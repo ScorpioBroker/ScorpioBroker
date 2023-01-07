@@ -1,5 +1,8 @@
 package eu.neclab.ngsildbroker.registry.subscriptionmanager.service;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -8,34 +11,71 @@ import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.github.jsonldjava.core.Context;
-import com.github.jsonldjava.core.JsonLdError;
+import com.github.jsonldjava.core.JsonLdProcessor;
+import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Table;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.NotificationParam;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.DeleteSubscriptionRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.InternalNotification;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.UpdateSubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import eu.neclab.ngsildbroker.registry.subscriptionmanager.repository.RegistrySubscriptionInfoDAO;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.reactive.messaging.MutinyEmitter;
+import io.smallrye.reactive.messaging.annotations.Broadcast;
+import io.vertx.mutiny.core.MultiMap;
+import io.vertx.mutiny.core.Vertx;
+import io.vertx.mutiny.core.buffer.Buffer;
+import io.vertx.mutiny.ext.web.client.WebClient;
+import io.vertx.mutiny.mqtt.MqttClient;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowIterator;
 
 @Singleton
 public class RegistrySubscriptionService {
 
+	private final static Logger logger = LoggerFactory.getLogger(RegistrySubscriptionService.class);
+
 	@Inject
 	RegistrySubscriptionInfoDAO regDAO;
 
+	@Inject
+	@Channel(AppConstants.INTERNAL_NOTIFICATION_CHANNEL)
+	@Broadcast
+	MutinyEmitter<InternalNotification> internalNotificationSender;
+
+	@Inject
+	Vertx vertx;
+
 	protected Table<String, String, SubscriptionRequest> tenant2subscriptionId2Subscription = HashBasedTable.create();
+
+	private WebClient webClient;
+
+	private MqttClient mqttClient;
+
+	void setup() {
+		this.webClient = WebClient.create(vertx);
+
+		this.mqttClient = MqttClient.create(vertx);
+
+	}
 
 	public Uni<NGSILDOperationResult> createSubscription(String tenant, Map<String, Object> subscription,
 			Context context) {
@@ -147,10 +187,88 @@ public class RegistrySubscriptionService {
 	}
 
 	private Uni<Void> sendNotification(SubscriptionRequest potentialSub, Map<String, Object> reg) {
-		if(shouldSendOut(potentialSub, reg)) {
-			
+		if (shouldSendOut(potentialSub, reg)) {
+			Map<String, Object> notification = generateNotification(potentialSub, reg);
+			NotificationParam notificationParam = potentialSub.getSubscription().getNotification();
+
+			switch (notificationParam.getEndPoint().getUri().getScheme()) {
+			case "internal":
+				return internalNotificationSender
+						.send(new InternalNotification(potentialSub.getTenant(), potentialSub.getId(), notification));
+			case "mqtt":
+			case "mqtts":
+				try {
+					return getMqttClient(notificationParam).onItem().transformToUni(client -> {
+
+						return client.publish(null, null, null, false, false).onItem().transformToUni(t -> {
+							if(t==0) {
+								//TODO what the fuck is the result here
+							}
+							return regDAO.updateNotificationSuccess(potentialSub.getTenant(), potentialSub.getId(),
+									SerializationTools.notifiedAt_formatter.format(LocalDateTime.ofInstant(
+											Instant.ofEpochMilli(System.currentTimeMillis()), ZoneId.of("Z"))));
+						}).onFailure().recoverWithUni(e -> {
+							logger.error("failed to send notification for subscription " + potentialSub.getId(), e);
+							return regDAO.updateNotificationFailure(potentialSub.getTenant(), potentialSub.getId(),
+									SerializationTools.notifiedAt_formatter.format(LocalDateTime.ofInstant(
+											Instant.ofEpochMilli(System.currentTimeMillis()), ZoneId.of("Z"))));
+						});
+					});
+				} catch (Exception e) {
+					logger.error("failed to send notification for subscription " + potentialSub.getId(), e);
+					return Uni.createFrom().voidItem();
+				}
+
+			case "http":
+			case "https":
+				try {
+					return webClient.post(notificationParam.getEndPoint().getUri().toString())
+							.putHeaders(getHeaders(notificationParam))
+							.sendBuffer(Buffer.buffer(JsonUtils.toPrettyString(JsonLdProcessor.compact(notification,
+									null, potentialSub.getContext(), HttpUtils.opts, -1))))
+							.onFailure().retry().atMost(3).onItem().transformToUni(result -> {
+								int statusCode = result.statusCode();
+
+								return regDAO
+										.updateNotificationSuccess(potentialSub.getTenant(), potentialSub.getId(),
+												SerializationTools.notifiedAt_formatter.format(LocalDateTime.ofInstant(
+														Instant.ofEpochMilli(System.currentTimeMillis()),
+														ZoneId.of("Z"))));
+							}).onFailure().recoverWithUni(e -> {
+								logger.error("failed to send notification for subscription " + potentialSub.getId(), e);
+								return regDAO
+										.updateNotificationFailure(potentialSub.getTenant(), potentialSub.getId(),
+												SerializationTools.notifiedAt_formatter.format(LocalDateTime.ofInstant(
+														Instant.ofEpochMilli(System.currentTimeMillis()),
+														ZoneId.of("Z"))));
+							});
+				} catch (Exception e) {
+					logger.error("failed to send notification for subscription " + potentialSub.getId(), e);
+					return Uni.createFrom().voidItem();
+				}
+
+			default:
+				logger.error("unsuported endpoint in subscription " + potentialSub.getId());
+				return Uni.createFrom().voidItem();
+			}
+
 		}
 		return Uni.createFrom().voidItem();
+	}
+
+	private Uni<MqttClient> getMqttClient(NotificationParam notificationParam) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	private MultiMap getHeaders(NotificationParam notificationParam) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	private Map<String, Object> generateNotification(SubscriptionRequest potentialSub, Map<String, Object> reg) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 	private boolean shouldSendOut(SubscriptionRequest potentialSub, Map<String, Object> reg) {

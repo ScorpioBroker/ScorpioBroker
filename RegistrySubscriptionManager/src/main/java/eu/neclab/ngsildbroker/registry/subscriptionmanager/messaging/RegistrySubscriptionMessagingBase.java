@@ -8,12 +8,12 @@ import org.slf4j.LoggerFactory;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
 import eu.neclab.ngsildbroker.registry.subscriptionmanager.service.RegistrySubscriptionService;
-import eu.neclab.ngsildbroker.registry.subscriptionmanager.service.oldRegistrySubscriptionService;
+
 import io.smallrye.mutiny.Uni;
 
 public abstract class RegistrySubscriptionMessagingBase {
 
-	private final static Logger logger = LoggerFactory.getLogger(oldRegistrySubscriptionService.class);
+	private final static Logger logger = LoggerFactory.getLogger(RegistrySubscriptionMessagingBase.class);
 
 	@Inject
 	RegistrySubscriptionService subscriptionService;

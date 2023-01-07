@@ -87,4 +87,17 @@ public class RegistrySubscriptionInfoDAO {
 		});
 	}
 
+	public Uni<Void> updateNotificationSuccess(String tenant, String id, String date) {
+		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
+			return client.preparedQuery("UPDATE registry_subscription SET subscription = jsonb_set(subscription, '')")
+					.execute(Tuple.of(id)).onFailure().retry().atMost(3).onItem()
+					.transformToUni(t -> Uni.createFrom().voidItem());
+		});
+	}
+
+	public Uni<Void> updateNotificationFailure(String tenant, String id, String format) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }

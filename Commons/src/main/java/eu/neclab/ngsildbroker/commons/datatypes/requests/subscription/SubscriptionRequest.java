@@ -18,19 +18,17 @@ public class SubscriptionRequest extends BaseRequest {
 
 	private Context context;
 
-	private boolean isInternal;
-
 	public SubscriptionRequest() {
 		// default constructor for serialization
 	}
 
-	public SubscriptionRequest(String tenant, Map<String, Object> subscription, Context context, boolean isInternal)
+	public SubscriptionRequest(String tenant, Map<String, Object> subscription, Context context)
 			throws ResponseException {
 		super(tenant, (String) subscription.get(NGSIConstants.JSON_LD_ID), subscription, null,
 				AppConstants.CREATE_SUBSCRIPTION_REQUEST);
 		this.context = context;
 		this.subscription = Subscription.expandSubscription(subscription, context, false);
-		this.isInternal = isInternal;
+
 	}
 
 	@Override
@@ -59,14 +57,6 @@ public class SubscriptionRequest extends BaseRequest {
 
 	public void setContext(Context context) {
 		this.context = context;
-	}
-
-	public boolean isInternal() {
-		return isInternal;
-	}
-
-	public void setInternal(boolean isInternal) {
-		this.isInternal = isInternal;
 	}
 
 }

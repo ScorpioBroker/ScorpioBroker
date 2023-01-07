@@ -110,7 +110,7 @@ public class HistoryDAO {
 			}
 			sql += "}')::jsonb, $3::TIMSTAMP, a.iid, $4 FROM a";
 			return client.preparedQuery(sql)
-					// You would think that we do the conversion in the db but somehow postgres
+					// You would think that we do the date conversion in the db but somehow postgres
 					// can't easily convert utc into a timestamp without a timezone
 					.execute(Tuple.of(request.getId(), request.getAttribName(), request.getDatasetId(),
 							SerializationTools.notifiedAt_formatter.format(LocalDateTime
