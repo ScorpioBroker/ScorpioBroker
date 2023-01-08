@@ -26,9 +26,9 @@ public class NotificationParam implements Serializable {
 	private EndPoint endPoint;
 	private Format format;
 	private int timesSent = 0;
-	private Date lastNotification;
-	private Date lastSuccessfulNotification;
-	private Date lastFailedNotification;
+	private long lastNotification;
+	private long lastSuccessfulNotification;
+	private long lastFailedNotification;
 
 	// duplicate
 	public NotificationParam(NotificationParam notification) {
@@ -38,15 +38,6 @@ public class NotificationParam implements Serializable {
 		this.endPoint = new EndPoint(notification.endPoint);
 		this.format = notification.format;
 		this.timesSent = notification.timesSent;
-		if (notification.lastNotification != null) {
-			this.lastNotification = Date.from(notification.lastNotification.toInstant());
-		}
-		if (notification.lastSuccessfulNotification != null) {
-			this.lastSuccessfulNotification = Date.from(notification.lastSuccessfulNotification.toInstant());
-		}
-		if (notification.lastFailedNotification != null) {
-			this.lastFailedNotification = Date.from(notification.lastFailedNotification.toInstant());
-		}
 	}
 
 	public NotificationParam() {
@@ -65,15 +56,6 @@ public class NotificationParam implements Serializable {
 
 		this.timesSent = notification.timesSent;
 
-		if (notification.lastNotification != null) {
-			this.lastNotification = Date.from(notification.lastNotification.toInstant());
-		}
-		if (notification.lastSuccessfulNotification != null) {
-			this.lastSuccessfulNotification = Date.from(notification.lastSuccessfulNotification.toInstant());
-		}
-		if (notification.lastFailedNotification != null) {
-			this.lastFailedNotification = Date.from(notification.lastFailedNotification.toInstant());
-		}
 		return this;
 	}
 
@@ -81,7 +63,7 @@ public class NotificationParam implements Serializable {
 		return timesSent;
 	}
 
-	public Date getLastNotification() {
+	public long getLastNotification() {
 		return lastNotification;
 	}
 
@@ -89,24 +71,24 @@ public class NotificationParam implements Serializable {
 		this.timesSent = timeSent;
 	}
 
-	public void setLastNotification(Date lastNotification) {
+	public void setLastNotification(long lastNotification) {
 		this.timesSent++;
 		this.lastNotification = lastNotification;
 	}
 
-	public Date getLastSuccessfulNotification() {
+	public long getLastSuccessfulNotification() {
 		return lastSuccessfulNotification;
 	}
 
-	public void setLastSuccessfulNotification(Date lastSuccessfulNotification) {
+	public void setLastSuccessfulNotification(long lastSuccessfulNotification) {
 		this.lastSuccessfulNotification = lastSuccessfulNotification;
 	}
 
-	public Date getLastFailedNotification() {
+	public long getLastFailedNotification() {
 		return lastFailedNotification;
 	}
 
-	public void setLastFailedNotification(Date lastFailedNotification) {
+	public void setLastFailedNotification(long lastFailedNotification) {
 		this.lastFailedNotification = lastFailedNotification;
 	}
 

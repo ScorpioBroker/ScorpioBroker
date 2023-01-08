@@ -23,7 +23,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.jsonldjava.core.Context;
-import com.github.jsonldjava.core.JsonLdError;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
@@ -31,6 +30,7 @@ import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Table;
+import com.google.common.collect.Table.Cell;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -50,6 +50,7 @@ import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import eu.neclab.ngsildbroker.registry.subscriptionmanager.repository.RegistrySubscriptionInfoDAO;
 import io.netty.handler.codec.mqtt.MqttQoS;
+import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.smallrye.reactive.messaging.annotations.Broadcast;
@@ -83,13 +84,15 @@ public class RegistrySubscriptionService {
 
 	protected Table<String, String, SubscriptionRequest> tenant2subscriptionId2Subscription = HashBasedTable.create();
 
-	private WebClient webClient;
+	protected Table<String, String, SubscriptionRequest> tenant2subscriptionId2IntervalSubscription = HashBasedTable
+			.create();
 
-	private Object ALL_TYPES_SUB;
+	private WebClient webClient;
 
 	@PostConstruct
 	Uni<Void> setup() {
 		this.webClient = WebClient.create(vertx);
+		
 
 		return regDAO.loadSubscriptions().onItem().transformToUni(subs -> {
 			subs.forEach(tuple -> {
@@ -97,7 +100,13 @@ public class RegistrySubscriptionService {
 				try {
 					request = new SubscriptionRequest(tuple.getItem1(), tuple.getItem2(),
 							new Context().parse(tuple.getItem3(), false));
-					this.tenant2subscriptionId2Subscription.put(request.getTenant(), request.getId(), request);
+					if (isIntervalSub(request)) {
+						this.tenant2subscriptionId2IntervalSubscription.put(request.getTenant(), request.getId(),
+								request);
+					} else {
+						this.tenant2subscriptionId2Subscription.put(request.getTenant(), request.getId(), request);
+					}
+
 				} catch (Exception e) {
 					logger.error("Failed to load stored subscription " + tuple.getItem1());
 				}
@@ -105,6 +114,10 @@ public class RegistrySubscriptionService {
 			return Uni.createFrom().voidItem();
 		});
 
+	}
+
+	private boolean isIntervalSub(SubscriptionRequest request) {
+		return request.getSubscription().getTimeInterval() > 0;
 	}
 
 	public Uni<NGSILDOperationResult> createSubscription(String tenant, Map<String, Object> subscription,
@@ -115,14 +128,46 @@ public class RegistrySubscriptionService {
 		} catch (ResponseException e) {
 			return Uni.createFrom().failure(e);
 		}
-		return regDAO.createSubscription(request).onItem().transform(t -> {
-			tenant2subscriptionId2Subscription.put(tenant, request.getId(), request);
-			return new NGSILDOperationResult(AppConstants.CREATE_SUBSCRIPTION_REQUEST, request.getId());
+		setInitTimesSentAndFailed(request);
+		return regDAO.createSubscription(request).onItem().transformToUni(t -> {
+			if (isIntervalSub(request)) {
+				this.tenant2subscriptionId2IntervalSubscription.put(request.getTenant(), request.getId(), request);
+			} else {
+				tenant2subscriptionId2Subscription.put(tenant, request.getId(), request);
+			}
+			return regDAO.getInitialNotificationData(request).onItem().transformToUni(rows -> {
+				List<Map<String, Object>> data = Lists.newArrayList();
+				rows.forEach(row -> {
+					data.add(row.getJsonObject(0).getMap());
+				});
+				try {
+					return sendNotification(request,
+							generateNotification(request, data, AppConstants.INTERNAL_NOTIFICATION_REQUEST),
+							AppConstants.INTERNAL_NOTIFICATION_REQUEST).onItem().transform(v -> {
+								return new NGSILDOperationResult(AppConstants.CREATE_SUBSCRIPTION_REQUEST,
+										request.getId());
+							});
+				} catch (Exception e) {
+					logger.error("Failed to send initial notifcation", e);
+					return Uni.createFrom()
+							.item(new NGSILDOperationResult(AppConstants.CREATE_SUBSCRIPTION_REQUEST, request.getId()));
+				}
+			});
+
 		}).onFailure().recoverWithUni(e -> {
 			// TODO sql check
 			return Uni.createFrom().failure(new ResponseException(ErrorType.AlreadyExists,
 					"Subscription with id " + request.getId() + " exists"));
 		});
+	}
+
+	private void setInitTimesSentAndFailed(SubscriptionRequest request) {
+		List<Map<String, Object>> timeValue = Lists.newArrayList();
+		Map<String, Object> tmp = Maps.newHashMap();
+		tmp.put(NGSIConstants.JSON_LD_VALUE, 0);
+		timeValue.add(tmp);
+		request.getPayload().put(NGSIConstants.NGSI_LD_TIMES_SENT, timeValue);
+		request.getPayload().put(NGSIConstants.NGSI_LD_TIMES_FAILED, timeValue);
 	}
 
 	public Uni<NGSILDOperationResult> updateSubscription(String tenant, String subscriptionId,
@@ -140,7 +185,14 @@ public class RegistrySubscriptionService {
 			} catch (Exception e) {
 				return Uni.createFrom().failure(e);
 			}
-			tenant2subscriptionId2Subscription.put(tenant, request.getId(), updatedRequest);
+
+			if (isIntervalSub(updatedRequest)) {
+				tenant2subscriptionId2IntervalSubscription.put(tenant, updatedRequest.getId(), updatedRequest);
+				tenant2subscriptionId2Subscription.remove(tenant, updatedRequest.getId());
+			} else {
+				tenant2subscriptionId2Subscription.put(tenant, updatedRequest.getId(), updatedRequest);
+				tenant2subscriptionId2IntervalSubscription.remove(tenant, updatedRequest.getId());
+			}
 			return Uni.createFrom()
 					.item(new NGSILDOperationResult(AppConstants.UPDATE_SUBSCRIPTION_REQUEST, subscriptionId));
 		});
@@ -149,6 +201,7 @@ public class RegistrySubscriptionService {
 	public Uni<NGSILDOperationResult> deleteSubscription(String tenant, String subscriptionId) {
 		DeleteSubscriptionRequest request = new DeleteSubscriptionRequest(tenant, subscriptionId);
 		return regDAO.deleteSubscription(request).onItem().transform(t -> {
+			tenant2subscriptionId2IntervalSubscription.remove(tenant, subscriptionId);
 			tenant2subscriptionId2Subscription.remove(tenant, subscriptionId);
 			return new NGSILDOperationResult(AppConstants.DELETE_SUBSCRIPTION_REQUEST, subscriptionId);
 		});
@@ -214,7 +267,7 @@ public class RegistrySubscriptionService {
 			}
 
 		}
-		return Uni.combine().all().unis(unis).combinedWith(null);
+		return Uni.combine().all().unis(unis).discardItems();
 	}
 
 	private Uni<Void> sendNotification(SubscriptionRequest potentialSub, Map<String, Object> reg, int triggerReason) {
@@ -277,12 +330,20 @@ public class RegistrySubscriptionService {
 									null, potentialSub.getContext(), HttpUtils.opts, -1))))
 							.onFailure().retry().atMost(3).onItem().transformToUni(result -> {
 								int statusCode = result.statusCode();
-
-								return regDAO
-										.updateNotificationSuccess(potentialSub.getTenant(), potentialSub.getId(),
-												SerializationTools.notifiedAt_formatter.format(LocalDateTime.ofInstant(
-														Instant.ofEpochMilli(System.currentTimeMillis()),
-														ZoneId.of("Z"))));
+								if (statusCode > 200 && statusCode < 300) {
+									return regDAO.updateNotificationSuccess(potentialSub.getTenant(),
+											potentialSub.getId(),
+											SerializationTools.notifiedAt_formatter.format(LocalDateTime.ofInstant(
+													Instant.ofEpochMilli(System.currentTimeMillis()), ZoneId.of("Z"))));
+								} else {
+									logger.error("failed to send notification for subscription " + potentialSub.getId()
+											+ " with status code " + statusCode
+											+ ". Remember there is redirect following for post due to security considerations");
+									return regDAO.updateNotificationFailure(potentialSub.getTenant(),
+											potentialSub.getId(),
+											SerializationTools.notifiedAt_formatter.format(LocalDateTime.ofInstant(
+													Instant.ofEpochMilli(System.currentTimeMillis()), ZoneId.of("Z"))));
+								}
 							}).onFailure().recoverWithUni(e -> {
 								logger.error("failed to send notification for subscription " + potentialSub.getId(), e);
 								return regDAO
@@ -311,7 +372,7 @@ public class RegistrySubscriptionService {
 	}
 
 	private Uni<MqttClient> getMqttClient(NotificationParam notificationParam) {
-		
+
 		return null;
 	}
 
@@ -354,18 +415,10 @@ public class RegistrySubscriptionService {
 		if (!sub.getIsActive() || sub.getExpiresAt() < System.currentTimeMillis()) {
 			return false;
 		}
+
 		for (EntityInfo entityInfo : sub.getEntities()) {
-			if (entityInfo.getType().equals(ALL_TYPES_SUB)) {
-				continue;
-			}
-			if (entityInfo.getId() == null && entityInfo.getIdPattern() == null) {
-				continue;
-			}
-			if (entityInfo.getId() != null && entityInfo.getId().toString().equals(id)) {
-				continue;
-			}
-			if (entityInfo.getIdPattern() != null && id.matches(entityInfo.getIdPattern())) {
-				continue;
+			if (entityInfo.getId() != null && entityInfo.getId().equals(reg)) {
+				return false;
 			}
 		}
 		return false;
@@ -408,36 +461,78 @@ public class RegistrySubscriptionService {
 
 	protected boolean shouldFire(Map<String, Object> entry, SubscriptionRequest subscription) {
 		Set<String> attribs = subscription.getSubscription().getAttributeNames();
+
 		if (attribs == null || attribs.isEmpty()) {
 			return true;
 		}
-
-		List<Map<String, Object>> information = (List<Map<String, Object>>) entry
-				.get(NGSIConstants.NGSI_LD_INFORMATION);
-		for (Map<String, Object> informationEntry : information) {
-			Object propertyNames = informationEntry.get(NGSIConstants.NGSI_LD_PROPERTIES);
-			Object relationshipNames = informationEntry.get(NGSIConstants.NGSI_LD_RELATIONSHIPS);
-			if (relationshipNames == null && relationshipNames == null) {
-				return true;
-			}
-			if (relationshipNames != null) {
-				List<Map<String, String>> list = (List<Map<String, String>>) relationshipNames;
-				for (Map<String, String> relationshipEntry : list) {
-					if (attribs.contains(relationshipEntry.get(NGSIConstants.JSON_LD_ID))) {
-						return true;
+		if (entry.containsKey(NGSIConstants.NGSI_LD_INFORMATION)) {
+			List<Map<String, Object>> information = (List<Map<String, Object>>) entry
+					.get(NGSIConstants.NGSI_LD_INFORMATION);
+			for (Map<String, Object> informationEntry : information) {
+				Object propertyNames = informationEntry.get(NGSIConstants.NGSI_LD_PROPERTIES);
+				Object relationshipNames = informationEntry.get(NGSIConstants.NGSI_LD_RELATIONSHIPS);
+				if (relationshipNames == null && relationshipNames == null) {
+					return true;
+				}
+				if (relationshipNames != null) {
+					List<Map<String, String>> list = (List<Map<String, String>>) relationshipNames;
+					for (Map<String, String> relationshipEntry : list) {
+						if (attribs.contains(relationshipEntry.get(NGSIConstants.JSON_LD_ID))) {
+							return true;
+						}
 					}
 				}
-			}
-			if (propertyNames != null) {
-				List<Map<String, String>> list = (List<Map<String, String>>) propertyNames;
-				for (Map<String, String> propertyEntry : list) {
-					if (attribs.contains(propertyEntry.get(NGSIConstants.JSON_LD_ID))) {
-						return true;
+				if (propertyNames != null) {
+					List<Map<String, String>> list = (List<Map<String, String>>) propertyNames;
+					for (Map<String, String> propertyEntry : list) {
+						if (attribs.contains(propertyEntry.get(NGSIConstants.JSON_LD_ID))) {
+							return true;
+						}
 					}
 				}
 			}
 		}
+		// TODO add aditional changes on what could fire in a csource reg
 		return false;
+	}
+
+	public static void main(String[] args) throws URISyntaxException {
+		URI uri1 = new URI("http://test1.com");
+		URI uri2 = new URI("http://test1.com/");
+
+		System.out.println(uri1.toString());
+		System.out.println(uri2.toString());
+	}
+
+	@Scheduled(every = "${scorpio.registry.subscription.checkinterval}")
+	Uni<Void> checkIntervalSubs() {
+		List<Uni<Void>> unis = Lists.newArrayList();
+		for (Cell<String, String, SubscriptionRequest> cell : tenant2subscriptionId2IntervalSubscription.cellSet()) {
+			SubscriptionRequest request = cell.getValue();
+			Subscription sub = request.getSubscription();
+			long now = System.currentTimeMillis();
+			if (sub.getNotification().getLastNotification() + sub.getTimeInterval() < now) {
+				unis.add(regDAO.getInitialNotificationData(request).onItem().transformToUni(rows -> {
+					if (rows.size() == 0) {
+						return Uni.createFrom().voidItem();
+					}
+					List<Map<String, Object>> data = Lists.newArrayList();
+					rows.forEach(row -> {
+						data.add(row.getJsonObject(0).getMap());
+					});
+					try {
+						return sendNotification(request,
+								generateNotification(request, data, AppConstants.INTERNAL_NOTIFICATION_REQUEST),
+								AppConstants.INTERVAL_NOTIFICATION_REQUEST);
+					} catch (Exception e) {
+						logger.error("Failed to send initial notifcation", e);
+						return Uni.createFrom().voidItem();
+					}
+
+				}));
+			}
+		}
+		return Uni.combine().all().unis(unis).discardItems();
 	}
 
 }

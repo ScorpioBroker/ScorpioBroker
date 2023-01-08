@@ -1,6 +1,7 @@
 package eu.neclab.ngsildbroker.registry.subscriptionmanager.repository;
 
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -14,11 +15,13 @@ import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.Lists;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.EntityInfo;
+import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.DeleteSubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.UpdateSubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
-import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.storage.ClientManager;
 import io.smallrye.mutiny.Uni;
@@ -93,15 +96,36 @@ public class RegistrySubscriptionInfoDAO {
 
 	public Uni<Void> updateNotificationSuccess(String tenant, String id, String date) {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
-			return client.preparedQuery("UPDATE registry_subscription SET subscription = jsonb_set(subscription, '')")
-					.execute(Tuple.of(id)).onFailure().retry().atMost(3).onItem()
+			return client
+					.preparedQuery("UPDATE registry_subscription SET subscription = subscription || ('{\""
+							+ NGSIConstants.NGSI_LD_TIMES_SENT + "\": [{\"" + NGSIConstants.JSON_LD_VALUE
+							+ "\": '|| subscription@>>'{" + NGSIConstants.NGSI_LD_TIMES_SENT + ",0, "
+							+ NGSIConstants.JSON_LD_VALUE + "}'::integer + 1 ||'}],\""
+							+ NGSIConstants.NGSI_LD_LAST_SUCCESS + "\": '[{\"" + NGSIConstants.JSON_LD_TYPE + "\": \""
+							+ NGSIConstants.NGSI_LD_DATE_TIME + "\", \"" + NGSIConstants.JSON_LD_VALUE + "\": \"$1\"}],"
+							+ NGSIConstants.NGSI_LD_LAST_NOTIFICATION + "\": '[{\"" + NGSIConstants.JSON_LD_TYPE
+							+ "\": \"" + NGSIConstants.NGSI_LD_DATE_TIME + "\", \"" + NGSIConstants.JSON_LD_VALUE
+							+ "\": \"$1\"}])::jsonb WHERE subscription_id=$2")
+					.execute(Tuple.of(date, id)).onFailure().retry().atMost(3).onItem()
 					.transformToUni(t -> Uni.createFrom().voidItem());
 		});
 	}
 
-	public Uni<Void> updateNotificationFailure(String tenant, String id, String format) {
-		// TODO Auto-generated method stub
-		return null;
+	public Uni<Void> updateNotificationFailure(String tenant, String id, String date) {
+		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
+			return client
+					.preparedQuery("UPDATE registry_subscription SET subscription = subscription || ('{\""
+							+ NGSIConstants.NGSI_LD_TIMES_FAILED + "\": [{\"" + NGSIConstants.JSON_LD_VALUE
+							+ "\": '|| subscription@>>'{" + NGSIConstants.NGSI_LD_TIMES_FAILED + ",0, "
+							+ NGSIConstants.JSON_LD_VALUE + "}'::integer + 1 ||'}],\""
+							+ NGSIConstants.NGSI_LD_LAST_FAILURE + "\": '[{\"" + NGSIConstants.JSON_LD_TYPE + "\": \""
+							+ NGSIConstants.NGSI_LD_DATE_TIME + "\", \"" + NGSIConstants.JSON_LD_VALUE + "\": \"$1\"}],"
+							+ NGSIConstants.NGSI_LD_LAST_NOTIFICATION + "\": '[{\"" + NGSIConstants.JSON_LD_TYPE
+							+ "\": \"" + NGSIConstants.NGSI_LD_DATE_TIME + "\", \"" + NGSIConstants.JSON_LD_VALUE
+							+ "\": \"$1\"}])::jsonb WHERE subscription_id=$2")
+					.execute(Tuple.of(date, id)).onFailure().retry().atMost(3).onItem()
+					.transformToUni(t -> Uni.createFrom().voidItem());
+		});
 	}
 
 	public Uni<List<Tuple3<String, Map<String, Object>, Map<String, Object>>>> loadSubscriptions() {
@@ -138,63 +162,77 @@ public class RegistrySubscriptionInfoDAO {
 
 	}
 
-	public Uni<RowSet<Row>> getInitialNotificationData(SubscriptionRequest message) {
-		return clientManager.getClient(message.getTenant(), false).onItem().transformToUni(client -> {
+	public Uni<RowSet<Row>> getInitialNotificationData(SubscriptionRequest subscriptionRequest) {
+		return clientManager.getClient(subscriptionRequest.getTenant(), false).onItem().transformToUni(client -> {
 			List<Object> tupleItems = Lists.newArrayList();
 			String sql = "with a as (select cs_id from contextsourceinformation WHERE ";
 			boolean sqlAdded = false;
 			int dollar = 1;
-			message.getSubscription().getEntities().get(0).getId();
-			if (ids != null) {
-				sql += "(e_id in $" + dollar + " or e_id is null) and (e_id_p is null or any($" + dollar
-						+ ") like e_id_p)";
-				dollar++;
-				tupleItems.add(ids);
-				sqlAdded = true;
-			}
-			if (idPattern != null) {
-				if (sqlAdded) {
+			Subscription subscription = subscriptionRequest.getSubscription();
+			Iterator<EntityInfo> it = subscription.getEntities().iterator();
+			while (it.hasNext()) {
+				EntityInfo entityInformation = it.next();
+				sql += "(";
+				if (entityInformation.getId() != null) {
+					sql += "((e_id is null or e_id  = $" + dollar + ") and (e_id_p is null or e_id_p ~ $" + dollar
+							+ "))";
+					dollar++;
+					tupleItems.add(entityInformation.getId().toString());
+					if (entityInformation.getType() != null) {
+						sql += " and ";
+					}
+				} else if (entityInformation.getIdPattern() != null) {
+					sql += "((e_id is null or $" + dollar + " ~ e_id) and (e_id_p is null or e_id_p = $" + dollar
+							+ "))";
+					dollar++;
+					tupleItems.add(entityInformation.getIdPattern());
+					if (entityInformation.getType() != null) {
+						sql += " and ";
+					}
+				}
+				if (entityInformation.getType() != null) {
+					sql += "(e_type is null or e_type in $" + dollar + ")";
+					dollar++;
+					tupleItems.add(entityInformation.getType());
+				}
+				sql += ")";
+				if (it.hasNext()) {
 					sql += " and ";
 				}
-				sql += "(e_id is null or $" + dollar + " ~ e_id)";
-				tupleItems.add(idPattern);
-				dollar++;
 				sqlAdded = true;
 			}
-			if (typeQuery != null) {
-				if (sqlAdded) {
-					sql += " and ";
-				}
-				tupleItems.add(typeQuery.getAllTypes());
-				dollar++;
-				sql += "(e_type is null or e_type in $" + dollar + ")";
-			}
-			if (attrsQuery != null) {
+
+			if (subscription.getAttributeNames() != null) {
 				if (sqlAdded) {
 					sql += " and ";
 				}
 				sql += "(e_prop is null or e_prop in $" + dollar + ") and (e_rel is null or e_rel in $" + dollar + ")";
-				tupleItems.add(attrsQuery.getAttrs());
+				tupleItems.add(subscription.getAttributeNames());
 				dollar++;
+				sqlAdded = true;
 			}
-			if (geoQuery != null) {
+
+			if (subscription.getLdGeoQuery() != null) {
 				if (sqlAdded) {
 					sql += " and ";
 				}
 				try {
-					Tuple2<StringBuilder, Integer> tmp = geoQuery.getGeoSQLQuery(tupleItems, dollar, "i_location");
+					Tuple2<StringBuilder, Integer> tmp = subscription.getLdGeoQuery().getGeoSQLQuery(tupleItems, dollar,
+							"i_location");
 					sql += tmp.getItem1().toString();
 					dollar = tmp.getItem2();
+					sqlAdded = true;
 				} catch (ResponseException e) {
 					return Uni.createFrom().failure(e);
 				}
 			}
-			if (scopeQuery != null) {
+
+			if (subscription.getScopeQuery() != null) {
 				if (sqlAdded) {
 					sql += " and ";
 				}
 				sql += "(scopes IS NULL OR ";
-				ScopeQueryTerm current = scopeQuery;
+				ScopeQueryTerm current = subscription.getScopeQuery();
 				while (current != null) {
 					sql += " matchscope(scopes, " + current.getSQLScopeQuery() + ")";
 
@@ -212,7 +250,7 @@ public class RegistrySubscriptionInfoDAO {
 			}
 
 			sql += ") select csource.reg from a left join csource on a.cs_id = csource.id";
-			if (csf != null) {
+			if (subscription.getCsf() != null) {
 				// if (sqlAdded) {
 				// sql += " and ";
 				// }
@@ -220,6 +258,7 @@ public class RegistrySubscriptionInfoDAO {
 			}
 
 			return client.preparedQuery(sql).execute(Tuple.from(tupleItems)).onFailure().retry().atMost(3);
+		});
 	}
 
 }
