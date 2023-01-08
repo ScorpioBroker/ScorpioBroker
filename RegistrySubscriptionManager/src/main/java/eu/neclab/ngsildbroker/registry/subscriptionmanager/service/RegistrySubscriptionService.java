@@ -2,6 +2,7 @@ package eu.neclab.ngsildbroker.registry.subscriptionmanager.service;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -273,21 +274,21 @@ public class RegistrySubscriptionService {
 			Map<String, Object> notification;
 			try {
 				notification = generateNotification(potentialSub, reg, triggerReason);
-			} catch (Exception e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
+			} catch (Exception e) {
+				logger.error("Failed to generate notification", e);
 				return Uni.createFrom().voidItem();
 			}
 			NotificationParam notificationParam = potentialSub.getSubscription().getNotification();
-
+			Uni<Void> toSend;
 			switch (notificationParam.getEndPoint().getUri().getScheme()) {
 			case "internal":
-				return internalNotificationSender
+				toSend = internalNotificationSender
 						.send(new InternalNotification(potentialSub.getTenant(), potentialSub.getId(), notification));
+				break;
 			case "mqtt":
 			case "mqtts":
 				try {
-					return getMqttClient(notificationParam).onItem().transformToUni(client -> {
+					toSend = getMqttClient(notificationParam).onItem().transformToUni(client -> {
 						int qos = 1;
 
 						String qosString = notificationParam.getEndPoint().getNotifierInfo()
@@ -331,11 +332,11 @@ public class RegistrySubscriptionService {
 					logger.error("failed to send notification for subscription " + potentialSub.getId(), e);
 					return Uni.createFrom().voidItem();
 				}
-
+				break;
 			case "http":
 			case "https":
 				try {
-					return webClient.post(notificationParam.getEndPoint().getUri().toString())
+					toSend = webClient.post(notificationParam.getEndPoint().getUri().toString())
 							.putHeaders(getHeaders(notificationParam))
 							.sendBuffer(Buffer.buffer(JsonUtils.toPrettyString(JsonLdProcessor.compact(notification,
 									null, potentialSub.getContext(), HttpUtils.opts, -1))))
@@ -373,12 +374,22 @@ public class RegistrySubscriptionService {
 					logger.error("failed to send notification for subscription " + potentialSub.getId(), e);
 					return Uni.createFrom().voidItem();
 				}
-
+				break;
 			default:
 				logger.error("unsuported endpoint in subscription " + potentialSub.getId());
 				return Uni.createFrom().voidItem();
 			}
-
+			if (potentialSub.getSubscription().getThrottling() > 0) {
+				long delay = potentialSub.getSubscription().getThrottling() - (System.currentTimeMillis()
+						- potentialSub.getSubscription().getNotification().getLastNotification());
+				if (delay > 0) {
+					return Uni.createFrom().voidItem().onItem().delayIt().by(Duration.ofMillis(delay)).onItem()
+							.transformToUni(v -> toSend);
+				} else {
+					return toSend;
+				}
+			}
+			return toSend;
 		}
 		return Uni.createFrom().voidItem();
 	}
@@ -438,7 +449,7 @@ public class RegistrySubscriptionService {
 		if (accept == null) {
 			accept = AppConstants.NGB_APPLICATION_JSON;
 		}
-		result.add("accept", accept);
+		result.set("accept", accept);
 		return new MultiMap(result);
 	}
 
@@ -453,7 +464,7 @@ public class RegistrySubscriptionService {
 				.format(LocalDateTime.ofInstant(Instant.ofEpochMilli(System.currentTimeMillis()), ZoneId.of("Z"))));
 		Map<String, Object> compacted = JsonLdProcessor.compact(reg, null, potentialSub.getContext(), HttpUtils.opts,
 				-1);
-		//TODO check what compacted produces here and add the correct things
+		// TODO check what compacted produces here and add the correct things
 		notification.put(NGSIConstants.NGSI_LD_DATA_SHORT, Lists.newArrayList(compacted));
 		notification.put(NGSIConstants.NGSI_LD_TRIGGER_REASON_SHORT, HttpUtils.getTriggerReason(triggerReason));
 		return notification;
@@ -488,6 +499,8 @@ public class RegistrySubscriptionService {
 				message.getSubscription().getAttributeNames()
 						.addAll(message.getSubscription().getLdQuery().getAllAttibs());
 			}
+			message.getSubscription().setThrottling(0);
+			message.getSubscription().setTimeInterval(0);
 			tenant2subscriptionId2Subscription.put(message.getTenant(), message.getId(), message);
 		} catch (URISyntaxException e) {
 			// left empty intentionally this will never throw because it's a constant string
