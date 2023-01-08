@@ -72,7 +72,6 @@ public class NotificationParam implements Serializable {
 	}
 
 	public void setLastNotification(long lastNotification) {
-		this.timesSent++;
 		this.lastNotification = lastNotification;
 	}
 

@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -18,7 +19,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.eclipse.microprofile.reactive.messaging.Channel;
-import org.quartz.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,20 +79,18 @@ public class RegistrySubscriptionService {
 	@Inject
 	Vertx vertx;
 
-	@Inject
-	Scheduler scheduler;
+	private Table<String, String, SubscriptionRequest> tenant2subscriptionId2Subscription = HashBasedTable.create();
 
-	protected Table<String, String, SubscriptionRequest> tenant2subscriptionId2Subscription = HashBasedTable.create();
-
-	protected Table<String, String, SubscriptionRequest> tenant2subscriptionId2IntervalSubscription = HashBasedTable
+	private Table<String, String, SubscriptionRequest> tenant2subscriptionId2IntervalSubscription = HashBasedTable
 			.create();
 
 	private WebClient webClient;
 
+	private Map<String, MqttClient> host2MqttClient = Maps.newHashMap();
+
 	@PostConstruct
 	Uni<Void> setup() {
 		this.webClient = WebClient.create(vertx);
-		
 
 		return regDAO.loadSubscriptions().onItem().transformToUni(subs -> {
 			subs.forEach(tuple -> {
@@ -297,24 +295,37 @@ public class RegistrySubscriptionService {
 						if (qosString != null) {
 							qos = Integer.parseInt(qosString);
 						}
-						return client.publish(notificationParam.getEndPoint().getUri().getPath().substring(1),
-								Buffer.buffer(getMqttPayload(notificationParam, notification)), MqttQoS.valueOf(qos),
-								false, false).onItem().transformToUni(t -> {
-									if (t == 0) {
-										// TODO what the fuck is the result here
-									}
-									return regDAO.updateNotificationSuccess(potentialSub.getTenant(),
-											potentialSub.getId(),
-											SerializationTools.notifiedAt_formatter.format(LocalDateTime.ofInstant(
-													Instant.ofEpochMilli(System.currentTimeMillis()), ZoneId.of("Z"))));
-								}).onFailure().recoverWithUni(e -> {
-									logger.error("failed to send notification for subscription " + potentialSub.getId(),
-											e);
-									return regDAO.updateNotificationFailure(potentialSub.getTenant(),
-											potentialSub.getId(),
-											SerializationTools.notifiedAt_formatter.format(LocalDateTime.ofInstant(
-													Instant.ofEpochMilli(System.currentTimeMillis()), ZoneId.of("Z"))));
-								});
+						try {
+							return client.publish(notificationParam.getEndPoint().getUri().getPath().substring(1),
+									Buffer.buffer(getMqttPayload(notificationParam, notification)),
+									MqttQoS.valueOf(qos), false, false).onItem().transformToUni(t -> {
+										if (t == 0) {
+											// TODO what the fuck is the result here
+										}
+										long now = System.currentTimeMillis();
+										potentialSub.getSubscription().getNotification()
+												.setLastSuccessfulNotification(now);
+										potentialSub.getSubscription().getNotification().setLastNotification(now);
+										return regDAO.updateNotificationSuccess(potentialSub.getTenant(),
+												potentialSub.getId(),
+												SerializationTools.notifiedAt_formatter.format(LocalDateTime
+														.ofInstant(Instant.ofEpochMilli(now), ZoneId.of("Z"))));
+									}).onFailure().recoverWithUni(e -> {
+										logger.error(
+												"failed to send notification for subscription " + potentialSub.getId(),
+												e);
+										long now = System.currentTimeMillis();
+										potentialSub.getSubscription().getNotification().setLastFailedNotification(now);
+										potentialSub.getSubscription().getNotification().setLastNotification(now);
+										return regDAO.updateNotificationFailure(potentialSub.getTenant(),
+												potentialSub.getId(),
+												SerializationTools.notifiedAt_formatter.format(LocalDateTime
+														.ofInstant(Instant.ofEpochMilli(now), ZoneId.of("Z"))));
+									});
+						} catch (Exception e) {
+							logger.error("failed to send notification for subscription " + potentialSub.getId(), e);
+							return Uni.createFrom().voidItem();
+						}
 					});
 				} catch (Exception e) {
 					logger.error("failed to send notification for subscription " + potentialSub.getId(), e);
@@ -330,27 +341,33 @@ public class RegistrySubscriptionService {
 									null, potentialSub.getContext(), HttpUtils.opts, -1))))
 							.onFailure().retry().atMost(3).onItem().transformToUni(result -> {
 								int statusCode = result.statusCode();
+								long now = System.currentTimeMillis();
 								if (statusCode > 200 && statusCode < 300) {
+									potentialSub.getSubscription().getNotification().setLastSuccessfulNotification(now);
+									potentialSub.getSubscription().getNotification().setLastNotification(now);
 									return regDAO.updateNotificationSuccess(potentialSub.getTenant(),
 											potentialSub.getId(),
-											SerializationTools.notifiedAt_formatter.format(LocalDateTime.ofInstant(
-													Instant.ofEpochMilli(System.currentTimeMillis()), ZoneId.of("Z"))));
+											SerializationTools.notifiedAt_formatter.format(LocalDateTime
+													.ofInstant(Instant.ofEpochMilli(now), ZoneId.of("Z"))));
 								} else {
 									logger.error("failed to send notification for subscription " + potentialSub.getId()
 											+ " with status code " + statusCode
-											+ ". Remember there is redirect following for post due to security considerations");
+											+ ". Remember there is no redirect following for post due to security considerations");
+									potentialSub.getSubscription().getNotification().setLastFailedNotification(now);
+									potentialSub.getSubscription().getNotification().setLastNotification(now);
 									return regDAO.updateNotificationFailure(potentialSub.getTenant(),
 											potentialSub.getId(),
-											SerializationTools.notifiedAt_formatter.format(LocalDateTime.ofInstant(
-													Instant.ofEpochMilli(System.currentTimeMillis()), ZoneId.of("Z"))));
+											SerializationTools.notifiedAt_formatter.format(LocalDateTime
+													.ofInstant(Instant.ofEpochMilli(now), ZoneId.of("Z"))));
 								}
 							}).onFailure().recoverWithUni(e -> {
 								logger.error("failed to send notification for subscription " + potentialSub.getId(), e);
-								return regDAO
-										.updateNotificationFailure(potentialSub.getTenant(), potentialSub.getId(),
-												SerializationTools.notifiedAt_formatter.format(LocalDateTime.ofInstant(
-														Instant.ofEpochMilli(System.currentTimeMillis()),
-														ZoneId.of("Z"))));
+								long now = System.currentTimeMillis();
+								potentialSub.getSubscription().getNotification().setLastFailedNotification(now);
+								potentialSub.getSubscription().getNotification().setLastNotification(now);
+								return regDAO.updateNotificationFailure(potentialSub.getTenant(), potentialSub.getId(),
+										SerializationTools.notifiedAt_formatter.format(
+												LocalDateTime.ofInstant(Instant.ofEpochMilli(now), ZoneId.of("Z"))));
 							});
 				} catch (Exception e) {
 					logger.error("failed to send notification for subscription " + potentialSub.getId(), e);
@@ -366,14 +383,46 @@ public class RegistrySubscriptionService {
 		return Uni.createFrom().voidItem();
 	}
 
-	private String getMqttPayload(NotificationParam notificationParam, Map<String, Object> notification) {
-		// TODO Auto-generated method stub
-		return null;
+	private String getMqttPayload(NotificationParam notificationParam, Map<String, Object> notification)
+			throws Exception {
+		Map<String, Object> result = Maps.newLinkedHashMap();
+		if (!notificationParam.getEndPoint().getReceiverInfo().isEmpty()) {
+			result.put(NGSIConstants.METADATA, getMetaData(notificationParam.getEndPoint().getReceiverInfo()));
+		}
+		result.put(NGSIConstants.BODY, notification);
+		return JsonUtils.toString(result);
+	}
+
+	private List<Map<String, String>> getMetaData(ArrayListMultimap<String, String> receiverInfo) {
+		List<Map<String, String>> result = Lists.newArrayList();
+		for (Entry<String, String> entry : receiverInfo.entries()) {
+			Map<String, String> tmp = new HashMap<>(1);
+			tmp.put(entry.getKey(), entry.getValue());
+			result.add(tmp);
+		}
+		return result;
 	}
 
 	private Uni<MqttClient> getMqttClient(NotificationParam notificationParam) {
-
-		return null;
+		URI host = notificationParam.getEndPoint().getUri();
+		String hostString = host.getHost() + host.getPort();
+		MqttClient client;
+		if (!host2MqttClient.containsKey(hostString)) {
+			client = MqttClient.create(vertx);
+			return client.connect(host.getPort(), host.getHost()).onItem().transform(t -> {
+				host2MqttClient.put(hostString, client);
+				return client;
+			});
+		} else {
+			client = host2MqttClient.get(hostString);
+			if (client.isConnected()) {
+				return Uni.createFrom().item(client);
+			} else {
+				return client.connect(host.getPort(), host.getHost()).onItem().transform(t -> {
+					return client;
+				});
+			}
+		}
 	}
 
 	private MultiMap getHeaders(NotificationParam notificationParam) {
@@ -404,8 +453,8 @@ public class RegistrySubscriptionService {
 				.format(LocalDateTime.ofInstant(Instant.ofEpochMilli(System.currentTimeMillis()), ZoneId.of("Z"))));
 		Map<String, Object> compacted = JsonLdProcessor.compact(reg, null, potentialSub.getContext(), HttpUtils.opts,
 				-1);
-		notification.put(NGSIConstants.NGSI_LD_DATA_SHORT,
-				Lists.newArrayList(JsonLdProcessor.compact(reg, null, potentialSub.getContext(), HttpUtils.opts, -1)));
+		//TODO check what compacted produces here and add the correct things
+		notification.put(NGSIConstants.NGSI_LD_DATA_SHORT, Lists.newArrayList(compacted));
 		notification.put(NGSIConstants.NGSI_LD_TRIGGER_REASON_SHORT, HttpUtils.getTriggerReason(triggerReason));
 		return notification;
 	}
@@ -466,6 +515,7 @@ public class RegistrySubscriptionService {
 			return true;
 		}
 		if (entry.containsKey(NGSIConstants.NGSI_LD_INFORMATION)) {
+			@SuppressWarnings("unchecked")
 			List<Map<String, Object>> information = (List<Map<String, Object>>) entry
 					.get(NGSIConstants.NGSI_LD_INFORMATION);
 			for (Map<String, Object> informationEntry : information) {
@@ -475,6 +525,7 @@ public class RegistrySubscriptionService {
 					return true;
 				}
 				if (relationshipNames != null) {
+					@SuppressWarnings("unchecked")
 					List<Map<String, String>> list = (List<Map<String, String>>) relationshipNames;
 					for (Map<String, String> relationshipEntry : list) {
 						if (attribs.contains(relationshipEntry.get(NGSIConstants.JSON_LD_ID))) {
@@ -483,6 +534,7 @@ public class RegistrySubscriptionService {
 					}
 				}
 				if (propertyNames != null) {
+					@SuppressWarnings("unchecked")
 					List<Map<String, String>> list = (List<Map<String, String>>) propertyNames;
 					for (Map<String, String> propertyEntry : list) {
 						if (attribs.contains(propertyEntry.get(NGSIConstants.JSON_LD_ID))) {
