@@ -29,7 +29,7 @@ public class ScopeQueryTerm {
 		return next != null;
 	}
 
-	public boolean calculate(List<String[]> scopes) throws ResponseException {
+	public boolean calculate(List<String[]> scopes) {
 		boolean result = false;
 		if (firstChild == null) {
 			result = calculateMe(scopes);
@@ -264,7 +264,5 @@ public class ScopeQueryTerm {
 	public ScopeQueryTerm getPrev() {
 		return prev;
 	}
-	
-	
 
 }

@@ -12,7 +12,6 @@ import com.github.jsonldjava.core.Context;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.BaseEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.BaseProperty;
@@ -68,7 +67,7 @@ public class QQueryTerm {
 	 * @return
 	 * @throws ResponseException
 	 */
-	public boolean calculate(List<BaseProperty> properties) throws ResponseException {
+	public boolean calculate(List<BaseProperty> properties) {
 		boolean result = false;
 		if (firstChild == null) {
 			result = calculate(properties, attribute, operator, operant);
@@ -87,8 +86,7 @@ public class QQueryTerm {
 	}
 
 	@SuppressWarnings("rawtypes") // rawtypes are fine here and intentionally used
-	private boolean calculate(List<BaseProperty> properties, String attribute, String operator, String operant)
-			throws ResponseException {
+	private boolean calculate(List<BaseProperty> properties, String attribute, String operator, String operant) {
 
 		if (!attribute.matches(URI) && attribute.contains(".")) {
 			String[] splittedAttrib = attribute.split("\\.");
@@ -174,11 +172,7 @@ public class QQueryTerm {
 					}
 					operant = operant.replace("\"", "");
 					if (TIME_PROPS.contains(myAttribName)) {
-						try {
-							operant = SerializationTools.date2Long(operant).toString();
-						} catch (Exception e) {
-							throw new ResponseException(ErrorType.BadRequestData, e.getMessage());
-						}
+						operant = SerializationTools.date2Long(operant).toString();
 					}
 					if (operant.matches(RANGE)) {
 						String[] range = operant.split("\\.\\.");
@@ -352,7 +346,7 @@ public class QQueryTerm {
 	 */
 
 	@SuppressWarnings("rawtypes") // Intentional usage of raw type here.
-	private Object getCompoundValue(Object value, String[] compound) throws ResponseException {
+	private Object getCompoundValue(Object value, String[] compound) {
 		if (!(value instanceof Map)) {
 			return null;
 		}
@@ -404,7 +398,7 @@ public class QQueryTerm {
 		return result;
 	}
 
-	private String expandAttributeName(String attribute) throws ResponseException {
+	private String expandAttributeName(String attribute) {
 		return linkHeaders.expandIri(attribute, false, true, null, null);
 	}
 

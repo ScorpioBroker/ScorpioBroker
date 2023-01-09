@@ -21,7 +21,7 @@ public class GeoQueryTerm {
 	private String geoproperty = "https://uri.etsi.org/ngsi-ld/location";
 	private String georel = null;
 	private String distanceType = null;
-	private String distanceValue = null;
+	private Double distanceValue = null;
 	private Context context;
 
 	public GeoQueryTerm(Context context) {
@@ -100,11 +100,11 @@ public class GeoQueryTerm {
 		this.distanceType = distanceType;
 	}
 
-	public String getDistanceValue() {
+	public Double getDistanceValue() {
 		return distanceValue;
 	}
 
-	public void setDistanceValue(String distanceValue) {
+	public void setDistanceValue(Double distanceValue) {
 		this.distanceValue = distanceValue;
 	}
 

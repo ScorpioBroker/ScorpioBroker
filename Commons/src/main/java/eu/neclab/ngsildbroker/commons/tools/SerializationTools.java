@@ -205,7 +205,7 @@ public class SerializationTools {
 		return result;
 	}
 
-	public static Long date2Long(String dateString) throws Exception {
+	public static Long date2Long(String dateString) {
 		return Instant.from(informatter.parse(dateString)).toEpochMilli();
 
 	}

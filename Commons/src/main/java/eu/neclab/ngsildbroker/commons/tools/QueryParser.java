@@ -83,10 +83,11 @@ public class QueryParser {
 	@SuppressWarnings("unused")
 	// TODO validate queries still not working ... rework regex ???
 	private static Pattern p = Pattern.compile(query);
-	
+
 	public static CSFQueryTerm parseCSFQuery(String input, Context context) throws ResponseException {
 		return null;
 	}
+
 	public static QQueryTerm parseQuery(String input, Context context) throws ResponseException {
 		QQueryTerm root = new QQueryTerm(context);
 		QQueryTerm current = root;
@@ -165,7 +166,7 @@ public class QueryParser {
 
 	public static GeoQueryTerm parseGeoQuery(String georel, String coordinates, String geometry, String geoproperty,
 			Context context) throws ResponseException {
-		if(georel == null && coordinates == null && geometry == null && geoproperty == null) {
+		if (georel == null && coordinates == null && geometry == null && geoproperty == null) {
 			return null;
 		}
 		if (georel == null || georel.isEmpty()) {
@@ -186,7 +187,7 @@ public class QueryParser {
 			}
 			String[] maxMin = temp[1].split("==");
 			result.setDistanceType(maxMin[0]);
-			result.setDistanceValue(maxMin[1]);
+			result.setDistanceValue(Double.parseDouble(maxMin[1]));
 		}
 		result.setCoordinates(coordinates);
 		result.setGeometry(geometry);

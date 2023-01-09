@@ -20,7 +20,9 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.locationtech.spatial4j.SpatialPredicate;
 import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
+import org.locationtech.spatial4j.distance.DistanceUtils;
 import org.locationtech.spatial4j.shape.Shape;
 import org.locationtech.spatial4j.shape.ShapeFactory.LineStringBuilder;
 import org.locationtech.spatial4j.shape.ShapeFactory.PolygonBuilder;
@@ -53,8 +55,8 @@ import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
-import eu.neclab.ngsildbroker.commons.tools.QueryParser;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import eu.neclab.ngsildbroker.registry.subscriptionmanager.repository.RegistrySubscriptionInfoDAO;
 import io.netty.handler.codec.mqtt.MqttQoS;
@@ -479,6 +481,7 @@ public class RegistrySubscriptionService {
 		return notification;
 	}
 
+	@SuppressWarnings("unchecked")
 	private boolean shouldSendOut(SubscriptionRequest potentialSub, Map<String, Object> reg) {
 		Subscription sub = potentialSub.getSubscription();
 		if (!sub.getIsActive() || sub.getExpiresAt() < System.currentTimeMillis()) {
@@ -486,8 +489,605 @@ public class RegistrySubscriptionService {
 		}
 
 		for (EntityInfo entityInfo : sub.getEntities()) {
-			if (entityInfo.getId() != null && entityInfo.getId().equals(reg)) {
+			if (entityInfo.getId() != null && entityInfo.getType() != null && sub.getAttributeNames() != null) {
+				if (checkRegForIdTypeAttrs(entityInfo.getId(), entityInfo.getType(), sub.getAttributeNames(),
+						(List<Map<String, Object>>) reg.get(NGSIConstants.NGSI_LD_INFORMATION))) {
+					break;
+				}
+			} else if (entityInfo.getIdPattern() != null && entityInfo.getType() != null
+					&& sub.getAttributeNames() != null) {
+				if (checkRegForIdPatternTypeAttrs(entityInfo.getIdPattern(), entityInfo.getType(),
+						sub.getAttributeNames(),
+						(List<Map<String, Object>>) reg.get(NGSIConstants.NGSI_LD_INFORMATION))) {
+					break;
+				}
+			} else if (entityInfo.getId() != null && entityInfo.getType() != null) {
+				if (checkRegForIdType(entityInfo.getId(), entityInfo.getType(),
+						(List<Map<String, Object>>) reg.get(NGSIConstants.NGSI_LD_INFORMATION))) {
+					break;
+				}
+			} else if (entityInfo.getIdPattern() != null && entityInfo.getType() != null) {
+				if (checkRegForIdPatternType(entityInfo.getIdPattern(), entityInfo.getType(),
+						(List<Map<String, Object>>) reg.get(NGSIConstants.NGSI_LD_INFORMATION))) {
+					break;
+				}
+			} else if (entityInfo.getId() != null && sub.getAttributeNames() != null) {
+				if (checkRegForIdAttrs(entityInfo.getId(), sub.getAttributeNames(),
+						(List<Map<String, Object>>) reg.get(NGSIConstants.NGSI_LD_INFORMATION))) {
+					break;
+				}
+			} else if (entityInfo.getIdPattern() != null && sub.getAttributeNames() != null) {
+				if (checkRegForIdPatternAttrs(entityInfo.getIdPattern(), sub.getAttributeNames(),
+						(List<Map<String, Object>>) reg.get(NGSIConstants.NGSI_LD_INFORMATION))) {
+					break;
+				}
+			} else if (entityInfo.getType() != null && sub.getAttributeNames() != null) {
+				if (checkRegForTypeAttrs(entityInfo.getType(), sub.getAttributeNames(),
+						(List<Map<String, Object>>) reg.get(NGSIConstants.NGSI_LD_INFORMATION))) {
+					break;
+				}
+			} else if (entityInfo.getType() != null) {
+				if (checkRegForType(entityInfo.getType(),
+						(List<Map<String, Object>>) reg.get(NGSIConstants.NGSI_LD_INFORMATION))) {
+					break;
+				}
+			} else if (entityInfo.getIdPattern() != null) {
+				if (checkRegForIdPattern(entityInfo.getIdPattern(),
+						(List<Map<String, Object>>) reg.get(NGSIConstants.NGSI_LD_INFORMATION))) {
+					break;
+				}
+			} else if (entityInfo.getId() != null) {
+				if (checkRegForId(entityInfo.getId(),
+						(List<Map<String, Object>>) reg.get(NGSIConstants.NGSI_LD_INFORMATION))) {
+					break;
+				}
+			} else if (sub.getAttributeNames() != null) {
+				if (checkRegForAttribs(sub.getAttributeNames(),
+						(List<Map<String, Object>>) reg.get(NGSIConstants.NGSI_LD_INFORMATION))) {
+					break;
+				}
+			}
+
+		}
+		if (!evaluateGeoQuery(sub.getLdGeoQuery(), reg)) {
+			return false;
+		}
+		if (sub.getScopeQuery() != null) {
+			if (!sub.getScopeQuery().calculate(EntityTools.getScopes(reg))) {
 				return false;
+			}
+		}
+		if (sub.getCsf() != null) {
+			if (!sub.getCsf().calculate(EntityTools.getBaseProperties(reg))) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	@SuppressWarnings("unchecked")
+	private boolean checkRegForId(URI id, List<Map<String, Object>> information) {
+		for (Map<String, Object> entry : information) {
+			if (!entry.containsKey(NGSIConstants.NGSI_LD_ENTITIES)) {
+				return true;
+			}
+			List<Map<String, Object>> entities = (List<Map<String, Object>>) entry.get(NGSIConstants.NGSI_LD_ENTITIES);
+			for (Map<String, Object> entity : entities) {
+				if (!entity.containsKey(NGSIConstants.JSON_LD_ID)) {
+					return true;
+				}
+				if (entity.get(NGSIConstants.JSON_LD_ID).equals(id.toString())) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	@SuppressWarnings("unchecked")
+	private boolean checkRegForIdPattern(String idPattern, List<Map<String, Object>> information) {
+		for (Map<String, Object> entry : information) {
+			if (!entry.containsKey(NGSIConstants.NGSI_LD_ENTITIES)) {
+				return true;
+			}
+			List<Map<String, Object>> entities = (List<Map<String, Object>>) entry.get(NGSIConstants.NGSI_LD_ENTITIES);
+			for (Map<String, Object> entity : entities) {
+				if ((!entity.containsKey(NGSIConstants.JSON_LD_ID)
+						&& !entity.containsKey(NGSIConstants.NGSI_LD_ID_PATTERN))
+						|| (entity.containsKey(NGSIConstants.JSON_LD_ID)
+								&& ((String) entity.get(NGSIConstants.JSON_LD_ID)).matches(idPattern))
+						|| (entity.containsKey(NGSIConstants.NGSI_LD_ID_PATTERN)
+								&& ((List<Map<String, String>>) entity.get(NGSIConstants.NGSI_LD_ID_PATTERN)).get(0)
+										.get(NGSIConstants.JSON_LD_VALUE).equals(idPattern))) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	@SuppressWarnings("unchecked")
+	private boolean checkRegForAttribs(Set<String> attributeNames, List<Map<String, Object>> information) {
+		for (Map<String, Object> entry : information) {
+			if (!entry.containsKey(NGSIConstants.NGSI_LD_RELATIONSHIPS)
+					&& !entry.containsKey(NGSIConstants.NGSI_LD_PROPERTIES)) {
+				return true;
+			}
+			if (entry.containsKey(NGSIConstants.NGSI_LD_RELATIONSHIPS)) {
+				List<Map<String, String>> relationships = (List<Map<String, String>>) entry
+						.get(NGSIConstants.NGSI_LD_RELATIONSHIPS);
+				for (Map<String, String> relationship : relationships) {
+					if (attributeNames.contains(relationship.get(NGSIConstants.JSON_LD_VALUE))) {
+						return true;
+					}
+				}
+			}
+			if (entry.containsKey(NGSIConstants.NGSI_LD_PROPERTIES)) {
+				List<Map<String, String>> properties = (List<Map<String, String>>) entry
+						.get(NGSIConstants.NGSI_LD_PROPERTIES);
+				for (Map<String, String> property : properties) {
+					if (attributeNames.contains(property.get(NGSIConstants.JSON_LD_VALUE))) {
+						return true;
+					}
+				}
+			}
+		}
+		return false;
+	}
+
+	@SuppressWarnings("unchecked")
+	private boolean checkRegForType(String type, List<Map<String, Object>> information) {
+		for (Map<String, Object> entry : information) {
+			if (!entry.containsKey(NGSIConstants.NGSI_LD_ENTITIES)) {
+				return true;
+			}
+			List<Map<String, Object>> entities = (List<Map<String, Object>>) entry.get(NGSIConstants.NGSI_LD_ENTITIES);
+			for (Map<String, Object> entity : entities) {
+				if (!entity.containsKey(NGSIConstants.JSON_LD_TYPE)
+						|| ((List<String>) entity.get(NGSIConstants.JSON_LD_TYPE)).contains(type)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	@SuppressWarnings("unchecked")
+	private boolean checkRegForTypeAttrs(String type, Set<String> attributeNames,
+			List<Map<String, Object>> information) {
+		for (Map<String, Object> entry : information) {
+			if (!entry.containsKey(NGSIConstants.NGSI_LD_ENTITIES)) {
+				if (entry.containsKey(NGSIConstants.NGSI_LD_RELATIONSHIPS)) {
+					List<Map<String, String>> relationships = (List<Map<String, String>>) entry
+							.get(NGSIConstants.NGSI_LD_RELATIONSHIPS);
+					for (Map<String, String> relationship : relationships) {
+						if (attributeNames.contains(relationship.get(NGSIConstants.JSON_LD_VALUE))) {
+							return true;
+						}
+					}
+				}
+				if (entry.containsKey(NGSIConstants.NGSI_LD_PROPERTIES)) {
+					List<Map<String, String>> properties = (List<Map<String, String>>) entry
+							.get(NGSIConstants.NGSI_LD_PROPERTIES);
+					for (Map<String, String> property : properties) {
+						if (attributeNames.contains(property.get(NGSIConstants.JSON_LD_VALUE))) {
+							return true;
+						}
+					}
+				}
+			} else if (!entry.containsKey(NGSIConstants.NGSI_LD_RELATIONSHIPS)
+					&& !entry.containsKey(NGSIConstants.NGSI_LD_PROPERTIES)) {
+				List<Map<String, Object>> entities = (List<Map<String, Object>>) entry
+						.get(NGSIConstants.NGSI_LD_ENTITIES);
+				for (Map<String, Object> entity : entities) {
+					if (!entity.containsKey(NGSIConstants.JSON_LD_TYPE)
+							|| ((List<String>) entity.get(NGSIConstants.JSON_LD_TYPE)).contains(type)) {
+						return true;
+					}
+				}
+			} else {
+				List<Map<String, Object>> entities = (List<Map<String, Object>>) entry
+						.get(NGSIConstants.NGSI_LD_ENTITIES);
+				boolean typeFound = false;
+				for (Map<String, Object> entity : entities) {
+					if (!entity.containsKey(NGSIConstants.JSON_LD_TYPE)
+							|| ((List<String>) entity.get(NGSIConstants.JSON_LD_TYPE)).contains(type)) {
+						typeFound = true;
+						break;
+					}
+				}
+				if (!typeFound) {
+					return false;
+				}
+				if (entry.containsKey(NGSIConstants.NGSI_LD_RELATIONSHIPS)) {
+					List<Map<String, String>> relationships = (List<Map<String, String>>) entry
+							.get(NGSIConstants.NGSI_LD_RELATIONSHIPS);
+					for (Map<String, String> relationship : relationships) {
+						if (attributeNames.contains(relationship.get(NGSIConstants.JSON_LD_VALUE))) {
+							return true;
+						}
+					}
+				}
+				if (entry.containsKey(NGSIConstants.NGSI_LD_PROPERTIES)) {
+					List<Map<String, String>> properties = (List<Map<String, String>>) entry
+							.get(NGSIConstants.NGSI_LD_PROPERTIES);
+					for (Map<String, String> property : properties) {
+						if (attributeNames.contains(property.get(NGSIConstants.JSON_LD_VALUE))) {
+							return true;
+						}
+					}
+				}
+			}
+		}
+		return false;
+	}
+
+	@SuppressWarnings("unchecked")
+	private boolean checkRegForIdPatternAttrs(String idPattern, Set<String> attributeNames,
+			List<Map<String, Object>> information) {
+		for (Map<String, Object> entry : information) {
+			if (!entry.containsKey(NGSIConstants.NGSI_LD_ENTITIES)) {
+				if (entry.containsKey(NGSIConstants.NGSI_LD_RELATIONSHIPS)) {
+					List<Map<String, String>> relationships = (List<Map<String, String>>) entry
+							.get(NGSIConstants.NGSI_LD_RELATIONSHIPS);
+					for (Map<String, String> relationship : relationships) {
+						if (attributeNames.contains(relationship.get(NGSIConstants.JSON_LD_VALUE))) {
+							return true;
+						}
+					}
+				}
+				if (entry.containsKey(NGSIConstants.NGSI_LD_PROPERTIES)) {
+					List<Map<String, String>> properties = (List<Map<String, String>>) entry
+							.get(NGSIConstants.NGSI_LD_PROPERTIES);
+					for (Map<String, String> property : properties) {
+						if (attributeNames.contains(property.get(NGSIConstants.JSON_LD_VALUE))) {
+							return true;
+						}
+					}
+				}
+			} else if (!entry.containsKey(NGSIConstants.NGSI_LD_RELATIONSHIPS)
+					&& !entry.containsKey(NGSIConstants.NGSI_LD_PROPERTIES)) {
+				List<Map<String, Object>> entities = (List<Map<String, Object>>) entry
+						.get(NGSIConstants.NGSI_LD_ENTITIES);
+				for (Map<String, Object> entity : entities) {
+					if (!entity.containsKey(NGSIConstants.JSON_LD_ID)
+							&& !entity.containsKey(NGSIConstants.NGSI_LD_ID_PATTERN)) {
+						return true;
+					}
+					if (entity.containsKey(NGSIConstants.JSON_LD_ID)
+							&& ((String) entity.get(NGSIConstants.JSON_LD_ID)).matches(idPattern)) {
+						return true;
+					}
+					if (entity.containsKey(NGSIConstants.NGSI_LD_ID_PATTERN)
+							&& ((List<Map<String, String>>) entity.get(NGSIConstants.NGSI_LD_ID_PATTERN)).get(0)
+									.get(NGSIConstants.JSON_LD_VALUE).equals(idPattern)) {
+						return true;
+					}
+				}
+			} else {
+
+				boolean idPatternFound = false;
+				List<Map<String, Object>> entities = (List<Map<String, Object>>) entry
+						.get(NGSIConstants.NGSI_LD_ENTITIES);
+				for (Map<String, Object> entity : entities) {
+					if (!entity.containsKey(NGSIConstants.JSON_LD_ID)
+							&& !entity.containsKey(NGSIConstants.NGSI_LD_ID_PATTERN)) {
+						idPatternFound = true;
+						break;
+					}
+					if (entity.containsKey(NGSIConstants.JSON_LD_ID)
+							&& ((String) entity.get(NGSIConstants.JSON_LD_ID)).matches(idPattern)) {
+						idPatternFound = true;
+						break;
+					}
+					if (entity.containsKey(NGSIConstants.NGSI_LD_ID_PATTERN)
+							&& ((List<Map<String, String>>) entity.get(NGSIConstants.NGSI_LD_ID_PATTERN)).get(0)
+									.get(NGSIConstants.JSON_LD_VALUE).equals(idPattern)) {
+						idPatternFound = true;
+						break;
+					}
+				}
+				if (!idPatternFound) {
+					return false;
+				}
+				if (entry.containsKey(NGSIConstants.NGSI_LD_RELATIONSHIPS)) {
+					List<Map<String, String>> relationships = (List<Map<String, String>>) entry
+							.get(NGSIConstants.NGSI_LD_RELATIONSHIPS);
+					for (Map<String, String> relationship : relationships) {
+						if (attributeNames.contains(relationship.get(NGSIConstants.JSON_LD_VALUE))) {
+							return true;
+						}
+					}
+				}
+				if (entry.containsKey(NGSIConstants.NGSI_LD_PROPERTIES)) {
+					List<Map<String, String>> properties = (List<Map<String, String>>) entry
+							.get(NGSIConstants.NGSI_LD_PROPERTIES);
+					for (Map<String, String> property : properties) {
+						if (attributeNames.contains(property.get(NGSIConstants.JSON_LD_VALUE))) {
+							return true;
+						}
+					}
+				}
+			}
+		}
+		return false;
+	}
+
+	@SuppressWarnings("unchecked")
+	private boolean checkRegForIdAttrs(URI id, Set<String> attributeNames, List<Map<String, Object>> information) {
+		for (Map<String, Object> entry : information) {
+			if (!entry.containsKey(NGSIConstants.NGSI_LD_ENTITIES)) {
+				if (entry.containsKey(NGSIConstants.NGSI_LD_RELATIONSHIPS)) {
+					List<Map<String, String>> relationships = (List<Map<String, String>>) entry
+							.get(NGSIConstants.NGSI_LD_RELATIONSHIPS);
+					for (Map<String, String> relationship : relationships) {
+						if (attributeNames.contains(relationship.get(NGSIConstants.JSON_LD_VALUE))) {
+							return true;
+						}
+					}
+				}
+				if (entry.containsKey(NGSIConstants.NGSI_LD_PROPERTIES)) {
+					List<Map<String, String>> properties = (List<Map<String, String>>) entry
+							.get(NGSIConstants.NGSI_LD_PROPERTIES);
+					for (Map<String, String> property : properties) {
+						if (attributeNames.contains(property.get(NGSIConstants.JSON_LD_VALUE))) {
+							return true;
+						}
+					}
+				}
+			} else if (!entry.containsKey(NGSIConstants.NGSI_LD_RELATIONSHIPS)
+					&& !entry.containsKey(NGSIConstants.NGSI_LD_PROPERTIES)) {
+				List<Map<String, Object>> entities = (List<Map<String, Object>>) entry
+						.get(NGSIConstants.NGSI_LD_ENTITIES);
+				for (Map<String, Object> entity : entities) {
+					if (!entity.containsKey(NGSIConstants.JSON_LD_ID)) {
+						return true;
+					}
+					if (entity.get(NGSIConstants.JSON_LD_ID).equals(id.toString())) {
+						return true;
+					}
+				}
+			} else {
+
+				List<Map<String, Object>> entities = (List<Map<String, Object>>) entry
+						.get(NGSIConstants.NGSI_LD_ENTITIES);
+				boolean idFound = false;
+
+				for (Map<String, Object> entity : entities) {
+					if (!entity.containsKey(NGSIConstants.JSON_LD_ID)) {
+						idFound = true;
+						break;
+					}
+					if (entity.get(NGSIConstants.JSON_LD_ID).equals(id.toString())) {
+						idFound = true;
+						break;
+					}
+				}
+				if (!idFound) {
+					return false;
+				}
+				if (entry.containsKey(NGSIConstants.NGSI_LD_RELATIONSHIPS)) {
+					List<Map<String, String>> relationships = (List<Map<String, String>>) entry
+							.get(NGSIConstants.NGSI_LD_RELATIONSHIPS);
+					for (Map<String, String> relationship : relationships) {
+						if (attributeNames.contains(relationship.get(NGSIConstants.JSON_LD_VALUE))) {
+							return true;
+						}
+					}
+				}
+				if (entry.containsKey(NGSIConstants.NGSI_LD_PROPERTIES)) {
+					List<Map<String, String>> properties = (List<Map<String, String>>) entry
+							.get(NGSIConstants.NGSI_LD_PROPERTIES);
+					for (Map<String, String> property : properties) {
+						if (attributeNames.contains(property.get(NGSIConstants.JSON_LD_VALUE))) {
+							return true;
+						}
+					}
+				}
+			}
+		}
+		return false;
+	}
+
+	@SuppressWarnings("unchecked")
+	private boolean checkRegForIdPatternType(String idPattern, String type, List<Map<String, Object>> information) {
+		for (Map<String, Object> entry : information) {
+			if (!entry.containsKey(NGSIConstants.NGSI_LD_ENTITIES)) {
+				return true;
+			}
+			List<Map<String, Object>> entities = (List<Map<String, Object>>) entry.get(NGSIConstants.NGSI_LD_ENTITIES);
+			for (Map<String, Object> entity : entities) {
+				if (((!entity.containsKey(NGSIConstants.JSON_LD_ID)
+						&& !entity.containsKey(NGSIConstants.NGSI_LD_ID_PATTERN))
+						|| (entity.containsKey(NGSIConstants.JSON_LD_ID)
+								&& ((String) entity.get(NGSIConstants.JSON_LD_ID)).matches(idPattern))
+						|| (entity.containsKey(NGSIConstants.NGSI_LD_ID_PATTERN)
+								&& ((List<Map<String, String>>) entity.get(NGSIConstants.NGSI_LD_ID_PATTERN)).get(0)
+										.get(NGSIConstants.JSON_LD_VALUE).equals(idPattern)))
+						&& (!entity.containsKey(NGSIConstants.JSON_LD_TYPE)
+								|| ((List<String>) entity.get(NGSIConstants.JSON_LD_TYPE)).contains(type))) {
+					return true;
+				}
+			}
+		}
+		return false;
+
+	}
+
+	@SuppressWarnings("unchecked")
+	private boolean checkRegForIdType(URI id, String type, List<Map<String, Object>> information) {
+		for (Map<String, Object> entry : information) {
+			if (!entry.containsKey(NGSIConstants.NGSI_LD_ENTITIES)) {
+				return true;
+			}
+			List<Map<String, Object>> entities = (List<Map<String, Object>>) entry.get(NGSIConstants.NGSI_LD_ENTITIES);
+			for (Map<String, Object> entity : entities) {
+				if ((!entity.containsKey(NGSIConstants.JSON_LD_ID)
+						|| entity.get(NGSIConstants.JSON_LD_ID).equals(id.toString()))
+						&& (!entity.containsKey(NGSIConstants.JSON_LD_TYPE)
+								|| ((List<String>) entity.get(NGSIConstants.JSON_LD_TYPE)).contains(type))) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	@SuppressWarnings("unchecked")
+	private boolean checkRegForIdPatternTypeAttrs(String idPattern, String type, Set<String> attributeNames,
+			List<Map<String, Object>> information) {
+		for (Map<String, Object> entry : information) {
+			if (!entry.containsKey(NGSIConstants.NGSI_LD_ENTITIES)) {
+				if (entry.containsKey(NGSIConstants.NGSI_LD_RELATIONSHIPS)) {
+					List<Map<String, String>> relationships = (List<Map<String, String>>) entry
+							.get(NGSIConstants.NGSI_LD_RELATIONSHIPS);
+					for (Map<String, String> relationship : relationships) {
+						if (attributeNames.contains(relationship.get(NGSIConstants.JSON_LD_VALUE))) {
+							return true;
+						}
+					}
+				}
+				if (entry.containsKey(NGSIConstants.NGSI_LD_PROPERTIES)) {
+					List<Map<String, String>> properties = (List<Map<String, String>>) entry
+							.get(NGSIConstants.NGSI_LD_PROPERTIES);
+					for (Map<String, String> property : properties) {
+						if (attributeNames.contains(property.get(NGSIConstants.JSON_LD_VALUE))) {
+							return true;
+						}
+					}
+				}
+			} else if (!entry.containsKey(NGSIConstants.NGSI_LD_RELATIONSHIPS)
+					&& !entry.containsKey(NGSIConstants.NGSI_LD_PROPERTIES)) {
+				List<Map<String, Object>> entities = (List<Map<String, Object>>) entry
+						.get(NGSIConstants.NGSI_LD_ENTITIES);
+				for (Map<String, Object> entity : entities) {
+					if (((!entity.containsKey(NGSIConstants.JSON_LD_ID)
+							&& !entity.containsKey(NGSIConstants.NGSI_LD_ID_PATTERN))
+							|| (entity.containsKey(NGSIConstants.JSON_LD_ID)
+									&& ((String) entity.get(NGSIConstants.JSON_LD_ID)).matches(idPattern))
+							|| (entity.containsKey(NGSIConstants.NGSI_LD_ID_PATTERN)
+									&& ((List<Map<String, String>>) entity.get(NGSIConstants.NGSI_LD_ID_PATTERN)).get(0)
+											.get(NGSIConstants.JSON_LD_VALUE).equals(idPattern)))
+							&& (!entity.containsKey(NGSIConstants.JSON_LD_TYPE)
+									|| ((List<String>) entity.get(NGSIConstants.JSON_LD_TYPE)).contains(type))) {
+						return true;
+					}
+				}
+			} else {
+				List<Map<String, Object>> entities = (List<Map<String, Object>>) entry
+						.get(NGSIConstants.NGSI_LD_ENTITIES);
+				boolean idPatternAndTypeFound = false;
+				for (Map<String, Object> entity : entities) {
+					if (((!entity.containsKey(NGSIConstants.JSON_LD_ID)
+							&& !entity.containsKey(NGSIConstants.NGSI_LD_ID_PATTERN))
+							|| (entity.containsKey(NGSIConstants.JSON_LD_ID)
+									&& ((String) entity.get(NGSIConstants.JSON_LD_ID)).matches(idPattern))
+							|| (entity.containsKey(NGSIConstants.NGSI_LD_ID_PATTERN)
+									&& ((List<Map<String, String>>) entity.get(NGSIConstants.NGSI_LD_ID_PATTERN)).get(0)
+											.get(NGSIConstants.JSON_LD_VALUE).equals(idPattern)))
+							&& (!entity.containsKey(NGSIConstants.JSON_LD_TYPE)
+									|| ((List<String>) entity.get(NGSIConstants.JSON_LD_TYPE)).contains(type))) {
+						idPatternAndTypeFound = true;
+						break;
+					}
+				}
+
+				if (!idPatternAndTypeFound) {
+					return false;
+				}
+				if (entry.containsKey(NGSIConstants.NGSI_LD_RELATIONSHIPS)) {
+					List<Map<String, String>> relationships = (List<Map<String, String>>) entry
+							.get(NGSIConstants.NGSI_LD_RELATIONSHIPS);
+					for (Map<String, String> relationship : relationships) {
+						if (attributeNames.contains(relationship.get(NGSIConstants.JSON_LD_VALUE))) {
+							return true;
+						}
+					}
+				}
+				if (entry.containsKey(NGSIConstants.NGSI_LD_PROPERTIES)) {
+					List<Map<String, String>> properties = (List<Map<String, String>>) entry
+							.get(NGSIConstants.NGSI_LD_PROPERTIES);
+					for (Map<String, String> property : properties) {
+						if (attributeNames.contains(property.get(NGSIConstants.JSON_LD_VALUE))) {
+							return true;
+						}
+					}
+				}
+			}
+		}
+		return false;
+	}
+
+	@SuppressWarnings("unchecked")
+	private boolean checkRegForIdTypeAttrs(URI id, String type, Set<String> attributeNames,
+			List<Map<String, Object>> information) {
+		for (Map<String, Object> entry : information) {
+			if (!entry.containsKey(NGSIConstants.NGSI_LD_ENTITIES)) {
+				if (entry.containsKey(NGSIConstants.NGSI_LD_RELATIONSHIPS)) {
+					List<Map<String, String>> relationships = (List<Map<String, String>>) entry
+							.get(NGSIConstants.NGSI_LD_RELATIONSHIPS);
+					for (Map<String, String> relationship : relationships) {
+						if (attributeNames.contains(relationship.get(NGSIConstants.JSON_LD_VALUE))) {
+							return true;
+						}
+					}
+				}
+				if (entry.containsKey(NGSIConstants.NGSI_LD_PROPERTIES)) {
+					List<Map<String, String>> properties = (List<Map<String, String>>) entry
+							.get(NGSIConstants.NGSI_LD_PROPERTIES);
+					for (Map<String, String> property : properties) {
+						if (attributeNames.contains(property.get(NGSIConstants.JSON_LD_VALUE))) {
+							return true;
+						}
+					}
+				}
+			} else if (!entry.containsKey(NGSIConstants.NGSI_LD_RELATIONSHIPS)
+					&& !entry.containsKey(NGSIConstants.NGSI_LD_PROPERTIES)) {
+				List<Map<String, Object>> entities = (List<Map<String, Object>>) entry
+						.get(NGSIConstants.NGSI_LD_ENTITIES);
+				for (Map<String, Object> entity : entities) {
+					if ((!entity.containsKey(NGSIConstants.JSON_LD_ID)
+							|| entity.get(NGSIConstants.JSON_LD_ID).equals(id.toString()))
+							&& (!entity.containsKey(NGSIConstants.JSON_LD_TYPE)
+									|| ((List<String>) entity.get(NGSIConstants.JSON_LD_TYPE)).contains(type))) {
+						return true;
+					}
+				}
+			} else {
+				List<Map<String, Object>> entities = (List<Map<String, Object>>) entry
+						.get(NGSIConstants.NGSI_LD_ENTITIES);
+				boolean idAndTypeFound = false;
+				for (Map<String, Object> entity : entities) {
+					if ((!entity.containsKey(NGSIConstants.JSON_LD_ID)
+							|| entity.get(NGSIConstants.JSON_LD_ID).equals(id.toString()))
+							&& (!entity.containsKey(NGSIConstants.JSON_LD_TYPE)
+									|| ((List<String>) entity.get(NGSIConstants.JSON_LD_TYPE)).contains(type))) {
+						idAndTypeFound = true;
+						break;
+					}
+				}
+
+				if (!idAndTypeFound) {
+					return false;
+				}
+				if (entry.containsKey(NGSIConstants.NGSI_LD_RELATIONSHIPS)) {
+					List<Map<String, String>> relationships = (List<Map<String, String>>) entry
+							.get(NGSIConstants.NGSI_LD_RELATIONSHIPS);
+					for (Map<String, String> relationship : relationships) {
+						if (attributeNames.contains(relationship.get(NGSIConstants.JSON_LD_VALUE))) {
+							return true;
+						}
+					}
+				}
+				if (entry.containsKey(NGSIConstants.NGSI_LD_PROPERTIES)) {
+					List<Map<String, String>> properties = (List<Map<String, String>>) entry
+							.get(NGSIConstants.NGSI_LD_PROPERTIES);
+					for (Map<String, String> property : properties) {
+						if (attributeNames.contains(property.get(NGSIConstants.JSON_LD_VALUE))) {
+							return true;
+						}
+					}
+				}
 			}
 		}
 		return false;
@@ -609,6 +1209,7 @@ public class RegistrySubscriptionService {
 		return Uni.combine().all().unis(unis).discardItems();
 	}
 
+	@SuppressWarnings("unchecked")
 	private boolean evaluateGeoQuery(GeoQueryTerm geoQuery, Map<String, Object> location) {
 		if (geoQuery == null) {
 			return true;
@@ -694,13 +1295,32 @@ public class RegistrySubscriptionService {
 
 		switch (relation) {
 		case NGSIConstants.GEO_REL_NEAR:
+			if (geoQuery.getDistanceType() == null) {
+				return geoQuery.getCoordinates().equals(regCoordinatesAsString);
+			}
+			Shape bufferedShape;
+			switch (geoQuery.getDistanceType()) {
+			case NGSIConstants.GEO_REL_MAX_DISTANCE:
+				bufferedShape = queryShape.getBuffered(geoQuery.getDistanceValue() * DistanceUtils.KM_TO_DEG,
+						queryShape.getContext());
+				return SpatialPredicate.IsWithin.evaluate(entityShape, bufferedShape);
+			case NGSIConstants.GEO_REL_MIN_DISTANCE:
+				bufferedShape = queryShape.getBuffered(geoQuery.getDistanceValue() * DistanceUtils.KM_TO_DEG,
+						queryShape.getContext());
+				return !SpatialPredicate.IsWithin.evaluate(entityShape, bufferedShape);
+			default:
+				return false;
+			}
 		case NGSIConstants.GEO_REL_WITHIN:
+			return SpatialPredicate.IsWithin.evaluate(entityShape, queryShape);
 		case NGSIConstants.GEO_REL_CONTAINS:
+			return SpatialPredicate.Contains.evaluate(entityShape, queryShape);
 		case NGSIConstants.GEO_REL_INTERSECTS:
+			return SpatialPredicate.Intersects.evaluate(entityShape, queryShape);
 		case NGSIConstants.GEO_REL_DISJOINT:
+			return SpatialPredicate.IsDisjointTo.evaluate(entityShape, queryShape);
 		case NGSIConstants.GEO_REL_OVERLAPS:
-		case NGSIConstants.GEO_REL_MAX_DISTANCE:
-		case NGSIConstants.GEO_REL_MIN_DISTANCE:
+			return SpatialPredicate.Overlaps.evaluate(entityShape, queryShape);
 		default:
 			return false;
 
