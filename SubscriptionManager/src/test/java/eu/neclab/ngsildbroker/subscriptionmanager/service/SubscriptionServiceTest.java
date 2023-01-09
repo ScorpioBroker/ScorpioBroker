@@ -62,7 +62,7 @@ public class SubscriptionServiceTest {
 
 	@InjectMocks
 	@Spy
-	SubscriptionService subscriptionService;
+	oldSubscriptionService subscriptionService;
 
 	@Mock
 	NotificationParam param;

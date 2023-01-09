@@ -1094,11 +1094,15 @@ public class RegistrySubscriptionService {
 	}
 
 	public Uni<Void> handleInternalSubscription(SubscriptionRequest message) {
+		if (message.getRequestType() == AppConstants.DELETE_SUBSCRIPTION_REQUEST) {
+			tenant2subscriptionId2Subscription.remove(message.getTenant(), message.getId());
+		}
 		try {
 			message.setSubscription(Subscription.expandSubscription(message.getPayload(), message.getContext(), false));
 		} catch (ResponseException e) {
 			logger.error("Failed to load internal subscription", e);
 		}
+		boolean sendNotification = !tenant2subscriptionId2Subscription.contains(message.getTenant(), message.getId());
 		try {
 			message.getSubscription().getNotification().getEndPoint().setUri(new URI("internal:kafka"));
 			// if there is attribs and there is q take attribs from q as well into attrs
@@ -1115,19 +1119,24 @@ public class RegistrySubscriptionService {
 			// left empty intentionally this will never throw because it's a constant string
 			// we control
 		}
-		return regDAO.getInitialNotificationData(message).onItem().transformToUni(rows -> {
-			List<Map<String, Object>> data = Lists.newArrayList();
-			rows.forEach(row -> {
-				data.add(row.getJsonObject(0).getMap());
+		if (sendNotification) {
+			return regDAO.getInitialNotificationData(message).onItem().transformToUni(rows -> {
+				List<Map<String, Object>> data = Lists.newArrayList();
+				rows.forEach(row -> {
+					data.add(row.getJsonObject(0).getMap());
+				});
+				try {
+					return internalNotificationSender
+							.send(new InternalNotification(message.getTenant(), message.getId(),
+									generateNotification(message, data, AppConstants.INTERNAL_NOTIFICATION_REQUEST)));
+				} catch (Exception e) {
+					logger.error("Failed to send internal notification for sub " + message.getId(), e);
+					return Uni.createFrom().voidItem();
+				}
 			});
-			try {
-				return internalNotificationSender.send(new InternalNotification(message.getTenant(), message.getId(),
-						generateNotification(message, data, AppConstants.INTERNAL_NOTIFICATION_REQUEST)));
-			} catch (Exception e) {
-				logger.error("Failed to send internal notification for sub " + message.getId(), e);
-				return Uni.createFrom().voidItem();
-			}
-		});
+		} else {
+			return Uni.createFrom().voidItem();
+		}
 	}
 
 	protected boolean shouldFire(Map<String, Object> entry, SubscriptionRequest subscription) {

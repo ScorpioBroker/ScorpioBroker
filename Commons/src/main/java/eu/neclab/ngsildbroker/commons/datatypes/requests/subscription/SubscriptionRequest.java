@@ -31,6 +31,10 @@ public class SubscriptionRequest extends BaseRequest {
 
 	}
 
+	protected SubscriptionRequest(String tenant, String subscriptionId, int deleteSubscriptionRequest) {
+		super(tenant, subscriptionId, null, null, deleteSubscriptionRequest);
+	}
+
 	@Override
 	public void setPayload(Map<String, Object> payload) {
 		// TODO Auto-generated method stub

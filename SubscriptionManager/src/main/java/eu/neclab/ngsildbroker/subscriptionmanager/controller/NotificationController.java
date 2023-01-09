@@ -17,6 +17,7 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
+import eu.neclab.ngsildbroker.subscriptionmanager.service.oldSubscriptionService;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.vertx.core.http.HttpServerRequest;
@@ -41,7 +42,8 @@ public class NotificationController {
 	@POST
 	public Uni<RestResponse<Object>> notify(HttpServerRequest req, String payload,
 			@PathParam(value = NGSIConstants.QUERY_PARAMETER_ID) String id) {
-		return HttpUtils.getAtContext(req).onItem().transform(Unchecked.function(t -> {
+		
+		return 
 			subscriptionManager.remoteNotify(id,
 					(Map<String, Object>) JsonLdProcessor.expand(t, JsonUtils.fromString(payload), opts,
 							AppConstants.NOTIFICAITION_RECEIVED, HttpUtils.doPreflightCheck(req, t)).get(0));

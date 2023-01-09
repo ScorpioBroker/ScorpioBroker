@@ -2,6 +2,8 @@ package eu.neclab.ngsildbroker.subscriptionmanager.messaging;
 
 import javax.inject.Singleton;
 
+import org.eclipse.microprofile.reactive.messaging.Acknowledgment;
+import org.eclipse.microprofile.reactive.messaging.Acknowledgment.Strategy;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
@@ -16,11 +18,13 @@ import io.smallrye.mutiny.Uni;
 public class SubscriptionMessagingInMemory extends SubscriptionMessagingBase {
 
 	@Incoming(AppConstants.ENTITY_CHANNEL)
+	@Acknowledgment(Strategy.PRE_PROCESSING)
 	public Uni<Void> handleEntity(BaseRequest message) {
-		return baseHandleEntity(MicroServiceUtils.deepCopyRequestMessage(message), message.getSendTimestamp());
+		return baseHandleEntity(MicroServiceUtils.deepCopyRequestMessage(message));
 	}
 
 	@Incoming(AppConstants.INTERNAL_NOTIFICATION_CHANNEL)
+	@Acknowledgment(Strategy.PRE_PROCESSING)
 	public Uni<Void> handleInternalNotification(InternalNotification message) {
 		return baseHandleInternalNotification(message);
 	}
