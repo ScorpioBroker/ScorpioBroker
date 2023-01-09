@@ -16,7 +16,7 @@ import io.smallrye.mutiny.Uni;
 
 @Path("/ngsi-ld/v1/entities")
 @RegisterRestClient(configKey = "scorpio.entity-service")
-@ClientHeaderParam(name = "Content-Type", value = "application/json")
+@ClientHeaderParam(name = "Accept", value = "application/json")
 public interface LocalEntityService {
 
 	@GET
