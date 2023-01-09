@@ -105,5 +105,9 @@
 			<groupId>io.quarkus</groupId>
 			<artifactId>quarkus-scheduler</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>io.quarkus</groupId>
+			<artifactId>quarkus-rest-client-reactive-jackson</artifactId>
+		</dependency>
 	</dependencies>
 </project>

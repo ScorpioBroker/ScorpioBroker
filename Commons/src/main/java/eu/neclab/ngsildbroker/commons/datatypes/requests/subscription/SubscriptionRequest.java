@@ -63,4 +63,10 @@ public class SubscriptionRequest extends BaseRequest {
 		this.context = context;
 	}
 
+	public static SubscriptionRequest generateRemoteSubscription(SubscriptionRequest subscriptionRequest,
+			InternalNotification message) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }

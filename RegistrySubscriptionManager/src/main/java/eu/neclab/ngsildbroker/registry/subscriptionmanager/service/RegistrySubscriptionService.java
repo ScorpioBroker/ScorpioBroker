@@ -139,7 +139,7 @@ public class RegistrySubscriptionService {
 		} catch (ResponseException e) {
 			return Uni.createFrom().failure(e);
 		}
-		
+
 		SubscriptionTools.setInitTimesSentAndFailed(request);
 		return regDAO.createSubscription(request).onItem().transformToUni(t -> {
 			if (isIntervalSub(request)) {
@@ -154,7 +154,8 @@ public class RegistrySubscriptionService {
 				});
 				try {
 					return sendNotification(request,
-							SubscriptionTools.generateNotification(request, data, AppConstants.INTERNAL_NOTIFICATION_REQUEST),
+							SubscriptionTools.generateNotification(request, data,
+									AppConstants.INTERNAL_NOTIFICATION_REQUEST),
 							AppConstants.INTERNAL_NOTIFICATION_REQUEST).onItem().transform(v -> {
 								return new NGSILDOperationResult(AppConstants.CREATE_SUBSCRIPTION_REQUEST,
 										request.getId());
@@ -172,8 +173,6 @@ public class RegistrySubscriptionService {
 					"Subscription with id " + request.getId() + " exists"));
 		});
 	}
-
-	
 
 	public Uni<NGSILDOperationResult> updateSubscription(String tenant, String subscriptionId,
 			Map<String, Object> update, Context context) {
@@ -399,8 +398,6 @@ public class RegistrySubscriptionService {
 		}
 		return Uni.createFrom().voidItem();
 	}
-
-
 
 	private Uni<MqttClient> getMqttClient(NotificationParam notificationParam) {
 		URI host = notificationParam.getEndPoint().getUri();
@@ -1070,8 +1067,8 @@ public class RegistrySubscriptionService {
 				});
 				try {
 					return internalNotificationSender
-							.send(new InternalNotification(message.getTenant(), message.getId(),
-									SubscriptionTools.generateNotification(message, data, AppConstants.INTERNAL_NOTIFICATION_REQUEST)));
+							.send(new InternalNotification(message.getTenant(), message.getId(), SubscriptionTools
+									.generateNotification(message, data, AppConstants.INTERNAL_NOTIFICATION_REQUEST)));
 				} catch (Exception e) {
 					logger.error("Failed to send internal notification for sub " + message.getId(), e);
 					return Uni.createFrom().voidItem();
@@ -1122,14 +1119,6 @@ public class RegistrySubscriptionService {
 		return false;
 	}
 
-	public static void main(String[] args) throws URISyntaxException {
-		URI uri1 = new URI("http://test1.com");
-		URI uri2 = new URI("http://test1.com/");
-
-		System.out.println(uri1.toString());
-		System.out.println(uri2.toString());
-	}
-
 	@Scheduled(every = "${scorpio.registry.subscription.checkinterval}")
 	Uni<Void> checkIntervalSubs() {
 		List<Uni<Void>> unis = Lists.newArrayList();
@@ -1148,7 +1137,8 @@ public class RegistrySubscriptionService {
 					});
 					try {
 						return sendNotification(request,
-								SubscriptionTools.generateNotification(request, data, AppConstants.INTERNAL_NOTIFICATION_REQUEST),
+								SubscriptionTools.generateNotification(request, data,
+										AppConstants.INTERNAL_NOTIFICATION_REQUEST),
 								AppConstants.INTERVAL_NOTIFICATION_REQUEST);
 					} catch (Exception e) {
 						logger.error("Failed to send initial notifcation", e);
@@ -1161,5 +1151,4 @@ public class RegistrySubscriptionService {
 		return Uni.combine().all().unis(unis).discardItems();
 	}
 
-	
 }
