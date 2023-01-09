@@ -93,7 +93,7 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_TIME_STAMP = "https://uri.etsi.org/ngsi-ld/default-context/timestamp";
 	public final static String NGSI_LD_TIMESTAMP_START = "https://uri.etsi.org/ngsi-ld/startAt";
 	public final static String NGSI_LD_TIMESTAMP_END = "https://uri.etsi.org/ngsi-ld/endAt";
-	public final static String NGSI_LD_POLYOGN = "https://purl.org/geojson/vocab#Polygon";
+	public final static String NGSI_LD_POLYGON = "https://purl.org/geojson/vocab#Polygon";
 	public final static String NGSI_LD_POINT = "https://purl.org/geojson/vocab#Point";
 	public final static String NGSI_LD_LINESTRING = "https://purl.org/geojson/vocab#LineString";
 	public final static String NGSI_LD_SUBSCRIPTION_ID = "https://uri.etsi.org/ngsi-ld/subscriptionId";

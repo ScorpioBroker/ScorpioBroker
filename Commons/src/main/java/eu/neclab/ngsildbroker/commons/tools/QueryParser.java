@@ -165,6 +165,9 @@ public class QueryParser {
 
 	public static GeoQueryTerm parseGeoQuery(String georel, String coordinates, String geometry, String geoproperty,
 			Context context) throws ResponseException {
+		if(georel == null && coordinates == null && geometry == null && geoproperty == null) {
+			return null;
+		}
 		if (georel == null || georel.isEmpty()) {
 			throw new ResponseException(ErrorType.BadRequestData, "georel needs to be provided");
 		}

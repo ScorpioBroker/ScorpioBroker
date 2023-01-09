@@ -401,7 +401,7 @@ public class SerializationTools {
 		switch (geometry) {
 			case NGSIConstants.NGSI_LD_POINT:
 				return new Point(getSingeLePosition(coordinates));
-			case NGSIConstants.NGSI_LD_POLYOGN:
+			case NGSIConstants.NGSI_LD_POLYGON:
 				return new Polygon(getAreaPositions(coordinates));
 			case NGSIConstants.NGSI_LD_LINESTRING:
 				return new LineString(getLinearPositions(coordinates));

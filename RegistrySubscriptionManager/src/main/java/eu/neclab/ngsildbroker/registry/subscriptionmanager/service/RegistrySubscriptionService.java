@@ -20,6 +20,11 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
+import org.locationtech.spatial4j.shape.Shape;
+import org.locationtech.spatial4j.shape.ShapeFactory.LineStringBuilder;
+import org.locationtech.spatial4j.shape.ShapeFactory.PolygonBuilder;
+import org.locationtech.spatial4j.shape.jts.JtsShapeFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,9 +50,11 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.Subscripti
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.UpdateSubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import eu.neclab.ngsildbroker.commons.tools.QueryParser;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import eu.neclab.ngsildbroker.registry.subscriptionmanager.repository.RegistrySubscriptionInfoDAO;
 import io.netty.handler.codec.mqtt.MqttQoS;
@@ -88,6 +95,8 @@ public class RegistrySubscriptionService {
 	private WebClient webClient;
 
 	private Map<String, MqttClient> host2MqttClient = Maps.newHashMap();
+
+	private JtsShapeFactory shapeFactory = JtsSpatialContext.GEO.getShapeFactory();
 
 	@PostConstruct
 	Uni<Void> setup() {
@@ -398,13 +407,13 @@ public class RegistrySubscriptionService {
 			throws Exception {
 		Map<String, Object> result = Maps.newLinkedHashMap();
 		if (!notificationParam.getEndPoint().getReceiverInfo().isEmpty()) {
-			result.put(NGSIConstants.METADATA, getMetaData(notificationParam.getEndPoint().getReceiverInfo()));
+			result.put(NGSIConstants.METADATA, getMqttMetaData(notificationParam.getEndPoint().getReceiverInfo()));
 		}
 		result.put(NGSIConstants.BODY, notification);
 		return JsonUtils.toString(result);
 	}
 
-	private List<Map<String, String>> getMetaData(ArrayListMultimap<String, String> receiverInfo) {
+	private List<Map<String, String>> getMqttMetaData(ArrayListMultimap<String, String> receiverInfo) {
 		List<Map<String, String>> result = Lists.newArrayList();
 		for (Entry<String, String> entry : receiverInfo.entries()) {
 			Map<String, String> tmp = new HashMap<>(1);
@@ -598,6 +607,105 @@ public class RegistrySubscriptionService {
 			}
 		}
 		return Uni.combine().all().unis(unis).discardItems();
+	}
+
+	private boolean evaluateGeoQuery(GeoQueryTerm geoQuery, Map<String, Object> location) {
+		if (geoQuery == null) {
+			return true;
+		}
+		if (location == null) {
+			return false;
+		}
+		String relation = geoQuery.getGeorel();
+		String regCoordinatesAsString = Subscription
+				.getCoordinates((List<Map<String, Object>>) location.get(NGSIConstants.NGSI_LD_COORDINATES));
+		if (relation.equals(NGSIConstants.GEO_REL_EQUALS)) {
+			return geoQuery.getCoordinates().equals(regCoordinatesAsString);
+		}
+		Shape queryShape;
+		List<List<Double>> tmp;
+		switch (geoQuery.getGeometry()) {
+		case NGSIConstants.GEO_TYPE_POINT:
+			queryShape = shapeFactory.pointXY((Double) geoQuery.getCoordinatesAsList().get(0),
+					(Double) geoQuery.getCoordinatesAsList().get(1));
+			break;
+		case NGSIConstants.GEO_TYPE_LINESTRING:
+			LineStringBuilder lineStringBuilder = shapeFactory.lineString();
+			tmp = (List<List<Double>>) geoQuery.getCoordinatesAsList().get(0);
+			for (List<Double> point : tmp) {
+				lineStringBuilder.pointXY(point.get(0), point.get(1));
+			}
+			queryShape = lineStringBuilder.build();
+			break;
+		case NGSIConstants.GEO_TYPE_POLYGON:
+			PolygonBuilder polygonBuilder = shapeFactory.polygon();
+			tmp = ((List<List<List<Double>>>) geoQuery.getCoordinatesAsList().get(0)).get(0);
+			for (List<Double> point : tmp) {
+				polygonBuilder.pointXY(point.get(0), point.get(1));
+			}
+			queryShape = polygonBuilder.build();
+			break;
+		case NGSIConstants.GEO_TYPE_MULTI_POLYGON:
+		default:
+			logger.error("Unsupported GeoJson type. Currently Point, Polygon and Linestring are supported but was "
+					+ geoQuery.getGeometry());
+			return false;
+
+		}
+		Shape entityShape;
+
+		switch (((List<String>) location.get(NGSIConstants.JSON_LD_TYPE)).get(0)) {
+		case NGSIConstants.NGSI_LD_POINT:
+			List<Map<String, List<Map<String, Double>>>> coordinates = ((List<Map<String, List<Map<String, Double>>>>) location
+					.get(NGSIConstants.NGSI_LD_COORDINATES));
+			entityShape = shapeFactory.pointXY(
+					coordinates.get(0).get(NGSIConstants.JSON_LD_LIST).get(0).get(NGSIConstants.JSON_LD_VALUE),
+					coordinates.get(0).get(NGSIConstants.JSON_LD_LIST).get(1).get(NGSIConstants.JSON_LD_VALUE));
+			break;
+		case NGSIConstants.NGSI_LD_LINESTRING:
+			LineStringBuilder lineStringBuilder = shapeFactory.lineString();
+			List<Map<String, List<Map<String, List<Map<String, Double>>>>>> linecoordinates = ((List<Map<String, List<Map<String, List<Map<String, Double>>>>>>) location
+					.get(NGSIConstants.NGSI_LD_COORDINATES));
+			for (Map<String, List<Map<String, Double>>> point : linecoordinates.get(0)
+					.get(NGSIConstants.JSON_LD_LIST)) {
+				lineStringBuilder.pointXY(point.get(NGSIConstants.JSON_LD_LIST).get(0).get(NGSIConstants.JSON_LD_VALUE),
+						point.get(NGSIConstants.JSON_LD_LIST).get(1).get(NGSIConstants.JSON_LD_VALUE));
+			}
+			entityShape = lineStringBuilder.build();
+			break;
+		case NGSIConstants.NGSI_LD_POLYGON:
+			PolygonBuilder polygonBuilder = shapeFactory.polygon();
+			List<Map<String, List<Map<String, List<Map<String, List<Map<String, Double>>>>>>>> polyogonCoordinates = ((List<Map<String, List<Map<String, List<Map<String, List<Map<String, Double>>>>>>>>) location
+					.get(NGSIConstants.NGSI_LD_COORDINATES));
+			for (Map<String, List<Map<String, Double>>> point : polyogonCoordinates.get(0)
+					.get(NGSIConstants.JSON_LD_LIST).get(0).get(NGSIConstants.JSON_LD_LIST)) {
+				polygonBuilder.pointXY(point.get(NGSIConstants.JSON_LD_LIST).get(0).get(NGSIConstants.JSON_LD_VALUE),
+						point.get(NGSIConstants.JSON_LD_LIST).get(1).get(NGSIConstants.JSON_LD_VALUE));
+			}
+			entityShape = polygonBuilder.build();
+			break;
+		case NGSIConstants.GEO_TYPE_MULTI_POLYGON:
+		default:
+			logger.error("Unsupported GeoJson type. Currently Point, Polygon and Linestring are supported but was "
+					+ geoQuery.getGeometry());
+			return false;
+
+		}
+
+		switch (relation) {
+		case NGSIConstants.GEO_REL_NEAR:
+		case NGSIConstants.GEO_REL_WITHIN:
+		case NGSIConstants.GEO_REL_CONTAINS:
+		case NGSIConstants.GEO_REL_INTERSECTS:
+		case NGSIConstants.GEO_REL_DISJOINT:
+		case NGSIConstants.GEO_REL_OVERLAPS:
+		case NGSIConstants.GEO_REL_MAX_DISTANCE:
+		case NGSIConstants.GEO_REL_MIN_DISTANCE:
+		default:
+			return false;
+
+		}
+
 	}
 
 }

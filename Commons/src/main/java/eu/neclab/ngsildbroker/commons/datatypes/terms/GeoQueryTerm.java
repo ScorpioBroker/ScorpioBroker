@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.commons.datatypes.terms;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.github.jsonldjava.core.Context;
@@ -16,6 +17,7 @@ import io.smallrye.mutiny.tuples.Tuple4;
 public class GeoQueryTerm {
 	private String geometry;
 	private String coordinates;
+	private List<Object> coordinatesAsList = Lists.newArrayList();
 	private String geoproperty = "https://uri.etsi.org/ngsi-ld/location";
 	private String georel = null;
 	private String distanceType = null;
@@ -40,6 +42,38 @@ public class GeoQueryTerm {
 
 	public void setCoordinates(String coordinates) {
 		this.coordinates = coordinates;
+		String[] splitted = coordinates.split("],");
+
+		int outerCount = 0;
+		List<Object> outerShell = Lists.newArrayList();
+		List<Object> mostInnerArray = outerShell;
+		List<Object> last = outerShell;
+		while (splitted[0].charAt(outerCount) == '[') {
+			outerCount++;
+			mostInnerArray.add(new ArrayList<Object>());
+			last = mostInnerArray;
+			mostInnerArray = (List<Object>) mostInnerArray.get(0);
+		}
+		String[] tmp = splitted[0].substring(outerCount).split(",");
+
+		mostInnerArray.add(Double.parseDouble(tmp[0].trim()));
+		mostInnerArray.add(Double.parseDouble(tmp[1].trim()));
+
+		if (splitted.length > 1) {
+			for (int i = 1; i < splitted.length - 1; i++) {
+				tmp = splitted[i].substring(1).split(",");
+				last.add(Lists.newArrayList(Double.parseDouble(tmp[0].trim()), Double.parseDouble(tmp[1].trim())));
+			}
+			tmp = splitted[splitted.length - 1].substring(0, splitted[splitted.length - 1].length() - outerCount)
+					.split(",");
+			last.add(Lists.newArrayList(Double.parseDouble(tmp[0].trim()), Double.parseDouble(tmp[1].trim())));
+		}
+		this.coordinatesAsList = outerShell;
+
+	}
+
+	public List<Object> getCoordinatesAsList() {
+		return coordinatesAsList;
 	}
 
 	public String getGeoproperty() {
