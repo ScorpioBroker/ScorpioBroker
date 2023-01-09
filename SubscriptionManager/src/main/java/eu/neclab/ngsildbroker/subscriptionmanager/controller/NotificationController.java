@@ -8,18 +8,19 @@ import javax.inject.Singleton;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
+
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.RestResponse;
-import com.github.jsonldjava.core.JsonLdOptions;
+
+import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdProcessor;
-import com.github.jsonldjava.utils.JsonUtils;
+
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
-import eu.neclab.ngsildbroker.subscriptionmanager.service.oldSubscriptionService;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.unchecked.Unchecked;
+import io.smallrye.mutiny.tuples.Tuple2;
 import io.vertx.core.http.HttpServerRequest;
 
 @Singleton
@@ -36,19 +37,19 @@ public class NotificationController {
 
 	@Inject
 	SubscriptionService subscriptionManager;
-	private JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
 	@Path("/{id}")
 	@POST
-	public Uni<RestResponse<Object>> notify(HttpServerRequest req, String payload,
+	public Uni<RestResponse<Object>> notify(HttpServerRequest request, String payload,
 			@PathParam(value = NGSIConstants.QUERY_PARAMETER_ID) String id) {
-		
-		return 
-			subscriptionManager.remoteNotify(id,
-					(Map<String, Object>) JsonLdProcessor.expand(t, JsonUtils.fromString(payload), opts,
-							AppConstants.NOTIFICAITION_RECEIVED, HttpUtils.doPreflightCheck(req, t)).get(0));
-			return RestResponse.ok();
-		})).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+		Tuple2<Context, Map<String, Object>> tuple;
+		try {
+			tuple = HttpUtils.expandBody(request, payload, AppConstants.NOTIFICAITION_RECEIVED);
+		} catch (Exception e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+		}
+		return subscriptionManager.remoteNotify(id, tuple.getItem2(), tuple.getItem1()).onItem()
+				.transform(v -> RestResponse.ok()).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
 	}
 

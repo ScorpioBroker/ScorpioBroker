@@ -17,6 +17,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.jboss.resteasy.reactive.RestResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,6 +47,7 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
+import eu.neclab.ngsildbroker.commons.tools.SubscriptionTools;
 import eu.neclab.ngsildbroker.subscriptionmanager.repository.SubscriptionInfoDAO;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import io.quarkus.scheduler.Scheduled;
@@ -1006,44 +1008,6 @@ public class SubscriptionService {
 		return false;
 	}
 
-	public Uni<Void> handleInternalSubscription(SubscriptionRequest message) {
-		try {
-			message.setSubscription(Subscription.expandSubscription(message.getPayload(), message.getContext(), false));
-		} catch (ResponseException e) {
-			logger.error("Failed to load internal subscription", e);
-		}
-		try {
-			message.getSubscription().getNotification().getEndPoint().setUri(new URI("internal:kafka"));
-			// if there is attribs and there is q take attribs from q as well into attrs
-			if (message.getSubscription().getAttributeNames() != null
-					&& !message.getSubscription().getAttributeNames().isEmpty()
-					&& message.getSubscription().getLdQuery() != null) {
-				message.getSubscription().getAttributeNames()
-						.addAll(message.getSubscription().getLdQuery().getAllAttibs());
-			}
-			message.getSubscription().setThrottling(0);
-			message.getSubscription().setTimeInterval(0);
-			tenant2subscriptionId2Subscription.put(message.getTenant(), message.getId(), message);
-		} catch (URISyntaxException e) {
-			// left empty intentionally this will never throw because it's a constant string
-			// we control
-		}
-		return subDAO.getInitialNotificationData(message).onItem().transformToUni(rows -> {
-			List<Map<String, Object>> data = Lists.newArrayList();
-			rows.forEach(row -> {
-				data.add(row.getJsonObject(0).getMap());
-			});
-			try {
-				return internalNotificationSender
-						.send(new InternalNotification(message.getTenant(), message.getId(), SubscriptionTools
-								.generateNotification(message, data, AppConstants.INTERNAL_NOTIFICATION_REQUEST)));
-			} catch (Exception e) {
-				logger.error("Failed to send internal notification for sub " + message.getId(), e);
-				return Uni.createFrom().voidItem();
-			}
-		});
-	}
-
 	private boolean shouldFire(Map<String, Object> entry, SubscriptionRequest subscription) {
 		if (subscription.getSubscription().getAttributeNames() == null
 				|| subscription.getSubscription().getAttributeNames().isEmpty()) {
@@ -1056,14 +1020,6 @@ public class SubscriptionService {
 			}
 		}
 		return false;
-	}
-
-	public static void main(String[] args) throws URISyntaxException {
-		URI uri1 = new URI("http://test1.com");
-		URI uri2 = new URI("http://test1.com/");
-
-		System.out.println(uri1.toString());
-		System.out.println(uri2.toString());
 	}
 
 	@Scheduled(every = "${scorpio.registry.subscription.checkinterval}")
@@ -1099,6 +1055,11 @@ public class SubscriptionService {
 	}
 
 	public Uni<Void> handleRegistryNotification(InternalNotification message) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public Uni<Void> remoteNotify(String id, Map<String, Object> notification, Context context) {
 		// TODO Auto-generated method stub
 		return null;
 	}

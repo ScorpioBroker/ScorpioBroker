@@ -58,6 +58,7 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
+import eu.neclab.ngsildbroker.commons.tools.SubscriptionTools;
 import eu.neclab.ngsildbroker.registry.subscriptionmanager.repository.RegistrySubscriptionInfoDAO;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import io.quarkus.scheduler.Scheduled;
@@ -138,7 +139,8 @@ public class RegistrySubscriptionService {
 		} catch (ResponseException e) {
 			return Uni.createFrom().failure(e);
 		}
-		setInitTimesSentAndFailed(request);
+		
+		SubscriptionTools.setInitTimesSentAndFailed(request);
 		return regDAO.createSubscription(request).onItem().transformToUni(t -> {
 			if (isIntervalSub(request)) {
 				this.tenant2subscriptionId2IntervalSubscription.put(request.getTenant(), request.getId(), request);
@@ -152,7 +154,7 @@ public class RegistrySubscriptionService {
 				});
 				try {
 					return sendNotification(request,
-							generateNotification(request, data, AppConstants.INTERNAL_NOTIFICATION_REQUEST),
+							SubscriptionTools.generateNotification(request, data, AppConstants.INTERNAL_NOTIFICATION_REQUEST),
 							AppConstants.INTERNAL_NOTIFICATION_REQUEST).onItem().transform(v -> {
 								return new NGSILDOperationResult(AppConstants.CREATE_SUBSCRIPTION_REQUEST,
 										request.getId());
@@ -171,14 +173,7 @@ public class RegistrySubscriptionService {
 		});
 	}
 
-	private void setInitTimesSentAndFailed(SubscriptionRequest request) {
-		List<Map<String, Object>> timeValue = Lists.newArrayList();
-		Map<String, Object> tmp = Maps.newHashMap();
-		tmp.put(NGSIConstants.JSON_LD_VALUE, 0);
-		timeValue.add(tmp);
-		request.getPayload().put(NGSIConstants.NGSI_LD_TIMES_SENT, timeValue);
-		request.getPayload().put(NGSIConstants.NGSI_LD_TIMES_FAILED, timeValue);
-	}
+	
 
 	public Uni<NGSILDOperationResult> updateSubscription(String tenant, String subscriptionId,
 			Map<String, Object> update, Context context) {
@@ -284,7 +279,7 @@ public class RegistrySubscriptionService {
 		if (shouldSendOut(potentialSub, reg)) {
 			Map<String, Object> notification;
 			try {
-				notification = generateNotification(potentialSub, reg, triggerReason);
+				notification = SubscriptionTools.generateNotification(potentialSub, reg, triggerReason);
 			} catch (Exception e) {
 				logger.error("Failed to generate notification", e);
 				return Uni.createFrom().voidItem();
@@ -309,7 +304,7 @@ public class RegistrySubscriptionService {
 						}
 						try {
 							return client.publish(notificationParam.getEndPoint().getUri().getPath().substring(1),
-									Buffer.buffer(getMqttPayload(notificationParam, notification)),
+									Buffer.buffer(SubscriptionTools.getMqttPayload(notificationParam, notification)),
 									MqttQoS.valueOf(qos), false, false).onItem().transformToUni(t -> {
 										if (t == 0) {
 											// TODO what the fuck is the result here
@@ -348,7 +343,7 @@ public class RegistrySubscriptionService {
 			case "https":
 				try {
 					toSend = webClient.post(notificationParam.getEndPoint().getUri().toString())
-							.putHeaders(getHeaders(notificationParam))
+							.putHeaders(SubscriptionTools.getHeaders(notificationParam))
 							.sendBuffer(Buffer.buffer(JsonUtils.toPrettyString(JsonLdProcessor.compact(notification,
 									null, potentialSub.getContext(), HttpUtils.opts, -1))))
 							.onFailure().retry().atMost(3).onItem().transformToUni(result -> {
@@ -405,25 +400,7 @@ public class RegistrySubscriptionService {
 		return Uni.createFrom().voidItem();
 	}
 
-	private String getMqttPayload(NotificationParam notificationParam, Map<String, Object> notification)
-			throws Exception {
-		Map<String, Object> result = Maps.newLinkedHashMap();
-		if (!notificationParam.getEndPoint().getReceiverInfo().isEmpty()) {
-			result.put(NGSIConstants.METADATA, getMqttMetaData(notificationParam.getEndPoint().getReceiverInfo()));
-		}
-		result.put(NGSIConstants.BODY, notification);
-		return JsonUtils.toString(result);
-	}
 
-	private List<Map<String, String>> getMqttMetaData(ArrayListMultimap<String, String> receiverInfo) {
-		List<Map<String, String>> result = Lists.newArrayList();
-		for (Entry<String, String> entry : receiverInfo.entries()) {
-			Map<String, String> tmp = new HashMap<>(1);
-			tmp.put(entry.getKey(), entry.getValue());
-			result.add(tmp);
-		}
-		return result;
-	}
 
 	private Uni<MqttClient> getMqttClient(NotificationParam notificationParam) {
 		URI host = notificationParam.getEndPoint().getUri();
@@ -445,40 +422,6 @@ public class RegistrySubscriptionService {
 				});
 			}
 		}
-	}
-
-	private MultiMap getHeaders(NotificationParam notificationParam) {
-		HeadersMultiMap result = new HeadersMultiMap();
-
-		ArrayListMultimap<String, String> receiverInfo = notificationParam.getEndPoint().getReceiverInfo();
-		if (receiverInfo != null) {
-			for (Entry<String, String> entry : receiverInfo.entries()) {
-				result.add(entry.getKey(), entry.getValue());
-			}
-		}
-		String accept = notificationParam.getEndPoint().getAccept();
-		if (accept == null) {
-			accept = AppConstants.NGB_APPLICATION_JSON;
-		}
-		result.set("accept", accept);
-		return new MultiMap(result);
-	}
-
-	private Map<String, Object> generateNotification(SubscriptionRequest potentialSub, Object reg, int triggerReason)
-			throws Exception {
-		Map<String, Object> notification = Maps.newLinkedHashMap();
-		notification.put(NGSIConstants.QUERY_PARAMETER_ID,
-				"csourcenotification:" + UUID.randomUUID().getLeastSignificantBits());
-		notification.put(NGSIConstants.QUERY_PARAMETER_TYPE, NGSIConstants.CSOURCE_NOTIFICATION);
-		notification.put(NGSIConstants.NGSI_LD_SUBSCRIPTION_ID_SHORT, potentialSub.getId());
-		notification.put(NGSIConstants.NGSI_LD_NOTIFIED_AT_SHORT, SerializationTools.notifiedAt_formatter
-				.format(LocalDateTime.ofInstant(Instant.ofEpochMilli(System.currentTimeMillis()), ZoneId.of("Z"))));
-		Map<String, Object> compacted = JsonLdProcessor.compact(reg, null, potentialSub.getContext(), HttpUtils.opts,
-				-1);
-		// TODO check what compacted produces here and add the correct things
-		notification.put(NGSIConstants.NGSI_LD_DATA_SHORT, Lists.newArrayList(compacted));
-		notification.put(NGSIConstants.NGSI_LD_TRIGGER_REASON_SHORT, HttpUtils.getTriggerReason(triggerReason));
-		return notification;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -549,7 +492,7 @@ public class RegistrySubscriptionService {
 			}
 
 		}
-		if (!evaluateGeoQuery(sub.getLdGeoQuery(), reg)) {
+		if (!SubscriptionTools.evaluateGeoQuery(sub.getLdGeoQuery(), reg)) {
 			return false;
 		}
 		if (sub.getScopeQuery() != null) {
@@ -1128,7 +1071,7 @@ public class RegistrySubscriptionService {
 				try {
 					return internalNotificationSender
 							.send(new InternalNotification(message.getTenant(), message.getId(),
-									generateNotification(message, data, AppConstants.INTERNAL_NOTIFICATION_REQUEST)));
+									SubscriptionTools.generateNotification(message, data, AppConstants.INTERNAL_NOTIFICATION_REQUEST)));
 				} catch (Exception e) {
 					logger.error("Failed to send internal notification for sub " + message.getId(), e);
 					return Uni.createFrom().voidItem();
@@ -1205,7 +1148,7 @@ public class RegistrySubscriptionService {
 					});
 					try {
 						return sendNotification(request,
-								generateNotification(request, data, AppConstants.INTERNAL_NOTIFICATION_REQUEST),
+								SubscriptionTools.generateNotification(request, data, AppConstants.INTERNAL_NOTIFICATION_REQUEST),
 								AppConstants.INTERVAL_NOTIFICATION_REQUEST);
 					} catch (Exception e) {
 						logger.error("Failed to send initial notifcation", e);
@@ -1218,123 +1161,5 @@ public class RegistrySubscriptionService {
 		return Uni.combine().all().unis(unis).discardItems();
 	}
 
-	@SuppressWarnings("unchecked")
-	private boolean evaluateGeoQuery(GeoQueryTerm geoQuery, Map<String, Object> location) {
-		if (geoQuery == null) {
-			return true;
-		}
-		if (location == null) {
-			return false;
-		}
-		String relation = geoQuery.getGeorel();
-		String regCoordinatesAsString = Subscription
-				.getCoordinates((List<Map<String, Object>>) location.get(NGSIConstants.NGSI_LD_COORDINATES));
-		if (relation.equals(NGSIConstants.GEO_REL_EQUALS)) {
-			return geoQuery.getCoordinates().equals(regCoordinatesAsString);
-		}
-		Shape queryShape;
-		List<List<Double>> tmp;
-		switch (geoQuery.getGeometry()) {
-		case NGSIConstants.GEO_TYPE_POINT:
-			queryShape = shapeFactory.pointXY((Double) geoQuery.getCoordinatesAsList().get(0),
-					(Double) geoQuery.getCoordinatesAsList().get(1));
-			break;
-		case NGSIConstants.GEO_TYPE_LINESTRING:
-			LineStringBuilder lineStringBuilder = shapeFactory.lineString();
-			tmp = (List<List<Double>>) geoQuery.getCoordinatesAsList().get(0);
-			for (List<Double> point : tmp) {
-				lineStringBuilder.pointXY(point.get(0), point.get(1));
-			}
-			queryShape = lineStringBuilder.build();
-			break;
-		case NGSIConstants.GEO_TYPE_POLYGON:
-			PolygonBuilder polygonBuilder = shapeFactory.polygon();
-			tmp = ((List<List<List<Double>>>) geoQuery.getCoordinatesAsList().get(0)).get(0);
-			for (List<Double> point : tmp) {
-				polygonBuilder.pointXY(point.get(0), point.get(1));
-			}
-			queryShape = polygonBuilder.build();
-			break;
-		case NGSIConstants.GEO_TYPE_MULTI_POLYGON:
-		default:
-			logger.error("Unsupported GeoJson type. Currently Point, Polygon and Linestring are supported but was "
-					+ geoQuery.getGeometry());
-			return false;
-
-		}
-		Shape entityShape;
-
-		switch (((List<String>) location.get(NGSIConstants.JSON_LD_TYPE)).get(0)) {
-		case NGSIConstants.NGSI_LD_POINT:
-			List<Map<String, List<Map<String, Double>>>> coordinates = ((List<Map<String, List<Map<String, Double>>>>) location
-					.get(NGSIConstants.NGSI_LD_COORDINATES));
-			entityShape = shapeFactory.pointXY(
-					coordinates.get(0).get(NGSIConstants.JSON_LD_LIST).get(0).get(NGSIConstants.JSON_LD_VALUE),
-					coordinates.get(0).get(NGSIConstants.JSON_LD_LIST).get(1).get(NGSIConstants.JSON_LD_VALUE));
-			break;
-		case NGSIConstants.NGSI_LD_LINESTRING:
-			LineStringBuilder lineStringBuilder = shapeFactory.lineString();
-			List<Map<String, List<Map<String, List<Map<String, Double>>>>>> linecoordinates = ((List<Map<String, List<Map<String, List<Map<String, Double>>>>>>) location
-					.get(NGSIConstants.NGSI_LD_COORDINATES));
-			for (Map<String, List<Map<String, Double>>> point : linecoordinates.get(0)
-					.get(NGSIConstants.JSON_LD_LIST)) {
-				lineStringBuilder.pointXY(point.get(NGSIConstants.JSON_LD_LIST).get(0).get(NGSIConstants.JSON_LD_VALUE),
-						point.get(NGSIConstants.JSON_LD_LIST).get(1).get(NGSIConstants.JSON_LD_VALUE));
-			}
-			entityShape = lineStringBuilder.build();
-			break;
-		case NGSIConstants.NGSI_LD_POLYGON:
-			PolygonBuilder polygonBuilder = shapeFactory.polygon();
-			List<Map<String, List<Map<String, List<Map<String, List<Map<String, Double>>>>>>>> polyogonCoordinates = ((List<Map<String, List<Map<String, List<Map<String, List<Map<String, Double>>>>>>>>) location
-					.get(NGSIConstants.NGSI_LD_COORDINATES));
-			for (Map<String, List<Map<String, Double>>> point : polyogonCoordinates.get(0)
-					.get(NGSIConstants.JSON_LD_LIST).get(0).get(NGSIConstants.JSON_LD_LIST)) {
-				polygonBuilder.pointXY(point.get(NGSIConstants.JSON_LD_LIST).get(0).get(NGSIConstants.JSON_LD_VALUE),
-						point.get(NGSIConstants.JSON_LD_LIST).get(1).get(NGSIConstants.JSON_LD_VALUE));
-			}
-			entityShape = polygonBuilder.build();
-			break;
-		case NGSIConstants.GEO_TYPE_MULTI_POLYGON:
-		default:
-			logger.error("Unsupported GeoJson type. Currently Point, Polygon and Linestring are supported but was "
-					+ geoQuery.getGeometry());
-			return false;
-
-		}
-
-		switch (relation) {
-		case NGSIConstants.GEO_REL_NEAR:
-			if (geoQuery.getDistanceType() == null) {
-				return geoQuery.getCoordinates().equals(regCoordinatesAsString);
-			}
-			Shape bufferedShape;
-			switch (geoQuery.getDistanceType()) {
-			case NGSIConstants.GEO_REL_MAX_DISTANCE:
-				bufferedShape = queryShape.getBuffered(geoQuery.getDistanceValue() * DistanceUtils.KM_TO_DEG,
-						queryShape.getContext());
-				return SpatialPredicate.IsWithin.evaluate(entityShape, bufferedShape);
-			case NGSIConstants.GEO_REL_MIN_DISTANCE:
-				bufferedShape = queryShape.getBuffered(geoQuery.getDistanceValue() * DistanceUtils.KM_TO_DEG,
-						queryShape.getContext());
-				return !SpatialPredicate.IsWithin.evaluate(entityShape, bufferedShape);
-			default:
-				return false;
-			}
-		case NGSIConstants.GEO_REL_WITHIN:
-			return SpatialPredicate.IsWithin.evaluate(entityShape, queryShape);
-		case NGSIConstants.GEO_REL_CONTAINS:
-			return SpatialPredicate.Contains.evaluate(entityShape, queryShape);
-		case NGSIConstants.GEO_REL_INTERSECTS:
-			return SpatialPredicate.Intersects.evaluate(entityShape, queryShape);
-		case NGSIConstants.GEO_REL_DISJOINT:
-			return SpatialPredicate.IsDisjointTo.evaluate(entityShape, queryShape);
-		case NGSIConstants.GEO_REL_OVERLAPS:
-			return SpatialPredicate.Overlaps.evaluate(entityShape, queryShape);
-		default:
-			return false;
-
-		}
-
-	}
-
+	
 }

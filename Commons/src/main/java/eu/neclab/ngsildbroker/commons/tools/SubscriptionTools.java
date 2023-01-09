@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.subscriptionmanager.service;
+package eu.neclab.ngsildbroker.commons.tools;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -31,8 +31,6 @@ import eu.neclab.ngsildbroker.commons.datatypes.NotificationParam;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
-import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
-import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import io.vertx.core.http.impl.headers.HeadersMultiMap;
 import io.vertx.mutiny.core.MultiMap;
 
