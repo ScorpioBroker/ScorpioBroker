@@ -68,9 +68,7 @@ public class EntityController {// implements EntityHandlerInterface {
 		return entityService.createEntry(HttpUtils.getTenant(req), tuple.getItem2(), tuple.getItem1()).onItem()
 				.transform(opResult -> {
 					return HttpUtils.generateCreateResult(opResult, AppConstants.ENTITES_URL);
-				}).onFailure().recoverWithItem(error -> {
-					return HttpUtils.handleControllerExceptions(error);
-				});
+				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
 	/**
@@ -93,11 +91,7 @@ public class EntityController {// implements EntityHandlerInterface {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 		}
 		return entityService.updateEntry(HttpUtils.getTenant(request), entityId, tuple.getItem2(), tuple.getItem1())
-				.onItem().transform(opResult -> {
-					return HttpUtils.generateUpdateResultResponse(opResult);
-				}).onFailure().recoverWithItem(error -> {
-					return HttpUtils.handleControllerExceptions(error);
-				});
+				.onItem().transform(HttpUtils::generateUpdateResultResponse).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
 	/**
@@ -125,11 +119,7 @@ public class EntityController {// implements EntityHandlerInterface {
 		}
 		return entityService
 				.appendToEntry(HttpUtils.getTenant(request), entityId, tuple.getItem2(), noOverwrite, tuple.getItem1())
-				.onItem().transform(opResult -> {
-					return HttpUtils.generateUpdateResultResponse(opResult);
-				}).onFailure().recoverWithItem(error -> {
-					return HttpUtils.handleControllerExceptions(error);
-				});
+				.onItem().transform(HttpUtils::generateUpdateResultResponse).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
 	/**
@@ -137,11 +127,9 @@ public class EntityController {// implements EntityHandlerInterface {
 	 * endpoint.
 	 * 
 	 * @param entityId
-	 * @param attrId
 	 * @param payload
 	 * @return
 	 */
-	@SuppressWarnings({ "unchecked", "static-access" })
 	@PATCH
 	@Path("/entities/{entityId}/attrs/{attrId}")
 	public Uni<RestResponse<Object>> partialUpdateEntity(HttpServerRequest request,
@@ -160,9 +148,7 @@ public class EntityController {// implements EntityHandlerInterface {
 				.onItem().transform(updateResult -> {
 					logger.trace("update entry :: completed");
 					return HttpUtils.generateUpdateResultResponse(updateResult);
-				}).onFailure().recoverWithItem(error -> {
-					return HttpUtils.handleControllerExceptions(error);
-				});
+				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
 	/**
@@ -194,9 +180,7 @@ public class EntityController {// implements EntityHandlerInterface {
 					logger.trace("delete attribute :: completed");
 					return HttpUtils.generateDeleteResult(opResult);
 
-				}).onFailure().recoverWithItem(error -> {
-					return HttpUtils.handleControllerExceptions(error);
-				});
+				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
 	}
 
@@ -216,10 +200,6 @@ public class EntityController {// implements EntityHandlerInterface {
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 		}
-		return entityService.deleteEntry(HttpUtils.getTenant(request), entityId, context).onItem().transform(result -> {
-			return HttpUtils.generateDeleteResult(result);
-		}).onFailure().recoverWithItem(error -> {
-			return HttpUtils.handleControllerExceptions(error);
-		});
+		return entityService.deleteEntry(HttpUtils.getTenant(request), entityId, context).onItem().transform(HttpUtils::generateDeleteResult).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 }
