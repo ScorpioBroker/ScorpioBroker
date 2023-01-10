@@ -608,8 +608,14 @@ public class SubscriptionService {
 				// arrives.
 				return Uni.createFrom().voidItem();
 			}
-			SubscriptionRequest remoteRequest = SubscriptionRequest.generateRemoteSubscription(subscriptionRequest,
-					message);
+			SubscriptionRequest remoteRequest;
+			try {
+				remoteRequest = SubscriptionTools.generateRemoteSubscription(subscriptionRequest,
+						message);
+			} catch (ResponseException e) {
+				logger.error("failed to generate a remote subscription", e);
+				return Uni.createFrom().voidItem();
+			}
 
 			Map<String, Object> compacted;
 			try {

@@ -79,7 +79,7 @@ public class MicroServiceUtils {
 		return result;
 	}
 
-	private static Map<String, Object> deepCopyMap(Map<String, Object> original) {
+	public static Map<String, Object> deepCopyMap(Map<String, Object> original) {
 		if (original == null) {
 			return null;
 		}
