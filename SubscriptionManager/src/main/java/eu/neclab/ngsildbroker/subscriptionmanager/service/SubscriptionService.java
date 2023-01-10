@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -31,6 +32,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Table;
 import com.google.common.collect.Table.Cell;
+import com.google.common.net.HttpHeaders;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -58,6 +60,7 @@ import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.smallrye.reactive.messaging.annotations.Broadcast;
+import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.WebClient;
@@ -597,6 +600,7 @@ public class SubscriptionService {
 	public Uni<Void> handleRegistryNotification(InternalNotification message) {
 		if (message.getRequestType() == AppConstants.DELETE_REQUEST) {
 			// entry was deleted
+			return unsubscribeRemote(message.getId(), message.getTenant());
 		} else {
 			SubscriptionRequest subscriptionRequest = subscriptionId2RequestGlobal.get(message.getId());
 			if (subscriptionRequest == null) {
@@ -604,65 +608,91 @@ public class SubscriptionService {
 				// arrives.
 				return Uni.createFrom().voidItem();
 			}
-			new Thread() {
+			SubscriptionRequest remoteRequest = SubscriptionRequest.generateRemoteSubscription(subscriptionRequest,
+					message);
 
-				@Override
-				public void run() {
-					Subscription remoteSub = new Subscription(subscriptionRequest.getSubscription());
-					remoteSub.getNotification().getEndPoint().setUri(prepareNotificationServlet(subscriptionRequest));
-					String body;
-					try {
-						Map<String, Object> expandedBody = remoteSub.toJson();
-						expandedBody.remove(NGSIConstants.NGSI_LD_STATUS);
-						expandedBody.remove(NGSIConstants.JSON_LD_ID);
-						body = JsonUtils.toPrettyString(
-								JsonLdProcessor.compact(expandedBody, subscriptionRequest.getContext(), opts));
-					} catch (Exception e) {
-						throw new AssertionError();
-					}
-					for (Map<String, Object> entry : notification.getData()) {
-						MultiMap additionalHeaders = HttpUtils.getAdditionalHeaders(entry,
-								subscriptionRequest.getContext(),
-								Arrays.asList(remoteSub.getNotification().getEndPoint().getAccept()));
-						additionalHeaders.add(HttpHeaders.CONTENT_TYPE, "application/ld+json");
-						String remoteEndpoint = getRemoteEndPoint(entry);
-						StringBuilder temp = new StringBuilder(remoteEndpoint);
-						if (remoteEndpoint.endsWith("/")) {
-							temp.deleteCharAt(remoteEndpoint.length() - 1);
+			Map<String, Object> compacted;
+			try {
+				compacted = JsonLdProcessor.compact(remoteRequest.getPayload(), null, remoteRequest.getContext(),
+						HttpUtils.opts, -1);
+			} catch (Exception e) {
+				logger.error("failed to generate remote subscription", e);
+				return Uni.createFrom().voidItem();
+			}
+			prepareNotificationServlet(remoteRequest);
+			@SuppressWarnings("unchecked")
+			String remoteEndpoint = ((List<Map<String, String>>) message.getPayload()
+					.get(NGSIConstants.NGSI_LD_ENDPOINT)).get(0).get(NGSIConstants.JSON_LD_VALUE);
+			StringBuilder temp = new StringBuilder(remoteEndpoint);
+			if (remoteEndpoint.endsWith("/")) {
+				temp.deleteCharAt(remoteEndpoint.length() - 1);
+			}
+			temp.append(AppConstants.SUBSCRIPTIONS_URL);
+			return webClient.post(temp.toString())
+					.putHeaders(SubscriptionTools.getHeaders(remoteRequest.getSubscription().getNotification()))
+					.sendJsonObject(new JsonObject(compacted)).onFailure().retry().atMost(3).onItem()
+					.transformToUni(response -> {
+						if (response.statusCode() >= 200 && response.statusCode() < 300) {
+							String locationHeader = response.headers().get(HttpHeaders.LOCATION);
+							// check if it's a relative path
+							if (locationHeader.charAt(0) == '/') {
+								locationHeader = remoteEndpoint + locationHeader;
+							}
+							internalSubId2ExternalEndpoint.put(subscriptionRequest.getSubscription().getId(),
+									locationHeader);
 						}
-						temp.append(AppConstants.SUBSCRIPTIONS_URL);
-
-						HttpRequest<Buffer> req = webClient.postAbs(temp.toString());
-						for (Entry<String, String> headersEntry : additionalHeaders.entries()) {
-							req = req.putHeader(headersEntry.getKey(), headersEntry.getValue());
-						}
-						req.sendBuffer(Buffer.buffer(body)).onFailure().retry().withBackOff(Duration.ofSeconds(5))
-								.atMost(5).onItem().transformToUni(response -> {
-									if (response.statusCode() >= 200 && response.statusCode() < 300) {
-										String locationHeader = response.headers().get(HttpHeaders.LOCATION);
-										// check if it's a relative path
-										if (locationHeader.charAt(0) == '/') {
-											locationHeader = remoteEndpoint + locationHeader;
-										}
-										internalSubId2ExternalEndpoint
-												.put(subscriptionRequest.getSubscription().getId(), locationHeader);
-									}
-									return Uni.createFrom().voidItem();
-								}).onFailure().recoverWithUni(t -> {
-									logger.error("Failed to subscribe to remote host " + temp.toString(), t);
-									return Uni.createFrom().voidItem();
-								}).subscribe();
-
-					}
-				}
-			}.start();
+						return Uni.createFrom().voidItem();
+					}).onFailure().recoverWithUni(t -> {
+						logger.error("Failed to subscribe to remote host " + temp.toString(), t);
+						return Uni.createFrom().voidItem();
+					});
 		}
-		return null;
 	}
 
 	public Uni<Void> remoteNotify(String notificationEndpoint, Map<String, Object> notification, Context context) {
-		notification.get(context);
-		return null;
+		SubscriptionRequest subscription = remoteNotifyCallbackId2InternalSub.get(notificationEndpoint);
+		if (subscription == null) {
+			return Uni.createFrom().voidItem();
+		}
+		List<Map<String, Object>> data = (List<Map<String, Object>>) notification.get(NGSIConstants.NGSI_LD_DATA);
+
+		List<Uni<Void>> unis = Lists.newArrayList();
+		for (Map<String, Object> entry : data) {
+			if (shouldFire(entry.keySet(), subscription)) {
+				unis.add(localEntityService
+						.getEntityById(subscription.getTenant(), (String) entry.get(NGSIConstants.JSON_LD_ID)).onItem()
+						.transformToUni(entity -> {
+							return sendNotification(subscription, entity, AppConstants.UPDATE_REQUEST);
+						}));
+			}
+		}
+
+		return Uni.combine().all().unis(unis).discardItems();
+	}
+
+	private String prepareNotificationServlet(SubscriptionRequest subToCheck) {
+
+		String uuid = Long.toString(UUID.randomUUID().getLeastSignificantBits());
+		remoteNotifyCallbackId2InternalSub.put(uuid, subToCheck);
+		internalSubId2RemoteNotifyCallbackId2.put(subToCheck.getId(), uuid);
+		StringBuilder url = new StringBuilder(microServiceUtils.getGatewayURL().toString()).append("/remotenotify/")
+				.append(uuid);
+
+		return url.toString();
+
+	}
+
+	private Uni<Void> unsubscribeRemote(String subscriptionId, String tenant) {
+		String endpoint = internalSubId2ExternalEndpoint.remove(subscriptionId);
+		if (endpoint != null) {
+			remoteNotifyCallbackId2InternalSub.remove(internalSubId2RemoteNotifyCallbackId2.remove(subscriptionId));
+			if (tenant != AppConstants.INTERNAL_NULL_KEY) {
+				return webClient.deleteAbs(endpoint).putHeader(NGSIConstants.TENANT_HEADER, tenant).send().onItem()
+						.transformToUni(t -> Uni.createFrom().voidItem());
+			}
+			return webClient.deleteAbs(endpoint).send().onItem().transformToUni(t -> Uni.createFrom().voidItem());
+		}
+		return Uni.createFrom().voidItem();
 	}
 
 	@PreDestroy
