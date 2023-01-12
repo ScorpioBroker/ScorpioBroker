@@ -419,7 +419,7 @@ public class QueryParser {
 	}
 
 	public static LanguageQueryTerm parseLangQuery(String langString) throws ResponseException {
-		if (langString == null || langString.equals("*")) {
+		if (langString == null) {
 			return null;
 		}
 		LanguageQueryTerm result = new LanguageQueryTerm();
@@ -441,10 +441,6 @@ public class QueryParser {
 			if (!tmp[0].isEmpty()) {
 				result.addTuple(Tuple2.of(Set.of(tmp), q));
 			}
-		}
-		if (result.getEntries().size() == 1 && result.getEntries().get(0).getItem1().size() == 1
-				&& result.getEntries().get(0).getItem1().contains("*")) {
-			return null;
 		}
 		result.sort();
 		return result;

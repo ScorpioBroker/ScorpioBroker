@@ -52,6 +52,8 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_HAS_OBJECT = "https://uri.etsi.org/ngsi-ld/hasObject";
 	public final static String NGSI_LD_COORDINATES = "https://purl.org/geojson/vocab#coordinates"; // "https://uri.etsi.org/ngsi-ld/coordinates";
 	public final static String NGSI_LD_GEOPROPERTY = "https://uri.etsi.org/ngsi-ld/GeoProperty";
+	public final static String NGSI_LD_LANGPROPERTY = "https://uri.etsi.org/ngsi-ld/LanguageProperty";
+	
 	public final static String NGSI_LD_GEOPROPERTY_SHORT = "GeoProperty";
 	public final static String NGSI_LD_LOCATION = "https://uri.etsi.org/ngsi-ld/location";
 	public final static String NGSI_LD_LOCATION_SHORT = "location";
@@ -200,6 +202,7 @@ public interface NGSIConstants {
 	public final static String QUERY_PARAMETER_OPTIONS = "options";
 	public final static String QUERY_PARAMETER_OPTIONS_SYSATTRS = "sysAttrs";
 	public final static String QUERY_PARAMETER_OPTIONS_KEYVALUES = "keyValues";
+	public final static String QUERY_PARAMETER_OPTIONS_SIMPLIFIED = "simplified";
 	public final static String QUERY_PARAMETER_OPTIONS_COMPRESS = "compress";
 	public final static String QUERY_PARAMETER_OPTIONS_TEMPORALVALUES = "temporalValues";
 
@@ -339,4 +342,5 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_TRIGGER_REASON_SHORT = "triggerReason";
 	public static final String NGSI_LD_GEO_QUERY_SHORT = "geoQ";
 	public static final String QUERY_PARAMETER_LANG = "lang";
+	public static final String NGSI_LD_HAS_LANGUAGE_MAP = "https://uri.etsi.org/ngsi-ld/hasLanguageMap";
 }

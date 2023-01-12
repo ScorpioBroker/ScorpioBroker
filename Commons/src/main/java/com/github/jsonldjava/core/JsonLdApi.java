@@ -29,6 +29,7 @@ import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import io.smallrye.mutiny.tuples.Tuple2;
 
 /**
  * A container object to maintain state relating to JsonLdOptions and the
@@ -187,7 +188,10 @@ public class JsonLdApi {
 			final Map<String, Object> elem = (Map<String, Object>) element;
 			boolean removeSysAttrs = options == null
 					|| !options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_SYSATTRS);
-			boolean keyValue = options != null && options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_KEYVALUES);
+			boolean keyValue = options != null && (options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_KEYVALUES)
+					|| options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_SIMPLIFIED));
+			boolean concise = options != null && (options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_KEYVALUES)
+					|| options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_SIMPLIFIED));
 			// 4
 			if (elem.containsKey(JsonLdConsts.VALUE) || elem.containsKey(JsonLdConsts.ID)) {
 				final Object compactedValue = activeCtx.compactValue(activeProperty, elem);
@@ -211,6 +215,9 @@ public class JsonLdApi {
 			final List<String> keys = new ArrayList<String>(elem.keySet());
 			Collections.sort(keys);
 			boolean isGeoProperty = false;
+			boolean isProperty = false;
+			boolean isRelationship = false;
+			boolean isLanguageProperty = false;
 			for (final String expandedProperty : keys) {
 
 				Object expandedValue = elem.get(expandedProperty);
@@ -247,17 +254,24 @@ public class JsonLdApi {
 							compactedValue = types;
 						}
 					}
-					if (JsonLdConsts.TYPE.equals(expandedProperty)) {
-						if (expandedValue instanceof String
-								&& NGSIConstants.NGSI_LD_GEOPROPERTY.equals(expandedValue)) {
+					if ((keyValue || concise || langQuery != null) && JsonLdConsts.TYPE.equals(expandedProperty)) {
+						switch (((List<String>) expandedValue).get(0)) {
+						case NGSIConstants.NGSI_LD_PROPERTY:
+							isProperty = true;
+							
+						case NGSIConstants.NGSI_LD_GEOPROPERTY:
 							isGeoProperty = true;
+							break;
+						case NGSIConstants.NGSI_LD_LANGPROPERTY:
+							isLanguageProperty = true;
+							break;
+						case NGSIConstants.NGSI_LD_RELATIONSHIP:
+							isRelationship = true;
+							break;
 						}
-						if (expandedValue instanceof List
-								&& ((List) expandedValue).contains(NGSIConstants.NGSI_LD_GEOPROPERTY)) {
-							isGeoProperty = true;
+						if (keyValue || concise){
+							continue;
 						}
-						// NGSI Comment: This is very much relying on the fact that @type comes before
-						// hasValue
 
 					}
 					// 7.1.4)
@@ -268,40 +282,69 @@ public class JsonLdApi {
 					// isArray(compactedValue)
 					// && ((List<Object>) expandedValue).size() == 0);
 				}
-//				Object potentialGeoProp = null;
-//				switch (endPoint) {
-//				case AppConstants.REGISTRY_ENDPOINT:
-//					if (NGSIConstants.LOCATIONS_IN_REGISTRATION.contains(expandedProperty)) {
-//						isGeoProperty = true;
-//						potentialGeoProp = ((Map<String, Object>) ((List) expandedValue).get(0))
-//								.get(JsonLdConsts.VALUE);
-//					}
-//					break;
-//				case AppConstants.SUBSCRIPTION_ENDPOINT:
-//					if (NGSIConstants.NGSI_LD_LOCATION.equals(expandedProperty)) {
-//						isGeoProperty = true;
-//						potentialGeoProp = ((Map<String, Object>) ((List) expandedValue).get(0))
-//								.get(JsonLdConsts.VALUE);
-//					}
-//					break;
-//				case AppConstants.NOTIFICATION_ENDPOINT:
-//				case AppConstants.QUERY_ENDPOINT:
-//				case AppConstants.HISTORY_ENDPOINT:
-//					if (NGSIConstants.NGSI_LD_HAS_VALUE.equals(expandedProperty)) {
-//						potentialGeoProp = ((Map<String, Object>) ((List) expandedValue).get(0))
-//								.get(JsonLdConsts.VALUE);
-//					}
-//					break;
-//				default:
-//					break;
-//				}
-//
-//				if (isGeoProperty && potentialGeoProp != null && potentialGeoProp instanceof Map) {
-//					Object expandedGeoProp = expandWithCoreContext(potentialGeoProp);
-//					final String alias = activeCtx.compactIri(expandedProperty, true);
-//					result.put(alias, compact(activeCtx, activeProperty, expandedGeoProp, compactArrays, endPoint));
-//					continue;
-//				}
+				if (langQuery != null && isLanguageProperty && expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP)) {
+					// do language stuff
+					result.put("type", "Property");
+					for(Tuple2<Set<String>, Float> tuple: langQuery.getEntries()) {
+//						[
+//				          {
+//				            "@value": "Grand Place",
+//				            "@language": "fr"
+//				          },
+//				          {
+//				            "@value": "Grote Markt",
+//				            "@language": "nl"
+//				          }
+//				        ]
+						List<Map<String, Object>> tmp = (List<Map<String, Object>>) expandedValue;
+						for(String lang: tuple.getItem1()) {
+							for(Map<String, Object> entry: tmp) {
+								if(lang.equals("*")) {
+									if(!entry.containsKey(JsonLdConsts.LANGUAGE)) {
+										
+									}
+								}
+							}
+							if(lang.equals("*")) {
+								
+							}
+						}
+						
+					}
+					isProperty = true;
+					isLanguageProperty = false;
+				}
+				if (keyValue) {
+					if (isProperty || isGeoProperty) {
+						if(expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_VALUE)) {
+							return compact(activeCtx, activeProperty, expandedValue, compactArrays, endPoint, null, null);
+						}else {
+							continue;
+						}
+					} else if (isRelationship) {
+						if(expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_OBJECT)) {
+							return compact(activeCtx, activeProperty, expandedValue, compactArrays, endPoint, null, null);
+						}else {
+							continue;
+						}
+					} else if (isLanguageProperty) {
+						if(expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP)) {
+							return compact(activeCtx, activeProperty, expandedValue, compactArrays, endPoint, null, null);
+						}else {
+							continue;
+						}
+					}
+				} else if (concise) {
+					if (isProperty) {
+						
+					} else if (isRelationship) {
+
+					} else if (isGeoProperty) {
+
+					} else if (isLanguageProperty) {
+
+					}
+				}
 				// 7.2)
 				if (JsonLdConsts.REVERSE.equals(expandedProperty)) {
 					// 7.2.1)
@@ -395,8 +438,11 @@ public class JsonLdApi {
 					}
 				}
 
+
 				// 7.6)
 				for (final Object expandedItem : (List<Object>) expandedValue) {
+
+
 					// 7.6.1)
 					final String itemActiveProperty = activeCtx.compactIri(expandedProperty, expandedItem, true,
 							insideReverse);
