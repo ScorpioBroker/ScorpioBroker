@@ -103,7 +103,7 @@ public class RegistryController {
 		}
 		return csourceService.retrieveRegistration(HttpUtils.getTenant(request), registrationId).onItem()
 				.transform(entity -> {
-					return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, entity, null, null);
+					return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, entity, null, null,null);
 				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
 	}
