@@ -1,6 +1,7 @@
 package eu.neclab.ngsildbroker.queryhandler.repository;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -11,9 +12,11 @@ import javax.inject.Singleton;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
@@ -31,15 +34,45 @@ public class QueryDAO {
 	@Inject
 	ClientManager clientManager;
 
-	public Uni<Map<String, Object>> getEntity(String entryId, String tenantId) {
+	public Uni<Map<String, Object>> getEntity(String entryId, String tenantId, AttrsQueryTerm attrsQuery,
+			LanguageQueryTerm lang) {
 		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
-			return client.preparedQuery("SELECT ENTITY FROM ENTITY WHERE E_ID=$1").execute(Tuple.of(entryId)).onItem()
-					.transformToUni(t -> {
-						if (t.rowCount() == 0) {
-							return Uni.createFrom().item(new HashMap<String, Object>());
-						}
-						return Uni.createFrom().item(t.iterator().next().getJsonObject(0).getMap());
-					});
+			String sql = "";
+			if (lang != null) {
+				sql += "WITH a as (";
+			}
+			sql += "SELECT ";
+			int dollar = 1;
+			List<Object> tupleItems = Lists.newArrayList();
+			if (attrsQuery != null) {
+				sql += "jsonb_strip_nulls(jsonb_build_object('" + NGSIConstants.JSON_LD_ID + "', ENTTIY->"
+						+ NGSIConstants.JSON_LD_ID + ", '" + NGSIConstants.JSON_LD_TYPE + "', ENTTIY->"
+						+ NGSIConstants.JSON_LD_TYPE + ", '" + NGSIConstants.NGSI_LD_CREATED_AT + "', ENTTIY->"
+						+ NGSIConstants.NGSI_LD_CREATED_AT + ", '" + NGSIConstants.NGSI_LD_MODIFIED_AT + "', ENTTIY->"
+						+ NGSIConstants.NGSI_LD_MODIFIED_AT + ", ";
+				Iterator<String> it = attrsQuery.getAttrs().iterator();
+				while (it.hasNext()) {
+					sql += "'$" + dollar + "', ENTITY->$" + dollar;
+					dollar++;
+					tupleItems.add(it.next());
+					if (it.hasNext()) {
+						sql += ", ";
+					}
+				}
+
+				sql += ")) AS ENTITY";
+			} else {
+				sql += "ENTITY";
+			}
+
+			sql += " FROM ENTITY WHERE E_ID=$" + dollar;
+			tupleItems.add(entryId);
+			return client.preparedQuery(sql).execute(Tuple.from(tupleItems)).onItem().transformToUni(t -> {
+				if (t.rowCount() == 0) {
+					return Uni.createFrom().item(new HashMap<String, Object>());
+				}
+				return Uni.createFrom().item(t.iterator().next().getJsonObject(0).getMap());
+			});
 		});
 
 	}
@@ -53,7 +86,7 @@ public class QueryDAO {
 	}
 
 	public Uni<RowSet<Row>> queryLocalOnly(String tenantId, Set<String> ids, TypeQueryTerm typeQuery, String idPattern,
-			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, int limit,
+			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, int limit,
 			int offSet, boolean count) {
 		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
 			StringBuilder query = new StringBuilder("WITH ");

@@ -457,7 +457,11 @@ public class SubscriptionTools {
 		for (Tuple4<String, String, String, String> subTuple: subTuples) {
 			Tuple4<String, String, String, String> bestFit;
 			for(Tuple4<String, String, String, String> regTuple: regTuples) {
+				String id, idpattern, type, attribname;
 				
+				if(regTuple.getItem1() == null || (regTuple.getItem1() != null && subTuple.getItem1() == null) && regTuple.getItem1().equals(subTuple.getItem1())) {
+					id = subTuple.getItem1();
+				}//else if(subTuple.getItem1())
 			}
 		}
 	}

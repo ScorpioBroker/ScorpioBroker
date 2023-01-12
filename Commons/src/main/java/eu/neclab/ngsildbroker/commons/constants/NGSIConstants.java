@@ -337,4 +337,6 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_NOTIFIED_AT_SHORT = "notifiedAt";
 	public static final String NGSI_LD_DATA_SHORT = "data";
 	public static final String NGSI_LD_TRIGGER_REASON_SHORT = "triggerReason";
+	public static final String NGSI_LD_GEO_QUERY_SHORT = "geoQ";
+	public static final String QUERY_PARAMETER_LANG = "lang";
 }

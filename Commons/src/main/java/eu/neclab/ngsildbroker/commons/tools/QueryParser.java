@@ -22,12 +22,14 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.AggrTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TemporalQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import io.smallrye.mutiny.tuples.Tuple2;
 
 public class QueryParser {
 	// Query = (QueryTerm / QueryTermAssoc) *(logicalOp (QueryTerm /
@@ -416,4 +418,39 @@ public class QueryParser {
 		return new TemporalQueryTerm(timeProperty, timeRel, timeAt, endTimeAt);
 	}
 
+	public static LanguageQueryTerm parseLangQuery(String langString) throws ResponseException {
+		if (langString == null || langString.equals("*")) {
+			return null;
+		}
+		LanguageQueryTerm result = new LanguageQueryTerm();
+		String[] langPairs = langString.split(";");
+
+		for (int i = 0; i < langPairs.length; i++) {
+			Float q = 1.0f;
+			if (i + 1 < langPairs.length) {
+				String[] tmp = langPairs[i + 1].split(",");
+				if (!tmp[0].startsWith("q=")) {
+					throw new ResponseException(ErrorType.InvalidRequest,
+							"syntax error in the lang query. looks like there is a q missing");
+				} else {
+					q = Float.parseFloat(tmp[0].substring(2));
+					langPairs[i + 1] = langPairs[i + 1].substring(tmp[0].length());
+				}
+			}
+			String[] tmp = langPairs[i].split(",");
+			if (!tmp[0].isEmpty()) {
+				result.addTuple(Tuple2.of(Set.of(tmp), q));
+			}
+		}
+		if (result.getEntries().size() == 1 && result.getEntries().get(0).getItem1().size() == 1
+				&& result.getEntries().get(0).getItem1().contains("*")) {
+			return null;
+		}
+		result.sort();
+		return result;
+	}
+
+	public static void main(String[] args) {
+		System.out.println("".split(",").length);
+	}
 }

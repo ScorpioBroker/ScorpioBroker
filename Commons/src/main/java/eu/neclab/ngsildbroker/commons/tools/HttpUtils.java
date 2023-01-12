@@ -939,4 +939,10 @@ public final class HttpUtils {
 		return null;
 	}
 
+	public static RestResponse<Object> generateQueryResult(QueryResult queryResult, String options,
+			String geometryProperty, int acceptHeader, Context context) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }

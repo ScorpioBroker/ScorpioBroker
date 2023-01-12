@@ -26,6 +26,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
@@ -71,10 +72,10 @@ public class QueryService {
 
 	public Uni<QueryResult> query(String tenant, Set<String> id, TypeQueryTerm typeQuery, String idPattern,
 			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, CSFQueryTerm csf, GeoQueryTerm geoQuery,
-			ScopeQueryTerm scopeQuery, String lang, int limit, int offSet, boolean count, boolean localOnly,
-			Context context) {
+			ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, int limit, int offSet, boolean count,
+			boolean localOnly, Context context) {
 		Uni<QueryResult> localQuery = queryDAO.queryLocalOnly(tenant, id, typeQuery, idPattern, attrsQuery, qQuery,
-				geoQuery, scopeQuery, limit, offSet, count).onItem().transform(rows -> {
+				geoQuery, scopeQuery, langQuery, limit, offSet, count).onItem().transform(rows -> {
 					QueryResult result = new QueryResult();
 					if (limit == 0 && count) {
 						result.setCount(rows.iterator().next().getLong(0));
@@ -398,8 +399,8 @@ public class QueryService {
 	}
 
 	public Uni<Map<String, Object>> retrieveEntity(Context context, String tenant, String entityId,
-			AttrsQueryTerm attrsQuery, String lang, boolean localOnly) {
-		Uni<Map<String, Object>> getEntity = queryDAO.getEntity(entityId, tenant);
+			AttrsQueryTerm attrsQuery, LanguageQueryTerm lang, boolean localOnly) {
+		Uni<Map<String, Object>> getEntity = queryDAO.getEntity(entityId, tenant, attrsQuery, lang);
 		Uni<Map<String, Object>> getRemoteEntities;
 		if (localOnly) {
 			getRemoteEntities = Uni.createFrom().item(new HashMap<String, Object>(0));
@@ -552,33 +553,4 @@ public class QueryService {
 		});
 
 	}
-
-	public Uni<List<QueryResult>> postQuery(String tenant, List<Map<String, Object>> entities, String lang, int limit,
-			int offSet, boolean count, boolean localOnly, Context context) {
-		List<Uni<QueryResult>> listResults = new ArrayList<>();
-		for (Map<String, Object> entity : entities) {
-			Set<String> ids = new HashSet<>();
-			if (entity.get("id") instanceof List<?> idList) {
-				ids.addAll((List<String>) idList);
-			} else
-				ids.add((String) entity.get("id"));
-			TypeQueryTerm typeQueryTerm = new TypeQueryTerm(context);
-			typeQueryTerm.setType((String) entity.get("type"));
-			AttrsQueryTerm attrsQueryTerm = new AttrsQueryTerm(context);
-			attrsQueryTerm.addAttr((String) entity.get("attrs"));
-			QQueryTerm qQueryTerm = new QQueryTerm(context);
-			CSFQueryTerm csfQueryTerm = new CSFQueryTerm(context);
-			GeoQueryTerm geoQueryTerm = new GeoQueryTerm(context);
-			geoQueryTerm.setGeometry((String) entity.get("Geometry"));
-			ScopeQueryTerm scopeQueryTerm = new ScopeQueryTerm();
-			scopeQueryTerm.setScopeLevels(((String) entity.get("scopeQ")).split(","));
-
-			listResults.add(query(tenant, ids, typeQueryTerm, (String) entity.get("idPattern"), attrsQueryTerm,
-					qQueryTerm, csfQueryTerm, geoQueryTerm, scopeQueryTerm, lang, limit, offSet, count, localOnly,
-					context));
-
-		}
-		return Uni.join().all(listResults).andCollectFailures();
-	}
-
 }
