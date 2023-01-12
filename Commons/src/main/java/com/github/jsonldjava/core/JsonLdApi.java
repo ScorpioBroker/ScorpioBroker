@@ -218,7 +218,7 @@ public class JsonLdApi {
 			boolean isProperty = false;
 			boolean isRelationship = false;
 			boolean isLanguageProperty = false;
-			for (final String expandedProperty : keys) {
+			for (String expandedProperty : keys) {
 
 				Object expandedValue = elem.get(expandedProperty);
 				// 7.1)
@@ -258,7 +258,7 @@ public class JsonLdApi {
 						switch (((List<String>) expandedValue).get(0)) {
 						case NGSIConstants.NGSI_LD_PROPERTY:
 							isProperty = true;
-							
+
 						case NGSIConstants.NGSI_LD_GEOPROPERTY:
 							isGeoProperty = true;
 							break;
@@ -269,7 +269,7 @@ public class JsonLdApi {
 							isRelationship = true;
 							break;
 						}
-						if (keyValue || concise){
+						if (keyValue || concise) {
 							continue;
 						}
 
@@ -282,10 +282,14 @@ public class JsonLdApi {
 					// isArray(compactedValue)
 					// && ((List<Object>) expandedValue).size() == 0);
 				}
-				if (langQuery != null && isLanguageProperty && expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP)) {
+				if (langQuery != null && isLanguageProperty
+						&& expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP)) {
 					// do language stuff
 					result.put("type", "Property");
-					for(Tuple2<Set<String>, Float> tuple: langQuery.getEntries()) {
+					boolean found = false;
+					Object defaultLang = null;
+					List<Map<String, Object>> tmp = (List<Map<String, Object>>) expandedValue;
+					for (Tuple2<Set<String>, Float> tuple : langQuery.getEntries()) {
 //						[
 //				          {
 //				            "@value": "Grand Place",
@@ -296,53 +300,93 @@ public class JsonLdApi {
 //				            "@language": "nl"
 //				          }
 //				        ]
-						List<Map<String, Object>> tmp = (List<Map<String, Object>>) expandedValue;
-						for(String lang: tuple.getItem1()) {
-							for(Map<String, Object> entry: tmp) {
-								if(lang.equals("*")) {
-									if(!entry.containsKey(JsonLdConsts.LANGUAGE)) {
-										
-									}
+						Object atLang = null;
+						for (String lang : tuple.getItem1()) {
+							for (Map<String, Object> entry : tmp) {
+								atLang = entry.get(JsonLdConsts.LANGUAGE);
+								if (atLang == null) {
+									defaultLang = atLang;
+								}
+								if ((lang.equals("*") && atLang == null) || lang.equals(atLang)) {
+									expandedValue = List.of(Map.of(JsonLdConsts.VALUE, entry.get(JsonLdConsts.VALUE)));
+									found = true;
+									break;
 								}
 							}
-							if(lang.equals("*")) {
-								
+							if (found) {
+								if (atLang != null) {
+									result.put("lang", atLang);
+								}
+								break;
+							}
+							if (lang.equals("*") && !found) {
+								expandedValue = List.of(Map.of(JsonLdConsts.VALUE, tmp.get(0).get(JsonLdConsts.VALUE)));
+								found = true;
+								break;
 							}
 						}
-						
+						if (found) {
+							break;
+						}
 					}
+					if (!found) {
+						expandedValue = defaultLang;
+						if (expandedValue == null) {
+							expandedValue = List.of(Map.of(JsonLdConsts.VALUE, tmp.get(0).get(JsonLdConsts.VALUE)));
+						}
+					}
+					expandedProperty = NGSIConstants.NGSI_LD_HAS_VALUE;
 					isProperty = true;
 					isLanguageProperty = false;
 				}
 				if (keyValue) {
 					if (isProperty || isGeoProperty) {
-						if(expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_VALUE)) {
-							return compact(activeCtx, activeProperty, expandedValue, compactArrays, endPoint, null, null);
-						}else {
+						if (expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_VALUE)) {
+							return compact(activeCtx, activeProperty, expandedValue, compactArrays, endPoint, null,
+									null);
+						} else {
 							continue;
 						}
 					} else if (isRelationship) {
-						if(expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_OBJECT)) {
-							return compact(activeCtx, activeProperty, expandedValue, compactArrays, endPoint, null, null);
-						}else {
+						if (expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_OBJECT)) {
+							return compact(activeCtx, activeProperty, expandedValue, compactArrays, endPoint, null,
+									null);
+						} else {
 							continue;
 						}
 					} else if (isLanguageProperty) {
-						if(expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP)) {
-							return compact(activeCtx, activeProperty, expandedValue, compactArrays, endPoint, null, null);
-						}else {
+						if (expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP)) {
+							return compact(activeCtx, activeProperty, expandedValue, compactArrays, endPoint, null,
+									null);
+						} else {
 							continue;
 						}
 					}
 				} else if (concise) {
-					if (isProperty) {
-						
-					} else if (isRelationship) {
+					if (expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_VALUE)
+							|| expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP)
+							|| expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_OBJECT)
+							|| expandedProperty.equals(NGSIConstants.NGSI_LD_OBSERVED_AT)
+							|| expandedProperty.equals(NGSIConstants.NGSI_LD_MODIFIED_AT)
+							|| expandedProperty.equals(NGSIConstants.NGSI_LD_CREATED_AT)
+							|| expandedProperty.equals(NGSIConstants.NGSI_LD_SCOPE)) {
 
-					} else if (isGeoProperty) {
+					} else if (expandedValue instanceof List && ((List) expandedValue).get(0) instanceof Map
+							&& ((List<Map>) expandedValue).get(0).containsKey(NGSIConstants.JSON_LD_TYPE)) {
+						String tmp = ((List<String>) ((List<Map>) expandedValue).get(0).get(NGSIConstants.JSON_LD_TYPE))
+								.get(0);
 
-					} else if (isLanguageProperty) {
-
+						switch (tmp) {
+						case NGSIConstants.NGSI_LD_PROPERTY:
+						case NGSIConstants.NGSI_LD_RELATIONSHIP:
+						case NGSIConstants.NGSI_LD_GEOPROPERTY:
+						case NGSIConstants.NGSI_LD_LANGPROPERTY:
+							break;
+						default:
+							continue;
+						}
+					} else {
+						continue;
 					}
 				}
 				// 7.2)
@@ -438,10 +482,8 @@ public class JsonLdApi {
 					}
 				}
 
-
 				// 7.6)
 				for (final Object expandedItem : (List<Object>) expandedValue) {
-
 
 					// 7.6.1)
 					final String itemActiveProperty = activeCtx.compactIri(expandedProperty, expandedItem, true,
@@ -570,6 +612,10 @@ public class JsonLdApi {
 				}
 			}
 			// 8)
+			if (concise && result.size() == 1 && result.containsKey("value")) {
+				return result.get("value");
+			}
+
 			if (listResult.isEmpty()) {
 				return result;
 			} else {
