@@ -49,6 +49,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.results.Attrib;
 import eu.neclab.ngsildbroker.commons.datatypes.results.CRUDSuccess;
 import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import io.smallrye.mutiny.Uni;
@@ -731,7 +732,7 @@ public final class HttpUtils {
 	}
 
 	public static RestResponse<Object> generateEntityResult(List<Object> contextHeader, Context context,
-			int acceptHeader, Map<String, Object> entity, String geometryProperty, Set<String> options) {
+			int acceptHeader, Map<String, Object> entity, String geometryProperty, Set<String> options, LanguageQueryTerm langQuery) {
 		String replyBody;
 		String contentType;
 		Object result;
@@ -761,7 +762,7 @@ public final class HttpUtils {
 		case 2:
 			try {
 				// todo add options to compact
-				compacted = JsonLdProcessor.compact(entity, contextHeader, context, opts, -1);
+				compacted = JsonLdProcessor.compact(entity, contextHeader, context, opts, -1, options, langQuery);
 			} catch (Exception e) {
 				return handleControllerExceptions(e);
 			}

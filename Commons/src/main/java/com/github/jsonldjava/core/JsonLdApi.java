@@ -26,6 +26,7 @@ import com.github.jsonldjava.utils.Obj;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 
@@ -117,6 +118,10 @@ public class JsonLdApi {
 			this.context = this.context.parse(context, false);
 		}
 	}
+//	public Object compact(Context activeCtx, String activeProperty, Object element, boolean compactArrays, int endPoint)
+//			throws JsonLdError {
+//		return compact(activeCtx, activeProperty, element, compactArrays, endPoint, null, null);
+//	}
 
 	/***
 	 * ____ _ _ _ _ _ _ / ___|___ _ __ ___ _ __ __ _ ___| |_ / \ | | __ _ ___ _
@@ -136,11 +141,13 @@ public class JsonLdApi {
 	 * @param activeProperty The Active Property
 	 * @param element        The current element
 	 * @param compactArrays  True to compact arrays.
+	 * @param langQuery
+	 * @param options
 	 * @return The compacted JSON-LD object.
 	 * @throws JsonLdError If there was an error during compaction.
 	 */
-	public Object compact(Context activeCtx, String activeProperty, Object element, boolean compactArrays, int endPoint)
-			throws JsonLdError {
+	public Object compact(Context activeCtx, String activeProperty, Object element, boolean compactArrays, int endPoint,
+			Set<String> options, LanguageQueryTerm langQuery) throws JsonLdError {
 		// 2)
 		if (element instanceof List) {
 			// 2.1)
@@ -148,7 +155,8 @@ public class JsonLdApi {
 			// 2.2)
 			for (final Object item : (List<Object>) element) {
 				// 2.2.1)
-				final Object compactedItem = compact(activeCtx, activeProperty, item, compactArrays, endPoint);
+				final Object compactedItem = compact(activeCtx, activeProperty, item, compactArrays, endPoint, options,
+						langQuery);
 				// 2.2.2)
 				if (compactedItem != null) {
 					final boolean isList = (compactedItem instanceof Map
@@ -177,7 +185,9 @@ public class JsonLdApi {
 		if (element instanceof Map) {
 			// access helper
 			final Map<String, Object> elem = (Map<String, Object>) element;
-
+			boolean removeSysAttrs = options == null
+					|| !options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_SYSATTRS);
+			boolean keyValue = options != null && options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_KEYVALUES);
 			// 4
 			if (elem.containsKey(JsonLdConsts.VALUE) || elem.containsKey(JsonLdConsts.ID)) {
 				final Object compactedValue = activeCtx.compactValue(activeProperty, elem);
@@ -205,6 +215,10 @@ public class JsonLdApi {
 
 				Object expandedValue = elem.get(expandedProperty);
 				// 7.1)
+				if (removeSysAttrs && (NGSIConstants.NGSI_LD_CREATED_AT.equals(expandedProperty)
+						|| NGSIConstants.NGSI_LD_MODIFIED_AT.equals(expandedProperty))) {
+					continue;
+				}
 				if (JsonLdConsts.ID.equals(expandedProperty) || JsonLdConsts.TYPE.equals(expandedProperty)) {
 					// TODO: Relabel these step numbers when spec changes
 					// 7.1.3)
@@ -292,7 +306,7 @@ public class JsonLdApi {
 				if (JsonLdConsts.REVERSE.equals(expandedProperty)) {
 					// 7.2.1)
 					final Map<String, Object> compactedValue = (Map<String, Object>) compact(activeCtx,
-							JsonLdConsts.REVERSE, expandedValue, compactArrays, endPoint);
+							JsonLdConsts.REVERSE, expandedValue, compactArrays, endPoint, options, langQuery);
 
 					// 7.2.2)
 					// Note: Must create a new set to avoid modifying the set we
@@ -399,7 +413,7 @@ public class JsonLdApi {
 
 					// 7.6.3)
 					Object compactedItem = compact(activeCtx, itemActiveProperty, isList ? list : expandedItem,
-							compactArrays, endPoint);
+							compactArrays, endPoint, options, langQuery);
 
 					// 7.6.4)
 					if (isList) {
@@ -544,7 +558,7 @@ public class JsonLdApi {
 	 * @throws JsonLdError If there was an error during compaction.
 	 */
 	public Object compact(Context activeCtx, String activeProperty, Object element) throws JsonLdError {
-		return compact(activeCtx, activeProperty, element, JsonLdOptions.DEFAULT_COMPACT_ARRAYS, -1);
+		return compact(activeCtx, activeProperty, element, JsonLdOptions.DEFAULT_COMPACT_ARRAYS, -1, null, null);
 	}
 
 	/***
@@ -929,42 +943,42 @@ public class JsonLdApi {
 					continue;
 				} else {
 					switch (payloadType) {
-						case AppConstants.ENTITY_CREATE_PAYLOAD:
-						case AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD:
-						case AppConstants.ENTITY_UPDATE_PAYLOAD:
-						case AppConstants.ENTITY_RETRIEVED_PAYLOAD:
-						case AppConstants.TEMP_ENTITY_CREATE_PAYLOAD:
-						case AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD:
-						case AppConstants.TEMP_ENTITY_RETRIEVED_PAYLOAD:
-							if (NGSIConstants.NGSI_LD_HAS_VALUE.equals(expandedProperty)) {
-								ngsiElement.setHasAtValue(true);
-							} else if (NGSIConstants.NGSI_LD_HAS_OBJECT.equals(expandedProperty)) {
-								ngsiElement.setHasAtObject(true);
-							} else if (NGSIConstants.NGSI_LD_DATE_TIME.equals(expandedProperty)) {
-								ngsiElement.setDateTime(true);
-							}
-							break;
-						case AppConstants.SUBSCRIPTION_CREATE_PAYLOAD:
-						case AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD:
-							ngsiElement.resetSubscriptionVars();
-							if (NGSIConstants.NGSI_LD_ENTITIES.equals(expandedProperty)) {
-								ngsiElement.setEntities(true);
-							} else if (NGSIConstants.NGSI_LD_GEO_QUERY.equals(expandedProperty)) {
-								ngsiElement.setGeoQ(true);
-							} else if (NGSIConstants.NGSI_LD_NOTIFICATION.equals(expandedProperty)) {
-								ngsiElement.setNotificationEntry(true);
-							} else if (NGSIConstants.NGSI_LD_TEMPORAL_QUERY.equals(expandedProperty)) {
-								ngsiElement.setTemporalQ(true);
-							} else if (NGSIConstants.NGSI_LD_ENDPOINT.equals(expandedProperty)) {
-								ngsiElement.setEndpoint(true);
-							} else if (NGSIConstants.NGSI_LD_NOTIFIERINFO.equals(expandedProperty)) {
-								ngsiElement.setNotifierInfo(true);
-							} else if (NGSIConstants.NGSI_LD_RECEIVERINFO.equals(expandedProperty)) {
-								ngsiElement.setReceiverInfo(true);
-							}
-							break;
-						default:
-							break;
+					case AppConstants.ENTITY_CREATE_PAYLOAD:
+					case AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD:
+					case AppConstants.ENTITY_UPDATE_PAYLOAD:
+					case AppConstants.ENTITY_RETRIEVED_PAYLOAD:
+					case AppConstants.TEMP_ENTITY_CREATE_PAYLOAD:
+					case AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD:
+					case AppConstants.TEMP_ENTITY_RETRIEVED_PAYLOAD:
+						if (NGSIConstants.NGSI_LD_HAS_VALUE.equals(expandedProperty)) {
+							ngsiElement.setHasAtValue(true);
+						} else if (NGSIConstants.NGSI_LD_HAS_OBJECT.equals(expandedProperty)) {
+							ngsiElement.setHasAtObject(true);
+						} else if (NGSIConstants.NGSI_LD_DATE_TIME.equals(expandedProperty)) {
+							ngsiElement.setDateTime(true);
+						}
+						break;
+					case AppConstants.SUBSCRIPTION_CREATE_PAYLOAD:
+					case AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD:
+						ngsiElement.resetSubscriptionVars();
+						if (NGSIConstants.NGSI_LD_ENTITIES.equals(expandedProperty)) {
+							ngsiElement.setEntities(true);
+						} else if (NGSIConstants.NGSI_LD_GEO_QUERY.equals(expandedProperty)) {
+							ngsiElement.setGeoQ(true);
+						} else if (NGSIConstants.NGSI_LD_NOTIFICATION.equals(expandedProperty)) {
+							ngsiElement.setNotificationEntry(true);
+						} else if (NGSIConstants.NGSI_LD_TEMPORAL_QUERY.equals(expandedProperty)) {
+							ngsiElement.setTemporalQ(true);
+						} else if (NGSIConstants.NGSI_LD_ENDPOINT.equals(expandedProperty)) {
+							ngsiElement.setEndpoint(true);
+						} else if (NGSIConstants.NGSI_LD_NOTIFIERINFO.equals(expandedProperty)) {
+							ngsiElement.setNotifierInfo(true);
+						} else if (NGSIConstants.NGSI_LD_RECEIVERINFO.equals(expandedProperty)) {
+							ngsiElement.setReceiverInfo(true);
+						}
+						break;
+					default:
+						break;
 					}
 				}
 
@@ -1809,16 +1823,16 @@ public class JsonLdApi {
 		}
 		if (value instanceof String) {
 			switch ((String) value) {
-				case "@always":
-					return Embed.ALWAYS;
-				case "@never":
-					return Embed.NEVER;
-				case "@last":
-					return Embed.LAST;
-				case "@link":
-					return Embed.LINK;
-				default:
-					throw new JsonLdError(JsonLdError.Error.INVALID_EMBED_VALUE);
+			case "@always":
+				return Embed.ALWAYS;
+			case "@never":
+				return Embed.NEVER;
+			case "@last":
+				return Embed.LAST;
+			case "@link":
+				return Embed.LINK;
+			default:
+				throw new JsonLdError(JsonLdError.Error.INVALID_EMBED_VALUE);
 			}
 		}
 		throw new JsonLdError(JsonLdError.Error.INVALID_EMBED_VALUE);

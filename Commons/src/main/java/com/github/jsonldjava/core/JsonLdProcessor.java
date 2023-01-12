@@ -7,11 +7,13 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.github.jsonldjava.core.JsonLdError.Error;
 import com.github.jsonldjava.impl.NQuadRDFParser;
 import com.github.jsonldjava.impl.NQuadTripleCallback;
 
+import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 
@@ -70,21 +72,28 @@ public class JsonLdProcessor {
 		return compact(input, context, activeCtx, opts, -1);
 	}
 
+	public static Map<String, Object> compact(Object input, Object context, Context activeCtx, JsonLdOptions opts,
+			int endPoint) throws JsonLdError, ResponseException {
+		return compact(input, context, activeCtx, opts, endPoint, null, null);
+	}
+
 	/**
 	 * Compacts the given input using the context according to the steps in the
 	 * <a href="http://www.w3.org/TR/json-ld-api/#compaction-algorithm"> Compaction
 	 * algorithm</a>.
 	 *
-	 * @param input   The input JSON-LD object.
-	 * @param context The context object to use for the compaction algorithm.
-	 * @param opts    The {@link JsonLdOptions} that are to be sent to the
-	 *                compaction algorithm.
+	 * @param input     The input JSON-LD object.
+	 * @param context   The context object to use for the compaction algorithm.
+	 * @param opts      The {@link JsonLdOptions} that are to be sent to the
+	 *                  compaction algorithm.
+	 * @param langQuery
+	 * @param options
 	 * @return The compacted JSON-LD document
 	 * @throws JsonLdError       If there is an error while compacting.
 	 * @throws ResponseException
 	 */
 	public static Map<String, Object> compact(Object input, Object context, Context activeCtx, JsonLdOptions opts,
-			int endPoint) throws JsonLdError, ResponseException {
+			int endPoint, Set<String> options, LanguageQueryTerm langQuery) throws JsonLdError, ResponseException {
 		// 1)
 		// TODO: look into java futures/promises
 
@@ -100,7 +109,8 @@ public class JsonLdProcessor {
 		 */
 
 		// 8)
-		Object compacted = new JsonLdApi(opts).compact(activeCtx, null, expanded, opts.getCompactArrays(), endPoint);
+		Object compacted = new JsonLdApi(opts).compact(activeCtx, null, expanded, opts.getCompactArrays(), endPoint,
+				options, langQuery);
 
 		// final step of Compaction Algorithm
 		// TODO: SPEC: the result result is a NON EMPTY array,
@@ -312,7 +322,8 @@ public class JsonLdProcessor {
 			Context activeCtx = new Context(opts);
 			activeCtx = activeCtx.parse(context, false);
 			// TODO: only instantiate one jsonldapi
-			Object compacted = new JsonLdApi(opts).compact(activeCtx, null, flattened, opts.getCompactArrays(), -1);
+			Object compacted = new JsonLdApi(opts).compact(activeCtx, null, flattened, opts.getCompactArrays(), -1,
+					null, null);
 			if (!(compacted instanceof List)) {
 				final List<Object> tmp = new ArrayList<Object>();
 				tmp.add(compacted);
@@ -386,7 +397,7 @@ public class JsonLdProcessor {
 		if (opts.getPruneBlankNodeIdentifiers()) {
 			JsonLdUtils.pruneBlankNodes(framed);
 		}
-		Object compacted = api.compact(activeCtx, null, framed, opts.getCompactArrays(), -1);
+		Object compacted = api.compact(activeCtx, null, framed, opts.getCompactArrays(), -1, null, null);
 		final Map<String, Object> rval = activeCtx.serialize();
 		final boolean addGraph = ((!(compacted instanceof List)) && !opts.getOmitGraph());
 		if (addGraph && !(compacted instanceof List)) {

@@ -34,13 +34,9 @@ public class QueryDAO {
 	@Inject
 	ClientManager clientManager;
 
-	public Uni<Map<String, Object>> getEntity(String entryId, String tenantId, AttrsQueryTerm attrsQuery,
-			LanguageQueryTerm lang) {
+	public Uni<Map<String, Object>> getEntity(String entryId, String tenantId, AttrsQueryTerm attrsQuery) {
 		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
 			String sql = "";
-			if (lang != null) {
-				sql += "WITH a as (";
-			}
 			sql += "SELECT ";
 			int dollar = 1;
 			List<Object> tupleItems = Lists.newArrayList();
@@ -64,7 +60,6 @@ public class QueryDAO {
 			} else {
 				sql += "ENTITY";
 			}
-
 			sql += " FROM ENTITY WHERE E_ID=$" + dollar;
 			tupleItems.add(entryId);
 			return client.preparedQuery(sql).execute(Tuple.from(tupleItems)).onItem().transformToUni(t -> {

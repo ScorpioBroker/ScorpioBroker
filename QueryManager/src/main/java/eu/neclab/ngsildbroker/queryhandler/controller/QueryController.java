@@ -101,7 +101,7 @@ public class QueryController {
 				.onItem().transform(entity -> {
 
 					return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, entity,
-							geometryProperty, options);
+							geometryProperty, options, langQuery);
 				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 

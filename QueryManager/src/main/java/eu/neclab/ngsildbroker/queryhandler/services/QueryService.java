@@ -400,7 +400,7 @@ public class QueryService {
 
 	public Uni<Map<String, Object>> retrieveEntity(Context context, String tenant, String entityId,
 			AttrsQueryTerm attrsQuery, LanguageQueryTerm lang, boolean localOnly) {
-		Uni<Map<String, Object>> getEntity = queryDAO.getEntity(entityId, tenant, attrsQuery, lang);
+		Uni<Map<String, Object>> getEntity = queryDAO.getEntity(entityId, tenant, attrsQuery);
 		Uni<Map<String, Object>> getRemoteEntities;
 		if (localOnly) {
 			getRemoteEntities = Uni.createFrom().item(new HashMap<String, Object>(0));
