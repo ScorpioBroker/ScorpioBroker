@@ -168,7 +168,7 @@ public class EntityController {// implements EntityHandlerInterface {
 		Context context;
 		try {
 			HttpUtils.validateUri(entityId);
-			context = JsonLdProcessor.getCoreContextClone().parse(HttpUtils.getAtContextNoUni(request), false);
+			context = JsonLdProcessor.getCoreContextClone().parse(HttpUtils.getAtContext(request), false);
 			attrId = context.expandIri(attrId, false, false, null, null);
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
@@ -196,7 +196,7 @@ public class EntityController {// implements EntityHandlerInterface {
 		Context context;
 		try {
 			HttpUtils.validateUri(entityId);
-			context = JsonLdProcessor.getCoreContextClone().parse(HttpUtils.getAtContextNoUni(request), true);
+			context = JsonLdProcessor.getCoreContextClone().parse(HttpUtils.getAtContext(request), true);
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 		}

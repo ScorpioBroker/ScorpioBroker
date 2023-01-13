@@ -75,8 +75,8 @@ public class HistoryController {
 			@QueryParam(value = "geometryProperty") String geometryProperty,
 			@QueryParam("timeproperty") String timeProperty, @QueryParam("timerel") String timeRel,
 			@QueryParam("timeAt") String timeAt, @QueryParam("endTimeAt") String endTimeAt) {
-		ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
-		int acceptHeader = HttpUtils.parseAcceptHeader(headers.get("Accept"));
+
+		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		if (acceptHeader == -1) {
 			return HttpUtils.INVALID_HEADER;
 		}
@@ -91,7 +91,7 @@ public class HistoryController {
 		TemporalQueryTerm tempQuery;
 		try {
 			HttpUtils.validateUri(entityId);
-			headerContext = HttpUtils.getAtContextNoUni(request);
+			headerContext = HttpUtils.getAtContext(request);
 			context = JsonLdProcessor.getCoreContextClone().parse(headerContext, false);
 			attrsQuery = QueryParser.parseAttrs(attrs, context);
 			aggrQuery = QueryParser.parseAggrTerm(aggrMethods, aggrPeriodDuration);
@@ -99,10 +99,10 @@ public class HistoryController {
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 		}
-		return historyQueryService.retrieveEntity(HttpUtils.getTenant(request), entityId, attrsQuery, aggrQuery, tempQuery, lang,
-				lastN.intValue(), localOnly, context).onItem().transform(entity -> {
+		return historyQueryService.retrieveEntity(HttpUtils.getTenant(request), entityId, attrsQuery, aggrQuery,
+				tempQuery, lang, lastN.intValue(), localOnly, context).onItem().transform(entity -> {
 					return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, entity,
-							geometryProperty, Sets.newHashSet(optionsString.split(",")));
+							geometryProperty, optionsString, null);
 				});
 
 	}

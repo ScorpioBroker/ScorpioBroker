@@ -40,6 +40,7 @@ import com.github.jsonldjava.core.RDFDatasetUtils;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.net.HttpHeaders;
 
@@ -54,6 +55,7 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
+import io.vertx.codegen.annotations.Nullable;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.impl.headers.HeadersMultiMap;
@@ -72,7 +74,8 @@ public final class HttpUtils {
 	private static final Logger logger = LoggerFactory.getLogger(HttpUtils.class);
 	public static final Uni<RestResponse<Object>> INVALID_HEADER = Uni.createFrom()
 			.item(HttpUtils.handleControllerExceptions(
-					new ResponseException(ErrorType.NotAcceptable, "Provided accept types are not supported")));;
+					new ResponseException(ErrorType.NotAcceptable, "Provided accept types are not supported")));
+	private static final String CORE_CONTEXT_URL_LINK = null;;
 	/** Timeout for all requests to respond. */
 
 	private static Pattern headerPattern = Pattern.compile(
@@ -107,70 +110,6 @@ public final class HttpUtils {
 		}
 		return false;
 
-	}
-
-	public static Uni<List<Object>> getAtContext(HttpServerRequest req) {
-
-		return parseLinkHeader(req, NGSIConstants.HEADER_REL_LDCONTEXT);
-	}
-
-	public static Uni<List<Object>> parseLinkHeader(HttpServerRequest req, String headerRelLdcontext) {
-		return parseLinkHeader(req.headers().getAll("Link"), headerRelLdcontext);
-	}
-
-	public static List<Object> parseLinkHeaderNoUni(List<String> rawLinks, String headerRelLdcontext) {
-		ArrayList<Object> result = new ArrayList<Object>();
-		if (rawLinks != null) {
-
-			Iterator<String> it = rawLinks.iterator();
-			while (it.hasNext()) {
-				String[] rawLinkInfos = it.next().split(";");
-				boolean isWantedRel = false;
-				for (String rawLinkInfo : rawLinkInfos) {
-					if (rawLinkInfo.trim().startsWith("rel=")) {
-						String[] relInfo = rawLinkInfo.trim().split("=");
-						if (relInfo.length == 2 && (relInfo[1].equalsIgnoreCase(headerRelLdcontext)
-								|| relInfo[1].equalsIgnoreCase("\"" + headerRelLdcontext + "\""))) {
-							isWantedRel = true;
-						}
-						break;
-					}
-				}
-				if (isWantedRel) {
-					String rawLink = rawLinkInfos[0];
-					if (rawLink.trim().startsWith("<")) {
-						rawLink = rawLink.substring(rawLink.indexOf("<") + 1, rawLink.indexOf(">"));
-					}
-					result.add(rawLink);
-				}
-
-			}
-		}
-		return result;
-	}
-
-	public static List<Object> getAtContextNoUni(HttpServerRequest request) {
-		return parseLinkHeaderNoUni(request.headers().getAll("Link"), NGSIConstants.HEADER_REL_LDCONTEXT);
-	}
-
-	public static Uni<List<Object>> parseLinkHeader(List<String> rawLinks, String headerRelLdcontext) {
-		return Uni.createFrom().item(parseLinkHeaderNoUni(rawLinks, headerRelLdcontext));
-
-	}
-
-	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, Object reply, int endPoint) {
-		return generateReply(request, reply, ArrayListMultimap.create(), endPoint);
-
-	}
-
-	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, Object reply,
-			ArrayListMultimap<String, String> additionalHeaders, int endPoint) {
-		return generateReply(request, reply, additionalHeaders, null, endPoint);
-	}
-
-	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, Object reply,
-			ArrayListMultimap<String, String> additionalHeaders, List<Object> context, int endPoint) {
-		return generateReply(request, reply, additionalHeaders, context, false, endPoint);
 	}
 
 	public static int parseAcceptHeader(List<String> acceptHeaders) {
@@ -219,152 +158,43 @@ public final class HttpUtils {
 		}
 	}
 
-	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, Object reply,
-			ArrayListMultimap<String, String> additionalHeaders, List<Object> additionalContext,
-			boolean forceArrayResult, int endPoint) {
-		return getAtContext(request).onItem().transform(t -> {
-			List<Object> result = Lists.newArrayList();
+	public static List<Object> parseLinkHeaderNoUni(List<String> rawLinks, String headerRelLdcontext) {
+		ArrayList<Object> result = new ArrayList<Object>();
+		if (rawLinks != null) {
 
-			if (additionalContext != null) {
-				result.addAll(additionalContext);
-			}
-			if (t != null) {
-				result.addAll(t);
-			}
-			return result;
-		}).onItem().transformToUni(t -> {
-			Context context = JsonLdProcessor.getCoreContextClone().parse(t, true);
-			return generateReply(request, reply, additionalHeaders, context, t, forceArrayResult, endPoint);
-		});
-
-	}
-
-	private static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, String reply,
-			ArrayListMultimap<String, String> additionalHeaders, Context ldContext, List<Object> contextLinks,
-			boolean forceArrayResult, int endPoint) {
-		try {
-			return generateReply(request, JsonUtils.fromString(reply), additionalHeaders, ldContext, contextLinks,
-					forceArrayResult, endPoint);
-		} catch (IOException e) {
-			return Uni.createFrom().failure(e);
-		}
-	}
-
-	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, Object expanded,
-			ArrayListMultimap<String, String> additionalHeaders, Context ldContext, List<Object> contextLinks,
-			boolean forceArrayResult, int endPoint) {
-		return getReplyBody(request.headers().getAll(HttpHeaders.ACCEPT), endPoint, additionalHeaders, expanded,
-				forceArrayResult, ldContext, contextLinks, getGeometry(request)).onItem().transformToUni(t -> {
-					boolean compress = false;
-					String options = request.params().get(NGSIConstants.QUERY_PARAMETER_OPTIONS);
-					if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_COMPRESS)) {
-						compress = true;
+			Iterator<String> it = rawLinks.iterator();
+			while (it.hasNext()) {
+				String[] rawLinkInfos = it.next().split(";");
+				boolean isWantedRel = false;
+				for (String rawLinkInfo : rawLinkInfos) {
+					if (rawLinkInfo.trim().startsWith("rel=")) {
+						String[] relInfo = rawLinkInfo.trim().split("=");
+						if (relInfo.length == 2 && (relInfo[1].equalsIgnoreCase(headerRelLdcontext)
+								|| relInfo[1].equalsIgnoreCase("\"" + headerRelLdcontext + "\""))) {
+							isWantedRel = true;
+						}
+						break;
 					}
-					return generateReply(t, additionalHeaders, compress);
-				});
+				}
+				if (isWantedRel) {
+					String rawLink = rawLinkInfos[0];
+					if (rawLink.trim().startsWith("<")) {
+						rawLink = rawLink.substring(rawLink.indexOf("<") + 1, rawLink.indexOf(">"));
+					}
+					result.add(rawLink);
+				}
 
+			}
+		}
+		return result;
 	}
 
-	private static Uni<String> getReplyBody(List<String> acceptHeader, int endPoint,
-			ArrayListMultimap<String, String> additionalHeaders, Object expanded, boolean forceArrayResult,
-			Context ldContext, List<Object> contextLinks, String geometryProperty) {
-		String replyBody;
-		int sendingContentType = parseAcceptHeader(acceptHeader);
-		Map<String, Object> compacted;
-		try {
-			compacted = JsonLdProcessor.compact(expanded, contextLinks, ldContext, opts, endPoint);
-		} catch (JsonLdError | ResponseException e4) {
-			return Uni.createFrom().failure(e4);
-		}
-		Object context = compacted.get(JsonLdConsts.CONTEXT);
-		Object result;
-		Object graph = compacted.get(JsonLdConsts.GRAPH);
-		if (graph != null) {
-			result = graph;
-		} else {
-			result = compacted;
-		}
-		if (forceArrayResult && !(result instanceof List)) {
-			ArrayList<Object> temp = new ArrayList<Object>();
-			temp.add(result);
-			result = temp;
-		}
-		if (additionalHeaders == null) {
-			additionalHeaders = ArrayListMultimap.create();
-		}
-		switch (sendingContentType) {
-		case 1:
-			additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON);
-			if (result instanceof Map) {
-				((Map) result).remove(JsonLdConsts.CONTEXT);
-			}
-			if (result instanceof List) {
-				List<Map<String, Object>> list = (List<Map<String, Object>>) result;
-				for (Map<String, Object> entry : list) {
-					entry.remove(JsonLdConsts.CONTEXT);
-				}
-			}
-			try {
-				replyBody = JsonUtils.toPrettyString(result);
-			} catch (IOException e3) {
-				return Uni.createFrom().failure(e3);
-			}
-			if (contextLinks != null) {
-				for (Object entry : contextLinks) {
-					if (entry instanceof String) {
-						additionalHeaders.put(com.google.common.net.HttpHeaders.LINK, "<" + entry
-								+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
-					} else {
-						additionalHeaders.put(HttpHeaders.LINK, "<" + getAtContextServing(entry)
-								+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
-					}
+	public static List<Object> getAtContext(HttpServerRequest request) {
+		return parseLinkHeaderNoUni(request.headers().getAll("Link"), NGSIConstants.HEADER_REL_LDCONTEXT);
+	}
 
-				}
-			}
-			break;
-		case 2:
-			additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD);
-			if (result instanceof List) {
-				List<Map<String, Object>> list = (List<Map<String, Object>>) result;
-				for (Map<String, Object> entry : list) {
-					entry.put(JsonLdConsts.CONTEXT, context);
-				}
-			}
-			try {
-				replyBody = JsonUtils.toPrettyString(result);
-			} catch (IOException e2) {
-				return Uni.createFrom().failure(e2);
-			}
-			break;
-		case 3:
-			additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_NQUADS);
-			try {
-				replyBody = RDFDatasetUtils.toNQuads((RDFDataset) JsonLdProcessor.toRDF(result));
-			} catch (JsonLdError | ResponseException e1) {
-				return Uni.createFrom().failure(e1);
-			}
-			break;
-		case 4:// geo+json
-			switch (endPoint) {
-			case AppConstants.QUERY_ENDPOINT:
-				additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_GEO_JSON);
-				try {
-					replyBody = JsonUtils.toPrettyString(generateGeoJson(result, geometryProperty, context));
-				} catch (IOException e) {
-					return Uni.createFrom().failure(e);
-				}
-				break;
-			default:
-				return Uni.createFrom().failure(new ResponseException(ErrorType.NotAcceptable,
-						"Provided accept types " + acceptHeader + " are not supported"));
-			}
-			break;
-		case -1:
-		default:
-			return Uni.createFrom().failure(new ResponseException(ErrorType.NotAcceptable,
-					"Provided accept types " + acceptHeader + " are not supported"));
-		}
-		return Uni.createFrom().item(replyBody);
+	public static Uni<List<Object>> parseLinkHeader(List<String> rawLinks, String headerRelLdcontext) {
+		return Uni.createFrom().item(parseLinkHeaderNoUni(rawLinks, headerRelLdcontext));
 
 	}
 
@@ -396,72 +226,6 @@ public final class HttpUtils {
 		return resultMap;
 	}
 
-	private static String getGeometry(HttpServerRequest request) {
-		String result = request.params().get(NGSIConstants.QUERY_PARAMETER_GEOMETRY_PROPERTY);
-		if (result == null) {
-			return NGSIConstants.NGSI_LD_LOCATION_SHORT;
-		}
-		return result;
-	}
-
-	private static String getAtContextServing(Object entry) {
-		// TODO Auto-generated method stub
-		return "http change this";
-	}
-
-	public static Uni<RestResponse<Object>> generateReply(String replyBody,
-			ArrayListMultimap<String, String> additionalHeaders, boolean compress) {
-		return generateReply(replyBody, additionalHeaders, HttpStatus.SC_OK, compress);
-	}
-
-	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, QueryResult qResult,
-			boolean forceArray, boolean count, Context context, List<Object> contextLinks, int endPoint) {
-		ArrayListMultimap<String, String> additionalHeaders = ArrayListMultimap.create();
-		if (count == true) {
-			additionalHeaders.put(NGSIConstants.COUNT_HEADER_RESULT, String.valueOf(qResult.getCount()));
-		}
-		if (qResult == null || qResult.getData() == null || qResult.getData().size() == 0) {
-			return HttpUtils.generateReply(request, Lists.newArrayList(), additionalHeaders, endPoint);
-		}
-		String nextLink = HttpUtils.generateNextLink(request, qResult);
-		String prevLink = HttpUtils.generatePrevLink(request, qResult);
-		ArrayList<Object> additionalLinks = new ArrayList<Object>();
-		if (nextLink != null) {
-			additionalLinks.add(nextLink);
-		}
-		if (prevLink != null) {
-			additionalLinks.add(prevLink);
-		}
-
-		if (!additionalLinks.isEmpty()) {
-			for (Object entry : additionalLinks) {
-				additionalHeaders.put(HttpHeaders.LINK, (String) entry);
-			}
-		}
-		return HttpUtils.generateReply(request, qResult.getData(), additionalHeaders, context, contextLinks, forceArray,
-				endPoint);
-	}
-
-	public static Uni<RestResponse<Object>> generateReply(String replyBody,
-			ArrayListMultimap<String, String> additionalHeaders, int status, boolean compress) {
-
-		ResponseBuilder<Object> builder = RestResponseBuilderImpl.create(status);
-
-		if (additionalHeaders != null) {
-			for (Entry<String, String> entry : additionalHeaders.entries()) {
-				builder = builder.header(entry.getKey(), entry.getValue());
-			}
-		}
-		Object body;
-		if (compress) {
-			body = zipResult(replyBody);
-			builder = builder.header(HttpHeaders.CONTENT_TYPE, "application/zip");
-		} else {
-			body = replyBody;
-		}
-		return Uni.createFrom().item(builder.entity(body).build());
-	}
-
 	private static byte[] zipResult(String replyBody) {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		ZipOutputStream zipOutputStream = new ZipOutputStream(baos);
@@ -480,42 +244,19 @@ public final class HttpUtils {
 		return baos.toByteArray();
 	}
 
-	public static ArrayListMultimap<String, String> getHeaders(HttpServerRequest request) {
-		ArrayListMultimap<String, String> result = ArrayListMultimap.create();
-		for (Entry<String, String> entry : request.headers()) {
-			result.put(entry.getKey(), entry.getValue());
-		}
-		return result;
-	}
-
-	public static String getTenantFromHeaders(ArrayListMultimap<String, String> headers) {
-		if (headers.containsKey(NGSIConstants.TENANT_HEADER)) {
-			return headers.get(NGSIConstants.TENANT_HEADER).get(0);
-		}
-		return null;
-	}
-
-	public static String getInternalTenant(ArrayListMultimap<String, String> headers) {
-		String tenantId = getTenantFromHeaders(headers);
-		if (tenantId == null) {
-			return AppConstants.INTERNAL_NULL_KEY;
-		}
-		return tenantId;
-	}
-
-	static String generateNextLink(HttpServerRequest request, QueryResult qResult) {
+	static String generateNextLink(MultiMap params, QueryResult qResult) {
 		if (qResult.getResultsLeftAfter() == null || qResult.getResultsLeftAfter() <= 0) {
 			return null;
 		}
-		return generateFollowUpLinkHeader(request, qResult.getOffset() + qResult.getLimit(), qResult.getLimit(),
+		return generateFollowUpLinkHeader(params, qResult.getOffset() + qResult.getLimit(), qResult.getLimit(),
 				qResult.getqToken(), "next");
 	}
 
-	public static String generateFollowUpLinkHeader(HttpServerRequest request, int offset, int limit, String token,
-			String rel) {
+	public static String generateFollowUpLinkHeader(MultiMap params, int offset, int limit, String token, String rel) {
 		StringBuilder builder = new StringBuilder("</");
 		builder.append("?");
-		for (Entry<String, String> entry : request.params().entries()) {
+
+		for (Entry<String, String> entry : params.entries()) {
 			String key = entry.getKey();
 			if (key.equals("offset")) {
 				continue;
@@ -535,7 +276,7 @@ public final class HttpUtils {
 		return builder.toString();
 	}
 
-	private static String generatePrevLink(HttpServerRequest request, QueryResult qResult) {
+	private static String generatePrevLink(MultiMap params, QueryResult qResult) {
 		if (qResult.getResultsLeftBefore() == null || qResult.getResultsLeftBefore() <= 0) {
 			return null;
 		}
@@ -544,8 +285,7 @@ public final class HttpUtils {
 			offset = 0;
 		}
 		int limit = qResult.getLimit();
-
-		return generateFollowUpLinkHeader(request, offset, limit, qResult.getqToken(), "prev");
+		return generateFollowUpLinkHeader(params, offset, limit, qResult.getqToken(), "prev");
 	}
 
 	public static RestResponse<Object> handleControllerExceptions(Throwable e) {
@@ -592,51 +332,6 @@ public final class HttpUtils {
 			throw new ResponseException(ErrorType.BadRequestData, "id is not a URI");
 		}
 		return uri;
-
-	}
-
-	public static RestResponse<String> generateNotification(ArrayListMultimap<String, String> origHeaders,
-			Object notificationData, List<Object> context, String geometryProperty)
-			throws ResponseException, JsonGenerationException, JsonParseException, IOException {
-		Context ldContext = JsonLdProcessor.getCoreContextClone().parse(context, true);
-
-		ArrayListMultimap<String, String> headers;
-		if (origHeaders == null) {
-			headers = ArrayListMultimap.create();
-		} else {
-			headers = ArrayListMultimap.create(origHeaders);
-		}
-		List<String> acceptHeader = headers.get(io.vertx.mutiny.core.http.HttpHeaders.ACCEPT.toString());
-		if (acceptHeader == null || acceptHeader.isEmpty()) {
-			acceptHeader = new ArrayList<String>();
-			acceptHeader.add("application/json");
-		}
-		String body = getReplyBody(acceptHeader, AppConstants.QUERY_ENDPOINT, headers, notificationData, true,
-				ldContext, context, geometryProperty).await().indefinitely();
-		// need to clean context for subscriptions. This is a bit bad practice but reply
-		// generation relies on side effects so clean up here
-		HashSet<Object> temp = Sets.newHashSet(context);
-		context.clear();
-		context.addAll(temp);
-
-		ResponseBuilder<String> builder = RestResponseBuilderImpl.ok(body);
-		for (String key : headers.keySet()) {
-			switch (key.toLowerCase()) {
-			case "postman-token":
-			case "accept-encoding":
-			case "user-agent":
-			case "host":
-			case "connection":
-			case "cache-control":
-			case "content-length":
-				break;
-			default:
-				for (String entry : Sets.newHashSet(headers.get(key))) {
-					builder = builder.header(key, entry);
-				}
-			}
-		}
-		return builder.build();
 	}
 
 	@SuppressWarnings("unchecked")
@@ -680,16 +375,16 @@ public final class HttpUtils {
 		return mMap;
 	}
 
-	public static String utfDecoder(String data) {
-		try {
-			return URLDecoder.decode(data, NGSIConstants.ENCODE_FORMAT);
-		} catch (UnsupportedEncodingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return null;
-
-	}
+//	public static String utfDecoder(String data) {
+//		try {
+//			return URLDecoder.decode(data, NGSIConstants.ENCODE_FORMAT);
+//		} catch (UnsupportedEncodingException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//		return null;
+//
+//	}
 
 	public static RestResponse<Object> generateUpdateResultResponse(NGSILDOperationResult updateResult) {
 		if (updateResult.getFailures().isEmpty()) {
@@ -732,17 +427,24 @@ public final class HttpUtils {
 	}
 
 	public static RestResponse<Object> generateEntityResult(List<Object> contextHeader, Context context,
-			int acceptHeader, Map<String, Object> entity, String geometryProperty, Set<String> options, LanguageQueryTerm langQuery) {
+			int acceptHeader, Map<String, Object> entity, String geometryProperty, String options,
+			LanguageQueryTerm langQuery) {
 		String replyBody;
 		String contentType;
 		Object result;
 		Map<String, Object> compacted;
 		ResponseBuilder<Object> resp = RestResponseBuilderImpl.ok();
+		Set<String> optionSet = null;
+		if (options != null) {
+			optionSet = Set.of(options.split(","));
+		}
+
 		switch (acceptHeader) {
+
 		case 1:
 			try {
 				// todo add options to compact
-				compacted = JsonLdProcessor.compact(entity, contextHeader, context, opts, -1);
+				compacted = JsonLdProcessor.compact(entity, contextHeader, context, opts, -1, optionSet, langQuery);
 			} catch (Exception e) {
 				return handleControllerExceptions(e);
 			}
@@ -762,7 +464,7 @@ public final class HttpUtils {
 		case 2:
 			try {
 				// todo add options to compact
-				compacted = JsonLdProcessor.compact(entity, contextHeader, context, opts, -1, options, langQuery);
+				compacted = JsonLdProcessor.compact(entity, contextHeader, context, opts, -1, optionSet, langQuery);
 			} catch (Exception e) {
 				return handleControllerExceptions(e);
 			}
@@ -785,7 +487,7 @@ public final class HttpUtils {
 		case 4:// geo+json
 			try {
 				// todo add options to compact
-				compacted = JsonLdProcessor.compact(entity, contextHeader, context, opts, -1);
+				compacted = JsonLdProcessor.compact(entity, contextHeader, context, opts, -1, optionSet, langQuery);
 				replyBody = JsonUtils.toPrettyString(generateGeoJson(compacted, geometryProperty, contextHeader));
 			} catch (Exception e) {
 				return handleControllerExceptions(e);
@@ -867,7 +569,7 @@ public final class HttpUtils {
 	public static Tuple2<Context, Map<String, Object>> expandBody(HttpServerRequest request, String payload,
 			int payloadType) throws Exception {
 		boolean atContextAllowed;
-		List<Object> atContext = getAtContextNoUni(request);
+		List<Object> atContext = getAtContext(request);
 		atContextAllowed = HttpUtils.doPreflightCheck(request, atContext);
 		if (payload == null || payload.isEmpty()) {
 			throw new ResponseException(ErrorType.InvalidRequest, "You have to provide a valid payload");
@@ -913,24 +615,7 @@ public final class HttpUtils {
 		return Lists.newArrayList(tmp);
 	}
 
-	public static RestResponse<Object> generateQueryResult(List<Object> headerContext, Context context,
-			int acceptHeader, Context context2, String geometryProperty, Set<String> id, String options) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
 	public static RestResponse<Object> generateSubscriptionResult(NGSILDOperationResult t, Context context) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	public static RestResponse<Object> generateQueryResult(QueryResult subscriptions, int acceptHeader, Context parse) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	public static RestResponse<Object> generateSubscriptionResult(Map<String, Object> subscription, int acceptHeader,
-			Context parse) {
 		// TODO Auto-generated method stub
 		return null;
 	}
@@ -940,10 +625,137 @@ public final class HttpUtils {
 		return null;
 	}
 
-	public static RestResponse<Object> generateQueryResult(QueryResult queryResult, String options,
-			String geometryProperty, int acceptHeader, Context context) {
-		// TODO Auto-generated method stub
-		return null;
+	public static RestResponse<Object> generateQueryResult(HttpServerRequest request, QueryResult queryResult,
+			String options, String geometryProperty, int acceptHeader, boolean count, int limit, LanguageQueryTerm lang,
+			Context context) {
+		HeadersMultiMap headers = HeadersMultiMap.headers();
+		if (count == true) {
+			headers.add(NGSIConstants.COUNT_HEADER_RESULT, queryResult.getCount());
+		}
+		if (limit == 0) {
+			return RestResponseBuilderImpl.ok().header(NGSIConstants.COUNT_HEADER_RESULT, queryResult.getCount())
+					.build();
+		}
+
+		MultiMap urlParams = request.params();
+		String nextLink = HttpUtils.generateNextLink(urlParams, queryResult);
+		String prevLink = HttpUtils.generatePrevLink(urlParams, queryResult);
+		ResponseBuilder<Object> builder = RestResponseBuilderImpl.ok();
+		if (nextLink != null) {
+			builder = builder.header(HttpHeaders.LINK, nextLink);
+		}
+		if (prevLink != null) {
+			builder = builder.header(HttpHeaders.LINK, prevLink);
+		}
+
+		Map<String, Object> compacted;
+		String contentType;
+		Set<String> optionSet = null;
+		if (options != null) {
+			optionSet = Set.of(options.split(","));
+		}
+		String replyBody;
+		Object result;
+		switch (acceptHeader) {
+		case 1:
+			try {
+				compacted = JsonLdProcessor.compact(queryResult.getData(), null, context, opts, -1, optionSet, lang);
+			} catch (Exception e) {
+				return handleControllerExceptions(e);
+			}
+			compacted.remove(NGSIConstants.JSON_LD_CONTEXT);
+			String link = request.headers().get(NGSIConstants.LINK_HEADER);
+			if (link == null) {
+				link = CORE_CONTEXT_URL_LINK;
+			}
+			builder.header(NGSIConstants.LINK_HEADER, link);
+			result = getPayloadForQuery(compacted);
+			try {
+				replyBody = JsonUtils.toPrettyString(result);
+			} catch (Exception e) {
+				return handleControllerExceptions(e);
+			}
+			contentType = AppConstants.NGB_APPLICATION_JSON;
+			break;
+		case 2:
+			try {
+				compacted = JsonLdProcessor.compact(queryResult.getData(), getAtContext(request), context, opts,
+						-1, optionSet, lang);
+			} catch (Exception e) {
+				return handleControllerExceptions(e);
+			}
+			contentType = AppConstants.NGB_APPLICATION_JSONLD;
+			result = getPayloadForQueryLD(compacted);
+			try {
+				replyBody = JsonUtils.toPrettyString(result);
+			} catch (Exception e) {
+				return handleControllerExceptions(e);
+			}
+			break;
+		case 3:
+
+			try {
+				replyBody = RDFDatasetUtils.toNQuads((RDFDataset) JsonLdProcessor.toRDF(queryResult.getData()));
+			} catch (JsonLdError | ResponseException e) {
+				return HttpUtils.handleControllerExceptions(e);
+			}
+			contentType = AppConstants.NGB_APPLICATION_NQUADS;
+			break;
+		case 4:// geo+json
+			try {
+				// todo add options to compact
+				compacted = JsonLdProcessor.compact(queryResult.getData(), getAtContext(request), context, opts,
+						-1, optionSet, lang);
+				replyBody = JsonUtils.toPrettyString(
+						generateGeoJson(getPayloadForQueryLD(compacted), geometryProperty, getAtContext(request)));
+			} catch (Exception e) {
+				return handleControllerExceptions(e);
+			}
+
+			contentType = AppConstants.NGB_APPLICATION_GEO_JSON;
+			break;
+		default:
+			return handleControllerExceptions(new ResponseException(ErrorType.InternalError));
+		}
+
+		if (options.contains("compress")) {
+			result = zipResult(replyBody);
+			contentType = AppConstants.NGB_APPLICATION_ZIP;
+		} else {
+			result = replyBody;
+		}
+		return builder.header(HttpHeaders.CONTENT_TYPE, contentType).entity(result).build();
+	}
+
+	private static Object getPayloadForQueryLD(Map<String, Object> compacted) {
+		Object result;
+		Object graph = compacted.get(JsonLdConsts.GRAPH);
+		if (graph != null) {
+			Object context = compacted.get(JsonLdConsts.CONTEXT);
+			List<Map<String, Object>> tmp = (List<Map<String, Object>>) graph;
+			for (Map<String, Object> entry : tmp) {
+				entry.put(JsonLdConsts.CONTEXT, context);
+			}
+			result = tmp;
+		} else {
+			ArrayList<Object> temp = new ArrayList<Object>();
+			temp.add(compacted);
+			result = temp;
+		}
+		return result;
+	}
+
+	private static Object getPayloadForQuery(Map<String, Object> compacted) {
+		Object result;
+		Object graph = compacted.get(JsonLdConsts.GRAPH);
+		if (graph != null) {
+			result = graph;
+		} else {
+			ArrayList<Object> temp = new ArrayList<Object>();
+			temp.add(compacted);
+			result = temp;
+		}
+		return result;
 	}
 
 }

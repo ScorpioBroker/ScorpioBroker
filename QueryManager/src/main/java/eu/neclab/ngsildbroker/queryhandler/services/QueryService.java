@@ -247,7 +247,7 @@ public class QueryService {
 				});
 			});
 		}
-		return Uni.combine().all().unis(queryRemoteTypes, queryDAO.getTypes(tenant)).asTuple().onItem().transform(t -> {
+		return Uni.combine().all().unis(queryRemoteTypes, queryDAO.getTypesWithDetails(tenant)).asTuple().onItem().transform(t -> {
 			List<Map<String, Object>> result = Lists.newArrayList();
 			Map<String, Set<String>> currentType2Attr = t.getItem1();
 			t.getItem2().forEach(row -> {

@@ -75,7 +75,7 @@ public class QueryController {
 	@Path("/entities/{entityId}")
 	@GET
 	public Uni<RestResponse<Object>> getEntity(HttpServerRequest request, @QueryParam(value = "attrs") String attrs,
-			@QueryParam(value = "options") Set<String> options, @QueryParam(value = "lang") String lang,
+			@QueryParam(value = "options") String options, @QueryParam(value = "lang") String lang,
 			@QueryParam(value = "geometryProperty") String geometryProperty,
 			@QueryParam(value = "localOnly") boolean localOnly, @PathParam("entityId") String entityId) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
@@ -89,7 +89,7 @@ public class QueryController {
 		LanguageQueryTerm langQuery;
 		try {
 			HttpUtils.validateUri(entityId);
-			headerContext = HttpUtils.getAtContextNoUni(request);
+			headerContext = HttpUtils.getAtContext(request);
 			context = JsonLdProcessor.getCoreContextClone().parse(headerContext, false);
 			attrsQuery = QueryParser.parseAttrs(attrs, context);
 			langQuery = QueryParser.parseLangQuery(lang);
@@ -128,10 +128,13 @@ public class QueryController {
 		if (acceptHeader == -1) {
 			return HttpUtils.INVALID_HEADER;
 		}
+		int actualLimit;
 		if (limit == null) {
-			limit = defaultLimit;
+			actualLimit = defaultLimit;
+		} else {
+			actualLimit = limit;
 		}
-		if (limit > maxLimit) {
+		if (actualLimit > maxLimit) {
 			return Uni.createFrom()
 					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.TooManyResults)));
 		}
@@ -150,7 +153,7 @@ public class QueryController {
 		ScopeQueryTerm scopeQueryTerm;
 		LanguageQueryTerm langQuery;
 		try {
-			headerContext = HttpUtils.getAtContextNoUni(request);
+			headerContext = HttpUtils.getAtContext(request);
 			context = JsonLdProcessor.getCoreContextClone().parse(headerContext, false);
 			attrsQuery = QueryParser.parseAttrs(attrs, context);
 			typeQueryTerm = QueryParser.parseTypeQuery(typeQuery, context);
@@ -164,10 +167,10 @@ public class QueryController {
 		}
 		return queryService
 				.query(HttpUtils.getTenant(request), id, typeQueryTerm, idPattern, attrsQuery, qQueryTerm, csfQueryTerm,
-						geoQueryTerm, scopeQueryTerm, langQuery, limit, offset, count, localOnly, context)
+						geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset, count, localOnly, context)
 				.onItem().transform(queryResult -> {
-					return HttpUtils.generateQueryResult(headerContext, context, acceptHeader, context,
-							geometryProperty, id, options);
+					return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty, acceptHeader,
+							count, actualLimit, langQuery, context);
 				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
@@ -175,86 +178,89 @@ public class QueryController {
 	@GET
 	public Uni<RestResponse<Object>> getAllTypes(HttpServerRequest request,
 			@QueryParam(value = "details") boolean details, @QueryParam(value = "localOnly") boolean localOnly) {
-		return HttpUtils.getAtContext(request).onItem().transformToUni(headerContext -> {
-			ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
-			int acceptHeader = HttpUtils.parseAcceptHeader(headers.get(HttpHeaders.ACCEPT));
-			if (acceptHeader == -1) {
-				return HttpUtils.INVALID_HEADER;
-			}
-			if (details) {
-				return queryService.getTypesWithDetail(HttpUtils.getTenant(request), localOnly).onItem()
-						.transform(types -> {
-							if (types.isEmpty()) {
-								return RestResponse.notFound();
-							} else
-								return RestResponse.ok(types);
-						});
-			} else
-				return queryService.getTypes(HttpUtils.getTenant(request), localOnly).onItem().transform(types -> {
-					if (types.isEmpty()) {
-						return RestResponse.notFound();
-					} else
-						return RestResponse.ok(types);
-				});
-		});
+
+		HttpUtils.getAtContext(request);
+		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll(HttpHeaders.ACCEPT));
+		if (acceptHeader == -1) {
+			return HttpUtils.INVALID_HEADER;
+		}
+		Uni<List<Map<String, Object>>> uni;
+		if (details) {
+			return queryService.getTypesWithDetail(HttpUtils.getTenant(request), localOnly).onItem()
+					.transform(types -> {
+						QueryResult tmp = new QueryResult();
+						tmp.setData(types);
+						return HttpUtils.generateQueryResult(request, tmp, null, null, acceptHeader, false, -1, null,
+								JsonLdProcessor.getCoreContextClone().parse(HttpUtils.getAtContext(request), true));
+					});
+		} else
+			return queryService.getTypes(HttpUtils.getTenant(request), localOnly).onItem().transform(types -> {
+				List<Object> contextHeader = HttpUtils.getAtContext(request);
+				return HttpUtils.generateEntityResult(contextHeader,
+						JsonLdProcessor.getCoreContextClone().parse(contextHeader, true), acceptHeader, types, null,
+						null, null);
+			});
+
 	}
 
 	@Path("/types/{entityType}")
 	@GET
 	public Uni<RestResponse<Object>> getType(HttpServerRequest request, @PathParam("entityType") String type,
 			@QueryParam(value = "details") boolean details, @QueryParam(value = "localOnly") boolean localOnly) {
-		return HttpUtils.getAtContext(request).onItem().transformToUni(headerContext -> {
-			ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
-			int acceptHeader = HttpUtils.parseAcceptHeader(headers.get(HttpHeaders.ACCEPT));
-			if (acceptHeader == -1) {
-				return HttpUtils.INVALID_HEADER;
+		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll(HttpHeaders.ACCEPT));
+		if (acceptHeader == -1) {
+			return HttpUtils.INVALID_HEADER;
+		}
+		return queryService.getType(HttpUtils.getTenant(request), type, localOnly).onItem().transform(map -> {
+			if (map.isEmpty()) {
+				return RestResponse.notFound();
+			} else {
+				List<Object> contextHeader = HttpUtils.getAtContext(request);
+				return HttpUtils.generateEntityResult(contextHeader,
+						JsonLdProcessor.getCoreContextClone().parse(contextHeader, true), acceptHeader, map, null, null,
+						null);
 			}
-			return queryService.getType(HttpUtils.getTenant(request), type, localOnly).onItem().transform(map -> {
-				if (map.isEmpty()) {
-					return RestResponse.notFound();
-				} else
-					return RestResponse.ok(map);
-			});
 		});
+
 	}
 
 	@Path("/attributes")
 	@GET
 	public Uni<RestResponse<Object>> getAllAttributes(HttpServerRequest request,
 			@QueryParam(value = "details") boolean details, @QueryParam(value = "localOnly") boolean localOnly) {
-		return HttpUtils.getAtContext(request).onItem().transformToUni(headerContext -> {
-			ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
-			int acceptHeader = HttpUtils.parseAcceptHeader(headers.get(HttpHeaders.ACCEPT));
-			if (acceptHeader == -1) {
-				return HttpUtils.INVALID_HEADER;
-			}
-			return queryService.getAttribs(HttpUtils.getTenant(request), localOnly).onItem().transform(map -> {
-				if (map.isEmpty()) {
-					return RestResponse.notFound();
-				} else
-					return RestResponse.ok(map);
-			});
+
+		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll(HttpHeaders.ACCEPT));
+		if (acceptHeader == -1) {
+			return HttpUtils.INVALID_HEADER;
+		}
+		return queryService.getAttribs(HttpUtils.getTenant(request), localOnly).onItem().transform(map -> {
+			List<Object> contextHeader = HttpUtils.getAtContext(request);
+			return HttpUtils.generateEntityResult(contextHeader,
+					JsonLdProcessor.getCoreContextClone().parse(contextHeader, true), acceptHeader, map, null, null,
+					null);
 		});
+
 	}
 
 	@Path("/attributes/{attribute}")
 	@GET
 	public Uni<RestResponse<Object>> getAttribute(HttpServerRequest request, @PathParam("attribute") String attribute,
 			@QueryParam(value = "details") boolean details, @QueryParam(value = "localOnly") boolean localOnly) {
-		return HttpUtils.getAtContext(request).onItem().transformToUni(headerContext -> {
-			ArrayListMultimap<String, String> headers = HttpUtils.getHeaders(request);
-			int acceptHeader = HttpUtils.parseAcceptHeader(headers.get(HttpHeaders.ACCEPT));
-			if (acceptHeader == -1) {
-				return HttpUtils.INVALID_HEADER;
+		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll(HttpHeaders.ACCEPT));
+		if (acceptHeader == -1) {
+			return HttpUtils.INVALID_HEADER;
+		}
+		return queryService.getAttrib(HttpUtils.getTenant(request), attribute, localOnly).onItem().transform(map -> {
+			if (map.isEmpty()) {
+				return RestResponse.notFound();
+			} else {
+				List<Object> contextHeader = HttpUtils.getAtContext(request);
+				return HttpUtils.generateEntityResult(contextHeader,
+						JsonLdProcessor.getCoreContextClone().parse(contextHeader, true), acceptHeader, map, null, null,
+						null);
 			}
-			return queryService.getAttrib(HttpUtils.getTenant(request), attribute, localOnly).onItem()
-					.transform(map -> {
-						if (map.isEmpty()) {
-							return RestResponse.notFound();
-						} else
-							return RestResponse.ok(map);
-					});
 		});
+
 	}
 
 	@Path("/entityOperations/query")
@@ -269,10 +275,13 @@ public class QueryController {
 		if (acceptHeader == -1) {
 			return HttpUtils.INVALID_HEADER;
 		}
+		int actualLimit;
 		if (limit == null) {
-			limit = defaultLimit;
+			actualLimit = defaultLimit;
+		} else {
+			actualLimit = limit;
 		}
-		if (limit > maxLimit) {
+		if (actualLimit > maxLimit) {
 			return Uni.createFrom()
 					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.TooManyResults)));
 		}
@@ -289,7 +298,7 @@ public class QueryController {
 		CSFQueryTerm csfQueryTerm = null;
 		GeoQueryTerm geoQueryTerm = null;
 		ScopeQueryTerm scopeQueryTerm = null;
-		LanguageQueryTerm langQuery = null;
+		LanguageQueryTerm langQuery;
 
 		try {
 			Map<String, Object> body = (Map<String, Object>) JsonUtils.fromString(payload);
@@ -300,7 +309,7 @@ public class QueryController {
 							new ResponseException(ErrorType.BadRequestData, "@context entry missing")));
 
 				} else {
-					context = JsonLdProcessor.getCoreContextClone().parse(HttpUtils.getAtContextNoUni(request), true);
+					context = JsonLdProcessor.getCoreContextClone().parse(HttpUtils.getAtContext(request), true);
 					break;
 				}
 			case AppConstants.NGB_APPLICATION_JSONLD:
@@ -356,6 +365,8 @@ public class QueryController {
 			}
 			if (lang != null) {
 				langQuery = QueryParser.parseLangQuery((String) lang);
+			} else {
+				langQuery = null;
 			}
 			String tenant = HttpUtils.getTenant(request);
 			if (entities != null) {
@@ -380,15 +391,16 @@ public class QueryController {
 					while (it.hasNext()) {
 						first.getData().addAll(((QueryResult) it.next()).getData());
 					}
-					return HttpUtils.generateQueryResult(first, options, geometryProperty, acceptHeader, context);
+					return HttpUtils.generateQueryResult(request, first, options, geometryProperty, acceptHeader, count,
+							actualLimit, langQuery, context);
 				});
 			} else {
 				return queryService
 						.query(tenant, null, null, null, attrsQuery, qQueryTerm, csfQueryTerm, geoQueryTerm,
 								scopeQueryTerm, langQuery, limit, offset, count, localOnly, context)
 						.onItem().transform(queryResult -> {
-							return HttpUtils.generateQueryResult(queryResult, options, geometryProperty, acceptHeader,
-									context);
+							return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty,
+									acceptHeader, count, limit, langQuery, context);
 						}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e));
 			}
 

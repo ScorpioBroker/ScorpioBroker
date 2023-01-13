@@ -96,7 +96,7 @@ public class RegistryController {
 		List<Object> headerContext;
 		try {
 			HttpUtils.validateUri(registrationId);
-			headerContext = HttpUtils.getAtContextNoUni(request);
+			headerContext = HttpUtils.getAtContext(request);
 			context = JsonLdProcessor.getCoreContextClone().parse(headerContext, false);
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));

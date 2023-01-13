@@ -73,7 +73,7 @@ public class HistoryController {
 		}
 		return historyService
 				.deleteEntry(HttpUtils.getTenant(request), entityId,
-						JsonLdProcessor.getCoreContextClone().parse(HttpUtils.getAtContextNoUni(request), true))
+						JsonLdProcessor.getCoreContextClone().parse(HttpUtils.getAtContext(request), true))
 				.onItem().transform(result -> {
 					return HttpUtils.generateDeleteResult(result);
 				}).onFailure().recoverWithItem(error -> {
@@ -110,7 +110,7 @@ public class HistoryController {
 		Context context;
 		try {
 			HttpUtils.validateUri(entityId);
-			context = JsonLdProcessor.getCoreContextClone().parse(HttpUtils.getAtContextNoUni(request), true);
+			context = JsonLdProcessor.getCoreContextClone().parse(HttpUtils.getAtContext(request), true);
 			attrId = context.expandIri(attrId, false, false, null, null);
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
@@ -155,7 +155,7 @@ public class HistoryController {
 		Context context;
 		try {
 			HttpUtils.validateUri(entityId);
-			context = JsonLdProcessor.getCoreContextClone().parse(HttpUtils.getAtContextNoUni(request), true);
+			context = JsonLdProcessor.getCoreContextClone().parse(HttpUtils.getAtContext(request), true);
 			attrId = context.expandIri(attrId, false, false, null, null);
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));

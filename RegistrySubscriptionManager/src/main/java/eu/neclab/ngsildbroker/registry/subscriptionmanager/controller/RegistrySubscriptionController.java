@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.registry.subscriptionmanager.controller;
 
+import java.util.List;
 import java.util.Map;
 
 import javax.annotation.PostConstruct;
@@ -86,8 +87,8 @@ public class RegistrySubscriptionController {
 
 		return subService.getAllSubscriptions(HttpUtils.getTenant(request), limit, offset).onItem()
 				.transform(subscriptions -> {
-
-					return HttpUtils.generateQueryResult(subscriptions, acceptHeader,
+					return HttpUtils.generateQueryResult(request, subscriptions, options, null, acceptHeader, false,
+							acceptHeader, null,
 							JsonLdProcessor.getCoreContextClone().parse(HttpUtils.getAtContext(request), true));
 				});
 
@@ -103,8 +104,10 @@ public class RegistrySubscriptionController {
 		}
 		return subService.getSubscription(HttpUtils.getTenant(request), subscriptionId).onItem()
 				.transform(subscription -> {
-					return HttpUtils.generateSubscriptionResult(subscription, acceptHeader,
-							JsonLdProcessor.getCoreContextClone().parse(HttpUtils.getAtContext(request), true));
+					List<Object> contextHeader = HttpUtils.getAtContext(request);
+					Context context = JsonLdProcessor.getCoreContextClone().parse(contextHeader, true);
+					return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, subscription, null,
+							options, null);
 				});
 
 	}
@@ -127,10 +130,10 @@ public class RegistrySubscriptionController {
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 		}
-		return subService.updateSubscription(HttpUtils.getTenant(request), id, tuple.getItem2(), tuple.getItem1()).onItem()
-				.transform(t -> HttpUtils.generateSubscriptionResult(t, tuple.getItem1())).onFailure()
+		return subService.updateSubscription(HttpUtils.getTenant(request), id, tuple.getItem2(), tuple.getItem1())
+				.onItem().transform(t -> HttpUtils.generateSubscriptionResult(t, tuple.getItem1())).onFailure()
 				.recoverWithItem(e -> HttpUtils.handleControllerExceptions(e));
-		
+
 	}
 
 }
