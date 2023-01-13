@@ -72,7 +72,6 @@ public class SubscriptionService {
 	@Inject
 	SubscriptionInfoDAO subDAO;
 
-	
 	@Inject
 	@Channel(AppConstants.INTERNAL_SUBS_CHANNEL)
 	@Broadcast
@@ -283,7 +282,7 @@ public class SubscriptionService {
 			NotificationParam notificationParam = potentialSub.getSubscription().getNotification();
 			Uni<Void> toSend;
 			switch (notificationParam.getEndPoint().getUri().getScheme()) {
-			
+
 			case "mqtt":
 			case "mqtts":
 				try {
@@ -582,6 +581,9 @@ public class SubscriptionService {
 
 				}));
 			}
+		}
+		if (unis.isEmpty()) {
+			return Uni.createFrom().voidItem();
 		}
 		return Uni.combine().all().unis(unis).discardItems();
 	}

@@ -67,7 +67,7 @@ CREATE TABLE public.tempetype2iid
 CREATE TABLE public.tempescope2iid
 (
     e_scope text,
-    iid bigint
+    iid bigint,
 	CONSTRAINT "tempScopePrKey" PRIMARY KEY (e_scope, iid)
 );
 ALTER TABLE IF EXISTS public.tempescope2iid
@@ -107,7 +107,7 @@ CREATE OR REPLACE FUNCTION getAttrType(entryValue jsonb) RETURNS int4 AS $$
 DECLARE
 	jsonType text;
 BEGIN
-	jsonType := jsonb_typeof(jsonb)
+	jsonType := jsonb_typeof(jsonb);
 	CASE
 		WHEN jsonType = 'string' THEN
 			CASE
@@ -137,7 +137,6 @@ declare
 	entryValue jsonb;
 	temp text;
 	instance_Id text;
-	entryValue jsonb;
 	attrType int4;
 	textValue text;
 	numericValue numeric;

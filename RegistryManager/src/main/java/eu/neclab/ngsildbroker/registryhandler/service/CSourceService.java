@@ -107,7 +107,7 @@ public class CSourceService {
 		AppendCSourceRequest request = new AppendCSourceRequest(tenant, registrationId, entry);
 		return cSourceInfoDAO.updateRegistration(request).onItem().transformToUni(rowset -> {
 			if (rowset.rowCount() > 0) {
-				// no need to query regs again they are not distributed 
+				// no need to query regs again they are not distributed
 				// request.setPayload(rowset.iterator().next().getJsonObject(0).getMap());
 				return kafkaSenderInterface.send(request).onItem().transform(v -> {
 					NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.OPERATION_UPDATE_REGISTRATION,
@@ -238,7 +238,7 @@ public class CSourceService {
 //			});
 //		});
 
-		return null;
+		return Uni.createFrom().voidItem();
 	}
 
 }

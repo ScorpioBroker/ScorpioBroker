@@ -138,8 +138,8 @@ public class RegistrySubscriptionInfoDAO {
 				});
 				unis.add(clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem()
 						.transformToUni(tenantClient -> {
-							return tenantClient.preparedQuery("SELECT " + AppConstants.INTERNAL_NULL_KEY
-									+ ", subscription, context FROM registry_subscriptions").execute();
+							return tenantClient.preparedQuery("SELECT '" + AppConstants.INTERNAL_NULL_KEY
+									+ "', subscription, context FROM registry_subscriptions").execute();
 						}));
 
 				return Uni.combine().all().unis(unis).combinedWith(list -> {

@@ -11,14 +11,15 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
 import org.eclipse.microprofile.reactive.messaging.Channel;
-import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
-import org.locationtech.spatial4j.shape.jts.JtsShapeFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
@@ -27,6 +28,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Table;
 import com.google.common.collect.Table.Cell;
+
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityInfo;
@@ -83,8 +85,6 @@ public class RegistrySubscriptionService {
 
 	private Map<String, MqttClient> host2MqttClient = Maps.newHashMap();
 
-	private JtsShapeFactory shapeFactory = JtsSpatialContext.GEO.getShapeFactory();
-
 	@PostConstruct
 	void setup() {
 		this.webClient = WebClient.create(vertx);
@@ -106,6 +106,9 @@ public class RegistrySubscriptionService {
 					logger.error("Failed to load stored subscription " + tuple.getItem1());
 				}
 			});
+			return Uni.createFrom().voidItem();
+		}).onFailure().recoverWithUni(e -> {
+			logger.error("Failed to load stored subscription ", e);
 			return Uni.createFrom().voidItem();
 		}).await().indefinitely();
 
@@ -1131,6 +1134,9 @@ public class RegistrySubscriptionService {
 
 				}));
 			}
+		}
+		if (unis.isEmpty()) {
+			return Uni.createFrom().voidItem();
 		}
 		return Uni.combine().all().unis(unis).discardItems();
 	}
