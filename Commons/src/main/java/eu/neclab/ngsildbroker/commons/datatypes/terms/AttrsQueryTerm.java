@@ -8,7 +8,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple4;
 
 public class AttrsQueryTerm {

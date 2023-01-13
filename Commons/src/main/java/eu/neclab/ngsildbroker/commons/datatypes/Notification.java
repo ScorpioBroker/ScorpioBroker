@@ -1,21 +1,8 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.stream.Collectors;
-
 import com.google.common.collect.ArrayListMultimap;
-
-import org.jboss.resteasy.reactive.RestResponse;
-import org.jboss.resteasy.reactive.RestResponse.ResponseBuilder;
-import org.jboss.resteasy.reactive.server.jaxrs.RestResponseBuilderImpl;
-
-import eu.neclab.ngsildbroker.commons.constants.AppConstants;
-import eu.neclab.ngsildbroker.commons.enums.TriggerReason;
-import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
-import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 
 /**
  * @author hebgen

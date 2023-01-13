@@ -8,7 +8,6 @@ import com.google.common.collect.Lists;
 
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.GeoRelation;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import io.smallrye.mutiny.tuples.Tuple2;

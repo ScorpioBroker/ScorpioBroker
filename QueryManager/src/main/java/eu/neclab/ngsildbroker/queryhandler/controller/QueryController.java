@@ -20,7 +20,6 @@ import org.jboss.resteasy.reactive.RestResponse;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
-import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.net.HttpHeaders;
 

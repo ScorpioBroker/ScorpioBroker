@@ -17,9 +17,6 @@ import org.slf4j.LoggerFactory;
 
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdProcessor;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Sets;
-
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AggrTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TemporalQueryTerm;

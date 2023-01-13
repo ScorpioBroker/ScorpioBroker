@@ -15,7 +15,7 @@ import io.quarkus.rest.client.reactive.ClientQueryParam;
 import io.smallrye.mutiny.Uni;
 
 @Path("/ngsi-ld/v1/entities")
-@RegisterRestClient(configKey = "scorpio.entity-service")
+@RegisterRestClient(configKey = "entity-service")
 @ClientHeaderParam(name = "Accept", value = "application/json")
 public interface LocalEntityService {
 

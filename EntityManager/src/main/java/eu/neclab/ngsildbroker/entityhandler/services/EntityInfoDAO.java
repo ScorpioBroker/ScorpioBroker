@@ -1,7 +1,11 @@
 package eu.neclab.ngsildbroker.entityhandler.services;
 
+import java.util.List;
+
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
+import com.google.common.collect.Lists;
 
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateEntityRequest;
@@ -20,11 +24,24 @@ public class EntityInfoDAO {
 
 	@Inject
 	ClientManager clientManager;
+
 	public Uni<RowSet<Row>> createEntity(CreateEntityRequest request) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
 			String sql = "SELECT * FROM NGSILD_CREATEENTITY($1::jsonb)";
 			return client.preparedQuery(sql).execute(Tuple.of(new JsonObject(request.getPayload()))).onFailure().retry()
-					.atMost(3).onFailure().recoverWithUni(e -> Uni.createFrom().failure(e));
+					.atMost(3);
+		});
+
+	}
+
+	public Uni<RowSet<Row>> batchCreateEntity(List<CreateEntityRequest> requests) {
+		return clientManager.getClient(requests.get(0).getTenant(), true).onItem().transformToUni(client -> {
+			String sql = "SELECT * FROM NGSILD_CREATEENTITY($1::jsonb)";
+			List<Tuple> batch = Lists.newArrayList();
+			for (CreateEntityRequest request : requests) {
+				batch.add(Tuple.of(new JsonObject(request.getPayload())));
+			}
+			return client.preparedQuery(sql).executeBatch(batch).onFailure().retry().atMost(3);
 		});
 
 	}
@@ -33,7 +50,7 @@ public class EntityInfoDAO {
 		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
 			String sql = "SELECT * FROM NGSILD_UPDATEENTITY($1, $2::jsonb)";
 			return client.preparedQuery(sql).execute(Tuple.of(request.getId(), new JsonObject(request.getPayload())))
-					.onFailure().retry().atMost(3).onFailure().recoverWithUni(e -> Uni.createFrom().failure(e));
+					.onFailure().retry().atMost(3);
 		});
 	}
 

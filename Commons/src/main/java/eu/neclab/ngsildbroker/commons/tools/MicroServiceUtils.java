@@ -19,8 +19,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
-import eu.neclab.ngsildbroker.commons.datatypes.SyncMessage;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteAttributeRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;

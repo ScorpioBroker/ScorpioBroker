@@ -76,11 +76,7 @@ public class SubscriptionService {
 	@Inject
 	SubscriptionInfoDAO subDAO;
 
-	@Inject
-	@Channel(AppConstants.INTERNAL_NOTIFICATION_CHANNEL)
-	@Broadcast
-	MutinyEmitter<InternalNotification> internalNotificationSender;
-
+	
 	@Inject
 	@Channel(AppConstants.INTERNAL_SUBS_CHANNEL)
 	@Broadcast
@@ -112,10 +108,10 @@ public class SubscriptionService {
 	private Map<String, MqttClient> host2MqttClient = Maps.newHashMap();
 
 	@PostConstruct
-	Uni<Void> setup() {
+	void setup() {
 		this.webClient = WebClient.create(vertx);
 
-		return subDAO.loadSubscriptions().onItem().transformToUni(subs -> {
+		subDAO.loadSubscriptions().onItem().transformToUni(subs -> {
 			subs.forEach(tuple -> {
 				SubscriptionRequest request;
 				try {
@@ -133,7 +129,7 @@ public class SubscriptionService {
 				}
 			});
 			return Uni.createFrom().voidItem();
-		});
+		}).await().indefinitely();
 
 	}
 
@@ -291,10 +287,7 @@ public class SubscriptionService {
 			NotificationParam notificationParam = potentialSub.getSubscription().getNotification();
 			Uni<Void> toSend;
 			switch (notificationParam.getEndPoint().getUri().getScheme()) {
-			case "internal":
-				toSend = internalNotificationSender
-						.send(new InternalNotification(potentialSub.getTenant(), potentialSub.getId(), notification));
-				break;
+			
 			case "mqtt":
 			case "mqtts":
 				try {
@@ -610,8 +603,7 @@ public class SubscriptionService {
 			}
 			SubscriptionRequest remoteRequest;
 			try {
-				remoteRequest = SubscriptionTools.generateRemoteSubscription(subscriptionRequest,
-						message);
+				remoteRequest = SubscriptionTools.generateRemoteSubscription(subscriptionRequest, message);
 			} catch (ResponseException e) {
 				logger.error("failed to generate a remote subscription", e);
 				return Uni.createFrom().voidItem();
@@ -702,13 +694,13 @@ public class SubscriptionService {
 	}
 
 	@PreDestroy
-	public Uni<Void> unsubscribeToAllRemote() {
+	public void unsubscribeToAllRemote() {
 		List<Uni<Void>> unis = new ArrayList<>(internalSubId2ExternalEndpoint.values().size());
 		for (String entry : internalSubId2ExternalEndpoint.values()) {
 			logger.info("Unsubscribing to remote host " + entry + " before shutdown");
 			unis.add(webClient.deleteAbs(entry).send().onItem().transformToUni(t -> Uni.createFrom().voidItem()));
 		}
-		return Uni.combine().all().unis(unis).discardItems();
+		Uni.combine().all().unis(unis).discardItems().await().atMost(Duration.ofSeconds(30));
 	}
 
 }

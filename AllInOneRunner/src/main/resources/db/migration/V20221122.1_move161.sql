@@ -113,6 +113,115 @@ DROP FUNCTION public.csource_extract_jsonb_fields_to_information_table cascade;
 DROP Trigger csource_extract_jsonb_fields ON csource;
 
 
+	
+CREATE TABLE temp (
+	c_id text,
+	reg jsonb
+);
+INSERT INTO temp SELECT c_id, reg FROM csource;
+
+DELETE FROM csource;
+
+INSERT INTO csource SELECT c_id, reg FROM temp;
+
+drop table temp;
+
+ALTER TABLE PUBLIC.ENTITY RENAME COLUMN DATA TO ENTITY;
+
+ALTER TABLE PUBLIC.ENTITY DROP COLUMN DATA_WITHOUT_SYSATTRS;
+
+ALTER TABLE PUBLIC.ENTITY DROP COLUMN KVDATA;
+
+ALTER TABLE PUBLIC.ENTITY DROP COLUMN LOCATION;
+
+ALTER TABLE PUBLIC.ENTITY DROP COLUMN OBSERVATIONSPACE;
+
+ALTER TABLE PUBLIC.ENTITY DROP COLUMN OPERATIONSPACE;
+
+ALTER TABLE PUBLIC.ENTITY DROP COLUMN SCOPES;
+
+ALTER TABLE PUBLIC.ENTITY DROP COLUMN MODIFIEDAT;
+
+ALTER TABLE PUBLIC.ENTITY DROP COLUMN CREATEDAT;
+
+ALTER TABLE PUBLIC.ENTITY DROP COLUMN CONTEXT;
+
+ALTER TABLE PUBLIC.ENTITY DROP CONSTRAINT entity_pkey;
+
+ALTER TABLE PUBLIC.ENTITY RENAME COLUMN id TO E_ID;
+
+ALTER TABLE IF EXISTS public.entity
+    ADD CONSTRAINT unique_e_id UNIQUE (E_ID);
+	
+CREATE INDEX i_entity_id
+    ON public.entity USING hash
+    (E_ID text_pattern_ops);
+
+
+
+ALTER TABLE IF EXISTS public.entity
+    ADD COLUMN id bigint NOT NULL GENERATED ALWAYS AS IDENTITY ( INCREMENT 1 START 1 );
+	
+ALTER TABLE public.entity ADD PRIMARY KEY (id);
+
+
+
+CREATE TABLE public.etype2iid
+(
+    e_type text,
+    iid bigint,
+    CONSTRAINT "prKey" PRIMARY KEY (e_type, iid)
+);
+
+CREATE TABLE public.escope2iid
+(
+    e_scope text,
+    iid bigint
+);
+ALTER TABLE IF EXISTS public.escope2iid
+    ADD CONSTRAINT iid_fkey FOREIGN KEY (iid)
+    REFERENCES public.entity (id) MATCH SIMPLE
+    ON UPDATE CASCADE
+    ON DELETE CASCADE;
+
+CREATE TABLE public.attr2iid
+(
+    attr text,
+    iid bigint,
+	is_rel boolean,
+	is_geo boolean,
+	is_lang boolean,
+	dataset_id text,
+	attr_value jsonb,
+	geo_value GEOMETRY(Geometry, 4326)
+);
+CREATE INDEX i_attr_geo_value
+    ON public.attr2iid USING gist
+    (geo_value gist_geometry_ops_nd);
+
+ALTER TABLE IF EXISTS public.attr2iid
+    ADD CONSTRAINT iid_fkey FOREIGN KEY (iid)
+    REFERENCES public.entity (id) MATCH SIMPLE
+    ON UPDATE CASCADE
+    ON DELETE CASCADE;
+	
+CREATE INDEX t_index
+    ON public.etype2iid USING hash
+    (e_type text_pattern_ops);
+	
+ALTER TABLE IF EXISTS public.etype2iid
+    ADD CONSTRAINT iid_fkey FOREIGN KEY (iid)
+    REFERENCES public.entity (id) MATCH SIMPLE
+    ON UPDATE CASCADE
+    ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS fki_iid_fkey
+    ON public.etype2iid(iid);
+
+INSERT INTO public.etype2iid SELECT type, id FROM public.entity;
+
+ALTER TABLE PUBLIC.ENTITY DROP COLUMN type;
+
+
 CREATE OR REPLACE FUNCTION CSOURCE_EXTRACT_JSONB_FIELDS() RETURNS TRIGGER AS $_$
 DECLARE
 BEGIN
@@ -324,113 +433,6 @@ $_$ LANGUAGE PLPGSQL;
 
 CREATE TRIGGER csource_extract_jsonb_fields_to_information_table AFTER INSERT OR UPDATE ON csource
     FOR EACH ROW EXECUTE PROCEDURE CSOURCEINFORMATION_EXTRACT_JSONB_FIELDS();	
-	
-CREATE TABLE temp (
-	c_id text,
-	reg jsonb
-);
-INSERT INTO temp SELECT c_id, reg FROM csource;
-
-DELETE FROM csource;
-
-INSERT INTO csource SELECT c_id, reg FROM temp;
-
-drop table temp;
-
-ALTER TABLE PUBLIC.ENTITY RENAME COLUMN DATA TO ENTITY;
-
-ALTER TABLE PUBLIC.ENTITY DROP COLUMN DATA_WITHOUT_SYSATTRS;
-
-ALTER TABLE PUBLIC.ENTITY DROP COLUMN KVDATA;
-
-ALTER TABLE PUBLIC.ENTITY DROP COLUMN LOCATION;
-
-ALTER TABLE PUBLIC.ENTITY DROP COLUMN OBSERVATIONSPACE;
-
-ALTER TABLE PUBLIC.ENTITY DROP COLUMN OPERATIONSPACE;
-
-ALTER TABLE PUBLIC.ENTITY DROP COLUMN SCOPES;
-
-ALTER TABLE PUBLIC.ENTITY DROP COLUMN MODIFIEDAT;
-
-ALTER TABLE PUBLIC.ENTITY DROP COLUMN CREATEDAT;
-
-ALTER TABLE PUBLIC.ENTITY DROP COLUMN CONTEXT;
-
-ALTER TABLE PUBLIC.ENTITY DROP CONSTRAINT entity_pkey;
-
-ALTER TABLE PUBLIC.ENTITY RENAME COLUMN id TO E_ID;
-
-ALTER TABLE IF EXISTS public.entity
-    ADD CONSTRAINT unique_e_id UNIQUE (E_ID);
-	
-CREATE INDEX i_entity_id
-    ON public.entity USING hash
-    (E_ID text_pattern_ops);
-
-
-
-ALTER TABLE IF EXISTS public.entity
-    ADD COLUMN id bigint NOT NULL GENERATED ALWAYS AS IDENTITY ( INCREMENT 1 START 1 );
-	
-ALTER TABLE public.entity ADD PRIMARY KEY (id);
-
-
-
-CREATE TABLE public.etype2iid
-(
-    e_type text,
-    iid bigint,
-    CONSTRAINT "prKey" PRIMARY KEY (e_type, iid)
-);
-
-CREATE TABLE public.escope2iid
-(
-    e_scope text,
-    iid bigint
-);
-ALTER TABLE IF EXISTS public.escope2iid
-    ADD CONSTRAINT iid_fkey FOREIGN KEY (iid)
-    REFERENCES public.entity (id) MATCH SIMPLE
-    ON UPDATE CASCADE
-    ON DELETE CASCADE;
-
-CREATE TABLE public.attr2iid
-(
-    attr text,
-    iid bigint,
-	is_rel boolean,
-	is_geo boolean,
-	is_lang boolean,
-	dataset_id text,
-	attr_value jsonb,
-	geo_value GEOMETRY(Geometry, 4326)
-);
-CREATE INDEX i_attr_geo_value
-    ON public.attr2iid USING gist
-    (geo_value gist_geometry_ops_nd);
-
-ALTER TABLE IF EXISTS public.attr2iid
-    ADD CONSTRAINT iid_fkey FOREIGN KEY (iid)
-    REFERENCES public.entity (id) MATCH SIMPLE
-    ON UPDATE CASCADE
-    ON DELETE CASCADE;
-	
-CREATE INDEX t_index
-    ON public.etype2iid USING hash
-    (e_type text_pattern_ops);
-	
-ALTER TABLE IF EXISTS public.etype2iid
-    ADD CONSTRAINT iid_fkey FOREIGN KEY (iid)
-    REFERENCES public.entity (id) MATCH SIMPLE
-    ON UPDATE CASCADE
-    ON DELETE CASCADE;
-CREATE INDEX IF NOT EXISTS fki_iid_fkey
-    ON public.etype2iid(iid);
-
-INSERT INTO public.etype2iid SELECT type, id FROM public.entity;
-
-ALTER TABLE PUBLIC.ENTITY DROP COLUMN type;
 
 CREATE OR REPLACE FUNCTION GETMODE (MODETEXT text) RETURNS smallint AS $registry_mode$
 declare
@@ -647,7 +649,7 @@ BEGIN
 	END IF;
 	PERFORM addAttribValue(attribName, entityIid, isRel, isGeo, isLang, datasetId, attrValue);
 	FOR subAttribName IN SELECT jsonb_object_keys FROM jsonb_object_keys(tempJson) LOOP
-		FOR subAttribValue IN SELECT6 jsonb_array_elements FROM jsonb_array_elements(tempJson->subAttribName) LOOP
+		FOR subAttribValue IN SELECT jsonb_array_elements FROM jsonb_array_elements(tempJson->subAttribName) LOOP
 			PERFORM addAttrib(attribName || "." || subAttribName, subAttribValue, entityIid);
 		END LOOP;
 	END LOOP;

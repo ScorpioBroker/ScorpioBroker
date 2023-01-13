@@ -5,7 +5,6 @@ import java.net.URLDecoder;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.PrimitiveIterator.OfInt;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -13,8 +12,6 @@ import java.util.regex.Pattern;
 import org.apache.commons.lang3.StringUtils;
 
 import com.github.jsonldjava.core.Context;
-import com.github.jsonldjava.core.JsonLdProcessor;
-import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.Sets;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;

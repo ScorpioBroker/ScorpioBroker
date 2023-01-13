@@ -24,28 +24,8 @@
 			<artifactId>gson</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.apache.camel.quarkus</groupId>
-			<artifactId>camel-quarkus-http</artifactId>
-			<version>2.7.0</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.camel.quarkus</groupId>
-			<artifactId>camel-quarkus-paho</artifactId>
-			<version>2.7.0</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.camel.quarkus</groupId>
-			<artifactId>camel-quarkus-paho-mqtt5</artifactId>
-			<version>2.7.0</version>
-		</dependency>
-		<dependency>
 			<groupId>org.apache.httpcomponents</groupId>
 			<artifactId>httpclient-cache</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.camel.quarkus</groupId>
-			<artifactId>camel-quarkus-caffeine</artifactId>
-			<version>2.7.0</version>
 		</dependency>
 		<dependency>
 			<groupId>com.github.filosganga</groupId>

@@ -1,19 +1,9 @@
 package eu.neclab.ngsildbroker.registryhandler.service;
 
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -23,20 +13,10 @@ import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.core.JsonGenerationException;
-import com.github.jsonldjava.core.Context;
-import com.github.jsonldjava.core.JsonLdProcessor;
-import com.github.jsonldjava.utils.JsonUtils;
-import com.google.common.collect.HashBasedTable;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Table;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.CSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.results.CRUDSuccess;
@@ -45,24 +25,19 @@ import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
-import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.registryhandler.controller.RegistryController;
 import eu.neclab.ngsildbroker.registryhandler.repository.CSourceDAO;
-import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.arc.properties.IfBuildProperty;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.smallrye.reactive.messaging.annotations.Broadcast;
 import io.vertx.mutiny.core.Vertx;
-import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.WebClient;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowIterator;
@@ -86,7 +61,7 @@ public class CSourceService {
 	@ConfigProperty(name = "scorpio.federation.registrationtype", defaultValue = "types")
 	String AUTO_REG_MODE;
 
-	@ConfigProperty(name = "scorpio.federation.hosts", defaultValue = "")
+	@ConfigProperty(name = "scorpio.federation.hosts", defaultValue = " ")
 	String FED_BROKERS_CONFIG;
 
 	String[] FED_BROKERS;
@@ -106,7 +81,7 @@ public class CSourceService {
 
 	@PostConstruct
 	void setup() {
-		this.webClient = new WebClient(vertx);
+		this.webClient = WebClient.create(vertx);
 		if (FED_BROKERS_CONFIG.isBlank()) {
 			FED_BROKERS = new String[0];
 		} else {

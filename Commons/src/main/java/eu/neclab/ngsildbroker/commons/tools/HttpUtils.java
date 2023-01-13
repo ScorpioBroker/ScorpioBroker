@@ -2,10 +2,8 @@ package eu.neclab.ngsildbroker.commons.tools;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URLDecoder;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -27,7 +25,6 @@ import org.jboss.resteasy.reactive.server.jaxrs.RestResponseBuilderImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.jsonldjava.core.Context;
@@ -38,9 +35,7 @@ import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.core.RDFDataset;
 import com.github.jsonldjava.core.RDFDatasetUtils;
 import com.github.jsonldjava.utils.JsonUtils;
-import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.net.HttpHeaders;
 
@@ -55,7 +50,6 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
-import io.vertx.codegen.annotations.Nullable;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.impl.headers.HeadersMultiMap;

@@ -8,24 +8,15 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
-import java.util.UUID;
-
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.eclipse.microprofile.reactive.messaging.Channel;
-import org.locationtech.spatial4j.SpatialPredicate;
 import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
-import org.locationtech.spatial4j.distance.DistanceUtils;
-import org.locationtech.spatial4j.shape.Shape;
-import org.locationtech.spatial4j.shape.ShapeFactory.LineStringBuilder;
-import org.locationtech.spatial4j.shape.ShapeFactory.PolygonBuilder;
 import org.locationtech.spatial4j.shape.jts.JtsShapeFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +24,6 @@ import org.slf4j.LoggerFactory;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
-import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -52,7 +42,6 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.Subscripti
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.UpdateSubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
-import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
@@ -65,8 +54,6 @@ import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.smallrye.reactive.messaging.annotations.Broadcast;
-import io.vertx.core.http.impl.headers.HeadersMultiMap;
-import io.vertx.mutiny.core.MultiMap;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.WebClient;
@@ -102,10 +89,10 @@ public class RegistrySubscriptionService {
 	private JtsShapeFactory shapeFactory = JtsSpatialContext.GEO.getShapeFactory();
 
 	@PostConstruct
-	Uni<Void> setup() {
+	void setup() {
 		this.webClient = WebClient.create(vertx);
 
-		return regDAO.loadSubscriptions().onItem().transformToUni(subs -> {
+		regDAO.loadSubscriptions().onItem().transformToUni(subs -> {
 			subs.forEach(tuple -> {
 				SubscriptionRequest request;
 				try {
@@ -123,7 +110,7 @@ public class RegistrySubscriptionService {
 				}
 			});
 			return Uni.createFrom().voidItem();
-		});
+		}).await().indefinitely();
 
 	}
 

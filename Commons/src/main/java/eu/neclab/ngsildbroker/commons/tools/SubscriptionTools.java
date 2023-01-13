@@ -4,7 +4,6 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -14,7 +13,6 @@ import org.locationtech.spatial4j.SpatialPredicate;
 import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
 import org.locationtech.spatial4j.distance.DistanceUtils;
 import org.locationtech.spatial4j.shape.Shape;
-import org.locationtech.spatial4j.shape.ShapeCollection;
 import org.locationtech.spatial4j.shape.ShapeFactory.LineStringBuilder;
 import org.locationtech.spatial4j.shape.ShapeFactory.PolygonBuilder;
 import org.locationtech.spatial4j.shape.jts.JtsShapeFactory;
@@ -26,8 +24,6 @@ import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.vividsolutions.jts.geom.Geometry;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.NotificationParam;
@@ -40,7 +36,6 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import io.smallrye.mutiny.tuples.Tuple4;
 import io.vertx.core.http.impl.headers.HeadersMultiMap;
 import io.vertx.mutiny.core.MultiMap;
-import io.vertx.pgclient.data.Polygon;
 
 public class SubscriptionTools {
 	private static JtsShapeFactory shapeFactory = JtsSpatialContext.GEO.getShapeFactory();

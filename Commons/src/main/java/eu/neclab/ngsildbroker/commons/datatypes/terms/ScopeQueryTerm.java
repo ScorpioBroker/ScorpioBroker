@@ -2,8 +2,6 @@ package eu.neclab.ngsildbroker.commons.datatypes.terms;
 
 import java.util.List;
 
-import eu.neclab.ngsildbroker.commons.constants.DBConstants;
-import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import io.smallrye.mutiny.tuples.Tuple2;
 
 public class ScopeQueryTerm {

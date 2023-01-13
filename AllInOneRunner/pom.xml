@@ -17,7 +17,12 @@
 		</dependency>
 		<dependency>
 			<groupId>eu.neclab.ngsildbroker</groupId>
-			<artifactId>history-manager</artifactId>
+			<artifactId>history-entity-manager</artifactId>
+			<version>3.0.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.neclab.ngsildbroker</groupId>
+			<artifactId>history-query-manager</artifactId>
 			<version>3.0.0-SNAPSHOT</version>
 		</dependency>
 		<dependency>
@@ -30,7 +35,7 @@
 			<artifactId>registry-manager</artifactId>
 			<version>3.0.0-SNAPSHOT</version>
 		</dependency>
-		<!--<dependency>
+		<dependency>
 			<groupId>eu.neclab.ngsildbroker</groupId>
 			<artifactId>registry-subscription-manager</artifactId>
 			<version>3.0.0-SNAPSHOT</version>
@@ -39,7 +44,7 @@
 			<groupId>eu.neclab.ngsildbroker</groupId>
 			<artifactId>subscription-manager</artifactId>
 			<version>3.0.0-SNAPSHOT</version>
-		</dependency>-->
+		</dependency>
 	</dependencies>
 	<profiles>
 		<profile>

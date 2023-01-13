@@ -89,12 +89,12 @@
 	</dependencyManagement>
 	<dependencies>
 		<dependency>
-			<groupId>io.quarkus</groupId>
-			<artifactId>quarkus-smallrye-reactive-messaging-mqtt</artifactId>
+			<groupId>io.smallrye.reactive</groupId>
+			<artifactId>smallrye-mutiny-vertx-web-client</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>io.smallrye.reactive</groupId>
-			<artifactId>smallrye-mutiny-vertx-web-client</artifactId>
+			<artifactId>smallrye-mutiny-vertx-mqtt</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>io.quarkus</groupId>
@@ -179,11 +179,6 @@
 		<dependency>
 			<groupId>io.smallrye.reactive</groupId>
 			<artifactId>smallrye-reactive-messaging-in-memory</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>com.github.fmcejudo</groupId>
-			<artifactId>quarkus-eureka</artifactId>
-			<version>0.0.14</version>
 		</dependency>
 	</dependencies>
 	<profiles>

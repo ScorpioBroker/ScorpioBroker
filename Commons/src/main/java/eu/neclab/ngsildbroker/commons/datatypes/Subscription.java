@@ -1,10 +1,8 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -18,10 +16,7 @@ import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdConsts;
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
-import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
@@ -32,7 +27,6 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TemporalQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.enums.Format;
-import eu.neclab.ngsildbroker.commons.enums.Geometry;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.QueryParser;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
