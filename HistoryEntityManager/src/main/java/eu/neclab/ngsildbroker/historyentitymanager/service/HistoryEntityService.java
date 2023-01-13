@@ -164,7 +164,7 @@ public class HistoryEntityService {
 					.transformToUni(resultTable -> {
 						return Uni.createFrom().voidItem();
 					}).onFailure().recoverWithUni(e -> {
-						logger.debug("Failed to record delete", e);
+						logger.debug("Failed to record create", e);
 						return Uni.createFrom().voidItem();
 					});
 		case AppConstants.APPEND_REQUEST:
@@ -173,7 +173,7 @@ public class HistoryEntityService {
 					.transformToUni(resultTable -> {
 						return Uni.createFrom().voidItem();
 					}).onFailure().recoverWithUni(e -> {
-						logger.debug("Failed to record delete", e);
+						logger.debug("Failed to record update", e);
 						return Uni.createFrom().voidItem();
 					});
 		case AppConstants.DELETE_REQUEST:
@@ -183,7 +183,7 @@ public class HistoryEntityService {
 			});
 		case AppConstants.DELETE_ATTRIBUTE_REQUEST:
 			return historyDAO.setAttributeDeleted((DeleteAttributeRequest) request).onFailure().recoverWithUni(e -> {
-				logger.debug("Failed to record delete", e);
+				logger.debug("Failed to record delete attrs", e);
 				return Uni.createFrom().voidItem();
 			});
 		default:

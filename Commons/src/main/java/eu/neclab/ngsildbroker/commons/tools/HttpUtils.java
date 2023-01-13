@@ -492,7 +492,7 @@ public final class HttpUtils {
 		default:
 			return handleControllerExceptions(new ResponseException(ErrorType.InternalError));
 		}
-		if (options.contains("compress")) {
+		if (options != null && options.contains("compress")) {
 			result = zipResult(replyBody);
 			contentType = AppConstants.NGB_APPLICATION_ZIP;
 		} else {
@@ -552,7 +552,7 @@ public final class HttpUtils {
 			context.parse(payloadAtContext, true);
 
 		}
-		return null;
+		return context;
 	}
 
 	public static RestResponse<Object> generateDeleteResult(NGSILDOperationResult result) {

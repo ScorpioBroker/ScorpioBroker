@@ -84,7 +84,7 @@ public class HistoryDAO {
 
 	public Uni<Void> setEntityDeleted(BaseRequest request) {
 		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
-			return client.preparedQuery("UPDATE temporalentity SET deletedat=$1::TIMESTAMP")
+			return client.preparedQuery("UPDATE temporalentity SET deletedat='$1'::TIMESTAMP")
 					// You would think that we do the conversion in the db but somehow postgres
 					// can't easily convert utc into a timestamp without a timezone
 					.execute(Tuple.of(SerializationTools.notifiedAt_formatter.format(

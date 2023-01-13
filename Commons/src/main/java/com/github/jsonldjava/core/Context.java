@@ -946,7 +946,7 @@ public class Context extends LinkedHashMap<String, Object> {
 	}
 
 	public String compactIri(String iri) {
-		return compactIri(iri, null, false, false);
+		return compactIri(iri, null, true, false);
 	}
 
 	@Override

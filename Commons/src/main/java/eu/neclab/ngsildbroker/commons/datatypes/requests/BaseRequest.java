@@ -16,7 +16,7 @@ public class BaseRequest {
 	private String tenant;
 	protected Map<String, Object> payload;
 	private int requestType;
-	private long sendTimestamp;
+	private long sendTimestamp = System.currentTimeMillis();
 	private BatchInfo batchInfo;
 	private String id;
 
@@ -24,12 +24,14 @@ public class BaseRequest {
 
 	}
 
-	protected BaseRequest(String tenant, String id, Map<String, Object> requestPayload, BatchInfo batchInfo, int requestType) {
+	protected BaseRequest(String tenant, String id, Map<String, Object> requestPayload, BatchInfo batchInfo,
+			int requestType) {
 		super();
 		this.tenant = tenant;
 		this.requestType = requestType;
 		this.batchInfo = batchInfo;
 		this.id = id;
+		this.payload = requestPayload;
 	}
 
 	public int getRequestType() {

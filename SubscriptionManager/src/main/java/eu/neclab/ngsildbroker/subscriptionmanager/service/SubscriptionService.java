@@ -54,6 +54,7 @@ import eu.neclab.ngsildbroker.subscriptionmanager.repository.SubscriptionInfoDAO
 import io.netty.handler.codec.mqtt.MqttQoS;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.smallrye.reactive.messaging.annotations.Broadcast;
 import io.vertx.core.json.JsonObject;
@@ -241,6 +242,7 @@ public class SubscriptionService {
 		Collection<SubscriptionRequest> potentialSubs = tenant2subscriptionId2Subscription.column(message.getTenant())
 				.values();
 		List<Uni<Void>> unis = Lists.newArrayList();
+		logger.info("checking subscriptions");
 		for (SubscriptionRequest potentialSub : potentialSubs) {
 			switch (message.getRequestType()) {
 			case AppConstants.UPDATE_REQUEST:
@@ -266,6 +268,9 @@ public class SubscriptionService {
 			default:
 				break;
 			}
+		}
+		if (unis.isEmpty()) {
+			return Uni.createFrom().voidItem();
 		}
 		return Uni.combine().all().unis(unis).discardItems();
 	}
@@ -553,7 +558,7 @@ public class SubscriptionService {
 		return false;
 	}
 
-	@Scheduled(every = "${scorpio.registry.subscription.checkinterval}")
+	@Scheduled(every = "${scorpio.registry.subscription.checkinterval}", delay = 3)
 	Uni<Void> checkIntervalSubs() {
 		List<Uni<Void>> unis = Lists.newArrayList();
 		for (Cell<String, String, SubscriptionRequest> cell : tenant2subscriptionId2IntervalSubscription.cellSet()) {
@@ -698,7 +703,9 @@ public class SubscriptionService {
 			logger.info("Unsubscribing to remote host " + entry + " before shutdown");
 			unis.add(webClient.deleteAbs(entry).send().onItem().transformToUni(t -> Uni.createFrom().voidItem()));
 		}
-		Uni.combine().all().unis(unis).discardItems().await().atMost(Duration.ofSeconds(30));
+		if (!unis.isEmpty()) {
+			Uni.combine().all().unis(unis).discardItems().await().atMost(Duration.ofSeconds(30));
+		}
 	}
 
 }

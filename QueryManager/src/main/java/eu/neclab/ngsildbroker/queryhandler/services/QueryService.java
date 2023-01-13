@@ -244,42 +244,43 @@ public class QueryService {
 				});
 			});
 		}
-		return Uni.combine().all().unis(queryRemoteTypes, queryDAO.getTypesWithDetails(tenant)).asTuple().onItem().transform(t -> {
-			List<Map<String, Object>> result = Lists.newArrayList();
-			Map<String, Set<String>> currentType2Attr = t.getItem1();
-			t.getItem2().forEach(row -> {
-				// T.e_type, A.attr
-				String type = row.getString(0);
-				String attr = row.getString(1);
-				Set<String> currentAttribs;
-				if (currentType2Attr.containsKey(type)) {
-					currentAttribs = currentType2Attr.get(type);
-				} else {
-					currentAttribs = Sets.newHashSet();
-					currentType2Attr.put(type, currentAttribs);
-				}
-				currentAttribs.add(attr);
-			});
-			currentType2Attr.entrySet().forEach(entry -> {
-				Map<String, Object> resultEntry = Maps.newHashMap();
-				String type = entry.getKey();
-				resultEntry.put(NGSIConstants.JSON_LD_ID, type);
-				List<Map<String, String>> typeName = Lists.newArrayList();
-				Map<String, String> typeEntry = Maps.newHashMap();
-				typeEntry.put(NGSIConstants.JSON_LD_ID, type);
-				resultEntry.put(NGSIConstants.NGSI_LD_TYPE_NAME, typeName);
-				resultEntry.put(NGSIConstants.JSON_LD_TYPE, ENTITY_TYPE_TYPE);
-				List<Map<String, String>> attribList = Lists.newArrayList();
-				for (String attrib : entry.getValue()) {
-					Map<String, String> attribValue = Maps.newHashMap();
-					attribValue.put(NGSIConstants.JSON_LD_ID, attrib);
-					attribList.add(attribValue);
-				}
-				resultEntry.put(NGSIConstants.NGSI_LD_ATTRIBUTE_NAMES, attribList);
-				result.add(resultEntry);
-			});
-			return result;
-		});
+		return Uni.combine().all().unis(queryRemoteTypes, queryDAO.getTypesWithDetails(tenant)).asTuple().onItem()
+				.transform(t -> {
+					List<Map<String, Object>> result = Lists.newArrayList();
+					Map<String, Set<String>> currentType2Attr = t.getItem1();
+					t.getItem2().forEach(row -> {
+						// T.e_type, A.attr
+						String type = row.getString(0);
+						String attr = row.getString(1);
+						Set<String> currentAttribs;
+						if (currentType2Attr.containsKey(type)) {
+							currentAttribs = currentType2Attr.get(type);
+						} else {
+							currentAttribs = Sets.newHashSet();
+							currentType2Attr.put(type, currentAttribs);
+						}
+						currentAttribs.add(attr);
+					});
+					currentType2Attr.entrySet().forEach(entry -> {
+						Map<String, Object> resultEntry = Maps.newHashMap();
+						String type = entry.getKey();
+						resultEntry.put(NGSIConstants.JSON_LD_ID, type);
+						List<Map<String, String>> typeName = Lists.newArrayList();
+						Map<String, String> typeEntry = Maps.newHashMap();
+						typeEntry.put(NGSIConstants.JSON_LD_ID, type);
+						resultEntry.put(NGSIConstants.NGSI_LD_TYPE_NAME, typeName);
+						resultEntry.put(NGSIConstants.JSON_LD_TYPE, ENTITY_TYPE_TYPE);
+						List<Map<String, String>> attribList = Lists.newArrayList();
+						for (String attrib : entry.getValue()) {
+							Map<String, String> attribValue = Maps.newHashMap();
+							attribValue.put(NGSIConstants.JSON_LD_ID, attrib);
+							attribList.add(attribValue);
+						}
+						resultEntry.put(NGSIConstants.NGSI_LD_ATTRIBUTE_NAMES, attribList);
+						result.add(resultEntry);
+					});
+					return result;
+				});
 	}
 
 	private void mergeTypeListWithDetails(List<Map<String, Object>> typeList,
@@ -402,7 +403,7 @@ public class QueryService {
 		if (localOnly) {
 			getRemoteEntities = Uni.createFrom().item(new HashMap<String, Object>(0));
 		} else {
-			getRemoteEntities = queryDAO.getRemoteSourcesForEntity(entityId, attrsQuery.getAttrs(), tenant).onItem()
+			getRemoteEntities = queryDAO.getRemoteSourcesForEntity(entityId, attrsQuery, tenant).onItem()
 					.transformToUni(rows -> {
 						List<Uni<Map<String, Object>>> tmp = Lists.newArrayList();
 						// C.endpoint C.tenant_id, c.headers, c.reg_mode
@@ -460,6 +461,9 @@ public class QueryService {
 										return responseEntity;
 									}));
 						});
+						if (tmp.isEmpty()) {
+							return Uni.createFrom().item(Maps.newHashMap());
+						}
 						return Uni.combine().all().unis(tmp).combinedWith(list -> {
 							Map<String, Object> result = Maps.newHashMap();
 							for (Object entry : list) {

@@ -197,6 +197,9 @@ public class QueryParser {
 	}
 
 	public static AttrsQueryTerm parseAttrs(String attrs, Context context) throws ResponseException {
+		if(attrs == null) {
+			return null;
+		}
 		AttrsQueryTerm result = new AttrsQueryTerm(context);
 		for (String attr : attrs.split(",")) {
 			result.addAttr(attr);

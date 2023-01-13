@@ -597,7 +597,7 @@ $$ LANGUAGE PLPGSQL;
 
 
 
-CREATE OR REPLACE FUNCTION addAttrib(attribName text, attribValue jsonb, entityIid bigint) RETURNS void AS $$
+CREATE OR REPLACE FUNCTION addAttrib(attribName text, attribValue jsonb, entityIid bigint, rootLevel boolean) RETURNS void AS $$
 declare	
 	tempJson jsonb;
 	attrValue jsonb;
@@ -647,10 +647,10 @@ BEGIN
 		INSERT INTO attr2iid VALUES (attribName || '.https://uri.etsi.org/ngsi-ld/observedAt' , entityIid, isRel, isGeo, isLang, datasetId, attribValue#>'{https://uri.etsi.org/ngsi-ld/observedAt,0,@value}', null);
 		tempJson := tempJson - 'https://uri.etsi.org/ngsi-ld/observedAt';
 	END IF;
-	PERFORM addAttribValue(attribName, entityIid, isRel, isGeo, isLang, datasetId, attrValue);
+	PERFORM addAttribValue(attribName, entityIid, isRel, isGeo, isLang, datasetId, attrValue, rootLevel);
 	FOR subAttribName IN SELECT jsonb_object_keys FROM jsonb_object_keys(tempJson) LOOP
 		FOR subAttribValue IN SELECT jsonb_array_elements FROM jsonb_array_elements(tempJson->subAttribName) LOOP
-			PERFORM addAttrib(attribName || "." || subAttribName, subAttribValue, entityIid);
+			PERFORM addAttrib(attribName || "." || subAttribName, subAttribValue, entityIid, false);
 		END LOOP;
 	END LOOP;
 	RETURN;
@@ -675,7 +675,7 @@ BEGIN
 	tempJson := entity - '@id';
 	tempJson := tempJson - '@type';
 	tempJson := tempJson - 'https://uri.etsi.org/ngsi-ld/createdAt';
-	tempJson := tempJson - 'https://uri.etsi.org/ngsi-ld/observedAt';
+	tempJson := tempJson - 'https://uri.etsi.org/ngsi-ld/modifiedAt';
 	INSERT INTO attr2iid VALUES ('https://uri.etsi.org/ngsi-ld/createdAt' , entity_iid, false, false, false, null, entity#>'{https://uri.etsi.org/ngsi-ld/createdAt,0,@value}', null);
 	INSERT INTO attr2iid VALUES ('https://uri.etsi.org/ngsi-ld/modifiedAt' , entity_iid, false, false, false, null, entity#>'{https://uri.etsi.org/ngsi-ld/modifiedAt,0,@value}', null);
 	IF entity ? 'https://uri.etsi.org/ngsi-ld/observedAt' THEN
@@ -685,7 +685,7 @@ BEGIN
 	tempJson := tempJson - 'https://uri.etsi.org/ngsi-ld/scope';
 	FOR attribName IN SELECT jsonb_object_keys FROM jsonb_object_keys(tempJson) LOOP
 		FOR attribValueEntry IN SELECT jsonb_array_elements FROM jsonb_array_elements(tempJson->attribName) LOOP
-			PERFORM addAttrib(attribName, attribValueEntry, entity_iid);
+			PERFORM addAttrib(attribName, attribValueEntry, entity_iid, true);
 		END LOOP;
 	END LOOP;
 	RETURN;
@@ -810,7 +810,7 @@ BEGIN
 			INSERT INTO ENTITY (E_ID, ENTITY) VALUES (entityId, insertEntity);
 			INSERT INTO resultTable VALUES ('ADDED ENTITY', null, null, insertEntity, 'ADDED ENTITY', false, false);
 		EXCEPTION WHEN OTHERS THEN
-			INSERT INTO resultTable VALUES ('ERROR', sqlstate::text, SQLERRM::text, insertEntity, 'ERROR', false, false);
+			INSERT INTO resultTable VALUES ('ERROR', sqlstate::text, null, insertEntity, SQLERRM::text, false, false);
 		END;
 	END IF;
 	RETURN QUERY SELECT * FROM resultTable;

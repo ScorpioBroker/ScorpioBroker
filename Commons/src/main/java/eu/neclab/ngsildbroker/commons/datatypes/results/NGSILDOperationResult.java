@@ -20,8 +20,8 @@ public class NGSILDOperationResult {
 
 	private boolean wasUpdated = false;
 
-	private List<CRUDSuccess> successes;
-	private List<ResponseException> failures;
+	private List<CRUDSuccess> successes = Lists.newArrayList();
+	private List<ResponseException> failures = Lists.newArrayList();
 
 	public NGSILDOperationResult(int operationType, String entityId) {
 		super();
