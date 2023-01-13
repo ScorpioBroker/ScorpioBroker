@@ -2,10 +2,8 @@ package eu.neclab.ngsildbroker.historyquerymanager.repository;
 
 import java.util.ArrayList;
 import java.util.Set;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AggrTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
