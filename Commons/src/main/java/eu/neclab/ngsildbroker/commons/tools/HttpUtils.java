@@ -18,6 +18,7 @@ import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.http.HttpStatus;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.RestResponse.ResponseBuilder;
@@ -41,6 +42,7 @@ import com.google.common.net.HttpHeaders;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.RemoteHost;
 import eu.neclab.ngsildbroker.commons.datatypes.results.Attrib;
 import eu.neclab.ngsildbroker.commons.datatypes.results.CRUDSuccess;
 import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
@@ -55,6 +57,8 @@ import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.impl.headers.HeadersMultiMap;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.mutiny.core.buffer.Buffer;
+import io.vertx.mutiny.ext.web.client.HttpResponse;
 
 /**
  * A utility class to handle HTTP Requests and Responses.
@@ -673,8 +677,8 @@ public final class HttpUtils {
 			break;
 		case 2:
 			try {
-				compacted = JsonLdProcessor.compact(queryResult.getData(), getAtContext(request), context, opts,
-						-1, optionSet, lang);
+				compacted = JsonLdProcessor.compact(queryResult.getData(), getAtContext(request), context, opts, -1,
+						optionSet, lang);
 			} catch (Exception e) {
 				return handleControllerExceptions(e);
 			}
@@ -698,8 +702,8 @@ public final class HttpUtils {
 		case 4:// geo+json
 			try {
 				// todo add options to compact
-				compacted = JsonLdProcessor.compact(queryResult.getData(), getAtContext(request), context, opts,
-						-1, optionSet, lang);
+				compacted = JsonLdProcessor.compact(queryResult.getData(), getAtContext(request), context, opts, -1,
+						optionSet, lang);
 				replyBody = JsonUtils.toPrettyString(
 						generateGeoJson(getPayloadForQueryLD(compacted), geometryProperty, getAtContext(request)));
 			} catch (Exception e) {
@@ -752,4 +756,54 @@ public final class HttpUtils {
 		return result;
 	}
 
+	public static NGSILDOperationResult handleWebResponse(HttpResponse<Buffer> response, Throwable failure,
+			Integer[] integers, RemoteHost remoteHost, int operationType, String entityId, Set<Attrib> attrs) {
+
+		NGSILDOperationResult result = new NGSILDOperationResult(operationType, entityId);
+		if (failure != null) {
+			result.addFailure(new ResponseException(ErrorType.InternalError, failure.getMessage(), remoteHost, attrs));
+		} else {
+			int statusCode = response.statusCode();
+			if (ArrayUtils.contains(integers, statusCode)) {
+				result.addSuccess(new CRUDSuccess(remoteHost, attrs));
+			} else if (statusCode == 207) {
+				JsonObject jsonObj = response.bodyAsJsonObject();
+				if (jsonObj != null) {
+					NGSILDOperationResult remoteResult;
+					try {
+						remoteResult = NGSILDOperationResult.getFromPayload(jsonObj.getMap());
+					} catch (ResponseException e) {
+						result.addFailure(e);
+						return result;
+					}
+					result.getFailures().addAll(remoteResult.getFailures());
+					result.getSuccesses().addAll(remoteResult.getSuccesses());
+				}
+
+			} else {
+
+				JsonObject responseBody = response.bodyAsJsonObject();
+				if (responseBody == null) {
+					result.addFailure(new ResponseException(500, NGSIConstants.ERROR_UNEXPECTED_RESULT,
+							NGSIConstants.ERROR_UNEXPECTED_RESULT_NULL_TITLE, statusCode, remoteHost, attrs));
+
+				} else {
+					if (!responseBody.containsKey(NGSIConstants.ERROR_TYPE)
+							|| !responseBody.containsKey(NGSIConstants.ERROR_TITLE)
+							|| !responseBody.containsKey(NGSIConstants.ERROR_DETAIL)) {
+						result.addFailure(
+								new ResponseException(statusCode, responseBody.getString(NGSIConstants.ERROR_TYPE),
+										responseBody.getString(NGSIConstants.ERROR_TITLE),
+										responseBody.getMap().get(NGSIConstants.ERROR_DETAIL), remoteHost, attrs));
+					} else {
+						result.addFailure(new ResponseException(500, NGSIConstants.ERROR_UNEXPECTED_RESULT,
+								NGSIConstants.ERROR_UNEXPECTED_RESULT_NOT_EXPECTED_BODY_TITLE, responseBody.getMap(),
+								remoteHost, attrs));
+					}
+				}
+			}
+		}
+		return result;
+
+	}
 }

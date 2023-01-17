@@ -44,7 +44,9 @@ public interface NGSIConstants {
 	public final static String JSON_LD_ID = "@id";
 	public final static String JSON_LD_TYPE = "@type";
 	public final static String JSON_LD_VALUE = "@value";
+	public final static String JSON_LD_NONE = "@none";
 	public final static String JSON_LD_CONTEXT = "@context";
+	public final static String JSON_LD_LANGUAGE = "@language";
 	public final static String NGSI_LD_DEFAULT_PREFIX = "https://uri.etsi.org/ngsi-ld/default-context/";
 	public final static String NGSI_LD_RELATIONSHIP = "https://uri.etsi.org/ngsi-ld/Relationship";
 	public final static String NGSI_LD_PROPERTY = "https://uri.etsi.org/ngsi-ld/Property";
@@ -53,7 +55,7 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_COORDINATES = "https://purl.org/geojson/vocab#coordinates"; // "https://uri.etsi.org/ngsi-ld/coordinates";
 	public final static String NGSI_LD_GEOPROPERTY = "https://uri.etsi.org/ngsi-ld/GeoProperty";
 	public final static String NGSI_LD_LANGPROPERTY = "https://uri.etsi.org/ngsi-ld/LanguageProperty";
-	
+
 	public final static String NGSI_LD_GEOPROPERTY_SHORT = "GeoProperty";
 	public final static String NGSI_LD_LOCATION = "https://uri.etsi.org/ngsi-ld/location";
 	public final static String NGSI_LD_LOCATION_SHORT = "location";
@@ -334,6 +336,8 @@ public interface NGSIConstants {
 	public static final String AGGR_METH_MAX = "max";
 	public static final String AGGR_METH_STDDEV = "stddev";
 	public static final String AGGR_METH_SUMSQ = "sumsq";
+	public static final Set<String> VALID_ATTR_TYPES = Sets.newHashSet(NGSI_LD_PROPERTY, NGSI_LD_RELATIONSHIP,
+			NGSI_LD_GEOPROPERTY, NGSI_LD_LANGPROPERTY);
 	public static final Set<String> ALLOWED_AGGR_METH = Sets.newHashSet(AGGR_METH_TOTAL_COUNT, AGGR_METH_DISTINCT_COUNT,
 			AGGR_METH_SUM, AGGR_METH_AVG, AGGR_METH_MIN, AGGR_METH_MAX, AGGR_METH_STDDEV, AGGR_METH_SUMSQ);
 	public static final String NGSI_LD_SUBSCRIPTION_ID_SHORT = "subscriptionId";

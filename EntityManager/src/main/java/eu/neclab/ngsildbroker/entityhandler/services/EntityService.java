@@ -1,12 +1,17 @@
 package eu.neclab.ngsildbroker.entityhandler.services;
 
 import com.github.jsonldjava.core.Context;
+import com.github.jsonldjava.core.JsonLdError;
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.common.collect.Table;
+import com.google.common.collect.Tables;
+
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
@@ -17,11 +22,14 @@ import eu.neclab.ngsildbroker.commons.datatypes.results.CRUDSuccess;
 import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple3;
 import io.smallrye.mutiny.tuples.Tuple4;
+import io.smallrye.mutiny.tuples.Tuple6;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.smallrye.reactive.messaging.annotations.Broadcast;
 import io.vertx.core.json.JsonArray;
@@ -37,6 +45,7 @@ import io.vertx.mutiny.sqlclient.RowSet;
 import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.locationtech.spatial4j.shape.Shape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import javax.annotation.PostConstruct;
@@ -66,6 +75,8 @@ public class EntityService {
 
 	WebClient webClient;
 
+	private Table<String, String, RegistrationEntry> tenant2CId2RegEntries = HashBasedTable.create();
+
 	private JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
 	private Random random = new Random();
@@ -73,6 +84,10 @@ public class EntityService {
 	@PostConstruct
 	void init() {
 		webClient = WebClient.create(vertx);
+		entityDAO.getAllRegistries().onItem().transform(t -> {
+			tenant2CId2RegEntries = t;
+			return null;
+		}).await().indefinitely();
 	}
 
 	public Uni<NGSILDOperationResult> createEntry(String tenant, Map<String, Object> resolved,
@@ -700,7 +715,7 @@ public class EntityService {
 			NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.UPDATE_REQUEST, request.getId());
 			List<Uni<Void>> unis = Lists.newArrayList();
 			Map<Integer, Map<String, Object>> hash2Compacted = Maps.newHashMap();
-			
+
 			resultTable.forEach(row -> {
 
 				switch (row.getString(0)) {
@@ -1117,6 +1132,214 @@ public class EntityService {
 
 		});
 
+	}
+
+	public Uni<NGSILDOperationResult> updateEntry2(String tenant, String entityId, Map<String, Object> payload,
+			Context originalContext) {
+		UpdateEntityRequest request = new UpdateEntityRequest(tenant, entityId, payload, null, null);
+		// entityDAO.updateEntity2(request)
+		return null;
+	}
+
+	public Uni<NGSILDOperationResult> createEntry2(String tenant, Map<String, Object> resolved, Context context) {
+		logger.debug("createMessage() :: started");
+		System.out.println("before dao" + System.nanoTime());
+		CreateEntityRequest request = new CreateEntityRequest(tenant, resolved, null);
+		Tuple2<Map<String, Object>, Collection<Tuple2<RemoteHost, Map<String, Object>>>> localAndRemote = splitEntity(
+				request);
+		Map<String, Object> localEntity = localAndRemote.getItem1();
+		Collection<Tuple2<RemoteHost, Map<String, Object>>> remoteEntitiesAndHosts = localAndRemote.getItem2();
+		if (remoteEntitiesAndHosts.isEmpty()) {
+			request.setPayload(localEntity);
+			System.out.println("before dao " + System.nanoTime());
+			return entityDAO.create2(request, context).onItem().transformToUni(v -> {
+				System.out.println("after dao " + System.nanoTime());
+				return kafkaSenderInterface.send(request).onItem().transform(v2 -> {
+					NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST,
+							request.getId());
+					localResult.addSuccess(new CRUDSuccess(null, null, null, request.getPayload(), context));
+					return localResult;
+				});
+			});
+		}
+		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(remoteEntitiesAndHosts.size());
+		for (Tuple2<RemoteHost, Map<String, Object>> remoteEntityAndHost : remoteEntitiesAndHosts) {
+			Map<String, Object> expanded = remoteEntityAndHost.getItem2();
+			expanded.put(NGSIConstants.JSON_LD_TYPE,
+					Lists.newArrayList((Set<String>) expanded.get(NGSIConstants.JSON_LD_TYPE)));
+			if (expanded.containsKey(NGSIConstants.NGSI_LD_SCOPE)) {
+				Set<String> collectedScopes = (Set<String>) expanded.get(NGSIConstants.NGSI_LD_SCOPE);
+				List<Map<String, String>> finalScopes = Lists.newArrayList();
+				for (String scope : collectedScopes) {
+					finalScopes.add(Map.of(NGSIConstants.JSON_LD_VALUE, scope));
+				}
+				expanded.put(NGSIConstants.NGSI_LD_SCOPE, finalScopes);
+			}
+			Map<String, Object> compacted;
+			try {
+				compacted = JsonLdProcessor.compact(expanded, null, context, opts, -1);
+			} catch (JsonLdError | ResponseException e) {
+				logger.error("Failed to compact remote payload", e);
+				continue;
+			}
+			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
+			if (remoteHost.canDoSingleOp()) {
+				unis.add(webClient.post(remoteHost.host() + NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT)
+						.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(compacted)).onItemOrFailure()
+						.transform((response, failure) -> {
+							return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(201), remoteHost,
+									AppConstants.CREATE_REQUEST, request.getId(),
+									HttpUtils.getAttribsFromCompactedPayload(compacted));
+
+						}));
+			} else {
+				unis.add(webClient.post(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_CREATE)
+						.putHeaders(remoteHost.headers())
+						.sendJson(new JsonArray(Lists.newArrayList(new JsonObject(compacted)))).onItemOrFailure()
+						.transform((response, failure) -> {
+							return handleBatchResponse(response, failure, remoteHost, Lists.newArrayList(compacted),
+									ArrayUtils.toArray(201)).get(0);
+						}));
+			}
+
+		}
+		if (remoteEntitiesAndHosts.isEmpty()) {
+			request.setPayload(localEntity);
+			unis.add(entityDAO.create2(request, context).onItem().transformToUni(v -> {
+				return kafkaSenderInterface.send(request).onItem().transform(v2 -> {
+					NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST,
+							request.getId());
+					localResult.addSuccess(new CRUDSuccess(null, null, null, request.getPayload(), context));
+					return localResult;
+				});
+			}));
+		}
+		return Uni.combine().all().unis(unis).combinedWith(list -> {
+			Iterator<?> it = list.iterator();
+			NGSILDOperationResult operationResult = (NGSILDOperationResult) it.next();
+			while (it.hasNext()) {
+				NGSILDOperationResult tmp = (NGSILDOperationResult) it.next();
+				operationResult.getSuccesses().addAll(tmp.getSuccesses());
+				operationResult.getFailures().addAll(tmp.getFailures());
+			}
+			return operationResult;
+		});
+	}
+
+	private Tuple2<Map<String, Object>, Collection<Tuple2<RemoteHost, Map<String, Object>>>> splitEntity(
+			EntityRequest request) {
+		Map<String, Object> originalEntity = request.getPayload();
+		Collection<RegistrationEntry> regs = tenant2CId2RegEntries.column(request.getTenant()).values();
+		Iterator<RegistrationEntry> it = regs.iterator();
+		Object originalScopes = originalEntity.remove(NGSIConstants.NGSI_LD_SCOPE);
+		String entityId = (String) originalEntity.remove(NGSIConstants.JSON_LD_ID);
+		List<String> originalTypes = (List<String>) originalEntity.remove(NGSIConstants.JSON_LD_TYPE);
+		Map<String, Tuple2<RemoteHost, Map<String, Object>>> cId2RemoteHostEntity = Maps.newHashMap();
+		Shape location = null;
+		Set<String> toBeRemoved = Sets.newHashSet();
+		for (Entry<String, Object> entry : originalEntity.entrySet()) {
+			while (it.hasNext()) {
+				RegistrationEntry regEntry = it.next();
+				if (regEntry.expiresAt() > System.currentTimeMillis()) {
+					it.remove();
+					continue;
+				}
+				if (!regEntry.createEntity() && !regEntry.createBatch()) {
+					continue;
+				}
+				String propType = ((List<String>) ((List<Map<String, Object>>) entry.getValue()).get(0)
+						.get(NGSIConstants.JSON_LD_TYPE)).get(0);
+				Tuple2<Set<String>, Set<String>> matches;
+				if (propType.equals(NGSIConstants.NGSI_LD_RELATIONSHIP)) {
+					matches = regEntry.matches(entityId, originalTypes, null, entry.getKey(), originalScopes, location);
+				} else {
+					matches = regEntry.matches(entityId, originalTypes, entry.getKey(), null, originalScopes, location);
+				}
+				if (matches != null) {
+					Map<String, Object> tmp;
+					if (cId2RemoteHostEntity.containsKey(regEntry.cId())) {
+						tmp = cId2RemoteHostEntity.get(regEntry.cId()).getItem2();
+						if (matches.getItem1() != null) {
+							((Set<String>) tmp.get(NGSIConstants.JSON_LD_TYPE)).addAll(matches.getItem1());
+						}
+						if (matches.getItem2() != null) {
+							if (!tmp.containsKey(NGSIConstants.NGSI_LD_SCOPE)) {
+								tmp.put(NGSIConstants.NGSI_LD_SCOPE, matches.getItem2());
+							} else {
+								((Set<String>) tmp.get(NGSIConstants.NGSI_LD_SCOPE)).addAll(matches.getItem2());
+							}
+
+						}
+					} else {
+						RemoteHost regHost = regEntry.host();
+						RemoteHost host;
+						switch (request.getRequestType()) {
+						case AppConstants.CREATE_REQUEST:
+							host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
+									regHost.cSourceId(), regEntry.createEntity(), regEntry.createBatch());
+							break;
+						case AppConstants.APPEND_REQUEST:
+							host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
+									regHost.cSourceId(), regEntry.appendAttrs(), false);
+							break;
+						case AppConstants.UPDATE_REQUEST:
+							host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
+									regHost.cSourceId(), regEntry.updateAttrs(), regEntry.updateBatch());
+							break;
+						default:
+							return null;
+						}
+
+						tmp = Maps.newHashMap();
+						tmp.put(NGSIConstants.JSON_LD_ID, entityId);
+						if (matches.getItem1() != null) {
+							tmp.put(NGSIConstants.JSON_LD_TYPE, matches.getItem1());
+						}
+						if (matches.getItem2() != null) {
+							tmp.put(NGSIConstants.NGSI_LD_SCOPE, matches.getItem2());
+						}
+						cId2RemoteHostEntity.put(regEntry.cId(), Tuple2.of(host, tmp));
+					}
+					tmp.put(entry.getKey(), entry.getValue());
+					if (regEntry.regMode() > 1) {
+						toBeRemoved.add(entry.getKey());
+						if (regEntry.regMode() == 3) {
+							break;
+						}
+					}
+				}
+
+			}
+		}
+		Iterator<String> it2 = toBeRemoved.iterator();
+		while (it2.hasNext()) {
+			originalEntity.remove(it2.next());
+		}
+		Map<String, Object> toStore = null;
+		if (originalEntity.size() > 0) {
+			if (cId2RemoteHostEntity.isEmpty()) {
+				toStore = originalEntity;
+			} else {
+				toStore = MicroServiceUtils.deepCopyMap(originalEntity);
+			}
+			toStore.put(NGSIConstants.JSON_LD_ID, entityId);
+			toStore.put(NGSIConstants.JSON_LD_TYPE, originalTypes);
+			if (originalScopes != null) {
+				toStore.put(NGSIConstants.NGSI_LD_SCOPE, originalScopes);
+			}
+			EntityTools.addSysAttrs(toStore, request.getSendTimestamp());
+		}
+		return Tuple2.of(toStore, cId2RemoteHostEntity.values());
+	}
+
+	public Uni<Void> handleRegistryChange(CSourceRequest req) {
+		tenant2CId2RegEntries.remove(req.getTenant(), req.getId());
+		if (req.getRequestType() != AppConstants.DELETE_REQUEST) {
+			for (RegistrationEntry regEntry : RegistrationEntry.fromRegPayload(req.getPayload())) {
+				tenant2CId2RegEntries.put(req.getTenant(), req.getId(), regEntry);
+			}
+		}
+		return Uni.createFrom().voidItem();
 	}
 
 }

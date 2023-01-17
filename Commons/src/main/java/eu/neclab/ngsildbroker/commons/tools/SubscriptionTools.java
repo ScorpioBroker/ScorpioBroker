@@ -13,6 +13,7 @@ import org.locationtech.spatial4j.SpatialPredicate;
 import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
 import org.locationtech.spatial4j.distance.DistanceUtils;
 import org.locationtech.spatial4j.shape.Shape;
+import org.locationtech.spatial4j.shape.ShapeFactory;
 import org.locationtech.spatial4j.shape.ShapeFactory.LineStringBuilder;
 import org.locationtech.spatial4j.shape.ShapeFactory.PolygonBuilder;
 import org.locationtech.spatial4j.shape.jts.JtsShapeFactory;
@@ -38,7 +39,8 @@ import io.vertx.core.http.impl.headers.HeadersMultiMap;
 import io.vertx.mutiny.core.MultiMap;
 
 public class SubscriptionTools {
-	private static JtsShapeFactory shapeFactory = JtsSpatialContext.GEO.getShapeFactory();
+	public static JtsShapeFactory shapeFactory = JtsSpatialContext.GEO.getShapeFactory();
+	
 	private final static Logger logger = LoggerFactory.getLogger(SubscriptionTools.class);
 
 	@SuppressWarnings("unchecked")

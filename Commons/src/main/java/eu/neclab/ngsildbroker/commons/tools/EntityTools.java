@@ -1,6 +1,8 @@
 package eu.neclab.ngsildbroker.commons.tools;
 
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -301,7 +303,7 @@ public abstract class EntityTools {
 			entry.put(REG_MODE_KEY, regMode);
 		}
 	}
-	
+
 	public static void removeAttrs(Map<String, Object> localEntity, Set<String> attrs) {
 		Set<String> entityAttrs = localEntity.keySet();
 		boolean attrsFound = false;
@@ -321,6 +323,95 @@ public abstract class EntityTools {
 			}
 		}
 
+	}
+
+	public static Map<String, Object> addSysAttrs(Map<String, Object> resolved, long timeStamp) {
+		String now = SerializationTools.formatter.format(Instant.ofEpochMilli(timeStamp));
+		setTemporalProperties(resolved, now, now, false);
+		return resolved;
+	}
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	protected static void setTemporalProperties(Object jsonNode, String createdAt, String modifiedAt,
+			boolean rootOnly) {
+		if (!(jsonNode instanceof Map)) {
+			return;
+		}
+		Map<String, Object> objectNode = (Map<String, Object>) jsonNode;
+		if (!createdAt.isEmpty()) {
+			objectNode.remove(NGSIConstants.NGSI_LD_CREATED_AT);
+			ArrayList<Object> tmp = getDateTime(createdAt);
+			objectNode.put(NGSIConstants.NGSI_LD_CREATED_AT, tmp);
+		}
+		if (!modifiedAt.isEmpty()) {
+			objectNode.remove(NGSIConstants.NGSI_LD_MODIFIED_AT);
+			ArrayList<Object> tmp = getDateTime(modifiedAt);
+			objectNode.put(NGSIConstants.NGSI_LD_MODIFIED_AT, tmp);
+		}
+		if (rootOnly) {
+			return;
+		}
+		for (Entry<String, Object> entry : objectNode.entrySet()) {
+			if (entry.getValue() instanceof List && !((List) entry.getValue()).isEmpty()) {
+				List list = (List) entry.getValue();
+				for (Object entry2 : list) {
+					if (entry2 instanceof Map) {
+						Map<String, Object> map = (Map<String, Object>) entry2;
+						if (map.containsKey(NGSIConstants.JSON_LD_TYPE)
+								&& map.get(NGSIConstants.JSON_LD_TYPE) instanceof List
+								&& !((List) map.get(NGSIConstants.JSON_LD_TYPE)).isEmpty()
+								&& ((List) map.get(NGSIConstants.JSON_LD_TYPE)).get(0).toString()
+										.matches(NGSIConstants.REGEX_NGSI_LD_ATTR_TYPES)) {
+							setTemporalProperties(map, createdAt, modifiedAt, rootOnly);
+						}
+					}
+				}
+
+			}
+		}
+	}
+	
+	public static String getCoordinates(List<Map<String, Object>> jsonCoordinates) {
+		String result = "";
+		boolean lon = true;
+		for (Map<String, Object> entry : jsonCoordinates) {
+			for (Entry<String, Object> entry1 : entry.entrySet()) {
+				String key = entry1.getKey();
+				Object value = entry1.getValue();
+				if (key.equals(NGSIConstants.JSON_LD_VALUE)) {
+					double myValue = 0;
+					if (value instanceof Double) {
+						myValue = (Double) value;
+					} else if (value instanceof Integer) {
+						myValue = ((Integer) value).doubleValue();
+					} else if (value instanceof Long) {
+						myValue = ((Long) value).doubleValue();
+					}
+					if (lon) {
+						myValue = SerializationTools.getProperLon(myValue);
+						result += "[" + myValue + ", ";
+					} else {
+						myValue = SerializationTools.getProperLat(myValue);
+						result += myValue + "]";
+					}
+
+					lon = !lon;
+				} else if (key.equals(NGSIConstants.JSON_LD_LIST)) {
+					result += "[" + getCoordinates((List<Map<String, Object>>) value) + "]";
+				}
+			}
+			result += ",";
+		}
+		return result.substring(0, result.length() - 1);
+	}
+
+	private static ArrayList<Object> getDateTime(String createdAt) {
+		ArrayList<Object> tmp = new ArrayList<Object>();
+		HashMap<String, Object> tmp2 = new HashMap<String, Object>();
+		tmp2.put(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME);
+		tmp2.put(NGSIConstants.JSON_LD_VALUE, createdAt);
+		tmp.add(tmp2);
+		return tmp;
 	}
 
 }

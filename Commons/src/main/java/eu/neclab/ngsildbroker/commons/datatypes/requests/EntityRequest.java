@@ -12,6 +12,5 @@ public class EntityRequest extends BaseRequest {
 
 	EntityRequest(String tenant, String id, Map<String, Object> requestPayload, BatchInfo batchInfo, int requestType) {
 		super(tenant, id, requestPayload, batchInfo, requestType);
-		addSysAttrs(requestPayload);
 	}
 }

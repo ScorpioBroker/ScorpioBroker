@@ -70,6 +70,30 @@ public class EntityController {// implements EntityHandlerInterface {
 				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
+	@Path("/entities2")
+	@POST
+	public Uni<RestResponse<Object>> createEntity2(HttpServerRequest req, String payload) {
+		Tuple2<Context, Map<String, Object>> tuple;
+		System.out.println("start " + System.nanoTime());
+		try {
+			tuple = HttpUtils.expandBody(req, payload, AppConstants.ENTITY_CREATE_PAYLOAD);
+		} catch (Exception e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+		}
+		
+		logger.info("creating entity");
+		return entityService.createEntry2(HttpUtils.getTenant(req), tuple.getItem2(), tuple.getItem1()).onItem()
+				.transform(opResult -> {
+					logger.info("Done creating entity");
+					System.out.println("create done " + System.nanoTime());
+					RestResponse<Object> result = HttpUtils.generateCreateResult(opResult, AppConstants.ENTITES_URL);
+		
+					return result;
+				}).onFailure().recoverWithItem(e -> {
+					return HttpUtils.handleControllerExceptions(e);
+				});
+	}
+
 	/**
 	 * Method(PATCH) for "/ngsi-ld/v1/entities/{entityId}/attrs" rest endpoint.
 	 * 
@@ -90,7 +114,8 @@ public class EntityController {// implements EntityHandlerInterface {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 		}
 		return entityService.updateEntry(HttpUtils.getTenant(request), entityId, tuple.getItem2(), tuple.getItem1())
-				.onItem().transform(HttpUtils::generateUpdateResultResponse).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+				.onItem().transform(HttpUtils::generateUpdateResultResponse).onFailure()
+				.recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
 	/**
@@ -118,7 +143,8 @@ public class EntityController {// implements EntityHandlerInterface {
 		}
 		return entityService
 				.appendToEntry(HttpUtils.getTenant(request), entityId, tuple.getItem2(), noOverwrite, tuple.getItem1())
-				.onItem().transform(HttpUtils::generateUpdateResultResponse).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+				.onItem().transform(HttpUtils::generateUpdateResultResponse).onFailure()
+				.recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
 	/**
@@ -199,6 +225,8 @@ public class EntityController {// implements EntityHandlerInterface {
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 		}
-		return entityService.deleteEntry(HttpUtils.getTenant(request), entityId, context).onItem().transform(HttpUtils::generateDeleteResult).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+		return entityService.deleteEntry(HttpUtils.getTenant(request), entityId, context).onItem()
+				.transform(HttpUtils::generateDeleteResult).onFailure()
+				.recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 }
