@@ -121,7 +121,7 @@ DELETE FROM csource;
 
 INSERT INTO csource SELECT c_id, reg FROM temp;
 
-drop table temp;.
+drop table temp;
 
 ALTER TABLE PUBLIC.ENTITY RENAME COLUMN DATA TO ENTITY;
 
