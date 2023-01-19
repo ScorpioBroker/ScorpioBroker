@@ -191,7 +191,7 @@ public class QueryController {
 					.transform(types -> {
 						QueryResult tmp = new QueryResult();
 						tmp.setData(types);
-						return HttpUtils.generateQueryResult(request, tmp, null, null, acceptHeader, false, -1, null,
+						return HttpUtils.generateQueryResult(request, tmp, "", null, acceptHeader, false, -1, null,
 								JsonLdProcessor.getCoreContextClone().parse(HttpUtils.getAtContext(request), true));
 					});
 		} else

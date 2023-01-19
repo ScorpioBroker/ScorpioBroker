@@ -314,6 +314,9 @@ public class QueryService {
 		} else {
 			queryRemoteTypes = queryDAO.getRemoteSourcesForTypes(tenant).onItem().transformToUni(rows -> {
 				List<Uni<Map<String, Object>>> unis = Lists.newArrayList();
+				if(rows.size()==0) {
+					return Uni.createFrom().item(new HashSet<>());
+					}
 				rows.forEach(row -> {
 					// C.endpoint C.tenant_id, c.headers, c.reg_mode
 					MultiMap remoteHeaders = MultiMap
