@@ -35,6 +35,7 @@ import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.smallrye.reactive.messaging.annotations.Broadcast;
+import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.ext.web.client.WebClient;
 import io.vertx.mutiny.sqlclient.Row;
@@ -129,7 +130,12 @@ public class CSourceService {
 				return Uni.createFrom()
 						.failure(new ResponseException(ErrorType.NotFound, registrationId + "was not found"));
 			}
-			return Uni.createFrom().item(rowSet.iterator().next().getJsonObject(0).getMap());
+			JsonObject first = rowSet.iterator().next().getJsonObject(0);
+			if(first == null) {
+				return Uni.createFrom()
+						.failure(new ResponseException(ErrorType.NotFound, registrationId + "was not found"));
+			}
+			return Uni.createFrom().item(first.getMap());
 		});
 
 	}

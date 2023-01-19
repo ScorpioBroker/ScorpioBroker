@@ -87,8 +87,6 @@ public class EntityService {
 
 	private Table<String, String, RegistrationEntry> tenant2CId2RegEntries = HashBasedTable.create();
 
-	
-
 	private Random random = new Random();
 
 	@PostConstruct
@@ -100,6 +98,8 @@ public class EntityService {
 		}).await().indefinitely();
 	}
 
+	// This is needed so that @postconstruct runs on the startup thread and not on a
+	// worker thread later on
 	void startup(@Observes StartupEvent event) {
 	}
 

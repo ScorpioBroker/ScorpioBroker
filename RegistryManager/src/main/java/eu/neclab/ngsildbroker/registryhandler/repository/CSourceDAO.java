@@ -16,6 +16,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.storage.ClientManager;
+import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.vertx.core.json.JsonObject;
@@ -29,18 +30,45 @@ public class CSourceDAO {
 	@Inject
 	ClientManager clientManager;
 
+	@Inject
+	MicroServiceUtils microServiceUtils;
+
 	public Uni<RowSet<Row>> getRegistrationById(String tenant, String id) {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
 			switch (id) {
 
-//			case AppConstants.INTERNAL_TYPE_REGISTRATION_ID:
-//				break;
-//			case AppConstants.INTERNAL_ATTRS_REGISTRATION_ID:
+			case AppConstants.INTERNAL_TYPE_REGISTRATION_ID:
+
+				return client
+						.preparedQuery("SELECT jsonb_set('{\"https://uri.etsi.org/ngsi-ld/endpoint\": [{\"@value\": \""
+								+ microServiceUtils.getGatewayURL().toString() + "\"}],\"@id\": \""
+								+ AppConstants.INTERNAL_TYPE_REGISTRATION_ID
+								+ "\",\"https://uri.etsi.org/ngsi-ld/information\": [{\"https://uri.etsi.org/ngsi-ld/entities\": [{}]}],\"@type\": [\"https://uri.etsi.org/ngsi-ld/ContextSourceRegistration\"]  }'::jsonb,'{https://uri.etsi.org/ngsi-ld/information,0,https://uri.etsi.org/ngsi-ld/entities,0,@type}' ,jsonb_agg(distinct myTypes)) from entity, jsonb_array_elements(ENTITY -> '@type') as myTypes")
+						.execute();
+			case AppConstants.INTERNAL_ATTRS_REGISTRATION_ID:
+				String sql = """
+							SELECT JSONB_SET('{"https://uri.etsi.org/ngsi-ld/endpoint": [{"@value": "http://localhost:9090"}],"@id": "scorpio:hosted:attrs","https://uri.etsi.org/ngsi-ld/information": [{"https://uri.etsi.org/ngsi-ld/entities": [{}]}],"@type": ["https://uri.etsi.org/ngsi-ld/ContextSourceRegistration"]  }'::JSONB,
+							'{https://uri.etsi.org/ngsi-ld/information,0,https://uri.etsi.org/ngsi-ld/entities,0}',
+							JSONB_BUILD_OBJECT('https://uri.etsi.org/ngsi-ld/propertyNames',
+								JSONB_AGG(JSONB_BUILD_OBJECT('@id',	ATTRIBNAME)) FILTER
+								(WHERE ENTITY #>> (ATTRIBNAME || '{0,@type,0}'::text[]) = ANY('{https://uri.etsi.org/ngsi-ld/Property, https://uri.etsi.org/ngsi-ld/GeoProperty, https://uri.etsi.org/ngsi-ld/LanguageProperty}')),
+								'https://uri.etsi.org/ngsi-ld/relationshipNames',
+								JSONB_AGG(JSONB_BUILD_OBJECT('@id',	ATTRIBNAME)) FILTER
+								(WHERE ENTITY #>> (ATTRIBNAME || '{0,@type,0}'::text[]) = ANY('{https://uri.etsi.org/ngsi-ld/Relationship}'))))
+						FROM ENTITY, Jsonb_object_keys(ENTITY) as attribname
+												""";
+				System.out.println(sql);
+				return client.preparedQuery(sql).execute();
 //				break;
 //			case AppConstants.INTERNAL_TYPE_ATTRS_REGISTRATION_ID:
 //				break;
-//			case AppConstants.INTERNAL_ID_REGISTRATION_ID:
-//				break;
+			case AppConstants.INTERNAL_ID_REGISTRATION_ID:
+				return client
+						.preparedQuery("SELECT jsonb_set('{\"https://uri.etsi.org/ngsi-ld/endpoint\": [{\"@value\": \""
+								+ microServiceUtils.getGatewayURL().toString() + "\"}],\"@id\": \""
+								+ AppConstants.INTERNAL_ID_REGISTRATION_ID
+								+ "\",\"https://uri.etsi.org/ngsi-ld/information\": [{\"https://uri.etsi.org/ngsi-ld/entities\": [{}]}],\"@type\": [\"https://uri.etsi.org/ngsi-ld/ContextSourceRegistration\"]  }'::jsonb,'{https://uri.etsi.org/ngsi-ld/information,0,https://uri.etsi.org/ngsi-ld/entities}' ,jsonb_agg(jsonb_build_object('@id', id))) from entity")
+						.execute();
 //			case AppConstants.INTERNAL_FULL_REGISTRATION_ID:
 //				break;
 			default:
@@ -160,8 +188,6 @@ public class CSourceDAO {
 		});
 
 	}
-
-
 
 	public Uni<List<String>> getAllTenants() {
 		return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
