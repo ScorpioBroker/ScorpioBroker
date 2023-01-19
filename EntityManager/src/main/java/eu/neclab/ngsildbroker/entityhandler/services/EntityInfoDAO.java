@@ -3,7 +3,6 @@ package eu.neclab.ngsildbroker.entityhandler.services;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -14,6 +13,7 @@ import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import org.apache.commons.lang3.StringUtils;
 import org.locationtech.spatial4j.context.SpatialContextFactory;
 import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
 import org.locationtech.spatial4j.exception.InvalidShapeException;
@@ -22,11 +22,8 @@ import org.locationtech.spatial4j.shape.Shape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.github.jsonldjava.core.Context;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import com.google.common.collect.Table;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
@@ -40,18 +37,16 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.UpdateEntityRequest;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.storage.ClientManager;
-import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
-import io.smallrye.mutiny.tuples.Tuple7;
-import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.MultiMap;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowIterator;
 import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
+import io.vertx.pgclient.PgException;
 
 @Singleton
 public class EntityInfoDAO {
@@ -62,15 +57,6 @@ public class EntityInfoDAO {
 	ClientManager clientManager;
 
 	GeoJSONReader geoReader = new GeoJSONReader(JtsSpatialContext.GEO, new SpatialContextFactory());
-
-	public Uni<RowSet<Row>> createEntity(CreateEntityRequest request) {
-		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
-			String sql = "SELECT * FROM NGSILD_CREATEENTITY($1::jsonb)";
-			return client.preparedQuery(sql).execute(Tuple.of(new JsonObject(request.getPayload()))).onFailure().retry()
-					.atMost(3);
-		});
-
-	}
 
 	public Uni<RowSet<Row>> batchCreateEntity(List<CreateEntityRequest> requests) {
 		return clientManager.getClient(requests.get(0).getTenant(), true).onItem().transformToUni(client -> {
@@ -84,48 +70,49 @@ public class EntityInfoDAO {
 
 	}
 
-	public Uni<RowSet<Row>> updateEntity(UpdateEntityRequest request) {
+	public Uni<Map<String, Object>> partialUpdateAttribute(UpdateEntityRequest request) {
 		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
-			String sql = "SELECT * FROM NGSILD_UPDATEENTITY($1, $2::jsonb)";
-			return client.preparedQuery(sql).execute(Tuple.of(request.getId(), new JsonObject(request.getPayload())))
-					.onFailure().retry().atMost(3);
-		});
-	}
-
-	public Uni<RowSet<Row>> appendEntity(AppendEntityRequest request, boolean noOverwrite) {
-		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
-			String sql = "SELECT * FROM NGSILD_APPENDENTITY($1, $2::jsonb, $3)";
+			List<Map<String, Object>> effectivePayloads = (List<Map<String, Object>>) request.getPayload()
+					.get(request.getAttrName());
+			String sql = "UPDATE ENTITY SET ENTITY = NGSILD_PARTIALUPDATE(ENTITY, $1, $2) WHERE id=$3 AND ENTITY ? '$1' RETURNINGG ENTITY";
 			return client.preparedQuery(sql)
-					.execute(Tuple.of(request.getId(), new JsonObject(request.getPayload()), noOverwrite)).onFailure()
-					.retry().atMost(3).onFailure().recoverWithUni(e -> Uni.createFrom().failure(e));
+					.execute(Tuple.of(request.getAttrName(), new JsonObject(request.getPayload()), request.getId()))
+					.onFailure().retry().atMost(3).onItem().transformToUni(rows -> {
+						if (rows.size() == 0) {
+							return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
+						} else {
+							return Uni.createFrom().item(rows.iterator().next().getJsonObject(0).getMap());
+						}
+					});
 		});
 	}
 
-	public Uni<RowSet<Row>> partialUpdateEntity(UpdateEntityRequest request) {
+	public Uni<Map<String, Object>> deleteAttribute(DeleteAttributeRequest request) {
 		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
-			String sql = "SELECT * FROM NGSILD_PARTIALUPDATEENTITY($1, $2::jsonb)";
-			return client.preparedQuery(sql).execute(Tuple.of(request.getId(), new JsonObject(request.getPayload())))
-					.onFailure().retry().atMost(3).onFailure().recoverWithUni(e -> Uni.createFrom().failure(e));
+			String sql;
+			Tuple tuple;
+			sql = "UPDATE ENTITY SET ENTITY=";
+			if (request.deleteAll()) {
+				sql = "ENTITY - $1 WHERE id=$2 AND ENTITY ? $1";
+				tuple = Tuple.of(request.getAttribName(), request.getId());
+			} else if (request.getDatasetId() != null) {
+				sql = "NGSILD_DELETEATTRIB(ENTITY, $1, $2) WHERE id=$3 AND ENTITY @> '{\"$1\": [{\""
+						+ NGSIConstants.NGSI_LD_DATA_SET_ID + "\": \"$2\"}]}'";
+				tuple = Tuple.of(request.getAttribName(), request.getDatasetId(), request.getId());
+			} else {
+				sql = "NGSILD_DELETEATTRIB(ENTITY, $1, null) WHERE id=$2 AND ENTITY ? $1 AND EXISTS (SELECT jsonb_array_elements FROM jsonb_array_elements(ENTITY->$1) WHERE NOT jsonb_array_elements ? '"
+						+ NGSIConstants.NGSI_LD_DATA_SET_ID + "')";
+				tuple = Tuple.of(request.getAttribName(), request.getId());
+			}
+			sql += " RETURNING ENTITY";
+			return client.preparedQuery(sql).execute(tuple).onFailure().retry().atMost(3).onItem()
+					.transformToUni(rows -> {
+						if (rows.size() == 0) {
+							return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
+						}
+						return Uni.createFrom().item(rows.iterator().next().getJsonObject(0).getMap());
+					});
 		});
-	}
-
-	public Uni<RowSet<Row>> deleteAttribute(DeleteAttributeRequest request) {
-		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
-			String sql = "SELECT * FROM NGSILD_DELETEATTR($1, $2, $3, $4)";
-			return client.preparedQuery(sql)
-					.execute(Tuple.of(request.getId(), request.getAttribName(), request.getDatasetId(),
-							request.deleteAll()))
-					.onFailure().retry().atMost(3).onFailure().recoverWithUni(e -> Uni.createFrom().failure(e));
-		});
-	}
-
-	public Uni<RowSet<Row>> deleteEntity(DeleteEntityRequest request) {
-		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
-			String sql = "SELECT * FROM NGSILD_DELETEENTITY($1)";
-			return client.preparedQuery(sql).execute(Tuple.of(request.getId())).onFailure().retry().atMost(3)
-					.onFailure().recoverWithUni(e -> Uni.createFrom().failure(e));
-		});
-
 	}
 
 	public Uni<RowSet<Row>> upsertEntity(CreateEntityRequest request) {
@@ -136,14 +123,22 @@ public class EntityInfoDAO {
 		});
 	}
 
-	public Uni<Void> create2(CreateEntityRequest request, Context context) {
+	public Uni<Void> createEntity(CreateEntityRequest request) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
 			String[] types = ((List<String>) request.getPayload().get(NGSIConstants.JSON_LD_TYPE))
 					.toArray(new String[0]);
+			System.out.println(StringUtils.join(types));
+
 			return client.preparedQuery("INSERT INTO ENTITY(ID,E_TYPES, ENTITY) VALUES ($1, $2, $3)")
 					.execute(Tuple.of(request.getId(), types, new JsonObject(request.getPayload()))).onFailure()
-					.recoverWithUni(e -> Uni.createFrom().failure(new ResponseException(ErrorType.AlreadyExists)))
-					.onItem().transformToUni(v -> Uni.createFrom().voidItem());
+					.recoverWithUni(e -> {
+						if (e instanceof PgException) {
+							if (((PgException) e).getCode().equals(AppConstants.SQL_ALREADY_EXISTS)) {
+								return Uni.createFrom().failure(new ResponseException(ErrorType.AlreadyExists, request.getId() + " already exists"));
+							}
+						}
+						return Uni.createFrom().failure(e);
+					}).onItem().transformToUni(v -> Uni.createFrom().voidItem());
 		});
 	}
 
@@ -153,7 +148,7 @@ public class EntityInfoDAO {
 					.transformToUni(tenantRows -> {
 						List<Uni<Tuple2<String, RowSet<Row>>>> unis = Lists.newArrayList();
 						RowIterator<Row> it = tenantRows.iterator();
-						String sql = "SELECT cs_id, c_id, e_id, e_id_p, e_type, e_prop, e_rel, ST_AsGeoJSON(i_location), scopes, EXTRACT(MILLISECONDS FROM expires), endpoint, tenant_id, headers, reg_mode, createEntity, updateEntity, appendAttrs, updateAttrs, deleteAttrs, deleteEntity, createBatch, upsertBatch, updateBatch, deleteBatch, upsertTemporal, appendAttrsTemporal, deleteAttrsTemporal, updateAttrsTemporal, deleteAttrInstanceTemporal, deleteTemporal, mergeEntity, replaceEntity, replaceAttrs, mergeBatch, retrieveEntity, queryEntity, queryBatch, retrieveTemporal, queryTemporal, retrieveEntityTypes, retrieveEntityTypeDetails, retrieveEntityTypeInfo, retrieveAttrTypes, retrieveAttrTypeDetails, retrieveAttrTypeInfo, createSubscription, updateSubscription, retrieveSubscription, querySubscription, deleteSubscription FROM csourceinformation WHERE entityCreate OR createBatch";
+						String sql = "SELECT cs_id, c_id, e_id, e_id_p, e_type, e_prop, e_rel, ST_AsGeoJSON(i_location), scopes, EXTRACT(MILLISECONDS FROM expires), endpoint, tenant_id, headers, reg_mode, createEntity, updateEntity, appendAttrs, updateAttrs, deleteAttrs, deleteEntity, createBatch, upsertBatch, updateBatch, deleteBatch, upsertTemporal, appendAttrsTemporal, deleteAttrsTemporal, updateAttrsTemporal, deleteAttrInstanceTemporal, deleteTemporal, mergeEntity, replaceEntity, replaceAttrs, mergeBatch, retrieveEntity, queryEntity, queryBatch, retrieveTemporal, queryTemporal, retrieveEntityTypes, retrieveEntityTypeDetails, retrieveEntityTypeInfo, retrieveAttrTypes, retrieveAttrTypeDetails, retrieveAttrTypeInfo, createSubscription, updateSubscription, retrieveSubscription, querySubscription, deleteSubscription FROM csourceinformation WHERE createEntity OR createBatch OR updateEntity OR appendAttrs OR deleteAttrs OR deleteEntity OR upsertBatch OR updateBatch OR deleteBatch";
 						unis.add(client.preparedQuery(sql).execute().onItem()
 								.transform(rows -> Tuple2.of(AppConstants.INTERNAL_NULL_KEY, rows)));
 						while (it.hasNext()) {
@@ -261,17 +256,28 @@ public class EntityInfoDAO {
 
 	}
 
-	public Uni<Void> updateEntity2(UpdateEntityRequest request) {
+	public Uni<Void> updateEntity(UpdateEntityRequest request) {
 		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
 			Map<String, Object> payload = request.getPayload();
-			// TODO still got to handle that no one removes types
+
 			Object types = payload.remove(NGSIConstants.JSON_LD_TYPE);
 
 			List<String> toBeRemoved = removeAtNoneEntries(payload);
 			int dollar = 2;
 			Tuple tuple = Tuple.tuple();
-			tuple.addJsonObject(new JsonObject(payload));
-			String sql = "UPDATE ENTITY SET ENTITY = (ENTITY || $1) ";
+
+			String sql;
+
+			sql = "UPDATE ENTITY SET ";
+			if (types != null) {
+				sql += "e_types = ARRAY(SELECT DISTINCT UNNEST(e_types || $1)), ENTITY = (jsonb_set(ENTITY, '{@type}', array_to_json(e_types)::jsonb) || $2)";
+				dollar = 3;
+				tuple.addArrayOfString(((List<String>) types).toArray(new String[0]));
+				tuple.addJsonObject(new JsonObject(payload));
+			} else {
+				sql += " ENTITY = (ENTITY || $1) ";
+				tuple.addJsonObject(new JsonObject(payload));
+			}
 			if (!toBeRemoved.isEmpty()) {
 				for (String remove : toBeRemoved) {
 					sql += " - '$" + dollar + "'";
@@ -283,7 +289,12 @@ public class EntityInfoDAO {
 			tuple.addString(request.getId());
 			return client.preparedQuery(sql).execute(tuple).onFailure()
 					.recoverWithUni(e -> Uni.createFrom().failure(new ResponseException(ErrorType.NotFound))).onItem()
-					.transformToUni(v -> Uni.createFrom().voidItem());
+					.transformToUni(rows -> {
+						if (rows.rowCount() == 0) {
+							return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
+						}
+						return Uni.createFrom().voidItem();
+					});
 		});
 
 	}
@@ -319,6 +330,71 @@ public class EntityInfoDAO {
 			}
 		}
 		return result;
+	}
+
+	/**
+	 * 
+	 * @param request
+	 * @param noOverwrite
+	 * @return the not added attribs
+	 */
+	public Uni<Set<String>> appendToEntity2(AppendEntityRequest request, boolean noOverwrite) {
+		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
+			Map<String, Object> payload = request.getPayload();
+			Object types = payload.remove(NGSIConstants.JSON_LD_TYPE);
+			int dollar = 2;
+			Tuple tuple = Tuple.tuple();
+
+			String sql;
+
+			sql = "UPDATE ENTITY SET ";
+			if (types != null) {
+				sql += "e_types = ARRAY(SELECT DISTINCT UNNEST(e_types || $1)), ";
+				if (noOverwrite) {
+					sql += "ENTITY = ($2 || jsonb_set(ENTITY, '{@type}', array_to_json(e_types)::jsonb))";
+				} else {
+					sql += "ENTITY = (jsonb_set(ENTITY, '{@type}', array_to_json(e_types)::jsonb) || $2)";
+				}
+
+				dollar = 3;
+				tuple.addArrayOfString(((List<String>) types).toArray(new String[0]));
+				tuple.addJsonObject(new JsonObject(payload));
+			} else {
+				if (noOverwrite) {
+					sql += " ENTITY = ($1 || ENTITY) ";
+				} else {
+					sql += " ENTITY = (ENTITY || $1) ";
+				}
+				tuple.addJsonObject(new JsonObject(payload));
+			}
+
+			sql += "WHERE ID = $" + dollar;
+			if (noOverwrite) {
+				sql += " RETURNING ENTITY";
+			}
+			tuple.addString(request.getId());
+			return client.preparedQuery(sql).execute(tuple).onItem().transform(rows -> {
+				if (noOverwrite) {
+					// TODO return the not added stuff from noOverwrite
+					return new HashSet<>(0);
+				} else {
+					return new HashSet<>(0);
+				}
+			});
+		});
+
+	}
+
+	public Uni<Map<String, Object>> deleteEntity(DeleteEntityRequest request) {
+		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
+			return client.preparedQuery("DELETE FROM ENTITY WHERE id=$1 RETURNING ENTITY")
+					.execute(Tuple.of(request.getId())).onItem().transformToUni(rows -> {
+						if (rows.rowCount() == 0) {
+							return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
+						}
+						return Uni.createFrom().item(rows.iterator().next().getJsonObject(0).getMap());
+					});
+		});
 	}
 
 }

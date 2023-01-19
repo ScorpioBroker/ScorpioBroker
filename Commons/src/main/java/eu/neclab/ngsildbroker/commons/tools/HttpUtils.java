@@ -716,7 +716,7 @@ public final class HttpUtils {
 			return handleControllerExceptions(new ResponseException(ErrorType.InternalError));
 		}
 
-		if (options.contains("compress")) {
+		if (options != null && options.contains("compress")) {
 			result = zipResult(replyBody);
 			contentType = AppConstants.NGB_APPLICATION_ZIP;
 		} else {

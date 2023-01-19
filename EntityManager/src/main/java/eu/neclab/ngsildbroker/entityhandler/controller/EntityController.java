@@ -3,6 +3,7 @@ package eu.neclab.ngsildbroker.entityhandler.controller;
 import java.util.Map;
 
 import javax.annotation.PostConstruct;
+import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.ws.rs.DELETE;
@@ -30,7 +31,7 @@ import io.vertx.core.http.HttpServerRequest;
  * @version 1.0
  * @date 10-Jul-2018
  */
-@Singleton
+@ApplicationScoped
 @Path("/ngsi-ld/v1")
 public class EntityController {// implements EntityHandlerInterface {
 
@@ -63,36 +64,14 @@ public class EntityController {// implements EntityHandlerInterface {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 		}
 		logger.info("creating entity");
-		return entityService.createEntry(HttpUtils.getTenant(req), tuple.getItem2(), tuple.getItem1()).onItem()
+		return entityService.createEntity(HttpUtils.getTenant(req), tuple.getItem2(), tuple.getItem1()).onItem()
 				.transform(opResult -> {
 					logger.info("Done creating entity");
 					return HttpUtils.generateCreateResult(opResult, AppConstants.ENTITES_URL);
 				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
-	@Path("/entities2")
-	@POST
-	public Uni<RestResponse<Object>> createEntity2(HttpServerRequest req, String payload) {
-		Tuple2<Context, Map<String, Object>> tuple;
-		System.out.println("start " + System.nanoTime());
-		try {
-			tuple = HttpUtils.expandBody(req, payload, AppConstants.ENTITY_CREATE_PAYLOAD);
-		} catch (Exception e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
-		}
-		
-		logger.info("creating entity");
-		return entityService.createEntry2(HttpUtils.getTenant(req), tuple.getItem2(), tuple.getItem1()).onItem()
-				.transform(opResult -> {
-					logger.info("Done creating entity");
-					System.out.println("create done " + System.nanoTime());
-					RestResponse<Object> result = HttpUtils.generateCreateResult(opResult, AppConstants.ENTITES_URL);
-		
-					return result;
-				}).onFailure().recoverWithItem(e -> {
-					return HttpUtils.handleControllerExceptions(e);
-				});
-	}
+	
 
 	/**
 	 * Method(PATCH) for "/ngsi-ld/v1/entities/{entityId}/attrs" rest endpoint.
@@ -113,7 +92,7 @@ public class EntityController {// implements EntityHandlerInterface {
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 		}
-		return entityService.updateEntry(HttpUtils.getTenant(request), entityId, tuple.getItem2(), tuple.getItem1())
+		return entityService.updateEntity(HttpUtils.getTenant(request), entityId, tuple.getItem2(), tuple.getItem1())
 				.onItem().transform(HttpUtils::generateUpdateResultResponse).onFailure()
 				.recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
@@ -142,7 +121,7 @@ public class EntityController {// implements EntityHandlerInterface {
 			noOverwrite = true;
 		}
 		return entityService
-				.appendToEntry(HttpUtils.getTenant(request), entityId, tuple.getItem2(), noOverwrite, tuple.getItem1())
+				.appendToEntity(HttpUtils.getTenant(request), entityId, tuple.getItem2(), noOverwrite, tuple.getItem1())
 				.onItem().transform(HttpUtils::generateUpdateResultResponse).onFailure()
 				.recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
@@ -157,7 +136,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	 */
 	@PATCH
 	@Path("/entities/{entityId}/attrs/{attrId}")
-	public Uni<RestResponse<Object>> partialUpdateEntity(HttpServerRequest request,
+	public Uni<RestResponse<Object>> partialUpdateAttribute(HttpServerRequest request,
 			@PathParam("entityId") String entityId, @PathParam("attrId") String attrib, String payload) {
 		Tuple2<Context, Map<String, Object>> tuple;
 		try {
@@ -168,9 +147,8 @@ public class EntityController {// implements EntityHandlerInterface {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 		}
 		logger.trace("update entry :: started");
-		return entityService
-				.partialUpdateEntity(HttpUtils.getTenant(request), entityId, attrib, tuple.getItem2(), tuple.getItem1())
-				.onItem().transform(updateResult -> {
+		return entityService.partialUpdateAttribute(HttpUtils.getTenant(request), entityId, attrib, tuple.getItem2(),
+				tuple.getItem1()).onItem().transform(updateResult -> {
 					logger.trace("update entry :: completed");
 					return HttpUtils.generateUpdateResultResponse(updateResult);
 				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
@@ -225,7 +203,7 @@ public class EntityController {// implements EntityHandlerInterface {
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 		}
-		return entityService.deleteEntry(HttpUtils.getTenant(request), entityId, context).onItem()
+		return entityService.deleteEntity(HttpUtils.getTenant(request), entityId, context).onItem()
 				.transform(HttpUtils::generateDeleteResult).onFailure()
 				.recoverWithItem(HttpUtils::handleControllerExceptions);
 	}

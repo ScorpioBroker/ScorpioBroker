@@ -15,10 +15,11 @@ import eu.neclab.ngsildbroker.commons.datatypes.BaseProperty;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple4;
+import io.vertx.mutiny.sqlclient.Tuple;
 
 public class TypeQueryTerm {
 
-	private Context linkHeaders;
+	private Context context;
 	private TypeQueryTerm next = null;
 	private TypeQueryTerm prev = null;
 	private boolean nextAnd = true;
@@ -28,7 +29,7 @@ public class TypeQueryTerm {
 	private Set<String> allTypes = null;
 
 	public TypeQueryTerm(Context context) {
-		this.linkHeaders = context;
+		this.context = context;
 
 	}
 
@@ -45,7 +46,7 @@ public class TypeQueryTerm {
 	}
 
 	public void setType(String type) {
-		this.type = linkHeaders.expandIri(type, false, true, null, null);
+		this.type = context.expandIri(type, false, true, null, null);
 	}
 
 	public boolean calculate(BaseProperty property) throws ResponseException {
@@ -450,7 +451,75 @@ public class TypeQueryTerm {
 		return result.toString();
 	}
 
+	public int toSql(StringBuilder result, Tuple tuple, int dollar) {
+		if (type == null || type.isEmpty()) {
+			TypeQueryTerm current = this;
+			while (current.firstChild != null) {
+				current = current.firstChild;
+			}
+			current.next.toSql(result, tuple, dollar);
+		} else {
+			result.append("(e_types ");
+			if (next != null && next.nextAnd) {
+				result.append("@> ");
+			} else {
+				result.append("&& ");
+			}
+			result.append("ARRAY[$");
+			result.append(dollar);
+			dollar++;
+			tuple.addString(type);
+			if (!hasNext()) {
+				result.append("])");
+				return dollar;
+			}
+			TypeQueryTerm current = this;
+
+			while (current.hasNext() || current.firstChild != null) {
+				if (current.firstChild != null) {
+					result.append("]");
+					if (current.prev.nextAnd) {
+						result.append(" AND (");
+					} else {
+						result.append(" OR (");
+					}
+					dollar = current.firstChild.toSql(result, tuple, dollar);
+					result.append(")");
+					break;
+				}
+				current = current.getNext();
+				if (current.type != null && !current.type.isEmpty()) {
+					if (current.prev.nextAnd != current.nextAnd && current.next != null) {
+						result.append("]");
+						if (current.prev.nextAnd) {
+							result.append(" AND ");
+						} else {
+							result.append(" OR ");
+						}
+						result.append("e_types ");
+						if (current.nextAnd) {
+							result.append("@> ");
+						} else {
+							result.append("&& ");
+						}
+						result.append("ARRAY[$");
+					} else {
+						result.append(",$");
+					}
+					result.append(dollar);
+					dollar++;
+					tuple.addString(current.type);
+				}
+			}
+
+			result.append("]) ");
+
+		}
+		return dollar;
+	}
+
 	public Tuple4<Character, String, Integer, List<Object>> toSql(char startChar, int dollar) {
+
 		StringBuilder builder = new StringBuilder();
 		StringBuilder builderFinalLine = new StringBuilder();
 		StringBuilder finalTables = new StringBuilder();
@@ -596,10 +665,10 @@ public class TypeQueryTerm {
 	}
 
 	public TypeQueryTerm getDuplicateAndRemoveNotKnownTypes(Set<String> lookup) {
-		TypeQueryTerm result = new TypeQueryTerm(linkHeaders);
+		TypeQueryTerm result = new TypeQueryTerm(context);
 		if (this.type == null || lookup.contains(this.type)) {
 			result.type = this.type;
-			result.linkHeaders = this.linkHeaders;
+			result.context = this.context;
 			result.nextAnd = this.nextAnd;
 			if (this.firstChild != null) {
 				result.firstChild = firstChild.getDuplicateAndRemoveNotKnownTypes(lookup);
@@ -625,7 +694,7 @@ public class TypeQueryTerm {
 
 	public void getTypeQuery(StringBuilder result) {
 		if (type != null) {
-			result.append(linkHeaders.compactIri(type));
+			result.append(context.compactIri(type));
 		} else {
 			if (firstChild != null && firstChild.hasNext()) {
 				result.append('(');

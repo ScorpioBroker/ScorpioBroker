@@ -121,7 +121,7 @@ DELETE FROM csource;
 
 INSERT INTO csource SELECT c_id, reg FROM temp;
 
-drop table temp;.
+drop table temp;
 
 ALTER TABLE PUBLIC.ENTITY RENAME COLUMN DATA TO ENTITY;
 
@@ -139,11 +139,11 @@ ALTER TABLE PUBLIC.ENTITY ADD COLUMN E_TYPES TEXT[];
 
 CREATE INDEX "I_entity_scopes"
     ON public.entity USING gin
-    (scopes);
+    (scopes array_ops);
 
 CREATE INDEX "I_entity_types"
     ON public.entity USING gin
-    (e_types);
+    (e_types array_ops);
 	
 UPDATE ENTITY SET E_TYPES=array_append(E_TYPES,TYPE);
 
@@ -478,15 +478,15 @@ CREATE OR REPLACE FUNCTION public.entity_extract_jsonb_fields() RETURNS trigger 
         	(TG_OP = 'UPDATE' AND OLD.ENTITY IS NULL AND NEW.ENTITY IS NOT NULL) OR 
             (TG_OP = 'UPDATE' AND OLD.ENTITY IS NOT NULL AND NEW.ENTITY IS NULL) OR 
 			(TG_OP = 'UPDATE' AND OLD.ENTITY IS NOT NULL AND NEW.ENTITY IS NOT NULL AND OLD.ENTITY <> NEW.ENTITY) THEN 
-          NEW.createdat = (NEW.data#>>'{https://uri.etsi.org/ngsi-ld/createdAt,0,@value}')::TIMESTAMP;
-          NEW.modifiedat = (NEW.data#>>'{https://uri.etsi.org/ngsi-ld/modifiedAt,0,@value}')::TIMESTAMP;
-          IF (NEW.data@>'{"https://uri.etsi.org/ngsi-ld/location": [ {"@type": [ "https://uri.etsi.org/ngsi-ld/GeoProperty" ] } ] }') THEN
-              NEW.location = ST_SetSRID(ST_GeomFromGeoJSON( getGeoJson( NEW.data#>'{https://uri.etsi.org/ngsi-ld/location,0,https://uri.etsi.org/ngsi-ld/hasValue,0}') ), 4326);
+          NEW.createdat = (NEW.ENTITY#>>'{https://uri.etsi.org/ngsi-ld/createdAt,0,@value}')::TIMESTAMP;
+          NEW.modifiedat = (NEW.ENTITY#>>'{https://uri.etsi.org/ngsi-ld/modifiedAt,0,@value}')::TIMESTAMP;
+          IF (NEW.ENTITY@>'{"https://uri.etsi.org/ngsi-ld/location": [ {"@type": [ "https://uri.etsi.org/ngsi-ld/GeoProperty" ] } ] }') THEN
+              NEW.location = ST_SetSRID(ST_GeomFromGeoJSON( getGeoJson( NEW.ENTITY#>'{https://uri.etsi.org/ngsi-ld/location,0,https://uri.etsi.org/ngsi-ld/hasValue,0}') ), 4326);
           ELSE 
               NEW.location = NULL;
           END IF;
-          IF (NEW.data ? 'https://uri.etsi.org/ngsi-ld/default-context/scope') THEN
-              NEW.scopes = getScopes(NEW.data#>'{https://uri.etsi.org/ngsi-ld/default-context/scope}');
+          IF (NEW.ENTITY ? 'https://uri.etsi.org/ngsi-ld/default-context/scope') THEN
+              NEW.scopes = getScopes(NEW.ENTITY#>'{https://uri.etsi.org/ngsi-ld/default-context/scope}');
           ELSE 
               NEW.scopes = NULL;
           END IF;

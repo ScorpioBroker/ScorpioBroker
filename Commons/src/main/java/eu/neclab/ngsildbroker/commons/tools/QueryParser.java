@@ -88,6 +88,9 @@ public class QueryParser {
 	}
 
 	public static QQueryTerm parseQuery(String input, Context context) throws ResponseException {
+		if(input == null) {
+			return null;
+		}
 		QQueryTerm root = new QQueryTerm(context);
 		QQueryTerm current = root;
 		boolean readingAttrib = true;
@@ -208,6 +211,9 @@ public class QueryParser {
 	}
 
 	public static ScopeQueryTerm parseScopeQuery(String queryString) {
+		if(queryString == null) {
+			return null;
+		}
 		ScopeQueryTerm result = new ScopeQueryTerm();
 		ScopeQueryTerm current = result;
 		String scopeLevel = "";
@@ -270,6 +276,9 @@ public class QueryParser {
 	}
 
 	public static TypeQueryTerm parseTypeQuery(String input, Context context) throws ResponseException {
+		if(input == null) {
+			return null;
+		}
 		Set<String> allTypes = Sets.newHashSet();
 		TypeQueryTerm root = new TypeQueryTerm(context);
 		TypeQueryTerm current = root;

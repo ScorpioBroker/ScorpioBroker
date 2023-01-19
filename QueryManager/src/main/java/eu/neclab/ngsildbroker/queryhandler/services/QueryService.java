@@ -71,8 +71,8 @@ public class QueryService {
 			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, CSFQueryTerm csf, GeoQueryTerm geoQuery,
 			ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, int limit, int offSet, boolean count,
 			boolean localOnly, Context context) {
-		Uni<QueryResult> localQuery = queryDAO.queryLocalOnly(tenant, id, typeQuery, idPattern, attrsQuery, qQuery,
-				geoQuery, scopeQuery, langQuery, limit, offSet, count).onItem().transform(rows -> {
+		return queryDAO.queryLocalOnly(tenant, id, typeQuery, idPattern, attrsQuery, qQuery, geoQuery, scopeQuery,
+				langQuery, limit, offSet, count).onItem().transform(rows -> {
 					QueryResult result = new QueryResult();
 					if (limit == 0 && count) {
 						result.setCount(rows.iterator().next().getLong(0));
@@ -83,112 +83,114 @@ public class QueryService {
 						List<Map<String, Object>> resultData = new ArrayList<Map<String, Object>>(rows.size());
 						while (it.hasNext()) {
 							next = it.next();
-							resultData.add(next.getJsonObject(1).getMap());
+							resultData.add(next.getJsonObject(0).getMap());
 						}
-						Long resultCount = next.getLong(0);
-						result.setCount(resultCount);
-						long leftAfter = resultCount - (offSet + limit);
-						if (leftAfter < 0) {
-							leftAfter = 0;
-						}
+
+//						Long resultCount = next.getLong(1);
+//						result.setCount(resultCount);
+//						long leftAfter = resultCount - (offSet + limit);
+//						if (leftAfter < 0) {
+//							leftAfter = 0;
+//						}
 						long leftBefore = offSet;
-						result.setResultsLeftAfter(leftAfter);
+						result.setResultsLeftAfter(0l);
 						result.setResultsLeftBefore(leftBefore);
 						result.setLimit(limit);
 						result.setOffset(offSet);
+						result.setData(resultData);
 					}
 
 					return result;
 				});
-		if (localOnly) {
-			Uni<List<Map<String, Object>>> queryRemoteEntities = Uni.createFrom()
-					.item(new ArrayList<Map<String, Object>>(0));
-		} else {
-			Uni<List<Map<String, Object>>> queryRemoteEntities = queryDAO.getRemoteSourcesForQuery(tenant, id,
-					typeQuery, idPattern, attrsQuery, qQuery, csf, geoQuery, scopeQuery).onItem()
-					.transformToUni(rows -> {
-						// 0 C.endpoint 1C.tenant_id, 2c.headers, 3c.reg_mode,4 c.queryEntity,
-						// 5c.queryBatch,
-						// 6entityType, 7entityId, 8attrs, 9geoq, 10scopeq
-
-						rows.forEach(row -> {
-							String[] entityTypes = row.getArrayOfStrings(6);
-							String[] entityIds = row.getArrayOfStrings(7);
-							String[] attrs = row.getArrayOfStrings(7);
-							StringBuilder url = new StringBuilder();
-							TypeQueryTerm callTypeQuery;
-							if (entityTypes != null && entityTypes.length > 0 && entityTypes[0] != null) {
-								if (typeQuery != null) {
-									callTypeQuery = typeQuery.getDuplicateAndRemoveNotKnownTypes(entityTypes);
-								} else {
-									callTypeQuery = new TypeQueryTerm(context);
-									TypeQueryTerm currentCallTypeQuery = callTypeQuery;
-									for (String entityType : entityTypes) {
-										currentCallTypeQuery.setType(entityType);
-										currentCallTypeQuery.setNextAnd(false);
-										currentCallTypeQuery.setNext(new TypeQueryTerm(context));
-										currentCallTypeQuery = currentCallTypeQuery.getNext();
-									}
-									currentCallTypeQuery.getPrev().setNext(null);
-								}
-							} else {
-								callTypeQuery = typeQuery;
-							}
-							if (callTypeQuery != null) {
-								url.append("type=");
-								url.append(callTypeQuery.getTypeQuery());
-								url.append('&');
-							}
-							if (entityIds != null && entityIds.length > 0 && entityIds[0] != null) {
-								url.append("id=");
-								for (String entityId : entityIds) {
-									url.append(context.compactIri(entityId));
-									url.append(',');
-								}
-								url.setLength(url.length() - 1);
-								url.append('&');
-
-							} else {
-								if (id != null) {
-									url.append("id=");
-									for (String entityId : id) {
-										url.append(context.compactIri(entityId));
-										url.append(',');
-									}
-									url.setLength(url.length() - 1);
-									url.append('&');
-								} else if (idPattern != null) {
-									url.append("idPattern=");
-									url.append(idPattern);
-									url.append('&');
-								}
-							}
-
-							if (attrs != null && attrs.length > 0 && attrs[0] != null) {
-								url.append("attrs=");
-								for (String attr : attrs) {
-									url.append(context.compactIri(attr));
-									url.append(',');
-								}
-								url.setLength(url.length() - 1);
-								url.append('&');
-							} else {
-								if (attrsQuery != null) {
-									url.append("attrs=");
-									for (String attr : attrsQuery.getAttrs()) {
-										url.append(context.compactIri(attr));
-										url.append(',');
-									}
-									url.setLength(url.length() - 1);
-									url.append('&');
-								}
-							}
-
-						});
-						return null;
-					});
-		}
-		return null;
+//		if (localOnly) {
+//			Uni<List<Map<String, Object>>> queryRemoteEntities = Uni.createFrom()
+//					.item(new ArrayList<Map<String, Object>>(0));
+//		} else {
+//			Uni<List<Map<String, Object>>> queryRemoteEntities = queryDAO.getRemoteSourcesForQuery(tenant, id,
+//					typeQuery, idPattern, attrsQuery, qQuery, csf, geoQuery, scopeQuery).onItem()
+//					.transformToUni(rows -> {
+//						// 0 C.endpoint 1C.tenant_id, 2c.headers, 3c.reg_mode,4 c.queryEntity,
+//						// 5c.queryBatch,
+//						// 6entityType, 7entityId, 8attrs, 9geoq, 10scopeq
+//
+//						rows.forEach(row -> {
+//							String[] entityTypes = row.getArrayOfStrings(6);
+//							String[] entityIds = row.getArrayOfStrings(7);
+//							String[] attrs = row.getArrayOfStrings(7);
+//							StringBuilder url = new StringBuilder();
+//							TypeQueryTerm callTypeQuery;
+//							if (entityTypes != null && entityTypes.length > 0 && entityTypes[0] != null) {
+//								if (typeQuery != null) {
+//									callTypeQuery = typeQuery.getDuplicateAndRemoveNotKnownTypes(entityTypes);
+//								} else {
+//									callTypeQuery = new TypeQueryTerm(context);
+//									TypeQueryTerm currentCallTypeQuery = callTypeQuery;
+//									for (String entityType : entityTypes) {
+//										currentCallTypeQuery.setType(entityType);
+//										currentCallTypeQuery.setNextAnd(false);
+//										currentCallTypeQuery.setNext(new TypeQueryTerm(context));
+//										currentCallTypeQuery = currentCallTypeQuery.getNext();
+//									}
+//									currentCallTypeQuery.getPrev().setNext(null);
+//								}
+//							} else {
+//								callTypeQuery = typeQuery;
+//							}
+//							if (callTypeQuery != null) {
+//								url.append("type=");
+//								url.append(callTypeQuery.getTypeQuery());
+//								url.append('&');
+//							}
+//							if (entityIds != null && entityIds.length > 0 && entityIds[0] != null) {
+//								url.append("id=");
+//								for (String entityId : entityIds) {
+//									url.append(context.compactIri(entityId));
+//									url.append(',');
+//								}
+//								url.setLength(url.length() - 1);
+//								url.append('&');
+//
+//							} else {
+//								if (id != null) {
+//									url.append("id=");
+//									for (String entityId : id) {
+//										url.append(context.compactIri(entityId));
+//										url.append(',');
+//									}
+//									url.setLength(url.length() - 1);
+//									url.append('&');
+//								} else if (idPattern != null) {
+//									url.append("idPattern=");
+//									url.append(idPattern);
+//									url.append('&');
+//								}
+//							}
+//
+//							if (attrs != null && attrs.length > 0 && attrs[0] != null) {
+//								url.append("attrs=");
+//								for (String attr : attrs) {
+//									url.append(context.compactIri(attr));
+//									url.append(',');
+//								}
+//								url.setLength(url.length() - 1);
+//								url.append('&');
+//							} else {
+//								if (attrsQuery != null) {
+//									url.append("attrs=");
+//									for (String attr : attrsQuery.getAttrs()) {
+//										url.append(context.compactIri(attr));
+//										url.append(',');
+//									}
+//									url.setLength(url.length() - 1);
+//									url.append('&');
+//								}
+//							}
+//
+//						});
+//						return null;
+//					});
+//		}
+//		return null;
 	}
 
 	public Uni<List<Map<String, Object>>> getTypesWithDetail(String tenant, boolean localOnly) {

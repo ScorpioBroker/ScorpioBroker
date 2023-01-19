@@ -18,6 +18,7 @@ import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import com.google.common.net.HttpHeaders;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -110,15 +111,15 @@ public class QueryController {
 	 */
 	@Path("/entities")
 	@GET
-	public Uni<RestResponse<Object>> query(HttpServerRequest request, @QueryParam("id") Set<String> id,
+	public Uni<RestResponse<Object>> query(HttpServerRequest request, @QueryParam("id") String id,
 			@QueryParam("type") String typeQuery, @QueryParam("idPattern") String idPattern,
 			@QueryParam("attrs") String attrs, @QueryParam("q") String q, @QueryParam("csf") String csf,
 			@QueryParam("geometry") String geometry, @QueryParam("georel") String georel,
 			@QueryParam("coordinates") String coordinates, @QueryParam("geoproperty") String geoproperty,
 			@QueryParam("geometryProperty") String geometryProperty, @QueryParam("lang") String lang,
-			@QueryParam("scopeQ") String scopeQ, @QueryParam("localOnly") Boolean localOnly,
-			@QueryParam("options") String options, @QueryParam("limit") Integer limit,
-			@QueryParam("offset") Integer offset, @QueryParam("count") Boolean count) {
+			@QueryParam("scopeQ") String scopeQ, @QueryParam("localOnly") boolean localOnly,
+			@QueryParam("options") String options, @QueryParam("limit") Integer limit, @QueryParam("offset") int offset,
+			@QueryParam("count") boolean count) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		if (acceptHeader == -1) {
 			return HttpUtils.INVALID_HEADER;
@@ -160,9 +161,14 @@ public class QueryController {
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 		}
-		return queryService
-				.query(HttpUtils.getTenant(request), id, typeQueryTerm, idPattern, attrsQuery, qQueryTerm, csfQueryTerm,
-						geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset, count, localOnly, context)
+		Set<String> ids;
+		if (id != null) {
+			ids = Sets.newHashSet(id.split(","));
+		} else {
+			ids = null;
+		}
+		return queryService.query(HttpUtils.getTenant(request), ids, typeQueryTerm, idPattern, attrsQuery, qQueryTerm,
+				csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset, count, localOnly, context)
 				.onItem().transform(queryResult -> {
 					return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty, acceptHeader,
 							count, actualLimit, langQuery, context);

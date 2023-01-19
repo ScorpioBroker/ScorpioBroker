@@ -9,6 +9,7 @@ import com.google.common.collect.Sets;
 
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import io.smallrye.mutiny.tuples.Tuple4;
+import io.vertx.mutiny.sqlclient.Tuple;
 
 public class AttrsQueryTerm {
 
@@ -56,6 +57,14 @@ public class AttrsQueryTerm {
 
 	public Set<String> getCompactedAttrs() {
 		return compactedAttrs;
+	}
+
+	public int toSql(StringBuilder query, Tuple tuple, int dollar) {
+		query.append("ENTITY ?| $");
+		query.append(dollar);
+		dollar++;
+		tuple.addArrayOfString(attrs.toArray(new String[0]));
+		return dollar;
 	}
 
 }
