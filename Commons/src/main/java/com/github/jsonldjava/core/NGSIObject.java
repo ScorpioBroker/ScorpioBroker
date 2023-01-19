@@ -171,9 +171,7 @@ class NGSIObject {
 
 	void validate(int payloadType, String activeProperty, String expandedProperty, JsonLdApi api)
 			throws ResponseException {
-		if (activeProperty == null && (atContextRequired ^ hasAtContext)) {
-			throw new ResponseException(ErrorType.BadRequestData, "@Context entry is needed");
-		}
+		
 		switch (payloadType) {
 			case AppConstants.TEMP_ENTITY_RETRIEVED_PAYLOAD:
 			case AppConstants.TEMP_ENTITY_CREATE_PAYLOAD:

@@ -1338,7 +1338,7 @@ public class JsonLdApi {
 	 */
 	public Object expand(Context activeCtx, Object element, int payloadType, boolean atContextAllowed)
 			throws JsonLdError, ResponseException {
-		return expand(activeCtx, "", new NGSIObject(element, null), payloadType, atContextAllowed).getElement();
+		return expand(activeCtx, null, new NGSIObject(element, null), payloadType, atContextAllowed).getElement();
 	}
 
 	/***
