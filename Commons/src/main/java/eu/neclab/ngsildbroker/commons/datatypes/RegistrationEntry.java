@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.entityhandler.services;
+package eu.neclab.ngsildbroker.commons.datatypes;
 
 import java.util.List;
 import java.util.Map;
@@ -9,7 +9,6 @@ import org.locationtech.spatial4j.shape.Shape;
 
 import com.google.common.collect.Sets;
 
-import eu.neclab.ngsildbroker.commons.datatypes.RemoteHost;
 import io.smallrye.mutiny.tuples.Tuple2;
 
 public record RegistrationEntry(String cId, String eId, String eIdp, String type, String eProp, String eRel,

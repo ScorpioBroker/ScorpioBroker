@@ -35,6 +35,7 @@ import com.google.common.collect.Table;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.RegistrationEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.RemoteHost;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
@@ -86,7 +87,7 @@ public class EntityService {
 
 	private Table<String, String, RegistrationEntry> tenant2CId2RegEntries = HashBasedTable.create();
 
-	private JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
+	
 
 	private Random random = new Random();
 
@@ -779,7 +780,7 @@ public class EntityService {
 			}
 			expanded.put(NGSIConstants.NGSI_LD_SCOPE, finalScopes);
 		}
-		return JsonLdProcessor.compact(expanded, null, context, opts, -1);
+		return JsonLdProcessor.compact(expanded, null, context, HttpUtils.opts, -1);
 
 	}
 

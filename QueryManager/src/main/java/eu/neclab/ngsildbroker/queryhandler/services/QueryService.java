@@ -9,16 +9,21 @@ import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 import javax.annotation.PostConstruct;
+import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdError;
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
+import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.common.collect.Table;
+
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.RegistrationEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
@@ -32,6 +37,7 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.queryhandler.repository.QueryDAO;
+import io.quarkus.runtime.StartupEvent;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.MultiMap;
 import io.vertx.mutiny.core.Vertx;
@@ -61,10 +67,20 @@ public class QueryService {
 
 	protected JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 	private Random random = new Random();
+	private Table<String, String, RegistrationEntry> tenant2CId2RegEntries = HashBasedTable.create();
 
 	@PostConstruct
 	void setup() {
 		webClient = WebClient.create(vertx);
+		queryDAO.getAllRegistries().onItem().transform(t -> {
+			tenant2CId2RegEntries = t;
+			return null;
+		}).await().indefinitely();
+	}
+
+	// This is needed so that @postconstruct runs on the startup thread and not on a
+	// worker thread later on
+	void startup(@Observes StartupEvent event) {
 	}
 
 	public Uni<QueryResult> query(String tenant, Set<String> id, TypeQueryTerm typeQuery, String idPattern,
@@ -314,9 +330,9 @@ public class QueryService {
 		} else {
 			queryRemoteTypes = queryDAO.getRemoteSourcesForTypes(tenant).onItem().transformToUni(rows -> {
 				List<Uni<Map<String, Object>>> unis = Lists.newArrayList();
-				if(rows.size()==0) {
+				if (rows.size() == 0) {
 					return Uni.createFrom().item(new HashSet<>());
-					}
+				}
 				rows.forEach(row -> {
 					// C.endpoint C.tenant_id, c.headers, c.reg_mode
 					MultiMap remoteHeaders = MultiMap

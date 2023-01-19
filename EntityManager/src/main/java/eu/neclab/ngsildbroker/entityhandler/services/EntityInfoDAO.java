@@ -28,6 +28,7 @@ import com.google.common.collect.Table;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.RegistrationEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.RemoteHost;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateEntityRequest;
@@ -40,6 +41,7 @@ import eu.neclab.ngsildbroker.commons.storage.ClientManager;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.MultiMap;
 import io.vertx.mutiny.sqlclient.Row;
@@ -88,7 +90,7 @@ public class EntityInfoDAO {
 					.get(request.getAttrName());
 			String sql = "UPDATE ENTITY SET ENTITY = NGSILD_PARTIALUPDATE(ENTITY, $1, $2) WHERE id=$3 AND ENTITY ? '$1' RETURNINGG ENTITY";
 			return client.preparedQuery(sql)
-					.execute(Tuple.of(request.getAttrName(), new JsonObject(request.getPayload()), request.getId()))
+					.execute(Tuple.of(request.getAttrName(), new JsonArray(effectivePayloads), request.getId()))
 					.onFailure().retry().atMost(3).onItem().transformToUni(rows -> {
 						if (rows.size() == 0) {
 							return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
