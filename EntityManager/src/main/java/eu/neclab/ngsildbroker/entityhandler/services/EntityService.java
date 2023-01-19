@@ -783,4 +783,12 @@ public class EntityService {
 
 	}
 
+	public Uni<Void> testBatch(String tenant, List<Object> test) {
+		List<CreateEntityRequest> requests = new ArrayList<>(test.size());
+		for (Object obj : test) {
+			requests.add(new CreateEntityRequest(tenant, (Map<String, Object>) obj, null));
+		}
+		return entityDAO.batchCreateEntity(requests);
+	}
+
 }

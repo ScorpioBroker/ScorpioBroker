@@ -58,16 +58,28 @@ public class EntityInfoDAO {
 
 	GeoJSONReader geoReader = new GeoJSONReader(JtsSpatialContext.GEO, new SpatialContextFactory());
 
-	public Uni<RowSet<Row>> batchCreateEntity(List<CreateEntityRequest> requests) {
+	public Uni<Void> batchCreateEntity(List<CreateEntityRequest> requests) {
 		return clientManager.getClient(requests.get(0).getTenant(), true).onItem().transformToUni(client -> {
-			String sql = "SELECT * FROM NGSILD_CREATEENTITY($1::jsonb)";
-			List<Tuple> batch = Lists.newArrayList();
+			List<Tuple> tuples = new ArrayList<>(requests.size());
 			for (CreateEntityRequest request : requests) {
-				batch.add(Tuple.of(new JsonObject(request.getPayload())));
+				tuples.add(Tuple.of(request.getId(),
+						((List<String>) request.getPayload().get(NGSIConstants.JSON_LD_TYPE)).toArray(new String[0]),
+						new JsonObject(request.getPayload())));
 			}
-			return client.preparedQuery(sql).executeBatch(batch).onFailure().retry().atMost(3);
+			return client.preparedQuery(
+					"INSERT INTO ENTITY(ID,E_TYPES, ENTITY) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING RETURNING ID as notadded")
+					.executeBatch(tuples).onFailure().recoverWithUni(e -> {
+						if (e instanceof PgException) {
+							if (((PgException) e).getCode().equals(AppConstants.SQL_ALREADY_EXISTS)) {
+								return Uni.createFrom().failure(new ResponseException(ErrorType.AlreadyExists));
+							}
+						}
+						return Uni.createFrom().failure(e);
+					}).onItem().transformToUni(v -> {
+						System.out.println(v);
+						return Uni.createFrom().voidItem();
+					});
 		});
-
 	}
 
 	public Uni<Map<String, Object>> partialUpdateAttribute(UpdateEntityRequest request) {
@@ -127,14 +139,13 @@ public class EntityInfoDAO {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
 			String[] types = ((List<String>) request.getPayload().get(NGSIConstants.JSON_LD_TYPE))
 					.toArray(new String[0]);
-			System.out.println(StringUtils.join(types));
-
 			return client.preparedQuery("INSERT INTO ENTITY(ID,E_TYPES, ENTITY) VALUES ($1, $2, $3)")
 					.execute(Tuple.of(request.getId(), types, new JsonObject(request.getPayload()))).onFailure()
 					.recoverWithUni(e -> {
 						if (e instanceof PgException) {
 							if (((PgException) e).getCode().equals(AppConstants.SQL_ALREADY_EXISTS)) {
-								return Uni.createFrom().failure(new ResponseException(ErrorType.AlreadyExists, request.getId() + " already exists"));
+								return Uni.createFrom().failure(new ResponseException(ErrorType.AlreadyExists,
+										request.getId() + " already exists"));
 							}
 						}
 						return Uni.createFrom().failure(e);

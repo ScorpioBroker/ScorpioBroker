@@ -1,5 +1,7 @@
 package eu.neclab.ngsildbroker.entityhandler.controller;
 
+import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 import javax.annotation.PostConstruct;
@@ -16,10 +18,16 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.fasterxml.jackson.core.JsonParseException;
 import com.github.jsonldjava.core.Context;
+import com.github.jsonldjava.core.JsonLdError;
 import com.github.jsonldjava.core.JsonLdProcessor;
+import com.github.jsonldjava.utils.JsonUtils;
+
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
 import io.smallrye.mutiny.Uni;
@@ -69,6 +77,15 @@ public class EntityController {// implements EntityHandlerInterface {
 					logger.info("Done creating entity");
 					return HttpUtils.generateCreateResult(opResult, AppConstants.ENTITES_URL);
 				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+	}
+	@Path("/testbatch")
+	@POST
+	public Uni<RestResponse<Object>> createBatch(HttpServerRequest req, String payload) throws JsonParseException, JsonLdError, ResponseException, IOException {
+		List<Object> expanded = JsonLdProcessor.expand(JsonUtils.fromString(payload));
+		return entityService.testBatch(HttpUtils.getTenant(req), expanded).onItem()
+				.transform(opResult -> {
+					return RestResponse.ok();
+				});
 	}
 
 	
