@@ -460,7 +460,7 @@ public class TypeQueryTerm {
 			current.next.toSql(result, tuple, dollar);
 		} else {
 			result.append("(e_types ");
-			if (next != null && next.nextAnd) {
+			if (next != null && nextAnd) {
 				result.append("@> ");
 			} else {
 				result.append("&& ");
