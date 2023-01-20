@@ -6,6 +6,8 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.reactive.messaging.Acknowledgment;
+import org.eclipse.microprofile.reactive.messaging.Acknowledgment.Strategy;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
@@ -16,6 +18,8 @@ import eu.neclab.ngsildbroker.commons.subscriptionbase.BaseSubscriptionService;
 import eu.neclab.ngsildbroker.commons.subscriptionbase.BaseSubscriptionSyncManager;
 import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
 import io.quarkus.arc.profile.UnlessBuildProfile;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.reactive.messaging.MutinyEmitter;
 
 @Singleton
 @UnlessBuildProfile("in-memory")
@@ -28,13 +32,14 @@ public class SubscriptionSyncService extends BaseSubscriptionSyncManager {
 
 	@Inject
 	@Channel(AppConstants.SUB_ALIVE_CHANNEL)
-	Emitter<AliveAnnouncement> aliveEmitter;
+	MutinyEmitter<AliveAnnouncement> aliveEmitter;
 
 	@Inject
 	SubscriptionService subService;
 
 	@Incoming(AppConstants.SUB_SYNC_RETRIEVE_CHANNEL)
-	void listenForSubs(SyncMessage message) {
+	@Acknowledgment(Strategy.PRE_PROCESSING)
+	Uni<Void> listenForSubs(SyncMessage message) {
 //		Message<SyncMessage> tmp;
 //		if (duplicate) {
 //			tmp = MicroServiceUtils.deepCopySyncMessage(message);
@@ -42,12 +47,14 @@ public class SubscriptionSyncService extends BaseSubscriptionSyncManager {
 //			tmp = message;
 //		}
 		listenForSubscriptionUpdates(message.getRequest(), message.getSyncId());
+		return Uni.createFrom().voidItem();
 	}
 
 	@Incoming(AppConstants.SUB_ALIVE_RETRIEVE_CHANNEL)
-	void listenForAlive(AliveAnnouncement message) {
+	@Acknowledgment(Strategy.PRE_PROCESSING)
+	Uni<Void> listenForAlive(AliveAnnouncement message) {
 		listenForAnnouncements(message, message.getId());
-
+		return Uni.createFrom().voidItem();
 	}
 
 	@Override
@@ -56,7 +63,7 @@ public class SubscriptionSyncService extends BaseSubscriptionSyncManager {
 	}
 
 	@Override
-	protected Emitter<AliveAnnouncement> getAliveEmitter() {
+	protected MutinyEmitter<AliveAnnouncement> getAliveEmitter() {
 		return aliveEmitter;
 	}
 

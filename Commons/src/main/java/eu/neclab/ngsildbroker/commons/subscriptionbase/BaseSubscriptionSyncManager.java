@@ -19,20 +19,21 @@ import com.google.common.collect.Sets;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.AliveAnnouncement;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
+import io.quarkus.scheduler.Scheduled;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.reactive.messaging.MutinyEmitter;
 
 public abstract class BaseSubscriptionSyncManager {
 
 	private Logger logger = LoggerFactory.getLogger(this.getClass());
 
-	private Timer executor = new Timer(true);
-
-	private Set<String> currentInstances = Sets.newHashSet();
+		private Set<String> currentInstances = Sets.newHashSet();
 
 	private Set<String> lastInstances = Sets.newHashSet();
 
 	BaseSubscriptionService subscriptionService;
 
-	private Emitter<AliveAnnouncement> kafkaSender;
+	private MutinyEmitter<AliveAnnouncement> kafkaSender;
 
 	@ConfigProperty(name = "scorpio.sync.announcement-time", defaultValue = "200")
 	int announcementTime;
@@ -50,37 +51,29 @@ public abstract class BaseSubscriptionSyncManager {
 		this.subscriptionService = getSubscriptionService();
 		setSyncId();
 		INSTANCE_ID = new AliveAnnouncement(syncId);
-		startSyncing();
 	}
 
 	protected abstract BaseSubscriptionService getSubscriptionService();
 
-	protected abstract Emitter<AliveAnnouncement> getAliveEmitter();
+	protected abstract MutinyEmitter<AliveAnnouncement> getAliveEmitter();
 
 	protected abstract void setSyncId();
 
-	private void startSyncing() {
-		executor.scheduleAtFixedRate(new TimerTask() {
-			@Override
-			public void run() {
-				kafkaSender.send(INSTANCE_ID);
-			}
-		}, 0, announcementTime);
+	
+	@Scheduled(every = "{scorpio.sync.announcement-time}")
+	Uni<Void> syncTask() {
+		return kafkaSender.send(INSTANCE_ID);
+	}
 
-		executor.scheduleAtFixedRate(new TimerTask() {
-			@Override
-			public void run() {
-				synchronized (currentInstances) {
-					if (!currentInstances.equals(lastInstances)) {
-						recalculateSubscriptions();
-					}
-					lastInstances.clear();
-					lastInstances.addAll(currentInstances);
-					currentInstances.clear();
-				}
-			}
-		}, 0, checkTime);
-
+	@Scheduled(every = "{scorpio.sync.check-time}")
+	Uni<Void> checkTask() {
+		if (!currentInstances.equals(lastInstances)) {
+			recalculateSubscriptions();
+		}
+		lastInstances.clear();
+		lastInstances.addAll(currentInstances);
+		currentInstances.clear();
+		return Uni.createFrom().voidItem();
 	}
 
 	protected void listenForAnnouncements(AliveAnnouncement announcement, String key) {
@@ -139,11 +132,6 @@ public abstract class BaseSubscriptionSyncManager {
 		}
 		List<String> mySubs = sortedSubs.subList(start, end);
 		subscriptionService.activateSubs(mySubs);
-	}
-
-	@PreDestroy
-	public void destroy() {
-		executor.cancel();
 	}
 
 }
