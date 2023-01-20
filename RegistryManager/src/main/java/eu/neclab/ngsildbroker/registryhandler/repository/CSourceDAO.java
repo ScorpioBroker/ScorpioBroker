@@ -72,7 +72,7 @@ public class CSourceDAO {
 //			case AppConstants.INTERNAL_FULL_REGISTRATION_ID:
 //				break;
 			default:
-				return client.preparedQuery("SELECT reg FROM csource WHERE id = $1").execute(Tuple.of(id)).onFailure()
+				return client.preparedQuery("SELECT reg FROM csource WHERE c_id = $1").execute(Tuple.of(id)).onFailure()
 						.retry().atMost(3);
 			}
 

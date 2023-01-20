@@ -259,6 +259,9 @@ public class RegistrySubscriptionService {
 			}
 
 		}
+		if (unis.isEmpty()) {
+			return Uni.createFrom().voidItem();
+		}
 		return Uni.combine().all().unis(unis).discardItems();
 	}
 
