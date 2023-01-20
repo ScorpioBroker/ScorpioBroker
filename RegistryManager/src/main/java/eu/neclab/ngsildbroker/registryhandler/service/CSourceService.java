@@ -4,13 +4,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendCSourceRequest;
@@ -40,6 +43,7 @@ import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.ext.web.client.WebClient;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowIterator;
+import io.vertx.pgclient.PgException;
 
 @Singleton
 public class CSourceService {
@@ -99,8 +103,17 @@ public class CSourceService {
 			});
 		}).onFailure().recoverWithUni(
 				// TODO do some proper error handling depending on the sql code
-				e -> Uni.createFrom()
-						.failure(new ResponseException(ErrorType.AlreadyExists, "Registration already exists")));
+				e -> {
+					ErrorType error = ErrorType.InternalError;
+					String errorMsg = e.getMessage();
+					if (e instanceof PgException) {
+						if (((PgException) e).getCode().equals("23505")) {
+							error = ErrorType.AlreadyExists;
+							errorMsg = "Registration already exists";
+						}
+					}
+					return Uni.createFrom().failure(new ResponseException(error, errorMsg));
+				});
 	}
 
 	public Uni<NGSILDOperationResult> updateRegistration(String tenant, String registrationId,
