@@ -134,7 +134,13 @@ public class CSourceService {
 			}
 		}).onFailure().recoverWithUni(
 				// TODO do some proper error handling depending on the sql code
-				e -> Uni.createFrom().failure(new ResponseException(ErrorType.NotFound, "Registration not found")));
+				e -> {
+					if (e instanceof ResponseException) {
+						return Uni.createFrom().failure((ResponseException) e);
+					} else {
+						return Uni.createFrom().failure(new ResponseException(ErrorType.InternalError, e.getMessage()));
+					}
+				});
 	}
 
 	public Uni<Map<String, Object>> retrieveRegistration(String tenant, String registrationId) {
@@ -170,7 +176,13 @@ public class CSourceService {
 			}
 		}).onFailure().recoverWithUni(
 				// TODO do some proper error handling depending on the sql code
-				e -> Uni.createFrom().failure(new ResponseException(ErrorType.NotFound, "Registration not found")));
+				e -> {
+					if (e instanceof ResponseException) {
+						return Uni.createFrom().failure((ResponseException) e);
+					} else {
+						return Uni.createFrom().failure(new ResponseException(ErrorType.InternalError, e.getMessage()));
+					}
+				});
 	}
 
 	public Uni<QueryResult> queryRegistrations(String tenant, Set<String> ids, TypeQueryTerm typeQuery,
