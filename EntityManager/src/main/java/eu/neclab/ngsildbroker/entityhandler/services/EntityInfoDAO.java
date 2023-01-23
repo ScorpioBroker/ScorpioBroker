@@ -354,6 +354,7 @@ public class EntityInfoDAO {
 	public Uni<Set<String>> appendToEntity2(AppendEntityRequest request, boolean noOverwrite) {
 		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
 			Map<String, Object> payload = request.getPayload();
+			payload.remove(NGSIConstants.JSON_LD_ID);
 			Object types = payload.remove(NGSIConstants.JSON_LD_TYPE);
 			int dollar = 2;
 			Tuple tuple = Tuple.tuple();
