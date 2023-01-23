@@ -14,6 +14,8 @@ import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.Sets;
+
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendCSourceRequest;
@@ -98,7 +100,7 @@ public class CSourceService {
 			return kafkaSenderInterface.send(request).onItem().transform(v -> {
 				NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.OPERATION_CREATE_REGISTRATION,
 						(String) registration.get(NGSIConstants.JSON_LD_ID));
-				result.addSuccess(new CRUDSuccess(null, null));
+				result.addSuccess(new CRUDSuccess(null, null, request.getId(), Sets.newHashSet()));
 				return result;
 			});
 		}).onFailure().recoverWithUni(
@@ -112,6 +114,7 @@ public class CSourceService {
 							errorMsg = "Registration already exists";
 						}
 					}
+					e.printStackTrace();
 					return Uni.createFrom().failure(new ResponseException(error, errorMsg));
 				});
 	}
@@ -150,7 +153,7 @@ public class CSourceService {
 						.failure(new ResponseException(ErrorType.NotFound, registrationId + "was not found"));
 			}
 			JsonObject first = rowSet.iterator().next().getJsonObject(0);
-			if(first == null) {
+			if (first == null) {
 				return Uni.createFrom()
 						.failure(new ResponseException(ErrorType.NotFound, registrationId + "was not found"));
 			}
