@@ -129,7 +129,7 @@ public class CSourceService {
 				return kafkaSenderInterface.send(request).onItem().transform(v -> {
 					NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.OPERATION_UPDATE_REGISTRATION,
 							registrationId);
-					result.addSuccess(new CRUDSuccess(null, null));
+					result.addSuccess(new CRUDSuccess(null, null, request.getId(), Sets.newHashSet()));
 					return result;
 				});
 			} else {
@@ -171,7 +171,7 @@ public class CSourceService {
 				return kafkaSenderInterface.send(request).onItem().transform(v -> {
 					NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.OPERATION_DELETE_REGISTRATION,
 							registrationId);
-					result.addSuccess(new CRUDSuccess(null, null));
+					result.addSuccess(new CRUDSuccess(null, null, request.getId(), Sets.newHashSet()));
 					return result;
 				});
 			} else {
