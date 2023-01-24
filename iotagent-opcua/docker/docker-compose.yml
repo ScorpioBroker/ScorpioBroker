@@ -1,0 +1,163 @@
+# Copyright 2022 Engineering Ingegneria Informatica S.p.A.
+#
+# This file is part of the IoT Agent for the OPCUA protocol (iotagent-opcua) component
+#
+# iotagent-opcua is free software: you can redistribute it and/or
+# modify it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the License,
+# or (at your option) any later version.
+#
+# iotagent-opcua is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public
+# License along with iotagent-opcua.
+# If not, see http://www.gnu.org/licenses/.
+#
+# For those usages not covered by the GNU Affero General Public License
+# please contact with: [manfredi.pistone@eng.it, gabriele.deluca@eng.it, walterdomenico.vergara@eng.it, mattiagiuseppe.marzano@eng.it]
+
+version: "3.5"
+
+services:
+  iot-agent:
+    image: iotagent4fiware/iotagent-opcua:latest
+    hostname: iotagent-opcua
+    depends_on:
+      - mongodb
+      - iotcarsrv
+      - scorpio
+    networks:
+      - default
+    expose:
+      - "4041"
+      - "9229"
+    ports:
+      - "4041:4041"
+      - "9229:9229"
+    extra_hosts:
+      - "iotcarsrv:172.30.48.45"
+      - "iotagent-opcua:172.30.48.45"
+    environment:
+      - "IOTA_CB_HOST=scorpio"
+      - "IOTA_CB_PORT=9090"
+      - "IOTA_NORTH_PORT=4041"
+      - "IOTA_REGISTRY_TYPE=mongodb"
+      - "IOTA_LOG_LEVEL=DEBUG"
+      - "IOTA_MONGO_HOST=mongodb"
+      - "IOTA_MONGO_PORT=27017"
+      - "IOTA_MONGO_DB=iotagent_opcua"
+      - "IOTA_PROVIDER_URL=http://iotagent-opcua:4041"
+      - "IOTA_DEFAULT_RESOURCE=/iot/d"
+      - "IOTA_OPCUA_ENDPOINT=opc.tcp://iotcarsrv:5001/UA/CarServer"
+      - "IOTA_OPCUA_SECURITY_MODE=None"
+      - "IOTA_OPCUA_SECURITY_POLICY=None"
+      #- "IOTA_OPCUA_SECURITY_USERNAME=null"
+      #- "IOTA_OPCUA_SECURITY_PASSWORD=null"
+      - "IOTA_OPCUA_UNIQUE_SUBSCRIPTION=false"
+      - "IOTA_OPCUA_MT_POLLING=false"
+      - "IOTA_OPCUA_MT_AGENT_ID=age01_"
+      - "IOTA_OPCUA_MT_ENTITY_ID=age01_Car"
+      - "IOTA_OPCUA_MT_ENTITY_TYPE=Device"
+      - "IOTA_OPCUA_MT_NAMESPACE_IGNORE=0,7"
+      - "IOTA_CB_NGSI_VERSION=ld"
+      - "IOTA_JSON_LD_CONTEXT=https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld"
+      - "IOTA_FALLBACK_TENANT=opcua_car"
+    volumes:
+      - ../conf/config.js:/opt/iotagent-opcua/conf/config.js
+      
+  mongodb:
+    image: mongo:4.4
+    hostname: mongodb
+    expose:
+      - "27017"
+    ports:
+      - "27017:27017" # localhost:27017
+    networks:
+      - default
+    command: --bind_ip_all
+    volumes:
+      - mongodb:/data
+
+ ################ Scorpio Context-Broker ################
+
+  zookeeper:
+    image: zookeeper
+    networks:
+      - default
+    ports:
+      - "2181"
+    logging:
+      driver: none
+      
+  kafka:
+    image: bitnami/kafka
+    networks:
+      - default
+    ports:
+      - "9092"
+    environment:
+      KAFKA_ADVERTISED_HOST_NAME: kafka
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_PORT: 9092
+      KAFKA_LOG_RETENTION_MS: 10000
+      KAFKA_LOG_RETENTION_CHECK_INTERVAL_MS: 5000
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - zookeeper
+    logging:
+      driver: none
+      
+  postgres:
+    image: postgis/postgis
+    ports:
+      - "5432"
+    networks:
+      - default
+    environment:
+      POSTGRES_USER: ngb
+      POSTGRES_PASSWORD: ngb
+      POSTGRES_DB: ngb
+    logging:
+      driver: none
+
+  scorpio:
+    image: scorpiobroker/all-in-one-runner:spring-kafka-latest
+    hostname: scorpio
+    networks:
+      - default
+    expose:
+      - "9090"
+    ports:
+      - "9090:9090"
+    depends_on:
+      - postgres
+      - kafka
+
+ ################ IoT Car Server ################
+
+  iotcarsrv:
+    hostname: iotcarsrv
+    image: iotagent4fiware/opcuacarsrv:latest
+    networks:
+      - default
+    expose:
+      - "5001"
+    ports:
+      - "5001:5001"
+    depends_on:
+      - scorpio
+      - mongodb
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.18.1.0/24
+        
+volumes:
+  mongodb: ~

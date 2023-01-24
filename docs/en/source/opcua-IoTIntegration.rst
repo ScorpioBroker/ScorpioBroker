@@ -4,19 +4,19 @@
 Integrate Scorpio Broker with OPC UA IoT agent 
 ****************************************************
 
-This is a step-by-step tutorial that will introduce in detail how to enable OPC UA to FIWARE connecting an OPC UA server to Context Broker using the agent. The OPC UA data will be automatically published in a FIWARE Context Broker using NGSI data model.
+This is a step-by-step tutorial that will introduce in detail how to enable OPC UA to FIWARE connecting an OPC UA server to Scorpio Broker using the agent. The OPC UA data will be automatically published in a FIWARE Scorpio Broker using NGSI data model.
 
 **What is OPC UA?**
 
 OPC UA is a well-known client-server protocol used in the Industry.
 
-In real environments, an OPC UA server is usually responsible for fetching sensor data from factory-level machinery making them available to an OPC UA client (the Agent in our case).
+In real environments, an OPC UA server is usually responsible for fetching sensor data from factory-level machinery making them available to an OPC UA client (OPC-UA IoT Agent in our case).
 
 Before a client can retrieve their values, sensors are mapped to the OPC UA Server Address Space as variables (or attributes). Moreover, it is also possible to control the machinery invoking methods exposed by the server.
 
 Sensor values access is provided through a subscription mechanism. For each sensor value the OPC UA client wants to have access to, it creates a subscription specifying some parameters. Using these parameters the client asks the server to send data according to some particular modalities. At that point the server determines if the requests can be fulfilled, otherwise it will continue sending data in a best effort mode.
 
-In our case the OPC UA Agent acts as bridge between the OPC UA server and the Scorpio Context Broker behaving as an OPC UA client.
+In our case the OPC UA Agent acts as bridge between the OPC UA server and the Scorpio Broker behaving as an OPC UA client.
 
 Actors
 ****************************************************
@@ -25,7 +25,7 @@ The actors involved in the scenario are:
 
 -   **OPC UA Server**, representing the data source
 -   **OPC UA Agent**, the connector to join industrial environment to FIWARE
--   **Scorpio Context Broker**, the broker as entry point of FIWARE platform
+-   **Scorpio Broker**, the broker as entry point of FIWARE platform
 
 **OPC UA Server**
 
@@ -61,9 +61,9 @@ The iot-agent container relies on the presence of the Orion Context Broker and u
 -   Port 9229 is exposed to receive OPC UA measurements over HTTP from the OPC UA server.
 -   Port 4041 is exposed purely for tutorial access - so that cUrl or Postman can make provisioning commands without being part of the same network.
 
-**Scorpio Context Broker**
+**Scorpio Broker**
 
-Scorpio Context Broker can be external, however to have a black box for testing, it will be included in docker compose in order to have a self-supporting environment. Scorpio-Broker is an NGSI-LD compliant broker so we will be testing OPC UA IoT Agent for NGSI-LD tests. 
+Scorpio Broker can be external, however to have a black box for testing, it will be included in docker compose in order to have a self-supporting environment. Scorpio-Broker is an NGSI-LD compliant broker so we will be testing OPC UA IoT Agent for NGSI-LD tests. 
 
 Start Up
 ****************************************************
