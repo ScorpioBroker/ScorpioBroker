@@ -327,8 +327,9 @@ public class EntityInfoDAO {
 					if (tmp instanceof Map) {
 						Map<String, Object> map = (Map<String, Object>) tmp;
 						if (map.containsKey(NGSIConstants.JSON_LD_TYPE)) {
-							if (((List<String>) map.get(NGSIConstants.JSON_LD_TYPE)).get(0)
-									.equals(NGSIConstants.JSON_LD_NONE)) {
+							if ((map.get(NGSIConstants.JSON_LD_TYPE) instanceof List<?> types && types.get(0)
+									.equals(NGSIConstants.JSON_LD_NONE))
+							|| map.get(NGSIConstants.JSON_LD_TYPE).equals(NGSIConstants.JSON_LD_NONE)) {
 								it2.remove();
 							}
 						} else {
