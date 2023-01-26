@@ -7,6 +7,7 @@ import java.util.Set;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -178,7 +179,7 @@ public class QueryController {
 	@Path("/types")
 	@GET
 	public Uni<RestResponse<Object>> getAllTypes(HttpServerRequest request,
-			@QueryParam(value = "details") boolean details, @QueryParam(value = "localOnly") boolean localOnly) {
+			@QueryParam(value = "details") Boolean details, @QueryParam(value = "localOnly") boolean localOnly) {
 
 		HttpUtils.getAtContext(request);
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll(HttpHeaders.ACCEPT));

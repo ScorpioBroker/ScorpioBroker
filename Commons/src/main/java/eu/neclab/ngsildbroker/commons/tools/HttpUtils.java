@@ -411,12 +411,14 @@ public final class HttpUtils {
 
 	public static MultiMap getHeadersForRemoteCall(JsonArray headerFromReg, String tenant) {
 		MultiMap result = HeadersMultiMap.headers();
-		headerFromReg.forEach(t -> {
-			JsonObject obj = (JsonObject) t;
-			obj.forEach(headerEntry -> {
-				result.add(headerEntry.getKey(), (String) headerEntry.getValue());
+		if (headerFromReg != null) {
+			headerFromReg.forEach(t -> {
+				JsonObject obj = (JsonObject) t;
+				obj.forEach(headerEntry -> {
+					result.add(headerEntry.getKey(), (String) headerEntry.getValue());
+				});
 			});
-		});
+		}
 		result.add("Accept", "application/json");
 		if (tenant != null) {
 			result.add(NGSIConstants.TENANT_HEADER, tenant);
