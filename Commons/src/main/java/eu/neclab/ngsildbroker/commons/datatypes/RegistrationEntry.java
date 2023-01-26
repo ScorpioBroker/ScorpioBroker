@@ -1,14 +1,23 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
+import java.lang.reflect.Array;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.locationtech.spatial4j.SpatialPredicate;
 import org.locationtech.spatial4j.shape.Shape;
 
 import com.google.common.collect.Sets;
 
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import io.smallrye.mutiny.tuples.Tuple2;
 
 public record RegistrationEntry(String cId, String eId, String eIdp, String type, String eProp, String eRel,
@@ -70,13 +79,25 @@ public record RegistrationEntry(String cId, String eId, String eIdp, String type
 	}
 
 	private Set<String> getOverlap(List<Map<String, String>> originalScopes) {
-		// TODO Auto-generated method stub
-		return null;
+		Set<String> result = Sets.newHashSet();
+		for (Map<String, String> scopeEntry : originalScopes) {
+			String scope = scopeEntry.get(NGSIConstants.JSON_LD_VALUE);
+			if (this.scopes == null || ArrayUtils.contains(this.scopes, scope)) {
+				result.add(scope);
+			}
+		}
+		return result;
 	}
 
 	public static List<RegistrationEntry> fromRegPayload(Map<String, Object> payload) {
 		// TODO Auto-generated method stub
 		return null;
+	}
+
+	public boolean matches(Set<String> id, String idPattern2, TypeQueryTerm typeQuery, String idPattern, AttrsQueryTerm attrsQuery,
+			QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery) {
+		return false;
+
 	}
 
 }

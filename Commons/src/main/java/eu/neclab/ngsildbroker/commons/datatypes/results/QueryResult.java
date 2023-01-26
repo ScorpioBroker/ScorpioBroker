@@ -3,6 +3,8 @@ package eu.neclab.ngsildbroker.commons.datatypes.results;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.collect.Maps;
+
 /**
  * @author hebgen
  * @version 1.0
@@ -16,6 +18,7 @@ public class QueryResult {
 	private Long resultsLeftAfter;
 	private Long resultsLeftBefore;
 	private List<Map<String, Object>> data;
+	private Map<String, Map<String, Object>> entityId2Data = Maps.newHashMap();
 	private Long count = 0L;
 
 	public QueryResult() {
@@ -75,6 +78,14 @@ public class QueryResult {
 
 	public void setCount(Long count) {
 		this.count = count;
+	}
+
+	public Map<String, Map<String, Object>> getEntityId2Data() {
+		return entityId2Data;
+	}
+
+	public void setEntityId2Data(Map<String, Map<String, Object>> entityId2Data) {
+		this.entityId2Data = entityId2Data;
 	}
 
 //	public void finalize() throws Throwable {

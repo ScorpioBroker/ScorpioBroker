@@ -1,8 +1,10 @@
 package eu.neclab.ngsildbroker.queryhandler.services;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -12,6 +14,9 @@ import javax.annotation.PostConstruct;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
+import org.locationtech.spatial4j.shape.Shape;
+
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdError;
 import com.github.jsonldjava.core.JsonLdOptions;
@@ -22,8 +27,11 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Table;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.QueryInfos;
 import eu.neclab.ngsildbroker.commons.datatypes.RegistrationEntry;
+import eu.neclab.ngsildbroker.commons.datatypes.RemoteHost;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
@@ -36,9 +44,13 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.queryhandler.repository.QueryDAO;
 import io.quarkus.runtime.StartupEvent;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.tuples.Tuple2;
+import io.smallrye.mutiny.tuples.Tuple5;
+import io.smallrye.mutiny.tuples.Tuple6;
 import io.vertx.mutiny.core.MultiMap;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.ext.web.client.WebClient;
@@ -87,6 +99,104 @@ public class QueryService {
 			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, CSFQueryTerm csf, GeoQueryTerm geoQuery,
 			ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, int limit, int offSet, boolean count,
 			boolean localOnly, Context context) {
+		if (localOnly) {
+			return localQueryLevel1(tenant, id, typeQuery, idPattern, attrsQuery, qQuery, geoQuery, scopeQuery,
+					langQuery, limit, offSet, count);
+		} else {
+			Uni<QueryResult> local = localQueryLevel1(tenant, id, typeQuery, idPattern, attrsQuery, qQuery, geoQuery,
+					scopeQuery, langQuery, limit, offSet, count);
+			List<Uni<QueryResult>> remoteQueries = getRemoteQueries(tenant, id, typeQuery, idPattern, attrsQuery,
+					qQuery, geoQuery, scopeQuery, langQuery, limit, offSet, count);
+			if (remoteQueries.isEmpty()) {
+				return local;
+			} else {
+				remoteQueries.add(local);
+				return Uni.combine().all().unis(remoteQueries).combinedWith(list -> {
+					QueryResult queryResult = new QueryResult();
+					for (Object obj : list) {
+						QueryResult tmp = (QueryResult) obj;
+						mergeQueryResults(queryResult, tmp);
+					}
+					return queryResult;
+				});
+			}
+		}
+	}
+
+	private List<Uni<QueryResult>> getRemoteQueries(String tenant, Set<String> id, TypeQueryTerm typeQuery,
+			String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery, GeoQueryTerm geoQuery,
+			ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, int limit, int offSet, boolean count) {
+		List<RemoteHost> result = Lists.newArrayList();
+		Iterator<RegistrationEntry> it = tenant2CId2RegEntries.row(tenant).values().iterator();
+		// ids, types, attrs, geo, scope
+		Map<RemoteHost, QueryInfos> remoteHost2QueryInfo = Maps.newHashMap();
+		while (it.hasNext()) {
+			RegistrationEntry regEntry = it.next();
+			if (regEntry.expiresAt() > System.currentTimeMillis()) {
+				it.remove();
+				continue;
+			}
+			if (!regEntry.queryBatch() || !regEntry.queryEntity()) {
+				continue;
+			}
+
+			if (!regEntry.matches(id, idPattern, typeQuery, idPattern, attrsQuery, qQuery, geoQuery, scopeQuery)) {
+				continue;
+			}
+			RemoteHost regHost = regEntry.host();
+			RemoteHost hostToQuery = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
+					regHost.cSourceId(), regEntry.queryEntity(), regEntry.queryBatch());
+			QueryInfos queryInfos = remoteHost2QueryInfo.get(hostToQuery);
+			if (queryInfos == null) {
+				queryInfos = new QueryInfos();
+				remoteHost2QueryInfo.put(hostToQuery, queryInfos);
+			}
+
+			if (!queryInfos.isFullIdFound()) {
+				if (regEntry.eId() != null) {
+					queryInfos.getIds().add(regEntry.eId());
+				} else {
+					if (id != null) {
+						queryInfos.setIds(id);
+						queryInfos.setFullIdFound(true);
+					} else if (idPattern != null) {
+						queryInfos.setIdPattern(idPattern);
+					}
+				}
+			}
+			if (!queryInfos.isFullTypesFound()) {
+				if (regEntry.type() != null) {
+					queryInfos.getTypes().add(regEntry.type());
+				} else {
+					if (typeQuery != null) {
+						queryInfos.setTypes(typeQuery.getAllTypes());
+						queryInfos.setFullTypesFound(true);
+					}
+				}
+			}
+			if (!queryInfos.isFullAttrsFound()) {
+				if (regEntry.eProp() != null) {
+					queryInfos.getAttrs().add(regEntry.eProp());
+				} else if (regEntry.eRel() != null) {
+					queryInfos.getAttrs().add(regEntry.eRel());
+				} else {
+					queryInfos.setFullAttrsFound(true);
+					queryInfos.setAttrs(attrsQuery.getAttrs());
+				}
+			}
+
+		}
+
+		return null;
+	}
+
+	private void mergeQueryResults(QueryResult queryResult, QueryResult toMerge) {
+
+	}
+
+	private Uni<QueryResult> localQueryLevel1(String tenant, Set<String> id, TypeQueryTerm typeQuery, String idPattern,
+			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery,
+			LanguageQueryTerm langQuery, int limit, int offSet, boolean count) {
 		return queryDAO.queryLocalOnly(tenant, id, typeQuery, idPattern, attrsQuery, qQuery, geoQuery, scopeQuery,
 				langQuery, limit, offSet, count).onItem().transform(rows -> {
 					QueryResult result = new QueryResult();
@@ -97,19 +207,31 @@ public class QueryService {
 						Row next = null;
 
 						List<Map<String, Object>> resultData = new ArrayList<Map<String, Object>>(rows.size());
+						Map<String, Object> entity;
 						while (it.hasNext()) {
 							next = it.next();
-							resultData.add(next.getJsonObject(0).getMap());
-						}
+							entity = next.getJsonObject(0).getMap();
+							resultData.add(entity);
 
-//						Long resultCount = next.getLong(1);
-//						result.setCount(resultCount);
-//						long leftAfter = resultCount - (offSet + limit);
-//						if (leftAfter < 0) {
-//							leftAfter = 0;
-//						}
+						}
+						if (count) {
+							Long resultCount = next.getLong(1);
+							result.setCount(resultCount);
+							long leftAfter = resultCount - (offSet + limit);
+							if (leftAfter < 0) {
+								leftAfter = 0;
+							}
+							result.setResultsLeftAfter(leftAfter);
+						} else {
+							if (resultData.size() < limit) {
+								result.setResultsLeftAfter(0l);
+							} else {
+								result.setResultsLeftAfter((long) limit);
+							}
+
+						}
 						long leftBefore = offSet;
-						result.setResultsLeftAfter(0l);
+
 						result.setResultsLeftBefore(leftBefore);
 						result.setLimit(limit);
 						result.setOffset(offSet);
@@ -118,95 +240,6 @@ public class QueryService {
 
 					return result;
 				});
-//		if (localOnly) {
-//			Uni<List<Map<String, Object>>> queryRemoteEntities = Uni.createFrom()
-//					.item(new ArrayList<Map<String, Object>>(0));
-//		} else {
-//			Uni<List<Map<String, Object>>> queryRemoteEntities = queryDAO.getRemoteSourcesForQuery(tenant, id,
-//					typeQuery, idPattern, attrsQuery, qQuery, csf, geoQuery, scopeQuery).onItem()
-//					.transformToUni(rows -> {
-//						// 0 C.endpoint 1C.tenant_id, 2c.headers, 3c.reg_mode,4 c.queryEntity,
-//						// 5c.queryBatch,
-//						// 6entityType, 7entityId, 8attrs, 9geoq, 10scopeq
-//
-//						rows.forEach(row -> {
-//							String[] entityTypes = row.getArrayOfStrings(6);
-//							String[] entityIds = row.getArrayOfStrings(7);
-//							String[] attrs = row.getArrayOfStrings(7);
-//							StringBuilder url = new StringBuilder();
-//							TypeQueryTerm callTypeQuery;
-//							if (entityTypes != null && entityTypes.length > 0 && entityTypes[0] != null) {
-//								if (typeQuery != null) {
-//									callTypeQuery = typeQuery.getDuplicateAndRemoveNotKnownTypes(entityTypes);
-//								} else {
-//									callTypeQuery = new TypeQueryTerm(context);
-//									TypeQueryTerm currentCallTypeQuery = callTypeQuery;
-//									for (String entityType : entityTypes) {
-//										currentCallTypeQuery.setType(entityType);
-//										currentCallTypeQuery.setNextAnd(false);
-//										currentCallTypeQuery.setNext(new TypeQueryTerm(context));
-//										currentCallTypeQuery = currentCallTypeQuery.getNext();
-//									}
-//									currentCallTypeQuery.getPrev().setNext(null);
-//								}
-//							} else {
-//								callTypeQuery = typeQuery;
-//							}
-//							if (callTypeQuery != null) {
-//								url.append("type=");
-//								url.append(callTypeQuery.getTypeQuery());
-//								url.append('&');
-//							}
-//							if (entityIds != null && entityIds.length > 0 && entityIds[0] != null) {
-//								url.append("id=");
-//								for (String entityId : entityIds) {
-//									url.append(context.compactIri(entityId));
-//									url.append(',');
-//								}
-//								url.setLength(url.length() - 1);
-//								url.append('&');
-//
-//							} else {
-//								if (id != null) {
-//									url.append("id=");
-//									for (String entityId : id) {
-//										url.append(context.compactIri(entityId));
-//										url.append(',');
-//									}
-//									url.setLength(url.length() - 1);
-//									url.append('&');
-//								} else if (idPattern != null) {
-//									url.append("idPattern=");
-//									url.append(idPattern);
-//									url.append('&');
-//								}
-//							}
-//
-//							if (attrs != null && attrs.length > 0 && attrs[0] != null) {
-//								url.append("attrs=");
-//								for (String attr : attrs) {
-//									url.append(context.compactIri(attr));
-//									url.append(',');
-//								}
-//								url.setLength(url.length() - 1);
-//								url.append('&');
-//							} else {
-//								if (attrsQuery != null) {
-//									url.append("attrs=");
-//									for (String attr : attrsQuery.getAttrs()) {
-//										url.append(context.compactIri(attr));
-//										url.append(',');
-//									}
-//									url.setLength(url.length() - 1);
-//									url.append('&');
-//								}
-//							}
-//
-//						});
-//						return null;
-//					});
-//		}
-//		return null;
 	}
 
 	public Uni<List<Map<String, Object>>> getTypesWithDetail(String tenant, boolean localOnly) {
