@@ -107,7 +107,7 @@ public class QueryService {
 					scopeQuery, langQuery, limit, offSet, count);
 			List<Uni<QueryResult>> remoteQueries = getRemoteQueries(tenant, id, typeQuery, idPattern, attrsQuery,
 					qQuery, geoQuery, scopeQuery, langQuery, limit, offSet, count);
-			if (remoteQueries.isEmpty()) {
+			if (remoteQueries == null || remoteQueries.isEmpty()) {
 				return local;
 			} else {
 				remoteQueries.add(local);
@@ -564,9 +564,9 @@ public class QueryService {
 		return Uni.combine().all().unis(getEntity, getRemoteEntities).asTuple().onItem().transformToUni(t -> {
 			Map<String, Object> localEntity = t.getItem1();
 			Map<String, Object> remoteEntity = t.getItem2();
-//			if (attrs != null && !attrs.isEmpty()) {
-//				EntityTools.removeAttrs(localEntity, attrs);
-//			}
+			// if (attrs != null && !attrs.isEmpty()) {
+			// EntityTools.removeAttrs(localEntity, attrs);
+			// }
 			if (localEntity.isEmpty() && remoteEntity.isEmpty()) {
 				return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound, entityId + " was not found"));
 			}
