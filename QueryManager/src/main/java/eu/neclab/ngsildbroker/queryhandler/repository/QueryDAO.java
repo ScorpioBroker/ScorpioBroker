@@ -172,6 +172,7 @@ public class QueryDAO {
 				}
 				query.append("id ~ $");
 				query.append(dollar);
+				tuple.addString(idPattern);
 				dollar++;
 				sqlAdded = true;
 			}

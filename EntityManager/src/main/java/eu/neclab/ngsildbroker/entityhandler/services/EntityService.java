@@ -761,7 +761,7 @@ public class EntityService {
 				failedToAdd.add(new Attrib(entry, null));
 			}
 			localResult.addSuccess(new CRUDSuccess(null, null, null, request.getPayload(), context));
-			localResult.addFailure(new ResponseException(ErrorType.None, "Not added", failedToAdd));
+			if(!failedToAdd.isEmpty())localResult.addFailure(new ResponseException(ErrorType.None, "Not added", failedToAdd));
 			return kafkaSenderInterface.send(request).onItem().transform(v2 -> {
 				return localResult;
 			});
