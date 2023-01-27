@@ -239,14 +239,15 @@ public class EntityService {
 			Map<String, Object> payload, Context originalContext) {
 		logger.trace("updateMessage() :: started");
 		Map<String, Object> effectivePayload;
-		if (payload.containsKey(attribName)) {
+		String expandedAttribName = originalContext.get("@vocab")+attribName;
+		if (payload.containsKey(expandedAttribName)) {
 			effectivePayload = payload;
 		} else {
 			effectivePayload = Maps.newHashMap();
-			effectivePayload.put(attribName, payload);
+			effectivePayload.put(expandedAttribName, payload);
 		}
 
-		UpdateEntityRequest request = new UpdateEntityRequest(tenant, entityId, effectivePayload, attribName, null);
+		UpdateEntityRequest request = new UpdateEntityRequest(tenant, entityId, effectivePayload, expandedAttribName, null);
 		return entityDAO.partialUpdateAttribute(request).onItem().transformToUni(resultetEntity -> {
 //			if (resultTable.size() == 0) {
 //				return Uni.createFrom().failure(new ResponseException(ErrorType.InternalError,
@@ -284,7 +285,8 @@ public class EntityService {
 //				}
 //				return Uni.combine().all().unis(unis).combinedWith(t -> localResult);
 //			});
-			return null;
+			NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.UPDATE_REQUEST,entityId);
+			return Uni.createFrom().item(result);
 		});
 	}
 

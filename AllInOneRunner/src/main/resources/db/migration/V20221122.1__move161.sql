@@ -520,7 +520,7 @@ BEGIN
 		END IF;
 	END LOOP;
 	tmp := tmp || attribValues;
-	RETURN jsonb_set(ENTITY,'{attribName}', tmp);
+	RETURN jsonb_set(ENTITY,ARRAY[attribName], tmp);
 END;
 $ENTITYPU$ LANGUAGE PLPGSQL;
 

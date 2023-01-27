@@ -84,18 +84,26 @@ public class EntityInfoDAO {
 		});
 	}
 
-	public Uni<Map<String, Object>> partialUpdateAttribute(UpdateEntityRequest request) {
+	public Uni<Void> partialUpdateAttribute(UpdateEntityRequest request) {
 		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
-			List<Map<String, Object>> effectivePayloads = (List<Map<String, Object>>) request.getPayload()
+			Object objPayload =  request.getPayload()
 					.get(request.getAttrName());
-			String sql = "UPDATE ENTITY SET ENTITY = NGSILD_PARTIALUPDATE(ENTITY, $1, $2) WHERE id=$3 AND ENTITY ? '$1' RETURNINGG ENTITY";
+			Tuple tuple;
+			if(objPayload instanceof List<?> payloads){
+				tuple = Tuple.of(request.getAttrName(), new JsonArray(payloads) , request.getId());
+			}else {
+				List<Object> payloads =new ArrayList<>();
+				payloads.add(objPayload);
+				tuple = Tuple.of(request.getAttrName(), new JsonArray(payloads) , request.getId());
+			}
+			String sql = "UPDATE ENTITY SET ENTITY = NGSILD_PARTIALUPDATE(ENTITY, $1, $2) WHERE id=$3 AND ENTITY ? $1 RETURNING ENTITY";
 			return client.preparedQuery(sql)
-					.execute(Tuple.of(request.getAttrName(), new JsonArray(effectivePayloads), request.getId()))
+					.execute(tuple)
 					.onFailure().retry().atMost(3).onItem().transformToUni(rows -> {
 						if (rows.size() == 0) {
 							return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
 						} else {
-							return Uni.createFrom().item(rows.iterator().next().getJsonObject(0).getMap());
+							return Uni.createFrom().voidItem();
 						}
 					});
 		});
