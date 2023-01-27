@@ -38,7 +38,7 @@ public class HistoryDAO {
 
 	public Uni<RowSet<Row>> deleteHistoryEntity(DeleteHistoryEntityRequest request) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
-			String sql = "SELECT * FROM NGSILD_DELETETEMPORALENTITY($1)";
+			String sql = "SELECT * FROM NGSILD_DELETETEMPENTITY($1)";
 			return client.preparedQuery(sql).execute(Tuple.of(request.getId())).onFailure().retry().atMost(3)
 					.onFailure().recoverWithUni(e -> Uni.createFrom().failure(e));
 		});
