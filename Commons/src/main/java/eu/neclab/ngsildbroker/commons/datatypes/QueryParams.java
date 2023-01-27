@@ -2,7 +2,6 @@ package eu.neclab.ngsildbroker.commons.datatypes;
 
 import java.util.List;
 import java.util.Map;
-
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
