@@ -280,7 +280,7 @@ public class EntityInfoDAO {
 	public Uni<Void> updateEntity(UpdateEntityRequest request) {
 		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
 			Map<String, Object> payload = request.getPayload();
-
+			payload.remove(NGSIConstants.JSON_LD_ID);
 			Object types = payload.remove(NGSIConstants.JSON_LD_TYPE);
 
 			List<String> toBeRemoved = removeAtNoneEntries(payload);
