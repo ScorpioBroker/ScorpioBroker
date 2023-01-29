@@ -740,7 +740,7 @@ public class EntityService {
 		return Tuple2.of(toStore, cId2RemoteHostEntity.values());
 	}
 
-	public Uni<Void> handleRegistryChange(CSourceRequest req) {
+	public Uni<Void> handleRegistryChange(BaseRequest req) {
 		tenant2CId2RegEntries.remove(req.getTenant(), req.getId());
 		if (req.getRequestType() != AppConstants.DELETE_REQUEST) {
 			for (RegistrationEntry regEntry : RegistrationEntry.fromRegPayload(req.getPayload())) {
