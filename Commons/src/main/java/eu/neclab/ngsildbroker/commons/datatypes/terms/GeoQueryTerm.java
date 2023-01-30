@@ -56,17 +56,19 @@ public class GeoQueryTerm {
 		}
 		String[] tmp = splitted[0].substring(outerCount).split(",");
 
-		mostInnerArray.add(Double.parseDouble(tmp[0].trim()));
-		mostInnerArray.add(Double.parseDouble(tmp[1].trim()));
+		mostInnerArray.add(Double.parseDouble(tmp[0].trim().replaceAll("[,\\[\\]]","")));
+		mostInnerArray.add(Double.parseDouble(tmp[1].trim().replaceAll("[,\\[\\]]","")));
 
 		if (splitted.length > 1) {
 			for (int i = 1; i < splitted.length - 1; i++) {
 				tmp = splitted[i].substring(1).split(",");
-				last.add(Lists.newArrayList(Double.parseDouble(tmp[0].trim()), Double.parseDouble(tmp[1].trim())));
+				last.add(Lists.newArrayList(Double.parseDouble(tmp[0].trim().replaceAll("[,\\[\\]]","")), Double.parseDouble(tmp[1].trim().replaceAll("[,\\[\\]]",""))));
 			}
 			tmp = splitted[splitted.length - 1].substring(0, splitted[splitted.length - 1].length() - outerCount)
 					.split(",");
-			last.add(Lists.newArrayList(Double.parseDouble(tmp[0].trim()), Double.parseDouble(tmp[1].trim())));
+			last.add(Lists.newArrayList(Double.parseDouble(
+					tmp[0].trim().replaceAll("[,\\[\\]]","")),
+					Double.parseDouble(tmp[1].trim().replaceAll("[,\\[\\]]",""))));
 		}
 		this.coordinatesAsList = outerShell;
 
@@ -196,7 +198,16 @@ public class GeoQueryTerm {
 			query.append(referenceValue);
 			query.append("::geography, ");
 			query.append(distanceValue);
+			query.append(") or ");
+			query.append(sqlPostgisFunction);
+			query.append("( ");
+			query.append(dbColumn);
+			query.append(", ");
+			query.append(referenceValue);
+			query.append(", ");
+			query.append(distanceValue);
 			query.append(") ");
+			break;
 		case NGSIConstants.GEO_REL_WITHIN:
 		case NGSIConstants.GEO_REL_CONTAINS:
 		case NGSIConstants.GEO_REL_OVERLAPS:
