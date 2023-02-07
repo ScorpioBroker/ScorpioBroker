@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.registryhandler.controller;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.PostConstruct;
@@ -12,6 +13,9 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
+
+import org.apache.kafka.common.protocol.types.Field;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.slf4j.Logger;
@@ -37,7 +41,6 @@ public class RegistryController {
 
 	@Inject
 	CSourceService csourceService;
-
 	@ConfigProperty(name = "scorpio.entity.default-limit", defaultValue = "50")
 	int defaultLimit;
 	@ConfigProperty(name = "scorpio.entity.max-limit", defaultValue = "1000")

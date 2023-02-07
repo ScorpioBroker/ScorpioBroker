@@ -1,21 +1,8 @@
 package eu.neclab.ngsildbroker.registryhandler.service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.eclipse.microprofile.reactive.messaging.Channel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import com.github.jsonldjava.core.JsonLdProcessor;
+import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.Sets;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendCSourceRequest;
@@ -25,16 +12,14 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.results.CRUDSuccess;
 import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
-import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
-import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
-import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
-import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
-import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.*;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.registryhandler.controller.RegistryController;
 import eu.neclab.ngsildbroker.registryhandler.repository.CSourceDAO;
+import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.arc.properties.IfBuildProperty;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
@@ -42,16 +27,28 @@ import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.smallrye.reactive.messaging.annotations.Broadcast;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.Vertx;
+import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.WebClient;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowIterator;
 import io.vertx.pgclient.PgException;
+import org.eclipse.microprofile.config.ConfigProvider;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.io.IOException;
+import java.util.*;
 
 @Singleton
 public class CSourceService {
-
 	private final static Logger logger = LoggerFactory.getLogger(RegistryController.class);
-
+	List<String> scorpioFedList = ConfigProvider.getConfig().getValues("scorpio.federation", String.class);
+	Map<String, Map<String,String>> fedMap = new HashMap<>();
 	@Inject
 	MicroServiceUtils microServiceUtils;
 
@@ -92,6 +89,17 @@ public class CSourceService {
 		} else {
 			FED_BROKERS = FED_BROKERS_CONFIG.split(",");
 		}
+		System.out.println(scorpioFedList);
+		if(scorpioFedList == null) return;
+		for (int i = 0; i < scorpioFedList.size(); i++) {
+			Map<String, String> details = new HashMap<>();
+			details.put("url", ConfigProvider.getConfig().getValue("scorpio.federation[" + i + "].url", String.class));
+			details.put("sourcetenant", ConfigProvider.getConfig().getValue("scorpio.federation[" + i + "].sourcetenant", String.class));
+			details.put("targettenant", ConfigProvider.getConfig().getValue("scorpio.federation[" + i + "].targettenant", String.class));
+			details.put("regtype", ConfigProvider.getConfig().getValue("scorpio.federation[" + i + "].regtype", String.class));
+			fedMap.put(scorpioFedList.get(i),details );
+		}
+		System.out.println("map " + fedMap);
 	}
 
 	public Uni<NGSILDOperationResult> createRegistration(String tenant, Map<String, Object> registration) {
@@ -120,7 +128,7 @@ public class CSourceService {
 	}
 
 	public Uni<NGSILDOperationResult> updateRegistration(String tenant, String registrationId,
-			Map<String, Object> entry) {
+														 Map<String, Object> entry) {
 		AppendCSourceRequest request = new AppendCSourceRequest(tenant, registrationId, entry);
 		return cSourceInfoDAO.updateRegistration(request).onItem().transformToUni(rowset -> {
 			if (rowset.rowCount() > 0) {
@@ -189,8 +197,8 @@ public class CSourceService {
 	}
 
 	public Uni<QueryResult> queryRegistrations(String tenant, Set<String> ids, TypeQueryTerm typeQuery,
-			String idPattern, AttrsQueryTerm attrsQuery, CSFQueryTerm csf, GeoQueryTerm geoQuery,
-			ScopeQueryTerm scopeQuery, int limit, int offset, boolean count) {
+											   String idPattern, AttrsQueryTerm attrsQuery, CSFQueryTerm csf, GeoQueryTerm geoQuery,
+											   ScopeQueryTerm scopeQuery, int limit, int offset, boolean count) {
 		return cSourceInfoDAO
 				.query(tenant, ids, typeQuery, idPattern, attrsQuery, csf, geoQuery, scopeQuery, limit, offset, count)
 				.onItem().transform(rows -> {
@@ -263,16 +271,63 @@ public class CSourceService {
 //								}).onFailure().retry().atMost(5).onFailure().recoverWithUni(e -> {
 //									logger.error("Failed to register with fed broker", e);
 //									return Uni.createFrom().voidItem();
-//								}));	
+//								}));
 //					});
-//					
+//
 //				}
 //				return Uni.combine().all().unis(unis).collectFailures()
 //						.combinedWith(l -> Uni.createFrom().voidItem());
 //			});
 //		});
-
-		return Uni.createFrom().voidItem();
+		Object[] brokersNames =  fedMap.keySet().toArray();
+		List<Uni<Void>> unis = new ArrayList<>();
+		for (Object brokerName: brokersNames) {
+			Map<String, String> brokerDetails = fedMap.get(brokerName.toString());
+			String sourceTenant = brokerDetails.get("sourcetenant");
+			String targetTenant = brokerDetails.get("targettenant");
+			String regType = brokerDetails.get("regtype");
+			String url = brokerDetails.get("url");
+			String finalUrl = url.endsWith("/") ? url : url+"/";
+			unis.add(cSourceInfoDAO.isTenantPresent(sourceTenant).onItem().transformToUni(present->{
+						if(present){
+							return retrieveRegistration(sourceTenant,regType).onItem().transformToUni(body->{
+								String csourceId = microServiceUtils.getGatewayURL().toString();
+								body.put("@id",csourceId);
+								String compact;
+								try {
+									compact = JsonUtils.toPrettyString(JsonLdProcessor.compact(body, null, HttpUtils.opts));
+								} catch (Exception e) {
+									return Uni.createFrom().failure(new Throwable("Unable to compact"));
+								}
+								return webClient.patchAbs(finalUrl + "csourceRegistrations/" + csourceId)
+								.putHeader("Content-Type", "application/json")
+										.putHeader("NGSILD-Tenant",targetTenant)
+										.sendBuffer(Buffer.buffer(compact))
+										.onItem().transformToUni(i -> {
+									if (i.statusCode() == HttpResponseStatus.NOT_FOUND.code()) {
+										return webClient.post(finalUrl + "csourceRegistrations/")
+												.putHeader("Content-Type", "application/json")
+												.putHeader("NGSILD-Tenant",targetTenant)
+												.sendBuffer(Buffer.buffer(compact)).onItem().transformToUni(r -> {
+													if (r.statusCode() >= 200 && r.statusCode() < 300) {
+														return Uni.createFrom().nullItem();
+													}
+													return Uni.createFrom().failure(new ResponseException(
+															ErrorType.InternalError, r.bodyAsString()));
+												});
+									}
+									return Uni.createFrom().voidItem();
+								}).onFailure().retry().atMost(5).onFailure().recoverWithUni(e -> {
+									logger.error("Failed to register with fed broker "+brokerName, e);
+									return Uni.createFrom().voidItem();
+								});
+							});
+						}
+				return Uni.createFrom().voidItem();
+					}
+			));
+		}
+		return Uni.combine().all().unis(unis).collectFailures().discardItems();
 	}
 
 }
