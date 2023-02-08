@@ -4,6 +4,7 @@ metadata:
   labels:
     component: kafka
   name: kafka
+  namespace: scorpio-broker
 spec:
   ports:
   - name: "9092"

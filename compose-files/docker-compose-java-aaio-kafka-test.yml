@@ -33,9 +33,9 @@ services:
       POSTGRES_PASSWORD: ngb
       POSTGRES_DB: ngb
   scorpio:
-    image: scorpiobroker/all-in-one-runner:java-kafka-latest
+    image: scorpiobroker/susbcription-manager:java-kafka-latest
     ports:
-      - "9090:9090"
+      - "2027:2027"
     environment:
       DBHOST: postgres
       BUSHOST: kafka

@@ -5,6 +5,7 @@ metadata:
   name: {{ include "entityManager.fullname" . }}
   labels:
     {{- include "entityManager.labels" . | nindent 4 }}
+  namespace: scorpio-broker
 spec:
   replicas: {{ .Values.entityManager.replicas }}
   strategy:
@@ -45,19 +46,10 @@ spec:
         ports:
         - containerPort: 1025
           protocol: TCP
-        {{- if eq .Values.profile "dist"  }}
-        lifecycle:
-           preStop:
-            exec:
-              command:
-              - /bin/sh
-              - -c
-              - curl -X PUT "http://{{ .Values.eureka.hostname }}:{{ .Values.eureka.port }}/eureka/apps/ENTITY-MANAGER/$HOSTNAME:entity-manager:1025/status?value=OUT_OF_SERVICE"
-        {{ end }}
-     
+
         readinessProbe:
           httpGet:
-            path: /actuator/health
+            path: /q/health
             port: 1025
           failureThreshold: {{ .Values.entityManager.readinessProbe.failureThreshold }}
           initialDelaySeconds: {{ .Values.entityManager.readinessProbe.initialDelaySeconds }}
@@ -66,7 +58,7 @@ spec:
         
         livenessProbe:
           httpGet:
-            path: /actuator/health
+            path: /q/health
             port: 1025
           failureThreshold: {{ .Values.entityManager.livenessProbe.failureThreshold }}
           initialDelaySeconds: {{ .Values.entityManager.livenessProbe.initialDelaySeconds }}

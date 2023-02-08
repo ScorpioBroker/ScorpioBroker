@@ -5,7 +5,7 @@ metadata:
   name: {{ include "queryManager.fullname" . }}
   labels:
     {{ include "queryManager.labels" . | nindent 4 }}
-  namespace: {{ .Release.Namespace }}
+  namespace: scorpio-broker
 spec:
   ports:
   - name: "1026"

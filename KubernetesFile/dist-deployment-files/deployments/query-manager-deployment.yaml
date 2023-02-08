@@ -21,7 +21,7 @@ spec:
         service: query-manager
     spec:
       containers:
-      - image: scorpiobroker/scorpio:QueryManager_latest
+      - image: scorpiobroker/query-manager:java-kafka-eureka-latest
         imagePullPolicy: Always
         name: query-manager
         ports:
@@ -35,12 +35,10 @@ spec:
               - -c
               - curl -X PUT "http://eureka:8761/eureka/apps/QUERY-MANAGER/$HOSTNAME:query-manager:1026/status?value=OUT_OF_SERVICE"
         readinessProbe:
-          exec:
-            command:
-            - sh
-            - -c
-            - curl --silent http://localhost:1026/actuator/health | grep --quiet -e
-              '^{\"status\"\:\"UP\".*}$'
+          httpGet:
+            path: /q/health
+            port: 1026
+            scheme: HTTP
           failureThreshold: 10
           initialDelaySeconds: 20
           periodSeconds: 5

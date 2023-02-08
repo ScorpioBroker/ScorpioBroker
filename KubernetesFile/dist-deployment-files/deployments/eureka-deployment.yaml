@@ -22,7 +22,7 @@ spec:
         service: eureka
     spec:
       containers:
-      - image: scorpiobroker/scorpio:eureka-server_latest
+      - image: scorpiobroker/eureka-server:latest
         imagePullPolicy: Always
         name: eureka
         ports:

@@ -5,6 +5,7 @@ metadata:
   name: {{ include "registryManager.fullname" . }}
   labels:
     {{ include "registryManager.labels" . | nindent 4 }}
+  namespace: scorpio-broker
 spec:
   replicas: {{ .Values.registryManager.replicas }}
   strategy:
@@ -56,7 +57,7 @@ spec:
         
         readinessProbe:
           httpGet:
-            path: /actuator/health
+            path: /q/health
             port: 1030
           failureThreshold: {{ .Values.registryManager.readinessProbe.failureThreshold }}
           initialDelaySeconds: {{ .Values.registryManager.readinessProbe.initialDelaySeconds }}
@@ -65,7 +66,7 @@ spec:
         
         livenessProbe:
           httpGet:
-            path: /actuator/health
+            path: /q/health
             port: 1030
           failureThreshold: {{ .Values.registryManager.livenessProbe.failureThreshold }}
           initialDelaySeconds: {{ .Values.registryManager.livenessProbe.initialDelaySeconds }}

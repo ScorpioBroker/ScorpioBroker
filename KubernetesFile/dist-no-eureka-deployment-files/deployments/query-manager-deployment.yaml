@@ -21,29 +21,25 @@ spec:
         service: query-manager
     spec:
       containers:
-      - image: scorpiobroker/scorpio:QueryManager-no-eureka_latest
+      - image: scorpiobroker/query-manager:java-kafka-latest
         imagePullPolicy: Always
         name: query-manager
         ports:
         - containerPort: 1026
           protocol: TCP
         readinessProbe:
-          exec:
-            command:
-            - sh
-            - -c
-            - curl --silent http://localhost:1026/actuator/health | grep --quiet -e
-              '^{\"status\"\:\"UP\".*}$'
+          httpGet:
+            path: /q/health
+            port: 1026
+            scheme: HTTP
           failureThreshold: 10
           initialDelaySeconds: 20
           periodSeconds: 5
         livenessProbe:
-          exec:
-            command:
-            - sh
-            - -c
-            - curl --silent http://localhost:1026/actuator/health | grep --quiet -e
-              '^{\"status\"\:\"UP\".*}$'
+          httpGet:
+            path: /q/health
+            port: 1026
+            scheme: HTTP
           failureThreshold: 10
           initialDelaySeconds: 20
           periodSeconds: 5

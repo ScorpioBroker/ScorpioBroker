@@ -14,13 +14,6 @@ spec:
   rules:
   - http:
       paths:
-      - path: /ngsi-ld/contextes/*
-        pathType: Prefix
-        backend:
-          service:
-            name: {{ .Values.atContextServer.name }}
-            port:
-              number: 27015
       - path: /ngsi-ld/v1/entities/*
         pathType: Prefix
         backend:

@@ -5,6 +5,7 @@ metadata:
   name: {{ include "subscriptionManager.fullname" . }}
   labels:
     {{ include "subscriptionManager.labels" . | nindent 4 }}
+  namespace: scorpio-broker
 spec:
   ports:
   - name: "2026"

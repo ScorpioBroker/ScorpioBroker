@@ -5,6 +5,7 @@ metadata:
   name: {{ include "historyManager.fullname" . }}
   labels:
     {{ include "historyManager.labels" . | nindent 4 }}
+  namespace: scorpio-broker
 spec:
   replicas: {{ .Values.historyManager.replicas }}
   strategy:
@@ -44,19 +45,10 @@ spec:
         ports:
         - containerPort: 1040
           protocol: TCP
-        {{- if eq .Values.profile "dist"  }}
-        lifecycle:
-           preStop:
-            exec:
-              command:
-              - /bin/sh
-              - -c
-              - curl -X PUT "http://{{ .Values.eureka.hostname }}:{{ .Values.eureka.port }}/eureka/apps/HISTORY-MANAGER/$HOSTNAME:history-manager:1040/status?value=OUT_OF_SERVICE"
-        {{ end }}
-        
+
         readinessProbe:
           httpGet:
-            path: /actuator/health
+            path: /q/health
             port: 1040
           failureThreshold: {{ .Values.historyManager.readinessProbe.failureThreshold }}
           initialDelaySeconds: {{ .Values.historyManager.readinessProbe.initialDelaySeconds }}
@@ -65,7 +57,7 @@ spec:
         
         livenessProbe:
           httpGet:
-            path: /actuator/health
+            path: /q/health
             port: 1040
           failureThreshold: {{ .Values.historyManager.livenessProbe.failureThreshold }}
           initialDelaySeconds: {{ .Values.historyManager.livenessProbe.initialDelaySeconds }}

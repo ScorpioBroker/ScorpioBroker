@@ -21,7 +21,7 @@ spec:
         service: registry-subscription-manager
     spec:
       containers:
-      - image: scorpiobroker/scorpio:RegistrySubscriptionManager_latest
+      - image: scorpiobroker/registry-subscription-manager:java-kafka-eureka-latest
         imagePullPolicy: Always
         name: registry-subscription-manager
         ports:
@@ -35,12 +35,10 @@ spec:
               - -c
               - curl -X PUT "http://eureka:8761/eureka/apps/RegistrySubscriptionManager/$HOSTNAME:RegistrySubscriptionManager:2025/status?value=OUT_OF_SERVICE"
         readinessProbe:
-          exec:
-            command:
-            - sh
-            - -c
-            - curl --silent http://localhost:2025/actuator/health | grep --quiet -e
-              '^{\"status\"\:\"UP\".*}$'
+          httpGet:
+            path: /q/health
+            port: 2025
+            scheme: HTTP
           failureThreshold: 10
           initialDelaySeconds: 20
           periodSeconds: 5

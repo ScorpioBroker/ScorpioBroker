@@ -23,30 +23,26 @@ spec:
         service: subscription-manager
     spec:
       containers:
-      - image: scorpiobroker/scorpio:SubscriptionManager-no-eureka_latest
+      - image: scorpiobroker/subscription-manager:java-kafka-latest
         imagePullPolicy: Always
         name: subscription-manager
         ports:
-        - containerPort: 2027
+        - containerPort: 2026
           protocol: TCP
         
         readinessProbe:
-          exec:
-            command:
-            - sh
-            - -c
-            - curl --silent http://localhost:2027/actuator/health | grep --quiet -e
-              '^{\"status\"\:\"UP\".*}$'
+          httpGet:
+            path: /q/health
+            port: 2026
+            scheme: HTTP
           failureThreshold: 10
           initialDelaySeconds: 20
           periodSeconds: 5
         livenessProbe:
-          exec:
-            command:
-            - sh
-            - -c
-            - curl --silent http://localhost:2027/actuator/health | grep --quiet -e
-              '^{\"status\"\:\"UP\".*}$'
+          httpGet:
+            path: /q/health
+            port: 2026
+            scheme: HTTP
           failureThreshold: 10
           initialDelaySeconds: 20
           periodSeconds: 5

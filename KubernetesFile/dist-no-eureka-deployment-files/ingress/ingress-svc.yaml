@@ -14,13 +14,6 @@ spec:
   - host: scorpiobroker.com
     http:
       paths:
-      - path: /ngsi-ld/contextes/
-        pathType: Prefix
-        backend:
-          service:
-            name: atcontext-server
-            port:
-              number: 27015
       - path: /ngsi-ld/v1/entities/
         pathType: Prefix
         backend:
@@ -77,12 +70,11 @@ spec:
           service:
             name: subscription-manager
             port:
-              number: 2027
-
+              number: 2026
       - path: /ngsi-ld/v1/subscriptions/
         pathType: Prefix
         backend:
           service:
             name: subscription-manager
             port:
-              number: 2027
+              number: 2026

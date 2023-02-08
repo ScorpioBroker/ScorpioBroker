@@ -21,7 +21,7 @@ spec:
         service: history-manager
     spec:
       containers:
-      - image: scorpiobroker/scorpio:HistoryManager_latest
+      - image: scorpiobroker/history-manager:java-kafka-eureka-latest
         imagePullPolicy: Always
         name: history-manager
         ports:
@@ -35,12 +35,10 @@ spec:
               - -c
               - curl -X PUT "http://eureka:8761/eureka/apps/HISTORY-MANAGER/$HOSTNAME:history-manager:1040/status?value=OUT_OF_SERVICE"
         readinessProbe:
-          exec:
-            command:
-            - sh
-            - -c
-            - curl --silent http://localhost:1040/actuator/health | grep --quiet -e
-              '^{\"status\"\:\"UP\".*}$'
+          httpGet:
+            path: /q/health
+            port: 1040
+            scheme: HTTP
           failureThreshold: 10
           initialDelaySeconds: 20
           periodSeconds: 5

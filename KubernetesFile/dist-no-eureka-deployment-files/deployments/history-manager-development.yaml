@@ -21,29 +21,25 @@ spec:
         service: history-manager
     spec:
       containers:
-      - image: scorpiobroker/scorpio:HistoryManager-no-eureka_latest
+      - image: scorpiobroker/history-manager:java-kafka-latest
         imagePullPolicy: Always
         name: history-manager
         ports:
         - containerPort: 1040
           protocol: TCP
         readinessProbe:
-          exec:
-            command:
-            - sh
-            - -c
-            - curl --silent http://localhost:1040/actuator/health | grep --quiet -e
-              '^{\"status\"\:\"UP\".*}$'
+          httpGet:
+            path: /q/health
+            port: 1040
+            scheme: HTTP
           failureThreshold: 10
           initialDelaySeconds: 20
           periodSeconds: 5
         livenessProbe:
-          exec:
-            command:
-            - sh
-            - -c
-            - curl --silent http://localhost:1040/actuator/health | grep --quiet -e
-              '^{\"status\"\:\"UP\".*}$'
+          httpGet:
+            path: /q/health
+            port: 1040
+            scheme: HTTP
           failureThreshold: 10
           initialDelaySeconds: 20
           periodSeconds: 5
