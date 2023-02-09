@@ -4,7 +4,7 @@
 Integrate Scorpio Broker with OPC UA IoT agent 
 ****************************************************
 
-This is a step-by-step tutorial that will introduce in detail how to enable OPC UA to FIWARE connecting an OPC UA server to Scorpio Broker using the agent. The OPC UA data will be automatically published in a FIWARE Scorpio Broker using NGSI data model.
+This is a step-by-step tutorial to enable an OPC UA IoT Agent with Scorpio Context Broker. The OPC UA data will be automatically published in a FIWARE Context Broker using NGSI-LD data model.
 
 **What is OPC UA?**
 
@@ -16,7 +16,7 @@ Before a client can retrieve their values, sensors are mapped to the OPC UA Serv
 
 Sensor values access is provided through a subscription mechanism. For each sensor value the OPC UA client wants to have access to, it creates a subscription specifying some parameters. Using these parameters the client asks the server to send data according to some particular modalities. At that point the server determines if the requests can be fulfilled, otherwise it will continue sending data in a best effort mode.
 
-In our case the OPC UA Agent acts as bridge between the OPC UA server and the Scorpio Broker behaving as an OPC UA client.
+In our case the OPC UA IoT Agent acts as bridge between the OPC UA server and the Scorpio Broker behaving as an OPC UA client.
 
 Actors
 ****************************************************
@@ -24,7 +24,7 @@ Actors
 The actors involved in the scenario are:
 
 -   **OPC UA Server**, representing the data source
--   **OPC UA Agent**, the connector to join industrial environment to FIWARE
+-   **OPC UA IoT Agent**, the connector to join industrial environment to FIWARE
 -   **Scorpio Broker**, the broker as entry point of FIWARE platform
 
 **OPC UA Server**
@@ -54,9 +54,9 @@ It represents a car with the following structure:
 
         For each sensor it is possible to define the semi-period
 		
-**OPC UA Agent**
+**OPC UA IoT Agent**
 
-The iot-agent container relies on the presence of the Scorpio Context Broker and uses a MongoDB database to hold device information such as device URLs and Keys. The container is listening on two ports:
+The IoT Agent container relies on the presence of the Scorpio Context Broker and uses a MongoDB database to hold device information such as device URLs and Keys. The container is listening on two ports:
 
 -   Port 9229 is exposed to receive OPC UA measurements over HTTP from the OPC UA server.
 -   Port 4041 is exposed purely for tutorial access - so that cUrl or Postman can make provisioning commands without being part of the same network.
@@ -100,7 +100,7 @@ check if the Scorpio broker is running
 
 	curl <scorpio-brokerIP>:9090/actuator/health
 
-check if the IoT Agent broker is running
+check if the IoT Agent is running
 
 .. code-block:: console
 
@@ -121,8 +121,10 @@ Running the docker environment (using configuration files) creates the following
 	
 .. figure:: figures/iotagent-opcuascorpioarchitecture.png
 
-How to Fetch data from OPC UA IoT Agent to Scorpio Broker
-================================================================
+Step By Step Tutorial for North Bound and South Bound Communication
+====================================================================
+
+In this tutorial we are going to describe how to quickly deploy a working testbed consisting of all the actors: Car Server, OPC UA IoT Agent, Scorpio Broker, MongoDB instance and Postgres instance. So that we can understand the flow of how to fetch data from IoT Agent to Scorpio Broker.
 
 **Step 1:** Start using the testbed
 -----------------------------------------------------------------
@@ -324,7 +326,7 @@ You can interact with the CarServer through the Agent in three different ways:
 **Step 4:** Monitor Agent behaviour
 ---------------------------------------
 
-Any activity regarding the Agent can be monitored looking at the logs. To view docker testbed logs run:
+Any activity regarding the IoT Agent can be monitored looking at the logs. To view docker testbed logs run:
 
 .. code-block:: console
 
@@ -333,10 +335,10 @@ Any activity regarding the Agent can be monitored looking at the logs. To view d
 
 Looking at these logs is useful to spot possible errors.
 
-**Step 5:** Accelerate (North Bound)
---------------------------------------
+**Step 5:** CarAccelerate (North Bound Communication)
+------------------------------------------------------
 
-In order to send the CarAccelerate command (method in OPC UA jargon), the request has to be sent directly to OPC UA Agent's North Port :
+In order to send the CarAccelerate command (method in OPC UA jargon), the request has to be sent directly to OPC UA IoT Agent's North Port :
 
 .. code-block:: console 
 
@@ -478,10 +480,10 @@ Response
 
 
 
-**Step 7:** Send the below PATCH request to Enable Scorpio-Broker commands (South Bound)
-----------------------------------------------------------------------------------
+**Step 7:** Send the below PATCH request to Enable Scorpio-Broker commands (South Bound Communication)
+-------------------------------------------------------------------------------------------------------
 
-In order to send the CarStop command (method in OPC UA jargon), the request has to be sent to Scorpio that forwards the request to the OPC UA Agent: :
+In order to send the CarStop command (method in OPC UA jargon), the request has to be sent to Scorpio that forwards the request to the OPC UA IoT Agent: :
 
 .. code-block:: console 
 
