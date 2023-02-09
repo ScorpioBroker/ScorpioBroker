@@ -56,7 +56,7 @@ It represents a car with the following structure:
 		
 **OPC UA Agent**
 
-The iot-agent container relies on the presence of the Orion Context Broker and uses a MongoDB database to hold device information such as device URLs and Keys. The container is listening on two ports:
+The iot-agent container relies on the presence of the Scorpio Context Broker and uses a MongoDB database to hold device information such as device URLs and Keys. The container is listening on two ports:
 
 -   Port 9229 is exposed to receive OPC UA measurements over HTTP from the OPC UA server.
 -   Port 4041 is exposed purely for tutorial access - so that cUrl or Postman can make provisioning commands without being part of the same network.
