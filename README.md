@@ -160,12 +160,17 @@ You can find a set of example calls, as a Postman collection, in the Examples fo
 ## Acknowledgements
 
 ### EU Acknowledgetment
+The contents of this publication are the sole responsibility of the authors and do not necessarily reflect the opinion of the European Union.
+
 This activity has received funding from the European Union’s Horizon 2020 research and innovation programme under Grant Agreement No. 731993 (Autopilot), No. 814918 (Fed4IoT) and No. 767498 (MIDIH, Open Call (MoLe). 
+
+This project has received funding from the European Union’s “The Connecting Europe Facility (CEF) in Telecom” programme under Grant Agreement number: INEA/CEF/ICT/A2019/2063604
+
 <img src="https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/master/img/flag_yellow_low.jpg" width="160">
 - [AUTOPILOT project: Automated driving Progressed by Internet Of Things](https://autopilot-project.eu/) <img src="https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/master/img/autopilot.png" width="160">
 - [Fed4IoT project](https://fed4iot.org/)
 - [MIDIH Project](https://midih.eu/), Open Call (MoLe)
-
+- [CEF ODALA](https://odalaproject.eu/)
 ## Credit where credit is due
 We like to thank everyone who has contributed to Scorpio. This goes for the entire Scorpio Devlopment Team as well as all external contributor.
 For a complete list have a look at the [CREDITS](./CREDITS) file.
