@@ -474,7 +474,7 @@ public class TypeQueryTerm {
 				return dollar;
 			}
 			TypeQueryTerm current = this;
-
+			Boolean childPresentFlag=false;
 			while (current.hasNext() || current.firstChild != null) {
 				if (current.firstChild != null) {
 					result.append("]");
@@ -483,6 +483,7 @@ public class TypeQueryTerm {
 					} else {
 						result.append(" OR (");
 					}
+					childPresentFlag=true;
 					dollar = current.firstChild.toSql(result, tuple, dollar);
 					result.append(")");
 					break;
@@ -512,8 +513,11 @@ public class TypeQueryTerm {
 				}
 			}
 
-			result.append("]) ");
-
+			if(childPresentFlag){
+			    result.append(") ");
+			}else{
+				result.append("]) ");
+			}
 		}
 		return dollar;
 	}
@@ -698,7 +702,7 @@ public class TypeQueryTerm {
 		} else {
 			if (firstChild != null && firstChild.hasNext()) {
 				result.append('(');
-				firstChild.next.getTypeQuery(result);
+				firstChild.getTypeQuery(result);
 				result.append(')');
 			}
 		}
