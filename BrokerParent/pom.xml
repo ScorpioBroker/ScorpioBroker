@@ -93,8 +93,16 @@
 			<artifactId>smallrye-mutiny-vertx-web-client</artifactId>
 		</dependency>
 		<dependency>
+			<groupId>io.quarkus</groupId>
+			<artifactId>quarkus-cache</artifactId>
+		</dependency>
+		<dependency>
 			<groupId>io.smallrye.reactive</groupId>
 			<artifactId>smallrye-mutiny-vertx-mqtt</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>io.quarkus</groupId>
+			<artifactId>quarkus-scheduler</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>io.quarkus</groupId>
