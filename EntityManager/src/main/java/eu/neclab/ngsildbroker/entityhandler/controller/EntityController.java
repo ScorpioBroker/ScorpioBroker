@@ -78,15 +78,7 @@ public class EntityController {// implements EntityHandlerInterface {
 					return HttpUtils.generateCreateResult(opResult, AppConstants.ENTITES_URL);
 				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
-	@Path("/testbatch")
-	@POST
-	public Uni<RestResponse<Object>> createBatch(HttpServerRequest req, String payload) throws JsonParseException, JsonLdError, ResponseException, IOException {
-		List<Object> expanded = JsonLdProcessor.expand(JsonUtils.fromString(payload));
-		return entityService.testBatch(HttpUtils.getTenant(req), expanded).onItem()
-				.transform(opResult -> {
-					return RestResponse.ok();
-				});
-	}
+	
 
 	
 
