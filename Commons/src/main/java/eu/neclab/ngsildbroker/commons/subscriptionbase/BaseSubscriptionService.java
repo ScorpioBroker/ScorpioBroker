@@ -458,15 +458,18 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 						subsToCheck.add(sub);
 						break;
 					}
-					if (entityInfo.getId() == null && entityInfo.getIdPattern() == null) {
+					if (entityInfo.getId() == null && entityInfo.getIdPattern() == null
+							&& (entityInfo.getType() == null || types.contains(entityInfo.getType()))) {
 						subsToCheck.add(sub);
 						break;
 					}
-					if (entityInfo.getId() != null && entityInfo.getId().toString().equals(id)) {
+					if (entityInfo.getId() != null && entityInfo.getId().toString().equals(id)
+							&& (entityInfo.getType() == null || types.contains(entityInfo.getType()))) {
 						subsToCheck.add(sub);
 						break;
 					}
-					if (entityInfo.getIdPattern() != null && id.matches(entityInfo.getIdPattern())) {
+					if (entityInfo.getIdPattern() != null && id.matches(entityInfo.getIdPattern())
+							&& (entityInfo.getType() == null || types.contains(entityInfo.getType()))) {
 						subsToCheck.add(sub);
 						break;
 					}
@@ -729,15 +732,18 @@ public abstract class BaseSubscriptionService implements SubscriptionCRUDService
 						subsToCheck.add(sub);
 						break;
 					}
-					if (entityInfo.getId() == null && entityInfo.getIdPattern() == null) {
+					if (entityInfo.getId() == null && entityInfo.getIdPattern() == null
+							&& (entityInfo.getType() == null || types.contains(entityInfo.getType()))) {
 						subsToCheck.add(sub);
 						break;
 					}
-					if (entityInfo.getId() != null && entityInfo.getId().toString().equals(id)) {
+					if (entityInfo.getId() != null && entityInfo.getId().toString().equals(id)
+							&& (entityInfo.getType() == null || types.contains(entityInfo.getType()))) {
 						subsToCheck.add(sub);
 						break;
 					}
-					if (entityInfo.getIdPattern() != null && id.matches(entityInfo.getIdPattern())) {
+					if (entityInfo.getIdPattern() != null && id.matches(entityInfo.getIdPattern())
+							&& (entityInfo.getType() == null || types.contains(entityInfo.getType()))) {
 						subsToCheck.add(sub);
 						break;
 					}
