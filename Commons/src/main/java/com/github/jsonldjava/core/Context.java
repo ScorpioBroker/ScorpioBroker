@@ -3,6 +3,9 @@ package com.github.jsonldjava.core;
 import static com.github.jsonldjava.core.JsonLdUtils.compareShortestLeast;
 import static com.github.jsonldjava.utils.Obj.newMap;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -18,6 +21,11 @@ import com.github.jsonldjava.utils.JsonLdUrl;
 import com.github.jsonldjava.utils.Obj;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
+import io.vertx.core.VertxOptions;
+import io.vertx.mutiny.core.Vertx;
+import io.vertx.mutiny.ext.web.client.WebClient;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 /**
  * A helper class which still stores all the values in a map but gives member
@@ -29,6 +37,7 @@ import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 @SuppressWarnings("unchecked")
 public class Context extends LinkedHashMap<String, Object> {
 
+	MicroServiceUtils microServiceUtils = new MicroServiceUtils();
 	private static final long serialVersionUID = 2894534897574805571L;
 
 	private JsonLdOptions options;
@@ -216,9 +225,16 @@ public class Context extends LinkedHashMap<String, Object> {
 				remoteContexts.add(uri);
 
 				// 3.2.3: Dereference context
-				final RemoteDocument rd = this.options.getDocumentLoader().loadDocument(uri);
+                String finalUrl = uri;
+                if (uri!= null && !(uri.contains(microServiceUtils.getGatewayURL().toString()) || uri.contains("localhost"))) {
+                    String encodedUrl = URLEncoder.encode(uri, StandardCharsets.UTF_8);
+					encodedUrl = encodedUrl.replace("%3F","?");
+					encodedUrl = encodedUrl.replace("%3D","=");
+                    finalUrl = "http://localhost:9090"+"/ngsi-ld/v1/jsonldContexts/create/" + encodedUrl;
+                }
+				final RemoteDocument rd = this.options.getDocumentLoader().loadDocument(finalUrl);
 				final Object remoteContext = rd.getDocument();
-				if (!(remoteContext instanceof Map)
+				if (remoteContext == null
 						|| !((Map<String, Object>) remoteContext).containsKey(JsonLdConsts.CONTEXT)) {
 					// If the dereferenced document has no top-level JSON object
 					// with an @context member
