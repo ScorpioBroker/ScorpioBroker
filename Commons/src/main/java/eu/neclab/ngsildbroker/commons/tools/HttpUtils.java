@@ -568,14 +568,21 @@ public final class HttpUtils {
 
 	public static Tuple2<Context, Map<String, Object>> expandBody(HttpServerRequest request, String payload,
 			int payloadType) throws Exception {
-		boolean atContextAllowed;
-		List<Object> atContext = getAtContext(request);
-		atContextAllowed = HttpUtils.doPreflightCheck(request, atContext);
+
 		if (payload == null || payload.isEmpty()) {
 			throw new ResponseException(ErrorType.InvalidRequest, "You have to provide a valid payload");
 		}
 		Map<String, Object> originalPayload;
 		originalPayload = (Map<String, Object>) JsonUtils.fromString(payload);
+
+		return expandBody(request, originalPayload, payloadType);
+	}
+
+	public static Tuple2<Context, Map<String, Object>> expandBody(HttpServerRequest request,
+			Map<String, Object> originalPayload, int payloadType) throws Exception {
+		boolean atContextAllowed;
+		List<Object> atContext = getAtContext(request);
+		atContextAllowed = HttpUtils.doPreflightCheck(request, atContext);
 		Context context = HttpUtils.getContextFromPayload(originalPayload, atContext, atContextAllowed);
 		Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor
 				.expand(context, originalPayload, opts, payloadType, atContextAllowed).get(0);

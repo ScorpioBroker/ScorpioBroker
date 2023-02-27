@@ -31,6 +31,7 @@ import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.RegistrationEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.RemoteHost;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.BatchCreateRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteAttributeRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteEntityRequest;
@@ -60,26 +61,12 @@ public class EntityInfoDAO {
 
 	GeoJSONReader geoReader = new GeoJSONReader(JtsSpatialContext.GEO, new SpatialContextFactory());
 
-	public Uni<Void> batchCreateEntity(List<CreateEntityRequest> requests) {
-		return clientManager.getClient(requests.get(0).getTenant(), true).onItem().transformToUni(client -> {
-			List<Tuple> tuples = new ArrayList<>(requests.size());
-			for (CreateEntityRequest request : requests) {
-				tuples.add(Tuple.of(request.getId(),
-						((List<String>) request.getPayload().get(NGSIConstants.JSON_LD_TYPE)).toArray(new String[0]),
-						new JsonObject(request.getPayload())));
-			}
+	public Uni<Map<String, Object>> batchCreateEntity(BatchCreateRequest request) {
+		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
 			return client.preparedQuery(
-					"INSERT INTO ENTITY(ID,E_TYPES, ENTITY) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING RETURNING ID as notadded")
-					.executeBatch(tuples).onFailure().recoverWithUni(e -> {
-						if (e instanceof PgException) {
-							if (((PgException) e).getCode().equals(AppConstants.SQL_ALREADY_EXISTS)) {
-								return Uni.createFrom().failure(new ResponseException(ErrorType.AlreadyExists));
-							}
-						}
-						return Uni.createFrom().failure(e);
-					}).onItem().transformToUni(v -> {
-						System.out.println(v);
-						return Uni.createFrom().voidItem();
+					"SELECT * FROM NGSILD_BATCHCREATE($1)")
+					.execute(Tuple.of(new JsonArray(request.getRequestPayload()))).onItem().transform(rows -> {
+						return rows.iterator().next().getJsonObject(0).getMap();
 					});
 		});
 	}
