@@ -11285,7 +11285,7 @@
 														"method": "DELETE",
 														"header": [],
 														"url": {
-															"raw": "{{entity-manager}}/ngsi-ld/v1/entities/myprefixurn:test:testentity1",
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities/myprefixurn:test:testentity2",
 															"host": [
 																"{{entity-manager}}"
 															],
@@ -11293,7 +11293,7 @@
 																"ngsi-ld",
 																"v1",
 																"entities",
-																"myprefixurn:test:testentity1"
+																"myprefixurn:test:testentity2"
 															]
 														}
 													},
@@ -33883,7 +33883,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:mytest1888\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"TestType\",\r\n            \"idPattern\": \".*\"\r\n   \t\t},\r\n           {\r\n\t\t\t\"type\": \"TestType2\",\r\n            \"idPattern\": \"myprefix.*\"\r\n   \t\t}\r\n\t],\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"{{notificationserver}}\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    }\r\n}\r\n\r\n"
+															"raw": "{\r\n\t\"id\": \"tenant:urn:ngsi-ld:Subscription:mytest1888\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"TestType\",\r\n            \"idPattern\": \".*\"\r\n   \t\t},\r\n           {\r\n\t\t\t\"type\": \"TestType2\",\r\n            \"idPattern\": \"myprefix.*\"\r\n   \t\t}\r\n\t],\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"{{notificationserver}}\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    }\r\n}\r\n\r\n"
 														},
 														"url": {
 															"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions",
@@ -34163,7 +34163,7 @@
 															}
 														],
 														"url": {
-															"raw": "{{entity-manager}}/ngsi-ld/v1/entities/myprefixurn:test:testentity1",
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities/myprefixurn:test:testentity2",
 															"host": [
 																"{{entity-manager}}"
 															],
@@ -34171,7 +34171,7 @@
 																"ngsi-ld",
 																"v1",
 																"entities",
-																"myprefixurn:test:testentity1"
+																"myprefixurn:test:testentity2"
 															]
 														}
 													},
