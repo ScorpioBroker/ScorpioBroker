@@ -61,7 +61,8 @@ public class EntityBatchController {
 
 	@POST
 	@Path("/create")
-	public Uni<RestResponse<Object>> createMultiple(HttpServerRequest request, String payload, boolean localOnly) {
+	public Uni<RestResponse<Object>> createMultiple(HttpServerRequest request, String payload,
+			@QueryParam("localOnly") boolean localOnly) {
 		List<Map<String, Object>> compactedEntities;
 		try {
 			compactedEntities = (List<Map<String, Object>>) JsonUtils.fromString(payload);
