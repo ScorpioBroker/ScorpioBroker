@@ -32,9 +32,11 @@ public class ContextCache {
     public Uni<Map<String, Object>> load(String uri) {
         return webClient.getAbs(uri)
                 .send()
-                .onItem().transform(
-                        (res) -> {
+                .onItemOrFailure().transform(
+                        (res, failure) -> {
                             Map<String, Object> map = new HashMap<>();
+                            if (failure != null)
+                                return map;
                             Map<String, Object> context = new HashMap<>();
                             Object contextToPut = res.getDelegate().bodyAsJsonObject().getMap().get("@context");
                             if (contextToPut == null)
@@ -55,8 +57,9 @@ public class ContextCache {
             return Uni.createFrom().item(RestResponse.notFound());
         if (details)
             return load(uri).onItem().transform(RestResponse::ok);
-        else return load(uri).onItem()
-                .transform(map -> RestResponse.ok(map.get("body")));
+        else
+            return load(uri).onItem()
+                    .transform(map -> RestResponse.ok(map.get("body")));
     }
 
     public Uni<List<Object>> getAllCache(Boolean details) {
@@ -79,7 +82,7 @@ public class ContextCache {
 
     @CacheInvalidate(cacheName = "context")
     public Uni<RestResponse<Object>> reload(@CacheKey String uri) {
-        return load(uri).onItem().transform(res-> RestResponse.ok());
+        return load(uri).onItem().transform(res -> RestResponse.ok());
     }
 
     @CacheInvalidate(cacheName = "context")
