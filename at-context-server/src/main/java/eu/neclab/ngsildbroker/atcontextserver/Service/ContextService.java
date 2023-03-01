@@ -16,7 +16,6 @@ import javax.ws.rs.core.Response;
 import java.util.HashMap;
 import java.util.Map;
 
-
 @ApplicationScoped
 public class ContextService {
     @Inject
@@ -51,31 +50,35 @@ public class ContextService {
                     if (response.getStatus() == RestResponse.Status.NOT_FOUND.getStatusCode()) {
                         if (reload) {
                             return cache.reload(id);
-                        } else return cache.invalidate(id);
+                        } else
+                            return cache.invalidate(id);
                     }
                     return Uni.createFrom().item(response);
-                }
-        );
+                });
     }
 
     public Uni<RestResponse<Object>> getContexts(String kind, Boolean details) {
         if (kind != null && kind.equalsIgnoreCase("cached")) {
             return Uni.createFrom().failure(new ResponseException(ErrorType.OperationNotSupported));
-        } else return dao.getContexts(kind, details).onItem()
-                .transformToUni(list -> Uni.createFrom().item(RestResponse.ok(list)));
+        } else
+            return dao.getContexts(kind, details).onItem()
+                    .transformToUni(list -> Uni.createFrom().item(RestResponse.ok(list)));
     }
 
-    public Uni<RestResponse<Object>> createOrGet(String url, String type) {//create cache or implicitly created context
+    public Uni<RestResponse<Object>> createOrGet(String url, String type) {// create cache or implicitly created context
         if (type != null && type.equals("implicitlyCreated")) {
             return dao.getById(url, false)
                     .onItem().transformToUni(res -> {
                         if (res.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
-                            return  webClient.getAbs(url)
+                            return webClient.getAbs(url)
                                     .send()
-                                    .onItem()
+                                    .onItemOrFailure()
                                     .transformToUni(
-                                            body -> {
-                                                Map<String, Object> contextBody = (Map<String, Object>) body.bodyAsJsonObject().getMap().get("@context");
+                                            (body, failure) -> {
+                                                if (failure != null)
+                                                    return Uni.createFrom().item(RestResponse.notFound());
+                                                Map<String, Object> contextBody = (Map<String, Object>) body
+                                                        .bodyAsJsonObject().getMap().get("@context");
                                                 if (contextBody != null) {
                                                     Map<String, Object> atContext = new HashMap<>();
                                                     atContext.put("@context", contextBody);
@@ -83,9 +86,11 @@ public class ContextService {
                                                 }
                                                 return null;
                                             });
-                        } else return Uni.createFrom().item(res);
+                        } else
+                            return Uni.createFrom().item(res);
 
                     });
-        } else return cache.getCache(url, false, true);
+        } else
+            return cache.getCache(url, false, true);
     }
 }
