@@ -832,15 +832,18 @@ public class EntityService {
 				result.add(opResult);
 			}
 			for (Map<String, String> fail : fails) {
-				String entityId = fail.get("entityid");
-				String sqlstate = fail.get("sqlstate");
-				NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, entityId);
-				if (sqlstate.equals(AppConstants.SQL_ALREADY_EXISTS)) {
-					opResult.addFailure(new ResponseException(ErrorType.AlreadyExists, entityId));
-				} else {
-					opResult.addFailure(new ResponseException(ErrorType.InvalidRequest, sqlstate));
-				}
-				result.add(opResult);
+				fail.entrySet().forEach(entry -> {
+					String entityId = entry.getKey();
+					String sqlstate = entry.getValue();
+					NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, entityId);
+					if (sqlstate.equals(AppConstants.SQL_ALREADY_EXISTS)) {
+						opResult.addFailure(new ResponseException(ErrorType.AlreadyExists, entityId));
+					} else {
+						opResult.addFailure(new ResponseException(ErrorType.InvalidRequest, sqlstate));
+					}
+					result.add(opResult);
+				});
+
 			}
 			return result;
 		});

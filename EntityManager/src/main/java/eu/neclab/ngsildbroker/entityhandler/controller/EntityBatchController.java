@@ -74,12 +74,23 @@ public class EntityBatchController {
 		List<ResponseException> fails = Lists.newArrayList();
 		for (Map<String, Object> compactedEntity : compactedEntities) {
 			try {
+				System.out.println("hererererererere1");
+				System.out.println(JsonUtils.toPrettyString(compactedEntity));
 				Tuple2<Context, Map<String, Object>> tuple = HttpUtils.expandBody(request, compactedEntity,
 						AppConstants.CREATE_REQUEST);
 				expandedEntities.add(tuple.getItem2());
 				contexts.add(tuple.getItem1());
+				System.out.println("hererererererere2");
 			} catch (Exception e) {
+				System.out.println("hererererererere3");
+				e.printStackTrace();
 				if (e instanceof ResponseException) {
+					try {
+						System.out.println(JsonUtils.toPrettyString(((ResponseException) e).getJson()));
+					} catch (IOException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
 					fails.add((ResponseException) e);
 				} else {
 					fails.add(new ResponseException(ErrorType.InvalidRequest, e));
@@ -88,7 +99,7 @@ public class EntityBatchController {
 		}
 		return entityService.createBatch(HttpUtils.getTenant(request), expandedEntities, contexts, localOnly).onItem()
 				.transform(opResults -> {
-					return null;
+					return RestResponse.accepted();
 				});
 	}
 
