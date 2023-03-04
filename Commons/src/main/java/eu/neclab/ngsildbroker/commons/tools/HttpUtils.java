@@ -443,7 +443,6 @@ public final class HttpUtils {
 
 		case 1:
 			try {
-				// todo add options to compact
 				compacted = JsonLdProcessor.compact(entity, contextHeader, context, opts, -1, optionSet, langQuery);
 			} catch (Exception e) {
 				return handleControllerExceptions(e);
@@ -461,6 +460,7 @@ public final class HttpUtils {
 				resp.header(NGSIConstants.LINK_HEADER, getLinkHeader(entry));
 			}
 			contentType = AppConstants.NGB_APPLICATION_JSON;
+			break;
 		case 2:
 			try {
 				// todo add options to compact
