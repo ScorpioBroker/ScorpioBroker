@@ -295,9 +295,11 @@ public class EntityService {
 
 	public Uni<NGSILDOperationResult> deleteAttribute(String tenant, String entityId, String attribName,
 			String datasetId, boolean deleteAll, Context context) {
-		DeleteAttributeRequest request = new DeleteAttributeRequest(tenant, entityId, attribName, datasetId, deleteAll);
+		String expandedAttribName = context.get("@vocab") + attribName;
+
+		DeleteAttributeRequest request = new DeleteAttributeRequest(tenant, entityId, expandedAttribName, datasetId, deleteAll);
 		Set<RemoteHost> remoteHosts = getRemoteHostsForDeleteAttrib(request);
-		if (remoteHosts.isEmpty()) {
+		if (remoteHosts ==null ||  remoteHosts.isEmpty()) {
 			return localDeleteAttrib(request, context);
 		}
 		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(remoteHosts.size());

@@ -98,18 +98,18 @@ public class EntityInfoDAO {
 
 	public Uni<Map<String, Object>> deleteAttribute(DeleteAttributeRequest request) {
 		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
-			String sql;
+			String sql="";
 			Tuple tuple;
-			sql = "UPDATE ENTITY SET ENTITY=";
+			sql += "UPDATE ENTITY SET ENTITY=";
 			if (request.deleteAll()) {
 				sql = "ENTITY - $1 WHERE id=$2 AND ENTITY ? $1";
 				tuple = Tuple.of(request.getAttribName(), request.getId());
 			} else if (request.getDatasetId() != null) {
-				sql = "NGSILD_DELETEATTRIB(ENTITY, $1, $2) WHERE id=$3 AND ENTITY @> '{\"$1\": [{\""
+				sql += "NGSILD_DELETEATTRIB(ENTITY, $1, $2) WHERE id=$3 AND ENTITY @> '{\"$1\": [{\""
 						+ NGSIConstants.NGSI_LD_DATA_SET_ID + "\": \"$2\"}]}'";
 				tuple = Tuple.of(request.getAttribName(), request.getDatasetId(), request.getId());
 			} else {
-				sql = "NGSILD_DELETEATTRIB(ENTITY, $1, null) WHERE id=$2 AND ENTITY ? $1 AND EXISTS (SELECT jsonb_array_elements FROM jsonb_array_elements(ENTITY->$1) WHERE NOT jsonb_array_elements ? '"
+				sql += "NGSILD_DELETEATTRIB(ENTITY, $1, null) WHERE id=$2 AND ENTITY ? $1 AND EXISTS (SELECT jsonb_array_elements FROM jsonb_array_elements(ENTITY->$1) WHERE NOT jsonb_array_elements ? '"
 						+ NGSIConstants.NGSI_LD_DATA_SET_ID + "')";
 				tuple = Tuple.of(request.getAttribName(), request.getId());
 			}
