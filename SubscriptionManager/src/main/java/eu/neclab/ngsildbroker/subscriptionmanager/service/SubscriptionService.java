@@ -208,13 +208,13 @@ public class SubscriptionService {
 			List<Map<String, Object>> resultData = new ArrayList<Map<String, Object>>(rows.size());
 			while (it.hasNext()) {
 				next = it.next();
-				resultData.add(next.getJsonObject(1).getMap());
+				resultData.add(next.getJsonObject(0).getMap());
 			}
 			result.setData(resultData);
 			if (next == null) {
 				return result;
 			}
-			Long resultCount = next.getLong(0);
+			long resultCount = rows.size();
 			result.setCount(resultCount);
 			long leftAfter = resultCount - (offset + limit);
 			if (leftAfter < 0) {
