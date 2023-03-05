@@ -7,13 +7,13 @@ import com.github.jsonldjava.core.Context;
 
 import io.smallrye.mutiny.tuples.Tuple2;
 
-public class BatchCreateRequest {
+public class BatchRequest {
 
 	private String tenant;
 	private List<Map<String, Object>> requestPayload;
 	private List<Context> contexts;
 
-	public BatchCreateRequest(String tenant, List<Map<String, Object>> requestPayload, List<Context> contexts) {
+	public BatchRequest(String tenant, List<Map<String, Object>> requestPayload, List<Context> contexts) {
 		this.tenant = tenant;
 		this.requestPayload = requestPayload;
 		this.contexts = contexts;

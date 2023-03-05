@@ -74,23 +74,13 @@ public class EntityBatchController {
 		List<ResponseException> fails = Lists.newArrayList();
 		for (Map<String, Object> compactedEntity : compactedEntities) {
 			try {
-				System.out.println("hererererererere1");
-				System.out.println(JsonUtils.toPrettyString(compactedEntity));
 				Tuple2<Context, Map<String, Object>> tuple = HttpUtils.expandBody(request, compactedEntity,
 						AppConstants.CREATE_REQUEST);
 				expandedEntities.add(tuple.getItem2());
 				contexts.add(tuple.getItem1());
-				System.out.println("hererererererere2");
 			} catch (Exception e) {
-				System.out.println("hererererererere3");
 				e.printStackTrace();
 				if (e instanceof ResponseException) {
-					try {
-						System.out.println(JsonUtils.toPrettyString(((ResponseException) e).getJson()));
-					} catch (IOException e1) {
-						// TODO Auto-generated catch block
-						e1.printStackTrace();
-					}
 					fails.add((ResponseException) e);
 				} else {
 					fails.add(new ResponseException(ErrorType.InvalidRequest, e));
@@ -106,21 +96,94 @@ public class EntityBatchController {
 	@POST
 	@Path("/upsert")
 	public Uni<RestResponse<Object>> upsertMultiple(HttpServerRequest request, String payload,
-			@QueryParam(value = "options") String options) {
-		return null;
+			@QueryParam(value = "options") String options, 	@QueryParam("localOnly") boolean localOnly) {
+		List<Map<String, Object>> compactedEntities;
+		try {
+			compactedEntities = (List<Map<String, Object>>) JsonUtils.fromString(payload);
+		} catch (IOException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+		}
+		List<Map<String, Object>> expandedEntities = Lists.newArrayList();
+		List<Context> contexts = Lists.newArrayList();
+		List<ResponseException> fails = Lists.newArrayList();
+		for (Map<String, Object> compactedEntity : compactedEntities) {
+			try {
+				Tuple2<Context, Map<String, Object>> tuple = HttpUtils.expandBody(request, compactedEntity,
+						AppConstants.UPSERT_REQUEST);
+				expandedEntities.add(tuple.getItem2());
+				contexts.add(tuple.getItem1());
+			} catch (Exception e) {
+				e.printStackTrace();
+				if (e instanceof ResponseException) {
+					fails.add((ResponseException) e);
+				} else {
+					fails.add(new ResponseException(ErrorType.InvalidRequest, e));
+				}
+			}
+		}
+		return entityService.upsertBatch(HttpUtils.getTenant(request), expandedEntities, contexts, localOnly).onItem()
+				.transform(opResults -> {
+					return RestResponse.accepted();
+				});
 	}
 
+	/**
+	 * This is called update in the spec but compared to the single operations it is
+	 * an append. All internal calls refer to this as appendBatch.
+	 * 
+	 * @param request
+	 * @param payload
+	 * @param options
+	 * @return
+	 */
 	@POST
 	@Path("/update")
-	public Uni<RestResponse<Object>> updateMultiple(HttpServerRequest request, String payload,
-			@QueryParam(value = "options") String options) {
-		return null;
+	public Uni<RestResponse<Object>> appendMultiple(HttpServerRequest request, String payload,
+			@QueryParam(value = "options") String options, @QueryParam("localOnly") boolean localOnly) {
+		List<Map<String, Object>> compactedEntities;
+		try {
+			compactedEntities = (List<Map<String, Object>>) JsonUtils.fromString(payload);
+		} catch (IOException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+		}
+		List<Map<String, Object>> expandedEntities = Lists.newArrayList();
+		List<Context> contexts = Lists.newArrayList();
+		List<ResponseException> fails = Lists.newArrayList();
+		for (Map<String, Object> compactedEntity : compactedEntities) {
+			try {
+				Tuple2<Context, Map<String, Object>> tuple = HttpUtils.expandBody(request, compactedEntity,
+						AppConstants.APPEND_REQUEST);
+				expandedEntities.add(tuple.getItem2());
+				contexts.add(tuple.getItem1());
+			} catch (Exception e) {
+				e.printStackTrace();
+				if (e instanceof ResponseException) {
+					fails.add((ResponseException) e);
+				} else {
+					fails.add(new ResponseException(ErrorType.InvalidRequest, e));
+				}
+			}
+		}
+		return entityService.appendBatch(HttpUtils.getTenant(request), expandedEntities, contexts, localOnly).onItem()
+				.transform(opResults -> {
+					return RestResponse.accepted();
+				});
 	}
 
 	@POST
 	@Path("/delete")
-	public Uni<RestResponse<Object>> deleteMultiple(HttpServerRequest request, String payload) {
-		return null;
+	public Uni<RestResponse<Object>> deleteMultiple(HttpServerRequest request, String payload,	@QueryParam("localOnly") boolean localOnly) {
+		List<String> entityIds;
+		try {
+			entityIds = (List<String>) JsonUtils.fromString(payload);
+		} catch (IOException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+		}
+		
+		return entityService.deleteBatch(HttpUtils.getTenant(request), entityIds, localOnly).onItem()
+				.transform(opResults -> {
+					return RestResponse.accepted();
+				});
 	}
 
 }

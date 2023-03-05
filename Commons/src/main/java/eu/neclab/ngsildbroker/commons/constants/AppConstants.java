@@ -103,6 +103,7 @@ public class AppConstants {
 	public static final int DELETE_TEMPORAL_REQUEST = 8;
 	public static final int DELETE_TEMPORAL_ATTRIBUTE_REQUEST = 9;
 	public static final int DELETE_TEMPORAL_ATTRIBUTE_INSTANCE_REQUEST = 10;
+	public static final int UPSERT_REQUEST = 11;
 
 	public static final int OPERATION_CREATE_REGISTRATION = 11;
 	public static final int OPERATION_UPDATE_REGISTRATION = 12;

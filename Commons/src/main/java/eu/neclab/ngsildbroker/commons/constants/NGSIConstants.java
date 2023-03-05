@@ -322,6 +322,7 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_TYPES_ENDPOINT = "/ngsi-ld/v1/types";
 	public static final String NGSI_LD_ENTITIES_ENDPOINT = "/ngsi-ld/v1/entities";
 	public static final String ENDPOINT_BATCH_CREATE = "/ngsi-ld/v1/entityOperations/create";
+	public static final String ENDPOINT_BATCH_UPSERT = "/ngsi-ld/v1/entityOperations/upsert";
 	public static final String ENDPOINT_BATCH_DELETE = "/ngsi-ld/v1/entityOperations/delete";
 	public static final String ENDPOINT_BATCH_UPDATE = "/ngsi-ld/v1/entityOperations/update";
 	public static final String NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT = "/ngsi-ld/v1/temporal/entities";

@@ -31,7 +31,7 @@ import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.RegistrationEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.RemoteHost;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendEntityRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.BatchCreateRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.BatchRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteAttributeRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteEntityRequest;
@@ -61,10 +61,38 @@ public class EntityInfoDAO {
 
 	GeoJSONReader geoReader = new GeoJSONReader(JtsSpatialContext.GEO, new SpatialContextFactory());
 
-	public Uni<Map<String, Object>> batchCreateEntity(BatchCreateRequest request) {
+	public Uni<Map<String, Object>> batchCreateEntity(BatchRequest request) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
 			return client.preparedQuery(
 					"SELECT * FROM NGSILD_CREATEBATCH($1)")
+					.execute(Tuple.of(new JsonArray(request.getRequestPayload()))).onItem().transform(rows -> {
+						return rows.iterator().next().getJsonObject(0).getMap();
+					});
+		});
+	}
+	public Uni<Map<String, Object>> batchUpsertEntity(BatchRequest request) {
+		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
+			return client.preparedQuery(
+					"SELECT * FROM NGSILD_UPSERTBATCH($1)")
+					.execute(Tuple.of(new JsonArray(request.getRequestPayload()))).onItem().transform(rows -> {
+						return rows.iterator().next().getJsonObject(0).getMap();
+					});
+		});
+	}
+	public Uni<Map<String, Object>> batchAppendEntity(BatchRequest request) {
+		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
+			return client.preparedQuery(
+					"SELECT * FROM NGSILD_APPENDBATCH($1)")
+					.execute(Tuple.of(new JsonArray(request.getRequestPayload()))).onItem().transform(rows -> {
+						return rows.iterator().next().getJsonObject(0).getMap();
+					});
+		});
+	}
+	
+	public Uni<Map<String, Object>> batchDeleteEntity(BatchRequest request) {
+		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
+			return client.preparedQuery(
+					"SELECT * FROM NGSILD_DELETEBATCH($1)")
 					.execute(Tuple.of(new JsonArray(request.getRequestPayload()))).onItem().transform(rows -> {
 						return rows.iterator().next().getJsonObject(0).getMap();
 					});
