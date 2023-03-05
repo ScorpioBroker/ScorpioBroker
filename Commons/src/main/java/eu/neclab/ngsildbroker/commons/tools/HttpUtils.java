@@ -550,12 +550,12 @@ public final class HttpUtils {
 			if (atContextAllowed) {
 				throw new ResponseException(ErrorType.BadRequestData, "@Context entry is needed");
 			}
-			context.parse(atContextHeader, true);
+			context = context.parse(atContextHeader, true);
 		} else {
 			if (!atContextAllowed) {
 				throw new ResponseException(ErrorType.BadRequestData, "@context entry in body is not allowed");
 			}
-			context.parse(payloadAtContext, true);
+			context = context.parse(payloadAtContext, true);
 
 		}
 		return context;

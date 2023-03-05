@@ -266,6 +266,8 @@ public interface NGSIConstants {
 	public static final String ISACTIVE_TRUE = "active";
 
 	public static final Set<String> CORE_CONTEXT_URLS = Sets.newHashSet(
+			"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld",
+			"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.5.jsonld",
 			"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.4.jsonld",
 			"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld",
 			"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld");
