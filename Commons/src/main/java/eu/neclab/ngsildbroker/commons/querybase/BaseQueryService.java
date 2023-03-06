@@ -151,8 +151,13 @@ public abstract class BaseQueryService implements EntryQueryService {
 						exchange = webClient.postAbs(endpoint + "/ngsi-ld/v1/entityOperations/query")
 								.putHeaders(additionalHeaders).sendBuffer(Buffer.buffer(rawQueryString));
 					} else {
-						exchange = webClient.getAbs(endpoint + "/ngsi-ld/v1/entities/" + rawQueryString)
-								.putHeaders(additionalHeaders).send();
+						if (rawQueryString.contains("=")) {
+							exchange = webClient.getAbs(endpoint + "/ngsi-ld/v1/entities?" + rawQueryString)
+									.putHeaders(additionalHeaders).send();
+						} else {
+							exchange = webClient.getAbs(endpoint + "/ngsi-ld/v1/entities/" + rawQueryString)
+									.putHeaders(additionalHeaders).send();
+						}
 					}
 
 					remoteResults.add(UniHelper.toUni(exchange).onItem().transform(response -> {
