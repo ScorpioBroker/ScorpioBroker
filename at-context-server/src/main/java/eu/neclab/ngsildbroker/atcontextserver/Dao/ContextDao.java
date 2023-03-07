@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.atcontextserver.Dao;
+package eu.neclab.ngsildbroker.atcontextserver.dao;
 
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -15,6 +15,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -58,8 +59,8 @@ public class ContextDao {
         return pgPool.preparedQuery(sql).execute(Tuple.of("urn:" + UUID.randomUUID(), new JsonObject(payload))).onItem()
                 .transformToUni(rows -> {
                     if (rows.size() > 0) {
-                        return Uni.createFrom().item( RestResponseBuilderImpl.create(201)
-                                .entity(new JsonObject("{\"url\":\"" +"http://localhost:9090/ngsi-ld/v1/jsonldContexts/" +rows.iterator().next().getString(0) + "\"}"))
+                        return Uni.createFrom().item(RestResponseBuilderImpl.create(201)
+                                .entity(new JsonObject("{\"url\":\"" + "http://localhost:9090/ngsi-ld/v1/jsonldContexts/" + rows.iterator().next().getString(0) + "\"}"))
                                 .build());
                     } else
                         return Uni.createFrom().failure(new Throwable("Server Error"));
@@ -78,7 +79,7 @@ public class ContextDao {
                 });
     }
 
-    public Uni<List<Object>> getContexts(String kind, Boolean details) {
+    public Uni<List<Object>> getAllContexts(String kind, Boolean details) {
         String sql;
         if (details)
             sql = "Select * from public.contexts ";
@@ -95,7 +96,7 @@ public class ContextDao {
 
                         if (details) {
                             map.put(i.getColumnName(1), ((JsonObject) map.get(i.getColumnName(1))).getMap());
-                            map.put("url", "http://localhost:9090/ngsi-ld/v1/jsonldContexts/" + URLEncoder.encode( map.get("id").toString(), StandardCharsets.UTF_8));
+                            map.put("url", "http://localhost:9090/ngsi-ld/v1/jsonldContexts/" + URLEncoder.encode(map.get("id").toString(), StandardCharsets.UTF_8));
                             contexts.add(map);
                         } else {
                             contexts.add("http://localhost:9090/ngsi-ld/v1/jsonldContexts/" + URLEncoder.encode(map.get("id").toString(), StandardCharsets.UTF_8));
@@ -107,14 +108,27 @@ public class ContextDao {
 
     }
 
-    public Uni<RestResponse<Object>> createContextImpl(Map<String, Object> payload, String id) {
-        String sql = "INSERT INTO public.contexts (id, body, kind) values($1, $2, 'implicitlyCreated') returning body";
-        return pgPool.preparedQuery(sql).execute(Tuple.of(id, new JsonObject(payload))).onItem()
-                .transform(rows -> {
+    public Uni<RestResponse<Object>> createContextImpl(Map<String, Object> payload) {
+        java.security.MessageDigest md;
+        try {
+            md = java.security.MessageDigest.getInstance("MD5");
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+        byte[] array = md.digest(payload.toString().getBytes());
+        StringBuilder sb = new StringBuilder();
+        for (byte b : array) {
+            sb.append(Integer.toHexString((b & 0xFF) | 0x100), 1, 3);
+        }
+        String id = "urn:" + sb;
+        String sql = "INSERT INTO public.contexts (id, body, kind) values($1, $2, 'implicitlycreated') returning id";
+        return pgPool.preparedQuery(sql).execute(Tuple.of(id, new JsonObject(payload))).onItemOrFailure()
+                .transform((rows, failure) -> {
+                    if (failure != null && failure.getMessage().contains("duplicate key")) return RestResponse.ok(id);
                     if (rows.size() > 0) {
-                        return RestResponse.ok(rows.iterator().next().getJsonObject(0).getMap().get("body"));
+                        return RestResponse.ok(rows.iterator().next().getString(0));
                     } else
-                        return RestResponseBuilderImpl.create(500).build();
+                        return RestResponse.status(RestResponse.Status.INTERNAL_SERVER_ERROR);
                 });
     }
 }

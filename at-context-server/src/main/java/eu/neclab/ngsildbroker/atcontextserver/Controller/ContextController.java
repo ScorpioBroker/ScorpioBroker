@@ -1,7 +1,7 @@
-package eu.neclab.ngsildbroker.atcontextserver.Controller;
+package eu.neclab.ngsildbroker.atcontextserver.controller;
 
 import com.github.jsonldjava.utils.JsonUtils;
-import eu.neclab.ngsildbroker.atcontextserver.Service.ContextService;
+import eu.neclab.ngsildbroker.atcontextserver.service.ContextService;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
@@ -11,7 +11,6 @@ import org.jboss.resteasy.reactive.RestResponse;
 import javax.inject.Inject;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -60,8 +59,23 @@ public class ContextController {
     }
 
     @GET
-    @Path("/create/{url}")
-    public Uni<RestResponse<Object>> loadCache(@PathParam("url") String url, @QueryParam("type") String type) {
-        return contextService.createOrGet(url, type);
+    @Path("/createcache/{url}")
+    public Uni<RestResponse<Object>> loadCache(@PathParam("url") String url) {
+        return contextService.createOrGetCache(url);
+    }
+
+    @POST
+    @Path("/createimplicitly/")
+    public Uni<RestResponse<Object>> createImplicitly(String payload) {
+        Map<String, Object> payloadMap =new HashMap<>();
+        try {
+            Map<String, Object> contextBody = (Map<String, Object>) ((Map<String,Object>)JsonUtils.fromString(payload)).get("@context");
+            if(contextBody == null) throw new Exception("Bad Request");
+            else payloadMap.put("@context",contextBody);
+        } catch (Exception e) {
+            return Uni.createFrom().item(
+                    HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData)));
+        }
+        return contextService.createImplicitly(payloadMap);
     }
 }

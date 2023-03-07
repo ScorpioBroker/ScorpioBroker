@@ -1,7 +1,8 @@
-package eu.neclab.ngsildbroker.atcontextserver.Service;
+package eu.neclab.ngsildbroker.atcontextserver.service;
 
-import eu.neclab.ngsildbroker.atcontextserver.ContextCache;
-import eu.neclab.ngsildbroker.atcontextserver.Dao.ContextDao;
+import com.github.jsonldjava.core.JsonLdOptions;
+import eu.neclab.ngsildbroker.atcontextserver.cache.ContextCache;
+import eu.neclab.ngsildbroker.atcontextserver.dao.ContextDao;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import io.smallrye.mutiny.Uni;
@@ -13,7 +14,8 @@ import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.ws.rs.core.Response;
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 @ApplicationScoped
@@ -25,6 +27,7 @@ public class ContextService {
     ContextCache cache;
 
     WebClient webClient;
+    JsonLdOptions jsonLdOptions = new JsonLdOptions();
 
     @PostConstruct
     void init() {
@@ -34,7 +37,12 @@ public class ContextService {
     public Uni<RestResponse<Object>> getContextById(String id, boolean details) {
         return dao.getById(id, details).onItem().transformToUni(res -> {
             if (res.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
-                return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
+                return cache.createOrGetCache(id,details,false).onItem().transformToUni(response->{
+                    if(response.getStatus() == RestResponse.notFound().getStatus()){
+                        return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
+                    }
+                    return Uni.createFrom().item(response);
+                });
             }
             return Uni.createFrom().item(res);
         });
@@ -59,38 +67,26 @@ public class ContextService {
 
     public Uni<RestResponse<Object>> getContexts(String kind, Boolean details) {
         if (kind != null && kind.equalsIgnoreCase("cached")) {
-            return Uni.createFrom().failure(new ResponseException(ErrorType.OperationNotSupported));
-        } else
-            return dao.getContexts(kind, details).onItem()
-                    .transformToUni(list -> Uni.createFrom().item(RestResponse.ok(list)));
+            return cache.getAllCache(details).map(RestResponse::ok);
+        } else if (kind != null && !kind.equalsIgnoreCase("cached"))
+            return dao.getAllContexts(kind, details).onItem()
+                    .transform(RestResponse::ok);
+        else return cache.getAllCache(details).onItem()
+                    .transformToUni(list1 -> dao.getAllContexts(kind, details).onItem()
+                            .transform(list2 -> {
+                                List<Object> finalList = new ArrayList<>();
+                                finalList.addAll(list1);
+                                finalList.addAll(list2);
+                                return RestResponse.ok(finalList);
+                            }));
     }
 
-    public Uni<RestResponse<Object>> createOrGet(String url, String type) {// create cache or implicitly created context
-        if (type != null && type.equals("implicitlyCreated")) {
-            return dao.getById(url, false)
-                    .onItem().transformToUni(res -> {
-                        if (res.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
-                            return webClient.getAbs(url)
-                                    .send()
-                                    .onItemOrFailure()
-                                    .transformToUni(
-                                            (body, failure) -> {
-                                                if (failure != null)
-                                                    return Uni.createFrom().item(RestResponse.notFound());
-                                                Map<String, Object> contextBody = (Map<String, Object>) body
-                                                        .bodyAsJsonObject().getMap().get("@context");
-                                                if (contextBody != null) {
-                                                    Map<String, Object> atContext = new HashMap<>();
-                                                    atContext.put("@context", contextBody);
-                                                    return dao.createContextImpl(atContext, url);
-                                                }
-                                                return null;
-                                            });
-                        } else
-                            return Uni.createFrom().item(res);
+    public Uni<RestResponse<Object>> createOrGetCache(String url) {// create cache or implicitly created context
+            return cache.createOrGetCache(url, false, true);
+    }
 
-                    });
-        } else
-            return cache.getCache(url, false, true);
+    public Uni<RestResponse<Object>> createImplicitly(Map<String,Object> payload)  {
+        return dao.createContextImpl(payload);
+
     }
 }

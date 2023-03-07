@@ -1,57 +1,49 @@
-package eu.neclab.ngsildbroker.atcontextserver;
+package eu.neclab.ngsildbroker.atcontextserver.cache;
 
+import com.github.jsonldjava.core.JsonLdOptions;
+import com.github.jsonldjava.core.RemoteDocument;
 import io.quarkus.cache.*;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
-import io.vertx.core.VertxOptions;
-import io.vertx.ext.web.client.WebClientOptions;
-import io.vertx.mutiny.core.Vertx;
-import io.vertx.mutiny.ext.web.client.WebClient;
 import org.jboss.resteasy.reactive.RestResponse;
 
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
 import java.sql.Timestamp;
 import java.util.*;
 
 @ApplicationScoped
 public class ContextCache {
-    @Inject
-    Vertx vertx;
-    WebClient webClient;
     @CacheName("context")
     Cache cache;
-
+    JsonLdOptions jsonLdOptions = new JsonLdOptions();
     @PostConstruct
     void init() {
-        webClient = WebClient.create(vertx);
+
     }
 
     @CacheResult(cacheName = "context")
     public Uni<Map<String, Object>> load(String uri) {
-        return webClient.getAbs(uri)
-                .send()
-                .onItemOrFailure().transform(
-                        (res, failure) -> {
-                            Map<String, Object> map = new HashMap<>();
-                            if (failure != null)
-                                return map;
-                            Map<String, Object> context = new HashMap<>();
-                            Object contextToPut = res.getDelegate().bodyAsJsonObject().getMap().get("@context");
-                            if (contextToPut == null)
-                                return null;
-                            context.put("@context", contextToPut);
-                            map.put("body", context);
-                            map.put("kind", "cached");
-                            map.put("createdat", new Timestamp(System.currentTimeMillis()));
-                            map.put("url", uri);
-                            map.put("id", uri);
-                            return map;
-                        });
+        try {
+            RemoteDocument rd = jsonLdOptions.getDocumentLoader().loadDocument(uri);
+            if (rd.getDocument() instanceof Map<?, ?> map && map.containsKey("@context")) {
+                Map<String, Object> contextBody = (Map<String, Object>) map.get("@context");
+                Map<String, Object> finalContext = new HashMap<>();
+                Map<String, Object> tempMap = new HashMap<>();
+                tempMap.put("@context", contextBody);
+                finalContext.put("body", tempMap);
+                finalContext.put("kind", "cached");
+                finalContext.put("createdat", new Timestamp(System.currentTimeMillis()));
+                finalContext.put("url", uri);
+                finalContext.put("id", uri);
+                return Uni.createFrom().item(finalContext);
+            } else return Uni.createFrom().item(new HashMap<>());
+        }catch (Exception e){
+            return Uni.createFrom().item(new HashMap<>());
+        }
     }
 
-    public Uni<RestResponse<Object>> getCache(String uri, Boolean details, Boolean loadNewCache) {
+    public Uni<RestResponse<Object>> createOrGetCache(String uri, Boolean details, Boolean loadNewCache) {
         Set<Object> cacheSet = cache.as(CaffeineCache.class).keySet();
         if (!loadNewCache && !cacheSet.contains(uri))
             return Uni.createFrom().item(RestResponse.notFound());
@@ -59,7 +51,10 @@ public class ContextCache {
             return load(uri).onItem().transform(RestResponse::ok);
         else
             return load(uri).onItem()
-                    .transform(map -> RestResponse.ok(map.get("body")));
+                    .transform(map -> {
+                        if(map==null || map.isEmpty()) return RestResponse.notFound();
+                        else return RestResponse.ok(map.get("body"));
+                    });
     }
 
     public Uni<List<Object>> getAllCache(Boolean details) {

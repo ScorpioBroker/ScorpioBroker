@@ -106,13 +106,12 @@ public class SubscriptionService {
 	@PostConstruct
 	void setup() {
 		this.webClient = WebClient.create(vertx);
-
 		subDAO.loadSubscriptions().onItem().transformToUni(subs -> {
 			subs.forEach(tuple -> {
 				SubscriptionRequest request;
 				try {
 					request = new SubscriptionRequest(tuple.getItem1(), tuple.getItem2(),
-							new Context().parse(tuple.getItem3(), false));
+							new Context().parse(tuple.getItem3().get("@context") , false));
 					if (isIntervalSub(request)) {
 						this.tenant2subscriptionId2IntervalSubscription.put(request.getTenant(), request.getId(),
 								request);
@@ -126,7 +125,6 @@ public class SubscriptionService {
 			});
 			return Uni.createFrom().voidItem();
 		}).await().indefinitely();
-
 	}
 
 	private boolean isIntervalSub(SubscriptionRequest request) {
@@ -134,10 +132,10 @@ public class SubscriptionService {
 	}
 
 	public Uni<NGSILDOperationResult> createSubscription(String tenant, Map<String, Object> subscription,
-			Context context) {
+			Context contextLink) {
 		SubscriptionRequest request;
 		try {
-			request = new SubscriptionRequest(tenant, subscription, context);
+			request = new SubscriptionRequest(tenant, subscription, contextLink);
 		} catch (ResponseException e) {
 			return Uni.createFrom().failure(e);
 		}

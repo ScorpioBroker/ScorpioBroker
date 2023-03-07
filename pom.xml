@@ -15,10 +15,10 @@
 	<modules>
 		<module>BrokerParent</module>
 		<module>Commons</module>
+		<module>at-context-server</module>
 		<module>EntityManager</module>
 		<module>QueryManager</module>
 		<module>SubscriptionManager</module>
-		<module>at-context-server</module>
 		<module>RegistryManager</module>
 		<module>RegistrySubscriptionManager</module>
 		<module>HistoryEntityManager</module>

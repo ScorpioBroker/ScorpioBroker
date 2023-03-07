@@ -3,9 +3,13 @@ package com.github.jsonldjava.core;
 import static com.github.jsonldjava.core.JsonLdUtils.compareShortestLeast;
 import static com.github.jsonldjava.utils.Obj.newMap;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -18,14 +22,11 @@ import java.util.Set;
 
 import com.github.jsonldjava.core.JsonLdError.Error;
 import com.github.jsonldjava.utils.JsonLdUrl;
+import com.github.jsonldjava.utils.JsonUtils;
 import com.github.jsonldjava.utils.Obj;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
-import io.vertx.core.VertxOptions;
-import io.vertx.mutiny.core.Vertx;
-import io.vertx.mutiny.ext.web.client.WebClient;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 /**
  * A helper class which still stores all the values in a map but gives member
@@ -226,11 +227,9 @@ public class Context extends LinkedHashMap<String, Object> {
 
 				// 3.2.3: Dereference context
                 String finalUrl = uri;
-                if (uri!= null && !(uri.contains(microServiceUtils.getGatewayURL().toString()) || uri.contains("localhost"))) {
+                if (uri!= null && !(uri.contains(microServiceUtils.getGatewayURL().toString()) || uri.contains("localhost" ) || uri.contains("type=implicitlyCreated"))) {
                     String encodedUrl = URLEncoder.encode(uri, StandardCharsets.UTF_8);
-					encodedUrl = encodedUrl.replace("%3F","?");
-					encodedUrl = encodedUrl.replace("%3D","=");
-                    finalUrl = "http://localhost:9090"+"/ngsi-ld/v1/jsonldContexts/create/" + encodedUrl;
+                    finalUrl = "http://localhost:9090"+"/ngsi-ld/v1/jsonldContexts/createcache/" + encodedUrl;
                 }
 				final RemoteDocument rd = this.options.getDocumentLoader().loadDocument(finalUrl);
 				final Object remoteContext = rd.getDocument();
@@ -254,7 +253,7 @@ public class Context extends LinkedHashMap<String, Object> {
 			if (((Map<String, Object>) context).containsKey(JsonLdConsts.VERSION)) {
 				final Object version = ((Map<String, Object>) context).get(JsonLdConsts.VERSION);
 				// 5.5.1
-				if (!version.equals(Double.valueOf(1.1))) {
+				if (!version.equals(1.1)) {
 					throw new JsonLdError(Error.INVALID_VERSION_VALUE, context);
 				}
 				// 5.5.2
@@ -346,7 +345,6 @@ public class Context extends LinkedHashMap<String, Object> {
 		}
 		return result;
 	}
-
 	public boolean dontAddCoreContext() {
 		return dontAddCoreContext;
 	}

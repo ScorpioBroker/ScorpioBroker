@@ -12,6 +12,11 @@
 	<dependencies>
 		<dependency>
 			<groupId>eu.neclab.ngsildbroker</groupId>
+			<artifactId>at-context-server</artifactId>
+			<version>1.0.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.neclab.ngsildbroker</groupId>
 			<artifactId>entity-manager</artifactId>
 			<version>3.0.0-SNAPSHOT</version>
 		</dependency>
@@ -44,11 +49,6 @@
 			<groupId>eu.neclab.ngsildbroker</groupId>
 			<artifactId>subscription-manager</artifactId>
 			<version>3.0.0-SNAPSHOT</version>
-		</dependency>
-		<dependency>
-			<groupId>eu.neclab.ngsildbroker</groupId>
-			<artifactId>at-context-server</artifactId>
-			<version>1.0.0-SNAPSHOT</version>
 		</dependency>
 	</dependencies>
 	<profiles>
