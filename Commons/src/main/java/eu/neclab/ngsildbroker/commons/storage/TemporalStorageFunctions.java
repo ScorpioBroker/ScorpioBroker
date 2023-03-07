@@ -303,14 +303,14 @@ public class TemporalStorageFunctions implements StorageFunctionsInterface {
 			if (timeProperty == null || timeProperty.equalsIgnoreCase(NGSIConstants.NGSI_LD_OBSERVED_AT)) {
 				sqlQuery += "                    jsonb_build_object(\r\n'" + NGSIConstants.JSON_LD_TYPE + "',\r\n"
 						+ "                        (\r\n" + "                            select\r\n"
-						+ "                                json_agg(jsonb(t ->'" + NGSIConstants.JSON_LD_TYPE
+						+ "                                jsonb_agg(jsonb(t ->'" + NGSIConstants.JSON_LD_TYPE
 						+ "'))\r\n" + "                            from\r\n"
 						+ "                                jsonb_array_elements(attributedata) as x (t)\r\n"
 						+ "                        ) ->0\r\n" + "                    ) || jsonb_build_object(\r\n"
 						+ "                        'values',\r\n" + "                        (\r\n"
-						+ "                            select\r\n" + "                                json_agg(\r\n"
-						+ "									json_build_array("
-						+ "                                    json_build_array(\r\n"
+						+ "                            select\r\n" + "                                jsonb_agg(\r\n"
+						+ "									jsonb_build_array("
+						+ "                                    jsonb_build_array(\r\n"
 						+ "                                        t ->'" + NGSIConstants.NGSI_LD_HAS_VALUE
 						+ "' -> 0 ->'" + NGSIConstants.JSON_LD_VALUE + "',\r\n"
 						+ "                                        t ->'" + NGSIConstants.NGSI_LD_OBSERVED_AT
@@ -322,14 +322,14 @@ public class TemporalStorageFunctions implements StorageFunctionsInterface {
 				if (timeProperty.equalsIgnoreCase(NGSIConstants.NGSI_LD_MODIFIED_AT)) {
 					sqlQuery += "                    jsonb_build_object(\r\n'" + NGSIConstants.JSON_LD_TYPE + "',\r\n"
 							+ "                        (\r\n" + "                            select\r\n"
-							+ "                                json_agg(jsonb(t ->'" + NGSIConstants.JSON_LD_TYPE
+							+ "                                jsonb_agg(jsonb(t ->'" + NGSIConstants.JSON_LD_TYPE
 							+ "'))\r\n" + "                            from\r\n"
 							+ "                                jsonb_array_elements(attributedata) as x (t)\r\n"
 							+ "                        ) ->0\r\n" + "                    ) || jsonb_build_object(\r\n"
 							+ "                        'values',\r\n" + "                        (\r\n"
-							+ "                            select\r\n" + "                                json_agg(\r\n"
-							+ "									json_build_array("
-							+ "                                    json_build_array(\r\n"
+							+ "                            select\r\n" + "                                jsonb_agg(\r\n"
+							+ "									jsonb_build_array("
+							+ "                                    jsonb_build_array(\r\n"
 							+ "                                        t ->'" + NGSIConstants.NGSI_LD_HAS_VALUE
 							+ "' -> 0 ->'" + NGSIConstants.JSON_LD_VALUE + "',\r\n"
 							+ "                                        t ->'" + NGSIConstants.NGSI_LD_MODIFIED_AT
@@ -341,14 +341,14 @@ public class TemporalStorageFunctions implements StorageFunctionsInterface {
 				} else if (timeProperty.equalsIgnoreCase(NGSIConstants.NGSI_LD_CREATED_AT)) {
 					sqlQuery += "                    jsonb_build_object(\r\n'" + NGSIConstants.JSON_LD_TYPE + "',\r\n"
 							+ "                        (\r\n" + "                            select\r\n"
-							+ "                                json_agg(jsonb(t ->'" + NGSIConstants.JSON_LD_TYPE
+							+ "                                jsonb_agg(jsonb(t ->'" + NGSIConstants.JSON_LD_TYPE
 							+ "'))\r\n" + "                            from\r\n"
 							+ "                                jsonb_array_elements(attributedata) as x (t)\r\n"
 							+ "                        ) ->0\r\n" + "                    ) || jsonb_build_object(\r\n"
 							+ "                        'values',\r\n" + "                        (\r\n"
-							+ "                            select\r\n" + "                                json_agg(\r\n"
-							+ "									json_build_array("
-							+ "                                    json_build_array(\r\n"
+							+ "                            select\r\n" + "                                jsonb_agg(\r\n"
+							+ "									jsonb_build_array("
+							+ "                                    jsonb_build_array(\r\n"
 							+ "                                        t ->'" + NGSIConstants.NGSI_LD_HAS_VALUE
 							+ "' -> 0 ->'" + NGSIConstants.JSON_LD_VALUE + "',\r\n"
 							+ "                                        t ->'" + NGSIConstants.NGSI_LD_CREATED_AT

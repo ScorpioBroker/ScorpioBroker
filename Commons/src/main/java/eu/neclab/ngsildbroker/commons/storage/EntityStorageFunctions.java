@@ -287,7 +287,7 @@ public class EntityStorageFunctions implements StorageFunctionsInterface {
 			int number = random.nextInt(999999);
 			query = "select jsonb_build_object('" + NGSIConstants.JSON_LD_ID + "','urn:ngsi-ld:EntityTypeList:" + number
 					+ "','" + NGSIConstants.JSON_LD_TYPE + "', jsonb_build_array('" + NGSIConstants.NGSI_LD_ENTITY_LIST
-					+ "'), '" + NGSIConstants.NGSI_LD_TYPE_LIST + "',json_agg(distinct jsonb_build_object('"
+					+ "'), '" + NGSIConstants.NGSI_LD_TYPE_LIST + "',jsonb_agg(distinct jsonb_build_object('"
 					+ NGSIConstants.JSON_LD_ID + "', type)::jsonb)) from entity;";
 			logger.debug("SQL Query: " + query);
 			return conn.preparedQuery(query).execute();
@@ -324,7 +324,7 @@ public class EntityStorageFunctions implements StorageFunctionsInterface {
 			query = "select jsonb_build_object('" + NGSIConstants.JSON_LD_ID + "','urn:ngsi-ld:AttributeList:" + number
 					+ "','" + NGSIConstants.JSON_LD_TYPE + "', jsonb_build_array('"
 					+ NGSIConstants.NGSI_LD_ATTRIBUTE_LIST_1 + "'), '" + NGSIConstants.NGSI_LD_ATTRIBUTE_LIST_2
-					+ "',json_agg(distinct jsonb_build_object('" + NGSIConstants.JSON_LD_ID
+					+ "',jsonb_agg(distinct jsonb_build_object('" + NGSIConstants.JSON_LD_ID
 					+ "', attribute.key)::jsonb)) from entity,jsonb_each(data_without_sysattrs-'"
 					+ NGSIConstants.JSON_LD_ID + "'-'" + NGSIConstants.JSON_LD_TYPE + "') attribute;";
 			logger.debug("SQL Query: " + query);
