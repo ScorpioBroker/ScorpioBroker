@@ -69,7 +69,7 @@ public class QueryParams {
 	@Expose
 	private int offSet = 0;
 	private String check;
-	private int lastN;
+	private int lastN = 20;
 
 	private String scopeQ;
 
