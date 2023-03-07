@@ -305,7 +305,7 @@ public class TemporalStorageFunctions implements StorageFunctionsInterface {
 						+ "                        (\r\n" + "                            select\r\n"
 						+ "                                jsonb_agg(jsonb(t ->'" + NGSIConstants.JSON_LD_TYPE
 						+ "'))\r\n" + "                            from\r\n"
-						+ "                                jsonb_array_elements(attributedata) as x (t)\r\n"
+						+ "                                jsonb_array_elements(attributedata::jsonb) as x (t)\r\n"
 						+ "                        ) ->0\r\n" + "                    ) || jsonb_build_object(\r\n"
 						+ "                        'values',\r\n" + "                        (\r\n"
 						+ "                            select\r\n" + "                                jsonb_agg(\r\n"
@@ -317,14 +317,14 @@ public class TemporalStorageFunctions implements StorageFunctionsInterface {
 						+ "' -> 0 ->'" + NGSIConstants.JSON_LD_VALUE + "'\r\n"
 						+ "                                    )\r\n" + "                                   )\r\n"
 						+ "                                )\r\n" + "                            from\r\n"
-						+ "                                jsonb_array_elements(attributedata) as x (t)\r\n))";
+						+ "                                jsonb_array_elements(attributedata::jsonb) as x (t)\r\n))";
 			} else {
 				if (timeProperty.equalsIgnoreCase(NGSIConstants.NGSI_LD_MODIFIED_AT)) {
 					sqlQuery += "                    jsonb_build_object(\r\n'" + NGSIConstants.JSON_LD_TYPE + "',\r\n"
 							+ "                        (\r\n" + "                            select\r\n"
 							+ "                                jsonb_agg(jsonb(t ->'" + NGSIConstants.JSON_LD_TYPE
 							+ "'))\r\n" + "                            from\r\n"
-							+ "                                jsonb_array_elements(attributedata) as x (t)\r\n"
+							+ "                                jsonb_array_elements(attributedata::jsonb) as x (t)\r\n"
 							+ "                        ) ->0\r\n" + "                    ) || jsonb_build_object(\r\n"
 							+ "                        'values',\r\n" + "                        (\r\n"
 							+ "                            select\r\n" + "                                jsonb_agg(\r\n"
@@ -336,14 +336,14 @@ public class TemporalStorageFunctions implements StorageFunctionsInterface {
 							+ "' -> 0 ->'" + NGSIConstants.JSON_LD_VALUE + "'\r\n"
 							+ "                                    )\r\n" + "                                  )\r\n"
 							+ "                                )\r\n" + "                            from\r\n"
-							+ "                                jsonb_array_elements(attributedata) as x (t)\r\n))";
+							+ "                                jsonb_array_elements(attributedata::jsonb) as x (t)\r\n))";
 
 				} else if (timeProperty.equalsIgnoreCase(NGSIConstants.NGSI_LD_CREATED_AT)) {
 					sqlQuery += "                    jsonb_build_object(\r\n'" + NGSIConstants.JSON_LD_TYPE + "',\r\n"
 							+ "                        (\r\n" + "                            select\r\n"
 							+ "                                jsonb_agg(jsonb(t ->'" + NGSIConstants.JSON_LD_TYPE
 							+ "'))\r\n" + "                            from\r\n"
-							+ "                                jsonb_array_elements(attributedata) as x (t)\r\n"
+							+ "                                jsonb_array_elements(attributedata::jsonb) as x (t)\r\n"
 							+ "                        ) ->0\r\n" + "                    ) || jsonb_build_object(\r\n"
 							+ "                        'values',\r\n" + "                        (\r\n"
 							+ "                            select\r\n" + "                                jsonb_agg(\r\n"
@@ -355,7 +355,7 @@ public class TemporalStorageFunctions implements StorageFunctionsInterface {
 							+ "' -> 0 ->'" + NGSIConstants.JSON_LD_VALUE + "'\r\n"
 							+ "                                    )\r\n" + "                                    )\r\n"
 							+ "                                )\r\n" + "                            from\r\n"
-							+ "                                jsonb_array_elements(attributedata) as x (t)\r\n))";
+							+ "                                jsonb_array_elements(attributedata::jsonb) as x (t)\r\n))";
 
 				} else {
 					throw new ResponseException(ErrorType.BadRequestData, "Invalid timeproperty");
