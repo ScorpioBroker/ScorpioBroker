@@ -1,3 +1,13 @@
+RELEASE NOTES SCORPIO 3.0.11
+
+Fixed various issues 
+
+Added a default limit for lastN (20) for temporal queries to avoid temporal queries consuming to much memory. 
+Will be addressed further with future spec updates. 
+
+There is currently still an open issue with the native versions and tenants. So this is a java version only release.
+
+
 RELEASE NOTES SCORPIO 3.0.6
 
 In this release we are adressing 
