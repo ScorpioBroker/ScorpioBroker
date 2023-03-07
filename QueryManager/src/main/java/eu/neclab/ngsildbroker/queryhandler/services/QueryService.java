@@ -11,6 +11,7 @@ import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 import javax.annotation.PostConstruct;
+import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -57,7 +58,7 @@ import io.vertx.mutiny.ext.web.client.WebClient;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowIterator;
 
-@Singleton
+@ApplicationScoped
 public class QueryService {
 
 	private static List<String> ENTITY_TYPE_LIST_TYPE = Lists.newArrayList();
