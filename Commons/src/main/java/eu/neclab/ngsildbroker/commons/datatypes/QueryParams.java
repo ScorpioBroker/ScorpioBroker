@@ -81,7 +81,7 @@ public class QueryParams {
 	}
 
 	private String check;
-	private int lastN;
+	private int lastN = 20;
 
 	private String scopeQ;
 
