@@ -81,7 +81,12 @@ public class EntityService {
 	@Inject
 	@Channel(AppConstants.ENTITY_CHANNEL)
 	@Broadcast
-	MutinyEmitter<BaseRequest> kafkaSenderInterface;
+	MutinyEmitter<BaseRequest> entityEmitter;
+
+	@Inject
+	@Channel(AppConstants.ENTITY_BATCH_CHANNEL)
+	@Broadcast
+	MutinyEmitter<BatchRequest> batchEmitter;
 
 	@Inject
 	Vertx vertx;
@@ -325,7 +330,7 @@ public class EntityService {
 	private Uni<NGSILDOperationResult> localDeleteAttrib(DeleteAttributeRequest request, Context context) {
 		return entityDAO.deleteAttribute(request).onItem().transformToUni(resultEntity -> {
 			request.setPayload(resultEntity);
-			return kafkaSenderInterface.send(request).onItem().transform(v -> {
+			return entityEmitter.send(request).onItem().transform(v -> {
 				NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.DELETE_ATTRIBUTE_REQUEST,
 						request.getId());
 				result.addSuccess(new CRUDSuccess(null, null, null,
@@ -384,7 +389,7 @@ public class EntityService {
 
 	private Uni<NGSILDOperationResult> localDeleteEntity(DeleteEntityRequest request, Context context) {
 		return entityDAO.deleteEntity(request).onItem().transformToUni(deleted -> {
-			return kafkaSenderInterface.send(request).onItem().transform(v -> {
+			return entityEmitter.send(request).onItem().transform(v -> {
 				NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.DELETE_REQUEST, request.getId());
 				result.addSuccess(new CRUDSuccess(null, null, null, deleted, context));
 				return result;
@@ -542,7 +547,7 @@ public class EntityService {
 	private Uni<NGSILDOperationResult> updateLocalEntity(UpdateEntityRequest request, Context context) {
 		return entityDAO.updateEntity(request).onItem().transformToUni(notAppended -> {
 			System.out.println("after dao " + System.nanoTime());
-			return kafkaSenderInterface.send(request).onItem().transform(v2 -> {
+			return entityEmitter.send(request).onItem().transform(v2 -> {
 				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST,
 						request.getId());
 				localResult.addSuccess(new CRUDSuccess(null, null, null, request.getPayload(), context));
@@ -615,7 +620,7 @@ public class EntityService {
 
 	private Uni<NGSILDOperationResult> createLocalEntity(CreateEntityRequest request, Context context) {
 		return entityDAO.createEntity(request).onItem().transformToUni(v -> {
-			return kafkaSenderInterface.send(request).onItem().transform(v2 -> {
+			return entityEmitter.send(request).onItem().transform(v2 -> {
 				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST,
 						request.getId());
 				localResult.addSuccess(new CRUDSuccess(null, null, null, request.getPayload(), context));
@@ -780,7 +785,7 @@ public class EntityService {
 			localResult.addSuccess(new CRUDSuccess(null, null, null, request.getPayload(), context));
 			if (!failedToAdd.isEmpty())
 				localResult.addFailure(new ResponseException(ErrorType.None, "Not added", failedToAdd));
-			return kafkaSenderInterface.send(request).onItem().transform(v2 -> {
+			return entityEmitter.send(request).onItem().transform(v2 -> {
 				return localResult;
 			});
 		});
@@ -833,33 +838,37 @@ public class EntityService {
 			}
 		}
 
-		BatchRequest request = new BatchRequest(tenant, localEntities, contexts);
-		Uni<List<NGSILDOperationResult>> local = entityDAO.batchCreateEntity(request).onItem().transform(dbResult -> {
-			List<NGSILDOperationResult> result = Lists.newArrayList();
-			List<String> successes = (List<String>) dbResult.get("success");
-			List<Map<String, String>> fails = (List<Map<String, String>>) dbResult.get("failure");
+		BatchRequest request = new BatchRequest(tenant, localEntities, contexts, AppConstants.CREATE_REQUEST);
+		Uni<List<NGSILDOperationResult>> local = entityDAO.batchCreateEntity(request).onItem()
+				.transformToUni(dbResult -> {
+					List<NGSILDOperationResult> result = Lists.newArrayList();
+					List<String> successes = (List<String>) dbResult.get("success");
+					List<Map<String, String>> fails = (List<Map<String, String>>) dbResult.get("failure");
 
-			for (String entityId : successes) {
-				NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, entityId);
-				opResult.addSuccess(new CRUDSuccess(null, null, null, Sets.newHashSet()));
-				result.add(opResult);
-			}
-			for (Map<String, String> fail : fails) {
-				fail.entrySet().forEach(entry -> {
-					String entityId = entry.getKey();
-					String sqlstate = entry.getValue();
-					NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, entityId);
-					if (sqlstate.equals(AppConstants.SQL_ALREADY_EXISTS)) {
-						opResult.addFailure(new ResponseException(ErrorType.AlreadyExists, entityId));
-					} else {
-						opResult.addFailure(new ResponseException(ErrorType.InvalidRequest, sqlstate));
+					for (String entityId : successes) {
+						NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST,
+								entityId);
+						opResult.addSuccess(new CRUDSuccess(null, null, null, Sets.newHashSet()));
+						result.add(opResult);
 					}
-					result.add(opResult);
-				});
+					for (Map<String, String> fail : fails) {
+						fail.entrySet().forEach(entry -> {
+							String entityId = entry.getKey();
+							String sqlstate = entry.getValue();
+							request.removeFromPayloadAndContext(entityId);
+							NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST,
+									entityId);
+							if (sqlstate.equals(AppConstants.SQL_ALREADY_EXISTS)) {
+								opResult.addFailure(new ResponseException(ErrorType.AlreadyExists, entityId));
+							} else {
+								opResult.addFailure(new ResponseException(ErrorType.InvalidRequest, sqlstate));
+							}
+							result.add(opResult);
+						});
 
-			}
-			return result;
-		});
+					}
+					return batchEmitter.send(request).onItem().transform(v -> result);
+				});
 		if (localOnly) {
 			return local;
 		}
@@ -952,33 +961,37 @@ public class EntityService {
 			}
 		}
 
-		BatchRequest request = new BatchRequest(tenant, localEntities, contexts);
-		Uni<List<NGSILDOperationResult>> local = entityDAO.batchAppendEntity(request).onItem().transform(dbResult -> {
-			List<NGSILDOperationResult> result = Lists.newArrayList();
-			List<String> successes = (List<String>) dbResult.get("success");
-			List<Map<String, String>> fails = (List<Map<String, String>>) dbResult.get("failure");
+		BatchRequest request = new BatchRequest(tenant, localEntities, contexts, AppConstants.APPEND_REQUEST);
+		Uni<List<NGSILDOperationResult>> local = entityDAO.batchAppendEntity(request).onItem()
+				.transformToUni(dbResult -> {
+					List<NGSILDOperationResult> result = Lists.newArrayList();
+					List<String> successes = (List<String>) dbResult.get("success");
+					List<Map<String, String>> fails = (List<Map<String, String>>) dbResult.get("failure");
 
-			for (String entityId : successes) {
-				NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.APPEND_REQUEST, entityId);
-				opResult.addSuccess(new CRUDSuccess(null, null, null, Sets.newHashSet()));
-				result.add(opResult);
-			}
-			for (Map<String, String> fail : fails) {
-				fail.entrySet().forEach(entry -> {
-					String entityId = entry.getKey();
-					String sqlstate = entry.getValue();
-					NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.APPEND_REQUEST, entityId);
-					if (sqlstate.equals(AppConstants.SQL_NOT_FOUND)) {
-						opResult.addFailure(new ResponseException(ErrorType.NotFound, entityId));
-					} else {
-						opResult.addFailure(new ResponseException(ErrorType.InvalidRequest, sqlstate));
+					for (String entityId : successes) {
+						NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.APPEND_REQUEST,
+								entityId);
+						opResult.addSuccess(new CRUDSuccess(null, null, null, Sets.newHashSet()));
+						result.add(opResult);
 					}
-					result.add(opResult);
-				});
+					for (Map<String, String> fail : fails) {
+						fail.entrySet().forEach(entry -> {
+							String entityId = entry.getKey();
+							String sqlstate = entry.getValue();
+							request.removeFromPayloadAndContext(entityId);
+							NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.APPEND_REQUEST,
+									entityId);
+							if (sqlstate.equals(AppConstants.SQL_NOT_FOUND)) {
+								opResult.addFailure(new ResponseException(ErrorType.NotFound, entityId));
+							} else {
+								opResult.addFailure(new ResponseException(ErrorType.InvalidRequest, sqlstate));
+							}
+							result.add(opResult);
+						});
 
-			}
-			return result;
-		});
+					}
+					return batchEmitter.send(request).onItem().transform(v -> result);
+				});
 		if (localOnly) {
 			return local;
 		}
@@ -1072,29 +1085,33 @@ public class EntityService {
 			}
 		}
 
-		BatchRequest request = new BatchRequest(tenant, localEntities, contexts);
-		Uni<List<NGSILDOperationResult>> local = entityDAO.batchUpsertEntity(request).onItem().transform(dbResult -> {
-			List<NGSILDOperationResult> result = Lists.newArrayList();
-			List<String> successes = (List<String>) dbResult.get("success");
-			List<Map<String, String>> fails = (List<Map<String, String>>) dbResult.get("failure");
+		BatchRequest request = new BatchRequest(tenant, localEntities, contexts, AppConstants.UPSERT_REQUEST);
+		Uni<List<NGSILDOperationResult>> local = entityDAO.batchUpsertEntity(request).onItem()
+				.transformToUni(dbResult -> {
+					List<NGSILDOperationResult> result = Lists.newArrayList();
+					List<String> successes = (List<String>) dbResult.get("success");
+					List<Map<String, String>> fails = (List<Map<String, String>>) dbResult.get("failure");
 
-			for (String entityId : successes) {
-				NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.UPSERT_REQUEST, entityId);
-				opResult.addSuccess(new CRUDSuccess(null, null, null, Sets.newHashSet()));
-				result.add(opResult);
-			}
-			for (Map<String, String> fail : fails) {
-				fail.entrySet().forEach(entry -> {
-					String entityId = entry.getKey();
-					String sqlstate = entry.getValue();
-					NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.UPSERT_REQUEST, entityId);
-					opResult.addFailure(new ResponseException(ErrorType.InvalidRequest, sqlstate));
-					result.add(opResult);
+					for (String entityId : successes) {
+						NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.UPSERT_REQUEST,
+								entityId);
+						opResult.addSuccess(new CRUDSuccess(null, null, null, Sets.newHashSet()));
+						result.add(opResult);
+					}
+					for (Map<String, String> fail : fails) {
+						fail.entrySet().forEach(entry -> {
+							String entityId = entry.getKey();
+							String sqlstate = entry.getValue();
+							request.removeFromPayloadAndContext(entityId);
+							NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.UPSERT_REQUEST,
+									entityId);
+							opResult.addFailure(new ResponseException(ErrorType.InvalidRequest, sqlstate));
+							result.add(opResult);
+						});
+
+					}
+					return batchEmitter.send(request).onItem().transform(v -> result);
 				});
-
-			}
-			return result;
-		});
 		if (localOnly) {
 			return local;
 		}
@@ -1174,47 +1191,52 @@ public class EntityService {
 
 	public Uni<List<NGSILDOperationResult>> deleteBatch(String tenant, List<String> entityIds, boolean localOnly) {
 		Map<RemoteHost, List<String>> host2Ids = Maps.newHashMap();
-		for(String entityId: entityIds) {
+		for (String entityId : entityIds) {
 			DeleteEntityRequest request = new DeleteEntityRequest(tenant, entityId, null);
-			Set<RemoteHost> remoteHosts = getRemoteHostsForDelete(request);	
-			for(RemoteHost remoteHost: remoteHosts) {
-				if(host2Ids.containsKey(remoteHost)) {
+			Set<RemoteHost> remoteHosts = getRemoteHostsForDelete(request);
+			for (RemoteHost remoteHost : remoteHosts) {
+				if (host2Ids.containsKey(remoteHost)) {
 					host2Ids.get(remoteHost).add(entityId);
-				}else {
+				} else {
 					host2Ids.put(remoteHost, Lists.newArrayList(entityId));
 				}
 			}
 		}
-		Uni<List<NGSILDOperationResult>> local = entityDAO.batchDeleteEntity(tenant, entityIds).onItem().transform(dbResult -> {
-			List<NGSILDOperationResult> result = Lists.newArrayList();
-			List<String> successes = (List<String>) dbResult.get("success");
-			List<Map<String, String>> fails = (List<Map<String, String>>) dbResult.get("failure");
+		Uni<List<NGSILDOperationResult>> local = entityDAO.batchDeleteEntity(tenant, entityIds).onItem()
+				.transformToUni(dbResult -> {
+					List<NGSILDOperationResult> result = Lists.newArrayList();
+					List<String> successes = (List<String>) dbResult.get("success");
+					List<Map<String, String>> fails = (List<Map<String, String>>) dbResult.get("failure");
 
-			for (String entityId : successes) {
-				NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.DELETE_REQUEST, entityId);
-				opResult.addSuccess(new CRUDSuccess(null, null, null, Sets.newHashSet()));
-				result.add(opResult);
-			}
-			for (Map<String, String> fail : fails) {
-				fail.entrySet().forEach(entry -> {
-					String entityId = entry.getKey();
-					String sqlstate = entry.getValue();
-					NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.DELETE_REQUEST, entityId);
-					opResult.addFailure(new ResponseException(ErrorType.InvalidRequest, sqlstate));
-					result.add(opResult);
+					for (String entityId : successes) {
+						NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.DELETE_REQUEST,
+								entityId);
+						opResult.addSuccess(new CRUDSuccess(null, null, null, Sets.newHashSet()));
+						result.add(opResult);
+					}
+					for (Map<String, String> fail : fails) {
+						fail.entrySet().forEach(entry -> {
+							String entityId = entry.getKey();
+							String sqlstate = entry.getValue();
+							NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.DELETE_REQUEST,
+									entityId);
+							opResult.addFailure(new ResponseException(ErrorType.InvalidRequest, sqlstate));
+							result.add(opResult);
+						});
+
+					}
+					BatchRequest request = new BatchRequest(tenant, null, null, AppConstants.DELETE_REQUEST);
+					request.setEntityIds(successes);
+					return batchEmitter.send(request).onItem().transform(v -> result);
 				});
-
-			}
-			return result;
-		});
 
 		if (host2Ids.isEmpty()) {
 			return local;
 		}
-		
+
 		List<Uni<List<NGSILDOperationResult>>> unis = new ArrayList<>(host2Ids.keySet().size());
 		unis.add(local);
-		for (Entry<RemoteHost, List<String>> entry: host2Ids.entrySet()) {
+		for (Entry<RemoteHost, List<String>> entry : host2Ids.entrySet()) {
 			RemoteHost remoteHost = entry.getKey();
 			List<String> toSend = entry.getValue();
 			if (remoteHost.canDoBatchOp()) {
@@ -1227,13 +1249,12 @@ public class EntityService {
 			} else {
 				List<Uni<NGSILDOperationResult>> singleUnis = new ArrayList<>();
 				for (String entityId : toSend) {
-					singleUnis.add(webClient.delete(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + entityId)
+					singleUnis.add(webClient
+							.delete(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + entityId)
 							.putHeaders(remoteHost.headers()).send().onItemOrFailure()
 							.transform((response, failure) -> {
 								return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(201),
-										remoteHost, AppConstants.CREATE_REQUEST,
-										entityId,
-										Sets.newHashSet());
+										remoteHost, AppConstants.CREATE_REQUEST, entityId, Sets.newHashSet());
 
 							}));
 				}

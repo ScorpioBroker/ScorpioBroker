@@ -123,6 +123,8 @@ public class AppConstants {
 	public static final String REGISTRY_RETRIEVE_CHANNEL = "registryretrieve";
 	public static final String ENTITY_CHANNEL = "entity";
 	public static final String ENTITY_RETRIEVE_CHANNEL = "entityretrieve";
+	public static final String ENTITY_BATCH_CHANNEL = "entitybatch";
+	public static final String ENTITY_BATCH_RETRIEVE_CHANNEL = "entitybatchretrieve";
 	public static final String INTERNAL_SUBS_CHANNEL = "isubs";
 	public static final String INTERNAL_RETRIEVE_SUBS_CHANNEL = "isubsretrieve";
 	public static final String INTERNAL_NOTIFICATION_CHANNEL = "inotification";
