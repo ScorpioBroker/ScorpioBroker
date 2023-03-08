@@ -1172,40 +1172,85 @@ public class EntityService {
 		});
 	}
 
-	public Uni<RestResponse<Object>> deleteBatch(String tenant, List<String> entityIds, boolean localOnly) {
-		return null;
-//		DeleteEntityRequest request = new DeleteEntityRequest(tenant, entityId, null);
-//		Set<RemoteHost> remoteHosts = getRemoteHostsForDelete(request);
-//		local = 
-//		if (remoteHosts.isEmpty()) {
-//			return localDeleteEntity(request);
-//		}
-//		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(remoteHosts.size());
-//		for (RemoteHost remoteHost : remoteHosts) {
-//			if (remoteHost.canDoSingleOp()) {
-//				unis.add(webClient
-//						.delete(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + request.getId())
-//						.putHeaders(remoteHost.headers()).send().onItemOrFailure().transform((response, failure) -> {
-//							Set<Attrib> attribs = new HashSet<>();
-//							attribs.add(new Attrib(null, entityId));
-//							return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(204), remoteHost,
-//									AppConstants.DELETE_REQUEST, request.getId(), attribs);
-//
-//						}));
-//			} else {
-//
-//				unis.add(webClient.post(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_DELETE)
-//						.putHeaders(remoteHost.headers())
-//						.sendJson(new JsonArray(Lists.newArrayList(new JsonObject(request.getId())))).onItemOrFailure()
-//						.transform((response, failure) -> {
-//							return handleBatchDeleteResponse(response, failure, remoteHost, List.of(request.getId()),
-//									ArrayUtils.toArray(204)).get(0);
-//						}));
-//			}
-//		}
-//
-//		unis.add(localDeleteEntity(request, context));
-//		return Uni.combine().all().unis(unis).combinedWith(list -> getResult(list));
+	public Uni<List<NGSILDOperationResult>> deleteBatch(String tenant, List<String> entityIds, boolean localOnly) {
+		Map<RemoteHost, List<String>> host2Ids = Maps.newHashMap();
+		for(String entityId: entityIds) {
+			DeleteEntityRequest request = new DeleteEntityRequest(tenant, entityId, null);
+			Set<RemoteHost> remoteHosts = getRemoteHostsForDelete(request);	
+			for(RemoteHost remoteHost: remoteHosts) {
+				if(host2Ids.containsKey(remoteHost)) {
+					host2Ids.get(remoteHost).add(entityId);
+				}else {
+					host2Ids.put(remoteHost, Lists.newArrayList(entityId));
+				}
+			}
+		}
+		Uni<List<NGSILDOperationResult>> local = entityDAO.batchDeleteEntity(tenant, entityIds).onItem().transform(dbResult -> {
+			List<NGSILDOperationResult> result = Lists.newArrayList();
+			List<String> successes = (List<String>) dbResult.get("success");
+			List<Map<String, String>> fails = (List<Map<String, String>>) dbResult.get("failure");
+
+			for (String entityId : successes) {
+				NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.DELETE_REQUEST, entityId);
+				opResult.addSuccess(new CRUDSuccess(null, null, null, Sets.newHashSet()));
+				result.add(opResult);
+			}
+			for (Map<String, String> fail : fails) {
+				fail.entrySet().forEach(entry -> {
+					String entityId = entry.getKey();
+					String sqlstate = entry.getValue();
+					NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.DELETE_REQUEST, entityId);
+					opResult.addFailure(new ResponseException(ErrorType.InvalidRequest, sqlstate));
+					result.add(opResult);
+				});
+
+			}
+			return result;
+		});
+
+		if (host2Ids.isEmpty()) {
+			return local;
+		}
+		
+		List<Uni<List<NGSILDOperationResult>>> unis = new ArrayList<>(host2Ids.keySet().size());
+		unis.add(local);
+		for (Entry<RemoteHost, List<String>> entry: host2Ids.entrySet()) {
+			RemoteHost remoteHost = entry.getKey();
+			List<String> toSend = entry.getValue();
+			if (remoteHost.canDoBatchOp()) {
+				unis.add(webClient.post(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_DELETE)
+						.putHeaders(remoteHost.headers()).sendJson(new JsonArray(toSend)).onItemOrFailure()
+						.transform((response, failure) -> {
+							return handleBatchDeleteResponse(response, failure, remoteHost, toSend,
+									ArrayUtils.toArray(204));
+						}));
+			} else {
+				List<Uni<NGSILDOperationResult>> singleUnis = new ArrayList<>();
+				for (String entityId : toSend) {
+					singleUnis.add(webClient.delete(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + entityId)
+							.putHeaders(remoteHost.headers()).send().onItemOrFailure()
+							.transform((response, failure) -> {
+								return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(201),
+										remoteHost, AppConstants.CREATE_REQUEST,
+										entityId,
+										Sets.newHashSet());
+
+							}));
+				}
+				unis.add(Uni.combine().all().unis(singleUnis).combinedWith(list -> {
+					List<NGSILDOperationResult> result = Lists.newArrayList();
+					list.forEach(obj -> result.add((NGSILDOperationResult) obj));
+					return result;
+				}));
+			}
+		}
+		return Uni.combine().all().unis(unis).combinedWith(resultLists -> {
+			List<NGSILDOperationResult> result = Lists.newArrayList();
+			resultLists.forEach(resultList -> {
+				result.addAll((List<NGSILDOperationResult>) resultList);
+			});
+			return result;
+		});
 	}
 
 }

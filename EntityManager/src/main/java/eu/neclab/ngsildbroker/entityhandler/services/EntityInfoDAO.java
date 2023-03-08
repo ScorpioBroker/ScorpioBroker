@@ -63,37 +63,35 @@ public class EntityInfoDAO {
 
 	public Uni<Map<String, Object>> batchCreateEntity(BatchRequest request) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
-			return client.preparedQuery(
-					"SELECT * FROM NGSILD_CREATEBATCH($1)")
+			return client.preparedQuery("SELECT * FROM NGSILD_CREATEBATCH($1)")
 					.execute(Tuple.of(new JsonArray(request.getRequestPayload()))).onItem().transform(rows -> {
 						return rows.iterator().next().getJsonObject(0).getMap();
 					});
 		});
 	}
+
 	public Uni<Map<String, Object>> batchUpsertEntity(BatchRequest request) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
-			return client.preparedQuery(
-					"SELECT * FROM NGSILD_UPSERTBATCH($1)")
+			return client.preparedQuery("SELECT * FROM NGSILD_UPSERTBATCH($1)")
 					.execute(Tuple.of(new JsonArray(request.getRequestPayload()))).onItem().transform(rows -> {
 						return rows.iterator().next().getJsonObject(0).getMap();
 					});
 		});
 	}
+
 	public Uni<Map<String, Object>> batchAppendEntity(BatchRequest request) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
-			return client.preparedQuery(
-					"SELECT * FROM NGSILD_APPENDBATCH($1)")
+			return client.preparedQuery("SELECT * FROM NGSILD_APPENDBATCH($1)")
 					.execute(Tuple.of(new JsonArray(request.getRequestPayload()))).onItem().transform(rows -> {
 						return rows.iterator().next().getJsonObject(0).getMap();
 					});
 		});
 	}
-	
-	public Uni<Map<String, Object>> batchDeleteEntity(BatchRequest request) {
-		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
-			return client.preparedQuery(
-					"SELECT * FROM NGSILD_DELETEBATCH($1)")
-					.execute(Tuple.of(new JsonArray(request.getRequestPayload()))).onItem().transform(rows -> {
+
+	public Uni<Map<String, Object>> batchDeleteEntity(String tenant, List<String> entityIds) {
+		return clientManager.getClient(tenant, true).onItem().transformToUni(client -> {
+			return client.preparedQuery("SELECT * FROM NGSILD_DELETEBATCH($1)")
+					.execute(Tuple.of(new JsonArray(entityIds))).onItem().transform(rows -> {
 						return rows.iterator().next().getJsonObject(0).getMap();
 					});
 		});
@@ -101,20 +99,18 @@ public class EntityInfoDAO {
 
 	public Uni<Void> partialUpdateAttribute(UpdateEntityRequest request) {
 		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
-			Object objPayload =  request.getPayload()
-					.get(request.getAttrName());
+			Object objPayload = request.getPayload().get(request.getAttrName());
 			Tuple tuple;
-			if(objPayload instanceof List<?> payloads){
-				tuple = Tuple.of(request.getAttrName(), new JsonArray(payloads) , request.getId());
-			}else {
-				List<Object> payloads =new ArrayList<>();
+			if (objPayload instanceof List<?> payloads) {
+				tuple = Tuple.of(request.getAttrName(), new JsonArray(payloads), request.getId());
+			} else {
+				List<Object> payloads = new ArrayList<>();
 				payloads.add(objPayload);
-				tuple = Tuple.of(request.getAttrName(), new JsonArray(payloads) , request.getId());
+				tuple = Tuple.of(request.getAttrName(), new JsonArray(payloads), request.getId());
 			}
 			String sql = "UPDATE ENTITY SET ENTITY = NGSILD_PARTIALUPDATE(ENTITY, $1, $2) WHERE id=$3 AND ENTITY ? $1 RETURNING ENTITY";
-			return client.preparedQuery(sql)
-					.execute(tuple)
-					.onFailure().retry().atMost(3).onItem().transformToUni(rows -> {
+			return client.preparedQuery(sql).execute(tuple).onFailure().retry().atMost(3).onItem()
+					.transformToUni(rows -> {
 						if (rows.size() == 0) {
 							return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
 						} else {
@@ -126,7 +122,7 @@ public class EntityInfoDAO {
 
 	public Uni<Map<String, Object>> deleteAttribute(DeleteAttributeRequest request) {
 		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
-			String sql="";
+			String sql = "";
 			Tuple tuple;
 			sql += "UPDATE ENTITY SET ENTITY=";
 			if (request.deleteAll()) {
@@ -350,9 +346,9 @@ public class EntityInfoDAO {
 					if (tmp instanceof Map) {
 						Map<String, Object> map = (Map<String, Object>) tmp;
 						if (map.containsKey(NGSIConstants.JSON_LD_TYPE)) {
-							if ((map.get(NGSIConstants.JSON_LD_TYPE) instanceof List<?> types && types.get(0)
-									.equals(NGSIConstants.JSON_LD_NONE))
-							|| map.get(NGSIConstants.JSON_LD_TYPE).equals(NGSIConstants.JSON_LD_NONE)) {
+							if ((map.get(NGSIConstants.JSON_LD_TYPE) instanceof List<?> types
+									&& types.get(0).equals(NGSIConstants.JSON_LD_NONE))
+									|| map.get(NGSIConstants.JSON_LD_TYPE).equals(NGSIConstants.JSON_LD_NONE)) {
 								it2.remove();
 							}
 						} else {
