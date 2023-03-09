@@ -144,6 +144,31 @@ CREATE INDEX "I_entity_scopes"
 CREATE INDEX "I_entity_types"
     ON public.entity USING gin
     (e_types array_ops);
+
+CREATE OR REPLACE FUNCTION public.entity_extract_jsonb_fields() RETURNS trigger LANGUAGE plpgsql AS $function$
+	BEGIN
+		
+		-- do not reprocess if it is just an update on another column
+        IF (TG_OP = 'INSERT' AND NEW.ENTITY IS NOT NULL) OR 
+        	(TG_OP = 'UPDATE' AND OLD.ENTITY IS NULL AND NEW.ENTITY IS NOT NULL) OR 
+            (TG_OP = 'UPDATE' AND OLD.ENTITY IS NOT NULL AND NEW.ENTITY IS NULL) OR 
+			(TG_OP = 'UPDATE' AND OLD.ENTITY IS NOT NULL AND NEW.ENTITY IS NOT NULL AND OLD.ENTITY <> NEW.ENTITY) THEN 
+          NEW.createdat = (NEW.ENTITY#>>'{https://uri.etsi.org/ngsi-ld/createdAt,0,@value}')::TIMESTAMP;
+          NEW.modifiedat = (NEW.ENTITY#>>'{https://uri.etsi.org/ngsi-ld/modifiedAt,0,@value}')::TIMESTAMP;
+          IF (NEW.ENTITY@>'{"https://uri.etsi.org/ngsi-ld/location": [ {"@type": [ "https://uri.etsi.org/ngsi-ld/GeoProperty" ] } ] }') THEN
+              NEW.location = ST_SetSRID(ST_GeomFromGeoJSON( getGeoJson( NEW.ENTITY#>'{https://uri.etsi.org/ngsi-ld/location,0,https://uri.etsi.org/ngsi-ld/hasValue,0}') ), 4326);
+          ELSE 
+              NEW.location = NULL;
+          END IF;
+          IF (NEW.ENTITY ? 'https://uri.etsi.org/ngsi-ld/scope') THEN
+              NEW.scopes = getScopes(NEW.ENTITY#>'{https://uri.etsi.org/ngsi-ld/scope}');
+          ELSE 
+              NEW.scopes = NULL;
+          END IF;
+        END IF;
+		RETURN NEW;
+	END;
+$function$;
 	
 UPDATE ENTITY SET E_TYPES=array_append(E_TYPES,TYPE);
 
@@ -469,31 +494,6 @@ END;
 $operations$ LANGUAGE PLPGSQL;
 
 
-
-CREATE OR REPLACE FUNCTION public.entity_extract_jsonb_fields() RETURNS trigger LANGUAGE plpgsql AS $function$
-	BEGIN
-		
-		-- do not reprocess if it is just an update on another column
-        IF (TG_OP = 'INSERT' AND NEW.ENTITY IS NOT NULL) OR 
-        	(TG_OP = 'UPDATE' AND OLD.ENTITY IS NULL AND NEW.ENTITY IS NOT NULL) OR 
-            (TG_OP = 'UPDATE' AND OLD.ENTITY IS NOT NULL AND NEW.ENTITY IS NULL) OR 
-			(TG_OP = 'UPDATE' AND OLD.ENTITY IS NOT NULL AND NEW.ENTITY IS NOT NULL AND OLD.ENTITY <> NEW.ENTITY) THEN 
-          NEW.createdat = (NEW.ENTITY#>>'{https://uri.etsi.org/ngsi-ld/createdAt,0,@value}')::TIMESTAMP;
-          NEW.modifiedat = (NEW.ENTITY#>>'{https://uri.etsi.org/ngsi-ld/modifiedAt,0,@value}')::TIMESTAMP;
-          IF (NEW.ENTITY@>'{"https://uri.etsi.org/ngsi-ld/location": [ {"@type": [ "https://uri.etsi.org/ngsi-ld/GeoProperty" ] } ] }') THEN
-              NEW.location = ST_SetSRID(ST_GeomFromGeoJSON( getGeoJson( NEW.ENTITY#>'{https://uri.etsi.org/ngsi-ld/location,0,https://uri.etsi.org/ngsi-ld/hasValue,0}') ), 4326);
-          ELSE 
-              NEW.location = NULL;
-          END IF;
-          IF (NEW.ENTITY ? 'https://uri.etsi.org/ngsi-ld/default-context/scope') THEN
-              NEW.scopes = getScopes(NEW.ENTITY#>'{https://uri.etsi.org/ngsi-ld/default-context/scope}');
-          ELSE 
-              NEW.scopes = NULL;
-          END IF;
-        END IF;
-		RETURN NEW;
-	END;
-$function$;
 
 CREATE OR REPLACE FUNCTION NGSILD_PARTIALUPDATE(ENTITY jsonb, attribName text, attribValues jsonb) RETURNS jsonb AS $ENTITYPU$
 declare

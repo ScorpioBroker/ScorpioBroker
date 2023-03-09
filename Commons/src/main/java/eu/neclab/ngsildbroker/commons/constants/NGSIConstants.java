@@ -303,8 +303,8 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_TRIGGER_REASON = "https://uri.etsi.org/ngsi-ld/triggerReason";
 	public static final String QUERY_PARAMETER_SCOPE_QUERY = "scopeQ";
 	public static final String NGSI_LD_GEOPROPERTY_GEOQ_ATTRIB = "https://uri.etsi.org/ngsi-ld/geoproperty";
-	public static final String NGSI_LD_SCOPE = "https://uri.etsi.org/ngsi-ld/default-context/scope";
-	public static final String NGSI_LD_SCOPE_Q = "https://uri.etsi.org/ngsi-ld/default-context/scopeQ";
+	public static final String NGSI_LD_SCOPE = "https://uri.etsi.org/ngsi-ld/scope";
+	public static final String NGSI_LD_SCOPE_Q = "https://uri.etsi.org/ngsi-ld/scopeQ";
 
 	public static final String ERROR_TYPE = "type";
 	public static final String ERROR_TITLE = "title";
