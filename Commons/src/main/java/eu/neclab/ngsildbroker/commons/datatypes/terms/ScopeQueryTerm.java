@@ -2,6 +2,7 @@ package eu.neclab.ngsildbroker.commons.datatypes.terms;
 
 import java.util.List;
 
+import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import io.smallrye.mutiny.tuples.Tuple2;
 
 public class ScopeQueryTerm {
@@ -75,132 +76,21 @@ public class ScopeQueryTerm {
 		return false;
 	}
 
-	public Tuple2<Character, String> toSql(char startChar) {
-		StringBuilder builder = new StringBuilder();
-		StringBuilder builderFinalLine = new StringBuilder();
-		StringBuilder finalTables = new StringBuilder();
-		char finalChar = toSql(builder, builderFinalLine, finalTables, startChar, "escope2iid");
-		if (!finalTables.isEmpty()) {
-			finalChar++;
-			builder.append(',');
-			builder.append(finalChar);
-			builder.append(" as (SELECT escope2iid.iid AS iid FROM escope2iid,");
-			builder.append(finalTables);
-			builder.append(" WHERE ");
-			builder.append(builderFinalLine);
+	public void toSql(StringBuilder result) {
+		if (firstChild != null) {
+			result.append("(");
+			firstChild.toSql(result);
+			result.append(")");
 		} else {
-			finalChar++;
-			builder.append(',');
-			builder.append(finalChar);
-			builder.append(" as (SELECT iid FROM ");
-			builder.append((char) (finalChar - 1));
+			result.append("matchScope(" + DBConstants.DBCOLUMN_SCOPE + "," + getSQLScopeQuery() + ")");
 		}
-		return Tuple2.of(finalChar, builder.toString());
-	}
-
-	private char toSql(StringBuilder result, StringBuilder resultFinalLine, StringBuilder finalTables, char currentChar,
-			String sqlTable) {
-		if (scopeLevels == null) {
-			ScopeQueryTerm current = this;
-			while (current.firstChild != null) {
-				current = current.firstChild;
-			}
-			return current.next.toSql(result, resultFinalLine, finalTables, currentChar, sqlTable);
-		} else {
-			int andCounter = 1;
-			result.append(currentChar);
-			result.append(" as (SELECT ");
-			result.append(sqlTable);
-			result.append(".iid, ");
-			result.append(sqlTable);
-			result.append(".e_scope FROM ");
-			result.append(sqlTable);
-			result.append(" WHERE ");
-			result.append(sqlTable);
-			result.append(".e_scope ~ ");
-			result.append(getSQLScopeQuery());
-			if (hasNext()) {
+		if (hasNext()) {
+			if (nextAnd) {
+				result.append(" and ");
+			} else {
 				result.append(" or ");
 			}
-			ScopeQueryTerm current = this;
-
-			while (current.hasNext() || current.firstChild != null) {
-				if (current.firstChild != null) {
-					resultFinalLine.append('(');
-					currentChar = current.firstChild.toSql(result, resultFinalLine, finalTables, currentChar, sqlTable);
-					resultFinalLine.append(')');
-					break;
-				}
-				current = current.getNext();
-				if (current.scopeLevels != null) {
-					result.append(sqlTable);
-					result.append(".e_scope");
-					result.append(getSQLScopeQuery());
-					andCounter++;
-					if ((current.getPrev() != null && current.isNextAnd() != current.getPrev().isNextAnd())
-							|| current.firstChild != null) {
-						if (current.getPrev() != null && current.getPrev().isNextAnd()) {
-							result.append(" GROUP BY ");
-							result.append(sqlTable);
-							result.append(".iid, ");
-							result.append(sqlTable);
-							result.append(".e_scope HAVING COUNT(");
-							result.append(sqlTable);
-							result.append(".e_scope)=");
-							result.append(andCounter);
-						}
-						if (current.nextAnd) {
-							sqlTable = currentChar + "";
-						} else {
-							resultFinalLine.append("escope2iid.iid=");
-							resultFinalLine.append(currentChar);
-							resultFinalLine.append(".iid");
-							resultFinalLine.append(" or ");
-							finalTables.append(currentChar);
-							finalTables.append(',');
-							sqlTable = "escope2iid";
-						}
-						result.append("),");
-						andCounter = 0;
-						currentChar++;
-						if (current.hasNext() && current.next.getFirstChild() == null) {
-							result.append(currentChar);
-							result.append(" as (SELECT ");
-							result.append(sqlTable);
-							result.append(".iid, ");
-							result.append(sqlTable);
-							result.append(".e_scope FROM ");
-							result.append(sqlTable);
-							result.append(" WHERE ");
-						}
-					} else {
-						if (current.hasNext()) {
-							result.append(" or ");
-						}
-					}
-
-				}
-
-			}
-			if (current.getPrev() != null && current.getPrev().isNextAnd()) {
-				result.append(" GROUP BY ");
-				result.append(sqlTable);
-				result.append(".iid, ");
-				result.append(sqlTable);
-				result.append(".e_scope HAVING COUNT(");
-				result.append(sqlTable);
-				result.append(".e_scope)=");
-				result.append(andCounter);
-			}
-			if (current.scopeLevels != null) {
-				resultFinalLine.append("escope2iid.iid=");
-				resultFinalLine.append(currentChar);
-				resultFinalLine.append(".iid");
-				finalTables.append(currentChar);
-				result.append(')');
-			}
-			return currentChar;
-
+			next.toSql(result);
 		}
 	}
 

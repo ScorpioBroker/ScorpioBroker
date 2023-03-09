@@ -176,6 +176,10 @@ public class QueryDAO {
 				dollar++;
 				sqlAdded = true;
 			}
+			if (scopeQuery != null) {
+				query.append("AND ");
+				scopeQuery.toSql(query);
+			}
 
 			query.append(" LIMIT ");
 			query.append(limit);
