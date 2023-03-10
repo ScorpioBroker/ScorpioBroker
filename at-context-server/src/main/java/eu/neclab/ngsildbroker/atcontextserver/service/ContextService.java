@@ -3,6 +3,7 @@ package eu.neclab.ngsildbroker.atcontextserver.service;
 import com.github.jsonldjava.core.JsonLdOptions;
 import eu.neclab.ngsildbroker.atcontextserver.cache.ContextCache;
 import eu.neclab.ngsildbroker.atcontextserver.dao.ContextDao;
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import io.smallrye.mutiny.Uni;
@@ -37,8 +38,8 @@ public class ContextService {
     public Uni<RestResponse<Object>> getContextById(String id, boolean details) {
         return dao.getById(id, details).onItem().transformToUni(res -> {
             if (res.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
-                return cache.createOrGetCache(id,details,false).onItem().transformToUni(response->{
-                    if(response.getStatus() == RestResponse.notFound().getStatus()){
+                return cache.createOrGetCache(id, details, false).onItem().transformToUni(response -> {
+                    if (response.getStatus() == RestResponse.notFound().getStatus()) {
                         return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
                     }
                     return Uni.createFrom().item(response);
@@ -66,12 +67,13 @@ public class ContextService {
     }
 
     public Uni<RestResponse<Object>> getContexts(String kind, Boolean details) {
-        if (kind != null && kind.equalsIgnoreCase("cached")) {
+        if (kind != null && kind.equalsIgnoreCase(NGSIConstants.CACHED)) {
             return cache.getAllCache(details).map(RestResponse::ok);
-        } else if (kind != null && !kind.equalsIgnoreCase("cached"))
+        } else if (kind != null && !kind.equalsIgnoreCase(NGSIConstants.CACHED))
             return dao.getAllContexts(kind, details).onItem()
                     .transform(RestResponse::ok);
-        else return cache.getAllCache(details).onItem()
+        else
+            return cache.getAllCache(details).onItem()
                     .transformToUni(list1 -> dao.getAllContexts(kind, details).onItem()
                             .transform(list2 -> {
                                 List<Object> finalList = new ArrayList<>();
@@ -82,10 +84,10 @@ public class ContextService {
     }
 
     public Uni<RestResponse<Object>> createOrGetCache(String url) {// create cache or implicitly created context
-            return cache.createOrGetCache(url, false, true);
+        return cache.createOrGetCache(url, false, true);
     }
 
-    public Uni<RestResponse<Object>> createImplicitly(Map<String,Object> payload)  {
+    public Uni<RestResponse<Object>> createImplicitly(Map<String, Object> payload) {
         return dao.createContextImpl(payload);
 
     }

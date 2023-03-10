@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.atcontextserver.dao;
 
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import io.smallrye.mutiny.Uni;
@@ -44,7 +45,7 @@ public class ContextDao {
                         Map<String, Object> map = row.toJson().getMap();
                         if (details) {
                             map.put(row.getColumnName(1), ((JsonObject) map.get(row.getColumnName(1))).getMap());
-                            map.put("url", "http://localhost:9090/ngsi-ld/v1/jsonldContexts/" + map.get("id"));
+                            map.put("url", "http://localhost:9090/" + NGSIConstants.JSONLD_CONTEXTS + map.get("id"));
                             return Uni.createFrom().item(RestResponse.ok(map));
                         } else
                             return Uni.createFrom().item(RestResponse.ok(row.getJson("body")));
@@ -60,7 +61,8 @@ public class ContextDao {
                 .transformToUni(rows -> {
                     if (rows.size() > 0) {
                         return Uni.createFrom().item(RestResponseBuilderImpl.create(201)
-                                .entity(new JsonObject("{\"url\":\"" + "http://localhost:9090/ngsi-ld/v1/jsonldContexts/" + rows.iterator().next().getString(0) + "\"}"))
+                                .entity(new JsonObject("{\"url\":\"" + "http://localhost:9090/"
+                                        + NGSIConstants.JSONLD_CONTEXTS + rows.iterator().next().getString(0) + "\"}"))
                                 .build());
                     } else
                         return Uni.createFrom().failure(new Throwable("Server Error"));
@@ -96,10 +98,12 @@ public class ContextDao {
 
                         if (details) {
                             map.put(i.getColumnName(1), ((JsonObject) map.get(i.getColumnName(1))).getMap());
-                            map.put("url", "http://localhost:9090/ngsi-ld/v1/jsonldContexts/" + URLEncoder.encode(map.get("id").toString(), StandardCharsets.UTF_8));
+                            map.put("url", "http://localhost:9090/" + NGSIConstants.JSONLD_CONTEXTS
+                                    + URLEncoder.encode(map.get("id").toString(), StandardCharsets.UTF_8));
                             contexts.add(map);
                         } else {
-                            contexts.add("http://localhost:9090/ngsi-ld/v1/jsonldContexts/" + URLEncoder.encode(map.get("id").toString(), StandardCharsets.UTF_8));
+                            contexts.add("http://localhost:9090/" + NGSIConstants.JSONLD_CONTEXTS
+                                    + URLEncoder.encode(map.get("id").toString(), StandardCharsets.UTF_8));
                         }
 
                     });
@@ -124,7 +128,8 @@ public class ContextDao {
         String sql = "INSERT INTO public.contexts (id, body, kind) values($1, $2, 'implicitlycreated') returning id";
         return pgPool.preparedQuery(sql).execute(Tuple.of(id, new JsonObject(payload))).onItemOrFailure()
                 .transform((rows, failure) -> {
-                    if (failure != null && failure.getMessage().contains("duplicate key")) return RestResponse.ok(id);
+                    if (failure != null && failure.getMessage().contains("duplicate key"))
+                        return RestResponse.ok(id);
                     if (rows.size() > 0) {
                         return RestResponse.ok(rows.iterator().next().getString(0));
                     } else

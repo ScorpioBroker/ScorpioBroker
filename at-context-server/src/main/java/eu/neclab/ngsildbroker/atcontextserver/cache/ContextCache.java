@@ -2,6 +2,8 @@ package eu.neclab.ngsildbroker.atcontextserver.cache;
 
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.RemoteDocument;
+
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import io.quarkus.cache.*;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
@@ -17,6 +19,7 @@ public class ContextCache {
     @CacheName("context")
     Cache cache;
     JsonLdOptions jsonLdOptions = new JsonLdOptions();
+
     @PostConstruct
     void init() {
 
@@ -26,19 +29,20 @@ public class ContextCache {
     public Uni<Map<String, Object>> load(String uri) {
         try {
             RemoteDocument rd = jsonLdOptions.getDocumentLoader().loadDocument(uri);
-            if (rd.getDocument() instanceof Map<?, ?> map && map.containsKey("@context")) {
-                Map<String, Object> contextBody = (Map<String, Object>) map.get("@context");
+            if (rd.getDocument() instanceof Map<?, ?> map && map.containsKey(NGSIConstants.JSON_LD_CONTEXT)) {
+                Map<String, Object> contextBody = (Map<String, Object>) map.get(NGSIConstants.JSON_LD_CONTEXT);
                 Map<String, Object> finalContext = new HashMap<>();
                 Map<String, Object> tempMap = new HashMap<>();
-                tempMap.put("@context", contextBody);
-                finalContext.put("body", tempMap);
-                finalContext.put("kind", "cached");
-                finalContext.put("createdat", new Timestamp(System.currentTimeMillis()));
-                finalContext.put("url", uri);
-                finalContext.put("id", uri);
+                tempMap.put(NGSIConstants.JSON_LD_CONTEXT, contextBody);
+                finalContext.put(NGSIConstants.BODY, tempMap);
+                finalContext.put(NGSIConstants.KIND, NGSIConstants.CACHED);
+                finalContext.put(NGSIConstants.CREATEDAT, new Timestamp(System.currentTimeMillis()));
+                finalContext.put(NGSIConstants.URL, uri);
+                finalContext.put(NGSIConstants.ID, uri);
                 return Uni.createFrom().item(finalContext);
-            } else return Uni.createFrom().item(new HashMap<>());
-        }catch (Exception e){
+            } else
+                return Uni.createFrom().item(new HashMap<>());
+        } catch (Exception e) {
             return Uni.createFrom().item(new HashMap<>());
         }
     }
@@ -52,8 +56,10 @@ public class ContextCache {
         else
             return load(uri).onItem()
                     .transform(map -> {
-                        if(map==null || map.isEmpty()) return RestResponse.notFound();
-                        else return RestResponse.ok(map.get("body"));
+                        if (map == null || map.isEmpty())
+                            return RestResponse.notFound();
+                        else
+                            return RestResponse.ok(map.get(NGSIConstants.BODY));
                     });
     }
 
@@ -67,7 +73,7 @@ public class ContextCache {
                 if (details)
                     list.add(cachedItem);
                 else
-                    list.add(cachedItem.get("url"));
+                    list.add(cachedItem.get(NGSIConstants.URL));
             } catch (Exception ignored) {
 
             }
@@ -88,6 +94,5 @@ public class ContextCache {
     @CacheInvalidateAll(cacheName = "context")
     @Scheduled(every = "20m")
     public void invalidateAll() {
-        System.out.println("Cache Invalidated!");
     }
 }
