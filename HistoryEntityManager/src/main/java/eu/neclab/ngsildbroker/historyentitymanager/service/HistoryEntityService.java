@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.annotation.PostConstruct;
+import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.ArrayUtils;
@@ -50,7 +51,7 @@ import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowIterator;
 import io.vertx.mutiny.sqlclient.RowSet;
 
-@Singleton
+@ApplicationScoped
 public class HistoryEntityService {
 
 	private final static Logger logger = LoggerFactory.getLogger(HistoryEntityService.class);

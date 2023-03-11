@@ -2,6 +2,7 @@ package eu.neclab.ngsildbroker.atcontextserver.controller;
 
 import com.github.jsonldjava.utils.JsonUtils;
 import eu.neclab.ngsildbroker.atcontextserver.service.ContextService;
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
@@ -20,17 +21,17 @@ public class ContextController {
     @Inject
     ContextService contextService;
 
-
     @GET
     @Path("{contextId}")
-    public Uni<RestResponse<Object>> getContextById(@PathParam("contextId") String id, @QueryParam("details") boolean details) {
+    public Uni<RestResponse<Object>> getContextById(@PathParam("contextId") String id,
+            @QueryParam("details") boolean details) {
         return contextService.getContextById(id, details)
                 .onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
     }
 
     @GET
     public Uni<RestResponse<Object>> getContexts(@QueryParam("kind") String kind,
-                                                 @QueryParam("details") boolean details) {
+            @QueryParam("details") boolean details) {
         return contextService.getContexts(kind, details)
                 .onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
     }
@@ -38,11 +39,14 @@ public class ContextController {
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     public Uni<RestResponse<Object>> createContext(String payload) {
-        Map<String, Object> payloadMap =new HashMap<>();
+        Map<String, Object> payloadMap = new HashMap<>();
         try {
-            Map<String, Object> contextBody = (Map<String, Object>) ((Map<String,Object>)JsonUtils.fromString(payload)).get("@context");
-            if(contextBody == null) throw new Exception("Bad Request");
-            else payloadMap.put("@context",contextBody);
+            Map<String, Object> contextBody = (Map<String, Object>) ((Map<String, Object>) JsonUtils
+                    .fromString(payload)).get(NGSIConstants.JSON_LD_CONTEXT);
+            if (contextBody == null)
+                throw new Exception("Bad Request");
+            else
+                payloadMap.put(NGSIConstants.JSON_LD_CONTEXT, contextBody);
         } catch (Exception e) {
             return Uni.createFrom().item(
                     HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData)));
@@ -53,7 +57,8 @@ public class ContextController {
 
     @DELETE
     @Path("{contextId}")
-    public Uni<RestResponse<Object>> deleteContextById(@PathParam("contextId") String id, @QueryParam("reload") boolean reload) {
+    public Uni<RestResponse<Object>> deleteContextById(@PathParam("contextId") String id,
+            @QueryParam("reload") boolean reload) {
         return contextService.deleteById(id, reload)
                 .onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
     }
@@ -67,11 +72,14 @@ public class ContextController {
     @POST
     @Path("/createimplicitly/")
     public Uni<RestResponse<Object>> createImplicitly(String payload) {
-        Map<String, Object> payloadMap =new HashMap<>();
+        Map<String, Object> payloadMap = new HashMap<>();
         try {
-            Map<String, Object> contextBody = (Map<String, Object>) ((Map<String,Object>)JsonUtils.fromString(payload)).get("@context");
-            if(contextBody == null) throw new Exception("Bad Request");
-            else payloadMap.put("@context",contextBody);
+            Map<String, Object> contextBody = (Map<String, Object>) ((Map<String, Object>) JsonUtils
+                    .fromString(payload)).get("@context");
+            if (contextBody == null)
+                throw new Exception("Bad Request");
+            else
+                payloadMap.put(NGSIConstants.JSON_LD_CONTEXT, contextBody);
         } catch (Exception e) {
             return Uni.createFrom().item(
                     HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData)));

@@ -52,15 +52,20 @@ public class HistoryDAO {
 				if (attrsQuery != null || tempQuery != null) {
 					sql += " AND ";
 					if (attrsQuery != null) {
-						sql += "attributeId in ($" + dollarCount + ") ";
-						dollarCount++;
-						tupleInput.add(attrsQuery.getAttrs());
-						if (tempQuery != null) {
-							sql += " AND ";
+						
+						sql += "attributeId in (";
+
+						for (String value : attrsQuery.getAttrs()) {
+							sql += "$" + dollarCount + ",";
+							tupleInput.add(value);
+							dollarCount++;
 						}
+						sql = sql.substring(0, sql.length() - 1);
+						sql += " ) ";
 					}
+					
 					if (tempQuery != null) {
-						sql += " and $" + dollarCount;
+						sql += " AND $" + dollarCount+ "::VARCHAR ";
 						tupleInput.add(tempQuery.getTimeProperty());
 						dollarCount++;
 						switch (tempQuery.getTimerel()) {
@@ -85,6 +90,7 @@ public class HistoryDAO {
 					}
 				}
 				sql += "group by attributeId limit $" + dollarCount + ")";
+				tupleInput.add(lastN);
 			}
 
 			sql += ",\nd as (select jsonb_object_agg(c.key, c.value) as attrs FROM c),\ne as (select '"

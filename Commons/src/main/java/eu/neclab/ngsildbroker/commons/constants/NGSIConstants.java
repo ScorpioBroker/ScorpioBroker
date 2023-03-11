@@ -350,4 +350,12 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_GEO_QUERY_SHORT = "geoQ";
 	public static final String QUERY_PARAMETER_LANG = "lang";
 	public static final String NGSI_LD_HAS_LANGUAGE_MAP = "https://uri.etsi.org/ngsi-ld/hasLanguageMap";
+	public static final String ID = "id";
+	public static final String KIND = "kind";
+	public static final String CACHED = "cached";
+	public static final String IMPLICITLYCREATED = "implicitlycreated";
+	public static final String HOSTED = "hosted";
+	public static final String CREATEDAT = "createdat";
+	public static final String URL = "url";
+	public static final String JSONLD_CONTEXTS = "ngsi-ld/v1/jsonldContexts/";
 }

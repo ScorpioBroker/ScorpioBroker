@@ -3,11 +3,6 @@ package com.github.jsonldjava.core;
 import static com.github.jsonldjava.core.JsonLdUtils.compareShortestLeast;
 import static com.github.jsonldjava.utils.Obj.newMap;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -22,7 +17,6 @@ import java.util.Set;
 
 import com.github.jsonldjava.core.JsonLdError.Error;
 import com.github.jsonldjava.utils.JsonLdUrl;
-import com.github.jsonldjava.utils.JsonUtils;
 import com.github.jsonldjava.utils.Obj;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -226,11 +220,12 @@ public class Context extends LinkedHashMap<String, Object> {
 				remoteContexts.add(uri);
 
 				// 3.2.3: Dereference context
-                String finalUrl = uri;
-                if (uri!= null && !(uri.contains(microServiceUtils.getGatewayURL().toString()) || uri.contains("localhost" ) || uri.contains("type=implicitlyCreated"))) {
-                    String encodedUrl = URLEncoder.encode(uri, StandardCharsets.UTF_8);
-                    finalUrl = "http://localhost:9090"+"/ngsi-ld/v1/jsonldContexts/createcache/" + encodedUrl;
-                }
+				String finalUrl = uri;
+				if (uri != null && !(uri.contains(microServiceUtils.getGatewayURL().toString())
+						|| uri.contains("localhost") || uri.contains(NGSIConstants.IMPLICITLYCREATED))) {
+					String encodedUrl = URLEncoder.encode(uri, StandardCharsets.UTF_8);
+					finalUrl = "http://localhost:9090/" + NGSIConstants.JSONLD_CONTEXTS + "createcache/" + encodedUrl;
+				}
 				final RemoteDocument rd = this.options.getDocumentLoader().loadDocument(finalUrl);
 				final Object remoteContext = rd.getDocument();
 				if (remoteContext == null
@@ -345,6 +340,7 @@ public class Context extends LinkedHashMap<String, Object> {
 		}
 		return result;
 	}
+
 	public boolean dontAddCoreContext() {
 		return dontAddCoreContext;
 	}
