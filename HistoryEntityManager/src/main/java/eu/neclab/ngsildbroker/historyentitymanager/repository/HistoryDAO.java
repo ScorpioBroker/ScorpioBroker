@@ -3,8 +3,16 @@ package eu.neclab.ngsildbroker.historyentitymanager.repository;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
+import com.google.common.collect.Lists;
+
+import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
@@ -28,11 +36,32 @@ public class HistoryDAO {
 	@Inject
 	ClientManager clientManager;
 
-	public Uni<RowSet<Row>> createHistoryEntity(CreateHistoryEntityRequest request) {
+	public Uni<Void> createHistoryEntity(CreateHistoryEntityRequest request) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
-			String sql = "SELECT * FROM NGSILD_CREATETEMPORALENTITY($1::jsonb)";
-			return client.preparedQuery(sql).execute(Tuple.of(new JsonObject(request.getPayload()))).onFailure().retry()
-					.atMost(3).onFailure().recoverWithUni(e -> Uni.createFrom().failure(e));
+			Map<String, Object> payload = request.getPayload();
+			return client.getConnection().onItem().transformToUni(conn -> {
+				return conn.preparedQuery("INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY
+						+ " (id, e_types, createdat, modifiedat) VALUES($1, $2, $3::timestamp, $4::timestamp) "
+						+ "ON CONFLICT(id) DO UPDATE SET e_types = ARRAY(SELECT DISTINCT UNNEST(e_types || EXCLUDED.e_types)), modifiedat = EXCLUDED.modifiedat RETURNING id")
+						.execute(Tuple.of(payload.remove(NGSIConstants.JSON_LD_ID),
+								payload.remove(NGSIConstants.JSON_LD_TYPE),
+								payload.remove(NGSIConstants.NGSI_LD_CREATED_AT),
+								payload.remove(NGSIConstants.NGSI_LD_MODIFIED_AT)))
+						.onItem().transformToUni(rows -> {
+							List<Tuple> batch = Lists.newArrayList();
+							for (Entry<String, Object> entry : payload.entrySet()) {
+								List<Map<String, Object>> entries = (List<Map<String, Object>>) entry.getValue();
+								for (Map<String, Object> attribEntry : entries) {
+									batch.add(Tuple.of(request.getId(), entry.getKey(), new JsonObject(attribEntry)));
+								}
+								//
+							}
+							return conn
+									.preparedQuery("INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
+											+ " (temporalentity_id, attributeid, data) VALUES ($1, $2, $3::jsonb")
+									.executeBatch(batch).onItem().transformToUni(t -> Uni.createFrom().voidItem());
+						});
+			});
 		});
 	}
 
