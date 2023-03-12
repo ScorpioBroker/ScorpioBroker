@@ -6,11 +6,13 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.UUID;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
@@ -210,29 +212,28 @@ public class HistoryDAO {
 	public Uni<Void> deleteAttrInstanceInHistoryEntity(DeleteAttrInstanceHistoryEntityRequest request) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
 			return client.getConnection().onItem().transformToUni(conn -> {
-				Uni<RowSet<Row>> query1;
-				query1 = conn
+				return conn
 						.preparedQuery("DELETE FROM " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
 								+ " WHERE attributeid=$2 AND instanceid=$3 AND id=$4")
-						.execute(Tuple.of(request.getAttrId(), request.getInstanceId(), request.getId()));
-				return query1.onFailure().recoverWithUni(e -> {
-					if (e instanceof PgException) {
-						if (((PgException) e).getCode().equals(AppConstants.SQL_NOT_FOUND)) {
-							return Uni.createFrom().failure(
-									new ResponseException(ErrorType.NotFound, request.getId() + " does not exist"));
-						}
-					}
-					return Uni.createFrom().failure(e);
-				}).onItem().transformToUni(rows -> {
-					return conn
-							.preparedQuery("UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY
-									+ " SET modifiedat = $1 WHERE id = $2")
-							.execute(Tuple.of(
-									SerializationTools.notifiedAt_formatter.format(LocalDateTime.ofInstant(
-											Instant.ofEpochMilli(request.getSendTimestamp()), ZoneId.of("Z"))),
-									request.getId()))
-							.onItem().transformToUni(t -> Uni.createFrom().voidItem());
-				});
+						.execute(Tuple.of(request.getAttrId(), request.getInstanceId(), request.getId())).onFailure()
+						.recoverWithUni(e -> {
+							if (e instanceof PgException) {
+								if (((PgException) e).getCode().equals(AppConstants.SQL_NOT_FOUND)) {
+									return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound,
+											request.getId() + " does not exist"));
+								}
+							}
+							return Uni.createFrom().failure(e);
+						}).onItem().transformToUni(rows -> {
+							return conn
+									.preparedQuery("UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY
+											+ " SET modifiedat = $1 WHERE id = $2")
+									.execute(Tuple.of(
+											SerializationTools.notifiedAt_formatter.format(LocalDateTime.ofInstant(
+													Instant.ofEpochMilli(request.getSendTimestamp()), ZoneId.of("Z"))),
+											request.getId()))
+									.onItem().transformToUni(t -> Uni.createFrom().voidItem());
+						});
 			});
 		});
 	}
@@ -250,26 +251,44 @@ public class HistoryDAO {
 	}
 
 	public Uni<Void> setAttributeDeleted(DeleteAttributeRequest request) {
-		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
-			String sql = "WITH a as (select gen_random_uuid() as instanceid, id as iid from temporalentity where e_id = $1)\r\n"
-					+ "INSERT INTO temporalentityattrinstance(attributeid, instanceid, data, deletedat, iid, datasetid) SELECT $2, a.instanceid, ('{\""
-					+ NGSIConstants.NGSI_LD_DELETED_AT + "\": [{\"" + NGSIConstants.JSON_LD_TYPE + "\": \""
-					+ NGSIConstants.NGSI_LD_DATE_TIME + "\", \"" + NGSIConstants.JSON_LD_VALUE + "\": \"$3\"}], \""
-					+ NGSIConstants.NGSI_LD_INSTANCE_ID + "\": [{\"" + NGSIConstants.JSON_LD_ID
-					+ "\": \"'|| a.instanceid||'\"}]";
-			if (request.getDatasetId() != null) {
-				sql += ",\"" + NGSIConstants.NGSI_LD_DATA_SET_ID + "\": [{\"" + NGSIConstants.JSON_LD_ID
-						+ "\": \"$4\"}]";
-			}
-			sql += "}')::jsonb, $3::TIMSTAMP, a.iid, $4 FROM a";
-			return client.preparedQuery(sql)
-					// You would think that we do the date conversion in the db but somehow postgres
-					// can't easily convert utc into a timestamp without a timezone
-					.execute(Tuple.of(request.getId(), request.getAttribName(), request.getDatasetId(),
-							SerializationTools.notifiedAt_formatter.format(LocalDateTime
-									.ofInstant(Instant.ofEpochMilli(request.getSendTimestamp()), ZoneId.of("Z")))))
-					.onItem().transformToUni(t -> Uni.createFrom().voidItem());
+		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
+			return client.getConnection().onItem().transformToUni(conn -> {
+				String now = SerializationTools.notifiedAt_formatter.format(
+						LocalDateTime.ofInstant(Instant.ofEpochMilli(request.getSendTimestamp()), ZoneId.of("Z")));
+				String instanceId = UUID.randomUUID().toString();
+				JsonObject deletePayload = getAttribDeletedPayload(now, instanceId, request.getDatasetId());
+				return conn.preparedQuery("INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
+						+ " (temporalentity_id, attributeid, data, deletedat, instanceId) VALUES ($1, $2, $3::jsonb, $4::TIMESTAMP, $5")
+						.execute(Tuple.of(request.getId(), request.getAttribName(), deletePayload, now, instanceId))
+						.onFailure().recoverWithUni(e -> {
+							if (e instanceof PgException) {
+								if (((PgException) e).getCode().equals(AppConstants.SQL_NOT_FOUND)) {
+									return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound,
+											request.getId() + " does not exist"));
+								}
+							}
+							return Uni.createFrom().failure(e);
+						}).onItem().transformToUni(rows -> {
+							return conn
+									.preparedQuery("UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY
+											+ " SET modifiedat = $1 WHERE id = $2")
+									.execute(Tuple.of(now, request.getId())).onItem()
+									.transformToUni(t -> Uni.createFrom().voidItem());
+						});
+			});
 		});
+	}
+
+	private JsonObject getAttribDeletedPayload(String now, String instanceId, String datasetId) {
+		Map<String, Object> result = Maps.newHashMap();
+		result.put(NGSIConstants.NGSI_LD_DELETED_AT, Lists.newArrayList(
+				Map.of(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME, NGSIConstants.JSON_LD_VALUE, now)));
+		result.put(NGSIConstants.NGSI_LD_INSTANCE_ID, Lists.newArrayList(Map.of(NGSIConstants.JSON_LD_ID, instanceId)));
+		if (datasetId != null) {
+			result.put(NGSIConstants.NGSI_LD_DATA_SET_ID,
+					Lists.newArrayList(Map.of(NGSIConstants.JSON_LD_ID, instanceId)));
+		}
+		return new JsonObject(result);
 	}
 
 }
