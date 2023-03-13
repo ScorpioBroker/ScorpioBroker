@@ -1,6 +1,5 @@
 package eu.neclab.ngsildbroker.commons.datatypes.requests;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -8,7 +7,6 @@ import java.util.Map;
 import com.github.jsonldjava.core.Context;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import io.smallrye.mutiny.tuples.Tuple2;
 
 public class BatchRequest {
 
@@ -16,12 +14,18 @@ public class BatchRequest {
 	private List<Map<String, Object>> requestPayload;
 	private List<Context> contexts;
 	private List<String> entityIds;
+	private int requestType;
 
 	public BatchRequest(String tenant, List<Map<String, Object>> requestPayload, List<Context> contexts,
 			int requestType) {
 		this.tenant = tenant;
 		this.requestPayload = requestPayload;
 		this.contexts = contexts;
+		this.requestType = requestType;
+	}
+
+	public int getRequestType() {
+		return requestType;
 	}
 
 	public List<String> getEntityIds() {
@@ -61,6 +65,11 @@ public class BatchRequest {
 			}
 		}
 
+	}
+
+	public long getSendTimestamp() {
+		// TODO Auto-generated method stub
+		return 0;
 	}
 
 }

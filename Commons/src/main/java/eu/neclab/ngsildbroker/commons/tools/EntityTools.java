@@ -8,6 +8,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import com.github.jsonldjava.core.Context;
+import com.github.jsonldjava.core.JsonLdError;
+import com.github.jsonldjava.core.JsonLdProcessor;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import java.util.Set;
@@ -22,6 +26,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.Property;
 import eu.neclab.ngsildbroker.commons.datatypes.PropertyEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
+import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 
 public abstract class EntityTools {
 
@@ -39,6 +44,24 @@ public abstract class EntityTools {
 			prefix += ":";
 		}
 		return BROKER_PREFIX + prefix + UUID.randomUUID().getLeastSignificantBits();
+
+	}
+	
+	public static Map<String, Object> prepareSplitUpEntityForSending(Map<String, Object> expanded, Context context)
+			throws JsonLdError, ResponseException {
+		if (expanded.containsKey(NGSIConstants.JSON_LD_TYPE)) {
+			expanded.put(NGSIConstants.JSON_LD_TYPE,
+					Lists.newArrayList((Set<String>) expanded.get(NGSIConstants.JSON_LD_TYPE)));
+		}
+		if (expanded.containsKey(NGSIConstants.NGSI_LD_SCOPE)) {
+			Set<String> collectedScopes = (Set<String>) expanded.get(NGSIConstants.NGSI_LD_SCOPE);
+			List<Map<String, String>> finalScopes = Lists.newArrayList();
+			for (String scope : collectedScopes) {
+				finalScopes.add(Map.of(NGSIConstants.JSON_LD_VALUE, scope));
+			}
+			expanded.put(NGSIConstants.NGSI_LD_SCOPE, finalScopes);
+		}
+		return JsonLdProcessor.compact(expanded, null, context, HttpUtils.opts, -1);
 
 	}
 
