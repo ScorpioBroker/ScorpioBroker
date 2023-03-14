@@ -4,6 +4,7 @@ import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -20,6 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.BatchRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteAttributeRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
 import io.vertx.core.http.impl.headers.HeadersMultiMap;
@@ -74,6 +76,17 @@ public class MicroServiceUtils {
 		result.setTenant(originalPayload.getTenant());
 		result.setRequestType(originalPayload.getRequestType());
 		result.setBatchInfo(originalPayload.getBatchInfo());
+		return result;
+	}
+
+	public static BatchRequest deepCopyRequestMessage(BatchRequest originalPayload) {
+		List<Map<String, Object>> copiedPayload = new ArrayList<>(originalPayload.getRequestPayload().size());
+		for (Map<String, Object> entry : originalPayload.getRequestPayload()) {
+			copiedPayload.add(deepCopyMap(entry));
+		}
+		BatchRequest result = new BatchRequest(originalPayload.getTenant(), copiedPayload,
+				originalPayload.getContexts(), originalPayload.getRequestType());
+		result.setEntityIds(originalPayload.getEntityIds());
 		return result;
 	}
 

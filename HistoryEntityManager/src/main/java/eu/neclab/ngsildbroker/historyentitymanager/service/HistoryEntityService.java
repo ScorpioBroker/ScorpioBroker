@@ -11,6 +11,7 @@ import java.util.Set;
 
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 
 import org.apache.commons.lang3.ArrayUtils;
@@ -49,6 +50,7 @@ import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.historyentitymanager.repository.HistoryDAO;
+import io.quarkus.runtime.StartupEvent;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.reactive.messaging.MutinyEmitter;
@@ -83,6 +85,11 @@ public class HistoryEntityService {
 	WebClient webClient;
 
 	private Table<String, String, RegistrationEntry> tenant2CId2RegEntries = HashBasedTable.create();
+
+	// This is needed so that @postconstruct runs on the startup thread and not on a
+	// worker thread later on
+	void startup(@Observes StartupEvent event) {
+	}
 
 	@PostConstruct
 	void init() {

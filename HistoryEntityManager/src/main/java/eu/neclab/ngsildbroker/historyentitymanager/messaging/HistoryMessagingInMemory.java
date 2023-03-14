@@ -8,6 +8,7 @@ import org.eclipse.microprofile.reactive.messaging.Acknowledgment.Strategy;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.BatchRequest;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import io.quarkus.arc.profile.IfBuildProfile;
 import io.smallrye.mutiny.Uni;
@@ -22,5 +23,13 @@ public class HistoryMessagingInMemory extends HistoryMessagingBase {
 		// need to make a real copy of the message because in memory means in memory
 		// reference so history will manipulate the subscriptions potentially
 		return baseHandleEntity(MicroServiceUtils.deepCopyRequestMessage(message));
+	}
+	
+	@Incoming(AppConstants.ENTITY_BATCH_CHANNEL)
+	@Acknowledgment(Strategy.PRE_PROCESSING)
+	public Uni<Void> handleBatchEntity(BatchRequest message) {
+		// need to make a real copy of the message because in memory means in memory
+		// reference so history will manipulate the subscriptions potentially
+		return baseHandleBatch(MicroServiceUtils.deepCopyRequestMessage(message));
 	}
 }

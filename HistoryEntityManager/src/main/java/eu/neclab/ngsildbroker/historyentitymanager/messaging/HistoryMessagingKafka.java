@@ -8,6 +8,7 @@ import org.eclipse.microprofile.reactive.messaging.Acknowledgment.Strategy;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.BatchRequest;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import io.quarkus.arc.profile.UnlessBuildProfile;
 import io.smallrye.mutiny.Uni;
@@ -26,5 +27,14 @@ public class HistoryMessagingKafka extends HistoryMessagingBase {
 			return baseHandleEntity(MicroServiceUtils.deepCopyRequestMessage(message));
 		}
 		return baseHandleEntity(message);
+	}
+
+	@Incoming(AppConstants.ENTITY_BATCH_RETRIEVE_CHANNEL)
+	@Acknowledgment(Strategy.PRE_PROCESSING)
+	public Uni<Void> handleBatchEntity(BatchRequest message) {
+		if (duplicate) {
+			return baseHandleBatch(MicroServiceUtils.deepCopyRequestMessage(message));
+		}
+		return baseHandleBatch(message);
 	}
 }

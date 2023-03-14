@@ -15,6 +15,7 @@ public class BatchRequest {
 	private List<Context> contexts;
 	private List<String> entityIds;
 	private int requestType;
+	private long sendTimestamp = System.currentTimeMillis();
 
 	public BatchRequest(String tenant, List<Map<String, Object>> requestPayload, List<Context> contexts,
 			int requestType) {
@@ -68,8 +69,7 @@ public class BatchRequest {
 	}
 
 	public long getSendTimestamp() {
-		// TODO Auto-generated method stub
-		return 0;
+		return sendTimestamp;
 	}
 
 }

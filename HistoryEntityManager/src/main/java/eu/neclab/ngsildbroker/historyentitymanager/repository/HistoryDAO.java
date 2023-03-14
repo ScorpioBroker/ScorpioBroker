@@ -66,33 +66,49 @@ public class HistoryDAO {
 	GeoJSONReader geoReader = new GeoJSONReader(JtsSpatialContext.GEO, new SpatialContextFactory());
 
 	public Uni<Boolean> createHistoryEntity(CreateHistoryEntityRequest request) {
+
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
 			Map<String, Object> payload = request.getPayload();
 			return client.getConnection().onItem().transformToUni(conn -> {
-				return conn.preparedQuery("INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY
-						+ " (id, e_types, createdat, modifiedat) VALUES($1, $2, $3::timestamp, $4::timestamp) "
-						+ "ON CONFLICT(id) DO UPDATE SET e_types = ARRAY(SELECT DISTINCT UNNEST(e_types || EXCLUDED.e_types)), modifiedat = EXCLUDED.modifiedat RETURNING (modifiedat = createdat)")
+				String sql = "INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY
+						+ " (id, e_types, createdat, modifiedat) VALUES($1, $2, $3, $4) "
+						+ "ON CONFLICT(id) DO UPDATE SET e_types = ARRAY(SELECT DISTINCT UNNEST("
+						+ DBConstants.DBTABLE_TEMPORALENTITY
+						+ ".e_types || EXCLUDED.e_types)), modifiedat = EXCLUDED.modifiedat RETURNING ("
+						+ DBConstants.DBTABLE_TEMPORALENTITY + ".modifiedat = " + DBConstants.DBTABLE_TEMPORALENTITY
+						+ ".createdat)";
+				logger.debug(sql);
+				return conn.preparedQuery(sql)
 						.execute(Tuple.of(payload.remove(NGSIConstants.JSON_LD_ID),
-								payload.remove(NGSIConstants.JSON_LD_TYPE),
-								payload.remove(NGSIConstants.NGSI_LD_CREATED_AT),
-								payload.remove(NGSIConstants.NGSI_LD_MODIFIED_AT)))
+								((List<String>) payload.remove(NGSIConstants.JSON_LD_TYPE)).toArray(new String[0]),
+								getLocalDateTime(payload.remove(NGSIConstants.NGSI_LD_CREATED_AT)),
+								getLocalDateTime(payload.remove(NGSIConstants.NGSI_LD_MODIFIED_AT))))
 						.onItem().transformToUni(rows -> {
 							List<Tuple> batch = Lists.newArrayList();
 							for (Entry<String, Object> entry : payload.entrySet()) {
 								@SuppressWarnings("unchecked")
 								List<Map<String, Object>> entries = (List<Map<String, Object>>) entry.getValue();
 								for (Map<String, Object> attribEntry : entries) {
+									attribEntry.put(NGSIConstants.NGSI_LD_INSTANCE_ID,
+											List.of(Map.of(NGSIConstants.JSON_LD_ID, UUID.randomUUID().toString())));
 									batch.add(Tuple.of(request.getId(), entry.getKey(), new JsonObject(attribEntry)));
 								}
 							}
+							logger.debug("INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
+									+ " (temporalentity_id, attributeid, data) VALUES ($1, $2, $3::jsonb)");
 							return conn
 									.preparedQuery("INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
-											+ " (temporalentity_id, attributeid, data) VALUES ($1, $2, $3::jsonb")
+											+ " (temporalentity_id, attributeid, data) VALUES ($1, $2, $3::jsonb)")
 									.executeBatch(batch).onItem()
 									.transformToUni(t -> Uni.createFrom().item(rows.iterator().next().getBoolean(0)));
 						});
 			});
 		});
+	}
+
+	private LocalDateTime getLocalDateTime(Object dateTimeEntry) {
+		return LocalDateTime.parse(((List<Map<String, String>>) dateTimeEntry).get(0).get(NGSIConstants.JSON_LD_VALUE),
+				SerializationTools.informatter);
 	}
 
 	public Uni<Void> batchUpsertHistoryEntity(BatchRequest request) {
@@ -105,16 +121,19 @@ public class HistoryDAO {
 					String entityId = (String) payload.remove(NGSIConstants.JSON_LD_ID);
 					if (payload.containsKey(NGSIConstants.JSON_LD_TYPE)) {
 						batchType.add(Tuple.of(entityId, payload.remove(NGSIConstants.JSON_LD_TYPE),
-								payload.remove(NGSIConstants.NGSI_LD_CREATED_AT),
-								payload.remove(NGSIConstants.NGSI_LD_MODIFIED_AT)));
+								getLocalDateTime(payload.remove(NGSIConstants.NGSI_LD_CREATED_AT)),
+								getLocalDateTime(payload.remove(NGSIConstants.NGSI_LD_MODIFIED_AT))));
 					} else {
 						payload.remove(NGSIConstants.NGSI_LD_CREATED_AT);
-						batchNoType.add(Tuple.of(payload.remove(NGSIConstants.NGSI_LD_MODIFIED_AT), entityId));
+						batchNoType.add(Tuple.of(getLocalDateTime(payload.remove(NGSIConstants.NGSI_LD_MODIFIED_AT)),
+								entityId));
 					}
 					for (Entry<String, Object> entry : payload.entrySet()) {
 						@SuppressWarnings("unchecked")
 						List<Map<String, Object>> entries = (List<Map<String, Object>>) entry.getValue();
 						for (Map<String, Object> attribEntry : entries) {
+							attribEntry.put(NGSIConstants.NGSI_LD_INSTANCE_ID,
+									List.of(Map.of(NGSIConstants.JSON_LD_ID, UUID.randomUUID().toString())));
 							batchAttribs.add(Tuple.of(entityId, entry.getKey(), new JsonObject(attribEntry)));
 						}
 					}
@@ -143,18 +162,17 @@ public class HistoryDAO {
 			List<Tuple> batch = Lists.newArrayList();
 			request.getEntityIds().forEach(entityId -> {
 				batch.add(Tuple.of(
-						SerializationTools.notifiedAt_formatter.format(LocalDateTime
-								.ofInstant(Instant.ofEpochMilli(request.getSendTimestamp()), ZoneId.of("Z"))),
+						LocalDateTime.ofInstant(Instant.ofEpochMilli(request.getSendTimestamp()), ZoneId.of("Z")),
 						entityId));
 			});
-			return client.preparedQuery("UPDATE temporalentity SET deletedat='$1'::TIMESTAMP WHERE id=$2")
-					.executeBatch(batch).onItem().transformToUni(t -> Uni.createFrom().voidItem());
+			return client.preparedQuery("UPDATE temporalentity SET deletedat=$1 WHERE id=$2").executeBatch(batch)
+					.onItem().transformToUni(t -> Uni.createFrom().voidItem());
 		});
 	}
 
 	public Uni<Void> deleteHistoryEntity(DeleteHistoryEntityRequest request) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
-			String sql = "DELETE * FROM " + DBConstants.DBTABLE_TEMPORALENTITY + " WHERE id = $1";
+			String sql = "DELETE FROM " + DBConstants.DBTABLE_TEMPORALENTITY + " WHERE id = $1";
 			return client.preparedQuery(sql).execute(Tuple.of(request.getId())).onFailure().recoverWithUni(e -> {
 				if (e instanceof PgException) {
 					if (((PgException) e).getCode().equals(AppConstants.SQL_NOT_FOUND)) {
@@ -176,12 +194,14 @@ public class HistoryDAO {
 					query1 = conn.preparedQuery("UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY
 							+ " SET e_types = ARRAY(SELECT DISTINCT UNNEST(e_types || $1)), modifiedat = $2 WHERE id=$3")
 							.execute(Tuple.of(payload.remove(NGSIConstants.JSON_LD_TYPE),
-									payload.remove(NGSIConstants.NGSI_LD_MODIFIED_AT), request.getId()));
+									getLocalDateTime(payload.remove(NGSIConstants.NGSI_LD_MODIFIED_AT)),
+									request.getId()));
 				} else {
 					query1 = conn
 							.preparedQuery(
 									"UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY + " SET modifiedat = $1 WHERE id=$2")
-							.execute(Tuple.of(payload.remove(NGSIConstants.NGSI_LD_MODIFIED_AT), request.getId()));
+							.execute(Tuple.of(getLocalDateTime(payload.remove(NGSIConstants.NGSI_LD_MODIFIED_AT)),
+									request.getId()));
 				}
 				payload.remove(NGSIConstants.JSON_LD_ID);
 				return query1.onFailure().recoverWithUni(e -> {
@@ -198,12 +218,14 @@ public class HistoryDAO {
 						@SuppressWarnings("unchecked")
 						List<Map<String, Object>> entries = (List<Map<String, Object>>) entry.getValue();
 						for (Map<String, Object> attribEntry : entries) {
+							attribEntry.put(NGSIConstants.NGSI_LD_INSTANCE_ID,
+									List.of(Map.of(NGSIConstants.JSON_LD_ID, UUID.randomUUID().toString())));
 							batch.add(Tuple.of(request.getId(), entry.getKey(), new JsonObject(attribEntry)));
 						}
 					}
 					return conn
 							.preparedQuery("INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
-									+ " (temporalentity_id, attributeid, data) VALUES ($1, $2, $3::jsonb")
+									+ " (temporalentity_id, attributeid, data) VALUES ($1, $2, $3::jsonb)")
 							.executeBatch(batch).onItem().transformToUni(t -> Uni.createFrom().voidItem());
 				});
 
@@ -232,7 +254,8 @@ public class HistoryDAO {
 							return conn
 									.preparedQuery("UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY
 											+ " SET modifiedat = $1 WHERE id = $2")
-									.execute(Tuple.of(payload.get(NGSIConstants.NGSI_LD_MODIFIED_AT), request.getId()))
+									.execute(Tuple.of(getLocalDateTime(payload.get(NGSIConstants.NGSI_LD_MODIFIED_AT)),
+											request.getId()))
 									.onItem().transformToUni(t -> Uni.createFrom().voidItem());
 						});
 
@@ -278,10 +301,8 @@ public class HistoryDAO {
 					return conn
 							.preparedQuery("UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY
 									+ " SET modifiedat = $1 WHERE id = $2")
-							.execute(Tuple.of(
-									SerializationTools.notifiedAt_formatter.format(LocalDateTime.ofInstant(
-											Instant.ofEpochMilli(request.getSendTimestamp()), ZoneId.of("Z"))),
-									request.getId()))
+							.execute(Tuple.of(LocalDateTime.ofInstant(Instant.ofEpochMilli(request.getSendTimestamp()),
+									ZoneId.of("Z")), request.getId()))
 							.onItem().transformToUni(t -> Uni.createFrom().voidItem());
 				});
 			});
@@ -308,8 +329,8 @@ public class HistoryDAO {
 									.preparedQuery("UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY
 											+ " SET modifiedat = $1 WHERE id = $2")
 									.execute(Tuple.of(
-											SerializationTools.notifiedAt_formatter.format(LocalDateTime.ofInstant(
-													Instant.ofEpochMilli(request.getSendTimestamp()), ZoneId.of("Z"))),
+											LocalDateTime.ofInstant(Instant.ofEpochMilli(request.getSendTimestamp()),
+													ZoneId.of("Z")),
 											request.getId()))
 									.onItem().transformToUni(t -> Uni.createFrom().voidItem());
 						});
@@ -319,12 +340,11 @@ public class HistoryDAO {
 
 	public Uni<Void> setEntityDeleted(BaseRequest request) {
 		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
-			return client.preparedQuery("UPDATE temporalentity SET deletedat='$1'::TIMESTAMP WHERE id=$2")
+			return client.preparedQuery("UPDATE temporalentity SET deletedat=$1 WHERE id=$2")
 					// You would think that we do the conversion in the db but somehow postgres
 					// can't easily convert utc into a timestamp without a timezone
 					.execute(Tuple.of(
-							SerializationTools.notifiedAt_formatter.format(LocalDateTime
-									.ofInstant(Instant.ofEpochMilli(request.getSendTimestamp()), ZoneId.of("Z"))),
+							LocalDateTime.ofInstant(Instant.ofEpochMilli(request.getSendTimestamp()), ZoneId.of("Z")),
 							request.getId()))
 					.onItem().transformToUni(t -> Uni.createFrom().voidItem());
 		});
@@ -334,12 +354,13 @@ public class HistoryDAO {
 	public Uni<Void> setAttributeDeleted(DeleteAttributeRequest request) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
 			return client.getConnection().onItem().transformToUni(conn -> {
-				String now = SerializationTools.notifiedAt_formatter.format(
-						LocalDateTime.ofInstant(Instant.ofEpochMilli(request.getSendTimestamp()), ZoneId.of("Z")));
+				LocalDateTime now = LocalDateTime.ofInstant(Instant.ofEpochMilli(request.getSendTimestamp()),
+						ZoneId.of("Z"));
+				String nowString = SerializationTools.notifiedAt_formatter.format(now);
 				String instanceId = UUID.randomUUID().toString();
-				JsonObject deletePayload = getAttribDeletedPayload(now, instanceId, request.getDatasetId());
+				JsonObject deletePayload = getAttribDeletedPayload(nowString, instanceId, request.getDatasetId());
 				return conn.preparedQuery("INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
-						+ " (temporalentity_id, attributeid, data, deletedat, instanceId) VALUES ($1, $2, $3::jsonb, $4::TIMESTAMP, $5")
+						+ " (temporalentity_id, attributeid, data, deletedat, instanceId) VALUES ($1, $2, $3::jsonb, $4, $5")
 						.execute(Tuple.of(request.getId(), request.getAttribName(), deletePayload, now, instanceId))
 						.onFailure().recoverWithUni(e -> {
 							if (e instanceof PgException) {
