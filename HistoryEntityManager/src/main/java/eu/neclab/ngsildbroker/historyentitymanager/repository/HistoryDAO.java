@@ -49,7 +49,6 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.MultiMap;
-import io.vertx.mutiny.sqlclient.PreparedQuery;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowIterator;
 import io.vertx.mutiny.sqlclient.RowSet;
@@ -80,11 +79,11 @@ public class HistoryDAO {
 						.onItem().transformToUni(rows -> {
 							List<Tuple> batch = Lists.newArrayList();
 							for (Entry<String, Object> entry : payload.entrySet()) {
+								@SuppressWarnings("unchecked")
 								List<Map<String, Object>> entries = (List<Map<String, Object>>) entry.getValue();
 								for (Map<String, Object> attribEntry : entries) {
 									batch.add(Tuple.of(request.getId(), entry.getKey(), new JsonObject(attribEntry)));
 								}
-								//
 							}
 							return conn
 									.preparedQuery("INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
@@ -113,6 +112,7 @@ public class HistoryDAO {
 						batchNoType.add(Tuple.of(payload.remove(NGSIConstants.NGSI_LD_MODIFIED_AT), entityId));
 					}
 					for (Entry<String, Object> entry : payload.entrySet()) {
+						@SuppressWarnings("unchecked")
 						List<Map<String, Object>> entries = (List<Map<String, Object>>) entry.getValue();
 						for (Map<String, Object> attribEntry : entries) {
 							batchAttribs.add(Tuple.of(entityId, entry.getKey(), new JsonObject(attribEntry)));
@@ -152,7 +152,7 @@ public class HistoryDAO {
 		});
 	}
 
-	public Uni<RowSet<Row>> deleteHistoryEntity(DeleteHistoryEntityRequest request) {
+	public Uni<Void> deleteHistoryEntity(DeleteHistoryEntityRequest request) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
 			String sql = "DELETE * FROM " + DBConstants.DBTABLE_TEMPORALENTITY + " WHERE id = $1";
 			return client.preparedQuery(sql).execute(Tuple.of(request.getId())).onFailure().recoverWithUni(e -> {
@@ -163,7 +163,7 @@ public class HistoryDAO {
 					}
 				}
 				return Uni.createFrom().failure(e);
-			});
+			}).onItem().transformToUni(rows -> Uni.createFrom().voidItem());
 		});
 	}
 
@@ -195,6 +195,7 @@ public class HistoryDAO {
 				}).onItem().transformToUni(rows -> {
 					List<Tuple> batch = Lists.newArrayList();
 					for (Entry<String, Object> entry : payload.entrySet()) {
+						@SuppressWarnings("unchecked")
 						List<Map<String, Object>> entries = (List<Map<String, Object>>) entry.getValue();
 						for (Map<String, Object> attribEntry : entries) {
 							batch.add(Tuple.of(request.getId(), entry.getKey(), new JsonObject(attribEntry)));
@@ -390,6 +391,7 @@ public class HistoryDAO {
 						return Uni.combine().all().unis(unis).combinedWith(list -> {
 							Table<String, String, RegistrationEntry> result = HashBasedTable.create();
 							for (Object obj : list) {
+								@SuppressWarnings("unchecked")
 								Tuple2<String, RowSet<Row>> tuple = (Tuple2<String, RowSet<Row>>) obj;
 								String tenant = tuple.getItem1();
 								RowIterator<Row> it2 = tuple.getItem2().iterator();
