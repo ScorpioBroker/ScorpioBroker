@@ -146,7 +146,7 @@ public class QueryService {
 			}
 			RemoteHost regHost = regEntry.host();
 			RemoteHost hostToQuery = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
-					regHost.cSourceId(), regEntry.queryEntity(), regEntry.queryBatch());
+					regHost.cSourceId(), regEntry.queryEntity(), regEntry.queryBatch(), regEntry.regMode());
 			QueryInfos queryInfos = remoteHost2QueryInfo.get(hostToQuery);
 			if (queryInfos == null) {
 				queryInfos = new QueryInfos();

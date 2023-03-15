@@ -407,7 +407,8 @@ public class EntityService {
 					|| (regEntry.eId() != null && regEntry.eId().equals(request.getId()))
 					|| (regEntry.eIdp() != null && request.getId().matches(regEntry.eIdp()))) {
 				result.add(new RemoteHost(regEntry.host().host(), regEntry.host().tenant(), regEntry.host().headers(),
-						regEntry.host().cSourceId(), regEntry.deleteEntity(), regEntry.deleteBatch()));
+						regEntry.host().cSourceId(), regEntry.deleteEntity(), regEntry.deleteBatch(),
+						regEntry.regMode()));
 			}
 		}
 		return result;
@@ -701,20 +702,22 @@ public class EntityService {
 						switch (request.getRequestType()) {
 						case AppConstants.CREATE_REQUEST:
 							host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
-									regHost.cSourceId(), regEntry.createEntity(), regEntry.createBatch());
+									regHost.cSourceId(), regEntry.createEntity(), regEntry.createBatch(),
+									regEntry.regMode());
 							break;
 						case AppConstants.UPDATE_REQUEST:
 							host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
-									regHost.cSourceId(), regEntry.appendAttrs(), false);
+									regHost.cSourceId(), regEntry.appendAttrs(), false, regEntry.regMode());
 							break;
 						case AppConstants.APPEND_REQUEST:
 							host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
-									regHost.cSourceId(), regEntry.appendAttrs(), regEntry.updateBatch());
+									regHost.cSourceId(), regEntry.appendAttrs(), regEntry.updateBatch(),
+									regEntry.regMode());
 							break;
 						case AppConstants.UPSERT_REQUEST:
 							host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
 									regHost.cSourceId(), (regEntry.appendAttrs() && regEntry.createEntity()),
-									regEntry.upsertBatch());
+									regEntry.upsertBatch(), regEntry.regMode());
 							break;
 						default:
 							return null;

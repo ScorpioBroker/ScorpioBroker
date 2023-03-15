@@ -98,34 +98,36 @@ public record RegistrationEntry(String cId, String eId, String eIdp, String type
 		List<RegistrationEntry> result = Lists.newArrayList();
 		boolean canDoSingleOp = false;
 		boolean canDoBatchOp = false;
-		String host = (String) ((List<Map<String, Object>>)payload.get(NGSIConstants.NGSI_LD_ENDPOINT)).get(0).get(NGSIConstants.JSON_LD_VALUE); 
+		String host = (String) ((List<Map<String, Object>>) payload.get(NGSIConstants.NGSI_LD_ENDPOINT)).get(0)
+				.get(NGSIConstants.JSON_LD_VALUE);
 		String tenant;
-		if(payload.containsKey(NGSIConstants.NGSI_LD_TENANT)) {			
-			tenant = (String) ((List<Map<String, Object>>)payload.get(NGSIConstants.NGSI_LD_TENANT)).get(0).get(NGSIConstants.JSON_LD_VALUE);
-		}else {
+		if (payload.containsKey(NGSIConstants.NGSI_LD_TENANT)) {
+			tenant = (String) ((List<Map<String, Object>>) payload.get(NGSIConstants.NGSI_LD_TENANT)).get(0)
+					.get(NGSIConstants.JSON_LD_VALUE);
+		} else {
 			tenant = AppConstants.INTERNAL_NULL_KEY;
 		}
 		String cSourceId = (String) payload.get(NGSIConstants.JSON_LD_ID);
-		MultiMap headers = null; 
+		MultiMap headers = null;
 		Shape location;
-		if(payload.containsKey(NGSIConstants.NGSI_LD_LOCATION)) {
+		if (payload.containsKey(NGSIConstants.NGSI_LD_LOCATION)) {
 			location = getShapeFromLocation(payload.get(NGSIConstants.NGSI_LD_LOCATION));
-		}else {
+		} else {
 			location = null;
 		}
 		String[] scopes;
-		if(payload.containsKey(NGSIConstants.NGSI_LD_SCOPE)) {
+		if (payload.containsKey(NGSIConstants.NGSI_LD_SCOPE)) {
 			scopes = getScopesFromPayload(payload.get(NGSIConstants.NGSI_LD_SCOPE));
-		}else {
+		} else {
 			scopes = null;
 		}
 		int mode;
-		
-		
-		
-		
-		RemoteHost remoteHost = new RemoteHost(host, tenant, headers, cSourceId, canDoSingleOp, canDoBatchOp);
-		new RegistrationEntry(null, null, null, null, null, null, null, null, 0, 0, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, null);
+
+		RemoteHost remoteHost = new RemoteHost(host, tenant, headers, cSourceId, canDoSingleOp, canDoBatchOp, 0);
+		new RegistrationEntry(null, null, null, null, null, null, null, null, 0, 0, false, false, false, false, false,
+				false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+				false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+				false, null);
 //		
 //			
 //			IF (NEW.REG ? 'https://uri.etsi.org/ngsi-ld/operations') THEN
@@ -272,9 +274,7 @@ public record RegistrationEntry(String cId, String eId, String eIdp, String type
 //	    RETURN NEW;
 //	END;
 //	$BODY$;
-		
-		
-		
+
 		return null;
 	}
 
@@ -283,11 +283,12 @@ public record RegistrationEntry(String cId, String eId, String eIdp, String type
 		return null;
 	}
 
-	public boolean matches(Set<String> id, String idPattern2, TypeQueryTerm typeQuery, String idPattern, AttrsQueryTerm attrsQuery,
-			QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery) {
+	public boolean matches(Set<String> id, String idPattern2, TypeQueryTerm typeQuery, String idPattern,
+			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery) {
 		return false;
 
 	}
+
 	private static Shape getShapeFromLocation(Object object) {
 		// TODO Auto-generated method stub
 		return null;

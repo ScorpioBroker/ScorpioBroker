@@ -1,29 +1,43 @@
 package eu.neclab.ngsildbroker.historyquerymanager.repository;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Table;
+
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.RegistrationEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AggrTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TemporalQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
-import eu.neclab.ngsildbroker.commons.enums.ErrorType;
-import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.storage.ClientManager;
 import eu.neclab.ngsildbroker.commons.tools.DBUtil;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.tuples.Tuple2;
 import io.vertx.mutiny.sqlclient.Row;
+import io.vertx.mutiny.sqlclient.RowIterator;
 import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
 
 @Singleton
 public class HistoryDAO {
+
+	private static Logger logger = LoggerFactory.getLogger(HistoryDAO.class);
 
 	@Inject
 	ClientManager clientManager;
@@ -85,8 +99,9 @@ public class HistoryDAO {
 				}
 			}
 
-			sql += " group by a.id, attributeid order by a.id) limit $" + dollarCount;
+			sql += " group by a.id, attributeid order by a.id limit $" + dollarCount + ") ";
 			dollarCount++;
+			tuple.addInteger(lastN);
 			sql += "select (jsonb_build_object('" + NGSIConstants.JSON_LD_ID + "', b.id, '" + NGSIConstants.JSON_LD_TYPE
 					+ "', a.e_types, '" + NGSIConstants.NGSI_LD_CREATED_AT + "', a.r_createdat, '"
 					+ NGSIConstants.NGSI_LD_MODIFIED_AT
@@ -95,32 +110,50 @@ public class HistoryDAO {
 					+ "', a.r_deletedat) end) || (case when a.scopes is null then '{}'::jsonb else jsonb_build_object('"
 					+ NGSIConstants.NGSI_LD_SCOPE
 					+ "', a.scopes) end) from b left join a on a.id = b.id group by b.id, a.e_types, a.r_createdat, a.r_modifiedat, a.r_deletedat, a.scopes";
-
-			return client.preparedQuery(sql).execute(tuple).onItem().transformToUni(rows -> {
+			return client.preparedQuery(sql).execute(tuple).onItem().transform(rows -> {
 				if (rows.size() == 0) {
-					return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
+					return new HashMap<>(0);
 				}
-				return Uni.createFrom().item(rows.iterator().next().getJsonObject(0).getMap());
+				return rows.iterator().next().getJsonObject(0).getMap();
 			});
 		});
 
 	}
 
-	/**
-	 * 
-	 * @param tenantId
-	 * @param entityId
-	 * @param expandedAttrs
-	 * @return returns a table of remote hosts to be called containing endpoint,
-	 *         tenant_id null if default, headers null if empty, reg_mode, attrs
-	 *         null if none are set by the reg
-	 */
-	public Uni<RowSet<Row>> getRemoteSourcesForEntity(String tenantId, String entityId, Set<String> expandedAttrs) {
-		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
-			return client.preparedQuery(
-					"SELECT C.endpoint, C.tenant_id, c.headers, c.reg_mode, (array_agg(DISTINCT C.e_prop) FILTER (WHERE C.e_prop is not null) || array_agg(DISTINCT C.e_rel) FILTER (WHERE C.e_rel is not null)) AS attrs FROM CSOURCEINFORMATION AS C WHERE C.retrieveTemporal AND (C.E_ID=$1 OR C.E_ID=NULL) AND (C.e_prop=NULL OR C.e_prop IN $2) AND (C.e_rel=NULL OR C.e_rel IN $2) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') GROUP BY C.endpoint, C.tenant_id, c.headers, c.reg_mode")
-					.execute(Tuple.of(entityId, expandedAttrs));
+	public Uni<Table<String, String, RegistrationEntry>> getAllRegistries() {
+		return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
+			return client.preparedQuery("SELECT tenant_id FROM tenant").execute().onItem()
+					.transformToUni(tenantRows -> {
+						List<Uni<Tuple2<String, RowSet<Row>>>> unis = Lists.newArrayList();
+						RowIterator<Row> it = tenantRows.iterator();
+						String sql = "SELECT cs_id, c_id, e_id, e_id_p, e_type, e_prop, e_rel, ST_AsGeoJSON(i_location), scopes, EXTRACT(MILLISECONDS FROM expires), endpoint, tenant_id, headers, reg_mode, createEntity, updateEntity, appendAttrs, updateAttrs, deleteAttrs, deleteEntity, createBatch, upsertBatch, updateBatch, deleteBatch, upsertTemporal, appendAttrsTemporal, deleteAttrsTemporal, updateAttrsTemporal, deleteAttrInstanceTemporal, deleteTemporal, mergeEntity, replaceEntity, replaceAttrs, mergeBatch, retrieveEntity, queryEntity, queryBatch, retrieveTemporal, queryTemporal, retrieveEntityTypes, retrieveEntityTypeDetails, retrieveEntityTypeInfo, retrieveAttrTypes, retrieveAttrTypeDetails, retrieveAttrTypeInfo, createSubscription, updateSubscription, retrieveSubscription, querySubscription, deleteSubscription FROM csourceinformation WHERE retrieveTemporal OR queryTemporal";
+						unis.add(client.preparedQuery(sql).execute().onItem()
+								.transform(rows -> Tuple2.of(AppConstants.INTERNAL_NULL_KEY, rows)));
+						while (it.hasNext()) {
+							unis.add(clientManager.getClient(it.next().getString(0), false).onItem()
+									.transformToUni(tenantClient -> {
+										return tenantClient.preparedQuery(sql).execute().onItem().transform(
+												tenantReg -> Tuple2.of(AppConstants.INTERNAL_NULL_KEY, tenantReg));
+									}));
+						}
+						return Uni.combine().all().unis(unis).combinedWith(list -> {
+							Table<String, String, RegistrationEntry> result = HashBasedTable.create();
+							for (Object obj : list) {
+								@SuppressWarnings("unchecked")
+								Tuple2<String, RowSet<Row>> tuple = (Tuple2<String, RowSet<Row>>) obj;
+								String tenant = tuple.getItem1();
+								RowIterator<Row> it2 = tuple.getItem2().iterator();
+								while (it2.hasNext()) {
+									Row row = it2.next();
+									result.put(tenant, row.getString(1),
+											DBUtil.getRegistrationEntry(row, tenant, logger));
+								}
+							}
+							return result;
+						});
+					});
 		});
+
 	}
 
 	public Uni<RowSet<Row>> query(String tenant, Set<String> entityIds, TypeQueryTerm typeQuery, String idPattern,

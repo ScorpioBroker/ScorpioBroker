@@ -4,9 +4,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.Map.Entry;
 import javax.annotation.PostConstruct;
+import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -15,10 +17,16 @@ import org.slf4j.LoggerFactory;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdError;
 import com.github.jsonldjava.core.JsonLdProcessor;
+import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.common.collect.Table;
+
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.RegistrationEntry;
+import eu.neclab.ngsildbroker.commons.datatypes.RemoteHost;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AggrTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
@@ -33,6 +41,7 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.historyquerymanager.repository.HistoryDAO;
+import io.quarkus.runtime.StartupEvent;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.MultiMap;
 import io.vertx.mutiny.core.Vertx;
@@ -54,9 +63,20 @@ public class HistoryQueryService {
 	@ConfigProperty(name = "scorpio.directDB", defaultValue = "true")
 	boolean directDB;
 
+	private Table<String, String, RegistrationEntry> tenant2CId2RegEntries = HashBasedTable.create();
+
 	@PostConstruct
-	void setup() {
+	void init() {
 		webClient = WebClient.create(vertx);
+		historyDAO.getAllRegistries().onItem().transform(t -> {
+			tenant2CId2RegEntries = t;
+			return null;
+		}).await().indefinitely();
+	}
+
+	// This is needed so that @postconstruct runs on the startup thread and not on a
+	// worker thread later on
+	void startup(@Observes StartupEvent event) {
 	}
 
 	public Uni<QueryResult> query(String tenant, Set<String> entityIds, TypeQueryTerm typeQuery, String idPattern,
@@ -89,167 +109,173 @@ public class HistoryQueryService {
 	public Uni<Map<String, Object>> retrieveEntity(String tenant, String entityId, AttrsQueryTerm attrsQuery,
 			AggrTerm aggrQuery, TemporalQueryTerm tempQuery, String lang, int lastN, boolean localOnly,
 			Context context) {
-		Uni<Map<String, Object>> getRemoteEntities;
-		Uni<Map<String, Object>> getEntity = historyDAO
-				.retrieveEntity(tenant, entityId, attrsQuery, aggrQuery, tempQuery, lang, lastN).onItem()
-				.transform(resultTable -> {
-					if (resultTable.size() == 0) {
-						return new HashMap<>(0);
-					}
-					return resultTable.iterator().next().getJsonObject(0).getMap();
-				});
+
+		Uni<Map<String, Object>> local = historyDAO.retrieveEntity(tenant, entityId, attrsQuery, aggrQuery, tempQuery,
+				lang, lastN);
 		if (localOnly) {
-			getRemoteEntities = Uni.createFrom().item(new HashMap<String, Object>(0));
+			return local;
 		} else {
-			getRemoteEntities = historyDAO.getRemoteSourcesForEntity(tenant, entityId, attrsQuery.getAttrs()).onItem()
-					.transformToUni(rows -> {
-
-						List<Uni<Map<String, Object>>> tmp = Lists.newArrayList();
-						// C.endpoint C.tenant_id, c.headers, c.reg_mode
-						rows.forEach(row -> {
-
-							StringBuilder url = new StringBuilder(row.getString(0)
-									+ NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT + "/" + entityId);
-							url.append("?");
-							String[] callAttrs = row.getArrayOfStrings(4);
-							// TODO remove the unneeded checks ... don't know how the db [null] will be
-							// return
-							if (callAttrs != null && callAttrs.length > 0 && callAttrs[0] != null) {
-								url.append("attrs=");
-								for (String callAttr : callAttrs) {
-									url.append(context.compactIri(callAttr));
-									url.append(',');
-								}
-								;
-								url.setLength(url.length() - 1);
-								url.append('&');
-							} else {
-								if (attrsQuery != null && !attrsQuery.getCompactedAttrs().isEmpty()) {
-									url.append("attrs=" + String.join(",", attrsQuery.getCompactedAttrs()) + "&");
-								}
-							}
-							if (lang != null) {
-								url.append("lang=" + lang + "&");
-							}
-
-							url.append("options=sysAttrs");
-							MultiMap remoteHeaders = MultiMap.newInstance(
-									HttpUtils.getHeadersForRemoteCall(row.getJsonArray(2), row.getString(1)));
-							tmp.add(webClient.get(url.toString()).putHeaders(remoteHeaders).send().onFailure()
-									.recoverWithNull().onItem().transform(response -> {
-										Map<String, Object> responseEntity;
-										if (response == null || response.statusCode() != 200) {
-											responseEntity = null;
-										} else {
-											responseEntity = response.bodyAsJsonObject().getMap();
-											try {
-												responseEntity = (Map<String, Object>) JsonLdProcessor
-														.expand(HttpUtils.getContextFromHeader(remoteHeaders),
-																responseEntity, HttpUtils.opts, -1, false)
-														.get(0);
-											} catch (JsonLdError e) {
-												// TODO Auto-generated catch block
-												e.printStackTrace();
-											} catch (ResponseException e) {
-												// TODO Auto-generated catch block
-												e.printStackTrace();
-											}
-
-											responseEntity.put(EntityTools.REG_MODE_KEY, row.getInteger(3));
-
-										}
-										return responseEntity;
-									}));
-						});
-						return Uni.combine().all().unis(tmp).combinedWith(list -> {
-							Map<String, Object> result = Maps.newHashMap();
-							for (Object entry : list) {
-								if (entry == null) {
-									continue;
-								}
-								Map<String, Object> entityMap = (Map<String, Object>) entry;
-								int regMode = (int) entityMap.remove(EntityTools.REG_MODE_KEY);
-								for (Entry<String, Object> attrib : entityMap.entrySet()) {
-									String key = attrib.getKey();
-									if (EntityTools.DO_NOT_MERGE_KEYS.contains(key)) {
-										if (!result.containsKey(key)) {
-											result.put(key, attrib.getValue());
-										} else {
-											if (key.equals(NGSIConstants.JSON_LD_TYPE)) {
-												List<String> newType = (List<String>) attrib.getValue();
-												List<String> currentType = (List<String>) result.get(key);
-												if (!newType.equals(currentType)) {
-													Set<String> tmpSet = Sets.newHashSet();
-													tmpSet.addAll(newType);
-													tmpSet.addAll(currentType);
-													result.put(key, Lists.newArrayList(tmpSet));
-												}
-											}
-										}
-										continue;
-									}
-									Object currentValue = result.get(key);
-									List<Map<String, Object>> newValue = (List<Map<String, Object>>) attrib.getValue();
-									EntityTools.addRegModeToValue(newValue, regMode);
-									if (currentValue == null) {
-										result.put(key, newValue);
-									} else {
-										EntityTools.mergeValues((List<Map<String, Object>>) currentValue, newValue);
-									}
-
-								}
-
-							}
-							return result;
-						}).onFailure().recoverWithItem(new HashMap<String, Object>());
-					});
-		}
-		return Uni.combine().all().unis(getEntity, getRemoteEntities).asTuple().onItem().transformToUni(t -> {
-			Map<String, Object> localEntity = t.getItem1();
-			Map<String, Object> remoteEntity = t.getItem2();
-//				if (attrs != null && !attrs.isEmpty()) {
-//					EntityTools.removeAttrs(localEntity, attrs);
-//				}
-			if (localEntity.isEmpty() && remoteEntity.isEmpty()) {
-				return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound, entityId + " was not found"));
+			Map<RemoteHost, Set<String>> remoteHosts = getRemoteHostsForRetrieve(tenant, entityId, attrsQuery);
+			if (remoteHosts.isEmpty()) {
+				return local;
 			}
-
-			if (remoteEntity.isEmpty()) {
-				return Uni.createFrom().item(localEntity);
-			}
-			if (localEntity.isEmpty()) {
-				EntityTools.removeRegKey(remoteEntity);
-				return Uni.createFrom().item(remoteEntity);
-			}
-			for (Entry<String, Object> attrib : remoteEntity.entrySet()) {
-				String key = attrib.getKey();
-				if (EntityTools.DO_NOT_MERGE_KEYS.contains(key)) {
-					if (key.equals(NGSIConstants.JSON_LD_TYPE)) {
-						List<String> newType = (List<String>) attrib.getValue();
-						List<String> currentType = (List<String>) localEntity.get(key);
-						if (!newType.equals(currentType)) {
-							Set<String> tmpSet = Sets.newHashSet();
-							tmpSet.addAll(newType);
-							tmpSet.addAll(currentType);
-							localEntity.put(key, Lists.newArrayList(tmpSet));
-						}
+			List<Uni<Map<String, Object>>> remoteCalls = new ArrayList<>(remoteHosts.size());
+			for (Entry<RemoteHost, Set<String>> entry : remoteHosts.entrySet()) {
+				RemoteHost remoteHost = entry.getKey();
+				String url = remoteHost.host() + NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT + "/" + entityId;
+				Set<String> attrs = entry.getValue();
+				if (attrs != null) {
+					url += "?" + NGSIConstants.QUERY_PARAMETER_ATTRS + "=";
+					for (String attr : attrs) {
+						url += context.compactIri(attr) + ",";
 					}
-					continue;
-				}
-				Object currentValue = localEntity.get(key);
-				List<Map<String, Object>> newValue = (List<Map<String, Object>>) attrib.getValue();
-				if (currentValue == null) {
-					localEntity.put(key, newValue);
-				} else {
-					EntityTools.mergeValues((List<Map<String, Object>>) currentValue, newValue);
+					url = url.substring(0, url.length() - 1);
 				}
 
+				remoteCalls
+						.add(webClient.get(url).putHeaders(remoteHost.headers()).send().onItem().transform(response -> {
+							Map<String, Object> responseEntity;
+							if (response == null || response.statusCode() != 200) {
+								responseEntity = null;
+							} else {
+								responseEntity = response.bodyAsJsonObject().getMap();
+								try {
+									responseEntity = (Map<String, Object>) JsonLdProcessor
+											.expand(HttpUtils.getContextFromHeader(remoteHost.headers()),
+													responseEntity, HttpUtils.opts, -1, false)
+											.get(0);
+								} catch (JsonLdError e) {
+									// TODO Auto-generated catch block
+									e.printStackTrace();
+								} catch (ResponseException e) {
+									// TODO Auto-generated catch block
+									e.printStackTrace();
+								}
+
+								responseEntity.put(EntityTools.REG_MODE_KEY, remoteHost.regMode());
+
+							}
+							return responseEntity;
+						}));
 			}
-			EntityTools.removeRegKey(localEntity);
-			return Uni.createFrom().item(localEntity);
+			Uni<Map<String, Object>> remote = Uni.combine().all().unis(remoteCalls).combinedWith(list -> {
+				Map<String, Object> result = Maps.newHashMap();
+				for (Object entry : list) {
+					if (entry == null) {
+						continue;
+					}
+					Map<String, Object> entityMap = (Map<String, Object>) entry;
+					int regMode = (int) entityMap.remove(EntityTools.REG_MODE_KEY);
+					for (Entry<String, Object> attrib : entityMap.entrySet()) {
+						String key = attrib.getKey();
+						if (EntityTools.DO_NOT_MERGE_KEYS.contains(key)) {
+							if (!result.containsKey(key)) {
+								result.put(key, attrib.getValue());
+							} else {
+								if (key.equals(NGSIConstants.JSON_LD_TYPE)) {
+									List<String> newType = (List<String>) attrib.getValue();
+									List<String> currentType = (List<String>) result.get(key);
+									if (!newType.equals(currentType)) {
+										Set<String> tmpSet = Sets.newHashSet();
+										tmpSet.addAll(newType);
+										tmpSet.addAll(currentType);
+										result.put(key, Lists.newArrayList(tmpSet));
+									}
+								}
+							}
+							continue;
+						}
+						Object currentValue = result.get(key);
+						List<Map<String, Object>> newValue = (List<Map<String, Object>>) attrib.getValue();
+						EntityTools.addRegModeToValue(newValue, regMode);
+						if (currentValue == null) {
+							result.put(key, newValue);
+						} else {
+							EntityTools.mergeValues((List<Map<String, Object>>) currentValue, newValue);
+						}
 
-		});
+					}
 
+				}
+				return result;
+			}).onFailure().recoverWithItem(new HashMap<String, Object>());
+
+			return Uni.combine().all().unis(local, remote).asTuple().onItem().transformToUni(t -> {
+				Map<String, Object> localEntity = t.getItem1();
+				Map<String, Object> remoteEntity = t.getItem2();
+				if (localEntity.isEmpty() && remoteEntity.isEmpty()) {
+					return Uni.createFrom()
+							.failure(new ResponseException(ErrorType.NotFound, entityId + " was not found"));
+				}
+
+				if (remoteEntity.isEmpty()) {
+					return Uni.createFrom().item(localEntity);
+				}
+				if (localEntity.isEmpty()) {
+					EntityTools.removeRegKey(remoteEntity);
+					return Uni.createFrom().item(remoteEntity);
+				}
+				for (Entry<String, Object> attrib : remoteEntity.entrySet()) {
+					String key = attrib.getKey();
+					if (EntityTools.DO_NOT_MERGE_KEYS.contains(key)) {
+						if (key.equals(NGSIConstants.JSON_LD_TYPE)) {
+							List<String> newType = (List<String>) attrib.getValue();
+							List<String> currentType = (List<String>) localEntity.get(key);
+							if (!newType.equals(currentType)) {
+								Set<String> tmpSet = Sets.newHashSet();
+								tmpSet.addAll(newType);
+								tmpSet.addAll(currentType);
+								localEntity.put(key, Lists.newArrayList(tmpSet));
+							}
+						}
+						continue;
+					}
+					Object currentValue = localEntity.get(key);
+					List<Map<String, Object>> newValue = (List<Map<String, Object>>) attrib.getValue();
+					if (currentValue == null) {
+						localEntity.put(key, newValue);
+					} else {
+						EntityTools.mergeValues((List<Map<String, Object>>) currentValue, newValue);
+					}
+
+				}
+				EntityTools.removeRegKey(localEntity);
+				return Uni.createFrom().item(localEntity);
+
+			});
+		}
+	}
+
+	private Map<RemoteHost, Set<String>> getRemoteHostsForRetrieve(String tenant, String entityId,
+			AttrsQueryTerm attrsQuery) {
+		Map<RemoteHost, Set<String>> result = Maps.newHashMap();
+
+		for (RegistrationEntry regEntry : tenant2CId2RegEntries.row(tenant).values()) {
+			if (!regEntry.retrieveTemporal()) {
+				continue;
+			}
+			if ((regEntry.eId() == null && regEntry.eIdp() == null)
+					|| (regEntry.eId() != null && regEntry.eId().equals(entityId))
+					|| (regEntry.eIdp() != null && entityId.matches(regEntry.eIdp()))) {
+				RemoteHost remoteHost = new RemoteHost(regEntry.host().host(), regEntry.host().tenant(),
+						regEntry.host().headers(), regEntry.host().cSourceId(), true, false, regEntry.regMode());
+				if (attrsQuery != null) {
+					Set<String> attribs = attrsQuery.getAttrs();
+					if (result.containsKey(remoteHost)) {
+						attribs = result.get(remoteHost);
+					} else {
+						attribs = Sets.newHashSet(attrsQuery.getAttrs());
+						result.put(remoteHost, attribs);
+					}
+//				if ((regEntry.eProp() != null && !attribs.contains(regEntry.eProp()))) {
+//					attribs.remove(regEntry.)
+//				}
+				} else {
+					result.put(remoteHost, null);
+				}
+			}
+		}
+		return result;
 	}
 
 }
