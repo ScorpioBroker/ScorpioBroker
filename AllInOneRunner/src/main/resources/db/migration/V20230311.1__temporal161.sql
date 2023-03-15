@@ -37,11 +37,22 @@ CREATE OR REPLACE FUNCTION temporalentityattrinstance_extract_jsonb_fields() RET
             ELSE 
                 NEW.geovalue = NULL;
             END IF;
-            IF (NEW.data ? 'https://uri.etsi.org/ngsi-ld/default-context/scope') THEN
-        		UPDATE temporalentity SET scopes = getScopes(NEW.data#>'{https://uri.etsi.org/ngsi-ld/default-context/scope}') WHERE id = NEW.temporalentity_id;
-        	END IF;
         END IF;
 
         RETURN NEW;
     END;
 $_$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION getScopeEntry (scopeList text[])
+RETURNS jsonb AS $scopes$
+declare
+	scopes jsonb;
+	i text;
+BEGIN
+	scopes := '[]'::jsonb;
+    FOREACH i IN ARRAY scopeList LOOP
+		scopes = scopes || jsonb_build_object('@value', i);
+	END LOOP;
+	RETURN scopes;
+END;
+$scopes$ LANGUAGE plpgsql;

@@ -1,6 +1,8 @@
 package eu.neclab.ngsildbroker.historyquerymanager.repository;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -10,7 +12,11 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TemporalQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
+import eu.neclab.ngsildbroker.commons.enums.ErrorType;
+import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.storage.ClientManager;
+import eu.neclab.ngsildbroker.commons.tools.DBUtil;
+import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowSet;
@@ -33,73 +39,69 @@ public class HistoryDAO {
 	 * @param lastN
 	 * @return a single row with a single column containing the constructed entity.
 	 */
-	public Uni<RowSet<Row>> retrieveEntity(String tenant, String entityId, AttrsQueryTerm attrsQuery,
+	public Uni<Map<String, Object>> retrieveEntity(String tenant, String entityId, AttrsQueryTerm attrsQuery,
 			AggrTerm aggrQuery, TemporalQueryTerm tempQuery, String lang, int lastN) {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
-			String sql = "with a as (select id, ('{\"@id\": \"'||e_id||'\", \"" + NGSIConstants.NGSI_LD_CREATED_AT
-					+ "\": [{\"@type\": \"" + NGSIConstants.NGSI_LD_DATE_TIME
-					+ "\", \"@value\": \"'|| createdat||'\"}], \"" + NGSIConstants.NGSI_LD_MODIFIED_AT
-					+ "\": [{\"@type\": \"" + NGSIConstants.NGSI_LD_DATE_TIME
-					+ "\", \"@value\": \"'|| modifiedat||'\"}]}')::jsonb as entity from temporalentity where e_id=$1),\n"
-					+ "b as (select '@type' as key, jsonb_agg(e_type) as value from a left join tempetype2iid on a.id = tempetype2iid.iid group by a.entity),\n";
-			ArrayList<Object> tupleInput = new ArrayList<>();
-			tupleInput.add(entityId);
-			int dollarCount = 2;
-			if (aggrQuery != null) {
-				sql += "c as (select sum(case)...";
-			} else {
-				sql += "c as (select attributeId as key, jsonb_agg(data) as value from a left join temporalentityattrinstance on a.id = temporalentityattrinstance.iid where temporalentityattrinstance.is_toplevel";
-				if (attrsQuery != null || tempQuery != null) {
-					sql += " AND ";
-					if (attrsQuery != null) {
-						
-						sql += "attributeId in (";
 
-						for (String value : attrsQuery.getAttrs()) {
-							sql += "$" + dollarCount + ",";
-							tupleInput.add(value);
-							dollarCount++;
-						}
-						sql = sql.substring(0, sql.length() - 1);
-						sql += " ) ";
-					}
-					
-					if (tempQuery != null) {
-						sql += " AND $" + dollarCount+ "::VARCHAR ";
-						tupleInput.add(tempQuery.getTimeProperty());
-						dollarCount++;
-						switch (tempQuery.getTimerel()) {
-						case NGSIConstants.TIME_REL_BEFORE:
-							sql += " < $" + dollarCount + "::TIMESTAMP ";
-							tupleInput.add(tempQuery.getTimeAt());
-							dollarCount++;
-							break;
-						case NGSIConstants.TIME_REL_AFTER:
-							sql += " > $" + dollarCount + "::TIMESTAMP ";
-							tupleInput.add(tempQuery.getTimeAt());
-							dollarCount++;
-							break;
-						case NGSIConstants.TIME_REL_BETWEEN:
-							sql += " between $" + dollarCount + "::TIMESTAMP AND $" + (dollarCount + 1)
-									+ "::TIMESTAMP ";
-							tupleInput.add(tempQuery.getTimeAt());
-							tupleInput.add(tempQuery.getEndTimeAt());
-							dollarCount += 2;
-							break;
-						}
-					}
-				}
-				sql += "group by attributeId limit $" + dollarCount + ")";
-				tupleInput.add(lastN);
+			Tuple tuple = Tuple.tuple();
+			tuple.addString(entityId);
+			int dollarCount = 2;
+			String sql = "with a as (select id , e_types, case when scopes is null then null else getScopeEntry(scopes) end as scopes, jsonb_build_array(jsonb_build_object('@type', 'bladatetime', '@value', to_char(temporalentity.createdat, 'YYYY-MM-DDThh:mm:ss.usZ'))) as r_createdat, jsonb_build_array(jsonb_build_object('@type', 'bladatetime', '@value', to_char(temporalentity.modifiedat, 'YYYY-MM-DDThh:mm:ss.usZ'))) as r_modifiedat, case when deletedat is null then null else jsonb_build_array(jsonb_build_object('@type', 'bladatetime', '@value', to_char(temporalentity.deletedat, 'YYYY-MM-DDThh:mm:ss.usZ')))  end as r_deletedat from temporalentity where id=$1),"
+					+ "b as (select a.id as id, temporalentityattrinstance.attributeid as attribid, ";
+			if (aggrQuery == null) {
+				sql += "jsonb_agg(data) ";
+			} else {
+
+			}
+			sql += "as data from temporalentityattrinstance, a where temporalentity_id = a.id ";
+
+			if (attrsQuery != null) {
+
+				sql += "AND attributeId in ($" + dollarCount + ")";
+				dollarCount++;
+				tuple.addArrayOfString(attrsQuery.getAttrs().toArray(new String[0]));
 			}
 
-			sql += ",\nd as (select jsonb_object_agg(c.key, c.value) as attrs FROM c),\ne as (select '"
-					+ NGSIConstants.NGSI_LD_SCOPE
-					+ "' as key, jsonb_agg(jsonb_build_object('@id', e_scope)) as value from b, a left join tempescope2iid on a.id = tempescope2iid.iid where e_scope is not null)\n"
-					+ "select jsonb_build_object(b.key, b.value, e.key, e.value) || d.attrs || a.entity from a, b, d, e";
+			if (tempQuery != null) {
+				sql += "AND " + tempQuery.getTimeProperty();
+				switch (tempQuery.getTimerel()) {
+				case NGSIConstants.TIME_REL_BEFORE:
+					sql += " < $" + dollarCount;
+					tuple.addLocalDateTime(LocalDateTime.parse(tempQuery.getTimeAt(), SerializationTools.informatter));
+					dollarCount++;
+					break;
+				case NGSIConstants.TIME_REL_AFTER:
+					sql += " > $" + dollarCount;
+					tuple.addLocalDateTime(LocalDateTime.parse(tempQuery.getTimeAt(), SerializationTools.informatter));
+					dollarCount++;
+					break;
+				case NGSIConstants.TIME_REL_BETWEEN:
+					sql += " between $" + dollarCount + " AND $" + (dollarCount + 1);
+					tuple.addLocalDateTime(LocalDateTime.parse(tempQuery.getTimeAt(), SerializationTools.informatter));
+					tuple.addLocalDateTime(
+							LocalDateTime.parse(tempQuery.getEndTimeAt(), SerializationTools.informatter));
+					dollarCount += 2;
+					break;
+				}
+			}
 
-			return client.preparedQuery(sql.toString()).execute(Tuple.from(tupleInput)).onFailure().retry().atMost(3);
-			// .onFailure().recoverWithUni(e -> Uni.createFrom().failure(e));
+			sql += " group by a.id, attributeid order by a.id) limit $" + dollarCount;
+			dollarCount++;
+			sql += "select (jsonb_build_object('" + NGSIConstants.JSON_LD_ID + "', b.id, '" + NGSIConstants.JSON_LD_TYPE
+					+ "', a.e_types, '" + NGSIConstants.NGSI_LD_CREATED_AT + "', a.r_createdat, '"
+					+ NGSIConstants.NGSI_LD_MODIFIED_AT
+					+ "', a.r_modifiedat) || jsonb_object_agg(b.attribid, b.data)) || (case when a.r_deletedat is null then '{}'::jsonb else jsonb_build_object('"
+					+ NGSIConstants.NGSI_LD_DELETED_AT
+					+ "', a.r_deletedat) end) || (case when a.scopes is null then '{}'::jsonb else jsonb_build_object('"
+					+ NGSIConstants.NGSI_LD_SCOPE
+					+ "', a.scopes) end) from b left join a on a.id = b.id group by b.id, a.e_types, a.r_createdat, a.r_modifiedat, a.r_deletedat, a.scopes";
+
+			return client.preparedQuery(sql).execute(tuple).onItem().transformToUni(rows -> {
+				if (rows.size() == 0) {
+					return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
+				}
+				return Uni.createFrom().item(rows.iterator().next().getJsonObject(0).getMap());
+			});
 		});
 
 	}
@@ -327,6 +329,8 @@ public class HistoryDAO {
 //			return client.preparedQuery(sql.toString()).execute(Tuple.from(tupleInput)).onFailure().retry().atMost(3)
 //					.onFailure().recoverWithUni(e -> Uni.createFrom().failure(e));
 //		});
+
+//		select id as r_id, e_types as r_types, scopes as r_scopes ,to_char(temporalentity.createdat, 'YYYY-MM-DDThh:mm:ss.usZ') as r_createdat, to_char(temporalentity.modifiedat, 'YYYY-MM-DDThh:mm:ss.usZ') as r_modifiedat, to_char(temporalentity.deletedat, 'YYYY-MM-DDThh:mm:ss.usZ')  as r_deletedat, jsonb_build_object(temporalentityattrinstance.attributeid, jsonb_agg(data)) from temporalentity, temporalentityattrinstance where id = temporalentityattrinstance.temporalentity_id GROUP BY r_id, r_types, r_scopes, r_createdat, r_modifiedat, r_deletedat, temporalentityattrinstance.attributeid
 		return null;
 	}
 

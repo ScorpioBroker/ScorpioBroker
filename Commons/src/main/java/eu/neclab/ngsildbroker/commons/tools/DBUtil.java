@@ -1,6 +1,11 @@
 package eu.neclab.ngsildbroker.commons.tools;
 
 import java.net.URI;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 
 public class DBUtil {
 
@@ -13,6 +18,12 @@ public class DBUtil {
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	@SuppressWarnings("unchecked")
+	public static LocalDateTime getLocalDateTime(Object dateTimeEntry) {
+		return LocalDateTime.parse(((List<Map<String, String>>) dateTimeEntry).get(0).get(NGSIConstants.JSON_LD_VALUE),
+				SerializationTools.informatter);
 	}
 
 }
