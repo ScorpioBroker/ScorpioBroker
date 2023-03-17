@@ -56,3 +56,23 @@ BEGIN
 	RETURN scopes;
 END;
 $scopes$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION getScopes (scopeList jsonb)
+RETURNS text[] AS $scopes$
+declare
+	scopes text[];
+	i jsonb;
+BEGIN
+	if scopeList is null THEN
+		RETURN null;
+	END IF;
+	FOR i IN SELECT jsonb_array_elements FROM jsonb_array_elements(scopeList) LOOP
+		SELECT array_append(scopes, (i#>>'{@value}')::text) into scopes;
+	END LOOP;
+	RETURN scopes;
+END;
+$scopes$ LANGUAGE plpgsql;
+
+CREATE INDEX i_temporalentityattrinstance_attribname
+    ON public.temporalentityattrinstance USING hash
+    (attributeid text_ops);

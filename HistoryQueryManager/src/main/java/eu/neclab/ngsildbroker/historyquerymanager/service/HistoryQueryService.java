@@ -32,6 +32,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.AggrTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TemporalQueryTerm;
@@ -79,18 +80,13 @@ public class HistoryQueryService {
 	void startup(@Observes StartupEvent event) {
 	}
 
-	public Uni<QueryResult> query(String tenant, Set<String> entityIds, TypeQueryTerm typeQuery, String idPattern,
+	public Uni<QueryResult> query(String tenant, String[] entityIds, TypeQueryTerm typeQuery, String idPattern,
 			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, CSFQueryTerm csf, GeoQueryTerm geoQuery,
-			ScopeQueryTerm scopeQuery, TemporalQueryTerm tempQuery, AggrTerm aggrQuery, String lang, int lastN,
-			int limit, int offSet, boolean count, boolean localOnly, Context context) {
-		Uni<List<Map<String, Object>>> getRemoteEntities;
-		// Uni<List<Map<String, Object>>> getEntities = historyDAO.query
-		if (localOnly) {
-			getRemoteEntities = Uni.createFrom().item(new ArrayList<Map<String, Object>>(0));
-		} else {
-
-		}
-		return null;
+			ScopeQueryTerm scopeQuery, TemporalQueryTerm tempQuery, AggrTerm aggrQuery, LanguageQueryTerm langQuery,
+			int lastN, int limit, int offSet, boolean count, boolean localOnly, Context context) {
+		Uni<QueryResult> local = historyDAO.query(tenant, entityIds, typeQuery, idPattern, attrsQuery, qQuery,
+				tempQuery, aggrQuery, langQuery, lastN, limit, offSet, count);
+		return local;
 	}
 
 	/**
@@ -259,19 +255,29 @@ public class HistoryQueryService {
 					|| (regEntry.eIdp() != null && entityId.matches(regEntry.eIdp()))) {
 				RemoteHost remoteHost = new RemoteHost(regEntry.host().host(), regEntry.host().tenant(),
 						regEntry.host().headers(), regEntry.host().cSourceId(), true, false, regEntry.regMode());
-				if (attrsQuery != null) {
-					Set<String> attribs = attrsQuery.getAttrs();
-					if (result.containsKey(remoteHost)) {
-						attribs = result.get(remoteHost);
-					} else {
-						attribs = Sets.newHashSet(attrsQuery.getAttrs());
-						result.put(remoteHost, attribs);
-					}
-//				if ((regEntry.eProp() != null && !attribs.contains(regEntry.eProp()))) {
-//					attribs.remove(regEntry.)
-//				}
+
+				Set<String> attribs;
+				if (result.containsKey(remoteHost)) {
+					attribs = result.get(remoteHost);
 				} else {
-					result.put(remoteHost, null);
+					attribs = Sets.newHashSet();
+					result.put(remoteHost, attribs);
+				}
+				if (regEntry.eProp() != null) {
+					attribs.add(regEntry.eProp());
+				}
+				if (regEntry.eRel() != null) {
+					attribs.add(regEntry.eRel());
+				}
+			}
+		}
+		if (attrsQuery != null) {
+			for (Entry<RemoteHost, Set<String>> entry : result.entrySet()) {
+				Set<String> regAttrs = entry.getValue();
+				if (regAttrs.isEmpty()) {
+					regAttrs.addAll(attrsQuery.getAttrs());
+				} else {
+					regAttrs.retainAll(attrsQuery.getAttrs());
 				}
 			}
 		}

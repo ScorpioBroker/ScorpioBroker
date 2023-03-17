@@ -474,7 +474,7 @@ public class TypeQueryTerm {
 				return dollar;
 			}
 			TypeQueryTerm current = this;
-			Boolean childPresentFlag=false;
+			Boolean childPresentFlag = false;
 			while (current.hasNext() || current.firstChild != null) {
 				if (current.firstChild != null) {
 					result.append("]");
@@ -483,7 +483,7 @@ public class TypeQueryTerm {
 					} else {
 						result.append(" OR (");
 					}
-					childPresentFlag=true;
+					childPresentFlag = true;
 					dollar = current.firstChild.toSql(result, tuple, dollar);
 					result.append(")");
 					break;
@@ -513,154 +513,13 @@ public class TypeQueryTerm {
 				}
 			}
 
-			if(childPresentFlag){
-			    result.append(") ");
-			}else{
+			if (childPresentFlag) {
+				result.append(") ");
+			} else {
 				result.append("]) ");
 			}
 		}
 		return dollar;
-	}
-
-	public Tuple4<Character, String, Integer, List<Object>> toSql(char startChar, int dollar) {
-
-		StringBuilder builder = new StringBuilder();
-		StringBuilder builderFinalLine = new StringBuilder();
-		StringBuilder finalTables = new StringBuilder();
-		List<Object> tupleInput = Lists.newArrayList();
-		Tuple2<Character, Integer> tmp = toSql(builder, builderFinalLine, finalTables, startChar, "etype2iid", dollar,
-				tupleInput);
-		Character finalChar = tmp.getItem1();
-		if (!finalTables.isEmpty()) {
-			finalChar++;
-			builder.append(',');
-			builder.append(finalChar);
-			builder.append(" as (SELECT etype2iid.iid AS iid FROM etype2iid,");
-			builder.append(finalTables);
-			builder.append(" WHERE ");
-			builder.append(builderFinalLine);
-
-		} else {
-			finalChar++;
-			builder.append(',');
-			builder.append(finalChar);
-			builder.append(" as (SELECT iid FROM ");
-			builder.append((char) (finalChar - 1));
-		}
-		return Tuple4.of(finalChar, builder.toString(), tmp.getItem2(), tupleInput);
-	}
-
-	private Tuple2<Character, Integer> toSql(StringBuilder result, StringBuilder resultFinalLine,
-			StringBuilder finalTables, char currentChar, String sqlTable, int dollar, List<Object> tupleInput) {
-		if (type == null || type.isEmpty()) {
-			TypeQueryTerm current = this;
-			while (current.firstChild != null) {
-				current = current.firstChild;
-			}
-			return current.next.toSql(result, resultFinalLine, finalTables, currentChar, sqlTable, dollar, tupleInput);
-		} else {
-			int andCounter = 1;
-			result.append(currentChar);
-			result.append(" as (SELECT ");
-			result.append(sqlTable);
-			result.append(".iid, ");
-			result.append(sqlTable);
-			result.append(".e_type FROM ");
-			result.append(sqlTable);
-			result.append(" WHERE ");
-			result.append(sqlTable);
-			result.append(".e_type=$");
-			result.append(dollar);
-			tupleInput.add(type);
-			dollar++;
-			if (hasNext()) {
-				result.append(" or ");
-			}
-			TypeQueryTerm current = this;
-
-			while (current.hasNext() || current.firstChild != null) {
-				if (current.firstChild != null) {
-					resultFinalLine.append('(');
-					Tuple2<Character, Integer> tmp = current.firstChild.toSql(result, resultFinalLine, finalTables,
-							currentChar, sqlTable, dollar, tupleInput);
-					currentChar = tmp.getItem1();
-					dollar = tmp.getItem2();
-					resultFinalLine.append(')');
-					break;
-				}
-				current = current.getNext();
-				if (current.type != null && !current.type.isEmpty()) {
-					result.append(sqlTable);
-					result.append(".e_type=$");
-					result.append(dollar);
-					dollar++;
-					tupleInput.add(current.type);
-					andCounter++;
-					if ((current.getPrev() != null && current.isNextAnd() != current.getPrev().isNextAnd())
-							|| current.firstChild != null) {
-						if (current.getPrev() != null && current.getPrev().isNextAnd()) {
-							result.append(" GROUP BY ");
-							result.append(sqlTable);
-							result.append(".iid, ");
-							result.append(sqlTable);
-							result.append(".e_type HAVING COUNT(");
-							result.append(sqlTable);
-							result.append(".e_type)=");
-							result.append(andCounter);
-						}
-						if (current.nextAnd) {
-							sqlTable = currentChar + "";
-						} else {
-							resultFinalLine.append("etype2iid.iid=");
-							resultFinalLine.append(currentChar);
-							resultFinalLine.append(".iid");
-							resultFinalLine.append(" or ");
-							finalTables.append(currentChar);
-							finalTables.append(',');
-							sqlTable = "etype2iid";
-						}
-						result.append("),");
-						andCounter = 0;
-						currentChar++;
-						if (current.hasNext() && current.next.getFirstChild() == null) {
-							result.append(currentChar);
-							result.append(" as (SELECT ");
-							result.append(sqlTable);
-							result.append(".iid, ");
-							result.append(sqlTable);
-							result.append(".e_type FROM ");
-							result.append(sqlTable);
-							result.append(" WHERE ");
-						}
-					} else {
-						if (current.hasNext()) {
-							result.append(" or ");
-						}
-					}
-
-				}
-
-			}
-			if (current.getPrev() != null && current.getPrev().isNextAnd()) {
-				result.append(" GROUP BY ");
-				result.append(sqlTable);
-				result.append(".iid, ");
-				result.append(sqlTable);
-				result.append(".e_type HAVING COUNT(");
-				result.append(sqlTable);
-				result.append(".e_type)=");
-				result.append(andCounter);
-			}
-			if (current.type != null) {
-				resultFinalLine.append("etype2iid.iid=");
-				resultFinalLine.append(currentChar);
-				resultFinalLine.append(".iid");
-				finalTables.append(currentChar);
-				result.append(')');
-			}
-			return Tuple2.of(currentChar, dollar);
-
-		}
 	}
 
 	public TypeQueryTerm getDuplicateAndRemoveNotKnownTypes(String[] entityTypes) {
@@ -725,36 +584,4 @@ public class TypeQueryTerm {
 		this.allTypes = allTypes;
 	}
 
-	/**
-	 * 
-	 * @param startChar character to start the X as (Select
-	 * @return a Tuple of the current character for further sql, the sql query, the
-	 *         current int for for the $ in the query, list for prepared query
-	 */
-	public Tuple4<Character, String, Integer, List<Object>> toTemporalSql(char startChar, int dollar) {
-		StringBuilder builder = new StringBuilder();
-		StringBuilder builderFinalLine = new StringBuilder();
-		StringBuilder finalTables = new StringBuilder();
-		List<Object> tupleInput = Lists.newArrayList();
-		Tuple2<Character, Integer> finalChars = toSql(builder, builderFinalLine, finalTables, startChar,
-				"tempetype2iid", dollar, tupleInput);
-		Character finalChar = finalChars.getItem1();
-		if (!finalTables.isEmpty()) {
-			finalChar++;
-			builder.append(',');
-			builder.append(finalChar);
-			builder.append(" as (SELECT tempetype2iid.iid AS iid FROM tempetype2iid,");
-			builder.append(finalTables);
-			builder.append(" WHERE ");
-			builder.append(builderFinalLine);
-
-		} else {
-			finalChar++;
-			builder.append(',');
-			builder.append(finalChar);
-			builder.append(" as (SELECT iid FROM ");
-			builder.append((char) (finalChar - 1));
-		}
-		return Tuple4.of(finalChar, builder.toString(), finalChars.getItem2(), tupleInput);
-	}
 }

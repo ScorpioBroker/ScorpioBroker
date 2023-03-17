@@ -1,5 +1,11 @@
 package eu.neclab.ngsildbroker.commons.datatypes.terms;
 
+import java.time.LocalDateTime;
+
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
+import io.vertx.mutiny.sqlclient.Tuple;
+
 public class TemporalQueryTerm {
 	String timeProperty;
 	String timerel;
@@ -43,6 +49,34 @@ public class TemporalQueryTerm {
 
 	public void setEndTimeAt(String endTimeAt) {
 		this.endTimeAt = endTimeAt;
+	}
+
+	public int toSql(StringBuilder sql, Tuple tuple, int dollarCount) {
+		sql.append(getTimeProperty());
+		switch (getTimerel()) {
+		case NGSIConstants.TIME_REL_BEFORE:
+			sql.append(" < $");
+			sql.append(dollarCount);
+			tuple.addLocalDateTime(LocalDateTime.parse(getTimeAt(), SerializationTools.informatter));
+			dollarCount++;
+			break;
+		case NGSIConstants.TIME_REL_AFTER:
+			sql.append(" > $");
+			sql.append(dollarCount);
+			tuple.addLocalDateTime(LocalDateTime.parse(getTimeAt(), SerializationTools.informatter));
+			dollarCount++;
+			break;
+		case NGSIConstants.TIME_REL_BETWEEN:
+			sql.append(" between $");
+			sql.append(dollarCount);
+			sql.append(" AND $");
+			sql.append((dollarCount + 1));
+			tuple.addLocalDateTime(LocalDateTime.parse(getTimeAt(), SerializationTools.informatter));
+			tuple.addLocalDateTime(LocalDateTime.parse(getEndTimeAt(), SerializationTools.informatter));
+			dollarCount += 2;
+			break;
+		}
+		return dollarCount;
 	}
 
 }

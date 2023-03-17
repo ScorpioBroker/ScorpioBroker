@@ -340,7 +340,7 @@ public class HistoryDAO {
 									+ " SET modifiedat = $1 WHERE id = $2")
 							.execute(Tuple.of(LocalDateTime.ofInstant(Instant.ofEpochMilli(request.getSendTimestamp()),
 									ZoneId.of("Z")), request.getId()))
-							.onItem().transformToUni(t -> Uni.createFrom().voidItem());
+							.onItem().transformToUni(t -> conn.close());
 				});
 			});
 		});
