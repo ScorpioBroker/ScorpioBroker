@@ -1,8 +1,9 @@
 {
 	"info": {
-		"_postman_id": "d3cc50d6-e547-48b3-9897-6ba4c20f71d9",
+		"_postman_id": "77e42c15-95a0-4acb-88e2-1170627188a6",
 		"name": "API Test",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "23420048"
 	},
 	"item": [
 		{
@@ -233,7 +234,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld\"]\r\n}",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld\"]\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -1458,7 +1459,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld\"]\r\n}",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld\"]\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -1514,7 +1515,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststringupdated\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123456},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456789},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values updated\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1:updated\"},\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld\"]\r\n}",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststringupdated\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123456},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456789},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values updated\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1:updated\"},\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld\"]\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -9170,10 +9171,11 @@
 																	"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
 																	"    pm.expect(jsonData.length).to.eql(4);\r",
-																	"    pm.expect(jsonData[0]).to.eql(pm.collectionVariables.get(\"createdmulti\"));\r",
-																	"    pm.expect(jsonData[1]).to.eql(pm.collectionVariables.get(\"created4levelnotfound\"));\r",
-																	"    pm.expect(jsonData[2]).to.eql(pm.collectionVariables.get(\"created2levelnotfound\"));\r",
-																	"    pm.expect(jsonData[3]).to.eql(pm.collectionVariables.get(\"created4level\"));\r",
+																	"    console.log(\"length :: \",jsonData.length);\r",
+																	"     pm.expect(jsonData[0]).to.eql(pm.collectionVariables.get(\"created4level\"));\r",
+																	"     pm.expect(jsonData[1]).to.eql(pm.collectionVariables.get(\"created4levelnotfound\"));\r",
+																	"     pm.expect(jsonData[2]).to.eql(pm.collectionVariables.get(\"created2levelnotfound\"));\r",
+																	"\t pm.expect(jsonData[3]).to.eql(pm.collectionVariables.get(\"createdmulti\"));\r",
 																	"});"
 																],
 																"type": "text/javascript"
@@ -9525,8 +9527,8 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
-																	"    delete jsonData['isActive'];\r",
-																	"    delete jsonData['status'];\r",
+																	"     delete jsonData['timesSent'];\r",
+																	"     delete jsonData['timesFailed'];\r",
 																	"    console.log(\"expected: \" + JSON.stringify(expected));\r",
 																	"    console.log(\"received: \" + JSON.stringify(jsonData));\r",
 																	"    pm.expect(jsonData).to.eql(expected);\r",
@@ -9641,7 +9643,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:storeSubscription4\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"Test2\"\r\n   \t\t}\r\n\t],\r\n    \"q\": \"speed>90\",\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"http://localhost:8080\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    },\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld\"]\r\n}"
+															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:storeSubscription4\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"Test2\"\r\n   \t\t}\r\n\t],\r\n    \"q\": \"speed>90\",\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"http://localhost:8080\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    },\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld\"]\r\n}"
 														},
 														"url": {
 															"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions",
@@ -9670,8 +9672,8 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
-																	"    delete jsonData['isActive'];\r",
-																	"    delete jsonData['status'];\r",
+																	"     delete jsonData['timesSent'];\r",
+																	"     delete jsonData['timesFailed'];\r",
 																	"    console.log(\"expected: \" + JSON.stringify(expected));\r",
 																	"    console.log(\"received: \" + JSON.stringify(jsonData));\r",
 																	"    pm.expect(jsonData).to.eql(expected);\r",
@@ -9681,6 +9683,9 @@
 															}
 														}
 													],
+													"protocolProfileBehavior": {
+														"disableBodyPruning": true
+													},
 													"request": {
 														"method": "GET",
 														"header": [
@@ -9695,6 +9700,15 @@
 																"type": "default"
 															}
 														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n    \"id\": \"urn:ngsi-ld:Subscription:storeSubscription4\",\r\n    \"type\": \"Subscription\",\r\n    \"entities\": [\r\n        {\r\n            \"type\": \"Test2\"\r\n        }\r\n    ],\r\n    \"q\": \"speed>90\",\r\n    \"notification\": {\r\n        \"format\": \"normalized\",\r\n        \"endpoint\": {\r\n            \"uri\": \"http://localhost:8080\",\r\n            \"accept\": \"application/json\"\r\n        }\r\n    },\r\n    \"@context\": [\r\n        \"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\",\r\n        \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld\"\r\n    ]\r\n},\r\n{\r\n    \"id\": \"urn:ngsi-ld:Subscription:storeSubscription4\",\r\n    \"type\": \"Subscription\",\r\n    \"entities\": [\r\n        {\r\n            \"type\": \"Test2\"\r\n        }\r\n    ],\r\n    \"notification\": {\r\n        \"endpoint\": {\r\n            \"accept\": \"application/json\",\r\n            \"uri\": \"http://localhost:8080\"\r\n        },\r\n        \"format\": \"normalized\"\r\n    },\r\n    \"q\": \"speed>90\",\r\n    \"timesFailed\": 0,\r\n    \"timesSent\": 0,\r\n    \"@context\": [\r\n        \"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\",\r\n        \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld\"\r\n    ]\r\n}",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
 														"url": {
 															"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions/{{subId}}",
 															"host": [
@@ -9844,8 +9858,8 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
-																	"    delete jsonData['isActive'];\r",
-																	"    delete jsonData['status'];\r",
+																	"     delete jsonData['timesSent'];\r",
+																	"     delete jsonData['timesFailed'];\r",
 																	"    console.log(\"expected: \" + JSON.stringify(expected));\r",
 																	"    console.log(\"received: \" + JSON.stringify(jsonData));\r",
 																	"    pm.expect(jsonData).to.eql(expected);\r",
@@ -10004,8 +10018,8 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
-																	"    delete jsonData['isActive'];\r",
-																	"    delete jsonData['status'];\r",
+																	"     delete jsonData['timesSent'];\r",
+																	"     delete jsonData['timesFailed'];\r",
 																	"    console.log(\"expected: \" + JSON.stringify(expected));\r",
 																	"    console.log(\"received: \" + JSON.stringify(jsonData));\r",
 																	"    pm.expect(jsonData).to.eql(expected);\r",
@@ -10077,7 +10091,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:storeSubscription4\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"Test3\"\r\n   \t\t}\r\n\t],\r\n    \"q\": \"speed>100\",\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"http://localhost:8080\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    }\r\n}"
+															"raw": "{\r\n    \"id\": \"urn:ngsi-ld:Subscription:storeSubscription4\",\r\n    \"type\": \"Subscription\",\r\n    \"entities\": [\r\n        {\r\n            \"type\": \"Test3\"\r\n        }\r\n    ],\r\n    \"q\": \"speed>100\",\r\n    \"notification\": {\r\n        \"format\": \"normalized\",\r\n        \"endpoint\": {\r\n            \"uri\": \"http://localhost:8080\",\r\n            \"accept\": \"application/json\"\r\n        }\r\n    }\r\n}"
 														},
 														"url": {
 															"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions/{{subId}}",
@@ -10107,8 +10121,8 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
-																	"    delete jsonData['isActive'];\r",
-																	"    delete jsonData['status'];\r",
+																	"   delete jsonData['timesSent'];\r",
+																	"   delete jsonData['timesFailed'];\r",
 																	"    console.log(\"expected: \" + JSON.stringify(expected));\r",
 																	"    console.log(\"received: \" + JSON.stringify(jsonData));\r",
 																	"    pm.expect(jsonData).to.eql(expected);\r",
@@ -10223,7 +10237,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:storeSubscription4\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"Test2\"\r\n   \t\t}\r\n\t],\r\n    \"q\": \"speed>90\",\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"http://localhost:8080\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    },\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld\"]\r\n}"
+															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:storeSubscription4\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"Test2\"\r\n   \t\t}\r\n\t],\r\n    \"q\": \"speed>90\",\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"http://localhost:8080\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    },\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld\"]\r\n}"
 														},
 														"url": {
 															"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions",
@@ -10252,8 +10266,8 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
-																	"    delete jsonData['isActive'];\r",
-																	"    delete jsonData['status'];\r",
+																	"    delete jsonData['timesSent'];\r",
+																	"     delete jsonData['timesFailed'];\r",
 																	"    console.log(\"expected: \" + JSON.stringify(expected));\r",
 																	"    console.log(\"received: \" + JSON.stringify(jsonData));\r",
 																	"    pm.expect(jsonData).to.eql(expected);\r",
@@ -10331,7 +10345,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:storeSubscription4\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"Test3\"\r\n   \t\t}\r\n\t],\r\n    \"q\": \"speed>100\",\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"http://localhost:8080\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    },\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld\"]\r\n}"
+															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:storeSubscription4\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"Test3\"\r\n   \t\t}\r\n\t],\r\n    \"q\": \"speed>100\",\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"http://localhost:8080\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    },\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld\"]\r\n}"
 														},
 														"url": {
 															"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions/{{subId}}",
@@ -10361,8 +10375,8 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
-																	"    delete jsonData['isActive'];\r",
-																	"    delete jsonData['status'];\r",
+																	"     delete jsonData['timesSent'];\r",
+																	"     delete jsonData['timesFailed'];\r",
 																	"    console.log(\"expected: \" + JSON.stringify(expected));\r",
 																	"    console.log(\"received: \" + JSON.stringify(jsonData));\r",
 																	"    pm.expect(jsonData).to.eql(expected);\r",
@@ -10535,8 +10549,8 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
-																	"    delete jsonData['isActive'];\r",
-																	"    delete jsonData['status'];\r",
+																	"    delete jsonData['timesFailed'];\r",
+																	"    delete jsonData['timesSent'];\r",
 																	"    console.log(\"expected: \" + JSON.stringify(expected));\r",
 																	"    console.log(\"received: \" + JSON.stringify(jsonData));\r",
 																	"    pm.expect(jsonData).to.eql(expected);\r",
@@ -10671,8 +10685,8 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
-																	"    delete jsonData['isActive'];\r",
-																	"    delete jsonData['status'];\r",
+																	"    delete jsonData['timesFailed'];\r",
+																	"    delete jsonData['timesSent'];\r",
 																	"    console.log(\"expected: \" + JSON.stringify(expected));\r",
 																	"    console.log(\"received: \" + JSON.stringify(jsonData));\r",
 																	"    pm.expect(jsonData).to.eql(expected);\r",
@@ -10805,7 +10819,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:mytest1\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"TestType\"\r\n   \t\t}\r\n\t],\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"{{notificationserver}}\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    }\r\n}\r\n\r\n"
+															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:mytest1\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"TestType\"\r\n   \t\t}\r\n\t],\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"{{notificationserver-external}}\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    }\r\n}\r\n\r\n"
 														},
 														"url": {
 															"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions",
@@ -37765,6 +37779,16 @@
 					]
 				}
 			]
+		}
+	],
+	"variable": [
+		{
+			"key": "subId",
+			"value": ""
+		},
+		{
+			"key": "entityId",
+			"value": ""
 		}
 	]
 }
