@@ -128,6 +128,14 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_TENANT = "https://uri.etsi.org/ngsi-ld/tenant";
 	public final static String NGSI_LD_ATTRIBUTE_TYPES = "https://uri.etsi.org/ngsi-ld/attributeTypes";
 	public final static String NGSI_LD_ATTRIBUTE = "https://uri.etsi.org/ngsi-ld/Attribute";
+	public final static String NGSI_LD_AVG = "https://uri.etsi.org/ngsi-ld/avg";
+	public final static String NGSI_LD_MIN = "https://uri.etsi.org/ngsi-ld/min";
+	public final static String NGSI_LD_MAX = "https://uri.etsi.org/ngsi-ld/max";
+	public final static String NGSI_LD_SUM = "https://uri.etsi.org/ngsi-ld/sum";
+	public final static String NGSI_LD_SUMSQ = "https://uri.etsi.org/ngsi-ld/sumsq";
+	public final static String NGSI_LD_STDDEV = "https://uri.etsi.org/ngsi-ld/stddev";
+	public final static String NGSI_LD_TOTALCOUNT = "https://uri.etsi.org/ngsi-ld/totalCount";
+	public final static String NGSI_LD_DISTINCTCOUNT = "https://uri.etsi.org/ngsi-ld/distinctCount";
 	public final static String NGSI_LD_ATTRS = "https://uri.etsi.org/ngsi-ld/attrs";
 	public final static String NGSI_LD_ATTRIBUTE_LIST_1 = "https://uri.etsi.org/ngsi-ld/AttributeList";
 	public final static String NGSI_LD_ATTRIBUTE_LIST_2 = "https://uri.etsi.org/ngsi-ld/attributeList";
