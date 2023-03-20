@@ -73,54 +73,46 @@ public class HistoryDAO {
 							+ NGSIConstants.NGSI_LD_DATE_TIME
 							+ "', '@value', to_char(temporalentity.deletedat, 'YYYY-MM-DDThh:mm:ss.usZ')))  end as r_deletedat from temporalentity where id=$1),"
 							+ "b as (SELECT DISTINCT TEAI.ID AS ID, TEAI.ATTRIBUTEID AS ATTRIBID, u.data as data "
-							+ "FROM (A LEFT JOIN TEMPORALENTITYATTRINSTANCE on A.id = TEMPORALENTITYATTRINSTANCE.temporalentity_id) as TEAI LEFT JOIN LATERAL (SELECT ");
+							+ "FROM (A LEFT JOIN TEMPORALENTITYATTRINSTANCE on A.id = TEMPORALENTITYATTRINSTANCE.temporalentity_id) as TEAI LEFT JOIN LATERAL (");
 
 			if (aggrQuery == null) {
-				sql.append("jsonb_agg(x.data) as data from (Select data as data from TEMPORALENTITYATTRINSTANCE TEAI2");
+				sql.append(
+						"SELECT jsonb_agg(x.data) as data from (Select data as data from TEMPORALENTITYATTRINSTANCE TEAI2");
 			} else {
-				sql.append("jsonb_build_array(");
+				sql.append("WITH Z as (SELECT ");
 				for (String aggrFunction : aggrQuery.getAggrFunctions()) {
 					switch (aggrFunction) {
 					case NGSIConstants.AGGR_METH_SUM:
-						sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.NGSI_LD_SUM + "', ");
-						sql.append("JSONB_BUILD_ARRAY(JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_LIST
-								+ "', JSONB_AGG(X.SUMDATA))))");
+						sql.append(
+								"JSONB_AGG(X.SUMDATA) FILTER (WHERE X.SUMDATA#>>'{@list,0,@value}' is not null) AS SUMDATA");
 						break;
 					case NGSIConstants.AGGR_METH_MIN:
-						sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.NGSI_LD_MIN + "', ");
-						sql.append("JSONB_BUILD_ARRAY(JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_LIST
-								+ "', JSONB_AGG(X.MINDATA))))");
+						sql.append(
+								"JSONB_AGG(X.MINDATA) FILTER (WHERE X.MINDATA#>>'{@list,0,@value}' is not null) AS MINDATA");
 						break;
 					case NGSIConstants.AGGR_METH_MAX:
-						sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.NGSI_LD_MAX + "', ");
-						sql.append("JSONB_BUILD_ARRAY(JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_LIST
-								+ "', JSONB_AGG(X.MAXDATA))))");
-
+						sql.append(
+								"JSONB_AGG(X.MAXDATA) FILTER (WHERE X.MAXDATA#>>'{@list,0,@value}' is not null) AS MAXDATA");
 						break;
 					case NGSIConstants.AGGR_METH_AVG:
-						sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.NGSI_LD_AVG + "', ");
-						sql.append("JSONB_BUILD_ARRAY(JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_LIST
-								+ "', JSONB_AGG(X.AVGDATA))))");
+						sql.append(
+								"JSONB_AGG(X.AVGDATA) FILTER (WHERE X.AVGDATA#>>'{@list,0,@value}' is not null) AS AVGDATA");
 						break;
 					case NGSIConstants.AGGR_METH_STDDEV:
-						sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.NGSI_LD_STDDEV + "', ");
-						sql.append("JSONB_BUILD_ARRAY(JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_LIST
-								+ "', JSONB_AGG(X.STDDEVDATA))))");
+						sql.append(
+								"JSONB_AGG(X.STDDEVDATA) FILTER (WHERE X.STDDEVDATA#>>'{@list,0,@value}' is not null) AS STDDEVDATA");
 						break;
 					case NGSIConstants.AGGR_METH_SUMSQ:
-						sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.NGSI_LD_SUMSQ + "', ");
-						sql.append("JSONB_BUILD_ARRAY(JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_LIST
-								+ "', JSONB_AGG(X.SUMSQDATA))))");
+						sql.append(
+								"JSONB_AGG(X.SUMSQDATA) FILTER (WHERE X.SUMSQDATA#>>'{@list,0,@value}' is not null) AS SUMSQDATA");
 						break;
 					case NGSIConstants.AGGR_METH_TOTAL_COUNT:
-						sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.NGSI_LD_TOTALCOUNT + "', ");
-						sql.append("JSONB_BUILD_ARRAY(JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_LIST
-								+ "', JSONB_AGG(X.TOTALCOUNTDATA))))");
+						sql.append(
+								"JSONB_AGG(X.TOTALCOUNTDATA) FILTER (WHERE X.TOTALCOUNTDATA#>>'{@list,0,@value}' is not null) AS TOTALCOUNTDATA");
 						break;
 					case NGSIConstants.AGGR_METH_DISTINCT_COUNT:
-						sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.NGSI_LD_DISTINCTCOUNT + "', ");
-						sql.append("JSONB_BUILD_ARRAY(JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_LIST
-								+ "', JSONB_AGG(X.DISTINCTCOUNTDATA))))");
+						sql.append(
+								"JSONB_AGG(X.DISTINCTCOUNTDATA) FILTER (WHERE X.DISTINCTCOUNTDATA#>>'{@list,0,@value}' is not null) AS DISTINCTCOUNTDATA");
 						break;
 					default:
 						break;
@@ -128,7 +120,7 @@ public class HistoryDAO {
 					sql.append(',');
 				}
 				sql.setLength(sql.length() - 1);
-				sql.append(") as data FROM (SELECT ");
+				sql.append(" FROM (SELECT ");
 				int dollarplus = 1;
 				for (String aggrFunction : aggrQuery.getAggrFunctions()) {
 					sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_LIST
@@ -290,7 +282,8 @@ public class HistoryDAO {
 				dollarCount += dollarplus;
 				sql.append(" FROM TEMPORALENTITYATTRINSTANCE TEAI2 RIGHT JOIN generate_series (");
 				if (tempQuery == null) {
-					sql.append("TEAI.raw_createdat, TEAI.raw_modifiedat");
+					sql.append(
+							"TEAI.raw_createdat, TEAI.raw_modifiedat - (TEAI.RAW_MODIFIEDAT - TEAI.RAW_CREATEDAT)::interval");
 				} else {
 					switch (tempQuery.getTimerel()) {
 					case NGSIConstants.TIME_REL_BEFORE:
@@ -324,15 +317,20 @@ public class HistoryDAO {
 				}
 				dollarplus = 1;
 				if (aggrQuery.getPeriod() != null) {
-					sql.append(", $");
+					sql.append("-$");
 					sql.append(dollarCount);
-					sql.append(") as pr(period) on teai2.modifiedat between pr.period and pr.period + $");
+					sql.append("::interval, $");
+					sql.append(dollarCount);
+					sql.append("::interval) as pr(period) on teai2.modifiedat between pr.period and pr.period + $");
 					sql.append(dollarCount);
 					tuple.addString(aggrQuery.getPeriod());
 				} else {
 					if (tempQuery != null) {
 						switch (tempQuery.getTimerel()) {
 						case NGSIConstants.TIME_REL_BEFORE:
+							sql.append("-(TEAI.raw_createdat - $");
+							sql.append(dollarCount);
+							sql.append(")::interval");
 							sql.append(",(TEAI.raw_createdat - $");
 							sql.append(dollarCount);
 							sql.append(
@@ -343,6 +341,9 @@ public class HistoryDAO {
 									LocalDateTime.parse(tempQuery.getTimeAt(), SerializationTools.informatter));
 							break;
 						case NGSIConstants.TIME_REL_AFTER:
+							sql.append("-($");
+							sql.append(dollarCount);
+							sql.append("- TEAI.raw_modifiedat)::interval");
 							sql.append(",($");
 							sql.append(dollarCount);
 							sql.append(
@@ -353,7 +354,11 @@ public class HistoryDAO {
 									LocalDateTime.parse(tempQuery.getTimeAt(), SerializationTools.informatter));
 							break;
 						case NGSIConstants.TIME_REL_BETWEEN:
-							sql.append(",($");
+							sql.append("- ($");
+							sql.append(dollarCount);
+							sql.append("- $");
+							sql.append(dollarCount + 1);
+							sql.append(")::interval,($");
 							sql.append(dollarCount);
 							sql.append("- $");
 							sql.append(dollarCount + 1);
@@ -378,7 +383,6 @@ public class HistoryDAO {
 					}
 					dollarCount += dollarplus;
 				}
-
 			}
 			sql.append(
 					" WHERE TEAI.ATTRIBUTEID = TEAI2.ATTRIBUTEID AND TEAI.temporalentity_id = TEAI2.temporalentity_id ");
@@ -399,16 +403,77 @@ public class HistoryDAO {
 				sql.append(dollarCount);
 				dollarCount++;
 				tuple.addInteger(lastN);
+				sql.append("as x) as u on true ORDER BY TEAI.ID) ");
 			} else {
-				sql.append(" GROUP BY pr.period)");
-			}
+				sql.append(" GROUP BY pr.period");
+				sql.append(")as x), tmp as (SELECT JSONB_BUILD_ARRAY(");
+				for (String aggrFunction : aggrQuery.getAggrFunctions()) {
+					switch (aggrFunction) {
+					case NGSIConstants.AGGR_METH_SUM:
+						sql.append("case when Z.sumdata is not null then ");
+						sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.NGSI_LD_SUM + "', ");
+						sql.append("JSONB_BUILD_ARRAY(JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_LIST
+								+ "', Z.sumdata)))");
+						break;
+					case NGSIConstants.AGGR_METH_MIN:
+						sql.append("case when Z.sumdata is not null then ");
+						sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.NGSI_LD_MIN + "', ");
+						sql.append("JSONB_BUILD_ARRAY(JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_LIST
+								+ "', Z.MINDATA)))");
+						break;
+					case NGSIConstants.AGGR_METH_MAX:
+						sql.append("case when Z.sumdata is not null then ");
+						sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.NGSI_LD_MAX + "', ");
+						sql.append("JSONB_BUILD_ARRAY(JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_LIST
+								+ "', Z.MAXDATA)))");
 
-			sql.append("as x) as u on true ORDER BY TEAI.ID) ");
+						break;
+					case NGSIConstants.AGGR_METH_AVG:
+						sql.append("case when Z.sumdata is not null then ");
+						sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.NGSI_LD_AVG + "', ");
+						sql.append("JSONB_BUILD_ARRAY(JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_LIST
+								+ "', Z.AVGDATA)))");
+						break;
+					case NGSIConstants.AGGR_METH_STDDEV:
+						sql.append("case when Z.sumdata is not null then ");
+						sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.NGSI_LD_STDDEV + "', ");
+						sql.append("JSONB_BUILD_ARRAY(JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_LIST
+								+ "', Z.STDDEVDATA)))");
+						break;
+					case NGSIConstants.AGGR_METH_SUMSQ:
+						sql.append("case when Z.sumdata is not null then ");
+						sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.NGSI_LD_SUMSQ + "', ");
+						sql.append("JSONB_BUILD_ARRAY(JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_LIST
+								+ "', Z.SUMSQDATA)))");
+						break;
+					case NGSIConstants.AGGR_METH_TOTAL_COUNT:
+						sql.append("case when Z.sumdata is not null then ");
+						sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.NGSI_LD_TOTALCOUNT + "', ");
+						sql.append("JSONB_BUILD_ARRAY(JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_LIST
+								+ "', Z.TOTALCOUNTDATA)))");
+						break;
+					case NGSIConstants.AGGR_METH_DISTINCT_COUNT:
+						sql.append("case when Z.sumdata is not null then ");
+						sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.NGSI_LD_DISTINCTCOUNT + "', ");
+						sql.append("JSONB_BUILD_ARRAY(JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_LIST
+								+ "', Z.DISTINCTCOUNTDATA)))");
+						break;
+					default:
+						break;
+					}
+					sql.append("end,");
+				}
+				sql.setLength(sql.length() - 1);
+				sql.append(
+						") as data FROM Z) SELECT JSONB_AGG(xyz.elem) filter (where not (xyz.elem = 'null')) as data FROM tmp, jsonb_array_elements(tmp.data) as xyz(elem)");
+
+				sql.append(") as u on true ORDER BY TEAI.ID) ");
+			}
 
 			sql.append("select (jsonb_build_object('" + NGSIConstants.JSON_LD_ID + "', b.id, '"
 					+ NGSIConstants.JSON_LD_TYPE + "', a.e_types, '" + NGSIConstants.NGSI_LD_CREATED_AT
 					+ "', a.r_createdat, '" + NGSIConstants.NGSI_LD_MODIFIED_AT
-					+ "', a.r_modifiedat) || jsonb_object_agg(b.attribid, b.data)) || (case when a.r_deletedat is null then '{}'::jsonb else jsonb_build_object('"
+					+ "', a.r_modifiedat) || jsonb_object_agg(b.attribid, b.data) FILTER (WHERE b.data is not null)) || (case when a.r_deletedat is null then '{}'::jsonb else jsonb_build_object('"
 					+ NGSIConstants.NGSI_LD_DELETED_AT
 					+ "', a.r_deletedat) end) || (case when a.scopes is null then '{}'::jsonb else jsonb_build_object('"
 					+ NGSIConstants.NGSI_LD_SCOPE
