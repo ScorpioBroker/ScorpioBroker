@@ -151,7 +151,7 @@ public class EntityController {// implements EntityHandlerInterface {
 		try {
 			tuple = HttpUtils.expandBody(request, payload, AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD);
 			HttpUtils.validateUri(entityId);
-			attrib = tuple.getItem1().expandIri(attrib, false, false, null, null);
+			attrib = tuple.getItem1().expandIri(attrib, false, true, null, null);
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 		}

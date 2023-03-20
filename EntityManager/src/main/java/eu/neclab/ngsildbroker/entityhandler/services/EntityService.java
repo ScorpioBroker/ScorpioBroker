@@ -247,15 +247,14 @@ public class EntityService {
 			Map<String, Object> payload, Context originalContext) {
 		logger.trace("updateMessage() :: started");
 		Map<String, Object> effectivePayload;
-		String expandedAttribName = originalContext.get("@vocab") + attribName;
-		if (payload.containsKey(expandedAttribName)) {
+		if (payload.containsKey(attribName)) {
 			effectivePayload = payload;
 		} else {
 			effectivePayload = Maps.newHashMap();
-			effectivePayload.put(expandedAttribName, payload);
+			effectivePayload.put(attribName, payload);
 		}
 
-		UpdateEntityRequest request = new UpdateEntityRequest(tenant, entityId, effectivePayload, expandedAttribName,
+		UpdateEntityRequest request = new UpdateEntityRequest(tenant, entityId, effectivePayload, attribName,
 				null);
 		return entityDAO.partialUpdateAttribute(request).onItem().transformToUni(resultetEntity -> {
 //			if (resultTable.size() == 0) {
