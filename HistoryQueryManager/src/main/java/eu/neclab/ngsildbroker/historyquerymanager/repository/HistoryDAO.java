@@ -79,6 +79,13 @@ public class HistoryDAO {
 				sql.append(
 						"SELECT jsonb_agg(x.data) as data from (Select data as data from TEMPORALENTITYATTRINSTANCE TEAI2");
 			} else {
+				// TODO once this is complete pack into a private method and than the query
+				// needs to be updated respectively
+
+				// Doc comment:
+				// we first build a jsonb array with jsonb_agg if it has no contents because of
+				// the filter it will be null this will be used later on to filter out null
+				// values
 				sql.append("WITH Z as (SELECT ");
 				for (String aggrFunction : aggrQuery.getAggrFunctions()) {
 					switch (aggrFunction) {
@@ -140,6 +147,8 @@ public class HistoryDAO {
 //								+ NGSIConstants.JSON_LD_VALUE + "}') = 'array' THEN (DATA#> ('{"
 //								+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE
 //								+ "}').size())::numeric ");
+						// nulling here will make the result null as well and it will run into the
+						// filter from above
 						sql.append("ELSE NULL END)), ");
 						sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_VALUE + "', pr.period), ");
 						sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_VALUE + "', pr.period + ");
@@ -275,10 +284,6 @@ public class HistoryDAO {
 					}
 				}
 
-//				FROM TEMPORALENTITYATTRINSTANCE TEAI2 RIGHT JOIN generate_series (
-//				        '2013-03-25'::timestamp without time zone,
-//				        '2023-04-01'::timestamp without time zone,
-//				        '1 day'::interval) as pr(period) on teai2.modifiedat between pr.period and pr.period + '1 day'::interval
 				dollarCount += dollarplus;
 				sql.append(" FROM TEMPORALENTITYATTRINSTANCE TEAI2 RIGHT JOIN generate_series (");
 				if (tempQuery == null) {
@@ -464,6 +469,11 @@ public class HistoryDAO {
 					sql.append("end,");
 				}
 				sql.setLength(sql.length() - 1);
+				// there is no way to just not add anything with jsonb_build_array and case so
+				// we need to remove nulls in seperate step but this are at max 7 elements and
+				// there is no way to use case with null it will always make a null string out
+				// of it because the other things are jsonb
+				// it is psqls parsing behaviour ... so it's ok like this
 				sql.append(
 						") as data FROM Z) SELECT JSONB_AGG(xyz.elem) filter (where not (xyz.elem = 'null')) as data FROM tmp, jsonb_array_elements(tmp.data) as xyz(elem)");
 
