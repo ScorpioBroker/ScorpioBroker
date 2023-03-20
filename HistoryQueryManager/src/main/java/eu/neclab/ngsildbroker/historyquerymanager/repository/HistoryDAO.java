@@ -78,7 +78,7 @@ public class HistoryDAO {
 			if (aggrQuery == null) {
 				sql.append("jsonb_agg(x.data) as data from (Select data as data from TEMPORALENTITYATTRINSTANCE TEAI2");
 			} else {
-				sql.append("(SELECT jsonb_build_array(");
+				sql.append("jsonb_build_array(");
 				for (String aggrFunction : aggrQuery.getAggrFunctions()) {
 					switch (aggrFunction) {
 					case NGSIConstants.AGGR_METH_SUM:
@@ -128,46 +128,8 @@ public class HistoryDAO {
 					sql.append(',');
 				}
 				sql.setLength(sql.length() - 1);
-				sql.append(") FROM (SELECT ");
-				if (aggrQuery.getPeriod() != null) {
-					sql.append("$");
-					sql.append(dollarCount);
-					dollarCount++;
-					tuple.addString(aggrQuery.getPeriod());
-				} else {
-					if (tempQuery != null) {
-						switch (tempQuery.getTimerel()) {
-						case NGSIConstants.TIME_REL_BEFORE:
-							sql.append("a.raw_createdat - $");
-							sql.append(dollarCount);
-							tuple.addLocalDateTime(
-									LocalDateTime.parse(tempQuery.getTimeAt(), SerializationTools.informatter));
-							break;
-						case NGSIConstants.TIME_REL_AFTER:
-							sql.append("$");
-							sql.append(dollarCount);
-							sql.append("- a.raw_modifiedat");
-							tuple.addLocalDateTime(
-									LocalDateTime.parse(tempQuery.getTimeAt(), SerializationTools.informatter));
-							break;
-						case NGSIConstants.TIME_REL_BETWEEN:
-							sql.append("$");
-							sql.append(dollarCount);
-							sql.append("- $");
-							sql.append(dollarCount + 1);
-							tuple.addLocalDateTime(
-									LocalDateTime.parse(tempQuery.getTimeAt(), SerializationTools.informatter));
-							tuple.addLocalDateTime(
-									LocalDateTime.parse(tempQuery.getEndTimeAt(), SerializationTools.informatter));
-							dollarCount += 2;
-							break;
-						}
-					} else {
-						sql.append("(a.raw_modifiedAt - a.raw_createdAt)");
-					}
-				}
-				sql.append("::interval as myinterval, ");
-
+				sql.append(") as data FROM (SELECT ");
+				int dollarplus = 1;
 				for (String aggrFunction : aggrQuery.getAggrFunctions()) {
 					sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_LIST
 							+ "', JSONB_BUILD_ARRAY(JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_VALUE + "', ");
@@ -188,7 +150,8 @@ public class HistoryDAO {
 //								+ "}').size())::numeric ");
 						sql.append("ELSE NULL END)), ");
 						sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_VALUE + "', pr.period), ");
-						sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_VALUE + "', pr.period + myinterval");
+						sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_VALUE + "', pr.period + ");
+						dollarplus = getPeriod(sql, dollarCount, tempQuery, aggrQuery);
 						sql.append("))) as SUMDATA");
 						break;
 					case NGSIConstants.AGGR_METH_MIN:
@@ -207,7 +170,8 @@ public class HistoryDAO {
 //								+ "}').size())::numeric ");
 						sql.append("ELSE NULL END)), ");
 						sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_VALUE + "', pr.period), ");
-						sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_VALUE + "', pr.period + myinterval");
+						sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_VALUE + "', pr.period + ");
+						dollarplus = getPeriod(sql, dollarCount, tempQuery, aggrQuery);
 						sql.append("))) as MINDATA");
 						break;
 					case NGSIConstants.AGGR_METH_MAX:
@@ -226,7 +190,8 @@ public class HistoryDAO {
 //								+ "}').size())::numeric ");
 						sql.append("ELSE NULL END)), ");
 						sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_VALUE + "', pr.period), ");
-						sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_VALUE + "', pr.period + myinterval");
+						sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_VALUE + "', pr.period + ");
+						dollarplus = getPeriod(sql, dollarCount, tempQuery, aggrQuery);
 						sql.append("))) as MAXDATA");
 						break;
 					case NGSIConstants.AGGR_METH_AVG:
@@ -245,7 +210,8 @@ public class HistoryDAO {
 //								+ "}').size())::numeric ");
 						sql.append("ELSE NULL END)), ");
 						sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_VALUE + "', pr.period), ");
-						sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_VALUE + "', pr.period + myinterval");
+						sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_VALUE + "', pr.period + ");
+						dollarplus = getPeriod(sql, dollarCount, tempQuery, aggrQuery);
 						sql.append("))) as AVGDATA");
 						break;
 					case NGSIConstants.AGGR_METH_STDDEV:
@@ -264,7 +230,8 @@ public class HistoryDAO {
 //								+ "}').size())::numeric ");
 						sql.append("ELSE NULL END)), ");
 						sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_VALUE + "', pr.period), ");
-						sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_VALUE + "', pr.period + myinterval");
+						sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_VALUE + "', pr.period + ");
+						dollarplus = getPeriod(sql, dollarCount, tempQuery, aggrQuery);
 						sql.append("))) as STDDEVDATA");
 						break;
 					case NGSIConstants.AGGR_METH_SUMSQ:
@@ -283,7 +250,8 @@ public class HistoryDAO {
 //								+ "}').size())::numeric)^2 ");
 						sql.append("ELSE NULL END)), ");
 						sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_VALUE + "', pr.period), ");
-						sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_VALUE + "', pr.period + myinterval");
+						sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_VALUE + "', pr.period + ");
+						dollarplus = getPeriod(sql, dollarCount, tempQuery, aggrQuery);
 						sql.append("))) as SUMSQDATA");
 						break;
 					case NGSIConstants.AGGR_METH_TOTAL_COUNT:
@@ -296,36 +264,121 @@ public class HistoryDAO {
 					sql.append(',');
 				}
 				sql.setLength(sql.length() - 1);
+				if (aggrQuery.getPeriod() != null) {
+					tuple.addString(aggrQuery.getPeriod());
+				} else {
+					switch (dollarplus) {
+					case 1:
+						tuple.addLocalDateTime(
+								LocalDateTime.parse(tempQuery.getTimeAt(), SerializationTools.informatter));
+						break;
+					case 2:
+						tuple.addLocalDateTime(
+								LocalDateTime.parse(tempQuery.getTimeAt(), SerializationTools.informatter));
+						tuple.addLocalDateTime(
+								LocalDateTime.parse(tempQuery.getEndTimeAt(), SerializationTools.informatter));
+						break;
+					default:
+						break;
+					}
+				}
 
 //				FROM TEMPORALENTITYATTRINSTANCE TEAI2 RIGHT JOIN generate_series (
 //				        '2013-03-25'::timestamp without time zone,
 //				        '2023-04-01'::timestamp without time zone,
 //				        '1 day'::interval) as pr(period) on teai2.modifiedat between pr.period and pr.period + '1 day'::interval
-
+				dollarCount += dollarplus;
 				sql.append(" FROM TEMPORALENTITYATTRINSTANCE TEAI2 RIGHT JOIN generate_series (");
 				if (tempQuery == null) {
-					sql.append("a.raw_createdat, a.raw_modifiedat");
+					sql.append("TEAI.raw_createdat, TEAI.raw_modifiedat");
 				} else {
 					switch (tempQuery.getTimerel()) {
 					case NGSIConstants.TIME_REL_BEFORE:
-						sql.append("a.raw_createdat, $");
-						sql.append(dollarCount - 1);
+						sql.append("TEAI.raw_createdat, $");
+						sql.append(dollarCount);
+						tuple.addLocalDateTime(
+								LocalDateTime.parse(tempQuery.getTimeAt(), SerializationTools.informatter));
+						dollarCount++;
 						break;
 					case NGSIConstants.TIME_REL_AFTER:
 						sql.append("$");
-						sql.append(dollarCount - 1);
-						sql.append(", a.raw_modifiedat");
+						sql.append(dollarCount);
+						sql.append(", TEAI.raw_modifiedat");
+						tuple.addLocalDateTime(
+								LocalDateTime.parse(tempQuery.getTimeAt(), SerializationTools.informatter));
+						dollarCount++;
 						break;
 					case NGSIConstants.TIME_REL_BETWEEN:
 						sql.append("$");
-						sql.append(dollarCount - 1);
+						sql.append(dollarCount);
+						tuple.addLocalDateTime(
+								LocalDateTime.parse(tempQuery.getTimeAt(), SerializationTools.informatter));
+						dollarCount++;
 						sql.append(", $");
-						sql.append(dollarCount - 2);
+						sql.append(dollarCount);
+						tuple.addLocalDateTime(
+								LocalDateTime.parse(tempQuery.getEndTimeAt(), SerializationTools.informatter));
+						dollarCount++;
 						break;
 					}
 				}
-				sql.append(
-						", myinterval) as pr(period) on teai2.modifiedat between pr.period and pr.period + myinterval");
+				dollarplus = 1;
+				if (aggrQuery.getPeriod() != null) {
+					sql.append(", $");
+					sql.append(dollarCount);
+					sql.append(") as pr(period) on teai2.modifiedat between pr.period and pr.period + $");
+					sql.append(dollarCount);
+					tuple.addString(aggrQuery.getPeriod());
+				} else {
+					if (tempQuery != null) {
+						switch (tempQuery.getTimerel()) {
+						case NGSIConstants.TIME_REL_BEFORE:
+							sql.append(",(TEAI.raw_createdat - $");
+							sql.append(dollarCount);
+							sql.append(
+									")::interval) as pr(period) on teai2.modifiedat between pr.period and pr.period + (TEAI.raw_createdat - $");
+							sql.append(dollarCount);
+							sql.append(")::interval");
+							tuple.addLocalDateTime(
+									LocalDateTime.parse(tempQuery.getTimeAt(), SerializationTools.informatter));
+							break;
+						case NGSIConstants.TIME_REL_AFTER:
+							sql.append(",($");
+							sql.append(dollarCount);
+							sql.append(
+									"- TEAI.raw_modifiedat)::interval) as pr(period) on teai2.modifiedat between pr.period and pr.period + ($");
+							sql.append(dollarCount);
+							sql.append(" - TEAI.raw_createdat)::interval");
+							tuple.addLocalDateTime(
+									LocalDateTime.parse(tempQuery.getTimeAt(), SerializationTools.informatter));
+							break;
+						case NGSIConstants.TIME_REL_BETWEEN:
+							sql.append(",($");
+							sql.append(dollarCount);
+							sql.append("- $");
+							sql.append(dollarCount + 1);
+							sql.append(
+									")::interval) as pr(period) on teai2.modifiedat between pr.period and pr.period + ");
+							sql.append("($");
+							sql.append(dollarCount);
+							sql.append("- $");
+							sql.append(dollarCount + 1);
+							sql.append(")::interval");
+							tuple.addLocalDateTime(
+									LocalDateTime.parse(tempQuery.getTimeAt(), SerializationTools.informatter));
+							tuple.addLocalDateTime(
+									LocalDateTime.parse(tempQuery.getEndTimeAt(), SerializationTools.informatter));
+							dollarplus = 2;
+							break;
+						}
+					} else {
+						sql.append(
+								",(TEAI.raw_modifiedAt - TEAI.raw_createdAt)::interval) as pr(period) on teai2.modifiedat between pr.period and pr.period + (TEAI.raw_modifiedAt - TEAI.raw_createdAt)::interval");
+						dollarplus = 0;
+					}
+					dollarCount += dollarplus;
+				}
+
 			}
 			sql.append(
 					" WHERE TEAI.ATTRIBUTEID = TEAI2.ATTRIBUTEID AND TEAI.temporalentity_id = TEAI2.temporalentity_id ");
@@ -350,7 +403,7 @@ public class HistoryDAO {
 				sql.append(" GROUP BY pr.period)");
 			}
 
-			sql.append("as x)) as u on true ORDER BY TEAI.ID) ");
+			sql.append("as x) as u on true ORDER BY TEAI.ID) ");
 
 			sql.append("select (jsonb_build_object('" + NGSIConstants.JSON_LD_ID + "', b.id, '"
 					+ NGSIConstants.JSON_LD_TYPE + "', a.e_types, '" + NGSIConstants.NGSI_LD_CREATED_AT
@@ -370,6 +423,39 @@ public class HistoryDAO {
 			});
 		});
 
+	}
+
+	private int getPeriod(StringBuilder sql, int dollarCount, TemporalQueryTerm tempQuery, AggrTerm aggrQuery) {
+		int dollarplus = 1;
+		if (aggrQuery.getPeriod() != null) {
+			sql.append("$");
+			sql.append(dollarCount);
+		} else {
+			if (tempQuery != null) {
+				switch (tempQuery.getTimerel()) {
+				case NGSIConstants.TIME_REL_BEFORE:
+					sql.append("TEAI.raw_createdat - $");
+					sql.append(dollarCount);
+					break;
+				case NGSIConstants.TIME_REL_AFTER:
+					sql.append("$");
+					sql.append(dollarCount);
+					sql.append("- TEAI.raw_modifiedat");
+					break;
+				case NGSIConstants.TIME_REL_BETWEEN:
+					sql.append("$");
+					sql.append(dollarCount);
+					sql.append("- $");
+					sql.append(dollarCount + 1);
+					dollarplus = 2;
+					break;
+				}
+			} else {
+				sql.append("(TEAI.raw_modifiedAt - TEAI.raw_createdAt)::interval");
+				dollarplus = 0;
+			}
+		}
+		return dollarplus;
 	}
 
 	public Uni<Table<String, String, RegistrationEntry>> getAllRegistries() {
