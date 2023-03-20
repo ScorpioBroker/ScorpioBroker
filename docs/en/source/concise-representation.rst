@@ -11,117 +11,126 @@ Following rules are applied for the concise representation:
  • Every LanguageProperty is represented by a languageMap key-value pair.
  • Every Relationship is represented by an object key-value pair.
 
-Concise Representation Example
-###############################
+Comparison between Normalized and Concise Representation of Entity
+---------------------------------------------------------------------
 
-1. Comparison between Normalized and Concise Representation
-------------------------------------------------------------
+1. Create Operation(Normalized Representation)
+===============================================
 
-- **Normalized Representation**
+In order to create an entity, we can hit the endpoint POST **http://<IP Address>:<port>/ngsi-ld/v1/entities/**  with the given payload.
 
-GET API: http://localhost:9090/ngsi-ld/v1/entities/urn:ngsi-ld:Vehicle:A100
+.. code-block:: JSON
 
-Response:
-::	
-	{
-		 "id": "urn:ngsi-ld:Vehicle:A100",
-		 "type": "Vehicle",
-		 "brandName": {
-			 "type": "Property",
-			 "value": "Mercedes"
-		 },
-		 "street": {
-			 "type": "LanguageProperty",
-			 "languageMap": {
-				 "fr": "Grand Place",
-				 "nl": "Grote Markt
-		 }
-		 },
-		 "isParked": {
-			 "type": "Relationship",
-			 "object": "urn:ngsi-ld:OffStreetParking:Downtown1",
-			 "observedAt": "2017-07-29T12:00:04Z",
-			 "providedBy": {
-				 "type": "Relationship",
-				 "object": "urn:ngsi-ld:Person:Bob"
-			 }
-		 }
-	}
+ {
+     "id": "urn:ngsi-ld:Vehicle:A100",
+     "type": "Vehicle",
+     "brandName": {
+         "type": "Property",
+         "value": "Mercedes"
+     },
+     "street": {
+         "type": "LanguageProperty",
+         "languageMap": {
+             "fr": "Grand Place",
+             "nl": "Grote Markt"
+         }
+     },
+     "isParked": {
+         "type": "Relationship",
+         "object": "urn:ngsi-ld:OffStreetParking:Downtown1",
+         "observedAt": "2017-07-29T12:00:04Z",
+         "providedBy": {
+             "type": "Relationship",
+             "object": "urn:ngsi-ld:Person:Bob"
+         }
+     }
+ }
 
-- **Concise Representation**
 
-GET API: http://localhost:9090/ngsi-ld/v1/entities/urn:ngsi-ld:Vehicle:A100?option=concise
+2. Query Operation(Normalized Representation)
+==============================================
 
-Response:
-::
-	{
-		 "id": " urn:ngsi-ld:Vehicle:A100",
-		 "type": "Vehicle",
-		 "brandName": "Mercedes",
-		 "street": {
-			 "languageMap": {
-			 "fr": "Grand Place",
-			 "nl": "Grote Markt"
-			 }
-		 },
-		 "isParked": {
-			 "object": "urn:ngsi-ld:OffStreetParking:Downtown1",
-			 "observedAt": "2017-07-29T12:00:04Z",
-			 "providedBy": {
-				"object": "urn:ngsi-ld:Person:Bob"
-			 }
-		}
-	}
-
-2. Location based example with concise
----------------------------------------
-
-The concise GeoJSON representation of a single Entity is defined as a single GeoJSON Feature object as follows:
-
- - "type": shall be a supported GeoJSON geometry.
- - "coordinates": shall be present.
-
-1. **Nomalized Representation for GeoJSON**
-
-GET API: http://localhost:9090/ngsi-ld/v1/entities/smartcity:building:building1
+To retrieve entities with normal representation you can send an HTTP GET to **http://localhost:9090/ngsi-ld/v1/entities/urn:ngsi-ld:Vehicle:A100**
 
 Response:
-::
-	{
-	    "id": "smartcity:building:building1",
-	    "type": "Building",
-	    "location": {
-		"type": "GeoProperty",
-		"value": {
-		    "type": "Point",
-		    "coordinates": [
-			-8.50000005,
-			41.2
-		    ]
-		}
-	    },
-	    "@context": [
-		"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld"
-	    ]
-	}
 
-2. **Concise Representation for GeoJSON**
+.. code-block:: JSON
 
-GET API: http://localhost:9090/ngsi-ld/v1/entities/smartcity:building:building1?option=concise
+ {
+     "id": "urn:ngsi-ld:Vehicle:A100",
+     "type": "Vehicle",
+     "brandName": {
+         "type": "Property",
+         "value": "Mercedes"
+     },
+     "street": {
+         "type": "LanguageProperty",
+         "languageMap": {
+             "fr": "Grand Place",
+             "nl": "Grote Markt"
+         }
+     },
+     "isParked": {
+         "type": "Relationship",
+         "object": "urn:ngsi-ld:OffStreetParking:Downtown1",
+         "observedAt": "2017-07-29T12:00:04Z",
+         "providedBy": {
+             "type": "Relationship",
+             "object": "urn:ngsi-ld:Person:Bob"
+         }
+     }
+ }
+
+3. Create Operation(Concise Representation)
+===============================================
+
+In order to create an entity with concise representation, we can hit the endpoint POST **http://<IP Address>:<port>/ngsi-ld/v1/entities/**  with the given payload.
+
+.. code-block:: JSON
+
+ {
+     "id": " urn:ngsi-ld:Vehicle:A100",
+     "type": "Vehicle",
+     "brandName": "Mercedes",
+     "street": {
+         "languageMap": {
+             "fr": "Grand Place",
+             "nl": "Grote Markt"
+         }
+     },
+     "isParked": {
+         "object": "urn:ngsi-ld:OffStreetParking:Downtown1",
+         "observedAt": "2017-07-29T12:00:04Z",
+         "providedBy": {
+             "object": "urn:ngsi-ld:Person:Bob"
+         }
+     }
+ }
+
+4. Query Operation(Concise Representation)
+===============================================
+
+To retrieve entities in concise representation you can send an HTTP GET to **"http://localhost:9090/ngsi-ld/v1/entities/urn:ngsi-ld:Vehicle:A100?option=concise"** where *"option=concise"* is used to get entity in concise representation.
 
 Response:
-::
-	{
-	    "id": "smartcity:building:building1",
-	    "type": "Building",
-	    "location": {
-		"type": "Point",
-		"coordinates": [
-		    -8.50000005,
-		    41.2
-		]
-	    },
-	    "@context": [
-		"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld"
-	    ]
-	}
+
+.. code-block:: JSON
+
+ {
+     "id": " urn:ngsi-ld:Vehicle:A100",
+     "type": "Vehicle",
+     "brandName": "Mercedes",
+     "street": {
+         "languageMap": {
+             "fr": "Grand Place",
+             "nl": "Grote Markt"
+         }
+     },
+     "isParked": {
+         "object": "urn:ngsi-ld:OffStreetParking:Downtown1",
+         "observedAt": "2017-07-29T12:00:04Z",
+         "providedBy": {
+             "object": "urn:ngsi-ld:Person:Bob"
+         }
+     }
+ }
