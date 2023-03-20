@@ -56,7 +56,7 @@ public class SubscriptionInfoDAO {
         System.out.println(JsonUtils.toPrettyString(test.serialize()));
     }
     public Uni<RowSet<Row>> createSubscription(SubscriptionRequest request) {
-        return clientManager.getClient(request.getTenant(), false).onItem()
+        return clientManager.getClient(request.getTenant(), true).onItem()
                 .transformToUni(client ->
                         webClient.postAbs("http://localhost:9090/ngsi-ld/v1/jsonldContexts/createimplicitly/")
                                 .sendJsonObject(new JsonObject(request.getContext().serialize()))
