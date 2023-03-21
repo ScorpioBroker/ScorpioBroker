@@ -142,25 +142,33 @@ public class SubscriptionInfoDAO {
                 List<Uni<RowSet<Row>>> unis = Lists.newArrayList();
                 rows.forEach(row -> {
                     unis.add(clientManager.getClient(row.getString(0), false).onItem().transformToUni(tenantClient -> tenantClient.preparedQuery(
-                                    "SELECT '" + row.getString(0) + "', subscriptions.subscription, contexts.body FROM subscriptions INNER JOIN contexts ON subscriptions.context=contexts.id;")
+                                    "SELECT '" + row.getString(0) + "', subscriptions.subscription, context FROM subscriptions")
                             .execute()));
                 });
                 unis.add(clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem()
                         .transformToUni(tenantClient -> tenantClient.preparedQuery("SELECT '" + AppConstants.INTERNAL_NULL_KEY
-                                + "', subscriptions.subscription, contexts.body FROM subscriptions INNER JOIN contexts ON subscriptions.context=contexts.id;").execute()));
+                                + "', subscriptions.subscription, context FROM subscriptions").execute()));
 
                 return Uni.combine().all().unis(unis).combinedWith(list -> {
                     List<Tuple3<String, Map<String, Object>, Map<String, Object>>> result = new ArrayList<>();
-                    for (Object obj : list) {
-                        @SuppressWarnings("unchecked")
-                        RowSet<Row> rowset = (RowSet<Row>) obj;
-                        rowset.forEach(row -> result.add(Tuple3.of(row.getString(0),
-                                row.getJsonObject(1).getMap(),
-                                row.getJsonObject(2).getMap()))
-                        );
-                    }
-                    return result;
-                });
+                    return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(pgPool->{
+                       return  pgPool.preparedQuery("select jsonb_object_agg(id,body) as col from public.contexts").execute()
+                               .onItem().transform(rows1 -> {
+                                   Map<String,Object> mapContexts = rows1.iterator().next().getJsonObject(0).getMap();
+                            for (Object obj : list) {
+                                @SuppressWarnings("unchecked")
+                                RowSet<Row> rowset = (RowSet<Row>) obj;
+                                rowset.forEach(row -> result.add(Tuple3.of(row.getString(0),
+                                        row.getJsonObject(1).getMap(),
+                                        (Map<String, Object>) mapContexts.get(row.getString(2))))
+                                );
+                            }
+                            return result;
+                        });
+
+                    });
+
+                }).onItem().transformToUni(x->x);
             });
         });
 

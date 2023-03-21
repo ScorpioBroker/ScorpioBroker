@@ -66,7 +66,7 @@ public class SubscriptionController {
         }
         return subService.createSubscription(HttpUtils.getTenant(request), tuple.getItem2(), tuple.getItem1()).onItem()
                 .transform(t -> HttpUtils.generateSubscriptionResult(t, tuple.getItem1())).onFailure()
-                .recoverWithItem(e -> HttpUtils.handleControllerExceptions(e));
+                .recoverWithItem(HttpUtils::handleControllerExceptions);
     }
 
     @GET
