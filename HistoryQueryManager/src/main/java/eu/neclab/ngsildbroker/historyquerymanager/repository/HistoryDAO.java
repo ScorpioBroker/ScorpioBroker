@@ -256,8 +256,19 @@ public class HistoryDAO {
 						sql.append("))) as SUMSQDATA");
 						break;
 					case NGSIConstants.AGGR_METH_TOTAL_COUNT:
+						sql.append("COUNT(DATA)), ");
+						sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_VALUE + "', pr.period), ");
+						sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_VALUE + "', pr.period + ");
+						dollarplus = getPeriod(sql, dollarCount, tempQuery, aggrQuery);
+						sql.append("))) as TOTALCOUNTDATA");
 						break;
 					case NGSIConstants.AGGR_METH_DISTINCT_COUNT:
+						sql.append("COUNT(DISTINCT DATA #> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
+								+ NGSIConstants.JSON_LD_VALUE + "}')), ");
+						sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_VALUE + "', pr.period), ");
+						sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_VALUE + "', pr.period + ");
+						dollarplus = getPeriod(sql, dollarCount, tempQuery, aggrQuery);
+						sql.append("))) as TOTALCOUNTDATA");
 						break;
 					default:
 						break;
