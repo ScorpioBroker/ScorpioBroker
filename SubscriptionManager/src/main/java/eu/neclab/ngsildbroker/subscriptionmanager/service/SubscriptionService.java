@@ -16,6 +16,8 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
+import eu.neclab.ngsildbroker.commons.datatypes.results.CRUDSuccess;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.slf4j.Logger;
@@ -148,7 +150,9 @@ public class SubscriptionService {
 			}
 			subscriptionId2RequestGlobal.put(request.getId(), request);
 			return internalSubEmitter.send(request).onItem().transform(v -> {
-				return new NGSILDOperationResult(AppConstants.CREATE_SUBSCRIPTION_REQUEST, request.getId());
+				NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.CREATE_SUBSCRIPTION_REQUEST, request.getId());
+				result.addSuccess(new CRUDSuccess(null, null, request.getId(), Sets.newHashSet()));
+				return result;
 			});
 		}).onFailure().recoverWithUni(e -> {
 			// TODO sql check
@@ -160,15 +164,14 @@ public class SubscriptionService {
 	public Uni<NGSILDOperationResult> updateSubscription(String tenant, String subscriptionId,
 			Map<String, Object> update, Context context) {
 		UpdateSubscriptionRequest request = new UpdateSubscriptionRequest(tenant, subscriptionId, update, context);
-		return subDAO.updateSubscription(request).onItem().transformToUni(t -> {
-			if (t.rowCount() == 0) {
+		return subDAO.updateSubscription(request).onItem().transformToUni(tup -> {
+			if (tup.size() == 0) {
 				return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound, "subscription not found"));
 			}
-			Row row = t.iterator().next();
 			SubscriptionRequest updatedRequest;
 			try {
-				updatedRequest = new SubscriptionRequest(tenant, row.getJsonObject(0).getMap(),
-						new Context().parse(row.getJsonObject(0).getMap(), false));
+				updatedRequest = new SubscriptionRequest(tenant, tup.getItem1(),
+						new Context().parse(tup.getItem2(), false));
 			} catch (Exception e) {
 				return Uni.createFrom().failure(e);
 			}

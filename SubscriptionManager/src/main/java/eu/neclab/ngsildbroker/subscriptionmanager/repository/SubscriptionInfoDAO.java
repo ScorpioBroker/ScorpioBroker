@@ -1,6 +1,5 @@
 package eu.neclab.ngsildbroker.subscriptionmanager.repository;
 
-import com.fasterxml.jackson.core.JsonGenerationException;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
@@ -70,18 +69,18 @@ public class SubscriptionInfoDAO {
                                 }));
     }
 
-    public Uni<RowSet<Row>> updateSubscription(UpdateSubscriptionRequest request) {
+    public Uni<Tuple2<Map<String, Object>,  Object>> updateSubscription(UpdateSubscriptionRequest request) {
         return clientManager.getClient(request.getTenant(), false).onItem()
                 .transformToUni(client ->
                         webClient.postAbs("http://localhost:9090/ngsi-ld/v1/jsonldContexts/createimplicitly/")
                                 .sendJsonObject(new JsonObject(request.getContext().serialize()))
                                 .onItemOrFailure().transformToUni((item, failure) -> {
-                                    if (failure != null) return Uni.createFrom().failure(new Throwable("Something went wrong"));
+                                    if (failure != null) throw new RuntimeException();
                                     String contextId = item.bodyAsString();
                                     return client.preparedQuery(
-                                                    "UPDATE subscriptions SET subscription=subscription || $2, context=$3 WHERE subscription_id=$1 RETURNING subscription, context")
+                                                    "UPDATE subscriptions SET subscription=subscription || $2, context=$3 WHERE subscription_id=$1 RETURNING subscription")
                                             .execute(Tuple.of(request.getId(), new JsonObject(request.getPayload()),
-                                                    contextId));
+                                                    contextId)).onItem().transform(i-> Tuple2.of(request.getPayload(),request.getContext().serialize().get("@context")));
                                 }));
     }
 
@@ -143,7 +142,7 @@ public class SubscriptionInfoDAO {
                 List<Uni<RowSet<Row>>> unis = Lists.newArrayList();
                 rows.forEach(row -> {
                     unis.add(clientManager.getClient(row.getString(0), false).onItem().transformToUni(tenantClient -> tenantClient.preparedQuery(
-                                    "SELECT " + row.getString(0) + "', subscriptions.subscription, contexts.body FROM subscriptions INNER JOIN contexts ON subscriptions.context=contexts.id;")
+                                    "SELECT '" + row.getString(0) + "', subscriptions.subscription, contexts.body FROM subscriptions INNER JOIN contexts ON subscriptions.context=contexts.id;")
                             .execute()));
                 });
                 unis.add(clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem()
