@@ -213,7 +213,7 @@ public class RegistrySubscriptionService {
 			if (next == null) {
 				return result;
 			}
-			Long resultCount = next.getLong(0);
+			Long resultCount = (long) rows.size();
 			result.setCount(resultCount);
 			long leftAfter = resultCount - (offset + limit);
 			if (leftAfter < 0) {
