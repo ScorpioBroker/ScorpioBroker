@@ -114,7 +114,7 @@ public class SubscriptionController {
                     Context context = JsonLdProcessor.getCoreContextClone().parse(contextHeader, true);
                     return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, subscription, null,
                             options, null);
-                });
+                }).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
     }
 

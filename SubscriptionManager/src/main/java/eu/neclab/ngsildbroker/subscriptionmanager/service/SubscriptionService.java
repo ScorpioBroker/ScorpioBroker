@@ -5,17 +5,13 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
+import eu.neclab.ngsildbroker.commons.datatypes.results.CRUDSuccess;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.slf4j.Logger;
@@ -146,9 +142,13 @@ public class SubscriptionService {
 			} else {
 				tenant2subscriptionId2Subscription.put(tenant, request.getId(), request);
 			}
+
 			subscriptionId2RequestGlobal.put(request.getId(), request);
+
 			return internalSubEmitter.send(request).onItem().transform(v -> {
-				return new NGSILDOperationResult(AppConstants.CREATE_SUBSCRIPTION_REQUEST, request.getId());
+				NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.CREATE_SUBSCRIPTION_REQUEST, request.getId());
+				result.addSuccess(new CRUDSuccess(null,null,request.getId(), Sets.newHashSet()));
+				return result;
 			});
 		}).onFailure().recoverWithUni(e -> {
 			// TODO sql check

@@ -623,7 +623,8 @@ public final class HttpUtils {
 	}
 
 	public static RestResponse<Object> generateSubscriptionResult(NGSILDOperationResult t, Context context) {
-		// TODO Auto-generated method stub
+		if(!t.getSuccesses().isEmpty())
+			return RestResponse.created( URI.create(AppConstants.SUBSCRIPTIONS_URL+t.getEntityId()));
 		return null;
 	}
 
