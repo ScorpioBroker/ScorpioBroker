@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import com.fasterxml.jackson.core.JsonGenerationException;
@@ -25,6 +26,8 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple3;
 import io.vertx.core.json.JsonObject;
+import io.vertx.mutiny.core.Vertx;
+import io.vertx.mutiny.ext.web.client.WebClient;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
@@ -34,23 +37,42 @@ public class RegistrySubscriptionInfoDAO {
 
 	@Inject
 	ClientManager clientManager;
+	@Inject
+	Vertx vertx;
+	WebClient webClient;
 
+	@PostConstruct
+	void setup() {
+		webClient = WebClient.create(vertx);
+	}
 	public Uni<RowSet<Row>> createSubscription(SubscriptionRequest request) {
-		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
-			return client.preparedQuery(
-					"INSERT INTO registry_subscriptions(subscription_id, subscription, context) VALUES ($1, $2, $3)")
-					.execute(Tuple.of(request.getId(), new JsonObject(request.getPayload()),
-							new JsonObject(request.getContext().serialize())));
-		});
+		return clientManager.getClient(request.getTenant(), true).onItem()
+				.transformToUni(client ->
+						webClient.postAbs("http://localhost:9090/ngsi-ld/v1/jsonldContexts/createimplicitly/")
+								.sendJsonObject(new JsonObject(request.getContext().serialize()))
+								.onItemOrFailure().transformToUni((item, failure) -> {
+									if (failure != null) return Uni.createFrom().failure(new Throwable("Something went wrong"));
+									String contextId = item.bodyAsString();
+									return client.preparedQuery(
+													"INSERT INTO registry_subscriptions(subscription_id, subscription, context) VALUES ($1, $2, $3)")
+											.execute(Tuple.of(request.getId(), new JsonObject(request.getPayload()),
+													contextId));
+								}));
 	}
 
-	public Uni<RowSet<Row>> updateSubscription(UpdateSubscriptionRequest request) {
-		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
-			return client.preparedQuery(
-					"UPDATE registry_subscriptions SET subscription=subscription || $2, context=$3 WHERE subscription_id=$1 RETURNING subscription, context")
-					.execute(Tuple.of(request.getId(), new JsonObject(request.getPayload()),
-							new JsonObject(request.getContext().serialize())));
-		});
+	public Uni<Tuple2<Map<String, Object>,  Object>> updateSubscription(UpdateSubscriptionRequest request) {
+		return clientManager.getClient(request.getTenant(), false).onItem()
+				.transformToUni(client ->
+						webClient.postAbs("http://localhost:9090/ngsi-ld/v1/jsonldContexts/createimplicitly/")
+								.sendJsonObject(new JsonObject(request.getContext().serialize()))
+								.onItemOrFailure().transformToUni((item, failure) -> {
+									if (failure != null) throw new RuntimeException();
+									String contextId = item.bodyAsString();
+									return client.preparedQuery(
+													"UPDATE registry_subscriptions SET subscription=subscription || $2, context=$3 WHERE subscription_id=$1 RETURNING subscription")
+											.execute(Tuple.of(request.getId(), new JsonObject(request.getPayload()),
+													contextId)).onItem().transform(i-> Tuple2.of(request.getPayload(),request.getContext().serialize().get("@context")));
+								}));
 	}
 
 	public Uni<RowSet<Row>> deleteSubscription(DeleteSubscriptionRequest request) {
@@ -156,7 +178,10 @@ public class RegistrySubscriptionInfoDAO {
 					return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(pgPool->{
 						return  pgPool.preparedQuery("select jsonb_object_agg(id,body) as col from public.contexts").execute()
 								.onItem().transform(rows1 -> {
-									Map<String,Object> mapContexts = rows1.iterator().next().getJsonObject(0).getMap();
+									JsonObject jsonContexts = rows1.iterator().next().getJsonObject(0);
+									Map<String, Object> mapContexts;
+									if(jsonContexts != null) mapContexts = jsonContexts.getMap();
+									else return result;
 									for (Object obj : list) {
 										@SuppressWarnings("unchecked")
 										RowSet<Row> rowset = (RowSet<Row>) obj;

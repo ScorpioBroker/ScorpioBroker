@@ -500,7 +500,7 @@ public class HistoryDAO {
 					+ NGSIConstants.NGSI_LD_SCOPE
 					+ "', a.scopes) end) from b left join a on a.id = b.id group by b.id, a.e_types, a.r_createdat, a.r_modifiedat, a.r_deletedat, a.scopes");
 
-			System.out.println(sql.toString());
+			System.out.println(sql);
 			return client.preparedQuery(sql.toString()).execute(tuple).onItem().transform(rows -> {
 				if (rows.size() == 0) {
 					return new HashMap<>(0);

@@ -165,15 +165,14 @@ public class RegistrySubscriptionService {
 	public Uni<NGSILDOperationResult> updateSubscription(String tenant, String subscriptionId,
 			Map<String, Object> update, Context context) {
 		UpdateSubscriptionRequest request = new UpdateSubscriptionRequest(tenant, subscriptionId, update, context);
-		return regDAO.updateSubscription(request).onItem().transformToUni(t -> {
-			if (t.rowCount() == 0) {
+		return regDAO.updateSubscription(request).onItem().transformToUni(tup -> {
+			if (tup.size() == 0) {
 				return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound, "subscription not found"));
 			}
-			Row row = t.iterator().next();
 			SubscriptionRequest updatedRequest;
 			try {
-				updatedRequest = new SubscriptionRequest(tenant, row.getJsonObject(0).getMap(),
-						new Context().parse(row.getJsonObject(0).getMap(), false));
+				updatedRequest = new SubscriptionRequest(tenant, tup.getItem1(),
+						new Context().parse(tup.getItem2(), false));
 			} catch (Exception e) {
 				return Uni.createFrom().failure(e);
 			}
