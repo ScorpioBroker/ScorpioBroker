@@ -83,10 +83,9 @@ public class HistoryQueryService {
 	public Uni<QueryResult> query(String tenant, String[] entityIds, TypeQueryTerm typeQuery, String idPattern,
 			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, CSFQueryTerm csf, GeoQueryTerm geoQuery,
 			ScopeQueryTerm scopeQuery, TemporalQueryTerm tempQuery, AggrTerm aggrQuery, LanguageQueryTerm langQuery,
-			int lastN, int limit, int offSet, boolean count, boolean localOnly, Context context) {
-		Uni<QueryResult> local = historyDAO.query(tenant, entityIds, typeQuery, idPattern, attrsQuery, qQuery,
+			Integer lastN, Integer limit, Integer offSet, Boolean count, Boolean localOnly, Context context) {
+		return historyDAO.query(tenant, entityIds, typeQuery, idPattern, attrsQuery, qQuery,
 				tempQuery, aggrQuery, langQuery, lastN, limit, offSet, count);
-		return local;
 	}
 
 	/**
