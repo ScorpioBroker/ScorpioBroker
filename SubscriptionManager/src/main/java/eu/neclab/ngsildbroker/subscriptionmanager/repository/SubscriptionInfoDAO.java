@@ -28,10 +28,7 @@ import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @ApplicationScoped
 public class SubscriptionInfoDAO {
@@ -154,8 +151,11 @@ public class SubscriptionInfoDAO {
                     return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(pgPool->{
                        return  pgPool.preparedQuery("select jsonb_object_agg(id,body) as col from public.contexts").execute()
                                .onItem().transform(rows1 -> {
-                                   Map<String,Object> mapContexts = rows1.iterator().next().getJsonObject(0).getMap();
-                            for (Object obj : list) {
+                                   JsonObject jsonContexts = rows1.iterator().next().getJsonObject(0);
+                                   Map<String, Object> mapContexts;
+                                   if(jsonContexts != null) mapContexts = jsonContexts.getMap();
+                                   else return result;
+                                   for (Object obj : list) {
                                 @SuppressWarnings("unchecked")
                                 RowSet<Row> rowset = (RowSet<Row>) obj;
                                 rowset.forEach(row -> result.add(Tuple3.of(row.getString(0),
