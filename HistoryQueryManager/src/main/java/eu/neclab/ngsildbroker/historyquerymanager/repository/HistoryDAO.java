@@ -419,7 +419,7 @@ public class HistoryDAO {
 				sql.append(dollarCount);
 				dollarCount++;
 				tuple.addInteger(lastN);
-				sql.append("as x) as u on true ORDER BY TEAI.ID) ");
+				sql.append(") as x) as u on true ORDER BY TEAI.ID) ");
 			} else {
 				sql.append(" GROUP BY pr.period");
 				sql.append(")as x), tmp as (SELECT JSONB_BUILD_ARRAY(");
