@@ -158,13 +158,17 @@ public class HistoryDAO {
 					case NGSIConstants.AGGR_METH_MIN:
 						sql.append("MIN(CASE ");
 						sql.append("WHEN JSONB_TYPEOF(DATA#> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
-								+ NGSIConstants.JSON_LD_VALUE + "}') = 'number' THEN (DATA#> '{"
+								+ NGSIConstants.JSON_LD_VALUE + "}') = 'number' THEN (DATA#>> '{"
 								+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE
-								+ "}')::numeric ");
+								+ "}') ");
 						sql.append("WHEN JSONB_TYPEOF(DATA#> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
-								+ NGSIConstants.JSON_LD_VALUE + "}') = 'boolean' THEN (DATA#> '{"
+								+ NGSIConstants.JSON_LD_VALUE + "}') = 'boolean' THEN (DATA#>> '{"
 								+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE
-								+ "}')::numeric ");
+								+ "}') ");
+						sql.append("WHEN JSONB_TYPEOF(DATA#> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
+								+ NGSIConstants.JSON_LD_VALUE + "}') = 'string' THEN (DATA#>> '{"
+								+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE
+								+ "}') ");
 //						sql.append("WHEN JSONB_TYPEOF(DATA#> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
 //								+ NGSIConstants.JSON_LD_VALUE + "}') = 'array' THEN (DATA#> ('{"
 //								+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE
@@ -178,13 +182,17 @@ public class HistoryDAO {
 					case NGSIConstants.AGGR_METH_MAX:
 						sql.append("MAX(CASE ");
 						sql.append("WHEN JSONB_TYPEOF(DATA#> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
-								+ NGSIConstants.JSON_LD_VALUE + "}') = 'number' THEN (DATA#> '{"
+								+ NGSIConstants.JSON_LD_VALUE + "}') = 'number' THEN (DATA#>> '{"
 								+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE
-								+ "}')::numeric ");
+								+ "}') ");
 						sql.append("WHEN JSONB_TYPEOF(DATA#> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
-								+ NGSIConstants.JSON_LD_VALUE + "}') = 'boolean' THEN (DATA#> '{"
+								+ NGSIConstants.JSON_LD_VALUE + "}') = 'boolean' THEN (DATA#>> '{"
 								+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE
-								+ "}')::numeric ");
+								+ "}') ");
+						sql.append("WHEN JSONB_TYPEOF(DATA#> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
+								+ NGSIConstants.JSON_LD_VALUE + "}') = 'string' THEN (DATA#>> '{"
+								+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE
+								+ "}') ");
 //						sql.append("WHEN JSONB_TYPEOF(DATA#> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
 //								+ NGSIConstants.JSON_LD_VALUE + "}') = 'array' THEN (DATA#> ('{"
 //								+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE
