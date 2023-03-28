@@ -65,6 +65,7 @@ class NotificationHandlerMQTT extends BaseNotificationHandler {
 
 		// Map<String, String> metaData = new HashMap<String, String>();
 		StringBuilder result = new StringBuilder("{\"" + NGSIConstants.METADATA + "\":{");
+		if(headers !=null) {
 		for (Entry<String, Collection<String>> entry : headers.asMap().entrySet()) {
 			ArrayList<String> value = new ArrayList<String>(entry.getValue());
 			result.append("\"");
@@ -82,6 +83,7 @@ class NotificationHandlerMQTT extends BaseNotificationHandler {
 				result.append("\"");
 			}
 			result.append(",");
+		 }
 		}
 		result.setCharAt(result.length() - 1, '}');
 		result.append(",");
