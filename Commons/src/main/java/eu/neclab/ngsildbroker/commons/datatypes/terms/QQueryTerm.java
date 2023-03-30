@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.commons.datatypes.terms;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -20,6 +21,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.RelationshipEntry;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
+import io.vertx.mutiny.sqlclient.Tuple;
 
 public class QQueryTerm {
 
@@ -1042,7 +1044,114 @@ public class QQueryTerm {
 	public void addAttrib(String attrib) {
 		allAttribs.add(linkHeaders.expandIri(attrib, false, true, null, null));
 	}
-	
-	
+
+	private int temporalSqlWherePart(StringBuilder sql, int dollarCount, Tuple tuple, QQueryTerm current) {
+		sql.append("(TEAI.ATTRIBUTEID=$");
+		sql.append(dollarCount);
+		dollarCount++;
+		String[] splitted = current.getAttribute().split("\\[");
+		if (splitted.length > 1) {
+			splitted[1] = splitted[1].substring(0, splitted[1].length() - 1);
+		}
+		String[] subAttribPath = splitted.length == 1 ? null : splitted[1].split("\\.");
+		String[] attribPath = splitted[0].split("\\.");
+		String attribName = linkHeaders.expandIri(attribPath[0], false, true, null, null);
+		tuple.addString(attribName);
+		StringBuilder tmp = new StringBuilder();
+		for (int i = 1; i < attribPath.length; i++) {
+			tmp.append(linkHeaders.expandIri(attribPath[i], false, true, null, null));
+			tmp.append(",0,");
+		}
+
+		String attribPathString = tmp.toString();
+		sql.append(" AND CASE WHEN TEAI.data #>> '{");
+		sql.append(attribPathString);
+		sql.append(NGSIConstants.JSON_LD_TYPE);
+		sql.append(",0}' = '");
+		sql.append(NGSIConstants.NGSI_LD_PROPERTY);
+		sql.append("' THEN TEAI.data #> '{");
+		sql.append(attribPathString);
+		sql.append(NGSIConstants.NGSI_LD_HAS_VALUE);
+		sql.append(",0," + NGSIConstants.JSON_LD_VALUE);
+		if (subAttribPath != null) {
+			for (String subAttrib : subAttribPath) {
+				sql.append('$');
+				sql.append(dollarCount);
+				sql.append(",0,");
+				tuple.addString(subAttrib);
+			}
+			sql.append(NGSIConstants.JSON_LD_VALUE);
+		}
+		sql.append("}'");
+		current.applyOperator(sql);
+
+		if (subAttribPath == null) {
+			sql.append(" WHEN TEAI.data #>> '{");
+			sql.append(attribPathString);
+			sql.append(NGSIConstants.JSON_LD_TYPE);
+			sql.append(",0}' = '");
+			sql.append(NGSIConstants.NGSI_LD_RELATIONSHIP);
+			sql.append("' THEN TEAI.data #> '{");
+			sql.append(attribPathString);
+			sql.append(NGSIConstants.NGSI_LD_HAS_OBJECT);
+			sql.append(",0," + NGSIConstants.JSON_LD_ID);
+			sql.append("}'");
+			current.applyOperator(sql);
+		} else {
+			sql.append(" WHEN TEAI.data #>> '{");
+			sql.append(attribPathString);
+			sql.append(NGSIConstants.JSON_LD_TYPE);
+			sql.append(",0}' = '");
+			sql.append(NGSIConstants.NGSI_LD_LANGPROPERTY);
+			sql.append("' THEN EXISTS (SELECT TRUE FROM JSONB_ARRAY_ELEMENTS(TEAI.data #> '{");
+			sql.append(attribPathString);
+			sql.append(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP);
+			sql.append("}) AS LANGPROP WHERE ");
+			if (!subAttribPath[0].equals("*")) {
+				sql.append("LANGPROP.VALUE->>'@language'=$");
+				sql.append(dollarCount);
+				dollarCount++;
+				tuple.addString(subAttribPath[0]);
+				sql.append(" AND ");
+			}
+			sql.append("LANGPROP.VALUE->>'");
+			sql.append(NGSIConstants.JSON_LD_VALUE);
+			sql.append("'");
+			current.applyOperator(sql);
+			sql.append(")");
+		}
+		sql.append(" ELSE FALSE END) ");
+		return dollarCount;
+	}
+
+	public int[] toTempSql(StringBuilder sql, int dollarCount, Tuple tuple, int charCount, String prevIdList) {
+		sql.append("filtered");
+		sql.append(charCount);
+		charCount++;
+		sql.append(" as (SELECT DISTINCT TEAI.TEMPORALENTITY_ID as id FROM (");
+		sql.append(prevIdList);
+		sql.append(" LEFT JOIN TEMPORALENTITYATTRINSTANCE ON ");
+		sql.append(prevIdList);
+		sql.append(".id = TEMPORALENTITYATTRINSTANCE.TEMPORALENTITY_ID) AS TEAI WHERE ");
+		dollarCount = temporalSqlWherePart(sql, dollarCount, tuple, this);
+		if (firstChild != null) {
+			sql.append("), ");
+			return firstChild.toTempSql(sql, dollarCount, tuple, charCount, "filtered" + (charCount - 1));
+		}
+		QQueryTerm current = this;
+		while (current.hasNext()) {
+			if (!current.nextAnd) {
+				sql.append(" OR ");
+				dollarCount = temporalSqlWherePart(sql, dollarCount, tuple, current.next);
+				current = current.next;
+			} else {
+				sql.append("), ");
+				return current.next.toTempSql(sql, dollarCount, tuple, charCount, "filtered" + (charCount - 1));
+			}
+		}
+		sql.append("), ");
+		return new int[] { dollarCount, charCount };
+
+	}
 
 }

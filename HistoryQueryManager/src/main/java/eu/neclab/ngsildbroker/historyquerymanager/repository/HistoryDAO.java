@@ -204,14 +204,15 @@ public class HistoryDAO {
 			Tuple tuple = Tuple.tuple();
 
 			int dollarCount = 1;
-
-			StringBuilder sql = new StringBuilder("with a as (select id , e_types, temporalentity.createdat as raw_createdat, temporalentity.modifiedat as raw_modifiedat, case when scopes is null then null else getScopeEntry(scopes) end as scopes, jsonb_build_array(jsonb_build_object('@type', '"
-							+ NGSIConstants.NGSI_LD_DATE_TIME
-							+ "', '@value', to_char(temporalentity.createdat, 'YYYY-MM-DDThh:mm:ss.usZ'))) as r_createdat, jsonb_build_array(jsonb_build_object('@type', '"
-							+ NGSIConstants.NGSI_LD_DATE_TIME
-							+ "', '@value', to_char(temporalentity.modifiedat, 'YYYY-MM-DDThh:mm:ss.usZ'))) as r_modifiedat, case when deletedat is null then null else jsonb_build_array(jsonb_build_object('@type', '"
-							+ NGSIConstants.NGSI_LD_DATE_TIME
-							+ "', '@value', to_char(temporalentity.deletedat, 'YYYY-MM-DDThh:mm:ss.usZ')))  end as r_deletedat from temporalentity where 1=1");
+			String entityInfos = "entityInfos";
+			StringBuilder sql = new StringBuilder("with " + entityInfos
+					+ " as (select id , e_types, temporalentity.createdat as raw_createdat, temporalentity.modifiedat as raw_modifiedat, case when scopes is null then null else getScopeEntry(scopes) end as scopes, jsonb_build_array(jsonb_build_object('@type', '"
+					+ NGSIConstants.NGSI_LD_DATE_TIME
+					+ "', '@value', to_char(temporalentity.createdat, 'YYYY-MM-DDThh:mm:ss.usZ'))) as r_createdat, jsonb_build_array(jsonb_build_object('@type', '"
+					+ NGSIConstants.NGSI_LD_DATE_TIME
+					+ "', '@value', to_char(temporalentity.modifiedat, 'YYYY-MM-DDThh:mm:ss.usZ'))) as r_modifiedat, case when deletedat is null then null else jsonb_build_array(jsonb_build_object('@type', '"
+					+ NGSIConstants.NGSI_LD_DATE_TIME
+					+ "', '@value', to_char(temporalentity.deletedat, 'YYYY-MM-DDThh:mm:ss.usZ')))  end as r_deletedat from temporalentity where 1=1");
 			if (typeQuery != null) {
 				sql.append(" AND ");
 				dollarCount = typeQuery.toSql(sql, tuple, dollarCount);
@@ -230,46 +231,21 @@ public class HistoryDAO {
 				tuple.addString(idPattern);
 			}
 			sql.append("), ");
-
 			if (qQuery != null) {
-				sql.append("a as (");
-				QQueryTerm current = qQuery;
-				String currentSet = "beforeA";
-				String[] splitted = current.getAttribute().split("[");
-				splitted[1] = splitted.length == 1 ? null: splitted[1].substring(0, splitted[1].length() - 1);
-				String[] subAttribPath = splitted.length == 1 ? null: splitted[1].split("\\.");
-				String[] attribPath = splitted[0].split("\\.");
-				String attribName = attribPath[0];
-				sql.append("SELECT beforeA.id FROM beforeA LEFT JOIN " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE + " ON beforeA.id = " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE + ".temporalentity_id WHERE attributeId = $");
-				tuple.addString(attribName);
-				sql.append(dollarCount);
-				dollarCount++;
-				sql.append(" AND data #> '{");
-				for (int i = 1; i < attribPath.length; i++) {
-					sql.append(attribPath[i]);
-					sql.append(",0,");
-				}
-				sql.append(NGSIConstants.NGSI_LD_HAS_VALUE);
-				sql.append("0," + NGSIConstants.JSON_LD_VALUE);
-				if(subAttribPath != null) {
-					for(String subAttrib: subAttribPath) {
-						sql.append('$');
-						sql.append(dollarCount);
-						sql.append(",0,");
-						tuple.addString(subAttrib);
-					}
-					sql.append(NGSIConstants.JSON_LD_VALUE);
-				}
-				sql.append("}'");
-				while(current != null) {
-					
-				}
-				
-				sql.append("), ");
+				int[] tmp = qQuery.toTempSql(sql, dollarCount, tuple, 0, entityInfos);
+				dollarCount = tmp[0];
+				entityInfos = "filteredEntityInfo";
+				sql.append(entityInfos);
+				sql.append(" as (SELECT entityInfos.* FROM filtered");
+				sql.append(tmp[1]-1);
+				sql.append(" LEFT JOIN entityInfos ON filtered");
+				sql.append(tmp[1]-1);
+				sql.append(".id = entityInfos.id), ");
 			}
 
-			sql.append("b as (SELECT DISTINCT TEAI.ID AS ID, TEAI.ATTRIBUTEID AS ATTRIBID, u.data as data "
-					+ "FROM (A LEFT JOIN TEMPORALENTITYATTRINSTANCE on A.id = TEMPORALENTITYATTRINSTANCE.temporalentity_id) as TEAI LEFT JOIN LATERAL (");
+			sql.append("attributeData as (SELECT DISTINCT TEAI.ID AS ID, TEAI.ATTRIBUTEID AS ATTRIBID, u.data as data "
+					+ "FROM (" + entityInfos + " LEFT JOIN TEMPORALENTITYATTRINSTANCE on " + entityInfos
+					+ ".id = TEMPORALENTITYATTRINSTANCE.temporalentity_id) as TEAI LEFT JOIN LATERAL (");
 
 			if (aggrQuery == null) {
 				sql.append(
@@ -302,14 +278,18 @@ public class HistoryDAO {
 				attachAggrQueryBottomPart(sql, aggrQuery);
 			}
 
-			sql.append("select (jsonb_build_object('" + NGSIConstants.JSON_LD_ID + "', b.id, '"
-					+ NGSIConstants.JSON_LD_TYPE + "', a.e_types, '" + NGSIConstants.NGSI_LD_CREATED_AT
-					+ "', a.r_createdat, '" + NGSIConstants.NGSI_LD_MODIFIED_AT
-					+ "', a.r_modifiedat) || jsonb_object_agg(b.attribid, b.data) FILTER (WHERE b.data is not null)) || (case when a.r_deletedat is null then '{}'::jsonb else jsonb_build_object('"
-					+ NGSIConstants.NGSI_LD_DELETED_AT
-					+ "', a.r_deletedat) end) || (case when a.scopes is null then '{}'::jsonb else jsonb_build_object('"
-					+ NGSIConstants.NGSI_LD_SCOPE
-					+ "', a.scopes) end) from b left join a on a.id = b.id group by b.id, a.e_types, a.r_createdat, a.r_modifiedat, a.r_deletedat, a.scopes");
+			sql.append("select (jsonb_build_object('" + NGSIConstants.JSON_LD_ID + "', attributeData.id, '"
+					+ NGSIConstants.JSON_LD_TYPE + "', " + entityInfos + ".e_types, '"
+					+ NGSIConstants.NGSI_LD_CREATED_AT + "', " + entityInfos + ".r_createdat, '"
+					+ NGSIConstants.NGSI_LD_MODIFIED_AT + "', " + entityInfos
+					+ ".r_modifiedat) || jsonb_object_agg(attributeData.attribid, attributeData.data) FILTER (WHERE attributeData.data is not null)) || (case when "
+					+ entityInfos + ".r_deletedat is null then '{}'::jsonb else jsonb_build_object('"
+					+ NGSIConstants.NGSI_LD_DELETED_AT + "', " + entityInfos + ".r_deletedat) end) || (case when "
+					+ entityInfos + ".scopes is null then '{}'::jsonb else jsonb_build_object('"
+					+ NGSIConstants.NGSI_LD_SCOPE + "', " + entityInfos + ".scopes) end) from attributeData left join "
+					+ entityInfos + " on " + entityInfos + ".id = attributeData.id group by attributeData.id, " + entityInfos + ".e_types, "
+					+ entityInfos + ".r_createdat, " + entityInfos + ".r_modifiedat, " + entityInfos + ".r_deletedat, "
+					+ entityInfos + ".scopes");
 			sql.append(" LIMIT $");
 			sql.append(dollarCount);
 			dollarCount++;
