@@ -205,14 +205,7 @@ public class HistoryDAO {
 
 			int dollarCount = 1;
 
-			StringBuilder sql = new StringBuilder("with ");
-			if (qQuery == null) {
-				sql.append("a");
-			} else {
-				sql.append("beforeA");
-			}
-			sql.append(
-					" as (select id , e_types, temporalentity.createdat as raw_createdat, temporalentity.modifiedat as raw_modifiedat, case when scopes is null then null else getScopeEntry(scopes) end as scopes, jsonb_build_array(jsonb_build_object('@type', '"
+			StringBuilder sql = new StringBuilder("with a as (select id , e_types, temporalentity.createdat as raw_createdat, temporalentity.modifiedat as raw_modifiedat, case when scopes is null then null else getScopeEntry(scopes) end as scopes, jsonb_build_array(jsonb_build_object('@type', '"
 							+ NGSIConstants.NGSI_LD_DATE_TIME
 							+ "', '@value', to_char(temporalentity.createdat, 'YYYY-MM-DDThh:mm:ss.usZ'))) as r_createdat, jsonb_build_array(jsonb_build_object('@type', '"
 							+ NGSIConstants.NGSI_LD_DATE_TIME
