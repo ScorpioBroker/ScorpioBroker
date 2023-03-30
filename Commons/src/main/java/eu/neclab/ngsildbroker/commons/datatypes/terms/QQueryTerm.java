@@ -1042,5 +1042,7 @@ public class QQueryTerm {
 	public void addAttrib(String attrib) {
 		allAttribs.add(linkHeaders.expandIri(attrib, false, true, null, null));
 	}
+	
+	
 
 }

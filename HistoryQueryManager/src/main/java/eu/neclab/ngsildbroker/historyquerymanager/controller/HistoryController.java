@@ -59,11 +59,11 @@ public class HistoryController {
                                                            @QueryParam("scopeQ") String scopeQ,
                                                            @QueryParam("timeAt") String timeAt,
                                                            @QueryParam("endTimeAt") String endTimeAt,
-                                                           @QueryParam("lastN") int lastN,
+                                                           @QueryParam("lastN") Integer lastN,
                                                            @QueryParam("lang") String lang,
                                                            @QueryParam("aggrMethods") String aggrMethods,
                                                            @QueryParam("aggrPeriodDuration") String aggrPeriodDuration,
-                                                           @QueryParam(value = "limit") int limit, @QueryParam(value = "offset") int offset,
+                                                           @QueryParam(value = "limit") Integer limit, @QueryParam(value = "offset") int offset,
                                                            @QueryParam(value = "qtoken") String qToken, @QueryParam(value = "options") List<String> options,
                                                            @QueryParam(value = "count") boolean count,
                                                            @QueryParam(value = "localOnly") boolean localOnly) {
@@ -80,6 +80,12 @@ public class HistoryController {
         LanguageQueryTerm languageQueryTerm;
         TemporalQueryTerm temporalQueryTerm;
         Context context;
+        if(limit == null) {
+        	limit = defaultLimit;
+        }
+        if(lastN == null) {
+        	lastN = defaultLastN;
+        }
         try {
             List<Object> ctx = HttpUtils.getAtContext(request);
             context = JsonLdProcessor.getCoreContextClone().parse(ctx, false);
