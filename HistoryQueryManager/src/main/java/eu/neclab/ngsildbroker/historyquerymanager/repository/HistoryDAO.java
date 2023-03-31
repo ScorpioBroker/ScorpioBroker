@@ -310,10 +310,14 @@ public class HistoryDAO {
 					+ entityInfos + ".r_deletedat is null then '{}'::jsonb else jsonb_build_object('"
 					+ NGSIConstants.NGSI_LD_DELETED_AT + "', " + entityInfos + ".r_deletedat) end) || (case when "
 					+ entityInfos + ".scopes is null then '{}'::jsonb else jsonb_build_object('"
-					+ NGSIConstants.NGSI_LD_SCOPE + "', " + entityInfos + ".scopes) end) from attributeData left join "
-					+ entityInfos + " on " + entityInfos + ".id = attributeData.id group by attributeData.id, "
-					+ entityInfos + ".e_types, " + entityInfos + ".r_createdat, " + entityInfos + ".r_modifiedat, "
-					+ entityInfos + ".r_deletedat, " + entityInfos + ".scopes");
+					+ NGSIConstants.NGSI_LD_SCOPE + "', " + entityInfos + ".scopes) end)");
+			if (count) {
+				sql.append(", count(*)");
+			}
+			sql.append(" from attributeData left join " + entityInfos + " on " + entityInfos
+					+ ".id = attributeData.id group by attributeData.id, " + entityInfos + ".e_types, " + entityInfos
+					+ ".r_createdat, " + entityInfos + ".r_modifiedat, " + entityInfos + ".r_deletedat, " + entityInfos
+					+ ".scopes");
 			sql.append(" LIMIT $");
 			sql.append(dollarCount);
 			dollarCount++;
