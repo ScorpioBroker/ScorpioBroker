@@ -3,10 +3,8 @@ package eu.neclab.ngsildbroker.historyquerymanager.repository;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -19,7 +17,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Table;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
-import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.RegistrationEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
@@ -38,7 +35,6 @@ import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowIterator;
 import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
-import io.vertx.pgclient.data.Interval;
 
 @Singleton
 public class HistoryDAO {
@@ -232,14 +228,14 @@ public class HistoryDAO {
 			}
 			sql.append("), ");
 			if (qQuery != null) {
-				int[] tmp = qQuery.toTempSql(sql, dollarCount, tuple, 0, entityInfos);
+				int[] tmp = qQuery.toTempSql(sql, dollarCount, tuple, 0, entityInfos, tempQuery);
 				dollarCount = tmp[0];
 				entityInfos = "filteredEntityInfo";
 				sql.append(entityInfos);
 				sql.append(" as (SELECT entityInfos.* FROM filtered");
-				sql.append(tmp[1]-1);
+				sql.append(tmp[1] - 1);
 				sql.append(" LEFT JOIN entityInfos ON filtered");
-				sql.append(tmp[1]-1);
+				sql.append(tmp[1] - 1);
 				sql.append(".id = entityInfos.id), ");
 			}
 
@@ -287,9 +283,9 @@ public class HistoryDAO {
 					+ NGSIConstants.NGSI_LD_DELETED_AT + "', " + entityInfos + ".r_deletedat) end) || (case when "
 					+ entityInfos + ".scopes is null then '{}'::jsonb else jsonb_build_object('"
 					+ NGSIConstants.NGSI_LD_SCOPE + "', " + entityInfos + ".scopes) end) from attributeData left join "
-					+ entityInfos + " on " + entityInfos + ".id = attributeData.id group by attributeData.id, " + entityInfos + ".e_types, "
-					+ entityInfos + ".r_createdat, " + entityInfos + ".r_modifiedat, " + entityInfos + ".r_deletedat, "
-					+ entityInfos + ".scopes");
+					+ entityInfos + " on " + entityInfos + ".id = attributeData.id group by attributeData.id, "
+					+ entityInfos + ".e_types, " + entityInfos + ".r_createdat, " + entityInfos + ".r_modifiedat, "
+					+ entityInfos + ".r_deletedat, " + entityInfos + ".scopes");
 			sql.append(" LIMIT $");
 			sql.append(dollarCount);
 			dollarCount++;

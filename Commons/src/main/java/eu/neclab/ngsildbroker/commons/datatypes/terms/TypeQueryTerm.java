@@ -470,14 +470,14 @@ public class TypeQueryTerm {
 			dollar++;
 			tuple.addString(type);
 			if (!hasNext()) {
-				result.append("])");
+				result.append("]::text[])");
 				return dollar;
 			}
 			TypeQueryTerm current = this;
 			Boolean childPresentFlag = false;
 			while (current.hasNext() || current.firstChild != null) {
 				if (current.firstChild != null) {
-					result.append("]");
+					result.append("]::text[]");
 					if (current.prev.nextAnd) {
 						result.append(" AND (");
 					} else {
@@ -516,7 +516,7 @@ public class TypeQueryTerm {
 			if (childPresentFlag) {
 				result.append(") ");
 			} else {
-				result.append("]) ");
+				result.append("]::text[]) ");
 			}
 		}
 		return dollar;
