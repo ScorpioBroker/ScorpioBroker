@@ -70,9 +70,12 @@ import io.vertx.mutiny.ext.web.client.HttpResponse;
 public final class HttpUtils {
 
 	private static final Logger logger = LoggerFactory.getLogger(HttpUtils.class);
-	public static final Uni<RestResponse<Object>> INVALID_HEADER = Uni.createFrom()
-			.item(HttpUtils.handleControllerExceptions(
-					new ResponseException(ErrorType.NotAcceptable, "Provided accept types are not supported")));
+
+	public static final Uni<RestResponse<Object>> getInvalidHeader() {
+		return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
+				new ResponseException(ErrorType.NotAcceptable, "Provided accept types are not supported")));
+	}
+
 	private static final String CORE_CONTEXT_URL_LINK = null;;
 	/** Timeout for all requests to respond. */
 
@@ -624,7 +627,8 @@ public final class HttpUtils {
 
 	public static RestResponse<Object> generateSubscriptionResult(NGSILDOperationResult t, Context context) {
 		// TODO Auto-generated method stub
-		if(!t.getSuccesses().isEmpty()) return RestResponse.created( URI.create(AppConstants.SUBSCRIPTIONS_URL+t.getEntityId()));
+		if (!t.getSuccesses().isEmpty())
+			return RestResponse.created(URI.create(AppConstants.SUBSCRIPTIONS_URL + t.getEntityId()));
 		return null;
 	}
 

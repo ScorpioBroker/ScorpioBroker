@@ -88,7 +88,7 @@ public class RegistryController {
 		logger.debug("get CSource() ::" + registrationId);
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		if (acceptHeader == -1) {
-			return HttpUtils.INVALID_HEADER;
+			return HttpUtils.getInvalidHeader();
 		}
 
 		Context context;
@@ -131,7 +131,7 @@ public class RegistryController {
 			@PathParam("registrationId") String registrationId) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		if (acceptHeader == -1) {
-			return HttpUtils.INVALID_HEADER;
+			return HttpUtils.getInvalidHeader();
 		}
 		try {
 			HttpUtils.validateUri(registrationId);

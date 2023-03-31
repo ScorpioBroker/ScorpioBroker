@@ -65,6 +65,9 @@ public class HistoryController {
 			@QueryParam(value = "options") String options, @QueryParam(value = "count") boolean count,
 			@QueryParam(value = "localOnly") boolean localOnly) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
+		if (acceptHeader == -1) {
+			return HttpUtils.getInvalidHeader();
+		}
 		String[] idList = null;
 		if (ids != null)
 			idList = ids.split(",");
@@ -132,7 +135,7 @@ public class HistoryController {
 
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		if (acceptHeader == -1) {
-			return HttpUtils.INVALID_HEADER;
+			return HttpUtils.getInvalidHeader();
 		}
 		if (lastN == null) {
 			lastN = defaultLastN;

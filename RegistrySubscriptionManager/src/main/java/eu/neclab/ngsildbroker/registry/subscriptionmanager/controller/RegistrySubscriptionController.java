@@ -67,7 +67,7 @@ public class RegistrySubscriptionController {
 			@QueryParam("limit") int offset, @QueryParam("options") String options) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		if (acceptHeader == -1) {
-			return HttpUtils.INVALID_HEADER;
+			return HttpUtils.getInvalidHeader();
 		}
 		if (limit == null) {
 			limit = defaultLimit;
@@ -96,7 +96,7 @@ public class RegistrySubscriptionController {
 			@PathParam(value = "id") String subscriptionId, @QueryParam(value = "options") String options) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		if (acceptHeader == -1) {
-			return HttpUtils.INVALID_HEADER;
+			return HttpUtils.getInvalidHeader();
 		}
 		return subService.getSubscription(HttpUtils.getTenant(request), subscriptionId).onItem()
 				.transform(subscription -> {

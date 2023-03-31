@@ -77,7 +77,7 @@ public class QueryController {
 			@QueryParam(value = "localOnly") boolean localOnly, @PathParam("entityId") String entityId) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		if (acceptHeader == -1) {
-			return HttpUtils.INVALID_HEADER;
+			return HttpUtils.getInvalidHeader();
 		}
 
 		Context context;
@@ -123,7 +123,7 @@ public class QueryController {
 			@QueryParam("count") boolean count) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		if (acceptHeader == -1) {
-			return HttpUtils.INVALID_HEADER;
+			return HttpUtils.getInvalidHeader();
 		}
 		int actualLimit;
 		if (limit == null) {
@@ -184,7 +184,7 @@ public class QueryController {
 		HttpUtils.getAtContext(request);
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll(HttpHeaders.ACCEPT));
 		if (acceptHeader == -1) {
-			return HttpUtils.INVALID_HEADER;
+			return HttpUtils.getInvalidHeader();
 		}
 		Uni<List<Map<String, Object>>> uni;
 		if (details) {
@@ -211,7 +211,7 @@ public class QueryController {
 			@QueryParam(value = "details") boolean details, @QueryParam(value = "localOnly") boolean localOnly) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll(HttpHeaders.ACCEPT));
 		if (acceptHeader == -1) {
-			return HttpUtils.INVALID_HEADER;
+			return HttpUtils.getInvalidHeader();
 		}
 		return queryService.getType(HttpUtils.getTenant(request), type, localOnly).onItem().transform(map -> {
 			if (map.isEmpty()) {
@@ -233,7 +233,7 @@ public class QueryController {
 
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll(HttpHeaders.ACCEPT));
 		if (acceptHeader == -1) {
-			return HttpUtils.INVALID_HEADER;
+			return HttpUtils.getInvalidHeader();
 		}
 		return queryService.getAttribs(HttpUtils.getTenant(request), localOnly).onItem().transform(map -> {
 			List<Object> contextHeader = HttpUtils.getAtContext(request);
@@ -250,7 +250,7 @@ public class QueryController {
 			@QueryParam(value = "details") boolean details, @QueryParam(value = "localOnly") boolean localOnly) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll(HttpHeaders.ACCEPT));
 		if (acceptHeader == -1) {
-			return HttpUtils.INVALID_HEADER;
+			return HttpUtils.getInvalidHeader();
 		}
 		return queryService.getAttrib(HttpUtils.getTenant(request), attribute, localOnly).onItem().transform(map -> {
 			if (map.isEmpty()) {
@@ -275,7 +275,7 @@ public class QueryController {
 
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		if (acceptHeader == -1) {
-			return HttpUtils.INVALID_HEADER;
+			return HttpUtils.getInvalidHeader();
 		}
 		int actualLimit;
 		if (limit == null) {
