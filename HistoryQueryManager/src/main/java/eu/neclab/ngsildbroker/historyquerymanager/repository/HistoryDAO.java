@@ -17,13 +17,15 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Table;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.RegistrationEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AggrTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
-import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TemporalQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import eu.neclab.ngsildbroker.commons.storage.ClientManager;
@@ -193,7 +195,7 @@ public class HistoryDAO {
 
 	public Uni<QueryResult> query(String tenant, String[] entityIds, TypeQueryTerm typeQuery, String idPattern,
 			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, TemporalQueryTerm tempQuery, AggrTerm aggrQuery,
-			LanguageQueryTerm langQuery, int lastN, int limit, int offset, boolean count) {
+			GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, int lastN, int limit, int offset, boolean count) {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
 			Tuple tuple = Tuple.tuple();
 
@@ -224,17 +226,45 @@ public class HistoryDAO {
 				dollarCount++;
 				tuple.addString(idPattern);
 			}
+			if (scopeQuery != null) {
+				scopeQuery.toSql(sql);
+			}
 			sql.append("), ");
+			if (geoQuery != null) {
+				String newEntityInfos = "geoFilteredInfos";
+				sql.append(newEntityInfos);
+				sql.append(" as (SELECT ");
+				sql.append(entityInfos);
+				sql.append(".* FROM ");
+				sql.append(entityInfos);
+				sql.append(" LEFT JOIN ");
+				sql.append(DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE);
+				sql.append(" ON ");
+				sql.append(DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE);
+				sql.append(".temporalentity_id = ");
+				sql.append(entityInfos);
+				sql.append(".id WHERE ");
+				dollarCount = geoQuery.toTempSql(sql, tuple, dollarCount, tempQuery);
+				sql.append("), ");
+				entityInfos = newEntityInfos;
+			}
 			if (qQuery != null) {
 				int[] tmp = qQuery.toTempSql(sql, dollarCount, tuple, 0, entityInfos, tempQuery);
 				dollarCount = tmp[0];
-				entityInfos = "filteredEntityInfo";
+				String newEntityInfos = "filteredEntityInfo";
+				sql.append(newEntityInfos);
+				sql.append(" as (SELECT ");
 				sql.append(entityInfos);
-				sql.append(" as (SELECT entityInfos.* FROM filtered");
+				sql.append(".* FROM filtered");
 				sql.append(tmp[1] - 1);
-				sql.append(" LEFT JOIN entityInfos ON filtered");
+				sql.append(" LEFT JOIN ");
+				sql.append(entityInfos);
+				sql.append(" ON filtered");
 				sql.append(tmp[1] - 1);
-				sql.append(".id = entityInfos.id), ");
+				sql.append(".id = ");
+				sql.append(entityInfos);
+				sql.append(".id), ");
+				entityInfos = newEntityInfos;
 			}
 
 			sql.append("attributeData as (SELECT DISTINCT TEAI.ID AS ID, TEAI.ATTRIBUTEID AS ATTRIBID, u.data as data "

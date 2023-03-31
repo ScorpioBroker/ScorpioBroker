@@ -85,7 +85,7 @@ public class HistoryQueryService {
 			ScopeQueryTerm scopeQuery, TemporalQueryTerm tempQuery, AggrTerm aggrQuery, LanguageQueryTerm langQuery,
 			Integer lastN, Integer limit, Integer offSet, Boolean count, Boolean localOnly, Context context) {
 		return historyDAO.query(tenant, entityIds, typeQuery, idPattern, attrsQuery, qQuery,
-				tempQuery, aggrQuery, langQuery, lastN, limit, offSet, count);
+				tempQuery, aggrQuery, geoQuery, scopeQuery, lastN, limit, offSet, count);
 	}
 
 	/**

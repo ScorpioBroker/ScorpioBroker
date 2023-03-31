@@ -56,19 +56,19 @@ public class GeoQueryTerm {
 		}
 		String[] tmp = splitted[0].substring(outerCount).split(",");
 
-		mostInnerArray.add(Double.parseDouble(tmp[0].trim().replaceAll("[,\\[\\]]","")));
-		mostInnerArray.add(Double.parseDouble(tmp[1].trim().replaceAll("[,\\[\\]]","")));
+		mostInnerArray.add(Double.parseDouble(tmp[0].trim().replaceAll("[,\\[\\]]", "")));
+		mostInnerArray.add(Double.parseDouble(tmp[1].trim().replaceAll("[,\\[\\]]", "")));
 
 		if (splitted.length > 1) {
 			for (int i = 1; i < splitted.length - 1; i++) {
 				tmp = splitted[i].substring(1).split(",");
-				last.add(Lists.newArrayList(Double.parseDouble(tmp[0].trim().replaceAll("[,\\[\\]]","")), Double.parseDouble(tmp[1].trim().replaceAll("[,\\[\\]]",""))));
+				last.add(Lists.newArrayList(Double.parseDouble(tmp[0].trim().replaceAll("[,\\[\\]]", "")),
+						Double.parseDouble(tmp[1].trim().replaceAll("[,\\[\\]]", ""))));
 			}
 			tmp = splitted[splitted.length - 1].substring(0, splitted[splitted.length - 1].length() - outerCount)
 					.split(",");
-			last.add(Lists.newArrayList(Double.parseDouble(
-					tmp[0].trim().replaceAll("[,\\[\\]]","")),
-					Double.parseDouble(tmp[1].trim().replaceAll("[,\\[\\]]",""))));
+			last.add(Lists.newArrayList(Double.parseDouble(tmp[0].trim().replaceAll("[,\\[\\]]", "")),
+					Double.parseDouble(tmp[1].trim().replaceAll("[,\\[\\]]", ""))));
 		}
 		this.coordinatesAsList = outerShell;
 
@@ -221,6 +221,60 @@ public class GeoQueryTerm {
 			query.append(referenceValue);
 			query.append(") ");
 			break;
+		}
+		return dollar;
+	}
+
+	public int toTempSql(StringBuilder query, Tuple tuple, int dollar, TemporalQueryTerm tempQuery) {
+		String dbColumn = "geovalue";
+		query.append("attributeid = $");
+		query.append(dollar);
+		tuple.addString(geoproperty);
+		dollar++;
+		query.append(" AND ");
+
+		String referenceValue = "ST_SetSRID(ST_GeomFromGeoJSON('{\"type\": \"" + geometry + "\", \"coordinates\": "
+				+ coordinates + " }'), 4326)";
+		String sqlPostgisFunction = DBConstants.NGSILD_TO_POSTGIS_GEO_OPERATORS_MAPPING.get(georel);
+		switch (georel) {
+		case NGSIConstants.GEO_REL_NEAR:
+			if (distanceType.equals(NGSIConstants.GEO_REL_MIN_DISTANCE)) {
+				query.append("NOT ");
+			}
+			query.append(sqlPostgisFunction);
+			query.append("( ");
+			query.append(dbColumn);
+			query.append("::geography, ");
+			query.append(referenceValue);
+			query.append("::geography, ");
+			query.append(distanceValue);
+			query.append(") or ");
+			query.append(sqlPostgisFunction);
+			query.append("( ");
+			query.append(dbColumn);
+			query.append(", ");
+			query.append(referenceValue);
+			query.append(", ");
+			query.append(distanceValue);
+			query.append(") ");
+			break;
+		case NGSIConstants.GEO_REL_WITHIN:
+		case NGSIConstants.GEO_REL_CONTAINS:
+		case NGSIConstants.GEO_REL_OVERLAPS:
+		case NGSIConstants.GEO_REL_INTERSECTS:
+		case NGSIConstants.GEO_REL_EQUALS:
+		case NGSIConstants.GEO_REL_DISJOINT:
+			query.append(sqlPostgisFunction);
+			query.append("( ");
+			query.append(dbColumn);
+			query.append(", ");
+			query.append(referenceValue);
+			query.append(") ");
+			break;
+		}
+		if (tempQuery != null) {
+			query.append(" AND ");
+			dollar = tempQuery.toSql(query, tuple, dollar);
 		}
 		return dollar;
 	}

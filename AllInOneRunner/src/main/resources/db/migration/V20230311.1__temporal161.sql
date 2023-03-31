@@ -1,4 +1,7 @@
 ALTER TABLE PUBLIC.temporalentity ADD COLUMN E_TYPES TEXT[];
+ALTER TABLE PUBLIC.temporalentity DROP COLUMN VALUE;
+ALTER TABLE PUBLIC.temporalentity DROP COLUMN VALUE;
+ALTER TABLE PUBLIC.temporalentity DROP COLUMN attributetype;
 CREATE INDEX "I_temporalentity_types"
     ON public.temporalentity USING gin
     (e_types array_ops);
@@ -12,26 +15,10 @@ CREATE OR REPLACE FUNCTION temporalentityattrinstance_extract_jsonb_fields() RET
         f_internalid temporalentityattrinstance.internalid%TYPE;
     BEGIN
         IF TG_OP = 'INSERT' OR NEW.data <> OLD.data THEN -- do not reprocess if it is just an update on other column (e.g. static)
-            NEW.attributetype = NEW.data#>>'{@type,0}';
-
             NEW.instanceid = NEW.data#>>'{https://uri.etsi.org/ngsi-ld/instanceId,0,@id}';
-            
             NEW.createdat = (NEW.data#>>'{https://uri.etsi.org/ngsi-ld/createdAt,0,@value}')::TIMESTAMP;
             NEW.modifiedat = (NEW.data#>>'{https://uri.etsi.org/ngsi-ld/modifiedAt,0,@value}')::TIMESTAMP;
             NEW.observedat = (NEW.data#>>'{https://uri.etsi.org/ngsi-ld/observedAt,0,@value}')::TIMESTAMP;
-
-            IF NEW.attributeid IN ('https://uri.etsi.org/ngsi-ld/createdAt', 'https://uri.etsi.org/ngsi-ld/modifiedAt', 'https://uri.etsi.org/ngsi-ld/observedAt') THEN
-                NEW.value = NEW.data#>'{@value}';
-            ELSE 
-                IF (NEW.data?'https://uri.etsi.org/ngsi-ld/hasValue') THEN
-                    NEW.value = NEW.data#>'{https://uri.etsi.org/ngsi-ld/hasValue,0,@value}';  -- TODO: confirm if #> or #>>
-                ELSIF (NEW.data?'https://uri.etsi.org/ngsi-ld/hasObject') THEN
-                    NEW.value = NEW.data#>'{https://uri.etsi.org/ngsi-ld/hasObject,0,@id}';
-                ELSE
-                    NEW.value = NULL;
-                END IF;
-            END IF;
-
             IF NEW.data#>>'{@type,0}' = 'https://uri.etsi.org/ngsi-ld/GeoProperty' THEN
                 NEW.geovalue = ST_SetSRID(ST_GeomFromGeoJSON( getGeoJson(NEW.data#>'{https://uri.etsi.org/ngsi-ld/hasValue,0}') ), 4326);
             ELSE 
@@ -76,3 +63,4 @@ $scopes$ LANGUAGE plpgsql;
 CREATE INDEX i_temporalentityattrinstance_attribname
     ON public.temporalentityattrinstance USING hash
     (attributeid text_ops);
+CREATE INDEX i_temporalentity_location ON public.temporalentityattrinstance USING GIST (geovalue);
