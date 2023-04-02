@@ -5,6 +5,7 @@ import java.text.ParseException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -127,7 +128,8 @@ public class HistoryDAO {
 				for (Map<String, Object> payload : request.getRequestPayload()) {
 					String entityId = (String) payload.remove(NGSIConstants.JSON_LD_ID);
 					if (payload.containsKey(NGSIConstants.JSON_LD_TYPE)) {
-						Tuple tuple = Tuple.of(entityId, payload.remove(NGSIConstants.JSON_LD_TYPE),
+						Tuple tuple = Tuple.of(entityId,
+								((List<String>) payload.remove(NGSIConstants.JSON_LD_TYPE)).toArray(new String[0]),
 								DBUtil.getLocalDateTime(payload.remove(NGSIConstants.NGSI_LD_CREATED_AT)),
 								DBUtil.getLocalDateTime(payload.remove(NGSIConstants.NGSI_LD_MODIFIED_AT)));
 						if (payload.containsKey(NGSIConstants.NGSI_LD_SCOPE)) {
@@ -162,8 +164,10 @@ public class HistoryDAO {
 					}
 				}
 				String typeSql = "INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY
-						+ " (id, e_types, createdat, modifiedat) VALUES($1, $2, $3, $4, getScopes($5)) "
-						+ "ON CONFLICT(id) DO UPDATE SET e_types = ARRAY(SELECT DISTINCT UNNEST(e_types || EXCLUDED.e_types)), modifiedat = EXCLUDED.modifiedat, ";
+						+ " (id, e_types, createdat, modifiedat, scopes) VALUES($1, $2, $3, $4, getScopes($5)) "
+						+ "ON CONFLICT(id) DO UPDATE SET e_types = ARRAY(SELECT DISTINCT UNNEST("
+						+ DBConstants.DBTABLE_TEMPORALENTITY
+						+ ".e_types || EXCLUDED.e_types)), modifiedat = EXCLUDED.modifiedat, ";
 				if (request.getRequestType() == AppConstants.APPEND_REQUEST) {
 					typeSql += "scopes = CASE WHEN EXCLUDED.scopes IS NULL THEN scopes ELSE EXCLUDED.scopes END ";
 				} else {
@@ -171,18 +175,22 @@ public class HistoryDAO {
 				}
 
 				typeSql += "RETURNING (modifiedat = createdat)";
-
-				Uni<RowSet<Row>> uniType = conn.preparedQuery(typeSql).executeBatch(batchType);
-				Uni<RowSet<Row>> uniNoType = conn.preparedQuery("UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY
-						+ " SET modifiedat = $1, scopes = CASE WHEN $2 IS NULL THEN scopes ELSE getScopes($2) END WHERE id=$3")
-						.executeBatch(batchNoType);
-
-				return Uni.combine().all().unis(uniType, uniNoType).asTuple().onItem().transformToUni(l -> {
+				List<Uni<RowSet<Row>>> tmpList = new ArrayList<>(2);
+				if (!batchType.isEmpty()) {
+					tmpList.add(conn.preparedQuery(typeSql).executeBatch(batchType));
+				}
+				if (!batchNoType.isEmpty()) {
+					tmpList.add(conn.preparedQuery("UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY
+							+ " SET modifiedat = $1, scopes = CASE WHEN $2 IS NULL THEN scopes ELSE getScopes($2) END WHERE id=$3")
+							.executeBatch(batchNoType));
+				}
+				return Uni.combine().all().unis(tmpList).combinedWith(l -> {
 					return conn
 							.preparedQuery("INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
 									+ " (temporalentity_id, attributeid, data) VALUES ($1, $2, $3::jsonb)")
-							.executeBatch(batchAttribs).onItem().transformToUni(t -> Uni.createFrom().voidItem());
-				});
+							.executeBatch(batchAttribs);
+
+				}).onItem().transformToUni(t -> conn.close());
 			});
 		});
 	}

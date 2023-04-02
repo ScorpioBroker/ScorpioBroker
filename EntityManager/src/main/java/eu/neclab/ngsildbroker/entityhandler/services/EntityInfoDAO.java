@@ -64,8 +64,10 @@ public class EntityInfoDAO {
 
 	public Uni<Map<String, Object>> batchCreateEntity(BatchRequest request) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
-			return client.preparedQuery("SELECT * FROM NGSILD_CREATEBATCH($1)")
-					.execute(Tuple.of(new JsonArray(request.getRequestPayload()))).onItem().transform(rows -> {
+			Tuple tuple = Tuple.of(new JsonArray(request.getRequestPayload()));
+			System.out.println(tuple.deepToString());
+			return client.preparedQuery("SELECT * FROM NGSILD_CREATEBATCH($1)").execute(tuple).onItem()
+					.transform(rows -> {
 						return rows.iterator().next().getJsonObject(0).getMap();
 					});
 		});

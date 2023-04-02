@@ -89,7 +89,7 @@ public class EntityBatchController {
 		}
 		return entityService.createBatch(HttpUtils.getTenant(request), expandedEntities, contexts, localOnly).onItem()
 				.transform(opResults -> {
-					return RestResponse.accepted();
+					return HttpUtils.generateBatchResult(opResults);
 				});
 	}
 
@@ -123,7 +123,7 @@ public class EntityBatchController {
 		}
 		return entityService.upsertBatch(HttpUtils.getTenant(request), expandedEntities, contexts, localOnly).onItem()
 				.transform(opResults -> {
-					return RestResponse.accepted();
+					return HttpUtils.generateBatchResult(opResults);
 				});
 	}
 
@@ -166,7 +166,7 @@ public class EntityBatchController {
 		}
 		return entityService.appendBatch(HttpUtils.getTenant(request), expandedEntities, contexts, localOnly).onItem()
 				.transform(opResults -> {
-					return RestResponse.accepted();
+					return HttpUtils.generateBatchResult(opResults);
 				});
 	}
 
@@ -182,7 +182,7 @@ public class EntityBatchController {
 		
 		return entityService.deleteBatch(HttpUtils.getTenant(request), entityIds, localOnly).onItem()
 				.transform(opResults -> {
-					return RestResponse.accepted();
+					return HttpUtils.generateBatchResult(opResults);
 				});
 	}
 

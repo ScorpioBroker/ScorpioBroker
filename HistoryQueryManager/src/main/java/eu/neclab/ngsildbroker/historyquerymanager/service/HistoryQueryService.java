@@ -84,8 +84,79 @@ public class HistoryQueryService {
 			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, CSFQueryTerm csf, GeoQueryTerm geoQuery,
 			ScopeQueryTerm scopeQuery, TemporalQueryTerm tempQuery, AggrTerm aggrQuery, LanguageQueryTerm langQuery,
 			Integer lastN, Integer limit, Integer offSet, Boolean count, Boolean localOnly, Context context) {
-		return historyDAO.query(tenant, entityIds, typeQuery, idPattern, attrsQuery, qQuery,
+
+		Uni<QueryResult> local = historyDAO.query(tenant, entityIds, typeQuery, idPattern, attrsQuery, qQuery,
 				tempQuery, aggrQuery, geoQuery, scopeQuery, lastN, limit, offSet, count);
+		if (localOnly) {
+			return local;
+		}
+		Map<RemoteHost, String> remoteHosts = getRemoteHostsForQuery(tenant, idPattern, attrsQuery);
+		if (remoteHosts.isEmpty()) {
+			return local;
+		}
+		List<Uni<QueryResult>> remoteCalls = new ArrayList<>(remoteHosts.size());
+		for (Entry<RemoteHost, String> entry : remoteHosts.entrySet()) {
+			RemoteHost remoteHost = entry.getKey();
+			String url = remoteHost.host() + NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT + "?" + entry.getValue();
+
+			remoteCalls.add(webClient.get(url).putHeaders(remoteHost.headers()).send().onItem().transform(response -> {
+				QueryResult result = new QueryResult();
+				List<Object> responseEntity;
+				if (response == null || response.statusCode() != 200) {
+					responseEntity = null;
+				} else {
+					responseEntity = response.bodyAsJsonArray().getList();
+					try {
+						responseEntity = JsonLdProcessor.expand(HttpUtils.getContextFromHeader(remoteHost.headers()),
+								responseEntity, HttpUtils.opts, -1, false);
+					} catch (JsonLdError e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (ResponseException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					List<Map<String, Object>> resultList = new ArrayList<>(responseEntity.size());
+					for (Object entry2 : responseEntity) {
+						Map<String, Object> tmp = (Map<String, Object>) entry2;
+						tmp.put(EntityTools.REG_MODE_KEY, remoteHost.regMode());
+						resultList.add(tmp);
+					}
+					result.setData(resultList);
+					if (count) {
+						result.setCount(Long.parseLong(response.getHeader(NGSIConstants.COUNT_HEADER_RESULT)));
+					}
+
+				}
+				return result;
+			}));
+		}
+		remoteCalls.add(0, local);
+		return Uni.combine().all().unis(remoteCalls).combinedWith(list -> {
+			QueryResult result = new QueryResult();
+			Map<String, Map<String, Object>> entityId2Entity = Maps.newHashMap();
+			long rCount = 0;
+			for (Object entry : list) {
+				QueryResult qResult = (QueryResult) entry;
+				mergeInResult(entityId2Entity, qResult.getData());
+				if (count) {
+					rCount += qResult.getCount();
+				}
+			}
+			result.setData(Lists.newArrayList(entityId2Entity.values()));
+			if (count) {
+				result.setCount(rCount);
+			} else {
+				result.setCount(-1l);
+			}
+			return result;
+		});
+
+	}
+
+	private void mergeInResult(Map<String, Map<String, Object>> entityId2Entity, List<Map<String, Object>> data) {
+		// TODO Auto-generated method stub
+
 	}
 
 	/**
@@ -280,6 +351,47 @@ public class HistoryQueryService {
 				}
 			}
 		}
+		return result;
+	}
+
+	private Map<RemoteHost, String> getRemoteHostsForQuery(String tenant, String entityId, AttrsQueryTerm attrsQuery) {
+		Map<RemoteHost, String> result = Maps.newHashMap();
+
+		for (RegistrationEntry regEntry : tenant2CId2RegEntries.row(tenant).values()) {
+			if (!regEntry.retrieveTemporal()) {
+				continue;
+			}
+			if ((regEntry.eId() == null && regEntry.eIdp() == null)
+					|| (regEntry.eId() != null && regEntry.eId().equals(entityId))
+					|| (regEntry.eIdp() != null && entityId.matches(regEntry.eIdp()))) {
+				RemoteHost remoteHost = new RemoteHost(regEntry.host().host(), regEntry.host().tenant(),
+						regEntry.host().headers(), regEntry.host().cSourceId(), true, false, regEntry.regMode());
+
+				Set<String> attribs;
+				if (result.containsKey(remoteHost)) {
+//					attribs = result.get(remoteHost);
+				} else {
+					attribs = Sets.newHashSet();
+					// result.put(remoteHost, attribs);
+				}
+				if (regEntry.eProp() != null) {
+					// attribs.add(regEntry.eProp());
+				}
+				if (regEntry.eRel() != null) {
+					// attribs.add(regEntry.eRel());
+				}
+			}
+		}
+//		if (attrsQuery != null) {
+//			for (Entry<RemoteHost, Set<String>> entry : result.entrySet()) {
+//				Set<String> regAttrs = entry.getValue();
+//				if (regAttrs.isEmpty()) {
+//					regAttrs.addAll(attrsQuery.getAttrs());
+//				} else {
+//					regAttrs.retainAll(attrsQuery.getAttrs());
+//				}
+//			}
+//		}
 		return result;
 	}
 

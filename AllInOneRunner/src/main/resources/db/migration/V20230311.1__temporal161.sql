@@ -1,7 +1,6 @@
 ALTER TABLE PUBLIC.temporalentity ADD COLUMN E_TYPES TEXT[];
-ALTER TABLE PUBLIC.temporalentity DROP COLUMN VALUE;
-ALTER TABLE PUBLIC.temporalentity DROP COLUMN VALUE;
-ALTER TABLE PUBLIC.temporalentity DROP COLUMN attributetype;
+ALTER TABLE PUBLIC.temporalentityattrinstance DROP COLUMN VALUE;
+ALTER TABLE PUBLIC.temporalentityattrinstance DROP COLUMN attributetype;
 CREATE INDEX "I_temporalentity_types"
     ON public.temporalentity USING gin
     (e_types array_ops);
