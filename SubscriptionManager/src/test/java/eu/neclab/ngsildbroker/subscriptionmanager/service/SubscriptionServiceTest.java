@@ -1,274 +1,269 @@
-//package eu.neclab.ngsildbroker.subscriptionmanager.service;
-//
-//import static org.junit.jupiter.api.Assertions.assertNotNull;
-//import static org.mockito.ArgumentMatchers.any;
-//
-//import io.quarkus.test.junit.QuarkusTest;
-//import io.quarkus.test.junit.TestProfile;
-//import io.smallrye.reactive.messaging.MutinyEmitter;
-//
-//import com.github.jsonldjava.core.Context;
-//import java.net.URISyntaxException;
-//import java.util.ArrayList;
-//import java.util.HashMap;
-//import java.util.Map;
-//import java.util.List;
-//
-//import com.google.common.collect.ArrayListMultimap;
-//import com.google.gson.Gson;
-//
-//import org.junit.jupiter.api.Assertions;
-//import org.junit.jupiter.api.BeforeEach;
-//import org.junit.jupiter.api.Test;
-//import org.junit.jupiter.api.TestMethodOrder;
-//import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
-//import org.junit.jupiter.api.Order;
-//import org.mockito.InjectMocks;
-//import org.mockito.Mock;
-//import org.mockito.Mockito;
-//import org.mockito.MockitoAnnotations;
-//import org.mockito.Spy;
-//
-//import eu.neclab.ngsildbroker.subscriptionmanager.controller.CustomProfile;
-//import eu.neclab.ngsildbroker.subscriptionmanager.repository.SubscriptionInfoDAO;
-//import eu.neclab.ngsildbroker.commons.constants.AppConstants;
-//import eu.neclab.ngsildbroker.commons.datatypes.NotificationParam;
-//import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
-//import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.InternalNotification;
-//import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
-//import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-//import eu.neclab.ngsildbroker.commons.subscriptionbase.IntervalNotificationHandler;
-//import groovy.util.logging.Slf4j;
-//
-//@QuarkusTest
-//@Slf4j
-//@TestMethodOrder(OrderAnnotation.class)
-//@TestProfile(CustomProfile.class)
-//public class SubscriptionServiceTest {
-//
-//	String payload;
-//
-//	@Mock
-//	SubscriptionRequest subscriptionRequest;
-//
-//	@Mock
-//	IntervalNotificationHandler intervalHandlerREST;
-//
-//	@Mock
-//	InternalNotification notify;
-//
-//	@Mock
-//	HashMap<String, Subscription> subscriptionId2Subscription;
-//
-//	@InjectMocks
-//	@Spy
-//	oldSubscriptionService subscriptionService;
-//
-//	@Mock
-//	NotificationParam param;
-//
-//	@Mock
-//	Subscription subscriptionMock;
-//
-//	@Mock
-//	IntervalNotificationHandler intervalNotificationHandler;
-//
-//	@Mock
-//	MutinyEmitter<SubscriptionRequest> internalSubEmitter;
-//
-//	@Mock
-//	SubscriptionServiceKafka kafka;
-//
-//	@Mock
-//	SubscriptionInfoDAO subService;
-//
-//	ArrayListMultimap<String, String> multimaparr = ArrayListMultimap.create();
-//
-//	// resolved payload of a subscription.
-//
-//	@BeforeEach
-//	public void setUp() {
-//		MockitoAnnotations.initMocks(this);
-//
-//		payload = "{\r\n  \"https://uri.etsi.org/ngsi-ld/entities\" : [ "
-//				+ "{\r\n    \"@type\" : [ \"https://uri.etsi.org/ngsi-ld/default-context/Vehicle\" ]"
-//				+ "\r\n  } ],\r\n  \"@id\" : \"urn:ngsi-ld:Subscription:173223\","
-//				+ "\r\n  \"https://uri.etsi.org/ngsi-ld/notification\" : [ "
-//				+ "{\r\n    \"https://uri.etsi.org/ngsi-ld/endpoint\" : [ "
-//				+ "{\r\n      \"https://uri.etsi.org/ngsi-ld/accept\" : [ "
-//				+ "{\r\n        \"@value\" : \"application/json\""
-//				+ "\r\n      } ],\r\n      \"https://uri.etsi.org/ngsi-ld/uri\" : [ {"
-//				+ "\r\n        \"@value\" : \"http://localhost:8080/acc\"\r\n      } ]"
-//				+ "\r\n    } ]\r\n  } ],\r\n  \"@type\" : [ \"https://uri.etsi.org/ngsi-ld/Subscription\" ]" + "\r\n}";
-//	}
-//
-//	/**
-//	 * this method is used to test create subscription test
-//	 */
-//	@Test
-//	@Order(1)
-//	public void serviceTest() throws ResponseException {
-//
-//		List<Object> context = new ArrayList<>();
-//		Context context1 = new Context();
-//		Subscription subscription = null;
-//		ArrayListMultimap<String, String> subIds = ArrayListMultimap.create();
-//		multimaparr.put("content-type", "application/json");
-//		Gson gson = new Gson();
-//		Map<String, Object> resolved = gson.fromJson(payload, Map.class);
-//		Subscription s = Subscription.expandSubscription(resolved, context1, true);
-//		subscription = new Subscription();
-//		SubscriptionRequest subRequest = new SubscriptionRequest(s, context, subIds, 0);
-//		String subId = subscriptionService.subscribe(subRequest).await().indefinitely();
-//		Assertions.assertEquals("urn:ngsi-ld:Subscription:173223", subId);
-//		Mockito.verify(subscriptionService).subscribe(any());
-//	}
-//
-//	/**
-//	 * this method is used to test updatesubscription test
-//	 */
-//	@Test
-//	@Order(2)
-//	public void updateSubscriptionNotFoundTest() throws Exception {
-//
-//		List<Object> context = new ArrayList<>();
-//		Context context1 = new Context();
-//		Subscription subscription = null;
-//		ArrayListMultimap<String, String> subIds = ArrayListMultimap.create();
-//		multimaparr.put("content-type", "application/json");
-//		Gson gson = new Gson();
-//		Map<String, Object> resolved = gson.fromJson(payload, Map.class);
-//		Subscription s = Subscription.expandSubscription(resolved, context1, true);
-//		subscription = new Subscription();
-//		SubscriptionRequest subRequest = new SubscriptionRequest(s, context, multimaparr, 0);
-//		try {
-//			subscriptionService.updateSubscription(subRequest).await().indefinitely();
-//		} catch (Exception e) {
-//			Assertions.assertEquals("urn:ngsi-ld:Subscription:173223 not found", e.getMessage());
-//			Mockito.verify(subscriptionService).updateSubscription(any());
-//		}
-//	}
-//
-//	/**
-//	 * this method is used to test getAllSubscriptions method
-//	 */
-//	@Test
-//	@Order(3)
-//	public void getAllSubscriptionsTest() {
-//
-//		ArrayListMultimap<String, String> subIds = ArrayListMultimap.create();
-//		List<SubscriptionRequest> result = subscriptionService.getAllSubscriptions(subIds).await().indefinitely();
-//		assertNotNull(result);
-//		Mockito.verify(subscriptionService).getAllSubscriptions(any());
-//	}
-//
-//	/**
-//	 * this method is used to test subscribeToRemote method
-//	 */
-//	@Test
-//	@Order(4)
-//	public void getInternalNotificationTest() throws ResponseException {
-//
-//		List<Object> context = new ArrayList<>();
-//		Context context1 = new Context();
-//		Subscription subscription = null;
-//		ArrayListMultimap<String, String> subIds = ArrayListMultimap.create();
-//		multimaparr.put("content-type", "application/json");
-//		Gson gson = new Gson();
-//		Map<String, Object> resolved = gson.fromJson(payload, Map.class);
-//		Subscription s = Subscription.expandSubscription(resolved, context1, true);
-//		subscription = new Subscription();
-//		SubscriptionRequest subRequest = new SubscriptionRequest(s, context, subIds, 0);
-//		subscriptionService.subscribeToRemote(subRequest, notify);
-//		Mockito.verify(subscriptionService).subscribeToRemote(any(), any());
-//
-//	}
-//
-//	/**
-//	 * this method is used to test subscribeToRemote method when Subscription is
-//	 * null
-//	 */
-//	@Test
-//	@Order(5)
-//	public void getInternalNotificationNullTest() throws ResponseException {
-//
-//		Subscription subscription = null;
-//		multimaparr.put("content-type", "application/json");
-//		Gson gson = new Gson();
-//		subscription = new Subscription();
-//		SubscriptionRequest subRequest = null;
-//		subscriptionService.subscribeToRemote(subRequest, notify);
-//		Mockito.verify(subscriptionService).subscribeToRemote(any(), any());
-//	}
-//
-//	/**
-//	 * this method is used to test remoteNotify method
-//	 */
-//	@Test
-//	@Order(6)
-//	public void remoteNotificationNullTest() throws ResponseException {
-//
-//		multimaparr.put("content-type", "application/json");
-//		Gson gson = new Gson();
-//		String id = new String("urn:ngsi-ld:Subscription:173223");
-//		Map<String, Object> resolved = null;
-//		subscriptionService.remoteNotify(id, resolved);
-//		Mockito.verify(subscriptionService).remoteNotify(any(), any());
-//	}
-//
-//	/**
-//	 * this method is used to test handleRegistryNotification method
-//	 */
-//	@Test
-//	@Order(7)
-//	public void handleRegistryNotificationTest() throws ResponseException {
-//
-//		List<Object> context = new ArrayList<>();
-//		Context context1 = new Context();
-//		Subscription subscription = null;
-//		ArrayListMultimap<String, String> subIds = ArrayListMultimap.create();
-//		InternalNotification notify = new InternalNotification(payload, payload, null, payload, null, 0, context,
-//				payload, subIds);
-//		subscriptionService.handleRegistryNotification(notify);
-//		Mockito.verify(subscriptionService).handleRegistryNotification(any());
-//		;
-//	}
-//
-//	/**
-//	 * this method is used to test unsubscribe method
-//	 */
-//	@Test
-//	@Order(8)
-//	public void unsubscribeNotFoundTest() throws URISyntaxException, ResponseException {
-//
-//		Subscription subscription = null;
-//		Subscription removedSub = new Subscription();
-//		String id = new String("urn:ngsi-ld:Subscription:173223");
-//		ArrayListMultimap<String, String> subIds = ArrayListMultimap.create();
-//		try {
-//			subscriptionService.unsubscribe(id, subIds).await().indefinitely();
-//		} catch (Exception e) {
-//			Assertions.assertEquals("urn:ngsi-ld:Subscription:173223 not found", e.getMessage());
-//			Mockito.verify(subscriptionService).unsubscribe(any(), any());
-//		}
-//	}
-//
-//	/**
-//	 * this method is used to test getSubscription method
-//	 */
-//	@Test
-//	@Order(9)
-//	public void getSubscriptionTest() throws ResponseException {
-//
-//		multimaparr.put("content-type", "application/json");
-//		MockitoAnnotations.initMocks(this);
-//		ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
-//		entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Subscription:173223");
-//		try {
-//			subscriptionService.getSubscription("urn:ngsi-ld:Subscription:173223", entityIds).await().indefinitely();
-//		} catch (Exception e) {
-//			Assertions.assertEquals("urn:ngsi-ld:Subscription:173223 not found", e.getMessage());
-//			Mockito.verify(subscriptionService).getSubscription(any(), any());
-//		}
-//	}
-//}
+package eu.neclab.ngsildbroker.subscriptionmanager.service;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.lang.reflect.Field;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.CompletionException;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.jsonldjava.core.Context;
+
+import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
+import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
+import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.subscriptionmanager.controller.CustomProfile;
+import eu.neclab.ngsildbroker.subscriptionmanager.repository.SubscriptionInfoDAO;
+import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.TestProfile;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.tuples.Tuple2;
+import io.smallrye.reactive.messaging.MutinyEmitter;
+import io.vertx.core.json.JsonObject;
+import io.vertx.mutiny.sqlclient.Row;
+import io.vertx.mutiny.sqlclient.RowIterator;
+import io.vertx.mutiny.sqlclient.RowSet;
+import io.vertx.pgclient.PgException;
+
+@QuarkusTest
+@TestMethodOrder(OrderAnnotation.class)
+@TestProfile(CustomProfile.class)
+public class SubscriptionServiceTest {
+
+	@InjectMocks
+	SubscriptionService subscriptionService;
+
+	@Mock
+	SubscriptionInfoDAO subDAO;
+
+	@Mock
+	Context context;
+
+	@Mock
+	MutinyEmitter<SubscriptionRequest> internalSubEmitter;
+
+	@Mock
+	LocalEntityService localEntityService;
+
+	String subscriptionId = "urn:ngsi-ld:Subscription:1";
+	String notificationId = "urn:ngsi-ld:notify:1";
+	String jsonLdObject;
+	Map<String, Object> resolved = null;
+	String tenant = "test";
+
+	@BeforeEach
+	public void setUp() throws Exception {
+		MockitoAnnotations.openMocks(this);
+		jsonLdObject = "{\"https://uri.etsi.org/ngsi-ld/entities\":[{\"@id\":\"urn:ngsi-ld:Vehicle:A135\",\"@type\":"
+				+ "[\"https://uri.etsi.org/ngsi-ld/default-context/Vehicle\"]}],\"@id\":\"urn:ngsi-ld:Subscription:"
+				+ "1\",\"https://uri.etsi.org/ngsi-ld/notification\":[{\"https://uri.etsi.org/ngsi-ld/endpoint\":"
+				+ "[{\"https://uri.etsi.org/ngsi-ld/accept\":[{\"@value\":\"application/json\"}],\"https://uri.etsi.org/ngsi-ld/uri\":"
+				+ "[{\"@value\":\"mqtt://localhost:1883/notify\"}]}],\"https://uri.etsi.org/ngsi-ld/format\":"
+				+ "[{\"@value\":\"keyValues\"}]}],\"@type\":[\"https://uri.etsi.org/ngsi-ld/Subscription\"]}";
+		ObjectMapper objectMapper = new ObjectMapper();
+		resolved = objectMapper.readValue(jsonLdObject, Map.class);
+
+	}
+
+	@Test
+	public void createSubscriptionTest() {
+
+		RowSet<Row> rowSetMock = mock(RowSet.class);
+		Uni<RowSet<Row>> uniRowsetMock = Uni.createFrom().item(rowSetMock);
+		when(subDAO.createSubscription(any())).thenReturn(uniRowsetMock);
+
+		Uni<Void> uniEmiiterResponse = Uni.createFrom().nullItem();
+		when(internalSubEmitter.send(any(SubscriptionRequest.class))).thenReturn(uniEmiiterResponse);
+
+		Uni<NGSILDOperationResult> uniResult = subscriptionService.createSubscription(tenant, resolved, context);
+		NGSILDOperationResult result = uniResult.await().indefinitely();
+
+		assertEquals(subscriptionId, result.getEntityId());
+		assertEquals(1, result.getSuccesses().size());
+		assertEquals(0, result.getFailures().size());
+		verify(subDAO, times(1)).createSubscription(any());
+
+	}
+
+	@Test
+	public void createSubscriptionExistTest() {
+
+		PgException sqlException = new PgException("duplicate key value violates unique constraint", "", "23505", "");
+		when(subDAO.createSubscription(any())).thenReturn(Uni.createFrom().failure(sqlException));
+
+		Uni<NGSILDOperationResult> uniResult = subscriptionService.createSubscription(tenant, resolved, context);
+
+		Throwable throwable = assertThrows(CompletionException.class, () -> uniResult.await().indefinitely());
+		ResponseException responseException = (ResponseException) throwable.getCause();
+
+		assertEquals(409, responseException.getErrorCode());
+		assertEquals("Subscription with id " + subscriptionId + " exists", responseException.getDetail());
+		verify(subDAO, times(1)).createSubscription(any());
+
+	}
+
+	@Test
+	public void updateSubscriptionNotFoundTest() {
+
+		// create a mock Tuple2 object with an empty map and null context
+		Tuple2<Map<String, Object>, Object> tuple2 = mock(Tuple2.class);
+		Mockito.when(tuple2.size()).thenReturn(0);
+
+		Uni<Tuple2<Map<String, Object>, Object>> uniRowsetMock = Uni.createFrom().item(tuple2);
+		when(subDAO.updateSubscription(any())).thenReturn(uniRowsetMock);
+
+		Uni<Void> uniEmiiterResponse = Uni.createFrom().nullItem();
+		when(internalSubEmitter.send(any(SubscriptionRequest.class))).thenReturn(uniEmiiterResponse);
+
+		Uni<NGSILDOperationResult> uniResult = subscriptionService.updateSubscription(tenant, subscriptionId, resolved,
+				context);
+
+		Throwable throwable = assertThrows(CompletionException.class, () -> uniResult.await().indefinitely());
+		ResponseException responseException = (ResponseException) throwable.getCause();
+
+		assertEquals(404, responseException.getErrorCode());
+		assertEquals("subscription not found", responseException.getDetail());
+		verify(subDAO, times(1)).updateSubscription(any());
+
+	}
+
+	@Test
+	public void deleteSubscriptionTest() {
+
+		RowSet<Row> rowSetMock = mock(RowSet.class);
+		Uni<RowSet<Row>> uniRowsetMock = Uni.createFrom().item(rowSetMock);
+		when(subDAO.deleteSubscription(any())).thenReturn(uniRowsetMock);
+
+		Uni<Void> uniEmiiterResponse = Uni.createFrom().nullItem();
+		when(internalSubEmitter.send(any(SubscriptionRequest.class))).thenReturn(uniEmiiterResponse);
+
+		Uni<NGSILDOperationResult> uniResult = subscriptionService.deleteSubscription(tenant, subscriptionId);
+		NGSILDOperationResult result = uniResult.await().indefinitely();
+
+		assertEquals(subscriptionId, result.getEntityId());
+		verify(subDAO, times(1)).deleteSubscription(any());
+	}
+
+	@Test
+	public void getSubscriptionTest() {
+
+		Row rowMock = mock(Row.class);
+		RowSet<Row> rowSetMock = mock(RowSet.class);
+		RowIterator<Row> rowIteratorMock = mock(RowIterator.class);
+		when(rowSetMock.size()).thenReturn(1);
+		when(rowSetMock.iterator()).thenReturn(rowIteratorMock);
+		when(rowIteratorMock.next()).thenReturn(rowMock);
+		JsonObject jsonObject = new JsonObject();
+		jsonObject.put("@id", subscriptionId);
+		when(rowMock.getJsonObject(anyInt())).thenReturn(jsonObject);
+		Uni<RowSet<Row>> uniRowsetMock = Uni.createFrom().item(rowSetMock);
+		when(subDAO.getSubscription(any(), any())).thenReturn(uniRowsetMock);
+
+		Uni<Map<String, Object>> uniResult = subscriptionService.getSubscription(tenant, subscriptionId);
+		Map<String, Object> result = uniResult.await().indefinitely();
+
+		assertEquals(subscriptionId, result.get("@id"));
+		verify(subDAO, times(1)).getSubscription(any(), any());
+
+	}
+
+	@Test
+	public void getSubscriptionNotFoundTest() {
+
+		RowSet<Row> rowSetMock = mock(RowSet.class);
+		when(rowSetMock.size()).thenReturn(0);
+		Uni<RowSet<Row>> uniRowsetMock = Uni.createFrom().item(rowSetMock);
+		when(subDAO.getSubscription(any(), any())).thenReturn(uniRowsetMock);
+
+		Uni<Map<String, Object>> uniResult = subscriptionService.getSubscription(tenant, subscriptionId);
+
+		Throwable throwable = assertThrows(CompletionException.class, () -> uniResult.await().indefinitely());
+		ResponseException responseException = (ResponseException) throwable.getCause();
+
+		assertEquals(404, responseException.getErrorCode());
+		assertEquals("subscription not found", responseException.getDetail());
+		verify(subDAO, times(1)).getSubscription(any(), any());
+
+	}
+
+	@Test
+	public void getAllSubscriptionsTest() {
+
+		Row rowMock = mock(Row.class);
+		RowSet<Row> rowSetMock = mock(RowSet.class);
+		RowIterator<Row> rowIteratorMock = mock(RowIterator.class);
+		when(rowSetMock.size()).thenReturn(1);
+		when(rowSetMock.iterator()).thenReturn(rowIteratorMock);
+		when(rowIteratorMock.next()).thenReturn(rowMock);
+		when(rowIteratorMock.hasNext()).thenReturn(true).thenReturn(false);
+		JsonObject jsonObject = new JsonObject();
+		jsonObject.put("@id", subscriptionId);
+		when(rowMock.getJsonObject(anyInt())).thenReturn(jsonObject);
+		Uni<RowSet<Row>> uniRowsetMock = Uni.createFrom().item(rowSetMock);
+		when(subDAO.getAllSubscriptions(any(), anyInt(), anyInt())).thenReturn(uniRowsetMock);
+
+		Uni<QueryResult> uniResult = subscriptionService.getAllSubscriptions(tenant, 0, 0);
+		QueryResult result = uniResult.await().indefinitely();
+
+		assertEquals(1L, result.getCount());
+		verify(subDAO, times(1)).getAllSubscriptions(any(), anyInt(), anyInt());
+
+	}
+
+	@Test
+	public void getAllSubscriptionsEmptyResultTest() {
+
+		Row rowMock = mock(Row.class);
+		RowSet<Row> rowSetMock = mock(RowSet.class);
+		RowIterator<Row> rowIteratorMock = mock(RowIterator.class);
+		when(rowSetMock.size()).thenReturn(0);
+		when(rowSetMock.iterator()).thenReturn(rowIteratorMock);
+		when(rowIteratorMock.next()).thenReturn(rowMock);
+		when(rowIteratorMock.hasNext()).thenReturn(false);
+		Uni<RowSet<Row>> uniRowsetMock = Uni.createFrom().item(rowSetMock);
+		when(subDAO.getAllSubscriptions(any(), anyInt(), anyInt())).thenReturn(uniRowsetMock);
+
+		Uni<QueryResult> uniResult = subscriptionService.getAllSubscriptions(tenant, 0, 0);
+		QueryResult result = uniResult.await().indefinitely();
+
+		assertEquals(0L, result.getCount());
+		verify(subDAO, times(1)).getAllSubscriptions(any(), anyInt(), anyInt());
+
+	}
+
+	@Test
+	public void remoteNotifyTest() throws Exception {
+
+		Field field = SubscriptionService.class.getDeclaredField("remoteNotifyCallbackId2InternalSub");
+		field.setAccessible(true);
+		field.set(subscriptionService, new HashMap<String, SubscriptionRequest>());
+
+		Uni<Void> resultUni = subscriptionService.remoteNotify(notificationId, resolved, context);
+		resultUni.await().indefinitely();
+
+		verify(localEntityService, times(0)).getEntityById(any(), any());
+	}
+
+}
+
+
+
+
