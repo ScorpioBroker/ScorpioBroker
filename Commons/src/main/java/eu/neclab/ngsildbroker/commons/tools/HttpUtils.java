@@ -18,6 +18,8 @@ import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.ListMultimap;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.http.HttpStatus;
 import org.jboss.resteasy.reactive.RestResponse;
@@ -541,8 +543,24 @@ public final class HttpUtils {
 	}
 
 	public static RestResponse<Object> generateBatchResult(List<NGSILDOperationResult> t) {
-		// TODO Auto-generated method stub
-		return null;
+		//MultiMap<String,Object> result =new HashMap<>();
+		ListMultimap<String,Object> result = ArrayListMultimap.create();
+		for (NGSILDOperationResult r: t ) {
+			if (!r.getFailures().isEmpty()) {
+					result.put("error",r.getJson());
+			}
+			if(!r.getSuccesses().isEmpty()){
+				 	result.put("success",r.getJson());
+			}
+		}
+		if(result.get("success").isEmpty()){
+			return  RestResponse.status(RestResponse.Status.BAD_REQUEST,result.asMap());
+		}
+		if(result.get("error").isEmpty()){
+			return  RestResponse.status(RestResponse.Status.CREATED,result.asMap());
+		}
+		return new RestResponseBuilderImpl<Object>().status(207).type(AppConstants.NGB_APPLICATION_JSON)
+				.entity(result.asMap()).build();
 	}
 
 	public static Context getContextFromPayload(Map<String, Object> originalPayload, List<Object> atContextHeader,
