@@ -88,7 +88,7 @@ public class QueryParser {
 	}
 
 	public static QQueryTerm parseQuery(String input, Context context) throws ResponseException {
-		if(input == null) {
+		if (input == null) {
 			return null;
 		}
 		QQueryTerm root = new QQueryTerm(context);
@@ -160,6 +160,9 @@ public class QueryParser {
 			}
 
 		}
+		if (readingAttrib) {
+			current.setAttribute(attribName);
+		}
 		if (!operant.equals("")) {
 			current.setOperant(operant);
 		}
@@ -200,7 +203,7 @@ public class QueryParser {
 	}
 
 	public static AttrsQueryTerm parseAttrs(String attrs, Context context) throws ResponseException {
-		if(attrs == null) {
+		if (attrs == null) {
 			return null;
 		}
 		AttrsQueryTerm result = new AttrsQueryTerm(context);
@@ -211,7 +214,7 @@ public class QueryParser {
 	}
 
 	public static ScopeQueryTerm parseScopeQuery(String queryString) {
-		if(queryString == null) {
+		if (queryString == null) {
 			return null;
 		}
 		ScopeQueryTerm result = new ScopeQueryTerm();
@@ -276,7 +279,7 @@ public class QueryParser {
 	}
 
 	public static TypeQueryTerm parseTypeQuery(String input, Context context) throws ResponseException {
-		if(input == null) {
+		if (input == null) {
 			return null;
 		}
 		Set<String> allTypes = Sets.newHashSet();

@@ -131,14 +131,14 @@ public class QueryDAO {
 			}
 			if (attrsQuery != null) {
 				if (sqlAdded) {
-					query.append("AND ");
+					query.append(" AND ");
 				}
 				dollar = attrsQuery.toSql(query, tuple, dollar);
 				sqlAdded = true;
 			}
 			if (geoQuery != null) {
 				if (sqlAdded) {
-					query.append("AND ");
+					query.append(" AND ");
 				}
 				dollar = geoQuery.toSql(query, tuple, dollar);
 				sqlAdded = true;
@@ -146,14 +146,14 @@ public class QueryDAO {
 
 			if (qQuery != null) {
 				if (sqlAdded) {
-					query.append("AND ");
+					query.append(" AND ");
 				}
-				query.append(qQuery.toSql());
+				dollar = qQuery.toSql(query, dollar, tuple);
 				sqlAdded = true;
 			}
 			if (ids != null) {
 				if (sqlAdded) {
-					query.append("AND ");
+					query.append(" AND ");
 				}
 				query.append("id IN (");
 				for (String id : ids) {
@@ -169,7 +169,7 @@ public class QueryDAO {
 			}
 			if (idPattern != null) {
 				if (sqlAdded) {
-					query.append("AND ");
+					query.append(" AND ");
 				}
 				query.append("id ~ $");
 				query.append(dollar);
@@ -178,7 +178,7 @@ public class QueryDAO {
 				sqlAdded = true;
 			}
 			if (scopeQuery != null) {
-				query.append("AND ");
+				query.append(" AND ");
 				scopeQuery.toSql(query);
 			}
 
