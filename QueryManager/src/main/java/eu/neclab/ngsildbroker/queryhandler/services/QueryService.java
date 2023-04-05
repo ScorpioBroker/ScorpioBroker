@@ -17,11 +17,14 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.locationtech.spatial4j.shape.Shape;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdError;
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
+import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -50,6 +53,7 @@ import eu.neclab.ngsildbroker.queryhandler.repository.QueryDAO;
 import io.quarkus.runtime.StartupEvent;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
+import io.smallrye.mutiny.tuples.Tuple3;
 import io.smallrye.mutiny.tuples.Tuple5;
 import io.smallrye.mutiny.tuples.Tuple6;
 import io.vertx.mutiny.core.MultiMap;
@@ -57,9 +61,12 @@ import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.ext.web.client.WebClient;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowIterator;
+import io.vertx.mutiny.sqlclient.RowSet;
 
 @ApplicationScoped
 public class QueryService {
+
+	private static Logger logger = LoggerFactory.getLogger(QueryService.class);
 
 	private static List<String> ENTITY_TYPE_LIST_TYPE = Lists.newArrayList();
 	{
@@ -455,7 +462,107 @@ public class QueryService {
 
 	public Uni<Map<String, Object>> getAttrib(String tenant, String attrib, boolean localOnly) {
 		Uni<Map<String, Object>> local = queryDAO.getAttributeDetail(tenant, attrib);
+		if (localOnly) {
+			return local;
+		}
+		Uni<Tuple3<Long, Set<String>, Set<String>>> remoteAttrib = queryDAO.getRemoteSourcesForAttrib(tenant, attrib)
+				.onItem().transformToUni(rows -> {
+
+					if (rows.size() == 0) {
+						return Uni.createFrom().item(Tuple3.of(-1l, Sets.newHashSet(), Sets.newHashSet()));
+					}
+					List<Uni<List<Object>>> remoteResults = getRemoteCalls(rows,
+							NGSIConstants.NGSI_LD_ATTRIBUTES_ENDPOINT + "/" + attrib);
+					return Uni.combine().all().unis(remoteResults).combinedWith(list -> {
+						long count = 0;
+						Set<String> attribTypes = Sets.newHashSet();
+						Set<String> entityTypes = Sets.newHashSet();
+						for (Object obj : list) {
+							Map<String, Object> payload = ((List<Map<String, Object>>) obj).get(0);
+							count += ((List<Map<String, Long>>) payload.get(NGSIConstants.NGSI_LD_ATTRIBUTE_COUNT))
+									.get(0).get(NGSIConstants.JSON_LD_VALUE);
+							List<Map<String, String>> entryAttribTypes = (List<Map<String, String>>) payload
+									.get(NGSIConstants.NGSI_LD_ATTRIBUTE_TYPES);
+							List<Map<String, String>> entryEntityTypes = (List<Map<String, String>>) payload
+									.get(NGSIConstants.NGSI_LD_TYPE_LIST);
+							for (Map<String, String> entry : entryAttribTypes) {
+								attribTypes.add(entry.get(NGSIConstants.JSON_LD_VALUE));
+							}
+							for (Map<String, String> entry : entryEntityTypes) {
+								entityTypes.add(entry.get(NGSIConstants.JSON_LD_VALUE));
+							}
+						}
+						return Tuple3.of(count, entityTypes, attribTypes);
+					});
+				});
+		Uni.combine().all().unis(local, remoteAttrib).asTuple().onItem().transform(t -> {
+			Map<String, Object> localResult = t.getItem1();
+			Tuple3<Long, Set<String>, Set<String>> remoteResult = t.getItem2();
+			if (remoteResult.getItem1() != -1l) {
+				Set<String> entityTypes = remoteResult.getItem2();
+				Set<String> attribTypes = remoteResult.getItem3();
+				long count = remoteResult.getItem1()
+						+ ((List<Map<String, Long>>) localResult.get(NGSIConstants.NGSI_LD_ATTRIBUTE_COUNT)).get(0)
+								.get(NGSIConstants.JSON_LD_VALUE);
+				((List<Map<String, Long>>) localResult.get(NGSIConstants.NGSI_LD_ATTRIBUTE_COUNT)).get(0)
+						.put(NGSIConstants.JSON_LD_VALUE, count);
+
+				List<Map<String, String>> entryAttribTypes = (List<Map<String, String>>) localResult
+						.get(NGSIConstants.NGSI_LD_ATTRIBUTE_TYPES);
+				List<Map<String, String>> entryEntityTypes = (List<Map<String, String>>) localResult
+						.get(NGSIConstants.NGSI_LD_TYPE_LIST);
+				for (Map<String, String> entry : entryAttribTypes) {
+					attribTypes.add(entry.get(NGSIConstants.JSON_LD_VALUE));
+				}
+				for (Map<String, String> entry : entryEntityTypes) {
+					entityTypes.add(entry.get(NGSIConstants.JSON_LD_VALUE));
+				}
+				List<Map<String, String>> newEntryAttribTypes = Lists.newArrayList();
+				List<Map<String, String>> newEntryEntityTypes = Lists.newArrayList();
+				attribTypes.forEach(attribType -> {
+					newEntryAttribTypes.add(Map.of(NGSIConstants.JSON_LD_VALUE, attribType));
+				});
+				entityTypes.forEach(entityType -> {
+					newEntryEntityTypes.add(Map.of(NGSIConstants.JSON_LD_VALUE, entityType));
+				});
+				localResult.put(NGSIConstants.NGSI_LD_TYPE_LIST, newEntryEntityTypes);
+				localResult.put(NGSIConstants.NGSI_LD_ATTRIBUTE_TYPES, newEntryAttribTypes);
+				localResult.put(NGSIConstants.JSON_LD_ID, attrib);
+				localResult.put(NGSIConstants.JSON_LD_TYPE, List.of(NGSIConstants.NGSI_LD_ATTRIBUTE));
+			}
+			return localResult;
+		});
 		return local;
+	}
+
+	private List<Uni<List<Object>>> getRemoteCalls(RowSet<Row> rows, String endpoint) {
+		List<Uni<List<Object>>> unis = Lists.newArrayList();
+		rows.forEach(row -> {
+			// C.endpoint C.tenant_id, c.headers, c.reg_mode
+			String host = row.getString(0);
+			MultiMap remoteHeaders = MultiMap
+					.newInstance(HttpUtils.getHeadersForRemoteCall(row.getJsonArray(2), row.getString(1)));
+
+			unis.add(webClient.get(host + endpoint).putHeaders(remoteHeaders).send().onFailure().recoverWithNull()
+					.onItem().transformToUni(response -> {
+						String responseTypes;
+						if (response == null || response.statusCode() != 200) {
+							return Uni.createFrom().item(Lists.newArrayList());
+						} else {
+							responseTypes = response.bodyAsString();
+							try {
+								return Uni.createFrom()
+										.item(JsonLdProcessor.expand(HttpUtils.getContextFromHeader(remoteHeaders),
+												JsonUtils.fromString(responseTypes), opts, -1, false));
+							} catch (Exception e) {
+								logger.debug("failed to handle response from host " + host + " : " + responseTypes, e);
+								return Uni.createFrom().item(Lists.newArrayList());
+							}
+						}
+
+					}));
+		});
+		return unis;
 	}
 
 	public Uni<Map<String, Object>> retrieveEntity(Context context, String tenant, String entityId,

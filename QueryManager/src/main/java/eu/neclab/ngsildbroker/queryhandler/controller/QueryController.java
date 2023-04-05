@@ -252,14 +252,19 @@ public class QueryController {
 		if (acceptHeader == -1) {
 			return HttpUtils.getInvalidHeader();
 		}
+		Context context;
+		List<Object> contextHeader = HttpUtils.getAtContext(request);
+		if (!contextHeader.isEmpty()) {
+			context = JsonLdProcessor.getCoreContextClone().parse(contextHeader, null, true);
+		} else {
+			context = JsonLdProcessor.getCoreContextClone();
+		}
+		attribute = context.expandIri(attribute, false, true, null, null);
 		return queryService.getAttrib(HttpUtils.getTenant(request), attribute, localOnly).onItem().transform(map -> {
 			if (map.isEmpty()) {
 				return RestResponse.notFound();
 			} else {
-				List<Object> contextHeader = HttpUtils.getAtContext(request);
-				return HttpUtils.generateEntityResult(contextHeader,
-						JsonLdProcessor.getCoreContextClone().parse(contextHeader, true), acceptHeader, map, null, null,
-						null);
+				return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, map, null, null, null);
 			}
 		});
 

@@ -366,4 +366,5 @@ public interface NGSIConstants {
 	public static final String CREATEDAT = "createdat";
 	public static final String URL = "url";
 	public static final String JSONLD_CONTEXTS = "ngsi-ld/v1/jsonldContexts/";
+	public static final String NGSI_LD_ATTRIBUTES_ENDPOINT = "/ngsi-ld/v1/attributes";
 }

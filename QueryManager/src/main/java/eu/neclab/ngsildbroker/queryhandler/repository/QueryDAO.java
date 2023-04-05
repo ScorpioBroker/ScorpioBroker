@@ -257,8 +257,7 @@ public class QueryDAO {
 					"Select jsonb_agg(distinct jsonb_build_object('@id', x#>>'{@type,0}')), jsonb_agg(distinct jsonb_build_object('@id', y)), count(entity) from entity, jsonb_array_elements(entity.entity-> $1) as x, jsonb_array_elements(entity->'@type') as y where entity ? $1")
 					.execute(tuple).onItem().transformToUni(rows -> {
 						if (rows.size() == 0) {
-							return Uni.createFrom()
-									.failure(new ResponseException(ErrorType.NotFound, attribId + " not found"));
+							return Uni.createFrom().item(new HashMap<>(0));
 						}
 						Row row = rows.iterator().next();
 						List types = row.getJsonArray(0).getList();
