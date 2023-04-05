@@ -12,7 +12,11 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.results.CRUDSuccess;
 import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
-import eu.neclab.ngsildbroker.commons.datatypes.terms.*;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
@@ -42,7 +46,12 @@ import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 
 @Singleton
 public class CSourceService {

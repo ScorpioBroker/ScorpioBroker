@@ -2,7 +2,16 @@ package eu.neclab.ngsildbroker.historyquerymanager.controller;
 
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdProcessor;
-import eu.neclab.ngsildbroker.commons.datatypes.terms.*;
+
+import eu.neclab.ngsildbroker.commons.datatypes.terms.AggrTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.TemporalQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;

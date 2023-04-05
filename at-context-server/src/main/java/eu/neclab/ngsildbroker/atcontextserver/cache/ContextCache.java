@@ -4,7 +4,13 @@ import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.RemoteDocument;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import io.quarkus.cache.*;
+import io.quarkus.cache.Cache;
+import io.quarkus.cache.CacheInvalidate;
+import io.quarkus.cache.CacheInvalidateAll;
+import io.quarkus.cache.CacheKey;
+import io.quarkus.cache.CacheName;
+import io.quarkus.cache.CacheResult;
+import io.quarkus.cache.CaffeineCache;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
 import org.jboss.resteasy.reactive.RestResponse;
@@ -12,7 +18,12 @@ import org.jboss.resteasy.reactive.RestResponse;
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import java.sql.Timestamp;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 
 @ApplicationScoped
 public class ContextCache {
