@@ -432,7 +432,7 @@ public final class HttpUtils {
 	}
 
 	public static RestResponse<Object> generateEntityResult(List<Object> contextHeader, Context context,
-			int acceptHeader, Map<String, Object> entity, String geometryProperty, String options,
+			int acceptHeader, Object entity, String geometryProperty, String options,
 			LanguageQueryTerm langQuery) {
 		String replyBody;
 		String contentType;

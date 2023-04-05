@@ -2,6 +2,7 @@ package eu.neclab.ngsildbroker.queryhandler.repository;
 
 import java.io.IOException;
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -20,6 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Table;
 
@@ -34,6 +36,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
+import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.storage.ClientManager;
 import eu.neclab.ngsildbroker.commons.tools.DBUtil;
@@ -199,6 +202,78 @@ public class QueryDAO {
 					.preparedQuery(
 							"SELECT DISTINCT myTypes from entity, jsonb_array_elements(ENTITY -> '@type') as myTypes")
 					.execute();
+		});
+	}
+
+	public Uni<List<Map<String, Object>>> getAttributeList(String tenantId) {
+		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
+			Tuple tuple = Tuple.tuple();
+			tuple.addArrayOfString(new String[] { NGSIConstants.JSON_LD_ID, NGSIConstants.JSON_LD_TYPE,
+					NGSIConstants.CREATEDAT, NGSIConstants.NGSI_LD_MODIFIED_AT });
+			return client
+					.preparedQuery(
+							"select distinct x from entity, jsonb_object_keys(entity.entity) as x where x not in ($1)")
+					.execute(tuple).onItem().transform(rows -> {
+						Map<String, Object> result = Maps.newHashMap();
+						List<Map<String, String>> attribs = new ArrayList<>(rows.size());
+						rows.forEach(row -> {
+							attribs.add(Map.of(NGSIConstants.JSON_LD_ID, row.getString(0)));
+						});
+						result.put(NGSIConstants.JSON_LD_ID, AppConstants.ATTRIBUTE_LIST_PREFIX + attribs.hashCode());
+						result.put(NGSIConstants.JSON_LD_TYPE, List.of(NGSIConstants.NGSI_LD_ATTRIBUTE_LIST_TYPE));
+						result.put(NGSIConstants.NGSI_LD_ATTRIBUTE_LIST_ATTRIBUTE_KEY, attribs);
+						return List.of(result);
+					});
+		});
+	}
+
+	public Uni<List<Map<String, Object>>> getAttributesDetail(String tenantId) {
+		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
+			Tuple tuple = Tuple.tuple();
+			tuple.addArrayOfString(new String[] { NGSIConstants.JSON_LD_ID, NGSIConstants.JSON_LD_TYPE,
+					NGSIConstants.CREATEDAT, NGSIConstants.NGSI_LD_MODIFIED_AT });
+			return client.preparedQuery(
+					"select distinct x, jsonb_agg(jsonb_build_object('@id',y)) from entity, jsonb_object_keys(entity.entity) as x, unnest(entity.e_types) as y where x not in ($1) group by x")
+					.execute(tuple).onItem().transform(rows -> {
+						List<Map<String, Object>> result = new ArrayList<>(rows.size());
+						rows.forEach(row -> {
+							String attrib = row.getString(0);
+							List<Map<String, Object>> types = row.getJsonArray(1).getList();
+							result.add(Map.of(NGSIConstants.JSON_LD_ID, attrib, NGSIConstants.JSON_LD_TYPE,
+									List.of(NGSIConstants.NGSI_LD_ATTRIBUTE), NGSIConstants.NGSI_LD_ATTRIBUTE_NAME,
+									List.of(Map.of(NGSIConstants.JSON_LD_ID, attrib)), NGSIConstants.NGSI_LD_TYPE_NAMES,
+									types));
+						});
+						return result;
+					});
+		});
+	}
+
+	public Uni<Map<String, Object>> getAttributeDetail(String tenantId, String attribId) {
+		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
+			Tuple tuple = Tuple.tuple();
+			tuple.addString(attribId);
+			return client.preparedQuery(
+					"Select jsonb_agg(distinct jsonb_build_object('@id', x#>>'{@type,0}')), jsonb_agg(distinct jsonb_build_object('@id', y)), count(entity) from entity, jsonb_array_elements(entity.entity-> $1) as x, jsonb_array_elements(entity->'@type') as y where entity ? $1")
+					.execute(tuple).onItem().transformToUni(rows -> {
+						if (rows.size() == 0) {
+							return Uni.createFrom()
+									.failure(new ResponseException(ErrorType.NotFound, attribId + " not found"));
+						}
+						Row row = rows.iterator().next();
+						List types = row.getJsonArray(0).getList();
+						List attribTypes = row.getJsonArray(1).getList();
+						Long count = row.getLong(2);
+						Map<String, Object> result = Map.of(NGSIConstants.JSON_LD_ID, attribId,
+								NGSIConstants.JSON_LD_TYPE, List.of(NGSIConstants.NGSI_LD_ATTRIBUTE),
+								NGSIConstants.NGSI_LD_ATTRIBUTE_NAME,
+								List.of(Map.of(NGSIConstants.JSON_LD_ID, attribId)), NGSIConstants.NGSI_LD_TYPE_NAMES,
+								types, NGSIConstants.NGSI_LD_ATTRIBUTE_TYPES, attribTypes,
+								NGSIConstants.NGSI_LD_ATTRIBUTE_COUNT,
+								List.of(Map.of(NGSIConstants.JSON_LD_VALUE, count)));
+
+						return Uni.createFrom().item(result);
+					});
 		});
 	}
 

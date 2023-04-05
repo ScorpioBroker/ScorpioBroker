@@ -137,8 +137,8 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_TOTALCOUNT = "https://uri.etsi.org/ngsi-ld/totalCount";
 	public final static String NGSI_LD_DISTINCTCOUNT = "https://uri.etsi.org/ngsi-ld/distinctCount";
 	public final static String NGSI_LD_ATTRS = "https://uri.etsi.org/ngsi-ld/attrs";
-	public final static String NGSI_LD_ATTRIBUTE_LIST_1 = "https://uri.etsi.org/ngsi-ld/AttributeList";
-	public final static String NGSI_LD_ATTRIBUTE_LIST_2 = "https://uri.etsi.org/ngsi-ld/attributeList";
+	public final static String NGSI_LD_ATTRIBUTE_LIST_TYPE = "https://uri.etsi.org/ngsi-ld/AttributeList";
+	public final static String NGSI_LD_ATTRIBUTE_LIST_ATTRIBUTE_KEY = "https://uri.etsi.org/ngsi-ld/attributeList";
 	public final static String NGSI_LD_TYPE_NAMES = "https://uri.etsi.org/ngsi-ld/typeNames";
 	public final static String NGSI_LD_ATTRIBUTE_COUNT = "https://uri.etsi.org/ngsi-ld/attributeCount";
 	public final static String NGSI_LD_TEMPORAL_QUERY = "https://uri.etsi.org/ngsi-ld/temporalQ";

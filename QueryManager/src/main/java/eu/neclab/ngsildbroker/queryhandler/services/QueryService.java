@@ -443,12 +443,19 @@ public class QueryService {
 		return null;
 	}
 
-	public Uni<Map<String, Object>> getAttribs(String tenant, boolean localOnly) {
-		return null;
+	public Uni<List<Map<String, Object>>> getAttribs(String tenant, boolean details, boolean localOnly) {
+		Uni<List<Map<String, Object>>> local;
+		if (details) {
+			local = queryDAO.getAttributeList(tenant);
+		} else {
+			local = queryDAO.getAttributesDetail(tenant);
+		}
+		return local;
 	}
 
 	public Uni<Map<String, Object>> getAttrib(String tenant, String attrib, boolean localOnly) {
-		return null;
+		Uni<Map<String, Object>> local = queryDAO.getAttributeDetail(tenant, attrib);
+		return local;
 	}
 
 	public Uni<Map<String, Object>> retrieveEntity(Context context, String tenant, String entityId,
