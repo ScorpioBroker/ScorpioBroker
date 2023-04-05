@@ -495,7 +495,7 @@ public class QueryService {
 						return Tuple3.of(count, entityTypes, attribTypes);
 					});
 				});
-		Uni.combine().all().unis(local, remoteAttrib).asTuple().onItem().transform(t -> {
+		return Uni.combine().all().unis(local, remoteAttrib).asTuple().onItem().transform(t -> {
 			Map<String, Object> localResult = t.getItem1();
 			Tuple3<Long, Set<String>, Set<String>> remoteResult = t.getItem2();
 			if (remoteResult.getItem1() != -1l) {
@@ -532,7 +532,6 @@ public class QueryService {
 			}
 			return localResult;
 		});
-		return local;
 	}
 
 	private List<Uni<List<Object>>> getRemoteCalls(RowSet<Row> rows, String endpoint) {
