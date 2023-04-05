@@ -4,16 +4,18 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
+
 import javax.annotation.PostConstruct;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdError;
 import com.github.jsonldjava.core.JsonLdProcessor;
@@ -44,9 +46,9 @@ import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.historyquerymanager.repository.HistoryDAO;
 import io.quarkus.runtime.StartupEvent;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.core.MultiMap;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.ext.web.client.WebClient;
+import io.vertx.pgclient.PgException;
 
 @Singleton
 public class HistoryQueryService {
@@ -86,7 +88,17 @@ public class HistoryQueryService {
 			Integer lastN, Integer limit, Integer offSet, Boolean count, Boolean localOnly, Context context) {
 
 		Uni<QueryResult> local = historyDAO.query(tenant, entityIds, typeQuery, idPattern, attrsQuery, qQuery,
-				tempQuery, aggrQuery, geoQuery, scopeQuery, lastN, limit, offSet, count);
+				tempQuery, aggrQuery, geoQuery, scopeQuery, lastN, limit, offSet, count).onFailure()
+				.recoverWithUni(e -> {
+					if (e instanceof PgException) {
+						PgException pge = (PgException) e;
+						if (pge.getCode().equals(AppConstants.SQL_INVALID_OPERATOR)) {
+							return Uni.createFrom().failure(
+									new ResponseException(ErrorType.InvalidRequest, "Invalid operator in q query"));
+						}
+					}
+					return Uni.createFrom().failure(e);
+				});
 		if (localOnly) {
 			return local;
 		}
