@@ -29,7 +29,10 @@ BEGIN
 	FOR entityId IN SELECT jsonb_array_elements_text FROM jsonb_array_elements_text(ENTITY_IDS) LOOP
 		BEGIN
 			DELETE FROM ENTITY WHERE ID = entityId;
-			resultObj['success'] = resultObj['success'] || (entityId)::jsonb;
+			if NOT FOUND THEN Raise Exception
+			    'NOT FOUND';
+            End IF;
+			resultObj['success'] = resultObj['success'] || jsonb_agg(entityId);
 		EXCEPTION WHEN OTHERS THEN
 			resultObj['failure'] = resultObj['failure'] || jsonb_object_agg(entityId, SQLSTATE);
 		END;
