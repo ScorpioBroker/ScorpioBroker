@@ -543,24 +543,27 @@ public final class HttpUtils {
 	}
 
 	public static RestResponse<Object> generateBatchResult(List<NGSILDOperationResult> t) {
-		//MultiMap<String,Object> result =new HashMap<>();
-		ListMultimap<String,Object> result = ArrayListMultimap.create();
-		for (NGSILDOperationResult r: t ) {
-			if (!r.getFailures().isEmpty()) {
-					result.put("error",r.getJson());
+		boolean isHavingError=false;
+			boolean isHavingSuccess=false;
+			List<Map<String,Object>> result = new ArrayList<>();
+			for (NGSILDOperationResult r: t ) {
+				if (!r.getFailures().isEmpty()) {
+					result.add(r.getJson());
+					isHavingError = true;
+				}
+				if(!r.getSuccesses().isEmpty()){
+					result.add(r.getJson());
+					isHavingSuccess =true;
+				}
 			}
-			if(!r.getSuccesses().isEmpty()){
-				 	result.put("success",r.getJson());
+			if(isHavingError && !isHavingSuccess){
+				return RestResponse.status(RestResponse.Status.BAD_REQUEST,result);
 			}
-		}
-		if(result.get("success").isEmpty()){
-			return  RestResponse.status(RestResponse.Status.BAD_REQUEST,result.asMap());
-		}
-		if(result.get("error").isEmpty()){
-			return  RestResponse.status(RestResponse.Status.CREATED,result.asMap());
-		}
-		return new RestResponseBuilderImpl<Object>().status(207).type(AppConstants.NGB_APPLICATION_JSON)
-				.entity(result.asMap()).build();
+			if(!isHavingError && isHavingSuccess){
+				return RestResponse.status(RestResponse.Status.CREATED,result);
+			}
+			return new RestResponseBuilderImpl<>().status(207).type(AppConstants.NGB_APPLICATION_JSON)
+					.entity(result).build();
 	}
 
 	public static Context getContextFromPayload(Map<String, Object> originalPayload, List<Object> atContextHeader,
