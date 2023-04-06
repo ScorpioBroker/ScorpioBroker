@@ -450,14 +450,54 @@ public class QueryService {
 		return null;
 	}
 
-	public Uni<List<Map<String, Object>>> getAttribs(String tenant, boolean details, boolean localOnly) {
-		Uni<List<Map<String, Object>>> local;
-		if (details) {
-			local = queryDAO.getAttributeList(tenant);
-		} else {
-			local = queryDAO.getAttributesDetail(tenant);
-		}
+	public Uni<List<Map<String, Object>>> getAttribsWithDetails(String tenant, boolean localOnly) {
+		Uni<List<Map<String, Object>>> local = queryDAO.getAttributesDetail(tenant);
 		return local;
+	}
+
+	public Uni<Map<String, Object>> getAttribs(String tenant, boolean localOnly) {
+		Uni<Map<String, Object>> local = queryDAO.getAttributeList(tenant);
+		if (localOnly) {
+			return local;
+		}
+		Uni<Set<String>> remoteAttribs = queryDAO.getRemoteSourcesForAttribs(tenant).onItem().transformToUni(rows -> {
+			if (rows.size() == 0) {
+				return Uni.createFrom().item(Sets.newHashSet());
+			}
+			List<Uni<List<Object>>> remoteResults = getRemoteCalls(rows, NGSIConstants.NGSI_LD_ATTRIBUTES_ENDPOINT);
+			return Uni.combine().all().unis(remoteResults).combinedWith(list -> {
+				Set<String> attribIds = Sets.newHashSet();
+				for (Object obj : list) {
+					Map<String, Object> payload = ((List<Map<String, Object>>) obj).get(0);
+					List<Map<String, String>> entryAttribIds = (List<Map<String, String>>) payload
+							.get(NGSIConstants.NGSI_LD_ATTRIBUTE_LIST_ATTRIBUTE_KEY);
+
+					for (Map<String, String> entry : entryAttribIds) {
+						attribIds.add(entry.get(NGSIConstants.JSON_LD_ID));
+					}
+				}
+				return attribIds;
+			});
+		});
+
+		return Uni.combine().all().unis(local, remoteAttribs).asTuple().onItem().transform(t -> {
+			Map<String, Object> localResult = t.getItem1();
+			Set<String> remoteAttribIds = t.getItem2();
+			if (!remoteAttribIds.isEmpty()) {
+				List<Map<String, String>> entryAttribIds = (List<Map<String, String>>) localResult
+						.get(NGSIConstants.NGSI_LD_ATTRIBUTE_LIST_ATTRIBUTE_KEY);
+
+				for (Map<String, String> entry : entryAttribIds) {
+					remoteAttribIds.add(entry.get(NGSIConstants.JSON_LD_ID));
+				}
+				List<Map<String, String>> newAttribIds = Lists.newArrayList();
+				for (String entry : remoteAttribIds) {
+					newAttribIds.add(Map.of(NGSIConstants.JSON_LD_ID, entry));
+				}
+				localResult.put(NGSIConstants.NGSI_LD_ATTRIBUTE_LIST_ATTRIBUTE_KEY, newAttribIds);
+			}
+			return localResult;
+		});
 	}
 
 	public Uni<Map<String, Object>> getAttrib(String tenant, String attrib, boolean localOnly) {
@@ -498,40 +538,46 @@ public class QueryService {
 		return Uni.combine().all().unis(local, remoteAttrib).asTuple().onItem().transform(t -> {
 			Map<String, Object> localResult = t.getItem1();
 			Tuple3<Long, Set<String>, Set<String>> remoteResult = t.getItem2();
-			if (remoteResult.getItem1() != -1l) {
-				Set<String> entityTypes = remoteResult.getItem2();
-				Set<String> attribTypes = remoteResult.getItem3();
-				long count = remoteResult.getItem1()
-						+ ((List<Map<String, Long>>) localResult.get(NGSIConstants.NGSI_LD_ATTRIBUTE_COUNT)).get(0)
-								.get(NGSIConstants.JSON_LD_VALUE);
-				((List<Map<String, Long>>) localResult.get(NGSIConstants.NGSI_LD_ATTRIBUTE_COUNT)).get(0)
-						.put(NGSIConstants.JSON_LD_VALUE, count);
+			return mergeAttribDetails(localResult, remoteResult, attrib);
 
-				List<Map<String, String>> entryAttribTypes = (List<Map<String, String>>) localResult
-						.get(NGSIConstants.NGSI_LD_ATTRIBUTE_TYPES);
-				List<Map<String, String>> entryEntityTypes = (List<Map<String, String>>) localResult
-						.get(NGSIConstants.NGSI_LD_TYPE_LIST);
-				for (Map<String, String> entry : entryAttribTypes) {
-					attribTypes.add(entry.get(NGSIConstants.JSON_LD_VALUE));
-				}
-				for (Map<String, String> entry : entryEntityTypes) {
-					entityTypes.add(entry.get(NGSIConstants.JSON_LD_VALUE));
-				}
-				List<Map<String, String>> newEntryAttribTypes = Lists.newArrayList();
-				List<Map<String, String>> newEntryEntityTypes = Lists.newArrayList();
-				attribTypes.forEach(attribType -> {
-					newEntryAttribTypes.add(Map.of(NGSIConstants.JSON_LD_VALUE, attribType));
-				});
-				entityTypes.forEach(entityType -> {
-					newEntryEntityTypes.add(Map.of(NGSIConstants.JSON_LD_VALUE, entityType));
-				});
-				localResult.put(NGSIConstants.NGSI_LD_TYPE_LIST, newEntryEntityTypes);
-				localResult.put(NGSIConstants.NGSI_LD_ATTRIBUTE_TYPES, newEntryAttribTypes);
-				localResult.put(NGSIConstants.JSON_LD_ID, attrib);
-				localResult.put(NGSIConstants.JSON_LD_TYPE, List.of(NGSIConstants.NGSI_LD_ATTRIBUTE));
-			}
-			return localResult;
 		});
+	}
+
+	private Map<String, Object> mergeAttribDetails(Map<String, Object> localResult,
+			Tuple3<Long, Set<String>, Set<String>> remoteResult, String attrib) {
+		if (remoteResult.getItem1() < 0) {
+			Set<String> entityTypes = remoteResult.getItem2();
+			Set<String> attribTypes = remoteResult.getItem3();
+			long count = remoteResult.getItem1()
+					+ ((List<Map<String, Long>>) localResult.get(NGSIConstants.NGSI_LD_ATTRIBUTE_COUNT)).get(0)
+							.get(NGSIConstants.JSON_LD_VALUE);
+			((List<Map<String, Long>>) localResult.get(NGSIConstants.NGSI_LD_ATTRIBUTE_COUNT)).get(0)
+					.put(NGSIConstants.JSON_LD_VALUE, count);
+
+			List<Map<String, String>> entryAttribTypes = (List<Map<String, String>>) localResult
+					.get(NGSIConstants.NGSI_LD_ATTRIBUTE_TYPES);
+			List<Map<String, String>> entryEntityTypes = (List<Map<String, String>>) localResult
+					.get(NGSIConstants.NGSI_LD_TYPE_LIST);
+			for (Map<String, String> entry : entryAttribTypes) {
+				attribTypes.add(entry.get(NGSIConstants.JSON_LD_VALUE));
+			}
+			for (Map<String, String> entry : entryEntityTypes) {
+				entityTypes.add(entry.get(NGSIConstants.JSON_LD_VALUE));
+			}
+			List<Map<String, String>> newEntryAttribTypes = Lists.newArrayList();
+			List<Map<String, String>> newEntryEntityTypes = Lists.newArrayList();
+			attribTypes.forEach(attribType -> {
+				newEntryAttribTypes.add(Map.of(NGSIConstants.JSON_LD_VALUE, attribType));
+			});
+			entityTypes.forEach(entityType -> {
+				newEntryEntityTypes.add(Map.of(NGSIConstants.JSON_LD_VALUE, entityType));
+			});
+			localResult.put(NGSIConstants.NGSI_LD_TYPE_LIST, newEntryEntityTypes);
+			localResult.put(NGSIConstants.NGSI_LD_ATTRIBUTE_TYPES, newEntryAttribTypes);
+			localResult.put(NGSIConstants.JSON_LD_ID, attrib);
+			localResult.put(NGSIConstants.JSON_LD_TYPE, List.of(NGSIConstants.NGSI_LD_ATTRIBUTE));
+		}
+		return localResult;
 	}
 
 	private List<Uni<List<Object>>> getRemoteCalls(RowSet<Row> rows, String endpoint) {

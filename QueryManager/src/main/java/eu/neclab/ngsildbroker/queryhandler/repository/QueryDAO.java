@@ -205,7 +205,7 @@ public class QueryDAO {
 		});
 	}
 
-	public Uni<List<Map<String, Object>>> getAttributeList(String tenantId) {
+	public Uni<Map<String, Object>> getAttributeList(String tenantId) {
 		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
 			Tuple tuple = Tuple.tuple();
 			tuple.addArrayOfString(new String[] { NGSIConstants.JSON_LD_ID, NGSIConstants.JSON_LD_TYPE,
@@ -222,7 +222,7 @@ public class QueryDAO {
 						result.put(NGSIConstants.JSON_LD_ID, AppConstants.ATTRIBUTE_LIST_PREFIX + attribs.hashCode());
 						result.put(NGSIConstants.JSON_LD_TYPE, List.of(NGSIConstants.NGSI_LD_ATTRIBUTE_LIST_TYPE));
 						result.put(NGSIConstants.NGSI_LD_ATTRIBUTE_LIST_ATTRIBUTE_KEY, attribs);
-						return List.of(result);
+						return result;
 					});
 		});
 	}
