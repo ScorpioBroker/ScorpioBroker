@@ -1,7 +1,6 @@
 package eu.neclab.ngsildbroker.queryhandler.services;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -10,13 +9,12 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
+
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
-import javax.inject.Singleton;
 
-import org.locationtech.spatial4j.shape.Shape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +29,6 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Table;
 
-import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryInfos;
 import eu.neclab.ngsildbroker.commons.datatypes.RegistrationEntry;
@@ -48,14 +45,10 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
-import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.queryhandler.repository.QueryDAO;
 import io.quarkus.runtime.StartupEvent;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple3;
-import io.smallrye.mutiny.tuples.Tuple5;
-import io.smallrye.mutiny.tuples.Tuple6;
 import io.vertx.mutiny.core.MultiMap;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.ext.web.client.WebClient;
@@ -452,7 +445,72 @@ public class QueryService {
 
 	public Uni<List<Map<String, Object>>> getAttribsWithDetails(String tenant, boolean localOnly) {
 		Uni<List<Map<String, Object>>> local = queryDAO.getAttributesDetail(tenant);
-		return local;
+		if (localOnly) {
+			return local;
+		}
+		Uni<Map<String, Set<String>>> remoteAttribs = queryDAO.getRemoteSourcesForAttribsWithDetails(tenant).onItem()
+				.transformToUni(rows -> {
+					if (rows.size() == 0) {
+						return Uni.createFrom().item(new HashMap<>());
+					}
+					List<Uni<List<Object>>> remoteResults = getRemoteCalls(rows,
+							NGSIConstants.NGSI_LD_ATTRIBUTES_ENDPOINT + "?details=true");
+					return Uni.combine().all().unis(remoteResults).combinedWith(list -> {
+
+						Map<String, Set<String>> attrib2EntityTypes = Maps.newHashMap();
+						for (Object obj : list) {
+							List<Map<String, Object>> attribList = ((List<Map<String, Object>>) obj);
+							for (Map<String, Object> entry : attribList) {
+								List<Map<String, String>> entryEntityTypes = (List<Map<String, String>>) entry
+										.get(NGSIConstants.NGSI_LD_TYPE_NAMES);
+								for (Map<String, String> typeEntry : entryEntityTypes) {
+									Set<String> entityTypes = attrib2EntityTypes
+											.get((String) entry.get(NGSIConstants.JSON_LD_ID));
+									if (entityTypes == null) {
+										entityTypes = Sets.newHashSet();
+										attrib2EntityTypes.put((String) entry.get(NGSIConstants.JSON_LD_ID),
+												entityTypes);
+									}
+									entityTypes.add(typeEntry.get(NGSIConstants.JSON_LD_ID));
+								}
+							}
+
+						}
+						return attrib2EntityTypes;
+					});
+				});
+		return Uni.combine().all().unis(local, remoteAttribs).asTuple().onItem().transform(t -> {
+			List<Map<String, Object>> localResult = t.getItem1();
+			Map<String, Set<String>> remoteResult = t.getItem2();
+			if (!remoteResult.isEmpty()) {
+				for (Map<String, Object> entry : localResult) {
+					List<Map<String, String>> entryEntityTypes = (List<Map<String, String>>) entry
+							.get(NGSIConstants.NGSI_LD_TYPE_NAMES);
+					for (Map<String, String> typeEntry : entryEntityTypes) {
+						Set<String> entityTypes = remoteResult.get((String) entry.get(NGSIConstants.JSON_LD_ID));
+						if (entityTypes == null) {
+							entityTypes = Sets.newHashSet();
+							remoteResult.put((String) entry.get(NGSIConstants.JSON_LD_ID), entityTypes);
+						}
+						entityTypes.add(typeEntry.get(NGSIConstants.JSON_LD_ID));
+					}
+
+				}
+				localResult = Lists.newArrayList();
+				for (Entry<String, Set<String>> entry : remoteResult.entrySet()) {
+					List<Map<String, String>> types = Lists.newArrayList();
+					for (String type : entry.getValue()) {
+						types.add(Map.of(NGSIConstants.JSON_LD_ID, type));
+					}
+					localResult.add(Map.of(NGSIConstants.JSON_LD_ID, entry.getKey(), NGSIConstants.JSON_LD_TYPE,
+							List.of(NGSIConstants.NGSI_LD_ATTRIBUTE), NGSIConstants.NGSI_LD_ATTRIBUTE_NAME,
+							List.of(Map.of(NGSIConstants.JSON_LD_ID, entry.getKey())), NGSIConstants.NGSI_LD_TYPE_NAMES,
+							types));
+				}
+			}
+			return localResult;
+		});
+
 	}
 
 	public Uni<Map<String, Object>> getAttribs(String tenant, boolean localOnly) {
@@ -526,10 +584,10 @@ public class QueryService {
 							List<Map<String, String>> entryEntityTypes = (List<Map<String, String>>) payload
 									.get(NGSIConstants.NGSI_LD_TYPE_LIST);
 							for (Map<String, String> entry : entryAttribTypes) {
-								attribTypes.add(entry.get(NGSIConstants.JSON_LD_VALUE));
+								attribTypes.add(entry.get(NGSIConstants.JSON_LD_ID));
 							}
 							for (Map<String, String> entry : entryEntityTypes) {
-								entityTypes.add(entry.get(NGSIConstants.JSON_LD_VALUE));
+								entityTypes.add(entry.get(NGSIConstants.JSON_LD_ID));
 							}
 						}
 						return Tuple3.of(count, entityTypes, attribTypes);
@@ -559,18 +617,18 @@ public class QueryService {
 			List<Map<String, String>> entryEntityTypes = (List<Map<String, String>>) localResult
 					.get(NGSIConstants.NGSI_LD_TYPE_LIST);
 			for (Map<String, String> entry : entryAttribTypes) {
-				attribTypes.add(entry.get(NGSIConstants.JSON_LD_VALUE));
+				attribTypes.add(entry.get(NGSIConstants.JSON_LD_ID));
 			}
 			for (Map<String, String> entry : entryEntityTypes) {
-				entityTypes.add(entry.get(NGSIConstants.JSON_LD_VALUE));
+				entityTypes.add(entry.get(NGSIConstants.JSON_LD_ID));
 			}
 			List<Map<String, String>> newEntryAttribTypes = Lists.newArrayList();
 			List<Map<String, String>> newEntryEntityTypes = Lists.newArrayList();
 			attribTypes.forEach(attribType -> {
-				newEntryAttribTypes.add(Map.of(NGSIConstants.JSON_LD_VALUE, attribType));
+				newEntryAttribTypes.add(Map.of(NGSIConstants.JSON_LD_ID, attribType));
 			});
 			entityTypes.forEach(entityType -> {
-				newEntryEntityTypes.add(Map.of(NGSIConstants.JSON_LD_VALUE, entityType));
+				newEntryEntityTypes.add(Map.of(NGSIConstants.JSON_LD_ID, entityType));
 			});
 			localResult.put(NGSIConstants.NGSI_LD_TYPE_LIST, newEntryEntityTypes);
 			localResult.put(NGSIConstants.NGSI_LD_ATTRIBUTE_TYPES, newEntryAttribTypes);
