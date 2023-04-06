@@ -207,13 +207,12 @@ public class QueryDAO {
 
 	public Uni<Map<String, Object>> getAttributeList(String tenantId) {
 		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
-			Tuple tuple = Tuple.tuple();
-			tuple.addArrayOfString(new String[] { NGSIConstants.JSON_LD_ID, NGSIConstants.JSON_LD_TYPE,
-					NGSIConstants.CREATEDAT, NGSIConstants.NGSI_LD_MODIFIED_AT });
-			return client
-					.preparedQuery(
-							"select distinct x from entity, jsonb_object_keys(entity.entity) as x where x not in ($1)")
-					.execute(tuple).onItem().transform(rows -> {
+
+			return client.preparedQuery(
+					"select distinct x from entity, jsonb_object_keys(entity.entity) as x where x not in ('"
+							+ NGSIConstants.JSON_LD_ID + "', '" + NGSIConstants.JSON_LD_TYPE + "', '"
+							+ NGSIConstants.NGSI_LD_CREATED_AT + "', '" + NGSIConstants.NGSI_LD_MODIFIED_AT + "')")
+					.execute().onItem().transform(rows -> {
 						Map<String, Object> result = Maps.newHashMap();
 						List<Map<String, String>> attribs = new ArrayList<>(rows.size());
 						rows.forEach(row -> {
@@ -229,12 +228,13 @@ public class QueryDAO {
 
 	public Uni<List<Map<String, Object>>> getAttributesDetail(String tenantId) {
 		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
-			Tuple tuple = Tuple.tuple();
-			tuple.addArrayOfString(new String[] { NGSIConstants.JSON_LD_ID, NGSIConstants.JSON_LD_TYPE,
-					NGSIConstants.CREATEDAT, NGSIConstants.NGSI_LD_MODIFIED_AT });
+
 			return client.preparedQuery(
-					"select distinct x, jsonb_agg(jsonb_build_object('@id',y)) from entity, jsonb_object_keys(entity.entity) as x, unnest(entity.e_types) as y where x not in ($1) group by x")
-					.execute(tuple).onItem().transform(rows -> {
+					"select distinct x, jsonb_agg(jsonb_build_object('@id',y)) from entity, jsonb_object_keys(entity.entity) as x, unnest(entity.e_types) as y where x not in ('"
+							+ NGSIConstants.JSON_LD_ID + "', '" + NGSIConstants.JSON_LD_TYPE + "', '"
+							+ NGSIConstants.NGSI_LD_CREATED_AT + "', '" + NGSIConstants.NGSI_LD_MODIFIED_AT
+							+ "') group by x")
+					.execute().onItem().transform(rows -> {
 						List<Map<String, Object>> result = new ArrayList<>(rows.size());
 						rows.forEach(row -> {
 							String attrib = row.getString(0);

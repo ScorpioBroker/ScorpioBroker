@@ -235,7 +235,7 @@ public class QueryController {
 		if (acceptHeader == -1) {
 			return HttpUtils.getInvalidHeader();
 		}
-		if (details) {
+		if (!details) {
 			return queryService.getAttribs(HttpUtils.getTenant(request), localOnly).onItem().transform(map -> {
 				List<Object> contextHeader = HttpUtils.getAtContext(request);
 				return HttpUtils.generateEntityResult(contextHeader,
