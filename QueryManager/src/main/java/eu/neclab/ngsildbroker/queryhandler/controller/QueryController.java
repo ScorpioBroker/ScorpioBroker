@@ -179,28 +179,29 @@ public class QueryController {
 	@Path("/types")
 	@GET
 	public Uni<RestResponse<Object>> getAllTypes(HttpServerRequest request,
-			@QueryParam(value = "details") Boolean details, @QueryParam(value = "localOnly") boolean localOnly) {
+			@QueryParam(value = "details") boolean details, @QueryParam(value = "localOnly") boolean localOnly) {
 
 		HttpUtils.getAtContext(request);
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll(HttpHeaders.ACCEPT));
 		if (acceptHeader == -1) {
 			return HttpUtils.getInvalidHeader();
 		}
-		Uni<List<Map<String, Object>>> uni;
+		List<Object> contextHeader = HttpUtils.getAtContext(request);
+		Context context;
+		if (contextHeader.isEmpty()) {
+			context = JsonLdProcessor.getCoreContextClone();
+		} else {
+			context = JsonLdProcessor.getCoreContextClone().parse(contextHeader, true);
+		}
 		if (details) {
 			return queryService.getTypesWithDetail(HttpUtils.getTenant(request), localOnly).onItem()
 					.transform(types -> {
-						QueryResult tmp = new QueryResult();
-						tmp.setData(types);
-						return HttpUtils.generateQueryResult(request, tmp, "", null, acceptHeader, false, -1, null,
-								JsonLdProcessor.getCoreContextClone().parse(HttpUtils.getAtContext(request), true));
+						return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, types, null, null,
+								null);
 					});
 		} else
 			return queryService.getTypes(HttpUtils.getTenant(request), localOnly).onItem().transform(types -> {
-				List<Object> contextHeader = HttpUtils.getAtContext(request);
-				return HttpUtils.generateEntityResult(contextHeader,
-						JsonLdProcessor.getCoreContextClone().parse(contextHeader, true), acceptHeader, types, null,
-						null, null);
+				return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, types, null, null, null);
 			});
 
 	}

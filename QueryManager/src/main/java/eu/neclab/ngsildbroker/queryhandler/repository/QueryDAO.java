@@ -196,12 +196,24 @@ public class QueryDAO {
 		});
 	}
 
-	public Uni<RowSet<Row>> getTypes(String tenantId) {
+	public Uni<Map<String, Object>> getTypes(String tenantId) {
 		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
 			return client
 					.preparedQuery(
 							"SELECT DISTINCT myTypes from entity, jsonb_array_elements(ENTITY -> '@type') as myTypes")
-					.execute();
+					.execute().onItem().transform(rows -> {
+						Map<String, Object> result = Maps.newHashMap();
+						result.put(NGSIConstants.JSON_LD_TYPE, Lists.newArrayList(NGSIConstants.NGSI_LD_ENTITY_LIST));
+						List<Map<String, String>> typeList = Lists.newArrayList();
+						rows.forEach(row -> {
+							Map<String, String> tmp = Maps.newHashMap();
+							tmp.put(NGSIConstants.JSON_LD_ID, row.getString(0));
+							typeList.add(tmp);
+						});
+						result.put(NGSIConstants.NGSI_LD_TYPE_LIST, typeList);
+						result.put(NGSIConstants.JSON_LD_ID, AppConstants.TYPE_LIST_PREFIX + typeList.hashCode());
+						return result;
+					});
 		});
 	}
 
@@ -287,26 +299,72 @@ public class QueryDAO {
 		});
 	}
 
-	public Uni<RowSet<Row>> getTypesWithDetails(String tenantId) {
+	public Uni<List<Map<String, Object>>> getTypesWithDetails(String tenantId) {
 		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
-			return client.preparedQuery(
-					"SELECT DISTINCT myTypes, myAttr from entity, jsonb_array_elements(ENTITY -> '@type') as myTypes, jsonb_object_keys((ENTITY - ARRAY['"
-							+ NGSIConstants.JSON_LD_TYPE + "', '" + NGSIConstants.JSON_LD_ID + "', '"
-							+ NGSIConstants.NGSI_LD_CREATED_AT + "','" + NGSIConstants.NGSI_LD_MODIFIED_AT
-							+ "'])) as myAttr")
-					.execute();
+			return client.preparedQuery("SELECT DISTINCT myTypes, jsonb_agg(jsonb_build_object('"
+					+ NGSIConstants.JSON_LD_ID
+					+ "', myAttr)) from entity, jsonb_array_elements(ENTITY -> '@type') as myTypes, jsonb_object_keys((ENTITY - ARRAY['"
+					+ NGSIConstants.JSON_LD_TYPE + "', '" + NGSIConstants.JSON_LD_ID + "', '"
+					+ NGSIConstants.NGSI_LD_CREATED_AT + "','" + NGSIConstants.NGSI_LD_MODIFIED_AT
+					+ "'])) as myAttr group by myTypes").execute().onItem().transform(rows -> {
+						List<Map<String, Object>> result = Lists.newArrayList();
+						rows.forEach(row -> {
+							Map<String, Object> resultEntry = Maps.newHashMap();
+							resultEntry.put(NGSIConstants.JSON_LD_ID, row.getString(0));
+							resultEntry.put(NGSIConstants.JSON_LD_TYPE,
+									Lists.newArrayList(NGSIConstants.NGSI_LD_ENTITY_TYPE));
+							Map<String, String> tmp = Maps.newHashMap();
+							tmp.put(NGSIConstants.JSON_LD_ID, row.getString(0));
+							resultEntry.put(NGSIConstants.NGSI_LD_TYPE_NAME, Lists.newArrayList(tmp));
+							resultEntry.put(NGSIConstants.NGSI_LD_ATTRIBUTE_NAMES, row.getJsonArray(1).getList());
+							result.add(resultEntry);
+						});
+						return result;
+					});
 		});
 	}
 
-	public Uni<RowSet<Row>> getType(String tenantId, String type) {
+	public Uni<Map<String, Object>> getType(String tenantId, String type) {
 		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
+			Tuple tuple = Tuple.tuple();
+			tuple.addArrayOfString(new String[] { type });
 			return client.preparedQuery(
-					// needs type, entitycount for type, attribs with entitycount attributetype
-					// (isRel, isGeo),
-					// typeNames of types where the attrib is used this is stupidly expensive for
-					// this and is optional in the spec i tend to not have it
-					"WITH T as (SELECT e_type, iid FROM etype2iid WHERE e_type = $1) SELECT DISTINCT T.e_type, A.attr FROM T LEFT JOIN attr2iid as A ON A.iid=T.iid")
-					.execute(Tuple.of(type));
+					"with a as (select x as id, entity -> x as data from entity, jsonb_object_keys(entity.entity) as x where e_types && $1::text[] and x not in ('"
+							+ NGSIConstants.JSON_LD_ID + "', '" + NGSIConstants.JSON_LD_TYPE + "', '"
+							+ NGSIConstants.NGSI_LD_CREATED_AT + "', '" + NGSIConstants.NGSI_LD_MODIFIED_AT
+							+ "')), b as (SELECT count(entity.id) as mycount FROM entity) select b.mycount, a.id, jsonb_agg(distinct jsonb_build_object('"
+							+ NGSIConstants.JSON_LD_ID + "', x#>'{" + NGSIConstants.JSON_LD_TYPE
+							+ ",0}')) from b, a, jsonb_array_elements(a.data) as x group by a.id;"
+
+			).execute(tuple).onItem().transform(rows -> {
+				Map<String, Object> result = Maps.newHashMap();
+				if (rows.size() == 0) {
+					return result;
+				}
+				long count = 0;
+				RowIterator<Row> it = rows.iterator();
+				List<Map<String, Object>> attrDetails = Lists.newArrayList();
+				while (it.hasNext()) {
+					Row row = it.next();
+					count = row.getLong(0);
+					Map<String, Object> attribDetail = Maps.newHashMap();
+					Map<String, String> tmp = Maps.newHashMap();
+					tmp.put(NGSIConstants.JSON_LD_ID, row.getString(1));
+					attribDetail.put(NGSIConstants.NGSI_LD_ATTRIBUTE_NAME, Lists.newArrayList(tmp));
+					attribDetail.put(NGSIConstants.NGSI_LD_ATTRIBUTE_TYPES, row.getJsonArray(2).getList());
+					attrDetails.add(attribDetail);
+				}
+				result.put(NGSIConstants.NGSI_LD_ATTRIBUTE_DETAILS, attrDetails);
+				Map<String, Long> countMap = Maps.newHashMap();
+				countMap.put(NGSIConstants.VALUE, count);
+				result.put(NGSIConstants.NGSI_LD_ENTITY_COUNT, countMap);
+				result.put(NGSIConstants.JSON_LD_ID, type);
+				result.put(NGSIConstants.JSON_LD_TYPE, Lists.newArrayList(NGSIConstants.NGSI_LD_ENTITY_TYPE_INFO));
+				Map<String, String> tmp = Maps.newHashMap();
+				tmp.put(NGSIConstants.JSON_LD_ID, type);
+				result.put(NGSIConstants.NGSI_LD_TYPE_NAME, Lists.newArrayList(tmp));
+				return result;
+			});
 		});
 	}
 
