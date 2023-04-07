@@ -11,15 +11,13 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.ListMultimap;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.http.HttpStatus;
 import org.jboss.resteasy.reactive.RestResponse;
@@ -432,76 +430,85 @@ public final class HttpUtils {
 	}
 
 	public static RestResponse<Object> generateEntityResult(List<Object> contextHeader, Context context,
-			int acceptHeader, Object entity, String geometryProperty, String options,
-			LanguageQueryTerm langQuery) {
+			int acceptHeader, Object entity, String geometryProperty, String options, LanguageQueryTerm langQuery) {
+
+		try {
+			Tuple2<Object, List<Tuple2<String, String>>> resultBodyAndHeaders = generateCompactedResult(contextHeader,
+					context, acceptHeader, entity, geometryProperty, options, langQuery);
+			ResponseBuilder<Object> resp = RestResponseBuilderImpl.ok();
+			List<Tuple2<String, String>> headers = resultBodyAndHeaders.getItem2();
+			for (Tuple2<String, String> entry : headers) {
+				resp = resp.header(entry.getItem1(), entry.getItem2());
+			}
+			return resp.entity(resultBodyAndHeaders.getItem1()).build();
+		} catch (Exception e) {
+			return handleControllerExceptions(e);
+		}
+	}
+
+	public static Tuple2<Object, List<Tuple2<String, String>>> generateCompactedResult(List<Object> contextHeader,
+			Context context, int acceptHeader, Object entity, String geometryProperty, String options,
+			LanguageQueryTerm langQuery) throws Exception {
 		String replyBody;
 		String contentType;
 		Object result;
 		Map<String, Object> compacted;
-		ResponseBuilder<Object> resp = RestResponseBuilderImpl.ok();
+		List<Tuple2<String, String>> headers = Lists.newArrayList();
+
 		Set<String> optionSet = null;
 		if (options != null) {
 			optionSet = Set.of(options.split(","));
 		}
-
+		Object finalCompacted;
 		switch (acceptHeader) {
 
 		case 1:
-			try {
-				compacted = JsonLdProcessor.compact(entity, contextHeader, context, opts, -1, optionSet, langQuery);
-			} catch (Exception e) {
-				return handleControllerExceptions(e);
-			}
+			compacted = JsonLdProcessor.compact(entity, contextHeader, context, opts, -1, optionSet, langQuery);
 			Object bodyContext = compacted.remove(NGSIConstants.JSON_LD_CONTEXT);
 			if (contextHeader.isEmpty()) {
 				contextHeader.add(((List<Object>) bodyContext).get(0));
 			}
-			try {
-				replyBody = JsonUtils.toPrettyString(compacted);
-			} catch (Exception e) {
-				return handleControllerExceptions(e);
+			if (compacted.containsKey(JsonLdConsts.GRAPH)) {
+				finalCompacted = compacted.get(JsonLdConsts.GRAPH);
+			} else {
+				finalCompacted = compacted;
 			}
+			replyBody = JsonUtils.toPrettyString(finalCompacted);
 			for (Object entry : contextHeader) {
-				resp.header(NGSIConstants.LINK_HEADER, getLinkHeader(entry));
+				headers.add(Tuple2.of(NGSIConstants.LINK_HEADER, getLinkHeader(entry)));
 			}
 			contentType = AppConstants.NGB_APPLICATION_JSON;
 			break;
 		case 2:
-			try {
-				// todo add options to compact
-				compacted = JsonLdProcessor.compact(entity, contextHeader, context, opts, -1, optionSet, langQuery);
-			} catch (Exception e) {
-				return handleControllerExceptions(e);
+			compacted = JsonLdProcessor.compact(entity, contextHeader, context, opts, -1, optionSet, langQuery);
+			if (compacted.containsKey(JsonLdConsts.GRAPH)) {
+				finalCompacted = compacted.get(JsonLdConsts.GRAPH);
+				bodyContext = compacted.get(NGSIConstants.JSON_LD_CONTEXT);
+				if (finalCompacted instanceof List) {
+					List<Map<String, Object>> tmpList = (List<Map<String, Object>>) finalCompacted;
+					for (Map<String, Object> entry : tmpList) {
+						entry.put(NGSIConstants.JSON_LD_CONTEXT, bodyContext);
+					}
+				} else if (finalCompacted instanceof Map) {
+					((Map<String, Object>) finalCompacted).put(NGSIConstants.JSON_LD_CONTEXT, bodyContext);
+				}
+			} else {
+				finalCompacted = compacted;
 			}
 			contentType = AppConstants.NGB_APPLICATION_JSONLD;
-			try {
-				replyBody = JsonUtils.toPrettyString(compacted);
-			} catch (Exception e) {
-				return handleControllerExceptions(e);
-			}
+			replyBody = JsonUtils.toPrettyString(finalCompacted);
 			break;
 		case 3:
-
-			try {
-				replyBody = RDFDatasetUtils.toNQuads((RDFDataset) JsonLdProcessor.toRDF(entity));
-			} catch (JsonLdError | ResponseException e) {
-				return HttpUtils.handleControllerExceptions(e);
-			}
+			replyBody = RDFDatasetUtils.toNQuads((RDFDataset) JsonLdProcessor.toRDF(entity));
 			contentType = AppConstants.NGB_APPLICATION_NQUADS;
 			break;
 		case 4:// geo+json
-			try {
-				// todo add options to compact
-				compacted = JsonLdProcessor.compact(entity, contextHeader, context, opts, -1, optionSet, langQuery);
-				replyBody = JsonUtils.toPrettyString(generateGeoJson(compacted, geometryProperty, contextHeader));
-			} catch (Exception e) {
-				return handleControllerExceptions(e);
-			}
-
+			compacted = JsonLdProcessor.compact(entity, contextHeader, context, opts, -1, optionSet, langQuery);
+			replyBody = JsonUtils.toPrettyString(generateGeoJson(compacted, geometryProperty, contextHeader));
 			contentType = AppConstants.NGB_APPLICATION_GEO_JSON;
 			break;
 		default:
-			return handleControllerExceptions(new ResponseException(ErrorType.InternalError));
+			return null;
 		}
 		if (options != null && options.contains("compress")) {
 			result = zipResult(replyBody);
@@ -509,7 +516,8 @@ public final class HttpUtils {
 		} else {
 			result = replyBody;
 		}
-		return resp.header(HttpHeaders.CONTENT_TYPE, contentType).entity(result).build();
+		headers.add(Tuple2.of(HttpHeaders.CONTENT_TYPE, contentType));
+		return Tuple2.of(result, headers);
 	}
 
 	private static String getLinkHeader(Object entry) {
@@ -543,27 +551,27 @@ public final class HttpUtils {
 	}
 
 	public static RestResponse<Object> generateBatchResult(List<NGSILDOperationResult> t) {
-		boolean isHavingError=false;
-			boolean isHavingSuccess=false;
-			List<Map<String,Object>> result = new ArrayList<>();
-			for (NGSILDOperationResult r: t ) {
-				if (!r.getFailures().isEmpty()) {
-					result.add(r.getJson());
-					isHavingError = true;
-				}
-				if(!r.getSuccesses().isEmpty()){
-					result.add(r.getJson());
-					isHavingSuccess =true;
-				}
+		boolean isHavingError = false;
+		boolean isHavingSuccess = false;
+		List<Map<String, Object>> result = new ArrayList<>();
+		for (NGSILDOperationResult r : t) {
+			if (!r.getFailures().isEmpty()) {
+				result.add(r.getJson());
+				isHavingError = true;
 			}
-			if(isHavingError && !isHavingSuccess){
-				return RestResponse.status(RestResponse.Status.BAD_REQUEST,result);
+			if (!r.getSuccesses().isEmpty()) {
+				result.add(r.getJson());
+				isHavingSuccess = true;
 			}
-			if(!isHavingError && isHavingSuccess){
-				return RestResponse.status(RestResponse.Status.CREATED,result);
-			}
-			return new RestResponseBuilderImpl<>().status(207).type(AppConstants.NGB_APPLICATION_JSON)
-					.entity(result).build();
+		}
+		if (isHavingError && !isHavingSuccess) {
+			return RestResponse.status(RestResponse.Status.BAD_REQUEST, result);
+		}
+		if (!isHavingError && isHavingSuccess) {
+			return RestResponse.status(RestResponse.Status.CREATED, result);
+		}
+		return new RestResponseBuilderImpl<>().status(207).type(AppConstants.NGB_APPLICATION_JSON).entity(result)
+				.build();
 	}
 
 	public static Context getContextFromPayload(Map<String, Object> originalPayload, List<Object> atContextHeader,
@@ -661,134 +669,37 @@ public final class HttpUtils {
 	public static RestResponse<Object> generateQueryResult(HttpServerRequest request, QueryResult queryResult,
 			String options, String geometryProperty, int acceptHeader, boolean count, int limit, LanguageQueryTerm lang,
 			Context context) {
-		HeadersMultiMap headers = HeadersMultiMap.headers();
+		ResponseBuilder<Object> builder = RestResponseBuilderImpl.ok();
 		if (count == true) {
-			headers.add(NGSIConstants.COUNT_HEADER_RESULT, queryResult.getCount());
+			builder = builder.header(NGSIConstants.COUNT_HEADER_RESULT, queryResult.getCount());
 		}
 		if (limit == 0) {
-			return RestResponseBuilderImpl.ok().header(NGSIConstants.COUNT_HEADER_RESULT, queryResult.getCount())
-					.build();
+			return builder.build();
 		}
 
-		MultiMap urlParams = request.params();
-		String nextLink = HttpUtils.generateNextLink(urlParams, queryResult);
-		String prevLink = HttpUtils.generatePrevLink(urlParams, queryResult);
-		ResponseBuilder<Object> builder = RestResponseBuilderImpl.ok();
-		if (nextLink != null) {
-			builder = builder.header(HttpHeaders.LINK, nextLink);
-		}
-		if (prevLink != null) {
-			builder = builder.header(HttpHeaders.LINK, prevLink);
-		}
+		try {
+			Tuple2<Object, List<Tuple2<String, String>>> resultAndHeaders = generateCompactedResult(
+					getAtContext(request), context, acceptHeader, context, geometryProperty, options, lang);
 
-		Map<String, Object> compacted;
-		String contentType;
-		Set<String> optionSet = null;
-		if (options != null) {
-			optionSet = Set.of(options.split(","));
-		}
-		String replyBody;
-		Object result;
-		switch (acceptHeader) {
-		case 1:
-			try {
-				compacted = JsonLdProcessor.compact(queryResult.getData(), null, context, opts, -1, optionSet, lang);
-			} catch (Exception e) {
-				return handleControllerExceptions(e);
-			}
-			compacted.remove(NGSIConstants.JSON_LD_CONTEXT);
-			String link = request.headers().get(NGSIConstants.LINK_HEADER);
-			if (link == null) {
-				link = CORE_CONTEXT_URL_LINK;
-			}
-			builder.header(NGSIConstants.LINK_HEADER, link);
-			result = getPayloadForQuery(compacted);
-			try {
-				replyBody = JsonUtils.toPrettyString(result);
-			} catch (Exception e) {
-				return handleControllerExceptions(e);
-			}
-			contentType = AppConstants.NGB_APPLICATION_JSON;
-			break;
-		case 2:
-			try {
-				compacted = JsonLdProcessor.compact(queryResult.getData(), getAtContext(request), context, opts, -1,
-						optionSet, lang);
-			} catch (Exception e) {
-				return handleControllerExceptions(e);
-			}
-			contentType = AppConstants.NGB_APPLICATION_JSONLD;
-			result = getPayloadForQueryLD(compacted);
-			try {
-				replyBody = JsonUtils.toPrettyString(result);
-			} catch (Exception e) {
-				return handleControllerExceptions(e);
-			}
-			break;
-		case 3:
+			MultiMap urlParams = request.params();
+			String nextLink = HttpUtils.generateNextLink(urlParams, queryResult);
+			String prevLink = HttpUtils.generatePrevLink(urlParams, queryResult);
 
-			try {
-				replyBody = RDFDatasetUtils.toNQuads((RDFDataset) JsonLdProcessor.toRDF(queryResult.getData()));
-			} catch (JsonLdError | ResponseException e) {
-				return HttpUtils.handleControllerExceptions(e);
+			if (nextLink != null) {
+				builder = builder.header(HttpHeaders.LINK, nextLink);
 			}
-			contentType = AppConstants.NGB_APPLICATION_NQUADS;
-			break;
-		case 4:// geo+json
-			try {
-				// todo add options to compact
-				compacted = JsonLdProcessor.compact(queryResult.getData(), getAtContext(request), context, opts, -1,
-						optionSet, lang);
-				replyBody = JsonUtils.toPrettyString(
-						generateGeoJson(getPayloadForQueryLD(compacted), geometryProperty, getAtContext(request)));
-			} catch (Exception e) {
-				return handleControllerExceptions(e);
+			if (prevLink != null) {
+				builder = builder.header(HttpHeaders.LINK, prevLink);
 			}
-
-			contentType = AppConstants.NGB_APPLICATION_GEO_JSON;
-			break;
-		default:
-			return handleControllerExceptions(new ResponseException(ErrorType.InternalError));
-		}
-
-		if (options != null && options.contains("compress")) {
-			result = zipResult(replyBody);
-			contentType = AppConstants.NGB_APPLICATION_ZIP;
-		} else {
-			result = replyBody;
-		}
-		return builder.header(HttpHeaders.CONTENT_TYPE, contentType).entity(result).build();
-	}
-
-	private static Object getPayloadForQueryLD(Map<String, Object> compacted) {
-		Object result;
-		Object graph = compacted.get(JsonLdConsts.GRAPH);
-		if (graph != null) {
-			Object context = compacted.get(JsonLdConsts.CONTEXT);
-			List<Map<String, Object>> tmp = (List<Map<String, Object>>) graph;
-			for (Map<String, Object> entry : tmp) {
-				entry.put(JsonLdConsts.CONTEXT, context);
+			List<Tuple2<String, String>> headers = resultAndHeaders.getItem2();
+			for (Tuple2<String, String> entry : headers) {
+				builder = builder.header(entry.getItem1(), entry.getItem2());
 			}
-			result = tmp;
-		} else {
-			ArrayList<Object> temp = new ArrayList<Object>();
-			temp.add(compacted);
-			result = temp;
-		}
-		return result;
-	}
+			return builder.entity(resultAndHeaders.getItem1()).build();
 
-	private static Object getPayloadForQuery(Map<String, Object> compacted) {
-		Object result;
-		Object graph = compacted.get(JsonLdConsts.GRAPH);
-		if (graph != null) {
-			result = graph;
-		} else {
-			ArrayList<Object> temp = new ArrayList<Object>();
-			temp.add(compacted);
-			result = temp;
+		} catch (Exception e) {
+			return handleControllerExceptions(e);
 		}
-		return result;
 	}
 
 	public static NGSILDOperationResult handleWebResponse(HttpResponse<Buffer> response, Throwable failure,

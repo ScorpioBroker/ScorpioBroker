@@ -239,10 +239,14 @@ public class QueryDAO {
 						rows.forEach(row -> {
 							String attrib = row.getString(0);
 							List<Map<String, Object>> types = row.getJsonArray(1).getList();
-							result.add(Map.of(NGSIConstants.JSON_LD_ID, attrib, NGSIConstants.JSON_LD_TYPE,
-									List.of(NGSIConstants.NGSI_LD_ATTRIBUTE), NGSIConstants.NGSI_LD_ATTRIBUTE_NAME,
-									List.of(Map.of(NGSIConstants.JSON_LD_ID, attrib)), NGSIConstants.NGSI_LD_TYPE_NAMES,
-									types));
+							Map<String, Object> tmp = Maps.newHashMap();
+							tmp.put(NGSIConstants.JSON_LD_ID, attrib);
+							tmp.put(NGSIConstants.JSON_LD_TYPE, Lists.newArrayList(NGSIConstants.NGSI_LD_ATTRIBUTE));
+							Map<String, Object> tmp2 = Maps.newHashMap();
+							tmp2.put(NGSIConstants.JSON_LD_ID, attrib);
+							tmp.put(NGSIConstants.NGSI_LD_ATTRIBUTE_NAME, Lists.newArrayList(tmp2));
+							tmp.put(NGSIConstants.NGSI_LD_TYPE_NAMES, types);
+							result.add(tmp);
 						});
 						return result;
 					});
@@ -260,17 +264,24 @@ public class QueryDAO {
 							return Uni.createFrom().item(new HashMap<>(0));
 						}
 						Row row = rows.iterator().next();
-						List types = row.getJsonArray(0).getList();
-						List attribTypes = row.getJsonArray(1).getList();
 						Long count = row.getLong(2);
-						Map<String, Object> result = Map.of(NGSIConstants.JSON_LD_ID, attribId,
-								NGSIConstants.JSON_LD_TYPE, List.of(NGSIConstants.NGSI_LD_ATTRIBUTE),
-								NGSIConstants.NGSI_LD_ATTRIBUTE_NAME,
-								List.of(Map.of(NGSIConstants.JSON_LD_ID, attribId)), NGSIConstants.NGSI_LD_TYPE_NAMES,
-								types, NGSIConstants.NGSI_LD_ATTRIBUTE_TYPES, attribTypes,
-								NGSIConstants.NGSI_LD_ATTRIBUTE_COUNT,
-								List.of(Map.of(NGSIConstants.JSON_LD_VALUE, count)));
+						if (count == 0) {
+							return Uni.createFrom().item(new HashMap<>(0));
+						}
+						List types = row.getJsonArray(1).getList();
+						List attribTypes = row.getJsonArray(0).getList();
 
+						Map<String, Object> result = Maps.newHashMap();
+						result.put(NGSIConstants.JSON_LD_ID, attribId);
+						result.put(NGSIConstants.JSON_LD_TYPE, Lists.newArrayList(NGSIConstants.NGSI_LD_ATTRIBUTE));
+						Map<String, Object> tmp = Maps.newHashMap();
+						tmp.put(NGSIConstants.JSON_LD_ID, attribId);
+						result.put(NGSIConstants.NGSI_LD_ATTRIBUTE_NAME, Lists.newArrayList(tmp));
+						result.put(NGSIConstants.NGSI_LD_TYPE_NAMES, types);
+						result.put(NGSIConstants.NGSI_LD_ATTRIBUTE_TYPES, attribTypes);
+						tmp = Maps.newHashMap();
+						tmp.put(NGSIConstants.JSON_LD_VALUE, count);
+						result.put(NGSIConstants.NGSI_LD_ATTRIBUTE_COUNT, Lists.newArrayList(tmp));
 						return Uni.createFrom().item(result);
 					});
 		});

@@ -603,7 +603,7 @@ public class QueryService {
 
 	private Map<String, Object> mergeAttribDetails(Map<String, Object> localResult,
 			Tuple3<Long, Set<String>, Set<String>> remoteResult, String attrib) {
-		if (remoteResult.getItem1() < 0) {
+		if (remoteResult.getItem1() > 0) {
 			Set<String> entityTypes = remoteResult.getItem2();
 			Set<String> attribTypes = remoteResult.getItem3();
 			long count = remoteResult.getItem1()
