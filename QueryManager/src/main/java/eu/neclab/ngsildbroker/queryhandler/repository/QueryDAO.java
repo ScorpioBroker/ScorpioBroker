@@ -405,6 +405,34 @@ public class QueryDAO {
 		});
 	}
 
+	public Uni<Map<String, Set<String>>> getRemoteTypeInfoForRegWithOutTypeSupport(String tenantId, String type) {
+		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
+			return client.preparedQuery(
+					"SELECT C.e_prop, C.e_rel FROM CSOURCEINFORMATION AS C WHERE C.retrieveEntityTypeInfo=false AND (C.e_type=$1) AND (C.e_prop is not null OR C.e_rel is not null)")
+					.execute(Tuple.of(type)).onItem().transform(rows -> {
+						if (rows.size() == 0) {
+							return Maps.newHashMap();
+						}
+						Map<String, Set<String>> result = Maps.newHashMap();
+						rows.forEach(row -> {
+							String prop = row.getString(0);
+							String rel = row.getString(1);
+							String attribName = prop == null ? rel : prop;
+							String attribType = prop == null ? NGSIConstants.NGSI_LD_PROPERTY
+									: NGSIConstants.NGSI_LD_RELATIONSHIP;
+							Set<String> types = result.get(attribName);
+							if (types == null) {
+								types = Sets.newHashSet();
+								result.put(attribName, types);
+							}
+							types.add(attribType);
+						});
+						return result;
+
+					});
+		});
+	}
+
 	public Uni<RowSet<Row>> getRemoteSourcesForAttribs(String tenantId) {
 		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
 			return client.preparedQuery(
