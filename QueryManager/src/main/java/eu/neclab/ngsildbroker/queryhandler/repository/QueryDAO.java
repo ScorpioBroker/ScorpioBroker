@@ -376,6 +376,19 @@ public class QueryDAO {
 		});
 	}
 
+	public Uni<String[]> getRemoteTypesForRegWithoutTypesSupport(String tenantId) {
+		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
+			return client.preparedQuery(
+					"SELECT array_agg(distinct C.e_type) FROM CSOURCEINFORMATION AS C WHERE C.retrieveAttrTypes=false")
+					.execute().onItem().transform(rows -> {
+						if (rows.size() == 0) {
+							return new String[0];
+						}
+						return rows.iterator().next().getArrayOfStrings(0);
+					});
+		});
+	}
+
 	public Uni<RowSet<Row>> getRemoteSourcesForTypesWithDetails(String tenantId) {
 		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
 			return client.preparedQuery(
