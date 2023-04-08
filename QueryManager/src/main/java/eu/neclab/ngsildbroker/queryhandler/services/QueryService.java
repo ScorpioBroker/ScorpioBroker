@@ -374,7 +374,7 @@ public class QueryService {
 		Uni<Tuple2<Map<String, Set<String>>, Long>> remoteAttribs2AttribTypeAndCount = queryDAO
 				.getRemoteSourcesForType(tenant, type).onItem().transformToUni(rows -> {
 					if (rows.size() == 0) {
-						
+
 						return Uni.createFrom().item(Tuple2.of(new HashMap<String, Set<String>>(), -1l));
 					}
 					List<Uni<List<Object>>> remoteResults = getRemoteCalls(rows,
@@ -382,12 +382,76 @@ public class QueryService {
 					return Uni.combine().all().unis(remoteResults).combinedWith(list -> {
 						long count = 0;
 						Map<String, Set<String>> attribId2AttribType = Maps.newHashMap();
-						
+						for (Object obj : list) {
+							Map<String, Object> typeInfo = ((List<Map<String, Object>>) obj).get(0);
+							count += ((List<Map<String, Long>>) typeInfo.get(NGSIConstants.NGSI_LD_ENTITY_COUNT)).get(0)
+									.get(NGSIConstants.JSON_LD_VALUE);
+							List<Map<String, Object>> attributeDetails = (List<Map<String, Object>>) typeInfo
+									.get(NGSIConstants.NGSI_LD_ATTRIBUTE_DETAILS);
+							for (Map<String, Object> attrDetail : attributeDetails) {
+								String attrName = (String) attrDetail.get(NGSIConstants.JSON_LD_ID);
+								Set<String> types = attribId2AttribType.get(attrName);
+								if (types == null) {
+									types = Sets.newHashSet();
+									attribId2AttribType.put(attrName, types);
+								}
+								List<Map<String, String>> attrTypes = (List<Map<String, String>>) attrDetail
+										.get(NGSIConstants.NGSI_LD_ATTRIBUTE_TYPES);
+								for (Map<String, String> typeEntry : attrTypes) {
+									types.add(typeEntry.get(NGSIConstants.JSON_LD_ID));
+								}
+							}
 
+						}
 						return Tuple2.of(attribId2AttribType, count);
 					});
 				});
-		return null;
+		return Uni.combine().all().unis(local, remoteAttribs2AttribTypeAndCount).asTuple().onItem().transform(t -> {
+			Map<String, Object> localResult = t.getItem1();
+			Tuple2<Map<String, Set<String>>, Long> remoteResult = t.getItem2();
+			Long remoteCount = remoteResult.getItem2();
+			if (remoteCount >= 0) {
+				Map<String, Set<String>> attribId2AttribType = remoteResult.getItem1();
+				List<Map<String, Object>> attributeDetails = (List<Map<String, Object>>) localResult
+						.get(NGSIConstants.NGSI_LD_ATTRIBUTE_DETAILS);
+				for (Map<String, Object> attrDetail : attributeDetails) {
+					String attrName = (String) attrDetail.get(NGSIConstants.JSON_LD_ID);
+					Set<String> types = attribId2AttribType.get(attrName);
+					if (types == null) {
+						types = Sets.newHashSet();
+						attribId2AttribType.put(attrName, types);
+					}
+					List<Map<String, String>> attrTypes = (List<Map<String, String>>) attrDetail
+							.get(NGSIConstants.NGSI_LD_ATTRIBUTE_TYPES);
+					for (Map<String, String> typeEntry : attrTypes) {
+						types.add(typeEntry.get(NGSIConstants.JSON_LD_ID));
+					}
+				}
+				remoteCount += ((List<Map<String, Long>>) localResult.get(NGSIConstants.NGSI_LD_ENTITY_COUNT)).get(0)
+						.get(NGSIConstants.JSON_LD_VALUE);
+				((List<Map<String, Long>>) localResult.get(NGSIConstants.NGSI_LD_ENTITY_COUNT)).get(0)
+						.put(NGSIConstants.JSON_LD_VALUE, remoteCount);
+				List<Map<String, Object>> newAttribDetails = Lists.newArrayList();
+				for (Entry<String, Set<String>> attr2Type : attribId2AttribType.entrySet()) {
+					Map<String, Object> attrEntry = Maps.newHashMap();
+					attrEntry.put(NGSIConstants.JSON_LD_ID, attr2Type.getKey());
+					attrEntry.put(NGSIConstants.JSON_LD_TYPE, Lists.newArrayList(NGSIConstants.NGSI_LD_ATTRIBUTE));
+					Map<String, String> tmp = Maps.newHashMap();
+					tmp.put(NGSIConstants.JSON_LD_ID, attr2Type.getKey());
+					attrEntry.put(NGSIConstants.NGSI_LD_ATTRIBUTE_NAME, Lists.newArrayList(tmp));
+					List<Map<String, String>> attrTypes = Lists.newArrayList();
+					for (String attrType : attr2Type.getValue()) {
+						tmp = Maps.newHashMap();
+						tmp.put(NGSIConstants.JSON_LD_ID, attrType);
+						attrTypes.add(tmp);
+					}
+					attrEntry.put(NGSIConstants.NGSI_LD_ATTRIBUTE_TYPES, attrTypes);
+					newAttribDetails.add(attrEntry);
+				}
+				localResult.put(NGSIConstants.NGSI_LD_ATTRIBUTE_DETAILS, newAttribDetails);
+			}
+			return localResult;
+		});
 	}
 
 	public Uni<List<Map<String, Object>>> getAttribsWithDetails(String tenant, boolean localOnly) {

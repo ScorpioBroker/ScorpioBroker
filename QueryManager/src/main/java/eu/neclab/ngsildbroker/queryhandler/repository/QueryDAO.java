@@ -334,7 +334,7 @@ public class QueryDAO {
 							+ NGSIConstants.NGSI_LD_CREATED_AT + "', '" + NGSIConstants.NGSI_LD_MODIFIED_AT
 							+ "')), b as (SELECT count(entity.id) as mycount FROM entity) select b.mycount, a.id, jsonb_agg(distinct jsonb_build_object('"
 							+ NGSIConstants.JSON_LD_ID + "', x#>'{" + NGSIConstants.JSON_LD_TYPE
-							+ ",0}')) from b, a, jsonb_array_elements(a.data) as x group by a.id;"
+							+ ",0}')) from b, a, jsonb_array_elements(a.data) as x group by a.id, b.mycount;"
 
 			).execute(tuple).onItem().transform(rows -> {
 				Map<String, Object> result = Maps.newHashMap();

@@ -209,21 +209,28 @@ public class QueryController {
 	@Path("/types/{entityType}")
 	@GET
 	public Uni<RestResponse<Object>> getType(HttpServerRequest request, @PathParam("entityType") String type,
-			@QueryParam(value = "details") boolean details, @QueryParam(value = "localOnly") boolean localOnly) {
+			@QueryParam(value = "localOnly") boolean localOnly) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll(HttpHeaders.ACCEPT));
 		if (acceptHeader == -1) {
 			return HttpUtils.getInvalidHeader();
 		}
-		return queryService.getType(HttpUtils.getTenant(request), type, localOnly).onItem().transform(map -> {
-			if (map.isEmpty()) {
-				return RestResponse.notFound();
-			} else {
-				List<Object> contextHeader = HttpUtils.getAtContext(request);
-				return HttpUtils.generateEntityResult(contextHeader,
-						JsonLdProcessor.getCoreContextClone().parse(contextHeader, true), acceptHeader, map, null, null,
-						null);
-			}
-		});
+		List<Object> contextHeader = HttpUtils.getAtContext(request);
+		Context context;
+		if (contextHeader.isEmpty()) {
+			context = JsonLdProcessor.getCoreContextClone();
+		} else {
+			context = JsonLdProcessor.getCoreContextClone().parse(contextHeader, true);
+		}
+		return queryService
+				.getType(HttpUtils.getTenant(request), context.expandIri(type, false, true, null, null), localOnly)
+				.onItem().transform(map -> {
+					if (map.isEmpty()) {
+						return RestResponse.notFound();
+					} else {
+						return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, map, null, null,
+								null);
+					}
+				});
 
 	}
 
