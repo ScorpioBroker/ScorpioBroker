@@ -43,6 +43,7 @@ import eu.neclab.ngsildbroker.commons.tools.DBUtil;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
+import io.smallrye.mutiny.tuples.Tuple3;
 import io.smallrye.mutiny.tuples.Tuple4;
 import io.vertx.mutiny.core.MultiMap;
 import io.vertx.mutiny.sqlclient.Row;
@@ -379,7 +380,7 @@ public class QueryDAO {
 	public Uni<String[]> getRemoteTypesForRegWithoutTypesSupport(String tenantId) {
 		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
 			return client.preparedQuery(
-					"SELECT array_agg(distinct C.e_type) FROM CSOURCEINFORMATION AS C WHERE C.retrieveAttrTypes=false")
+					"SELECT array_agg(distinct C.e_type) FROM CSOURCEINFORMATION AS C WHERE C.retrieveAttrTypes=false AND C.e_type is not null")
 					.execute().onItem().transform(rows -> {
 						if (rows.size() == 0) {
 							return new String[0];
@@ -394,6 +395,34 @@ public class QueryDAO {
 			return client.preparedQuery(
 					"SELECT C.endpoint, C.tenant_id, c.headers, c.reg_mode FROM CSOURCEINFORMATION AS C WHERE C.retrieveEntityTypeDetails=true")
 					.execute();
+		});
+	}
+
+	public Uni<Map<String, Set<String>>> getRemoteTypesWithDetailsForRegWithoutTypeSupport(String tenantId) {
+		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
+			return client.preparedQuery(
+					"SELECT C.e_type, C.e_prop, c.e_rel FROM CSOURCEINFORMATION AS C WHERE C.retrieveEntityTypeDetails=false AND C.e_type is not null")
+					.execute().onItem().transform(rows -> {
+						Map<String, Set<String>> result = Maps.newHashMap();
+						rows.forEach(row -> {
+							String type = row.getString(0);
+							String prop = row.getString(1);
+							String rel = row.getString(2);
+							Set<String> attribs = result.get(type);
+							if (attribs == null) {
+								attribs = Sets.newHashSet();
+								result.put(type, attribs);
+							}
+							if (prop != null) {
+								attribs.add(prop);
+							}
+							if (rel != null) {
+								attribs.add(prop);
+							}
+
+						});
+						return result;
+					});
 		});
 	}
 
@@ -441,6 +470,27 @@ public class QueryDAO {
 		});
 	}
 
+	public Uni<Set<String>> getRemoteAttribsForRegWithoutAttribSupport(String tenantId) {
+		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
+			return client.preparedQuery(
+					"SELECT C.e_prop, C.e_rel FROM CSOURCEINFORMATION AS C WHERE C.retrieveAttrTypes=true AND AND (C.e_prop is not null OR C.e_rel is not null)")
+					.execute().onItem().transform(rows -> {
+						Set<String> result = Sets.newHashSet();
+						rows.forEach(row -> {
+							String prop = row.getString(0);
+							String rel = row.getString(1);
+							if (prop != null) {
+								result.add(prop);
+							}
+							if (rel != null) {
+								result.add(rel);
+							}
+						});
+						return result;
+					});
+		});
+	}
+
 	public Uni<RowSet<Row>> getRemoteSourcesForAttribsWithDetails(String tenantId) {
 		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
 			return client.preparedQuery(
@@ -449,11 +499,61 @@ public class QueryDAO {
 		});
 	}
 
+	public Uni<Map<String, Set<String>>> getRemoteAttribsWithDetailsForRegWithoutAttribSupport(String tenantId) {
+		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
+			return client.preparedQuery(
+					"SELECT C.e_type, C.e_prop, C.e_rel  FROM CSOURCEINFORMATION AS C WHERE C.retrieveAttrTypeDetails=false AND (c.e_prop is not null OR c.e_rel is not null)")
+					.execute().onItem().transform(rows -> {
+						Map<String, Set<String>> result = Maps.newHashMap();
+						rows.forEach(row -> {
+							String type = row.getString(0);
+							String prop = row.getString(1);
+							String rel = row.getString(2);
+							String attr = prop == null ? rel : prop;
+							Set<String> types = result.get(attr);
+							if (types == null) {
+								types = Sets.newHashSet();
+								result.put(attr, types);
+							}
+							if (type != null) {
+								types.add(type);
+							}
+						});
+						return result;
+					});
+		});
+	}
+
 	public Uni<RowSet<Row>> getRemoteSourcesForAttrib(String tenantId, String attrib) {
 		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
 			return client.preparedQuery(
 					"SELECT C.endpoint, C.tenant_id, c.headers, c.reg_mode FROM CSOURCEINFORMATION AS C WHERE C.retrieveAttrTypeInfo=true AND (C.e_prop is NULL OR C.e_prop=$1) AND (C.e_rel is NULL OR C.e_rel=$1)")
 					.execute(Tuple.of(attrib));
+		});
+	}
+
+	public Uni<Tuple2<Set<String>, Set<String>>> getRemoteAttribForRegWithoutAttribSupport(String tenantId,
+			String attrib) {
+		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
+			return client.preparedQuery(
+					"SELECT C.e_type, (C.e_prop is null) FROM CSOURCEINFORMATION AS C WHERE C.retrieveAttrTypeInfo=false AND C.e_prop=$1 OR C.e_rel=$1")
+					.execute(Tuple.of(attrib)).onItem().transform(rows -> {
+						Set<String> attribTypes = Sets.newHashSet();
+						Set<String> entityTypes = Sets.newHashSet();
+						rows.forEach(row -> {
+							String type = row.getString(0);
+							boolean isRel = row.getBoolean(1);
+							if (isRel) {
+								attribTypes.add(NGSIConstants.NGSI_LD_RELATIONSHIP);
+							} else {
+								attribTypes.add(NGSIConstants.NGSI_LD_PROPERTY);
+							}
+							if (type != null) {
+								entityTypes.add(type);
+							}
+						});
+						return Tuple2.of(attribTypes, entityTypes);
+					});
 		});
 	}
 
