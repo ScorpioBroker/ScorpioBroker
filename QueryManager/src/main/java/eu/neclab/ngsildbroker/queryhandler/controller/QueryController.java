@@ -4,23 +4,26 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
+
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.RestResponse;
+
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.net.HttpHeaders;
+
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
@@ -407,7 +410,7 @@ public class QueryController {
 					typeQueryTerm = QueryParser.parseTypeQuery(typeQuery, context);
 					unis.add(queryService.query(HttpUtils.getTenant(request), id == null ? null : Set.of(id),
 							typeQueryTerm, idPattern, attrsQuery, qQueryTerm, csfQueryTerm, geoQueryTerm,
-							scopeQueryTerm, langQuery, limit, offset, count, localOnly, context));
+							scopeQueryTerm, langQuery, actualLimit, offset, count, localOnly, context));
 				}
 				return Uni.combine().all().unis(unis).combinedWith(list -> {
 					Iterator<?> it = list.iterator();
@@ -422,10 +425,10 @@ public class QueryController {
 			} else {
 				return queryService
 						.query(tenant, null, null, null, attrsQuery, qQueryTerm, csfQueryTerm, geoQueryTerm,
-								scopeQueryTerm, langQuery, limit, offset, count, localOnly, context)
+								scopeQueryTerm, langQuery, actualLimit, offset, count, localOnly, context)
 						.onItem().transform(queryResult -> {
 							return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty,
-									acceptHeader, count, limit, langQuery, context);
+									acceptHeader, count, actualLimit, langQuery, context);
 						}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e));
 			}
 
