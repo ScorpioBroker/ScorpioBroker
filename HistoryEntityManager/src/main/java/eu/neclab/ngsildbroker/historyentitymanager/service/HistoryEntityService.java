@@ -667,4 +667,18 @@ public class HistoryEntityService {
 		return Tuple2.of(toStore, cId2RemoteHostEntity.values());
 	}
 
+	public Uni<Void> handleRegistryChange(BaseRequest req) {
+		tenant2CId2RegEntries.remove(req.getTenant(), req.getId());
+		if (req.getRequestType() != AppConstants.DELETE_REQUEST) {
+			for (RegistrationEntry regEntry : RegistrationEntry.fromRegPayload(req.getPayload())) {
+				if (regEntry.appendAttrsTemporal() || regEntry.deleteAttrsTemporal()
+						|| regEntry.deleteAttrInstanceTemporal() || regEntry.deleteTemporal()
+						|| regEntry.updateAttrsTemporal() || regEntry.upsertTemporal()) {
+					tenant2CId2RegEntries.put(req.getTenant(), req.getId(), regEntry);
+				}
+			}
+		}
+		return Uni.createFrom().voidItem();
+	}
+
 }

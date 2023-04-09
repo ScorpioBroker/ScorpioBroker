@@ -32,4 +32,10 @@ public class HistoryMessagingInMemory extends HistoryMessagingBase {
 		// reference so history will manipulate the subscriptions potentially
 		return baseHandleBatch(MicroServiceUtils.deepCopyRequestMessage(message));
 	}
+	
+	@Incoming(AppConstants.REGISTRY_CHANNEL)
+	@Acknowledgment(Strategy.PRE_PROCESSING)
+	public Uni<Void> handleCsource(BaseRequest busMessage) {
+		return baseHandleCsource(MicroServiceUtils.deepCopyRequestMessage(busMessage));
+	}
 }

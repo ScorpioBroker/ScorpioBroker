@@ -9,15 +9,15 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
 import io.smallrye.mutiny.Uni;
 
-public abstract class RegistryMessagingBase {
+public abstract class EntityMessagingBase {
 
-	private final static Logger logger = LoggerFactory.getLogger(RegistryMessagingBase.class);
+	private final static Logger logger = LoggerFactory.getLogger(EntityMessagingBase.class);
 
 	@Inject
 	EntityService entityService;
 
 	public Uni<Void> baseHandleCsource(BaseRequest message) {
-		logger.debug("CSource sub manager got called for csource: " + message.getId());
+		logger.debug("entity manager got called for csource: " + message.getId());
 		return entityService.handleRegistryChange(message);
 	}
 

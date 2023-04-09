@@ -327,9 +327,8 @@ public class QueryService {
 						queryDAO.getRemoteTypesForRegWithoutTypesSupport(tenant))
 				.asTuple().onItem().transformToUni(t -> {
 					RowSet<Row> rows = t.getItem1();
-					if (rows.size() == 0) {
-						return Uni.createFrom().item(Sets.newHashSet());
-					}
+					
+					
 
 					Set<String> currentTypes = Sets.newHashSet(t.getItem2());
 					List<Uni<List<Object>>> unis = getRemoteCalls(rows, NGSIConstants.NGSI_LD_TYPES_ENDPOINT);

@@ -37,4 +37,13 @@ public class HistoryMessagingKafka extends HistoryMessagingBase {
 		}
 		return baseHandleBatch(message);
 	}
+
+	@Incoming(AppConstants.REGISTRY_RETRIEVE_CHANNEL)
+	@Acknowledgment(Strategy.PRE_PROCESSING)
+	public Uni<Void> handleCsource(BaseRequest busMessage) {
+		if (duplicate) {
+			return baseHandleCsource(MicroServiceUtils.deepCopyRequestMessage(busMessage));
+		}
+		return baseHandleCsource(busMessage);
+	}
 }
