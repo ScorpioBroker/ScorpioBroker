@@ -254,8 +254,7 @@ public class EntityService {
 			effectivePayload.put(attribName, payload);
 		}
 
-		UpdateEntityRequest request = new UpdateEntityRequest(tenant, entityId, effectivePayload, attribName,
-				null);
+		UpdateEntityRequest request = new UpdateEntityRequest(tenant, entityId, effectivePayload, attribName, null);
 		return entityDAO.partialUpdateAttribute(request).onItem().transformToUni(resultetEntity -> {
 //			if (resultTable.size() == 0) {
 //				return Uni.createFrom().failure(new ResponseException(ErrorType.InternalError,
@@ -768,7 +767,13 @@ public class EntityService {
 		tenant2CId2RegEntries.remove(req.getTenant(), req.getId());
 		if (req.getRequestType() != AppConstants.DELETE_REQUEST) {
 			for (RegistrationEntry regEntry : RegistrationEntry.fromRegPayload(req.getPayload())) {
-				tenant2CId2RegEntries.put(req.getTenant(), req.getId(), regEntry);
+				if (regEntry.createEntity() || regEntry.appendAttrs() || regEntry.createBatch()
+						|| regEntry.deleteAttrs() || regEntry.deleteBatch() || regEntry.deleteEntity()
+						|| regEntry.mergeBatch() || regEntry.mergeEntity() || regEntry.replaceAttrs()
+						|| regEntry.replaceEntity() || regEntry.updateAttrs() || regEntry.updateBatch()
+						|| regEntry.updateEntity() || regEntry.upsertBatch()) {
+					tenant2CId2RegEntries.put(req.getTenant(), req.getId(), regEntry);
+				}
 			}
 		}
 		return Uni.createFrom().voidItem();

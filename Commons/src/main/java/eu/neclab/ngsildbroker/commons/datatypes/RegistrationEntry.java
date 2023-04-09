@@ -275,7 +275,7 @@ public record RegistrationEntry(String cId, String eId, String eIdp, String type
 //	END;
 //	$BODY$;
 
-		return null;
+		return result;
 	}
 
 	private static String[] getScopesFromPayload(Object object) {

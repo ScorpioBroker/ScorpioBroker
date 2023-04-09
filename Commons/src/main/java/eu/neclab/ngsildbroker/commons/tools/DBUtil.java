@@ -104,20 +104,24 @@ public class DBUtil {
 				logger.error("Failed to load registrations for the entity mananger", e);
 			}
 		}
+		Long expires = row.getLong(9);
+		if (expires == null) {
+			expires = -1l;
+		}
 		return new RegistrationEntry(row.getString(1), row.getString(2), row.getString(3), row.getString(4),
-				row.getString(5), row.getString(6), geoJson, row.getArrayOfStrings(8), row.getLong(9),
-				row.getInteger(12), row.getBoolean(13), row.getBoolean(14), row.getBoolean(15), row.getBoolean(16),
-				row.getBoolean(17), row.getBoolean(18), row.getBoolean(19), row.getBoolean(20), row.getBoolean(21),
-				row.getBoolean(22), row.getBoolean(23), row.getBoolean(24), row.getBoolean(25), row.getBoolean(26),
-				row.getBoolean(27), row.getBoolean(28), row.getBoolean(29), row.getBoolean(30), row.getBoolean(31),
-				row.getBoolean(32), row.getBoolean(33), row.getBoolean(34), row.getBoolean(35), row.getBoolean(36),
-				row.getBoolean(37), row.getBoolean(38), row.getBoolean(39), row.getBoolean(40), row.getBoolean(41),
-				row.getBoolean(42), row.getBoolean(43), row.getBoolean(44), row.getBoolean(45), row.getBoolean(46),
-				row.getBoolean(47), row.getBoolean(48),
-				new RemoteHost(row.getString(9), row.getString(10),
+				row.getString(5), row.getString(6), geoJson, row.getArrayOfStrings(8), expires, row.getInteger(13),
+				row.getBoolean(14), row.getBoolean(15), row.getBoolean(16), row.getBoolean(17), row.getBoolean(18),
+				row.getBoolean(19), row.getBoolean(20), row.getBoolean(21), row.getBoolean(22), row.getBoolean(23),
+				row.getBoolean(24), row.getBoolean(25), row.getBoolean(26), row.getBoolean(27), row.getBoolean(28),
+				row.getBoolean(29), row.getBoolean(30), row.getBoolean(31), row.getBoolean(32), row.getBoolean(33),
+				row.getBoolean(34), row.getBoolean(35), row.getBoolean(36), row.getBoolean(37), row.getBoolean(38),
+				row.getBoolean(39), row.getBoolean(40), row.getBoolean(41), row.getBoolean(42), row.getBoolean(43),
+				row.getBoolean(44), row.getBoolean(45), row.getBoolean(46), row.getBoolean(47), row.getBoolean(48),
+				row.getBoolean(49),
+				new RemoteHost(row.getString(10), row.getString(11),
 						MultiMap.newInstance(
-								HttpUtils.getHeadersForRemoteCall(row.getJsonArray(11), row.getString(10))),
-						row.getString(1), false, false, row.getInteger(12)));
+								HttpUtils.getHeadersForRemoteCall(row.getJsonArray(12), row.getString(11))),
+						row.getString(1), false, false, row.getInteger(13)));
 
 	}
 
