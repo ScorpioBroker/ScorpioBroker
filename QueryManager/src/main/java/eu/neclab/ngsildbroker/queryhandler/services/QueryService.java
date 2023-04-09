@@ -327,24 +327,24 @@ public class QueryService {
 						queryDAO.getRemoteTypesForRegWithoutTypesSupport(tenant))
 				.asTuple().onItem().transformToUni(t -> {
 					RowSet<Row> rows = t.getItem1();
-					Set<String> currentTypes = Sets.newHashSet(t.getItem2());
-					if (rows.size() > 0) {
-						List<Uni<List<Object>>> unis = getRemoteCalls(rows, NGSIConstants.NGSI_LD_TYPES_ENDPOINT);
-						return Uni.combine().all().unis(unis).combinedWith(list -> {
-							for (Object entry : list) {
-								if (entry == null) {
-									continue;
-								}
-								Map<String, Object> typeMap = ((List<Map<String, Object>>) entry).get(0);
-								mergeTypeList(typeMap.get(NGSIConstants.NGSI_LD_TYPE_LIST), currentTypes);
-
-							}
-							return currentTypes;
-						});
-
-					} else {
-						return Uni.createFrom().item(currentTypes);
+					if (rows.size() == 0) {
+						return Uni.createFrom().item(Sets.newHashSet());
 					}
+
+					Set<String> currentTypes = Sets.newHashSet(t.getItem2());
+					List<Uni<List<Object>>> unis = getRemoteCalls(rows, NGSIConstants.NGSI_LD_TYPES_ENDPOINT);
+					return Uni.combine().all().unis(unis).combinedWith(list -> {
+						for (Object entry : list) {
+							if (entry == null) {
+								continue;
+							}
+							Map<String, Object> typeMap = ((List<Map<String, Object>>) entry).get(0);
+							mergeTypeList(typeMap.get(NGSIConstants.NGSI_LD_TYPE_LIST), currentTypes);
+
+						}
+						return currentTypes;
+					});
+
 				});
 
 		return Uni.combine().all().unis(local, remoteTypes).asTuple().onItem().transform(t -> {
