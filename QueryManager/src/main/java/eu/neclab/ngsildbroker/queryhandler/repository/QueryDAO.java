@@ -19,6 +19,7 @@ import org.locationtech.spatial4j.shape.Shape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.github.jsonldjava.core.Context;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -100,7 +101,7 @@ public class QueryDAO {
 		});
 	}
 
-	public Uni<RowSet<Row>> queryLocalOnly(String tenantId, Set<String> ids, TypeQueryTerm typeQuery, String idPattern,
+	public Uni<RowSet<Row>> queryLocalOnly(String tenantId, String[] ids, TypeQueryTerm typeQuery, String idPattern,
 			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery,
 			LanguageQueryTerm langQuery, int limit, int offSet, boolean count) {
 		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
@@ -708,6 +709,86 @@ public class QueryDAO {
 							return result;
 						});
 					});
+		});
+
+	}
+
+	public Uni<List<String>> queryForEntityIds(String tenant, String[] ids, TypeQueryTerm typeQuery, String idPattern,
+			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery,
+			Context context) {
+		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
+			StringBuilder query = new StringBuilder();
+			int dollar = 1;
+			Tuple tuple = Tuple.tuple();
+
+			query.append("SELECT ID");
+
+			query.append(" FROM ENTITY WHERE ");
+			boolean sqlAdded = false;
+			if (typeQuery != null) {
+				dollar = typeQuery.toSql(query, tuple, dollar);
+				sqlAdded = true;
+			}
+			if (attrsQuery != null) {
+				if (sqlAdded) {
+					query.append(" AND ");
+				}
+				dollar = attrsQuery.toSql(query, tuple, dollar);
+				sqlAdded = true;
+			}
+			if (geoQuery != null) {
+				if (sqlAdded) {
+					query.append(" AND ");
+				}
+				dollar = geoQuery.toSql(query, tuple, dollar);
+				sqlAdded = true;
+			}
+
+			if (qQuery != null) {
+				if (sqlAdded) {
+					query.append(" AND ");
+				}
+				dollar = qQuery.toSql(query, dollar, tuple);
+				sqlAdded = true;
+			}
+			if (ids != null) {
+				if (sqlAdded) {
+					query.append(" AND ");
+				}
+				query.append("id IN (");
+				for (String id : ids) {
+					query.append('$');
+					query.append(dollar);
+					query.append(',');
+					tuple.addString(id);
+					dollar++;
+				}
+
+				query.setCharAt(query.length() - 1, ')');
+				sqlAdded = true;
+			}
+			if (idPattern != null) {
+				if (sqlAdded) {
+					query.append(" AND ");
+				}
+				query.append("id ~ $");
+				query.append(dollar);
+				tuple.addString(idPattern);
+				dollar++;
+				sqlAdded = true;
+			}
+			if (scopeQuery != null) {
+				query.append(" AND ");
+				scopeQuery.toSql(query);
+			}
+			query.append(" ORDER BY createdAt");
+			return client.preparedQuery(query.toString()).execute(tuple).onItem().transform(rows -> {
+				List<String> result = Lists.newArrayList();
+				rows.forEach(row -> {
+					result.add(row.getString(0));
+				});
+				return result;
+			});
 		});
 
 	}

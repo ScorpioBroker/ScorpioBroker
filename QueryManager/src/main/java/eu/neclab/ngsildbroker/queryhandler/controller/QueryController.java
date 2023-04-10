@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.queryhandler.controller;
 
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -16,7 +17,9 @@ import javax.ws.rs.QueryParam;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.RestResponse;
+import org.jboss.resteasy.reactive.server.jaxrs.RestResponseBuilderImpl;
 
+import com.fasterxml.jackson.core.JsonGenerationException;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
@@ -123,7 +126,8 @@ public class QueryController {
 			@QueryParam("geometryProperty") String geometryProperty, @QueryParam("lang") String lang,
 			@QueryParam("scopeQ") String scopeQ, @QueryParam("localOnly") boolean localOnly,
 			@QueryParam("options") String options, @QueryParam("limit") Integer limit, @QueryParam("offset") int offset,
-			@QueryParam("count") boolean count) {
+			@QueryParam("count") boolean count, @QueryParam("entityMap") boolean entityMap,
+			@QueryParam("zipEntityMap") boolean zipEntityMap) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		if (acceptHeader == -1) {
 			return HttpUtils.getInvalidHeader();
@@ -165,11 +169,34 @@ public class QueryController {
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 		}
-		Set<String> ids;
+		String[] ids;
 		if (id != null) {
-			ids = Sets.newHashSet(id.split(","));
+			ids = id.split(",");
 		} else {
 			ids = null;
+		}
+		if (entityMap) {
+			return queryService.queryForEntityIds(HttpUtils.getTenant(request), ids, typeQueryTerm, idPattern,
+					attrsQuery, qQueryTerm, geoQueryTerm, scopeQueryTerm, context).onItem().transform(list -> {
+						String body;
+						Object result = "[]";
+						try {
+							body = JsonUtils.toPrettyString(list);
+							if (zipEntityMap) {
+								result = HttpUtils.zipResult(body);
+							} else {
+								result = body.getBytes();
+							}
+						} catch (JsonGenerationException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+
+						return RestResponseBuilderImpl.ok(result).build();
+					});
 		}
 		return queryService.query(HttpUtils.getTenant(request), ids, typeQueryTerm, idPattern, attrsQuery, qQueryTerm,
 				csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset, count, localOnly, context)
@@ -408,7 +435,7 @@ public class QueryController {
 					String idPattern = entityEntry.get(NGSIConstants.QUERY_PARAMETER_IDPATTERN);
 					String typeQuery = entityEntry.get(NGSIConstants.QUERY_PARAMETER_TYPE);
 					typeQueryTerm = QueryParser.parseTypeQuery(typeQuery, context);
-					unis.add(queryService.query(HttpUtils.getTenant(request), id == null ? null : Set.of(id),
+					unis.add(queryService.query(HttpUtils.getTenant(request), id == null ? null : new String[] { id },
 							typeQueryTerm, idPattern, attrsQuery, qQueryTerm, csfQueryTerm, geoQueryTerm,
 							scopeQueryTerm, langQuery, actualLimit, offset, count, localOnly, context));
 				}

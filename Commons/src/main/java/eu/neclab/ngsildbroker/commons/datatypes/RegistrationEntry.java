@@ -283,7 +283,7 @@ public record RegistrationEntry(String cId, String eId, String eIdp, String type
 		return null;
 	}
 
-	public boolean matches(Set<String> id, String idPattern2, TypeQueryTerm typeQuery, String idPattern,
+	public boolean matches(String[] id, String idPattern2, TypeQueryTerm typeQuery, String idPattern,
 			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery) {
 		return false;
 

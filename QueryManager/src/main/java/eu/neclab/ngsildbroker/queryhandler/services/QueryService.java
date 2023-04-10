@@ -15,6 +15,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 
+import org.jboss.resteasy.reactive.RestResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,7 +91,7 @@ public class QueryService {
 	void startup(@Observes StartupEvent event) {
 	}
 
-	public Uni<QueryResult> query(String tenant, Set<String> id, TypeQueryTerm typeQuery, String idPattern,
+	public Uni<QueryResult> query(String tenant, String[] id, TypeQueryTerm typeQuery, String idPattern,
 			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, CSFQueryTerm csf, GeoQueryTerm geoQuery,
 			ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, int limit, int offSet, boolean count,
 			boolean localOnly, Context context) {
@@ -118,7 +119,7 @@ public class QueryService {
 		}
 	}
 
-	private List<Uni<QueryResult>> getRemoteQueries(String tenant, Set<String> id, TypeQueryTerm typeQuery,
+	private List<Uni<QueryResult>> getRemoteQueries(String tenant, String[] id, TypeQueryTerm typeQuery,
 			String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery, GeoQueryTerm geoQuery,
 			ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, int limit, int offSet, boolean count) {
 		List<RemoteHost> result = Lists.newArrayList();
@@ -152,7 +153,7 @@ public class QueryService {
 					queryInfos.getIds().add(regEntry.eId());
 				} else {
 					if (id != null) {
-						queryInfos.setIds(id);
+						queryInfos.setIds(Sets.newHashSet(id));
 						queryInfos.setFullIdFound(true);
 					} else if (idPattern != null) {
 						queryInfos.setIdPattern(idPattern);
@@ -189,7 +190,7 @@ public class QueryService {
 
 	}
 
-	private Uni<QueryResult> localQueryLevel1(String tenant, Set<String> id, TypeQueryTerm typeQuery, String idPattern,
+	private Uni<QueryResult> localQueryLevel1(String tenant, String[] id, TypeQueryTerm typeQuery, String idPattern,
 			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery,
 			LanguageQueryTerm langQuery, int limit, int offSet, boolean count) {
 		return queryDAO.queryLocalOnly(tenant, id, typeQuery, idPattern, attrsQuery, qQuery, geoQuery, scopeQuery,
@@ -874,5 +875,12 @@ public class QueryService {
 			}
 		}
 		return Uni.createFrom().voidItem();
+	}
+
+	public Uni<List<String>> queryForEntityIds(String tenant, String[] ids, TypeQueryTerm typeQueryTerm,
+			String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQueryTerm, GeoQueryTerm geoQueryTerm,
+			ScopeQueryTerm scopeQueryTerm, Context context) {
+		return queryDAO.queryForEntityIds(tenant, ids, typeQueryTerm, idPattern, attrsQuery, qQueryTerm, geoQueryTerm,
+				scopeQueryTerm, context);
 	}
 }

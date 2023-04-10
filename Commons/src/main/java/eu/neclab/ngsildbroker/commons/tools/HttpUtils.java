@@ -227,7 +227,7 @@ public final class HttpUtils {
 		return resultMap;
 	}
 
-	private static byte[] zipResult(String replyBody) {
+	public static byte[] zipResult(String replyBody) {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		ZipOutputStream zipOutputStream = new ZipOutputStream(baos);
 		ZipEntry entry = new ZipEntry("index.json");
