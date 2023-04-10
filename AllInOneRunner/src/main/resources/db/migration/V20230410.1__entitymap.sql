@@ -1,6 +1,13 @@
 CREATE TABLE public.entitymap
 (
-    "qToken" text NOT NULL,
-    "entityIds" text[],
-    PRIMARY KEY ("qToken")
+    "q_token" text NOT NULL,
+    "entity_id" text,
+	"remote_hosts" jsonb,
+	"order_field" numeric NOT NULL
 );
+
+CREATE INDEX i_entitymap_qtoke
+    ON public.entitymap USING hash
+    ("entity_id" text_pattern_ops)
+;
+

@@ -103,9 +103,37 @@ public class QueryService {
 		if (qToken == null) {
 			Uni<List<String>> localIds = queryDAO.queryForEntityIds(tenant, id, typeQuery, idPattern, attrsQuery,
 					qQuery, geoQuery, scopeQuery, context);
-			Map<RemoteHost, String> remoteIds = getRemoteQueriesForIds(tenant, id, typeQuery, idPattern, attrsQuery,
+			Map<RemoteHost, String> remoteHost2Query = getRemoteQueriesForIds(tenant, id, typeQuery, idPattern, attrsQuery,
 					qQuery, geoQuery, scopeQuery, context);
-			qToken = UUID.randomUUID().toString();
+			Uni<Map<RemoteHost, List<String>>> remoteIds;
+			if(remoteHost2Query.isEmpty()) {
+				remoteIds = Uni.createFrom().item(Maps.newHashMap());
+			}else {
+				remoteIds = Uni.createFrom().item(Maps.newHashMap());
+				
+				
+			}
+			String newQToken = UUID.randomUUID().toString();
+			Uni.combine().all().unis(localIds, remoteIds).asTuple().onItem().transform(t -> {
+				List<Tuple2<String, List<RemoteHost>>> result = Lists.newArrayList();
+				
+				return result;
+			}).onItem().transformToUni(entityMap -> {
+				if(entityMap.isEmpty()) {
+					QueryResult result = new QueryResult();
+					result.setData(Lists.newArrayList());
+					return Uni.createFrom().item(result);
+				}
+				return queryDAO.storeEntityMap(tenant, newQToken, entityMap).onItem().transform(v -> {
+					
+					//TODO for benni construct the queries local/remote for the ids in the query
+					return null;
+				});
+			});
+			
+			
+			
+			
 
 		}
 

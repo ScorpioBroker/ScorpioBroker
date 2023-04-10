@@ -46,6 +46,7 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple3;
 import io.smallrye.mutiny.tuples.Tuple4;
+import io.vertx.core.json.JsonArray;
 import io.vertx.mutiny.core.MultiMap;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowIterator;
@@ -789,6 +790,33 @@ public class QueryDAO {
 				});
 				return result;
 			});
+		});
+
+	}
+
+	public Uni<Void> storeEntityMap(String tenant, String qToken, List<Tuple2<String, List<RemoteHost>>> entityMap) {
+		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
+			List<Tuple> batch = Lists.newArrayList();
+//			"q_token" text NOT NULL,
+//		    "entity_id" text,
+//			"remote_hosts" jsonb,
+//			"order_field" numeric NOT NULL
+			long count = 0;
+			for (Tuple2<String, List<RemoteHost>> entityId2RemoteHosts : entityMap) {
+				Tuple tuple = Tuple.tuple();
+				tuple.addString(qToken);
+				tuple.addString(entityId2RemoteHosts.getItem1());
+				JsonArray remoteHosts = new JsonArray();
+				for (RemoteHost remoteHost : entityId2RemoteHosts.getItem2()) {
+					remoteHosts.add(remoteHost.toJson());
+				}
+				tuple.addJsonArray(remoteHosts);
+				tuple.addLong(count);
+				count++;
+				batch.add(tuple);
+			}
+			return client.preparedQuery("INSERT INTO entitymap VALUES ($1, $2, $3, $4)").executeBatch(batch).onItem()
+					.transformToUni(r -> Uni.createFrom().voidItem());
 		});
 
 	}
