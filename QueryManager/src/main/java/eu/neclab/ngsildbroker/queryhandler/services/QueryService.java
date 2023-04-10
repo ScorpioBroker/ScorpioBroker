@@ -91,7 +91,7 @@ public class QueryService {
 	void startup(@Observes StartupEvent event) {
 	}
 
-	public Uni<QueryResult> query(String tenant, String[] id, TypeQueryTerm typeQuery, String idPattern,
+	public Uni<QueryResult> query(String tenant, String queryToken, String[] id, TypeQueryTerm typeQuery, String idPattern,
 			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, CSFQueryTerm csf, GeoQueryTerm geoQuery,
 			ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, int limit, int offSet, boolean count,
 			boolean localOnly, Context context) {

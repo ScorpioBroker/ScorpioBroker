@@ -198,9 +198,9 @@ public class QueryController {
 						return RestResponseBuilderImpl.ok(result).build();
 					});
 		}
-		return queryService.query(HttpUtils.getTenant(request), ids, typeQueryTerm, idPattern, attrsQuery, qQueryTerm,
-				csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset, count, localOnly, context)
-				.onItem().transform(queryResult -> {
+		return queryService.query(HttpUtils.getTenant(request), request.headers().get("qToken"), ids, typeQueryTerm,
+				idPattern, attrsQuery, qQueryTerm, csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit,
+				offset, count, localOnly, context).onItem().transform(queryResult -> {
 					return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty, acceptHeader,
 							count, actualLimit, langQuery, context);
 				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
@@ -435,9 +435,10 @@ public class QueryController {
 					String idPattern = entityEntry.get(NGSIConstants.QUERY_PARAMETER_IDPATTERN);
 					String typeQuery = entityEntry.get(NGSIConstants.QUERY_PARAMETER_TYPE);
 					typeQueryTerm = QueryParser.parseTypeQuery(typeQuery, context);
-					unis.add(queryService.query(HttpUtils.getTenant(request), id == null ? null : new String[] { id },
-							typeQueryTerm, idPattern, attrsQuery, qQueryTerm, csfQueryTerm, geoQueryTerm,
-							scopeQueryTerm, langQuery, actualLimit, offset, count, localOnly, context));
+					unis.add(queryService.query(HttpUtils.getTenant(request), request.headers().get("qToken"),
+							id == null ? null : new String[] { id }, typeQueryTerm, idPattern, attrsQuery, qQueryTerm,
+							csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset, count,
+							localOnly, context));
 				}
 				return Uni.combine().all().unis(unis).combinedWith(list -> {
 					Iterator<?> it = list.iterator();
@@ -450,10 +451,9 @@ public class QueryController {
 							actualLimit, langQuery, context);
 				});
 			} else {
-				return queryService
-						.query(tenant, null, null, null, attrsQuery, qQueryTerm, csfQueryTerm, geoQueryTerm,
-								scopeQueryTerm, langQuery, actualLimit, offset, count, localOnly, context)
-						.onItem().transform(queryResult -> {
+				return queryService.query(tenant, request.headers().get("qToken"), null, null, null, attrsQuery,
+						qQueryTerm, csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset, count,
+						localOnly, context).onItem().transform(queryResult -> {
 							return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty,
 									acceptHeader, count, actualLimit, langQuery, context);
 						}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e));
