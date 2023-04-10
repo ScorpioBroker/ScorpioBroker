@@ -51,7 +51,9 @@ import io.vertx.mutiny.core.MultiMap;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowIterator;
 import io.vertx.mutiny.sqlclient.RowSet;
+import io.vertx.mutiny.sqlclient.SqlConnection;
 import io.vertx.mutiny.sqlclient.Tuple;
+import io.vertx.sqlclient.impl.Connection;
 
 @Singleton
 public class QueryDAO {
@@ -794,31 +796,65 @@ public class QueryDAO {
 
 	}
 
-	public Uni<Void> storeEntityMap(String tenant, String qToken, List<Tuple2<String, List<RemoteHost>>> entityMap) {
+	public Uni<SqlConnection> storeEntityMap(String tenant, String qToken,
+			List<Tuple2<String, List<RemoteHost>>> entityMap) {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
-			List<Tuple> batch = Lists.newArrayList();
+			return client.getConnection().onItem().transformToUni(conn -> {
+				List<Tuple> batch = Lists.newArrayList();
 //			"q_token" text NOT NULL,
 //		    "entity_id" text,
 //			"remote_hosts" jsonb,
 //			"order_field" numeric NOT NULL
-			long count = 0;
-			for (Tuple2<String, List<RemoteHost>> entityId2RemoteHosts : entityMap) {
-				Tuple tuple = Tuple.tuple();
-				tuple.addString(qToken);
-				tuple.addString(entityId2RemoteHosts.getItem1());
-				JsonArray remoteHosts = new JsonArray();
-				for (RemoteHost remoteHost : entityId2RemoteHosts.getItem2()) {
-					remoteHosts.add(remoteHost.toJson());
+				long count = 0;
+				for (Tuple2<String, List<RemoteHost>> entityId2RemoteHosts : entityMap) {
+					Tuple tuple = Tuple.tuple();
+					tuple.addString(qToken);
+					tuple.addString(entityId2RemoteHosts.getItem1());
+					JsonArray remoteHosts = new JsonArray();
+					for (RemoteHost remoteHost : entityId2RemoteHosts.getItem2()) {
+						remoteHosts.add(remoteHost.toJson());
+					}
+					tuple.addJsonArray(remoteHosts);
+					tuple.addLong(count);
+					count++;
+					batch.add(tuple);
 				}
-				tuple.addJsonArray(remoteHosts);
-				tuple.addLong(count);
-				count++;
-				batch.add(tuple);
-			}
-			return client.preparedQuery("INSERT INTO entitymap VALUES ($1, $2, $3, $4)").executeBatch(batch).onItem()
-					.transformToUni(r -> Uni.createFrom().voidItem());
+				return conn.preparedQuery("INSERT INTO entitymap VALUES ($1, $2, $3, $4)").executeBatch(batch).onItem()
+						.transform(r -> conn);
+			});
 		});
 
+	}
+
+	public Uni<Map<String, Map<String, Object>>> getEntities(SqlConnection conn, List<String> entityIds,
+			AttrsQueryTerm attrsQuery) {
+		Tuple tuple = Tuple.tuple();
+		StringBuilder query = new StringBuilder("SELECT id, entity");
+		if (attrsQuery != null) {
+			if (attrsQuery != null) {
+				query.append("-$1");
+
+				tuple.addArrayOfString(attrsQuery.getAttrs().toArray(new String[0]));
+			}
+		}
+		query.append(" FROM entity WHERE id in (");
+		int dollarCount = 2;
+		for (String id : entityIds) {
+			query.append('$');
+			query.append(dollarCount);
+			query.append(',');
+			dollarCount++;
+			tuple.addString(id);
+		}
+		query.setCharAt(query.length(), ')');
+		return conn.preparedQuery(query.toString()).execute(tuple).onItem().transformToUni(rows -> {
+			Map<String, Map<String, Object>> result = Maps.newHashMap();
+			rows.forEach(row -> {
+				result.put(row.getString(0), row.getJsonObject(1).getMap());
+			});
+
+			return conn.close().onItem().transform(v -> result);
+		});
 	}
 
 }

@@ -9,4 +9,9 @@ public record RemoteHost(String host, String tenant, MultiMap headers, String cS
 		return null;
 	}
 
+	public boolean isLocal() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
 }

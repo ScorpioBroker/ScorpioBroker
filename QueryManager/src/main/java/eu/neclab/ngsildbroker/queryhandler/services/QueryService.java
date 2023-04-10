@@ -103,37 +103,90 @@ public class QueryService {
 		if (qToken == null) {
 			Uni<List<String>> localIds = queryDAO.queryForEntityIds(tenant, id, typeQuery, idPattern, attrsQuery,
 					qQuery, geoQuery, scopeQuery, context);
-			Map<RemoteHost, String> remoteHost2Query = getRemoteQueriesForIds(tenant, id, typeQuery, idPattern, attrsQuery,
-					qQuery, geoQuery, scopeQuery, context);
+			Map<RemoteHost, String> remoteHost2Query = getRemoteQueriesForIds(tenant, id, typeQuery, idPattern,
+					attrsQuery, qQuery, geoQuery, scopeQuery, context);
 			Uni<Map<RemoteHost, List<String>>> remoteIds;
-			if(remoteHost2Query.isEmpty()) {
+			if (remoteHost2Query.isEmpty()) {
 				remoteIds = Uni.createFrom().item(Maps.newHashMap());
-			}else {
+			} else {
 				remoteIds = Uni.createFrom().item(Maps.newHashMap());
-				
-				
+
 			}
 			String newQToken = UUID.randomUUID().toString();
-			Uni.combine().all().unis(localIds, remoteIds).asTuple().onItem().transform(t -> {
+			return Uni.combine().all().unis(localIds, remoteIds).asTuple().onItem().transform(t -> {
 				List<Tuple2<String, List<RemoteHost>>> result = Lists.newArrayList();
-				
+
 				return result;
 			}).onItem().transformToUni(entityMap -> {
-				if(entityMap.isEmpty()) {
+				if (entityMap.isEmpty()) {
 					QueryResult result = new QueryResult();
 					result.setData(Lists.newArrayList());
 					return Uni.createFrom().item(result);
 				}
-				return queryDAO.storeEntityMap(tenant, newQToken, entityMap).onItem().transform(v -> {
-					
-					//TODO for benni construct the queries local/remote for the ids in the query
-					return null;
+				return queryDAO.storeEntityMap(tenant, newQToken, entityMap).onItem().transformToUni(conn -> {
+					List<Tuple2<String, List<RemoteHost>>> resultEntityMap = entityMap.subList(limit, limit + offSet);
+					Long resultCount = (long) entityMap.size();
+					Map<RemoteHost, List<String>> remoteHost2EntityIds = Maps.newHashMap();
+					// has to be linked. We want to keep order here;
+					Map<String, Map<String, Object>> resultEntityId2Entity = Maps.newLinkedHashMap();
+					for (Tuple2<String, List<RemoteHost>> entry : resultEntityMap) {
+						List<RemoteHost> remoteHosts = entry.getItem2();
+						for (RemoteHost remoteHost : remoteHosts) {
+							List<String> tmp = remoteHost2EntityIds.get(remoteHost);
+							if (tmp == null) {
+								tmp = Lists.newArrayList();
+								remoteHost2EntityIds.put(remoteHost, tmp);
+							}
+							tmp.add(entry.getItem1());
+						}
+						resultEntityId2Entity.put(entry.getItem1(), new HashMap<>(0));
+					}
+					List<Uni<Map<String, Map<String, Object>>>> unis = Lists.newArrayList();
+					for (Entry<RemoteHost, List<String>> entry : remoteHost2EntityIds.entrySet()) {
+						RemoteHost remoteHost = entry.getKey();
+						if (remoteHost.isLocal()) {
+							unis.add(queryDAO.getEntities(conn, entry.getValue(), attrsQuery));
+						} else {
+							unis.add(webClient.get(remoteHost.host() + "/" + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT)
+									.send().onItem().transform(response -> {
+										Map<String, Map<String, Object>> result = Maps.newHashMap();
+										// todo parse
+										return result;
+									}));
+						}
+					}
+					return Uni.combine().all().unis(unis).combinedWith(list -> {
+						QueryResult result = new QueryResult();
+						for (Object obj : list) {
+							Map<String, Map<String, Object>> entityId2Entity = (Map<String, Map<String, Object>>) obj;
+							for (Entry<String, Map<String, Object>> entry : entityId2Entity.entrySet()) {
+								mergeEntity(resultEntityId2Entity, entry.getKey(), entry.getValue());
+							}
+						}
+						List<Map<String, Object>> resultData = Lists.newArrayList(resultEntityId2Entity.values());
+						result.setData(resultData);
+						result.setLimit(limit);
+						result.setOffset(offSet);
+						if (count) {
+							result.setCount(resultCount);
+							long leftAfter = resultCount - (offSet + limit);
+							if (leftAfter < 0) {
+								leftAfter = 0;
+							}
+							result.setResultsLeftAfter(leftAfter);
+						} else {
+							if (resultData.size() < limit) {
+								result.setResultsLeftAfter(0l);
+							} else {
+								result.setResultsLeftAfter((long) limit);
+							}
+
+						}
+
+						return result;
+					});
 				});
 			});
-			
-			
-			
-			
 
 		}
 
@@ -154,6 +207,12 @@ public class QueryService {
 				return queryResult;
 			});
 		}
+
+	}
+
+	private void mergeEntity(Map<String, Map<String, Object>> resultEntityId2Entity, String key,
+			Map<String, Object> value) {
+		// TODO Auto-generated method stub
 
 	}
 
