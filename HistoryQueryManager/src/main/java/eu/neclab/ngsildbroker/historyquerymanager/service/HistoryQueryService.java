@@ -29,6 +29,7 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.RegistrationEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.RemoteHost;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AggrTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
@@ -405,6 +406,18 @@ public class HistoryQueryService {
 //			}
 //		}
 		return result;
+	}
+
+	public Uni<Void> handleRegistryChange(BaseRequest req) {
+		tenant2CId2RegEntries.remove(req.getTenant(), req.getId());
+		if (req.getRequestType() != AppConstants.DELETE_REQUEST) {
+			for (RegistrationEntry regEntry : RegistrationEntry.fromRegPayload(req.getPayload())) {
+				if (regEntry.retrieveTemporal() || regEntry.queryTemporal()) {
+					tenant2CId2RegEntries.put(req.getTenant(), req.getId(), regEntry);
+				}
+			}
+		}
+		return Uni.createFrom().voidItem();
 	}
 
 }

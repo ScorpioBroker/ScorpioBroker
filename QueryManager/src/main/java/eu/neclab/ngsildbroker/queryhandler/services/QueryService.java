@@ -29,10 +29,12 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Table;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryInfos;
 import eu.neclab.ngsildbroker.commons.datatypes.RegistrationEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.RemoteHost;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
@@ -327,8 +329,6 @@ public class QueryService {
 						queryDAO.getRemoteTypesForRegWithoutTypesSupport(tenant))
 				.asTuple().onItem().transformToUni(t -> {
 					RowSet<Row> rows = t.getItem1();
-					
-					
 
 					Set<String> currentTypes = Sets.newHashSet(t.getItem2());
 					List<Uni<List<Object>>> unis = getRemoteCalls(rows, NGSIConstants.NGSI_LD_TYPES_ENDPOINT);
@@ -862,5 +862,17 @@ public class QueryService {
 
 		});
 
+	}
+
+	public Uni<Void> handleRegistryChange(BaseRequest req) {
+		tenant2CId2RegEntries.remove(req.getTenant(), req.getId());
+		if (req.getRequestType() != AppConstants.DELETE_REQUEST) {
+			for (RegistrationEntry regEntry : RegistrationEntry.fromRegPayload(req.getPayload())) {
+				if (regEntry.retrieveEntity() || regEntry.queryEntity() || regEntry.queryBatch()) {
+					tenant2CId2RegEntries.put(req.getTenant(), req.getId(), regEntry);
+				}
+			}
+		}
+		return Uni.createFrom().voidItem();
 	}
 }
