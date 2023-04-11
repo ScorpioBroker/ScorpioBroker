@@ -15,6 +15,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 
+import org.apache.commons.codec.digest.Md5Crypt;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.jaxrs.RestResponseBuilderImpl;
@@ -43,6 +44,7 @@ import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.QueryParser;
 import eu.neclab.ngsildbroker.queryhandler.services.QueryService;
 import io.smallrye.mutiny.Uni;
+import io.vertx.codegen.annotations.Nullable;
 import io.vertx.core.http.HttpServerRequest;
 
 @Singleton
@@ -198,9 +200,25 @@ public class QueryController {
 						return RestResponseBuilderImpl.ok(result).build();
 					});
 		}
-		return queryService.query(HttpUtils.getTenant(request), request.headers().get("qToken"), ids, typeQueryTerm,
-				idPattern, attrsQuery, qQueryTerm, csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit,
-				offset, count, localOnly, context).onItem().transform(queryResult -> {
+
+		String token;
+		boolean tokenProvided;
+
+		String md5 = "" + request.params().remove("limit").remove("offset").hashCode();
+		if (request.headers().contains("qToken")) {
+			token = request.headers().get("qToken");
+			if (!token.equals(md5)) {
+				return Uni.createFrom()
+						.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.InvalidRequest)));
+			}
+			tokenProvided = true;
+		} else {
+			token = md5;
+			tokenProvided = false;
+		}
+		return queryService.query(HttpUtils.getTenant(request), token, tokenProvided, ids, typeQueryTerm, idPattern,
+				attrsQuery, qQueryTerm, csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset,
+				count, localOnly, context).onItem().transform(queryResult -> {
 					return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty, acceptHeader,
 							count, actualLimit, langQuery, context);
 				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
@@ -435,7 +453,7 @@ public class QueryController {
 					String idPattern = entityEntry.get(NGSIConstants.QUERY_PARAMETER_IDPATTERN);
 					String typeQuery = entityEntry.get(NGSIConstants.QUERY_PARAMETER_TYPE);
 					typeQueryTerm = QueryParser.parseTypeQuery(typeQuery, context);
-					unis.add(queryService.query(HttpUtils.getTenant(request), request.headers().get("qToken"),
+					unis.add(queryService.query(HttpUtils.getTenant(request), request.headers().get("qToken"), false,
 							id == null ? null : new String[] { id }, typeQueryTerm, idPattern, attrsQuery, qQueryTerm,
 							csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset, count,
 							localOnly, context));
@@ -451,7 +469,7 @@ public class QueryController {
 							actualLimit, langQuery, context);
 				});
 			} else {
-				return queryService.query(tenant, request.headers().get("qToken"), null, null, null, attrsQuery,
+				return queryService.query(tenant, request.headers().get("qToken"), false, null, null, null, attrsQuery,
 						qQueryTerm, csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset, count,
 						localOnly, context).onItem().transform(queryResult -> {
 							return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty,

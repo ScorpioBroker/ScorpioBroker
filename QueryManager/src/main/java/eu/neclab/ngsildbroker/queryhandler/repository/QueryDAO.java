@@ -28,8 +28,10 @@ import com.google.common.collect.Table;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.QueryRemoteHost;
 import eu.neclab.ngsildbroker.commons.datatypes.RegistrationEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.RemoteHost;
+import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
@@ -384,11 +386,8 @@ public class QueryDAO {
 	public Uni<String[]> getRemoteTypesForRegWithoutTypesSupport(String tenantId) {
 		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
 			return client.preparedQuery(
-					"SELECT array_agg(distinct C.e_type) FROM CSOURCEINFORMATION AS C WHERE C.retrieveAttrTypes=false AND C.e_type is not null")
+					"SELECT case when array_agg(distinct C.e_type) is null then array[]::text[] else array_agg(distinct C.e_type) end FROM CSOURCEINFORMATION AS C WHERE C.retrieveAttrTypes=false AND C.e_type is not null")
 					.execute().onItem().transform(rows -> {
-						if (rows.size() == 0) {
-							return new String[0];
-						}
 						return rows.iterator().next().getArrayOfStrings(0);
 					});
 		});
@@ -477,7 +476,7 @@ public class QueryDAO {
 	public Uni<Set<String>> getRemoteAttribsForRegWithoutAttribSupport(String tenantId) {
 		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
 			return client.preparedQuery(
-					"SELECT C.e_prop, C.e_rel FROM CSOURCEINFORMATION AS C WHERE C.retrieveAttrTypes=true AND AND (C.e_prop is not null OR C.e_rel is not null)")
+					"SELECT C.e_prop, C.e_rel FROM CSOURCEINFORMATION AS C WHERE C.retrieveAttrTypes=true AND (C.e_prop is not null OR C.e_rel is not null)")
 					.execute().onItem().transform(rows -> {
 						Set<String> result = Sets.newHashSet();
 						rows.forEach(row -> {
@@ -797,7 +796,7 @@ public class QueryDAO {
 	}
 
 	public Uni<SqlConnection> storeEntityMap(String tenant, String qToken,
-			List<Tuple2<String, List<RemoteHost>>> entityMap) {
+			List<Tuple2<String, List<QueryRemoteHost>>> entityMap) {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
 			return client.getConnection().onItem().transformToUni(conn -> {
 				List<Tuple> batch = Lists.newArrayList();
@@ -806,12 +805,12 @@ public class QueryDAO {
 //			"remote_hosts" jsonb,
 //			"order_field" numeric NOT NULL
 				long count = 0;
-				for (Tuple2<String, List<RemoteHost>> entityId2RemoteHosts : entityMap) {
+				for (Tuple2<String, List<QueryRemoteHost>> entityId2RemoteHosts : entityMap) {
 					Tuple tuple = Tuple.tuple();
 					tuple.addString(qToken);
 					tuple.addString(entityId2RemoteHosts.getItem1());
 					JsonArray remoteHosts = new JsonArray();
-					for (RemoteHost remoteHost : entityId2RemoteHosts.getItem2()) {
+					for (QueryRemoteHost remoteHost : entityId2RemoteHosts.getItem2()) {
 						remoteHosts.add(remoteHost.toJson());
 					}
 					tuple.addJsonArray(remoteHosts);
@@ -854,6 +853,25 @@ public class QueryDAO {
 			});
 
 			return conn.close().onItem().transform(v -> result);
+		});
+	}
+
+	public Uni<Tuple3<SqlConnection, Long, List<Tuple2<String, List<QueryRemoteHost>>>>> getEntityMap(String tenant,
+			String qToken, int limit, int offSet, boolean count) {
+		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
+			return client.getConnection().onItem().transformToUni(conn -> {
+				return conn.preparedQuery(
+						"SELECT entity_id, remote_hosts FROM entitymap WHERE q_token = $1 order by order_field LIMIT $2 OFFSET $3")
+						.execute(Tuple.of(qToken, limit, offSet)).onItem().transform(rows -> {
+							List<Tuple2<String, List<QueryRemoteHost>>> entityIdList = Lists.newArrayList();
+							rows.forEach(row -> {
+								entityIdList.add(Tuple2.of(row.getString(0),
+										QueryRemoteHost.getRemoteHostsFromJson(row.getJsonArray(1).getList())));
+							});
+							return Tuple3.of(conn, 0l, entityIdList);
+						});
+			});
+
 		});
 	}
 
