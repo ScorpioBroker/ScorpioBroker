@@ -45,19 +45,19 @@ CREATE OR REPLACE FUNCTION NGSILD_APPENDBATCH(ENTITIES jsonb) RETURNS jsonb AS $
 declare
 	resultObj jsonb;
 	resultEntry jsonb;
-	entity jsonb;
+	newentity jsonb;
 BEGIN
 	resultObj := '{"success": [], "failure": []}'::jsonb;
-	FOR entity IN SELECT jsonb_array_elements FROM jsonb_array_elements(ENTITIES) LOOP
+	FOR newentity IN SELECT jsonb_array_elements FROM jsonb_array_elements(ENTITIES) LOOP
 		BEGIN
-			IF entity ? '@type' THEN
-				UPDATE ENTITY SET ENTITY.ENTITY=jsonb_set(ENTITY.ENTITY, '{@type}', ENTITY.ENTITY->'@type' || entity->'@type'), ENTITY.E_TYPES = ARRAY(SELECT jsonb_array_elements(ENTITY.ENTITY->'@type')), ENTITY.ENTITY = ENTITY.ENTITY || (entity - '@type') WHERE id = entity->>'@id';
+			IF newentity ? '@type' THEN
+				UPDATE ENTITY SET E_TYPES = ARRAY(SELECT jsonb_array_elements(newentity->'@type')), ENTITY = ENTITY.ENTITY || newentity WHERE id = newentity->>'@id';
 			ELSE
-				UPDATE ENTITY SET ENTITY.ENTITY = ENTITY.ENTITY || entity WHERE id = entity->>'@id';
+				UPDATE ENTITY SET ENTITY = ENTITY.ENTITY || newentity WHERE id = newentity->>'@id';
 			END IF;
-			resultObj['success'] = resultObj['success'] || (entity->'@id')::jsonb;
+			resultObj['success'] = resultObj['success'] || (newentity->'@id')::jsonb;
 		EXCEPTION WHEN OTHERS THEN
-			resultObj['failure'] = resultObj['failure'] || jsonb_object_agg(entity->>'@id', SQLSTATE);
+			resultObj['failure'] = resultObj['failure'] || jsonb_object_agg(newentity->>'@id', SQLSTATE);
 		END;
 	END LOOP;
 	RETURN resultObj;
@@ -75,7 +75,7 @@ BEGIN
 	FOR newentity IN SELECT jsonb_array_elements FROM jsonb_array_elements(ENTITIES) LOOP
 		BEGIN
 			IF newentity ? '@type' THEN
-				INSERT INTO ENTITY(ID,E_TYPES, ENTITY) VALUES (newentity->>'@id',  ARRAY(SELECT jsonb_array_elements(newentity->'@type')), newentity) ON CONFLICT(ID) DO UPDATE SET E_TYPES = ARRAY(SELECT jsonb_array_elements(ENTITY.ENTITY->'@type')), ENTITY = ENTITY.entity || newentity;
+				INSERT INTO ENTITY(ID,E_TYPES, ENTITY) VALUES (newentity->>'@id',  ARRAY(SELECT jsonb_array_elements(newentity->'@type')), newentity) ON CONFLICT(ID) DO UPDATE SET E_TYPES = ARRAY(SELECT jsonb_array_elements(newentity->'@type')), ENTITY = ENTITY.entity || newentity;
 			ELSE
 				UPDATE ENTITY SET ENTITY = ENTITY.ENTITY || newentity WHERE id = newentity->>'@id';
 			END IF;
