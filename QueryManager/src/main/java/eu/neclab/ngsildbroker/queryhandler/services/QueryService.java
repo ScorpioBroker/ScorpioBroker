@@ -102,13 +102,35 @@ public class QueryService {
 		if (!tokenProvided) {
 			Uni<List<String>> localIds = queryDAO.queryForEntityIds(tenant, id, typeQuery, idPattern, attrsQuery,
 					qQuery, geoQuery, scopeQuery, context);
-			Set<QueryRemoteHost> remoteHost2Query = getRemoteQueriesForIds(tenant, id, typeQuery, idPattern, attrsQuery,
+			Set<QueryRemoteHost> remoteHost2Query = getRemoteQueries(tenant, id, typeQuery, idPattern, attrsQuery,
 					qQuery, geoQuery, scopeQuery, context);
 			Uni<Map<QueryRemoteHost, List<String>>> remoteIds;
 			if (remoteHost2Query.isEmpty()) {
 				remoteIds = Uni.createFrom().item(Maps.newHashMap());
 			} else {
-				remoteIds = Uni.createFrom().item(Maps.newHashMap());
+				List<Uni<Tuple2<QueryRemoteHost, List<String>>>> unis = Lists.newArrayList();
+				for (QueryRemoteHost remoteHost : remoteHost2Query) {
+					unis.add(webClient
+							.get(remoteHost.host() + "/" + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT
+									+ remoteHost.queryString() + "&entityMap=true&zipEntityMap=true")
+							.send().onItem().transform(response -> {
+								List<String> result;
+								if (response != null && response.statusCode() == 200) {
+									result = response.bodyAsJsonArray().getList();
+								} else {
+									result = Lists.newArrayList();
+								}
+								return Tuple2.of(remoteHost, result);
+							}));
+				}
+				remoteIds = Uni.combine().all().unis(unis).combinedWith(list -> {
+					Map<QueryRemoteHost, List<String>> result = Maps.newHashMap();
+					for(Object obj: list) {
+						Tuple2<QueryRemoteHost, List<String>> tuple = (Tuple2<QueryRemoteHost, List<String>>) obj;
+						result.put(tuple.getItem1(), tuple.getItem2());
+					}
+					return result;
+				});
 
 			}
 
@@ -138,6 +160,13 @@ public class QueryService {
 
 			});
 		}
+	}
+
+	private Set<QueryRemoteHost> getRemoteQueries(String tenant, String[] id, TypeQueryTerm typeQuery, String idPattern,
+			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery,
+			Context context) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 	private Uni<QueryResult> handleEntityMap(Long resultCount,
