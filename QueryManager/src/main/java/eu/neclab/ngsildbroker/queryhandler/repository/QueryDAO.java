@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -796,7 +797,7 @@ public class QueryDAO {
 	}
 
 	public Uni<SqlConnection> storeEntityMap(String tenant, String qToken,
-			List<Tuple2<String, List<QueryRemoteHost>>> entityMap) {
+			Map<String, List<QueryRemoteHost>> entityMap) {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
 			return client.getConnection().onItem().transformToUni(conn -> {
 				List<Tuple> batch = Lists.newArrayList();
@@ -805,12 +806,12 @@ public class QueryDAO {
 //			"remote_hosts" jsonb,
 //			"order_field" numeric NOT NULL
 				long count = 0;
-				for (Tuple2<String, List<QueryRemoteHost>> entityId2RemoteHosts : entityMap) {
+				for (Entry<String, List<QueryRemoteHost>> entityId2RemoteHosts : entityMap.entrySet()) {
 					Tuple tuple = Tuple.tuple();
 					tuple.addString(qToken);
-					tuple.addString(entityId2RemoteHosts.getItem1());
+					tuple.addString(entityId2RemoteHosts.getKey());
 					JsonArray remoteHosts = new JsonArray();
-					for (QueryRemoteHost remoteHost : entityId2RemoteHosts.getItem2()) {
+					for (QueryRemoteHost remoteHost : entityId2RemoteHosts.getValue()) {
 						remoteHosts.add(remoteHost.toJson());
 					}
 					tuple.addJsonArray(remoteHosts);

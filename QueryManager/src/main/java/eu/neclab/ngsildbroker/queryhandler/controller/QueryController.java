@@ -177,6 +177,21 @@ public class QueryController {
 		} else {
 			ids = null;
 		}
+		String token;
+		boolean tokenProvided;
+
+		String md5 = "" + request.params().remove("limit").remove("offset").remove("entityMap").hashCode();
+		if (request.headers().contains("qToken")) {
+			token = request.headers().get("qToken");
+			if (!token.equals(md5)) {
+				return Uni.createFrom()
+						.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.InvalidRequest)));
+			}
+			tokenProvided = true;
+		} else {
+			token = md5;
+			tokenProvided = false;
+		}
 		if (entityMap) {
 			return queryService.queryForEntityIds(HttpUtils.getTenant(request), ids, typeQueryTerm, idPattern,
 					attrsQuery, qQueryTerm, geoQueryTerm, scopeQueryTerm, context).onItem().transform(list -> {
@@ -197,25 +212,10 @@ public class QueryController {
 							e.printStackTrace();
 						}
 
-						return RestResponseBuilderImpl.ok(result).build();
+						return RestResponseBuilderImpl.ok(result).header("qToken", md5).build();
 					});
 		}
 
-		String token;
-		boolean tokenProvided;
-
-		String md5 = "" + request.params().remove("limit").remove("offset").hashCode();
-		if (request.headers().contains("qToken")) {
-			token = request.headers().get("qToken");
-			if (!token.equals(md5)) {
-				return Uni.createFrom()
-						.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.InvalidRequest)));
-			}
-			tokenProvided = true;
-		} else {
-			token = md5;
-			tokenProvided = false;
-		}
 		return queryService.query(HttpUtils.getTenant(request), token, tokenProvided, ids, typeQueryTerm, idPattern,
 				attrsQuery, qQueryTerm, csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset,
 				count, localOnly, context).onItem().transform(queryResult -> {
