@@ -565,10 +565,18 @@ public final class HttpUtils {
 			}
 		}
 		if (isHavingError && !isHavingSuccess) {
-			return RestResponse.status(RestResponse.Status.BAD_REQUEST, result);
+			String type = (String) result.get(0).get("type");
+			if( type.equalsIgnoreCase("Delete") ||
+					type.equalsIgnoreCase("Append"))
+				return RestResponse.status(RestResponse.Status.NOT_FOUND,result);
+			else return RestResponse.status(RestResponse.Status.BAD_REQUEST, result);
 		}
 		if (!isHavingError && isHavingSuccess) {
-			return RestResponse.status(RestResponse.Status.CREATED, result);
+			String type = (String) result.get(0).get("type");
+			if(type.equalsIgnoreCase("Upsert") || type.equalsIgnoreCase("Delete") ||
+					type.equalsIgnoreCase("Append"))
+				return RestResponse.status(RestResponse.Status.NO_CONTENT,result);
+			else return RestResponse.status(RestResponse.Status.CREATED, result);
 		}
 		return new RestResponseBuilderImpl<>().status(207).type(AppConstants.NGB_APPLICATION_JSON).entity(result)
 				.build();

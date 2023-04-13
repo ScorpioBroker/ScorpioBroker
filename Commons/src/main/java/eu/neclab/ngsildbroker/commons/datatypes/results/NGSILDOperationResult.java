@@ -78,33 +78,37 @@ public class NGSILDOperationResult {
 
 	private String getOperationType() {
 		switch (operationType) {
-		case AppConstants.CREATE_REQUEST:
-			return "Create";
-		case AppConstants.UPDATE_REQUEST:
-			return "Update";
-		case AppConstants.APPEND_REQUEST:
-			return "Append";
-		case AppConstants.DELETE_REQUEST:
-			return "Delete";
-		case AppConstants.DELETE_ATTRIBUTE_REQUEST:
-			return "Delete Attribute";
-		default:
-			return "Unknown Operation";
+			case AppConstants.CREATE_REQUEST:
+				return "Create";
+			case AppConstants.UPDATE_REQUEST:
+				return "Update";
+			case AppConstants.APPEND_REQUEST:
+				return "Append";
+			case AppConstants.DELETE_REQUEST:
+				return "Delete";
+			case AppConstants.DELETE_ATTRIBUTE_REQUEST:
+				return "Delete Attribute";
+			case AppConstants.UPSERT_REQUEST:
+				return "Upsert";
+			default:
+				return "Unknown Operation";
 		}
 	}
 
 	private static int getOperationCode(String operationType) {
 		switch (operationType) {
-		case "Create":
-			return AppConstants.CREATE_REQUEST;
-		case "Update":
-			return AppConstants.UPDATE_REQUEST;
-		case "Append":
-			return AppConstants.APPEND_REQUEST;
-		case "Delete":
-			return AppConstants.DELETE_REQUEST;
-		case "Delete Attribute":
-			return AppConstants.DELETE_ATTRIBUTE_REQUEST;
+			case "Create":
+				return AppConstants.CREATE_REQUEST;
+			case "Update":
+				return AppConstants.UPDATE_REQUEST;
+			case "Append":
+				return AppConstants.APPEND_REQUEST;
+			case "Delete":
+				return AppConstants.DELETE_REQUEST;
+			case "Delete Attribute":
+				return AppConstants.DELETE_ATTRIBUTE_REQUEST;
+			case "Upsert":
+				return AppConstants.UPSERT_REQUEST;
 		default:
 			return -1;
 		}
