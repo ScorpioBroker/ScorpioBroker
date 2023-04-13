@@ -12,6 +12,8 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
 
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.RestResponse;
 
@@ -71,7 +73,7 @@ public class EntityBatchController {
 		}
 		List<Map<String, Object>> expandedEntities = Lists.newArrayList();
 		List<Context> contexts = Lists.newArrayList();
-		List<ResponseException> fails = Lists.newArrayList();
+		List<NGSILDOperationResult> fails = Lists.newArrayList();
 		for (Map<String, Object> compactedEntity : compactedEntities) {
 			try {
 				Tuple2<Context, Map<String, Object>> tuple = HttpUtils.expandBody(request, compactedEntity,
@@ -80,15 +82,18 @@ public class EntityBatchController {
 				contexts.add(tuple.getItem1());
 			} catch (Exception e) {
 				e.printStackTrace();
+				NGSILDOperationResult failureResults = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, (String) compactedEntity.get("id"));
 				if (e instanceof ResponseException) {
-					fails.add((ResponseException) e);
+					failureResults.addFailure((ResponseException) e);
 				} else {
-					fails.add(new ResponseException(ErrorType.InvalidRequest, e));
+					failureResults.addFailure(new ResponseException(ErrorType.InvalidRequest, e.getMessage()));
 				}
+				fails.add(failureResults);
 			}
 		}
 		return entityService.createBatch(HttpUtils.getTenant(request), expandedEntities, contexts, localOnly).onItem()
 				.transform(opResults -> {
+					opResults.addAll(fails);
 					return HttpUtils.generateBatchResult(opResults);
 				});
 	}
@@ -105,7 +110,7 @@ public class EntityBatchController {
 		}
 		List<Map<String, Object>> expandedEntities = Lists.newArrayList();
 		List<Context> contexts = Lists.newArrayList();
-		List<ResponseException> fails = Lists.newArrayList();
+		List<NGSILDOperationResult> fails = Lists.newArrayList();
 		for (Map<String, Object> compactedEntity : compactedEntities) {
 			try {
 				Tuple2<Context, Map<String, Object>> tuple = HttpUtils.expandBody(request, compactedEntity,
@@ -113,16 +118,18 @@ public class EntityBatchController {
 				expandedEntities.add(tuple.getItem2());
 				contexts.add(tuple.getItem1());
 			} catch (Exception e) {
-				e.printStackTrace();
+				NGSILDOperationResult failureResults = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, (String) compactedEntity.get("id"));
 				if (e instanceof ResponseException) {
-					fails.add((ResponseException) e);
+					failureResults.addFailure((ResponseException) e);
 				} else {
-					fails.add(new ResponseException(ErrorType.InvalidRequest, e));
+					failureResults.addFailure(new ResponseException(ErrorType.InvalidRequest, e.getMessage()));
 				}
+				fails.add(failureResults);
 			}
 		}
 		return entityService.upsertBatch(HttpUtils.getTenant(request), expandedEntities, contexts, localOnly).onItem()
 				.transform(opResults -> {
+					opResults.addAll(fails);
 					return HttpUtils.generateBatchResult(opResults);
 				});
 	}
@@ -148,7 +155,7 @@ public class EntityBatchController {
 		}
 		List<Map<String, Object>> expandedEntities = Lists.newArrayList();
 		List<Context> contexts = Lists.newArrayList();
-		List<ResponseException> fails = Lists.newArrayList();
+		List<NGSILDOperationResult> fails = Lists.newArrayList();
 		for (Map<String, Object> compactedEntity : compactedEntities) {
 			try {
 				Tuple2<Context, Map<String, Object>> tuple = HttpUtils.expandBody(request, compactedEntity,
@@ -157,15 +164,18 @@ public class EntityBatchController {
 				contexts.add(tuple.getItem1());
 			} catch (Exception e) {
 				e.printStackTrace();
+				NGSILDOperationResult failureResults = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, (String) compactedEntity.get("id"));
 				if (e instanceof ResponseException) {
-					fails.add((ResponseException) e);
+					failureResults.addFailure((ResponseException) e);
 				} else {
-					fails.add(new ResponseException(ErrorType.InvalidRequest, e));
+					failureResults.addFailure(new ResponseException(ErrorType.InvalidRequest, e.getMessage()));
 				}
+				fails.add(failureResults);
 			}
 		}
 		return entityService.appendBatch(HttpUtils.getTenant(request), expandedEntities, contexts, localOnly).onItem()
 				.transform(opResults -> {
+					opResults.addAll(fails);
 					return HttpUtils.generateBatchResult(opResults);
 				});
 	}
