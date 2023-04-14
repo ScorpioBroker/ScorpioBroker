@@ -147,6 +147,7 @@ public class AppConstants {
 	public static final int INTERVAL_NOTIFICATION_REQUEST = 100;
 	public static final String ATTRIBUTE_LIST_PREFIX = "urn:ngsi-ld:AttributeList:";
 	public static final String TYPE_LIST_PREFIX = "urn:ngsi-ld:EntityTypeList:";
+	public static final String CONTENT_TYPE = "content-type";
 
 	public static JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 

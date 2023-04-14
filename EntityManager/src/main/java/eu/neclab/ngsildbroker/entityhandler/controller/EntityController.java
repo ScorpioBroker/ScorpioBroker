@@ -156,11 +156,21 @@ public class EntityController {// implements EntityHandlerInterface {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 		}
 		logger.trace("update entry :: started");
+		String attribCopy = attrib;
 		return entityService.partialUpdateAttribute(HttpUtils.getTenant(request), entityId, attrib, tuple.getItem2(),
 				tuple.getItem1()).onItem().transform(updateResult -> {
 					logger.trace("update entry :: completed");
 					return HttpUtils.generateUpdateResultResponse(updateResult);
-				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+				}).onFailure().recoverWithUni(t -> {
+					return entityService.patchToEndPoint(entityId, request, payload, attribCopy).onItem()
+							.transform(isEndPointExist -> {
+								if (isEndPointExist)
+									return RestResponse.noContent();
+								else {
+									return HttpUtils.handleControllerExceptions(t);
+								}
+							});
+				});
 	}
 
 	/**

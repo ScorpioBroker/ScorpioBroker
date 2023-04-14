@@ -19,6 +19,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.registryhandler.controller.RegistryController;
@@ -112,7 +113,20 @@ public class CSourceService {
 	}
 
 	public Uni<NGSILDOperationResult> createRegistration(String tenant, Map<String, Object> registration) {
-		CreateCSourceRequest request = new CreateCSourceRequest(tenant, registration);
+		CreateCSourceRequest request;
+		String id;
+		Object idObj = registration.get(NGSIConstants.JSON_LD_ID);
+		if (idObj == null) {
+			id = EntityTools.generateUniqueRegId(registration);
+			registration.put(NGSIConstants.JSON_LD_ID, id);
+		} else {
+			id = (String) idObj;
+		}
+		try {
+			request = new CreateCSourceRequest(tenant, registration);
+		} catch (Exception e) {
+			return Uni.createFrom().failure(e);
+		}
 		return cSourceInfoDAO.createRegistration(request).onItem().transformToUni(rowset -> {
 			return kafkaSenderInterface.send(request).onItem().transform(v -> {
 				NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.OPERATION_CREATE_REGISTRATION,

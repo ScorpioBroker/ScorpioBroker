@@ -177,6 +177,18 @@ public class EntityInfoDAO {
 		});
 	}
 
+	public Uni<String> getEndpoint(String entityId, String tenantId) {
+		String query = "SELECT endpoint FROM csource, csourceinformation csi WHERE csource.id=csi.id AND csi.e_id='"
+				+ entityId + "'";
+		return clientManager.getClient(tenantId, false).onItem()
+				.transformToUni(client -> client.preparedQuery(query).execute().onItem().transform((rowSet) -> {
+					if (rowSet.rowCount() == 0) {
+						return null;
+					}
+					return rowSet.iterator().next().getString("endpoint");
+				}).onFailure().recoverWithUni(Uni.createFrom().item("")));
+	}
+	
 	public Uni<Table<String, String, RegistrationEntry>> getAllRegistries() {
 		return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
 			return client.preparedQuery("SELECT tenant_id FROM tenant").execute().onItem()

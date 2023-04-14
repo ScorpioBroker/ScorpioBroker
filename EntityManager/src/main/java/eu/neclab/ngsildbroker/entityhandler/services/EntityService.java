@@ -61,6 +61,7 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.smallrye.reactive.messaging.annotations.Broadcast;
+import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.Vertx;
@@ -297,6 +298,23 @@ public class EntityService {
 		});
 	}
 
+	public Uni<Boolean> patchToEndPoint(String entityId, HttpServerRequest request, String payload, String attrId) {
+		String tenantId = HttpUtils.getTenant(request);
+		return entityDAO.getEndpoint(entityId, tenantId).onItem().transformToUni(endPoint -> {
+			if (endPoint != null && endPoint != "") {
+				WebClient client = WebClient.create(Vertx.vertx());
+				return client.patchAbs(endPoint + "/ngsi-ld/v1/entities/" + entityId + "/attrs/" + attrId)
+						.putHeader(NGSIConstants.TENANT_HEADER, tenantId)
+						.putHeader(AppConstants.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+						.sendJsonObject(new JsonObject(payload)).onItem().transform(ar -> {
+							logger.trace("patchToEndPoint() :: completed");
+							return true;
+						});
+			}
+			return Uni.createFrom().item(false);
+		});
+	}
+	
 	public Uni<NGSILDOperationResult> deleteAttribute(String tenant, String entityId, String attribName,
 			String datasetId, boolean deleteAll, Context context) {
 		String expandedAttribName = context.get("@vocab") + attribName;
