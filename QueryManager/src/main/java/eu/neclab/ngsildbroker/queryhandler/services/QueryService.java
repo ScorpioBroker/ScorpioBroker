@@ -3,13 +3,10 @@ package eu.neclab.ngsildbroker.queryhandler.services;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Random;
 import java.util.Set;
-import java.util.SortedMap;
 
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
@@ -32,6 +29,8 @@ import com.google.common.collect.Table;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.EntityMap;
+import eu.neclab.ngsildbroker.commons.datatypes.EntityMapEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryInfos;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryRemoteHost;
 import eu.neclab.ngsildbroker.commons.datatypes.RegistrationEntry;
@@ -76,7 +75,7 @@ public class QueryService {
 	private WebClient webClient;
 
 	protected JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
-	private Random random = new Random();
+
 	private Table<String, String, RegistrationEntry> tenant2CId2RegEntries = HashBasedTable.create();
 
 	@PostConstruct
@@ -105,11 +104,8 @@ public class QueryService {
 			return getAndStoreEntityIdList(tenant, id, idPattern, qToken, typeQuery, attrsQuery, geoQuery, qQuery,
 					scopeQuery, context).onItem().transformToUni(t -> {
 						SqlConnection conn = t.getItem1();
-
-						List<Tuple2<String, List<QueryRemoteHost>>> entityMap = t.getItem2();
-
-						List<Tuple2<String, List<QueryRemoteHost>>> resultEntityMap = entityMap.subList(limit,
-								limit + offSet);
+						EntityMap entityMap = t.getItem2();
+						List<EntityMapEntry> resultEntityMap = entityMap.getSubMap(limit, limit + offSet);
 						Long resultCount = (long) entityMap.size();
 						return handleEntityMap(resultCount, resultEntityMap, attrsQuery, conn, count, limit, offSet);
 					});
@@ -117,37 +113,29 @@ public class QueryService {
 			return queryDAO.getEntityMap(tenant, qToken, limit, offSet, count).onItem().transformToUni(t -> {
 				SqlConnection conn = t.getItem1();
 				Long resultCount = t.getItem2();
-				List<Tuple2<String, List<QueryRemoteHost>>> entityMap = t.getItem3();
-				return handleEntityMap(resultCount, entityMap, attrsQuery, conn, count, limit, offSet);
+				EntityMap entityMap = t.getItem3();
+				return handleEntityMap(resultCount, entityMap.getEntityList(), attrsQuery, conn, count, limit, offSet);
 
 			});
 		}
 	}
 
-	private Set<QueryRemoteHost> getRemoteQueries(String tenant, String[] id, TypeQueryTerm typeQuery, String idPattern,
-			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery,
-			Context context) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	private Uni<QueryResult> handleEntityMap(Long resultCount,
-			List<Tuple2<String, List<QueryRemoteHost>>> resultEntityMap, AttrsQueryTerm attrsQuery, SqlConnection conn,
-			boolean count, int limit, int offSet) {
+	private Uni<QueryResult> handleEntityMap(Long resultCount, List<EntityMapEntry> resultEntityMap,
+			AttrsQueryTerm attrsQuery, SqlConnection conn, boolean count, int limit, int offSet) {
 		Map<QueryRemoteHost, List<String>> remoteHost2EntityIds = Maps.newHashMap();
 		// has to be linked. We want to keep order here
 		Map<String, Map<String, Object>> resultEntityId2Entity = Maps.newLinkedHashMap();
-		for (Tuple2<String, List<QueryRemoteHost>> entry : resultEntityMap) {
-			List<QueryRemoteHost> remoteHosts = entry.getItem2();
+		for (EntityMapEntry entry : resultEntityMap) {
+			List<QueryRemoteHost> remoteHosts = entry.getRemoteHosts();
 			for (QueryRemoteHost remoteHost : remoteHosts) {
 				List<String> tmp = remoteHost2EntityIds.get(remoteHost);
 				if (tmp == null) {
 					tmp = Lists.newArrayList();
 					remoteHost2EntityIds.put(remoteHost, tmp);
 				}
-				tmp.add(entry.getItem1());
+				tmp.add(entry.getEntityId());
 			}
-			resultEntityId2Entity.put(entry.getItem1(), new HashMap<>(0));
+			resultEntityId2Entity.put(entry.getEntityId(), new HashMap<>(0));
 		}
 		List<Uni<Map<String, Map<String, Object>>>> unis = Lists.newArrayList();
 		for (Entry<QueryRemoteHost, List<String>> entry : remoteHost2EntityIds.entrySet()) {
@@ -172,7 +160,6 @@ public class QueryService {
 								} catch (JsonLdError | ResponseException e) {
 									e.printStackTrace();
 								}
-
 							}
 							return result;
 						}));
@@ -217,20 +204,13 @@ public class QueryService {
 
 	}
 
-	private Set<QueryRemoteHost> getRemoteQueriesForIds(String tenant, String[] id, TypeQueryTerm typeQuery,
+	private List<QueryRemoteHost> getRemoteQueries(String tenant, String[] id, TypeQueryTerm typeQuery,
 			String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery, GeoQueryTerm geoQuery,
 			ScopeQueryTerm scopeQuery, Context context) {
-		// TODO Auto-generated method stub
-		return null;
-	}
 
-	private List<Uni<QueryResult>> getRemoteQueries(String tenant, String[] id, TypeQueryTerm typeQuery,
-			String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery, GeoQueryTerm geoQuery,
-			ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, int limit, int offSet, boolean count) {
-		List<RemoteHost> result = Lists.newArrayList();
 		Iterator<RegistrationEntry> it = tenant2CId2RegEntries.row(tenant).values().iterator();
 		// ids, types, attrs, geo, scope
-		Map<RemoteHost, QueryInfos> remoteHost2QueryInfo = Maps.newHashMap();
+		Map<QueryRemoteHost, QueryInfos> remoteHost2QueryInfo = Maps.newHashMap();
 		while (it.hasNext()) {
 			RegistrationEntry regEntry = it.next();
 			if (regEntry.expiresAt() > System.currentTimeMillis()) {
@@ -245,8 +225,8 @@ public class QueryService {
 				continue;
 			}
 			RemoteHost regHost = regEntry.host();
-			RemoteHost hostToQuery = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
-					regHost.cSourceId(), regEntry.queryEntity(), regEntry.queryBatch(), regEntry.regMode());
+			QueryRemoteHost hostToQuery = QueryRemoteHost.fromRemoteHost(regHost, null, regEntry.canDoIdQuery(),
+					regEntry.canDoZip(), null);
 			QueryInfos queryInfos = remoteHost2QueryInfo.get(hostToQuery);
 			if (queryInfos == null) {
 				queryInfos = new QueryInfos();
@@ -287,8 +267,15 @@ public class QueryService {
 			}
 
 		}
-
-		return null;
+		List<QueryRemoteHost> result = new ArrayList<>(remoteHost2QueryInfo.size());
+		for (Entry<QueryRemoteHost, QueryInfos> entry : remoteHost2QueryInfo.entrySet()) {
+			QueryRemoteHost tmpHost = entry.getKey();
+			String queryString = entry.getValue().toQueryString();
+			result.add(new QueryRemoteHost(tmpHost.host(), tmpHost.tenant(), tmpHost.headers(), tmpHost.cSourceId(),
+					tmpHost.canDoSingleOp(), tmpHost.canDoBatchOp(), tmpHost.regMode(), queryString,
+					tmpHost.canDoIdQuery(), tmpHost.canDoZip(), tmpHost.remoteToken()));
+		}
+		return result;
 	}
 
 	private void mergeQueryResults(QueryResult queryResult, QueryResult toMerge) {
@@ -1003,21 +990,21 @@ public class QueryService {
 					SqlConnection conn = t.getItem1();
 					return conn.close().onItem().transform(v -> {
 						List<String> result = Lists.newArrayList();
-//						Map<String, List<QueryRemoteHost>> entityMap = t.getItem2();
-//						for (Entry<String, List<QueryRemoteHost>> entry : entityMap.entrySet()) {
-//							result.add(entry.getKey());
-//						}
+						EntityMap entityMap = t.getItem2();
+						for (EntityMapEntry entry : entityMap.getEntityList()) {
+							result.add(entry.getEntityId());
+						}
 						return result;
 					});
 				});
 	}
 
-	private Uni<Tuple2<SqlConnection, List<Tuple2<String, List<QueryRemoteHost>>>>> getAndStoreEntityIdList(String tenant,
-			String[] id, String idPattern, String qToken, TypeQueryTerm typeQuery, AttrsQueryTerm attrsQuery,
-			GeoQueryTerm geoQuery, QQueryTerm qQuery, ScopeQueryTerm scopeQuery, Context context) {
+	private Uni<Tuple2<SqlConnection, EntityMap>> getAndStoreEntityIdList(String tenant, String[] id, String idPattern,
+			String qToken, TypeQueryTerm typeQuery, AttrsQueryTerm attrsQuery, GeoQueryTerm geoQuery, QQueryTerm qQuery,
+			ScopeQueryTerm scopeQuery, Context context) {
 		Uni<List<String>> localIds = queryDAO.queryForEntityIds(tenant, id, typeQuery, idPattern, attrsQuery, qQuery,
 				geoQuery, scopeQuery, context);
-		Set<QueryRemoteHost> remoteHost2Query = getRemoteQueries(tenant, id, typeQuery, idPattern, attrsQuery, qQuery,
+		List<QueryRemoteHost> remoteHost2Query = getRemoteQueries(tenant, id, typeQuery, idPattern, attrsQuery, qQuery,
 				geoQuery, scopeQuery, context);
 		Uni<Map<QueryRemoteHost, List<String>>> remoteIds;
 		if (remoteHost2Query.isEmpty()) {
@@ -1048,36 +1035,30 @@ public class QueryService {
 			});
 
 		}
-		return null;
 
-//		return Uni.combine().all().unis(localIds, remoteIds).asTuple().onItem().transform(t -> {
-//			List<Tuple2<String, List<QueryRemoteHost>>> result = Lists.newArrayList();
-//			List<String> local = t.getItem1();
-//			Map<QueryRemoteHost, List<String>> remote = t.getItem2();
-//			for (String entry : local) {
-//				result.add(Tuple2.of(entry,
-//						Lists.newArrayList(new QueryRemoteHost(null, null, null, null, false, false, 0, null))));
-//			}
-//			for (Entry<QueryRemoteHost, List<String>> entry : remote.entrySet()) {
-//				for (String entityId : entry.getValue()) {
-//					List<QueryRemoteHost> tmp = result.get(entityId);
-//					if (tmp == null) {
-//						tmp = Lists.newArrayList();
-//						result.put(entityId, tmp);
-//					}
-//					tmp.add(entry.getKey());
-//				}
-//			}
-//			return result;
-//		}).onItem().transformToUni(entityMap -> {
-//			if (entityMap.isEmpty()) {
-//
-//				return Uni.createFrom().nullItem();
-//			}
-//			return queryDAO.storeEntityMap(tenant, qToken, entityMap).onItem().transform(conn -> {
-//				return Tuple2.of(conn, entityMap);
-//			});
-//		});
+		return Uni.combine().all().unis(localIds, remoteIds).asTuple().onItem().transform(t -> {
+			EntityMap result = new EntityMap();
+			List<String> local = t.getItem1();
+			Map<QueryRemoteHost, List<String>> remote = t.getItem2();
+			for (String entry : local) {
+				result.getEntry(entry).getRemoteHosts()
+						.add(new QueryRemoteHost(null, null, null, null, false, false, -1, null, false, false, null));
+			}
+			for (Entry<QueryRemoteHost, List<String>> entry : remote.entrySet()) {
+				for (String entityId : entry.getValue()) {
+					result.getEntry(entityId).getRemoteHosts().add(entry.getKey());
+				}
+			}
+			return result;
+		}).onItem().transformToUni(entityMap -> {
+			if (entityMap.isEmpty()) {
+
+				return Uni.createFrom().nullItem();
+			}
+			return queryDAO.storeEntityMap(tenant, qToken, entityMap).onItem().transform(conn -> {
+				return Tuple2.of(conn, entityMap);
+			});
+		});
 
 	}
 }
