@@ -158,6 +158,7 @@ public class QueryService {
 									expanded = JsonLdProcessor.expand(response.bodyAsJsonArray().getList());
 									expanded.forEach(obj -> {
 										Map<String, Object> entity = (Map<String, Object>) obj;
+										entity.put(EntityTools.REG_MODE_KEY, remoteHost.regMode());
 										result.put((String) entity.get(NGSIConstants.JSON_LD_ID), entity);
 									});
 								} catch (JsonLdError | ResponseException e) {
@@ -202,8 +203,13 @@ public class QueryService {
 	}
 
 	private void mergeEntity(Map<String, Map<String, Object>> resultEntityId2Entity, String key,
-			Map<String, Object> value) {
-		// TODO Auto-generated method stub
+			Map<String, Object> entity) {
+		if(resultEntityId2Entity.containsKey(key)) {
+			
+		}else {
+			Integer regMod = (Integer) entity.get(EntityTools.REG_MODE_KEY);
+			
+		}
 
 	}
 
@@ -858,7 +864,9 @@ public class QueryService {
 			String id = null;
 			Map<String, Integer> attsDataset2CurrentRegMode = Maps.newHashMap();
 			for (Object obj : list) {
-				int regMode = -1;
+				// regmode 2 is redirect meaning it is expected to be something we is merged by
+				// normal rules
+				int regMode = 1;
 				Map<String, Object> tmpEntity = (Map<String, Object>) obj;
 				if (tmpEntity.containsKey(EntityTools.REG_MODE_KEY)) {
 					regMode = (int) tmpEntity.remove(EntityTools.REG_MODE_KEY);
@@ -956,7 +964,27 @@ public class QueryService {
 					datasetId = NGSIConstants.DEFAULT_DATA_SET_ID;
 				}
 				if (attribMap.containsKey(datasetId)) {
-					//TODO benni add merging of same dataset id
+					Integer currentRegMode = attsDataset2CurrentRegMode.get(key + datasetId);
+					if (regMode == 3 || currentRegMode == 0) {
+						attribMap.put(datasetId, attrEntry);
+						attsDataset2CurrentRegMode.put(key + datasetId, regMode);
+						continue;
+					}
+					if (currentRegMode == 3 || regMode == 0) {
+						continue;
+					}
+					Map<String, Object> currentValue = attribMap.get(datasetId);
+					Long currentModifiedDate = SerializationTools
+							.date2Long(((List<Map<String, String>>) currentValue.get(NGSIConstants.NGSI_LD_MODIFIED_AT))
+									.get(0).get(NGSIConstants.JSON_LD_VALUE));
+					Long newModifiedDate = SerializationTools
+							.date2Long(((List<Map<String, String>>) attrEntry.get(NGSIConstants.NGSI_LD_MODIFIED_AT))
+									.get(0).get(NGSIConstants.JSON_LD_VALUE));
+					if (newModifiedDate > currentModifiedDate) {
+						attribMap.put(datasetId, attrEntry);
+						attsDataset2CurrentRegMode.put(key + datasetId, regMode);
+					}
+
 				} else {
 					attribMap.put(datasetId, attrEntry);
 				}
