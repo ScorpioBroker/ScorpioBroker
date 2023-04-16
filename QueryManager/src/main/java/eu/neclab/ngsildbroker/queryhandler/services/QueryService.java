@@ -850,13 +850,13 @@ public class QueryService {
 		}
 
 		return Uni.combine().all().unis(unis).combinedWith(list -> {
-			Map<String, Object> result = Maps.newHashMap();
+			Map<String, Map<String, Map<String, Object>>> result = Maps.newHashMap();
 			Set<String> types = Sets.newHashSet();
 			Set<String> scopes = Sets.newHashSet();
 			long oldestCreatedAt = Long.MAX_VALUE;
 			long youngestModifiedAt = Long.MIN_VALUE;
 			String id = null;
-			Map<String, Integer> attsDataset2CurrentRegKey = Maps.newHashMap();
+			Map<String, Integer> attsDataset2CurrentRegMode = Maps.newHashMap();
 			for (Object obj : list) {
 				int regMode = -1;
 				Map<String, Object> tmpEntity = (Map<String, Object>) obj;
@@ -888,33 +888,37 @@ public class QueryService {
 							scopes.add(scope.get(NGSIConstants.JSON_LD_VALUE));
 						}
 					} else {
-						mergeAttr(key, attrib.getValue(), result, regMode);
+						mergeAttr(key, (List<Map<String, Object>>) attrib.getValue(), result, regMode,
+								attsDataset2CurrentRegMode);
 					}
 
 				}
 
 			}
+			Map<String, Object> realResult = Maps.newHashMap();
 			if (id != null) {
-				result.put(NGSIConstants.JSON_LD_ID, id);
-				result.put(NGSIConstants.NGSI_LD_CREATED_AT,
+				realResult.put(NGSIConstants.JSON_LD_ID, id);
+				realResult.put(NGSIConstants.NGSI_LD_CREATED_AT,
 						List.of(Map.of(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME,
 								NGSIConstants.JSON_LD_VALUE, SerializationTools.toDateTimeString(oldestCreatedAt))));
-				result.put(NGSIConstants.NGSI_LD_MODIFIED_AT,
+				realResult.put(NGSIConstants.NGSI_LD_MODIFIED_AT,
 						List.of(Map.of(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME,
 								NGSIConstants.JSON_LD_VALUE, SerializationTools.toDateTimeString(youngestModifiedAt))));
 			}
 			if (!types.isEmpty()) {
-				result.put(NGSIConstants.JSON_LD_TYPE, Lists.newArrayList(types));
+				realResult.put(NGSIConstants.JSON_LD_TYPE, Lists.newArrayList(types));
 			}
 			if (!scopes.isEmpty()) {
 				List<Map<String, String>> scopesResult = new ArrayList<>(scopes.size());
 				for (String scope : scopes) {
 					scopesResult.add(Map.of(NGSIConstants.JSON_LD_VALUE, scope));
 				}
-				result.put(NGSIConstants.NGSI_LD_SCOPE, scopesResult);
+				realResult.put(NGSIConstants.NGSI_LD_SCOPE, scopesResult);
 			}
-
-			return result;
+			for (Entry<String, Map<String, Map<String, Object>>> attrEntry : result.entrySet()) {
+				realResult.put(attrEntry.getKey(), Lists.newArrayList(attrEntry.getValue().values()));
+			}
+			return realResult;
 		}).onItem().transformToUni(result -> {
 			if (result.isEmpty()) {
 				return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound, entityId + " was not found"));
@@ -923,8 +927,41 @@ public class QueryService {
 		});
 	}
 
-	private void mergeAttr(String key, Object value, Map<String, Object> result, int regMode) {
-		// TODO Auto-generated method stub
+	private void mergeAttr(String key, List<Map<String, Object>> value,
+			Map<String, Map<String, Map<String, Object>>> result, int regMode,
+			Map<String, Integer> attsDataset2CurrentRegMode) {
+
+		if (!result.containsKey(key)) {
+			Map<String, Map<String, Object>> attribMap = new HashMap<>(value.size());
+			result.put(key, attribMap);
+			for (Map<String, Object> attrEntry : value) {
+				if (attrEntry.containsKey(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
+					String datasetId = ((List<Map<String, String>>) attrEntry.get(NGSIConstants.NGSI_LD_DATA_SET_ID))
+							.get(0).get(NGSIConstants.JSON_LD_ID);
+					attsDataset2CurrentRegMode.put(key + datasetId, regMode);
+					attribMap.put(datasetId, attrEntry);
+				} else {
+					attsDataset2CurrentRegMode.put(key, regMode);
+					attribMap.put(NGSIConstants.DEFAULT_DATA_SET_ID, attrEntry);
+				}
+			}
+		} else {
+			Map<String, Map<String, Object>> attribMap = result.get(key);
+			for (Map<String, Object> attrEntry : value) {
+				String datasetId;
+				if (attrEntry.containsKey(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
+					datasetId = ((List<Map<String, String>>) attrEntry.get(NGSIConstants.NGSI_LD_DATA_SET_ID)).get(0)
+							.get(NGSIConstants.JSON_LD_ID);
+				} else {
+					datasetId = NGSIConstants.DEFAULT_DATA_SET_ID;
+				}
+				if (attribMap.containsKey(datasetId)) {
+					//TODO benni add merging of same dataset id
+				} else {
+					attribMap.put(datasetId, attrEntry);
+				}
+			}
+		}
 
 	}
 
