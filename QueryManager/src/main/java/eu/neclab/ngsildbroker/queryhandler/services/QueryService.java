@@ -127,7 +127,8 @@ public class QueryService {
 			AttrsQueryTerm attrsQuery, SqlConnection conn, boolean count, int limit, int offSet) {
 		Map<QueryRemoteHost, List<String>> remoteHost2EntityIds = Maps.newHashMap();
 		// has to be linked. We want to keep order here
-		Map<String, Map<String, Object>> resultEntityId2Entity = Maps.newLinkedHashMap();
+		Map<String, Map<String, Map<String, Map<String, Object>>>> entityId2AttrName2DatasetId2AttrValue = Maps
+				.newLinkedHashMap();
 		for (EntityMapEntry entry : resultEntityMap) {
 			List<QueryRemoteHost> remoteHosts = entry.getRemoteHosts();
 			for (QueryRemoteHost remoteHost : remoteHosts) {
@@ -138,7 +139,7 @@ public class QueryService {
 				}
 				tmp.add(entry.getEntityId());
 			}
-			resultEntityId2Entity.put(entry.getEntityId(), new HashMap<>(0));
+			entityId2AttrName2DatasetId2AttrValue.put(entry.getEntityId(), new HashMap<>(0));
 		}
 		List<Uni<Map<String, Map<String, Object>>>> unis = Lists.newArrayList();
 		for (Entry<QueryRemoteHost, List<String>> entry : remoteHost2EntityIds.entrySet()) {
@@ -146,7 +147,6 @@ public class QueryService {
 			if (remoteHost.isLocal()) {
 				unis.add(queryDAO.getEntities(conn, entry.getValue(), attrsQuery));
 			} else {
-
 				unis.add(webClient
 						.get(remoteHost.host() + "/" + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT
 								+ remoteHost.queryString())
@@ -171,13 +171,49 @@ public class QueryService {
 		}
 		return Uni.combine().all().unis(unis).combinedWith(list -> {
 			QueryResult result = new QueryResult();
+			Map<String, Set<String>> entityId2Types = Maps.newHashMap();
+			Map<String, Set<String>> entityId2Scopes = Maps.newHashMap();
+			Map<String, Long> entityId2YoungestModified = Maps.newHashMap();
+			Map<String, Long> entityId2OldestCreatedAt = Maps.newHashMap();
+			Map<String, Map<String, Integer>> entityId2AttrDatasetId2CurrentRegMode = Maps.newHashMap();
 			for (Object obj : list) {
 				Map<String, Map<String, Object>> entityId2Entity = (Map<String, Map<String, Object>>) obj;
 				for (Entry<String, Map<String, Object>> entry : entityId2Entity.entrySet()) {
-					mergeEntity(resultEntityId2Entity, entry.getKey(), entry.getValue());
+					mergeEntity(entry.getKey(), entry.getValue(), entityId2AttrName2DatasetId2AttrValue, entityId2Types,
+							entityId2Scopes, entityId2YoungestModified, entityId2OldestCreatedAt,
+							entityId2AttrDatasetId2CurrentRegMode);
 				}
 			}
-			List<Map<String, Object>> resultData = Lists.newArrayList(resultEntityId2Entity.values());
+			List<Map<String, Object>> resultData = Lists.newArrayList();
+			for (Entry<String, Map<String, Map<String, Map<String, Object>>>> entry : entityId2AttrName2DatasetId2AttrValue
+					.entrySet()) {
+				String entityId = entry.getKey();
+				Map<String, Map<String, Map<String, Object>>> attribMap = entry.getValue();
+				Map<String, Object> entity = new HashMap<>(attribMap.size() + 5);
+				entity.put(NGSIConstants.JSON_LD_ID, entityId);
+				entity.put(NGSIConstants.JSON_LD_TYPE, Lists.newArrayList(entityId2Types.get(entityId)));
+				if (entityId2Scopes.containsKey(entityId)) {
+					Set<String> scopesSet = entityId2Scopes.get(entityId);
+					if (!scopesSet.isEmpty()) {
+						List<Map<String, String>> scopes = Lists.newArrayList();
+						for (String scope : scopesSet) {
+							scopes.add(Map.of(NGSIConstants.JSON_LD_VALUE, scope));
+						}
+						entity.put(NGSIConstants.NGSI_LD_SCOPE, scopes);
+					}
+				}
+				entity.put(NGSIConstants.NGSI_LD_CREATED_AT,
+						List.of(Map.of(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME,
+								NGSIConstants.JSON_LD_VALUE,
+								SerializationTools.toDateTimeString(entityId2OldestCreatedAt.get(entityId)))));
+				entity.put(NGSIConstants.NGSI_LD_MODIFIED_AT,
+						List.of(Map.of(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME,
+								NGSIConstants.JSON_LD_VALUE,
+								SerializationTools.toDateTimeString(entityId2YoungestModified.get(entityId)))));
+				for (Entry<String, Map<String, Map<String, Object>>> attribEntry : attribMap.entrySet()) {
+					entity.put(attribEntry.getKey(), Lists.newArrayList(attribEntry.getValue().values()));
+				}
+			}
 			result.setData(resultData);
 			result.setLimit(limit);
 			result.setOffset(offSet);
@@ -202,13 +238,74 @@ public class QueryService {
 
 	}
 
-	private void mergeEntity(Map<String, Map<String, Object>> resultEntityId2Entity, String key,
-			Map<String, Object> entity) {
-		if(resultEntityId2Entity.containsKey(key)) {
-			
-		}else {
-			Integer regMod = (Integer) entity.get(EntityTools.REG_MODE_KEY);
-			
+	private void mergeEntity(String entityId, Map<String, Object> entity,
+			Map<String, Map<String, Map<String, Map<String, Object>>>> entityId2AttrName2DatasetId2AttrValue,
+			Map<String, Set<String>> entityId2Types, Map<String, Set<String>> entityId2Scopes,
+			Map<String, Long> entityId2YoungestModified, Map<String, Long> entityId2OldestCreatedAt,
+			Map<String, Map<String, Integer>> entityId2AttrDatasetId2CurrentRegMode) {
+		int regMode = 1;
+
+		Map<String, Map<String, Map<String, Object>>> result = entityId2AttrName2DatasetId2AttrValue.get(entityId);
+		if (result == null) {
+			result = Maps.newHashMap();
+			entityId2AttrName2DatasetId2AttrValue.put(entityId, result);
+		}
+
+		Map<String, Integer> attsDataset2CurrentRegMode = entityId2AttrDatasetId2CurrentRegMode.get(entityId);
+		if (attsDataset2CurrentRegMode == null) {
+			attsDataset2CurrentRegMode = Maps.newHashMap();
+			entityId2AttrDatasetId2CurrentRegMode.put(entityId, attsDataset2CurrentRegMode);
+		}
+		if (entity.containsKey(EntityTools.REG_MODE_KEY)) {
+			regMode = (Integer) entity.remove(EntityTools.REG_MODE_KEY);
+		}
+		Set<String> types = entityId2Types.get(entityId);
+		if (types == null) {
+			types = Sets.newHashSet();
+			entityId2Types.put(entityId, types);
+		}
+		Set<String> scopes = entityId2Types.get(entityId);
+		if (scopes == null) {
+			scopes = Sets.newHashSet();
+			entityId2Types.put(entityId, scopes);
+		}
+		long youngestModifiedAt = Long.MIN_VALUE;
+		long oldestCreatedAt = Long.MAX_VALUE;
+		if (entityId2YoungestModified.containsKey(entityId)) {
+			youngestModifiedAt = entityId2YoungestModified.get(entityId);
+		}
+		if (entityId2OldestCreatedAt.containsKey(entityId)) {
+			oldestCreatedAt = entityId2OldestCreatedAt.get(entityId);
+		}
+
+		for (Entry<String, Object> attrib : entity.entrySet()) {
+			String key = attrib.getKey();
+			if (key.equals(NGSIConstants.JSON_LD_ID)) {
+				continue;
+			} else if (key.equals(NGSIConstants.JSON_LD_TYPE)) {
+				types.addAll((List<String>) attrib.getValue());
+			} else if (key.equals(NGSIConstants.NGSI_LD_MODIFIED_AT)) {
+				Long modifiedAt = SerializationTools.date2Long(
+						((List<Map<String, String>>) attrib.getValue()).get(0).get(NGSIConstants.JSON_LD_VALUE));
+				if (modifiedAt > youngestModifiedAt) {
+					entityId2YoungestModified.put(entityId, modifiedAt);
+				}
+			} else if (key.equals(NGSIConstants.NGSI_LD_CREATED_AT)) {
+				Long createdAt = SerializationTools.date2Long(
+						((List<Map<String, String>>) attrib.getValue()).get(0).get(NGSIConstants.JSON_LD_VALUE));
+				if (createdAt < oldestCreatedAt) {
+					entityId2OldestCreatedAt.put(entityId, createdAt);
+				}
+			} else if (key.equals(NGSIConstants.NGSI_LD_SCOPE)) {
+				List<Map<String, String>> tmpList = (List<Map<String, String>>) attrib.getValue();
+				for (Map<String, String> scope : tmpList) {
+					scopes.add(scope.get(NGSIConstants.JSON_LD_VALUE));
+				}
+			} else {
+				mergeAttr(key, (List<Map<String, Object>>) attrib.getValue(), result, regMode,
+						attsDataset2CurrentRegMode);
+			}
+
 		}
 
 	}
