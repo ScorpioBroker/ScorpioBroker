@@ -1,22 +1,17 @@
 package eu.neclab.ngsildbroker.queryhandler.repository;
 
-import java.io.IOException;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
+
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.locationtech.spatial4j.context.SpatialContextFactory;
 import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
-import org.locationtech.spatial4j.exception.InvalidShapeException;
 import org.locationtech.spatial4j.io.GeoJSONReader;
-import org.locationtech.spatial4j.shape.Shape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,10 +24,10 @@ import com.google.common.collect.Table;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.EntityMap;
+import eu.neclab.ngsildbroker.commons.datatypes.EntityMapEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryRemoteHost;
 import eu.neclab.ngsildbroker.commons.datatypes.RegistrationEntry;
-import eu.neclab.ngsildbroker.commons.datatypes.RemoteHost;
-import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
@@ -40,23 +35,17 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
-import eu.neclab.ngsildbroker.commons.enums.ErrorType;
-import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.storage.ClientManager;
 import eu.neclab.ngsildbroker.commons.tools.DBUtil;
-import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple3;
-import io.smallrye.mutiny.tuples.Tuple4;
 import io.vertx.core.json.JsonArray;
-import io.vertx.mutiny.core.MultiMap;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowIterator;
 import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.SqlConnection;
 import io.vertx.mutiny.sqlclient.Tuple;
-import io.vertx.sqlclient.impl.Connection;
 
 @Singleton
 public class QueryDAO {
@@ -796,8 +785,7 @@ public class QueryDAO {
 
 	}
 
-	public Uni<SqlConnection> storeEntityMap(String tenant, String qToken,
-			Map<String, List<QueryRemoteHost>> entityMap) {
+	public Uni<SqlConnection> storeEntityMap(String tenant, String qToken, EntityMap entityMap) {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
 			return client.getConnection().onItem().transformToUni(conn -> {
 				List<Tuple> batch = Lists.newArrayList();
@@ -806,12 +794,12 @@ public class QueryDAO {
 //			"remote_hosts" jsonb,
 //			"order_field" numeric NOT NULL
 				long count = 0;
-				for (Entry<String, List<QueryRemoteHost>> entityId2RemoteHosts : entityMap.entrySet()) {
+				for (EntityMapEntry entityId2RemoteHosts : entityMap.getEntityList()) {
 					Tuple tuple = Tuple.tuple();
 					tuple.addString(qToken);
-					tuple.addString(entityId2RemoteHosts.getKey());
+					tuple.addString(entityId2RemoteHosts.getEntityId());
 					JsonArray remoteHosts = new JsonArray();
-					for (QueryRemoteHost remoteHost : entityId2RemoteHosts.getValue()) {
+					for (QueryRemoteHost remoteHost : entityId2RemoteHosts.getRemoteHosts()) {
 						remoteHosts.add(remoteHost.toJson());
 					}
 					tuple.addJsonArray(remoteHosts);
@@ -857,17 +845,18 @@ public class QueryDAO {
 		});
 	}
 
-	public Uni<Tuple3<SqlConnection, Long, List<Tuple2<String, List<QueryRemoteHost>>>>> getEntityMap(String tenant,
-			String qToken, int limit, int offSet, boolean count) {
+	public Uni<Tuple3<SqlConnection, Long, EntityMap>> getEntityMap(String tenant, String qToken, int limit, int offSet,
+			boolean count) {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
 			return client.getConnection().onItem().transformToUni(conn -> {
 				return conn.preparedQuery(
 						"SELECT entity_id, remote_hosts FROM entitymap WHERE q_token = $1 order by order_field LIMIT $2 OFFSET $3")
 						.execute(Tuple.of(qToken, limit, offSet)).onItem().transform(rows -> {
-							List<Tuple2<String, List<QueryRemoteHost>>> entityIdList = Lists.newArrayList();
+							EntityMap entityIdList = new EntityMap();
 							rows.forEach(row -> {
-								entityIdList.add(Tuple2.of(row.getString(0),
-										QueryRemoteHost.getRemoteHostsFromJson(row.getJsonArray(1).getList())));
+								entityIdList.getEntry(row.getString(0)).getRemoteHosts()
+										.addAll(QueryRemoteHost.getRemoteHostsFromJson(row.getJsonArray(1).getList()));
+
 							});
 							return Tuple3.of(conn, 0l, entityIdList);
 						});

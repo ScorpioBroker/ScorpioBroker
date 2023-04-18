@@ -35,7 +35,8 @@ public record RegistrationEntry(String cId, String eId, String eIdp, String type
 		boolean retrieveTemporal, boolean queryTemporal, boolean retrieveEntityTypes, boolean retrieveEntityTypeDetails,
 		boolean retrieveEntityTypeInfo, boolean retrieveAttrTypes, boolean retrieveAttrTypeDetails,
 		boolean retrieveAttrTypeInfo, boolean createSubscription, boolean updateSubscription,
-		boolean retrieveSubscription, boolean querySubscription, boolean deleteSubscription, RemoteHost host) {
+		boolean retrieveSubscription, boolean querySubscription, boolean deleteSubscription, boolean canDoIdQuery,
+		boolean canDoZip, RemoteHost host) {
 
 	/**
 	 * 
@@ -124,10 +125,10 @@ public record RegistrationEntry(String cId, String eId, String eIdp, String type
 		int mode;
 
 		RemoteHost remoteHost = new RemoteHost(host, tenant, headers, cSourceId, canDoSingleOp, canDoBatchOp, 0);
-		new RegistrationEntry(null, null, null, null, null, null, null, null, 0, 0, false, false, false, false, false,
-				false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
-				false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
-				false, null);
+//		new RegistrationEntry(null, null, null, null, null, null, null, null, 0, 0, false, false, false, false, false,
+//				false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+//				false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+//				false, null);
 //		
 //			
 //			IF (NEW.REG ? 'https://uri.etsi.org/ngsi-ld/operations') THEN

@@ -117,7 +117,7 @@ public class DBUtil {
 				row.getBoolean(34), row.getBoolean(35), row.getBoolean(36), row.getBoolean(37), row.getBoolean(38),
 				row.getBoolean(39), row.getBoolean(40), row.getBoolean(41), row.getBoolean(42), row.getBoolean(43),
 				row.getBoolean(44), row.getBoolean(45), row.getBoolean(46), row.getBoolean(47), row.getBoolean(48),
-				row.getBoolean(49),
+				row.getBoolean(49), false, false,
 				new RemoteHost(row.getString(10), row.getString(11),
 						MultiMap.newInstance(
 								HttpUtils.getHeadersForRemoteCall(row.getJsonArray(12), row.getString(11))),

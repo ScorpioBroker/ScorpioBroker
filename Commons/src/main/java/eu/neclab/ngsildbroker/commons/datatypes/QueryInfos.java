@@ -98,4 +98,8 @@ public class QueryInfos {
 		this.fullScopeFound = fullScopeFound;
 	}
 
+	public String toQueryString() {
+		return null;
+	}
+
 }
