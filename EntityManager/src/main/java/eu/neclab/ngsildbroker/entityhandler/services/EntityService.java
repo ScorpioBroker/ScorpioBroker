@@ -14,19 +14,16 @@ import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
-import javax.inject.Singleton;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Channel;
-import org.jboss.resteasy.reactive.RestResponse;
 import org.locationtech.spatial4j.shape.Shape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdError;
-import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
@@ -41,7 +38,6 @@ import eu.neclab.ngsildbroker.commons.datatypes.RemoteHost;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BatchRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.CSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteAttributeRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteEntityRequest;
@@ -314,7 +310,7 @@ public class EntityService {
 			return Uni.createFrom().item(false);
 		});
 	}
-	
+
 	public Uni<NGSILDOperationResult> deleteAttribute(String tenant, String entityId, String attribName,
 			String datasetId, boolean deleteAll, Context context) {
 		String expandedAttribName = context.get("@vocab") + attribName;
@@ -424,7 +420,7 @@ public class EntityService {
 					|| (regEntry.eIdp() != null && request.getId().matches(regEntry.eIdp()))) {
 				result.add(new RemoteHost(regEntry.host().host(), regEntry.host().tenant(), regEntry.host().headers(),
 						regEntry.host().cSourceId(), regEntry.deleteEntity(), regEntry.deleteBatch(),
-						regEntry.regMode()));
+						regEntry.regMode(), regEntry.canDoZip(), regEntry.canDoIdQuery()));
 			}
 		}
 		return result;
@@ -719,21 +715,23 @@ public class EntityService {
 						case AppConstants.CREATE_REQUEST:
 							host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
 									regHost.cSourceId(), regEntry.createEntity(), regEntry.createBatch(),
-									regEntry.regMode());
+									regEntry.regMode(), regEntry.canDoZip(), regEntry.canDoIdQuery());
 							break;
 						case AppConstants.UPDATE_REQUEST:
 							host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
-									regHost.cSourceId(), regEntry.appendAttrs(), false, regEntry.regMode());
+									regHost.cSourceId(), regEntry.appendAttrs(), false, regEntry.regMode(),
+									regEntry.canDoZip(), regEntry.canDoIdQuery());
 							break;
 						case AppConstants.APPEND_REQUEST:
 							host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
 									regHost.cSourceId(), regEntry.appendAttrs(), regEntry.updateBatch(),
-									regEntry.regMode());
+									regEntry.regMode(), regEntry.canDoZip(), regEntry.canDoIdQuery());
 							break;
 						case AppConstants.UPSERT_REQUEST:
 							host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
 									regHost.cSourceId(), (regEntry.appendAttrs() && regEntry.createEntity()),
-									regEntry.upsertBatch(), regEntry.regMode());
+									regEntry.upsertBatch(), regEntry.regMode(), regEntry.canDoZip(),
+									regEntry.canDoIdQuery());
 							break;
 						default:
 							return null;

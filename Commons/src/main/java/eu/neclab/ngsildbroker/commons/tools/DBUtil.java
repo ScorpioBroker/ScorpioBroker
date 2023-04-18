@@ -22,7 +22,7 @@ import io.vertx.mutiny.sqlclient.Row;
 
 public class DBUtil {
 
-	private static GeoJSONReader geoReader = new GeoJSONReader(JtsSpatialContext.GEO, new SpatialContextFactory());
+	public static GeoJSONReader geoReader = new GeoJSONReader(JtsSpatialContext.GEO, new SpatialContextFactory());
 
 	public static String databaseURLFromPostgresJdbcUrl(String url, String newDbName) {
 		try {
@@ -100,6 +100,7 @@ public class DBUtil {
 		if (geoString != null) {
 			try {
 				geoJson = geoReader.read(geoString);
+				
 			} catch (InvalidShapeException | IOException | ParseException e) {
 				logger.error("Failed to load registrations for the entity mananger", e);
 			}
@@ -121,7 +122,7 @@ public class DBUtil {
 				new RemoteHost(row.getString(10), row.getString(11),
 						MultiMap.newInstance(
 								HttpUtils.getHeadersForRemoteCall(row.getJsonArray(12), row.getString(11))),
-						row.getString(1), false, false, row.getInteger(13)));
+						row.getString(1), false, false, row.getInteger(13), false, false));
 
 	}
 

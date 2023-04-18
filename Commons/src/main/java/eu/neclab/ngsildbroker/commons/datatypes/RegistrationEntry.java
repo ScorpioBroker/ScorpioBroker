@@ -1,14 +1,16 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
-import java.lang.reflect.Array;
-import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.locationtech.jts.geom.Geometry;
 import org.locationtech.spatial4j.SpatialPredicate;
+import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
 import org.locationtech.spatial4j.shape.Shape;
+import org.locationtech.spatial4j.shape.jts.JtsGeometry;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -20,8 +22,6 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
-import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
-import eu.neclab.ngsildbroker.commons.tools.SubscriptionTools;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.vertx.mutiny.core.MultiMap;
 
@@ -124,7 +124,8 @@ public record RegistrationEntry(String cId, String eId, String eIdp, String type
 		}
 		int mode;
 
-		RemoteHost remoteHost = new RemoteHost(host, tenant, headers, cSourceId, canDoSingleOp, canDoBatchOp, 0);
+		RemoteHost remoteHost = new RemoteHost(host, tenant, headers, cSourceId, canDoSingleOp, canDoBatchOp, 0, false,
+				false);
 //		new RegistrationEntry(null, null, null, null, null, null, null, null, 0, 0, false, false, false, false, false,
 //				false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
 //				false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
@@ -284,9 +285,127 @@ public record RegistrationEntry(String cId, String eId, String eIdp, String type
 		return null;
 	}
 
-	public boolean matches(String[] id, String idPattern2, TypeQueryTerm typeQuery, String idPattern,
-			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery) {
-		return false;
+	public QueryInfos matches(String[] id, String idPattern, TypeQueryTerm typeQuery, AttrsQueryTerm attrsQuery,
+			QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery) {
+		QueryInfos result = new QueryInfos();
+		Set<String> idSet;
+		if (id != null) {
+			idSet = Sets.newHashSet(id);
+		} else {
+			idSet = new HashSet<>(0);
+		}
+
+		if (!idSet.isEmpty()) {
+			if (eId != null) {
+				if (idSet.contains(eId)) {
+					result.addId(eId);
+				} else {
+					return null;
+				}
+			} else if (eIdp != null) {
+				boolean matchFound = false;
+				for (String entry : idSet) {
+					if (entry.matches(eIdp)) {
+						matchFound = true;
+						result.addAttr(entry);
+					}
+				}
+				if (!matchFound) {
+					return null;
+				}
+			} else {
+				result.getIds().addAll(idSet);
+			}
+		} else {
+			if (eId != null) {
+				result.addId(eId);
+			}
+		}
+
+		if (idPattern != null) {
+			if (eId == null) {
+				result.setIdPattern(idPattern);
+			} else {
+				if (idPattern.matches(eId)) {
+					result.addId(eId);
+				} else {
+					return null;
+				}
+			}
+		}
+		if (typeQuery != null) {
+			if (type != null) {
+				if (typeQuery.getAllTypes().contains(type)) {
+					result.addType(type);
+
+				} else {
+					return null;
+				}
+			} else {
+				result.getTypes().addAll(typeQuery.getAllTypes());
+				result.setFullTypesFound(true);
+			}
+		} else {
+			if (type != null) {
+				result.addType(type);
+			}
+		}
+		if (attrsQuery != null) {
+			if (eProp == null && eRel == null) {
+				result.getAttrs().addAll(attrsQuery.getAttrs());
+				result.setFullAttrsFound(true);
+			} else if (eProp != null) {
+				if (attrsQuery.getAttrs().contains(eProp)) {
+					result.addAttr(eProp);
+				} else {
+					return null;
+				}
+			} else {
+				if (attrsQuery.getAttrs().contains(eRel)) {
+					result.addAttr(eRel);
+				} else {
+					return null;
+				}
+			}
+		} else {
+			if (eProp != null) {
+				result.addAttr(eProp);
+			}
+			if (eRel != null) {
+				result.addAttr(eRel);
+			}
+		}
+		if (geoQuery != null) {
+			Shape geoShape = geoQuery.getShape();
+			if (location == null) {
+				result.setGeo(geoShape);
+			} else {
+
+				if (SpatialPredicate.IsEqualTo.evaluate(geoShape, location)) {
+					result.setGeo(geoShape);
+				} else if (SpatialPredicate.IsWithin.evaluate(geoShape, location)) {
+					result.setGeo(geoShape);
+				} else if (SpatialPredicate.IsWithin.evaluate(location, geoShape)) {
+					result.setGeo(location);
+				} else if (SpatialPredicate.Intersects.evaluate(geoShape, location)) {
+					if (!(geoShape instanceof JtsGeometry) || !(location instanceof JtsGeometry)) {
+						return null;
+					}
+					Geometry geom1 = ((JtsGeometry) geoShape).getGeom();
+					Geometry geom2 = ((JtsGeometry) location).getGeom();
+					Geometry intersection = geom1.intersection(geom2);
+					result.setGeo(new JtsGeometry(intersection, JtsSpatialContext.GEO, true, true));
+				} else {
+					return null;
+				}
+			}
+
+		} else {
+			if (location != null) {
+				result.setGeo(location);
+			}
+		}
+		return result;
 
 	}
 

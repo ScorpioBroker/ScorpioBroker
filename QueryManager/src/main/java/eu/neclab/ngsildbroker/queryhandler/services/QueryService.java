@@ -1,8 +1,7 @@
 package eu.neclab.ngsildbroker.queryhandler.services;
 
-import java.time.temporal.TemporalAccessor;
 import java.util.ArrayList;
-import java.util.Date;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -105,7 +104,7 @@ public class QueryService {
 		}
 		if (!tokenProvided) {
 			return getAndStoreEntityIdList(tenant, id, idPattern, qToken, typeQuery, attrsQuery, geoQuery, qQuery,
-					scopeQuery, context).onItem().transformToUni(t -> {
+					scopeQuery, langQuery, context).onItem().transformToUni(t -> {
 						SqlConnection conn = t.getItem1();
 						EntityMap entityMap = t.getItem2();
 						List<EntityMapEntry> resultEntityMap = entityMap.getSubMap(limit, limit + offSet);
@@ -312,7 +311,7 @@ public class QueryService {
 
 	private List<QueryRemoteHost> getRemoteQueries(String tenant, String[] id, TypeQueryTerm typeQuery,
 			String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery, GeoQueryTerm geoQuery,
-			ScopeQueryTerm scopeQuery, Context context) {
+			ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, Context context) {
 
 		Iterator<RegistrationEntry> it = tenant2CId2RegEntries.row(tenant).values().iterator();
 		// ids, types, attrs, geo, scope
@@ -327,9 +326,9 @@ public class QueryService {
 				continue;
 			}
 
-			if (!regEntry.matches(id, idPattern, typeQuery, idPattern, attrsQuery, qQuery, geoQuery, scopeQuery)) {
-				continue;
-			}
+//			if (!regEntry.matches(id, idPattern, typeQuery, idPattern, attrsQuery, qQuery, geoQuery, scopeQuery)) {
+//				continue;
+//			}
 			RemoteHost regHost = regEntry.host();
 			QueryRemoteHost hostToQuery = QueryRemoteHost.fromRemoteHost(regHost, null, regEntry.canDoIdQuery(),
 					regEntry.canDoZip(), null);
@@ -376,16 +375,12 @@ public class QueryService {
 		List<QueryRemoteHost> result = new ArrayList<>(remoteHost2QueryInfo.size());
 		for (Entry<QueryRemoteHost, QueryInfos> entry : remoteHost2QueryInfo.entrySet()) {
 			QueryRemoteHost tmpHost = entry.getKey();
-			String queryString = entry.getValue().toQueryString();
+			String queryString = entry.getValue().toQueryString(context, typeQuery, geoQuery, langQuery, false);
 			result.add(new QueryRemoteHost(tmpHost.host(), tmpHost.tenant(), tmpHost.headers(), tmpHost.cSourceId(),
 					tmpHost.canDoSingleOp(), tmpHost.canDoBatchOp(), tmpHost.regMode(), queryString,
 					tmpHost.canDoIdQuery(), tmpHost.canDoZip(), tmpHost.remoteToken()));
 		}
 		return result;
-	}
-
-	private void mergeQueryResults(QueryResult queryResult, QueryResult toMerge) {
-
 	}
 
 	private Uni<QueryResult> localQueryLevel1(String tenant, String[] id, TypeQueryTerm typeQuery, String idPattern,
@@ -1092,8 +1087,36 @@ public class QueryService {
 
 	private List<QueryRemoteHost> getRemoteHostsForRetrieve(String tenant, String entityId, AttrsQueryTerm attrsQuery,
 			LanguageQueryTerm lang, Context context) {
-		// TODO Auto-generated method stub
-		return null;
+		Collection<RegistrationEntry> regEntries = tenant2CId2RegEntries.row(tenant).values();
+		Iterator<RegistrationEntry> it = regEntries.iterator();
+		Map<RemoteHost, QueryInfos> host2QueryInfo = Maps.newHashMap();
+		List<QueryRemoteHost> result = Lists.newArrayList();
+
+		while (it.hasNext()) {
+			RegistrationEntry regEntry = it.next();
+			if (!regEntry.retrieveEntity()) {
+				continue;
+			}
+			QueryInfos tmp = regEntry.matches(new String[] { entityId }, null, null, attrsQuery, null, null, null);
+			if (tmp == null) {
+				continue;
+			}
+			QueryInfos resultQueryInfo = host2QueryInfo.get(regEntry.host());
+			if (resultQueryInfo == null) {
+				resultQueryInfo = tmp;
+				host2QueryInfo.put(regEntry.host(), tmp);
+			} else {
+				resultQueryInfo.merge(tmp);
+			}
+
+		}
+		for (Entry<RemoteHost, QueryInfos> entry : host2QueryInfo.entrySet()) {
+			RemoteHost remoteHost = entry.getKey();
+			result.add(QueryRemoteHost.fromRemoteHost(remoteHost,
+					entry.getValue().toQueryString(context, null, null, lang, true), remoteHost.canDoEntityId(),
+					remoteHost.canDoZip(), null));
+		}
+		return result;
 	}
 
 	public Uni<Void> handleRegistryChange(BaseRequest req) {
@@ -1110,9 +1133,9 @@ public class QueryService {
 
 	public Uni<List<String>> queryForEntityIds(String tenant, String[] ids, TypeQueryTerm typeQueryTerm,
 			String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQueryTerm, GeoQueryTerm geoQueryTerm,
-			ScopeQueryTerm scopeQueryTerm, Context context) {
+			ScopeQueryTerm scopeQueryTerm, LanguageQueryTerm queryTerm, Context context) {
 		return getAndStoreEntityIdList(tenant, ids, idPattern, idPattern, typeQueryTerm, attrsQuery, geoQueryTerm,
-				qQueryTerm, scopeQueryTerm, context).onItem().transformToUni(t -> {
+				qQueryTerm, scopeQueryTerm, queryTerm, context).onItem().transformToUni(t -> {
 					SqlConnection conn = t.getItem1();
 					return conn.close().onItem().transform(v -> {
 						List<String> result = Lists.newArrayList();
@@ -1127,11 +1150,11 @@ public class QueryService {
 
 	private Uni<Tuple2<SqlConnection, EntityMap>> getAndStoreEntityIdList(String tenant, String[] id, String idPattern,
 			String qToken, TypeQueryTerm typeQuery, AttrsQueryTerm attrsQuery, GeoQueryTerm geoQuery, QQueryTerm qQuery,
-			ScopeQueryTerm scopeQuery, Context context) {
+			ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, Context context) {
 		Uni<List<String>> localIds = queryDAO.queryForEntityIds(tenant, id, typeQuery, idPattern, attrsQuery, qQuery,
 				geoQuery, scopeQuery, context);
 		List<QueryRemoteHost> remoteHost2Query = getRemoteQueries(tenant, id, typeQuery, idPattern, attrsQuery, qQuery,
-				geoQuery, scopeQuery, context);
+				geoQuery, scopeQuery, langQuery, context);
 		Uni<Map<QueryRemoteHost, List<String>>> remoteIds;
 		if (remoteHost2Query.isEmpty()) {
 			remoteIds = Uni.createFrom().item(Maps.newHashMap());
@@ -1178,7 +1201,6 @@ public class QueryService {
 			return result;
 		}).onItem().transformToUni(entityMap -> {
 			if (entityMap.isEmpty()) {
-
 				return Uni.createFrom().nullItem();
 			}
 			return queryDAO.storeEntityMap(tenant, qToken, entityMap).onItem().transform(conn -> {

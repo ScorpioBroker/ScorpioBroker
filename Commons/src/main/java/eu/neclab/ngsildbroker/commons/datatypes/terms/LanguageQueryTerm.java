@@ -27,4 +27,15 @@ public class LanguageQueryTerm {
 		});
 	}
 
+	public void toRequestString(StringBuilder result) {
+		result.append("lang=");
+		for (Tuple2<Set<String>, Float> entry : entries) {
+			result.append(String.join(",", entry.getItem1()));
+			result.append(";q=");
+			result.append(entry.getItem2());
+			result.append(',');
+		}
+		result.setCharAt(result.length() - 1, '&');
+	}
+
 }

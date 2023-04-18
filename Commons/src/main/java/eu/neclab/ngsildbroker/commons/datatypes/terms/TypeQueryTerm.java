@@ -584,4 +584,23 @@ public class TypeQueryTerm {
 		this.allTypes = allTypes;
 	}
 
+	public void toRequestString(StringBuilder result) {
+		if (firstChild != null) {
+			result.append('(');
+			firstChild.toRequestString(result);
+			result.append(')');
+		} else {
+			result.append(type);
+			if (hasNext()) {
+				if (isNextAnd()) {
+					result.append(';');
+				} else {
+					result.append('|');
+				}
+				next.toRequestString(result);
+			}
+		}
+
+	}
+
 }

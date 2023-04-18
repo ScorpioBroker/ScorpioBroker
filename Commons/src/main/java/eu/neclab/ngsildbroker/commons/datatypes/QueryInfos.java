@@ -4,6 +4,13 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.locationtech.spatial4j.shape.Shape;
+import org.locationtech.spatial4j.shape.jts.JtsPoint;
+
+import com.github.jsonldjava.core.Context;
+
+import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 
 public class QueryInfos {
 
@@ -98,8 +105,97 @@ public class QueryInfos {
 		this.fullScopeFound = fullScopeFound;
 	}
 
-	public String toQueryString() {
-		return null;
+	public String toQueryString(Context context, TypeQueryTerm typeQuery, GeoQueryTerm geoQuery, LanguageQueryTerm langQuery, boolean ignoredId) {
+		StringBuilder result = new StringBuilder("?");
+
+		if (!ids.isEmpty() && !ignoredId) {
+			result.append("id=");
+			result.append(String.join(",", ids));
+			result.append('&');
+		}
+		if(idPattern != null) {
+			result.append("idPattern=");
+			result.append(idPattern);
+			result.append('&');
+		}
+		if (!types.isEmpty() && typeQuery != null) {
+			result.append("type=");
+			typeQuery.toRequestString(result);
+			result.append('&');
+		}
+		if (!attrs.isEmpty()) {
+			result.append("attrs=");
+			for (String attr : attrs) {
+				result.append(context.compactIri(attr));
+				result.append(',');
+			}
+			result.setCharAt(result.length() - 1, '&');
+		}
+		if(!scopes.isEmpty()) {
+			result.append("scopeQ=");
+			result.append(String.join(",", scopes));
+			result.append('&');
+		}
+		if(langQuery != null) {
+			langQuery.toRequestString(result);
+		}
+		if (geo != null && geoQuery != null) {
+			geoQuery.toRequestString(result, geo);
+			
+		}
+
+		result.setLength(result.length() - 1);
+		return result.toString();
+	}
+
+	public void addId(String id) {
+		ids.add(id);
+	}
+
+	public void removeId(String id) {
+		ids.remove(id);
+	}
+
+	public void addType(String type) {
+		types.add(type);
+	}
+
+	public void removeType(String type) {
+		types.remove(type);
+	}
+
+	public void addAttr(String attr) {
+		attrs.add(attr);
+	}
+
+	public void removeAttr(String attr) {
+		attrs.remove(attr);
+	}
+
+	public void addScope(String scope) {
+		scopes.add(scope);
+	}
+
+	public void removeScope(String scope) {
+		scopes.remove(scope);
+	}
+
+	public void merge(QueryInfos other) {
+
+		this.ids.addAll(other.ids);
+		this.types.addAll(other.types);
+		this.attrs.addAll(other.attrs);
+		this.scopes.addAll(other.scopes);
+		if (other.geo != null) {
+			if (this.geo == null) {
+				this.geo = other.geo;
+			}
+		}
+		if (other.idPattern != null) {
+			if (this.idPattern == null) {
+				this.idPattern = other.idPattern;
+			}
+		}
 	}
 
 }

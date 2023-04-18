@@ -3,6 +3,8 @@ package eu.neclab.ngsildbroker.commons.datatypes.terms;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.locationtech.spatial4j.shape.Shape;
+
 import com.github.jsonldjava.core.Context;
 import com.google.common.collect.Lists;
 
@@ -10,6 +12,7 @@ import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.tools.DBUtil;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple4;
 import io.vertx.mutiny.sqlclient.Tuple;
@@ -277,6 +280,16 @@ public class GeoQueryTerm {
 			dollar = tempQuery.toSql(query, tuple, dollar);
 		}
 		return dollar;
+	}
+
+	public Shape getShape() {
+		
+		return null;
+	}
+
+	public void toRequestString(StringBuilder result, Shape geo) {
+		// TODO Auto-generated method stub
+		
 	}
 
 }
