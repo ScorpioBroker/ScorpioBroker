@@ -1,13 +1,10 @@
 package eu.neclab.ngsildbroker.entityhandler.controller;
 
-import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
-import javax.inject.Singleton;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.PATCH;
 import javax.ws.rs.POST;
@@ -19,15 +16,11 @@ import org.jboss.resteasy.reactive.RestResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.core.JsonParseException;
 import com.github.jsonldjava.core.Context;
-import com.github.jsonldjava.core.JsonLdError;
 import com.github.jsonldjava.core.JsonLdProcessor;
-import com.github.jsonldjava.utils.JsonUtils;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
 import io.smallrye.mutiny.Uni;
@@ -125,10 +118,7 @@ public class EntityController {// implements EntityHandlerInterface {
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 		}
-		boolean noOverwrite = false;
-		if (options != null && options.contains(NGSIConstants.NO_OVERWRITE_OPTION)) {
-			noOverwrite = true;
-		}
+		boolean noOverwrite = options != null && options.contains(NGSIConstants.NO_OVERWRITE_OPTION);
 		return entityService
 				.appendToEntity(HttpUtils.getTenant(request), entityId, tuple.getItem2(), noOverwrite, tuple.getItem1())
 				.onItem().transform(HttpUtils::generateUpdateResultResponse).onFailure()
@@ -148,29 +138,27 @@ public class EntityController {// implements EntityHandlerInterface {
 	public Uni<RestResponse<Object>> partialUpdateAttribute(HttpServerRequest request,
 			@PathParam("entityId") String entityId, @PathParam("attrId") String attrib, String payload) {
 		Tuple2<Context, Map<String, Object>> tuple;
+		String expAttrib;
 		try {
 			tuple = HttpUtils.expandBody(request, payload, AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD);
 			HttpUtils.validateUri(entityId);
-			attrib = tuple.getItem1().expandIri(attrib, false, true, null, null);
+			expAttrib = tuple.getItem1().expandIri(attrib, false, true, null, null);
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 		}
 		logger.trace("update entry :: started");
-		String attribCopy = attrib;
-		return entityService.partialUpdateAttribute(HttpUtils.getTenant(request), entityId, attrib, tuple.getItem2(),
+		return entityService.partialUpdateAttribute(HttpUtils.getTenant(request), entityId, expAttrib, tuple.getItem2(),
 				tuple.getItem1()).onItem().transform(updateResult -> {
 					logger.trace("update entry :: completed");
 					return HttpUtils.generateUpdateResultResponse(updateResult);
-				}).onFailure().recoverWithUni(t -> {
-					return entityService.patchToEndPoint(entityId, request, payload, attribCopy).onItem()
-							.transform(isEndPointExist -> {
-								if (isEndPointExist)
-									return RestResponse.noContent();
-								else {
-									return HttpUtils.handleControllerExceptions(t);
-								}
-							});
-				});
+				}).onFailure().recoverWithUni(t -> entityService.patchToEndPoint(entityId, request, payload, attrib).onItem()
+						.transform(isEndPointExist -> {
+							if (isEndPointExist)
+								return RestResponse.noContent();
+							else {
+								return HttpUtils.handleControllerExceptions(t);
+							}
+						}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions));
 	}
 
 	/**
