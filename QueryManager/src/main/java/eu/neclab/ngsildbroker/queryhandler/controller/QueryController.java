@@ -194,7 +194,7 @@ public class QueryController {
 		}
 		if (entityMap) {
 			return queryService.queryForEntityIds(HttpUtils.getTenant(request), ids, typeQueryTerm, idPattern,
-					attrsQuery, qQueryTerm, geoQueryTerm, scopeQueryTerm, context).onItem().transform(list -> {
+					attrsQuery, qQueryTerm, geoQueryTerm, scopeQueryTerm,langQuery, context).onItem().transform(list -> {
 						String body;
 						Object result = "[]";
 						try {
