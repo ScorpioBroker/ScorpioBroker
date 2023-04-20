@@ -190,7 +190,9 @@ public class HistoryDAO {
 									+ " (temporalentity_id, attributeid, data) VALUES ($1, $2, $3::jsonb)")
 							.executeBatch(batchAttribs);
 
-				}).onItem().transformToUni(t -> conn.close());
+				}).onItem().transformToUni(t -> {
+					return t.onItem().transformToUni(x->conn.close());
+				});
 			});
 		});
 	}

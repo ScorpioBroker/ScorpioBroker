@@ -687,7 +687,7 @@ public final class HttpUtils {
 
 		try {
 			Tuple2<Object, List<Tuple2<String, String>>> resultAndHeaders = generateCompactedResult(
-					getAtContext(request), context, acceptHeader, context, geometryProperty, options, lang);
+					getAtContext(request), context, acceptHeader, queryResult.getData(), geometryProperty, options, lang);
 
 			MultiMap urlParams = request.params();
 			String nextLink = HttpUtils.generateNextLink(urlParams, queryResult);

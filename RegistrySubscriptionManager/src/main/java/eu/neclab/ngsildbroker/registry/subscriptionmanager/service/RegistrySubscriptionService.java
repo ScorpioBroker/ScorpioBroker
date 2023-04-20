@@ -206,7 +206,7 @@ public class RegistrySubscriptionService {
 			List<Map<String, Object>> resultData = new ArrayList<Map<String, Object>>(rows.size());
 			while (it.hasNext()) {
 				next = it.next();
-				resultData.add(next.getJsonObject(1).getMap());
+				resultData.add(next.getJsonObject(0).getMap());
 			}
 			result.setData(resultData);
 			if (next == null) {
