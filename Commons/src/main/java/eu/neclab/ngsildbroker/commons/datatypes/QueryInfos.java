@@ -24,6 +24,7 @@ public class QueryInfos {
 	Set<String> scopes = new HashSet<>();
 	Shape geo;
 	String idPattern;
+	private String geoRel;
 
 	public Set<String> getIds() {
 		return ids;
@@ -196,6 +197,11 @@ public class QueryInfos {
 				this.idPattern = other.idPattern;
 			}
 		}
+	}
+
+	public void setGeoOp(String geoRel) {
+		this.geoRel = geoRel;
+		
 	}
 
 }

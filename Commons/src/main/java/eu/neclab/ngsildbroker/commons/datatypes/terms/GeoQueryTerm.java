@@ -1,9 +1,15 @@
 package eu.neclab.ngsildbroker.commons.datatypes.terms;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
+import org.locationtech.spatial4j.distance.DistanceUtils;
 import org.locationtech.spatial4j.shape.Shape;
+import org.locationtech.spatial4j.shape.ShapeFactory.LineStringBuilder;
+import org.locationtech.spatial4j.shape.ShapeFactory.MultiPolygonBuilder;
+import org.locationtech.spatial4j.shape.ShapeFactory.PolygonBuilder;
+import org.locationtech.spatial4j.shape.ShapeFactory.PolygonBuilder.HoleBuilder;
 
 import com.github.jsonldjava.core.Context;
 import com.google.common.collect.Lists;
@@ -13,6 +19,7 @@ import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.DBUtil;
+import eu.neclab.ngsildbroker.commons.tools.SubscriptionTools;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple4;
 import io.vertx.mutiny.sqlclient.Tuple;
@@ -283,13 +290,77 @@ public class GeoQueryTerm {
 	}
 
 	public Shape getShape() {
-		
-		return null;
+		Shape queryShape;
+		List<List<Double>> tmp;
+		switch (getGeometry()) {
+		case NGSIConstants.GEO_TYPE_POINT:
+			queryShape = SubscriptionTools.shapeFactory.pointXY((Double) getCoordinatesAsList().get(0),
+					(Double) getCoordinatesAsList().get(1));
+			break;
+		case NGSIConstants.GEO_TYPE_LINESTRING:
+			LineStringBuilder lineStringBuilder = SubscriptionTools.shapeFactory.lineString();
+			tmp = (List<List<Double>>) getCoordinatesAsList().get(0);
+			for (List<Double> point : tmp) {
+				lineStringBuilder.pointXY(point.get(0), point.get(1));
+			}
+			queryShape = lineStringBuilder.build();
+			break;
+		case NGSIConstants.GEO_TYPE_POLYGON:
+			List<Object> poly = getCoordinatesAsList();
+			PolygonBuilder polygonBuilder = SubscriptionTools.shapeFactory.polygon();
+			if (poly.size() > 1) {
+				for (Object obj : poly) {
+					List<List<Double>> subpoly = (List<List<Double>>) obj;
+					HoleBuilder holeBuilder = polygonBuilder.hole();
+					for (List<Double> point : subpoly) {
+						holeBuilder.pointXY(point.get(0), point.get(1));
+					}
+					holeBuilder.endHole();
+				}
+			} else {
+				for (List<Double> point : (List<List<Double>>) poly.get(0)) {
+					polygonBuilder.pointXY(point.get(0), point.get(1));
+				}
+			}
+			queryShape = polygonBuilder.build();
+			break;
+		case NGSIConstants.GEO_TYPE_MULTI_POLYGON:
+			MultiPolygonBuilder multiPolyBuilder = SubscriptionTools.shapeFactory.multiPolygon();
+
+			List<Object> list = getCoordinatesAsList();
+			for (Object obj : list) {
+				List<List<List<Double>>> multiPoly = (List<List<List<Double>>>) obj;
+				PolygonBuilder tmpPolygonBuilder = multiPolyBuilder.polygon();
+				if (multiPoly.size() > 1) {
+					for (List<List<Double>> subpoly : multiPoly) {
+						HoleBuilder holeBuilder = tmpPolygonBuilder.hole();
+						for (List<Double> point : subpoly) {
+							holeBuilder.pointXY(point.get(0), point.get(1));
+						}
+						holeBuilder.endHole();
+					}
+				} else {
+					for (List<Double> point : multiPoly.get(0)) {
+						tmpPolygonBuilder.pointXY(point.get(0), point.get(1));
+					}
+				}
+			}
+			queryShape = multiPolyBuilder.build();
+			break;
+
+		default:
+			return null;
+
+		}
+		if (getDistanceValue() != null) {
+			queryShape = queryShape.getBuffered(getDistanceValue() * DistanceUtils.KM_TO_DEG, queryShape.getContext());
+		}
+		return queryShape;
 	}
 
 	public void toRequestString(StringBuilder result, Shape geo) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 }

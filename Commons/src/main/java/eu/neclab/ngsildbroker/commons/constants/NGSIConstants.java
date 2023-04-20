@@ -24,6 +24,7 @@ public interface NGSIConstants {
 	public final static String GEO_TYPE_POINT = "Point";
 	public final static String GEO_TYPE_POLYGON = "Polygon";
 	public final static String GEO_TYPE_LINESTRING = "LineString";
+	public final static String GEO_TYPE_MULTI_LINESTRING = "MultiLineString";
 	public final static String GEO_TYPE_MULTI_POLYGON = "MultiPolygon";
 
 	public final static String TIME_REL_BEFORE = "before";
