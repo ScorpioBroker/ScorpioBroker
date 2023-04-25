@@ -133,15 +133,15 @@ public class RegistrySubscriptionInfoDAO {
 	public Uni<Void> updateNotificationFailure(String tenant, String id, String date) {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
 			return client
-					.preparedQuery("UPDATE registry_subscription SET subscription = subscription || ('{\""
+					.preparedQuery("UPDATE registry_subscriptions SET subscription = subscription || ('{\""
 							+ NGSIConstants.NGSI_LD_TIMES_FAILED + "\": [{\"" + NGSIConstants.JSON_LD_VALUE
-							+ "\": '|| subscription@>>'{" + NGSIConstants.NGSI_LD_TIMES_FAILED + ",0, "
-							+ NGSIConstants.JSON_LD_VALUE + "}'::integer + 1 ||'}],\""
-							+ NGSIConstants.NGSI_LD_LAST_FAILURE + "\": '[{\"" + NGSIConstants.JSON_LD_TYPE + "\": \""
-							+ NGSIConstants.NGSI_LD_DATE_TIME + "\", \"" + NGSIConstants.JSON_LD_VALUE + "\": \"$1\"}],"
-							+ NGSIConstants.NGSI_LD_LAST_NOTIFICATION + "\": '[{\"" + NGSIConstants.JSON_LD_TYPE
+							+ "\": '|| (subscription#>>'{" + NGSIConstants.NGSI_LD_TIMES_FAILED + ",0, "
+							+ NGSIConstants.JSON_LD_VALUE + "}')::integer + 1 ||'}],\""
+							+ NGSIConstants.NGSI_LD_LAST_FAILURE + "\": [{\"" + NGSIConstants.JSON_LD_TYPE + "\": \""
+							+ NGSIConstants.NGSI_LD_DATE_TIME + "\", \"" + NGSIConstants.JSON_LD_VALUE + "\": \"$1\"}],\""
+							+NGSIConstants.NGSI_LD_LAST_NOTIFICATION + "\": [{\"" + NGSIConstants.JSON_LD_TYPE
 							+ "\": \"" + NGSIConstants.NGSI_LD_DATE_TIME + "\", \"" + NGSIConstants.JSON_LD_VALUE
-							+ "\": \"$1\"}])::jsonb WHERE subscription_id=$2")
+							+ "\": \"$1\"}]}')::jsonb WHERE subscription_id=$2")
 					.execute(Tuple.of(date, id)).onFailure().retry().atMost(3).onItem()
 					.transformToUni(t -> Uni.createFrom().voidItem());
 		});
@@ -202,7 +202,7 @@ public class RegistrySubscriptionInfoDAO {
 	public Uni<RowSet<Row>> getInitialNotificationData(SubscriptionRequest subscriptionRequest) {
 		return clientManager.getClient(subscriptionRequest.getTenant(), false).onItem().transformToUni(client -> {
 			List<Object> tupleItems = Lists.newArrayList();
-			String sql = "with a as (select cs_id from contextsourceinformation WHERE ";
+			String sql = "with a as (select cs_id from csourceinformation WHERE ";
 			boolean sqlAdded = false;
 			int dollar = 1;
 			Subscription subscription = subscriptionRequest.getSubscription();
@@ -228,7 +228,7 @@ public class RegistrySubscriptionInfoDAO {
 					}
 				}
 				if (entityInformation.getType() != null) {
-					sql += "(e_type is null or e_type in $" + dollar + ")";
+					sql += "(e_type is null or e_type in ($" + dollar + "))";
 					dollar++;
 					tupleItems.add(entityInformation.getType());
 				}
