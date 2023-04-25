@@ -760,4 +760,12 @@ public final class HttpUtils {
 		return result;
 
 	}
+	public static Object doubleToInt(Object object) {
+		if (object instanceof Double) {
+			double d = (Double) object;
+			int i = (int) d;
+			return (d == i)?i:d;
+		} else
+			return object;
+	}
 }
