@@ -16,7 +16,12 @@ import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import com.google.common.collect.*;
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Table;
+import com.google.common.collect.Sets;
+import com.google.common.collect.Table.Cell;
 import eu.neclab.ngsildbroker.commons.datatypes.results.CRUDSuccess;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.slf4j.Logger;
@@ -25,7 +30,7 @@ import org.slf4j.LoggerFactory;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
-import com.google.common.collect.Table.Cell;
+
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
