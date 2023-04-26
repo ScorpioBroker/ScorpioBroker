@@ -180,7 +180,7 @@ public class QueryController {
 		String token;
 		boolean tokenProvided;
 
-		String md5 = "" + request.params().remove("limit").remove("offset").remove("entityMap").hashCode();
+		String md5 = "" + request.params().remove("limit").remove("offset").remove("entityMap").remove("id").hashCode();
 		if (request.headers().contains("qToken")) {
 			token = request.headers().get("qToken");
 			if (!token.equals(md5)) {
