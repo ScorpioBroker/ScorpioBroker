@@ -4,12 +4,23 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.geom.LinearRing;
+import org.locationtech.jts.geom.MultiLineString;
+import org.locationtech.jts.geom.MultiPolygon;
+import org.locationtech.jts.geom.Polygon;
+import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.distance.DistanceUtils;
+import org.locationtech.spatial4j.io.GeoJSONWriter;
 import org.locationtech.spatial4j.shape.Shape;
 import org.locationtech.spatial4j.shape.ShapeFactory.LineStringBuilder;
 import org.locationtech.spatial4j.shape.ShapeFactory.MultiPolygonBuilder;
 import org.locationtech.spatial4j.shape.ShapeFactory.PolygonBuilder;
 import org.locationtech.spatial4j.shape.ShapeFactory.PolygonBuilder.HoleBuilder;
+import org.locationtech.spatial4j.shape.jts.JtsGeometry;
+import org.locationtech.spatial4j.shape.jts.JtsPoint;
 
 import com.github.jsonldjava.core.Context;
 import com.google.common.collect.Lists;
@@ -294,14 +305,14 @@ public class GeoQueryTerm {
 		List<List<Double>> tmp;
 		switch (getGeometry()) {
 		case NGSIConstants.GEO_TYPE_POINT:
-			queryShape = SubscriptionTools.shapeFactory.pointXY((Double) getCoordinatesAsList().get(0),
-					(Double) getCoordinatesAsList().get(1));
+			queryShape = SubscriptionTools.shapeFactory.pointLatLon((Double) getCoordinatesAsList().get(1),
+					(Double) getCoordinatesAsList().get(0));
 			break;
 		case NGSIConstants.GEO_TYPE_LINESTRING:
 			LineStringBuilder lineStringBuilder = SubscriptionTools.shapeFactory.lineString();
 			tmp = (List<List<Double>>) getCoordinatesAsList().get(0);
 			for (List<Double> point : tmp) {
-				lineStringBuilder.pointXY(point.get(0), point.get(1));
+				lineStringBuilder.pointLatLon(point.get(1), point.get(0));
 			}
 			queryShape = lineStringBuilder.build();
 			break;
@@ -335,13 +346,13 @@ public class GeoQueryTerm {
 					for (List<List<Double>> subpoly : multiPoly) {
 						HoleBuilder holeBuilder = tmpPolygonBuilder.hole();
 						for (List<Double> point : subpoly) {
-							holeBuilder.pointXY(point.get(0), point.get(1));
+							holeBuilder.pointLatLon(point.get(1), point.get(0));
 						}
 						holeBuilder.endHole();
 					}
 				} else {
 					for (List<Double> point : multiPoly.get(0)) {
-						tmpPolygonBuilder.pointXY(point.get(0), point.get(1));
+						tmpPolygonBuilder.pointLatLon(point.get(1), point.get(0));
 					}
 				}
 			}
@@ -358,9 +369,107 @@ public class GeoQueryTerm {
 		return queryShape;
 	}
 
-	public void toRequestString(StringBuilder result, Shape geo) {
-		// TODO Auto-generated method stub
+	public void toRequestString(StringBuilder result, Shape geo, String georel) {
+		result.append("geoproperty=");
+		result.append(geoproperty);
+		result.append("&georel=");
+		result.append(georel);
+		if (georel.equals(NGSIConstants.GEO_REL_NEAR)) {
+			result.append(";");
+			result.append(distanceType);
+			result.append("=");
+			result.append(distanceValue);
+		}
+		result.append("&coordinates=");
+		result.append('[');
+		if (geo instanceof JtsPoint) {
+			JtsPoint point = (JtsPoint) geo;
+			result.append(point.getLon());
+			result.append(',');
+			result.append(point.getLat());
+		} else {
+			JtsGeometry jtsGeom = (JtsGeometry) geo;
+			Geometry geom = jtsGeom.getGeom();
+			if (geom instanceof LineString) {
+				LineString line = (LineString) geom;
+				handleLine(line, result);
+			} else if (geom instanceof MultiLineString) {
+				MultiLineString multiLine = (MultiLineString) geom;
+				int numGeo = multiLine.getNumGeometries();
+				result.append('[');
+				for (int i = 0; i < numGeo; i++) {
+					LineString line = (LineString) multiLine.getGeometryN(i);
+					handleLine(line, result);
+					result.append(',');
+				}
+				result.setCharAt(result.length(), ']');
+			} else if (geom instanceof Polygon) {
+				Polygon poly = (Polygon) geom;
+				handlePoly(poly, result);
+			} else if (geom instanceof MultiPolygon) {
+				MultiPolygon multiPoly = (MultiPolygon) geom;
+				int numGeom = multiPoly.getNumGeometries();
+				result.append('[');
+				for (int i = 0; i < numGeom; i++) {
+					handlePoly((Polygon) multiPoly.getGeometryN(i), result);
+					result.append(',');
+				}
+				result.setCharAt(result.length(), ']');
+			}
+		}
+		result.append(']');
+	}
 
+	private void handleLine(LineString line, StringBuilder result) {
+		for (Coordinate coordinate : line.getCoordinates()) {
+			result.append('[');
+			result.append(coordinate.getX());
+			result.append(',');
+			result.append(coordinate.getY());
+			result.append(']');
+			result.append(',');
+		}
+		result.setLength(result.length() - 1);
+	}
+
+	private void handlePoly(Polygon poly, StringBuilder result) {
+		LinearRing extRing = poly.getExteriorRing();
+		result.append('[');
+		for (Coordinate coordinate : extRing.getCoordinates()) {
+			result.append('[');
+			result.append(coordinate.getX());
+			result.append(',');
+			result.append(coordinate.getY());
+			result.append(']');
+		}
+		int intRingNum = poly.getNumInteriorRing();
+		for (int i = 0; i < intRingNum; i++) {
+			LinearRing intRing = poly.getInteriorRingN(i);
+			result.append(",[");
+			for (Coordinate coordinate : intRing.getCoordinates()) {
+				result.append('[');
+				result.append(coordinate.getX());
+				result.append(',');
+				result.append(coordinate.getY());
+				result.append(']');
+			}
+			result.append(']');
+
+		}
+		result.append(']');
+
+	}
+
+	public static void main(String[] args) {
+		PolygonBuilder builder = SubscriptionTools.shapeFactory.polygon();
+
+		builder.pointLatLon(0, 0).pointLatLon(0, 1).pointLatLon(1, 1).pointLatLon(1, 0).pointLatLon(0, 0);
+		Shape poly = builder.build();
+		Shape line = SubscriptionTools.shapeFactory.lineString().pointLatLon(0, 0).pointLatLon(0, 1).build();
+		Shape multiline = SubscriptionTools.shapeFactory.multiLineString()
+				.add(SubscriptionTools.shapeFactory.lineString().pointLatLon(0, 0).pointLatLon(0, 1)).build();
+		Shape point = SubscriptionTools.shapeFactory.pointLatLon(0, 0);
+		System.out.println(poly);
 	}
 
 }

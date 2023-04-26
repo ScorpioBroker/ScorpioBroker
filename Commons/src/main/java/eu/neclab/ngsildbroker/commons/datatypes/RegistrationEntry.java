@@ -8,6 +8,7 @@ import java.util.Set;
 import org.apache.commons.lang3.ArrayUtils;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.geom.MultiLineString;
 import org.locationtech.jts.geom.MultiPolygon;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.Polygon;
@@ -16,8 +17,8 @@ import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
 import org.locationtech.spatial4j.distance.DistanceUtils;
 import org.locationtech.spatial4j.shape.Shape;
 import org.locationtech.spatial4j.shape.jts.JtsGeometry;
+import org.locationtech.spatial4j.shape.jts.JtsPoint;
 
-import com.github.filosganga.geogson.model.MultiLineString;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -382,229 +383,231 @@ public record RegistrationEntry(String cId, String eId, String eIdp, String type
 			}
 		}
 		if (geoQuery != null) {
-			Shape geoShape = geoQuery.getShape();
-			if (location == null) {
-				result.setGeo(geoShape);
-			} else {
-				switch (geoQuery.getGeorel()) {
-				case NGSIConstants.GEO_REL_EQUALS:
-					result.setGeoOp(NGSIConstants.GEO_REL_EQUALS);
-					switch (geoQuery.getGeometry()) {
-					case NGSIConstants.GEO_TYPE_POINT:
-						if (location instanceof Point) {
-							if (SpatialPredicate.IsEqualTo.evaluate(location, geoShape)) {
-								result.setGeo(geoShape);
+			if (geoQuery.getGeoproperty().equals(NGSIConstants.NGSI_LD_LOCATION)) {
+				Shape geoShape = geoQuery.getShape();
+				if (location == null) {
+					result.setGeo(geoShape);
+				} else {
+					switch (geoQuery.getGeorel()) {
+					case NGSIConstants.GEO_REL_EQUALS:
+						result.setGeoOp(NGSIConstants.GEO_REL_EQUALS);
+						switch (geoQuery.getGeometry()) {
+						case NGSIConstants.GEO_TYPE_POINT:
+							if (location instanceof JtsPoint) {
+								if (SpatialPredicate.IsEqualTo.evaluate(location, geoShape)) {
+									result.setGeo(geoShape);
+								} else {
+									return null;
+								}
 							} else {
-								return null;
+								if (SpatialPredicate.IsWithin.evaluate(location, geoShape)) {
+									result.setGeo(geoShape);
+								} else {
+									return null;
+								}
 							}
-						} else {
-							if (SpatialPredicate.IsWithin.evaluate(location, geoShape)) {
-								result.setGeo(geoShape);
+							break;
+						case NGSIConstants.GEO_TYPE_LINESTRING:
+						case NGSIConstants.GEO_TYPE_MULTI_LINESTRING:
+							if (location instanceof JtsPoint) {
+								// point can never be queried for equality with a string
+								return null;
 							} else {
-								return null;
+								if (SpatialPredicate.IsWithin.evaluate(location, geoShape)) {
+									result.setGeo(geoShape);
+								} else {
+									return null;
+								}
 							}
-						}
-						break;
-					case NGSIConstants.GEO_TYPE_LINESTRING:
-					case NGSIConstants.GEO_TYPE_MULTI_LINESTRING:
-						if (location instanceof Point) {
-							// point can never be queried for equality with a string
-							return null;
-						} else {
-							if (SpatialPredicate.IsWithin.evaluate(location, geoShape)) {
-								result.setGeo(geoShape);
+							break;
+						case NGSIConstants.GEO_TYPE_POLYGON:
+						case NGSIConstants.GEO_TYPE_MULTI_POLYGON:
+							if (location instanceof JtsPoint || ((JtsGeometry) location).getGeom() instanceof LineString
+									|| ((JtsGeometry) location).getGeom() instanceof MultiLineString) {
+								// point can never be queried for equality with a string
+								return null;
 							} else {
-								return null;
+								if (SpatialPredicate.IsWithin.evaluate(location, geoShape)) {
+									result.setGeo(geoShape);
+								} else {
+									return null;
+								}
 							}
-						}
-						break;
-					case NGSIConstants.GEO_TYPE_POLYGON:
-					case NGSIConstants.GEO_TYPE_MULTI_POLYGON:
-						if (location instanceof Point || location instanceof LineString
-								|| location instanceof MultiLineString) {
-							// point can never be queried for equality with a string
-							return null;
-						} else {
-							if (SpatialPredicate.IsWithin.evaluate(location, geoShape)) {
-								result.setGeo(geoShape);
-							} else {
-								return null;
-							}
-						}
-						break;
-					default:
-						return null;
-					}
-					break;
-				case NGSIConstants.GEO_REL_NEAR:
-					Shape toCheck = geoShape;
-					if (geoQuery.getDistanceType().equals(NGSIConstants.GEO_REL_MIN_DISTANCE)) {
-						toCheck = new JtsGeometry(((Geometry) toCheck).reverse(), JtsSpatialContext.GEO, true, true);
-					}
-					if (location instanceof Point) {
-						if (SpatialPredicate.IsWithin.evaluate(toCheck, location)) {
-							result.setGeo(location);
-							result.setGeoOp(NGSIConstants.GEO_REL_EQUALS);
-						} else {
+							break;
+						default:
 							return null;
 						}
-					} else {
-						if (SpatialPredicate.IsWithin.evaluate(toCheck, location)) {
-							result.setGeo(geoShape);
-							result.setGeoOp(NGSIConstants.GEO_REL_NEAR);
-						} else if (SpatialPredicate.IsWithin.evaluate(location, toCheck)) {
-							result.setGeo(location);
-							result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
-						} else if (SpatialPredicate.Intersects.evaluate(location, toCheck)) {
-							Geometry geom1 = ((JtsGeometry) toCheck).getGeom();
-							Geometry geom2 = (Geometry) location;
-							Geometry intersection = geom1.intersection(geom2);
-							result.setGeo(new JtsGeometry(intersection, JtsSpatialContext.GEO, true, true));
-							result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
+						break;
+					case NGSIConstants.GEO_REL_NEAR:
+						Shape toCheck = geoShape;
+						if (geoQuery.getDistanceType().equals(NGSIConstants.GEO_REL_MIN_DISTANCE)) {
+							toCheck = new JtsGeometry(((Geometry) toCheck).reverse(), JtsSpatialContext.GEO, true,
+									true);
+						}
+						if (location instanceof JtsPoint) {
+							if (SpatialPredicate.IsWithin.evaluate(toCheck, location)) {
+								result.setGeo(location);
+								result.setGeoOp(NGSIConstants.GEO_REL_EQUALS);
+							} else {
+								return null;
+							}
 						} else {
+							if (SpatialPredicate.IsWithin.evaluate(toCheck, location)) {
+								result.setGeo(geoShape);
+								result.setGeoOp(NGSIConstants.GEO_REL_NEAR);
+							} else if (SpatialPredicate.IsWithin.evaluate(location, toCheck)) {
+								result.setGeo(location);
+								result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
+							} else if (SpatialPredicate.Intersects.evaluate(location, toCheck)) {
+								Geometry geom1 = ((JtsGeometry) toCheck).getGeom();
+								Geometry geom2 = ((JtsGeometry) location).getGeom();
+								Geometry intersection = geom1.intersection(geom2);
+								result.setGeo(new JtsGeometry(intersection, JtsSpatialContext.GEO, true, true));
+								result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
+							} else {
 
-							return null;
+								return null;
+							}
 						}
-					}
-					break;
-				case NGSIConstants.GEO_REL_WITHIN:
-					if (location instanceof Point) {
-						if (SpatialPredicate.IsWithin.evaluate(geoShape, location)) {
-							result.setGeo(location);
-							result.setGeoOp(NGSIConstants.GEO_REL_EQUALS);
+						break;
+					case NGSIConstants.GEO_REL_WITHIN:
+						if (location instanceof JtsPoint) {
+							if (SpatialPredicate.IsWithin.evaluate(geoShape, location)) {
+								result.setGeo(location);
+								result.setGeoOp(NGSIConstants.GEO_REL_EQUALS);
+							} else {
+								return null;
+							}
 						} else {
-							return null;
-						}
-					} else {
-						if (SpatialPredicate.IsWithin.evaluate(geoShape, location)) {
-							result.setGeo(geoShape);
-							result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
-						} else if (SpatialPredicate.IsWithin.evaluate(location, geoShape)) {
-							result.setGeo(location);
-							result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
-						} else if (SpatialPredicate.Intersects.evaluate(location, geoShape)) {
-							Geometry geom1 = ((JtsGeometry) geoShape).getGeom();
-							Geometry geom2 = (Geometry) location;
-							Geometry intersection = geom1.intersection(geom2);
-							result.setGeo(new JtsGeometry(intersection, JtsSpatialContext.GEO, true, true));
-							result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
-						} else {
-							return null;
-						}
-					}
-
-					break;
-				case NGSIConstants.GEO_REL_CONTAINS:
-					if (location instanceof Point) {
-						if (SpatialPredicate.Contains.evaluate(geoShape, location)) {
-							result.setGeo(location);
-							result.setGeoOp(NGSIConstants.GEO_REL_EQUALS);
-						} else {
-							return null;
-						}
-					} else {
-						if (SpatialPredicate.IsWithin.evaluate(geoShape, location)) {
-							result.setGeo(geoShape);
-							result.setGeoOp(NGSIConstants.GEO_REL_CONTAINS);
-						} else if (SpatialPredicate.IsWithin.evaluate(location, geoShape)) {
-							result.setGeo(location);
-							result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
-						} else if (SpatialPredicate.Intersects.evaluate(location, geoShape)) {
-							Geometry geom1 = ((JtsGeometry) geoShape).getGeom();
-							Geometry geom2 = (Geometry) location;
-							Geometry intersection = geom1.intersection(geom2);
-							result.setGeo(new JtsGeometry(intersection, JtsSpatialContext.GEO, true, true));
-							result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
-						} else {
-							return null;
-						}
-					}
-					break;
-				case NGSIConstants.GEO_REL_INTERSECTS:
-					if (location instanceof Point) {
-						if (SpatialPredicate.Intersects.evaluate(geoShape, location)) {
-							result.setGeo(location);
-							result.setGeoOp(NGSIConstants.GEO_REL_EQUALS);
-						} else {
-							return null;
-						}
-					} else {
-						if (SpatialPredicate.IsWithin.evaluate(geoShape, location)) {
-							result.setGeo(geoShape);
-							result.setGeoOp(NGSIConstants.GEO_REL_INTERSECTS);
-						} else if (SpatialPredicate.IsWithin.evaluate(location, geoShape)) {
-							result.setGeo(location);
-							result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
-						} else if (SpatialPredicate.Intersects.evaluate(location, geoShape)) {
-							Geometry geom1 = (Geometry) geoShape;
-							Geometry geom2 = (Geometry) location;
-							Geometry intersection = geom1.intersection(geom2);
-							result.setGeo(new JtsGeometry(intersection, JtsSpatialContext.GEO, true, true));
-							result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
-						} else {
-							return null;
-						}
-					}
-					break;
-				case NGSIConstants.GEO_REL_DISJOINT:
-					if (location instanceof Point) {
-						if (SpatialPredicate.IsDisjointTo.evaluate(geoShape, location)) {
-							result.setGeo(location);
-							result.setGeoOp(NGSIConstants.GEO_REL_EQUALS);
-						} else {
-							return null;
-						}
-					} else {
-						if (SpatialPredicate.IsDisjointTo.evaluate(geoShape, location)) {
-							result.setGeo(location);
-							result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
-						} else {
-							Geometry geom1 = ((Geometry) geoShape).reverse();
-							Geometry geom2 = (Geometry) location;
-							if (geom1.intersects(geom2)) {
+							if (SpatialPredicate.IsWithin.evaluate(geoShape, location)) {
+								result.setGeo(geoShape);
+								result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
+							} else if (SpatialPredicate.IsWithin.evaluate(location, geoShape)) {
+								result.setGeo(location);
+								result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
+							} else if (SpatialPredicate.Intersects.evaluate(location, geoShape)) {
+								Geometry geom1 = ((JtsGeometry) geoShape).getGeom();
+								Geometry geom2 = ((JtsGeometry) location).getGeom();
 								Geometry intersection = geom1.intersection(geom2);
 								result.setGeo(new JtsGeometry(intersection, JtsSpatialContext.GEO, true, true));
 								result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
 							} else {
 								return null;
 							}
+						}
 
-						}
-					}
-					break;
-				case NGSIConstants.GEO_REL_OVERLAPS:
-					if (location instanceof Point) {
-						if (SpatialPredicate.Intersects.evaluate(geoShape, location)) {
-							result.setGeo(location);
-							result.setGeoOp(NGSIConstants.GEO_REL_EQUALS);
+						break;
+					case NGSIConstants.GEO_REL_CONTAINS:
+						if (location instanceof JtsPoint) {
+							if (SpatialPredicate.Contains.evaluate(geoShape, location)) {
+								result.setGeo(location);
+								result.setGeoOp(NGSIConstants.GEO_REL_EQUALS);
+							} else {
+								return null;
+							}
 						} else {
-							return null;
+							if (SpatialPredicate.IsWithin.evaluate(geoShape, location)) {
+								result.setGeo(geoShape);
+								result.setGeoOp(NGSIConstants.GEO_REL_CONTAINS);
+							} else if (SpatialPredicate.IsWithin.evaluate(location, geoShape)) {
+								result.setGeo(location);
+								result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
+							} else if (SpatialPredicate.Intersects.evaluate(location, geoShape)) {
+								Geometry geom1 = ((JtsGeometry) geoShape).getGeom();
+								Geometry geom2 = ((JtsGeometry) location).getGeom();
+								Geometry intersection = geom1.intersection(geom2);
+								result.setGeo(new JtsGeometry(intersection, JtsSpatialContext.GEO, true, true));
+								result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
+							} else {
+								return null;
+							}
 						}
-					} else {
-						if (SpatialPredicate.IsWithin.evaluate(geoShape, location)) {
-							result.setGeo(geoShape);
-							result.setGeoOp(NGSIConstants.GEO_REL_OVERLAPS);
-						} else if (SpatialPredicate.IsWithin.evaluate(location, geoShape)) {
-							result.setGeo(location);
-							result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
-						} else if (SpatialPredicate.Intersects.evaluate(location, geoShape)) {
-							Geometry geom1 = ((JtsGeometry) geoShape).getGeom();
-							Geometry geom2 = (Geometry) location;
-							Geometry intersection = geom1.intersection(geom2);
-							result.setGeo(new JtsGeometry(intersection, JtsSpatialContext.GEO, true, true));
-							result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
+						break;
+					case NGSIConstants.GEO_REL_INTERSECTS:
+						if (location instanceof JtsPoint) {
+							if (SpatialPredicate.Intersects.evaluate(geoShape, location)) {
+								result.setGeo(location);
+								result.setGeoOp(NGSIConstants.GEO_REL_EQUALS);
+							} else {
+								return null;
+							}
 						} else {
-							return null;
+							if (SpatialPredicate.IsWithin.evaluate(geoShape, location)) {
+								result.setGeo(geoShape);
+								result.setGeoOp(NGSIConstants.GEO_REL_INTERSECTS);
+							} else if (SpatialPredicate.IsWithin.evaluate(location, geoShape)) {
+								result.setGeo(location);
+								result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
+							} else if (SpatialPredicate.Intersects.evaluate(location, geoShape)) {
+								Geometry geom1 = ((JtsGeometry) geoShape).getGeom();
+								Geometry geom2 = ((JtsGeometry) location).getGeom();
+								Geometry intersection = geom1.intersection(geom2);
+								result.setGeo(new JtsGeometry(intersection, JtsSpatialContext.GEO, true, true));
+								result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
+							} else {
+								return null;
+							}
 						}
+						break;
+					case NGSIConstants.GEO_REL_DISJOINT:
+						if (location instanceof Point) {
+							if (SpatialPredicate.IsDisjointTo.evaluate(geoShape, location)) {
+								result.setGeo(location);
+								result.setGeoOp(NGSIConstants.GEO_REL_EQUALS);
+							} else {
+								return null;
+							}
+						} else {
+							if (SpatialPredicate.IsDisjointTo.evaluate(geoShape, location)) {
+								result.setGeo(location);
+								result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
+							} else {
+								Geometry geom1 = ((JtsGeometry) geoShape).getGeom().reverse();
+								Geometry geom2 = ((JtsGeometry) location).getGeom();
+								if (geom1.intersects(geom2)) {
+									Geometry intersection = geom1.intersection(geom2);
+									result.setGeo(new JtsGeometry(intersection, JtsSpatialContext.GEO, true, true));
+									result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
+								} else {
+									return null;
+								}
+
+							}
+						}
+						break;
+					case NGSIConstants.GEO_REL_OVERLAPS:
+						if (location instanceof Point) {
+							if (SpatialPredicate.Intersects.evaluate(geoShape, location)) {
+								result.setGeo(location);
+								result.setGeoOp(NGSIConstants.GEO_REL_EQUALS);
+							} else {
+								return null;
+							}
+						} else {
+							if (SpatialPredicate.IsWithin.evaluate(geoShape, location)) {
+								result.setGeo(geoShape);
+								result.setGeoOp(NGSIConstants.GEO_REL_OVERLAPS);
+							} else if (SpatialPredicate.IsWithin.evaluate(location, geoShape)) {
+								result.setGeo(location);
+								result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
+							} else if (SpatialPredicate.Intersects.evaluate(location, geoShape)) {
+								Geometry geom1 = ((JtsGeometry) geoShape).getGeom();
+								Geometry geom2 = ((JtsGeometry) location).getGeom();
+								Geometry intersection = geom1.intersection(geom2);
+								result.setGeo(new JtsGeometry(intersection, JtsSpatialContext.GEO, true, true));
+								result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
+							} else {
+								return null;
+							}
+						}
+						break;
+					default:
+						break;
+
 					}
-					break;
-				default:
-					break;
 
 				}
-
 			}
-
 		} else {
 			if (location != null) {
 				result.setGeo(location);

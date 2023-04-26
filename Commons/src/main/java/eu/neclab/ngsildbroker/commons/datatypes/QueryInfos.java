@@ -106,7 +106,8 @@ public class QueryInfos {
 		this.fullScopeFound = fullScopeFound;
 	}
 
-	public String toQueryString(Context context, TypeQueryTerm typeQuery, GeoQueryTerm geoQuery, LanguageQueryTerm langQuery, boolean ignoredId) {
+	public String toQueryString(Context context, TypeQueryTerm typeQuery, GeoQueryTerm geoQuery,
+			LanguageQueryTerm langQuery, boolean ignoredId) {
 		StringBuilder result = new StringBuilder("?");
 
 		if (!ids.isEmpty() && !ignoredId) {
@@ -114,7 +115,7 @@ public class QueryInfos {
 			result.append(String.join(",", ids));
 			result.append('&');
 		}
-		if(idPattern != null) {
+		if (idPattern != null) {
 			result.append("idPattern=");
 			result.append(idPattern);
 			result.append('&');
@@ -132,17 +133,17 @@ public class QueryInfos {
 			}
 			result.setCharAt(result.length() - 1, '&');
 		}
-		if(!scopes.isEmpty()) {
+		if (!scopes.isEmpty()) {
 			result.append("scopeQ=");
 			result.append(String.join(",", scopes));
 			result.append('&');
 		}
-		if(langQuery != null) {
+		if (langQuery != null) {
 			langQuery.toRequestString(result);
 		}
 		if (geo != null && geoQuery != null) {
-			geoQuery.toRequestString(result, geo);
-			
+			geoQuery.toRequestString(result, geo, geoQuery.getGeorel());
+
 		}
 
 		result.setLength(result.length() - 1);
@@ -201,7 +202,7 @@ public class QueryInfos {
 
 	public void setGeoOp(String geoRel) {
 		this.geoRel = geoRel;
-		
+
 	}
 
 }
