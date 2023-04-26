@@ -6,7 +6,7 @@ BEGIN
 	resultObj := '{"success": [], "failure": []}'::jsonb;
 	FOR entity IN SELECT jsonb_array_elements FROM jsonb_array_elements(ENTITIES) LOOP
 		BEGIN
-			INSERT INTO ENTITY(ID,E_TYPES, ENTITY) VALUES (entity->>'@id',  ARRAY(SELECT jsonb_array_elements(entity->'@type')), entity);
+			INSERT INTO ENTITY(ID,E_TYPES, ENTITY) VALUES (entity->>'@id',  ARRAY(SELECT jsonb_array_elements_text(entity->'@type')), entity);
 			RAISE NOTICE 'result obj before %', resultObj;
 			resultObj['success'] = resultObj['success'] || (entity->'@id')::jsonb;
 			RAISE NOTICE 'result obj after %', resultObj;

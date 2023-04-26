@@ -445,7 +445,33 @@ public final class HttpUtils {
 			return handleControllerExceptions(e);
 		}
 	}
+	private static void makeConcise(Object compacted){
+		makeConcise(compacted,null,null);
+	}
+	private static void makeConcise(Object compacted, Map<?, ?> parent, String key) {
+		if (compacted instanceof ArrayList<?> list) {
+			list.forEach(item -> {
+				if (item instanceof Map<?, ?> mapItem) {
+					makeConcise(mapItem, null, "");
+				}
+			});
+		} else if (compacted instanceof Map<?, ?> map) {
+			if (!map.containsKey(NGSIConstants.ID)) {
+				if (map.containsKey(NGSIConstants.TYPE)
+						&& !map.get(NGSIConstants.TYPE).equals(NGSIConstants.GEO_TYPE_POINT))
+					map.remove(NGSIConstants.TYPE); // if object is top element then type should not be removed
+				if (map.size() == 1 && map.containsKey(NGSIConstants.VALUE)) {
+					((Map<String, Object>) parent).put(key, map.get(NGSIConstants.VALUE));
+				}
+			}
+			map.forEach((str, nestedObj) -> {
+				if (!str.equals(NGSIConstants.JSON_LD_CONTEXT) && nestedObj instanceof Map<?, ?> || nestedObj instanceof ArrayList<?>) {
+					makeConcise(nestedObj, map, str.toString());
+				}
+			});
+		}
 
+	}
 	public static Tuple2<Object, List<Tuple2<String, String>>> generateCompactedResult(List<Object> contextHeader,
 			Context context, int acceptHeader, Object entity, String geometryProperty, String options,
 			LanguageQueryTerm langQuery) throws Exception {
@@ -473,6 +499,7 @@ public final class HttpUtils {
 			} else {
 				finalCompacted = compacted;
 			}
+			if(options!=null && options.contains(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)) makeConcise(finalCompacted);
 			replyBody = JsonUtils.toPrettyString(finalCompacted);
 			for (Object entry : contextHeader) {
 				headers.add(Tuple2.of(NGSIConstants.LINK_HEADER, getLinkHeader(entry)));
@@ -495,6 +522,7 @@ public final class HttpUtils {
 			} else {
 				finalCompacted = compacted;
 			}
+			if(options!=null && options.contains(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)) makeConcise(finalCompacted);
 			contentType = AppConstants.NGB_APPLICATION_JSONLD;
 			replyBody = JsonUtils.toPrettyString(finalCompacted);
 			break;
@@ -504,6 +532,7 @@ public final class HttpUtils {
 			break;
 		case 4:// geo+json
 			compacted = JsonLdProcessor.compact(entity, contextHeader, context, opts, -1, optionSet, langQuery);
+			if(options!=null && options.contains(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)) makeConcise(compacted);
 			replyBody = JsonUtils.toPrettyString(generateGeoJson(compacted, geometryProperty, contextHeader));
 			contentType = AppConstants.NGB_APPLICATION_GEO_JSON;
 			break;
@@ -703,6 +732,7 @@ public final class HttpUtils {
 			for (Tuple2<String, String> entry : headers) {
 				builder = builder.header(entry.getItem1(), entry.getItem2());
 			}
+
 			return builder.entity(resultAndHeaders.getItem1()).build();
 
 		} catch (Exception e) {
@@ -759,5 +789,13 @@ public final class HttpUtils {
 		}
 		return result;
 
+	}
+	public static Object doubleToInt(Object object) {
+		if (object instanceof Double) {
+			double d = (Double) object;
+			int i = (int) d;
+			return (d == i)?i:d;
+		} else
+			return object;
 	}
 }

@@ -3,6 +3,7 @@ package eu.neclab.ngsildbroker.entityhandler.services;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -1297,4 +1298,69 @@ public class EntityService {
 		});
 	}
 
+	public void noConcise(Object object) {noConcise(object,null,null);}
+	private void noConcise(Object object, Map<String, Object> parentMap, String keyOfObject) {
+		// Object is Map
+		if (object instanceof Map<?, ?> map) {
+			// Map have object but not type
+			if (map.containsKey(NGSIConstants.OBJECT)) {
+				((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.RELATIONSHIP);
+
+			}
+			// Map have value but not type
+			if (map.containsKey(NGSIConstants.VALUE) && !map.containsKey(NGSIConstants.TYPE)) {
+				// for GeoProperty
+				if (map.get(NGSIConstants.VALUE) instanceof Map<?, ?> nestedMap
+						&& (NGSIConstants.GEO_KEYWORDS.contains(nestedMap.get(NGSIConstants.TYPE))))
+					((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.NGSI_LD_GEOPROPERTY_SHORT);
+				else
+					((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.PROPERTY);
+
+			}
+			// for GeoProperty
+			if (map.containsKey(NGSIConstants.TYPE)
+					&& (NGSIConstants.GEO_KEYWORDS.contains(map.get(NGSIConstants.TYPE)))
+					&& !keyOfObject.equals(NGSIConstants.VALUE)) {
+				Map<String, Object> newMap = new HashMap<>();
+				newMap.put(NGSIConstants.TYPE, NGSIConstants.NGSI_LD_GEOPROPERTY_SHORT);
+				newMap.put(NGSIConstants.VALUE, map);
+				parentMap.put(keyOfObject, newMap);
+
+			}
+
+			// Iterate through every element of Map
+			Object[] mapKeys = map.keySet().toArray();
+			for (Object key : mapKeys) {
+				if (!key.equals(NGSIConstants.ID) && !key.equals(NGSIConstants.TYPE)
+						&& !key.equals(NGSIConstants.JSON_LD_CONTEXT)
+						&& !key.equals(NGSIConstants.QUERY_PARAMETER_COORDINATES)
+						&& !key.equals(NGSIConstants.QUERY_PARAMETER_OBSERVED_AT)
+						&& !key.equals(NGSIConstants.INSTANCE_ID)
+						&& !key.equals(NGSIConstants.QUERY_PARAMETER_DATA_SET_ID) && !key.equals(NGSIConstants.OBJECT)
+						&& !key.equals(NGSIConstants.VALUE) && !key.equals(NGSIConstants.SCOPE)
+						&& !key.equals(NGSIConstants.QUERY_PARAMETER_UNIT_CODE)) {
+					noConcise(map.get(key), (Map<String, Object>) map, key.toString());
+				}
+			}
+		}
+		// Object is List
+		else if (object instanceof List<?> list) {
+			for (int i = 0; i < list.size(); i++) {
+				noConcise(list.get(i), null, null);
+			}
+		}
+		// Object is String or Number value
+		else if ((object instanceof String || object instanceof Number) && parentMap != null) {
+       //  if keyofobject is value then just need to convert double to int if possible
+			if (keyOfObject != null && keyOfObject.equals(NGSIConstants.VALUE)) {
+				parentMap.put(keyOfObject, HttpUtils.doubleToInt(object));
+			} else {
+				Map<String, Object> newMap = new HashMap<>();
+				newMap.put(NGSIConstants.VALUE, HttpUtils.doubleToInt(object));
+				newMap.put(NGSIConstants.TYPE, NGSIConstants.PROPERTY);
+				parentMap.put(keyOfObject, newMap);
+			}
+
+		}
+	}
 }

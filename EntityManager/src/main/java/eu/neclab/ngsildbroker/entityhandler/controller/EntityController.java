@@ -11,6 +11,7 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
+import com.github.jsonldjava.utils.JsonUtils;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.slf4j.Logger;
@@ -60,7 +61,9 @@ public class EntityController {// implements EntityHandlerInterface {
 	public Uni<RestResponse<Object>> createEntity(HttpServerRequest req, String payload) {
 		Tuple2<Context, Map<String, Object>> tuple;
 		try {
-			tuple = HttpUtils.expandBody(req, payload, AppConstants.ENTITY_CREATE_PAYLOAD);
+			Map<String,Object> body = (Map<String, Object>)JsonUtils.fromString(payload);
+			entityService.noConcise(body);
+			tuple = HttpUtils.expandBody(req, body, AppConstants.ENTITY_CREATE_PAYLOAD);
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 		}
@@ -89,7 +92,9 @@ public class EntityController {// implements EntityHandlerInterface {
 			String payload) {
 		Tuple2<Context, Map<String, Object>> tuple;
 		try {
-			tuple = HttpUtils.expandBody(request, payload, AppConstants.ENTITY_UPDATE_PAYLOAD);
+			Map<String,Object> body = (Map<String, Object>)JsonUtils.fromString(payload);
+			entityService.noConcise(body);
+			tuple = HttpUtils.expandBody(request, body, AppConstants.ENTITY_UPDATE_PAYLOAD);
 			HttpUtils.validateUri(entityId);
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
@@ -113,7 +118,9 @@ public class EntityController {// implements EntityHandlerInterface {
 			String payload, @QueryParam("options") String options) {
 		Tuple2<Context, Map<String, Object>> tuple;
 		try {
-			tuple = HttpUtils.expandBody(request, payload, AppConstants.ENTITY_UPDATE_PAYLOAD);
+			Map<String,Object> body = (Map<String, Object>)JsonUtils.fromString(payload);
+			entityService.noConcise(body);
+			tuple = HttpUtils.expandBody(request, body, AppConstants.ENTITY_UPDATE_PAYLOAD);
 			HttpUtils.validateUri(entityId);
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
@@ -140,7 +147,9 @@ public class EntityController {// implements EntityHandlerInterface {
 		Tuple2<Context, Map<String, Object>> tuple;
 		String expAttrib;
 		try {
-			tuple = HttpUtils.expandBody(request, payload, AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD);
+			Map<String,Object> body = (Map<String, Object>)JsonUtils.fromString(payload);
+			entityService.noConcise(body);
+			tuple = HttpUtils.expandBody(request, body, AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD);
 			HttpUtils.validateUri(entityId);
 			expAttrib = tuple.getItem1().expandIri(attrib, false, true, null, null);
 		} catch (Exception e) {

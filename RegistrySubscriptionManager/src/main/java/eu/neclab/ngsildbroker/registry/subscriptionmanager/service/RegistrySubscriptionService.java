@@ -16,6 +16,13 @@ import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Table;
+import com.google.common.collect.Sets;
+import com.google.common.collect.Table.Cell;
+import eu.neclab.ngsildbroker.commons.datatypes.results.CRUDSuccess;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,11 +30,7 @@ import org.slf4j.LoggerFactory;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
-import com.google.common.collect.HashBasedTable;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Table;
-import com.google.common.collect.Table.Cell;
+
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -145,8 +148,9 @@ public class RegistrySubscriptionService {
 							SubscriptionTools.generateNotification(request, data,
 									AppConstants.INTERNAL_NOTIFICATION_REQUEST),
 							AppConstants.INTERNAL_NOTIFICATION_REQUEST).onItem().transform(v -> {
-								return new NGSILDOperationResult(AppConstants.CREATE_SUBSCRIPTION_REQUEST,
-										request.getId());
+							NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.CREATE_SUBSCRIPTION_REQUEST,request.getId());
+						result.addSuccess(new CRUDSuccess(null, null, request.getId(), Sets.newHashSet()));
+						 return result;
 							});
 				} catch (Exception e) {
 					logger.error("Failed to send initial notifcation", e);
@@ -414,7 +418,7 @@ public class RegistrySubscriptionService {
 	@SuppressWarnings("unchecked")
 	private boolean shouldSendOut(SubscriptionRequest potentialSub, Map<String, Object> reg) {
 		Subscription sub = potentialSub.getSubscription();
-		if (!sub.getIsActive() || sub.getExpiresAt() < System.currentTimeMillis()) {
+		if (sub.getIsActive()==null || !sub.getIsActive() || sub.getExpiresAt() < System.currentTimeMillis()) {
 			return false;
 		}
 
@@ -567,6 +571,7 @@ public class RegistrySubscriptionService {
 
 	@SuppressWarnings("unchecked")
 	private boolean checkRegForType(String type, List<Map<String, Object>> information) {
+	if(information!=null){
 		for (Map<String, Object> entry : information) {
 			if (!entry.containsKey(NGSIConstants.NGSI_LD_ENTITIES)) {
 				return true;
@@ -578,7 +583,7 @@ public class RegistrySubscriptionService {
 					return true;
 				}
 			}
-		}
+		}}
 		return false;
 	}
 

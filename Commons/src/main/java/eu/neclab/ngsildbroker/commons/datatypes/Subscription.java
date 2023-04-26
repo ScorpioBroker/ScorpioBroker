@@ -45,7 +45,7 @@ public class Subscription implements Serializable {
 	private static final long serialVersionUID = -327073906884724592L;
 	static final JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 	private String description;
-	private Long expiresAt;
+	private Long expiresAt=Long.MAX_VALUE;
 	private String id;
 	private String subscriptionName;
 	private NotificationParam notification;
@@ -54,7 +54,7 @@ public class Subscription implements Serializable {
 	private Integer timeInterval = 0;
 	private String type;
 	private List<URI> requestorList;
-	private Boolean isActive;
+	private Boolean isActive=true;
 	private Set<String> attributeNames;
 	private List<EntityInfo> entities;
 

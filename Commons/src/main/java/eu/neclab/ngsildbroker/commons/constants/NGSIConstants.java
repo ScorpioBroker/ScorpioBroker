@@ -369,4 +369,14 @@ public interface NGSIConstants {
 	public static final String URL = "url";
 	public static final String JSONLD_CONTEXTS = "ngsi-ld/v1/jsonldContexts/";
 	public static final String NGSI_LD_ATTRIBUTES_ENDPOINT = "/ngsi-ld/v1/attributes";
+	public static final List<String> GEO_KEYWORDS = Arrays.asList(NGSIConstants.GEO_TYPE_POINT,
+			NGSIConstants.GEO_TYPE_POLYGON, NGSIConstants.GEO_TYPE_LINESTRING, NGSIConstants.GEO_TYPE_MULTI_POLYGON);
+	public final static String TYPE = "type";
+	public final static String RELATIONSHIP = "Relationship";
+	public final static String PROPERTY = "Property";
+	public final static String INSTANCE_ID = "instanceId";
+	public final static String QUERY_PARAMETER_CONCISE_VALUE = "concise";
+	public final static String QUERY_PARAMETER_CONCISE = "option";
+	public static final String SCOPE = "scope";
+
 }
