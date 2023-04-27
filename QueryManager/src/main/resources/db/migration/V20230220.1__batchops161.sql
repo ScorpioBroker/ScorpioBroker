@@ -52,7 +52,7 @@ BEGIN
 	FOR newentity IN SELECT jsonb_array_elements FROM jsonb_array_elements(ENTITIES) LOOP
 		BEGIN
 			IF newentity ? '@type' THEN
-				UPDATE ENTITY SET E_TYPES = ARRAY(SELECT jsonb_array_elements(newentity->'@type')), ENTITY = ENTITY.ENTITY || newentity WHERE id = newentity->>'@id';
+				UPDATE ENTITY SET E_TYPES = ARRAY(SELECT jsonb_array_elements_text(newentity->'@type')), ENTITY = ENTITY.ENTITY || newentity WHERE id = newentity->>'@id';
 			ELSE
 				UPDATE ENTITY SET ENTITY = ENTITY.ENTITY || newentity WHERE id = newentity->>'@id';
 			END IF;
@@ -78,7 +78,7 @@ BEGIN
 	FOR newentity IN SELECT jsonb_array_elements FROM jsonb_array_elements(ENTITIES) LOOP
 		BEGIN
 			IF newentity ? '@type' THEN
-				INSERT INTO ENTITY(ID,E_TYPES, ENTITY) VALUES (newentity->>'@id',  ARRAY(SELECT jsonb_array_elements(newentity->'@type')), newentity) ON CONFLICT(ID) DO UPDATE SET E_TYPES = ARRAY(SELECT jsonb_array_elements(newentity->'@type')), ENTITY = ENTITY.entity || newentity;
+				INSERT INTO ENTITY(ID,E_TYPES, ENTITY) VALUES (newentity->>'@id',  ARRAY(SELECT jsonb_array_elements_text(newentity->'@type')), newentity) ON CONFLICT(ID) DO UPDATE SET E_TYPES = ARRAY(SELECT jsonb_array_elements_text(newentity->'@type')), ENTITY = ENTITY.entity || newentity;
 			ELSE
 				UPDATE ENTITY SET ENTITY = ENTITY.ENTITY || newentity WHERE id = newentity->>'@id';
 			END IF;
