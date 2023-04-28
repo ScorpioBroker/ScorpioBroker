@@ -241,7 +241,7 @@ public class SubscriptionService {
 	}
 
 	public Uni<Void> checkSubscriptions(BaseRequest message) {
-		Collection<SubscriptionRequest> potentialSubs = tenant2subscriptionId2Subscription.column(message.getTenant())
+		Collection<SubscriptionRequest> potentialSubs = tenant2subscriptionId2Subscription.row(message.getTenant())
 				.values();
 		List<Uni<Void>> unis = Lists.newArrayList();
 		logger.info("checking subscriptions");
@@ -249,15 +249,17 @@ public class SubscriptionService {
 			switch (message.getRequestType()) {
 			case AppConstants.UPDATE_REQUEST:
 				if (shouldFire(message.getPayload().keySet(), potentialSub)) {
-					unis.add(localEntityService.getEntityById(message.getTenant(), message.getId()).onItem()
+					unis.add(localEntityService.getEntityById(message.getTenant(), message.getId(),true).onItem()
 							.transformToUni(entity -> {
 								return sendNotification(potentialSub, entity, message.getRequestType());
 							}));
 				}
 				break;
 			case AppConstants.CREATE_REQUEST:
-				unis.add(localEntityService.getEntityById(message.getTenant(), message.getId()).onItem()
-						.transformToUni(entity -> sendNotification(potentialSub, entity, message.getRequestType())));
+				unis.add(localEntityService.getEntityById(message.getTenant(), message.getId(),true).onItem()
+						.transformToUni(entity -> {
+							return sendNotification(potentialSub, entity, message.getRequestType());
+						}));
 				break;
 			case AppConstants.DELETE_REQUEST:
 				unis.add(sendNotification(potentialSub, message.getPayload(), message.getRequestType()));
@@ -336,7 +338,7 @@ public class SubscriptionService {
 				}
 				case "http", "https" -> {
 					try {
-						toSend = webClient.post(notificationParam.getEndPoint().getUri().toString())
+						toSend = webClient.postAbs(notificationParam.getEndPoint().getUri().toString())
 								.putHeaders(SubscriptionTools.getHeaders(notificationParam))
 								.sendBuffer(Buffer.buffer(JsonUtils.toPrettyString(JsonLdProcessor.compact(notification,
 										null, potentialSub.getContext(), HttpUtils.opts, -1))))
@@ -659,7 +661,7 @@ public class SubscriptionService {
 		for (Map<String, Object> entry : data) {
 			if (shouldFire(entry.keySet(), subscription)) {
 				unis.add(localEntityService
-						.getEntityById(subscription.getTenant(), (String) entry.get(NGSIConstants.JSON_LD_ID)).onItem()
+						.getEntityById(subscription.getTenant(), (String) entry.get(NGSIConstants.JSON_LD_ID),true).onItem()
 						.transformToUni(entity -> {
 							return sendNotification(subscription, entity, AppConstants.UPDATE_REQUEST);
 						}));

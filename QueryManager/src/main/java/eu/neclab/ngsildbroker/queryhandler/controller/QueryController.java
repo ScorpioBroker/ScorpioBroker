@@ -82,7 +82,8 @@ public class QueryController {
 	public Uni<RestResponse<Object>> getEntity(HttpServerRequest request, @QueryParam(value = "attrs") String attrs,
 			@QueryParam(value = "options") String options, @QueryParam(value = "lang") String lang,
 			@QueryParam(value = "geometryProperty") String geometryProperty,
-			@QueryParam(value = "localOnly") boolean localOnly, @PathParam("entityId") String entityId) {
+			@QueryParam(value = "localOnly") boolean localOnly, @PathParam("entityId") String entityId,
+			@QueryParam(value = "doNotCompact") boolean doNotCompact) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		if (acceptHeader == -1) {
 			return HttpUtils.getInvalidHeader();
@@ -104,7 +105,7 @@ public class QueryController {
 		return queryService
 				.retrieveEntity(context, HttpUtils.getTenant(request), entityId, attrsQuery, langQuery, localOnly)
 				.onItem().transform(entity -> {
-
+					if(doNotCompact) return RestResponse.ok((Object)entity);
 					return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, entity,
 							geometryProperty, options, langQuery);
 				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);

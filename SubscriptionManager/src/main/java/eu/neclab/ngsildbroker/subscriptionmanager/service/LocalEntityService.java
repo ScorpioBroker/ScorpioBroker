@@ -6,6 +6,8 @@ import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
+import javax.ws.rs.QueryParam;
+
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -21,6 +23,7 @@ public interface LocalEntityService {
 	@Path("/{entityId}")
 	@ClientQueryParam(name = NGSIConstants.QUERY_PARAMETER_OPTIONS, value = NGSIConstants.QUERY_PARAMETER_OPTIONS_SYSATTRS)
 	Uni<Map<String, Object>> getEntityById(@HeaderParam(NGSIConstants.TENANT_HEADER) String tenant,
-			@PathParam("entityId") String entityId);
+										   @PathParam("entityId") String entityId,
+										   @QueryParam("doNotCompact")boolean doNotCompact);
 
 }
