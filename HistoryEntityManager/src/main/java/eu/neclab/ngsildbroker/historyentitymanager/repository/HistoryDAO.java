@@ -169,7 +169,7 @@ public class HistoryDAO {
 						+ DBConstants.DBTABLE_TEMPORALENTITY
 						+ ".e_types || EXCLUDED.e_types)), modifiedat = EXCLUDED.modifiedat, ";
 				if (request.getRequestType() == AppConstants.APPEND_REQUEST) {
-					typeSql += "scopes = CASE WHEN EXCLUDED.scopes IS NULL THEN scopes ELSE EXCLUDED.scopes END ";
+					typeSql += "scopes = CASE WHEN EXCLUDED.scopes IS NULL THEN temporalentity.scopes ELSE EXCLUDED.scopes END ";
 				} else {
 					typeSql += "scopes = EXCLUDED.scopes ";
 				}
