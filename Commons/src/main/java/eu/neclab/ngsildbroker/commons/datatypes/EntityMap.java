@@ -27,7 +27,15 @@ public class EntityMap {
 	}
 
 	public List<EntityMapEntry> getSubMap(int from, int to) {
-		return entityList.subList(from, to);
+		List<EntityMapEntry> entityListRes = Lists.newArrayList();
+		if(to>entityList.size()){
+			to=entityList.size();
+		}
+
+		if(from >= 0 && to <= entityList.size() && from <= to){
+			entityListRes=entityList.subList(from, to);
+		}
+		return entityListRes;
 	}
 
 	public Map<String, Integer> getId2ListPosition() {
