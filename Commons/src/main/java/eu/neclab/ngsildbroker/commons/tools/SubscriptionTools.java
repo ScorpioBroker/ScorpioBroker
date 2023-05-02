@@ -199,7 +199,8 @@ public class SubscriptionTools {
 	public static String getMqttPayload(NotificationParam notificationParam, Map<String, Object> notification)
 			throws Exception {
 		Map<String, Object> result = Maps.newLinkedHashMap();
-		if (!notificationParam.getEndPoint().getReceiverInfo().isEmpty()) {
+		if (notificationParam.getEndPoint().getReceiverInfo()!=null &&
+				!notificationParam.getEndPoint().getReceiverInfo().isEmpty()) {
 			result.put(NGSIConstants.METADATA, getMqttMetaData(notificationParam.getEndPoint().getReceiverInfo()));
 		}
 		result.put(NGSIConstants.BODY, notification);
