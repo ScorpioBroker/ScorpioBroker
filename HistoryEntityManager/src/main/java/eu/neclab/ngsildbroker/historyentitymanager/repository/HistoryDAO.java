@@ -113,7 +113,9 @@ public class HistoryDAO {
 							.preparedQuery("INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
 									+ " (temporalentity_id, attributeid, data) VALUES ($1, $2, $3::jsonb)")
 							.executeBatch(batch).onItem().transformToUni(
-									t -> conn.close().onItem().transform(v -> rows.iterator().next().getBoolean(0)));
+									t -> conn.close().onItem().transform(v->{
+									return 	!rows.iterator().next().getBoolean(0);
+									}));
 				});
 			});
 		});

@@ -669,7 +669,7 @@ public final class HttpUtils {
 					return HttpUtils.handleControllerExceptions(e);
 				}
 			} else {
-				return RestResponse.ok();
+				return RestResponse.noContent();
 			}
 		} else if (successes.isEmpty() && fails.size() == 1) {
 			return HttpUtils.handleControllerExceptions(fails.get(0));
