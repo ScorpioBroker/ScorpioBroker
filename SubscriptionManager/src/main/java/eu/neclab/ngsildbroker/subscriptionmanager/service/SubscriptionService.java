@@ -430,49 +430,49 @@ public class SubscriptionService {
 			if (entityInfo.getId() != null && entityInfo.getType() != null && sub.getAttributeNames() != null) {
 				if (checkEntityForIdTypeAttrs(entityInfo.getId(), entityInfo.getType(), sub.getAttributeNames(),
 						entity)) {
-					break;
+					return true;
 				}
 			} else if (entityInfo.getIdPattern() != null && entityInfo.getType() != null
 					&& sub.getAttributeNames() != null) {
 				if (checkEntityForIdPatternTypeAttrs(entityInfo.getIdPattern(), entityInfo.getType(),
 						sub.getAttributeNames(), entity)) {
-					break;
+					return true;
 				}
 			} else if (entityInfo.getId() != null && entityInfo.getType() != null) {
 				if (checkEntityForIdType(entityInfo.getId(), entityInfo.getType(), entity)) {
-					break;
+					return true;
 				}
 			} else if (entityInfo.getIdPattern() != null && entityInfo.getType() != null) {
 				if (checkEntityForIdPatternType(entityInfo.getIdPattern(), entityInfo.getType(), entity)) {
-					break;
+					return true;
 				}
 			} else if (entityInfo.getId() != null && sub.getAttributeNames() != null) {
 				if (checkEntityForIdAttrs(entityInfo.getId(), sub.getAttributeNames(), entity)) {
-					break;
+					return true;
 				}
 			} else if (entityInfo.getIdPattern() != null && sub.getAttributeNames() != null) {
 				if (checkEntityForIdPatternAttrs(entityInfo.getIdPattern(), sub.getAttributeNames(), entity)) {
-					break;
+					return true;
 				}
 			} else if (entityInfo.getType() != null && sub.getAttributeNames() != null) {
 				if (checkEntityForTypeAttrs(entityInfo.getType(), sub.getAttributeNames(), entity)) {
-					break;
+					return true;
 				}
 			} else if (entityInfo.getType() != null) {
 				if (checkEntityForType(entityInfo.getType(), entity)) {
-					break;
+					return true;
 				}
 			} else if (entityInfo.getIdPattern() != null) {
 				if (checkEntityForIdPattern(entityInfo.getIdPattern(), entity)) {
-					break;
+					return true;
 				}
 			} else if (entityInfo.getId() != null) {
 				if (checkEntityForId(entityInfo.getId(), entity)) {
-					break;
+					return true;
 				}
 			} else if (sub.getAttributeNames() != null) {
 				if (checkEntityForAttribs(sub.getAttributeNames(), entity)) {
-					break;
+					return true;
 				}
 			}
 
@@ -490,7 +490,7 @@ public class SubscriptionService {
 				return false;
 			}
 		}
-		return true;
+		return false;
 	}
 
 	private boolean checkEntityForId(URI id, Map<String, Object> entity) {
