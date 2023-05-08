@@ -287,7 +287,7 @@ public class HistoryDAO {
 			return client.getConnection().onItem().transformToUni(conn -> {
 				return conn
 						.preparedQuery("UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
-								+ " SET data VALUES ($1::jsonb) WHERE attributeid=$2 AND instanceid=$3 AND id=$4")
+								+ " SET data = $1::jsonb WHERE attributeid=$2 AND instanceid=$3 AND temporalentity_id=$4")
 						.execute(Tuple.of(new JsonObject(payload), request.getAttrId(), request.getInstanceId(),
 								request.getId()))
 						.onFailure().recoverWithUni(e -> {
@@ -362,7 +362,7 @@ public class HistoryDAO {
 			return client.getConnection().onItem().transformToUni(conn -> {
 				return conn
 						.preparedQuery("DELETE FROM " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
-								+ " WHERE attributeid=$2 AND instanceid=$3 AND id=$4")
+								+ " WHERE attributeid=$1 AND instanceid=$2 AND temporalentity_id=$3")
 						.execute(Tuple.of(request.getAttrId(), request.getInstanceId(), request.getId())).onFailure()
 						.recoverWithUni(e -> {
 							if (e instanceof PgException) {
