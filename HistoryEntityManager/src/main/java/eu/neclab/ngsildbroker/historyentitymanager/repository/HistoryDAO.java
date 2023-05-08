@@ -237,8 +237,8 @@ public class HistoryDAO {
 
 				String sql = "UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY + " SET modifiedat = $1";
 				int dollarCount = 2;
-				if (payload.containsKey(NGSIConstants.JSON_LD_TYPE)) {
-					sql += ", SET e_types = ARRAY(SELECT DISTINCT UNNEST(e_types || $" + dollarCount + "))";
+				if (payload.containsKey(NGSIConstants.JSON_LD_TYPE) && payload.get(NGSIConstants.JSON_LD_TYPE)!=null) {
+					sql += ",e_types = ARRAY(SELECT DISTINCT UNNEST(e_types || $" + dollarCount + "))";
 					tuple.addArrayOfString(
 							((List<String>) payload.remove(NGSIConstants.JSON_LD_TYPE)).toArray(new String[0]));
 					dollarCount++;
@@ -251,6 +251,7 @@ public class HistoryDAO {
 				}
 				sql += " WHERE id=$" + dollarCount;
 				tuple.addString(request.getId());
+				payload.remove(NGSIConstants.JSON_LD_TYPE);
 				payload.remove(NGSIConstants.JSON_LD_ID);
 				return conn.preparedQuery(sql).execute(tuple).onFailure().recoverWithUni(e -> {
 					if (e instanceof PgException) {
