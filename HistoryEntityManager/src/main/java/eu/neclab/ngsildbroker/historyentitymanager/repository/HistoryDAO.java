@@ -320,19 +320,18 @@ public class HistoryDAO {
 					if (request.isDeleteAll()) {
 						query1 = conn
 								.preparedQuery("DELETE FROM " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
-										+ " WHERE attributeid=$1 AND id=$2")
+										+ " WHERE attributeid=$1 AND temporalentity_id=$2")
 								.execute(Tuple.of(request.getAttribName(), request.getId()));
 					} else {
 						query1 = conn
 								.preparedQuery("DELETE FROM " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
-										+ " WHERE attributeid=$1 AND id=$2 AND NOT '"
-										+ NGSIConstants.NGSI_LD_DATA_SET_ID + "' ? data")
+										+ " WHERE attributeid=$1 AND temporalentity_id=$2 AND NOT data ?| array['"+NGSIConstants.NGSI_LD_DATA_SET_ID+"']")
 								.execute(Tuple.of(request.getAttribName(), request.getId()));
 					}
 				} else {
 					query1 = conn
 							.preparedQuery("DELETE FROM " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
-									+ " WHERE attributeid=$1 AND id=$2 AND '" + NGSIConstants.NGSI_LD_DATA_SET_ID
+									+ " WHERE attributeid=$1 AND temporalentity_id=$2 AND '" + NGSIConstants.NGSI_LD_DATA_SET_ID
 									+ "' ? data AND data@>>'{" + NGSIConstants.NGSI_LD_DATA_SET_ID + ",0,"
 									+ NGSIConstants.JSON_LD_ID + "}'=$3")
 							.execute(Tuple.of(request.getAttribName(), request.getId(), request.getDatasetId()));

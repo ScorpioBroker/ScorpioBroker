@@ -107,7 +107,7 @@ public class HistoryController {
 		try {
 			HttpUtils.validateUri(entityId);
 			context = JsonLdProcessor.getCoreContextClone().parse(HttpUtils.getAtContext(request), true);
-			attrId = context.expandIri(attrId, false, false, null, null);
+			attrId = context.expandIri(attrId, false, true, null, null);
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 		}
