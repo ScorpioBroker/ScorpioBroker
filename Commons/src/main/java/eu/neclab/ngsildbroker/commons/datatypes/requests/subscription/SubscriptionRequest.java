@@ -40,7 +40,8 @@ public class SubscriptionRequest extends BaseRequest {
 		// TODO Auto-generated method stub
 		super.setPayload(payload);
 		try {
-			this.subscription = Subscription.expandSubscription(payload, context, false);
+			if (payload != null)
+				this.subscription = Subscription.expandSubscription(payload, context, false);
 		} catch (ResponseException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -62,7 +63,5 @@ public class SubscriptionRequest extends BaseRequest {
 	public void setContext(Context context) {
 		this.context = context;
 	}
-
-	
 
 }

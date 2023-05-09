@@ -1,33 +1,11 @@
 package eu.neclab.ngsildbroker.queryhandler.controller;
 
-import java.io.IOException;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.QueryParam;
-
-import org.apache.commons.codec.digest.Md5Crypt;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.resteasy.reactive.RestResponse;
-import org.jboss.resteasy.reactive.server.jaxrs.RestResponseBuilderImpl;
-
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import com.google.common.net.HttpHeaders;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
@@ -44,8 +22,23 @@ import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.QueryParser;
 import eu.neclab.ngsildbroker.queryhandler.services.QueryService;
 import io.smallrye.mutiny.Uni;
-import io.vertx.codegen.annotations.Nullable;
 import io.vertx.core.http.HttpServerRequest;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.resteasy.reactive.RestResponse;
+import org.jboss.resteasy.reactive.server.jaxrs.RestResponseBuilderImpl;
+
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.QueryParam;
+import java.io.IOException;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 @Singleton
 @Path("/ngsi-ld/v1")
@@ -105,7 +98,8 @@ public class QueryController {
 		return queryService
 				.retrieveEntity(context, HttpUtils.getTenant(request), entityId, attrsQuery, langQuery, localOnly)
 				.onItem().transform(entity -> {
-					if(doNotCompact) return RestResponse.ok((Object)entity);
+					if (doNotCompact)
+						return RestResponse.ok((Object) entity);
 					return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, entity,
 							geometryProperty, options, langQuery);
 				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
@@ -145,7 +139,7 @@ public class QueryController {
 			return Uni.createFrom()
 					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.TooManyResults)));
 		}
-		if (typeQuery == null && attrs == null && geometry == null && q == null) {
+		if (id != null || typeQuery == null && attrs == null && geometry == null && q == null) {
 			return Uni.createFrom()
 					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.InvalidRequest)));
 		}
@@ -195,7 +189,8 @@ public class QueryController {
 		}
 		if (entityMap) {
 			return queryService.queryForEntityIds(HttpUtils.getTenant(request), ids, typeQueryTerm, idPattern,
-					attrsQuery, qQueryTerm, geoQueryTerm, scopeQueryTerm,langQuery, context).onItem().transform(list -> {
+					attrsQuery, qQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, context).onItem()
+					.transform(list -> {
 						String body;
 						Object result = "[]";
 						try {
@@ -337,13 +332,14 @@ public class QueryController {
 
 	}
 
-	@Path("/entityOperations/query")
+	@Path("/entityoperations/query")
 	@POST
 	public Uni<RestResponse<Object>> postQuery(HttpServerRequest request, String payload,
 			@QueryParam(value = "limit") Integer limit, @QueryParam(value = "offset") int offset,
 			@QueryParam(value = "options") String options, @QueryParam(value = "count") boolean count,
 			@QueryParam(value = "localOnly") boolean localOnly,
-			@QueryParam(value = "geometryProperty") String geometryProperty) {
+			@QueryParam(value = "geometryProperty") String geometryProperty,
+			@QueryParam(value = "doNotCompact") boolean doNotCompact) {
 
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		if (acceptHeader == -1) {
@@ -466,6 +462,8 @@ public class QueryController {
 					while (it.hasNext()) {
 						first.getData().addAll(((QueryResult) it.next()).getData());
 					}
+					if (doNotCompact)
+						return RestResponse.ok(first.getData());
 					return HttpUtils.generateQueryResult(request, first, options, geometryProperty, acceptHeader, count,
 							actualLimit, langQuery, context);
 				});
@@ -473,6 +471,8 @@ public class QueryController {
 				return queryService.query(tenant, request.headers().get("qToken"), false, null, null, null, attrsQuery,
 						qQueryTerm, csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset, count,
 						localOnly, context).onItem().transform(queryResult -> {
+							if (doNotCompact)
+								return RestResponse.ok((Object) queryResult.getData());
 							return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty,
 									acceptHeader, count, actualLimit, langQuery, context);
 						}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e));

@@ -153,6 +153,7 @@ public class MicroServiceUtils {
 		result.setTenant(originalPayload.getTenant());
 		result.setRequestType(originalPayload.getRequestType());
 		result.setBatchInfo(originalPayload.getBatchInfo());
+		result.setContext(originalPayload.getContext());
 		return result;
 	}
 

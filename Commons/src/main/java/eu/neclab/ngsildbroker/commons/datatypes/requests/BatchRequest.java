@@ -1,11 +1,13 @@
 package eu.neclab.ngsildbroker.commons.datatypes.requests;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 
 import com.github.jsonldjava.core.Context;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 
 public class BatchRequest {
@@ -23,6 +25,13 @@ public class BatchRequest {
 		this.requestPayload = requestPayload;
 		this.contexts = contexts;
 		this.requestType = requestType;
+		if (requestPayload != null) {
+			List<String> ids = new ArrayList<>();
+			for (Map<String, Object> entity : requestPayload) {
+				ids.add((String) entity.get(NGSIConstants.JSON_LD_ID));
+			}
+			setEntityIds(ids);
+		}
 	}
 
 	public int getRequestType() {
