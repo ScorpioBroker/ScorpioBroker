@@ -1,6 +1,7 @@
 package eu.neclab.ngsildbroker.subscriptionmanager.service;
 
 import com.github.jsonldjava.core.Context;
+import com.github.jsonldjava.core.JsonLdConsts;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.HashBasedTable;
@@ -15,7 +16,8 @@ import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityInfo;
 import eu.neclab.ngsildbroker.commons.datatypes.NotificationParam;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.BatchRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteAttributeRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.DeleteSubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.InternalNotification;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
@@ -58,6 +60,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -232,82 +235,33 @@ public class SubscriptionService {
 		});
 	}
 
-//	public Uni<Void> checkSubscriptions(BaseRequest message) {
-//		Collection<SubscriptionRequest> potentialSubs = tenant2subscriptionId2Subscription.row(message.getTenant())
-//				.values();
-//		List<Uni<Void>> unis = Lists.newArrayList();
-//		logger.info("checking subscriptions");
-//		for (SubscriptionRequest potentialSub : potentialSubs) {
-//			switch (message.getRequestType()) {
-//				case AppConstants.UPDATE_REQUEST:
-//					if (shouldFire(message.getPayload().keySet(), potentialSub)) {
-//						unis.add(localEntityService.getEntityById(message.getTenant(), message.getId(), true).onItem()
-//								.transformToUni(entity -> {
-//									return sendNotification(potentialSub, entity, message.getRequestType());
-//								}));
-//					}
-//					break;
-//				case AppConstants.CREATE_REQUEST:
-//					unis.add(localEntityService.getEntityById(message.getTenant(), message.getId(), true).onItem()
-//							.transformToUni(entity -> {
-//								return sendNotification(potentialSub, entity, message.getRequestType());
-//							}));
-//					break;
-//				case AppConstants.DELETE_REQUEST:
-//					unis.add(sendNotification(potentialSub, message.getPayload(), message.getRequestType()));
-//				case AppConstants.DELETE_ATTRIBUTE_REQUEST:
-//					if (shouldFire(Sets.newHashSet(((DeleteAttributeRequest) message).getAttribName()), potentialSub)) {
-//						unis.add(sendNotification(potentialSub, message.getPayload(), message.getRequestType()));
-//					}
-//				default:
-//					break;
-//			}
-//		}
-//		if (unis.isEmpty()) {
-//			return Uni.createFrom().voidItem();
-//		}
-//		return Uni.combine().all().unis(unis).discardItems();
-//	}
-
-	public Uni<Void> checkSubscriptions(BatchRequest message) {
+	public Uni<Void> checkSubscriptions(BaseRequest message) {
 		Collection<SubscriptionRequest> potentialSubs = tenant2subscriptionId2Subscription.row(message.getTenant())
 				.values();
 		List<Uni<Void>> unis = Lists.newArrayList();
 		logger.info("checking subscriptions");
 		for (SubscriptionRequest potentialSub : potentialSubs) {
 			switch (message.getRequestType()) {
-//				case AppConstants.UPDATE_REQUEST:
-//					if (shouldFire(message.getPayload().keySet(), potentialSub)) {
-//						unis.add(localEntityService.getEntityById(message.getTenant(), message.getId(), true).onItem()
-//								.transformToUni(entity -> {
-//									return sendNotification(potentialSub, entity, message.getRequestType());
-//								}));
-//					}
-//					break;
-			case AppConstants.UPSERT_REQUEST:
-			case AppConstants.CREATE_REQUEST:
-				Map<String, Object> queryBody = new HashMap<>();
-				List<Map<String, Object>> entities = new ArrayList<>();
-				queryBody.put("type", "Query");
-				queryBody.put("entities", entities);
-				for (String id : message.getEntityIds()) {
-					Map<String, Object> idMap = new HashMap<>();
-					idMap.put("id", id);
-					entities.add(idMap);
+				case AppConstants.UPDATE_REQUEST, AppConstants.UPSERT_REQUEST, AppConstants.CREATE_REQUEST,
+						AppConstants.APPEND_REQUEST ->
+					unis.add(localEntityService.getAllByIds(message.getTenant(), message.getId(), true).onItem()
+							.transformToUni(entityList -> {
+								Map<String, Object> payload = new HashMap<>();
+								payload.put(JsonLdConsts.GRAPH, entityList);
+								return sendNotification(potentialSub, payload, message.getRequestType());
+							}));
+				case AppConstants.DELETE_REQUEST -> {
+					Map<String, Object> ids = new HashMap<>();
+					ids.put(NGSIConstants.ID, message.getId());
+					unis.add(sendNotification(potentialSub, ids, message.getRequestType()));
 				}
-				unis.add(localEntityService.getAllByIds(message.getTenant(), queryBody, true, true).onItem()
-						.transformToUni(entityList -> {
-							return sendNotification(potentialSub, entityList, message.getRequestType());
-						}));
-				break;
-//				case AppConstants.DELETE_REQUEST:
-//					unis.add(sendNotification(potentialSub, message.getPayload(), message.getRequestType()));
-//				case AppConstants.DELETE_ATTRIBUTE_REQUEST:
-//					if (shouldFire(Sets.newHashSet(((DeleteAttributeRequest) message).getAttribName()), potentialSub)) {
-//						unis.add(sendNotification(potentialSub, message.getPayload(), message.getRequestType()));
-//					}
-			default:
-				break;
+				case AppConstants.DELETE_ATTRIBUTE_REQUEST -> {
+					if (shouldFire(Sets.newHashSet(((DeleteAttributeRequest) message).getAttribName()), potentialSub)) {
+						unis.add(sendNotification(potentialSub, message.getPayload(), message.getRequestType()));
+					}
+				}
+				default -> {
+				}
 			}
 		}
 		if (unis.isEmpty()) {
@@ -316,13 +270,23 @@ public class SubscriptionService {
 		return Uni.combine().all().unis(unis).discardItems();
 	}
 
-	private Uni<Void> sendNotification(SubscriptionRequest potentialSub, List<Map<String, Object>> reg,
-			int triggerReason) {
+	private Uni<Void> sendNotification(SubscriptionRequest potentialSub, Map<String, Object> reg, int triggerReason) {
 		List<Map<String, Object>> entityToBeSent = new ArrayList<>();
-		for (Map<String, Object> entity : reg) {
-			if (shouldSendOut(potentialSub, entity)) {
-				entityToBeSent.add(entity);
+		if (triggerReason == AppConstants.DELETE_REQUEST) {
+			String[] ids = ((String) reg.get(NGSIConstants.ID)).split(",");
+			Map<String, Object> idsMap = new HashMap<>();
+			idsMap.put(JsonLdConsts.GRAPH, Arrays.asList(ids));
+			entityToBeSent.add(idsMap);
+		} else if (reg.containsKey(JsonLdConsts.GRAPH)) {
+			for (Map<String, Object> entity : (List<Map<String, Object>>) reg.get(JsonLdConsts.GRAPH)) {
+				if (!shouldFire(entity.keySet(), potentialSub))
+					continue;
+				if (shouldSendOut(potentialSub, entity)) {
+					entityToBeSent.add(entity);
+				}
 			}
+		} else if (shouldSendOut(potentialSub, reg)) {
+			entityToBeSent.add(reg);
 		}
 		if (!entityToBeSent.isEmpty()) {
 			Map<String, Object> notification;
@@ -335,24 +299,66 @@ public class SubscriptionService {
 			NotificationParam notificationParam = potentialSub.getSubscription().getNotification();
 			Uni<Void> toSend;
 			switch (notificationParam.getEndPoint().getUri().getScheme()) {
-			case "mqtt", "mqtts" -> {
-				try {
-					toSend = getMqttClient(notificationParam).onItem().transformToUni(client -> {
-						int qos = 1;
+				case "mqtt", "mqtts" -> {
+					try {
+						toSend = getMqttClient(notificationParam).onItem().transformToUni(client -> {
+							int qos = 1;
 
-						String qosString = notificationParam.getEndPoint().getNotifierInfo()
-								.get(NGSIConstants.MQTT_QOS);
-						if (qosString != null) {
-							qos = Integer.parseInt(qosString);
-						}
-						try {
-							return client.publish(notificationParam.getEndPoint().getUri().getPath().substring(1),
-									Buffer.buffer(SubscriptionTools.getMqttPayload(notificationParam, notification)),
-									MqttQoS.valueOf(qos), false, false).onItem().transformToUni(t -> {
-										if (t == 0) {
-											// TODO what the fuck is the result here
-										}
-										long now = System.currentTimeMillis();
+							String qosString = notificationParam.getEndPoint().getNotifierInfo()
+									.get(NGSIConstants.MQTT_QOS);
+							if (qosString != null) {
+								qos = Integer.parseInt(qosString);
+							}
+							try {
+								return client
+										.publish(notificationParam.getEndPoint().getUri().getPath().substring(1),
+												Buffer.buffer(SubscriptionTools.getMqttPayload(notificationParam,
+														notification)),
+												MqttQoS.valueOf(qos), false, false)
+										.onItem().transformToUni(t -> {
+											if (t == 0) {
+												// TODO what the fuck is the result here
+											}
+											long now = System.currentTimeMillis();
+											potentialSub.getSubscription().getNotification()
+													.setLastSuccessfulNotification(now);
+											potentialSub.getSubscription().getNotification().setLastNotification(now);
+											return subDAO.updateNotificationSuccess(potentialSub.getTenant(),
+													potentialSub.getId(),
+													SerializationTools.notifiedAt_formatter.format(LocalDateTime
+															.ofInstant(Instant.ofEpochMilli(now), ZoneId.of("Z"))));
+										}).onFailure().recoverWithUni(e -> {
+											logger.error("failed to send notification for subscription "
+													+ potentialSub.getId(), e);
+											long now = System.currentTimeMillis();
+											potentialSub.getSubscription().getNotification()
+													.setLastFailedNotification(now);
+											potentialSub.getSubscription().getNotification().setLastNotification(now);
+											return subDAO.updateNotificationFailure(potentialSub.getTenant(),
+													potentialSub.getId(),
+													SerializationTools.notifiedAt_formatter.format(LocalDateTime
+															.ofInstant(Instant.ofEpochMilli(now), ZoneId.of("Z"))));
+										});
+							} catch (Exception e) {
+								logger.error("failed to send notification for subscription " + potentialSub.getId(), e);
+								return Uni.createFrom().voidItem();
+							}
+						});
+					} catch (Exception e) {
+						logger.error("failed to send notification for subscription " + potentialSub.getId(), e);
+						return Uni.createFrom().voidItem();
+					}
+				}
+				case "http", "https" -> {
+					try {
+						toSend = webClient.postAbs(notificationParam.getEndPoint().getUri().toString())
+								.putHeaders(SubscriptionTools.getHeaders(notificationParam))
+								.sendBuffer(Buffer.buffer(JsonUtils.toPrettyString(JsonLdProcessor.compact(notification,
+										null, potentialSub.getContext(), HttpUtils.opts, -1))))
+								.onFailure().retry().atMost(3).onItem().transformToUni(result -> {
+									int statusCode = result.statusCode();
+									long now = System.currentTimeMillis();
+									if (statusCode > 200 && statusCode < 300) {
 										potentialSub.getSubscription().getNotification()
 												.setLastSuccessfulNotification(now);
 										potentialSub.getSubscription().getNotification().setLastNotification(now);
@@ -360,73 +366,37 @@ public class SubscriptionService {
 												potentialSub.getId(),
 												SerializationTools.notifiedAt_formatter.format(LocalDateTime
 														.ofInstant(Instant.ofEpochMilli(now), ZoneId.of("Z"))));
-									}).onFailure().recoverWithUni(e -> {
-										logger.error(
-												"failed to send notification for subscription " + potentialSub.getId(),
-												e);
-										long now = System.currentTimeMillis();
+									} else {
+										logger.error("failed to send notification for subscription "
+												+ potentialSub.getId() + " with status code " + statusCode
+												+ ". Remember there is no redirect following for post due to security considerations");
 										potentialSub.getSubscription().getNotification().setLastFailedNotification(now);
 										potentialSub.getSubscription().getNotification().setLastNotification(now);
 										return subDAO.updateNotificationFailure(potentialSub.getTenant(),
 												potentialSub.getId(),
 												SerializationTools.notifiedAt_formatter.format(LocalDateTime
 														.ofInstant(Instant.ofEpochMilli(now), ZoneId.of("Z"))));
-									});
-						} catch (Exception e) {
-							logger.error("failed to send notification for subscription " + potentialSub.getId(), e);
-							return Uni.createFrom().voidItem();
-						}
-					});
-				} catch (Exception e) {
-					logger.error("failed to send notification for subscription " + potentialSub.getId(), e);
-					return Uni.createFrom().voidItem();
-				}
-			}
-			case "http", "https" -> {
-				try {
-					toSend = webClient.postAbs(notificationParam.getEndPoint().getUri().toString())
-							.putHeaders(SubscriptionTools.getHeaders(notificationParam))
-							.sendBuffer(Buffer.buffer(JsonUtils.toPrettyString(JsonLdProcessor.compact(notification,
-									null, potentialSub.getContext(), HttpUtils.opts, -1))))
-							.onFailure().retry().atMost(3).onItem().transformToUni(result -> {
-								int statusCode = result.statusCode();
-								long now = System.currentTimeMillis();
-								if (statusCode > 200 && statusCode < 300) {
-									potentialSub.getSubscription().getNotification().setLastSuccessfulNotification(now);
-									potentialSub.getSubscription().getNotification().setLastNotification(now);
-									return subDAO.updateNotificationSuccess(potentialSub.getTenant(),
-											potentialSub.getId(),
-											SerializationTools.notifiedAt_formatter.format(LocalDateTime
-													.ofInstant(Instant.ofEpochMilli(now), ZoneId.of("Z"))));
-								} else {
-									logger.error("failed to send notification for subscription " + potentialSub.getId()
-											+ " with status code " + statusCode
-											+ ". Remember there is no redirect following for post due to security considerations");
+									}
+								}).onFailure().recoverWithUni(e -> {
+									logger.error("failed to send notification for subscription " + potentialSub.getId(),
+											e);
+									long now = System.currentTimeMillis();
 									potentialSub.getSubscription().getNotification().setLastFailedNotification(now);
 									potentialSub.getSubscription().getNotification().setLastNotification(now);
 									return subDAO.updateNotificationFailure(potentialSub.getTenant(),
 											potentialSub.getId(),
 											SerializationTools.notifiedAt_formatter.format(LocalDateTime
 													.ofInstant(Instant.ofEpochMilli(now), ZoneId.of("Z"))));
-								}
-							}).onFailure().recoverWithUni(e -> {
-								logger.error("failed to send notification for subscription " + potentialSub.getId(), e);
-								long now = System.currentTimeMillis();
-								potentialSub.getSubscription().getNotification().setLastFailedNotification(now);
-								potentialSub.getSubscription().getNotification().setLastNotification(now);
-								return subDAO.updateNotificationFailure(potentialSub.getTenant(), potentialSub.getId(),
-										SerializationTools.notifiedAt_formatter.format(
-												LocalDateTime.ofInstant(Instant.ofEpochMilli(now), ZoneId.of("Z"))));
-							});
-				} catch (Exception e) {
-					logger.error("failed to send notification for subscription " + potentialSub.getId(), e);
+								});
+					} catch (Exception e) {
+						logger.error("failed to send notification for subscription " + potentialSub.getId(), e);
+						return Uni.createFrom().voidItem();
+					}
+				}
+				default -> {
+					logger.error("unsuported endpoint in subscription " + potentialSub.getId());
 					return Uni.createFrom().voidItem();
 				}
-			}
-			default -> {
-				logger.error("unsuported endpoint in subscription " + potentialSub.getId());
-				return Uni.createFrom().voidItem();
-			}
 			}
 			if (potentialSub.getSubscription().getThrottling() > 0) {
 				long delay = potentialSub.getSubscription().getThrottling() - (System.currentTimeMillis()
@@ -621,10 +591,10 @@ public class SubscriptionService {
 						data.add(row.getJsonObject(0).getMap());
 					});
 					try {
-						List<Map<String, Object>> list = new ArrayList<>();
-						list.add(SubscriptionTools.generateNotification(request, data,
-								AppConstants.INTERNAL_NOTIFICATION_REQUEST));
-						return sendNotification(request, list, AppConstants.INTERVAL_NOTIFICATION_REQUEST);
+						return sendNotification(request,
+								SubscriptionTools.generateNotification(request, data,
+										AppConstants.INTERNAL_NOTIFICATION_REQUEST),
+								AppConstants.INTERVAL_NOTIFICATION_REQUEST);
 					} catch (Exception e) {
 						logger.error("Failed to send initial notifcation", e);
 						return Uni.createFrom().voidItem();
@@ -712,9 +682,7 @@ public class SubscriptionService {
 				unis.add(localEntityService
 						.getEntityById(subscription.getTenant(), (String) entry.get(NGSIConstants.JSON_LD_ID), true)
 						.onItem().transformToUni(entity -> {
-							List<Map<String, Object>> list = new ArrayList<>();
-							list.add(entity);
-							return sendNotification(subscription, list, AppConstants.UPDATE_REQUEST);
+							return sendNotification(subscription, entity, AppConstants.UPDATE_REQUEST);
 						}));
 			}
 		}

@@ -172,8 +172,7 @@ public class SubscriptionTools {
 				.format(LocalDateTime.ofInstant(Instant.ofEpochMilli(System.currentTimeMillis()), ZoneId.of("Z"))));
 		Map<String, Object> compacted = JsonLdProcessor.compact(reg, null, potentialSub.getContext(), HttpUtils.opts,
 				-1);
-		// TODO check what compacted produces here and add the correct things
-		notification.put(NGSIConstants.NGSI_LD_DATA_SHORT, compacted.getOrDefault(JsonLdConsts.GRAPH, compacted));
+		notification.put(NGSIConstants.NGSI_LD_DATA_SHORT, compacted.getOrDefault(JsonLdConsts.GRAPH, List.of(compacted)));
 		notification.put(NGSIConstants.NGSI_LD_TRIGGER_REASON_SHORT, HttpUtils.getTriggerReason(triggerReason));
 		return notification;
 	}

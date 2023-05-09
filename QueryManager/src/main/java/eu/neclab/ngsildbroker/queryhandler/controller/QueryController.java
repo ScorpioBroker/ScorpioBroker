@@ -124,7 +124,8 @@ public class QueryController {
 			@QueryParam("scopeQ") String scopeQ, @QueryParam("localOnly") boolean localOnly,
 			@QueryParam("options") String options, @QueryParam("limit") Integer limit, @QueryParam("offset") int offset,
 			@QueryParam("count") boolean count, @QueryParam("entityMap") boolean entityMap,
-			@QueryParam("zipEntityMap") boolean zipEntityMap) {
+			@QueryParam("zipEntityMap") boolean zipEntityMap,
+			@QueryParam(value = "doNotCompact") boolean doNotCompact) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		if (acceptHeader == -1) {
 			return HttpUtils.getInvalidHeader();
@@ -139,7 +140,7 @@ public class QueryController {
 			return Uni.createFrom()
 					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.TooManyResults)));
 		}
-		if (id != null || typeQuery == null && attrs == null && geometry == null && q == null) {
+		if (id == null && typeQuery == null && attrs == null && geometry == null && q == null) {
 			return Uni.createFrom()
 					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.InvalidRequest)));
 		}
@@ -175,7 +176,7 @@ public class QueryController {
 		String token;
 		boolean tokenProvided;
 
-		String md5 = "" + request.params().remove("limit").remove("offset").remove("entityMap").hashCode();
+		String md5 = String.valueOf(request.params().remove("limit").remove("offset").remove("entityMap").hashCode());
 		if (request.headers().contains("qToken")) {
 			token = request.headers().get("qToken");
 			if (!token.equals(md5)) {
@@ -215,6 +216,8 @@ public class QueryController {
 		return queryService.query(HttpUtils.getTenant(request), token, tokenProvided, ids, typeQueryTerm, idPattern,
 				attrsQuery, qQueryTerm, csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset,
 				count, localOnly, context).onItem().transform(queryResult -> {
+					if (doNotCompact)
+						return RestResponse.ok((Object) queryResult.getData());
 					return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty, acceptHeader,
 							count, actualLimit, langQuery, context);
 				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
@@ -332,14 +335,13 @@ public class QueryController {
 
 	}
 
-	@Path("/entityoperations/query")
+	@Path("/entityOperations/query")
 	@POST
 	public Uni<RestResponse<Object>> postQuery(HttpServerRequest request, String payload,
 			@QueryParam(value = "limit") Integer limit, @QueryParam(value = "offset") int offset,
 			@QueryParam(value = "options") String options, @QueryParam(value = "count") boolean count,
 			@QueryParam(value = "localOnly") boolean localOnly,
-			@QueryParam(value = "geometryProperty") String geometryProperty,
-			@QueryParam(value = "doNotCompact") boolean doNotCompact) {
+			@QueryParam(value = "geometryProperty") String geometryProperty) {
 
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		if (acceptHeader == -1) {
@@ -373,29 +375,29 @@ public class QueryController {
 		try {
 			Map<String, Object> body = (Map<String, Object>) JsonUtils.fromString(payload);
 			switch (request.getHeader(io.vertx.core.http.HttpHeaders.CONTENT_TYPE)) {
-			case AppConstants.NGB_APPLICATION_JSON:
-				if (body.containsKey(NGSIConstants.JSON_LD_CONTEXT)) {
-					return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
-							new ResponseException(ErrorType.BadRequestData, "@context entry missing")));
+				case AppConstants.NGB_APPLICATION_JSON:
+					if (body.containsKey(NGSIConstants.JSON_LD_CONTEXT)) {
+						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
+								new ResponseException(ErrorType.BadRequestData, "@context entry missing")));
 
-				} else {
-					context = JsonLdProcessor.getCoreContextClone().parse(HttpUtils.getAtContext(request), true);
-					break;
-				}
-			case AppConstants.NGB_APPLICATION_JSONLD:
-				if (body.containsKey(NGSIConstants.JSON_LD_CONTEXT)) {
-					context = JsonLdProcessor.getCoreContextClone().parse(body.get(NGSIConstants.JSON_LD_CONTEXT),
-							true);
-					break;
-				} else {
-					return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
-							new ResponseException(ErrorType.BadRequestData, "@context entry missing")));
-				}
-			default:
-				return Uni.createFrom()
-						.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.InvalidRequest,
-								"Only Content-Type " + AppConstants.NGB_APPLICATION_JSON + " and "
-										+ AppConstants.NGB_APPLICATION_JSONLD + " are allowed")));
+					} else {
+						context = JsonLdProcessor.getCoreContextClone().parse(HttpUtils.getAtContext(request), true);
+						break;
+					}
+				case AppConstants.NGB_APPLICATION_JSONLD:
+					if (body.containsKey(NGSIConstants.JSON_LD_CONTEXT)) {
+						context = JsonLdProcessor.getCoreContextClone().parse(body.get(NGSIConstants.JSON_LD_CONTEXT),
+								true);
+						break;
+					} else {
+						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
+								new ResponseException(ErrorType.BadRequestData, "@context entry missing")));
+					}
+				default:
+					return Uni.createFrom()
+							.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.InvalidRequest,
+									"Only Content-Type " + AppConstants.NGB_APPLICATION_JSON + " and "
+											+ AppConstants.NGB_APPLICATION_JSONLD + " are allowed")));
 			}
 
 			Object entities = body.get(NGSIConstants.NGSI_LD_ENTITIES_SHORT);
@@ -462,8 +464,6 @@ public class QueryController {
 					while (it.hasNext()) {
 						first.getData().addAll(((QueryResult) it.next()).getData());
 					}
-					if (doNotCompact)
-						return RestResponse.ok(first.getData());
 					return HttpUtils.generateQueryResult(request, first, options, geometryProperty, acceptHeader, count,
 							actualLimit, langQuery, context);
 				});
@@ -471,8 +471,6 @@ public class QueryController {
 				return queryService.query(tenant, request.headers().get("qToken"), false, null, null, null, attrsQuery,
 						qQueryTerm, csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset, count,
 						localOnly, context).onItem().transform(queryResult -> {
-							if (doNotCompact)
-								return RestResponse.ok((Object) queryResult.getData());
 							return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty,
 									acceptHeader, count, actualLimit, langQuery, context);
 						}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e));

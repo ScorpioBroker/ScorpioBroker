@@ -80,9 +80,11 @@ public class MicroServiceUtils {
 	}
 
 	public static BatchRequest deepCopyRequestMessage(BatchRequest originalPayload) {
-		List<Map<String, Object>> copiedPayload = new ArrayList<>(originalPayload.getRequestPayload().size());
-		for (Map<String, Object> entry : originalPayload.getRequestPayload()) {
-			copiedPayload.add(deepCopyMap(entry));
+		List<Map<String, Object>> copiedPayload=new ArrayList<>();
+		if(originalPayload.getRequestPayload()!=null && !originalPayload.getRequestPayload().isEmpty()) {
+			for (Map<String, Object> entry : originalPayload.getRequestPayload()) {
+				copiedPayload.add(deepCopyMap(entry));
+			}
 		}
 		BatchRequest result = new BatchRequest(originalPayload.getTenant(), copiedPayload,
 				originalPayload.getContexts(), originalPayload.getRequestType());

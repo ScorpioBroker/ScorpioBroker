@@ -16,21 +16,20 @@ import javax.ws.rs.QueryParam;
 import java.util.List;
 import java.util.Map;
 
-@Path("/ngsi-ld/v1")
+@Path("/ngsi-ld/v1/entities")
 @RegisterRestClient(configKey = "entity-service")
 @ClientHeaderParam(name = "Accept", value = "application/json")
 public interface LocalEntityService {
 
 	@GET
-	@Path("/entities/{entityId}")
+	@Path("/{entityId}")
 	@ClientQueryParam(name = NGSIConstants.QUERY_PARAMETER_OPTIONS, value = NGSIConstants.QUERY_PARAMETER_OPTIONS_SYSATTRS)
 	Uni<Map<String, Object>> getEntityById(@HeaderParam(NGSIConstants.TENANT_HEADER) String tenant,
 			@PathParam("entityId") String entityId, @QueryParam("doNotCompact") boolean doNotCompact);
 
-	@POST
-	@Path("/entityoperations/query")
+	@GET
+	@Path("/")
 	Uni<List<Map<String, Object>>> getAllByIds(@HeaderParam(NGSIConstants.TENANT_HEADER) String tenant,
-			@RequestBody Map<String, Object> body, @QueryParam("doNotCompact") boolean doNotCompact,
-			@QueryParam("localOnly") boolean localOnly);
+			@QueryParam("id") String ids, @QueryParam("doNotCompact") boolean doNotCompact);
 
 }

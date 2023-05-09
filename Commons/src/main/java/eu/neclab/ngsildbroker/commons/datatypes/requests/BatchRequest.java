@@ -1,16 +1,18 @@
 package eu.neclab.ngsildbroker.commons.datatypes.requests;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 
 import com.github.jsonldjava.core.Context;
 
+import com.github.jsonldjava.core.JsonLdConsts;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 
-public class BatchRequest {
+public class BatchRequest extends BaseRequest {
 
 	private String tenant;
 	private List<Map<String, Object>> requestPayload;
@@ -41,6 +43,7 @@ public class BatchRequest {
 	public List<String> getEntityIds() {
 		return entityIds;
 	}
+	public String getId(){return String.join(",",entityIds);}
 
 	public void setEntityIds(List<String> entityIds) {
 		this.entityIds = entityIds;
@@ -58,6 +61,11 @@ public class BatchRequest {
 		return requestPayload;
 	}
 
+	public Map<String,Object> getPayload(){
+		Map<String,Object> payload = new HashMap<>();
+		payload.put(JsonLdConsts.GRAPH,requestPayload);
+		return payload;
+	}
 	public List<Context> getContexts() {
 		return contexts;
 	}

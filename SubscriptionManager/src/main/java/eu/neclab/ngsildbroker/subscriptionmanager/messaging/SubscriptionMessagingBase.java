@@ -9,7 +9,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public abstract class SubscriptionMessagingBase {
 	private static final Logger logger = LoggerFactory.getLogger(SubscriptionMessagingBase.class);
@@ -18,9 +20,7 @@ public abstract class SubscriptionMessagingBase {
 
 	public Uni<Void> baseHandleEntity(BaseRequest message) {
 		logger.debug("CSource sub manager got called for csource: " + message.getId());
-		BatchRequest batchRequest = new BatchRequest(message.getTenant(), List.of(message.getPayload()), null,
-				message.getRequestType());
-		return subscriptionService.checkSubscriptions(batchRequest);
+		return subscriptionService.checkSubscriptions(message);
 	}
 
 	public Uni<Void> baseHandleBatchEntities(BatchRequest message) {
