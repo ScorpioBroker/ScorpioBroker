@@ -82,9 +82,15 @@ public class HistoryDAO {
 					" WHERE TEAI.ATTRIBUTEID = TEAI2.ATTRIBUTEID AND TEAI.temporalentity_id = TEAI2.temporalentity_id ");
 
 			if (attrsQuery != null) {
-				sql.append("AND TEAI2.attributeId in ($" + dollarCount + ")");
-				dollarCount++;
-				tuple.addArrayOfString(attrsQuery.getAttrs().toArray(new String[0]));
+				sql.append(" AND TEAI2.attributeId in ( ");
+				for (String attr : attrsQuery.getAttrs()) {
+					sql.append('$');
+					sql.append(dollarCount);
+					sql.append(',');
+					tuple.addString(attr);
+					dollarCount++;
+				}
+				sql.setCharAt(sql.length() - 1, ')');
 			}
 
 			if (tempQuery != null && aggrQuery == null) {
@@ -210,11 +216,15 @@ public class HistoryDAO {
 				dollarCount = typeQuery.toSql(sql, tuple, dollarCount);
 			}
 			if (entityIds != null) {
-				sql.append(" AND id in ($");
-				sql.append(dollarCount);
-				sql.append(")");
-				dollarCount++;
-				tuple.addArrayOfString(entityIds);
+				sql.append(" AND id IN (");
+				for (String id : entityIds) {
+					sql.append('$');
+					sql.append(dollarCount);
+					sql.append(',');
+					tuple.addString(id);
+					dollarCount++;
+				}
+				sql.setCharAt(sql.length() - 1, ')');
 			}
 			if (idPattern != null) {
 				sql.append(" AND id ~ $");
