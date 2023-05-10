@@ -60,7 +60,6 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -251,9 +250,7 @@ public class SubscriptionService {
 								return sendNotification(potentialSub, payload, message.getRequestType());
 							}));
 				case AppConstants.DELETE_REQUEST -> {
-					Map<String, Object> ids = new HashMap<>();
-					ids.put(NGSIConstants.ID, message.getId());
-					unis.add(sendNotification(potentialSub, ids, message.getRequestType()));
+					unis.add(sendNotification(potentialSub, message.getPayload(), message.getRequestType()));
 				}
 				case AppConstants.DELETE_ATTRIBUTE_REQUEST -> {
 					if (shouldFire(Sets.newHashSet(((DeleteAttributeRequest) message).getAttribName()), potentialSub)) {
@@ -273,15 +270,25 @@ public class SubscriptionService {
 	private Uni<Void> sendNotification(SubscriptionRequest potentialSub, Map<String, Object> reg, int triggerReason) {
 		List<Map<String, Object>> entityToBeSent = new ArrayList<>();
 		if (triggerReason == AppConstants.DELETE_REQUEST) {
-			String[] ids = ((String) reg.get(NGSIConstants.ID)).split(",");
+			List<String> ids = new ArrayList<>();
 			Map<String, Object> idsMap = new HashMap<>();
-			idsMap.put(JsonLdConsts.GRAPH, Arrays.asList(ids));
-			entityToBeSent.add(idsMap);
+			if (reg.containsKey(JsonLdConsts.GRAPH)) {
+				for (Map<String, Object> entity : (List<Map<String, Object>>) reg.get(JsonLdConsts.GRAPH)) {
+					if (shouldFire(entity.keySet(), potentialSub) && shouldSendOut(potentialSub, entity)) {
+						ids.add((String) entity.get(JsonLdConsts.ID));
+					}
+				}
+				idsMap.put(JsonLdConsts.GRAPH, ids);
+				entityToBeSent.add(idsMap);
+			} else if (shouldFire(reg.keySet(), potentialSub) && shouldSendOut(potentialSub, reg)) {
+				ids.add((String) reg.get(JsonLdConsts.ID));
+				idsMap.put(JsonLdConsts.GRAPH, ids);
+				entityToBeSent.add(idsMap);
+			}
+
 		} else if (reg.containsKey(JsonLdConsts.GRAPH)) {
 			for (Map<String, Object> entity : (List<Map<String, Object>>) reg.get(JsonLdConsts.GRAPH)) {
-				if (!shouldFire(entity.keySet(), potentialSub))
-					continue;
-				if (shouldSendOut(potentialSub, entity)) {
+				if (shouldFire(entity.keySet(), potentialSub) && shouldSendOut(potentialSub, entity)) {
 					entityToBeSent.add(entity);
 				}
 			}
@@ -518,7 +525,7 @@ public class SubscriptionService {
 	}
 
 	private boolean checkEntityForAttribs(Set<String> attributeNames, Map<String, Object> entity) {
-		return Sets.intersection(attributeNames, entity.keySet()).isEmpty();
+		return !Sets.intersection(attributeNames, entity.keySet()).isEmpty();
 	}
 
 	@SuppressWarnings("unchecked")

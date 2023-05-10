@@ -402,6 +402,7 @@ public class EntityService {
 
 	private Uni<NGSILDOperationResult> localDeleteEntity(DeleteEntityRequest request, Context context) {
 		return entityDAO.deleteEntity(request).onItem().transformToUni(deleted -> {
+			request.setPayload(deleted);
 			return entityEmitter.send(request).onItem().transform(v -> {
 				NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.DELETE_REQUEST, request.getId());
 				result.addSuccess(new CRUDSuccess(null, null, null, deleted, context));
