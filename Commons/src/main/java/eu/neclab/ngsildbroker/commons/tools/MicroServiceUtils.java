@@ -150,12 +150,12 @@ public class MicroServiceUtils {
 
 	public static SubscriptionRequest deepCopySubscriptionMessage(SubscriptionRequest originalPayload) {
 		SubscriptionRequest result = new SubscriptionRequest();
+		result.setContext(originalPayload.getContext());
 		result.setId(originalPayload.getId());
 		result.setPayload(deepCopyMap(originalPayload.getPayload()));
 		result.setTenant(originalPayload.getTenant());
 		result.setRequestType(originalPayload.getRequestType());
 		result.setBatchInfo(originalPayload.getBatchInfo());
-		result.setContext(originalPayload.getContext());
 		return result;
 	}
 
