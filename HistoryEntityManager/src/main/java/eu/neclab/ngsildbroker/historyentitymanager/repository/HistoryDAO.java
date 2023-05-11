@@ -14,6 +14,7 @@ import java.util.UUID;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import com.github.jsonldjava.core.JsonLdConsts;
 import org.locationtech.spatial4j.context.SpatialContextFactory;
 import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
 import org.locationtech.spatial4j.exception.InvalidShapeException;
@@ -284,12 +285,12 @@ public class HistoryDAO {
 
 	public Uni<Void> updateAttrInstanceInHistoryEntity(UpdateAttrHistoryEntityRequest request) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
-			Map<String, Object> payload = request.getPayload();
+			Object payload = new JsonObject(((List<Map<String,Object>>)request.getPayload().get(request.getAttrId())).get(0));
 			return client.getConnection().onItem().transformToUni(conn -> {
 				return conn
 						.preparedQuery("UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
-								+ " SET data = $1::jsonb WHERE attributeid=$2 AND instanceid=$3 AND temporalentity_id=$4")
-						.execute(Tuple.of(new JsonObject(payload), request.getAttrId(), request.getInstanceId(),
+								+ " SET data = data || $1::jsonb WHERE attributeid=$2 AND instanceid=$3 AND temporalentity_id=$4")
+						.execute(Tuple.of(payload, request.getAttrId(), request.getInstanceId(),
 								request.getId()))
 						.onFailure().recoverWithUni(e -> {
 							if (e instanceof PgException) {
@@ -304,7 +305,8 @@ public class HistoryDAO {
 									.preparedQuery("UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY
 											+ " SET modifiedat = $1 WHERE id = $2")
 									.execute(Tuple.of(
-											DBUtil.getLocalDateTime(payload.get(NGSIConstants.NGSI_LD_MODIFIED_AT)),
+											DBUtil.getLocalDateTime(request.getPayload()
+													.get(NGSIConstants.NGSI_LD_MODIFIED_AT)),
 											request.getId()))
 									.onItem().transformToUni(t -> conn.close());
 						});
