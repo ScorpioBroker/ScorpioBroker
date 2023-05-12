@@ -1,10 +1,7 @@
 package eu.neclab.ngsildbroker.historyquerymanager.repository;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
@@ -290,7 +287,7 @@ public class HistoryDAO {
 			if (attrsQuery != null) {
 				sql.append("AND TEAI2.attributeId in ($" + dollarCount + ")");
 				dollarCount++;
-				tuple.addArrayOfString(attrsQuery.getAttrs().toArray(new String[0]));
+				tuple.addString(String.join(",", attrsQuery.getAttrs().toArray(new String[0])));
 			}
 
 			if (tempQuery != null && aggrQuery == null) {
@@ -345,7 +342,10 @@ public class HistoryDAO {
 					Map<String, Object> entity;
 					while (it.hasNext()) {
 						next = it.next();
-						entity = next.getJsonObject(0).getMap();
+						if(next.getJsonObject(0)!=null)
+							entity = next.getJsonObject(0).getMap();
+						else
+							entity=new HashMap<>();
 						resultData.add(entity);
 					}
 					if (count) {
