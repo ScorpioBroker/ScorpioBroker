@@ -1161,18 +1161,42 @@ public class QueryService {
 		} else {
 			List<Uni<Tuple2<QueryRemoteHost, List<String>>>> unis = Lists.newArrayList();
 			for (QueryRemoteHost remoteHost : remoteHost2Query) {
-				unis.add(webClient
-						.get(remoteHost.host() + "/" + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT
-								+ remoteHost.queryString() + "&entityMap=true&zipEntityMap=true")
-						.send().onItem().transform(response -> {
-							List<String> result;
-							if (response != null && response.statusCode() == 200) {
-								result = response.bodyAsJsonArray().getList();
-							} else {
-								result = Lists.newArrayList();
-							}
-							return Tuple2.of(remoteHost, result);
-						}));
+				if (remoteHost.canDoIdQuery()) {
+					String entityMapString;
+					if (remoteHost.canDoZip()) {
+						entityMapString = "&entityMap=true&zipEntityMap=true";
+					} else {
+						entityMapString = "&entityMap=true";
+					}
+					unis.add(webClient
+							.get(remoteHost.host() + "/" + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT
+									+ remoteHost.queryString() + entityMapString)
+							.send().onItem().transform(response -> {
+								List<String> result;
+								if (response != null && response.statusCode() == 200) {
+									result = response.bodyAsJsonArray().getList();
+								} else {
+									result = Lists.newArrayList();
+								}
+								return Tuple2.of(remoteHost, result);
+							}));
+				} else {
+					unis.add(
+							webClient
+									.get(remoteHost.host() + "/" + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT
+											+ remoteHost.queryString() + "limit=1000")
+									.send().onItem().transform(response -> {
+										List<String> result = Lists.newArrayList();
+										if (response != null && response.statusCode() == 200) {
+											List tmpList = response.bodyAsJsonArray().getList();
+											for (Object obj : tmpList) {
+												result.add((String) ((Map<String, Object>) obj)
+														.get(NGSIConstants.JSON_LD_ID));
+											}
+										}
+										return Tuple2.of(remoteHost, result);
+									}));
+				}
 			}
 			remoteIds = Uni.combine().all().unis(unis).combinedWith(list -> {
 				Map<QueryRemoteHost, List<String>> result = Maps.newHashMap();
