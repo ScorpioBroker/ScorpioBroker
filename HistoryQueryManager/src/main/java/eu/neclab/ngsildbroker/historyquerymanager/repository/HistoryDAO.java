@@ -5,17 +5,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Table;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -86,9 +82,15 @@ public class HistoryDAO {
 					" WHERE TEAI.ATTRIBUTEID = TEAI2.ATTRIBUTEID AND TEAI.temporalentity_id = TEAI2.temporalentity_id ");
 
 			if (attrsQuery != null) {
-				sql.append("AND TEAI2.attributeId in ($" + dollarCount + ")");
-				dollarCount++;
-				tuple.addArrayOfString(attrsQuery.getAttrs().toArray(new String[0]));
+				sql.append(" AND TEAI2.attributeId in ( ");
+				for (String attr : attrsQuery.getAttrs()) {
+					sql.append('$');
+					sql.append(dollarCount);
+					sql.append(',');
+					tuple.addString(attr);
+					dollarCount++;
+				}
+				sql.setCharAt(sql.length() - 1, ')');
 			}
 
 			if (tempQuery != null && aggrQuery == null) {
@@ -214,11 +216,15 @@ public class HistoryDAO {
 				dollarCount = typeQuery.toSql(sql, tuple, dollarCount);
 			}
 			if (entityIds != null) {
-				sql.append(" AND id in ($");
-				sql.append(dollarCount);
-				sql.append(")");
-				dollarCount++;
-				tuple.addArrayOfString(entityIds);
+				sql.append(" AND id IN (");
+				for (String id : entityIds) {
+					sql.append('$');
+					sql.append(dollarCount);
+					sql.append(',');
+					tuple.addString(id);
+					dollarCount++;
+				}
+				sql.setCharAt(sql.length() - 1, ')');
 			}
 			if (idPattern != null) {
 				sql.append(" AND id ~ $");

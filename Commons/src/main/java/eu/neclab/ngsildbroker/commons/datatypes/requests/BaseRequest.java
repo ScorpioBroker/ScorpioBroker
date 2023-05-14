@@ -1,20 +1,14 @@
 package eu.neclab.ngsildbroker.commons.datatypes.requests;
 
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-
-import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
-import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class BaseRequest {
 
 	private String tenant;
-	protected Map<String, Object> payload;
+	protected Map<String, Object> payload = new HashMap<>();
 	private int requestType;
 	private long sendTimestamp = System.currentTimeMillis();
 	private BatchInfo batchInfo;

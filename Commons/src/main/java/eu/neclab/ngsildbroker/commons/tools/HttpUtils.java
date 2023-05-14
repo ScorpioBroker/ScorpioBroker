@@ -669,7 +669,7 @@ public final class HttpUtils {
 					return HttpUtils.handleControllerExceptions(e);
 				}
 			} else {
-				return RestResponse.ok();
+				return RestResponse.noContent();
 			}
 		} else if (successes.isEmpty() && fails.size() == 1) {
 			return HttpUtils.handleControllerExceptions(fails.get(0));
@@ -699,8 +699,14 @@ public final class HttpUtils {
 	}
 
 	public static String getTriggerReason(int triggerReason) {
-		// TODO Auto-generated method stub
-		return null;
+		// TODO Cases remaining for upsert(determine created or updated)
+		//  and noLongerMatching due to update or delete attr
+		return switch (triggerReason) {
+			case AppConstants.CREATE_REQUEST -> "newlyMatching";
+			case AppConstants.UPDATE_REQUEST,AppConstants.APPEND_REQUEST -> "updated";
+			case AppConstants.DELETE_REQUEST -> "noLongerMatching";
+			default -> null;
+		};
 	}
 
 	public static RestResponse<Object> generateQueryResult(HttpServerRequest request, QueryResult queryResult,

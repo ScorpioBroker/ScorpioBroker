@@ -1,25 +1,6 @@
 package eu.neclab.ngsildbroker.commons.tools;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.Map.Entry;
-
-import org.locationtech.spatial4j.SpatialPredicate;
-import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
-import org.locationtech.spatial4j.distance.DistanceUtils;
-import org.locationtech.spatial4j.shape.Shape;
-import org.locationtech.spatial4j.shape.ShapeFactory;
-import org.locationtech.spatial4j.shape.ShapeFactory.LineStringBuilder;
-import org.locationtech.spatial4j.shape.ShapeFactory.PolygonBuilder;
-import org.locationtech.spatial4j.shape.jts.JtsShapeFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import com.github.jsonldjava.core.JsonLdConsts;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
@@ -37,10 +18,28 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import io.smallrye.mutiny.tuples.Tuple4;
 import io.vertx.core.http.impl.headers.HeadersMultiMap;
 import io.vertx.mutiny.core.MultiMap;
+import org.locationtech.spatial4j.SpatialPredicate;
+import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
+import org.locationtech.spatial4j.distance.DistanceUtils;
+import org.locationtech.spatial4j.shape.Shape;
+import org.locationtech.spatial4j.shape.ShapeFactory.LineStringBuilder;
+import org.locationtech.spatial4j.shape.ShapeFactory.PolygonBuilder;
+import org.locationtech.spatial4j.shape.jts.JtsShapeFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.UUID;
 
 public class SubscriptionTools {
 	public static JtsShapeFactory shapeFactory = JtsSpatialContext.GEO.getShapeFactory();
-	
+
 	private final static Logger logger = LoggerFactory.getLogger(SubscriptionTools.class);
 
 	@SuppressWarnings("unchecked")
@@ -173,8 +172,7 @@ public class SubscriptionTools {
 				.format(LocalDateTime.ofInstant(Instant.ofEpochMilli(System.currentTimeMillis()), ZoneId.of("Z"))));
 		Map<String, Object> compacted = JsonLdProcessor.compact(reg, null, potentialSub.getContext(), HttpUtils.opts,
 				-1);
-		// TODO check what compacted produces here and add the correct things
-		notification.put(NGSIConstants.NGSI_LD_DATA_SHORT, Lists.newArrayList(compacted));
+		notification.put(NGSIConstants.NGSI_LD_DATA_SHORT, compacted.getOrDefault(JsonLdConsts.GRAPH, List.of(compacted)));
 		notification.put(NGSIConstants.NGSI_LD_TRIGGER_REASON_SHORT, HttpUtils.getTriggerReason(triggerReason));
 		return notification;
 	}
@@ -199,7 +197,8 @@ public class SubscriptionTools {
 	public static String getMqttPayload(NotificationParam notificationParam, Map<String, Object> notification)
 			throws Exception {
 		Map<String, Object> result = Maps.newLinkedHashMap();
-		if (!notificationParam.getEndPoint().getReceiverInfo().isEmpty()) {
+		if (notificationParam.getEndPoint().getReceiverInfo() != null
+				&& !notificationParam.getEndPoint().getReceiverInfo().isEmpty()) {
 			result.put(NGSIConstants.METADATA, getMqttMetaData(notificationParam.getEndPoint().getReceiverInfo()));
 		}
 		result.put(NGSIConstants.BODY, notification);
@@ -241,8 +240,9 @@ public class SubscriptionTools {
 
 		SubscriptionRequest result = new SubscriptionRequest(subscriptionRequest.getTenant(), newSub,
 				subscriptionRequest.getContext());
-		result.getSubscription().getNotification().getEndPoint().getReceiverInfo()
-				.removeAll(NGSIConstants.TENANT_HEADER);
+		if (result.getSubscription().getNotification().getEndPoint().getReceiverInfo() != null)
+			result.getSubscription().getNotification().getEndPoint().getReceiverInfo()
+					.removeAll(NGSIConstants.TENANT_HEADER);
 		if (!tenant.equals(AppConstants.INTERNAL_NULL_KEY)) {
 			result.getSubscription().getNotification().getEndPoint().getReceiverInfo().put(NGSIConstants.TENANT_HEADER,
 					tenant);
@@ -364,58 +364,60 @@ public class SubscriptionTools {
 
 		List<Map<String, Object>> regInfos = (List<Map<String, Object>>) registryEntry
 				.get(NGSIConstants.NGSI_LD_INFORMATION);
-		for (Map<String, Object> regInfo : regInfos) {
-			if (regInfo.containsKey(NGSIConstants.NGSI_LD_ENTITIES)) {
-				List<Map<String, Object>> entities = (List<Map<String, Object>>) regInfo
-						.get(NGSIConstants.NGSI_LD_ENTITIES);
-				for (Map<String, Object> entry : entities) {
-					String id = null;
-					String idPattern = null;
-					String type = null;
-					if (entry.containsKey(NGSIConstants.JSON_LD_ID)) {
-						id = (String) entry.get(NGSIConstants.JSON_LD_ID);
-					}
-					if (entry.containsKey(NGSIConstants.JSON_LD_TYPE)) {
-						type = ((List<String>) entry.get(NGSIConstants.JSON_LD_TYPE)).get(0);
-					}
-					if (entry.containsKey(NGSIConstants.NGSI_LD_ID_PATTERN)) {
-						idPattern = ((List<Map<String, String>>) entry.get(NGSIConstants.NGSI_LD_ID_PATTERN)).get(0)
-								.get(NGSIConstants.JSON_LD_VALUE);
-					}
-					if (regInfo.containsKey(NGSIConstants.NGSI_LD_RELATIONSHIPS)
-							|| regInfo.containsKey(NGSIConstants.NGSI_LD_PROPERTIES)) {
-						if (regInfo.containsKey(NGSIConstants.NGSI_LD_RELATIONSHIPS)) {
-							for (Map<String, String> relationship : (List<Map<String, String>>) regInfo
-									.get(NGSIConstants.NGSI_LD_RELATIONSHIPS)) {
-								regTuples.add(
-										Tuple4.of(id, idPattern, type, relationship.get(NGSIConstants.JSON_LD_ID)));
-							}
+		if (regInfos != null)
+			for (Map<String, Object> regInfo : regInfos) {
+				if (regInfo.containsKey(NGSIConstants.NGSI_LD_ENTITIES)) {
+					List<Map<String, Object>> entities = (List<Map<String, Object>>) regInfo
+							.get(NGSIConstants.NGSI_LD_ENTITIES);
+					for (Map<String, Object> entry : entities) {
+						String id = null;
+						String idPattern = null;
+						String type = null;
+						if (entry.containsKey(NGSIConstants.JSON_LD_ID)) {
+							id = (String) entry.get(NGSIConstants.JSON_LD_ID);
 						}
-						if (regInfo.containsKey(NGSIConstants.NGSI_LD_PROPERTIES)) {
-							for (Map<String, String> property : (List<Map<String, String>>) regInfo
-									.get(NGSIConstants.NGSI_LD_PROPERTIES)) {
-								regTuples.add(Tuple4.of(id, idPattern, type, property.get(NGSIConstants.JSON_LD_ID)));
-							}
+						if (entry.containsKey(NGSIConstants.JSON_LD_TYPE)) {
+							type = ((List<String>) entry.get(NGSIConstants.JSON_LD_TYPE)).get(0);
 						}
-					} else {
-						regTuples.add(Tuple4.of(id, idPattern, type, null));
+						if (entry.containsKey(NGSIConstants.NGSI_LD_ID_PATTERN)) {
+							idPattern = ((List<Map<String, String>>) entry.get(NGSIConstants.NGSI_LD_ID_PATTERN)).get(0)
+									.get(NGSIConstants.JSON_LD_VALUE);
+						}
+						if (regInfo.containsKey(NGSIConstants.NGSI_LD_RELATIONSHIPS)
+								|| regInfo.containsKey(NGSIConstants.NGSI_LD_PROPERTIES)) {
+							if (regInfo.containsKey(NGSIConstants.NGSI_LD_RELATIONSHIPS)) {
+								for (Map<String, String> relationship : (List<Map<String, String>>) regInfo
+										.get(NGSIConstants.NGSI_LD_RELATIONSHIPS)) {
+									regTuples.add(
+											Tuple4.of(id, idPattern, type, relationship.get(NGSIConstants.JSON_LD_ID)));
+								}
+							}
+							if (regInfo.containsKey(NGSIConstants.NGSI_LD_PROPERTIES)) {
+								for (Map<String, String> property : (List<Map<String, String>>) regInfo
+										.get(NGSIConstants.NGSI_LD_PROPERTIES)) {
+									regTuples.add(
+											Tuple4.of(id, idPattern, type, property.get(NGSIConstants.JSON_LD_ID)));
+								}
+							}
+						} else {
+							regTuples.add(Tuple4.of(id, idPattern, type, null));
+						}
 					}
-				}
-			} else {
-				if (regInfo.containsKey(NGSIConstants.NGSI_LD_RELATIONSHIPS)) {
-					for (Map<String, String> relationship : (List<Map<String, String>>) regInfo
-							.get(NGSIConstants.NGSI_LD_RELATIONSHIPS)) {
-						regTuples.add(Tuple4.of(null, null, null, relationship.get(NGSIConstants.JSON_LD_ID)));
+				} else {
+					if (regInfo.containsKey(NGSIConstants.NGSI_LD_RELATIONSHIPS)) {
+						for (Map<String, String> relationship : (List<Map<String, String>>) regInfo
+								.get(NGSIConstants.NGSI_LD_RELATIONSHIPS)) {
+							regTuples.add(Tuple4.of(null, null, null, relationship.get(NGSIConstants.JSON_LD_ID)));
+						}
 					}
-				}
-				if (regInfo.containsKey(NGSIConstants.NGSI_LD_PROPERTIES)) {
-					for (Map<String, String> property : (List<Map<String, String>>) regInfo
-							.get(NGSIConstants.NGSI_LD_PROPERTIES)) {
-						regTuples.add(Tuple4.of(null, null, null, property.get(NGSIConstants.JSON_LD_ID)));
+					if (regInfo.containsKey(NGSIConstants.NGSI_LD_PROPERTIES)) {
+						for (Map<String, String> property : (List<Map<String, String>>) regInfo
+								.get(NGSIConstants.NGSI_LD_PROPERTIES)) {
+							regTuples.add(Tuple4.of(null, null, null, property.get(NGSIConstants.JSON_LD_ID)));
+						}
 					}
 				}
 			}
-		}
 		List<Map<String, Object>> subEntities;
 		List<Map<String, String>> watchedAttribs;
 		if (newSub.containsKey(NGSIConstants.NGSI_LD_ENTITIES)) {
@@ -437,28 +439,29 @@ public class SubscriptionTools {
 				}
 				if (newSub.containsKey(NGSIConstants.NGSI_LD_WATCHED_ATTRIBUTES)) {
 					watchedAttribs = (List<Map<String, String>>) newSub.get(NGSIConstants.NGSI_LD_WATCHED_ATTRIBUTES);
-					for(Map<String, String> attrib: watchedAttribs) {
-						subTuples.add(Tuple4.of(id, idPattern, type, attrib.get(NGSIConstants.JSON_LD_ID)));	
+					for (Map<String, String> attrib : watchedAttribs) {
+						subTuples.add(Tuple4.of(id, idPattern, type, attrib.get(NGSIConstants.JSON_LD_ID)));
 					}
-				}else {
+				} else {
 					subTuples.add(Tuple4.of(id, idPattern, type, null));
 				}
 			}
 		} else {
 			watchedAttribs = (List<Map<String, String>>) newSub.get(NGSIConstants.NGSI_LD_WATCHED_ATTRIBUTES);
-			for(Map<String, String> attrib: watchedAttribs) {
-				subTuples.add(Tuple4.of(null, null, null, attrib.get(NGSIConstants.JSON_LD_ID)));	
+			for (Map<String, String> attrib : watchedAttribs) {
+				subTuples.add(Tuple4.of(null, null, null, attrib.get(NGSIConstants.JSON_LD_ID)));
 			}
 		}
-		//id, idpattern, type, attribname combo
-		for (Tuple4<String, String, String, String> subTuple: subTuples) {
+		// id, idpattern, type, attribname combo
+		for (Tuple4<String, String, String, String> subTuple : subTuples) {
 			Tuple4<String, String, String, String> bestFit;
-			for(Tuple4<String, String, String, String> regTuple: regTuples) {
+			for (Tuple4<String, String, String, String> regTuple : regTuples) {
 				String id, idpattern, type, attribname;
-				
-				if(regTuple.getItem1() == null || (regTuple.getItem1() != null && subTuple.getItem1() == null) && regTuple.getItem1().equals(subTuple.getItem1())) {
+
+				if (regTuple.getItem1() == null || (regTuple.getItem1() != null && subTuple.getItem1() == null)
+						&& regTuple.getItem1().equals(subTuple.getItem1())) {
 					id = subTuple.getItem1();
-				}//else if(subTuple.getItem1())
+				} // else if(subTuple.getItem1())
 			}
 		}
 	}

@@ -818,15 +818,16 @@ public class QueryDAO {
 			AttrsQueryTerm attrsQuery) {
 		Tuple tuple = Tuple.tuple();
 		StringBuilder query = new StringBuilder("SELECT id, entity");
+		int dollarCount = 1;
 		if (attrsQuery != null) {
 			if (attrsQuery != null) {
 				query.append("-$1");
-
 				tuple.addArrayOfString(attrsQuery.getAttrs().toArray(new String[0]));
+				dollarCount++;
 			}
 		}
 		query.append(" FROM entity WHERE id in (");
-		int dollarCount = 2;
+
 		for (String id : entityIds) {
 			query.append('$');
 			query.append(dollarCount);
@@ -834,7 +835,7 @@ public class QueryDAO {
 			dollarCount++;
 			tuple.addString(id);
 		}
-		query.setCharAt(query.length(), ')');
+		query.setCharAt(query.length() - 1, ')');
 		return conn.preparedQuery(query.toString()).execute(tuple).onItem().transformToUni(rows -> {
 			Map<String, Map<String, Object>> result = Maps.newHashMap();
 			rows.forEach(row -> {

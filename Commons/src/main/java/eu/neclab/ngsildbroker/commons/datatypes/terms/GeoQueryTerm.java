@@ -104,7 +104,7 @@ public class GeoQueryTerm {
 	}
 
 	public void setGeoproperty(String geoproperty) {
-		this.geoproperty = context.expandIri(geoproperty, false, true, null, null);
+		this.geoproperty = context.expandIri(geoproperty, false, true, context, null);
 	}
 
 	public String getGeorel() {

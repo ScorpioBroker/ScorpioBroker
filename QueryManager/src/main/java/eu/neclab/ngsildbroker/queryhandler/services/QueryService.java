@@ -107,7 +107,7 @@ public class QueryService {
 					scopeQuery, langQuery, context).onItem().transformToUni(t -> {
 						SqlConnection conn = t.getItem1();
 						EntityMap entityMap = t.getItem2();
-						List<EntityMapEntry> resultEntityMap = entityMap.getSubMap(limit, limit + offSet);
+						List<EntityMapEntry> resultEntityMap = entityMap.getSubMap(offSet, limit + offSet);
 						Long resultCount = (long) entityMap.size();
 						return handleEntityMap(resultCount, resultEntityMap, attrsQuery, conn, count, limit, offSet);
 					});
@@ -168,6 +168,13 @@ public class QueryService {
 						}));
 			}
 		}
+		
+		if(unis.isEmpty()){
+			QueryResult q=new QueryResult();
+			q.setData(new ArrayList<Map<String, Object>>());
+			return Uni.createFrom().item(q);
+		}
+		
 		return Uni.combine().all().unis(unis).combinedWith(list -> {
 			QueryResult result = new QueryResult();
 			Map<String, Set<String>> entityId2Types = Maps.newHashMap();
@@ -212,6 +219,7 @@ public class QueryService {
 				for (Entry<String, Map<String, Map<String, Object>>> attribEntry : attribMap.entrySet()) {
 					entity.put(attribEntry.getKey(), Lists.newArrayList(attribEntry.getValue().values()));
 				}
+				resultData.add(entity);
 			}
 			result.setData(resultData);
 			result.setLimit(limit);

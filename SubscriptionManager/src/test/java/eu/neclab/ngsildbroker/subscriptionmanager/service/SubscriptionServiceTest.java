@@ -259,7 +259,7 @@ public class SubscriptionServiceTest {
 		Uni<Void> resultUni = subscriptionService.remoteNotify(notificationId, resolved, context);
 		resultUni.await().indefinitely();
 
-		verify(localEntityService, times(0)).getEntityById(any(), any());
+		verify(localEntityService, times(0)).getEntityById(any(), any(),any());
 	}
 
 }

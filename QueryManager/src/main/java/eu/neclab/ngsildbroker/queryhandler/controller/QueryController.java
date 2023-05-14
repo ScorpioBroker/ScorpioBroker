@@ -1,33 +1,11 @@
 package eu.neclab.ngsildbroker.queryhandler.controller;
 
-import java.io.IOException;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.QueryParam;
-
-import org.apache.commons.codec.digest.Md5Crypt;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.resteasy.reactive.RestResponse;
-import org.jboss.resteasy.reactive.server.jaxrs.RestResponseBuilderImpl;
-
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import com.google.common.net.HttpHeaders;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
@@ -44,8 +22,23 @@ import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.QueryParser;
 import eu.neclab.ngsildbroker.queryhandler.services.QueryService;
 import io.smallrye.mutiny.Uni;
-import io.vertx.codegen.annotations.Nullable;
 import io.vertx.core.http.HttpServerRequest;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.resteasy.reactive.RestResponse;
+import org.jboss.resteasy.reactive.server.jaxrs.RestResponseBuilderImpl;
+
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.QueryParam;
+import java.io.IOException;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 @Singleton
 @Path("/ngsi-ld/v1")
@@ -82,7 +75,8 @@ public class QueryController {
 	public Uni<RestResponse<Object>> getEntity(HttpServerRequest request, @QueryParam(value = "attrs") String attrs,
 			@QueryParam(value = "options") String options, @QueryParam(value = "lang") String lang,
 			@QueryParam(value = "geometryProperty") String geometryProperty,
-			@QueryParam(value = "localOnly") boolean localOnly, @PathParam("entityId") String entityId) {
+			@QueryParam(value = "localOnly") boolean localOnly, @PathParam("entityId") String entityId,
+			@QueryParam(value = "doNotCompact") boolean doNotCompact) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		if (acceptHeader == -1) {
 			return HttpUtils.getInvalidHeader();
@@ -104,7 +98,8 @@ public class QueryController {
 		return queryService
 				.retrieveEntity(context, HttpUtils.getTenant(request), entityId, attrsQuery, langQuery, localOnly)
 				.onItem().transform(entity -> {
-
+					if (doNotCompact)
+						return RestResponse.ok((Object) entity);
 					return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, entity,
 							geometryProperty, options, langQuery);
 				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
@@ -129,7 +124,8 @@ public class QueryController {
 			@QueryParam("scopeQ") String scopeQ, @QueryParam("localOnly") boolean localOnly,
 			@QueryParam("options") String options, @QueryParam("limit") Integer limit, @QueryParam("offset") int offset,
 			@QueryParam("count") boolean count, @QueryParam("entityMap") boolean entityMap,
-			@QueryParam("zipEntityMap") boolean zipEntityMap) {
+			@QueryParam("zipEntityMap") boolean zipEntityMap,
+			@QueryParam(value = "doNotCompact") boolean doNotCompact) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		if (acceptHeader == -1) {
 			return HttpUtils.getInvalidHeader();
@@ -144,7 +140,7 @@ public class QueryController {
 			return Uni.createFrom()
 					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.TooManyResults)));
 		}
-		if (typeQuery == null && attrs == null && geometry == null && q == null) {
+		if (id == null && typeQuery == null && attrs == null && geometry == null && q == null) {
 			return Uni.createFrom()
 					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.InvalidRequest)));
 		}
@@ -180,7 +176,9 @@ public class QueryController {
 		String token;
 		boolean tokenProvided;
 
+
 		String md5 = "" + request.params().remove("limit").remove("offset").remove("entityMap").remove("id").hashCode();
+
 		if (request.headers().contains("qToken")) {
 			token = request.headers().get("qToken");
 			if (!token.equals(md5)) {
@@ -194,7 +192,8 @@ public class QueryController {
 		}
 		if (entityMap) {
 			return queryService.queryForEntityIds(HttpUtils.getTenant(request), ids, typeQueryTerm, idPattern,
-					attrsQuery, qQueryTerm, geoQueryTerm, scopeQueryTerm,langQuery, context).onItem().transform(list -> {
+					attrsQuery, qQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, context).onItem()
+					.transform(list -> {
 						String body;
 						Object result = "[]";
 						try {
@@ -219,6 +218,8 @@ public class QueryController {
 		return queryService.query(HttpUtils.getTenant(request), token, tokenProvided, ids, typeQueryTerm, idPattern,
 				attrsQuery, qQueryTerm, csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset,
 				count, localOnly, context).onItem().transform(queryResult -> {
+					if (doNotCompact)
+						return RestResponse.ok((Object) queryResult.getData());
 					return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty, acceptHeader,
 							count, actualLimit, langQuery, context);
 				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
@@ -376,29 +377,29 @@ public class QueryController {
 		try {
 			Map<String, Object> body = (Map<String, Object>) JsonUtils.fromString(payload);
 			switch (request.getHeader(io.vertx.core.http.HttpHeaders.CONTENT_TYPE)) {
-			case AppConstants.NGB_APPLICATION_JSON:
-				if (body.containsKey(NGSIConstants.JSON_LD_CONTEXT)) {
-					return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
-							new ResponseException(ErrorType.BadRequestData, "@context entry missing")));
+				case AppConstants.NGB_APPLICATION_JSON:
+					if (body.containsKey(NGSIConstants.JSON_LD_CONTEXT)) {
+						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
+								new ResponseException(ErrorType.BadRequestData, "@context entry missing")));
 
-				} else {
-					context = JsonLdProcessor.getCoreContextClone().parse(HttpUtils.getAtContext(request), true);
-					break;
-				}
-			case AppConstants.NGB_APPLICATION_JSONLD:
-				if (body.containsKey(NGSIConstants.JSON_LD_CONTEXT)) {
-					context = JsonLdProcessor.getCoreContextClone().parse(body.get(NGSIConstants.JSON_LD_CONTEXT),
-							true);
-					break;
-				} else {
-					return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
-							new ResponseException(ErrorType.BadRequestData, "@context entry missing")));
-				}
-			default:
-				return Uni.createFrom()
-						.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.InvalidRequest,
-								"Only Content-Type " + AppConstants.NGB_APPLICATION_JSON + " and "
-										+ AppConstants.NGB_APPLICATION_JSONLD + " are allowed")));
+					} else {
+						context = JsonLdProcessor.getCoreContextClone().parse(HttpUtils.getAtContext(request), true);
+						break;
+					}
+				case AppConstants.NGB_APPLICATION_JSONLD:
+					if (body.containsKey(NGSIConstants.JSON_LD_CONTEXT)) {
+						context = JsonLdProcessor.getCoreContextClone().parse(body.get(NGSIConstants.JSON_LD_CONTEXT),
+								true);
+						break;
+					} else {
+						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
+								new ResponseException(ErrorType.BadRequestData, "@context entry missing")));
+					}
+				default:
+					return Uni.createFrom()
+							.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.InvalidRequest,
+									"Only Content-Type " + AppConstants.NGB_APPLICATION_JSON + " and "
+											+ AppConstants.NGB_APPLICATION_JSONLD + " are allowed")));
 			}
 
 			Object entities = body.get(NGSIConstants.NGSI_LD_ENTITIES_SHORT);

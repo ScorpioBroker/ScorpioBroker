@@ -14,6 +14,7 @@ import java.util.UUID;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import com.github.jsonldjava.core.JsonLdConsts;
 import org.locationtech.spatial4j.context.SpatialContextFactory;
 import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
 import org.locationtech.spatial4j.exception.InvalidShapeException;
@@ -113,7 +114,9 @@ public class HistoryDAO {
 							.preparedQuery("INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
 									+ " (temporalentity_id, attributeid, data) VALUES ($1, $2, $3::jsonb)")
 							.executeBatch(batch).onItem().transformToUni(
-									t -> conn.close().onItem().transform(v -> rows.iterator().next().getBoolean(0)));
+									t -> conn.close().onItem().transform(v->{
+									return 	!rows.iterator().next().getBoolean(0);
+									}));
 				});
 			});
 		});
@@ -169,7 +172,7 @@ public class HistoryDAO {
 						+ DBConstants.DBTABLE_TEMPORALENTITY
 						+ ".e_types || EXCLUDED.e_types)), modifiedat = EXCLUDED.modifiedat, ";
 				if (request.getRequestType() == AppConstants.APPEND_REQUEST) {
-					typeSql += "scopes = CASE WHEN EXCLUDED.scopes IS NULL THEN scopes ELSE EXCLUDED.scopes END ";
+					typeSql += "scopes = CASE WHEN EXCLUDED.scopes IS NULL THEN temporalentity.scopes ELSE EXCLUDED.scopes END ";
 				} else {
 					typeSql += "scopes = EXCLUDED.scopes ";
 				}
@@ -235,8 +238,8 @@ public class HistoryDAO {
 
 				String sql = "UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY + " SET modifiedat = $1";
 				int dollarCount = 2;
-				if (payload.containsKey(NGSIConstants.JSON_LD_TYPE)) {
-					sql += ", SET e_types = ARRAY(SELECT DISTINCT UNNEST(e_types || $" + dollarCount + "))";
+				if (payload.containsKey(NGSIConstants.JSON_LD_TYPE) && payload.get(NGSIConstants.JSON_LD_TYPE)!=null) {
+					sql += ",e_types = ARRAY(SELECT DISTINCT UNNEST(e_types || $" + dollarCount + "))";
 					tuple.addArrayOfString(
 							((List<String>) payload.remove(NGSIConstants.JSON_LD_TYPE)).toArray(new String[0]));
 					dollarCount++;
@@ -249,6 +252,7 @@ public class HistoryDAO {
 				}
 				sql += " WHERE id=$" + dollarCount;
 				tuple.addString(request.getId());
+				payload.remove(NGSIConstants.JSON_LD_TYPE);
 				payload.remove(NGSIConstants.JSON_LD_ID);
 				return conn.preparedQuery(sql).execute(tuple).onFailure().recoverWithUni(e -> {
 					if (e instanceof PgException) {
@@ -281,12 +285,12 @@ public class HistoryDAO {
 
 	public Uni<Void> updateAttrInstanceInHistoryEntity(UpdateAttrHistoryEntityRequest request) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
-			Map<String, Object> payload = request.getPayload();
+			Object payload = new JsonObject(((List<Map<String,Object>>)request.getPayload().get(request.getAttrId())).get(0));
 			return client.getConnection().onItem().transformToUni(conn -> {
 				return conn
 						.preparedQuery("UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
-								+ " SET data VALUES ($1::jsonb) WHERE attributeid=$2 AND instanceid=$3 AND id=$4")
-						.execute(Tuple.of(new JsonObject(payload), request.getAttrId(), request.getInstanceId(),
+								+ " SET data = data || $1::jsonb WHERE attributeid=$2 AND instanceid=$3 AND temporalentity_id=$4")
+						.execute(Tuple.of(payload, request.getAttrId(), request.getInstanceId(),
 								request.getId()))
 						.onFailure().recoverWithUni(e -> {
 							if (e instanceof PgException) {
@@ -301,7 +305,8 @@ public class HistoryDAO {
 									.preparedQuery("UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY
 											+ " SET modifiedat = $1 WHERE id = $2")
 									.execute(Tuple.of(
-											DBUtil.getLocalDateTime(payload.get(NGSIConstants.NGSI_LD_MODIFIED_AT)),
+											DBUtil.getLocalDateTime(request.getPayload()
+													.get(NGSIConstants.NGSI_LD_MODIFIED_AT)),
 											request.getId()))
 									.onItem().transformToUni(t -> conn.close());
 						});
@@ -318,19 +323,18 @@ public class HistoryDAO {
 					if (request.isDeleteAll()) {
 						query1 = conn
 								.preparedQuery("DELETE FROM " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
-										+ " WHERE attributeid=$1 AND id=$2")
+										+ " WHERE attributeid=$1 AND temporalentity_id=$2")
 								.execute(Tuple.of(request.getAttribName(), request.getId()));
 					} else {
 						query1 = conn
 								.preparedQuery("DELETE FROM " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
-										+ " WHERE attributeid=$1 AND id=$2 AND NOT '"
-										+ NGSIConstants.NGSI_LD_DATA_SET_ID + "' ? data")
+										+ " WHERE attributeid=$1 AND temporalentity_id=$2 AND NOT data ?| array['"+NGSIConstants.NGSI_LD_DATA_SET_ID+"']")
 								.execute(Tuple.of(request.getAttribName(), request.getId()));
 					}
 				} else {
 					query1 = conn
 							.preparedQuery("DELETE FROM " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
-									+ " WHERE attributeid=$1 AND id=$2 AND '" + NGSIConstants.NGSI_LD_DATA_SET_ID
+									+ " WHERE attributeid=$1 AND temporalentity_id=$2 AND '" + NGSIConstants.NGSI_LD_DATA_SET_ID
 									+ "' ? data AND data@>>'{" + NGSIConstants.NGSI_LD_DATA_SET_ID + ",0,"
 									+ NGSIConstants.JSON_LD_ID + "}'=$3")
 							.execute(Tuple.of(request.getAttribName(), request.getId(), request.getDatasetId()));
@@ -361,7 +365,7 @@ public class HistoryDAO {
 			return client.getConnection().onItem().transformToUni(conn -> {
 				return conn
 						.preparedQuery("DELETE FROM " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
-								+ " WHERE attributeid=$2 AND instanceid=$3 AND id=$4")
+								+ " WHERE attributeid=$1 AND instanceid=$2 AND temporalentity_id=$3")
 						.execute(Tuple.of(request.getAttrId(), request.getInstanceId(), request.getId())).onFailure()
 						.recoverWithUni(e -> {
 							if (e instanceof PgException) {

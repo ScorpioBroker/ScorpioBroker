@@ -504,6 +504,7 @@ public class HistoryEntityService {
 		case AppConstants.CREATE_REQUEST:
 		case AppConstants.APPEND_REQUEST:
 		case AppConstants.UPDATE_REQUEST:
+		case AppConstants.UPSERT_REQUEST:
 			return historyDAO.batchUpsertHistoryEntity(request).onFailure().recoverWithUni(e -> {
 				logger.debug("Failed to record create", e);
 				return Uni.createFrom().voidItem();
