@@ -14,6 +14,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,6 +53,7 @@ import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import eu.neclab.ngsildbroker.queryhandler.repository.QueryDAO;
 import io.quarkus.runtime.StartupEvent;
+import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple3;
@@ -79,6 +81,9 @@ public class QueryService {
 	protected JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
 	private Table<String, String, RegistrationEntry> tenant2CId2RegEntries = HashBasedTable.create();
+
+	@ConfigProperty(name = "scorpio.entitymap.cleanup.ttl", defaultValue = "30 sec")
+	private String entityMapTTL;
 
 	@PostConstruct
 	void setup() {
@@ -168,13 +173,13 @@ public class QueryService {
 						}));
 			}
 		}
-		
-		if(unis.isEmpty()){
-			QueryResult q=new QueryResult();
+
+		if (unis.isEmpty()) {
+			QueryResult q = new QueryResult();
 			q.setData(new ArrayList<Map<String, Object>>());
 			return Uni.createFrom().item(q);
 		}
-		
+
 		return Uni.combine().all().unis(unis).combinedWith(list -> {
 			QueryResult result = new QueryResult();
 			Map<String, Set<String>> entityId2Types = Maps.newHashMap();
@@ -1172,7 +1177,8 @@ public class QueryService {
 				if (remoteHost.canDoIdQuery()) {
 					String entityMapString;
 					if (remoteHost.canDoZip()) {
-						entityMapString = "&entityMap=true&zipEntityMap=true";
+						entityMapString = "&entityMap=true";
+						// TODO add headers to support compress
 					} else {
 						entityMapString = "&entityMap=true";
 					}
@@ -1198,8 +1204,7 @@ public class QueryService {
 										if (response != null && response.statusCode() == 200) {
 											List tmpList = response.bodyAsJsonArray().getList();
 											for (Object obj : tmpList) {
-												result.add((String) ((Map<String, Object>) obj)
-														.get(NGSIConstants.JSON_LD_ID));
+												result.add((String) ((Map<String, Object>) obj).get(NGSIConstants.ID));
 											}
 										}
 										return Tuple2.of(remoteHost, result);
@@ -1241,4 +1246,10 @@ public class QueryService {
 		});
 
 	}
+	
+	@Scheduled(every = "{scorpio.entitymap.cleanup.schedule}")
+	public Uni<Void> scheduleEntityMapCleanUp() {
+		return queryDAO.runEntityMapCleanup(entityMapTTL);
+	}
+
 }

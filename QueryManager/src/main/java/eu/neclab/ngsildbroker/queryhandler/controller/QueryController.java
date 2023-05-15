@@ -123,9 +123,7 @@ public class QueryController {
 			@QueryParam("geometryProperty") String geometryProperty, @QueryParam("lang") String lang,
 			@QueryParam("scopeQ") String scopeQ, @QueryParam("localOnly") boolean localOnly,
 			@QueryParam("options") String options, @QueryParam("limit") Integer limit, @QueryParam("offset") int offset,
-			@QueryParam("count") boolean count, @QueryParam("entityMap") boolean entityMap,
-			@QueryParam("zipEntityMap") boolean zipEntityMap,
-			@QueryParam(value = "doNotCompact") boolean doNotCompact) {
+			@QueryParam("count") boolean count, @QueryParam("entityMap") boolean entityMap) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		if (acceptHeader == -1) {
 			return HttpUtils.getInvalidHeader();
@@ -176,7 +174,6 @@ public class QueryController {
 		String token;
 		boolean tokenProvided;
 
-
 		String md5 = "" + request.params().remove("limit").remove("offset").remove("entityMap").remove("id").hashCode();
 
 		if (request.headers().contains("qToken")) {
@@ -190,6 +187,7 @@ public class QueryController {
 			token = md5;
 			tokenProvided = false;
 		}
+
 		if (entityMap) {
 			return queryService.queryForEntityIds(HttpUtils.getTenant(request), ids, typeQueryTerm, idPattern,
 					attrsQuery, qQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, context).onItem()
@@ -198,11 +196,11 @@ public class QueryController {
 						Object result = "[]";
 						try {
 							body = JsonUtils.toPrettyString(list);
-							if (zipEntityMap) {
-								result = HttpUtils.zipResult(body);
-							} else {
-								result = body.getBytes();
-							}
+//							if (zipEntityMap) {
+//								result = HttpUtils.zipResult(body);
+//							} else {
+							result = body.getBytes();
+//							}
 						} catch (JsonGenerationException e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
@@ -218,8 +216,6 @@ public class QueryController {
 		return queryService.query(HttpUtils.getTenant(request), token, tokenProvided, ids, typeQueryTerm, idPattern,
 				attrsQuery, qQueryTerm, csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset,
 				count, localOnly, context).onItem().transform(queryResult -> {
-					if (doNotCompact)
-						return RestResponse.ok((Object) queryResult.getData());
 					return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty, acceptHeader,
 							count, actualLimit, langQuery, context);
 				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
@@ -377,29 +373,29 @@ public class QueryController {
 		try {
 			Map<String, Object> body = (Map<String, Object>) JsonUtils.fromString(payload);
 			switch (request.getHeader(io.vertx.core.http.HttpHeaders.CONTENT_TYPE)) {
-				case AppConstants.NGB_APPLICATION_JSON:
-					if (body.containsKey(NGSIConstants.JSON_LD_CONTEXT)) {
-						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
-								new ResponseException(ErrorType.BadRequestData, "@context entry missing")));
+			case AppConstants.NGB_APPLICATION_JSON:
+				if (body.containsKey(NGSIConstants.JSON_LD_CONTEXT)) {
+					return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
+							new ResponseException(ErrorType.BadRequestData, "@context entry missing")));
 
-					} else {
-						context = JsonLdProcessor.getCoreContextClone().parse(HttpUtils.getAtContext(request), true);
-						break;
-					}
-				case AppConstants.NGB_APPLICATION_JSONLD:
-					if (body.containsKey(NGSIConstants.JSON_LD_CONTEXT)) {
-						context = JsonLdProcessor.getCoreContextClone().parse(body.get(NGSIConstants.JSON_LD_CONTEXT),
-								true);
-						break;
-					} else {
-						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
-								new ResponseException(ErrorType.BadRequestData, "@context entry missing")));
-					}
-				default:
-					return Uni.createFrom()
-							.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.InvalidRequest,
-									"Only Content-Type " + AppConstants.NGB_APPLICATION_JSON + " and "
-											+ AppConstants.NGB_APPLICATION_JSONLD + " are allowed")));
+				} else {
+					context = JsonLdProcessor.getCoreContextClone().parse(HttpUtils.getAtContext(request), true);
+					break;
+				}
+			case AppConstants.NGB_APPLICATION_JSONLD:
+				if (body.containsKey(NGSIConstants.JSON_LD_CONTEXT)) {
+					context = JsonLdProcessor.getCoreContextClone().parse(body.get(NGSIConstants.JSON_LD_CONTEXT),
+							true);
+					break;
+				} else {
+					return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
+							new ResponseException(ErrorType.BadRequestData, "@context entry missing")));
+				}
+			default:
+				return Uni.createFrom()
+						.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.InvalidRequest,
+								"Only Content-Type " + AppConstants.NGB_APPLICATION_JSON + " and "
+										+ AppConstants.NGB_APPLICATION_JSONLD + " are allowed")));
 			}
 
 			Object entities = body.get(NGSIConstants.NGSI_LD_ENTITIES_SHORT);

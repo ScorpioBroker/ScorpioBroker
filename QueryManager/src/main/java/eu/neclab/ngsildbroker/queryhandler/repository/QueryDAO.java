@@ -866,4 +866,25 @@ public class QueryDAO {
 		});
 	}
 
+	public Uni<Void> runEntityMapCleanup(String cleanUpInterval) {
+		return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
+			return client.preparedQuery("select tenant_id from tenant").execute().onItem().transformToUni(rows -> {
+				List<Uni<Void>> cleanUpUnis = Lists.newArrayList();
+				Tuple tuple = Tuple.of(cleanUpInterval);
+				cleanUpUnis.add(client.preparedQuery(
+						"DELETE FROM entitymap WHERE q_token IN (SELECT q_token FROM entitymap WHERE pg_stat_get_last_used_time(entitymap.entity_id) < NOW() - INTERVAL $1)")
+						.execute(tuple).onItem().transformToUni(r -> Uni.createFrom().voidItem()));
+				rows.forEach(row -> {
+					cleanUpUnis.add(
+							clientManager.getClient(row.getString(0), false).onItem().transformToUni(tenantClient -> {
+								return tenantClient.preparedQuery(
+										"DELETE FROM entitymap WHERE q_token IN (SELECT q_token FROM entitymap WHERE pg_stat_get_last_used_time(entitymap.entity_id) < NOW() - INTERVAL $1)")
+										.execute(tuple).onItem().transformToUni(r -> Uni.createFrom().voidItem());
+							}));
+				});
+				return Uni.combine().all().unis(cleanUpUnis).discardItems();
+			});
+		});
+	}
+
 }
