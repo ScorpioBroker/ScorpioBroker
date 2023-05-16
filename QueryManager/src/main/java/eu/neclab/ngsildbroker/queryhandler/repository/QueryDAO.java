@@ -811,8 +811,8 @@ public class QueryDAO {
 				return conn.preparedQuery("INSERT INTO entitymap VALUES ($1, $2, $3, $4)").executeBatch(batch).onItem()
 						.transformToUni(r -> {
 							return conn.preparedQuery(
-									"INSERT INTO entitymap_management VALUES ($1, now()) ON CONFLICT DO UPDATE SET entitymap_management.last_access=now()")
-									.execute().onItem().transform(r2 -> conn);
+									"INSERT INTO entitymap_management VALUES ($1, now()) ON CONFLICT(q_token) DO UPDATE SET last_access=now()")
+									.execute(Tuple.of(qToken)).onItem().transform(r2 -> conn);
 						});
 			});
 		});
