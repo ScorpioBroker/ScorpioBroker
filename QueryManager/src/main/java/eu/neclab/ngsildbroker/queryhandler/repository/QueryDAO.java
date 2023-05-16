@@ -46,6 +46,7 @@ import io.vertx.mutiny.sqlclient.RowIterator;
 import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.SqlConnection;
 import io.vertx.mutiny.sqlclient.Tuple;
+import io.vertx.pgclient.data.Interval;
 
 @Singleton
 public class QueryDAO {
@@ -808,7 +809,11 @@ public class QueryDAO {
 					batch.add(tuple);
 				}
 				return conn.preparedQuery("INSERT INTO entitymap VALUES ($1, $2, $3, $4)").executeBatch(batch).onItem()
-						.transform(r -> conn);
+						.transformToUni(r -> {
+							return conn.preparedQuery(
+									"INSERT INTO entitymap_management VALUES ($1, now()) ON CONFLICT DO UPDATE SET entitymap_management.last_access=now()")
+									.execute().onItem().transform(r2 -> conn);
+						});
 			});
 		});
 
@@ -851,7 +856,7 @@ public class QueryDAO {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
 			return client.getConnection().onItem().transformToUni(conn -> {
 				return conn.preparedQuery(
-						"SELECT entity_id, remote_hosts FROM entitymap WHERE q_token = $1 order by order_field LIMIT $2 OFFSET $3")
+						"WITH a AS (UPDATE entitymap_management SET entitymap_management.last_access=now() WHERE entitymap_management.q_token=$1) SELECT entity_id, remote_hosts FROM entitymap WHERE q_token = $1 order by order_field LIMIT $2 OFFSET $3")
 						.execute(Tuple.of(qToken, limit, offSet)).onItem().transform(rows -> {
 							EntityMap entityIdList = new EntityMap();
 							rows.forEach(row -> {
@@ -870,16 +875,17 @@ public class QueryDAO {
 		return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
 			return client.preparedQuery("select tenant_id from tenant").execute().onItem().transformToUni(rows -> {
 				List<Uni<Void>> cleanUpUnis = Lists.newArrayList();
-				Tuple tuple = Tuple.of(cleanUpInterval);
-				cleanUpUnis.add(client.preparedQuery(
-						"DELETE FROM entitymap WHERE q_token IN (SELECT q_token FROM entitymap WHERE pg_stat_get_last_used_time(entitymap.entity_id) < NOW() - INTERVAL $1)")
-						.execute(tuple).onItem().transformToUni(r -> Uni.createFrom().voidItem()));
+				String sql = "WITH a as (SELECT q_token FROM entitymap_management WHERE entitymap_management.last_access < NOW() - INTERVAL '"
+						+ cleanUpInterval + "'),"
+						+ " b as (DELETE FROM entitymap WHERE entitymap.q_token IN (SELECT q_token FROM a)) "
+						+ "DELETE FROM entitymap_management WHERE entitymap_management.q_token IN (SELECT q_token FROM a)";
+				cleanUpUnis.add(
+						client.preparedQuery(sql).execute().onItem().transformToUni(r -> Uni.createFrom().voidItem()));
 				rows.forEach(row -> {
 					cleanUpUnis.add(
 							clientManager.getClient(row.getString(0), false).onItem().transformToUni(tenantClient -> {
-								return tenantClient.preparedQuery(
-										"DELETE FROM entitymap WHERE q_token IN (SELECT q_token FROM entitymap WHERE pg_stat_get_last_used_time(entitymap.entity_id) < NOW() - INTERVAL $1)")
-										.execute(tuple).onItem().transformToUni(r -> Uni.createFrom().voidItem());
+								return tenantClient.preparedQuery(sql).execute().onItem()
+										.transformToUni(r -> Uni.createFrom().voidItem());
 							}));
 				});
 				return Uni.combine().all().unis(cleanUpUnis).discardItems();

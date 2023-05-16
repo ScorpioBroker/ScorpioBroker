@@ -1246,8 +1246,8 @@ public class QueryService {
 		});
 
 	}
-	
-	@Scheduled(every = "{scorpio.entitymap.cleanup.schedule}")
+
+	@Scheduled(every = "{scorpio.entitymap.cleanup.schedule}", delay = 3)
 	public Uni<Void> scheduleEntityMapCleanUp() {
 		return queryDAO.runEntityMapCleanup(entityMapTTL);
 	}
