@@ -434,7 +434,7 @@ public final class HttpUtils {
 
 		try {
 			Tuple2<Object, List<Tuple2<String, String>>> resultBodyAndHeaders = generateCompactedResult(contextHeader,
-					context, acceptHeader, entity, geometryProperty, options, langQuery);
+					context, acceptHeader, entity, geometryProperty, options, langQuery, false);
 			ResponseBuilder<Object> resp = RestResponseBuilderImpl.ok();
 			List<Tuple2<String, String>> headers = resultBodyAndHeaders.getItem2();
 			for (Tuple2<String, String> entry : headers) {
@@ -445,9 +445,11 @@ public final class HttpUtils {
 			return handleControllerExceptions(e);
 		}
 	}
-	private static void makeConcise(Object compacted){
-		makeConcise(compacted,null,null);
+
+	private static void makeConcise(Object compacted) {
+		makeConcise(compacted, null, null);
 	}
+
 	private static void makeConcise(Object compacted, Map<?, ?> parent, String key) {
 		if (compacted instanceof ArrayList<?> list) {
 			list.forEach(item -> {
@@ -465,16 +467,18 @@ public final class HttpUtils {
 				}
 			}
 			map.forEach((str, nestedObj) -> {
-				if (!str.equals(NGSIConstants.JSON_LD_CONTEXT) && nestedObj instanceof Map<?, ?> || nestedObj instanceof ArrayList<?>) {
+				if (!str.equals(NGSIConstants.JSON_LD_CONTEXT) && nestedObj instanceof Map<?, ?>
+						|| nestedObj instanceof ArrayList<?>) {
 					makeConcise(nestedObj, map, str.toString());
 				}
 			});
 		}
 
 	}
+
 	public static Tuple2<Object, List<Tuple2<String, String>>> generateCompactedResult(List<Object> contextHeader,
 			Context context, int acceptHeader, Object entity, String geometryProperty, String options,
-			LanguageQueryTerm langQuery) throws Exception {
+			LanguageQueryTerm langQuery, boolean forceArray) throws Exception {
 		String replyBody;
 		String contentType;
 		Object result;
@@ -499,11 +503,17 @@ public final class HttpUtils {
 			} else {
 				finalCompacted = compacted;
 			}
-			if(options!=null && options.contains(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)) makeConcise(finalCompacted);
+			if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)) {
+				makeConcise(finalCompacted);
+			}
+			if (forceArray && !(finalCompacted instanceof List)) {
+				finalCompacted = List.of(finalCompacted);
+			}
 			replyBody = JsonUtils.toPrettyString(finalCompacted);
 			for (Object entry : contextHeader) {
 				headers.add(Tuple2.of(NGSIConstants.LINK_HEADER, getLinkHeader(entry)));
 			}
+
 			contentType = AppConstants.NGB_APPLICATION_JSON;
 			break;
 		case 2:
@@ -522,7 +532,12 @@ public final class HttpUtils {
 			} else {
 				finalCompacted = compacted;
 			}
-			if(options!=null && options.contains(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)) makeConcise(finalCompacted);
+			if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)) {
+				makeConcise(finalCompacted);
+			}
+			if (forceArray && !(finalCompacted instanceof List)) {
+				finalCompacted = List.of(finalCompacted);
+			}
 			contentType = AppConstants.NGB_APPLICATION_JSONLD;
 			replyBody = JsonUtils.toPrettyString(finalCompacted);
 			break;
@@ -532,7 +547,12 @@ public final class HttpUtils {
 			break;
 		case 4:// geo+json
 			compacted = JsonLdProcessor.compact(entity, contextHeader, context, opts, -1, optionSet, langQuery);
-			if(options!=null && options.contains(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)) makeConcise(compacted);
+			if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)) {
+				makeConcise(compacted);
+			}
+			if (forceArray && !(compacted instanceof List)) {
+				finalCompacted = List.of(compacted);
+			}
 			replyBody = JsonUtils.toPrettyString(generateGeoJson(compacted, geometryProperty, contextHeader));
 			contentType = AppConstants.NGB_APPLICATION_GEO_JSON;
 			break;
@@ -595,17 +615,17 @@ public final class HttpUtils {
 		}
 		if (isHavingError && !isHavingSuccess) {
 			String type = (String) result.get(0).get("type");
-			if( type.equalsIgnoreCase("Delete") ||
-					type.equalsIgnoreCase("Append"))
-				return RestResponse.status(RestResponse.Status.NOT_FOUND,result);
-			else return RestResponse.status(RestResponse.Status.BAD_REQUEST, result);
+			if (type.equalsIgnoreCase("Delete") || type.equalsIgnoreCase("Append"))
+				return RestResponse.status(RestResponse.Status.NOT_FOUND, result);
+			else
+				return RestResponse.status(RestResponse.Status.BAD_REQUEST, result);
 		}
 		if (!isHavingError && isHavingSuccess) {
 			String type = (String) result.get(0).get("type");
-			if(type.equalsIgnoreCase("Upsert") || type.equalsIgnoreCase("Delete") ||
-					type.equalsIgnoreCase("Append"))
-				return RestResponse.status(RestResponse.Status.NO_CONTENT,result);
-			else return RestResponse.status(RestResponse.Status.CREATED, result);
+			if (type.equalsIgnoreCase("Upsert") || type.equalsIgnoreCase("Delete") || type.equalsIgnoreCase("Append"))
+				return RestResponse.status(RestResponse.Status.NO_CONTENT, result);
+			else
+				return RestResponse.status(RestResponse.Status.CREATED, result);
 		}
 		return new RestResponseBuilderImpl<>().status(207).type(AppConstants.NGB_APPLICATION_JSON).entity(result)
 				.build();
@@ -700,12 +720,12 @@ public final class HttpUtils {
 
 	public static String getTriggerReason(int triggerReason) {
 		// TODO Cases remaining for upsert(determine created or updated)
-		//  and noLongerMatching due to update or delete attr
+		// and noLongerMatching due to update or delete attr
 		return switch (triggerReason) {
-			case AppConstants.CREATE_REQUEST -> "newlyMatching";
-			case AppConstants.UPDATE_REQUEST,AppConstants.APPEND_REQUEST -> "updated";
-			case AppConstants.DELETE_REQUEST -> "noLongerMatching";
-			default -> null;
+		case AppConstants.CREATE_REQUEST -> "newlyMatching";
+		case AppConstants.UPDATE_REQUEST, AppConstants.APPEND_REQUEST -> "updated";
+		case AppConstants.DELETE_REQUEST -> "noLongerMatching";
+		default -> null;
 		};
 	}
 
@@ -722,7 +742,8 @@ public final class HttpUtils {
 
 		try {
 			Tuple2<Object, List<Tuple2<String, String>>> resultAndHeaders = generateCompactedResult(
-					getAtContext(request), context, acceptHeader, queryResult.getData(), geometryProperty, options, lang);
+					getAtContext(request), context, acceptHeader, queryResult.getData(), geometryProperty, options,
+					lang, true);
 
 			MultiMap urlParams = request.params();
 			String nextLink = HttpUtils.generateNextLink(urlParams, queryResult);
@@ -796,11 +817,12 @@ public final class HttpUtils {
 		return result;
 
 	}
+
 	public static Object doubleToInt(Object object) {
 		if (object instanceof Double) {
 			double d = (Double) object;
 			int i = (int) d;
-			return (d == i)?i:d;
+			return (d == i) ? i : d;
 		} else
 			return object;
 	}
