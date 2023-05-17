@@ -123,7 +123,8 @@ public class QueryController {
 			@QueryParam("geometryProperty") String geometryProperty, @QueryParam("lang") String lang,
 			@QueryParam("scopeQ") String scopeQ, @QueryParam("localOnly") boolean localOnly,
 			@QueryParam("options") String options, @QueryParam("limit") Integer limit, @QueryParam("offset") int offset,
-			@QueryParam("count") boolean count, @QueryParam("entityMap") boolean entityMap) {
+			@QueryParam("count") boolean count, @QueryParam("entityMap") boolean entityMap,
+			@QueryParam(value = "doNotCompact") boolean doNotCompact) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		if (acceptHeader == -1) {
 			return HttpUtils.getInvalidHeader();
@@ -216,6 +217,9 @@ public class QueryController {
 		return queryService.query(HttpUtils.getTenant(request), token, tokenProvided, ids, typeQueryTerm, idPattern,
 				attrsQuery, qQueryTerm, csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset,
 				count, localOnly, context).onItem().transform(queryResult -> {
+					if (doNotCompact) {
+						return RestResponse.ok((Object) queryResult.getData());
+					}
 					return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty, acceptHeader,
 							count, actualLimit, langQuery, context);
 				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
