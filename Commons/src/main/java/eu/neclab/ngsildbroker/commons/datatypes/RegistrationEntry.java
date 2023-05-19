@@ -29,7 +29,9 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
+import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
+import eu.neclab.ngsildbroker.commons.tools.SubscriptionTools;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.vertx.mutiny.core.MultiMap;
 
@@ -120,7 +122,12 @@ public record RegistrationEntry(String cId, String eId, String eIdp, String type
 		MultiMap headers = null;
 		Shape location;
 		if (payload.containsKey(NGSIConstants.NGSI_LD_LOCATION)) {
-			location = getShapeFromLocation(payload.get(NGSIConstants.NGSI_LD_LOCATION));
+			try {
+				location = SubscriptionTools
+						.getShape((Map<String, Object>) payload.get(NGSIConstants.NGSI_LD_LOCATION));
+			} catch (ResponseException e) {
+				location = null;
+			}
 		} else {
 			location = null;
 		}
@@ -785,11 +792,6 @@ public record RegistrationEntry(String cId, String eId, String eIdp, String type
 		}
 		return result;
 
-	}
-
-	private static Shape getShapeFromLocation(Object object) {
-		// TODO Auto-generated method stub
-		return null;
 	}
 
 }

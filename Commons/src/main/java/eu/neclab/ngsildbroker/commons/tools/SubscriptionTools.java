@@ -301,7 +301,7 @@ public class SubscriptionTools {
 		return null;
 	}
 
-	private static Shape getShape(Map<String, Object> location) throws ResponseException {
+	public static Shape getShape(Map<String, Object> location) throws ResponseException {
 		Shape entityShape;
 		switch (((List<String>) location.get(NGSIConstants.JSON_LD_TYPE)).get(0)) {
 		case NGSIConstants.NGSI_LD_POINT:
