@@ -29,6 +29,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
+import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.vertx.mutiny.core.MultiMap;
 
@@ -129,167 +130,336 @@ public record RegistrationEntry(String cId, String eId, String eIdp, String type
 		} else {
 			scopes = null;
 		}
-		int mode;
+		int mode = 1;
+		if (payload.containsKey(NGSIConstants.NGSI_LD_REG_MODE)) {
+			String modeText = ((List<Map<String, String>>) payload.get(NGSIConstants.NGSI_LD_REG_MODE)).get(0)
+					.get(NGSIConstants.JSON_LD_VALUE);
+			switch (modeText) {
+			case NGSIConstants.NGSI_LD_REG_MODE_AUX:
+				mode = 0;
+				break;
+			case NGSIConstants.NGSI_LD_REG_MODE_INC:
+				mode = 1;
+				break;
+			case NGSIConstants.NGSI_LD_REG_MODE_RED:
+				mode = 2;
+				break;
+			case NGSIConstants.NGSI_LD_REG_MODE_EXC:
+				mode = 3;
+				break;
 
+			}
+		}
+		long tmpEexpiresAt = -1l;
+		if (payload.containsKey(NGSIConstants.NGSI_LD_EXPIRES)) {
+			tmpEexpiresAt = SerializationTools
+					.date2Long(((List<Map<String, String>>) payload.get(NGSIConstants.NGSI_LD_EXPIRES)).get(0)
+							.get(NGSIConstants.JSON_LD_VALUE));
+		}
 		RemoteHost remoteHost = new RemoteHost(host, tenant, headers, cSourceId, canDoSingleOp, canDoBatchOp, 0, false,
 				false);
-//		new RegistrationEntry(null, null, null, null, null, null, null, null, 0, 0, false, false, false, false, false,
-//				false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
-//				false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
-//				false, null);
-//		
-//			
-//			IF (NEW.REG ? 'https://uri.etsi.org/ngsi-ld/operations') THEN
-//				operations = getOperations(NEW.REG#>'{https://uri.etsi.org/ngsi-ld/operations}');
-//			ELSIF (NEW.REG ? 'https://uri.etsi.org/ngsi-ld/default-context/operations') THEN
-//				operations = getOperations(NEW.REG#>'{https://uri.etsi.org/ngsi-ld/default-context/operations}');
-//			ELSE
-//				operations = array[false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true,true]::boolean[];
-//			END IF;
-//
-//			IF (NEW.REG ? 'https://uri.etsi.org/ngsi-ld/contextSourceInfo') THEN
-//				headers = NEW.REG#>'{https://uri.etsi.org/ngsi-ld/contextSourceInfo}';
-//			ELSIF (NEW.REG ? 'https://uri.etsi.org/ngsi-ld/default-context/contextSourceInfo') THEN
-//				headers = NEW.REG#>'{https://uri.etsi.org/ngsi-ld/default-context/contextSourceInfo}';
-//			ELSE
-//				headers = NULL;
-//			END IF;
-//
-//			IF (NEW.REG ? 'https://uri.etsi.org/ngsi-ld/mode') THEN
-//				regMode = getMode(NEW.REG#>>'{https://uri.etsi.org/ngsi-ld/mode,0,@value}');
-//			ELSIF (NEW.REG ? 'https://uri.etsi.org/ngsi-ld/default-context/mode') THEN
-//				regMode = getMode(NEW.REG#>>'{https://uri.etsi.org/ngsi-ld/default-context/mode,0,@value}');
-//			ELSE
-//				regMode = 1;
-//			END IF;
-//			
-//			IF (NEW.REG ? 'https://uri.etsi.org/ngsi-ld/expires') THEN
-//				expires = (NEW.REG#>>'{https://uri.etsi.org/ngsi-ld/expires,0,@value}')::TIMESTAMP;
-//			ELSE
-//				expires = NULL;
-//			END IF;
-//			BEGIN
-//				IF TG_OP = 'UPDATE' THEN
-//					DELETE FROM csourceinformation where cs_id = NEW.id;
-//				END IF;
-//				FOR infoEntry IN SELECT jsonb_array_elements FROM jsonb_array_elements(NEW.REG#>'{https://uri.etsi.org/ngsi-ld/information}') LOOP
-//					IF infoEntry ? 'https://uri.etsi.org/ngsi-ld/entities' THEN
-//						FOR entitiesEntry IN SELECT jsonb_array_elements FROM jsonb_array_elements(infoEntry#>'{https://uri.etsi.org/ngsi-ld/entities}') LOOP
-//							FOR entityType IN SELECT jsonb_array_elements_text FROM jsonb_array_elements_text(entitiesEntry#>'{@type}') LOOP
-//								entityId := NULL;
-//								entityIdPattern := NULL;
-//								attribsAdded := false;
-//								IF entitiesEntry ? '@id' THEN
-//									entityId = entitiesEntry#>>'{@id}';
-//								END IF;
-//								IF entitiesEntry ? 'https://uri.etsi.org/ngsi-ld/idPattern' THEN
-//									entityIdPattern = entitiesEntry#>>'{https://uri.etsi.org/ngsi-ld/idPattern,0,@value}';
-//								END IF;
-//								IF infoEntry ? 'https://uri.etsi.org/ngsi-ld/propertyNames' THEN
-//									attribsAdded = true;
-//									FOR attribName IN SELECT value#>>'{@id}' FROM jsonb_array_elements(infoEntry#>'{https://uri.etsi.org/ngsi-ld/propertyNames}') LOOP
-//										IF regMode > 1 THEN
-//											IF entityId IS NOT NULL THEN 
-//												WITH iids AS (SELECT id FROM ENTITY, etype2iid WHERE e_id = entityId AND ENTITY.id = etype2iid.iid AND etype2iid.e_type = entityType) SELECT count(attr2iid.iid)>0 INTO errorFound FROM iids left join attr2iid on iids.iid = attr2iid.iid WHERE attr2iid.attr = attribName AND NOT attr2iid.is_rel;
-//												IF errorFound THEN
-//													RAISE EXCEPTION 'Registration with attrib % and id % conflicts with existing entry', attribName, entityId USING ERRCODE='23514';
-//												END IF;
-//											ELSIF entityIdPattern IS NOT NULL THEN
-//												WITH iids AS (SELECT id FROM ENTITY, etype2iid WHERE e_id ~ entityIdPattern AND ENTITY.id = etype2iid.iid AND etype2iid.e_type = entityType) SELECT count(attr2iid.iid)>0 INTO errorFound FROM iids left join attr2iid on iids.iid = attr2iid.iid WHERE attr2iid.attr = attribName AND NOT attr2iid.is_rel;
-//												IF errorFound THEN
-//													RAISE EXCEPTION 'Registration with attrib % and idpattern % conflicts with existing entry', attribName, entityIdPattern USING ERRCODE='23514';
-//												END IF;
-//											ELSE
-//												WITH iids AS (SELECT iid FROM etype2iid WHERE e_type = entityType) SELECT count(attr2iid.iid)>0 INTO errorFound FROM iids left join attr2iid on iids.iid = attr2iid.iid WHERE attr2iid.attr = attribName AND NOT attr2iid.is_rel;
-//												IF errorFound THEN
-//													RAISE EXCEPTION 'Registration with attrib % and type % conflicts with existing entry', attribName, entityType USING ERRCODE='23514';
-//												END IF;
-//											END IF;
-//										END IF;
-//										INSERT INTO csourceinformation (cs_id, c_id, e_id, e_id_p, e_type, e_rel, e_prop, i_location, scopes, expires, endpoint, tenant_id, headers, reg_mode, createEntity, updateEntity, appendAttrs, updateAttrs, deleteAttrs, deleteEntity, createBatch, upsertBatch, updateBatch, deleteBatch, upsertTemporal, appendAttrsTemporal, deleteAttrsTemporal, updateAttrsTemporal, deleteAttrInstanceTemporal, deleteTemporal, mergeEntity, replaceEntity, replaceAttrs, mergeBatch, retrieveEntity, queryEntity, queryBatch, retrieveTemporal, queryTemporal, retrieveEntityTypes, retrieveEntityTypeDetails, retrieveEntityTypeInfo, retrieveAttrTypes, retrieveAttrTypeDetails, retrieveAttrTypeInfo, createSubscription, updateSubscription, retrieveSubscription, querySubscription, deleteSubscription) VALUES (internalId, NEW.C_ID, entityId, entityIdPattern, entityType, attribName, NULL, location, scopes, expires, endpoint, tenant, headers, regMode,operations[1],operations[2],operations[3],operations[4],operations[5],operations[6],operations[7],operations[8],operations[9],operations[10],operations[11],operations[12],operations[13],operations[14],operations[15],operations[16],operations[17],operations[18],operations[19],operations[20],operations[21],operations[22],operations[23],operations[24],operations[25],operations[26],operations[27],operations[28],operations[29],operations[30],operations[31],operations[32],operations[33],operations[34],operations[35],operations[36]);
-//									END LOOP;
-//								END IF;
-//								IF infoEntry ? 'https://uri.etsi.org/ngsi-ld/relationshipNames' THEN
-//									attribsAdded = true;
-//									FOR attribName IN SELECT value#>>'{@id}' FROM jsonb_array_elements(infoEntry#>'{https://uri.etsi.org/ngsi-ld/relationshipNames}') LOOP
-//										IF regMode > 1 THEN
-//											IF entityId IS NOT NULL THEN 
-//												WITH iids AS (SELECT id FROM ENTITY, etype2iid WHERE e_id = entityId AND ENTITY.id = etype2iid.iid AND etype2iid.e_type = entityType) SELECT count(attr2iid.iid)>0 INTO errorFound FROM iids left join attr2iid on iids.iid = attr2iid.iid WHERE attr2iid.attr = attribName AND attr2iid.is_rel;
-//												IF errorFound THEN
-//													RAISE EXCEPTION 'Registration with attrib % and id % conflicts with existing entry', attribName, entityId USING ERRCODE='23514';
-//												END IF;
-//											ELSIF entityIdPattern IS NOT NULL THEN
-//												WITH iids AS (SELECT id FROM ENTITY, etype2iid WHERE e_id ~ entityIdPattern AND ENTITY.id = etype2iid.iid AND etype2iid.e_type = entityType) SELECT count(attr2iid.iid)>0 INTO errorFound FROM iids left join attr2iid on iids.iid = attr2iid.iid WHERE attr2iid.attr = attribName AND attr2iid.is_rel;
-//												IF errorFound THEN
-//													RAISE EXCEPTION 'Registration with attrib % and idpattern % conflicts with existing entry', attribName, entityIdPattern USING ERRCODE='23514';
-//												END IF;
-//											ELSE
-//												WITH iids AS (SELECT iid FROM etype2iid WHERE e_type = entityType) SELECT count(attr2iid.iid)>0 INTO errorFound FROM iids left join attr2iid on iids.iid = attr2iid.iid WHERE attr2iid.attr = attribName AND attr2iid.is_rel;
-//												IF errorFound THEN
-//													RAISE EXCEPTION 'Registration with attrib % and type % conflicts with existing entry', attribName, entityType USING ERRCODE='23514';
-//												END IF;
-//											END IF;
-//										END IF;
-//										INSERT INTO csourceinformation (cs_id, c_id, e_id, e_id_p, e_type, e_rel, e_prop, i_location, scopes, expires, endpoint, tenant_id, headers, reg_mode, createEntity, updateEntity, appendAttrs, updateAttrs, deleteAttrs, deleteEntity, createBatch, upsertBatch, updateBatch, deleteBatch, upsertTemporal, appendAttrsTemporal, deleteAttrsTemporal, updateAttrsTemporal, deleteAttrInstanceTemporal, deleteTemporal, mergeEntity, replaceEntity, replaceAttrs, mergeBatch, retrieveEntity, queryEntity, queryBatch, retrieveTemporal, queryTemporal, retrieveEntityTypes, retrieveEntityTypeDetails, retrieveEntityTypeInfo, retrieveAttrTypes, retrieveAttrTypeDetails, retrieveAttrTypeInfo, createSubscription, updateSubscription, retrieveSubscription, querySubscription, deleteSubscription) VALUES (internalId, NEW.C_ID, entityId, entityIdPattern, entityType,NULL, attribName, location, scopes, expires, endpoint, tenant, headers, regMode,operations[1],operations[2],operations[3],operations[4],operations[5],operations[6],operations[7],operations[8],operations[9],operations[10],operations[11],operations[12],operations[13],operations[14],operations[15],operations[16],operations[17],operations[18],operations[19],operations[20],operations[21],operations[22],operations[23],operations[24],operations[25],operations[26],operations[27],operations[28],operations[29],operations[30],operations[31],operations[32],operations[33],operations[34],operations[35],operations[36]);
-//										
-//									END LOOP;
-//								END IF;
-//								IF NOT attribsAdded THEN
-//									IF regMode > 1 THEN
-//										IF entityId IS NOT NULL THEN 
-//											WITH e_ids AS (SELECT id FROM entity WHERE e_id = entityId) SELECT count(iid) INTO errorFound FROM etype2iid  WHERE etype2iid.e_type = entityType;
-//											IF errorFound THEN
-//												RAISE EXCEPTION 'Registration with entityId % conflicts with existing entity', entityId USING ERRCODE='23514';
-//											END IF;
-//										ELSIF entityIdPattern IS NOT NULL THEN
-//											WITH e_ids AS (SELECT id FROM entity WHERE e_id ~ entityIdPattern) SELECT count(iid)>0 INTO errorFound FROM etype2iid LEFT JOIN e_ids ON etype2iid.iid = e_ids.id WHERE etype2iid.e_type = entityType;
-//											IF errorFound THEN
-//												RAISE EXCEPTION 'Registration with idPattern % and type % conflicts with existing entity', entityIdPattern, entityType USING ERRCODE='23514';
-//											END IF;
-//										ELSE
-//											SELECT count(iid)>0 INTO errorFound FROM etype2iid WHERE e_type = entityType;
-//											IF errorFound THEN
-//												RAISE EXCEPTION 'Registration with type % conflicts with existing entity', entityType USING ERRCODE='23514';
-//											END IF;
-//										END IF;
-//									END IF;
-//									INSERT INTO csourceinformation(cs_id, c_id, e_id, e_id_p, e_type, e_rel, e_prop, i_location, scopes, expires, endpoint, tenant_id, headers, reg_mode, createEntity, updateEntity, appendAttrs, updateAttrs, deleteAttrs, deleteEntity, createBatch, upsertBatch, updateBatch, deleteBatch, upsertTemporal, appendAttrsTemporal, deleteAttrsTemporal, updateAttrsTemporal, deleteAttrInstanceTemporal, deleteTemporal, mergeEntity, replaceEntity, replaceAttrs, mergeBatch, retrieveEntity, queryEntity, queryBatch, retrieveTemporal, queryTemporal, retrieveEntityTypes, retrieveEntityTypeDetails, retrieveEntityTypeInfo, retrieveAttrTypes, retrieveAttrTypeDetails, retrieveAttrTypeInfo, createSubscription, updateSubscription, retrieveSubscription, querySubscription, deleteSubscription) values (internalId, NEW.C_ID, entityId, entityIdPattern, entityType, NULL, NULL, location, scopes, expires, endpoint, tenant, headers, regMode,operations[1],operations[2],operations[3],operations[4],operations[5],operations[6],operations[7],operations[8],operations[9],operations[10],operations[11],operations[12],operations[13],operations[14],operations[15],operations[16],operations[17],operations[18],operations[19],operations[20],operations[21],operations[22],operations[23],operations[24],operations[25],operations[26],operations[27],operations[28],operations[29],operations[30],operations[31],operations[32],operations[33],operations[34],operations[35],operations[36]);
-//								END IF;
-//							END LOOP;
-//						END LOOP;
-//					ELSE
-//						IF infoEntry ? 'https://uri.etsi.org/ngsi-ld/propertyNames' THEN
-//							FOR attribName IN SELECT value#>>'{@id}' FROM jsonb_array_elements(infoEntry#>'{https://uri.etsi.org/ngsi-ld/propertyNames}') LOOP
-//								SELECT count(attr2iid.iid)>0 INTO errorFound FROM attr2iid WHERE attr2iid.attr = attribName AND NOT attr2iid.is_rel;
-//								IF regMode > 1 AND errorFound THEN
-//									RAISE EXCEPTION 'Attribute % conflicts with existing entity', attribName USING ERRCODE='23514';
-//								END IF;
-//								INSERT INTO csourceinformation(cs_id, c_id, e_id, e_id_p, e_type, e_rel, e_prop, i_location, scopes, expires, endpoint, tenant_id, headers, reg_mode, createEntity, updateEntity, appendAttrs, updateAttrs, deleteAttrs, deleteEntity, createBatch, upsertBatch, updateBatch, deleteBatch, upsertTemporal, appendAttrsTemporal, deleteAttrsTemporal, updateAttrsTemporal, deleteAttrInstanceTemporal, deleteTemporal, mergeEntity, replaceEntity, replaceAttrs, mergeBatch, retrieveEntity, queryEntity, queryBatch, retrieveTemporal, queryTemporal, retrieveEntityTypes, retrieveEntityTypeDetails, retrieveEntityTypeInfo, retrieveAttrTypes, retrieveAttrTypeDetails, retrieveAttrTypeInfo, createSubscription, updateSubscription, retrieveSubscription, querySubscription, deleteSubscription) VALUES (internalId, NEW.C_ID, NULL, NULL, NULL, attribName, NULL, location, scopes, expires, endpoint, tenant, headers, regMode, operations[1],operations[2],operations[3],operations[4],operations[5],operations[6],operations[7],operations[8],operations[9],operations[10],operations[11],operations[12],operations[13],operations[14],operations[15],operations[16],operations[17],operations[18],operations[19],operations[20],operations[21],operations[22],operations[23],operations[24],operations[25],operations[26],operations[27],operations[28],operations[29],operations[30],operations[31],operations[32],operations[33],operations[34],operations[35],operations[36]);
-//							END LOOP;
-//						END IF;
-//						IF infoEntry ? 'https://uri.etsi.org/ngsi-ld/relationshipNames' THEN
-//							FOR attribName IN SELECT value#>>'{@id}' FROM jsonb_array_elements(infoEntry#>'{https://uri.etsi.org/ngsi-ld/relationshipNames}') LOOP
-//								SELECT count(attr2iid.iid)>0 INTO errorFound FROM attr2iid WHERE attr2iid.attr = attribName AND attr2iid.is_rel;
-//								IF regMode > 1 AND errorFound THEN
-//									RAISE EXCEPTION 'Attribute % conflicts with existing entity', attribName USING ERRCODE='23514';
-//								END IF;
-//								INSERT INTO csourceinformation(cs_id, c_id, e_id, e_id_p, e_type, e_rel, e_prop, i_location, scopes, expires, endpoint, tenant_id, headers, reg_mode, createEntity, updateEntity, appendAttrs, updateAttrs, deleteAttrs, deleteEntity, createBatch, upsertBatch, updateBatch, deleteBatch, upsertTemporal, appendAttrsTemporal, deleteAttrsTemporal, updateAttrsTemporal, deleteAttrInstanceTemporal, deleteTemporal, mergeEntity, replaceEntity, replaceAttrs, mergeBatch, retrieveEntity, queryEntity, queryBatch, retrieveTemporal, queryTemporal, retrieveEntityTypes, retrieveEntityTypeDetails, retrieveEntityTypeInfo, retrieveAttrTypes, retrieveAttrTypeDetails, retrieveAttrTypeInfo, createSubscription, updateSubscription, retrieveSubscription, querySubscription, deleteSubscription) VALUES (internalId, NEW.C_ID, NULL, NULL, NULL, NULL, attribName, location, scopes, expires, endpoint, tenant, headers, regMode, operations[1],operations[2],operations[3],operations[4],operations[5],operations[6],operations[7],operations[8],operations[9],operations[10],operations[11],operations[12],operations[13],operations[14],operations[15],operations[16],operations[17],operations[18],operations[19],operations[20],operations[21],operations[22],operations[23],operations[24],operations[25],operations[26],operations[27],operations[28],operations[29],operations[30],operations[31],operations[32],operations[33],operations[34],operations[35],operations[36]);
-//							END LOOP;
-//						END IF;
-//					END IF;
-//				END LOOP;
-//			END;
-//		END IF;
-//	    RETURN NEW;
-//	END;
-//	$BODY$;
+
+		boolean tmpCreateEntity = false;
+		boolean tmpUpdateEntity = false;
+		boolean tmpAppendAttrs = false;
+		boolean tmpUpdateAttrs = false;
+		boolean tmpDeleteAttrs = false;
+		boolean tmpDeleteEntity = false;
+		boolean tmpCreateBatch = false;
+		boolean tmpUpsertBatch = false;
+		boolean tmpUpdateBatch = false;
+		boolean tmpDeleteBatch = false;
+		boolean tmpUpsertTemporal = false;
+		boolean tmpAppendAttrsTemporal = false;
+		boolean tmpDeleteAttrsTemporal = false;
+		boolean tmpUpdateAttrsTemporal = false;
+		boolean tmpDeleteAttrInstanceTemporal = false;
+		boolean tmpDeleteTemporal = false;
+		boolean tmpMergeEntity = false;
+		boolean tmpReplaceEntity = false;
+		boolean tmpReplaceAttrs = false;
+		boolean tmpMergeBatch = false;
+		boolean tmpRetrieveEntity = false;
+		boolean tmpQueryEntity = false;
+		boolean tmpQueryBatch = false;
+		boolean tmpRetrieveTemporal = false;
+		boolean tmpQueryTemporal = false;
+		boolean tmpRetrieveEntityTypes = false;
+		boolean tmpRetrieveEntityTypeDetails = false;
+		boolean tmpRetrieveEntityTypeInfo = false;
+		boolean tmpRetrieveAttrTypes = false;
+		boolean tmpRetrieveAttrTypeDetails = false;
+		boolean tmpRetrieveAttrTypeInfo = false;
+		boolean tmpCreateSubscription = false;
+		boolean tmpUpdateSubscription = false;
+		boolean tmpRetrieveSubscription = false;
+		boolean tmpCanCompress = false;
+		boolean tmpEntityMap = false;
+		boolean tmpDeleteSubscription = false;
+		boolean tmpQuerySubscription = false;
+		if (payload.containsKey(NGSIConstants.NGSI_LD_REG_OPERATIONS)) {
+			for (Map<String, String> opEntry : (List<Map<String, String>>) payload
+					.get(NGSIConstants.NGSI_LD_REG_OPERATIONS)) {
+				String operation = opEntry.get(NGSIConstants.JSON_LD_VALUE);
+				switch (operation) {
+				case NGSIConstants.NGSI_LD_REG_OPERATION_CREATEENTITY:
+					tmpCreateEntity = true;
+					break;
+				case NGSIConstants.NGSI_LD_REG_OPERATION_UPDATEENTITY:
+					tmpUpdateEntity = true;
+					break;
+				case NGSIConstants.NGSI_LD_REG_OPERATION_APPENDATTRS:
+					tmpAppendAttrs = true;
+					break;
+				case NGSIConstants.NGSI_LD_REG_OPERATION_UPDATEATTRS:
+					tmpUpdateAttrs = true;
+					break;
+				case NGSIConstants.NGSI_LD_REG_OPERATION_DELETEATTRS:
+					tmpDeleteAttrs = true;
+					break;
+				case NGSIConstants.NGSI_LD_REG_OPERATION_DELETEENTITY:
+					tmpDeleteEntity = true;
+					break;
+				case NGSIConstants.NGSI_LD_REG_OPERATION_CREATEBATCH:
+					tmpCreateBatch = true;
+					break;
+				case NGSIConstants.NGSI_LD_REG_OPERATION_UPSERTBATCH:
+					tmpUpsertBatch = true;
+					break;
+				case NGSIConstants.NGSI_LD_REG_OPERATION_UPDATEBATCH:
+					tmpUpdateBatch = true;
+					break;
+				case NGSIConstants.NGSI_LD_REG_OPERATION_DELETEBATCH:
+					tmpDeleteBatch = true;
+					break;
+				case NGSIConstants.NGSI_LD_REG_OPERATION_UPSERTTEMPORAL:
+					tmpUpsertTemporal = true;
+					break;
+				case NGSIConstants.NGSI_LD_REG_OPERATION_APPENDATTRSTEMPORAL:
+					tmpAppendAttrsTemporal = true;
+					break;
+				case NGSIConstants.NGSI_LD_REG_OPERATION_DELETEATTRSTEMPORAL:
+					tmpDeleteAttrsTemporal = true;
+					break;
+				case NGSIConstants.NGSI_LD_REG_OPERATION_UPDATEATTRSTEMPORAL:
+					tmpUpdateAttrsTemporal = true;
+					break;
+				case NGSIConstants.NGSI_LD_REG_OPERATION_DELETEATTRINSTANCETEMPORAL:
+					tmpDeleteAttrInstanceTemporal = true;
+					break;
+				case NGSIConstants.NGSI_LD_REG_OPERATION_DELETETEMPORAL:
+					tmpDeleteTemporal = true;
+					break;
+				case NGSIConstants.NGSI_LD_REG_OPERATION_MERGEENTITY:
+					tmpMergeEntity = true;
+					break;
+				case NGSIConstants.NGSI_LD_REG_OPERATION_REPLACEENTITY:
+					tmpReplaceEntity = true;
+					break;
+				case NGSIConstants.NGSI_LD_REG_OPERATION_REPLACEATTRS:
+					tmpReplaceAttrs = true;
+					break;
+				case NGSIConstants.NGSI_LD_REG_OPERATION_MERGEBATCH:
+					tmpMergeBatch = true;
+					break;
+				case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVEENTITY:
+					tmpRetrieveEntity = true;
+					break;
+				case NGSIConstants.NGSI_LD_REG_OPERATION_QUERYENTITY:
+					tmpQueryEntity = true;
+					break;
+				case NGSIConstants.NGSI_LD_REG_OPERATION_QUERYBATCH:
+					tmpQueryBatch = true;
+					break;
+				case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVETEMPORAL:
+					tmpRetrieveTemporal = true;
+					break;
+				case NGSIConstants.NGSI_LD_REG_OPERATION_QUERYTEMPORAL:
+					tmpQueryTemporal = true;
+					break;
+				case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVEENTITYTYPES:
+					tmpRetrieveEntityTypes = true;
+					break;
+				case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVEENTITYTYPEDETAILS:
+					tmpRetrieveEntityTypeDetails = true;
+					break;
+				case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVEENTITYTYPEINFO:
+					tmpRetrieveEntityTypeInfo = true;
+					break;
+				case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVEATTRTYPES:
+					tmpRetrieveAttrTypes = true;
+					break;
+				case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVEATTRTYPEDETAILS:
+					tmpRetrieveAttrTypeDetails = true;
+					break;
+				case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVEATTRTYPEINFO:
+					tmpRetrieveAttrTypeInfo = true;
+					break;
+				case NGSIConstants.NGSI_LD_REG_OPERATION_CREATESUBSCRIPTION:
+					tmpCreateSubscription = true;
+					break;
+				case NGSIConstants.NGSI_LD_REG_OPERATION_UPDATESUBSCRIPTION:
+					tmpUpdateSubscription = true;
+					break;
+				case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVESUBSCRIPTION:
+					tmpRetrieveSubscription = true;
+					break;
+				case NGSIConstants.NGSI_LD_REG_OPERATION_QUERYSUBSCRIPTION:
+					tmpQuerySubscription = true;
+					break;
+				case NGSIConstants.NGSI_LD_REG_OPERATION_DELETESUBSCRIPTION:
+					tmpDeleteSubscription = true;
+					break;
+				case NGSIConstants.NGSI_LD_REG_OPERATION_ENTITYMAP:
+					tmpEntityMap = true;
+					break;
+				case NGSIConstants.NGSI_LD_REG_OPERATION_CANCOMPRESS:
+					tmpCanCompress = true;
+					break;
+				}
+			}
+		} else {
+			tmpRetrieveEntity = true;
+			tmpQueryEntity = true;
+			tmpRetrieveEntityTypes = true;
+			tmpRetrieveEntityTypeDetails = true;
+			tmpRetrieveEntityTypeInfo = true;
+			tmpRetrieveAttrTypes = true;
+			tmpRetrieveAttrTypeDetails = true;
+			tmpRetrieveAttrTypeInfo = true;
+			tmpCreateSubscription = true;
+			tmpUpdateSubscription = true;
+			tmpRetrieveSubscription = true;
+			tmpQuerySubscription = true;
+			tmpDeleteSubscription = true;
+		}
+		for (Map<String, Object> infoEntry : (List<Map<String, Object>>) payload
+				.get(NGSIConstants.NGSI_LD_INFORMATION)) {
+			if (infoEntry.containsKey(NGSIConstants.NGSI_LD_ENTITIES)) {
+				for (Map<String, Object> entitiesEntry : (List<Map<String, Object>>) infoEntry
+						.get(NGSIConstants.NGSI_LD_ENTITIES)) {
+					for (String entityType : (List<String>) entitiesEntry.get(NGSIConstants.JSON_LD_TYPE)) {
+						String tmpEId = null;
+						String tmpEIdp = null;
+						if (entitiesEntry.containsKey(NGSIConstants.JSON_LD_ID)) {
+							tmpEId = (String) entitiesEntry.get(NGSIConstants.JSON_LD_ID);
+						}
+						if (entitiesEntry.containsKey(NGSIConstants.NGSI_LD_ID_PATTERN)) {
+							tmpEIdp = ((List<Map<String, String>>) entitiesEntry.get(NGSIConstants.JSON_LD_ID)).get(0)
+									.get(NGSIConstants.JSON_LD_VALUE);
+						}
+
+						boolean containsProps = infoEntry.containsKey(NGSIConstants.NGSI_LD_PROPERTIES);
+						boolean containsRels = infoEntry.containsKey(NGSIConstants.NGSI_LD_RELATIONSHIPS);
+						if (containsProps || containsRels) {
+							if (containsProps) {
+								for (Map<String, String> prop : (List<Map<String, String>>) infoEntry
+										.get(NGSIConstants.NGSI_LD_PROPERTIES)) {
+									result.add(new RegistrationEntry(cSourceId, tmpEId, tmpEIdp, entityType,
+											prop.get(NGSIConstants.JSON_LD_ID), null, location, scopes, tmpEexpiresAt,
+											mode, tmpCreateEntity, tmpUpdateEntity, tmpAppendAttrs, tmpUpdateAttrs,
+											tmpDeleteAttrs, tmpDeleteEntity, tmpCreateBatch, tmpUpsertBatch,
+											tmpUpdateBatch, tmpDeleteBatch, tmpUpsertTemporal, tmpAppendAttrsTemporal,
+											tmpDeleteAttrsTemporal, tmpUpdateAttrsTemporal,
+											tmpDeleteAttrInstanceTemporal, tmpDeleteTemporal, tmpMergeEntity,
+											tmpReplaceEntity, tmpReplaceAttrs, tmpMergeBatch, tmpRetrieveEntity,
+											tmpQueryEntity, tmpQueryBatch, tmpRetrieveTemporal, tmpQueryTemporal,
+											tmpRetrieveEntityTypes, tmpRetrieveEntityTypeDetails,
+											tmpRetrieveEntityTypeInfo, tmpRetrieveAttrTypes, tmpRetrieveAttrTypeDetails,
+											tmpRetrieveAttrTypeInfo, tmpCreateSubscription, tmpUpdateSubscription,
+											tmpRetrieveSubscription, tmpQuerySubscription, tmpDeleteSubscription,
+											tmpEntityMap, tmpCanCompress, remoteHost));
+								}
+							}
+							if (containsRels) {
+								for (Map<String, String> rel : (List<Map<String, String>>) infoEntry
+										.get(NGSIConstants.NGSI_LD_RELATIONSHIPS)) {
+									result.add(new RegistrationEntry(cSourceId, tmpEId, tmpEIdp, entityType, null,
+											rel.get(NGSIConstants.JSON_LD_ID), location, scopes, tmpEexpiresAt, mode,
+											tmpCreateEntity, tmpUpdateEntity, tmpAppendAttrs, tmpUpdateAttrs,
+											tmpDeleteAttrs, tmpDeleteEntity, tmpCreateBatch, tmpUpsertBatch,
+											tmpUpdateBatch, tmpDeleteBatch, tmpUpsertTemporal, tmpAppendAttrsTemporal,
+											tmpDeleteAttrsTemporal, tmpUpdateAttrsTemporal,
+											tmpDeleteAttrInstanceTemporal, tmpDeleteTemporal, tmpMergeEntity,
+											tmpReplaceEntity, tmpReplaceAttrs, tmpMergeBatch, tmpRetrieveEntity,
+											tmpQueryEntity, tmpQueryBatch, tmpRetrieveTemporal, tmpQueryTemporal,
+											tmpRetrieveEntityTypes, tmpRetrieveEntityTypeDetails,
+											tmpRetrieveEntityTypeInfo, tmpRetrieveAttrTypes, tmpRetrieveAttrTypeDetails,
+											tmpRetrieveAttrTypeInfo, tmpCreateSubscription, tmpUpdateSubscription,
+											tmpRetrieveSubscription, tmpQuerySubscription, tmpDeleteSubscription,
+											tmpEntityMap, tmpCanCompress, remoteHost));
+								}
+							}
+						} else {
+							result.add(new RegistrationEntry(cSourceId, tmpEId, tmpEIdp, entityType, null, null,
+									location, scopes, tmpEexpiresAt, mode, tmpCreateEntity, tmpUpdateEntity,
+									tmpAppendAttrs, tmpUpdateAttrs, tmpDeleteAttrs, tmpDeleteEntity, tmpCreateBatch,
+									tmpUpsertBatch, tmpUpdateBatch, tmpDeleteBatch, tmpUpsertTemporal,
+									tmpAppendAttrsTemporal, tmpDeleteAttrsTemporal, tmpUpdateAttrsTemporal,
+									tmpDeleteAttrInstanceTemporal, tmpDeleteTemporal, tmpMergeEntity, tmpReplaceEntity,
+									tmpReplaceAttrs, tmpMergeBatch, tmpRetrieveEntity, tmpQueryEntity, tmpQueryBatch,
+									tmpRetrieveTemporal, tmpQueryTemporal, tmpRetrieveEntityTypes,
+									tmpRetrieveEntityTypeDetails, tmpRetrieveEntityTypeInfo, tmpRetrieveAttrTypes,
+									tmpRetrieveAttrTypeDetails, tmpRetrieveAttrTypeInfo, tmpCreateSubscription,
+									tmpUpdateSubscription, tmpRetrieveSubscription, tmpQuerySubscription,
+									tmpDeleteSubscription, tmpEntityMap, tmpCanCompress, remoteHost));
+						}
+
+					}
+				}
+			} else {
+				boolean containsProps = infoEntry.containsKey(NGSIConstants.NGSI_LD_PROPERTIES);
+				boolean containsRels = infoEntry.containsKey(NGSIConstants.NGSI_LD_RELATIONSHIPS);
+
+				if (containsProps) {
+					for (Map<String, String> prop : (List<Map<String, String>>) infoEntry
+							.get(NGSIConstants.NGSI_LD_PROPERTIES)) {
+						result.add(new RegistrationEntry(cSourceId, null, null, null,
+								prop.get(NGSIConstants.JSON_LD_ID), null, location, scopes, tmpEexpiresAt, mode,
+								tmpCreateEntity, tmpUpdateEntity, tmpAppendAttrs, tmpUpdateAttrs, tmpDeleteAttrs,
+								tmpDeleteEntity, tmpCreateBatch, tmpUpsertBatch, tmpUpdateBatch, tmpDeleteBatch,
+								tmpUpsertTemporal, tmpAppendAttrsTemporal, tmpDeleteAttrsTemporal,
+								tmpUpdateAttrsTemporal, tmpDeleteAttrInstanceTemporal, tmpDeleteTemporal,
+								tmpMergeEntity, tmpReplaceEntity, tmpReplaceAttrs, tmpMergeBatch, tmpRetrieveEntity,
+								tmpQueryEntity, tmpQueryBatch, tmpRetrieveTemporal, tmpQueryTemporal,
+								tmpRetrieveEntityTypes, tmpRetrieveEntityTypeDetails, tmpRetrieveEntityTypeInfo,
+								tmpRetrieveAttrTypes, tmpRetrieveAttrTypeDetails, tmpRetrieveAttrTypeInfo,
+								tmpCreateSubscription, tmpUpdateSubscription, tmpRetrieveSubscription,
+								tmpQuerySubscription, tmpDeleteSubscription, tmpEntityMap, tmpCanCompress, remoteHost));
+					}
+				}
+				if (containsRels) {
+					for (Map<String, String> rel : (List<Map<String, String>>) infoEntry
+							.get(NGSIConstants.NGSI_LD_RELATIONSHIPS)) {
+						result.add(new RegistrationEntry(cSourceId, null, null, null, null,
+								rel.get(NGSIConstants.JSON_LD_ID), location, scopes, tmpEexpiresAt, mode,
+								tmpCreateEntity, tmpUpdateEntity, tmpAppendAttrs, tmpUpdateAttrs, tmpDeleteAttrs,
+								tmpDeleteEntity, tmpCreateBatch, tmpUpsertBatch, tmpUpdateBatch, tmpDeleteBatch,
+								tmpUpsertTemporal, tmpAppendAttrsTemporal, tmpDeleteAttrsTemporal,
+								tmpUpdateAttrsTemporal, tmpDeleteAttrInstanceTemporal, tmpDeleteTemporal,
+								tmpMergeEntity, tmpReplaceEntity, tmpReplaceAttrs, tmpMergeBatch, tmpRetrieveEntity,
+								tmpQueryEntity, tmpQueryBatch, tmpRetrieveTemporal, tmpQueryTemporal,
+								tmpRetrieveEntityTypes, tmpRetrieveEntityTypeDetails, tmpRetrieveEntityTypeInfo,
+								tmpRetrieveAttrTypes, tmpRetrieveAttrTypeDetails, tmpRetrieveAttrTypeInfo,
+								tmpCreateSubscription, tmpUpdateSubscription, tmpRetrieveSubscription,
+								tmpQuerySubscription, tmpDeleteSubscription, tmpEntityMap, tmpCanCompress, remoteHost));
+					}
+				}
+			}
+		}
 
 		return result;
 	}
 
 	private static String[] getScopesFromPayload(Object object) {
-		// TODO Auto-generated method stub
-		return null;
+		List<Map<String, String>> list = (List<Map<String, String>>) object;
+		String[] result = new String[list.size()];
+		int i = 0;
+		for (Map<String, String> entry : list) {
+			result[i] = entry.get(NGSIConstants.JSON_LD_VALUE);
+			i++;
+		}
+		return result;
 	}
 
 	public QueryInfos matches(String[] id, String idPattern, TypeQueryTerm typeQuery, AttrsQueryTerm attrsQuery,

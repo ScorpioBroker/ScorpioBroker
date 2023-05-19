@@ -1,5 +1,7 @@
 package eu.neclab.ngsildbroker.registryhandler.repository;
 
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.Lists;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendCSourceRequest;
@@ -15,6 +17,7 @@ import eu.neclab.ngsildbroker.commons.storage.ClientManager;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
+import io.smallrye.openapi.runtime.io.JsonUtil;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowSet;
@@ -22,6 +25,8 @@ import io.vertx.mutiny.sqlclient.Tuple;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
+import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 
