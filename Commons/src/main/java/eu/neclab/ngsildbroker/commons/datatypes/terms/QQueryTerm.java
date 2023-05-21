@@ -593,7 +593,7 @@ public class QQueryTerm {
 		tuple.addString(attribName);
 		result.append(") AS toplevel WHERE ");
 		dollarCount = commonWherePart(attribPath, subAttribPath, "toplevel", dollarCount, tuple, result, this);
-		//result.append(")");
+		// result.append(")");
 		return dollarCount;
 	}
 
@@ -911,6 +911,9 @@ public class QQueryTerm {
 			if (listItem.toLowerCase().equals("true") || listItem.toLowerCase().equals("false")) {
 				tuple.addBoolean(Boolean.parseBoolean(listItem));
 			} else {
+				if (listItem.charAt(0) == '"' && listItem.charAt(listItem.length() - 1) == '"') {
+					listItem = listItem.substring(1, listItem.length() - 1);
+				}
 				tuple.addString(listItem);
 			}
 		}
@@ -1003,7 +1006,7 @@ public class QQueryTerm {
 				sql.append("'");
 				dollarCount = applyOperator(sql, dollarCount, tuple);
 				sql.append(") WHEN ");
-				
+
 				sql.append(currentSqlAttrib);
 				sql.append(" #>>'{");
 				sql.append(NGSIConstants.JSON_LD_TYPE);

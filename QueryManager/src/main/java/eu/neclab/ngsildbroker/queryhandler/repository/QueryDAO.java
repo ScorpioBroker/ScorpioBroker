@@ -775,6 +775,8 @@ public class QueryDAO {
 				scopeQuery.toSql(query);
 			}
 			query.append(" ORDER BY createdAt");
+			System.out.println(query.toString());
+			System.out.println(tuple.deepToString());
 			return client.preparedQuery(query.toString()).execute(tuple).onItem().transform(rows -> {
 				List<String> result = Lists.newArrayList();
 				rows.forEach(row -> {
@@ -789,6 +791,9 @@ public class QueryDAO {
 	public Uni<SqlConnection> storeEntityMap(String tenant, String qToken, EntityMap entityMap) {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
 			return client.getConnection().onItem().transformToUni(conn -> {
+				if (entityMap.getEntityList().isEmpty()) {
+					return Uni.createFrom().item(conn);
+				}
 				List<Tuple> batch = Lists.newArrayList();
 //			"q_token" text NOT NULL,
 //		    "entity_id" text,

@@ -1237,9 +1237,6 @@ public class QueryService {
 			}
 			return result;
 		}).onItem().transformToUni(entityMap -> {
-			if (entityMap.isEmpty()) {
-				return Uni.createFrom().nullItem();
-			}
 			return queryDAO.storeEntityMap(tenant, qToken, entityMap).onItem().transform(conn -> {
 				return Tuple2.of(conn, entityMap);
 			});
