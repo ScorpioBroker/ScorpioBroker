@@ -646,7 +646,7 @@ public class EntityService {
 			EntityRequest request) {
 		Map<String, Object> originalEntity = request.getPayload();
 		Collection<RegistrationEntry> regs = tenant2CId2RegEntries.row(request.getTenant()).values();
-		Iterator<RegistrationEntry> it = regs.iterator();
+		
 		Object originalScopes = originalEntity.remove(NGSIConstants.NGSI_LD_SCOPE);
 		String entityId = (String) originalEntity.remove(NGSIConstants.JSON_LD_ID);
 		List<String> originalTypes = (List<String>) originalEntity.remove(NGSIConstants.JSON_LD_TYPE);
@@ -654,6 +654,7 @@ public class EntityService {
 		Shape location = null;
 		Set<String> toBeRemoved = Sets.newHashSet();
 		for (Entry<String, Object> entry : originalEntity.entrySet()) {
+			Iterator<RegistrationEntry> it = regs.iterator();
 			while (it.hasNext()) {
 				RegistrationEntry regEntry = it.next();
 				if (regEntry.expiresAt() > System.currentTimeMillis()) {
