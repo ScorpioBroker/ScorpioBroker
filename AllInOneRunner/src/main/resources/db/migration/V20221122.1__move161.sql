@@ -292,17 +292,17 @@ BEGIN
 								FOR attribName IN SELECT value#>>'{@id}' FROM jsonb_array_elements(infoEntry#>'{https://uri.etsi.org/ngsi-ld/propertyNames}') LOOP
 									IF regMode > 1 THEN
 										IF entityId IS NOT NULL THEN 
-											WITH iids AS (SELECT id FROM ENTITY, etype2iid WHERE e_id = entityId AND ENTITY.id = etype2iid.iid AND etype2iid.e_type = entityType) SELECT count(attr2iid.iid)>0 INTO errorFound FROM iids left join attr2iid on iids.iid = attr2iid.iid WHERE attr2iid.attr = attribName AND NOT attr2iid.is_rel;
+											SELECT count(id)>0 INTO errorFound FROM ENTITY WHERE id = entityId AND entityType = ANY(e_types) AND ENTITY ? attribName AND EXISTS (SELECT FROM jsonb_array_elements(ENTITY->attribName) as attribBody WHERE attribBody#>>'{@type,0}' != 'https://uri.etsi.org/ngsi-ld/Relationship');
 											IF errorFound THEN
 												RAISE EXCEPTION 'Registration with attrib % and id % conflicts with existing entry', attribName, entityId USING ERRCODE='23514';
 											END IF;
 										ELSIF entityIdPattern IS NOT NULL THEN
-											WITH iids AS (SELECT id FROM ENTITY, etype2iid WHERE e_id ~ entityIdPattern AND ENTITY.id = etype2iid.iid AND etype2iid.e_type = entityType) SELECT count(attr2iid.iid)>0 INTO errorFound FROM iids left join attr2iid on iids.iid = attr2iid.iid WHERE attr2iid.attr = attribName AND NOT attr2iid.is_rel;
+											SELECT count(id)>0 INTO errorFound FROM ENTITY WHERE id ~ entityIdPattern AND entityType = ANY(e_types) AND ENTITY ? attribName AND EXISTS (SELECT FROM jsonb_array_elements(ENTITY->attribName) as attribBody WHERE attribBody#>>'{@type,0}' != 'https://uri.etsi.org/ngsi-ld/Relationship');
 											IF errorFound THEN
 												RAISE EXCEPTION 'Registration with attrib % and idpattern % conflicts with existing entry', attribName, entityIdPattern USING ERRCODE='23514';
 											END IF;
 										ELSE
-											WITH iids AS (SELECT iid FROM etype2iid WHERE e_type = entityType) SELECT count(attr2iid.iid)>0 INTO errorFound FROM iids left join attr2iid on iids.iid = attr2iid.iid WHERE attr2iid.attr = attribName AND NOT attr2iid.is_rel;
+											SELECT count(id)>0 INTO errorFound FROM ENTITY WHERE entityType = ANY(e_types) AND ENTITY ? attribName AND EXISTS (SELECT FROM jsonb_array_elements(ENTITY->attribName) as attribBody WHERE attribBody#>>'{@type,0}' != 'https://uri.etsi.org/ngsi-ld/Relationship');
 											IF errorFound THEN
 												RAISE EXCEPTION 'Registration with attrib % and type % conflicts with existing entry', attribName, entityType USING ERRCODE='23514';
 											END IF;
@@ -316,17 +316,17 @@ BEGIN
 								FOR attribName IN SELECT value#>>'{@id}' FROM jsonb_array_elements(infoEntry#>'{https://uri.etsi.org/ngsi-ld/relationshipNames}') LOOP
 									IF regMode > 1 THEN
 										IF entityId IS NOT NULL THEN 
-											WITH iids AS (SELECT id FROM ENTITY, etype2iid WHERE e_id = entityId AND ENTITY.id = etype2iid.iid AND etype2iid.e_type = entityType) SELECT count(attr2iid.iid)>0 INTO errorFound FROM iids left join attr2iid on iids.iid = attr2iid.iid WHERE attr2iid.attr = attribName AND attr2iid.is_rel;
+											SELECT count(id)>0 INTO errorFound FROM ENTITY WHERE id = entityId AND entityType = ANY(e_types) AND ENTITY ? attribName AND EXISTS (SELECT FROM jsonb_array_elements(ENTITY->attribName) as attribBody WHERE attribBody#>>'{@type,0}' = 'https://uri.etsi.org/ngsi-ld/Relationship');
 											IF errorFound THEN
 												RAISE EXCEPTION 'Registration with attrib % and id % conflicts with existing entry', attribName, entityId USING ERRCODE='23514';
 											END IF;
 										ELSIF entityIdPattern IS NOT NULL THEN
-											WITH iids AS (SELECT id FROM ENTITY, etype2iid WHERE e_id ~ entityIdPattern AND ENTITY.id = etype2iid.iid AND etype2iid.e_type = entityType) SELECT count(attr2iid.iid)>0 INTO errorFound FROM iids left join attr2iid on iids.iid = attr2iid.iid WHERE attr2iid.attr = attribName AND attr2iid.is_rel;
+											SELECT count(id)>0 INTO errorFound FROM ENTITY WHERE id ~ entityIdPattern AND entityType = ANY(e_types) AND ENTITY ? attribName AND EXISTS (SELECT FROM jsonb_array_elements(ENTITY->attribName) as attribBody WHERE attribBody#>>'{@type,0}' = 'https://uri.etsi.org/ngsi-ld/Relationship');
 											IF errorFound THEN
 												RAISE EXCEPTION 'Registration with attrib % and idpattern % conflicts with existing entry', attribName, entityIdPattern USING ERRCODE='23514';
 											END IF;
 										ELSE
-											WITH iids AS (SELECT iid FROM etype2iid WHERE e_type = entityType) SELECT count(attr2iid.iid)>0 INTO errorFound FROM iids left join attr2iid on iids.iid = attr2iid.iid WHERE attr2iid.attr = attribName AND attr2iid.is_rel;
+											SELECT count(id)>0 INTO errorFound FROM ENTITY WHERE entityType = ANY(e_types) AND ENTITY ? attribName AND EXISTS (SELECT FROM jsonb_array_elements(ENTITY->attribName) as attribBody WHERE attribBody#>>'{@type,0}' = 'https://uri.etsi.org/ngsi-ld/Relationship');
 											IF errorFound THEN
 												RAISE EXCEPTION 'Registration with attrib % and type % conflicts with existing entry', attribName, entityType USING ERRCODE='23514';
 											END IF;
@@ -339,17 +339,17 @@ BEGIN
 							IF NOT attribsAdded THEN
 								IF regMode > 1 THEN
 									IF entityId IS NOT NULL THEN 
-										WITH e_ids AS (SELECT id FROM entity WHERE e_id = entityId) SELECT count(iid) INTO errorFound FROM etype2iid  WHERE etype2iid.e_type = entityType;
+										SELECT count(id)>0 INTO errorFound FROM ENTITY WHERE id = entityId AND entityType = ANY(e_types);
 										IF errorFound THEN
 											RAISE EXCEPTION 'Registration with entityId % conflicts with existing entity', entityId USING ERRCODE='23514';
 										END IF;
 									ELSIF entityIdPattern IS NOT NULL THEN
-										WITH e_ids AS (SELECT id FROM entity WHERE e_id ~ entityIdPattern) SELECT count(iid)>0 INTO errorFound FROM etype2iid LEFT JOIN e_ids ON etype2iid.iid = e_ids.id WHERE etype2iid.e_type = entityType;
+										SELECT count(id)>0 INTO errorFound FROM ENTITY WHERE id ~ entityIdPattern AND entityType = ANY(e_types);
 										IF errorFound THEN
 											RAISE EXCEPTION 'Registration with idPattern % and type % conflicts with existing entity', entityIdPattern, entityType USING ERRCODE='23514';
 										END IF;
 									ELSE
-										SELECT count(iid)>0 INTO errorFound FROM etype2iid WHERE e_type = entityType;
+										SELECT count(id)>0 INTO errorFound FROM ENTITY WHERE entityType = ANY(e_types);
 										IF errorFound THEN
 											RAISE EXCEPTION 'Registration with type % conflicts with existing entity', entityType USING ERRCODE='23514';
 										END IF;
@@ -362,7 +362,7 @@ BEGIN
 				ELSE
 					IF infoEntry ? 'https://uri.etsi.org/ngsi-ld/propertyNames' THEN
 						FOR attribName IN SELECT value#>>'{@id}' FROM jsonb_array_elements(infoEntry#>'{https://uri.etsi.org/ngsi-ld/propertyNames}') LOOP
-							SELECT count(attr2iid.iid)>0 INTO errorFound FROM attr2iid WHERE attr2iid.attr = attribName AND NOT attr2iid.is_rel;
+							SELECT count(id)>0 INTO errorFound FROM ENTITY WHERE ENTITY ? attribName AND EXISTS (SELECT FROM jsonb_array_elements(ENTITY->attribName) as attribBody WHERE attribBody#>>'{@type,0}' != 'https://uri.etsi.org/ngsi-ld/Relationship');
 							IF regMode > 1 AND errorFound THEN
 								RAISE EXCEPTION 'Attribute % conflicts with existing entity', attribName USING ERRCODE='23514';
 							END IF;
@@ -371,7 +371,7 @@ BEGIN
 					END IF;
 					IF infoEntry ? 'https://uri.etsi.org/ngsi-ld/relationshipNames' THEN
 						FOR attribName IN SELECT value#>>'{@id}' FROM jsonb_array_elements(infoEntry#>'{https://uri.etsi.org/ngsi-ld/relationshipNames}') LOOP
-							SELECT count(attr2iid.iid)>0 INTO errorFound FROM attr2iid WHERE attr2iid.attr = attribName AND attr2iid.is_rel;
+							SELECT count(id)>0 INTO errorFound FROM ENTITY WHERE ENTITY ? attribName AND EXISTS (SELECT FROM jsonb_array_elements(ENTITY->attribName) as attribBody WHERE attribBody#>>'{@type,0}' = 'https://uri.etsi.org/ngsi-ld/Relationship');
 							IF regMode > 1 AND errorFound THEN
 								RAISE EXCEPTION 'Attribute % conflicts with existing entity', attribName USING ERRCODE='23514';
 							END IF;

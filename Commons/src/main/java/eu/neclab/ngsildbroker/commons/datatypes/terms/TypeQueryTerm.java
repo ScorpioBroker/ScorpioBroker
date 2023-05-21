@@ -437,19 +437,7 @@ public class TypeQueryTerm {
 //	public boolean equals(Object obj) {
 //		return equals(obj, false);
 //	}
-	public String toBroadSql(char startChar) {
-		StringBuilder result = new StringBuilder(39 + (allTypes.size() * 14));
-		result.append(startChar);
-		result.append(" as (SELECT iid FROM etype2iid WHERE ");
-		allTypes.forEach(t -> {
-			result.append("e_type='");
-			result.append(t);
-			result.append("' or ");
-		});
-		result.setLength(result.length() - 4);
-		result.append(')');
-		return result.toString();
-	}
+
 
 	public int toSql(StringBuilder result, Tuple tuple, int dollar) {
 		if (type == null || type.isEmpty()) {

@@ -135,7 +135,6 @@ public class CSourceService {
 				return result;
 			});
 		}).onFailure().recoverWithUni(
-				// TODO do some proper error handling depending on the sql code
 				e -> {
 					ErrorType error = ErrorType.InternalError;
 					String errorMsg = e.getMessage();
