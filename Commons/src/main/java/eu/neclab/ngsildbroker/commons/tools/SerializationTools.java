@@ -109,9 +109,9 @@ public class SerializationTools {
 				} else if (propKey.equals(NGSIConstants.NGSI_LD_UNIT_CODE)) {
 					unitCode = getValue((List<Map<String, Object>>) value);
 				} else {
-					if (value instanceof String) {
-						System.out.println();
-					}
+//					if (value instanceof String) {
+//						System.out.println();
+//					}
 					List<Map<String, Object>> subLevelArray = (List<Map<String, Object>>) value;
 					Map<String, Object> objValue = subLevelArray.get(0);
 					if (objValue.containsKey(NGSIConstants.JSON_LD_TYPE)) {

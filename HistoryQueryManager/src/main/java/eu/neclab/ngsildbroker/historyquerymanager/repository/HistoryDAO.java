@@ -337,8 +337,7 @@ public class HistoryDAO {
 			dollarCount++;
 			tuple.addInteger(limit);
 			tuple.addInteger(offset);
-			System.out.println(sql.toString());
-			System.out.println(tuple.deepToString());
+
 			return client.preparedQuery(sql.toString()).execute(tuple).onItem().transform(rows -> {
 				QueryResult result = new QueryResult();
 				if (limit == 0 && count) {

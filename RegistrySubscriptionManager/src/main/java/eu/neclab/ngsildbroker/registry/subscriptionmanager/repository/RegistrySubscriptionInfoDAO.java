@@ -96,15 +96,7 @@ public class RegistrySubscriptionInfoDAO {
 		});
 	}
 
-	public static void main(String[] args) throws JsonGenerationException, IOException {
-		JsonLdProcessor.init("https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld");
 
-		Context context = JsonLdProcessor.getCoreContextClone();
-		Context test = new Context().parse(context.serialize().get("@context"), false);
-
-		System.out.println(JsonUtils.toPrettyString(context.serialize()));
-		System.out.println(JsonUtils.toPrettyString(test.serialize()));
-	}
 
 	public Uni<RowSet<Row>> getRegById(String tenant, String id) {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {

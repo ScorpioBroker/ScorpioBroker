@@ -460,16 +460,4 @@ public class GeoQueryTerm {
 
 	}
 
-	public static void main(String[] args) {
-		PolygonBuilder builder = SubscriptionTools.shapeFactory.polygon();
-
-		builder.pointLatLon(0, 0).pointLatLon(0, 1).pointLatLon(1, 1).pointLatLon(1, 0).pointLatLon(0, 0);
-		Shape poly = builder.build();
-		Shape line = SubscriptionTools.shapeFactory.lineString().pointLatLon(0, 0).pointLatLon(0, 1).build();
-		Shape multiline = SubscriptionTools.shapeFactory.multiLineString()
-				.add(SubscriptionTools.shapeFactory.lineString().pointLatLon(0, 0).pointLatLon(0, 1)).build();
-		Shape point = SubscriptionTools.shapeFactory.pointLatLon(0, 0);
-		System.out.println(poly);
-	}
-
 }

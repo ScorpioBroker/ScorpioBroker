@@ -188,8 +188,7 @@ public class QueryDAO {
 			query.append(" OFFSET ");
 			query.append(offSet);
 			query.append(';');
-			System.out.println(query.toString());
-			System.out.println(tuple.deepToString());
+
 			return client.preparedQuery(query.toString()).execute(tuple);
 		});
 	}
@@ -775,8 +774,7 @@ public class QueryDAO {
 				scopeQuery.toSql(query);
 			}
 			query.append(" ORDER BY createdAt");
-			System.out.println(query.toString());
-			System.out.println(tuple.deepToString());
+
 			return client.preparedQuery(query.toString()).execute(tuple).onItem().transform(rows -> {
 				List<String> result = Lists.newArrayList();
 				rows.forEach(row -> {

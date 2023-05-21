@@ -47,7 +47,7 @@ public class CSourceDAO {
                             + microServiceUtils.getGatewayURL().toString() + "\"}],\"@id\": \""
                             + AppConstants.INTERNAL_TYPE_REGISTRATION_ID
                             + "\",\"https://uri.etsi.org/ngsi-ld/information\": [{\"https://uri.etsi.org/ngsi-ld/entities\": [{}]}],\"@type\": [\"https://uri.etsi.org/ngsi-ld/ContextSourceRegistration\"]  }'::jsonb,'{https://uri.etsi.org/ngsi-ld/information,0,https://uri.etsi.org/ngsi-ld/entities,0,@type}' ,jsonb_agg(distinct myTypes)) from entity, jsonb_array_elements(ENTITY -> '@type') as myTypes";
-                    System.out.println(sql1);
+                    
                     return client
                             .preparedQuery(sql1)
                             .execute();
@@ -64,7 +64,7 @@ public class CSourceDAO {
                             		(WHERE ENTITY #>> (ATTRIBNAME || '{0,@type,0}'::text[]) = ANY('{https://uri.etsi.org/ngsi-ld/Relationship}'))))
                             FROM ENTITY, Jsonb_object_keys(ENTITY) as attribname
                             						""";
-                    System.out.println("this " + sql);
+                    
                     return client.preparedQuery(sql).execute();
                 }
                 case AppConstants.INTERNAL_TYPE_ATTRS_REGISTRATION_ID -> {

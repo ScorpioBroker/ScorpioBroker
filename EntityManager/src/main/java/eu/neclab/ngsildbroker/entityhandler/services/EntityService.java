@@ -437,7 +437,6 @@ public class EntityService {
 		Collection<Tuple2<RemoteHost, Map<String, Object>>> remoteEntitiesAndHosts = localAndRemote.getItem2();
 		if (remoteEntitiesAndHosts.isEmpty()) {
 			request.setPayload(localEntity);
-			System.out.println("before dao " + System.nanoTime());
 			return appendLocal(request, noOverwrite, context);
 		}
 		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(remoteEntitiesAndHosts.size());
@@ -561,7 +560,6 @@ public class EntityService {
 
 	private Uni<NGSILDOperationResult> updateLocalEntity(UpdateEntityRequest request, Context context) {
 		return entityDAO.updateEntity(request).onItem().transformToUni(notAppended -> {
-			System.out.println("after dao " + System.nanoTime());
 			return entityEmitter.send(request).onItem().transform(v2 -> {
 				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST,
 						request.getId());
@@ -799,7 +797,6 @@ public class EntityService {
 
 	private Uni<NGSILDOperationResult> appendLocal(AppendEntityRequest request, boolean noOverwrite, Context context) {
 		return entityDAO.appendToEntity2(request, noOverwrite).onItem().transformToUni(notAppended -> {
-			System.out.println("after dao " + System.nanoTime());
 			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.APPEND_REQUEST, request.getId());
 			Set<Attrib> failedToAdd = Sets.newHashSet();
 			Map<String, Object> payload = request.getPayload();

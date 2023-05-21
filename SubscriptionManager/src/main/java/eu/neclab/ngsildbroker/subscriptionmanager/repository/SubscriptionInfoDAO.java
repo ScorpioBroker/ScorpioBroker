@@ -46,15 +46,7 @@ public class SubscriptionInfoDAO {
     void setup() {
         webClient = WebClient.create(vertx);
     }
-    public static void main(String[] args) throws IOException {
-        JsonLdProcessor.init("https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld");
 
-        Context context = JsonLdProcessor.getCoreContextClone();
-        Context test = new Context().parse(context.serialize().get("@context"), false);
-
-        System.out.println(JsonUtils.toPrettyString(context.serialize()));
-        System.out.println(JsonUtils.toPrettyString(test.serialize()));
-    }
     public Uni<RowSet<Row>> createSubscription(SubscriptionRequest request) {
         return clientManager.getClient(request.getTenant(), true).onItem()
                 .transformToUni(client ->

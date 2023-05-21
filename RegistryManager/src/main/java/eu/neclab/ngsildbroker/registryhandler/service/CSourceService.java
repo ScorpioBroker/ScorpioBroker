@@ -99,7 +99,7 @@ public class CSourceService {
 		} else {
 			FED_BROKERS = FED_BROKERS_CONFIG.split(",");
 		}
-		System.out.println(scorpioFedList);
+		
 		if(scorpioFedList == null) return;
 		for (int i = 0; i < scorpioFedList.size(); i++) {
 			Map<String, String> details = new HashMap<>();
@@ -109,7 +109,7 @@ public class CSourceService {
 			details.put("regtype", ConfigProvider.getConfig().getValue("scorpio.federation[" + i + "].regtype", String.class));
 			fedMap.put(scorpioFedList.get(i),details );
 		}
-		System.out.println("map " + fedMap);
+		
 	}
 
 	public Uni<NGSILDOperationResult> createRegistration(String tenant, Map<String, Object> registration) {
