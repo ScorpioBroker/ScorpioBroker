@@ -93,6 +93,9 @@ public record RegistrationEntry(String cId, String eId, String eIdp, String type
 
 	private Set<String> getOverlap(List<Map<String, String>> originalScopes) {
 		Set<String> result = Sets.newHashSet();
+		if (originalScopes == null) {
+			originalScopes = Lists.newArrayList();
+		}
 		for (Map<String, String> scopeEntry : originalScopes) {
 			String scope = scopeEntry.get(NGSIConstants.JSON_LD_VALUE);
 			if (this.scopes == null || ArrayUtils.contains(this.scopes, scope)) {
