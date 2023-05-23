@@ -84,7 +84,7 @@ public final class HttpUtils {
 
 	public static JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
-	private static Set<String> DO_NOT_SCAN_ATTRIBS = Sets.newHashSet("id", "type", "createdAt", "scope");
+	private static Set<String> DO_NOT_SCAN_ATTRIBS = Sets.newHashSet("id", "type", "createdAt", "scope", "@context");
 
 //	public static final RestResponse<Object> NOT_FOUND_REPLY = RestResponseBuilderImpl.create(HttpStatus.SC_NOT_FOUND)
 //			.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
@@ -590,11 +590,24 @@ public final class HttpUtils {
 			if (DO_NOT_SCAN_ATTRIBS.contains(entry.getKey())) {
 				continue;
 			}
-			map = (Map<String, Object>) entry.getValue();
-			if (map.containsKey("datasetId")) {
-				datasetId = (String) map.get("datasetId");
+			Object attribObj = entry.getValue();
+			if (attribObj instanceof Map) {
+				map = (Map<String, Object>) entry.getValue();
+				if (map.containsKey("datasetId")) {
+					datasetId = (String) map.get("datasetId");
+				}
+				result.add(new Attrib(entry.getKey(), datasetId));
+			} else if (attribObj instanceof List) {
+				List<Map<String, Object>> list = (List<Map<String, Object>>) attribObj;
+				for (Map<String, Object> attribEntry : list) {
+					if (attribEntry.containsKey("datasetId")) {
+						datasetId = (String) attribEntry.get("datasetId");
+					}
+					result.add(new Attrib(entry.getKey(), datasetId));
+				}
+
 			}
-			result.add(new Attrib(entry.getKey(), datasetId));
+
 		}
 		return result;
 	}

@@ -64,10 +64,10 @@ public record RegistrationEntry(String cId, String eId, String eIdp, String type
 		if (this.eIdp != null && !id.matches(eIdp)) {
 			return null;
 		}
-		if (prop != null && eProp != null && !prop.equals(eProp)) {
+		if (prop != null && (eRel != null || eProp != null && !prop.equals(eProp))) {
 			return null;
 		}
-		if (rel != null && eRel != null && !rel.equals(eRel)) {
+		if (rel != null && (eProp != null || eRel != null && !rel.equals(eRel))) {
 			return null;
 		}
 		if ((location != null && this.location == null) || (location != null && this.location != null
@@ -94,6 +94,9 @@ public record RegistrationEntry(String cId, String eId, String eIdp, String type
 	private Set<String> getOverlap(List<Map<String, String>> originalScopes) {
 		Set<String> result = Sets.newHashSet();
 		if (originalScopes == null) {
+			if (this.scopes == null) {
+				return null;
+			}
 			originalScopes = Lists.newArrayList();
 		}
 		for (Map<String, String> scopeEntry : originalScopes) {

@@ -91,7 +91,7 @@ public class EntityService {
 
 	WebClient webClient;
 
-	private Table<String, String, RegistrationEntry> tenant2CId2RegEntries = HashBasedTable.create();
+	private Table<String, String, List<RegistrationEntry>> tenant2CId2RegEntries = HashBasedTable.create();
 
 	private Random random = new Random();
 
@@ -413,16 +413,18 @@ public class EntityService {
 
 	private Set<RemoteHost> getRemoteHostsForDelete(DeleteEntityRequest request) {
 		Set<RemoteHost> result = Sets.newHashSet();
-		for (RegistrationEntry regEntry : tenant2CId2RegEntries.row(request.getTenant()).values()) {
-			if (!regEntry.deleteEntity() && !regEntry.deleteBatch()) {
-				continue;
-			}
-			if ((regEntry.eId() == null && regEntry.eIdp() == null)
-					|| (regEntry.eId() != null && regEntry.eId().equals(request.getId()))
-					|| (regEntry.eIdp() != null && request.getId().matches(regEntry.eIdp()))) {
-				result.add(new RemoteHost(regEntry.host().host(), regEntry.host().tenant(), regEntry.host().headers(),
-						regEntry.host().cSourceId(), regEntry.deleteEntity(), regEntry.deleteBatch(),
-						regEntry.regMode(), regEntry.canDoZip(), regEntry.canDoIdQuery()));
+		for (List<RegistrationEntry> regEntries : tenant2CId2RegEntries.row(request.getTenant()).values()) {
+			for (RegistrationEntry regEntry : regEntries) {
+				if (!regEntry.deleteEntity() && !regEntry.deleteBatch()) {
+					continue;
+				}
+				if ((regEntry.eId() == null && regEntry.eIdp() == null)
+						|| (regEntry.eId() != null && regEntry.eId().equals(request.getId()))
+						|| (regEntry.eIdp() != null && request.getId().matches(regEntry.eIdp()))) {
+					result.add(new RemoteHost(regEntry.host().host(), regEntry.host().tenant(),
+							regEntry.host().headers(), regEntry.host().cSourceId(), regEntry.deleteEntity(),
+							regEntry.deleteBatch(), regEntry.regMode(), regEntry.canDoZip(), regEntry.canDoIdQuery()));
+				}
 			}
 		}
 		return result;
@@ -611,7 +613,7 @@ public class EntityService {
 			}
 
 		}
-		if (remoteEntitiesAndHosts.isEmpty()) {
+		if (!localEntity.isEmpty()) {
 			request.setPayload(localEntity);
 			unis.add(createLocalEntity(request, context).onFailure().recoverWithItem(e -> {
 				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST,
@@ -645,8 +647,8 @@ public class EntityService {
 	private Tuple2<Map<String, Object>, Collection<Tuple2<RemoteHost, Map<String, Object>>>> splitEntity(
 			EntityRequest request) {
 		Map<String, Object> originalEntity = request.getPayload();
-		Collection<RegistrationEntry> regs = tenant2CId2RegEntries.row(request.getTenant()).values();
-		
+		Collection<List<RegistrationEntry>> tenantRegs = tenant2CId2RegEntries.row(request.getTenant()).values();
+
 		Object originalScopes = originalEntity.remove(NGSIConstants.NGSI_LD_SCOPE);
 		String entityId = (String) originalEntity.remove(NGSIConstants.JSON_LD_ID);
 		List<String> originalTypes = (List<String>) originalEntity.remove(NGSIConstants.JSON_LD_TYPE);
@@ -654,109 +656,112 @@ public class EntityService {
 		Shape location = null;
 		Set<String> toBeRemoved = Sets.newHashSet();
 		for (Entry<String, Object> entry : originalEntity.entrySet()) {
-			Iterator<RegistrationEntry> it = regs.iterator();
-			while (it.hasNext()) {
-				RegistrationEntry regEntry = it.next();
-				if (regEntry.expiresAt() > System.currentTimeMillis()) {
-					it.remove();
-					continue;
-				}
-				switch (request.getRequestType()) {
-				case AppConstants.CREATE_REQUEST:
-					if (!regEntry.createEntity() && !regEntry.createBatch()) {
+			for (List<RegistrationEntry> regs : tenantRegs) {
+				Iterator<RegistrationEntry> it = regs.iterator();
+				while (it.hasNext()) {
+					RegistrationEntry regEntry = it.next();
+					if (regEntry.expiresAt() > System.currentTimeMillis()) {
+						it.remove();
 						continue;
 					}
-					break;
-				case AppConstants.UPDATE_REQUEST:
-					if (!regEntry.updateEntity()) {
-						continue;
-					}
-					break;
-				case AppConstants.APPEND_REQUEST:
-					if (!regEntry.appendAttrs() && !regEntry.updateBatch()) {
-						continue;
-					}
-					break;
-				case AppConstants.UPSERT_REQUEST:
-					if (!regEntry.upsertBatch() && !regEntry.appendAttrs() && !regEntry.createEntity()) {
-						continue;
-					}
-					break;
-				default:
-					continue;
-				}
-
-				String propType = ((List<String>) ((List<Map<String, Object>>) entry.getValue()).get(0)
-						.get(NGSIConstants.JSON_LD_TYPE)).get(0);
-				Tuple2<Set<String>, Set<String>> matches;
-				if (propType.equals(NGSIConstants.NGSI_LD_RELATIONSHIP)) {
-					matches = regEntry.matches(entityId, originalTypes, null, entry.getKey(), originalScopes, location);
-				} else {
-					matches = regEntry.matches(entityId, originalTypes, entry.getKey(), null, originalScopes, location);
-				}
-				if (matches != null) {
-					Map<String, Object> tmp;
-					if (cId2RemoteHostEntity.containsKey(regEntry.cId())) {
-						tmp = cId2RemoteHostEntity.get(regEntry.cId()).getItem2();
-						if (matches.getItem1() != null) {
-							((Set<String>) tmp.get(NGSIConstants.JSON_LD_TYPE)).addAll(matches.getItem1());
+					switch (request.getRequestType()) {
+					case AppConstants.CREATE_REQUEST:
+						if (!regEntry.createEntity() && !regEntry.createBatch()) {
+							continue;
 						}
-						if (matches.getItem2() != null) {
-							if (!tmp.containsKey(NGSIConstants.NGSI_LD_SCOPE)) {
-								tmp.put(NGSIConstants.NGSI_LD_SCOPE, matches.getItem2());
-							} else {
-								((Set<String>) tmp.get(NGSIConstants.NGSI_LD_SCOPE)).addAll(matches.getItem2());
+						break;
+					case AppConstants.UPDATE_REQUEST:
+						if (!regEntry.updateEntity()) {
+							continue;
+						}
+						break;
+					case AppConstants.APPEND_REQUEST:
+						if (!regEntry.appendAttrs() && !regEntry.updateBatch()) {
+							continue;
+						}
+						break;
+					case AppConstants.UPSERT_REQUEST:
+						if (!regEntry.upsertBatch() && !regEntry.appendAttrs() && !regEntry.createEntity()) {
+							continue;
+						}
+						break;
+					default:
+						continue;
+					}
+
+					String propType = ((List<String>) ((List<Map<String, Object>>) entry.getValue()).get(0)
+							.get(NGSIConstants.JSON_LD_TYPE)).get(0);
+					Tuple2<Set<String>, Set<String>> matches;
+					if (propType.equals(NGSIConstants.NGSI_LD_RELATIONSHIP)) {
+						matches = regEntry.matches(entityId, originalTypes, null, entry.getKey(), originalScopes,
+								location);
+					} else {
+						matches = regEntry.matches(entityId, originalTypes, entry.getKey(), null, originalScopes,
+								location);
+					}
+					if (matches != null) {
+						Map<String, Object> tmp;
+						if (cId2RemoteHostEntity.containsKey(regEntry.cId())) {
+							tmp = cId2RemoteHostEntity.get(regEntry.cId()).getItem2();
+							if (matches.getItem1() != null) {
+								((Set<String>) tmp.get(NGSIConstants.JSON_LD_TYPE)).addAll(matches.getItem1());
+							}
+							if (matches.getItem2() != null && !matches.getItem2().isEmpty()) {
+								if (!tmp.containsKey(NGSIConstants.NGSI_LD_SCOPE)) {
+									tmp.put(NGSIConstants.NGSI_LD_SCOPE, matches.getItem2());
+								} else {
+									((Set<String>) tmp.get(NGSIConstants.NGSI_LD_SCOPE)).addAll(matches.getItem2());
+								}
+
+							}
+						} else {
+							RemoteHost regHost = regEntry.host();
+							RemoteHost host;
+							switch (request.getRequestType()) {
+							case AppConstants.CREATE_REQUEST:
+								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
+										regHost.cSourceId(), regEntry.createEntity(), regEntry.createBatch(),
+										regEntry.regMode(), regEntry.canDoZip(), regEntry.canDoIdQuery());
+								break;
+							case AppConstants.UPDATE_REQUEST:
+								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
+										regHost.cSourceId(), regEntry.appendAttrs(), false, regEntry.regMode(),
+										regEntry.canDoZip(), regEntry.canDoIdQuery());
+								break;
+							case AppConstants.APPEND_REQUEST:
+								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
+										regHost.cSourceId(), regEntry.appendAttrs(), regEntry.updateBatch(),
+										regEntry.regMode(), regEntry.canDoZip(), regEntry.canDoIdQuery());
+								break;
+							case AppConstants.UPSERT_REQUEST:
+								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
+										regHost.cSourceId(), (regEntry.appendAttrs() && regEntry.createEntity()),
+										regEntry.upsertBatch(), regEntry.regMode(), regEntry.canDoZip(),
+										regEntry.canDoIdQuery());
+								break;
+							default:
+								return null;
 							}
 
+							tmp = Maps.newHashMap();
+							tmp.put(NGSIConstants.JSON_LD_ID, entityId);
+							if (matches.getItem1() != null) {
+								tmp.put(NGSIConstants.JSON_LD_TYPE, matches.getItem1());
+							}
+							if (matches.getItem2() != null) {
+								tmp.put(NGSIConstants.NGSI_LD_SCOPE, matches.getItem2());
+							}
+							cId2RemoteHostEntity.put(regEntry.cId(), Tuple2.of(host, tmp));
 						}
-					} else {
-						RemoteHost regHost = regEntry.host();
-						RemoteHost host;
-						switch (request.getRequestType()) {
-						case AppConstants.CREATE_REQUEST:
-							host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
-									regHost.cSourceId(), regEntry.createEntity(), regEntry.createBatch(),
-									regEntry.regMode(), regEntry.canDoZip(), regEntry.canDoIdQuery());
-							break;
-						case AppConstants.UPDATE_REQUEST:
-							host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
-									regHost.cSourceId(), regEntry.appendAttrs(), false, regEntry.regMode(),
-									regEntry.canDoZip(), regEntry.canDoIdQuery());
-							break;
-						case AppConstants.APPEND_REQUEST:
-							host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
-									regHost.cSourceId(), regEntry.appendAttrs(), regEntry.updateBatch(),
-									regEntry.regMode(), regEntry.canDoZip(), regEntry.canDoIdQuery());
-							break;
-						case AppConstants.UPSERT_REQUEST:
-							host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
-									regHost.cSourceId(), (regEntry.appendAttrs() && regEntry.createEntity()),
-									regEntry.upsertBatch(), regEntry.regMode(), regEntry.canDoZip(),
-									regEntry.canDoIdQuery());
-							break;
-						default:
-							return null;
-						}
-
-						tmp = Maps.newHashMap();
-						tmp.put(NGSIConstants.JSON_LD_ID, entityId);
-						if (matches.getItem1() != null) {
-							tmp.put(NGSIConstants.JSON_LD_TYPE, matches.getItem1());
-						}
-						if (matches.getItem2() != null) {
-							tmp.put(NGSIConstants.NGSI_LD_SCOPE, matches.getItem2());
-						}
-						cId2RemoteHostEntity.put(regEntry.cId(), Tuple2.of(host, tmp));
-					}
-					tmp.put(entry.getKey(), entry.getValue());
-					if (regEntry.regMode() > 1) {
-						toBeRemoved.add(entry.getKey());
-						if (regEntry.regMode() == 3) {
-							break;
+						tmp.put(entry.getKey(), entry.getValue());
+						if (regEntry.regMode() > 1) {
+							toBeRemoved.add(entry.getKey());
+							if (regEntry.regMode() == 3) {
+								break;
+							}
 						}
 					}
 				}
-
 			}
 		}
 		Iterator<String> it2 = toBeRemoved.iterator();
@@ -783,15 +788,17 @@ public class EntityService {
 	public Uni<Void> handleRegistryChange(BaseRequest req) {
 		tenant2CId2RegEntries.remove(req.getTenant(), req.getId());
 		if (req.getRequestType() != AppConstants.DELETE_REQUEST) {
+			List<RegistrationEntry> newRegs = Lists.newArrayList();
 			for (RegistrationEntry regEntry : RegistrationEntry.fromRegPayload(req.getPayload())) {
 				if (regEntry.createEntity() || regEntry.appendAttrs() || regEntry.createBatch()
 						|| regEntry.deleteAttrs() || regEntry.deleteBatch() || regEntry.deleteEntity()
 						|| regEntry.mergeBatch() || regEntry.mergeEntity() || regEntry.replaceAttrs()
 						|| regEntry.replaceEntity() || regEntry.updateAttrs() || regEntry.updateBatch()
 						|| regEntry.updateEntity() || regEntry.upsertBatch()) {
-					tenant2CId2RegEntries.put(req.getTenant(), req.getId(), regEntry);
+					newRegs.add(regEntry);
 				}
 			}
+			tenant2CId2RegEntries.put(req.getTenant(), req.getId(), newRegs);
 		}
 		return Uni.createFrom().voidItem();
 	}
@@ -1297,7 +1304,10 @@ public class EntityService {
 		});
 	}
 
-	public void noConcise(Object object) {noConcise(object,null,null);}
+	public void noConcise(Object object) {
+		noConcise(object, null, null);
+	}
+
 	private void noConcise(Object object, Map<String, Object> parentMap, String keyOfObject) {
 		// Object is Map
 		if (object instanceof Map<?, ?> map) {
@@ -1350,7 +1360,7 @@ public class EntityService {
 		}
 		// Object is String or Number value
 		else if ((object instanceof String || object instanceof Number) && parentMap != null) {
-       //  if keyofobject is value then just need to convert double to int if possible
+			// if keyofobject is value then just need to convert double to int if possible
 			if (keyOfObject != null && keyOfObject.equals(NGSIConstants.VALUE)) {
 				parentMap.put(keyOfObject, HttpUtils.doubleToInt(object));
 			} else {

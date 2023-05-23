@@ -187,8 +187,8 @@ public class EntityInfoDAO {
 					return rowSet.iterator().next().getString("endpoint");
 				}).onFailure().recoverWithUni(Uni.createFrom().item("")));
 	}
-	
-	public Uni<Table<String, String, RegistrationEntry>> getAllRegistries() {
+
+	public Uni<Table<String, String, List<RegistrationEntry>>> getAllRegistries() {
 		return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
 			return client.preparedQuery("SELECT tenant_id FROM tenant").execute().onItem()
 					.transformToUni(tenantRows -> {
@@ -205,15 +205,19 @@ public class EntityInfoDAO {
 									}));
 						}
 						return Uni.combine().all().unis(unis).combinedWith(list -> {
-							Table<String, String, RegistrationEntry> result = HashBasedTable.create();
+							Table<String, String, List<RegistrationEntry>> result = HashBasedTable.create();
 							for (Object obj : list) {
 								Tuple2<String, RowSet<Row>> tuple = (Tuple2<String, RowSet<Row>>) obj;
 								String tenant = tuple.getItem1();
 								RowIterator<Row> it2 = tuple.getItem2().iterator();
 								while (it2.hasNext()) {
 									Row row = it2.next();
-									result.put(tenant, row.getString(1),
-											DBUtil.getRegistrationEntry(row, tenant, logger));
+									List<RegistrationEntry> entries = result.get(tenant, row.getString(1));
+									if (entries == null) {
+										entries = Lists.newArrayList();
+										result.put(tenant, row.getString(1), entries);
+									}
+									entries.add(DBUtil.getRegistrationEntry(row, tenant, logger));
 								}
 							}
 							return result;

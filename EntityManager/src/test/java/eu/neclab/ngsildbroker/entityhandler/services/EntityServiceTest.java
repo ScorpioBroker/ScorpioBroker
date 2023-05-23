@@ -90,8 +90,8 @@ public class EntityServiceTest {
 		entityService.entityEmitter = entityEmitter;
 		entityService.batchEmitter = batchEmitter;
 
-		Table<String, String, RegistrationEntry> registriesMap = HashBasedTable.create();
-		Uni<Table<String, String, RegistrationEntry>> uniRegistriesMap = Uni.createFrom().item(registriesMap);
+		Table<String, String, List<RegistrationEntry>> registriesMap = HashBasedTable.create();
+		Uni<Table<String, String, List<RegistrationEntry>>> uniRegistriesMap = Uni.createFrom().item(registriesMap);
 		when(entityDAO.getAllRegistries()).thenReturn(uniRegistriesMap);
 
 		jsonLdObject = "{\"https://uri.etsi.org/ngsi-ld/default-context/complexproperty\":[{\"@type\":"
