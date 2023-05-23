@@ -1,5 +1,7 @@
 package eu.neclab.ngsildbroker.entityhandler.controller;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.annotation.PostConstruct;
@@ -61,8 +63,8 @@ public class EntityController {// implements EntityHandlerInterface {
 	public Uni<RestResponse<Object>> createEntity(HttpServerRequest req, String payload) {
 		Tuple2<Context, Map<String, Object>> tuple;
 		try {
-			Map<String,Object> body = (Map<String, Object>)JsonUtils.fromString(payload);
-			entityService.noConcise(body);
+			Map<String, Object> body = (Map<String, Object>) JsonUtils.fromString(payload);
+			noConcise(body);
 			tuple = HttpUtils.expandBody(req, body, AppConstants.ENTITY_CREATE_PAYLOAD);
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
@@ -74,9 +76,6 @@ public class EntityController {// implements EntityHandlerInterface {
 					return HttpUtils.generateCreateResult(opResult, AppConstants.ENTITES_URL);
 				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
-	
-
-	
 
 	/**
 	 * Method(PATCH) for "/ngsi-ld/v1/entities/{entityId}/attrs" rest endpoint.
@@ -92,8 +91,8 @@ public class EntityController {// implements EntityHandlerInterface {
 			String payload) {
 		Tuple2<Context, Map<String, Object>> tuple;
 		try {
-			Map<String,Object> body = (Map<String, Object>)JsonUtils.fromString(payload);
-			entityService.noConcise(body);
+			Map<String, Object> body = (Map<String, Object>) JsonUtils.fromString(payload);
+			noConcise(body);
 			tuple = HttpUtils.expandBody(request, body, AppConstants.ENTITY_UPDATE_PAYLOAD);
 			HttpUtils.validateUri(entityId);
 		} catch (Exception e) {
@@ -118,8 +117,8 @@ public class EntityController {// implements EntityHandlerInterface {
 			String payload, @QueryParam("options") String options) {
 		Tuple2<Context, Map<String, Object>> tuple;
 		try {
-			Map<String,Object> body = (Map<String, Object>)JsonUtils.fromString(payload);
-			entityService.noConcise(body);
+			Map<String, Object> body = (Map<String, Object>) JsonUtils.fromString(payload);
+			noConcise(body);
 			tuple = HttpUtils.expandBody(request, body, AppConstants.ENTITY_UPDATE_PAYLOAD);
 			HttpUtils.validateUri(entityId);
 		} catch (Exception e) {
@@ -147,8 +146,8 @@ public class EntityController {// implements EntityHandlerInterface {
 		Tuple2<Context, Map<String, Object>> tuple;
 		String expAttrib;
 		try {
-			Map<String,Object> body = (Map<String, Object>)JsonUtils.fromString(payload);
-			entityService.noConcise(body);
+			Map<String, Object> body = (Map<String, Object>) JsonUtils.fromString(payload);
+			noConcise(body);
 			tuple = HttpUtils.expandBody(request, body, AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD);
 			HttpUtils.validateUri(entityId);
 			expAttrib = tuple.getItem1().expandIri(attrib, false, true, null, null);
@@ -160,8 +159,8 @@ public class EntityController {// implements EntityHandlerInterface {
 				tuple.getItem1()).onItem().transform(updateResult -> {
 					logger.trace("update entry :: completed");
 					return HttpUtils.generateUpdateResultResponse(updateResult);
-				}).onFailure().recoverWithUni(t -> entityService.patchToEndPoint(entityId, request, payload, attrib).onItem()
-						.transform(isEndPointExist -> {
+				}).onFailure().recoverWithUni(t -> entityService.patchToEndPoint(entityId, request, payload, attrib)
+						.onItem().transform(isEndPointExist -> {
 							if (isEndPointExist)
 								return RestResponse.noContent();
 							else {
@@ -222,5 +221,74 @@ public class EntityController {// implements EntityHandlerInterface {
 		return entityService.deleteEntity(HttpUtils.getTenant(request), entityId, context).onItem()
 				.transform(HttpUtils::generateDeleteResult).onFailure()
 				.recoverWithItem(HttpUtils::handleControllerExceptions);
+	}
+
+	public void noConcise(Object object) {
+		noConcise(object, null, null);
+	}
+
+	private void noConcise(Object object, Map<String, Object> parentMap, String keyOfObject) {
+		// Object is Map
+		if (object instanceof Map<?, ?> map) {
+			// Map have object but not type
+			if (map.containsKey(NGSIConstants.OBJECT)) {
+				((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.RELATIONSHIP);
+
+			}
+			// Map have value but not type
+			if (map.containsKey(NGSIConstants.VALUE) && !map.containsKey(NGSIConstants.TYPE)) {
+				// for GeoProperty
+				if (map.get(NGSIConstants.VALUE) instanceof Map<?, ?> nestedMap
+						&& (NGSIConstants.GEO_KEYWORDS.contains(nestedMap.get(NGSIConstants.TYPE))))
+					((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.NGSI_LD_GEOPROPERTY_SHORT);
+				else
+					((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.PROPERTY);
+
+			}
+			// for GeoProperty
+			if (map.containsKey(NGSIConstants.TYPE)
+					&& (NGSIConstants.GEO_KEYWORDS.contains(map.get(NGSIConstants.TYPE)))
+					&& !keyOfObject.equals(NGSIConstants.VALUE)) {
+				Map<String, Object> newMap = new HashMap<>();
+				newMap.put(NGSIConstants.TYPE, NGSIConstants.NGSI_LD_GEOPROPERTY_SHORT);
+				newMap.put(NGSIConstants.VALUE, map);
+				parentMap.put(keyOfObject, newMap);
+
+			}
+
+			// Iterate through every element of Map
+			Object[] mapKeys = map.keySet().toArray();
+			for (Object key : mapKeys) {
+				if (!key.equals(NGSIConstants.ID) && !key.equals(NGSIConstants.TYPE)
+						&& !key.equals(NGSIConstants.JSON_LD_CONTEXT)
+						&& !key.equals(NGSIConstants.QUERY_PARAMETER_COORDINATES)
+						&& !key.equals(NGSIConstants.QUERY_PARAMETER_OBSERVED_AT)
+						&& !key.equals(NGSIConstants.INSTANCE_ID)
+						&& !key.equals(NGSIConstants.QUERY_PARAMETER_DATA_SET_ID) && !key.equals(NGSIConstants.OBJECT)
+						&& !key.equals(NGSIConstants.VALUE) && !key.equals(NGSIConstants.SCOPE)
+						&& !key.equals(NGSIConstants.QUERY_PARAMETER_UNIT_CODE)) {
+					noConcise(map.get(key), (Map<String, Object>) map, key.toString());
+				}
+			}
+		}
+		// Object is List
+		else if (object instanceof List<?> list) {
+			for (int i = 0; i < list.size(); i++) {
+				noConcise(list.get(i), null, null);
+			}
+		}
+		// Object is String or Number value
+		else if ((object instanceof String || object instanceof Number) && parentMap != null) {
+			// if keyofobject is value then just need to convert double to int if possible
+			if (keyOfObject != null && keyOfObject.equals(NGSIConstants.VALUE)) {
+				parentMap.put(keyOfObject, HttpUtils.doubleToInt(object));
+			} else {
+				Map<String, Object> newMap = new HashMap<>();
+				newMap.put(NGSIConstants.VALUE, HttpUtils.doubleToInt(object));
+				newMap.put(NGSIConstants.TYPE, NGSIConstants.PROPERTY);
+				parentMap.put(keyOfObject, newMap);
+			}
+
+		}
 	}
 }
