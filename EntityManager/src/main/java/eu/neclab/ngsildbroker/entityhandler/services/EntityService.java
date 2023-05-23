@@ -475,7 +475,7 @@ public class EntityService {
 			}
 
 		}
-		if (remoteEntitiesAndHosts.isEmpty()) {
+		if (!localEntity.isEmpty()) {
 			request.setPayload(localEntity);
 			unis.add(appendLocal(request, noOverwrite, context).onFailure().recoverWithItem(e -> {
 				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST,
