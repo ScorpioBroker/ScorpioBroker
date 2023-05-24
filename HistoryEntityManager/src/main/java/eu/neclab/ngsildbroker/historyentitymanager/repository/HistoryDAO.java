@@ -113,10 +113,9 @@ public class HistoryDAO {
 					return conn
 							.preparedQuery("INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
 									+ " (temporalentity_id, attributeid, data) VALUES ($1, $2, $3::jsonb)")
-							.executeBatch(batch).onItem().transformToUni(
-									t -> conn.close().onItem().transform(v->{
-									return 	!rows.iterator().next().getBoolean(0);
-									}));
+							.executeBatch(batch).onItem().transformToUni(t -> conn.close().onItem().transform(v -> {
+								return !rows.iterator().next().getBoolean(0);
+							}));
 				});
 			});
 		});
@@ -194,7 +193,7 @@ public class HistoryDAO {
 							.executeBatch(batchAttribs);
 
 				}).onItem().transformToUni(t -> {
-					return t.onItem().transformToUni(x->conn.close());
+					return t.onItem().transformToUni(x -> conn.close());
 				});
 			});
 		});
@@ -238,7 +237,8 @@ public class HistoryDAO {
 
 				String sql = "UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY + " SET modifiedat = $1";
 				int dollarCount = 2;
-				if (payload.containsKey(NGSIConstants.JSON_LD_TYPE) && payload.get(NGSIConstants.JSON_LD_TYPE)!=null) {
+				if (payload.containsKey(NGSIConstants.JSON_LD_TYPE)
+						&& payload.get(NGSIConstants.JSON_LD_TYPE) != null) {
 					sql += ",e_types = ARRAY(SELECT DISTINCT UNNEST(e_types || $" + dollarCount + "))";
 					tuple.addArrayOfString(
 							((List<String>) payload.remove(NGSIConstants.JSON_LD_TYPE)).toArray(new String[0]));
@@ -285,13 +285,12 @@ public class HistoryDAO {
 
 	public Uni<Void> updateAttrInstanceInHistoryEntity(UpdateAttrHistoryEntityRequest request) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
-			Object payload = new JsonObject(((List<Map<String,Object>>)request.getPayload().get(request.getAttrId())).get(0));
+			Object payload = new JsonObject(
+					((List<Map<String, Object>>) request.getPayload().get(request.getAttrId())).get(0));
 			return client.getConnection().onItem().transformToUni(conn -> {
-				return conn
-						.preparedQuery("UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
-								+ " SET data = data || $1::jsonb WHERE attributeid=$2 AND instanceid=$3 AND temporalentity_id=$4")
-						.execute(Tuple.of(payload, request.getAttrId(), request.getInstanceId(),
-								request.getId()))
+				return conn.preparedQuery("UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
+						+ " SET data = data || $1::jsonb WHERE attributeid=$2 AND instanceid=$3 AND temporalentity_id=$4")
+						.execute(Tuple.of(payload, request.getAttrId(), request.getInstanceId(), request.getId()))
 						.onFailure().recoverWithUni(e -> {
 							if (e instanceof PgException) {
 								if (((PgException) e).getCode().equals(AppConstants.SQL_NOT_FOUND)) {
@@ -305,8 +304,8 @@ public class HistoryDAO {
 									.preparedQuery("UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY
 											+ " SET modifiedat = $1 WHERE id = $2")
 									.execute(Tuple.of(
-											DBUtil.getLocalDateTime(request.getPayload()
-													.get(NGSIConstants.NGSI_LD_MODIFIED_AT)),
+											DBUtil.getLocalDateTime(
+													request.getPayload().get(NGSIConstants.NGSI_LD_MODIFIED_AT)),
 											request.getId()))
 									.onItem().transformToUni(t -> conn.close());
 						});
@@ -328,15 +327,16 @@ public class HistoryDAO {
 					} else {
 						query1 = conn
 								.preparedQuery("DELETE FROM " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
-										+ " WHERE attributeid=$1 AND temporalentity_id=$2 AND NOT data ?| array['"+NGSIConstants.NGSI_LD_DATA_SET_ID+"']")
+										+ " WHERE attributeid=$1 AND temporalentity_id=$2 AND NOT data ?| array['"
+										+ NGSIConstants.NGSI_LD_DATA_SET_ID + "']")
 								.execute(Tuple.of(request.getAttribName(), request.getId()));
 					}
 				} else {
 					query1 = conn
 							.preparedQuery("DELETE FROM " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
-									+ " WHERE attributeid=$1 AND temporalentity_id=$2 AND '" + NGSIConstants.NGSI_LD_DATA_SET_ID
-									+ "' ? data AND data@>>'{" + NGSIConstants.NGSI_LD_DATA_SET_ID + ",0,"
-									+ NGSIConstants.JSON_LD_ID + "}'=$3")
+									+ " WHERE attributeid=$1 AND temporalentity_id=$2 AND '"
+									+ NGSIConstants.NGSI_LD_DATA_SET_ID + "' ? data AND data@>>'{"
+									+ NGSIConstants.NGSI_LD_DATA_SET_ID + ",0," + NGSIConstants.JSON_LD_ID + "}'=$3")
 							.execute(Tuple.of(request.getAttribName(), request.getId(), request.getDatasetId()));
 				}
 
@@ -444,7 +444,7 @@ public class HistoryDAO {
 		return new JsonObject(result);
 	}
 
-	public Uni<Table<String, String, RegistrationEntry>> getAllRegistries() {
+	public Uni<Table<String, String, List<RegistrationEntry>>> getAllRegistries() {
 		return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
 			return client.preparedQuery("SELECT tenant_id FROM tenant").execute().onItem()
 					.transformToUni(tenantRows -> {
@@ -461,16 +461,19 @@ public class HistoryDAO {
 									}));
 						}
 						return Uni.combine().all().unis(unis).combinedWith(list -> {
-							Table<String, String, RegistrationEntry> result = HashBasedTable.create();
+							Table<String, String, List<RegistrationEntry>> result = HashBasedTable.create();
 							for (Object obj : list) {
-								@SuppressWarnings("unchecked")
 								Tuple2<String, RowSet<Row>> tuple = (Tuple2<String, RowSet<Row>>) obj;
 								String tenant = tuple.getItem1();
 								RowIterator<Row> it2 = tuple.getItem2().iterator();
 								while (it2.hasNext()) {
 									Row row = it2.next();
-									result.put(tenant, row.getString(1),
-											DBUtil.getRegistrationEntry(row, tenant, logger));
+									List<RegistrationEntry> entries = result.get(tenant, row.getString(1));
+									if (entries == null) {
+										entries = Lists.newArrayList();
+										result.put(tenant, row.getString(1), entries);
+									}
+									entries.add(DBUtil.getRegistrationEntry(row, tenant, logger));
 								}
 							}
 							return result;

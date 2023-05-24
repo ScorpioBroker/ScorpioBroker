@@ -80,7 +80,7 @@ public class QueryService {
 
 	protected JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
-	private Table<String, String, RegistrationEntry> tenant2CId2RegEntries = HashBasedTable.create();
+	private Table<String, String, List<RegistrationEntry>> tenant2CId2RegEntries = HashBasedTable.create();
 
 	@ConfigProperty(name = "scorpio.entitymap.cleanup.ttl", defaultValue = "30 sec")
 	private String entityMapTTL;
@@ -326,61 +326,65 @@ public class QueryService {
 			String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery, GeoQueryTerm geoQuery,
 			ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, Context context) {
 
-		Iterator<RegistrationEntry> it = tenant2CId2RegEntries.row(tenant).values().iterator();
+		Iterator<List<RegistrationEntry>> it = tenant2CId2RegEntries.row(tenant).values().iterator();
 		// ids, types, attrs, geo, scope
 		Map<QueryRemoteHost, QueryInfos> remoteHost2QueryInfo = Maps.newHashMap();
 		while (it.hasNext()) {
-			RegistrationEntry regEntry = it.next();
-			if (regEntry.expiresAt() > System.currentTimeMillis()) {
-				it.remove();
-				continue;
-			}
-			if (!regEntry.queryBatch() || !regEntry.queryEntity()) {
-				continue;
-			}
+			Iterator<RegistrationEntry> tenantRegs = it.next().iterator();
+			while (tenantRegs.hasNext()) {
+
+				RegistrationEntry regEntry = tenantRegs.next();
+				if (regEntry.expiresAt() > System.currentTimeMillis()) {
+					it.remove();
+					continue;
+				}
+				if (!regEntry.queryBatch() || !regEntry.queryEntity()) {
+					continue;
+				}
 
 //			if (!regEntry.matches(id, idPattern, typeQuery, idPattern, attrsQuery, qQuery, geoQuery, scopeQuery)) {
 //				continue;
 //			}
-			RemoteHost regHost = regEntry.host();
-			QueryRemoteHost hostToQuery = QueryRemoteHost.fromRemoteHost(regHost, null, regEntry.canDoIdQuery(),
-					regEntry.canDoZip(), null);
-			QueryInfos queryInfos = remoteHost2QueryInfo.get(hostToQuery);
-			if (queryInfos == null) {
-				queryInfos = new QueryInfos();
-				remoteHost2QueryInfo.put(hostToQuery, queryInfos);
-			}
+				RemoteHost regHost = regEntry.host();
+				QueryRemoteHost hostToQuery = QueryRemoteHost.fromRemoteHost(regHost, null, regEntry.canDoIdQuery(),
+						regEntry.canDoZip(), null);
+				QueryInfos queryInfos = remoteHost2QueryInfo.get(hostToQuery);
+				if (queryInfos == null) {
+					queryInfos = new QueryInfos();
+					remoteHost2QueryInfo.put(hostToQuery, queryInfos);
+				}
 
-			if (!queryInfos.isFullIdFound()) {
-				if (regEntry.eId() != null) {
-					queryInfos.getIds().add(regEntry.eId());
-				} else {
-					if (id != null) {
-						queryInfos.setIds(Sets.newHashSet(id));
-						queryInfos.setFullIdFound(true);
-					} else if (idPattern != null) {
-						queryInfos.setIdPattern(idPattern);
+				if (!queryInfos.isFullIdFound()) {
+					if (regEntry.eId() != null) {
+						queryInfos.getIds().add(regEntry.eId());
+					} else {
+						if (id != null) {
+							queryInfos.setIds(Sets.newHashSet(id));
+							queryInfos.setFullIdFound(true);
+						} else if (idPattern != null) {
+							queryInfos.setIdPattern(idPattern);
+						}
 					}
 				}
-			}
-			if (!queryInfos.isFullTypesFound()) {
-				if (regEntry.type() != null) {
-					queryInfos.getTypes().add(regEntry.type());
-				} else {
-					if (typeQuery != null) {
-						queryInfos.setTypes(typeQuery.getAllTypes());
-						queryInfos.setFullTypesFound(true);
+				if (!queryInfos.isFullTypesFound()) {
+					if (regEntry.type() != null) {
+						queryInfos.getTypes().add(regEntry.type());
+					} else {
+						if (typeQuery != null) {
+							queryInfos.setTypes(typeQuery.getAllTypes());
+							queryInfos.setFullTypesFound(true);
+						}
 					}
 				}
-			}
-			if (!queryInfos.isFullAttrsFound()) {
-				if (regEntry.eProp() != null) {
-					queryInfos.getAttrs().add(regEntry.eProp());
-				} else if (regEntry.eRel() != null) {
-					queryInfos.getAttrs().add(regEntry.eRel());
-				} else {
-					queryInfos.setFullAttrsFound(true);
-					queryInfos.setAttrs(attrsQuery.getAttrs());
+				if (!queryInfos.isFullAttrsFound()) {
+					if (regEntry.eProp() != null) {
+						queryInfos.getAttrs().add(regEntry.eProp());
+					} else if (regEntry.eRel() != null) {
+						queryInfos.getAttrs().add(regEntry.eRel());
+					} else {
+						queryInfos.setFullAttrsFound(true);
+						queryInfos.setAttrs(attrsQuery.getAttrs());
+					}
 				}
 			}
 
@@ -1100,28 +1104,31 @@ public class QueryService {
 
 	private List<QueryRemoteHost> getRemoteHostsForRetrieve(String tenant, String entityId, AttrsQueryTerm attrsQuery,
 			LanguageQueryTerm lang, Context context) {
-		Collection<RegistrationEntry> regEntries = tenant2CId2RegEntries.row(tenant).values();
-		Iterator<RegistrationEntry> it = regEntries.iterator();
+		Iterator<List<RegistrationEntry>> regEntries = tenant2CId2RegEntries.row(tenant).values().iterator();
+
 		Map<RemoteHost, QueryInfos> host2QueryInfo = Maps.newHashMap();
 		List<QueryRemoteHost> result = Lists.newArrayList();
 
-		while (it.hasNext()) {
-			RegistrationEntry regEntry = it.next();
-			if (!regEntry.retrieveEntity()) {
-				continue;
-			}
-			QueryInfos tmp = regEntry.matches(new String[] { entityId }, null, null, attrsQuery, null, null, null);
-			if (tmp == null) {
-				continue;
-			}
-			QueryInfos resultQueryInfo = host2QueryInfo.get(regEntry.host());
-			if (resultQueryInfo == null) {
-				resultQueryInfo = tmp;
-				host2QueryInfo.put(regEntry.host(), tmp);
-			} else {
-				resultQueryInfo.merge(tmp);
-			}
+		while (regEntries.hasNext()) {
+			Iterator<RegistrationEntry> it = regEntries.next().iterator();
+			while (it.hasNext()) {
+				RegistrationEntry regEntry = it.next();
+				if (!regEntry.retrieveEntity()) {
+					continue;
+				}
+				QueryInfos tmp = regEntry.matches(new String[] { entityId }, null, null, attrsQuery, null, null, null);
+				if (tmp == null) {
+					continue;
+				}
+				QueryInfos resultQueryInfo = host2QueryInfo.get(regEntry.host());
+				if (resultQueryInfo == null) {
+					resultQueryInfo = tmp;
+					host2QueryInfo.put(regEntry.host(), tmp);
+				} else {
+					resultQueryInfo.merge(tmp);
+				}
 
+			}
 		}
 		for (Entry<RemoteHost, QueryInfos> entry : host2QueryInfo.entrySet()) {
 			RemoteHost remoteHost = entry.getKey();
@@ -1133,13 +1140,15 @@ public class QueryService {
 	}
 
 	public Uni<Void> handleRegistryChange(BaseRequest req) {
+		List<RegistrationEntry> newRegs = Lists.newArrayList();
 		tenant2CId2RegEntries.remove(req.getTenant(), req.getId());
 		if (req.getRequestType() != AppConstants.DELETE_REQUEST) {
 			for (RegistrationEntry regEntry : RegistrationEntry.fromRegPayload(req.getPayload())) {
 				if (regEntry.retrieveEntity() || regEntry.queryEntity() || regEntry.queryBatch()) {
-					tenant2CId2RegEntries.put(req.getTenant(), req.getId(), regEntry);
+					newRegs.add(regEntry);
 				}
 			}
+			tenant2CId2RegEntries.put(req.getTenant(), req.getId(), newRegs);
 		}
 		return Uni.createFrom().voidItem();
 	}

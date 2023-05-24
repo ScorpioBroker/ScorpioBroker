@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdError;
 import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Table;
@@ -84,7 +85,7 @@ public class HistoryEntityService {
 
 	WebClient webClient;
 
-	private Table<String, String, RegistrationEntry> tenant2CId2RegEntries = HashBasedTable.create();
+	private Table<String, String, List<RegistrationEntry>> tenant2CId2RegEntries = HashBasedTable.create();
 
 	// This is needed so that @postconstruct runs on the startup thread and not on a
 	// worker thread later on
@@ -414,16 +415,18 @@ public class HistoryEntityService {
 
 	private Set<RemoteHost> getRemoteHostsForDelete(BaseRequest request) {
 		Set<RemoteHost> result = Sets.newHashSet();
-		for (RegistrationEntry regEntry : tenant2CId2RegEntries.row(request.getTenant()).values()) {
-			if (!regEntry.deleteTemporal()) {
-				continue;
-			}
-			if ((regEntry.eId() == null && regEntry.eIdp() == null)
-					|| (regEntry.eId() != null && regEntry.eId().equals(request.getId()))
-					|| (regEntry.eIdp() != null && request.getId().matches(regEntry.eIdp()))) {
-				result.add(new RemoteHost(regEntry.host().host(), regEntry.host().tenant(), regEntry.host().headers(),
-						regEntry.host().cSourceId(), true, false, regEntry.regMode(), regEntry.canDoZip(),
-						regEntry.canDoIdQuery()));
+		for (List<RegistrationEntry> regEntries : tenant2CId2RegEntries.row(request.getTenant()).values()) {
+			for (RegistrationEntry regEntry : regEntries) {
+				if (!regEntry.deleteTemporal()) {
+					continue;
+				}
+				if ((regEntry.eId() == null && regEntry.eIdp() == null)
+						|| (regEntry.eId() != null && regEntry.eId().equals(request.getId()))
+						|| (regEntry.eIdp() != null && request.getId().matches(regEntry.eIdp()))) {
+					result.add(new RemoteHost(regEntry.host().host(), regEntry.host().tenant(),
+							regEntry.host().headers(), regEntry.host().cSourceId(), true, false, regEntry.regMode(),
+							regEntry.canDoZip(), regEntry.canDoIdQuery()));
+				}
 			}
 		}
 		return result;
@@ -431,17 +434,19 @@ public class HistoryEntityService {
 
 	private Set<RemoteHost> getRemoteHostsForDeleteAttribInstance(DeleteAttrInstanceHistoryEntityRequest request) {
 		Set<RemoteHost> result = Sets.newHashSet();
-		for (RegistrationEntry regEntry : tenant2CId2RegEntries.row(request.getTenant()).values()) {
-			if (!regEntry.deleteAttrInstanceTemporal()) {
-				continue;
-			}
-			if ((regEntry.eId() == null && regEntry.eIdp() == null)
-					|| (regEntry.eId() != null && regEntry.eId().equals(request.getId()))
-					|| (regEntry.eIdp() != null && request.getId().matches(regEntry.eIdp()))
-							&& (regEntry.eProp() == null || regEntry.eProp().equals(request.getAttrId()))) {
-				result.add(new RemoteHost(regEntry.host().host(), regEntry.host().tenant(), regEntry.host().headers(),
-						regEntry.host().cSourceId(), true, false, regEntry.regMode(), regEntry.canDoZip(),
-						regEntry.canDoIdQuery()));
+		for (List<RegistrationEntry> regEntries : tenant2CId2RegEntries.row(request.getTenant()).values()) {
+			for (RegistrationEntry regEntry : regEntries) {
+				if (!regEntry.deleteAttrInstanceTemporal()) {
+					continue;
+				}
+				if ((regEntry.eId() == null && regEntry.eIdp() == null)
+						|| (regEntry.eId() != null && regEntry.eId().equals(request.getId()))
+						|| (regEntry.eIdp() != null && request.getId().matches(regEntry.eIdp()))
+								&& (regEntry.eProp() == null || regEntry.eProp().equals(request.getAttrId()))) {
+					result.add(new RemoteHost(regEntry.host().host(), regEntry.host().tenant(),
+							regEntry.host().headers(), regEntry.host().cSourceId(), true, false, regEntry.regMode(),
+							regEntry.canDoZip(), regEntry.canDoIdQuery()));
+				}
 			}
 		}
 		return result;
@@ -449,17 +454,19 @@ public class HistoryEntityService {
 
 	private Set<RemoteHost> getRemoteHostsForDeleteAttrib(DeleteAttrHistoryEntityRequest request) {
 		Set<RemoteHost> result = Sets.newHashSet();
-		for (RegistrationEntry regEntry : tenant2CId2RegEntries.row(request.getTenant()).values()) {
-			if (!regEntry.deleteAttrInstanceTemporal()) {
-				continue;
-			}
-			if ((regEntry.eId() == null && regEntry.eIdp() == null)
-					|| (regEntry.eId() != null && regEntry.eId().equals(request.getId()))
-					|| (regEntry.eIdp() != null && request.getId().matches(regEntry.eIdp()))
-							&& (regEntry.eProp() == null || regEntry.eProp().equals(request.getAttribName()))) {
-				result.add(new RemoteHost(regEntry.host().host(), regEntry.host().tenant(), regEntry.host().headers(),
-						regEntry.host().cSourceId(), true, false, regEntry.regMode(), regEntry.canDoZip(),
-						regEntry.canDoIdQuery()));
+		for (List<RegistrationEntry> regEntries : tenant2CId2RegEntries.row(request.getTenant()).values()) {
+			for (RegistrationEntry regEntry : regEntries) {
+				if (!regEntry.deleteAttrInstanceTemporal()) {
+					continue;
+				}
+				if ((regEntry.eId() == null && regEntry.eIdp() == null)
+						|| (regEntry.eId() != null && regEntry.eId().equals(request.getId()))
+						|| (regEntry.eIdp() != null && request.getId().matches(regEntry.eIdp()))
+								&& (regEntry.eProp() == null || regEntry.eProp().equals(request.getAttribName()))) {
+					result.add(new RemoteHost(regEntry.host().host(), regEntry.host().tenant(),
+							regEntry.host().headers(), regEntry.host().cSourceId(), true, false, regEntry.regMode(),
+							regEntry.canDoZip(), regEntry.canDoIdQuery()));
+				}
 			}
 		}
 		return result;
@@ -523,8 +530,8 @@ public class HistoryEntityService {
 	private Tuple2<Map<String, Object>, Collection<Tuple2<RemoteHost, Map<String, Object>>>> splitEntity(
 			EntityRequest request) {
 		Map<String, Object> originalEntity = request.getPayload();
-		Collection<RegistrationEntry> regs = tenant2CId2RegEntries.row(request.getTenant()).values();
-		Iterator<RegistrationEntry> it = regs.iterator();
+		Collection<List<RegistrationEntry>> tenantRegs = tenant2CId2RegEntries.row(request.getTenant()).values();
+
 		Object originalScopes = originalEntity.remove(NGSIConstants.NGSI_LD_SCOPE);
 		String entityId = (String) originalEntity.remove(NGSIConstants.JSON_LD_ID);
 		List<String> originalTypes = (List<String>) originalEntity.remove(NGSIConstants.JSON_LD_TYPE);
@@ -532,123 +539,128 @@ public class HistoryEntityService {
 		Shape location = null;
 		Set<String> toBeRemoved = Sets.newHashSet();
 		for (Entry<String, Object> entry : originalEntity.entrySet()) {
-			while (it.hasNext()) {
-				RegistrationEntry regEntry = it.next();
-				if (regEntry.expiresAt() > System.currentTimeMillis()) {
-					it.remove();
-					continue;
-				}
-				switch (request.getRequestType()) {
-				case AppConstants.CREATE_TEMPORAL_REQUEST:
-					if (!regEntry.upsertTemporal()) {
+			for (List<RegistrationEntry> regs : tenantRegs) {
+				Iterator<RegistrationEntry> it = regs.iterator();
+				while (it.hasNext()) {
+					RegistrationEntry regEntry = it.next();
+					if (regEntry.expiresAt() > System.currentTimeMillis()) {
+						it.remove();
 						continue;
 					}
-					break;
-				case AppConstants.APPEND_TEMPORAL_REQUEST:
-					if (!regEntry.appendAttrsTemporal()) {
-						continue;
-					}
-					break;
-				case AppConstants.UPDATE_TEMPORAL_INSTANCE_REQUEST:
-					if (!regEntry.updateAttrsTemporal()) {
-						continue;
-					}
-					break;
-				case AppConstants.DELETE_TEMPORAL_REQUEST:
-					if (!regEntry.deleteTemporal()) {
-						continue;
-					}
-					break;
-				case AppConstants.DELETE_TEMPORAL_ATTRIBUTE_REQUEST:
-					if (!regEntry.deleteAttrsTemporal()) {
-						continue;
-					}
-					break;
-				case AppConstants.DELETE_TEMPORAL_ATTRIBUTE_INSTANCE_REQUEST:
-					if (!regEntry.deleteAttrInstanceTemporal()) {
-						continue;
-					}
-					break;
-				default:
-					continue;
-				}
-
-				String propType = ((List<String>) ((List<Map<String, Object>>) entry.getValue()).get(0)
-						.get(NGSIConstants.JSON_LD_TYPE)).get(0);
-				Tuple2<Set<String>, Set<String>> matches;
-				if (propType.equals(NGSIConstants.NGSI_LD_RELATIONSHIP)) {
-					matches = regEntry.matches(entityId, originalTypes, null, entry.getKey(), originalScopes, location);
-				} else {
-					matches = regEntry.matches(entityId, originalTypes, entry.getKey(), null, originalScopes, location);
-				}
-				if (matches != null) {
-					Map<String, Object> tmp;
-					if (cId2RemoteHostEntity.containsKey(regEntry.cId())) {
-						tmp = cId2RemoteHostEntity.get(regEntry.cId()).getItem2();
-						if (matches.getItem1() != null) {
-							((Set<String>) tmp.get(NGSIConstants.JSON_LD_TYPE)).addAll(matches.getItem1());
+					switch (request.getRequestType()) {
+					case AppConstants.CREATE_TEMPORAL_REQUEST:
+						if (!regEntry.upsertTemporal()) {
+							continue;
 						}
-						if (matches.getItem2() != null) {
-							if (!tmp.containsKey(NGSIConstants.NGSI_LD_SCOPE)) {
-								tmp.put(NGSIConstants.NGSI_LD_SCOPE, matches.getItem2());
-							} else {
-								((Set<String>) tmp.get(NGSIConstants.NGSI_LD_SCOPE)).addAll(matches.getItem2());
+						break;
+					case AppConstants.APPEND_TEMPORAL_REQUEST:
+						if (!regEntry.appendAttrsTemporal()) {
+							continue;
+						}
+						break;
+					case AppConstants.UPDATE_TEMPORAL_INSTANCE_REQUEST:
+						if (!regEntry.updateAttrsTemporal()) {
+							continue;
+						}
+						break;
+					case AppConstants.DELETE_TEMPORAL_REQUEST:
+						if (!regEntry.deleteTemporal()) {
+							continue;
+						}
+						break;
+					case AppConstants.DELETE_TEMPORAL_ATTRIBUTE_REQUEST:
+						if (!regEntry.deleteAttrsTemporal()) {
+							continue;
+						}
+						break;
+					case AppConstants.DELETE_TEMPORAL_ATTRIBUTE_INSTANCE_REQUEST:
+						if (!regEntry.deleteAttrInstanceTemporal()) {
+							continue;
+						}
+						break;
+					default:
+						continue;
+					}
+
+					String propType = ((List<String>) ((List<Map<String, Object>>) entry.getValue()).get(0)
+							.get(NGSIConstants.JSON_LD_TYPE)).get(0);
+					Tuple2<Set<String>, Set<String>> matches;
+					if (propType.equals(NGSIConstants.NGSI_LD_RELATIONSHIP)) {
+						matches = regEntry.matches(entityId, originalTypes, null, entry.getKey(), originalScopes,
+								location);
+					} else {
+						matches = regEntry.matches(entityId, originalTypes, entry.getKey(), null, originalScopes,
+								location);
+					}
+					if (matches != null) {
+						Map<String, Object> tmp;
+						if (cId2RemoteHostEntity.containsKey(regEntry.cId())) {
+							tmp = cId2RemoteHostEntity.get(regEntry.cId()).getItem2();
+							if (matches.getItem1() != null) {
+								((Set<String>) tmp.get(NGSIConstants.JSON_LD_TYPE)).addAll(matches.getItem1());
+							}
+							if (matches.getItem2() != null) {
+								if (!tmp.containsKey(NGSIConstants.NGSI_LD_SCOPE)) {
+									tmp.put(NGSIConstants.NGSI_LD_SCOPE, matches.getItem2());
+								} else {
+									((Set<String>) tmp.get(NGSIConstants.NGSI_LD_SCOPE)).addAll(matches.getItem2());
+								}
+
+							}
+						} else {
+							RemoteHost regHost = regEntry.host();
+							RemoteHost host;
+							switch (request.getRequestType()) {
+							case AppConstants.CREATE_TEMPORAL_REQUEST:
+								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
+										regHost.cSourceId(), regEntry.upsertTemporal(), false, regEntry.regMode(),
+										regEntry.canDoZip(), regEntry.canDoIdQuery());
+								break;
+							case AppConstants.APPEND_TEMPORAL_REQUEST:
+								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
+										regHost.cSourceId(), regEntry.appendAttrsTemporal(), false, regEntry.regMode(),
+										regEntry.canDoZip(), regEntry.canDoIdQuery());
+								break;
+							case AppConstants.UPDATE_TEMPORAL_INSTANCE_REQUEST:
+								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
+										regHost.cSourceId(), regEntry.updateAttrsTemporal(), false, regEntry.regMode(),
+										regEntry.canDoZip(), regEntry.canDoIdQuery());
+								break;
+							case AppConstants.DELETE_TEMPORAL_REQUEST:
+								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
+										regHost.cSourceId(), regEntry.deleteTemporal(), false, regEntry.regMode(),
+										regEntry.canDoZip(), regEntry.canDoIdQuery());
+								break;
+							case AppConstants.DELETE_TEMPORAL_ATTRIBUTE_REQUEST:
+								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
+										regHost.cSourceId(), regEntry.deleteAttrsTemporal(), false, regEntry.regMode(),
+										regEntry.canDoZip(), regEntry.canDoIdQuery());
+								break;
+							case AppConstants.DELETE_TEMPORAL_ATTRIBUTE_INSTANCE_REQUEST:
+								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
+										regHost.cSourceId(), regEntry.deleteAttrInstanceTemporal(), false,
+										regEntry.regMode(), regEntry.canDoZip(), regEntry.canDoIdQuery());
+								break;
+							default:
+								return null;
 							}
 
+							tmp = Maps.newHashMap();
+							tmp.put(NGSIConstants.JSON_LD_ID, entityId);
+							if (matches.getItem1() != null) {
+								tmp.put(NGSIConstants.JSON_LD_TYPE, matches.getItem1());
+							}
+							if (matches.getItem2() != null) {
+								tmp.put(NGSIConstants.NGSI_LD_SCOPE, matches.getItem2());
+							}
+							cId2RemoteHostEntity.put(regEntry.cId(), Tuple2.of(host, tmp));
 						}
-					} else {
-						RemoteHost regHost = regEntry.host();
-						RemoteHost host;
-						switch (request.getRequestType()) {
-						case AppConstants.CREATE_TEMPORAL_REQUEST:
-							host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
-									regHost.cSourceId(), regEntry.upsertTemporal(), false, regEntry.regMode(),
-									regEntry.canDoZip(), regEntry.canDoIdQuery());
-							break;
-						case AppConstants.APPEND_TEMPORAL_REQUEST:
-							host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
-									regHost.cSourceId(), regEntry.appendAttrsTemporal(), false, regEntry.regMode(),
-									regEntry.canDoZip(), regEntry.canDoIdQuery());
-							break;
-						case AppConstants.UPDATE_TEMPORAL_INSTANCE_REQUEST:
-							host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
-									regHost.cSourceId(), regEntry.updateAttrsTemporal(), false, regEntry.regMode(),
-									regEntry.canDoZip(), regEntry.canDoIdQuery());
-							break;
-						case AppConstants.DELETE_TEMPORAL_REQUEST:
-							host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
-									regHost.cSourceId(), regEntry.deleteTemporal(), false, regEntry.regMode(),
-									regEntry.canDoZip(), regEntry.canDoIdQuery());
-							break;
-						case AppConstants.DELETE_TEMPORAL_ATTRIBUTE_REQUEST:
-							host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
-									regHost.cSourceId(), regEntry.deleteAttrsTemporal(), false, regEntry.regMode(),
-									regEntry.canDoZip(), regEntry.canDoIdQuery());
-							break;
-						case AppConstants.DELETE_TEMPORAL_ATTRIBUTE_INSTANCE_REQUEST:
-							host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
-									regHost.cSourceId(), regEntry.deleteAttrInstanceTemporal(), false,
-									regEntry.regMode(), regEntry.canDoZip(), regEntry.canDoIdQuery());
-							break;
-						default:
-							return null;
-						}
-
-						tmp = Maps.newHashMap();
-						tmp.put(NGSIConstants.JSON_LD_ID, entityId);
-						if (matches.getItem1() != null) {
-							tmp.put(NGSIConstants.JSON_LD_TYPE, matches.getItem1());
-						}
-						if (matches.getItem2() != null) {
-							tmp.put(NGSIConstants.NGSI_LD_SCOPE, matches.getItem2());
-						}
-						cId2RemoteHostEntity.put(regEntry.cId(), Tuple2.of(host, tmp));
-					}
-					tmp.put(entry.getKey(), entry.getValue());
-					if (regEntry.regMode() > 1) {
-						toBeRemoved.add(entry.getKey());
-						if (regEntry.regMode() == 3) {
-							break;
+						tmp.put(entry.getKey(), entry.getValue());
+						if (regEntry.regMode() > 1) {
+							toBeRemoved.add(entry.getKey());
+							if (regEntry.regMode() == 3) {
+								break;
+							}
 						}
 					}
 				}
@@ -679,13 +691,15 @@ public class HistoryEntityService {
 	public Uni<Void> handleRegistryChange(BaseRequest req) {
 		tenant2CId2RegEntries.remove(req.getTenant(), req.getId());
 		if (req.getRequestType() != AppConstants.DELETE_REQUEST) {
+			List<RegistrationEntry> newRegs = Lists.newArrayList();
 			for (RegistrationEntry regEntry : RegistrationEntry.fromRegPayload(req.getPayload())) {
 				if (regEntry.appendAttrsTemporal() || regEntry.deleteAttrsTemporal()
 						|| regEntry.deleteAttrInstanceTemporal() || regEntry.deleteTemporal()
 						|| regEntry.updateAttrsTemporal() || regEntry.upsertTemporal()) {
-					tenant2CId2RegEntries.put(req.getTenant(), req.getId(), regEntry);
+					newRegs.add(regEntry);
 				}
 			}
+			tenant2CId2RegEntries.put(req.getTenant(), req.getId(), newRegs);
 		}
 		return Uni.createFrom().voidItem();
 	}
