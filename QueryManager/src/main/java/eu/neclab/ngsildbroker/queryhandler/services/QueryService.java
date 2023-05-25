@@ -334,11 +334,11 @@ public class QueryService {
 			while (tenantRegs.hasNext()) {
 
 				RegistrationEntry regEntry = tenantRegs.next();
-				if (regEntry.expiresAt() > System.currentTimeMillis()) {
+				if (regEntry.expiresAt() > 0 && regEntry.expiresAt() <= System.currentTimeMillis()) {
 					it.remove();
 					continue;
 				}
-				if (!regEntry.queryBatch() || !regEntry.queryEntity()) {
+				if (!regEntry.queryBatch() && !regEntry.queryEntity()) {
 					continue;
 				}
 
@@ -1202,9 +1202,13 @@ public class QueryService {
 								if (response != null && response.statusCode() == 200) {
 									result = response.bodyAsJsonArray().getList();
 								} else {
+									logger.warn("Failed to query remote host" + remoteHost.toString());
 									result = Lists.newArrayList();
 								}
 								return Tuple2.of(remoteHost, result);
+							}).onFailure().recoverWithItem(e -> {
+								logger.warn("Failed to query remote host" + remoteHost.toString());
+								return null;
 							}));
 				} else {
 					unis.add(
@@ -1218,16 +1222,23 @@ public class QueryService {
 											for (Object obj : tmpList) {
 												result.add((String) ((Map<String, Object>) obj).get(NGSIConstants.ID));
 											}
+										} else {
+											logger.warn("Failed to query remote host" + remoteHost.toString());
 										}
 										return Tuple2.of(remoteHost, result);
+									}).onFailure().recoverWithItem(e -> {
+										logger.warn("Failed to query remote host" + remoteHost.toString());
+										return null;
 									}));
 				}
 			}
 			remoteIds = Uni.combine().all().unis(unis).combinedWith(list -> {
 				Map<QueryRemoteHost, List<String>> result = Maps.newHashMap();
 				for (Object obj : list) {
-					Tuple2<QueryRemoteHost, List<String>> tuple = (Tuple2<QueryRemoteHost, List<String>>) obj;
-					result.put(tuple.getItem1(), tuple.getItem2());
+					if (obj != null) {
+						Tuple2<QueryRemoteHost, List<String>> tuple = (Tuple2<QueryRemoteHost, List<String>>) obj;
+						result.put(tuple.getItem1(), tuple.getItem2());
+					}
 				}
 				return result;
 			});
