@@ -961,7 +961,10 @@ public class QueryService {
 						}
 						result.put(EntityTools.REG_MODE_KEY, remoteHost.regMode());
 						return result;
-					}).onFailure().recoverWithItem(e -> new HashMap<String, Object>()));
+					}).onFailure().recoverWithItem(e -> {
+						logger.warn("Failed to retrieve infos from host " + remoteHost);
+						return new HashMap<String, Object>();
+					}));
 		}
 
 		return Uni.combine().all().unis(unis).combinedWith(list -> {
