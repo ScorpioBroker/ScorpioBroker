@@ -95,6 +95,7 @@ public class AppConstants {
 	public static final int CREATE_REQUEST = 0;
 	public static final int APPEND_REQUEST = 1;
 	public static final int UPDATE_REQUEST = 2;
+	public static final int PARTIAL_UPDATE_REQUEST = 21;
 	public static final int DELETE_REQUEST = 3;
 	public static final int DELETE_ATTRIBUTE_REQUEST = 4;
 	public static final int CREATE_TEMPORAL_REQUEST = 5;

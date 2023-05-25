@@ -242,7 +242,7 @@ public class EntityService {
 	}
 
 	public Uni<NGSILDOperationResult> partialUpdateAttribute(String tenant, String entityId, String attribName,
-			Map<String, Object> payload, Context originalContext) {
+			Map<String, Object> payload, Context context) {
 		logger.trace("updateMessage() :: started");
 		Map<String, Object> effectivePayload;
 		if (payload.containsKey(attribName)) {
@@ -251,47 +251,58 @@ public class EntityService {
 			effectivePayload = Maps.newHashMap();
 			effectivePayload.put(attribName, payload);
 		}
-
 		UpdateEntityRequest request = new UpdateEntityRequest(tenant, entityId, effectivePayload, attribName, null);
-		return entityDAO.partialUpdateAttribute(request).onItem().transformToUni(resultetEntity -> {
-//			if (resultTable.size() == 0) {
-//				return Uni.createFrom().failure(new ResponseException(ErrorType.InternalError,
-//						"No result from the database this should never happen"));
-//			}
-//			return handleDBUpdateResult(request, resultTable, originalContext).onItem().transformToUni(tuple -> {
-//				NGSILDOperationResult localResult = tuple.getItem1();
-//				Map<RemoteHost, Map<String, Object>> remoteHosts = tuple.getItem2();
-//				List<Uni<Void>> unis = new ArrayList<>(remoteHosts.size());
-//				for (Entry<RemoteHost, Map<String, Object>> entry : remoteHosts.entrySet()) {
-//					RemoteHost remoteHost = entry.getKey();
-//					if (remoteHost.canDoSingleOp()) {
-//						unis.add(webClient
-//								.patch(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + entityId
-//										+ "/attrs/" + attribName)
-//								.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(entry.getValue()))
-//								.onItemOrFailure().transformToUni((response, failure) -> {
-//									handleWebResponse(localResult, response, failure, 201, remoteHost,
-//											HttpUtils.getAttribsFromCompactedPayload(entry.getValue()));
-//									return Uni.createFrom().voidItem();
-//								}));
-//					} else {
-//						unis.add(webClient.post(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_UPDATE)
-//								.putHeaders(remoteHost.headers())
-//								.sendJson(new JsonArray(Lists.newArrayList(new JsonObject(entry.getValue()))))
-//								.onItemOrFailure().transformToUni((response, failure) -> {
-//									NGSILDOperationResult remoteResult = handleBatchResponse(response, failure,
-//											remoteHost, Lists.newArrayList(entry.getValue()), ArrayUtils.toArray(201))
-//											.get(0);
-//									localResult.getSuccesses().addAll(remoteResult.getSuccesses());
-//									localResult.getFailures().addAll(remoteResult.getFailures());
-//									return Uni.createFrom().voidItem();
-//								}));
-//					}
-//				}
-//				return Uni.combine().all().unis(unis).combinedWith(t -> localResult);
-//			});
-			NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.UPDATE_REQUEST, entityId);
-			return Uni.createFrom().item(result);
+		request.setRequestType(AppConstants.PARTIAL_UPDATE_REQUEST);
+		Tuple2<Map<String, Object>, Collection<Tuple2<RemoteHost, Map<String, Object>>>> splitted = splitEntity(
+				request);
+		Map<String, Object> localEntity = splitted.getItem1();
+		Collection<Tuple2<RemoteHost, Map<String, Object>>> remoteEntitiesAndHosts = splitted.getItem2();
+		if (remoteEntitiesAndHosts.isEmpty()) {
+			request.setPayload(localEntity);
+			return partialUpdateLocalEntity(request, context);
+		}
+		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(remoteEntitiesAndHosts.size());
+		for (Tuple2<RemoteHost, Map<String, Object>> remoteEntityAndHost : remoteEntitiesAndHosts) {
+			Map<String, Object> expanded = remoteEntityAndHost.getItem2();
+			Map<String, Object> compacted;
+			try {
+				compacted = prepareSplitUpEntityForSending(expanded, context);
+			} catch (JsonLdError | ResponseException e) {
+				logger.error("Failed to compact remote payload", e);
+				continue;
+			}
+			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
+			if (remoteHost.canDoSingleOp()) {
+				unis.add(webClient
+						.post(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + request.getId()
+								+ "/attrs/" + request.getAttrName())
+						.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(compacted)).onItemOrFailure()
+						.transform((response, failure) -> {
+							return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(204), remoteHost,
+									AppConstants.PARTIAL_UPDATE_REQUEST, request.getId(),
+									HttpUtils.getAttribsFromCompactedPayload(compacted));
+
+						}));
+			}
+
+		}
+		if (!localEntity.isEmpty()) {
+			request.setPayload(localEntity);
+			unis.add(partialUpdateLocalEntity(request, context).onFailure().recoverWithItem(e -> {
+				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.PARTIAL_UPDATE_REQUEST,
+						request.getId());
+				if (e instanceof ResponseException) {
+					localResult.addFailure((ResponseException) e);
+				} else {
+					localResult.addFailure(new ResponseException(ErrorType.InternalError, e.getMessage()));
+				}
+
+				return localResult;
+
+			}));
+		}
+		return Uni.combine().all().unis(unis).combinedWith(list -> {
+			return getResult(list);
 		});
 	}
 
@@ -354,8 +365,27 @@ public class EntityService {
 	}
 
 	private Set<RemoteHost> getRemoteHostsForDeleteAttrib(DeleteAttributeRequest request) {
-		// TODO Auto-generated method stub
-		return null;
+		Set<RemoteHost> result = Sets.newHashSet();
+		for (List<RegistrationEntry> regEntries : tenant2CId2RegEntries.row(request.getTenant()).values()) {
+			for (RegistrationEntry regEntry : regEntries) {
+				if (!regEntry.deleteEntity() && !regEntry.deleteBatch()) {
+					continue;
+				}
+				if (((regEntry.eId() == null && regEntry.eIdp() == null)
+						|| (regEntry.eId() != null && regEntry.eId().equals(request.getId()))
+						|| (regEntry.eIdp() != null && request.getId().matches(regEntry.eIdp())))
+						&& ((regEntry.eProp() == null && regEntry.eRel() == null)
+								|| (regEntry.eProp() != null && regEntry.eProp().equals(request.getAttribName()))
+								|| (regEntry.eRel() != null && regEntry.eRel().equals(request.getAttribName()))
+
+						)) {
+					result.add(new RemoteHost(regEntry.host().host(), regEntry.host().tenant(),
+							regEntry.host().headers(), regEntry.host().cSourceId(), regEntry.deleteEntity(),
+							regEntry.deleteBatch(), regEntry.regMode(), regEntry.canDoZip(), regEntry.canDoIdQuery()));
+				}
+			}
+		}
+		return result;
 	}
 
 	public Uni<NGSILDOperationResult> deleteEntity(String tenant, String entityId, Context context) {
@@ -644,13 +674,25 @@ public class EntityService {
 		});
 	}
 
+	private Uni<NGSILDOperationResult> partialUpdateLocalEntity(UpdateEntityRequest request, Context context) {
+		return entityDAO.partialUpdateAttribute(request).onItem().transformToUni(v -> {
+			return entityEmitter.send(request).onItem().transform(v2 -> {
+				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.PARTIAL_UPDATE_REQUEST,
+						request.getId());
+				localResult.addSuccess(new CRUDSuccess(null, null, null, request.getPayload(), context));
+				return localResult;
+			});
+		});
+	}
+
 	private Tuple2<Map<String, Object>, Collection<Tuple2<RemoteHost, Map<String, Object>>>> splitEntity(
 			EntityRequest request) {
 		Map<String, Object> originalEntity = request.getPayload();
 		Collection<List<RegistrationEntry>> tenantRegs = tenant2CId2RegEntries.row(request.getTenant()).values();
 
 		Object originalScopes = originalEntity.remove(NGSIConstants.NGSI_LD_SCOPE);
-		String entityId = (String) originalEntity.remove(NGSIConstants.JSON_LD_ID);
+		String entityId = request.getId();
+		originalEntity.remove(NGSIConstants.JSON_LD_ID);
 		List<String> originalTypes = (List<String>) originalEntity.remove(NGSIConstants.JSON_LD_TYPE);
 		Map<String, Tuple2<RemoteHost, Map<String, Object>>> cId2RemoteHostEntity = Maps.newHashMap();
 		Shape location = null;
@@ -672,6 +714,11 @@ public class EntityService {
 						break;
 					case AppConstants.UPDATE_REQUEST:
 						if (!regEntry.updateEntity()) {
+							continue;
+						}
+						break;
+					case AppConstants.PARTIAL_UPDATE_REQUEST:
+						if (!regEntry.updateAttrs()) {
 							continue;
 						}
 						break;
@@ -1304,5 +1351,4 @@ public class EntityService {
 		});
 	}
 
-	
 }

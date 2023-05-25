@@ -159,14 +159,18 @@ public class EntityController {// implements EntityHandlerInterface {
 				tuple.getItem1()).onItem().transform(updateResult -> {
 					logger.trace("update entry :: completed");
 					return HttpUtils.generateUpdateResultResponse(updateResult);
-				}).onFailure().recoverWithUni(t -> entityService.patchToEndPoint(entityId, request, payload, attrib)
-						.onItem().transform(isEndPointExist -> {
-							if (isEndPointExist)
-								return RestResponse.noContent();
-							else {
-								return HttpUtils.handleControllerExceptions(t);
-							}
-						}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions));
+				}).onFailure().recoverWithItem(e -> {
+					return HttpUtils.handleControllerExceptions(e);
+				});
+
+//				.onFailure().recoverWithUni(t -> entityService.patchToEndPoint(entityId, request, payload, attrib)
+//						.onItem().transform(isEndPointExist -> {
+//							if (isEndPointExist)
+//								return RestResponse.noContent();
+//							else {
+//								return HttpUtils.handleControllerExceptions(t);
+//							}
+//						}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions));
 	}
 
 	/**
