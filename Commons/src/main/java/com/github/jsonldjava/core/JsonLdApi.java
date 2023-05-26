@@ -691,6 +691,7 @@ public class JsonLdApi {
 			// 3.2)
 			NGSIObject resultElement = new NGSIObject(null, ngsiElement);
 			resultElement.fillUpForArray(ngsiElement);
+			resultElement.setFromHasValue(ngsiElement.isFromHasValue() || ngsiElement.isHasAtValue());
 			for (final Object item : (List<Object>) element) {
 				// 3.2.1)
 				NGSIObject ngsiV = expand(activeCtx, activeProperty,
