@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 
 import com.google.common.collect.Lists;
 
@@ -115,6 +116,28 @@ public record QueryRemoteHost(String host, String tenant, MultiMap headers, Stri
 		return new QueryRemoteHost(remoteHost.host(), remoteHost.tenant(), remoteHost.headers(), remoteHost.cSourceId(),
 				remoteHost.canDoSingleOp(), remoteHost.canDoBatchOp(), remoteHost.regMode(), queryString, canDoIdQuery,
 				canDoZip, remoteToken);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(cSourceId, canDoBatchOp, canDoIdQuery, canDoSingleOp, canDoZip, host, queryString, regMode,
+				remoteToken, tenant);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		QueryRemoteHost other = (QueryRemoteHost) obj;
+		return Objects.equals(cSourceId, other.cSourceId) && canDoBatchOp == other.canDoBatchOp
+				&& canDoIdQuery == other.canDoIdQuery && canDoSingleOp == other.canDoSingleOp
+				&& canDoZip == other.canDoZip && Objects.equals(host, other.host)
+				&& Objects.equals(queryString, other.queryString) && regMode == other.regMode
+				&& Objects.equals(remoteToken, other.remoteToken) && Objects.equals(tenant, other.tenant);
 	}
 
 }
