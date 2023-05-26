@@ -643,7 +643,7 @@ public class EntityService {
 			}
 
 		}
-		if (!localEntity.isEmpty()) {
+		if (localEntity != null && !localEntity.isEmpty()) {
 			request.setPayload(localEntity);
 			unis.add(createLocalEntity(request, context).onFailure().recoverWithItem(e -> {
 				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST,

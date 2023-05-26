@@ -27,6 +27,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import eu.neclab.ngsildbroker.commons.tools.SubscriptionTools;
 import io.smallrye.mutiny.tuples.Tuple2;
@@ -122,7 +123,9 @@ public record RegistrationEntry(String cId, String eId, String eIdp, String type
 			tenant = AppConstants.INTERNAL_NULL_KEY;
 		}
 		String cSourceId = (String) payload.get(NGSIConstants.JSON_LD_ID);
-		MultiMap headers = null;
+		List<Map<String, Object>> csourceInfo = (List<Map<String, Object>>) payload
+				.get("https://uri.etsi.org/ngsi-ld/contextSourceInfo");
+		MultiMap headers = MultiMap.newInstance(HttpUtils.getHeadersForRemoteCallFromRegUpdate(csourceInfo, tenant));
 		Shape location;
 		if (payload.containsKey(NGSIConstants.NGSI_LD_LOCATION)) {
 			try {

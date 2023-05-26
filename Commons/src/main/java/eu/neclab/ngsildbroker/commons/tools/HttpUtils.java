@@ -429,6 +429,23 @@ public final class HttpUtils {
 		return result;
 	}
 
+	public static MultiMap getHeadersForRemoteCallFromRegUpdate(List<Map<String, Object>> headerFromReg,
+			String tenant) {
+		MultiMap result = HeadersMultiMap.headers();
+		if (headerFromReg != null) {
+			headerFromReg.forEach(t -> {
+				t.forEach((key, value) -> {
+					result.add(key, (String) value);
+				});
+			});
+		}
+		result.add("Accept", "application/json");
+		if (!tenant.equals(AppConstants.INTERNAL_NULL_KEY)) {
+			result.add(NGSIConstants.TENANT_HEADER, tenant);
+		}
+		return result;
+	}
+
 	public static RestResponse<Object> generateEntityResult(List<Object> contextHeader, Context context,
 			int acceptHeader, Object entity, String geometryProperty, String options, LanguageQueryTerm langQuery) {
 
@@ -785,7 +802,8 @@ public final class HttpUtils {
 
 		NGSILDOperationResult result = new NGSILDOperationResult(operationType, entityId);
 		if (failure != null) {
-			result.addFailure(new ResponseException(ErrorType.InternalError, failure.getMessage(), remoteHost, attrs));
+			result.addFailure(new ResponseException(ErrorType.UnprocessableContextSourceRegistration,
+					failure.getMessage(), remoteHost, attrs));
 		} else {
 			int statusCode = response.statusCode();
 			if (ArrayUtils.contains(integers, statusCode)) {
