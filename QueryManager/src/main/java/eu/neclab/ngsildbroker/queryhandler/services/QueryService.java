@@ -113,21 +113,23 @@ public class QueryService {
 						EntityMap entityMap = t.getItem2();
 						List<EntityMapEntry> resultEntityMap = entityMap.getSubMap(offSet, limit + offSet);
 						Long resultCount = (long) entityMap.size();
-						return handleEntityMap(resultCount, resultEntityMap, attrsQuery, conn, count, limit, offSet);
+						return handleEntityMap(resultCount, resultEntityMap, attrsQuery, conn, count, limit, offSet,
+								qToken);
 					});
 		} else {
 			return queryDAO.getEntityMap(tenant, qToken, limit, offSet, count).onItem().transformToUni(t -> {
 				SqlConnection conn = t.getItem1();
 				Long resultCount = t.getItem2();
 				EntityMap entityMap = t.getItem3();
-				return handleEntityMap(resultCount, entityMap.getEntityList(), attrsQuery, conn, count, limit, offSet);
+				return handleEntityMap(resultCount, entityMap.getEntityList(), attrsQuery, conn, count, limit, offSet,
+						qToken);
 
 			});
 		}
 	}
 
 	private Uni<QueryResult> handleEntityMap(Long resultCount, List<EntityMapEntry> resultEntityMap,
-			AttrsQueryTerm attrsQuery, SqlConnection conn, boolean count, int limit, int offSet) {
+			AttrsQueryTerm attrsQuery, SqlConnection conn, boolean count, int limit, int offSet, String qToken) {
 		Map<QueryRemoteHost, List<String>> remoteHost2EntityIds = Maps.newHashMap();
 		// has to be linked. We want to keep order here
 		Map<String, Map<String, Map<String, Map<String, Object>>>> entityId2AttrName2DatasetId2AttrValue = Maps
@@ -243,7 +245,7 @@ public class QueryService {
 				}
 
 			}
-
+			result.setqToken(qToken);
 			return result;
 		});
 

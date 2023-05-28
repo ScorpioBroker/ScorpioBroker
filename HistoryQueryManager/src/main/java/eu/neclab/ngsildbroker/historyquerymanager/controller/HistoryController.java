@@ -70,7 +70,7 @@ public class HistoryController {
 			@QueryParam("endTimeAt") String endTimeAt, @QueryParam("lastN") Integer lastN,
 			@QueryParam("lang") String lang, @QueryParam("aggrMethods") String aggrMethods,
 			@QueryParam("aggrPeriodDuration") String aggrPeriodDuration, @QueryParam(value = "limit") Integer limit,
-			@QueryParam(value = "offset") int offset, @QueryParam(value = "qtoken") String qToken,
+			@QueryParam(value = "offset") int offset, @QueryParam(value = "entityMap") String qToken,
 			@QueryParam(value = "options") String options, @QueryParam(value = "count") boolean count,
 			@QueryParam(value = "localOnly") boolean localOnly) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));

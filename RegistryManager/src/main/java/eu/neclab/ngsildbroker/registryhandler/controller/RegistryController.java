@@ -56,10 +56,10 @@ public class RegistryController {
 
 	@GET
 	public Uni<RestResponse<Object>> queryCSource(HttpServerRequest request, @QueryParam(value = "limit") Integer limit,
-			@QueryParam(value = "offset") Integer offset, @QueryParam(value = "qtoken") String qToken,
-			@QueryParam(value = "count") boolean count) {
+			@QueryParam(value = "offset") Integer offset, @QueryParam(value = "count") boolean count) {
 		// return QueryControllerFunctions.queryForEntries(csourceService, request,
 		// false, defaultLimit, maxLimit, false);
+//		return csourceService.queryRegistrations(HttpUtils.getTenant(request), null, null, coreContext, null, null, null, null, maxLimit, defaultLimit, count);
 		return null;
 	}
 
@@ -102,7 +102,8 @@ public class RegistryController {
 		}
 		return csourceService.retrieveRegistration(HttpUtils.getTenant(request), registrationId).onItem()
 				.transform(entity -> {
-					return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, entity, null, null,null);
+					return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, entity, null, null,
+							null);
 				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
 	}

@@ -270,9 +270,9 @@ public final class HttpUtils {
 			}
 			builder.append(key + "=" + entry.getValue() + "&");
 		}
-		builder.append("offset=" + offset + "&");
-		builder.append("limit=" + limit + "&");
-		// builder.append("qtoken=" + token);
+		builder.append("offset=" + offset);
+		builder.append("&limit=" + limit);
+		builder.append("&qtoken=" + token);
 		builder.append(">;rel=\"" + rel + "\"");
 		return builder.toString();
 	}
@@ -778,6 +778,9 @@ public final class HttpUtils {
 			MultiMap urlParams = request.params();
 			String nextLink = HttpUtils.generateNextLink(urlParams, queryResult);
 			String prevLink = HttpUtils.generatePrevLink(urlParams, queryResult);
+			
+				builder= builder.header(NGSIConstants.ENTITY_MAP_TOKEN_HEADER, queryResult.getqToken());
+			
 
 			if (nextLink != null) {
 				builder = builder.header(HttpHeaders.LINK, nextLink);
