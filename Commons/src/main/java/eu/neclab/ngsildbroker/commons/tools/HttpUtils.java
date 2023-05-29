@@ -272,7 +272,7 @@ public final class HttpUtils {
 		}
 		builder.append("offset=" + offset);
 		builder.append("&limit=" + limit);
-		builder.append("&qtoken=" + token);
+		builder.append("&entityMap=" + token);
 		builder.append(">;rel=\"" + rel + "\"");
 		return builder.toString();
 	}

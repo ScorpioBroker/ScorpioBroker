@@ -35,6 +35,8 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
+import eu.neclab.ngsildbroker.commons.enums.ErrorType;
+import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.storage.ClientManager;
 import eu.neclab.ngsildbroker.commons.tools.DBUtil;
 import io.smallrye.mutiny.Uni;
@@ -863,15 +865,19 @@ public class QueryDAO {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
 			return client.getConnection().onItem().transformToUni(conn -> {
 				return conn.preparedQuery(
-						"WITH a AS (UPDATE entitymap_management SET entitymap_management.last_access=now() WHERE entitymap_management.q_token=$1) SELECT entity_id, remote_hosts FROM entitymap WHERE q_token = $1 order by order_field LIMIT $2 OFFSET $3")
-						.execute(Tuple.of(qToken, limit, offSet)).onItem().transform(rows -> {
+						"WITH a AS (UPDATE entitymap_management SET last_access=now() WHERE q_token=$1) SELECT entity_id, remote_hosts FROM entitymap WHERE q_token = $1 order by order_field LIMIT $2 OFFSET $3")
+						.execute(Tuple.of(qToken, limit, offSet)).onItem().transformToUni(rows -> {
+							if (rows.rowCount() == 0) {
+								return Uni.createFrom().failure(new ResponseException(ErrorType.InvalidRequest,
+										"Token is invalid. Please rerequest without a token to retrieve a new token"));
+							}
 							EntityMap entityIdList = new EntityMap();
 							rows.forEach(row -> {
 								entityIdList.getEntry(row.getString(0)).getRemoteHosts()
 										.addAll(QueryRemoteHost.getRemoteHostsFromJson(row.getJsonArray(1).getList()));
 
 							});
-							return Tuple3.of(conn, 0l, entityIdList);
+							return Uni.createFrom().item(Tuple3.of(conn, 0l, entityIdList));
 						});
 			});
 
