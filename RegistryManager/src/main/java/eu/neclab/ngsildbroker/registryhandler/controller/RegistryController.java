@@ -3,6 +3,8 @@ package eu.neclab.ngsildbroker.registryhandler.controller;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -22,8 +24,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdProcessor;
+import com.google.common.collect.Sets;
+
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
+import eu.neclab.ngsildbroker.commons.enums.ErrorType;
+import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import eu.neclab.ngsildbroker.commons.tools.QueryParser;
 import eu.neclab.ngsildbroker.registryhandler.service.CSourceService;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
@@ -55,12 +69,65 @@ public class RegistryController {
 	}
 
 	@GET
-	public Uni<RestResponse<Object>> queryCSource(HttpServerRequest request, @QueryParam(value = "limit") Integer limit,
-			@QueryParam(value = "offset") Integer offset, @QueryParam(value = "count") boolean count) {
-		// return QueryControllerFunctions.queryForEntries(csourceService, request,
-		// false, defaultLimit, maxLimit, false);
-//		return csourceService.queryRegistrations(HttpUtils.getTenant(request), null, null, coreContext, null, null, null, null, maxLimit, defaultLimit, count);
-		return null;
+	public Uni<RestResponse<Object>> queryCSource(HttpServerRequest request, @QueryParam("id") String ids,
+			@QueryParam("type") String type, @QueryParam("idPattern") String idPattern,
+			@QueryParam("attrs") String attrs, @QueryParam("q") String q, @QueryParam("csf") String csf,
+			@QueryParam("geometry") String geometry, @QueryParam("georel") String georel,
+			@QueryParam("coordinates") String coordinates, @QueryParam("geoproperty") String geoproperty,
+			@QueryParam("geometryProperty") String geometryProperty, @QueryParam("timeproperty") String timeProperty,
+			@QueryParam("timerel") String timerel, @QueryParam("scopeQ") String scopeQ,
+			@QueryParam("timeAt") String timeAt, @QueryParam("endTimeAt") String endTimeAt,
+			@QueryParam(value = "limit") Integer limit, @QueryParam(value = "offset") int offset,
+			@QueryParam(value = "options") String options, @QueryParam(value = "count") boolean count) {
+		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
+		if (acceptHeader == -1) {
+			return HttpUtils.getInvalidHeader();
+		}
+		int actualLimit;
+		if (limit == null) {
+			actualLimit = defaultLimit;
+		} else {
+			actualLimit = limit;
+		}
+		if (actualLimit > maxLimit) {
+			return Uni.createFrom()
+					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.TooManyResults)));
+		}
+		if (ids == null && type == null && attrs == null && geometry == null && q == null) {
+			return Uni.createFrom()
+					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.InvalidRequest)));
+		}
+
+		Context context;
+		List<Object> headerContext;
+		AttrsQueryTerm attrsQuery;
+		TypeQueryTerm typeQueryTerm;
+		QQueryTerm qQueryTerm;
+		CSFQueryTerm csfQueryTerm;
+		GeoQueryTerm geoQueryTerm;
+		ScopeQueryTerm scopeQueryTerm;
+
+		try {
+			headerContext = HttpUtils.getAtContext(request);
+			context = JsonLdProcessor.getCoreContextClone().parse(headerContext, false);
+			attrsQuery = QueryParser.parseAttrs(attrs, context);
+			typeQueryTerm = QueryParser.parseTypeQuery(type, context);
+			qQueryTerm = QueryParser.parseQuery(q, context);
+			csfQueryTerm = QueryParser.parseCSFQuery(csf, context);
+			geoQueryTerm = QueryParser.parseGeoQuery(georel, coordinates, geometry, geoproperty, context);
+			scopeQueryTerm = QueryParser.parseScopeQuery(scopeQ);
+		} catch (Exception e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+		}
+
+		return csourceService
+				.queryRegistrations(HttpUtils.getTenant(request), Sets.newHashSet(ids.split(",")), typeQueryTerm,
+						idPattern, attrsQuery, csfQueryTerm, geoQueryTerm, scopeQueryTerm, limit, offset, count)
+				.onItem().transform(queryResult -> {
+
+					return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty, acceptHeader,
+							count, actualLimit, null, context);
+				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
 	@POST

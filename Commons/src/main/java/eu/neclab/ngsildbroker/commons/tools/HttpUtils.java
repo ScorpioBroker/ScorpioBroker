@@ -653,12 +653,20 @@ public final class HttpUtils {
 		if (!isHavingError && isHavingSuccess) {
 			String type = (String) result.get(0).get("type");
 			if (type.equalsIgnoreCase("Upsert") || type.equalsIgnoreCase("Delete") || type.equalsIgnoreCase("Append"))
-				return RestResponse.status(RestResponse.Status.NO_CONTENT, result);
+				return RestResponse.status(RestResponse.Status.NO_CONTENT);
 			else
-				return RestResponse.status(RestResponse.Status.CREATED, result);
+				return RestResponse.status(RestResponse.Status.CREATED, generateBatchCreateSuccess(result));
 		}
 		return new RestResponseBuilderImpl<>().status(207).type(AppConstants.NGB_APPLICATION_JSON).entity(result)
 				.build();
+	}
+
+	private static List<String> generateBatchCreateSuccess(List<Map<String, Object>> resultInfo) {
+		List<String> result = new ArrayList<>(resultInfo.size());
+		resultInfo.forEach(entry -> {
+			result.add((String) entry.get(NGSIConstants.ID));
+		});
+		return result;
 	}
 
 	public static Context getContextFromPayload(Map<String, Object> originalPayload, List<Object> atContextHeader,
@@ -778,9 +786,8 @@ public final class HttpUtils {
 			MultiMap urlParams = request.params();
 			String nextLink = HttpUtils.generateNextLink(urlParams, queryResult);
 			String prevLink = HttpUtils.generatePrevLink(urlParams, queryResult);
-			
-				builder= builder.header(NGSIConstants.ENTITY_MAP_TOKEN_HEADER, queryResult.getqToken());
-			
+
+			builder = builder.header(NGSIConstants.ENTITY_MAP_TOKEN_HEADER, queryResult.getqToken());
 
 			if (nextLink != null) {
 				builder = builder.header(HttpHeaders.LINK, nextLink);
