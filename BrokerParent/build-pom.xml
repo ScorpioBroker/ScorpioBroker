@@ -173,8 +173,20 @@
 			<version>2.1.3</version>
 		</dependency>
 		<dependency>
+			<groupId>io.quarkus</groupId>
+			<artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>io.strimzi</groupId>
+			<artifactId>kafka-oauth-client</artifactId>
+		</dependency>
+		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>io.smallrye.reactive</groupId>
+			<artifactId>smallrye-reactive-messaging-in-memory</artifactId>
 		</dependency>
 	</dependencies>
 	<profiles>
@@ -211,51 +223,6 @@
 			<properties>
 				<quarkus.package.type>native</quarkus.package.type>
 			</properties>
-		</profile>
-		<profile>
-			<id>kafka</id>
-			<activation>
-				<property>
-					<name>kafka</name>
-				</property>
-			</activation>
-			<dependencies>
-				<dependency>
-					<groupId>io.quarkus</groupId>
-					<artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>
-				</dependency>
-				<dependency>
-					<groupId>io.strimzi</groupId>
-					<artifactId>kafka-oauth-client</artifactId>
-				</dependency>
-			</dependencies>
-		</profile>
-		<profile>
-			<id>in-memory</id>
-			<activation>
-				<property>
-					<name>in-memory</name>
-				</property>
-			</activation>
-			<dependencies>
-				<dependency>
-					<groupId>io.smallrye.reactive</groupId>
-					<artifactId>smallrye-reactive-messaging-in-memory</artifactId>
-				</dependency>
-			</dependencies>
-		</profile>
-		<profile>
-			<id>dev</id>
-			<dependencies>
-				<dependency>
-					<groupId>io.quarkus</groupId>
-					<artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>
-				</dependency>
-				<dependency>
-					<groupId>io.smallrye.reactive</groupId>
-					<artifactId>smallrye-reactive-messaging-in-memory</artifactId>
-				</dependency>
-			</dependencies>
 		</profile>
 		<profile>
 			<id>windowsext</id>
