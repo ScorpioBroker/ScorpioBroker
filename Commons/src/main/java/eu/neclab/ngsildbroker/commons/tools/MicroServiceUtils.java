@@ -80,8 +80,8 @@ public class MicroServiceUtils {
 	}
 
 	public static BatchRequest deepCopyRequestMessage(BatchRequest originalPayload) {
-		List<Map<String, Object>> copiedPayload=new ArrayList<>();
-		if(originalPayload.getRequestPayload()!=null && !originalPayload.getRequestPayload().isEmpty()) {
+		List<Map<String, Object>> copiedPayload = new ArrayList<>();
+		if (originalPayload.getRequestPayload() != null && !originalPayload.getRequestPayload().isEmpty()) {
 			for (Map<String, Object> entry : originalPayload.getRequestPayload()) {
 				copiedPayload.add(deepCopyMap(entry));
 			}
@@ -112,6 +112,9 @@ public class MicroServiceUtils {
 				copiedValue = ((Float) originalValue).floatValue();
 			} else if (originalValue instanceof Boolean) {
 				copiedValue = ((Boolean) originalValue).booleanValue();
+			} else if (originalValue == null) {
+				System.out.println(entry.getKey() + " was null");
+				copiedValue = null;
 			} else {
 				copiedValue = originalValue.toString();
 			}

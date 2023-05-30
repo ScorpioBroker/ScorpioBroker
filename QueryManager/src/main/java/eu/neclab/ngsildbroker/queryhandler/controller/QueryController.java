@@ -34,7 +34,10 @@ import org.jboss.resteasy.reactive.server.jaxrs.RestResponseBuilderImpl;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.Encoded;
 import javax.ws.rs.GET;
+import javax.ws.rs.MatrixParam;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -119,6 +122,7 @@ public class QueryController {
 	 */
 	@Path("/entities")
 	@GET
+	@Consumes()
 	public Uni<RestResponse<Object>> query(HttpServerRequest request, @QueryParam("id") String id,
 			@QueryParam("type") String typeQuery, @QueryParam("idPattern") String idPattern,
 			@QueryParam("attrs") String attrs, @QueryParam("q") String q, @QueryParam("csf") String csf,

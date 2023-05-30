@@ -219,15 +219,16 @@ public class GeoQueryTerm {
 			query.append(referenceValue);
 			query.append("::geography, ");
 			query.append(distanceValue);
-			query.append(") or ");
-			query.append(sqlPostgisFunction);
-			query.append("( ");
-			query.append(dbColumn);
-			query.append(", ");
-			query.append(referenceValue);
-			query.append(", ");
-			query.append(distanceValue);
 			query.append(") ");
+//			query.append("or ");
+//			query.append(sqlPostgisFunction);
+//			query.append("( ");
+//			query.append(dbColumn);
+//			query.append(", ");
+//			query.append(referenceValue);
+//			query.append(", ");
+//			query.append(distanceValue);
+//			query.append(") ");
 			break;
 		case NGSIConstants.GEO_REL_WITHIN:
 		case NGSIConstants.GEO_REL_CONTAINS:

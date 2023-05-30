@@ -277,10 +277,10 @@ public class QueryService {
 			types = Sets.newHashSet();
 			entityId2Types.put(entityId, types);
 		}
-		Set<String> scopes = entityId2Types.get(entityId);
+		Set<String> scopes = entityId2Scopes.get(entityId);
 		if (scopes == null) {
 			scopes = Sets.newHashSet();
-			entityId2Types.put(entityId, scopes);
+			entityId2Scopes.put(entityId, scopes);
 		}
 		long youngestModifiedAt = Long.MIN_VALUE;
 		long oldestCreatedAt = Long.MAX_VALUE;
@@ -938,7 +938,13 @@ public class QueryService {
 		}
 		List<QueryRemoteHost> remoteHosts = getRemoteHostsForRetrieve(tenant, entityId, attrsQuery, lang, context);
 		if (remoteHosts.isEmpty()) {
-			return local;
+			return local.onItem().transformToUni(item -> {
+				if (item.isEmpty()) {
+					return Uni.createFrom()
+							.failure(new ResponseException(ErrorType.NotFound, entityId + " was not found"));
+				}
+				return Uni.createFrom().item(item);
+			});
 		}
 		List<Uni<Map<String, Object>>> unis = new ArrayList<>(remoteHosts.size() + 1);
 		unis.add(local);

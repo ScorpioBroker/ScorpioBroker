@@ -249,7 +249,7 @@ public class EntityService {
 			effectivePayload = payload;
 		} else {
 			effectivePayload = Maps.newHashMap();
-			effectivePayload.put(attribName, payload);
+			effectivePayload.put(attribName, Lists.newArrayList(payload));
 		}
 		UpdateEntityRequest request = new UpdateEntityRequest(tenant, entityId, effectivePayload, attribName, null);
 		request.setRequestType(AppConstants.PARTIAL_UPDATE_REQUEST);
