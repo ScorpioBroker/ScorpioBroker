@@ -264,7 +264,7 @@ public class SubscriptionInfoDAO {
                 // }
                 // dollar++;
             }
-
+            System.out.println(sql);
             return client.preparedQuery(sql).execute(Tuple.from(tupleItems)).onFailure().retry().atMost(3);
         });
     }
