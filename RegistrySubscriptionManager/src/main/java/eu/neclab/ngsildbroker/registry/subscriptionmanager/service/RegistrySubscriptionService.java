@@ -1031,6 +1031,7 @@ public class RegistrySubscriptionService {
 	public Uni<Void> handleInternalSubscription(SubscriptionRequest message) {
 		if (message.getRequestType() == AppConstants.DELETE_SUBSCRIPTION_REQUEST) {
 			tenant2subscriptionId2Subscription.remove(message.getTenant(), message.getId());
+			return  Uni.createFrom().voidItem();
 		}
 		try {
 			message.setSubscription(Subscription.expandSubscription(message.getPayload(), message.getContext(), false));

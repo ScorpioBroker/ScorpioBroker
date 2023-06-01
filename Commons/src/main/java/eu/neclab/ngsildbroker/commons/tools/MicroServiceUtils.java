@@ -114,7 +114,7 @@ public class MicroServiceUtils {
 				copiedValue = ((Boolean) originalValue).booleanValue();
 			} else if (originalValue == null) {
 				System.out.println(entry.getKey() + " was null");
-				copiedValue = null;
+				continue;
 			} else {
 				copiedValue = originalValue.toString();
 			}
