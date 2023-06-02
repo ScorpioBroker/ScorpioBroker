@@ -64,4 +64,9 @@ public class SubscriptionRequest extends BaseRequest {
 		this.context = context;
 	}
 
+	@Override
+	public String toString() {
+		return "SubscriptionRequest [subscription=" + subscription + ", context=" + context + "]";
+	}
+
 }

@@ -775,4 +775,17 @@ public class Subscription implements Serializable {
 		return uri;
 	}
 
+	@Override
+	public String toString() {
+		return "Subscription [description=" + description + ", expiresAt=" + expiresAt + ", id=" + id
+				+ ", subscriptionName=" + subscriptionName + ", notification=" + notification + ", status=" + status
+				+ ", throttling=" + throttling + ", timeInterval=" + timeInterval + ", type=" + type
+				+ ", requestorList=" + requestorList + ", isActive=" + isActive + ", attributeNames=" + attributeNames
+				+ ", entities=" + entities + ", ldQueryString=" + ldQueryString + ", scopeQueryString="
+				+ scopeQueryString + ", csfQueryString=" + csfQueryString + ", ldGeoQuery=" + ldGeoQuery
+				+ ", ldTempQuery=" + ldTempQuery + ", ldQuery=" + ldQuery + ", csfQuery=" + csfQuery + ", scopeQuery="
+				+ scopeQuery + "]";
+	}
+	
+
 }

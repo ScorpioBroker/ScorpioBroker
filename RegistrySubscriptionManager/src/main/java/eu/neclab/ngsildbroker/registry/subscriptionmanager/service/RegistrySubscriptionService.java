@@ -31,7 +31,6 @@ import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
 
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityInfo;
@@ -148,9 +147,10 @@ public class RegistrySubscriptionService {
 							SubscriptionTools.generateNotification(request, data,
 									AppConstants.INTERNAL_NOTIFICATION_REQUEST),
 							AppConstants.INTERNAL_NOTIFICATION_REQUEST).onItem().transform(v -> {
-							NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.CREATE_SUBSCRIPTION_REQUEST,request.getId());
-						result.addSuccess(new CRUDSuccess(null, null, request.getId(), Sets.newHashSet()));
-						 return result;
+								NGSILDOperationResult result = new NGSILDOperationResult(
+										AppConstants.CREATE_SUBSCRIPTION_REQUEST, request.getId());
+								result.addSuccess(new CRUDSuccess(null, null, request.getId(), Sets.newHashSet()));
+								return result;
 							});
 				} catch (Exception e) {
 					logger.error("Failed to send initial notifcation", e);
@@ -311,9 +311,7 @@ public class RegistrySubscriptionService {
 												SerializationTools.notifiedAt_formatter.format(LocalDateTime
 														.ofInstant(Instant.ofEpochMilli(now), ZoneId.of("Z"))));
 									}).onFailure().recoverWithUni(e -> {
-										logger.error(
-												"failed to send notification for subscription " + potentialSub.getId(),
-												e);
+										logger.error("failed to send notification for subscription " + potentialSub, e);
 										long now = System.currentTimeMillis();
 										potentialSub.getSubscription().getNotification().setLastFailedNotification(now);
 										potentialSub.getSubscription().getNotification().setLastNotification(now);
@@ -323,12 +321,12 @@ public class RegistrySubscriptionService {
 														.ofInstant(Instant.ofEpochMilli(now), ZoneId.of("Z"))));
 									});
 						} catch (Exception e) {
-							logger.error("failed to send notification for subscription " + potentialSub.getId(), e);
+							logger.error("failed to send notification for subscription " + potentialSub, e);
 							return Uni.createFrom().voidItem();
 						}
 					});
 				} catch (Exception e) {
-					logger.error("failed to send notification for subscription " + potentialSub.getId(), e);
+					logger.error("failed to send notification for subscription " + potentialSub, e);
 					return Uni.createFrom().voidItem();
 				}
 				break;
@@ -350,7 +348,7 @@ public class RegistrySubscriptionService {
 											SerializationTools.notifiedAt_formatter.format(LocalDateTime
 													.ofInstant(Instant.ofEpochMilli(now), ZoneId.of("Z"))));
 								} else {
-									logger.error("failed to send notification for subscription " + potentialSub.getId()
+									logger.error("failed to send notification for subscription " + potentialSub
 											+ " with status code " + statusCode
 											+ ". Remember there is no redirect following for post due to security considerations");
 									potentialSub.getSubscription().getNotification().setLastFailedNotification(now);
@@ -361,7 +359,7 @@ public class RegistrySubscriptionService {
 													.ofInstant(Instant.ofEpochMilli(now), ZoneId.of("Z"))));
 								}
 							}).onFailure().recoverWithUni(e -> {
-								logger.error("failed to send notification for subscription " + potentialSub.getId(), e);
+								logger.error("failed to send notification for subscription " + potentialSub, e);
 								long now = System.currentTimeMillis();
 								potentialSub.getSubscription().getNotification().setLastFailedNotification(now);
 								potentialSub.getSubscription().getNotification().setLastNotification(now);
@@ -370,7 +368,7 @@ public class RegistrySubscriptionService {
 												LocalDateTime.ofInstant(Instant.ofEpochMilli(now), ZoneId.of("Z"))));
 							});
 				} catch (Exception e) {
-					logger.error("failed to send notification for subscription " + potentialSub.getId(), e);
+					logger.error("failed to send notification for subscription " + potentialSub, e);
 					return Uni.createFrom().voidItem();
 				}
 				break;
@@ -418,7 +416,7 @@ public class RegistrySubscriptionService {
 	@SuppressWarnings("unchecked")
 	private boolean shouldSendOut(SubscriptionRequest potentialSub, Map<String, Object> reg) {
 		Subscription sub = potentialSub.getSubscription();
-		if (sub.getIsActive()==null || !sub.getIsActive() || sub.getExpiresAt() < System.currentTimeMillis()) {
+		if (sub.getIsActive() == null || !sub.getIsActive() || sub.getExpiresAt() < System.currentTimeMillis()) {
 			return false;
 		}
 
@@ -571,19 +569,21 @@ public class RegistrySubscriptionService {
 
 	@SuppressWarnings("unchecked")
 	private boolean checkRegForType(String type, List<Map<String, Object>> information) {
-	if(information!=null){
-		for (Map<String, Object> entry : information) {
-			if (!entry.containsKey(NGSIConstants.NGSI_LD_ENTITIES)) {
-				return true;
-			}
-			List<Map<String, Object>> entities = (List<Map<String, Object>>) entry.get(NGSIConstants.NGSI_LD_ENTITIES);
-			for (Map<String, Object> entity : entities) {
-				if (!entity.containsKey(NGSIConstants.JSON_LD_TYPE)
-						|| ((List<String>) entity.get(NGSIConstants.JSON_LD_TYPE)).contains(type)) {
+		if (information != null) {
+			for (Map<String, Object> entry : information) {
+				if (!entry.containsKey(NGSIConstants.NGSI_LD_ENTITIES)) {
 					return true;
 				}
+				List<Map<String, Object>> entities = (List<Map<String, Object>>) entry
+						.get(NGSIConstants.NGSI_LD_ENTITIES);
+				for (Map<String, Object> entity : entities) {
+					if (!entity.containsKey(NGSIConstants.JSON_LD_TYPE)
+							|| ((List<String>) entity.get(NGSIConstants.JSON_LD_TYPE)).contains(type)) {
+						return true;
+					}
+				}
 			}
-		}}
+		}
 		return false;
 	}
 
@@ -1031,7 +1031,7 @@ public class RegistrySubscriptionService {
 	public Uni<Void> handleInternalSubscription(SubscriptionRequest message) {
 		if (message.getRequestType() == AppConstants.DELETE_SUBSCRIPTION_REQUEST) {
 			tenant2subscriptionId2Subscription.remove(message.getTenant(), message.getId());
-			return  Uni.createFrom().voidItem();
+			return Uni.createFrom().voidItem();
 		}
 		try {
 			message.setSubscription(Subscription.expandSubscription(message.getPayload(), message.getContext(), false));

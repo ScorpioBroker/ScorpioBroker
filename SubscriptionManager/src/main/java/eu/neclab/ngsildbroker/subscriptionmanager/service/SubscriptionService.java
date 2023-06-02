@@ -335,9 +335,7 @@ public class SubscriptionService {
 												SerializationTools.notifiedAt_formatter.format(LocalDateTime
 														.ofInstant(Instant.ofEpochMilli(now), ZoneId.of("Z"))));
 									}).onFailure().recoverWithUni(e -> {
-										logger.error(
-												"failed to send notification for subscription " + potentialSub.getId(),
-												e);
+										logger.error("failed to send notification for subscription " + potentialSub, e);
 										long now = System.currentTimeMillis();
 										potentialSub.getSubscription().getNotification().setLastFailedNotification(now);
 										potentialSub.getSubscription().getNotification().setLastNotification(now);
@@ -347,12 +345,12 @@ public class SubscriptionService {
 														.ofInstant(Instant.ofEpochMilli(now), ZoneId.of("Z"))));
 									});
 						} catch (Exception e) {
-							logger.error("failed to send notification for subscription " + potentialSub.getId(), e);
+							logger.error("failed to send notification for subscription " + potentialSub, e);
 							return Uni.createFrom().voidItem();
 						}
 					});
 				} catch (Exception e) {
-					logger.error("failed to send notification for subscription " + potentialSub.getId(), e);
+					logger.error("failed to send notification for subscription " + potentialSub, e);
 					return Uni.createFrom().voidItem();
 				}
 			}
@@ -384,7 +382,7 @@ public class SubscriptionService {
 													.ofInstant(Instant.ofEpochMilli(now), ZoneId.of("Z"))));
 								}
 							}).onFailure().recoverWithUni(e -> {
-								logger.error("failed to send notification for subscription " + potentialSub.getId(), e);
+								logger.error("failed to send notification for subscription " + potentialSub, e);
 								long now = System.currentTimeMillis();
 								potentialSub.getSubscription().getNotification().setLastFailedNotification(now);
 								potentialSub.getSubscription().getNotification().setLastNotification(now);
@@ -393,7 +391,7 @@ public class SubscriptionService {
 												LocalDateTime.ofInstant(Instant.ofEpochMilli(now), ZoneId.of("Z"))));
 							});
 				} catch (Exception e) {
-					logger.error("failed to send notification for subscription " + potentialSub.getId(), e);
+					logger.error("failed to send notification for subscription " + potentialSub, e);
 					return Uni.createFrom().voidItem();
 				}
 			}
@@ -614,10 +612,13 @@ public class SubscriptionService {
 		Subscription sub = request.getSubscription();
 		List<Uni<List<Map<String, Object>>>> unis = Lists.newArrayList();
 		for (EntityInfo entityInfo : sub.getEntities()) {
-			unis.add(localEntityService.query(request.getTenant(), entityInfo.getId().toString(), entityInfo.getType(),
+			unis.add(localEntityService.query(request.getTenant(),
+					entityInfo.getId() == null ? null : entityInfo.getId().toString(), entityInfo.getType(),
 					entityInfo.getIdPattern(), StringUtils.join(sub.getAttributeNames(), ","), sub.getLdQueryString(),
-					sub.getCsfQueryString(), sub.getLdGeoQuery().getGeometry(), sub.getLdGeoQuery().getGeorel(),
-					sub.getLdGeoQuery().getCoordinates(), sub.getLdGeoQuery().getGeoproperty(), null, null,
+					sub.getCsfQueryString(), sub.getLdGeoQuery() == null ? null : sub.getLdGeoQuery().getGeometry(),
+					sub.getLdGeoQuery() == null ? null : sub.getLdGeoQuery().getGeorel(),
+					sub.getLdGeoQuery() == null ? null : sub.getLdGeoQuery().getCoordinates(),
+					sub.getLdGeoQuery() == null ? null : sub.getLdGeoQuery().getGeoproperty(), null, null,
 					sub.getScopeQueryString(), false, null, null, true));
 		}
 

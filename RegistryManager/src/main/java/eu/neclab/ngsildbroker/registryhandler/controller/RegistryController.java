@@ -120,10 +120,10 @@ public class RegistryController {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 		}
 
-		return csourceService
-				.queryRegistrations(HttpUtils.getTenant(request), Sets.newHashSet(ids.split(",")), typeQueryTerm,
-						idPattern, attrsQuery, csfQueryTerm, geoQueryTerm, scopeQueryTerm, limit, offset, count)
-				.onItem().transform(queryResult -> {
+		return csourceService.queryRegistrations(HttpUtils.getTenant(request),
+				ids == null ? null : Sets.newHashSet(ids.split(",")), typeQueryTerm, idPattern, attrsQuery,
+				csfQueryTerm, geoQueryTerm, scopeQueryTerm, actualLimit, offset, count).onItem()
+				.transform(queryResult -> {
 
 					return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty, acceptHeader,
 							count, actualLimit, null, context);
