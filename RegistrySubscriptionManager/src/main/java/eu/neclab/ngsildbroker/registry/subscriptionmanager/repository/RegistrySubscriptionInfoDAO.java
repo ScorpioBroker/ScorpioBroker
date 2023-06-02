@@ -146,7 +146,7 @@ public class RegistrySubscriptionInfoDAO {
 				rows.forEach(row -> {
 					unis.add(clientManager.getClient(row.getString(0), false).onItem().transformToUni(tenantClient -> {
 						return tenantClient.preparedQuery(
-								"SELECT " + row.getString(0) + ", subscription, context FROM registry_subscriptions")
+								"SELECT '" + row.getString(0) + "', subscription, context FROM registry_subscriptions")
 								.execute();
 					}));
 				});
