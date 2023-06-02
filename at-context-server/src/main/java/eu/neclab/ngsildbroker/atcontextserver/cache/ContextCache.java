@@ -41,11 +41,8 @@ public class ContextCache {
         try {
             RemoteDocument rd = jsonLdOptions.getDocumentLoader().loadDocument(uri);
             if (rd.getDocument() instanceof Map<?, ?> map && map.containsKey(NGSIConstants.JSON_LD_CONTEXT)) {
-                Map<String, Object> contextBody = (Map<String, Object>) map.get(NGSIConstants.JSON_LD_CONTEXT);
                 Map<String, Object> finalContext = new HashMap<>();
-                Map<String, Object> tempMap = new HashMap<>();
-                tempMap.put(NGSIConstants.JSON_LD_CONTEXT, contextBody);
-                finalContext.put(NGSIConstants.BODY, tempMap);
+                finalContext.put(NGSIConstants.BODY, Map.of(NGSIConstants.JSON_LD_CONTEXT,map.get(NGSIConstants.JSON_LD_CONTEXT)));
                 finalContext.put(NGSIConstants.KIND, NGSIConstants.CACHED);
                 finalContext.put(NGSIConstants.CREATEDAT, new Timestamp(System.currentTimeMillis()));
                 finalContext.put(NGSIConstants.URL, uri);
