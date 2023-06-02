@@ -32,4 +32,16 @@ public interface LocalEntityService {
 	Uni<List<Map<String, Object>>> getAllByIds(@HeaderParam(NGSIConstants.TENANT_HEADER) String tenant,
 			@QueryParam("id") String ids, @QueryParam("doNotCompact") boolean doNotCompact);
 
+	@GET
+	@Path("/")
+	Uni<List<Map<String, Object>>> query(@HeaderParam(NGSIConstants.TENANT_HEADER) String tenant,
+			@QueryParam("id") String id, @QueryParam("type") String typeQuery,
+			@QueryParam("idPattern") String idPattern, @QueryParam("attrs") String attrs, @QueryParam("q") String q,
+			@QueryParam("csf") String csf, @QueryParam("geometry") String geometry, @QueryParam("georel") String georel,
+			@QueryParam("coordinates") String coordinates, @QueryParam("geoproperty") String geoproperty,
+			@QueryParam("geometryProperty") String geometryProperty, @QueryParam("lang") String lang,
+			@QueryParam("scopeQ") String scopeQ, @QueryParam("localOnly") boolean localOnly,
+			@QueryParam("options") String options, @QueryParam("limit") Integer limit,
+			@QueryParam("doNotCompact") boolean doNotCompact);
+
 }
