@@ -1183,8 +1183,8 @@ public class QueryService {
 	private Uni<Tuple2<SqlConnection, EntityMap>> getAndStoreEntityIdList(String tenant, String[] id, String idPattern,
 			String qToken, TypeQueryTerm typeQuery, AttrsQueryTerm attrsQuery, GeoQueryTerm geoQuery, QQueryTerm qQuery,
 			ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, Context context) {
-		Uni<List<String>> localIds = queryDAO.queryForEntityIds(tenant, id, typeQuery, idPattern, attrsQuery, qQuery,
-				geoQuery, scopeQuery, context);
+		Uni<Tuple2<SqlConnection, List<String>>> localIds = queryDAO.queryForEntityIds(tenant, id, typeQuery, idPattern,
+				attrsQuery, qQuery, geoQuery, scopeQuery, context);
 		List<QueryRemoteHost> remoteHost2Query = getRemoteQueries(tenant, id, typeQuery, idPattern, attrsQuery, qQuery,
 				geoQuery, scopeQuery, langQuery, context);
 		Uni<Map<QueryRemoteHost, List<String>>> remoteIds;
@@ -1254,9 +1254,9 @@ public class QueryService {
 
 		return Uni.combine().all().unis(localIds, remoteIds).asTuple().onItem().transform(t -> {
 			EntityMap result = new EntityMap();
-			List<String> local = t.getItem1();
+			Tuple2<SqlConnection, List<String>> local = t.getItem1();
 			Map<QueryRemoteHost, List<String>> remote = t.getItem2();
-			for (String entry : local) {
+			for (String entry : local.getItem2()) {
 				result.getEntry(entry).getRemoteHosts()
 						.add(new QueryRemoteHost(null, null, null, null, false, false, -1, null, false, false, null));
 			}
@@ -1265,10 +1265,12 @@ public class QueryService {
 					result.getEntry(entityId).getRemoteHosts().add(entry.getKey());
 				}
 			}
-			return result;
-		}).onItem().transformToUni(entityMap -> {
-			return queryDAO.storeEntityMap(tenant, qToken, entityMap).onItem().transform(conn -> {
-				return Tuple2.of(conn, entityMap);
+			return Tuple2.of(result, local.getItem1());
+		}).onItem().transformToUni(tuple -> {
+			EntityMap entityMap = tuple.getItem1();
+			SqlConnection conn = tuple.getItem2();
+			return queryDAO.storeEntityMap(conn, tenant, qToken, entityMap).onItem().transform(conn2 -> {
+				return Tuple2.of(conn2, entityMap);
 			});
 		});
 

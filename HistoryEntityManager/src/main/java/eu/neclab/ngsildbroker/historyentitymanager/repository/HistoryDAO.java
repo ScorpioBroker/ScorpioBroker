@@ -113,9 +113,9 @@ public class HistoryDAO {
 					return conn
 							.preparedQuery("INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
 									+ " (temporalentity_id, attributeid, data) VALUES ($1, $2, $3::jsonb)")
-							.executeBatch(batch).onItem().transformToUni(t -> conn.close().onItem().transform(v -> {
-								return !rows.iterator().next().getBoolean(0);
-							}));
+							.executeBatch(batch).eventually(() -> conn.close()).onItem()
+							.transform(rows1 -> !rows.iterator().next().getBoolean(0));
+
 				});
 			});
 		});
@@ -192,9 +192,7 @@ public class HistoryDAO {
 									+ " (temporalentity_id, attributeid, data) VALUES ($1, $2, $3::jsonb)")
 							.executeBatch(batchAttribs);
 
-				}).onItem().transformToUni(t -> {
-					return t.onItem().transformToUni(x -> conn.close());
-				});
+				}).eventually(() -> conn.close()).onItem().transformToUni(t -> Uni.createFrom().voidItem());
 			});
 		});
 	}
@@ -276,8 +274,8 @@ public class HistoryDAO {
 					return conn
 							.preparedQuery("INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
 									+ " (temporalentity_id, attributeid, data) VALUES ($1, $2, $3::jsonb)")
-							.executeBatch(batch).onItem().transformToUni(t -> conn.close());
-				});
+							.executeBatch(batch);
+				}).eventually(() -> conn.close()).onItem().transformToUni(t -> Uni.createFrom().voidItem());
 
 			});
 		});
@@ -307,7 +305,8 @@ public class HistoryDAO {
 											DBUtil.getLocalDateTime(
 													request.getPayload().get(NGSIConstants.NGSI_LD_MODIFIED_AT)),
 											request.getId()))
-									.onItem().transformToUni(t -> conn.close());
+									.eventually(() -> conn.close()).onItem()
+									.transformToUni(t -> Uni.createFrom().voidItem());
 						});
 
 			});
@@ -353,9 +352,8 @@ public class HistoryDAO {
 							.preparedQuery("UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY
 									+ " SET modifiedat = $1 WHERE id = $2")
 							.execute(Tuple.of(LocalDateTime.ofInstant(Instant.ofEpochMilli(request.getSendTimestamp()),
-									ZoneId.of("Z")), request.getId()))
-							.onItem().transformToUni(t -> conn.close());
-				});
+									ZoneId.of("Z")), request.getId()));
+				}).eventually(() -> conn.close()).onItem().transformToUni(t -> Uni.createFrom().voidItem());
 			});
 		});
 	}
@@ -382,9 +380,8 @@ public class HistoryDAO {
 									.execute(Tuple.of(
 											LocalDateTime.ofInstant(Instant.ofEpochMilli(request.getSendTimestamp()),
 													ZoneId.of("Z")),
-											request.getId()))
-									.onItem().transformToUni(t -> Uni.createFrom().voidItem());
-						});
+											request.getId()));
+						}).eventually(() -> conn.close()).onItem().transformToUni(t -> Uni.createFrom().voidItem());
 			});
 		});
 	}
@@ -425,9 +422,8 @@ public class HistoryDAO {
 							return conn
 									.preparedQuery("UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY
 											+ " SET modifiedat = $1 WHERE id = $2")
-									.execute(Tuple.of(now, request.getId())).onItem()
-									.transformToUni(t -> Uni.createFrom().voidItem());
-						});
+									.execute(Tuple.of(now, request.getId()));
+						}).eventually(() -> conn.close()).onItem().transformToUni(t -> Uni.createFrom().voidItem());
 			});
 		});
 	}
