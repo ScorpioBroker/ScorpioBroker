@@ -1,20 +1,20 @@
 package eu.neclab.ngsildbroker.subscriptionmanager.service;
 
-import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import io.quarkus.rest.client.reactive.ClientQueryParam;
-import io.smallrye.mutiny.Uni;
-import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
-import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
-import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+import java.util.List;
+import java.util.Map;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
-import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
-import java.util.List;
-import java.util.Map;
+
+import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import io.quarkus.rest.client.reactive.ClientQueryParam;
+import io.smallrye.mutiny.Uni;
 
 @Path("/ngsi-ld/v1/entities")
 @RegisterRestClient(configKey = "entity-service")

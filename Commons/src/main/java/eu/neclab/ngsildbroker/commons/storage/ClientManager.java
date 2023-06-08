@@ -92,13 +92,13 @@ public class ClientManager {
 
 	public Uni<String> determineTargetDataSource(String tenantidvalue, boolean createDB) {
 		return createDataSourceForTenantId(tenantidvalue, createDB).onItem().transform(tenantDataSource -> {
-
 			flywayMigrate(tenantDataSource.getItem1());
+			tenantDataSource.getItem1().close();
 			return tenantDataSource.getItem2();
 		});
 	}
 
-	private Uni<Tuple2<DataSource, String>> createDataSourceForTenantId(String tenantidvalue, boolean createDB) {
+	private Uni<Tuple2<AgroalDataSource, String>> createDataSourceForTenantId(String tenantidvalue, boolean createDB) {
 		return findDataBaseNameByTenantId(tenantidvalue, createDB).onItem()
 				.transform(Unchecked.function(tenantDatabaseName -> {
 					// TODO this needs to be from the config not hardcoded!!!

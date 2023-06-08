@@ -1,5 +1,29 @@
 package eu.neclab.ngsildbroker.subscriptionmanager.service;
 
+import java.net.URI;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+import org.apache.commons.lang3.StringUtils;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.rest.client.inject.RestClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdConsts;
 import com.github.jsonldjava.core.JsonLdProcessor;
@@ -11,6 +35,7 @@ import com.google.common.collect.Sets;
 import com.google.common.collect.Table;
 import com.google.common.collect.Table.Cell;
 import com.google.common.net.HttpHeaders;
+
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityInfo;
@@ -36,7 +61,6 @@ import eu.neclab.ngsildbroker.subscriptionmanager.repository.SubscriptionInfoDAO
 import io.netty.handler.codec.mqtt.MqttQoS;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.tuples.Tuple3;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.smallrye.reactive.messaging.annotations.Broadcast;
 import io.vertx.core.json.JsonObject;
@@ -46,29 +70,7 @@ import io.vertx.mutiny.ext.web.client.WebClient;
 import io.vertx.mutiny.mqtt.MqttClient;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowIterator;
-
-import org.apache.commons.lang3.StringUtils;
-import org.eclipse.microprofile.reactive.messaging.Channel;
-import org.eclipse.microprofile.rest.client.inject.RestClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.net.URI;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import io.vertx.pgclient.PgException;
 
 @Singleton
 public class SubscriptionService {
@@ -89,6 +91,11 @@ public class SubscriptionService {
 	@RestClient
 	@Inject
 	LocalEntityService localEntityService;
+
+	@RestClient
+	@Inject
+	LocalContextService localContextService;
+
 	@Inject
 	MicroServiceUtils microServiceUtils;
 	private Table<String, String, SubscriptionRequest> tenant2subscriptionId2Subscription = HashBasedTable.create();
@@ -139,52 +146,67 @@ public class SubscriptionService {
 			return Uni.createFrom().failure(e);
 		}
 		SubscriptionTools.setInitTimesSentAndFailed(request);
-		return subDAO.createSubscription(request).onItem().transformToUni(t -> {
-			if (isIntervalSub(request)) {
-				this.tenant2subscriptionId2IntervalSubscription.put(request.getTenant(), request.getId(), request);
-			} else {
-				tenant2subscriptionId2Subscription.put(tenant, request.getId(), request);
-			}
-			subscriptionId2RequestGlobal.put(request.getId(), request);
-			return internalSubEmitter.send(request).onItem().transform(v -> {
-				NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.CREATE_SUBSCRIPTION_REQUEST,
-						request.getId());
-				result.addSuccess(new CRUDSuccess(null, null, request.getId(), Sets.newHashSet()));
-				return result;
-			});
-		}).onFailure().recoverWithUni(e -> {
-			// TODO sql check
-			return Uni.createFrom().failure(new ResponseException(ErrorType.AlreadyExists,
-					"Subscription with id " + request.getId() + " exists"));
-		});
+		return localContextService.createImplicitly(tenant, request.getContext().serialize()).onItem()
+				.transformToUni(contextId -> {
+					return subDAO.createSubscription(request, contextId).onItem().transformToUni(t -> {
+						if (isIntervalSub(request)) {
+							this.tenant2subscriptionId2IntervalSubscription.put(request.getTenant(), request.getId(),
+									request);
+						} else {
+							tenant2subscriptionId2Subscription.put(tenant, request.getId(), request);
+						}
+						subscriptionId2RequestGlobal.put(request.getId(), request);
+						return internalSubEmitter.send(request).onItem().transform(v -> {
+							NGSILDOperationResult result = new NGSILDOperationResult(
+									AppConstants.CREATE_SUBSCRIPTION_REQUEST, request.getId());
+							result.addSuccess(new CRUDSuccess(null, null, request.getId(), Sets.newHashSet()));
+							return result;
+						});
+					}).onFailure().recoverWithUni(e -> {
+						if (e instanceof PgException
+								&& ((PgException) e).getCode().equals(AppConstants.SQL_ALREADY_EXISTS)) {
+							return Uni.createFrom().failure(new ResponseException(ErrorType.AlreadyExists,
+									"Subscription with id " + request.getId() + " exists"));
+						} else {
+							return Uni.createFrom()
+									.failure(new ResponseException(ErrorType.InternalError, e.getMessage()));
+						}
+
+					});
+				});
 	}
 
 	public Uni<NGSILDOperationResult> updateSubscription(String tenant, String subscriptionId,
 			Map<String, Object> update, Context context) {
 		UpdateSubscriptionRequest request = new UpdateSubscriptionRequest(tenant, subscriptionId, update, context);
-		return subDAO.updateSubscription(request).onItem().transformToUni(tup -> {
-			if (tup.size() == 0) {
-				return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound, "subscription not found"));
-			}
-			SubscriptionRequest updatedRequest;
-			try {
-				updatedRequest = new SubscriptionRequest(tenant, tup.getItem1(),
-						new Context().parse(tup.getItem2(), false));
-			} catch (Exception e) {
-				return Uni.createFrom().failure(e);
-			}
+		return localContextService.createImplicitly(tenant, request.getContext().serialize()).onItem()
+				.transformToUni(contextId -> {
+					return subDAO.updateSubscription(request, contextId).onItem().transformToUni(tup -> {
+						if (tup.size() == 0) {
+							return Uni.createFrom()
+									.failure(new ResponseException(ErrorType.NotFound, "subscription not found"));
+						}
+						SubscriptionRequest updatedRequest;
+						try {
+							updatedRequest = new SubscriptionRequest(tenant, tup.getItem1(),
+									new Context().parse(tup.getItem2(), false));
+						} catch (Exception e) {
+							return Uni.createFrom().failure(e);
+						}
 
-			if (isIntervalSub(updatedRequest)) {
-				tenant2subscriptionId2IntervalSubscription.put(tenant, updatedRequest.getId(), updatedRequest);
-				tenant2subscriptionId2Subscription.remove(tenant, updatedRequest.getId());
-			} else {
-				tenant2subscriptionId2Subscription.put(tenant, updatedRequest.getId(), updatedRequest);
-				tenant2subscriptionId2IntervalSubscription.remove(tenant, updatedRequest.getId());
-			}
-			return internalSubEmitter.send(updatedRequest).onItem().transform(v -> {
-				return new NGSILDOperationResult(AppConstants.UPDATE_SUBSCRIPTION_REQUEST, request.getId());
-			});
-		});
+						if (isIntervalSub(updatedRequest)) {
+							tenant2subscriptionId2IntervalSubscription.put(tenant, updatedRequest.getId(),
+									updatedRequest);
+							tenant2subscriptionId2Subscription.remove(tenant, updatedRequest.getId());
+						} else {
+							tenant2subscriptionId2Subscription.put(tenant, updatedRequest.getId(), updatedRequest);
+							tenant2subscriptionId2IntervalSubscription.remove(tenant, updatedRequest.getId());
+						}
+						return internalSubEmitter.send(updatedRequest).onItem().transform(v -> {
+							return new NGSILDOperationResult(AppConstants.UPDATE_SUBSCRIPTION_REQUEST, request.getId());
+						});
+					});
+				});
 	}
 
 	public Uni<NGSILDOperationResult> deleteSubscription(String tenant, String subscriptionId) {

@@ -166,7 +166,7 @@ public class SubscriptionTools {
 		Map<String, Object> notification = Maps.newLinkedHashMap();
 		notification.put(NGSIConstants.QUERY_PARAMETER_ID,
 				"csourcenotification:" + UUID.randomUUID().getLeastSignificantBits());
-		notification.put(NGSIConstants.QUERY_PARAMETER_TYPE, NGSIConstants.CSOURCE_NOTIFICATION);
+		notification.put(NGSIConstants.QUERY_PARAMETER_TYPE, NGSIConstants.NOTIFICATION);
 		notification.put(NGSIConstants.NGSI_LD_SUBSCRIPTION_ID_SHORT, potentialSub.getId());
 		notification.put(NGSIConstants.NGSI_LD_NOTIFIED_AT_SHORT, SerializationTools.notifiedAt_formatter
 				.format(LocalDateTime.ofInstant(Instant.ofEpochMilli(System.currentTimeMillis()), ZoneId.of("Z"))));

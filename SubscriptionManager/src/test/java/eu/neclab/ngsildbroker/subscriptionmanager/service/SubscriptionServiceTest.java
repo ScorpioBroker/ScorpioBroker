@@ -87,8 +87,8 @@ public class SubscriptionServiceTest {
 	public void createSubscriptionTest() {
 
 		RowSet<Row> rowSetMock = mock(RowSet.class);
-		Uni<RowSet<Row>> uniRowsetMock = Uni.createFrom().item(rowSetMock);
-		when(subDAO.createSubscription(any())).thenReturn(uniRowsetMock);
+
+		when(subDAO.createSubscription(any(), any())).thenReturn(Uni.createFrom().voidItem());
 
 		Uni<Void> uniEmiiterResponse = Uni.createFrom().nullItem();
 		when(internalSubEmitter.send(any(SubscriptionRequest.class))).thenReturn(uniEmiiterResponse);
@@ -99,7 +99,7 @@ public class SubscriptionServiceTest {
 		assertEquals(subscriptionId, result.getEntityId());
 		assertEquals(1, result.getSuccesses().size());
 		assertEquals(0, result.getFailures().size());
-		verify(subDAO, times(1)).createSubscription(any());
+		verify(subDAO, times(1)).createSubscription(any(), any());
 
 	}
 
@@ -107,7 +107,7 @@ public class SubscriptionServiceTest {
 	public void createSubscriptionExistTest() {
 
 		PgException sqlException = new PgException("duplicate key value violates unique constraint", "", "23505", "");
-		when(subDAO.createSubscription(any())).thenReturn(Uni.createFrom().failure(sqlException));
+		when(subDAO.createSubscription(any(), any())).thenReturn(Uni.createFrom().failure(sqlException));
 
 		Uni<NGSILDOperationResult> uniResult = subscriptionService.createSubscription(tenant, resolved, context);
 
@@ -116,7 +116,7 @@ public class SubscriptionServiceTest {
 
 		assertEquals(409, responseException.getErrorCode());
 		assertEquals("Subscription with id " + subscriptionId + " exists", responseException.getDetail());
-		verify(subDAO, times(1)).createSubscription(any());
+		verify(subDAO, times(1)).createSubscription(any(), any());
 
 	}
 
@@ -128,7 +128,7 @@ public class SubscriptionServiceTest {
 		Mockito.when(tuple2.size()).thenReturn(0);
 
 		Uni<Tuple2<Map<String, Object>, Object>> uniRowsetMock = Uni.createFrom().item(tuple2);
-		when(subDAO.updateSubscription(any())).thenReturn(uniRowsetMock);
+		when(subDAO.updateSubscription(any(), any())).thenReturn(uniRowsetMock);
 
 		Uni<Void> uniEmiiterResponse = Uni.createFrom().nullItem();
 		when(internalSubEmitter.send(any(SubscriptionRequest.class))).thenReturn(uniEmiiterResponse);
@@ -141,7 +141,7 @@ public class SubscriptionServiceTest {
 
 		assertEquals(404, responseException.getErrorCode());
 		assertEquals("subscription not found", responseException.getDetail());
-		verify(subDAO, times(1)).updateSubscription(any());
+		verify(subDAO, times(1)).updateSubscription(any(), any());
 
 	}
 
@@ -259,11 +259,7 @@ public class SubscriptionServiceTest {
 		Uni<Void> resultUni = subscriptionService.remoteNotify(notificationId, resolved, context);
 		resultUni.await().indefinitely();
 
-		verify(localEntityService, times(0)).getEntityById(any(), any(),any());
+		verify(localEntityService, times(0)).getEntityById(any(), any(), any());
 	}
 
 }
-
-
-
-
