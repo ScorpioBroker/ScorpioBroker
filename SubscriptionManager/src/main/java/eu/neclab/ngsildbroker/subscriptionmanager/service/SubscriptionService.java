@@ -323,7 +323,7 @@ public class SubscriptionService {
 		if (!entityToBeSent.isEmpty()) {
 			Map<String, Object> notification;
 			try {
-				notification = SubscriptionTools.generateNotification(potentialSub, entityToBeSent, triggerReason);
+				notification = SubscriptionTools.generateNotification(potentialSub, entityToBeSent);
 			} catch (Exception e) {
 				logger.error("Failed to generate notification", e);
 				return Uni.createFrom().voidItem();
@@ -385,7 +385,7 @@ public class SubscriptionService {
 							.onFailure().retry().atMost(3).onItem().transformToUni(result -> {
 								int statusCode = result.statusCode();
 								long now = System.currentTimeMillis();
-								if (statusCode > 200 && statusCode < 300) {
+								if (statusCode >= 200 && statusCode < 300) {
 									potentialSub.getSubscription().getNotification().setLastSuccessfulNotification(now);
 									potentialSub.getSubscription().getNotification().setLastNotification(now);
 									return subDAO.updateNotificationSuccess(potentialSub.getTenant(),
@@ -612,9 +612,7 @@ public class SubscriptionService {
 						return Uni.createFrom().voidItem();
 					}
 					try {
-						return sendNotification(request,
-								SubscriptionTools.generateNotification(request, queryResult,
-										AppConstants.INTERVAL_NOTIFICATION_REQUEST),
+						return sendNotification(request, Map.of(JsonLdConsts.GRAPH, queryResult),
 								AppConstants.INTERVAL_NOTIFICATION_REQUEST);
 					} catch (Exception e) {
 						logger.error("Failed to send initial notifcation", e);

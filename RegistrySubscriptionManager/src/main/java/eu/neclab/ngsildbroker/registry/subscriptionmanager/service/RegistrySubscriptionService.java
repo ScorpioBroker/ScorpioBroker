@@ -144,7 +144,7 @@ public class RegistrySubscriptionService {
 				});
 				try {
 					return sendNotification(request,
-							SubscriptionTools.generateNotification(request, data,
+							SubscriptionTools.generateCsourceNotification(request, data,
 									AppConstants.INTERNAL_NOTIFICATION_REQUEST),
 							AppConstants.INTERNAL_NOTIFICATION_REQUEST).onItem().transform(v -> {
 								NGSILDOperationResult result = new NGSILDOperationResult(
@@ -272,7 +272,7 @@ public class RegistrySubscriptionService {
 		if (shouldSendOut(potentialSub, reg)) {
 			Map<String, Object> notification;
 			try {
-				notification = SubscriptionTools.generateNotification(potentialSub, reg, triggerReason);
+				notification = SubscriptionTools.generateCsourceNotification(potentialSub, reg, triggerReason);
 			} catch (Exception e) {
 				logger.error("Failed to generate notification", e);
 				return Uni.createFrom().voidItem();
@@ -1064,7 +1064,7 @@ public class RegistrySubscriptionService {
 				try {
 					return internalNotificationSender
 							.send(new InternalNotification(message.getTenant(), message.getId(), SubscriptionTools
-									.generateNotification(message, data, AppConstants.INTERNAL_NOTIFICATION_REQUEST)));
+									.generateCsourceNotification(message, data, AppConstants.INTERNAL_NOTIFICATION_REQUEST)));
 				} catch (Exception e) {
 					logger.error("Failed to send internal notification for sub " + message.getId(), e);
 					return Uni.createFrom().voidItem();
@@ -1133,7 +1133,7 @@ public class RegistrySubscriptionService {
 					});
 					try {
 						return sendNotification(request,
-								SubscriptionTools.generateNotification(request, data,
+								SubscriptionTools.generateCsourceNotification(request, data,
 										AppConstants.INTERNAL_NOTIFICATION_REQUEST),
 								AppConstants.INTERVAL_NOTIFICATION_REQUEST);
 					} catch (Exception e) {

@@ -1,6 +1,7 @@
 package eu.neclab.ngsildbroker.commons.tools;
 
 import com.github.jsonldjava.core.JsonLdConsts;
+import com.github.jsonldjava.core.JsonLdError;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
@@ -161,8 +162,25 @@ public class SubscriptionTools {
 
 	}
 
-	public static Map<String, Object> generateNotification(SubscriptionRequest potentialSub, Object reg,
-			int triggerReason) throws Exception {
+	public static Map<String, Object> generateNotification(SubscriptionRequest potentialSub, Object entity)
+			throws JsonLdError, ResponseException {
+		Map<String, Object> notification = Maps.newLinkedHashMap();
+		notification.put(NGSIConstants.QUERY_PARAMETER_ID,
+				"notification:" + UUID.randomUUID().getLeastSignificantBits());
+		notification.put(NGSIConstants.QUERY_PARAMETER_TYPE, NGSIConstants.NOTIFICATION);
+		notification.put(NGSIConstants.NGSI_LD_SUBSCRIPTION_ID_SHORT, potentialSub.getId());
+		notification.put(NGSIConstants.NGSI_LD_NOTIFIED_AT_SHORT, SerializationTools.notifiedAt_formatter
+				.format(LocalDateTime.ofInstant(Instant.ofEpochMilli(System.currentTimeMillis()), ZoneId.of("Z"))));
+		Map<String, Object> compacted = JsonLdProcessor.compact(entity, null, potentialSub.getContext(), HttpUtils.opts,
+				-1);
+		notification.put(NGSIConstants.NGSI_LD_DATA_SHORT,
+				compacted.getOrDefault(JsonLdConsts.GRAPH, List.of(compacted)));
+
+		return notification;
+	}
+
+	public static Map<String, Object> generateCsourceNotification(SubscriptionRequest potentialSub, Object reg,
+			int triggerReason) throws JsonLdError, ResponseException {
 		Map<String, Object> notification = Maps.newLinkedHashMap();
 		notification.put(NGSIConstants.QUERY_PARAMETER_ID,
 				"csourcenotification:" + UUID.randomUUID().getLeastSignificantBits());
@@ -172,7 +190,8 @@ public class SubscriptionTools {
 				.format(LocalDateTime.ofInstant(Instant.ofEpochMilli(System.currentTimeMillis()), ZoneId.of("Z"))));
 		Map<String, Object> compacted = JsonLdProcessor.compact(reg, null, potentialSub.getContext(), HttpUtils.opts,
 				-1);
-		notification.put(NGSIConstants.NGSI_LD_DATA_SHORT, compacted.getOrDefault(JsonLdConsts.GRAPH, List.of(compacted)));
+		notification.put(NGSIConstants.NGSI_LD_DATA_SHORT,
+				compacted.getOrDefault(JsonLdConsts.GRAPH, List.of(compacted)));
 		notification.put(NGSIConstants.NGSI_LD_TRIGGER_REASON_SHORT, HttpUtils.getTriggerReason(triggerReason));
 		return notification;
 	}

@@ -23,11 +23,13 @@ public abstract class HistoryMessagingBase {
 	public Uni<Void> baseHandleEntity(BaseRequest message) {
 		logger.debug("history manager got called for entity: " + message.getId());
 		return historyService.handleInternalRequest(message);
+		//return Uni.createFrom().voidItem();
 	}
 
 	public Uni<Void> baseHandleBatch(BatchRequest message) {
 		logger.debug("history manager batch handling got called");
 		return historyService.handleInternalBatchRequest(message);
+		//return Uni.createFrom().voidItem();
 	}
 	
 	public Uni<Void> baseHandleCsource(BaseRequest message) {
