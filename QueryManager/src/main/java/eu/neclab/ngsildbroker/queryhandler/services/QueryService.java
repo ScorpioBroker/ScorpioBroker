@@ -62,7 +62,6 @@ import io.vertx.mutiny.ext.web.client.WebClient;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowIterator;
 import io.vertx.mutiny.sqlclient.RowSet;
-import io.vertx.mutiny.sqlclient.SqlConnection;
 
 @ApplicationScoped
 public class QueryService {
@@ -108,28 +107,29 @@ public class QueryService {
 		}
 		if (!tokenProvided) {
 			return getAndStoreEntityIdList(tenant, id, idPattern, qToken, typeQuery, attrsQuery, geoQuery, qQuery,
-					scopeQuery, langQuery, context).onItem().transformToUni(t -> {
-						SqlConnection conn = t.getItem1();
+					scopeQuery, langQuery, limit, offSet, context).onItem().transformToUni(t -> {
+						Map<String, Map<String, Object>> localResults = t.getItem1();
 						EntityMap entityMap = t.getItem2();
 						List<EntityMapEntry> resultEntityMap = entityMap.getSubMap(offSet, limit + offSet);
 						Long resultCount = (long) entityMap.size();
-						return handleEntityMap(resultCount, resultEntityMap, attrsQuery, conn, count, limit, offSet,
-								qToken);
+						return handleEntityMap(resultCount, resultEntityMap, attrsQuery, localResults, count, limit,
+								offSet, qToken);
 					});
 		} else {
 			return queryDAO.getEntityMap(tenant, qToken, limit, offSet, count).onItem().transformToUni(t -> {
-				SqlConnection conn = t.getItem1();
-				Long resultCount = t.getItem2();
-				EntityMap entityMap = t.getItem3();
-				return handleEntityMap(resultCount, entityMap.getEntityList(), attrsQuery, conn, count, limit, offSet,
-						qToken);
+				Long resultCount = t.getItem1();
+				EntityMap entityMap = t.getItem2();
+				Map<String, Map<String, Object>> localResults = t.getItem3();
+				return handleEntityMap(resultCount, entityMap.getEntityList(), attrsQuery, localResults, count, limit,
+						offSet, qToken);
 
 			});
 		}
 	}
 
 	private Uni<QueryResult> handleEntityMap(Long resultCount, List<EntityMapEntry> resultEntityMap,
-			AttrsQueryTerm attrsQuery, SqlConnection conn, boolean count, int limit, int offSet, String qToken) {
+			AttrsQueryTerm attrsQuery, Map<String, Map<String, Object>> localResults, boolean count, int limit,
+			int offSet, String qToken) {
 		Map<QueryRemoteHost, List<String>> remoteHost2EntityIds = Maps.newHashMap();
 		// has to be linked. We want to keep order here
 		Map<String, Map<String, Map<String, Map<String, Object>>>> entityId2AttrName2DatasetId2AttrValue = Maps
@@ -150,7 +150,8 @@ public class QueryService {
 		for (Entry<QueryRemoteHost, List<String>> entry : remoteHost2EntityIds.entrySet()) {
 			QueryRemoteHost remoteHost = entry.getKey();
 			if (remoteHost.isLocal()) {
-				unis.add(queryDAO.getEntities(conn, entry.getValue(), attrsQuery));
+				// Already here now
+				// unis.add(queryDAO.getEntities(conn, entry.getValue(), attrsQuery));
 			} else {
 				unis.add(webClient
 						.get(remoteHost.host() + "/" + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT
@@ -173,6 +174,9 @@ public class QueryService {
 							return result;
 						}));
 			}
+		}
+		if (!localResults.isEmpty()) {
+			unis.add(Uni.createFrom().item(localResults));
 		}
 
 		if (unis.isEmpty()) {
@@ -1167,24 +1171,25 @@ public class QueryService {
 			String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQueryTerm, GeoQueryTerm geoQueryTerm,
 			ScopeQueryTerm scopeQueryTerm, LanguageQueryTerm queryTerm, Context context) {
 		return getAndStoreEntityIdList(tenant, ids, idPattern, idPattern, typeQueryTerm, attrsQuery, geoQueryTerm,
-				qQueryTerm, scopeQueryTerm, queryTerm, context).onItem().transformToUni(t -> {
-					SqlConnection conn = t.getItem1();
-					return conn.close().onItem().transform(v -> {
-						List<String> result = Lists.newArrayList();
-						EntityMap entityMap = t.getItem2();
-						for (EntityMapEntry entry : entityMap.getEntityList()) {
-							result.add(entry.getEntityId());
-						}
-						return result;
-					});
+				qQueryTerm, scopeQueryTerm, queryTerm, 0, 0, context).onItem().transform(t -> {
+					// List<Map<String, Object>> localResults = t.getItem1();
+
+					List<String> result = Lists.newArrayList();
+					EntityMap entityMap = t.getItem2();
+					for (EntityMapEntry entry : entityMap.getEntityList()) {
+						result.add(entry.getEntityId());
+					}
+					return result;
+
 				});
 	}
 
-	private Uni<Tuple2<SqlConnection, EntityMap>> getAndStoreEntityIdList(String tenant, String[] id, String idPattern,
-			String qToken, TypeQueryTerm typeQuery, AttrsQueryTerm attrsQuery, GeoQueryTerm geoQuery, QQueryTerm qQuery,
-			ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, Context context) {
-		Uni<Tuple2<SqlConnection, List<String>>> localIds = queryDAO.queryForEntityIds(tenant, id, typeQuery, idPattern,
-				attrsQuery, qQuery, geoQuery, scopeQuery, context);
+	private Uni<Tuple2<Map<String, Map<String, Object>>, EntityMap>> getAndStoreEntityIdList(String tenant, String[] id,
+			String idPattern, String qToken, TypeQueryTerm typeQuery, AttrsQueryTerm attrsQuery, GeoQueryTerm geoQuery,
+			QQueryTerm qQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, int limit, int offset,
+			Context context) {
+		Uni<Tuple2<Map<String, Map<String, Object>>, List<String>>> localIds = queryDAO.queryForEntityIds(tenant, id,
+				typeQuery, idPattern, attrsQuery, qQuery, geoQuery, scopeQuery, context, limit, offset);
 		List<QueryRemoteHost> remoteHost2Query = getRemoteQueries(tenant, id, typeQuery, idPattern, attrsQuery, qQuery,
 				geoQuery, scopeQuery, langQuery, context);
 		Uni<Map<QueryRemoteHost, List<String>>> remoteIds;
@@ -1254,7 +1259,7 @@ public class QueryService {
 
 		return Uni.combine().all().unis(localIds, remoteIds).asTuple().onItem().transform(t -> {
 			EntityMap result = new EntityMap();
-			Tuple2<SqlConnection, List<String>> local = t.getItem1();
+			Tuple2<Map<String, Map<String, Object>>, List<String>> local = t.getItem1();
 			Map<QueryRemoteHost, List<String>> remote = t.getItem2();
 			for (String entry : local.getItem2()) {
 				result.getEntry(entry).getRemoteHosts()
@@ -1268,9 +1273,9 @@ public class QueryService {
 			return Tuple2.of(result, local.getItem1());
 		}).onItem().transformToUni(tuple -> {
 			EntityMap entityMap = tuple.getItem1();
-			SqlConnection conn = tuple.getItem2();
-			return queryDAO.storeEntityMap(conn, tenant, qToken, entityMap).onItem().transform(conn2 -> {
-				return Tuple2.of(conn2, entityMap);
+			Map<String, Map<String, Object>> localResults = tuple.getItem2();
+			return queryDAO.storeEntityMap(tenant, qToken, entityMap).onItem().transform(v -> {
+				return Tuple2.of(localResults, entityMap);
 			});
 		});
 

@@ -43,12 +43,11 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple3;
 import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowIterator;
 import io.vertx.mutiny.sqlclient.RowSet;
-import io.vertx.mutiny.sqlclient.SqlConnection;
 import io.vertx.mutiny.sqlclient.Tuple;
-import io.vertx.pgclient.data.Interval;
 
 @Singleton
 public class QueryDAO {
@@ -711,96 +710,115 @@ public class QueryDAO {
 
 	}
 
-	public Uni<Tuple2<SqlConnection, List<String>>> queryForEntityIds(String tenant, String[] ids,
+	public Uni<Tuple2<Map<String, Map<String, Object>>, List<String>>> queryForEntityIds(String tenant, String[] ids,
 			TypeQueryTerm typeQuery, String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery,
-			GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, Context context) {
+			GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, Context context, int limit, int offset) {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
-			return client.getConnection().onItem().transformToUni(conn -> {
-				StringBuilder query = new StringBuilder();
-				int dollar = 1;
-				Tuple tuple = Tuple.tuple();
+			StringBuilder query = new StringBuilder();
+			int dollar = 1;
+			Tuple tuple = Tuple.tuple();
 
-				query.append("SELECT ID");
+			query.append("WITH a as (SELECT ID");
 
-				query.append(" FROM ENTITY WHERE ");
-				boolean sqlAdded = false;
-				if (typeQuery != null) {
-					dollar = typeQuery.toSql(query, tuple, dollar);
-					sqlAdded = true;
-				}
-				if (attrsQuery != null) {
-					if (sqlAdded) {
-						query.append(" AND ");
-					}
-					dollar = attrsQuery.toSql(query, tuple, dollar);
-					sqlAdded = true;
-				}
-				if (geoQuery != null) {
-					if (sqlAdded) {
-						query.append(" AND ");
-					}
-					dollar = geoQuery.toSql(query, tuple, dollar);
-					sqlAdded = true;
-				}
-
-				if (qQuery != null) {
-					if (sqlAdded) {
-						query.append(" AND ");
-					}
-					dollar = qQuery.toSql(query, dollar, tuple);
-					sqlAdded = true;
-				}
-				if (ids != null) {
-					if (sqlAdded) {
-						query.append(" AND ");
-					}
-					query.append("id IN (");
-					for (String id : ids) {
-						query.append('$');
-						query.append(dollar);
-						query.append(',');
-						tuple.addString(id);
-						dollar++;
-					}
-
-					query.setCharAt(query.length() - 1, ')');
-					sqlAdded = true;
-				}
-				if (idPattern != null) {
-					if (sqlAdded) {
-						query.append(" AND ");
-					}
-					query.append("id ~ $");
-					query.append(dollar);
-					tuple.addString(idPattern);
-					dollar++;
-					sqlAdded = true;
-				}
-				if (scopeQuery != null) {
+			query.append(" FROM ENTITY WHERE ");
+			boolean sqlAdded = false;
+			if (typeQuery != null) {
+				dollar = typeQuery.toSql(query, tuple, dollar);
+				sqlAdded = true;
+			}
+			if (attrsQuery != null) {
+				if (sqlAdded) {
 					query.append(" AND ");
-					scopeQuery.toSql(query);
 				}
-				query.append(" ORDER BY createdAt");
-				System.out.println(query.toString());
-				return conn.preparedQuery(query.toString()).execute(tuple).onItem().transform(rows -> {
-					List<String> result = Lists.newArrayList();
-					rows.forEach(row -> {
-						result.add(row.getString(0));
-					});
-					return Tuple2.of(conn, result);
-				}).onFailure().recoverWithUni(e -> {
-					conn.close();
-					return Uni.createFrom().failure(e);
+				dollar = attrsQuery.toSql(query, tuple, dollar);
+				sqlAdded = true;
+			}
+			if (geoQuery != null) {
+				if (sqlAdded) {
+					query.append(" AND ");
+				}
+				dollar = geoQuery.toSql(query, tuple, dollar);
+				sqlAdded = true;
+			}
+
+			if (qQuery != null) {
+				if (sqlAdded) {
+					query.append(" AND ");
+				}
+				dollar = qQuery.toSql(query, dollar, tuple);
+				sqlAdded = true;
+			}
+			if (ids != null) {
+				if (sqlAdded) {
+					query.append(" AND ");
+				}
+				query.append("id IN (");
+				for (String id : ids) {
+					query.append('$');
+					query.append(dollar);
+					query.append(',');
+					tuple.addString(id);
+					dollar++;
+				}
+
+				query.setCharAt(query.length() - 1, ')');
+				sqlAdded = true;
+			}
+			if (idPattern != null) {
+				if (sqlAdded) {
+					query.append(" AND ");
+				}
+				query.append("id ~ $");
+				query.append(dollar);
+				tuple.addString(idPattern);
+				dollar++;
+				sqlAdded = true;
+			}
+			if (scopeQuery != null) {
+				query.append(" AND ");
+				scopeQuery.toSql(query);
+			}
+			query.append(" ORDER BY createdAt), b as (SELECT a.ID FROM a limit $");
+			query.append(dollar);
+			tuple.addInteger(limit);
+			dollar++;
+			query.append(" offset $");
+			query.append(dollar);
+			tuple.addInteger(offset);
+			dollar++;
+			query.append("), c as (SELECT ENTITY.ID, ENTITY.ENTITY");
+			if (attrsQuery != null) {
+				query.append("-$");
+				query.append(dollar);
+				dollar++;
+				tuple.addArrayOfString(attrsQuery.getAttrs().toArray(new String[0]));
+			}
+			query.append(
+					" as ENTITY FROM b left join ENTITY on b.ID = ENTITY.ID) SELECT a.ID, c.ENTITY FROM a left outer join c on a.ID = c.ID");
+			System.out.println(query.toString());
+			System.out.println(tuple.deepToString());
+			return client.preparedQuery(query.toString()).execute(tuple).onItem().transform(rows -> {
+				List<String> entityIds = Lists.newArrayList();
+				Map<String, Map<String, Object>> entities = Maps.newHashMap();
+				;
+				rows.forEach(row -> {
+					String id = row.getString(0);
+					JsonObject entity = row.getJsonObject(1);
+					entityIds.add(id);
+					if (entity != null) {
+						entities.put(id, entity.getMap());
+					}
+
 				});
+				return Tuple2.of(entities, entityIds);
 			});
 		});
-
 	}
 
-	public Uni<SqlConnection> storeEntityMap(SqlConnection conn, String tenant, String qToken, EntityMap entityMap) {
+	public Uni<Void> storeEntityMap(String tenant, String qToken, EntityMap entityMap) {
 
 		if (entityMap.getEntityList().isEmpty()) {
-			return Uni.createFrom().item(conn);
+			return Uni.createFrom().voidItem();
 		}
 		List<Tuple> batch = Lists.newArrayList();
 //			"q_token" text NOT NULL,
@@ -821,19 +839,17 @@ public class QueryDAO {
 			count++;
 			batch.add(tuple);
 		}
-		return conn.preparedQuery("INSERT INTO entitymap VALUES ($1, $2, $3, $4)").executeBatch(batch).onItem()
-				.transformToUni(r -> {
-					return conn.preparedQuery(
-							"INSERT INTO entitymap_management VALUES ($1, now()) ON CONFLICT(q_token) DO UPDATE SET last_access=now()")
-							.execute(Tuple.of(qToken)).onItem().transform(r2 -> conn);
-				}).onFailure().recoverWithUni(e -> {
-					conn.close();
-					return Uni.createFrom().failure(e);
-				});
-
+		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
+			return client.preparedQuery("INSERT INTO entitymap VALUES ($1, $2, $3, $4)").executeBatch(batch).onItem()
+					.transformToUni(r -> {
+						return client.preparedQuery(
+								"INSERT INTO entitymap_management VALUES ($1, now()) ON CONFLICT(q_token) DO UPDATE SET last_access=now()")
+								.execute(Tuple.of(qToken)).onItem().transformToUni(r2 -> Uni.createFrom().voidItem());
+					});
+		});
 	}
 
-	public Uni<Map<String, Map<String, Object>>> getEntities(SqlConnection conn, List<String> entityIds,
+	public Uni<Map<String, Map<String, Object>>> getEntities(String tenant, List<String> entityIds,
 			AttrsQueryTerm attrsQuery) {
 		Tuple tuple = Tuple.tuple();
 		StringBuilder query = new StringBuilder("SELECT id, entity");
@@ -855,38 +871,44 @@ public class QueryDAO {
 			tuple.addString(id);
 		}
 		query.setCharAt(query.length() - 1, ')');
-		return conn.preparedQuery(query.toString()).execute(tuple).onItem().transformToUni(rows -> {
-			Map<String, Map<String, Object>> result = Maps.newHashMap();
-			rows.forEach(row -> {
-				result.put(row.getString(0), row.getJsonObject(1).getMap());
-			});
+		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
+			return client.preparedQuery(query.toString()).execute(tuple).onItem().transform(rows -> {
+				Map<String, Map<String, Object>> result = Maps.newHashMap();
+				rows.forEach(row -> {
+					result.put(row.getString(0), row.getJsonObject(1).getMap());
+				});
 
-			return conn.close().onItem().transform(v -> result);
+				return result;
+			});
 		});
 	}
 
-	public Uni<Tuple3<SqlConnection, Long, EntityMap>> getEntityMap(String tenant, String qToken, int limit, int offSet,
-			boolean count) {
+	public Uni<Tuple3<Long, EntityMap, Map<String, Map<String, Object>>>> getEntityMap(String tenant, String qToken,
+			int limit, int offSet, boolean count) {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
-			return client.getConnection().onItem().transformToUni(conn -> {
-				return conn.preparedQuery(
-						"WITH a AS (UPDATE entitymap_management SET last_access=now() WHERE q_token=$1) SELECT entity_id, remote_hosts FROM entitymap WHERE q_token = $1 order by order_field LIMIT $2 OFFSET $3")
-						.execute(Tuple.of(qToken, limit, offSet)).onItem().transformToUni(rows -> {
-							if (rows.rowCount() == 0) {
-								return Uni.createFrom().failure(new ResponseException(ErrorType.InvalidRequest,
-										"Token is invalid. Please rerequest without a token to retrieve a new token"));
+			return client.preparedQuery(
+					"WITH a AS (UPDATE entitymap_management SET last_access=now() WHERE q_token=$1), b as (SELECT entity_id, remote_hosts FROM entitymap WHERE q_token = $1 order by order_field LIMIT $2 OFFSET $3) select b.entity_id, b.remote_hosts, entity FROM b left join ENTITY ON b.entity_id = ENTITY.id")
+					.execute(Tuple.of(qToken, limit, offSet)).onItem().transformToUni(rows -> {
+						if (rows.rowCount() == 0) {
+							return Uni.createFrom().failure(new ResponseException(ErrorType.InvalidRequest,
+									"Token is invalid. Please rerequest without a token to retrieve a new token"));
+						}
+						EntityMap entityIdList = new EntityMap();
+						Map<String, Map<String, Object>> localEntities = Maps.newHashMap();
+						rows.forEach(row -> {
+							String entityId = row.getString(0);
+							entityIdList.getEntry(entityId).getRemoteHosts()
+									.addAll(QueryRemoteHost.getRemoteHostsFromJson(row.getJsonArray(1).getList()));
+							JsonObject localEntity = row.getJsonObject(2);
+							if (localEntity != null) {
+								localEntities.put(entityId, localEntity.getMap());
 							}
-							EntityMap entityIdList = new EntityMap();
-							rows.forEach(row -> {
-								entityIdList.getEntry(row.getString(0)).getRemoteHosts()
-										.addAll(QueryRemoteHost.getRemoteHostsFromJson(row.getJsonArray(1).getList()));
 
-							});
-							return Uni.createFrom().item(Tuple3.of(conn, 0l, entityIdList));
 						});
-			});
-
+						return Uni.createFrom().item(Tuple3.of(0l, entityIdList, localEntities));
+					});
 		});
+
 	}
 
 	public Uni<Void> runEntityMapCleanup(String cleanUpInterval) {

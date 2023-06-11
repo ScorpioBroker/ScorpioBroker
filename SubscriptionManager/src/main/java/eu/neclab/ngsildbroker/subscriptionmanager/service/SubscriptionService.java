@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -598,7 +599,7 @@ public class SubscriptionService {
 		return false;
 	}
 
-	@Scheduled(every = "${scorpio.registry.subscription.checkinterval}", delay = 3)
+	@Scheduled(every = "${scorpio.subscription.checkinterval}", delayUnit = TimeUnit.SECONDS, delay = 3)
 	Uni<Void> checkIntervalSubs() {
 		List<Uni<Void>> unis = Lists.newArrayList();
 		for (Cell<String, String, SubscriptionRequest> cell : tenant2subscriptionId2IntervalSubscription.cellSet()) {
@@ -625,7 +626,8 @@ public class SubscriptionService {
 		if (unis.isEmpty()) {
 			return Uni.createFrom().voidItem();
 		}
-		return Uni.combine().all().unis(unis).discardItems();
+		return Uni.combine().all().unis(unis).combinedWith(list -> list).onItem()
+				.transformToUni(list -> Uni.createFrom().voidItem());
 	}
 
 	private Uni<List<Map<String, Object>>> queryFromSubscription(SubscriptionRequest request) {
@@ -645,7 +647,7 @@ public class SubscriptionService {
 		return Uni.combine().all().unis(unis).combinedWith(list -> {
 			List<Map<String, Object>> result = Lists.newArrayList();
 			for (Object obj : list) {
-				List<Map<String, Object>> qResult = Lists.newArrayList();
+				List<Map<String, Object>> qResult = (List<Map<String, Object>>) obj;
 				result.addAll(qResult);
 			}
 			return result;
