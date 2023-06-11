@@ -8,7 +8,7 @@ import io.smallrye.mutiny.tuples.Tuple2;
 public class ScopeQueryTerm {
 
 	private static final String REGEX_PLUS = "[^\\/]+";
-	private static final String REGEX_HASH = ".+";
+	private static final String REGEX_HASH = ".*";
 	private String[] scopeLevels = null;
 	private ScopeQueryTerm prev = null;
 	private ScopeQueryTerm next = null;

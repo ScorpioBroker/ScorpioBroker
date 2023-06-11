@@ -91,7 +91,7 @@ public class GeoQueryTerm {
 			last.add(Lists.newArrayList(Double.parseDouble(tmp[0].trim().replaceAll("[,\\[\\]]", "")),
 					Double.parseDouble(tmp[1].trim().replaceAll("[,\\[\\]]", ""))));
 		}
-		this.coordinatesAsList = outerShell;
+		this.coordinatesAsList = (List<Object>) outerShell.get(0);
 
 	}
 

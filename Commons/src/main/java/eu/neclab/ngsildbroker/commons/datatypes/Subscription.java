@@ -709,10 +709,10 @@ public class Subscription implements Serializable {
 					}
 					if (lon) {
 						myValue = SerializationTools.getProperLon(myValue);
-						result += "[" + myValue;
+						result += myValue;
 					} else {
 						myValue = SerializationTools.getProperLat(myValue);
-						result += myValue + "]";
+						result += myValue;
 					}
 
 					lon = !lon;
