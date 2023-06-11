@@ -329,7 +329,7 @@ public class QueryParser {
 		}
 		if (!type.isEmpty()) {
 			current.setType(type.toString());
-			allTypes.add(type.toString());
+			allTypes.add(current.getType());
 		}
 		root.setAllTypes(allTypes);
 		return root;
