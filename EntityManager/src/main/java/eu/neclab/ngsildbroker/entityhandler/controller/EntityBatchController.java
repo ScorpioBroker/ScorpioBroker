@@ -114,7 +114,7 @@ public class EntityBatchController {
 		for (Map<String, Object> compactedEntity : compactedEntities) {
 			try {
 				Tuple2<Context, Map<String, Object>> tuple = HttpUtils.expandBody(request, compactedEntity,
-						AppConstants.UPSERT_REQUEST);
+						AppConstants.ENTITY_CREATE_PAYLOAD);
 				expandedEntities.add(tuple.getItem2());
 				contexts.add(tuple.getItem1());
 			} catch (Exception e) {

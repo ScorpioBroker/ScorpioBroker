@@ -1166,12 +1166,15 @@ public class EntityService {
 		Uni<List<NGSILDOperationResult>> local = entityDAO.batchUpsertEntity(request).onItem()
 				.transformToUni(dbResult -> {
 					List<NGSILDOperationResult> result = Lists.newArrayList();
-					List<String> successes = (List<String>) dbResult.get("success");
+					List<Map<String, Boolean>> successes = (List<Map<String, Boolean>>) dbResult.get("success");
 					List<Map<String, String>> fails = (List<Map<String, String>>) dbResult.get("failure");
 
-					for (String entityId : successes) {
+					for (Map<String, Boolean> entityResult : successes) {
+						Entry<String, Boolean> keyValue = entityResult.entrySet().iterator().next();
+						String entityId = keyValue.getKey();
 						NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.UPSERT_REQUEST,
 								entityId);
+						opResult.setWasUpdated(keyValue.getValue());
 						opResult.addSuccess(new CRUDSuccess(null, null, null, Sets.newHashSet()));
 						result.add(opResult);
 					}

@@ -275,9 +275,10 @@ public class SubscriptionService {
 							payload.put(JsonLdConsts.GRAPH, entityList);
 							return sendNotification(potentialSub, payload, message.getRequestType());
 						}));
-			case AppConstants.DELETE_REQUEST -> {
-				unis.add(sendNotification(potentialSub, message.getPayload(), message.getRequestType()));
-			}
+//TODO temp. commented because we need to check if the subscription is actually asking for it and the default is not to. so keeping default behaviour for now				
+//			case AppConstants.DELETE_REQUEST -> {
+//				unis.add(sendNotification(potentialSub, message.getPayload(), message.getRequestType()));
+//			}
 			case AppConstants.DELETE_ATTRIBUTE_REQUEST -> {
 				if (shouldFire(Sets.newHashSet(((DeleteAttributeRequest) message).getAttribName()), potentialSub)) {
 					unis.add(sendNotification(potentialSub, message.getPayload(), message.getRequestType()));

@@ -632,6 +632,7 @@ public final class HttpUtils {
 	public static RestResponse<Object> generateBatchResult(List<NGSILDOperationResult> t) {
 		boolean isHavingError = false;
 		boolean isHavingSuccess = false;
+		boolean wasUpdated = false;
 		List<Map<String, Object>> result = new ArrayList<>();
 		for (NGSILDOperationResult r : t) {
 			if (!r.getFailures().isEmpty()) {
@@ -642,6 +643,7 @@ public final class HttpUtils {
 				result.add(r.getJson());
 				isHavingSuccess = true;
 			}
+			wasUpdated = wasUpdated || r.isWasUpdated();
 		}
 		if (isHavingError && !isHavingSuccess) {
 			String type = (String) result.get(0).get("type");
@@ -652,7 +654,7 @@ public final class HttpUtils {
 		}
 		if (!isHavingError && isHavingSuccess) {
 			String type = (String) result.get(0).get("type");
-			if (type.equalsIgnoreCase("Upsert") || type.equalsIgnoreCase("Delete") || type.equalsIgnoreCase("Append"))
+			if ((type.equalsIgnoreCase("Upsert") && wasUpdated) || type.equalsIgnoreCase("Delete") || type.equalsIgnoreCase("Append"))
 				return RestResponse.status(RestResponse.Status.NO_CONTENT);
 			else
 				return RestResponse.status(RestResponse.Status.CREATED, generateBatchCreateSuccess(result));
