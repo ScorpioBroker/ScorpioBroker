@@ -7,14 +7,11 @@ import java.util.List;
 import java.util.Set;
 
 import com.github.jsonldjava.core.Context;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import eu.neclab.ngsildbroker.commons.datatypes.BaseEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.BaseProperty;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import io.smallrye.mutiny.tuples.Tuple2;
-import io.smallrye.mutiny.tuples.Tuple4;
 import io.vertx.mutiny.sqlclient.Tuple;
 
 public class TypeQueryTerm {

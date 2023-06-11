@@ -1,22 +1,16 @@
 package eu.neclab.ngsildbroker.queryhandler.controller;
 
-import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static io.restassured.RestAssured.given;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
@@ -24,7 +18,6 @@ import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.mockito.Mockito;
 import org.junit.jupiter.api.Order;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.queryhandler.services.QueryService;
 import io.quarkus.test.junit.QuarkusTest;
@@ -36,8 +29,6 @@ import io.restassured.response.Response;
 import io.smallrye.mutiny.Uni;
 
 import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response.Status;
-
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 

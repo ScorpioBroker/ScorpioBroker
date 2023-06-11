@@ -53,7 +53,6 @@ import eu.neclab.ngsildbroker.registry.subscriptionmanager.repository.RegistrySu
 import io.netty.handler.codec.mqtt.MqttQoS;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.smallrye.reactive.messaging.annotations.Broadcast;
 import io.vertx.mutiny.core.Vertx;

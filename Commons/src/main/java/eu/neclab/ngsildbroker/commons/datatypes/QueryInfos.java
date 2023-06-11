@@ -4,8 +4,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.locationtech.spatial4j.shape.Shape;
-import org.locationtech.spatial4j.shape.jts.JtsPoint;
-
 import com.github.jsonldjava.core.Context;
 
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;

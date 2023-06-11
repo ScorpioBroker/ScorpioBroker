@@ -1,7 +1,6 @@
 package eu.neclab.ngsildbroker.commons.datatypes.terms;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import org.locationtech.jts.geom.Coordinate;
@@ -11,9 +10,7 @@ import org.locationtech.jts.geom.LinearRing;
 import org.locationtech.jts.geom.MultiLineString;
 import org.locationtech.jts.geom.MultiPolygon;
 import org.locationtech.jts.geom.Polygon;
-import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.distance.DistanceUtils;
-import org.locationtech.spatial4j.io.GeoJSONWriter;
 import org.locationtech.spatial4j.shape.Shape;
 import org.locationtech.spatial4j.shape.ShapeFactory.LineStringBuilder;
 import org.locationtech.spatial4j.shape.ShapeFactory.MultiPolygonBuilder;
@@ -29,7 +26,6 @@ import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.tools.DBUtil;
 import eu.neclab.ngsildbroker.commons.tools.SubscriptionTools;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple4;

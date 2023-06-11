@@ -5,11 +5,8 @@ import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.base.Objects;
-import com.google.common.collect.Lists;
 import com.google.common.net.HttpHeaders;
-import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
@@ -23,7 +20,6 @@ import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.QueryParser;
 import eu.neclab.ngsildbroker.queryhandler.services.QueryService;
 import io.smallrye.mutiny.Uni;
-import io.vertx.codegen.annotations.Nullable;
 import io.vertx.core.http.HttpServerRequest;
 
 import org.apache.commons.lang3.RandomStringUtils;
@@ -35,17 +31,12 @@ import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.ws.rs.Consumes;
-import javax.ws.rs.Encoded;
 import javax.ws.rs.GET;
-import javax.ws.rs.MatrixParam;
-import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 @Singleton
 @Path("/ngsi-ld/v1")

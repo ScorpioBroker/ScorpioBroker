@@ -9,7 +9,6 @@ import java.util.Map;
 import com.github.jsonldjava.core.Context;
 
 import com.github.jsonldjava.core.JsonLdConsts;
-import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 
 public class BatchRequest extends BaseRequest {
