@@ -654,7 +654,8 @@ public final class HttpUtils {
 		}
 		if (!isHavingError && isHavingSuccess) {
 			String type = (String) result.get(0).get("type");
-			if ((type.equalsIgnoreCase("Upsert") && wasUpdated) || type.equalsIgnoreCase("Delete") || type.equalsIgnoreCase("Append"))
+			if ((type.equalsIgnoreCase("Upsert") && wasUpdated) || type.equalsIgnoreCase("Delete")
+					|| type.equalsIgnoreCase("Append"))
 				return RestResponse.status(RestResponse.Status.NO_CONTENT);
 			else
 				return RestResponse.status(RestResponse.Status.CREATED, generateBatchCreateSuccess(result));
@@ -781,14 +782,19 @@ public final class HttpUtils {
 		}
 
 		try {
-			Tuple2<Object, List<Tuple2<String, String>>> resultAndHeaders = generateCompactedResult(
-					getAtContext(request), context, acceptHeader, queryResult.getData(), geometryProperty, options,
-					lang, true);
-
-			MultiMap urlParams = request.params();
-			String nextLink = HttpUtils.generateNextLink(urlParams, queryResult);
-			String prevLink = HttpUtils.generatePrevLink(urlParams, queryResult);
-
+			List<Object> atContext = request == null ? Lists.newArrayList() : getAtContext(request);
+			Tuple2<Object, List<Tuple2<String, String>>> resultAndHeaders = generateCompactedResult(atContext, context,
+					acceptHeader, queryResult.getData(), geometryProperty, options, lang, true);
+			String nextLink;
+			String prevLink;
+			if (request != null) {
+				MultiMap urlParams = request.params();
+				nextLink = HttpUtils.generateNextLink(urlParams, queryResult);
+				prevLink = HttpUtils.generatePrevLink(urlParams, queryResult);
+			} else {
+				prevLink = null;
+				nextLink = null;
+			}
 			builder = builder.header(NGSIConstants.ENTITY_MAP_TOKEN_HEADER, queryResult.getqToken());
 
 			if (nextLink != null) {

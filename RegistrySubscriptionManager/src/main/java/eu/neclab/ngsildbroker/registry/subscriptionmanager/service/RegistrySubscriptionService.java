@@ -480,7 +480,7 @@ public class RegistrySubscriptionService {
 			}
 
 		}
-		if (!SubscriptionTools.evaluateGeoQuery(sub.getLdGeoQuery(), reg)) {
+		if (!SubscriptionTools.evaluateGeoQuery(sub.getLdGeoQuery(), (List<Map<String, Object>>) reg.get(NGSIConstants.NGSI_LD_LOCATION))) {
 			return false;
 		}
 		if (sub.getScopeQuery() != null) {

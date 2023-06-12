@@ -118,7 +118,7 @@ public class SubscriptionService {
 				SubscriptionRequest request;
 				try {
 					request = new SubscriptionRequest(tuple.getItem1(), tuple.getItem2(),
-							new Context().parse(tuple.getItem3().get("@context"), false));
+							new Context().parse(tuple.getItem3(), false));
 					if (isIntervalSub(request)) {
 						this.tenant2subscriptionId2IntervalSubscription.put(request.getTenant(), request.getId(),
 								request);
@@ -466,7 +466,7 @@ public class SubscriptionService {
 		if (!sub.getIsActive() || sub.getExpiresAt() < System.currentTimeMillis()) {
 			return false;
 		}
-		if (!SubscriptionTools.evaluateGeoQuery(sub.getLdGeoQuery(), entity)) {
+		if (!SubscriptionTools.evaluateGeoQuery(sub.getLdGeoQuery(), (List<Map<String, Object>>) entity.get(NGSIConstants.NGSI_LD_LOCATION))) {
 			return false;
 		}
 		if (sub.getScopeQuery() != null) {
@@ -600,7 +600,7 @@ public class SubscriptionService {
 		return false;
 	}
 
-	@Scheduled(every = "${scorpio.subscription.checkinterval}", delayUnit = TimeUnit.SECONDS, delay = 3)
+	@Scheduled(every = "${scorpio.subscription.checkinterval}", delayUnit = TimeUnit.SECONDS, delay = 5)
 	Uni<Void> checkIntervalSubs() {
 		List<Uni<Void>> unis = Lists.newArrayList();
 		for (Cell<String, String, SubscriptionRequest> cell : tenant2subscriptionId2IntervalSubscription.cellSet()) {
