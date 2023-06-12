@@ -1,37 +1,6 @@
 name: API test against Java version
 on: [push,pull_request]
 jobs:
-  build-java-kafka-eureka:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2     
-      - name: Set up JDK 1.17
-        uses: actions/setup-java@v1
-        with:
-          java-version: 1.17
-      - name: Build testserver
-        run: |
-          cd testserver
-          docker build -t testserver .
-      - name: Get release number
-        id: get-id
-        run: |
-          id=$(echo ${{github.ref_name}} | cut -d/ -f2)
-          echo "::set-output name=id::$id"
-      - name: build-java-with-eureka-with-kafka
-        run: |
-          rm ./BrokerParent/pom.xml
-          mv ./BrokerParent/build-pom.xml ./BrokerParent/pom.xml
-          mvn clean package -DskipTests -Pkafka -Deureka -Dkafka -Ddocker -Ddocker-tag=java-kafka-eureka-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=kafka-eureka
-      - name: docker tag
-        run: |
-          docker tag scorpiobroker/history-manager:java-kafka-eureka-${{steps.get-id.outputs.id}} scorpiobroker/history-manager:java-kafka-eureka-latest
-          docker tag scorpiobroker/registry-subscription-manager:java-kafka-eureka-${{steps.get-id.outputs.id}} scorpiobroker/registry-subscription-manager:java-kafka-eureka-latest
-          docker tag scorpiobroker/registry-manager:java-kafka-eureka-${{steps.get-id.outputs.id}} scorpiobroker/registry-manager:java-kafka-eureka-latest
-          docker tag scorpiobroker/subscription-manager:java-kafka-eureka-${{steps.get-id.outputs.id}} scorpiobroker/subscription-manager:java-kafka-eureka-latest
-          docker tag scorpiobroker/query-manager:java-kafka-eureka-${{steps.get-id.outputs.id}} scorpiobroker/query-manager:java-kafka-eureka-latest
-          docker tag scorpiobroker/entity-manager:java-kafka-eureka-${{steps.get-id.outputs.id}} scorpiobroker/entity-manager:java-kafka-eureka-latest
-          docker tag scorpiobroker/all-in-one-runner:java-kafka-eureka-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:java-kafka-eureka-latest
   build-java-kafka:
     runs-on: ubuntu-latest
     steps:
@@ -63,7 +32,9 @@ jobs:
           docker-compose -f ./compose-files/docker-compose-kafka-postgis.yml down
       - name: docker tag 
         run: |
-          docker tag scorpiobroker/history-manager:java-kafka-${{steps.get-id.outputs.id}} scorpiobroker/history-manager:java-kafka-latest
+          docker tag scorpiobroker/at-context-server:java-kafka-${{steps.get-id.outputs.id}} scorpiobroker/at-context-server:java-kafka-latest
+          docker tag scorpiobroker/history-entity-manager:java-kafka-${{steps.get-id.outputs.id}} scorpiobroker/history-entity-manager:java-kafka-latest
+          docker tag scorpiobroker/history-query-manager:java-kafka-${{steps.get-id.outputs.id}} scorpiobroker/history-query-manager:java-kafka-latest
           docker tag scorpiobroker/registry-subscription-manager:java-kafka-${{steps.get-id.outputs.id}} scorpiobroker/registry-subscription-manager:java-kafka-latest
           docker tag scorpiobroker/registry-manager:java-kafka-${{steps.get-id.outputs.id}} scorpiobroker/registry-manager:java-kafka-latest
           docker tag scorpiobroker/subscription-manager:java-kafka-${{steps.get-id.outputs.id}} scorpiobroker/subscription-manager:java-kafka-latest

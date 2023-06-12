@@ -42,14 +42,34 @@ services:
       - "1025:1025"
     depends_on:
       - kafka
-  histmgr:
-    image: scorpiobroker/history-manager:java-kafka-latest
+  histemgr:
+    image: scorpiobroker/history-entity-manager:java-kafka-latest
     environment:
       DBHOST: postgres
       BUSHOST: kafka
       QUARKUS_EUREKA_SERVICE-URL_DEFAULT: "http://eureka:8761/eureka"
     ports:
       - "1040:1040"
+    depends_on:
+      - kafka
+  histqmgr:
+    image: scorpiobroker/history-query-manager:java-kafka-latest
+    environment:
+      DBHOST: postgres
+      BUSHOST: kafka
+      QUARKUS_EUREKA_SERVICE-URL_DEFAULT: "http://eureka:8761/eureka"
+    ports:
+      - "1041:1041"
+    depends_on:
+      - kafka
+  at-context-server:
+    image: scorpiobroker/at-context-server:java-kafka-latest
+    environment:
+      DBHOST: postgres
+      BUSHOST: kafka
+      QUARKUS_EUREKA_SERVICE-URL_DEFAULT: "http://eureka:8761/eureka"
+    ports:
+      - "1042:1042"
     depends_on:
       - kafka
   qrymgr:
