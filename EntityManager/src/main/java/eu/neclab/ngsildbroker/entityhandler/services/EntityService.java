@@ -943,6 +943,10 @@ public class EntityService {
 						});
 
 					}
+
+					if(request.getRequestPayload().isEmpty()) {
+						return Uni.createFrom().item(result);
+					}
 					return batchEmitter.send(request).onItem().transform(v -> result);
 				});
 		if (localOnly) {

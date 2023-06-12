@@ -73,12 +73,16 @@ public class BatchRequest extends BaseRequest {
 
 		ListIterator<Map<String, Object>> it = requestPayload.listIterator();
 		ListIterator<Context> it2 = contexts.listIterator();
-		while (it.hasPrevious()) {
-			Map<String, Object> tmp = it.previous();
-			Context tmp2 = it2.previous();
+		ListIterator<String> it3 = entityIds.listIterator();
+		while (it.hasNext()) {
+			Map<String, Object> tmp = it.next();
+			Context tmp2 = it2.next();
+			String tmp3 = it3.next();
 			if (tmp.get(NGSIConstants.JSON_LD_ID).equals(entityId)) {
 				it.remove();
 				it2.remove();
+				it3.remove();
+				break;
 			}
 		}
 

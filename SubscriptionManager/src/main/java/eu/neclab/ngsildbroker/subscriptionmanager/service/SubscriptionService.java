@@ -466,6 +466,19 @@ public class SubscriptionService {
 		if (!sub.getIsActive() || sub.getExpiresAt() < System.currentTimeMillis()) {
 			return false;
 		}
+		if (!SubscriptionTools.evaluateGeoQuery(sub.getLdGeoQuery(), entity)) {
+			return false;
+		}
+		if (sub.getScopeQuery() != null) {
+			if (!sub.getScopeQuery().calculate(EntityTools.getScopes(entity))) {
+				return false;
+			}
+		}
+		if (sub.getLdQuery() != null) {
+			if (!sub.getLdQuery().calculate(EntityTools.getBaseProperties(entity))) {
+				return false;
+			}
+		}
 
 		for (EntityInfo entityInfo : sub.getEntities()) {
 			if (entityInfo.getId() != null && entityInfo.getType() != null && sub.getAttributeNames() != null) {
@@ -518,19 +531,7 @@ public class SubscriptionService {
 			}
 
 		}
-		if (!SubscriptionTools.evaluateGeoQuery(sub.getLdGeoQuery(), entity)) {
-			return false;
-		}
-		if (sub.getScopeQuery() != null) {
-			if (!sub.getScopeQuery().calculate(EntityTools.getScopes(entity))) {
-				return false;
-			}
-		}
-		if (sub.getLdQuery() != null) {
-			if (!sub.getLdQuery().calculate(EntityTools.getBaseProperties(entity))) {
-				return false;
-			}
-		}
+
 		return false;
 	}
 
