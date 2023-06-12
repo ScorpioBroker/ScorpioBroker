@@ -173,8 +173,10 @@ public class SubscriptionTools {
 				.format(LocalDateTime.ofInstant(Instant.ofEpochMilli(System.currentTimeMillis()), ZoneId.of("Z"))));
 		Map<String, Object> compacted = JsonLdProcessor.compact(entity, null, potentialSub.getContext(), HttpUtils.opts,
 				-1);
-		notification.put(NGSIConstants.NGSI_LD_DATA_SHORT,
-				compacted.getOrDefault(JsonLdConsts.GRAPH, List.of(compacted)));
+		List<Map<String, Object>> data = (List<Map<String, Object>>) compacted.getOrDefault(JsonLdConsts.GRAPH,
+				List.of(compacted));
+		data.forEach(entry -> entry.remove(NGSIConstants.JSON_LD_CONTEXT));
+		notification.put(NGSIConstants.NGSI_LD_DATA_SHORT, data);
 
 		return notification;
 	}

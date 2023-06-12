@@ -382,9 +382,8 @@ public class SubscriptionService {
 				try {
 					toSend = webClient.postAbs(notificationParam.getEndPoint().getUri().toString())
 							.putHeaders(SubscriptionTools.getHeaders(notificationParam))
-							.sendBuffer(Buffer.buffer(JsonUtils.toPrettyString(JsonLdProcessor.compact(notification,
-									null, potentialSub.getContext(), HttpUtils.opts, -1))))
-							.onFailure().retry().atMost(3).onItem().transformToUni(result -> {
+							.sendBuffer(Buffer.buffer(JsonUtils.toPrettyString(notification))).onFailure().retry()
+							.atMost(3).onItem().transformToUni(result -> {
 								int statusCode = result.statusCode();
 								long now = System.currentTimeMillis();
 								if (statusCode >= 200 && statusCode < 300) {
