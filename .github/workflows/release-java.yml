@@ -4,6 +4,7 @@ on:
     branches: "quarkus-release/**"
   build-java-kafka:
     runs-on: ubuntu-latest
+  jobs:
     steps:
       - uses: actions/checkout@v2     
       - name: Set up JDK 1.17
