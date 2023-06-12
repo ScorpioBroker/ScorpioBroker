@@ -2,9 +2,9 @@ name: Release Java version
 on: 
   push:
     branches: "quarkus-release/**"
+jobs:
   build-java-kafka:
     runs-on: ubuntu-latest
-  jobs:
     steps:
       - uses: actions/checkout@v2     
       - name: Set up JDK 1.17
