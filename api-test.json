@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "77e42c15-95a0-4acb-88e2-1170627188a6",
+		"_postman_id": "496f5a7d-12bf-409b-9aa5-fe0c1d634028",
 		"name": "API Test",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
@@ -6809,7 +6809,7 @@
 																	}
 																],
 																"url": {
-																	"raw": "{{query-manager}}/ngsi-ld/v1/entities?type={{entityTypeTBF}}&geoproperty=location&georel=near;maxDistance==1500&geometry=Point&coordinates=[80,80]",
+																	"raw": "{{query-manager}}/ngsi-ld/v1/entities?type={{entityTypeTBF}}&geoproperty=location&georel=near%3BmaxDistance==1500&geometry=Point&coordinates=[80,80]",
 																	"host": [
 																		"{{query-manager}}"
 																	],
@@ -6829,7 +6829,7 @@
 																		},
 																		{
 																			"key": "georel",
-																			"value": "near;maxDistance==1500"
+																			"value": "near%3BmaxDistance==1500"
 																		},
 																		{
 																			"key": "geometry",
@@ -13298,7 +13298,7 @@
 																],
 																"body": {
 																	"mode": "raw",
-																	"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:mytest2\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"TestType\"\r\n   \t\t}\r\n\t],\r\n    \"q\": \"stringproperty==\\\"trigger\\\"\",\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"{{notificationserver}}\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    }\r\n}\r\n\r\n"
+																	"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:q:equal:prop\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"TestType\"\r\n   \t\t}\r\n\t],\r\n    \"q\": \"stringproperty==\\\"trigger\\\"\",\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"{{notificationserver}}\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    }\r\n}\r\n\r\n"
 																},
 																"url": {
 																	"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions",
@@ -13642,7 +13642,7 @@
 																],
 																"body": {
 																	"mode": "raw",
-																	"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:mytest3\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"TestType\"\r\n   \t\t}\r\n\t],\r\n    \"q\": \"testref==urn:mytest1\",\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"{{notificationserver}}\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    }\r\n}\r\n\r\n"
+																	"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:q:equal:rel\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"TestType\"\r\n   \t\t}\r\n\t],\r\n    \"q\": \"testref==urn:mytest1\",\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"{{notificationserver}}\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    }\r\n}\r\n\r\n"
 																},
 																"url": {
 																	"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions",
@@ -16823,16 +16823,11 @@
 																	"pm.collectionVariables.set(\"created\", payloadBody);\r",
 																	"pm.collectionVariables.set(\"entityId1\", entityId1);\r",
 																	"pm.collectionVariables.set(\"entityId2\", entityId2);\r",
-																	"pm.test(\"Content-Type is present\", function () {\r",
-																	"    pm.response.to.have.header(\"Content-Type\");\r",
-																	"});\r",
+																	"\r",
 																	"pm.test(\"Successful POST request\", function () {\r",
 																	"    pm.expect(pm.response.code).to.be.oneOf([201, 207,204]);\r",
 																	"});\r",
-																	"pm.test(\"Response validations\", function () {\r",
-																	"     pm.expect(entityId1).to.equal(\"urn:test:testbatchentity1005\");\r",
-																	"     pm.expect(entityId2).to.equal(\"urn:test:testbatchentity1007\");\r",
-																	"});\r",
+																	"\r",
 																	" \r",
 																	" "
 																],
@@ -17054,16 +17049,11 @@
 																	"pm.collectionVariables.set(\"created\", payloadBody);\r",
 																	"pm.collectionVariables.set(\"entityId1\", entityId1);\r",
 																	"pm.collectionVariables.set(\"entityId2\", entityId2);\r",
-																	"pm.test(\"Content-Type is present\", function () {\r",
-																	"    pm.response.to.have.header(\"Content-Type\");\r",
-																	"});\r",
+																	"\r",
 																	"pm.test(\"Successful POST request\", function () {\r",
 																	"    pm.expect(pm.response.code).to.be.oneOf([201, 207,204]);\r",
 																	"});\r",
-																	"pm.test(\"Validate response\", function () {\r",
-																	"    pm.expect(entityId1).to.eql(\"urn:test:testbatchentity1005\");\r",
-																	"    pm.expect(entityId2).to.eql(\"urn:test:testbatchentity1007\");\r",
-																	"});\r",
+																	"\r",
 																	" \r",
 																	" "
 																],
@@ -17300,13 +17290,7 @@
 																	"    pm.expect(pm.response.code).to.be.oneOf([204, 207]);\r",
 																	"});\r",
 																	"\r",
-																	"pm.test(\"Content-Type is present\", function () {\r",
-																	"    pm.response.to.have.header(\"Content-Type\");\r",
-																	"});\r",
 																	"\r",
-																	"pm.test(\"Status code name has string\", function () {\r",
-																	"    pm.response.to.have.status(\"No Content\");\r",
-																	"});\r",
 																	"\r",
 																	"  \r",
 																	"   \r",
@@ -17540,13 +17524,7 @@
 																	"    pm.expect(pm.response.code).to.be.oneOf([204, 207]);\r",
 																	"});\r",
 																	"\r",
-																	"pm.test(\"Content-Type is present\", function () {\r",
-																	"    pm.response.to.have.header(\"Content-Type\");\r",
-																	"});\r",
 																	"\r",
-																	"pm.test(\"Status code name has string\", function () {\r",
-																	"    pm.response.to.have.status(\"No Content\");\r",
-																	"});\r",
 																	"\r",
 																	"  \r",
 																	"   \r",
@@ -25161,7 +25139,7 @@
 																	}
 																],
 																"url": {
-																	"raw": "{{query-manager}}/ngsi-ld/v1/entities?type={{entityTypeTBF}}&geoproperty=location&georel=near;maxDistance==1500&geometry=Point&coordinates=[80,80]",
+																	"raw": "{{query-manager}}/ngsi-ld/v1/entities?type={{entityTypeTBF}}&geoproperty=location&georel=near%3BmaxDistance==1500&geometry=Point&coordinates=[80,80]",
 																	"host": [
 																		"{{query-manager}}"
 																	],
@@ -25181,7 +25159,7 @@
 																		},
 																		{
 																			"key": "georel",
-																			"value": "near;maxDistance==1500"
+																			"value": "near%3BmaxDistance==1500"
 																		},
 																		{
 																			"key": "geometry",
@@ -28071,6 +28049,196 @@
 													"response": []
 												}
 											]
+										},
+										{
+											"name": "Pagination local test",
+											"item": [
+												{
+													"name": "Create multiple dummy entities",
+													"request": {
+														"method": "POST",
+														"header": [],
+														"body": {
+															"mode": "raw",
+															"raw": "[{\r\n\t\"id\": \"test:0\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:1\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:2\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:3\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:4\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:5\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:6\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:7\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:8\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:9\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:10\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:11\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:12\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:13\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:14\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:15\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:16\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:17\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:18\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:19\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:20\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:21\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:22\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:23\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:24\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:25\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:26\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:27\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:28\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:29\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:30\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:31\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:32\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:33\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:34\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:35\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:36\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:37\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:38\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:39\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:40\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:41\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:42\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:43\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:44\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:45\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:46\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:47\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:48\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:49\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:51\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:52\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:53\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:54\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:55\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:56\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:57\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:58\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:59\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:60\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:61\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:62\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:63\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:64\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:65\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:66\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:67\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:68\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:69\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:70\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:71\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:72\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:73\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:74\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:75\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:76\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:77\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:78\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:79\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:80\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:81\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:82\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:83\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:84\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:85\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:86\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:87\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:88\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:89\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:90\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:91\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:92\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:93\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:94\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:95\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:96\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:97\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:98\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:99\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:100\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:101\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:102\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:103\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:104\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:105\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:106\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:107\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:108\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:109\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:110\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:111\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:112\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:113\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:114\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:115\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:116\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:117\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:118\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:119\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:120\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:121\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:122\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:123\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:124\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:125\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:126\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:127\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:128\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:129\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:130\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:131\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:132\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:133\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:134\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:135\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:136\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:137\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:138\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:139\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:140\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:141\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:142\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:143\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:144\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:145\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:146\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:147\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:148\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:149\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}]",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entityOperations/create",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entityOperations",
+																"create"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Get local entity",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"let nextLink = pm.response.headers.filter(header => header.key === \"Link\")[0][\"value\"];\r",
+																	"nextLink = nextLink.substring(1, nextLink.length -12);\r",
+																	"\r",
+																	"console.log(nextLink);\r",
+																	"pm.collectionVariables.set(\"nextLink\", nextLink);\r",
+																	"\r",
+																	"\r",
+																	"pm.test(\"Successful query request\", function () {\r",
+																	"    pm.expect(pm.response.code).to.equal(200);\r",
+																	"});\r",
+																	"\r",
+																	"pm.test(\"Count result\", function () {\r",
+																	"    pm.expect(pm.response.json().length).to.equal(50);\r",
+																	"});\r",
+																	"\r",
+																	"\r",
+																	"  \r",
+																	"   \r",
+																	" \r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															}
+														],
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities?type=Test2",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities"
+															],
+															"query": [
+																{
+																	"key": "type",
+																	"value": "Test2"
+																}
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Get next set",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var nextLink = pm.response.headers.all(\"Link\");\r",
+																	"console.log(nextLink);\r",
+																	"pm.collectionVariables.set(\"nextlink\", nextLink);\r",
+																	"\r",
+																	"\r",
+																	"pm.test(\"Successful query request\", function () {\r",
+																	"    pm.expect(pm.response.code).to.equal(200);\r",
+																	"});\r",
+																	"\r",
+																	"pm.test(\"Count result\", function () {\r",
+																	"    pm.expect(pm.response.json().length).to.equal(50);\r",
+																	"});\r",
+																	"\r",
+																	"\r",
+																	"  \r",
+																	"   \r",
+																	" \r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															}
+														],
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities{{nextLink}}",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities{{nextLink}}"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Delete entities",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [],
+														"body": {
+															"mode": "raw",
+															"raw": "[\r\n\t\"test:0\",\r\n\t\"test:1\",\r\n\t\"test:2\",\r\n\t\"test:3\",\r\n\t\"test:4\",\r\n\t\"test:5\",\r\n\t\"test:6\",\r\n\t\"test:7\",\r\n\t\"test:8\",\r\n\t\"test:9\",\r\n\t\"test:10\",\r\n\t\"test:11\",\r\n\t\"test:12\",\r\n\t\"test:13\",\r\n\t\"test:14\",\r\n\t\"test:15\",\r\n\t\"test:16\",\r\n\t\"test:17\",\r\n\t\"test:18\",\r\n\t\"test:19\",\r\n\t\"test:20\",\r\n\t\"test:21\",\r\n\t\"test:22\",\r\n\t\"test:23\",\r\n\t\"test:24\",\r\n\t\"test:25\",\r\n\t\"test:26\",\r\n\t\"test:27\",\r\n\t\"test:28\",\r\n\t\"test:29\",\r\n\t\"test:30\",\r\n\t\"test:31\",\r\n\t\"test:32\",\r\n\t\"test:33\",\r\n\t\"test:34\",\r\n\t\"test:35\",\r\n\t\"test:36\",\r\n\t\"test:37\",\r\n\t\"test:38\",\r\n\t\"test:39\",\r\n\t\"test:40\",\r\n\t\"test:41\",\r\n\t\"test:42\",\r\n\t\"test:43\",\r\n\t\"test:44\",\r\n\t\"test:45\",\r\n\t\"test:46\",\r\n\t\"test:47\",\r\n\t\"test:48\",\r\n\t\"test:49\",\r\n\t\"test:51\",\r\n\t\"test:52\",\r\n\t\"test:53\",\r\n\t\"test:54\",\r\n\t\"test:55\",\r\n\t\"test:56\",\r\n\t\"test:57\",\r\n\t\"test:58\",\r\n\t\"test:59\",\r\n\t\"test:60\",\r\n\t\"test:61\",\r\n\t\"test:62\",\r\n\t\"test:63\",\r\n\t\"test:64\",\r\n\t\"test:65\",\r\n\t\"test:66\",\r\n\t\"test:67\",\r\n\t\"test:68\",\r\n\t\"test:69\",\r\n\t\"test:70\",\r\n\t\"test:71\",\r\n\t\"test:72\",\r\n\t\"test:73\",\r\n\t\"test:74\",\r\n\t\"test:75\",\r\n\t\"test:76\",\r\n\t\"test:77\",\r\n\t\"test:78\",\r\n\t\"test:79\",\r\n\t\"test:80\",\r\n\t\"test:81\",\r\n\t\"test:82\",\r\n\t\"test:83\",\r\n\t\"test:84\",\r\n\t\"test:85\",\r\n\t\"test:86\",\r\n\t\"test:87\",\r\n\t\"test:88\",\r\n\t\"test:89\",\r\n\t\"test:90\",\r\n\t\"test:91\",\r\n\t\"test:92\",\r\n\t\"test:93\",\r\n\t\"test:94\",\r\n\t\"test:95\",\r\n\t\"test:96\",\r\n\t\"test:97\",\r\n\t\"test:98\",\r\n\t\"test:99\",\r\n\t\"test:100\",\r\n\t\"test:101\",\r\n\t\"test:102\",\r\n\t\"test:103\",\r\n\t\"test:104\",\r\n\t\"test:105\",\r\n\t\"test:106\",\r\n\t\"test:107\",\r\n\t\"test:108\",\r\n\t\"test:109\",\r\n\t\"test:110\",\r\n\t\"test:111\",\r\n\t\"test:112\",\r\n\t\"test:113\",\r\n\t\"test:114\",\r\n\t\"test:115\",\r\n\t\"test:116\",\r\n\t\"test:117\",\r\n\t\"test:118\",\r\n\t\"test:119\",\r\n\t\"test:120\",\r\n\t\"test:121\",\r\n\t\"test:122\",\r\n\t\"test:123\",\r\n\t\"test:124\",\r\n\t\"test:125\",\r\n\t\"test:126\",\r\n\t\"test:127\",\r\n\t\"test:128\",\r\n\t\"test:129\",\r\n\t\"test:130\",\r\n\t\"test:131\",\r\n\t\"test:132\",\r\n\t\"test:133\",\r\n\t\"test:134\",\r\n\t\"test:135\",\r\n\t\"test:136\",\r\n\t\"test:137\",\r\n\t\"test:138\",\r\n\t\"test:139\",\r\n\t\"test:140\",\r\n\t\"test:141\",\r\n\t\"test:142\",\r\n\t\"test:143\",\r\n\t\"test:144\",\r\n\t\"test:145\",\r\n\t\"test:146\",\r\n\t\"test:147\",\r\n\t\"test:148\",\r\n\t\"test:149\"\r\n]",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entityOperations/delete",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entityOperations",
+																"delete"
+															]
+														}
+													},
+													"response": []
+												}
+											]
 										}
 									]
 								}
@@ -28156,6 +28324,8 @@
 																	"    var jsonData = pm.response.json();\r",
 																	"    delete jsonData['isActive'];\r",
 																	"    delete jsonData['status'];\r",
+																	"    delete jsonData['timesSent'];\r",
+																	"    delete jsonData['timesFailed'];\r",
 																	"    console.log(\"expected: \" + JSON.stringify(expected));\r",
 																	"    console.log(\"received: \" + JSON.stringify(jsonData));\r",
 																	"    pm.expect(jsonData).to.eql(expected);\r",
@@ -28317,6 +28487,8 @@
 																	"    var jsonData = pm.response.json();\r",
 																	"    delete jsonData['isActive'];\r",
 																	"    delete jsonData['status'];\r",
+																	"    delete jsonData['timesSent'];\r",
+																	"     delete jsonData['timesFailed'];\r",
 																	"    console.log(\"expected: \" + JSON.stringify(expected));\r",
 																	"    console.log(\"received: \" + JSON.stringify(jsonData));\r",
 																	"    pm.expect(jsonData).to.eql(expected);\r",
@@ -28507,6 +28679,8 @@
 																	"    var jsonData = pm.response.json();\r",
 																	"    delete jsonData['isActive'];\r",
 																	"    delete jsonData['status'];\r",
+																	"    delete jsonData['timesSent'];\r",
+																	"     delete jsonData['timesFailed'];\r",
 																	"    console.log(\"expected: \" + JSON.stringify(expected));\r",
 																	"    console.log(\"received: \" + JSON.stringify(jsonData));\r",
 																	"    pm.expect(jsonData).to.eql(expected);\r",
@@ -28683,6 +28857,8 @@
 																	"    var jsonData = pm.response.json();\r",
 																	"    delete jsonData['isActive'];\r",
 																	"    delete jsonData['status'];\r",
+																	"    delete jsonData['timesSent'];\r",
+																	"     delete jsonData['timesFailed'];\r",
 																	"    console.log(\"expected: \" + JSON.stringify(expected));\r",
 																	"    console.log(\"received: \" + JSON.stringify(jsonData));\r",
 																	"    pm.expect(jsonData).to.eql(expected);\r",
@@ -28796,6 +28972,8 @@
 																	"    var jsonData = pm.response.json();\r",
 																	"    delete jsonData['isActive'];\r",
 																	"    delete jsonData['status'];\r",
+																	"    delete jsonData['timesSent'];\r",
+																	"     delete jsonData['timesFailed'];\r",
 																	"    console.log(\"expected: \" + JSON.stringify(expected));\r",
 																	"    console.log(\"received: \" + JSON.stringify(jsonData));\r",
 																	"    pm.expect(jsonData).to.eql(expected);\r",
@@ -28957,6 +29135,8 @@
 																	"    var jsonData = pm.response.json();\r",
 																	"    delete jsonData['isActive'];\r",
 																	"    delete jsonData['status'];\r",
+																	"    delete jsonData['timesSent'];\r",
+																	"     delete jsonData['timesFailed'];\r",
 																	"    console.log(\"expected: \" + JSON.stringify(expected));\r",
 																	"    console.log(\"received: \" + JSON.stringify(jsonData));\r",
 																	"    pm.expect(jsonData).to.eql(expected);\r",
@@ -29076,6 +29256,8 @@
 																	"    var jsonData = pm.response.json();\r",
 																	"    delete jsonData['isActive'];\r",
 																	"    delete jsonData['status'];\r",
+																	"    delete jsonData['timesSent'];\r",
+																	"     delete jsonData['timesFailed'];\r",
 																	"    console.log(\"expected: \" + JSON.stringify(expected));\r",
 																	"    console.log(\"received: \" + JSON.stringify(jsonData));\r",
 																	"    pm.expect(jsonData).to.eql(expected);\r",
@@ -29266,6 +29448,8 @@
 																	"    var jsonData = pm.response.json();\r",
 																	"    delete jsonData['isActive'];\r",
 																	"    delete jsonData['status'];\r",
+																	"    delete jsonData['timesSent'];\r",
+																	"     delete jsonData['timesFailed'];\r",
 																	"    console.log(\"expected: \" + JSON.stringify(expected));\r",
 																	"    console.log(\"received: \" + JSON.stringify(jsonData));\r",
 																	"    pm.expect(jsonData).to.eql(expected);\r",
@@ -29412,6 +29596,8 @@
 																	"    var jsonData = pm.response.json();\r",
 																	"    delete jsonData['isActive'];\r",
 																	"    delete jsonData['status'];\r",
+																	"    delete jsonData['timesSent'];\r",
+																	"     delete jsonData['timesFailed'];\r",
 																	"    console.log(\"expected: \" + JSON.stringify(expected));\r",
 																	"    console.log(\"received: \" + JSON.stringify(jsonData));\r",
 																	"    pm.expect(jsonData).to.eql(expected);\r",
@@ -36097,25 +36283,13 @@
 															"script": {
 																"exec": [
 																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
-																	"console.log(payloadBody[0].id);\r",
-																	"console.log(payloadBody[1].id);\r",
-																	"var entityId1 = payloadBody[0].id;\r",
 																	"var entityId2 = payloadBody[1].id;\r",
-																	"pm.collectionVariables.set(\"created\", payloadBody);\r",
-																	"pm.collectionVariables.set(\"entityId1\", entityId1);\r",
 																	"pm.collectionVariables.set(\"entityId3\", entityId2);\r",
-																	"var response = pm.response.json();\r",
-																	"pm.test(\"Content-Type is present\", function () {\r",
-																	"    pm.response.to.have.header(\"Content-Type\");\r",
-																	"});\r",
+																	"\r",
 																	"pm.test(\"Successful POST request\", function () {\r",
 																	"    pm.expect(pm.response.code).to.be.oneOf([201, 207,204]);\r",
 																	"});\r",
-																	"pm.test(\"Response validations\", function () {\r",
-																	"     pm.expect(entityId1).to.equal(response[0]);\r",
-																	"     pm.expect(entityId2).to.equal(response[1]);\r",
-																	"});\r",
-																	" \r",
+																	"\r",
 																	" "
 																],
 																"type": "text/javascript"
@@ -36349,25 +36523,11 @@
 															"listen": "test",
 															"script": {
 																"exec": [
-																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
-																	"console.log(payloadBody[0].id);\r",
-																	"console.log(payloadBody[1].id);\r",
-																	"var entityId1 = payloadBody[0].id;\r",
-																	"var entityId2 = payloadBody[1].id;\r",
-																	"pm.collectionVariables.set(\"created\", payloadBody);\r",
-																	"pm.collectionVariables.set(\"entityId1\", entityId1);\r",
-																	"pm.collectionVariables.set(\"entityId3\", entityId2);\r",
-																	"var response = pm.response.json();\r",
-																	"pm.test(\"Content-Type is present\", function () {\r",
-																	"    pm.response.to.have.header(\"Content-Type\");\r",
-																	"});\r",
+																	"\r",
 																	"pm.test(\"Successful POST request\", function () {\r",
 																	"    pm.expect(pm.response.code).to.be.oneOf([201, 207,204]);\r",
 																	"});\r",
-																	"pm.test(\"Validate response\", function () {\r",
-																	"    pm.expect(entityId1).to.eql(response[0]);\r",
-																	"    pm.expect(entityId2).to.eql(response[1]);\r",
-																	"});\r",
+																	"\r",
 																	" \r",
 																	" "
 																],
@@ -36624,9 +36784,6 @@
 																	"    pm.expect(pm.response.code).to.be.oneOf([204, 207]);\r",
 																	"});\r",
 																	"\r",
-																	"pm.test(\"Content-Type is present\", function () {\r",
-																	"    pm.response.to.have.header(\"Content-Type\");\r",
-																	"});\r",
 																	"\r",
 																	"pm.test(\"Status code name has string\", function () {\r",
 																	"    pm.response.to.have.status(\"No Content\");\r",
@@ -36884,9 +37041,6 @@
 																	"    pm.expect(pm.response.code).to.be.oneOf([204, 207]);\r",
 																	"});\r",
 																	"\r",
-																	"pm.test(\"Content-Type is present\", function () {\r",
-																	"    pm.response.to.have.header(\"Content-Type\");\r",
-																	"});\r",
 																	"\r",
 																	"pm.test(\"Status code name has string\", function () {\r",
 																	"    pm.response.to.have.status(\"No Content\");\r",
@@ -37713,15 +37867,20 @@
 											]
 										}
 									]
-								},
+								}
+							]
+						},
+						{
+							"name": "Dist ops",
+							"item": [
 								{
-									"name": "Entity Partial Update Tests",
+									"name": "Invalid Registration tests",
 									"item": [
 										{
-											"name": "Reject change of type",
+											"name": "Attempt creation based on exclusive reg",
 											"item": [
 												{
-													"name": "Create Simple Entity No Context",
+													"name": "Create Exclusive Registry",
 													"event": [
 														{
 															"listen": "test",
@@ -37729,15 +37888,15 @@
 																"exec": [
 																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
 																	"console.log(payloadBody.id);\r",
-																	"var entityId = payloadBody.id;\r",
+																	"var cSourceId = payloadBody.id;\r",
 																	"pm.collectionVariables.set(\"created\", payloadBody);\r",
-																	"pm.collectionVariables.set(\"entityId\", entityId);\r",
+																	"pm.collectionVariables.set(\"cSourceId\", cSourceId);\r",
 																	"pm.test(\"Status code is 201\", function () {\r",
 																	"    pm.response.to.have.status(201);\r",
 																	"});\r",
 																	"pm.test(\"Check location header\", function () {\r",
 																	"    pm.response.to.have.header(\"Location\");\r",
-																	"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+																	"    pm.expect(pm.response.headers.get(\"Location\")).to.include(cSourceId);\r",
 																	"});\r",
 																	"\r",
 																	"\r",
@@ -37773,7 +37932,82 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
+															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:ContextSourceRegistration:cccc\",\r\n\t\"type\": \"ContextSourceRegistration\",\r\n\t\"information\": [{\r\n\t\t\t\"entities\": [{\r\n                \"id\": \"urn:test:testentity12345\",\r\n\t\t\t\t\"type\": \"Test2\"\r\n\t\t\t}],\r\n            \"propertyNames\": [\"brandName\",\"speed\"],\r\n            \"relationshipNames\": [\"isParked\"]\r\n\t\t}\r\n\t],\r\n\t\"endpoint\": \"http://localhost:9080\",\r\n    \"mode\": \"exclusive\",\r\n    \"operations\": [\"retrieveEntity\", \"createEntity\", \"queryEntity\"]\r\n}",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{registry-manager}}/ngsi-ld/v1/csourceRegistrations",
+															"host": [
+																"{{registry-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"csourceRegistrations"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Create all matching reg simple Entity",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"console.log(payloadBody.id);\r",
+																	"var entityId = payloadBody.id;\r",
+																	"pm.collectionVariables.set(\"created\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"entityId\", entityId);\r",
+																	"pm.test(\"Status code is 422\", function () {\r",
+																	"    pm.response.to.have.status(422);\r",
+																	"});\r",
+																	"pm.test(\"Check location type and title\", function () {\r",
+																	"    var jsonData = pm.response.json();\r",
+																	"    pm.expect(pm.response.json()[\"type\"]).to.equal(\"https://uri.etsi.org/ngsi-ld/errors/UnprocessableContextSourceRegistration\");\r",
+																	"    pm.expect(pm.response.json()[\"title\"]).to.equal(\"UnprocessableContextSourceRegistration\");\r",
+																	"});\r",
+																	"\r",
+																	"\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity12345\",\r\n    \"type\": \"Test2\",\r\n    \"brandName\": {\"type\": \"Property\", \"value\": \"teststring\"}\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -37795,61 +38029,29 @@
 													"response": []
 												},
 												{
-													"name": "Get Created Entity and Validate content",
+													"name": "Create partial matching reg simple Entity",
 													"event": [
 														{
 															"listen": "test",
 															"script": {
 																"exec": [
-																	"var expected = pm.collectionVariables.get(\"created\");\r",
-																	"pm.test(\"Status code is 200\", function () {\r",
-																	"    pm.response.to.have.status(200);\r",
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"console.log(payloadBody.id);\r",
+																	"var entityId = payloadBody.id;\r",
+																	"pm.collectionVariables.set(\"created\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"entityId\", entityId);\r",
+																	"pm.test(\"Status code is 207\", function () {\r",
+																	"    pm.response.to.have.status(207);\r",
 																	"});\r",
-																	"pm.test(\"Validate content\", function () {\r",
+																	"pm.test(\"Check location type and title\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
-																	"    console.log(\"Expected: \" + expected);\r",
-																	"    console.log(\"Received: \" + jsonData);\r",
-																	"    pm.expect(jsonData).to.eql(expected);\r",
-																	"});"
-																],
-																"type": "text/javascript"
-															}
-														}
-													],
-													"request": {
-														"method": "GET",
-														"header": [
-															{
-																"key": "Accept",
-																"value": "application/json",
-																"type": "default"
-															}
-														],
-														"url": {
-															"raw": "{{query-manager}}/ngsi-ld/v1/entities/{{entityId}}",
-															"host": [
-																"{{query-manager}}"
-															],
-															"path": [
-																"ngsi-ld",
-																"v1",
-																"entities",
-																"{{entityId}}"
-															]
-														}
-													},
-													"response": []
-												},
-												{
-													"name": "Partial update try to change type",
-													"event": [
-														{
-															"listen": "test",
-															"script": {
-																"exec": [
-																	"\r",
-																	"pm.test(\"Status code is 400\", function () {\r",
-																	"    pm.response.to.have.status(400);\r",
+																	"    var success = jsonData[\"success\"];\r",
+																	"    var fails = jsonData[\"failure\"];\r",
+																	"    var regFail = fails[0];\r",
+																	"    \r",
+																	"    pm.expect(regFail[\"type\"]).to.equal(\"https://uri.etsi.org/ngsi-ld/errors/UnprocessableContextSourceRegistration\");\r",
+																	"    pm.expect(regFail[\"title\"]).to.equal(\"UnprocessableContextSourceRegistration\");\r",
+																	"    pm.expect(success[0][\"attributes\"][0][\"attributeName\"]).to.equal(\"notBrandName\");\r",
 																	"});\r",
 																	"\r",
 																	"\r",
@@ -37869,7 +38071,7 @@
 														}
 													],
 													"request": {
-														"method": "PATCH",
+														"method": "POST",
 														"header": [
 															{
 																"key": "Content-Type",
@@ -37885,7 +38087,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\"type\": \"blub\", \"value\": 123456}",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity12345\",\r\n    \"type\": \"Test2\",\r\n    \"brandName\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"notBrandName\": {\"type\": \"Property\", \"value\": \"teststring\"}\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -37893,7 +38095,79 @@
 															}
 														},
 														"url": {
-															"raw": "{{entity-manager}}/ngsi-ld/v1/entities/{{entityId}}/attrs/intproperty",
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Get local entity",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"\r",
+																	"pm.test(\"Status code is 200\", function () {\r",
+																	"    pm.response.to.have.status(200);\r",
+																	"});\r",
+																	"\r",
+																	"pm.test(\"Test body contains notBrandName\", function () {\r",
+																	"    pm.expect(pm.response.json()).to.have.property('notBrandName');\r",
+																	"    pm.expect(pm.response.json()['notBrandName']['value']).to.equal('teststring');\r",
+																	"});\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"protocolProfileBehavior": {
+														"disableBodyPruning": true
+													},
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities/urn:test:testentity12345",
 															"host": [
 																"{{entity-manager}}"
 															],
@@ -37901,71 +38175,114 @@
 																"ngsi-ld",
 																"v1",
 																"entities",
-																"{{entityId}}",
-																"attrs",
-																"intproperty"
+																"urn:test:testentity12345"
 															]
 														}
 													},
 													"response": []
 												},
 												{
-													"name": "Validate no change in entity",
+													"name": "Create partial matching reg simple Entity check double fail",
 													"event": [
 														{
 															"listen": "test",
 															"script": {
 																"exec": [
-																	"var expected = pm.collectionVariables.get(\"created\");\r",
-																	"pm.test(\"Status code is 200\", function () {\r",
-																	"    pm.response.to.have.status(200);\r",
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"console.log(payloadBody.id);\r",
+																	"var entityId = payloadBody.id;\r",
+																	"pm.collectionVariables.set(\"created\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"entityId\", entityId);\r",
+																	"pm.test(\"Status code is 207\", function () {\r",
+																	"    pm.response.to.have.status(207);\r",
 																	"});\r",
-																	"pm.test(\"Validate content\", function () {\r",
+																	"pm.test(\"Check location type and title\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
-																	"    console.log(\"Expected: \" + expected);\r",
-																	"    console.log(\"Received: \" + jsonData);\r",
-																	"    pm.expect(jsonData).to.eql(expected);\r",
-																	"});"
+																	"    var fails = jsonData[\"failure\"];\r",
+																	"    var regFail = fails[0];\r",
+																	"    var localFail = fails[1];\r",
+																	"    pm.expect(regFail[\"type\"]).to.equal(\"https://uri.etsi.org/ngsi-ld/errors/UnprocessableContextSourceRegistration\");\r",
+																	"    pm.expect(regFail[\"title\"]).to.equal(\"UnprocessableContextSourceRegistration\");\r",
+																	"    pm.expect(localFail[\"errorCode\"]).to.equal(409);\r",
+																	"    pm.expect(localFail[\"type\"]).to.equal(\"https://uri.etsi.org/ngsi-ld/errors/AlreadyExists\");\r",
+																	"    pm.expect(localFail[\"title\"]).to.equal(\"Already exists.\");\r",
+																	"});\r",
+																	"\r",
+																	"\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
 																],
 																"type": "text/javascript"
 															}
 														}
 													],
 													"request": {
-														"method": "GET",
+														"method": "POST",
 														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
 															{
 																"key": "Accept",
 																"value": "application/json",
-																"type": "default"
+																"type": "default",
+																"disabled": true
 															}
 														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity12345\",\r\n    \"type\": \"Test2\",\r\n    \"brandName\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"notBrandName\": {\"type\": \"Property\", \"value\": \"teststring\"}\r\n}",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
 														"url": {
-															"raw": "{{query-manager}}/ngsi-ld/v1/entities/{{entityId}}",
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
 															"host": [
-																"{{query-manager}}"
+																"{{entity-manager}}"
 															],
 															"path": [
 																"ngsi-ld",
 																"v1",
-																"entities",
-																"{{entityId}}"
+																"entities"
 															]
 														}
 													},
 													"response": []
 												},
 												{
-													"name": "Delete Entity",
+													"name": "Delete entity",
 													"event": [
 														{
 															"listen": "test",
 															"script": {
 																"exec": [
+																	"\r",
 																	"pm.test(\"Status code is 204\", function () {\r",
 																	"    pm.response.to.have.status(204);\r",
 																	"});\r",
-																	"pm.collectionVariables.clear();"
+																	""
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
 																],
 																"type": "text/javascript"
 															}
@@ -37973,9 +38290,30 @@
 													],
 													"request": {
 														"method": "DELETE",
-														"header": [],
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
 														"url": {
-															"raw": "{{entity-manager}}/ngsi-ld/v1/entities/{{entityId}}",
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities/urn:test:testentity12345",
 															"host": [
 																"{{entity-manager}}"
 															],
@@ -37983,7 +38321,63 @@
 																"ngsi-ld",
 																"v1",
 																"entities",
-																"{{entityId}}"
+																"urn:test:testentity12345"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Delete Registry",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"\r",
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "DELETE",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"url": {
+															"raw": "{{registry-manager}}/ngsi-ld/v1/csourceRegistrations/urn:ngsi-ld:ContextSourceRegistration:cccc",
+															"host": [
+																"{{registry-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"csourceRegistrations",
+																"urn:ngsi-ld:ContextSourceRegistration:cccc"
 															]
 														}
 													},
@@ -37992,10 +38386,10 @@
 											]
 										},
 										{
-											"name": "Reject change object in property",
+											"name": "Attempt update based on exclusive reg",
 											"item": [
 												{
-													"name": "Create Simple Entity No Context",
+													"name": "Create Exclusive Registry",
 													"event": [
 														{
 															"listen": "test",
@@ -38003,15 +38397,15 @@
 																"exec": [
 																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
 																	"console.log(payloadBody.id);\r",
-																	"var entityId = payloadBody.id;\r",
+																	"var cSourceId = payloadBody.id;\r",
 																	"pm.collectionVariables.set(\"created\", payloadBody);\r",
-																	"pm.collectionVariables.set(\"entityId\", entityId);\r",
+																	"pm.collectionVariables.set(\"cSourceId\", cSourceId);\r",
 																	"pm.test(\"Status code is 201\", function () {\r",
 																	"    pm.response.to.have.status(201);\r",
 																	"});\r",
 																	"pm.test(\"Check location header\", function () {\r",
 																	"    pm.response.to.have.header(\"Location\");\r",
-																	"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+																	"    pm.expect(pm.response.headers.get(\"Location\")).to.include(cSourceId);\r",
 																	"});\r",
 																	"\r",
 																	"\r",
@@ -38047,7 +38441,82 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
+															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:ContextSourceRegistration:cccc\",\r\n\t\"type\": \"ContextSourceRegistration\",\r\n\t\"information\": [{\r\n\t\t\t\"entities\": [{\r\n                \"id\": \"urn:test:testentity12345\",\r\n\t\t\t\t\"type\": \"Test2\"\r\n\t\t\t}],\r\n            \"propertyNames\": [\"brandName\",\"speed\"],\r\n            \"relationshipNames\": [\"isParked\"]\r\n\t\t}\r\n\t],\r\n\t\"endpoint\": \"http://localhost:9080\",\r\n    \"mode\": \"exclusive\",\r\n    \"operations\": [\"retrieveEntity\", \"createEntity\", \"queryEntity\"]\r\n}",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{registry-manager}}/ngsi-ld/v1/csourceRegistrations",
+															"host": [
+																"{{registry-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"csourceRegistrations"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Patch to entity",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"console.log(payloadBody.id);\r",
+																	"var entityId = payloadBody.id;\r",
+																	"pm.collectionVariables.set(\"created\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"entityId\", entityId);\r",
+																	"pm.test(\"Status code is 422\", function () {\r",
+																	"    pm.response.to.have.status(422);\r",
+																	"});\r",
+																	"pm.test(\"Check location type and title\", function () {\r",
+																	"    var jsonData = pm.response.json();\r",
+																	"    pm.expect(pm.response.json()[\"type\"]).to.equal(\"https://uri.etsi.org/ngsi-ld/errors/UnprocessableContextSourceRegistration\");\r",
+																	"    pm.expect(pm.response.json()[\"title\"]).to.equal(\"UnprocessableContextSourceRegistration\");\r",
+																	"});\r",
+																	"\r",
+																	"\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity12345\",\r\n    \"type\": \"Test2\",\r\n    \"brandName\": {\"type\": \"Property\", \"value\": \"teststring\"}\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -38069,61 +38538,84 @@
 													"response": []
 												},
 												{
-													"name": "Get Created Entity and Validate content",
-													"event": [
-														{
-															"listen": "test",
-															"script": {
-																"exec": [
-																	"var expected = pm.collectionVariables.get(\"created\");\r",
-																	"pm.test(\"Status code is 200\", function () {\r",
-																	"    pm.response.to.have.status(200);\r",
-																	"});\r",
-																	"pm.test(\"Validate content\", function () {\r",
-																	"    var jsonData = pm.response.json();\r",
-																	"    console.log(\"Expected: \" + expected);\r",
-																	"    console.log(\"Received: \" + jsonData);\r",
-																	"    pm.expect(jsonData).to.eql(expected);\r",
-																	"});"
-																],
-																"type": "text/javascript"
-															}
-														}
-													],
-													"request": {
-														"method": "GET",
-														"header": [
-															{
-																"key": "Accept",
-																"value": "application/json",
-																"type": "default"
-															}
-														],
-														"url": {
-															"raw": "{{query-manager}}/ngsi-ld/v1/entities/{{entityId}}",
-															"host": [
-																"{{query-manager}}"
-															],
-															"path": [
-																"ngsi-ld",
-																"v1",
-																"entities",
-																"{{entityId}}"
-															]
-														}
-													},
-													"response": []
-												},
-												{
-													"name": "Partial update try to change add object",
+													"name": "Delete Registry",
 													"event": [
 														{
 															"listen": "test",
 															"script": {
 																"exec": [
 																	"\r",
-																	"pm.test(\"Status code is 400\", function () {\r",
-																	"    pm.response.to.have.status(400);\r",
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "DELETE",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"url": {
+															"raw": "{{registry-manager}}/ngsi-ld/v1/csourceRegistrations/urn:ngsi-ld:ContextSourceRegistration:cccc",
+															"host": [
+																"{{registry-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"csourceRegistrations",
+																"urn:ngsi-ld:ContextSourceRegistration:cccc"
+															]
+														}
+													},
+													"response": []
+												}
+											]
+										},
+										{
+											"name": "Attempt creation based on redirect reg",
+											"item": [
+												{
+													"name": "Create redirect Registry",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"console.log(payloadBody.id);\r",
+																	"var cSourceId = payloadBody.id;\r",
+																	"pm.collectionVariables.set(\"created\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"cSourceId\", cSourceId);\r",
+																	"pm.test(\"Status code is 201\", function () {\r",
+																	"    pm.response.to.have.status(201);\r",
+																	"});\r",
+																	"pm.test(\"Check location header\", function () {\r",
+																	"    pm.response.to.have.header(\"Location\");\r",
+																	"    pm.expect(pm.response.headers.get(\"Location\")).to.include(cSourceId);\r",
 																	"});\r",
 																	"\r",
 																	"\r",
@@ -38143,7 +38635,7 @@
 														}
 													],
 													"request": {
-														"method": "PATCH",
+														"method": "POST",
 														"header": [
 															{
 																"key": "Content-Type",
@@ -38159,7 +38651,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\"type\": \"Property\", \"object\": \"urn:1\"}",
+															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:ContextSourceRegistration:cccc\",\r\n\t\"type\": \"ContextSourceRegistration\",\r\n\t\"information\": [{\r\n\t\t\t\"entities\": [{\r\n                \"id\": \"urn:test:testentity12345\",\r\n\t\t\t\t\"type\": \"Test2\"\r\n\t\t\t}],\r\n            \"propertyNames\": [\"brandName\",\"speed\"],\r\n            \"relationshipNames\": [\"isParked\"]\r\n\t\t}\r\n\t],\r\n\t\"endpoint\": \"http://localhost:9080\",\r\n    \"mode\": \"redirect\",\r\n    \"operations\": [\"retrieveEntity\", \"createEntity\", \"queryEntity\"]\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -38167,79 +38659,276 @@
 															}
 														},
 														"url": {
-															"raw": "{{entity-manager}}/ngsi-ld/v1/entities/{{entityId}}/attrs/intproperty",
+															"raw": "{{registry-manager}}/ngsi-ld/v1/csourceRegistrations",
 															"host": [
-																"{{entity-manager}}"
+																"{{registry-manager}}"
 															],
 															"path": [
 																"ngsi-ld",
 																"v1",
-																"entities",
-																"{{entityId}}",
-																"attrs",
-																"intproperty"
+																"csourceRegistrations"
 															]
 														}
 													},
 													"response": []
 												},
 												{
-													"name": "Validate no change in entity",
+													"name": "Create all matching reg simple Entity",
 													"event": [
 														{
 															"listen": "test",
 															"script": {
 																"exec": [
-																	"var expected = pm.collectionVariables.get(\"created\");\r",
-																	"pm.test(\"Status code is 200\", function () {\r",
-																	"    pm.response.to.have.status(200);\r",
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"console.log(payloadBody.id);\r",
+																	"var entityId = payloadBody.id;\r",
+																	"pm.collectionVariables.set(\"created\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"entityId\", entityId);\r",
+																	"pm.test(\"Status code is 422\", function () {\r",
+																	"    pm.response.to.have.status(422);\r",
 																	"});\r",
-																	"pm.test(\"Validate content\", function () {\r",
+																	"pm.test(\"Check location type and title\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
-																	"    console.log(\"Expected: \" + expected);\r",
-																	"    console.log(\"Received: \" + jsonData);\r",
-																	"    pm.expect(jsonData).to.eql(expected);\r",
-																	"});"
+																	"    pm.expect(pm.response.json()[\"type\"]).to.equal(\"https://uri.etsi.org/ngsi-ld/errors/UnprocessableContextSourceRegistration\");\r",
+																	"    pm.expect(pm.response.json()[\"title\"]).to.equal(\"UnprocessableContextSourceRegistration\");\r",
+																	"});\r",
+																	"\r",
+																	"\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
 																],
 																"type": "text/javascript"
 															}
 														}
 													],
 													"request": {
-														"method": "GET",
+														"method": "POST",
 														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
 															{
 																"key": "Accept",
 																"value": "application/json",
-																"type": "default"
+																"type": "default",
+																"disabled": true
 															}
 														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity12345\",\r\n    \"type\": \"Test2\",\r\n    \"brandName\": {\"type\": \"Property\", \"value\": \"teststring\"}\r\n}",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
 														"url": {
-															"raw": "{{query-manager}}/ngsi-ld/v1/entities/{{entityId}}",
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
 															"host": [
-																"{{query-manager}}"
+																"{{entity-manager}}"
 															],
 															"path": [
 																"ngsi-ld",
 																"v1",
-																"entities",
-																"{{entityId}}"
+																"entities"
 															]
 														}
 													},
 													"response": []
 												},
 												{
-													"name": "Delete Entity",
+													"name": "Create partial matching reg simple Entity",
 													"event": [
 														{
 															"listen": "test",
 															"script": {
 																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"console.log(payloadBody.id);\r",
+																	"var entityId = payloadBody.id;\r",
+																	"pm.collectionVariables.set(\"created\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"entityId\", entityId);\r",
+																	"pm.test(\"Status code is 207\", function () {\r",
+																	"    pm.response.to.have.status(207);\r",
+																	"});\r",
+																	"pm.test(\"Check location type and title\", function () {\r",
+																	"    var jsonData = pm.response.json();\r",
+																	"    var success = jsonData[\"success\"];\r",
+																	"    var fails = jsonData[\"failure\"];\r",
+																	"    var regFail = fails[0];\r",
+																	"    \r",
+																	"    pm.expect(regFail[\"type\"]).to.equal(\"https://uri.etsi.org/ngsi-ld/errors/UnprocessableContextSourceRegistration\");\r",
+																	"    pm.expect(regFail[\"title\"]).to.equal(\"UnprocessableContextSourceRegistration\");\r",
+																	"    pm.expect(success[0][\"attributes\"][0][\"attributeName\"]).to.equal(\"notBrandName\");\r",
+																	"});\r",
+																	"\r",
+																	"\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity12345\",\r\n    \"type\": \"Test2\",\r\n    \"brandName\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"notBrandName\": {\"type\": \"Property\", \"value\": \"teststring\"}\r\n}",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Create partial matching reg simple Entity check double fail",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"console.log(payloadBody.id);\r",
+																	"var entityId = payloadBody.id;\r",
+																	"pm.collectionVariables.set(\"created\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"entityId\", entityId);\r",
+																	"pm.test(\"Status code is 207\", function () {\r",
+																	"    pm.response.to.have.status(207);\r",
+																	"});\r",
+																	"pm.test(\"Check location type and title\", function () {\r",
+																	"    var jsonData = pm.response.json();\r",
+																	"    var fails = jsonData[\"failure\"];\r",
+																	"    var regFail = fails[0];\r",
+																	"    var localFail = fails[1];\r",
+																	"    pm.expect(regFail[\"type\"]).to.equal(\"https://uri.etsi.org/ngsi-ld/errors/UnprocessableContextSourceRegistration\");\r",
+																	"    pm.expect(regFail[\"title\"]).to.equal(\"UnprocessableContextSourceRegistration\");\r",
+																	"    pm.expect(localFail[\"errorCode\"]).to.equal(409);\r",
+																	"    pm.expect(localFail[\"type\"]).to.equal(\"https://uri.etsi.org/ngsi-ld/errors/AlreadyExists\");\r",
+																	"    pm.expect(localFail[\"title\"]).to.equal(\"Already exists.\");\r",
+																	"});\r",
+																	"\r",
+																	"\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity12345\",\r\n    \"type\": \"Test2\",\r\n    \"brandName\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"notBrandName\": {\"type\": \"Property\", \"value\": \"teststring\"}\r\n}",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Delete entity",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"\r",
 																	"pm.test(\"Status code is 204\", function () {\r",
 																	"    pm.response.to.have.status(204);\r",
 																	"});\r",
-																	"pm.collectionVariables.clear();"
+																	""
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
 																],
 																"type": "text/javascript"
 															}
@@ -38247,9 +38936,30 @@
 													],
 													"request": {
 														"method": "DELETE",
-														"header": [],
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
 														"url": {
-															"raw": "{{entity-manager}}/ngsi-ld/v1/entities/{{entityId}}",
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities/urn:test:testentity12345",
 															"host": [
 																"{{entity-manager}}"
 															],
@@ -38257,7 +38967,642 @@
 																"ngsi-ld",
 																"v1",
 																"entities",
-																"{{entityId}}"
+																"urn:test:testentity12345"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Delete Registry",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"\r",
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "DELETE",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"url": {
+															"raw": "{{registry-manager}}/ngsi-ld/v1/csourceRegistrations/urn:ngsi-ld:ContextSourceRegistration:cccc",
+															"host": [
+																"{{registry-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"csourceRegistrations",
+																"urn:ngsi-ld:ContextSourceRegistration:cccc"
+															]
+														}
+													},
+													"response": []
+												}
+											]
+										},
+										{
+											"name": "Attempt creation based on inclusive reg",
+											"item": [
+												{
+													"name": "Create inclusive Registry",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"console.log(payloadBody.id);\r",
+																	"var cSourceId = payloadBody.id;\r",
+																	"pm.collectionVariables.set(\"created\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"cSourceId\", cSourceId);\r",
+																	"pm.test(\"Status code is 201\", function () {\r",
+																	"    pm.response.to.have.status(201);\r",
+																	"});\r",
+																	"pm.test(\"Check location header\", function () {\r",
+																	"    pm.response.to.have.header(\"Location\");\r",
+																	"    pm.expect(pm.response.headers.get(\"Location\")).to.include(cSourceId);\r",
+																	"});\r",
+																	"\r",
+																	"\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:ContextSourceRegistration:cccc\",\r\n\t\"type\": \"ContextSourceRegistration\",\r\n\t\"information\": [{\r\n\t\t\t\"entities\": [{\r\n                \"id\": \"urn:test:testentity12345\",\r\n\t\t\t\t\"type\": \"Test2\"\r\n\t\t\t}],\r\n            \"propertyNames\": [\"brandName\",\"speed\"],\r\n            \"relationshipNames\": [\"isParked\"]\r\n\t\t}\r\n\t],\r\n\t\"endpoint\": \"http://localhost:9080\",\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\"retrieveEntity\", \"createEntity\", \"queryEntity\"]\r\n}",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{registry-manager}}/ngsi-ld/v1/csourceRegistrations",
+															"host": [
+																"{{registry-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"csourceRegistrations"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Create all matching reg simple Entity",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"console.log(payloadBody.id);\r",
+																	"var entityId = payloadBody.id;\r",
+																	"pm.collectionVariables.set(\"created\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"entityId\", entityId);\r",
+																	"pm.test(\"Status code is 207\", function () {\r",
+																	"    pm.response.to.have.status(207);\r",
+																	"});\r",
+																	"pm.test(\"Check location type and title\", function () {\r",
+																	"    var jsonData = pm.response.json();\r",
+																	"    var fails = jsonData['failure'];\r",
+																	"    var success = jsonData['success'];\r",
+																	"    pm.expect(fails[0][\"type\"]).to.equal(\"https://uri.etsi.org/ngsi-ld/errors/UnprocessableContextSourceRegistration\");\r",
+																	"    pm.expect(fails[0][\"title\"]).to.equal(\"UnprocessableContextSourceRegistration\");\r",
+																	"    pm.expect(fails[0][\"detail\"][\"attributes\"][0][\"attributeName\"]).to.equal(\"brandName\");\r",
+																	"    pm.expect(success[0][\"attributes\"][0][\"attributeName\"]).to.equal(\"brandName\");\r",
+																	"});\r",
+																	"\r",
+																	"\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity12345\",\r\n    \"type\": \"Test2\",\r\n    \"brandName\": {\"type\": \"Property\", \"value\": \"teststring\"}\r\n}",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Get local entity",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"\r",
+																	"pm.test(\"Status code is 200\", function () {\r",
+																	"    pm.response.to.have.status(200);\r",
+																	"});\r",
+																	"\r",
+																	"pm.test(\"Test body contains brandName\", function () {\r",
+																	"    pm.expect(pm.response.json()).to.have.property('brandName');\r",
+																	"    pm.expect(pm.response.json()['brandName']['value']).to.equal('teststring');\r",
+																	"});\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"protocolProfileBehavior": {
+														"disableBodyPruning": true
+													},
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities/urn:test:testentity12345",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities",
+																"urn:test:testentity12345"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Delete entity",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"\r",
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "DELETE",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities/urn:test:testentity12345",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities",
+																"urn:test:testentity12345"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Create partial matching reg simple Entity",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"console.log(payloadBody.id);\r",
+																	"var entityId = payloadBody.id;\r",
+																	"pm.collectionVariables.set(\"created\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"entityId\", entityId);\r",
+																	"pm.test(\"Status code is 207\", function () {\r",
+																	"    pm.response.to.have.status(207);\r",
+																	"});\r",
+																	"pm.test(\"Check location type and title\", function () {\r",
+																	"    var jsonData = pm.response.json();\r",
+																	"    var fails = jsonData['failure'];\r",
+																	"    var success = jsonData['success'];\r",
+																	"    pm.expect(fails[0][\"type\"]).to.equal(\"https://uri.etsi.org/ngsi-ld/errors/UnprocessableContextSourceRegistration\");\r",
+																	"    pm.expect(fails[0][\"title\"]).to.equal(\"UnprocessableContextSourceRegistration\");\r",
+																	"    pm.expect(fails[0][\"detail\"][\"attributes\"][0][\"attributeName\"]).to.equal(\"brandName\");\r",
+																	"    let attributes = success[0][\"attributes\"]; // assuming this is the array you want to check\r",
+																	"    let brandName = {\r",
+																	"        \"attributeName\": \"brandName\"\r",
+																	"    };\r",
+																	"    let notBrandName = {\r",
+																	"        \"attributeName\": \"notBrandName\"\r",
+																	"    };\r",
+																	"    pm.expect(attributes).to.deep.include(brandName); \r",
+																	"    pm.expect(attributes).to.deep.include(notBrandName); \r",
+																	"\r",
+																	"});\r",
+																	"\r",
+																	"\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity12345\",\r\n    \"type\": \"Test2\",\r\n    \"brandName\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"notBrandName\": {\"type\": \"Property\", \"value\": \"teststring\"}\r\n}",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Get local entity",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"\r",
+																	"pm.test(\"Status code is 200\", function () {\r",
+																	"    pm.response.to.have.status(200);\r",
+																	"});\r",
+																	"\r",
+																	"pm.test(\"Test body contains brandName\", function () {\r",
+																	"    pm.expect(pm.response.json()).to.have.property('brandName');\r",
+																	"    pm.expect(pm.response.json()['brandName']['value']).to.equal('teststring');\r",
+																	"    pm.expect(pm.response.json()['notBrandName']['value']).to.equal('teststring');\r",
+																	"});\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"protocolProfileBehavior": {
+														"disableBodyPruning": true
+													},
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities/urn:test:testentity12345",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities",
+																"urn:test:testentity12345"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Delete entity",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"\r",
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "DELETE",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities/urn:test:testentity12345",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities",
+																"urn:test:testentity12345"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Delete Registry",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"\r",
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "DELETE",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"url": {
+															"raw": "{{registry-manager}}/ngsi-ld/v1/csourceRegistrations/urn:ngsi-ld:ContextSourceRegistration:cccc",
+															"host": [
+																"{{registry-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"csourceRegistrations",
+																"urn:ngsi-ld:ContextSourceRegistration:cccc"
 															]
 														}
 													},
@@ -38272,6 +39617,28 @@
 					]
 				}
 			]
+		}
+	],
+	"variable": [
+		{
+			"key": "created",
+			"value": ""
+		},
+		{
+			"key": "entityId",
+			"value": ""
+		},
+		{
+			"key": "cSourceId",
+			"value": ""
+		},
+		{
+			"key": "nextLink",
+			"value": ""
+		},
+		{
+			"key": "nextlink",
+			"value": ""
 		}
 	]
 }
