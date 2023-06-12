@@ -38,7 +38,12 @@
 			"enabled": true
 		},
 		{
-			"key": "history-manager",
+			"key": "history-entity-manager",
+			"value": "http://localhost:9090",
+			"type": "default",
+			"enabled": true
+		},{
+			"key": "history-query-manager",
 			"value": "http://localhost:9090",
 			"type": "default",
 			"enabled": true
