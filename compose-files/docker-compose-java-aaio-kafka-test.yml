@@ -33,7 +33,7 @@ services:
       POSTGRES_PASSWORD: ngb
       POSTGRES_DB: ngb
   scorpio:
-    image: scorpiobroker/susbcription-manager:java-kafka-latest
+    image: scorpiobroker/all-in-one-runner:java-kafka-latest
     ports:
       - "2027:2027"
     environment:
