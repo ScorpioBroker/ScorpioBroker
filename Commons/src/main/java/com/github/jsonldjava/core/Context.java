@@ -1240,33 +1240,38 @@ public class Context extends LinkedHashMap<String, Object> {
 			ctx.put(JsonLdConsts.VOCAB, this.get(JsonLdConsts.VOCAB));
 		}
 		for (final String term : termDefinitions.keySet()) {
-			final Map<String, Object> definition = (Map<String, Object>) termDefinitions.get(term);
-			if (definition.get(JsonLdConsts.LANGUAGE) == null && definition.get(JsonLdConsts.CONTAINER) == null
-					&& definition.get(JsonLdConsts.TYPE) == null && (definition.get(JsonLdConsts.REVERSE) == null
-							|| Boolean.FALSE.equals(definition.get(JsonLdConsts.REVERSE)))) {
-				final String cid = this.compactIri((String) definition.get(JsonLdConsts.ID));
-				ctx.put(term, term.equals(cid) ? definition.get(JsonLdConsts.ID) : cid);
-			} else {
-				final Map<String, Object> defn = newMap();
-				final String cid = this.compactIri((String) definition.get(JsonLdConsts.ID));
-				final Boolean reverseProperty = Boolean.TRUE.equals(definition.get(JsonLdConsts.REVERSE));
-				if (!(term.equals(cid) && !reverseProperty)) {
-					defn.put(reverseProperty ? JsonLdConsts.REVERSE : JsonLdConsts.ID, cid);
-				}
-				final String typeMapping = (String) definition.get(JsonLdConsts.TYPE);
-				if (typeMapping != null) {
-					defn.put(JsonLdConsts.TYPE,
-							JsonLdUtils.isKeyword(typeMapping) ? typeMapping : compactIri(typeMapping, true));
-				}
-				if (definition.get(JsonLdConsts.CONTAINER) != null) {
-					defn.put(JsonLdConsts.CONTAINER, definition.get(JsonLdConsts.CONTAINER));
-				}
-				final Object lang = definition.get(JsonLdConsts.LANGUAGE);
-				if (definition.get(JsonLdConsts.LANGUAGE) != null) {
-					defn.put(JsonLdConsts.LANGUAGE, Boolean.FALSE.equals(lang) ? null : lang);
-				}
-				ctx.put(term, defn);
+//			final Map<String, Object> definition = (Map<String, Object>) termDefinitions.get(term);
+//			if (definition.get(JsonLdConsts.LANGUAGE) == null && definition.get(JsonLdConsts.CONTAINER) == null
+//					&& definition.get(JsonLdConsts.TYPE) == null && (definition.get(JsonLdConsts.REVERSE) == null
+//							|| Boolean.FALSE.equals(definition.get(JsonLdConsts.REVERSE)))) {
+//				final String cid = this.compactIri((String) definition.get(JsonLdConsts.ID));
+//				ctx.put(term, term.equals(cid) ? definition.get(JsonLdConsts.ID) : cid);
+//			} else {
+//				final Map<String, Object> defn = newMap();
+//				final String cid = this.compactIri((String) definition.get(JsonLdConsts.ID));
+//				final Boolean reverseProperty = Boolean.TRUE.equals(definition.get(JsonLdConsts.REVERSE));
+//				if (!(term.equals(cid) && !reverseProperty)) {
+//					defn.put(reverseProperty ? JsonLdConsts.REVERSE : JsonLdConsts.ID, cid);
+//				}
+//				final String typeMapping = (String) definition.get(JsonLdConsts.TYPE);
+//				if (typeMapping != null) {
+//					defn.put(JsonLdConsts.TYPE,
+//							JsonLdUtils.isKeyword(typeMapping) ? typeMapping : compactIri(typeMapping, true));
+//				}
+//				if (definition.get(JsonLdConsts.CONTAINER) != null) {
+//					defn.put(JsonLdConsts.CONTAINER, definition.get(JsonLdConsts.CONTAINER));
+//				}
+//				final Object lang = definition.get(JsonLdConsts.LANGUAGE);
+//				if (definition.get(JsonLdConsts.LANGUAGE) != null) {
+//					defn.put(JsonLdConsts.LANGUAGE, Boolean.FALSE.equals(lang) ? null : lang);
+//				}
+//				ctx.put(term, defn);
+//			}
+			Object entry = termDefinitions.get(term);
+			if(entry instanceof Map) {
+				((Map)entry).remove(JsonLdConsts.REVERSE);
 			}
+			ctx.put(term, entry);
 		}
 
 		final Map<String, Object> rval = newMap();

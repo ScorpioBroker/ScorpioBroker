@@ -118,7 +118,7 @@ public class SubscriptionService {
 				SubscriptionRequest request;
 				try {
 					request = new SubscriptionRequest(tuple.getItem1(), tuple.getItem2(),
-							new Context().parse(tuple.getItem3(), false));
+							new Context().parse(tuple.getItem3().get(NGSIConstants.JSON_LD_CONTEXT), false));
 					if (isIntervalSub(request)) {
 						this.tenant2subscriptionId2IntervalSubscription.put(request.getTenant(), request.getId(),
 								request);
@@ -147,7 +147,8 @@ public class SubscriptionService {
 			return Uni.createFrom().failure(e);
 		}
 		SubscriptionTools.setInitTimesSentAndFailed(request);
-		return localContextService.createImplicitly(tenant, request.getContext().serialize()).onItem()
+		Map<String, Object> tmp = request.getContext().serialize();
+		return localContextService.createImplicitly(tenant, tmp).onItem()
 				.transformToUni(contextId -> {
 					return subDAO.createSubscription(request, contextId).onItem().transformToUni(t -> {
 						if (isIntervalSub(request)) {

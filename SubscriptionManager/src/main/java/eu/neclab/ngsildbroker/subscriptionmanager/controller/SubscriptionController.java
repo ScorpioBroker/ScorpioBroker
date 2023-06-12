@@ -57,17 +57,7 @@ public class SubscriptionController {
         Tuple2<Context, Map<String, Object>> tuple;
         try {
             Map<String, Object> map = (Map<String, Object>) JsonUtils.fromString(payload);
-            List<String> contexts = (List<String>) map.get("@context");
-            List<String> finalContexts = new ArrayList<>();
-            if (contexts != null) {
-                for (String url : contexts) {
-                    url = url + "?type=implicitlyCreated";
-                    finalContexts.add(url);
-                }
-                map.put("@context", finalContexts);
-            }
-            Gson gson = new Gson();
-            tuple = HttpUtils.expandBody(request, gson.toJson(map), AppConstants.SUBSCRIPTION_CREATE_PAYLOAD);
+            tuple = HttpUtils.expandBody(request, map, AppConstants.SUBSCRIPTION_CREATE_PAYLOAD);
         } catch (Exception e) {
             return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
         }

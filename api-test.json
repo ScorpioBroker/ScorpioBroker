@@ -36523,7 +36523,9 @@
 															"listen": "test",
 															"script": {
 																"exec": [
-																	"\r",
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"var entityId2 = payloadBody[1].id;\r",
+																	"pm.collectionVariables.set(\"entityId3\", entityId2);\r",
 																	"pm.test(\"Successful POST request\", function () {\r",
 																	"    pm.expect(pm.response.code).to.be.oneOf([201, 207,204]);\r",
 																	"});\r",
@@ -39621,23 +39623,7 @@
 	],
 	"variable": [
 		{
-			"key": "created",
-			"value": ""
-		},
-		{
-			"key": "entityId",
-			"value": ""
-		},
-		{
-			"key": "cSourceId",
-			"value": ""
-		},
-		{
-			"key": "nextLink",
-			"value": ""
-		},
-		{
-			"key": "nextlink",
+			"key": "subId",
 			"value": ""
 		}
 	]
