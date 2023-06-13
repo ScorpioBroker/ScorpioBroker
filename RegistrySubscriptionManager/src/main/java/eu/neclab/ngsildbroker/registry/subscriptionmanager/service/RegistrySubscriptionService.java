@@ -480,7 +480,8 @@ public class RegistrySubscriptionService {
 			}
 
 		}
-		if (!SubscriptionTools.evaluateGeoQuery(sub.getLdGeoQuery(), (List<Map<String, Object>>) reg.get(NGSIConstants.NGSI_LD_LOCATION))) {
+		if (!SubscriptionTools.evaluateGeoQuery(sub.getLdGeoQuery(),
+				(List<Map<String, Object>>) reg.get(NGSIConstants.NGSI_LD_LOCATION))) {
 			return false;
 		}
 		if (sub.getScopeQuery() != null) {
@@ -1061,9 +1062,9 @@ public class RegistrySubscriptionService {
 					data.add(row.getJsonObject(0).getMap());
 				});
 				try {
-					return internalNotificationSender
-							.send(new InternalNotification(message.getTenant(), message.getId(), SubscriptionTools
-									.generateCsourceNotification(message, data, AppConstants.INTERNAL_NOTIFICATION_REQUEST)));
+					return internalNotificationSender.send(new InternalNotification(message.getTenant(),
+							message.getId(), SubscriptionTools.generateCsourceNotification(message, data,
+									AppConstants.INTERNAL_NOTIFICATION_REQUEST)));
 				} catch (Exception e) {
 					logger.error("Failed to send internal notification for sub " + message.getId(), e);
 					return Uni.createFrom().voidItem();
@@ -1114,7 +1115,7 @@ public class RegistrySubscriptionService {
 		return false;
 	}
 
-	@Scheduled(every = "${scorpio.registry.subscription.checkinterval}", delay = 5)
+	@Scheduled(every = "${scorpio.registry.subscription.checkinterval}", delayed = "${scorpio.startupdelay}")
 	Uni<Void> checkIntervalSubs() {
 		List<Uni<Void>> unis = Lists.newArrayList();
 		for (Cell<String, String, SubscriptionRequest> cell : tenant2subscriptionId2IntervalSubscription.cellSet()) {

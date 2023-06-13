@@ -19,6 +19,8 @@ import org.locationtech.spatial4j.shape.ShapeFactory.PolygonBuilder.HoleBuilder;
 import org.locationtech.spatial4j.shape.jts.JtsGeometry;
 import org.locationtech.spatial4j.shape.jts.JtsPoint;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import com.github.jsonldjava.core.Context;
 import com.google.common.collect.Lists;
 
@@ -99,8 +101,14 @@ public class GeoQueryTerm {
 		return geoproperty;
 	}
 
+	@JsonIgnore
 	public void setGeoproperty(String geoproperty) {
 		this.geoproperty = context.expandIri(geoproperty, false, true, context, null);
+	}
+
+	@JsonSetter("geoproperty")
+	void setGeopropertySerializer(String geoproperty) {
+		this.geoproperty = geoproperty;
 	}
 
 	public String getGeorel() {

@@ -601,7 +601,7 @@ public class SubscriptionService {
 		return false;
 	}
 
-	@Scheduled(every = "${scorpio.subscription.checkinterval}", delayUnit = TimeUnit.SECONDS, delay = 5)
+	@Scheduled(every = "${scorpio.subscription.checkinterval}", delayed = "${scorpio.startupdelay}")
 	Uni<Void> checkIntervalSubs() {
 		List<Uni<Void>> unis = Lists.newArrayList();
 		for (Cell<String, String, SubscriptionRequest> cell : tenant2subscriptionId2IntervalSubscription.cellSet()) {

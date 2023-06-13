@@ -2,6 +2,8 @@ package eu.neclab.ngsildbroker.commons.datatypes.requests.subscription;
 
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import com.github.jsonldjava.core.Context;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
@@ -36,8 +38,8 @@ public class SubscriptionRequest extends BaseRequest {
 	}
 
 	@Override
+	@JsonIgnore
 	public void setPayload(Map<String, Object> payload) {
-		// TODO Auto-generated method stub
 		super.setPayload(payload);
 		try {
 			if (payload != null)
@@ -46,6 +48,11 @@ public class SubscriptionRequest extends BaseRequest {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+	}
+
+	@JsonSetter("payload")
+	void setPayloadForDeserialize(Map<String, Object> payload) {
+		super.setPayload(payload);
 	}
 
 	public Subscription getSubscription() {
