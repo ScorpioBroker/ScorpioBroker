@@ -253,7 +253,7 @@ public class CSourceService {
 	}
 
 	@IfBuildProperty(name = "scorpio.fedupdate", stringValue = "active", enableIfMissing = false)
-	@Scheduled(every = "{scorpio.fedupdaterate}")
+	@Scheduled(every = "${scorpio.fedupdaterate}", delayed = "${scorpio.startupdelay}")
 	Uni<Void> checkInternalAndSendUpdateIfNeeded() {
 //		return cSourceInfoDAO.getAllTenants().onItem().transformToUni(tenants -> {
 //			List<Uni<Map<String, Object>>> unis = Lists.newArrayList();

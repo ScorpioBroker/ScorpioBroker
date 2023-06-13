@@ -11,11 +11,9 @@ import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import io.quarkus.runtime.annotations.IgnoreProperty;
 
 public class SubscriptionRequest extends BaseRequest {
 
-	@IgnoreProperty
 	private Subscription subscription;
 
 	private Context context;
@@ -38,7 +36,6 @@ public class SubscriptionRequest extends BaseRequest {
 	}
 
 	@Override
-	@JsonIgnore
 	public void setPayload(Map<String, Object> payload) {
 		super.setPayload(payload);
 		try {

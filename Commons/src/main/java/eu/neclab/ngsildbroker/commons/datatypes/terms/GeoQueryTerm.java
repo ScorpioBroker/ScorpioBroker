@@ -43,6 +43,9 @@ public class GeoQueryTerm {
 	private Double distanceValue = null;
 	private Context context;
 
+	public GeoQueryTerm() {
+		// for serialization
+	}
 	public GeoQueryTerm(Context context) {
 		this.context = context;
 	}
@@ -101,7 +104,7 @@ public class GeoQueryTerm {
 		return geoproperty;
 	}
 
-	@JsonIgnore
+	
 	public void setGeoproperty(String geoproperty) {
 		this.geoproperty = context.expandIri(geoproperty, false, true, context, null);
 	}
@@ -305,6 +308,7 @@ public class GeoQueryTerm {
 		return dollar;
 	}
 
+	@JsonIgnore
 	public Shape getShape() {
 		Shape queryShape;
 		List<List<Double>> tmp;

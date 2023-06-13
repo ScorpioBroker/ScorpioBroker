@@ -155,7 +155,9 @@ public class MicroServiceUtils {
 		SubscriptionRequest result = new SubscriptionRequest();
 		result.setContext(originalPayload.getContext());
 		result.setId(originalPayload.getId());
-		result.setPayload(deepCopyMap(originalPayload.getPayload()));
+		if (originalPayload.getPayload() != null) {
+			result.setPayload(deepCopyMap(originalPayload.getPayload()));
+		}
 		result.setTenant(originalPayload.getTenant());
 		result.setRequestType(originalPayload.getRequestType());
 		result.setBatchInfo(originalPayload.getBatchInfo());
