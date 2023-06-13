@@ -7,6 +7,7 @@ import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Acknowledgment.Strategy;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.BatchRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.InternalNotification;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import io.quarkus.arc.profile.UnlessBuildProfile;
@@ -32,5 +33,14 @@ public class SubscriptionMessagingKafka extends SubscriptionMessagingBase {
 	@Acknowledgment(Strategy.PRE_PROCESSING)
 	public Uni<Void> handleInternalNotification(InternalNotification message) {
 		return baseHandleInternalNotification(message);
+	}
+
+	@Incoming(AppConstants.ENTITY_BATCH_RETRIEVE_CHANNEL)
+	@Acknowledgment(Strategy.PRE_PROCESSING)
+	public Uni<Void> handleBatchEntities(BatchRequest message) {
+		if (duplicate) {
+			return baseHandleBatchEntities(MicroServiceUtils.deepCopyRequestMessage(message));
+		}
+		return baseHandleBatchEntities(message);
 	}
 }
