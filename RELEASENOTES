@@ -1,3 +1,35 @@
+RELEASE NOTES SCORPIO 4.0.0/FIWARE-8.4
+
+
+
+With this release we are moving to NGSI-LD version 1.6.1. This means there are a few changes in the core context.
+As a general warning. There might be query issues with previous created entities with scopes and scope queries. We will soon provide a script to update your current entities up to spec as well as a script/tutorial how to backup your database for Scorpio.
+
+The follow features have been implemented in this release.
+
+ - Multi type support in entities
+ - Full federated ops support. You can now create registrations with operations they shall support, e.g. createEntity or retrieveEntity (see spec for full list). All operations are supported. This means you can now create or update entities through a federation broker in a remote broker.
+ - Lang property support. Full support for "languageMap" type attributes. Support in q queries updated.
+     - In Query and temporal Query 
+ - TypeQuery support. Support for new type query language. 
+     - In Query and temporal Query
+ - Aggr function support in temporal queries (e.g. min, max, avg)
+ - A new approach to pagination in queries
+   - NGSI-LD will define a new logic for queries in distributed systems. This release already includes the first step for this. 
+   The issue with distributed systems is that real time pagination on a full dynamic system is very expensive. 
+   Therefore NGSI-LD will introduce two new types of queries. Later a full snapshot logic will be introduced where a snapshot is recorded for a query through which a user can paginate.
+   The change to the live query which is implemented in this release already works as follows
+    - The federation broker will first collect all entity ids which match a query and create a temporary entityMap. 
+    - The id of this map returned on a first query. It is also encoded in the next and prev links.
+    - This entityMap is static so entityIds will not change order and a clear pagination is possible.
+    - If the entityMap id is provided in the follow up query via the entityMap url parameter the entityMap entries will be retrieve
+    - If the entityMap parameter is omitted the query will always retrieve the latest matching entities. This might causes inconsistencies between pages.
+ - Support for deletedAt for attributes and entities in temporal recording.
+ - @Context hosting/caching. A new endpoint /ngsi-ld/v1/jsonldContexts/ is provided to which users can store @contexts.
+ 	- Cache support in all operations. Custom @contexts provided in user requests are automatically cached 
+
+  
+
 RELEASE NOTES SCORPIO 3.0.11
 
 Fixed various issues 

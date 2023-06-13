@@ -5,15 +5,26 @@ import os
 import random
 import sys
 import time
-import base64
 from datetime import timezone
+from threading import Thread
+
+import dash_leaflet as dl
+import dash_leaflet.express as dlx
 import requests
+import schedule
 from dash import Dash, dcc, html, dash_table
 from dash.dependencies import Input, Output, State
+from dash_extensions.javascript import assign
+import dash_leaflet as dl
+import dash_leaflet.express as dlx
 import plotly.express as px
+import plotly.graph_objects as go
 import pandas as pd
+import time
+import base64
 import dash_bootstrap_components as dbc
-import urllib.parse
+from dash_bootstrap_templates import load_figure_template
+#from mtk_common import utils
 
 LOGGER = logging.getLogger("ngsildmap")
 LOGGER.setLevel(10)
@@ -22,28 +33,92 @@ sh = logging.StreamHandler(sys.stdout)
 sh.setFormatter(formatter)
 sh.setLevel(10)
 LOGGER.addHandler(sh)
-LOGGER.info("Scorpio Dashboard starting...")
+LOGGER.info("NGSI-LD Map starting...")
 
 
-ROUNDINGVALUE = int(os.getenv('SCORPIO_DASHBOARD_ROUNDING_VALUE', '0'))
+ROUNDINGVALUE = 0
 
-PRECONFIGURED_QUERIES = os.getenv('SCORPIO_DASHBOARD_QUERIES', None)
-if PRECONFIGURED_QUERIES:
-  PRECONFIGURED_QUERIES = json.loads(PRECONFIGURED_QUERIES)
-else:
-  PRECONFIGURED_QUERIES = []
-POLL_TIME = os.getenv('SCORPIO_DASHBOARD_POLL_TIME', 5000)
 
-if PRECONFIGURED_QUERIES == []:
-  hiddenConfig = ''
-  timerDisabled = True
-  showHosts = True
-  showGraphsHidden = 'hidden'
-else:
-  hiddenConfig = 'hidden'
-  timerDisabled = False
-  showHosts = False
-  showGraphsHidden = ''
+def temporalGet(url, headers, isIDSA, entityId, attrib):
+  if isIDSA:
+    print('do nothing')
+  else:
+    return requests.get(url + '/ngsi-ld/v1/temporal/entities/' + entityId + '?attrs=' + attrib + '&options=sysAttrs'
+      ,headers=headers,
+      ).json()
+def getTypeEndpoints(host, atContext, isIDSA):
+  result = []
+  if isIDSA:
+    print('do nothing')
+  else:
+    headers={
+      "Link": "<"
+       + atContext
+       + '>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"',
+      "Accept": "application/json",
+    }
+    types = requests.get(host + '/ngsi-ld/v1/types'
+      ,headers=headers,
+      ).json()['typeList']
+    for entityType in types:
+      result.append({'headers': headers, 'url': host + '/ngsi-ld/v1/types/' + entityType, 'baseUrl': host, 'type': entityType, 'isIDSA': False, 'atContext': atContext})
+  return result
+def getAttribs(typeEndpoints, isIDSA):
+  type2Attribs = []
+  if isIDSA:
+    print('do nothing')
+  else:
+    for typeEndpoint in typeEndpoints:
+      attribList = requests.get(typeEndpoint['url'], headers=typeEndpoint['headers']).json()['attributeDetails']
+      for attrib in attribList:
+        if attrib['attributeName'] == 'location':
+          continue
+        value = typeEndpoint['baseUrl'] + ';' + typeEndpoint['type'] + ';' + attrib['attributeName']
+        type2Attribs.append({'label': 'Type: ' + typeEndpoint['type'] + ' Attribute: ' + attrib['attributeName'], 'value': value, 'extra': {'url': typeEndpoint['baseUrl'], 'headers': typeEndpoint['headers'], 'type': typeEndpoint['type'], 'attribName': attrib['attributeName'], 'isIDSA': typeEndpoint['isIDSA'], 'atContext': typeEndpoint['atContext']}})
+  return type2Attribs
+def getEntityTypeAttr(endpoints):
+  entryList = []
+  for endpoint in endpoints:
+    entryList.append({'label': html.H5(endpoint['url']), 'value': endpoint['url'], 'disabled': True})
+    if 'atContext' in endpoint:
+      atContext = endpoint['atContext']
+    else:
+     atContext = 'https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld'
+    typeEndpoints = getTypeEndpoints(endpoint['url'], atContext, endpoint['isIDSA'])
+    entryList = entryList + getAttribs(typeEndpoints, endpoint['isIDSA'])
+  return entryList
+
+def queryEntities(query):
+  #currentQueries.append({'qId': queryName, 'url': type2Attr['url'], 'atContext': type2Attr['atContext'], 'isIDSA': type2Attr['isIDSA'],  'type2Attrib': type2Attr['type'] + ' ' + type2Attr['attribName'], 'q': q, 'geoQ': geoQ, 'headers': type2Attr['headers']})
+  if query['isIDSA']:
+    print('do nothing')
+    return []
+  else:
+    url = query['url']+'/ngsi-ld/v1/entities?type='+query['type']
+    if query['q'] and len(query['q'])>0:
+      url += '&q=' + query['q']
+    if query['geoQ'] and len(query['geoQ'])>0:
+      url += '&geoQ=' + query['geoQ']
+    print(url)
+    return requests.get(url, headers=query['headers']).json()
+  
+def getEntities(currentQueries):
+  entities = {}
+  temp = {}
+  for entry in currentQueries:
+    qId = entry['qId']
+    entities[qId] = []
+    for entity in queryEntities(entry):
+      entities[qId].append(entity)
+  return entities
+
+def getInitialMap():
+  dummy = {'_': [], 'lon':[], 'lat':[]}
+  df = pd.DataFrame(dummy)
+  result = px.scatter_mapbox(df, lat='lat', lon='lon', hover_name='_', zoom=3, color='_', mapbox_style='carto-darkmatter', template='plotly_dark')
+  result.update_layout(margin={"r":0,"t":0,"l":0,"b":0}, uirevision = 'something')#, paper_bgcolor='black', legend_font_color='white')
+  return result
+
 
 app = Dash(external_stylesheets=[dbc.themes.DARKLY])
 #initialSetup(app)
@@ -54,7 +129,7 @@ app.layout = html.Div([
       html.Img(src='data:image/png;base64,{}'.format(encoded_image.decode()), style={'display': 'inline-block', 'height': '80px'}),
       html.H2('Scorpio Dashboard', style={'display': 'inline-block', 'padding-left': 2, 'vertical-align': 'middle', 'height': '50'})
     ], id='header_div', style={'text-align': 'center', 'padding': 5}),
-    html.Button('⮟Hosts⮟', id='show-hide-hosts-button', n_clicks=0, style={'width': '100%', 'height': '14px', 'backgroundColor': 'rgb(34,34,34)', 'color': 'white', 'border': '0px', 'margin': 'auto', 'font-size': '10px'}, hidden=hiddenConfig),
+    html.Button('⮟Hosts⮟', id='show-hide-hosts-button', n_clicks=0, style={'width': '100%', 'height': '14px', 'backgroundColor': 'rgb(34,34,34)', 'color': 'white', 'border': '0px', 'margin': 'auto', 'font-size': '10px'}),
     dbc.Collapse([  
       html.Div([
         html.Div([
@@ -113,9 +188,9 @@ app.layout = html.Div([
             })
         ], style={'width': '70vw', 'display': 'inline-block', 'vertical-align': 'top', 'float': 'right'})
       ], style={'padding': 5})
-    ], id='hosts-collabsable', is_open=showHosts),
+    ], id='hosts-collabsable', is_open=True),
     html.Div([
-      html.Button('⮟Queries⮟', id='show-hide-queries-button', n_clicks=0, style={'width': '100%', 'height': '14px', 'backgroundColor': 'rgb(34,34,34)', 'color': 'white', 'border': '0px', 'margin': 'auto', 'font-size': '10px'}, hidden=hiddenConfig),
+      html.Button('⮟Queries⮟', id='show-hide-queries-button', n_clicks=0, style={'width': '100%', 'height': '14px', 'backgroundColor': 'rgb(34,34,34)', 'color': 'white', 'border': '0px', 'margin': 'auto', 'font-size': '10px'}),
       dbc.Collapse([
         html.Div([
           html.Div([
@@ -175,7 +250,7 @@ app.layout = html.Div([
                 'name': 'geoQ',
                 'id': 'geoQ'}
             ],
-            data=PRECONFIGURED_QUERIES,
+            data=[],
             editable=False,
             row_deletable=True,
             page_size=5,
@@ -188,7 +263,7 @@ app.layout = html.Div([
               'border': '1px solid black'
             })
         ], style={'width': '70vw', 'display': 'inline-block', 'vertical-align': 'top', 'float': 'right'})
-      ], id='queries-collabsable', is_open=timerDisabled)
+      ], id='queries-collabsable', is_open=True)
     ], id='type2attrs-dropdown_container', hidden='hidden', style={'padding': 5}),
     html.Div([
       html.Div([
@@ -229,12 +304,13 @@ app.layout = html.Div([
       html.Div([
         dcc.Graph(
           id='entities-map',
+          figure=getInitialMap(),
           config={
             'displayModeBar': False
           }
         )
       ], id='entities_map_container', style={'width': '49vw', 'display': 'inline-block', 'vertical-align': 'top', 'float': 'right', 'height': '49vh'})
-    ], id='entities_view_container', hidden=showGraphsHidden, style={'height': '49vh'}),
+    ], id='entities_view_container', hidden='hidden', style={'height': '49vh'}),
     html.Div([
       dcc.Graph(
         id='history-line-graph',
@@ -252,93 +328,14 @@ app.layout = html.Div([
         figure=px.bar(title='Minimum, Maximum, Average', template='plotly_dark'),
         style={'display': 'inline-block', 'width': '20vw', 'float': 'right'}
       )
-    ], id='live_graph_container', hidden=showGraphsHidden),
+    ], id='live_graph_container', hidden='hidden'),
     dcc.Interval(
       id="interval-component",
-      interval=POLL_TIME,  # in milliseconds
-      n_intervals=int(not timerDisabled),
-      disabled=timerDisabled
+      interval=5000,  # in milliseconds
+      n_intervals=0,
+      disabled=True
     )
 ])
-
-def temporalGet(url, headers, isIDSA, entityId, attrib):
-  if isIDSA:
-    print('do nothing')
-  else:
-    return requests.get(url + '/ngsi-ld/v1/temporal/entities/' + entityId + '?attrs=' + attrib + '&options=sysAttrs'
-      ,headers=headers,
-      ).json()
-def getTypeEndpoints(host, atContext, isIDSA):
-  result = []
-  if isIDSA:
-    print('do nothing')
-  else:
-    headers={
-      "Link": "<"
-       + atContext
-       + '>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"',
-      "Accept": "application/json",
-    }
-    types = requests.get(host + '/ngsi-ld/v1/types'
-      ,headers=headers,
-      ).json()['typeList']
-    for entityType in types:
-      result.append({'headers': headers, 'url': host + '/ngsi-ld/v1/types/' + urllib.parse.quote(entityType, safe=''), 'baseUrl': host, 'type': entityType, 'isIDSA': False, 'atContext': atContext})
-  return result
-def getAttribs(typeEndpoints, isIDSA):
-  type2Attribs = []
-  if isIDSA:
-    print('do nothing')
-  else:
-    for typeEndpoint in typeEndpoints:
-      attribList = requests.get(typeEndpoint['url'], headers=typeEndpoint['headers']).json()['attributeDetails']
-      for attrib in attribList:
-        if attrib['attributeName'] == 'location':
-          continue
-        value = typeEndpoint['baseUrl'] + ';' + typeEndpoint['type'] + ';' + attrib['attributeName']
-        type2Attribs.append({'label': 'Type: ' + typeEndpoint['type'] + ' Attribute: ' + attrib['attributeName'], 'value': value, 'extra': {'url': typeEndpoint['baseUrl'], 'headers': typeEndpoint['headers'], 'type': typeEndpoint['type'], 'attribName': attrib['attributeName'], 'isIDSA': typeEndpoint['isIDSA'], 'atContext': typeEndpoint['atContext']}})
-  return type2Attribs
-def getEntityTypeAttr(endpoints):
-  entryList = []
-  for endpoint in endpoints:
-    entryList.append({'label': html.H5(endpoint['url']), 'value': endpoint['url'], 'disabled': True})
-    if 'atContext' in endpoint:
-      atContext = endpoint['atContext']
-    else:
-     atContext = 'https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld'
-    typeEndpoints = getTypeEndpoints(endpoint['url'], atContext, endpoint['isIDSA'])
-    entryList = entryList + getAttribs(typeEndpoints, endpoint['isIDSA'])
-  return entryList
-
-def queryEntities(query):
-  #currentQueries.append({'qId': queryName, 'url': type2Attr['url'], 'atContext': type2Attr['atContext'], 'isIDSA': type2Attr['isIDSA'],  'type2Attrib': type2Attr['type'] + ' ' + type2Attr['attribName'], 'q': q, 'geoQ': geoQ, 'headers': type2Attr['headers']})
-  if query['isIDSA']:
-    print('do nothing')
-    return []
-  else:
-    url = query['url']+'/ngsi-ld/v1/entities?type='+urllib.parse.quote(query['type'], safe='')
-    if query['q'] and len(query['q'])>0:
-      url += '&q=' + urllib.parse.quote(query['q'], safe='')
-    if query['geoQ'] and len(query['geoQ'])>0:
-      url += '&' + urllib.parse.quote(query['geoQ'], safe='')
-    return requests.get(url, headers=query['headers']).json()
-  
-def getEntities(currentQueries):
-  entities = {}
-  temp = {}
-  for entry in currentQueries:
-    qId = entry['qId']
-    entities[qId] = []
-    for entity in queryEntities(entry):
-      entities[qId].append(entity)
-  return entities
-
-def getInitialMap():
-  dummy = {'_': [], 'lon':[], 'lat':[]}
-  df = pd.DataFrame(dummy)
-  result = px.scatter_mapbox(df, lat='lat', lon='lon', hover_name='_', zoom=3, color='_', mapbox_style='carto-darkmatter', template='plotly_dark')
-  result.update_layout(margin={"r":0,"t":0,"l":0,"b":0}, uirevision = 'something')#, paper_bgcolor='black', legend_font_color='white')
-  return result
 
 @app.callback(
   Output('hosts-collabsable', 'is_open'),
@@ -346,12 +343,12 @@ def getInitialMap():
   Input('show-hide-hosts-button', 'n_clicks'),
   State('hosts-collabsable', 'is_open'))
 def toggleCollapseHosts(n, isOpen):
-  if n and n > 0:
+  if n:
     if isOpen:
       return not isOpen, '⮞Hosts⮜'
     else:
       return not isOpen, '⮟Hosts⮟'
-  return showHosts, '⮟Hosts⮟'
+  return True, '⮟Hosts⮟'
 
 @app.callback(
   Output('queries-collabsable', 'is_open'),
@@ -359,12 +356,12 @@ def toggleCollapseHosts(n, isOpen):
   Input('show-hide-queries-button', 'n_clicks'),
   State('queries-collabsable', 'is_open'))
 def toggleCollapseHosts(n, isOpen):
-  if n and n > 0:
+  if n:
     if isOpen:
       return not isOpen, '⮞Queries⮜'
     else:
       return not isOpen, '⮟Queries⮟'
-  return showHosts, '⮟Queries⮟'
+  return True, '⮟Queries⮟'
 
 @app.callback(
   Output('hosts-table', 'data'),
@@ -412,7 +409,6 @@ def addQuery(n, queryName, q, geoQ, type2AttrOptions, selectedType2Attr, current
         type2Attr = entry['extra']
     #'extra': {'url': typeEndpoint['baseUrl'], 'headers': typeEndpoint['headers'], 'type': typeEndpoint['type'], 'attribName': attrib['attributeName'], 'isIDSA': typeEndpoint['isIDSA'], 'atContext': typeEndpoint['atContext']}
     currentQueries.append({'qId': queryName, 'url': type2Attr['url'], 'atContext': type2Attr['atContext'], 'isIDSA': type2Attr['isIDSA'],  'type2Attrib': type2Attr['type'] + ' ' + type2Attr['attribName'], 'q': q, 'geoQ': geoQ, 'headers': type2Attr['headers'], 'attribName': type2Attr['attribName'], 'type': type2Attr['type']})
-    print(json.dumps(currentQueries))
   return currentQueries
 
 @app.callback(
@@ -525,6 +521,7 @@ def intervalGetting(n, queryTable):
     attribIndex = []
     attribColumnNames.append(qId + ' ' + attribName)
     legendNames.append(attribName + ' ' + mapData['unitCode'][0])
+    #print(str(mapData))
     for mapDataEntry in mapData[attribName]:
       attribData.append(mapDataEntry)
       attribIndex.append(indexCounter)
@@ -547,7 +544,7 @@ def intervalGetting(n, queryTable):
   for i in range(len(attribColumnNames)):
     attribColumnName = attribColumnNames[i]
     temp = px.scatter_mapbox(df, lat='lat', lon='lon', hover_name='entityId', zoom=3, color=attribColumnName, mapbox_style='carto-darkmatter', template='plotly_dark')
-    entitiesMap.add_scattermapbox(marker=temp.data[0].marker, hovertext=temp.data[0].hovertext, hovertemplate=temp.data[0].hovertemplate, mode=temp.data[0].mode, subplot=temp.data[0].subplot, lat=temp.data[0].lat, lon=temp.data[0].lon, name=attribColumnName)
+    entitiesMap.add_scattermapbox(marker=temp.data[0].marker, hovertext=temp.data[0].hovertext, hovertemplate=temp.data[0].hovertemplate, mode=temp.data[0].mode, subplot=temp.data[0].subplot, lat=temp.data[0].lat, lon=temp.data[0].lon, name=attribColumnNam)
   return entitiesTable, barChart, minMaxChart, entitiesMap
 
 

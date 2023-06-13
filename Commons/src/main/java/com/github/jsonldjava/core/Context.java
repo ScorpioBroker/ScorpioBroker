@@ -3,6 +3,8 @@ package com.github.jsonldjava.core;
 import static com.github.jsonldjava.core.JsonLdUtils.compareShortestLeast;
 import static com.github.jsonldjava.utils.Obj.newMap;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -18,6 +20,7 @@ import com.github.jsonldjava.utils.JsonLdUrl;
 import com.github.jsonldjava.utils.Obj;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 
 /**
  * A helper class which still stores all the values in a map but gives member
@@ -29,6 +32,7 @@ import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 @SuppressWarnings("unchecked")
 public class Context extends LinkedHashMap<String, Object> {
 
+	MicroServiceUtils microServiceUtils = new MicroServiceUtils();
 	private static final long serialVersionUID = 2894534897574805571L;
 
 	private JsonLdOptions options;
@@ -216,9 +220,15 @@ public class Context extends LinkedHashMap<String, Object> {
 				remoteContexts.add(uri);
 
 				// 3.2.3: Dereference context
-				final RemoteDocument rd = this.options.getDocumentLoader().loadDocument(uri);
+				String finalUrl = uri;
+				if (uri != null && !(uri.contains(microServiceUtils.getGatewayURL().toString())
+						|| uri.contains("localhost") || uri.contains(NGSIConstants.IMPLICITLYCREATED))) {
+					String encodedUrl = URLEncoder.encode(uri, StandardCharsets.UTF_8);
+					finalUrl = "http://localhost:9090/" + NGSIConstants.JSONLD_CONTEXTS + "createcache/" + encodedUrl;
+				}
+				final RemoteDocument rd = this.options.getDocumentLoader().loadDocument(finalUrl);
 				final Object remoteContext = rd.getDocument();
-				if (!(remoteContext instanceof Map)
+				if (remoteContext == null
 						|| !((Map<String, Object>) remoteContext).containsKey(JsonLdConsts.CONTEXT)) {
 					// If the dereferenced document has no top-level JSON object
 					// with an @context member
@@ -238,7 +248,7 @@ public class Context extends LinkedHashMap<String, Object> {
 			if (((Map<String, Object>) context).containsKey(JsonLdConsts.VERSION)) {
 				final Object version = ((Map<String, Object>) context).get(JsonLdConsts.VERSION);
 				// 5.5.1
-				if (!version.equals(Double.valueOf(1.1))) {
+				if (!version.equals(1.1)) {
 					throw new JsonLdError(Error.INVALID_VERSION_VALUE, context);
 				}
 				// 5.5.2
@@ -945,8 +955,8 @@ public class Context extends LinkedHashMap<String, Object> {
 		return compactIri(iri, null, relativeToVocab, false);
 	}
 
-	String compactIri(String iri) {
-		return compactIri(iri, null, false, false);
+	public String compactIri(String iri) {
+		return compactIri(iri, null, true, false);
 	}
 
 	@Override
@@ -1230,33 +1240,38 @@ public class Context extends LinkedHashMap<String, Object> {
 			ctx.put(JsonLdConsts.VOCAB, this.get(JsonLdConsts.VOCAB));
 		}
 		for (final String term : termDefinitions.keySet()) {
-			final Map<String, Object> definition = (Map<String, Object>) termDefinitions.get(term);
-			if (definition.get(JsonLdConsts.LANGUAGE) == null && definition.get(JsonLdConsts.CONTAINER) == null
-					&& definition.get(JsonLdConsts.TYPE) == null && (definition.get(JsonLdConsts.REVERSE) == null
-							|| Boolean.FALSE.equals(definition.get(JsonLdConsts.REVERSE)))) {
-				final String cid = this.compactIri((String) definition.get(JsonLdConsts.ID));
-				ctx.put(term, term.equals(cid) ? definition.get(JsonLdConsts.ID) : cid);
-			} else {
-				final Map<String, Object> defn = newMap();
-				final String cid = this.compactIri((String) definition.get(JsonLdConsts.ID));
-				final Boolean reverseProperty = Boolean.TRUE.equals(definition.get(JsonLdConsts.REVERSE));
-				if (!(term.equals(cid) && !reverseProperty)) {
-					defn.put(reverseProperty ? JsonLdConsts.REVERSE : JsonLdConsts.ID, cid);
-				}
-				final String typeMapping = (String) definition.get(JsonLdConsts.TYPE);
-				if (typeMapping != null) {
-					defn.put(JsonLdConsts.TYPE,
-							JsonLdUtils.isKeyword(typeMapping) ? typeMapping : compactIri(typeMapping, true));
-				}
-				if (definition.get(JsonLdConsts.CONTAINER) != null) {
-					defn.put(JsonLdConsts.CONTAINER, definition.get(JsonLdConsts.CONTAINER));
-				}
-				final Object lang = definition.get(JsonLdConsts.LANGUAGE);
-				if (definition.get(JsonLdConsts.LANGUAGE) != null) {
-					defn.put(JsonLdConsts.LANGUAGE, Boolean.FALSE.equals(lang) ? null : lang);
-				}
-				ctx.put(term, defn);
+//			final Map<String, Object> definition = (Map<String, Object>) termDefinitions.get(term);
+//			if (definition.get(JsonLdConsts.LANGUAGE) == null && definition.get(JsonLdConsts.CONTAINER) == null
+//					&& definition.get(JsonLdConsts.TYPE) == null && (definition.get(JsonLdConsts.REVERSE) == null
+//							|| Boolean.FALSE.equals(definition.get(JsonLdConsts.REVERSE)))) {
+//				final String cid = this.compactIri((String) definition.get(JsonLdConsts.ID));
+//				ctx.put(term, term.equals(cid) ? definition.get(JsonLdConsts.ID) : cid);
+//			} else {
+//				final Map<String, Object> defn = newMap();
+//				final String cid = this.compactIri((String) definition.get(JsonLdConsts.ID));
+//				final Boolean reverseProperty = Boolean.TRUE.equals(definition.get(JsonLdConsts.REVERSE));
+//				if (!(term.equals(cid) && !reverseProperty)) {
+//					defn.put(reverseProperty ? JsonLdConsts.REVERSE : JsonLdConsts.ID, cid);
+//				}
+//				final String typeMapping = (String) definition.get(JsonLdConsts.TYPE);
+//				if (typeMapping != null) {
+//					defn.put(JsonLdConsts.TYPE,
+//							JsonLdUtils.isKeyword(typeMapping) ? typeMapping : compactIri(typeMapping, true));
+//				}
+//				if (definition.get(JsonLdConsts.CONTAINER) != null) {
+//					defn.put(JsonLdConsts.CONTAINER, definition.get(JsonLdConsts.CONTAINER));
+//				}
+//				final Object lang = definition.get(JsonLdConsts.LANGUAGE);
+//				if (definition.get(JsonLdConsts.LANGUAGE) != null) {
+//					defn.put(JsonLdConsts.LANGUAGE, Boolean.FALSE.equals(lang) ? null : lang);
+//				}
+//				ctx.put(term, defn);
+//			}
+			Object entry = termDefinitions.get(term);
+			if(entry instanceof Map) {
+				((Map)entry).remove(JsonLdConsts.REVERSE);
 			}
+			ctx.put(term, entry);
 		}
 
 		final Map<String, Object> rval = newMap();

@@ -1,447 +1,456 @@
 package eu.neclab.ngsildbroker.registryhandler.service;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import java.util.ArrayList;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import java.util.HashMap;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.gson.Gson;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
+import java.util.concurrent.CompletionException;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
-import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
-import org.mockito.Spy;
-import eu.neclab.ngsildbroker.commons.constants.AppConstants;
-import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.jsonldjava.core.Context;
+
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.CSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateCSourceRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.results.CreateResult;
-import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
-import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteCSourceRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
+import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
+import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
+import eu.neclab.ngsildbroker.registryhandler.controller.CustomProfile;
 import eu.neclab.ngsildbroker.registryhandler.repository.CSourceDAO;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
+import io.vertx.core.Vertx;
+import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.client.WebClient;
+import io.vertx.mutiny.sqlclient.Row;
+import io.vertx.mutiny.sqlclient.RowIterator;
+import io.vertx.mutiny.sqlclient.RowSet;
+import io.vertx.pgclient.PgException;
 
 @QuarkusTest
-@TestMethodOrder(OrderAnnotation.class)
+@TestProfile(CustomProfile.class)
 public class CSourceServiceTest {
+
 	@InjectMocks
-	@Spy
-	CSourceService csourceService;
-
-	@ConfigProperty(name = "scorpio.registry.autoregmode", defaultValue = "types")
-	String AUTO_REG_MODE;
-
-	@ConfigProperty(name = "scorpio.registry.autorecording", defaultValue = "active")
-	String AUTO_REG_STATUS;
-
-	@ConfigProperty(name = "scorpio.topics.registry")
-	String CSOURCE_TOPIC;
-	@Mock
-	ObjectMapper objectMapper;
+	CSourceService CSourceService;
 
 	@Mock
-	CSourceDAO csourceDAO;
+	CSourceDAO cSourceInfoDAO;
 
 	@Mock
 	MutinyEmitter<BaseRequest> kafkaSenderInterface;
 
 	@Mock
-	StorageDAO storageDAO = Mockito.mock(StorageDAO.class);
+	MicroServiceUtils microServiceUtils;
 
-	String payload;
-	private String payloadNotFound;
+	@Mock
+	Vertx vertx;
 
-	String entitypayload;
-	String updatePayload;
-	String headers;
-	JsonNode blankNode;
-	JsonNode payloadNode;
-	ArrayListMultimap<String, String> multimaparr = ArrayListMultimap.create();
+	@Mock
+	WebClient webClient;
+
+	@Mock
+	Context context;
+
+	String jsonLdObject;
+
+	String csorceRegistrationId = "urn:ngsi-ld:ContextSourceRegistration:1";
+	Map<String, Object> resolved = null;
+	String tenant = "test";
 
 	@BeforeEach
-	public void setup() throws Exception {
-		MockitoAnnotations.initMocks(this);
+	public void setUp() throws Exception {
+
+		MockitoAnnotations.openMocks(this);
+
+		jsonLdObject = "{\"https://uri.etsi.org/ngsi-ld/endpoint\":[{\"@value\":\"http://my.csource.org:1234\"}],\"@id\""
+				+ ":\"urn:ngsi-ld:ContextSourceRegistration:1\",\"https://uri.etsi.org/ngsi-ld/information\""
+				+ ":[{\"https://uri.etsi.org/ngsi-ld/entities\":[{\"@type\":[\"https://uri.etsi.org/ngsi-ld/default-context/Room\"]}]}]"
+				+ ",\"https://uri.etsi.org/ngsi-ld/location\":[{\"https://purl.org/geojson/vocab#coordinates\":[{\"@list\":"
+				+ "[{\"@list\":[{\"@list\":[{\"@value\":8.686752319335938},{\"@value\":49.359122687528746}]},{\"@list\":[{\"@value\":8.742027282714844},{\"@value\""
+				+ ":49.3642654834877}]},{\"@list\":[{\"@value\":8.767433166503904},{\"@value\":49.398462568451485}]},{\"@list\":[{\"@value\""
+				+ ":8.768119812011719},{\"@value\":49.42750021620163}]},{\"@list\":[{\"@value\":8.74305725097656},{\"@value\":49.44781634951542}]},{\"@list\""
+				+ ":[{\"@value\":8.669242858886719},{\"@value\":49.43754770762113}]},{\"@list\":[{\"@value\":8.63525390625},{\"@value\""
+				+ ":49.41968407776289}]},{\"@list\":[{\"@value\":8.637657165527344},{\"@value\":49.3995797187007}]},{\"@list\":[{\"@value\""
+				+ ":8.663749694824219},{\"@value\":49.36851347448498}]},{\"@list\":[{\"@value\":8.686752319335938},{\"@value\":49.359122687528746}]}]}],\"@type\":"
+				+ "[\"https://purl.org/geojson/vocab#Polygon\"]}]}],\"@type\":[\"https://uri.etsi.org/ngsi-ld/ContextSourceRegistration\"]}"
+				+ "[\"https://uri.etsi.org/ngsi-ld/Relationship\"]}]}";
 
 		ObjectMapper objectMapper = new ObjectMapper();
-		// @formatter:off			
-		payload = "{\r\n"
-				+ "  \"https://uri.etsi.org/ngsi-ld/description\" : [ {\r\n"
-				+ "    \"@value\" : \"DescriptionExample\"\r\n"
-				+ "  } ],\r\n"
-				+ "  \"https://uri.etsi.org/ngsi-ld/endpoint\" : [ {\r\n"
-				+ "    \"@value\" : \"http://my.csource.org:1026\"\r\n"
-				+ "  } ],\r\n"
-				+ "  \"@id\" : \"urn:ngsi-ld:ContextSourceRegistration:csr4\",\r\n"
-				+ "  \"https://uri.etsi.org/ngsi-ld/information\" : [ {\r\n"
-				+ "    \"https://uri.etsi.org/ngsi-ld/entities\" : [ {\r\n"
-				+ "      \"@id\" : \"urn:ngsi-ld:Vehicle:A456\",\r\n"
-				+ "      \"@type\" : [ \"https://uri.etsi.org/ngsi-ld/default-context/Vehicle\" ]\r\n"
-				+ "    } ],\r\n"
-				+ "    \"https://uri.etsi.org/ngsi-ld/properties\" : [ {\r\n"
-				+ "      \"@id\" : \"https://uri.etsi.org/ngsi-ld/default-context/brandName\"\r\n"
-				+ "    }, {\r\n"
-				+ "      \"@id\" : \"https://uri.etsi.org/ngsi-ld/default-context/speed\"\r\n"
-				+ "    } ],\r\n"
-				+ "    \"https://uri.etsi.org/ngsi-ld/relationships\" : [ {\r\n"
-				+ "      \"@id\" : \"https://uri.etsi.org/ngsi-ld/default-context/isParked\"\r\n"
-				+ "    } ]\r\n"
-				+ "  } ],\r\n"
-				+ "  \"https://uri.etsi.org/ngsi-ld/name\" : [ {\r\n"
-				+ "    \"@value\" : \"NameExample\"\r\n"
-				+ "  } ],\r\n"
-				+ "  \"@type\" : [ \"https://uri.etsi.org/ngsi-ld/ContextSourceRegistration\" ]\r\n"
-				+ "}";
-		
-		
-		payloadNotFound = "{\r\n"
-				+ "  \"https://uri.etsi.org/ngsi-ld/description\" : [ {\r\n"
-				+ "    \"@value\" : \"DescriptionExample\"\r\n"
-				+ "  } ],\r\n"
-				+ "  \"https://uri.etsi.org/ngsi-ld/endpoint\" : [ {\r\n"
-				+ "    \"@value\" : \"http://my.csource.org:1026\"\r\n"
-				+ "  } ],\r\n"
-				+ "  \"@id\" : \"\",\r\n"
-				+ "  \"https://uri.etsi.org/ngsi-ld/information\" : [ {\r\n"
-				+ "    \"https://uri.etsi.org/ngsi-ld/entities\" : [ {\r\n"
-				+ "      \"@id\" : \"urn:ngsi-ld:Vehicle:A456\",\r\n"
-				+ "      \"@type\" : [ \"https://uri.etsi.org/ngsi-ld/default-context/Vehicle\" ]\r\n"
-				+ "    } ],\r\n"
-				+ "    \"https://uri.etsi.org/ngsi-ld/properties\" : [ {\r\n"
-				+ "      \"@id\" : \"https://uri.etsi.org/ngsi-ld/default-context/brandName\"\r\n"
-				+ "    }, {\r\n"
-				+ "      \"@id\" : \"https://uri.etsi.org/ngsi-ld/default-context/speed\"\r\n"
-				+ "    } ],\r\n"
-				+ "    \"https://uri.etsi.org/ngsi-ld/relationships\" : [ {\r\n"
-				+ "      \"@id\" : \"https://uri.etsi.org/ngsi-ld/default-context/isParked\"\r\n"
-				+ "    } ]\r\n"
-				+ "  } ],\r\n"
-				+ "  \"https://uri.etsi.org/ngsi-ld/name\" : [ {\r\n"
-				+ "    \"@value\" : \"NameExample\"\r\n"
-				+ "  } ],\r\n"
-				+ "  \"@type\" : [ \"https://uri.etsi.org/ngsi-ld/ContextSourceRegistration\" ]\r\n"
-				+ "}";
-		
-		
-		updatePayload="{\r\n"
-				+ "  \"https://uri.etsi.org/ngsi-ld/description\" : [ {\r\n"
-				+ "    \"@value\" : \"DescriptionExample\"\r\n"
-				+ "  } ],\r\n"
-				+ "  \"https://uri.etsi.org/ngsi-ld/endpoint\" : [ {\r\n"
-				+ "    \"@value\" : \"http://my.csource.org:1026\"\r\n"
-				+ "  } ],\r\n"
-				+ "  \"@id\" : \"urn:ngsi-ld:ContextSourceRegistration:csr\",\r\n"
-				+ "  \"https://uri.etsi.org/ngsi-ld/information\" : [ {\r\n"
-				+ "    \"https://uri.etsi.org/ngsi-ld/entities\" : [ {\r\n"
-				+ "      \"@id\" : \"urn:ngsi-ld:Vehicle:A456\",\r\n"
-				+ "      \"@type\" : [ \"https://uri.etsi.org/ngsi-ld/default-context/Vehicle\" ]\r\n"
-				+ "    } ],\r\n"
-				+ "    \"https://uri.etsi.org/ngsi-ld/properties\" : [ {\r\n"
-				+ "      \"@id\" : \"https://uri.etsi.org/ngsi-ld/default-context/brandName\"\r\n"
-				+ "    }, {\r\n"
-				+ "      \"@id\" : \"https://uri.etsi.org/ngsi-ld/default-context/speed\"\r\n"
-				+ "    }, {\r\n"
-				+ "      \"@id\" : \"https://uri.etsi.org/ngsi-ld/default-context/brandName\"\r\n"
-				+ "    } ],\r\n"
-				+ "    \"https://uri.etsi.org/ngsi-ld/relationships\" : [ {\r\n"
-				+ "      \"@id\" : \"https://uri.etsi.org/ngsi-ld/default-context/isParked\"\r\n"
-				+ "    } ]\r\n"
-				+ "  } ],\r\n"
-				+ "  \"https://uri.etsi.org/ngsi-ld/name\" : [ {\r\n"
-				+ "    \"@value\" : \"NameExample\"\r\n"
-				+ "  } ],\r\n"
-				+ "  \"@type\" : [ \"https://uri.etsi.org/ngsi-ld/ContextSourceRegistration\" ]\r\n"
-				+ "}";
-		
-		entitypayload = "{\r\n"				
-				+ "    \"https://uri.etsi.org/ngsi-ld/entities\" : [ {\r\n"
-				+ "      \"@id\" : \"urn:ngsi-ld:Vehicle:A456\",\r\n"
-				+ "      \"@type\" : [ \"https://uri.etsi.org/ngsi-ld/default-context/Vehicle\" ]\r\n"
-				+ "    } ],\r\n"				
-				+ "}";
-		
-		 
-		// @formatter:on
-		headers = "{content-length=[883], x-forwarded-proto=[http], postman-token=[8f71bb12-8223-44a4-9322-9853fae06baa], x-forwarded-port=[9090], x-forwarded-for=[0:0:0:0:0:0:0:1], accept=[*/*], ngsild-tenant=[csource1], x-forwarded-host=[localhost:9090], host=[DLLT-9218.nectechnologies.in:1030], content-type=[application/json], connection=[Keep-Alive], accept-encoding=[gzip, deflate], user-agent=[PostmanRuntime/7.6.0]}";
-		payloadNode = objectMapper.readTree(payload.getBytes());
-
+		resolved = objectMapper.readValue(jsonLdObject, Map.class);
 	}
 
-	@AfterEach
-	public void teardown() {
-		payload = null;
-		updatePayload = null;
-		blankNode = null;
-	}
-
-	/**
-	 * this method is use for create CSource Registry
-	 */
 	@Test
-	public void registerCSourceTest() throws Exception {
+	public void createRegistrationTest() {
 
-		multimaparr.put("content-type", "application/json");
-		Gson gson = new Gson();
-		Map<String, Object> resolved = gson.fromJson(payload, Map.class);
-		CSourceRequest request = new CreateCSourceRequest(resolved, AppConstants.INTERNAL_NULL_KEY,
-				"urn:ngsi-ld:ContextSourceRegistration:csr4");
-		Mockito.when(csourceDAO.storeRegistryEntry(any())).thenReturn(Uni.createFrom().voidItem());
-		CreateResult result = csourceService.createEntry(AppConstants.INTERNAL_NULL_KEY, resolved).await()
-				.indefinitely();
-		Assertions.assertEquals("urn:ngsi-ld:ContextSourceRegistration:csr4", result.getEntityId());
-		Mockito.verify(csourceService).createEntry(any(), any());
-	}
+		RowSet<Row> rowSetMock = mock(RowSet.class);
+		Uni<RowSet<Row>> uniRowsetMock = Uni.createFrom().item(rowSetMock);
+		when(cSourceInfoDAO.createRegistration(any())).thenReturn(uniRowsetMock);
 
-	/**
-	 * this method is use for create CSource Registry but Id not provided
-	 */
-	@Test
-	public void registerCSourceIdNotProvideTest() throws Exception {
-		multimaparr.put("content-type", "application/json");
-		Gson gson = new Gson();
-		Map<String, Object> resolved = gson.fromJson(payload, Map.class);
-		resolved.put(NGSIConstants.JSON_LD_ID, null);
-		CSourceRequest request = new CreateCSourceRequest(resolved, AppConstants.INTERNAL_NULL_KEY,
-				"urn:ngsi-ld:ContextSourceRegistration:csr4");
-		Mockito.when(csourceDAO.storeRegistryEntry(any())).thenReturn(Uni.createFrom().voidItem());
-		CreateResult result = csourceService.createEntry(AppConstants.INTERNAL_NULL_KEY, resolved).await()
-				.indefinitely();
-		Assertions.assertNotEquals(null, result.getEntityId());
-		Mockito.verify(csourceService).createEntry(any(), any());
-	}
+		Uni<Void> kafkaResponse = Uni.createFrom().nullItem();
+		when(kafkaSenderInterface.send(any(CreateCSourceRequest.class))).thenReturn(kafkaResponse);
 
-	/**
-	 * this method is use to validate CSource Registry Id is null
-	 */
-	@Test
-	public void registerCSourceIdNullFoundTest() throws Exception {
-		multimaparr.put("content-type", "application/json");
-		Gson gson = new Gson();
-		Map<String, Object> resolved = gson.fromJson(payloadNotFound, Map.class);
-		CSourceRequest request = new CreateCSourceRequest(resolved, AppConstants.INTERNAL_NULL_KEY,
-				"urn:ngsi-ld:ContextSourceRegistration:csr4");
-		Mockito.when(csourceDAO.storeRegistryEntry(any())).thenReturn(Uni.createFrom().voidItem());
-		CreateResult result = csourceService.createEntry(AppConstants.INTERNAL_NULL_KEY, resolved).await()
-				.indefinitely();
-		Assertions.assertEquals("", result.getEntityId());
-		Mockito.verify(csourceService).createEntry(any(), any());
-	}
+		Uni<NGSILDOperationResult> resultUni = CSourceService.createRegistration(tenant, resolved);
+		NGSILDOperationResult result = resultUni.await().indefinitely();
 
-	/**
-	 * this method is use to Validate update CSource Registry
-	 */
-	@Test
-	public void updateCSourceTest() throws Exception {
-		try {
-			ArrayListMultimap<String, String> csourceIds = ArrayListMultimap.create();
-			csourceIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:ContextSourceRegistration:csr3");
-			HashMap<String, List<Map<String, Object>>> result = new HashMap<String, List<Map<String, Object>>>();
-			List<Map<String, Object>> entities = new ArrayList<Map<String, Object>>();
-			result.put(AppConstants.INTERNAL_NULL_KEY, entities);
-			multimaparr.put("content-type", "application/json");
-			UpdateResult updateResult = new UpdateResult();
-			Gson gson = new Gson();
-			Map<String, Object> resolved = gson.fromJson(updatePayload, Map.class);
-			Map<String, Object> originalresolved = gson.fromJson(payload, Map.class);
-			String[] optionsArray = new String[0];
-			AppendCSourceRequest request = new AppendCSourceRequest(AppConstants.INTERNAL_NULL_KEY,
-					"urn:ngsi-ld:ContextSourceRegistration:csr3", originalresolved, resolved, optionsArray);
-			Mockito.when(csourceDAO.getEntity(any(), any())).thenReturn(Uni.createFrom().item(originalresolved));
-			updateResult = csourceService.appendToEntry(AppConstants.INTERNAL_NULL_KEY,
-					"urn:ngsi-ld:ContextSourceRegistration:csr3", resolved, optionsArray).await().indefinitely();
-			Assertions.assertEquals(updateResult.getUpdated(), request.getUpdateResult().getUpdated());
-			Mockito.verify(csourceService).appendToEntry(any(), any(), any(), any());
-		} catch (Exception e) {
-			Assertions.fail();
-			e.printStackTrace();
-		}
+		assertEquals(csorceRegistrationId, result.getEntityId());
+		assertEquals(1, result.getSuccesses().size());
+		assertEquals(0, result.getFailures().size());
+		verify(cSourceInfoDAO, times(1)).createRegistration(any());
 
 	}
 
-	/**
-	 * this method is use to Validate update CSource Registry Bad Request
-	 */
 	@Test
-	public void updateCSourceBadRequestTest() throws Exception {
-		ArrayListMultimap<String, String> csourceIds = ArrayListMultimap.create();
-		csourceIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:ContextSourceRegistration:csr3");
-		HashMap<String, List<Map<String, Object>>> result = new HashMap<String, List<Map<String, Object>>>();
-		List<Map<String, Object>> entities = new ArrayList<Map<String, Object>>();
-		result.put(AppConstants.INTERNAL_NULL_KEY, entities);
-		multimaparr.put("content-type", "application/json");
-		UpdateResult updateResult = new UpdateResult();
-		Gson gson = new Gson();
-		Map<String, Object> resolved = gson.fromJson(updatePayload, Map.class);
-		Map<String, Object> originalresolved = gson.fromJson(payload, Map.class);
-		String[] optionsArray = new String[0];
-		AppendCSourceRequest request = new AppendCSourceRequest(AppConstants.INTERNAL_NULL_KEY,
-				"urn:ngsi-ld:ContextSourceRegistration:csr3", originalresolved, resolved, optionsArray);
-		Mockito.when(csourceDAO.getEntity(any(), any())).thenReturn(Uni.createFrom().item(originalresolved));
-		try {
-			csourceService.appendToEntry(AppConstants.INTERNAL_NULL_KEY, null, resolved, optionsArray).await()
-					.indefinitely();
-		} catch (Exception e) {
-			Assertions.assertEquals("empty entity id is not allowed", e.getMessage());
-			Mockito.verify(csourceService).appendToEntry(any(), any(), any(), any());
-		}
-	}
+	public void createRegistrationExistTest() {
 
-	/**
-	 * this method is use for get CSource Registry by Id
-	 */
-	@Test
-	public void getRegistrationByIdTest() {
-		try {
-			ArrayListMultimap<String, String> csourceIds = ArrayListMultimap.create();
-			csourceIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:ContextSourceRegistration:csr3");
-			HashMap<String, List<Map<String, Object>>> result = new HashMap<String, List<Map<String, Object>>>();
-			List<Map<String, Object>> entities = new ArrayList<Map<String, Object>>();
-			result.put(AppConstants.INTERNAL_NULL_KEY, entities);
-			Gson gson = new Gson();
-			Map<String, Object> originalresolved = gson.fromJson(payload, Map.class);
-			multimaparr.put("content-type", "application/json");
-			Mockito.when(csourceDAO.getRegistrationById(any(), any()))
-					.thenReturn(Uni.createFrom().item(originalresolved));
-			Map<String, Object> getresult = csourceService
-					.getRegistrationById("urn:ngsi-ld:ContextSourceRegistration:csr3", null).await().indefinitely();
-			Assertions.assertEquals(originalresolved, getresult);
-			Mockito.verify(csourceService).getRegistrationById(any(), any());
-		} catch (Exception e) {
-			Assertions.fail();
-			e.printStackTrace();
-		}
-	}
+		Uni<Void> kafkaResponse = Uni.createFrom().nullItem();
+		when(kafkaSenderInterface.send(any(CreateCSourceRequest.class))).thenReturn(kafkaResponse);
 
-	/**
-	 * this method is use for get update CSource Registry by Id
-	 */
-	@Test
-	public void updateCSourceEntrybyIdTest() throws Exception {
-		ArrayListMultimap<String, String> csourceIds = ArrayListMultimap.create();
-		csourceIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:ContextSourceRegistration:csr3");
-		multimaparr.put("content-type", "application/json");
-		UpdateResult updateResult = new UpdateResult();
-		Gson gson = new Gson();
-		Map<String, Object> resolved = gson.fromJson(updatePayload, Map.class);
-		Map<String, Object> originalresolved = gson.fromJson(payload, Map.class);
-		String[] optionsArray = new String[0];
-		AppendCSourceRequest request = new AppendCSourceRequest(AppConstants.INTERNAL_NULL_KEY,
-				"urn:ngsi-ld:ContextSourceRegistration:csr3", originalresolved, resolved, optionsArray);
-		Mockito.when(csourceDAO.getEntity(any(), any())).thenReturn(Uni.createFrom().item(originalresolved));
-		try {
-			csourceService
-					.updateEntry(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:ContextSourceRegistration:csr3", resolved)
-					.await().indefinitely();
-		} catch (Exception e) {
-			Assertions.assertEquals("not supported in registry", e.getMessage());
-		}
+		PgException sqlException = new PgException("duplicate key value violates unique constraint", "", "23505", "");
+
+		when(cSourceInfoDAO.createRegistration(any())).thenReturn(Uni.createFrom().failure(sqlException));
+
+		Uni<NGSILDOperationResult> resultUni = CSourceService.createRegistration(tenant, resolved);
+
+		Throwable throwable = assertThrows(CompletionException.class, () -> resultUni.await().indefinitely());
+		ResponseException responseException = (ResponseException) throwable.getCause();
+
+		assertEquals(409, responseException.getErrorCode());
+		assertEquals("Registration already exists", responseException.getDetail());
+		verify(cSourceInfoDAO, times(1)).createRegistration(any());
 
 	}
 
-	/**
-	 * this method is use to Validate delete Entry Method
-	 */
 	@Test
-	public void deleteEntryTest() {
-		try {
-			ArrayListMultimap<String, String> csourceIds = ArrayListMultimap.create();
-			csourceIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:ContextSourceRegistration:csr3");
-			Gson gson = new Gson();
-			Map<String, Object> resolved = gson.fromJson(updatePayload, Map.class);
-			Map<String, Object> originalresolved = gson.fromJson(payload, Map.class);
-			multimaparr.put("content-type", "application/json");
-			Mockito.when(csourceDAO.getEntity(any(), any())).thenReturn(Uni.createFrom().item(originalresolved));
-			boolean deleteresult = csourceService
-					.deleteEntry(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:ContextSourceRegistration:csr3").await()
-					.indefinitely();
-			Assertions.assertEquals(true, deleteresult);
-			Mockito.verify(csourceService).deleteEntry(any(), any());
-		} catch (Exception ex) {
-			Assertions.fail();
+	public void createRegistrationErrorTest() {
 
-		}
-	}
+		Uni<Void> kafkaResponse = Uni.createFrom().nullItem();
+		when(kafkaSenderInterface.send(any(CreateCSourceRequest.class))).thenReturn(kafkaResponse);
 
-	/**
-	 * this method is use to Validate delete Entry Method Id is NUll
-	 */
-	@Test
-	public void deleteEntryBadRequestTest() {
-		ArrayListMultimap<String, String> csourceIds = ArrayListMultimap.create();
-		csourceIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:ContextSourceRegistration:csr3");
-		Gson gson = new Gson();
-		Map<String, Object> resolved = gson.fromJson(updatePayload, Map.class);
-		Map<String, Object> originalresolved = gson.fromJson(payload, Map.class);
-		multimaparr.put("content-type", "application/json");
-		Mockito.when(csourceDAO.getEntity(any(), any())).thenReturn(Uni.createFrom().item(originalresolved));
-		try {
-			csourceService.deleteEntry(AppConstants.INTERNAL_NULL_KEY, null).await().indefinitely();
-		} catch (Exception e) {
-			Assertions.assertEquals("empty entity id not allowed", e.getMessage());
-			Mockito.verify(csourceService).deleteEntry(any(), any());
-		}
-	}
+		when(cSourceInfoDAO.createRegistration(any()))
+				.thenReturn(Uni.createFrom().failure(new RuntimeException("Something went wrong")));
 
-	/**
-	 * this method is use to Validate handleEntityDelete method with Null id
-	 */
-	@Test
-	public void handleEntityDeleteIdNUllTest() {
-		try {
-			ArrayListMultimap<String, String> csourceIds = ArrayListMultimap.create();
-			csourceIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:ContextSourceRegistration:csr3");
-			Gson gson = new Gson();
-			Map<String, Object> resolved = gson.fromJson(updatePayload, Map.class);
-			Map<String, Object> originalresolved = gson.fromJson(payload, Map.class);
-			BaseRequest br = new BaseRequest();
-			br.setFinalPayload(originalresolved);
-			br.setTenant(AppConstants.INTERNAL_NULL_KEY);
-			multimaparr.put("content-type", "application/json");
-			Mockito.when(csourceDAO.getEntity(any(), any())).thenReturn(Uni.createFrom().item(originalresolved));
-			csourceService.handleEntityDelete(br);
-			Mockito.verify(csourceService).handleEntityDelete(any());
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+		Uni<NGSILDOperationResult> resultUni = CSourceService.createRegistration(tenant, resolved);
+
+		Throwable throwable = assertThrows(CompletionException.class, () -> resultUni.await().indefinitely());
+		ResponseException responseException = (ResponseException) throwable.getCause();
+
+		assertEquals(500, responseException.getErrorCode());
+		assertEquals("Something went wrong", responseException.getDetail());
+		verify(cSourceInfoDAO, times(1)).createRegistration(any());
 
 	}
 
-	/**
-	 * this method is use to Validate csourceTimerTask
-	 */
 	@Test
-	public void csourceTimerTaskTest() throws Exception {
+	public void updateRegistrationTest() {
 
-		ArrayListMultimap<String, String> csourceIds = ArrayListMultimap.create();
-		csourceIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:ContextSourceRegistration:csr3");
-		HashMap<String, List<Map<String, Object>>> result = new HashMap<String, List<Map<String, Object>>>();
-		List<Map<String, Object>> entities = new ArrayList<Map<String, Object>>();
-		result.put(AppConstants.INTERNAL_NULL_KEY, entities);
-		multimaparr.put("content-type", "application/json");
-		Gson gson = new Gson();
-		Map<String, Object> originalresolved = gson.fromJson(payload, Map.class);
-		originalresolved.put(NGSIConstants.NGSI_LD_EXPIRES, "https://uri.etsi.org/ngsi-ld/expiresAt");
-		originalresolved.put(NGSIConstants.JSON_LD_ID, "@id");
-		Mockito.when(csourceDAO.getEntity(any(), any())).thenReturn(Uni.createFrom().item(originalresolved));
-		try {
-			csourceService.csourceTimerTask(AppConstants.INTERNAL_NULL_KEY, originalresolved);
-		} catch (Exception e) {
-			e.getMessage();
-		}
+		Uni<Void> kafkaResponse = Uni.createFrom().nullItem();
+		when(kafkaSenderInterface.send(any(AppendCSourceRequest.class))).thenReturn(kafkaResponse);
 
+		RowSet<Row> rowSetMock = mock(RowSet.class);
+		when(rowSetMock.rowCount()).thenReturn(1);
+		Uni<RowSet<Row>> uniRowsetMock = Uni.createFrom().item(rowSetMock);
+		when(cSourceInfoDAO.updateRegistration(any())).thenReturn(uniRowsetMock);
+
+		Uni<NGSILDOperationResult> resultUni = CSourceService.updateRegistration(tenant, csorceRegistrationId,
+				resolved);
+		NGSILDOperationResult result = resultUni.await().indefinitely();
+
+		assertEquals(csorceRegistrationId, result.getEntityId());
+		assertEquals(1, result.getSuccesses().size());
+		assertEquals(0, result.getFailures().size());
+		verify(cSourceInfoDAO, times(1)).updateRegistration(any());
+
+	}
+
+	@Test
+	public void updateRegistrationNotFoundTest() {
+
+		Uni<Void> kafkaResponse = Uni.createFrom().nullItem();
+		when(kafkaSenderInterface.send(any(AppendCSourceRequest.class))).thenReturn(kafkaResponse);
+
+		RowSet<Row> rowSetMock = mock(RowSet.class);
+		when(rowSetMock.rowCount()).thenReturn(0);
+		Uni<RowSet<Row>> uniRowsetMock = Uni.createFrom().item(rowSetMock);
+		when(cSourceInfoDAO.updateRegistration(any())).thenReturn(uniRowsetMock);
+
+		Uni<NGSILDOperationResult> resultUni = CSourceService.updateRegistration(tenant, csorceRegistrationId,
+				resolved);
+
+		Throwable throwable = assertThrows(CompletionException.class, () -> resultUni.await().indefinitely());
+		ResponseException responseException = (ResponseException) throwable.getCause();
+
+		assertEquals(404, responseException.getErrorCode());
+		assertEquals("Registration not found", responseException.getDetail());
+		verify(cSourceInfoDAO, times(1)).updateRegistration(any());
+
+	}
+
+	@Test
+	public void updateRegistrationErrorTest() {
+
+		Uni<Void> kafkaResponse = Uni.createFrom().nullItem();
+		when(kafkaSenderInterface.send(any(AppendCSourceRequest.class))).thenReturn(kafkaResponse);
+
+		when(cSourceInfoDAO.updateRegistration(any()))
+				.thenReturn(Uni.createFrom().failure(new RuntimeException("Something went wrong")));
+
+		Uni<NGSILDOperationResult> resultUni = CSourceService.updateRegistration(tenant, csorceRegistrationId,
+				resolved);
+
+		Throwable throwable = assertThrows(CompletionException.class, () -> resultUni.await().indefinitely());
+		ResponseException responseException = (ResponseException) throwable.getCause();
+
+		assertEquals(500, responseException.getErrorCode());
+		assertEquals("Something went wrong", responseException.getDetail());
+		verify(cSourceInfoDAO, times(1)).updateRegistration(any());
+
+	}
+
+	@Test
+	public void retrieveRegistrationTest() {
+
+		Row rowMock = mock(Row.class);
+		RowSet<Row> rowSetMock = mock(RowSet.class);
+		RowIterator<Row> rowIteratorMock = mock(RowIterator.class);
+		when(rowSetMock.size()).thenReturn(1);
+		when(rowSetMock.iterator()).thenReturn(rowIteratorMock);
+		when(rowIteratorMock.next()).thenReturn(rowMock);
+		JsonObject jsonObject = new JsonObject();
+		jsonObject.put("@id", "urn:ngsi-ld:ContextSourceRegistration:1");
+		when(rowMock.getJsonObject(anyInt())).thenReturn(jsonObject);
+
+		Uni<RowSet<Row>> uniRowsetMock = Uni.createFrom().item(rowSetMock);
+		when(cSourceInfoDAO.getRegistrationById(any(), any())).thenReturn(uniRowsetMock);
+
+		Uni<Map<String, Object>> resultUni = CSourceService.retrieveRegistration(tenant, csorceRegistrationId);
+		Map<String, Object> result = resultUni.await().indefinitely();
+
+		assertEquals("urn:ngsi-ld:ContextSourceRegistration:1", result.get("@id"));
+		verify(cSourceInfoDAO, times(1)).getRegistrationById(any(), any());
+
+	}
+
+	@Test
+	public void retrieveRegistrationNotFoundTest() {
+
+		RowSet<Row> rowSetMock = mock(RowSet.class);
+		when(rowSetMock.size()).thenReturn(0);
+		Uni<RowSet<Row>> uniRowsetMock = Uni.createFrom().item(rowSetMock);
+		when(cSourceInfoDAO.getRegistrationById(any(), any())).thenReturn(uniRowsetMock);
+
+		Uni<Map<String, Object>> resultUni = CSourceService.retrieveRegistration(tenant, csorceRegistrationId);
+
+		Throwable throwable = assertThrows(CompletionException.class, () -> resultUni.await().indefinitely());
+		ResponseException responseException = (ResponseException) throwable.getCause();
+
+		assertEquals(404, responseException.getErrorCode());
+		assertEquals(csorceRegistrationId + "was not found", responseException.getDetail());
+		verify(cSourceInfoDAO, times(1)).getRegistrationById(any(), any());
+
+	}
+
+	@Test
+	public void retrieveRegistrationDataNotFoundTest() {
+
+		Row rowMock = mock(Row.class);
+		RowSet<Row> rowSetMock = mock(RowSet.class);
+		RowIterator<Row> rowIteratorMock = mock(RowIterator.class);
+		when(rowSetMock.size()).thenReturn(1);
+		when(rowSetMock.iterator()).thenReturn(rowIteratorMock);
+		when(rowIteratorMock.next()).thenReturn(rowMock);
+		when(rowMock.getJsonObject(anyInt())).thenReturn(null);
+
+		Uni<RowSet<Row>> uniRowsetMock = Uni.createFrom().item(rowSetMock);
+		when(cSourceInfoDAO.getRegistrationById(any(), any())).thenReturn(uniRowsetMock);
+
+		Uni<Map<String, Object>> resultUni = CSourceService.retrieveRegistration(tenant, csorceRegistrationId);
+
+		Throwable throwable = assertThrows(CompletionException.class, () -> resultUni.await().indefinitely());
+		ResponseException responseException = (ResponseException) throwable.getCause();
+
+		assertEquals(404, responseException.getErrorCode());
+		assertEquals(csorceRegistrationId + "was not found", responseException.getDetail());
+		verify(cSourceInfoDAO, times(1)).getRegistrationById(any(), any());
+	}
+
+	@Test
+	public void deleteRegistrationTest() {
+
+		Uni<Void> kafkaResponse = Uni.createFrom().nullItem();
+		when(kafkaSenderInterface.send(any(DeleteCSourceRequest.class))).thenReturn(kafkaResponse);
+
+		Row rowMock = mock(Row.class);
+		RowSet<Row> rowSetMock = mock(RowSet.class);
+		RowIterator<Row> rowIteratorMock = mock(RowIterator.class);
+		when(rowSetMock.rowCount()).thenReturn(1);
+		when(rowSetMock.iterator()).thenReturn(rowIteratorMock);
+		when(rowIteratorMock.next()).thenReturn(rowMock);
+		JsonObject jsonObject = new JsonObject();
+		jsonObject.put("@id", "urn:ngsi-ld:ContextSourceRegistration:1");
+		when(rowMock.getJsonObject(anyInt())).thenReturn(jsonObject);
+
+		Uni<RowSet<Row>> uniRowsetMock = Uni.createFrom().item(rowSetMock);
+		when(cSourceInfoDAO.deleteRegistration(any())).thenReturn(uniRowsetMock);
+
+		Uni<NGSILDOperationResult> resultUni = CSourceService.deleteRegistration(tenant, csorceRegistrationId);
+		NGSILDOperationResult result = resultUni.await().indefinitely();
+
+		assertEquals(csorceRegistrationId, result.getEntityId());
+		assertEquals(1, result.getSuccesses().size());
+		assertEquals(0, result.getFailures().size());
+		verify(cSourceInfoDAO, times(1)).deleteRegistration(any());
+
+	}
+
+	@Test
+	public void deleteRegistrationNotFoundTest() {
+
+		Uni<Void> kafkaResponse = Uni.createFrom().nullItem();
+		when(kafkaSenderInterface.send(any(DeleteCSourceRequest.class))).thenReturn(kafkaResponse);
+
+		RowSet<Row> rowSetMock = mock(RowSet.class);
+		when(rowSetMock.rowCount()).thenReturn(0);
+
+		Uni<RowSet<Row>> uniRowsetMock = Uni.createFrom().item(rowSetMock);
+		when(cSourceInfoDAO.deleteRegistration(any())).thenReturn(uniRowsetMock);
+
+		Uni<NGSILDOperationResult> resultUni = CSourceService.deleteRegistration(tenant, csorceRegistrationId);
+
+		Throwable throwable = assertThrows(CompletionException.class, () -> resultUni.await().indefinitely());
+		ResponseException responseException = (ResponseException) throwable.getCause();
+
+		assertEquals(404, responseException.getErrorCode());
+		assertEquals("Registration not found", responseException.getDetail());
+		verify(cSourceInfoDAO, times(1)).deleteRegistration(any());
+
+	}
+
+	@Test
+	public void deleteRegistrationErrorTest() {
+
+		Uni<Void> kafkaResponse = Uni.createFrom().nullItem();
+		when(kafkaSenderInterface.send(any(DeleteCSourceRequest.class))).thenReturn(kafkaResponse);
+
+		when(cSourceInfoDAO.deleteRegistration(any()))
+				.thenReturn(Uni.createFrom().failure(new RuntimeException("Something went wrong")));
+
+		Uni<NGSILDOperationResult> resultUni = CSourceService.deleteRegistration(tenant, csorceRegistrationId);
+
+		Throwable throwable = assertThrows(CompletionException.class, () -> resultUni.await().indefinitely());
+		ResponseException responseException = (ResponseException) throwable.getCause();
+
+		assertEquals(500, responseException.getErrorCode());
+		assertEquals("Something went wrong", responseException.getDetail());
+		verify(cSourceInfoDAO, times(1)).deleteRegistration(any());
+
+	}
+
+	@Test
+	public void queryRegistrationsTest() {
+
+		Row rowMock = mock(Row.class);
+		RowSet<Row> rowSetMock = mock(RowSet.class);
+		RowIterator<Row> rowIteratorMock = mock(RowIterator.class);
+		when(rowSetMock.iterator()).thenReturn(rowIteratorMock);
+		when(rowIteratorMock.next()).thenReturn(rowMock);
+		when(rowMock.getLong(0)).thenReturn(1L);
+
+		Uni<RowSet<Row>> uniRowsetMock = Uni.createFrom().item(rowSetMock);
+
+		when(cSourceInfoDAO.query(any(), any(), any(), any(), any(), any(), any(), any(), anyInt(), anyInt(),
+				anyBoolean())).thenReturn(uniRowsetMock);
+
+		Uni<QueryResult> resultUni = CSourceService.queryRegistrations(tenant, new HashSet<>(), null, "", null, null,
+				null, null, 0, 0, true);
+
+		QueryResult result = resultUni.await().indefinitely();
+
+		assertEquals(1L, result.getCount());
+		verify(cSourceInfoDAO, times(1)).query(any(), any(), any(), any(), any(), any(), any(), any(), anyInt(),
+				anyInt(), anyBoolean());
+
+	}
+
+	@Test
+	public void queryRegistrationsLimitTest() {
+
+		Row rowMock = mock(Row.class);
+		RowSet<Row> rowSetMock = mock(RowSet.class);
+		RowIterator<Row> rowIteratorMock = mock(RowIterator.class);
+		when(rowSetMock.size()).thenReturn(1);
+		when(rowSetMock.iterator()).thenReturn(rowIteratorMock);
+		when(rowIteratorMock.next()).thenReturn(rowMock);
+		when(rowIteratorMock.hasNext()).thenReturn(true).thenReturn(false);
+		JsonObject jsonObject = new JsonObject();
+		jsonObject.put("@id", "urn:ngsi-ld:ContextSourceRegistration:1");
+		when(rowMock.getJsonObject(anyInt())).thenReturn(jsonObject);
+		when(rowMock.getLong(0)).thenReturn(0L);
+
+		Uni<RowSet<Row>> uniRowsetMock = Uni.createFrom().item(rowSetMock);
+
+		when(cSourceInfoDAO.query(any(), any(), any(), any(), any(), any(), any(), any(), anyInt(), anyInt(),
+				anyBoolean())).thenReturn(uniRowsetMock);
+
+		Uni<QueryResult> resultUni = CSourceService.queryRegistrations(tenant, new HashSet<>(), null, "", null, null,
+				null, null, 1, 0, false);
+
+		QueryResult result = resultUni.await().indefinitely();
+
+		assertEquals(0L, result.getCount());
+		verify(cSourceInfoDAO, times(1)).query(any(), any(), any(), any(), any(), any(), any(), any(), anyInt(),
+				anyInt(), anyBoolean());
+
+	}
+
+	@Test
+	public void checkInternalAndSendUpdateIfNeededTest() {
+
+		Uni<Boolean> uniMock = Uni.createFrom().item(false);
+		when(cSourceInfoDAO.isTenantPresent(anyString())).thenReturn(uniMock);
+
+		Map<String, String> details1 = new HashMap<>();
+		details1.put("url", "https://example.com/federation1");
+		details1.put("sourcetenant", "sourceTenant1");
+		details1.put("targettenant", "targetTenant1");
+		details1.put("regtype", "regType1");
+
+		Map<String, String> details2 = new HashMap<>();
+		details2.put("url", "https://example.com/federation2");
+		details2.put("sourcetenant", "sourceTenant2");
+		details2.put("targettenant", "targetTenant2");
+		details2.put("regtype", "regType2");
+
+		Map<String, Map<String, String>> fedMap = new HashMap<>();
+		fedMap.put("federation1", details1);
+		fedMap.put("federation2", details2);
+
+		CSourceService.fedMap = fedMap;
+
+		Uni<Void> voidResult = CSourceService.checkInternalAndSendUpdateIfNeeded();
+		voidResult.await().indefinitely();
+
+		verify(cSourceInfoDAO, times(2)).isTenantPresent(anyString());
 	}
 
 }

@@ -61,7 +61,7 @@ public class HistoryController {
 	@POST
 	public Uni<RestResponse<Object>> createTemporalEntity(HttpServerRequest request, String payload) {
 		return EntryControllerFunctions.createEntry(historyService, request, payload,
-				AppConstants.TEMP_ENTITY_CREATE_PAYLOAD, AppConstants.HISTORY_URL, logger, false);
+				AppConstants.TEMP_ENTITY_CREATE_PAYLOAD, AppConstants.HISTORY_URL, logger);
 	}
 
 	@GET
@@ -94,7 +94,7 @@ public class HistoryController {
 	public Uni<RestResponse<Object>> addAttrib2TemopralEntity(HttpServerRequest request,
 			@PathParam("entityId") String entityId, String payload, @QueryParam(value = "options") String options) {
 		return EntryControllerFunctions.appendToEntry(historyService, request, entityId, payload, options,
-				AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD, logger, false);
+				AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD, logger);
 	}
 
 	@Path("/{entityId}/attrs/{attrId}")
@@ -110,8 +110,8 @@ public class HistoryController {
 					logger.trace("deleteAttrib2TemporalEntity :: started");
 					logger.debug("entityId : " + entityId + " attrId : " + attrId);
 
-					return historyService.delete(HttpUtils.getInternalTenant(request), entityId,
-							attrId, null, context).onItem().transform(t2 -> {
+					return historyService.delete(HttpUtils.getHeaders(request), entityId, attrId, null, context)
+							.onItem().transform(t2 -> {
 								logger.trace("deleteAttrib2TemporalEntity :: completed");
 								return RestResponse.noContent();
 							});
@@ -140,9 +140,8 @@ public class HistoryController {
 								.expand(linkHeaders, JsonUtils.fromString(payload), opts,
 										AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD, atContextAllowed)
 								.get(0);
-						return historyService.modifyAttribInstanceTemporalEntity(
-								HttpUtils.getInternalTenant(request), entityId, resolved, attrId,
-								instanceId, context).onItem().transform(t2 -> {
+						return historyService.modifyAttribInstanceTemporalEntity(HttpUtils.getHeaders(request), entityId,
+								resolved, attrId, instanceId, context).onItem().transform(t2 -> {
 									return RestResponse.noContent();
 								}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
@@ -165,8 +164,8 @@ public class HistoryController {
 					List<Object> links = t.getItem3();
 					context = context.parse(links, true);
 
-					return historyService.delete(HttpUtils.getInternalTenant(request), entityId,
-							attrId, instanceId, context).onItem().transform(t2 -> {
+					return historyService.delete(HttpUtils.getHeaders(request), entityId, attrId, instanceId, context)
+							.onItem().transform(t2 -> {
 								logger.trace("deleteAtrribInstanceTemporalEntity :: completed");
 								return RestResponse.noContent();
 

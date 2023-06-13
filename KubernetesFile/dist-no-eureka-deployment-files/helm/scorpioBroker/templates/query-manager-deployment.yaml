@@ -5,6 +5,7 @@ metadata:
   name: {{ include "queryManager.fullname" . }}
   labels:
     {{ include "queryManager.labels" . | nindent 4 }}
+  namespace: scorpio-broker
 spec:
   replicas: {{ .Values.queryManager.replicas }}
   strategy:
@@ -44,19 +45,10 @@ spec:
         ports:
         - containerPort: 1026
           protocol: TCP
-        {{- if eq .Values.profile "dist"}}
-        lifecycle:
-           preStop:
-            exec:
-              command:
-              - /bin/sh
-              - -c
-              - curl -X PUT "http://{{ .Values.eureka.hostname }}:{{ .Values.eureka.port }}/eureka/apps/QUERY-MANAGER/$HOSTNAME:query-manager:1026/status?value=OUT_OF_SERVICE"
-        {{ end }}
         
         readinessProbe:
           httpGet:
-            path: /actuator/health
+            path: /q/health
             port: 1026
           failureThreshold: {{ .Values.queryManager.readinessProbe.failureThreshold }}
           initialDelaySeconds: {{ .Values.queryManager.readinessProbe.initialDelaySeconds }}
@@ -65,7 +57,7 @@ spec:
         
         livenessProbe:
           httpGet:
-            path: /actuator/health
+            path: /q/health
             port: 1026
           failureThreshold: {{ .Values.queryManager.livenessProbe.failureThreshold }}
           initialDelaySeconds: {{ .Values.queryManager.livenessProbe.initialDelaySeconds }}

@@ -38,8 +38,13 @@
 			"enabled": true
 		},
 		{
-			"key": "history-manager",
+			"key": "history-entity-manager",
 			"value": "http://localhost:1040",
+			"type": "default",
+			"enabled": true
+		},{
+			"key": "history-query-manager",
+			"value": "http://localhost:1041",
 			"type": "default",
 			"enabled": true
 		},

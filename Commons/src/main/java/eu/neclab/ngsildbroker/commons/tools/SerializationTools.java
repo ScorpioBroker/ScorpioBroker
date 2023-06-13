@@ -52,9 +52,6 @@ public class SerializationTools {
 //			.create();
 
 	public static LocalDateTime localDateTimeFormatter(String dateTimeValue) {
-		if (dateTimeValue == null || dateTimeValue.isBlank()) {
-			return LocalDateTime.now();
-		}
 		return LocalDateTime.parse(dateTimeValue, SerializationTools.informatter);
 	}
 
@@ -112,9 +109,9 @@ public class SerializationTools {
 				} else if (propKey.equals(NGSIConstants.NGSI_LD_UNIT_CODE)) {
 					unitCode = getValue((List<Map<String, Object>>) value);
 				} else {
-					if (value instanceof String) {
-						System.out.println();
-					}
+//					if (value instanceof String) {
+//						System.out.println();
+//					}
 					List<Map<String, Object>> subLevelArray = (List<Map<String, Object>>) value;
 					Map<String, Object> objValue = subLevelArray.get(0);
 					if (objValue.containsKey(NGSIConstants.JSON_LD_TYPE)) {
@@ -208,7 +205,7 @@ public class SerializationTools {
 		return result;
 	}
 
-	public static Long date2Long(String dateString) throws Exception {
+	public static Long date2Long(String dateString) {
 		return Instant.from(informatter.parse(dateString)).toEpochMilli();
 
 	}
@@ -404,7 +401,7 @@ public class SerializationTools {
 		switch (geometry) {
 		case NGSIConstants.NGSI_LD_POINT:
 			return new Point(getSingeLePosition(coordinates));
-		case NGSIConstants.NGSI_LD_POLYOGN:
+		case NGSIConstants.NGSI_LD_POLYGON:
 			return new Polygon(getAreaPositions(coordinates));
 		case NGSIConstants.NGSI_LD_LINESTRING:
 			return new LineString(getLinearPositions(coordinates));
@@ -415,16 +412,6 @@ public class SerializationTools {
 	}
 
 	@SuppressWarnings("unchecked")
-	private static AreaPositions getAreaPositions(List<Map<String, Object>> coordinates) {
-		ArrayList<LinearPositions> coordinateList = new ArrayList<LinearPositions>();
-		List<Map<String, Object>> list = (List<Map<String, Object>>) coordinates.get(0).get(NGSIConstants.JSON_LD_LIST);
-		for (Map<String, Object> entry : list) {
-			coordinateList.add(getLinearPositions((List<Map<String, Object>>) entry.get(NGSIConstants.JSON_LD_LIST)));
-		}
-		return new AreaPositions(coordinateList);
-	}
-
-	@SuppressWarnings("unchecked")
 	private static LinearPositions getLinearPositions(List<Map<String, Object>> coordinates) {
 		ArrayList<SinglePosition> coordinateList = new ArrayList<SinglePosition>();
 		List<Map<String, Object>> list = (List<Map<String, Object>>) coordinates.get(0).get(NGSIConstants.JSON_LD_LIST);
@@ -432,6 +419,16 @@ public class SerializationTools {
 			coordinateList.add(getSingeLePosition((List<Map<String, Object>>) entry.get(NGSIConstants.JSON_LD_LIST)));
 		}
 		return new LinearPositions(ImmutableList.copyOf(coordinateList));
+	}
+
+	@SuppressWarnings("unchecked")
+	private static AreaPositions getAreaPositions(List<Map<String, Object>> coordinates) {
+		ArrayList<LinearPositions> coordinateList = new ArrayList<LinearPositions>();
+		List<Map<String, Object>> list = (List<Map<String, Object>>) coordinates.get(0).get(NGSIConstants.JSON_LD_LIST);
+		for (Map<String, Object> entry : list) {
+			coordinateList.add(getLinearPositions((List<Map<String, Object>>) entry.get(NGSIConstants.JSON_LD_LIST)));
+		}
+		return new AreaPositions(coordinateList);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -460,6 +457,10 @@ public class SerializationTools {
 			lon = lon + 360;
 		}
 		return lon;
+	}
+
+	public static String toDateTimeString(long oldestCreatedAt) {
+		return formatter.format(Instant.ofEpochMilli(oldestCreatedAt));
 	}
 
 }

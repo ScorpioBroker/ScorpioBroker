@@ -24,6 +24,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteHistoryEntityRequ
 import eu.neclab.ngsildbroker.commons.datatypes.requests.HistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.UpdateHistoryEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.results.CreateResult;
+import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
@@ -60,15 +61,15 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 	@Channel(AppConstants.HISTORY_CHANNEL)
 	MutinyEmitter<BaseRequest> kafkaSenderInterface;
 
-	public Uni<CreateResult> createEntry(String tenant, Map<String, Object> resolved) {
-		return createEntry(tenant, resolved, new BatchInfo(-1, -1));
+	public Uni<NGSILDOperationResult> createEntry(String tenant, Map<String, Object> resolved) {
+		return createEntry(tenant, resolved, null);
 	}
 
-	public Uni<CreateResult> createEntry(String tenant, Map<String, Object> resolved, BatchInfo batchInfo) {
+	public Uni<NGSILDOperationResult> createEntry(String tenant, Map<String, Object> resolved, BatchInfo batchInfo) {
 		return createTemporalEntity(tenant, resolved, false, batchInfo);
 	}
 
-	Uni<CreateResult> createTemporalEntity(String tenant, Map<String, Object> resolved, boolean fromEntity,
+	Uni<NGSILDOperationResult> createTemporalEntity(String tenant, Map<String, Object> resolved, boolean fromEntity,
 			BatchInfo batchInfo) {
 		logger.trace("creating temporal entity");
 		CreateHistoryEntityRequest request;
@@ -77,8 +78,10 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 		} catch (ResponseException e) {
 			return Uni.createFrom().failure(e);
 		}
-		return historyDAO.isTempEntityExist(request.getId(), tenant).onItem()
-				.transformToUni(t2 -> {
+		return historyDAO.isTempEntityExist(request.getId(), HttpUtils.getInternalTenant(headers)).onItem()
+				.transform(Unchecked.function(t -> {
+					return t;
+				})).onItem().transformToUni(t2 -> {
 					return handleRequest(request).combinedWith((t, u) -> {
 						logger.debug("createMessage() :: completed");
 						return new CreateResult(request.getId(), Boolean.parseBoolean(t2.toString()));
@@ -87,11 +90,11 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 	}
 
 	public Uni<Boolean> deleteEntry(String tenant, String entityId) {
-		return deleteEntry(tenant, entityId, new BatchInfo(-1, -1));
+		return deleteEntry(headers, entityId, new BatchInfo(-1, -1));
 	}
 
 	public Uni<Boolean> deleteEntry(String tenant, String entityId, BatchInfo batchInfo) {
-		return delete(tenant, entityId, null, null, null);
+		return delete(headers, entityId, null, null, null);
 	}
 
 	public Uni<Boolean> delete(String tenant, String entityId, String attributeId, String instanceId,
@@ -100,16 +103,16 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 			return Uni.createFrom()
 					.failure(new ResponseException(ErrorType.BadRequestData, "empty entity id not allowed"));
 		}
-
+		String tenantId = HttpUtils.getInternalTenant(headers);
 		return Uni.combine().all()
-				.unis(historyDAO.getTemporalEntity(entityId, tenant), historyDAO
-						.temporalEntityAttrInstanceExist(entityId, tenant, attributeId, instanceId, linkHeaders))
+				.unis(historyDAO.getTemporalEntity(entityId, tenantId), historyDAO
+						.temporalEntityAttrInstanceExist(entityId, tenantId, attributeId, instanceId, linkHeaders))
 				.asTuple().onItem().transform(Unchecked.function(t -> {
 					String resolvedAttrId = null;
 					if (attributeId != null) {
 						resolvedAttrId = ParamsResolver.expandAttribute(attributeId, linkHeaders);
 					}
-					return new DeleteHistoryEntityRequest(tenant, resolvedAttrId, instanceId, entityId);
+					return new DeleteHistoryEntityRequest(headers, resolvedAttrId, instanceId, entityId);
 
 				})).onItem().transformToUni(t2 -> {
 					return handleRequest(t2).combinedWith((t, u) -> {
@@ -121,18 +124,15 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 
 	public Uni<UpdateResult> appendToEntry(String tenant, String entityId, Map<String, Object> resolved,
 			String[] options) {
-		return appendToEntry(tenant, entityId, resolved, options, new BatchInfo(-1, -1));
+		return appendToEntry(headers, entityId, resolved, options, new BatchInfo(-1, -1));
 	}
 
 	public Uni<UpdateResult> appendToEntry(String tenant, String entityId, Map<String, Object> resolved,
 			String[] options, BatchInfo batchInfo) {
-		return historyDAO.getTemporalEntity(entityId, tenant).onItem().transformToUni(t -> {
-			try {
-				return Uni.createFrom().item(new AppendHistoryEntityRequest(tenant, resolved, entityId));
-			} catch (ResponseException e) {
-				return Uni.createFrom().failure(e);
-			}
-		}).onItem().transformToUni(t2 -> {
+		String tenantId = HttpUtils.getInternalTenant(headers);
+		return historyDAO.getTemporalEntity(entityId, tenantId).onItem().transform(Unchecked.function(t -> {
+			return new AppendHistoryEntityRequest(headers, resolved, entityId);
+		})).onItem().transformToUni(t2 -> {
 			return handleRequest(t2).combinedWith((t, u) -> {
 				logger.debug("appendToEntry() :: completed");
 				return t2.getUpdateResult();
@@ -159,47 +159,34 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 		qp.setAttrs(resolvedAttrId);
 		qp.setInstanceId(instanceId);
 		qp.setIncludeSysAttrs(true);
-		qp.setTenant(tenant);
+		qp.setTenant(HttpUtils.getTenantFromHeaders(headers));
 
-		return historyDAO.query(qp).onItem().transformToUni(queryResult -> {
+		return historyDAO.query(qp).onItem().transformToUni(Unchecked.function(queryResult -> {
 			List<Map<String, Object>> entityList = ((QueryResult) queryResult).getData();
 			if (entityList.size() == 0) {
 				return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound, "Entity not found"));
 			}
-			UpdateHistoryEntityRequest request;
-			try {
-				request = new UpdateHistoryEntityRequest(tenant, resolved, entityId, resolvedAttrId, instanceId,
-						entityList);
-			} catch (ResponseException e) {
-				return Uni.createFrom().failure(e);
-			}
+			UpdateHistoryEntityRequest request = new UpdateHistoryEntityRequest(headers, resolved, entityId,
+					resolvedAttrId, instanceId, entityList);
 			return handleRequest(request).combinedWith(t -> null);
-		});
+		}));
 
 	}
 
 	@Override
-	public Uni<UpdateResult> updateEntry(String tenant, String entityId, Map<String, Object> entry) {
+	public Uni<NGSILDOperationResult> updateEntry(String tenant, String entityId, Map<String, Object> entry) {
 		return updateEntry(tenant, entityId, entry, new BatchInfo(-1, -1));
 	}
 
 	@Override
-	public Uni<UpdateResult> updateEntry(String tenant, String entityId, Map<String, Object> entry,
+	public Uni<NGSILDOperationResult> updateEntry(String tenant, String entityId, Map<String, Object> entry,
 			BatchInfo batchInfo) {
 		// History can't do this
 		throw new MethodNotFoundException();
 	}
 
 	public UniAndGroup2<CreateResult, Void> handleRequest(HistoryEntityRequest request) {
-		return Uni.combine().all().unis(historyDAO.storeTemporalEntity(request), sendToKafka(request));
-	}
-
-	private Uni<Void> sendToKafka(HistoryEntityRequest request) {
-		if (historyToKafkaEnabled) {
-			return kafkaSenderInterface.send(request);
-		} else {
-			return Uni.createFrom().voidItem();
-		}
+		return Uni.combine().all().unis(historyDAO.storeTemporalEntity(request), kafkaSenderInterface.send(request));
 	}
 
 	@Override
@@ -215,6 +202,61 @@ public class HistoryService extends BaseQueryService implements EntryCRUDService
 	@Override
 	public Uni<Void> sendFail(BatchInfo batchInfo) {
 		return Uni.createFrom().voidItem();
+	}
+
+	@Override
+	public Uni<NGSILDOperationResult> createEntry(String tenant, Map<String, Object> resolved,
+			List<Object> originalContext, BatchInfo batchInfo) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Uni<NGSILDOperationResult> createEntry(String tenant, Map<String, Object> resolved,
+			List<Object> originalContext) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Uni<NGSILDOperationResult> updateEntry(String tenant, String entityId, Map<String, Object> entry,
+			List<Object> originalContext) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Uni<NGSILDOperationResult> updateEntry(String tenant, String entityId, Map<String, Object> entry,
+			List<Object> originalContext, BatchInfo batchInfo) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Uni<NGSILDOperationResult> appendToEntry(String tenant, String entityId, Map<String, Object> entry,
+			String[] options, List<Object> originalContext) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Uni<NGSILDOperationResult> appendToEntry(String tenant, String entityId, Map<String, Object> entry,
+			String[] options, List<Object> originalContext, BatchInfo batchInfo) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Uni<NGSILDOperationResult> deleteEntry(String tenant, String entryId, List<Object> originalContext) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Uni<NGSILDOperationResult> deleteEntry(String tenant, String entryId, List<Object> originalContext,
+			BatchInfo batchInfo) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

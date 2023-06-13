@@ -18,7 +18,7 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.PayloadQueryParamParser;
 import eu.neclab.ngsildbroker.commons.ngsiqueries.ParamsResolver;
-import eu.neclab.ngsildbroker.commons.ngsiqueries.QueryParser;
+import eu.neclab.ngsildbroker.commons.tools.QueryParser;
 
 public class HistoryPostQueryParser implements PayloadQueryParamParser {
 
@@ -76,7 +76,7 @@ public class HistoryPostQueryParser implements PayloadQueryParamParser {
 						params.setGeoproperty((String) getValue(geoQuery.get(NGSIConstants.NGSI_LD_GEOPROPERTY)));
 					}
 					params.setGeorel(
-							QueryParser.parseGeoRel((String) getValue(geoQuery.get(NGSIConstants.NGSI_LD_GEO_REL))));
+							QueryParser.parseGeoQuery((String) getValue(geoQuery.get(NGSIConstants.NGSI_LD_GEO_REL))));
 					break;
 				case NGSIConstants.NGSI_LD_QUERY:
 					params.setQ(QueryParser.parseQuery((String) getValue(entry.getValue()), context).toSql(false));

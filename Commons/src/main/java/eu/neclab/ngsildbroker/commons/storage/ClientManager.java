@@ -1,6 +1,5 @@
 package eu.neclab.ngsildbroker.commons.storage;
 
-import java.sql.SQLException;
 import java.util.HashMap;
 
 import javax.annotation.PostConstruct;
@@ -93,30 +92,28 @@ public class ClientManager {
 
 	public Uni<String> determineTargetDataSource(String tenantidvalue, boolean createDB) {
 		return createDataSourceForTenantId(tenantidvalue, createDB).onItem().transform(tenantDataSource -> {
-
 			flywayMigrate(tenantDataSource.getItem1());
+			tenantDataSource.getItem1().close();
 			return tenantDataSource.getItem2();
 		});
 	}
 
-	private Uni<Tuple2<DataSource, String>> createDataSourceForTenantId(String tenantidvalue, boolean createDB) {
-		return findDataBaseNameByTenantId(tenantidvalue, createDB).onItem().transformToUni(tenantDatabaseName -> {
-			// TODO this needs to be from the config not hardcoded!!!
-			String tenantJdbcURL = DBUtil.databaseURLFromPostgresJdbcUrl(jdbcBaseUrl, tenantDatabaseName);
-			AgroalDataSourceConfigurationSupplier configuration = new AgroalDataSourceConfigurationSupplier()
-					.dataSourceImplementation(DataSourceImplementation.AGROAL).metricsEnabled(false)
-					.connectionPoolConfiguration(cp -> cp.minSize(minsize).maxSize(maxsize).initialSize(initialSize)
-							.connectionFactoryConfiguration(cf -> cf.jdbcUrl(tenantJdbcURL)
-									.connectionProviderClassName(jdbcDriver).autoCommit(false)
-									.principal(new NamePrincipal(username)).credential(new SimplePassword(password))));
-			AgroalDataSource agroaldataSource;
-			try {
-				agroaldataSource = AgroalDataSource.from(configuration);
-			} catch (SQLException e) {
-				return Uni.createFrom().failure(e);
-			}
-			return Uni.createFrom().item(Tuple2.of(agroaldataSource, tenantDatabaseName));
-		});
+	private Uni<Tuple2<AgroalDataSource, String>> createDataSourceForTenantId(String tenantidvalue, boolean createDB) {
+		return findDataBaseNameByTenantId(tenantidvalue, createDB).onItem()
+				.transform(Unchecked.function(tenantDatabaseName -> {
+					// TODO this needs to be from the config not hardcoded!!!
+					String tenantJdbcURL = DBUtil.databaseURLFromPostgresJdbcUrl(jdbcBaseUrl, tenantDatabaseName);
+					AgroalDataSourceConfigurationSupplier configuration = new AgroalDataSourceConfigurationSupplier()
+							.dataSourceImplementation(DataSourceImplementation.AGROAL).metricsEnabled(false)
+							.connectionPoolConfiguration(
+									cp -> cp.minSize(minsize).maxSize(maxsize).initialSize(initialSize)
+											.connectionFactoryConfiguration(cf -> cf.jdbcUrl(tenantJdbcURL)
+													.connectionProviderClassName(jdbcDriver).autoCommit(false)
+													.principal(new NamePrincipal(username))
+													.credential(new SimplePassword(password))));
+					AgroalDataSource agroaldataSource = AgroalDataSource.from(configuration);
+					return Tuple2.of(agroaldataSource, tenantDatabaseName);
+				}));
 
 	}
 
@@ -148,7 +145,6 @@ public class ClientManager {
 									} else
 										return Uni.createFrom().item(databasename);
 								});
-
 					}
 				});
 	}

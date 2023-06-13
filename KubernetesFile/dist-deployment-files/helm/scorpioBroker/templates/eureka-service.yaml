@@ -6,7 +6,7 @@ metadata:
   name: {{ include "eureka.fullname" . }}
   labels:
     {{ include "eureka.labels" . | nindent 4 }}
-  namespace: {{ .Release.Namespace }}
+  namespace: scorpio-broker
 spec:
   ports:
   - name: "8761"

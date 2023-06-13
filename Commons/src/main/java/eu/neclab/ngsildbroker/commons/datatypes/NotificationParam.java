@@ -1,10 +1,8 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-
+import java.util.Set;
+import com.google.common.collect.Sets;
 import eu.neclab.ngsildbroker.commons.enums.Format;
 
 /**
@@ -19,31 +17,22 @@ public class NotificationParam implements Serializable {
 	 *
 	 */
 	private static final long serialVersionUID = -5749495213091903926L;
-	private List<String> attributeNames;
+	private Set<String> attributeNames;
 	private EndPoint endPoint;
 	private Format format;
 	private int timesSent = 0;
-	private Date lastNotification;
-	private Date lastSuccessfulNotification;
-	private Date lastFailedNotification;
+	private long lastNotification;
+	private long lastSuccessfulNotification;
+	private long lastFailedNotification;
 
 	// duplicate
 	public NotificationParam(NotificationParam notification) {
 		if (notification.attributeNames != null) {
-			this.attributeNames = new ArrayList<String>(notification.attributeNames);
+			this.attributeNames = Sets.newHashSet(notification.attributeNames);
 		}
 		this.endPoint = new EndPoint(notification.endPoint);
 		this.format = notification.format;
 		this.timesSent = notification.timesSent;
-		if (notification.lastNotification != null) {
-			this.lastNotification = Date.from(notification.lastNotification.toInstant());
-		}
-		if (notification.lastSuccessfulNotification != null) {
-			this.lastSuccessfulNotification = Date.from(notification.lastSuccessfulNotification.toInstant());
-		}
-		if (notification.lastFailedNotification != null) {
-			this.lastFailedNotification = Date.from(notification.lastFailedNotification.toInstant());
-		}
 	}
 
 	public NotificationParam() {
@@ -51,7 +40,7 @@ public class NotificationParam implements Serializable {
 
 	public NotificationParam update(NotificationParam notification) {
 		if (notification.attributeNames != null) {
-			this.attributeNames = new ArrayList<String>(notification.attributeNames);
+			this.attributeNames = Sets.newHashSet(notification.attributeNames);
 		}
 		if (notification.endPoint != null) {
 			this.endPoint.update(notification.endPoint);
@@ -62,15 +51,6 @@ public class NotificationParam implements Serializable {
 
 		this.timesSent = notification.timesSent;
 
-		if (notification.lastNotification != null) {
-			this.lastNotification = Date.from(notification.lastNotification.toInstant());
-		}
-		if (notification.lastSuccessfulNotification != null) {
-			this.lastSuccessfulNotification = Date.from(notification.lastSuccessfulNotification.toInstant());
-		}
-		if (notification.lastFailedNotification != null) {
-			this.lastFailedNotification = Date.from(notification.lastFailedNotification.toInstant());
-		}
 		return this;
 	}
 
@@ -78,7 +58,7 @@ public class NotificationParam implements Serializable {
 		return timesSent;
 	}
 
-	public Date getLastNotification() {
+	public long getLastNotification() {
 		return lastNotification;
 	}
 
@@ -86,24 +66,23 @@ public class NotificationParam implements Serializable {
 		this.timesSent = timeSent;
 	}
 
-	public void setLastNotification(Date lastNotification) {
-		this.timesSent++;
+	public void setLastNotification(long lastNotification) {
 		this.lastNotification = lastNotification;
 	}
 
-	public Date getLastSuccessfulNotification() {
+	public long getLastSuccessfulNotification() {
 		return lastSuccessfulNotification;
 	}
 
-	public void setLastSuccessfulNotification(Date lastSuccessfulNotification) {
+	public void setLastSuccessfulNotification(long lastSuccessfulNotification) {
 		this.lastSuccessfulNotification = lastSuccessfulNotification;
 	}
 
-	public Date getLastFailedNotification() {
+	public long getLastFailedNotification() {
 		return lastFailedNotification;
 	}
 
-	public void setLastFailedNotification(Date lastFailedNotification) {
+	public void setLastFailedNotification(long lastFailedNotification) {
 		this.lastFailedNotification = lastFailedNotification;
 	}
 
@@ -111,11 +90,11 @@ public class NotificationParam implements Serializable {
 
 	}
 
-	public List<String> getAttributeNames() {
+	public Set<String> getAttributeNames() {
 		return attributeNames;
 	}
 
-	public void setAttributeNames(List<String> attributeNames) {
+	public void setAttributeNames(Set<String> attributeNames) {
 		this.attributeNames = attributeNames;
 	}
 

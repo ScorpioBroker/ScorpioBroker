@@ -5,6 +5,7 @@ metadata:
   name: {{ include "registryManager.fullname" . }}
   labels:
     {{ include "registryManager.labels" . | nindent 4 }}
+  namespace: scorpio-broker
 spec:
   replicas: {{ .Values.registryManager.replicas }}
   strategy:
@@ -44,19 +45,10 @@ spec:
         ports:
         - containerPort: 1030
           protocol: TCP
-        {{- if eq .Values.profile "dist"}}
-        lifecycle:
-           preStop:
-            exec:
-              command:
-              - /bin/sh
-              - -c
-              - curl -X PUT "http://{{ .Values.eureka.hostname }}:{{ .Values.eureka.port }}/eureka/apps/REGISTRY-MANAGER/$HOSTNAME:registry-manager:1030/status?value=OUT_OF_SERVICE"
-        {{ end }}
         
         readinessProbe:
           httpGet:
-            path: /actuator/health
+            path: /q/health
             port: 1030
           failureThreshold: {{ .Values.registryManager.readinessProbe.failureThreshold }}
           initialDelaySeconds: {{ .Values.registryManager.readinessProbe.initialDelaySeconds }}
@@ -65,7 +57,7 @@ spec:
         
         livenessProbe:
           httpGet:
-            path: /actuator/health
+            path: /q/health
             port: 1030
           failureThreshold: {{ .Values.registryManager.livenessProbe.failureThreshold }}
           initialDelaySeconds: {{ .Values.registryManager.livenessProbe.initialDelaySeconds }}

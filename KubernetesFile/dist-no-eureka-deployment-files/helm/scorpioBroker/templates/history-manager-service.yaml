@@ -5,7 +5,7 @@ metadata:
   name: {{ include "historyManager.fullname" . }}
   labels:
     {{ include "historyManager.labels" . | nindent 4 }}
-  namespace: {{ .Release.Namespace }}
+  namespace: scorpio-broker
 spec:
   ports:
   - name: "1040"

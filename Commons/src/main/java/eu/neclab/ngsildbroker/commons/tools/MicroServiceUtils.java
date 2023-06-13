@@ -4,6 +4,7 @@ import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -18,10 +19,11 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
-import eu.neclab.ngsildbroker.commons.datatypes.SyncMessage;
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.BatchRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteAttributeRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
 import io.vertx.core.http.impl.headers.HeadersMultiMap;
 
 @Singleton
@@ -56,20 +58,41 @@ public class MicroServiceUtils {
 	}
 
 	public static BaseRequest deepCopyRequestMessage(BaseRequest originalPayload) {
-		BaseRequest result = new BaseRequest();
-		result.setId(originalPayload.getId());
-		result.setFinalPayload(deepCopyMap(originalPayload.getFinalPayload()));
-		result.setRequestPayload(deepCopyMap(originalPayload.getRequestPayload()));
-		if (originalPayload.getTenant() != null) {
-			result.setTenant(originalPayload.getTenant());
+		BaseRequest result;
+		switch (originalPayload.getRequestType()) {
+		case AppConstants.DELETE_ATTRIBUTE_REQUEST:
+			result = new DeleteAttributeRequest();
+			((DeleteAttributeRequest) result).setAttribName(((DeleteAttributeRequest) originalPayload).getAttribName());
+			((DeleteAttributeRequest) result).setDatasetId(((DeleteAttributeRequest) originalPayload).getDatasetId());
+			((DeleteAttributeRequest) result).setDeleteAll(((DeleteAttributeRequest) originalPayload).isDeleteAll());
+			break;
+		default:
+			result = new BaseRequest();
+
 		}
+
+		result.setId(originalPayload.getId());
+		result.setPayload(deepCopyMap(originalPayload.getPayload()));
+		result.setTenant(originalPayload.getTenant());
 		result.setRequestType(originalPayload.getRequestType());
 		result.setBatchInfo(originalPayload.getBatchInfo());
 		return result;
 	}
 
-	@SuppressWarnings("unchecked")
-	private static Map<String, Object> deepCopyMap(Map<String, Object> original) {
+	public static BatchRequest deepCopyRequestMessage(BatchRequest originalPayload) {
+		List<Map<String, Object>> copiedPayload = new ArrayList<>();
+		if (originalPayload.getRequestPayload() != null && !originalPayload.getRequestPayload().isEmpty()) {
+			for (Map<String, Object> entry : originalPayload.getRequestPayload()) {
+				copiedPayload.add(deepCopyMap(entry));
+			}
+		}
+		BatchRequest result = new BatchRequest(originalPayload.getTenant(), copiedPayload,
+				originalPayload.getContexts(), originalPayload.getRequestType());
+		result.setEntityIds(originalPayload.getEntityIds());
+		return result;
+	}
+
+	public static Map<String, Object> deepCopyMap(Map<String, Object> original) {
 		if (original == null) {
 			return null;
 		}
@@ -77,20 +100,22 @@ public class MicroServiceUtils {
 		for (Entry<String, Object> entry : original.entrySet()) {
 			Object copiedValue;
 			Object originalValue = entry.getValue();
-			if (originalValue == null) {
-				copiedValue = null;
-			} else if (originalValue instanceof List) {
+			if (originalValue instanceof List) {
 				copiedValue = deppCopyList((List<Object>) originalValue);
 			} else if (originalValue instanceof Map) {
 				copiedValue = deepCopyMap((Map<String, Object>) originalValue);
-
+			} else if (originalValue instanceof Integer) {
+				copiedValue = ((Integer) originalValue).intValue();
+			} else if (originalValue instanceof Double) {
+				copiedValue = ((Double) originalValue).doubleValue();
+			} else if (originalValue instanceof Float) {
+				copiedValue = ((Float) originalValue).floatValue();
 			} else if (originalValue instanceof Boolean) {
 				copiedValue = ((Boolean) originalValue).booleanValue();
-			} else if (originalValue instanceof Number) {
-				copiedValue = originalValue;
-			}
-
-			else {
+			} else if (originalValue == null) {
+				//System.out.println(entry.getKey() + " was null");
+				continue;
+			} else {
 				copiedValue = originalValue.toString();
 			}
 			result.put(entry.getKey(), copiedValue);
@@ -99,7 +124,6 @@ public class MicroServiceUtils {
 		return result;
 	}
 
-	@SuppressWarnings("unchecked")
 	private static List<Object> deppCopyList(List<Object> original) {
 		if (original == null) {
 			return null;
@@ -111,8 +135,12 @@ public class MicroServiceUtils {
 				copiedValue = deppCopyList((List<Object>) originalValue);
 			} else if (originalValue instanceof Map) {
 				copiedValue = deepCopyMap((Map<String, Object>) originalValue);
-			} else if (originalValue instanceof Number) {
-				copiedValue = originalValue;
+			} else if (originalValue instanceof Integer) {
+				copiedValue = ((Integer) originalValue).intValue();
+			} else if (originalValue instanceof Double) {
+				copiedValue = ((Double) originalValue).doubleValue();
+			} else if (originalValue instanceof Float) {
+				copiedValue = ((Float) originalValue).floatValue();
 			} else if (originalValue instanceof Boolean) {
 				copiedValue = ((Boolean) originalValue).booleanValue();
 			} else {
@@ -124,16 +152,14 @@ public class MicroServiceUtils {
 	}
 
 	public static SubscriptionRequest deepCopySubscriptionMessage(SubscriptionRequest originalPayload) {
-		SubscriptionRequest tmp = new SubscriptionRequest();
-		tmp.setActive(originalPayload.isActive());
-		tmp.setContext(deppCopyList(originalPayload.getContext()));
-		tmp.setFinalPayload(deepCopyMap(originalPayload.getFinalPayload()));
-		tmp.setTenant(originalPayload.getTenant());
-		tmp.setId(originalPayload.getId());
-		tmp.setRequestPayload(deepCopyMap(originalPayload.getRequestPayload()));
-		tmp.setType(originalPayload.getRequestType());
-		tmp.setSubscription(new Subscription(originalPayload.getSubscription()));
-		return tmp;
+		SubscriptionRequest result = new SubscriptionRequest();
+		result.setContext(originalPayload.getContext());
+		result.setId(originalPayload.getId());
+		result.setPayload(deepCopyMap(originalPayload.getPayload()));
+		result.setTenant(originalPayload.getTenant());
+		result.setRequestType(originalPayload.getRequestType());
+		result.setBatchInfo(originalPayload.getBatchInfo());
+		return result;
 	}
 
 	public static HeadersMultiMap getHeaders(ArrayListMultimap<String, String> receiverInfo) {
@@ -144,18 +170,17 @@ public class MicroServiceUtils {
 		return result;
 	}
 
-	public static SyncMessage deepCopySyncMessage(SyncMessage originalSync) {
-		SubscriptionRequest tmp = new SubscriptionRequest();
-		SubscriptionRequest originalPayload = originalSync.getRequest();
-		tmp.setActive(originalPayload.isActive());
-		tmp.setContext(deppCopyList(originalPayload.getContext()));
-		tmp.setFinalPayload(deepCopyMap(originalPayload.getFinalPayload()));
-		tmp.setTenant(originalPayload.getTenant());
-		tmp.setId(originalPayload.getId());
-		tmp.setRequestPayload(deepCopyMap(originalPayload.getRequestPayload()));
-		tmp.setType(originalPayload.getRequestType());
-		tmp.setSubscription(new Subscription(originalPayload.getSubscription()));
-		return new SyncMessage(originalSync.getSyncId(), tmp);
-	}
+//	public static SyncMessage deepCopySyncMessage(SyncMessage originalSync) {
+//		SubscriptionRequest tmp = new SubscriptionRequest();
+//		SubscriptionRequest originalPayload = originalSync.getRequest();
+//		tmp.setActive(originalPayload.isActive());
+//		tmp.setContext(deppCopyList(originalPayload.getContext()));
+//		tmp.setPayload(deepCopyMap(originalPayload.getPayload()));
+//		tmp.setHeaders(ArrayListMultimap.create(originalPayload.getHeaders()));
+//		tmp.setId(originalPayload.getId());
+//		tmp.setType(originalPayload.getRequestType());
+//		tmp.setSubscription(new Subscription(originalPayload.getSubscription()));
+//		return new SyncMessage(originalSync.getSyncId(), tmp);
+//	}
 
 }

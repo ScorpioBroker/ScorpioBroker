@@ -6,6 +6,7 @@ metadata:
   name: {{ include "eureka.fullname" . }}-node-port
   labels:
     {{- include "eureka.labels" . | nindent 4 }}
+  namespace: scorpio-broker
 spec:
   type: {{ .Values.eureka.service.type }}
   ports:

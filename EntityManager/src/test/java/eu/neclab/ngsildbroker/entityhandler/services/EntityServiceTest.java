@@ -1,511 +1,514 @@
 package eu.neclab.ngsildbroker.entityhandler.services;
 
-import io.agroal.api.AgroalDataSource;
-import io.quarkus.test.junit.QuarkusTest;
-import io.smallrye.mutiny.Uni;
-import io.smallrye.reactive.messaging.MutinyEmitter;
-import io.vertx.mutiny.pgclient.PgPool;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.gson.Gson;
+import java.util.Set;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
-import org.mockito.Spy;
-import org.slf4j.LoggerFactory;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.jsonldjava.core.Context;
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Table;
+
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.RegistrationEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.EntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.BatchRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteAttributeRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.UpdateEntityRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.results.CreateResult;
-import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
-import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
-import com.github.jsonldjava.core.JsonLdOptions;
-import com.github.jsonldjava.utils.JsonUtils;
+import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
+import eu.neclab.ngsildbroker.entityhandler.controller.CustomProfile;
+import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.TestProfile;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.reactive.messaging.MutinyEmitter;
+import io.vertx.mutiny.core.Vertx;
+import io.vertx.mutiny.ext.web.client.WebClient;
 
 @QuarkusTest
 @TestMethodOrder(OrderAnnotation.class)
+@TestProfile(CustomProfile.class)
 public class EntityServiceTest {
 
-	@Mock
-	private AgroalDataSource writerDataSource;
-
-	@Mock
-	private PgPool pgClient;;
-
-	@ConfigProperty(name = "scorpio.directDB", defaultValue = "true")
-	boolean directDB;
-
-	@Mock
-	private EntityInfoDAO entityInfoDAO;
-	@Mock
-	private StorageDAO storageDAO;
-
-	@Mock
-	MutinyEmitter<BaseRequest> kafkaSenderInterface;
-
 	@InjectMocks
-	@Spy
 	private EntityService entityService;
+
 	@Mock
-	EntityRequest request;
+	EntityInfoDAO entityDAO;
 
-	org.slf4j.Logger logger = LoggerFactory.getLogger("SampleLogger");
-	String updatePayload;
-	String updatePayloadforwrongattr;
-	String appendPayload;
-	String entityPayload;
-	String updatePartialAttributesPayload;
-	String updatePartialDefaultAttributesPayload;
-	JsonNode updateJsonNode;
-	JsonNode appendJsonNode;
-	JsonNode blankNode;
-	JsonNode payloadNode;
-	JsonNode updatePartialAttributesNode;
-	JsonNode updatePartialDefaultAttributesNode;
-	private String enitityIdNotPayload;
-	private String entityAttrPayload;
-	private String updateAttrPayload;
-	private String entityPayloadIdNotFound;
-	ArrayListMultimap<String, String> multimaparr = ArrayListMultimap.create();
-	ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
+	@Mock
+	MutinyEmitter<BaseRequest> entityEmitter;
 
-	static JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
+	@Mock
+	MutinyEmitter<BatchRequest> batchEmitter;
+
+	@Mock
+	Vertx vertx;
+
+	@Mock
+	WebClient webClient;
+
+	@Mock
+	Context context;
+
+	String jsonLdObject;
+	String tenant = "tenant";
+	String entityId = "urn:test:testentity2";
+	String entityPayload = null;
+	Map<String, Object> resolved = null;
 
 	@BeforeEach
 	public void setUp() throws Exception {
-		MockitoAnnotations.initMocks(this);
-		pgClient.preparedQuery("SELECT $1");
+
+		MockitoAnnotations.openMocks(this);
+		entityService.webClient = webClient;
+		entityService.vertx = vertx;
+		entityService.entityEmitter = entityEmitter;
+		entityService.batchEmitter = batchEmitter;
+
+		Table<String, String, List<RegistrationEntry>> registriesMap = HashBasedTable.create();
+		Uni<Table<String, String, List<RegistrationEntry>>> uniRegistriesMap = Uni.createFrom().item(registriesMap);
+		when(entityDAO.getAllRegistries()).thenReturn(uniRegistriesMap);
+
+		jsonLdObject = "{\"https://uri.etsi.org/ngsi-ld/default-context/complexproperty\":[{\"@type\":"
+				+ "[\"https://uri.etsi.org/ngsi-ld/Property\"],\"https://uri.etsi.org/ngsi-ld/hasValue\":"
+				+ "[{\"https://uri.etsi.org/ngsi-ld/default-context/some\":[{\"https://uri.etsi.org/ngsi-ld/default-context/more\":"
+				+ "[{\"@value\":\"values\"}]}]}]}],\"https://uri.etsi.org/ngsi-ld/default-context/floatproperty\":[{\"@type\":"
+				+ "[\"https://uri.etsi.org/ngsi-ld/Property\"],\"https://uri.etsi.org/ngsi-ld/hasValue\":"
+				+ "[{\"@value\":123.456}]}],\"@id\":\"urn:test:testentity2\",\"https://uri.etsi.org/ngsi-ld/default-context/intproperty\":"
+				+ "[{\"@type\":[\"https://uri.etsi.org/ngsi-ld/Property\"],\"https://uri.etsi.org/ngsi-ld/hasValue\":"
+				+ "[{\"@value\":123}]}],\"https://uri.etsi.org/ngsi-ld/default-context/stringproperty\":[{\"@type\":"
+				+ "[\"https://uri.etsi.org/ngsi-ld/Property\"],\"https://uri.etsi.org/ngsi-ld/hasValue\":"
+				+ "[{\"@value\":\"teststring\"}]}],\"https://uri.etsi.org/ngsi-ld/default-context/testrelationship\":"
+				+ "[{\"https://uri.etsi.org/ngsi-ld/hasObject\":[{\"@id\":\"urn:testref1\"}],\"@type\":"
+				+ "[\"https://uri.etsi.org/ngsi-ld/Relationship\"]}]}";
+
 		ObjectMapper objectMapper = new ObjectMapper();
-
-		enitityIdNotPayload = "{\r\n" + "    \"id\": \" \",\r\n" + "    \"type\": \"Vehicle\",\r\n"
-				+ "   \"brandName\": {\r\n" + "        \"type\": \"Property\",\r\n" + "        \"value\": \"Swift\"\r\n"
-				+ "    },\r\n" + "    \"isParked\": {\r\n" + "        \"type\": \"Relationship\",\r\n"
-				+ "        \"providedBy\": {\r\n" + "            \"type\": \"Relationship\",\r\n"
-				+ "            \"object\": \"urn:ngsi-ld:Person:Bob\"\r\n" + "        },\r\n"
-				+ "        \"object\": \"urn:ngsi-ld:OffStreetParking:Downtown1\"\r\n" + "    },\r\n"
-				+ "    \"speed\": {\r\n" + "        \"type\": \"Property\",\r\n" + "        \"value\": 85\r\n"
-				+ "    },\r\n" + "    \"location\": {\r\n" + "        \"type\": \"GeoProperty\",\r\n"
-				+ "        \"value\": {\r\n" + "            \"type\": \"Point\",\r\n"
-				+ "            \"coordinates\": [\r\n" + "                -8.6,\r\n" + "                41.6\r\n"
-				+ "            ]\r\n" + "        }\r\n" + "    }\r\n" + "}";
-
-		entityPayload = "{\r\n" + "    \"http://example.org/vehicle/brandName\": [\r\n" + "      {\r\n"
-				+ "        \"@type\":[\r\n" + "    \"https://uri.etsi.org/ngsi-ld/Property\"],\r\n"
-				+ "    \"https://uri.etsi.org/ngsi-ld/hasValue\": [{\r\n" + "     \"@value\": \"Mercedes\"\r\n"
-				+ "      }]\r\n" + "    }],\r\n" + "        \"https://uri.etsi.org/ngsi-ld/createdAt\": [\r\n"
-				+ "          {\r\n" + "            \"@type\": \"https://uri.etsi.org/ngsi-ld/DateTime\",\r\n"
-				+ "            \"@value\": \"2018-06-01T12:03:00Z\"\r\n" + "          }\r\n" + "        ],\r\n"
-				+ "     \"@id\": \"urn:ngsi-ld:Vehicle:A103\",\r\n"
-				+ "    \"https://uri.etsi.org/ngsi-ld/modifiedAt\":[{\r\n"
-				+ "     \"@value\": \"2017-07-29T12:00:04Z\",\r\n"
-				+ "     \"@type\": \"https://uri.etsi.org/ngsi-ld/DateTime\"}],\r\n"
-				+ "     \"http://example.org/vehicle/speed\": [\r\n" + "     {\r\n"
-				+ "    \"https://uri.etsi.org/ngsi-ld/datasetId\": [\r\n" + "     {\r\n"
-				+ "     \"@id\": \"urn:ngsi-ld:Property:speedometerA4567-speed\"\r\n" + "      }\r\n" + "      ],\r\n"
-				+ "    \"https://uri.etsi.org/ngsi-ld/default-context/source\":[\r\n" + "     {\r\n"
-				+ "     \"@type\":[\r\n" + "    \"https://https://uri.etsi.org/ngsi-ld/Property\"],\r\n"
-				+ "    \"https://uri.etsi.org/ngsi-ld/hasValue\":[\r\n" + "		{\r\n"
-				+ "     \"@value\": \"Speedometer\"\r\n" + "      }\r\n" + "      ]\r\n" + "      }\r\n"
-				+ "      ],\r\n" + "       \"@type\":[\r\n" + "    \"https://uri.etsi.org/ngsi-ld/Property\"],\r\n"
-				+ "     \"https://uri.etsi.org/ngsi-ld/hasValue\":[\r\n" + "		{\r\n" + "    \"value\":55\r\n"
-				+ "      }\r\n" + "        ]\r\n" + "      },\r\n" + "     {\r\n"
-				+ "    \"https://uri.etsi.org/ngsi-ld/default-context/source\":[\r\n" + "     {\r\n"
-				+ "     \"@type\":[\r\n" + "    \"https://https://uri.etsi.org/ngsi-ld/Property\"],\r\n"
-				+ "    \"https://uri.etsi.org/ngsi-ld/hasValue\":[\r\n" + "		{\r\n" + "     \"@value\": \"GPS\"\r\n"
-				+ "      }\r\n" + "      ]\r\n" + "     }\r\n" + "      ],\r\n" + "     \"@type\":[\r\n"
-				+ "    \"https://https://uri.etsi.org/ngsi-ld/Property\"],\r\n"
-				+ "     \"https://uri.etsi.org/ngsi-ld/hasValue\":[\r\n" + "	  {\r\n" + "    \"value\":10\r\n"
-				+ "      }\r\n" + "     ]\r\n" + "     }\r\n" + "     ],\r\n" + "     \"@type\":[\r\n"
-				+ "    \"http://example.org/vehicle/Vehicle\"]\r\n" + "  }\r\n";
-
-		updatePayload = "{\r\n" + "	\"http://example.org/vehicle/brandName\": [{\r\n"
-				+ "		\"@type\": [\"https://uri.etsi.org/ngsi-ld/Property\"],\r\n"
-				+ "		\"https://uri.etsi.org/ngsi-ld/hasValue\": [{\r\n" + "			\"@value\": \"AUDI\"\r\n"
-				+ "		}]\r\n" + "	}]\r\n" + "}";
-
-		entityPayloadIdNotFound = "{\r\n" + "    \"http://example.org/vehicle/brandName\": [\r\n" + "      {\r\n"
-				+ "        \"@type\":[\r\n" + "    \"https://uri.etsi.org/ngsi-ld/Property\"],\r\n"
-				+ "    \"https://uri.etsi.org/ngsi-ld/hasValue\": [{\r\n" + "     \"@value\": \"Mercedes\"\r\n"
-				+ "      }]\r\n" + "    }],\r\n" + "        \"https://uri.etsi.org/ngsi-ld/createdAt\": [\r\n"
-				+ "          {\r\n" + "            \"@type\": \"https://uri.etsi.org/ngsi-ld/DateTime\",\r\n"
-				+ "            \"@value\": \"2018-06-01T12:03:00Z\"\r\n" + "          }\r\n" + "        ],\r\n"
-				+ "     \"@id\": \"\",\r\n" + "    \"https://uri.etsi.org/ngsi-ld/modifiedAt\":[{\r\n"
-				+ "     \"@value\": \"2017-07-29T12:00:04Z\",\r\n"
-				+ "     \"@type\": \"https://uri.etsi.org/ngsi-ld/DateTime\"}],\r\n"
-				+ "     \"http://example.org/vehicle/speed\": [\r\n" + "     {\r\n"
-				+ "    \"https://uri.etsi.org/ngsi-ld/datasetId\": [\r\n" + "     {\r\n"
-				+ "     \"@id\": \"urn:ngsi-ld:Property:speedometerA4567-speed\"\r\n" + "      }\r\n" + "      ],\r\n"
-				+ "    \"https://uri.etsi.org/ngsi-ld/default-context/source\":[\r\n" + "     {\r\n"
-				+ "     \"@type\":[\r\n" + "    \"https://https://uri.etsi.org/ngsi-ld/Property\"],\r\n"
-				+ "    \"https://uri.etsi.org/ngsi-ld/hasValue\":[\r\n" + "		{\r\n"
-				+ "     \"@value\": \"Speedometer\"\r\n" + "      }\r\n" + "      ]\r\n" + "      }\r\n"
-				+ "      ],\r\n" + "       \"@type\":[\r\n" + "    \"https://uri.etsi.org/ngsi-ld/Property\"],\r\n"
-				+ "     \"https://uri.etsi.org/ngsi-ld/hasValue\":[\r\n" + "		{\r\n" + "    \"value\":55\r\n"
-				+ "      }\r\n" + "        ]\r\n" + "      },\r\n" + "     {\r\n"
-				+ "    \"https://uri.etsi.org/ngsi-ld/default-context/source\":[\r\n" + "     {\r\n"
-				+ "     \"@type\":[\r\n" + "    \"https://https://uri.etsi.org/ngsi-ld/Property\"],\r\n"
-				+ "    \"https://uri.etsi.org/ngsi-ld/hasValue\":[\r\n" + "		{\r\n" + "     \"@value\": \"GPS\"\r\n"
-				+ "      }\r\n" + "      ]\r\n" + "     }\r\n" + "      ],\r\n" + "     \"@type\":[\r\n"
-				+ "    \"https://https://uri.etsi.org/ngsi-ld/Property\"],\r\n"
-				+ "     \"https://uri.etsi.org/ngsi-ld/hasValue\":[\r\n" + "	  {\r\n" + "    \"value\":10\r\n"
-				+ "      }\r\n" + "     ]\r\n" + "     }\r\n" + "     ],\r\n" + "     \"@type\":[\r\n"
-				+ "    \"http://example.org/vehicle/Vehicle\"]\r\n" + "  }\r\n";
-
-		updatePayload = "{\r\n" + "	\"http://example.org/vehicle/brandName\": [{\r\n"
-				+ "		\"@type\": [\"https://uri.etsi.org/ngsi-ld/Property\"],\r\n"
-				+ "		\"https://uri.etsi.org/ngsi-ld/hasValue\": [{\r\n" + "			\"@value\": \"AUDI\"\r\n"
-				+ "		}]\r\n" + "	}]\r\n" + "}";
-
-		updatePayloadforwrongattr = "{\r\n" + "	\"http://example.org/vehicle/brandName1\": [{\r\n"
-				+ "		\"@type\": [\"https://uri.etsi.org/ngsi-ld/Property\"],\r\n"
-				+ "		\"https://uri.etsi.org/ngsi-ld/hasValue\": [{\r\n" + "			\"@value\": \"AUDI\"\r\n"
-				+ "		}]\r\n" + "	}]\r\n" + "}";
-		updatePartialAttributesPayload = "{\r\n" + "	\"https://uri.etsi.org/ngsi-ld/datasetId\": [{\r\n"
-				+ "		\"@id\": \"urn:ngsi-ld:Property:speedometerA4567-speed\" \r\n" + "	}],\r\n"
-				+ "		\"https://uri.etsi.org/ngsi-ld/hasValue\": [{\r\n" + "			\"@value\": \"20\"\r\n"
-				+ "		}]\r\n" + "}";
-		updatePartialDefaultAttributesPayload = "{\r\n" + "		\"https://uri.etsi.org/ngsi-ld/hasValue\": [{\r\n"
-				+ "			\"@value\": \"20\"\r\n" + "		}]\r\n" + "}";
-
-		appendPayload = "{\r\n" + "	\"http://example.org/vehicle/brandName1\": [{\r\n"
-				+ "		\"@type\": [\"https://uri.etsi.org/ngsi-ld/Property\"],\r\n"
-				+ "		\"https://uri.etsi.org/ngsi-ld/hasValue\": [{\r\n" + "			\"@value\": \"BMW\"\r\n"
-				+ "		}]\r\n" + "	}]\r\n" + "}";
-
-		entityAttrPayload = "{\r\n" + "    \"id\": \"urn:ngsi-ld:Vehicle:A100\",\r\n" + "    \"type\": \"Vehicle\",\r\n"
-				+ "    \"brandName\": {\r\n" + "        \"type\": \"Property\",\r\n"
-				+ "        \"value\": \"Mercedes\"\r\n" + "    }\r\n" + "}";
-
-		updateAttrPayload = "{\r\n" + "    \"brandName\": {\r\n" + "        \"type\": \"Property\",\r\n"
-				+ "        \"value\": \"AUDI\"\r\n" + "    }\r\n" + "}";
-
-		// @formatter:on
-
-		updateJsonNode = objectMapper.readTree(updatePayload);
-		appendJsonNode = objectMapper.readTree(appendPayload);
-		blankNode = objectMapper.createObjectNode();
-		payloadNode = objectMapper.readTree(entityPayload);
-		updatePartialAttributesNode = objectMapper.readTree(updatePartialAttributesPayload);
-		updatePartialDefaultAttributesNode = objectMapper.readTree(updatePartialDefaultAttributesPayload);
-		directDB = true;
+		resolved = objectMapper.readValue(jsonLdObject, Map.class);
 	}
 
 	@AfterEach
 	public void tearDown() {
-		updatePayload = null;
-		appendPayload = null;
-		entityPayload = null;
-		updatePartialAttributesPayload = null;
-		updatePartialDefaultAttributesPayload = null;
+		jsonLdObject = null;
 	}
 
-	/**
-	 * this method is use for create the entity
-	 */
 	@Test
 	@Order(1)
-	public void createMessageIdTest() {
-		try {
-			multimaparr.put("content-type", "application/json");
-			Gson gson = new Gson();
-			Map<String, Object> resolved = gson.fromJson(entityPayload, Map.class);
-			CreateResult result = entityService.createEntry(AppConstants.INTERNAL_NULL_KEY, resolved).await().indefinitely();
-			Assertions.assertEquals("urn:ngsi-ld:Vehicle:A103", result.getEntityId());
-			Mockito.verify(entityService).createEntry(any(),any());
-		} catch (Exception e) {
-			Assertions.fail();
-			e.printStackTrace();
-		}
+	public void createEntryTest() throws Exception {
+
+		CreateEntityRequest request = new CreateEntityRequest(tenant, resolved, null);
+
+		Uni<Void> createEntityRes = Uni.createFrom().voidItem();
+		when(entityDAO.createEntity(any())).thenReturn(createEntityRes);
+
+		Uni<Void> emitterResponse = Uni.createFrom().nullItem();
+		when(entityEmitter.send(request)).thenReturn(emitterResponse);
+
+		when(context.compactIri(anyString())).thenReturn("");
+
+		NGSILDOperationResult operationResult = entityService.createEntity(tenant, resolved, context).await()
+				.indefinitely();
+
+		assertEquals(entityId, operationResult.getEntityId());
+		assertEquals(1, operationResult.getSuccesses().size());
+		assertEquals(0, operationResult.getFailures().size());
+		verify(entityDAO, times(1)).createEntity(any());
 	}
 
-	/**
-	 * this method is use for verify entity id is null
-	 */
 	@Test
 	@Order(2)
-	public void createMessageNullTest() {
-		try {
-		multimaparr.put("content-type", "application/json");
-		Gson gson = new Gson();
-		Map<String, Object> resolved = gson.fromJson(enitityIdNotPayload, Map.class);
-		CreateResult s = entityService.createEntry(AppConstants.INTERNAL_NULL_KEY, resolved).await().indefinitely();
-		Assertions.assertEquals(null, s.getEntityId());
-		Mockito.verify(entityService).createEntry(any(),any());
-		}catch(Exception e) {
-			e.printStackTrace();
-			Assertions.fail();
-		}
+	public void updateEntryTest() {
+
+		UpdateEntityRequest request = new UpdateEntityRequest(tenant, entityId, resolved, null, null);
+
+		Uni<Void> updateEntityRes = Uni.createFrom().voidItem();
+		when(entityDAO.updateEntity(any())).thenReturn(updateEntityRes);
+
+		Uni<Void> emitterResponse = Uni.createFrom().nullItem();
+		when(entityEmitter.send(request)).thenReturn(emitterResponse);
+
+		NGSILDOperationResult operationResult = entityService.updateEntity(tenant, entityId, resolved, context).await()
+				.indefinitely();
+
+		assertEquals(entityId, operationResult.getEntityId());
+		assertEquals(1, operationResult.getSuccesses().size());
+		assertEquals(0, operationResult.getFailures().size());
+		verify(entityDAO, times(1)).updateEntity(any());
 	}
 
-	/**
-	 * this method is use for update the entity if Attribute id is not exist
-	 */
 	@Test
 	@Order(3)
-	public void updateMessageAttrIdNotExistTest() throws Exception {
-		try {
-			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
-			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A103");
-			UpdateResult updateResult = new UpdateResult();
-			Map<String, Object> m = new HashMap<String, Object>();
-			m.put(appendPayload, entityIds);
-			Mockito.when(entityInfoDAO.getEntity(any(), any())).thenReturn(Uni.createFrom().item(m));
-			multimaparr.put("content-type", "application/json");
-			Gson gson = new Gson();
-			Map<String, Object> resolved = gson.fromJson(updatePayloadforwrongattr, Map.class);
-			Map<String, Object> entityBody = (Map<String, Object>) JsonUtils.fromString(entityPayload);
-			UpdateEntityRequest request = new UpdateEntityRequest(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A103", entityBody,
-					resolved, null);
-			updateResult = entityService.updateEntry(AppConstants.INTERNAL_NULL_KEY, entityPayload, resolved).await().indefinitely();
-			Assertions.assertEquals(request.getUpdateResult().getNotUpdated(), updateResult.getNotUpdated());
-			Mockito.verify(entityService).updateEntry(any(), any(), any());
-		} catch (Exception ex) {
-			Assertions.fail();
-			ex.printStackTrace();
-		}
+	public void appendEntryTest() {
+
+		Uni<Set<String>> appendEntityRes = Uni.createFrom().item(new HashSet<>(0));
+		when(entityDAO.appendToEntity2(any(), anyBoolean())).thenReturn(appendEntityRes);
+
+		Uni<Void> emitterResponse = Uni.createFrom().nullItem();
+		when(entityEmitter.send(any(AppendEntityRequest.class))).thenReturn(emitterResponse);
+
+		NGSILDOperationResult operationResult = entityService.appendToEntity(tenant, entityId, resolved, false, context)
+				.await().indefinitely();
+
+		assertEquals(entityId, operationResult.getEntityId());
+		assertEquals(1, operationResult.getSuccesses().size());
+		assertEquals(0, operationResult.getFailures().size());
+		verify(entityDAO, times(1)).appendToEntity2(any(), anyBoolean());
+		verify(entityEmitter, times(1)).send(any(AppendEntityRequest.class));
 	}
 
-	/**
-	 * this method is use for update attribute if attribute not found
-	 */
 	@Test
-	public void updateMessageAttrNotFound() {
+	@Order(4)
+	public void partialUpdateAttributeTest() {
+
+		Uni<Void> partialUpdateAttributeRes = Uni.createFrom().nullItem();
+		when(entityDAO.partialUpdateAttribute(any())).thenReturn(partialUpdateAttributeRes);
+
+		NGSILDOperationResult operationResult = entityService
+				.partialUpdateAttribute(tenant, entityId, "brandName", resolved, context).await().indefinitely();
+
+		assertEquals(entityId, operationResult.getEntityId());
+		assertEquals(0, operationResult.getFailures().size());
+		verify(entityDAO, times(1)).partialUpdateAttribute(any());
+	}
+
+	@Test
+	@Order(5)
+	public void deleteAttributeTest() throws Exception {
 		try {
-			ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
-			entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A100");
-			UpdateResult updateResult = new UpdateResult();
-			Map<String, Object> m = new HashMap<String, Object>();
-			m.put("@value", entityPayload);
-			Mockito.when(entityInfoDAO.getEntity(any(), any())).thenReturn(Uni.createFrom().item(m));
-			multimaparr.put("content-type", "application/json");
-			Gson gson = new Gson();
-			Map<String, Object> resolved = gson.fromJson(updatePayload, Map.class);
-			Map<String, Object> entityBody = (Map<String, Object>) JsonUtils.fromString(entityPayload);
-			UpdateEntityRequest request = new UpdateEntityRequest(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A103", entityBody,
-					resolved, null);
-			updateResult = entityService.updateEntry(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A103", resolved).await()
-					.indefinitely();
-			Assertions.assertNotEquals(request.getUpdateResult().getUpdated(), updateResult.getNotUpdated());
-			Mockito.verify(entityService, Mockito.times(1)).updateEntry(any(), any(), any());
+
+			Uni<Map<String, Object>> deleteAttributeRes = Uni.createFrom().item(new HashMap());
+			when(entityDAO.deleteAttribute(any())).thenReturn(deleteAttributeRes);
+
+			Uni<Void> emitterResponse = Uni.createFrom().nullItem();
+			when(entityEmitter.send(any(DeleteAttributeRequest.class))).thenReturn(emitterResponse);
+
+			NGSILDOperationResult operationResult = entityService
+					.deleteAttribute(tenant, entityId, "brandName", "datasetId", false, context).await().indefinitely();
+
+			verify(entityDAO, times(1)).deleteAttribute(any());
+			verify(entityEmitter, times(1)).send(any(DeleteAttributeRequest.class));
+
+			assertEquals(entityId, operationResult.getEntityId());
+
 		} catch (Exception e) {
 			Assertions.fail();
-			e.printStackTrace();
 		}
 	}
 
-	/**
-	 * this method is use for append the field Attribute
-	 */
 	@Test
-	public void appendFieldTest()  {
-		try {
-		MockitoAnnotations.initMocks(this);
-		ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
-		entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A103");
-		UpdateResult updateResult = new UpdateResult();
-		Map<String, Object> m = new HashMap<String, Object>();
-		m.put("@id", entityIds);
-		Mockito.when(entityInfoDAO.getEntity(any(), any())).thenReturn(Uni.createFrom().item(m));
-		multimaparr.put("content-type", "application/json");
-		Gson gson = new Gson();
-		Map<String, Object> resolved = gson.fromJson(appendPayload, Map.class);
-		Map<String, Object> entityBody = (Map<String, Object>) JsonUtils.fromString(entityPayload);
-		AppendEntityRequest request = new AppendEntityRequest(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A103", entityBody,
-				resolved, null);
-		String[] options = null;
-		updateResult = entityService.appendToEntry(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A103", resolved, options).await()
-				.indefinitely();
-		Assertions.assertEquals(request.getUpdateResult().getUpdated(), updateResult.getUpdated());
-		Mockito.verify(entityService).appendToEntry(any(), any(), any(), any());
-		}catch(Exception e) {
-			Assertions.fail();
-		}
-
-	}
-
-	/**
-	 * this method is use to valied Id Not Found
-	 */
-	@Test
-	public void appendFieldNotFoundTest() throws Exception {
-		MockitoAnnotations.initMocks(this);
-		ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
-		entityIds.put(AppConstants.INTERNAL_NULL_KEY, null);
-		UpdateResult updateResult = new UpdateResult();
-		Map<String, Object> m = new HashMap<String, Object>();
-		m.put("@id", entityIds);
-		Mockito.when(entityInfoDAO.getEntity(any(), any())).thenReturn(Uni.createFrom().item(m));
-		multimaparr.put("content-type", "application/json");
-		Gson gson = new Gson();
-		Map<String, Object> resolved = gson.fromJson(appendPayload, Map.class);
-		Map<String, Object> entityBody = (Map<String, Object>) JsonUtils.fromString(entityPayloadIdNotFound);
-		AppendEntityRequest request = new AppendEntityRequest(AppConstants.INTERNAL_NULL_KEY, " ", entityBody, resolved, null);
-		try {
-			entityService.appendToEntry(AppConstants.INTERNAL_NULL_KEY, null, resolved, null).await().indefinitely();
-		} catch (Exception e) {
-			Assertions.assertEquals("empty entity id is not allowed", e.getMessage());
-			Mockito.verify(entityService).appendToEntry(any(), any(), any(), any());
-		}
-
-	}
-
-	/**
-	 * this method is use to Validate partial update attribute but Attribute Not
-	 * Found
-	 */
-	@Test
-	public void updatePartialAttributeNotFoundTest() throws Exception {
-
-		MockitoAnnotations.initMocks(this);
-		ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
-		entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A103");
-		UpdateResult updateResult = new UpdateResult();
-		// Mockito.doReturn(entityPayload).when(entityInfoDAO).getEntity(any(), any());
-		Map<String, Object> m = new HashMap<String, Object>();
-		m.put("@id", entityIds);
-		Mockito.when(entityInfoDAO.getEntity(any(), any())).thenReturn(Uni.createFrom().item(m));
-		multimaparr.put("content-type", "application/json");
-		Gson gson = new Gson();
-		Map<String, Object> resolved = gson.fromJson(updatePartialAttributesPayload, Map.class);
-		Map<String, Object> entityBody = (Map<String, Object>) JsonUtils.fromString(entityPayload);
-		UpdateEntityRequest request = new UpdateEntityRequest(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A103", entityBody,
-				resolved, "http://example.org/vehicle/speed");
-
-		try {
-			entityService.partialUpdateEntity(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A103",
-					"http://example.org/vehicle/speed", resolved).await().indefinitely();
-		} catch (Exception e) {
-			Assertions.assertEquals("Provided attribute is not present", e.getMessage());
-			Mockito.verify(entityService).partialUpdateEntity(any(), any(), any(), any());
-		}
-	}
-
-	/**
-	 * this method is use to Validate partial update attribute but Id Not Found
-	 */
-	@Test
-	public void updatePartialAttributeIdFoundTest() throws Exception {
-		MockitoAnnotations.initMocks(this);
-		ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
-		entityIds.put(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A103");
-		UpdateResult updateResult = new UpdateResult();
-		// Mockito.doReturn(entityPayload).when(entityInfoDAO).getEntity(any(), any());
-		Map<String, Object> m = new HashMap<String, Object>();
-		m.put("@id", entityIds);
-		Mockito.when(entityInfoDAO.getEntity(any(), any())).thenReturn(Uni.createFrom().item(m));
-		multimaparr.put("content-type", "application/json");
-		Gson gson = new Gson();
-		Map<String, Object> resolved = gson.fromJson(updatePartialAttributesPayload, Map.class);
-		Map<String, Object> entityBody = (Map<String, Object>) JsonUtils.fromString(entityPayload);
-		UpdateEntityRequest request = new UpdateEntityRequest(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A103", entityBody,
-				resolved, "http://example.org/vehicle/speed");
-
-		try {
-			entityService.partialUpdateEntity(AppConstants.INTERNAL_NULL_KEY, null, "http://example.org/vehicle/speed", resolved).await()
-					.indefinitely();
-		} catch (Exception e) {
-			Assertions.assertEquals("empty entity id not allowed", e.getMessage());
-			Mockito.verify(entityService).partialUpdateEntity(any(), any(), any(), any());
-		}
-	}
-
-	/**
-	 * this method is use to Validate delete Attribute but Attribute Not Found
-	 */
-	@Test
-	public void deleteAttributeNotFoundTest() throws Exception {
-		ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
-		entityIds.put(AppConstants.REQUEST_ID, "urn:ngsi-ld:Vehicle:A103");
-		Map<String, Object> m = new HashMap<String, Object>();
-		m.put("attrs", "http://example.org/vehicle/speed");
-		Mockito.when(entityInfoDAO.getEntity(any(), any())).thenReturn(Uni.createFrom().item(m));
-		Map<String, Object> entityBody = (Map<String, Object>) JsonUtils.fromString(entityPayload);
-		multimaparr.put("content-type", "application/json");
-		try {
-			entityService.deleteAttribute(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A103", "http://example.org/vehicle/speed",
-					null, null).await().indefinitely();
-		} catch (Exception e) {
-			Assertions.assertEquals("Attribute is not present", e.getMessage());
-			Mockito.verify(entityService).deleteAttribute(any(), any(), any(), any(), any());
-		}
-
-	}
-
-	/**
-	 * this method is use to Validate delete Attribute but Id Not Found
-	 */
-	@Test
-	public void deleteAttributeInstanceIdNullTest() throws Exception {
-		ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
-		entityIds.put(AppConstants.REQUEST_ID, "urn:ngsi-ld:Vehicle:A103");
-		Map<String, Object> m = new HashMap<String, Object>();
-		m.put("attrs", "http://example.org/vehicle/speed");
-		Mockito.when(entityInfoDAO.getEntity(any(), any())).thenReturn(Uni.createFrom().item(m));
-		Map<String, Object> entityBody = (Map<String, Object>) JsonUtils.fromString(entityPayload);
-		multimaparr.put("content-type", "application/json");
-		try {
-			entityService.deleteAttribute(AppConstants.INTERNAL_NULL_KEY, null, "http://example.org/vehicle/speed", null, null).await()
-					.indefinitely();
-		} catch (Exception e) {
-			Assertions.assertEquals("empty entity id not allowed", e.getMessage());
-			Mockito.verify(entityService).deleteAttribute(any(), any(), any(), any(), any());
-		}
-	}
-
-	/**
-	 * this method is use to Validate delete Entry
-	 */
-	@Test
+	@Order(6)
 	public void deleteEntityTest() throws Exception {
 		try {
-		ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
-		entityIds.put(AppConstants.REQUEST_ID, "urn:ngsi-ld:Vehicle:A103");
-		Map<String, Object> m = new HashMap<String, Object>();
-		m.put(entityPayload, entityIds);
-		Mockito.when(entityInfoDAO.getEntity(any(), any())).thenReturn(Uni.createFrom().item(m));
-		Map<String, Object> entityBody = (Map<String, Object>) JsonUtils.fromString(entityPayload);
-		multimaparr.put("content-type", "application/json");
-		boolean result = entityService.deleteEntry(AppConstants.INTERNAL_NULL_KEY, "urn:ngsi-ld:Vehicle:A103").await().indefinitely();
-		Assertions.assertEquals(true, result);
-		Mockito.verify(entityService).deleteEntry(any(), any());
-		}catch(Exception e) {
+
+			Uni<Map<String, Object>> deleteEntityRes = Uni.createFrom().item(new HashMap());
+			when(entityDAO.deleteEntity(any())).thenReturn(deleteEntityRes);
+
+			Uni<Void> emitterResponse = Uni.createFrom().nullItem();
+			when(entityEmitter.send(any(DeleteEntityRequest.class))).thenReturn(emitterResponse);
+
+			NGSILDOperationResult operationResult = entityService.deleteEntity(tenant, entityId, context).await()
+					.indefinitely();
+
+			verify(entityDAO, times(1)).deleteEntity(any());
+			verify(entityEmitter, times(1)).send(any(DeleteEntityRequest.class));
+
+			assertEquals(entityId, operationResult.getEntityId());
+
+		} catch (Exception e) {
 			Assertions.fail();
 		}
+
 	}
 
-	/**
-	 * this method is use to Validate delete Entry but Entity id Not Found
-	 */
 	@Test
-	public void deleteEntityNotFoundTest() throws Exception {
-		ArrayListMultimap<String, String> entityIds = ArrayListMultimap.create();
-		entityIds.put(AppConstants.REQUEST_ID, "urn:ngsi-ld:Vehicle:A103");
-		Map<String, Object> m = new HashMap<String, Object>();
-		m.put(entityPayload, entityIds);
-		Mockito.when(entityInfoDAO.getEntity(any(), any())).thenReturn(Uni.createFrom().item(m));
-		Map<String, Object> entityBody = (Map<String, Object>) JsonUtils.fromString(entityPayload);
-		multimaparr.put("content-type", "application/json");
-		try {
-			entityService.deleteEntry(AppConstants.INTERNAL_NULL_KEY, null).await().indefinitely();
-		} catch (Exception e) {
-			Assertions.assertEquals("empty entity id not allowed", e.getMessage());
-			Mockito.verify(entityService).deleteEntry(any(), any());
-		}
+	@Order(7)
+	public void createBatchTest() throws Exception {
+
+		List<Map<String, Object>> expandedEntities = new ArrayList<>();
+		expandedEntities.add(resolved);
+
+		List<Context> contextList = new ArrayList<>();
+		contextList.add(context);
+
+		Map<String, Object> entityBatchDaoRes = new HashMap<>();
+		List<String> successes = new ArrayList<>();
+		successes.add(entityId);
+		List<Map<String, String>> failures = new ArrayList<>();
+		entityBatchDaoRes.put("success", successes);
+		entityBatchDaoRes.put("failure", failures);
+
+		Uni<Void> emitterResponse = Uni.createFrom().nullItem();
+		when(batchEmitter.send(any(BatchRequest.class))).thenReturn(emitterResponse);
+
+		Uni<Map<String, Object>> createEntityRes = Uni.createFrom().item(entityBatchDaoRes);
+		when(entityDAO.batchCreateEntity(any())).thenReturn(createEntityRes);
+
+		List<NGSILDOperationResult> operationResultList = entityService
+				.createBatch(tenant, expandedEntities, contextList, true).await().indefinitely();
+
+		assertEquals(1, operationResultList.size());
+		verify(entityDAO, times(1)).batchCreateEntity(any());
+		verify(batchEmitter, times(1)).send(any(BatchRequest.class));
+	}
+
+	@Test
+	@Order(9)
+	public void createBatchFailureTest() throws Exception {
+
+		List<Map<String, Object>> expandedEntities = new ArrayList<>();
+		expandedEntities.add(resolved);
+
+		List<Context> contextList = new ArrayList<>();
+		contextList.add(context);
+
+		Map<String, Object> entityBatchDaoRes = new HashMap<>();
+		List<String> successes = new ArrayList<>();
+		List<Map<String, String>> failures = new ArrayList<>();
+
+		Map<String, String> fail = new HashMap<>();
+		fail.put(entityId, AppConstants.SQL_ALREADY_EXISTS);
+		fail.put("urn:test:testentity", "Internal custom error");
+		failures.add(fail);
+
+		entityBatchDaoRes.put("success", successes);
+		entityBatchDaoRes.put("failure", failures);
+
+		Uni<Void> emitterResponse = Uni.createFrom().nullItem();
+		when(batchEmitter.send(any(BatchRequest.class))).thenReturn(emitterResponse);
+
+		Uni<Map<String, Object>> createEntityRes = Uni.createFrom().item(entityBatchDaoRes);
+		when(entityDAO.batchCreateEntity(any())).thenReturn(createEntityRes);
+
+		List<NGSILDOperationResult> operationResultList = entityService
+				.createBatch(tenant, expandedEntities, contextList, true).await().indefinitely();
+
+		assertEquals(2, operationResultList.size());
+		verify(entityDAO, times(1)).batchCreateEntity(any());
+		verify(batchEmitter, times(1)).send(any(BatchRequest.class));
+	}
+
+	@Test
+	@Order(10)
+	public void appendBatchTest() throws Exception {
+
+		List<Map<String, Object>> expandedEntities = new ArrayList<>();
+		expandedEntities.add(resolved);
+
+		List<Context> contextList = new ArrayList<>();
+		contextList.add(context);
+
+		Map<String, Object> entityBatchDaoRes = new HashMap<>();
+		List<String> successes = new ArrayList<>();
+		successes.add(entityId);
+		List<Map<String, String>> failures = new ArrayList<>();
+		entityBatchDaoRes.put("success", successes);
+		entityBatchDaoRes.put("failure", failures);
+
+		Uni<Void> emitterResponse = Uni.createFrom().nullItem();
+		when(batchEmitter.send(any(BatchRequest.class))).thenReturn(emitterResponse);
+
+		Uni<Map<String, Object>> createEntityRes = Uni.createFrom().item(entityBatchDaoRes);
+		when(entityDAO.batchAppendEntity(any())).thenReturn(createEntityRes);
+
+		List<NGSILDOperationResult> operationResultList = entityService
+				.appendBatch(tenant, expandedEntities, contextList, true).await().indefinitely();
+
+		assertEquals(1, operationResultList.size());
+		verify(entityDAO, times(1)).batchAppendEntity(any());
+		verify(batchEmitter, times(1)).send(any(BatchRequest.class));
+	}
+
+	@Test
+	@Order(11)
+	public void appendBatchFailureTest() throws Exception {
+
+		List<Map<String, Object>> expandedEntities = new ArrayList<>();
+		expandedEntities.add(resolved);
+
+		List<Context> contextList = new ArrayList<>();
+		contextList.add(context);
+
+		Map<String, Object> entityBatchDaoRes = new HashMap<>();
+		List<String> successes = new ArrayList<>();
+		List<Map<String, String>> failures = new ArrayList<>();
+
+		Map<String, String> fail = new HashMap<>();
+		fail.put(entityId, AppConstants.SQL_NOT_FOUND);
+		fail.put("urn:test:testentity", "Internal custom error");
+		failures.add(fail);
+
+		entityBatchDaoRes.put("success", successes);
+		entityBatchDaoRes.put("failure", failures);
+
+		Uni<Void> emitterResponse = Uni.createFrom().nullItem();
+		when(batchEmitter.send(any(BatchRequest.class))).thenReturn(emitterResponse);
+
+		Uni<Map<String, Object>> createEntityRes = Uni.createFrom().item(entityBatchDaoRes);
+		when(entityDAO.batchAppendEntity(any())).thenReturn(createEntityRes);
+
+		List<NGSILDOperationResult> operationResultList = entityService
+				.appendBatch(tenant, expandedEntities, contextList, true).await().indefinitely();
+
+		assertEquals(2, operationResultList.size());
+		verify(entityDAO, times(1)).batchAppendEntity(any());
+		verify(batchEmitter, times(1)).send(any(BatchRequest.class));
+	}
+
+	@Test
+	@Order(12)
+	public void upsertBatchTest() throws Exception {
+
+		List<Map<String, Object>> expandedEntities = new ArrayList<>();
+		expandedEntities.add(resolved);
+
+		List<Context> contextList = new ArrayList<>();
+		contextList.add(context);
+
+		Map<String, Object> entityBatchDaoRes = new HashMap<>();
+		List<String> successes = new ArrayList<>();
+		successes.add(entityId);
+		List<Map<String, String>> failures = new ArrayList<>();
+		entityBatchDaoRes.put("success", successes);
+		entityBatchDaoRes.put("failure", failures);
+
+		Uni<Void> emitterResponse = Uni.createFrom().nullItem();
+		when(batchEmitter.send(any(BatchRequest.class))).thenReturn(emitterResponse);
+
+		Uni<Map<String, Object>> createEntityRes = Uni.createFrom().item(entityBatchDaoRes);
+		when(entityDAO.batchUpsertEntity(any())).thenReturn(createEntityRes);
+
+		List<NGSILDOperationResult> operationResultList = entityService
+				.upsertBatch(tenant, expandedEntities, contextList, true).await().indefinitely();
+
+		assertEquals(1, operationResultList.size());
+		verify(entityDAO, times(1)).batchUpsertEntity(any());
+		verify(batchEmitter, times(1)).send(any(BatchRequest.class));
+	}
+
+	@Test
+	@Order(13)
+	public void upsertBatchFailureTest() throws Exception {
+
+		List<Map<String, Object>> expandedEntities = new ArrayList<>();
+		expandedEntities.add(resolved);
+
+		List<Context> contextList = new ArrayList<>();
+		contextList.add(context);
+
+		Map<String, Object> entityBatchDaoRes = new HashMap<>();
+		List<String> successes = new ArrayList<>();
+		List<Map<String, String>> failures = new ArrayList<>();
+
+		Map<String, String> fail = new HashMap<>();
+		fail.put(entityId, "Internal custom error2");
+		fail.put("urn:test:testentity", "Internal custom error1");
+		failures.add(fail);
+
+		entityBatchDaoRes.put("success", successes);
+		entityBatchDaoRes.put("failure", failures);
+
+		Uni<Void> emitterResponse = Uni.createFrom().nullItem();
+		when(batchEmitter.send(any(BatchRequest.class))).thenReturn(emitterResponse);
+
+		Uni<Map<String, Object>> createEntityRes = Uni.createFrom().item(entityBatchDaoRes);
+		when(entityDAO.batchUpsertEntity(any())).thenReturn(createEntityRes);
+
+		List<NGSILDOperationResult> operationResultList = entityService
+				.upsertBatch(tenant, expandedEntities, contextList, true).await().indefinitely();
+
+		assertEquals(2, operationResultList.size());
+		verify(entityDAO, times(1)).batchUpsertEntity(any());
+		verify(batchEmitter, times(1)).send(any(BatchRequest.class));
+	}
+
+	@Test
+	@Order(14)
+	public void deleteBatchTest() throws Exception {
+
+		List<String> entityIds = new ArrayList<>();
+		entityIds.add(entityId);
+
+		List<Context> contextList = new ArrayList<>();
+		contextList.add(context);
+
+		Map<String, Object> entityBatchDaoRes = new HashMap<>();
+		List<String> successes = new ArrayList<>();
+		successes.add(entityId);
+		List<Map<String, String>> failures = new ArrayList<>();
+		entityBatchDaoRes.put("success", successes);
+		entityBatchDaoRes.put("failure", failures);
+
+		Uni<Void> emitterResponse = Uni.createFrom().nullItem();
+		when(batchEmitter.send(any(BatchRequest.class))).thenReturn(emitterResponse);
+
+		Uni<Map<String, Object>> createEntityRes = Uni.createFrom().item(entityBatchDaoRes);
+		when(entityDAO.batchDeleteEntity(any(), any())).thenReturn(createEntityRes);
+
+		List<NGSILDOperationResult> operationResultList = entityService.deleteBatch(tenant, entityIds, true).await()
+				.indefinitely();
+
+		assertEquals(1, operationResultList.size());
+		verify(entityDAO, times(1)).batchDeleteEntity(any(), any());
+		verify(batchEmitter, times(1)).send(any(BatchRequest.class));
+	}
+
+	@Test
+	@Order(15)
+	public void deleteBatchFailureTest() throws Exception {
+
+		List<String> entityIds = new ArrayList<>();
+		entityIds.add(entityId);
+
+		List<Context> contextList = new ArrayList<>();
+		contextList.add(context);
+
+		Map<String, Object> entityBatchDaoRes = new HashMap<>();
+		List<String> successes = new ArrayList<>();
+		List<Map<String, String>> failures = new ArrayList<>();
+
+		Map<String, String> fail = new HashMap<>();
+		fail.put(entityId, "Internal custom error");
+		failures.add(fail);
+
+		entityBatchDaoRes.put("success", successes);
+		entityBatchDaoRes.put("failure", failures);
+
+		Uni<Void> emitterResponse = Uni.createFrom().nullItem();
+		when(batchEmitter.send(any(BatchRequest.class))).thenReturn(emitterResponse);
+
+		Uni<Map<String, Object>> createEntityRes = Uni.createFrom().item(entityBatchDaoRes);
+		when(entityDAO.batchDeleteEntity(any(), any())).thenReturn(createEntityRes);
+
+		List<NGSILDOperationResult> operationResultList = entityService.deleteBatch(tenant, entityIds, true).await()
+				.indefinitely();
+
+		assertEquals(1, operationResultList.size());
+		verify(entityDAO, times(1)).batchDeleteEntity(any(), any());
+		verify(batchEmitter, times(1)).send(any(BatchRequest.class));
 	}
 
 }

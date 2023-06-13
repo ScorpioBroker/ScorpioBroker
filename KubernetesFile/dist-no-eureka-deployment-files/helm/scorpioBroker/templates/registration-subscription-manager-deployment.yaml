@@ -5,6 +5,7 @@ metadata:
   name: {{ include "registrySubscriptionManager.fullname" . }}
   labels:
     {{ include "registrySubscriptionManager.labels" . | nindent 4 }}
+  namespace: scorpio-broker
 spec:
   replicas: {{ .Values.registrySubscriptionManager.replicas }}
   strategy:
@@ -44,19 +45,10 @@ spec:
         ports:
         - containerPort: 2025
           protocol: TCP
-        {{- if eq .Values.profile "dist"}}
-        lifecycle:
-           preStop:
-            exec:
-              command:
-              - /bin/sh
-              - -c
-              - curl -X PUT "http://{{ .Values.eureka.hostname }}:{{ .Values.eureka.port }}/eureka/apps/REGISTRY-SUBSCRIPTION-MANAGER/$HOSTNAME:registry-subscription-manager:2025/status?value=OUT_OF_SERVICE"
-        {{ end }}
 
         readinessProbe:
           httpGet:
-            path: /actuator/health
+            path: /q/health
             port: 2025
           failureThreshold: {{ .Values.registrySubscriptionManager.readinessProbe.failureThreshold }}
           initialDelaySeconds: {{ .Values.registrySubscriptionManager.readinessProbe.initialDelaySeconds }}
@@ -65,7 +57,7 @@ spec:
 
         livenessProbe:
           httpGet:
-            path: /actuator/health
+            path: /q/health
             port: 2025
           failureThreshold: {{ .Values.registrySubscriptionManager.livenessProbe.failureThreshold }}
           initialDelaySeconds: {{ .Values.registrySubscriptionManager.livenessProbe.initialDelaySeconds }}

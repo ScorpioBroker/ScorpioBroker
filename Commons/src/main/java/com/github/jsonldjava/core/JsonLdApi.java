@@ -26,8 +26,10 @@ import com.github.jsonldjava.utils.Obj;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import io.smallrye.mutiny.tuples.Tuple2;
 
 /**
  * A container object to maintain state relating to JsonLdOptions and the
@@ -117,6 +119,10 @@ public class JsonLdApi {
 			this.context = this.context.parse(context, false);
 		}
 	}
+//	public Object compact(Context activeCtx, String activeProperty, Object element, boolean compactArrays, int endPoint)
+//			throws JsonLdError {
+//		return compact(activeCtx, activeProperty, element, compactArrays, endPoint, null, null);
+//	}
 
 	/***
 	 * ____ _ _ _ _ _ _ / ___|___ _ __ ___ _ __ __ _ ___| |_ / \ | | __ _ ___ _
@@ -136,11 +142,13 @@ public class JsonLdApi {
 	 * @param activeProperty The Active Property
 	 * @param element        The current element
 	 * @param compactArrays  True to compact arrays.
+	 * @param langQuery
+	 * @param options
 	 * @return The compacted JSON-LD object.
 	 * @throws JsonLdError If there was an error during compaction.
 	 */
-	public Object compact(Context activeCtx, String activeProperty, Object element, boolean compactArrays, int endPoint)
-			throws JsonLdError {
+	public Object compact(Context activeCtx, String activeProperty, Object element, boolean compactArrays, int endPoint,
+			Set<String> options, LanguageQueryTerm langQuery) throws JsonLdError {
 		// 2)
 		if (element instanceof List) {
 			// 2.1)
@@ -148,7 +156,8 @@ public class JsonLdApi {
 			// 2.2)
 			for (final Object item : (List<Object>) element) {
 				// 2.2.1)
-				final Object compactedItem = compact(activeCtx, activeProperty, item, compactArrays, endPoint);
+				final Object compactedItem = compact(activeCtx, activeProperty, item, compactArrays, endPoint, options,
+						langQuery);
 				// 2.2.2)
 				if (compactedItem != null) {
 					final boolean isList = (compactedItem instanceof Map
@@ -177,7 +186,12 @@ public class JsonLdApi {
 		if (element instanceof Map) {
 			// access helper
 			final Map<String, Object> elem = (Map<String, Object>) element;
-
+			boolean removeSysAttrs = options == null
+					|| !options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_SYSATTRS);
+			boolean keyValue = options != null && (options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_KEYVALUES)
+					|| options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_SIMPLIFIED));
+			boolean concise = options != null && (options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_KEYVALUES)
+					|| options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_SIMPLIFIED));
 			// 4
 			if (elem.containsKey(JsonLdConsts.VALUE) || elem.containsKey(JsonLdConsts.ID)) {
 				final Object compactedValue = activeCtx.compactValue(activeProperty, elem);
@@ -201,10 +215,17 @@ public class JsonLdApi {
 			final List<String> keys = new ArrayList<String>(elem.keySet());
 			Collections.sort(keys);
 			boolean isGeoProperty = false;
-			for (final String expandedProperty : keys) {
+			boolean isProperty = false;
+			boolean isRelationship = false;
+			boolean isLanguageProperty = false;
+			for (String expandedProperty : keys) {
 
 				Object expandedValue = elem.get(expandedProperty);
 				// 7.1)
+				if (removeSysAttrs && (NGSIConstants.NGSI_LD_CREATED_AT.equals(expandedProperty)
+						|| NGSIConstants.NGSI_LD_MODIFIED_AT.equals(expandedProperty))) {
+					continue;
+				}
 				if (JsonLdConsts.ID.equals(expandedProperty) || JsonLdConsts.TYPE.equals(expandedProperty)) {
 					// TODO: Relabel these step numbers when spec changes
 					// 7.1.3)
@@ -233,17 +254,24 @@ public class JsonLdApi {
 							compactedValue = types;
 						}
 					}
-					if (JsonLdConsts.TYPE.equals(expandedProperty)) {
-						if (expandedValue instanceof String
-								&& NGSIConstants.NGSI_LD_GEOPROPERTY.equals(expandedValue)) {
+					if ((keyValue || concise || langQuery != null) && JsonLdConsts.TYPE.equals(expandedProperty)) {
+						switch (((List<String>) expandedValue).get(0)) {
+						case NGSIConstants.NGSI_LD_PROPERTY:
+							isProperty = true;
+
+						case NGSIConstants.NGSI_LD_GEOPROPERTY:
 							isGeoProperty = true;
+							break;
+						case NGSIConstants.NGSI_LD_LANGPROPERTY:
+							isLanguageProperty = true;
+							break;
+						case NGSIConstants.NGSI_LD_RELATIONSHIP:
+							isRelationship = true;
+							break;
 						}
-						if (expandedValue instanceof List
-								&& ((List) expandedValue).contains(NGSIConstants.NGSI_LD_GEOPROPERTY)) {
-							isGeoProperty = true;
+						if (keyValue || concise) {
+							continue;
 						}
-						// NGSI Comment: This is very much relying on the fact that @type comes before
-						// hasValue
 
 					}
 					// 7.1.4)
@@ -254,45 +282,118 @@ public class JsonLdApi {
 					// isArray(compactedValue)
 					// && ((List<Object>) expandedValue).size() == 0);
 				}
-//				Object potentialGeoProp = null;
-//				switch (endPoint) {
-//				case AppConstants.REGISTRY_ENDPOINT:
-//					if (NGSIConstants.LOCATIONS_IN_REGISTRATION.contains(expandedProperty)) {
-//						isGeoProperty = true;
-//						potentialGeoProp = ((Map<String, Object>) ((List) expandedValue).get(0))
-//								.get(JsonLdConsts.VALUE);
-//					}
-//					break;
-//				case AppConstants.SUBSCRIPTION_ENDPOINT:
-//					if (NGSIConstants.NGSI_LD_LOCATION.equals(expandedProperty)) {
-//						isGeoProperty = true;
-//						potentialGeoProp = ((Map<String, Object>) ((List) expandedValue).get(0))
-//								.get(JsonLdConsts.VALUE);
-//					}
-//					break;
-//				case AppConstants.NOTIFICATION_ENDPOINT:
-//				case AppConstants.QUERY_ENDPOINT:
-//				case AppConstants.HISTORY_ENDPOINT:
-//					if (NGSIConstants.NGSI_LD_HAS_VALUE.equals(expandedProperty)) {
-//						potentialGeoProp = ((Map<String, Object>) ((List) expandedValue).get(0))
-//								.get(JsonLdConsts.VALUE);
-//					}
-//					break;
-//				default:
-//					break;
-//				}
-//
-//				if (isGeoProperty && potentialGeoProp != null && potentialGeoProp instanceof Map) {
-//					Object expandedGeoProp = expandWithCoreContext(potentialGeoProp);
-//					final String alias = activeCtx.compactIri(expandedProperty, true);
-//					result.put(alias, compact(activeCtx, activeProperty, expandedGeoProp, compactArrays, endPoint));
-//					continue;
-//				}
+				if (langQuery != null && isLanguageProperty
+						&& expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP)) {
+					// do language stuff
+					result.put("type", "Property");
+					boolean found = false;
+					Object defaultLang = null;
+					List<Map<String, Object>> tmp = (List<Map<String, Object>>) expandedValue;
+					for (Tuple2<Set<String>, Float> tuple : langQuery.getEntries()) {
+//						[
+//				          {
+//				            "@value": "Grand Place",
+//				            "@language": "fr"
+//				          },
+//				          {
+//				            "@value": "Grote Markt",
+//				            "@language": "nl"
+//				          }
+//				        ]
+						Object atLang = null;
+						for (String lang : tuple.getItem1()) {
+							for (Map<String, Object> entry : tmp) {
+								atLang = entry.get(JsonLdConsts.LANGUAGE);
+								if (atLang == null) {
+									defaultLang = atLang;
+								}
+								if ((lang.equals("*") && atLang == null) || lang.equals(atLang)) {
+									expandedValue = List.of(Map.of(JsonLdConsts.VALUE, entry.get(JsonLdConsts.VALUE)));
+									found = true;
+									break;
+								}
+							}
+							if (found) {
+								if (atLang != null) {
+									result.put("lang", atLang);
+								}
+								break;
+							}
+							if (lang.equals("*") && !found) {
+								expandedValue = List.of(Map.of(JsonLdConsts.VALUE, tmp.get(0).get(JsonLdConsts.VALUE)));
+								found = true;
+								break;
+							}
+						}
+						if (found) {
+							break;
+						}
+					}
+					if (!found) {
+						expandedValue = defaultLang;
+						if (expandedValue == null) {
+							expandedValue = List.of(Map.of(JsonLdConsts.VALUE, tmp.get(0).get(JsonLdConsts.VALUE)));
+						}
+					}
+					expandedProperty = NGSIConstants.NGSI_LD_HAS_VALUE;
+					isProperty = true;
+					isLanguageProperty = false;
+				}
+				if (keyValue) {
+					if (isProperty || isGeoProperty) {
+						if (expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_VALUE)) {
+							return compact(activeCtx, activeProperty, expandedValue, compactArrays, endPoint, null,
+									null);
+						} else {
+							continue;
+						}
+					} else if (isRelationship) {
+						if (expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_OBJECT)) {
+							return compact(activeCtx, activeProperty, expandedValue, compactArrays, endPoint, null,
+									null);
+						} else {
+							continue;
+						}
+					} else if (isLanguageProperty) {
+						if (expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP)) {
+							return compact(activeCtx, activeProperty, expandedValue, compactArrays, endPoint, null,
+									null);
+						} else {
+							continue;
+						}
+					}
+				} else if (concise) {
+					if (expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_VALUE)
+							|| expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP)
+							|| expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_OBJECT)
+							|| expandedProperty.equals(NGSIConstants.NGSI_LD_OBSERVED_AT)
+							|| expandedProperty.equals(NGSIConstants.NGSI_LD_MODIFIED_AT)
+							|| expandedProperty.equals(NGSIConstants.NGSI_LD_CREATED_AT)
+							|| expandedProperty.equals(NGSIConstants.NGSI_LD_SCOPE)) {
+
+					} else if (expandedValue instanceof List && ((List) expandedValue).get(0) instanceof Map
+							&& ((List<Map>) expandedValue).get(0).containsKey(NGSIConstants.JSON_LD_TYPE)) {
+						String tmp = ((List<String>) ((List<Map>) expandedValue).get(0).get(NGSIConstants.JSON_LD_TYPE))
+								.get(0);
+
+						switch (tmp) {
+						case NGSIConstants.NGSI_LD_PROPERTY:
+						case NGSIConstants.NGSI_LD_RELATIONSHIP:
+						case NGSIConstants.NGSI_LD_GEOPROPERTY:
+						case NGSIConstants.NGSI_LD_LANGPROPERTY:
+							break;
+						default:
+							continue;
+						}
+					} else {
+						continue;
+					}
+				}
 				// 7.2)
 				if (JsonLdConsts.REVERSE.equals(expandedProperty)) {
 					// 7.2.1)
 					final Map<String, Object> compactedValue = (Map<String, Object>) compact(activeCtx,
-							JsonLdConsts.REVERSE, expandedValue, compactArrays, endPoint);
+							JsonLdConsts.REVERSE, expandedValue, compactArrays, endPoint, options, langQuery);
 
 					// 7.2.2)
 					// Note: Must create a new set to avoid modifying the set we
@@ -383,6 +484,7 @@ public class JsonLdApi {
 
 				// 7.6)
 				for (final Object expandedItem : (List<Object>) expandedValue) {
+
 					// 7.6.1)
 					final String itemActiveProperty = activeCtx.compactIri(expandedProperty, expandedItem, true,
 							insideReverse);
@@ -399,7 +501,7 @@ public class JsonLdApi {
 
 					// 7.6.3)
 					Object compactedItem = compact(activeCtx, itemActiveProperty, isList ? list : expandedItem,
-							compactArrays, endPoint);
+							compactArrays, endPoint, options, langQuery);
 
 					// 7.6.4)
 					if (isList) {
@@ -510,6 +612,10 @@ public class JsonLdApi {
 				}
 			}
 			// 8)
+			if (concise && result.size() == 1 && result.containsKey("value")) {
+				return result.get("value");
+			}
+
 			if (listResult.isEmpty()) {
 				return result;
 			} else {
@@ -544,7 +650,7 @@ public class JsonLdApi {
 	 * @throws JsonLdError If there was an error during compaction.
 	 */
 	public Object compact(Context activeCtx, String activeProperty, Object element) throws JsonLdError {
-		return compact(activeCtx, activeProperty, element, JsonLdOptions.DEFAULT_COMPACT_ARRAYS, -1);
+		return compact(activeCtx, activeProperty, element, JsonLdOptions.DEFAULT_COMPACT_ARRAYS, -1, null, null);
 	}
 
 	/***
@@ -585,6 +691,7 @@ public class JsonLdApi {
 			// 3.2)
 			NGSIObject resultElement = new NGSIObject(null, ngsiElement);
 			resultElement.fillUpForArray(ngsiElement);
+			resultElement.setFromHasValue(ngsiElement.isFromHasValue() || ngsiElement.isHasAtValue());
 			for (final Object item : (List<Object>) element) {
 				// 3.2.1)
 				NGSIObject ngsiV = expand(activeCtx, activeProperty,
@@ -929,42 +1036,42 @@ public class JsonLdApi {
 					continue;
 				} else {
 					switch (payloadType) {
-						case AppConstants.ENTITY_CREATE_PAYLOAD:
-						case AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD:
-						case AppConstants.ENTITY_UPDATE_PAYLOAD:
-						case AppConstants.ENTITY_RETRIEVED_PAYLOAD:
-						case AppConstants.TEMP_ENTITY_CREATE_PAYLOAD:
-						case AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD:
-						case AppConstants.TEMP_ENTITY_RETRIEVED_PAYLOAD:
-							if (NGSIConstants.NGSI_LD_HAS_VALUE.equals(expandedProperty)) {
-								ngsiElement.setHasAtValue(true);
-							} else if (NGSIConstants.NGSI_LD_HAS_OBJECT.equals(expandedProperty)) {
-								ngsiElement.setHasAtObject(true);
-							} else if (NGSIConstants.NGSI_LD_DATE_TIME.equals(expandedProperty)) {
-								ngsiElement.setDateTime(true);
-							}
-							break;
-						case AppConstants.SUBSCRIPTION_CREATE_PAYLOAD:
-						case AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD:
-							ngsiElement.resetSubscriptionVars();
-							if (NGSIConstants.NGSI_LD_ENTITIES.equals(expandedProperty)) {
-								ngsiElement.setEntities(true);
-							} else if (NGSIConstants.NGSI_LD_GEO_QUERY.equals(expandedProperty)) {
-								ngsiElement.setGeoQ(true);
-							} else if (NGSIConstants.NGSI_LD_NOTIFICATION.equals(expandedProperty)) {
-								ngsiElement.setNotificationEntry(true);
-							} else if (NGSIConstants.NGSI_LD_TEMPORAL_QUERY.equals(expandedProperty)) {
-								ngsiElement.setTemporalQ(true);
-							} else if (NGSIConstants.NGSI_LD_ENDPOINT.equals(expandedProperty)) {
-								ngsiElement.setEndpoint(true);
-							} else if (NGSIConstants.NGSI_LD_NOTIFIERINFO.equals(expandedProperty)) {
-								ngsiElement.setNotifierInfo(true);
-							} else if (NGSIConstants.NGSI_LD_RECEIVERINFO.equals(expandedProperty)) {
-								ngsiElement.setReceiverInfo(true);
-							}
-							break;
-						default:
-							break;
+					case AppConstants.ENTITY_CREATE_PAYLOAD:
+					case AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD:
+					case AppConstants.ENTITY_UPDATE_PAYLOAD:
+					case AppConstants.ENTITY_RETRIEVED_PAYLOAD:
+					case AppConstants.TEMP_ENTITY_CREATE_PAYLOAD:
+					case AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD:
+					case AppConstants.TEMP_ENTITY_RETRIEVED_PAYLOAD:
+						if (NGSIConstants.NGSI_LD_HAS_VALUE.equals(expandedProperty)) {
+							ngsiElement.setHasAtValue(true);
+						} else if (NGSIConstants.NGSI_LD_HAS_OBJECT.equals(expandedProperty)) {
+							ngsiElement.setHasAtObject(true);
+						} else if (NGSIConstants.NGSI_LD_DATE_TIME.equals(expandedProperty)) {
+							ngsiElement.setDateTime(true);
+						}
+						break;
+					case AppConstants.SUBSCRIPTION_CREATE_PAYLOAD:
+					case AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD:
+						ngsiElement.resetSubscriptionVars();
+						if (NGSIConstants.NGSI_LD_ENTITIES.equals(expandedProperty)) {
+							ngsiElement.setEntities(true);
+						} else if (NGSIConstants.NGSI_LD_GEO_QUERY.equals(expandedProperty)) {
+							ngsiElement.setGeoQ(true);
+						} else if (NGSIConstants.NGSI_LD_NOTIFICATION.equals(expandedProperty)) {
+							ngsiElement.setNotificationEntry(true);
+						} else if (NGSIConstants.NGSI_LD_TEMPORAL_QUERY.equals(expandedProperty)) {
+							ngsiElement.setTemporalQ(true);
+						} else if (NGSIConstants.NGSI_LD_ENDPOINT.equals(expandedProperty)) {
+							ngsiElement.setEndpoint(true);
+						} else if (NGSIConstants.NGSI_LD_NOTIFIERINFO.equals(expandedProperty)) {
+							ngsiElement.setNotifierInfo(true);
+						} else if (NGSIConstants.NGSI_LD_RECEIVERINFO.equals(expandedProperty)) {
+							ngsiElement.setReceiverInfo(true);
+						}
+						break;
+					default:
+						break;
 					}
 				}
 
@@ -1809,16 +1916,16 @@ public class JsonLdApi {
 		}
 		if (value instanceof String) {
 			switch ((String) value) {
-				case "@always":
-					return Embed.ALWAYS;
-				case "@never":
-					return Embed.NEVER;
-				case "@last":
-					return Embed.LAST;
-				case "@link":
-					return Embed.LINK;
-				default:
-					throw new JsonLdError(JsonLdError.Error.INVALID_EMBED_VALUE);
+			case "@always":
+				return Embed.ALWAYS;
+			case "@never":
+				return Embed.NEVER;
+			case "@last":
+				return Embed.LAST;
+			case "@link":
+				return Embed.LINK;
+			default:
+				throw new JsonLdError(JsonLdError.Error.INVALID_EMBED_VALUE);
 			}
 		}
 		throw new JsonLdError(JsonLdError.Error.INVALID_EMBED_VALUE);

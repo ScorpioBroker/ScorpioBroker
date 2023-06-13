@@ -2,6 +2,7 @@ apiVersion: v1
 kind: PersistentVolume
 metadata:
   name: kafka-pv-volume
+  namespace: scorpio-broker
   labels:
     type: local
 spec:
@@ -19,6 +20,7 @@ metadata:
   labels:
       component: kafka-claim0
   name: kafka-claim0
+  namespace: scorpio-broker
 spec:
   storageClassName: manual
   accessModes:

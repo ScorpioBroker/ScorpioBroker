@@ -2,10 +2,8 @@ package eu.neclab.ngsildbroker.commons.tools;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URLDecoder;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -14,18 +12,20 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.http.HttpStatus;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.RestResponse.ResponseBuilder;
 import org.jboss.resteasy.reactive.server.jaxrs.RestResponseBuilderImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.fasterxml.jackson.core.JsonGenerationException;
+
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.jsonldjava.core.Context;
@@ -36,22 +36,29 @@ import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.core.RDFDataset;
 import com.github.jsonldjava.core.RDFDatasetUtils;
 import com.github.jsonldjava.utils.JsonUtils;
-import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.net.HttpHeaders;
+
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse;
+import eu.neclab.ngsildbroker.commons.datatypes.RemoteHost;
+import eu.neclab.ngsildbroker.commons.datatypes.results.Attrib;
+import eu.neclab.ngsildbroker.commons.datatypes.results.CRUDSuccess;
+import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
-import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import io.smallrye.mutiny.Uni;
-import io.vertx.codegen.annotations.Nullable;
+import io.smallrye.mutiny.tuples.Tuple2;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.impl.headers.HeadersMultiMap;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
+import io.vertx.mutiny.core.buffer.Buffer;
+import io.vertx.mutiny.ext.web.client.HttpResponse;
 
 /**
  * A utility class to handle HTTP Requests and Responses.
@@ -63,16 +70,25 @@ import io.vertx.core.http.impl.headers.HeadersMultiMap;
 public final class HttpUtils {
 
 	private static final Logger logger = LoggerFactory.getLogger(HttpUtils.class);
+
+	public static final Uni<RestResponse<Object>> getInvalidHeader() {
+		return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
+				new ResponseException(ErrorType.NotAcceptable, "Provided accept types are not supported")));
+	}
+
+	private static final String CORE_CONTEXT_URL_LINK = null;;
 	/** Timeout for all requests to respond. */
 
 	private static Pattern headerPattern = Pattern.compile(
 			"((\\*\\/\\*)|(application\\/\\*)|(application\\/json)|(application\\/ld\\+json)|(application\\/n-quads)|(application\\/geo\\+json))(\\s*\\;\\s*q=(\\d(\\.\\d)*))?\\s*\\,?\\s*");
 
-	private static JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
+	public static JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
-	public static final RestResponse<Object> NOT_FOUND_REPLY = RestResponseBuilderImpl.create(HttpStatus.SC_NOT_FOUND)
-			.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-			.entity(new NGSIRestResponse(ErrorType.NotFound, "Resource not found.").toJson()).build();
+	private static Set<String> DO_NOT_SCAN_ATTRIBS = Sets.newHashSet("id", "type", "createdAt", "scope", "@context");
+
+//	public static final RestResponse<Object> NOT_FOUND_REPLY = RestResponseBuilderImpl.create(HttpStatus.SC_NOT_FOUND)
+//			.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+//			.entity(new NGSIRestResponse(ErrorType.NotFound, "Resource not found.").toJson()).build();
 
 	public static boolean doPreflightCheck(HttpServerRequest req, List<Object> atContextLinks)
 			throws ResponseException {
@@ -95,71 +111,6 @@ public final class HttpUtils {
 		}
 		return false;
 
-	}
-
-	public static Uni<List<Object>> getAtContext(HttpServerRequest req) {
-
-		return parseLinkHeader(req, NGSIConstants.HEADER_REL_LDCONTEXT);
-	}
-
-	public static Uni<List<Object>> parseLinkHeader(HttpServerRequest req, String headerRelLdcontext) {
-		return parseLinkHeader(req.headers().getAll("Link"), headerRelLdcontext);
-	}
-
-	public static List<Object> parseLinkHeaderNoUni(List<String> rawLinks, String headerRelLdcontext) {
-		ArrayList<Object> result = new ArrayList<Object>();
-		if (rawLinks != null) {
-
-			Iterator<String> it = rawLinks.iterator();
-			while (it.hasNext()) {
-				String[] rawLinkInfos = it.next().split(";");
-				boolean isWantedRel = false;
-				for (String rawLinkInfo : rawLinkInfos) {
-					if (rawLinkInfo.trim().startsWith("rel=")) {
-						String[] relInfo = rawLinkInfo.trim().split("=");
-						if (relInfo.length == 2 && (relInfo[1].equalsIgnoreCase(headerRelLdcontext)
-								|| relInfo[1].equalsIgnoreCase("\"" + headerRelLdcontext + "\""))) {
-							isWantedRel = true;
-						}
-						break;
-					}
-				}
-				if (isWantedRel) {
-					String rawLink = rawLinkInfos[0];
-					if (rawLink.trim().startsWith("<")) {
-						rawLink = rawLink.substring(rawLink.indexOf("<") + 1, rawLink.indexOf(">"));
-					}
-					result.add(rawLink);
-				}
-
-			}
-		}
-		return result;
-	}
-
-	public static List<Object> getAtContextNoUni(HttpServerRequest request) {
-		return parseLinkHeaderNoUni(request.headers().getAll("Link"), NGSIConstants.HEADER_REL_LDCONTEXT);
-	}
-
-	public static Uni<List<Object>> parseLinkHeader(List<String> rawLinks, String headerRelLdcontext) {
-		return Uni.createFrom().item(parseLinkHeaderNoUni(rawLinks, headerRelLdcontext));
-
-	}
-
-	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, Object reply, int endPoint,
-			String option) {
-		return generateReply(request, reply, ArrayListMultimap.create(), endPoint, option);
-
-	}
-
-	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, Object reply,
-			ArrayListMultimap<String, String> additionalHeaders, int endPoint, String option) {
-		return generateReply(request, reply, additionalHeaders, null, endPoint, option);
-	}
-
-	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, Object reply,
-			ArrayListMultimap<String, String> additionalHeaders, List<Object> context, int endPoint, String option) {
-		return generateReply(request, reply, additionalHeaders, context, false, endPoint, option);
 	}
 
 	public static int parseAcceptHeader(List<String> acceptHeaders) {
@@ -208,186 +159,43 @@ public final class HttpUtils {
 		}
 	}
 
-	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, Object reply,
-			ArrayListMultimap<String, String> additionalHeaders, List<Object> additionalContext,
-			boolean forceArrayResult, int endPoint, String option) {
-		return getAtContext(request).onItem().transform(t -> {
-			List<Object> result = Lists.newArrayList();
+	public static List<Object> parseLinkHeaderNoUni(List<String> rawLinks, String headerRelLdcontext) {
+		ArrayList<Object> result = new ArrayList<Object>();
+		if (rawLinks != null) {
 
-			if (additionalContext != null) {
-				result.addAll(additionalContext);
-			}
-			if (t != null) {
-				result.addAll(t);
-			}
-			return result;
-		}).onItem().transformToUni(t -> {
-			Context context = JsonLdProcessor.getCoreContextClone().parse(t, true);
-			return generateReply(request, reply, additionalHeaders, context, t, forceArrayResult, endPoint, option);
-		});
-
-	}
-
-	private static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, String reply,
-			ArrayListMultimap<String, String> additionalHeaders, Context ldContext, List<Object> contextLinks,
-			boolean forceArrayResult, int endPoint, String option) {
-		try {
-			return generateReply(request, JsonUtils.fromString(reply), additionalHeaders, ldContext, contextLinks,
-					forceArrayResult, endPoint, option);
-		} catch (IOException e) {
-			return Uni.createFrom().failure(e);
-		}
-	}
-
-	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, Object expanded,
-			ArrayListMultimap<String, String> additionalHeaders, Context ldContext, List<Object> contextLinks,
-			boolean forceArrayResult, int endPoint, String option) {
-		return getReplyBody(request.headers().getAll(HttpHeaders.ACCEPT), endPoint, additionalHeaders, expanded,
-				forceArrayResult, ldContext, contextLinks, getGeometry(request), option).onItem().transformToUni(t -> {
-					boolean compress = false;
-					String options = request.params().get(NGSIConstants.QUERY_PARAMETER_OPTIONS);
-					if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_COMPRESS)) {
-						compress = true;
+			Iterator<String> it = rawLinks.iterator();
+			while (it.hasNext()) {
+				String[] rawLinkInfos = it.next().split(";");
+				boolean isWantedRel = false;
+				for (String rawLinkInfo : rawLinkInfos) {
+					if (rawLinkInfo.trim().startsWith("rel=")) {
+						String[] relInfo = rawLinkInfo.trim().split("=");
+						if (relInfo.length == 2 && (relInfo[1].equalsIgnoreCase(headerRelLdcontext)
+								|| relInfo[1].equalsIgnoreCase("\"" + headerRelLdcontext + "\""))) {
+							isWantedRel = true;
+						}
+						break;
 					}
-					return generateReply(t, additionalHeaders, compress);
-				});
-
-	}
-
-	/// modifiying coding
-	private static Uni<String> getReplyBody(List<String> acceptHeader, int endPoint,
-			ArrayListMultimap<String, String> additionalHeaders, Object expanded, boolean forceArrayResult,
-			Context ldContext, List<Object> contextLinks, String geometryProperty, String option) {
-		try {
-			return Uni.createFrom().item(getReplyBodyNoUni(acceptHeader, endPoint, additionalHeaders, expanded,
-					forceArrayResult, ldContext, contextLinks, geometryProperty, option));
-		} catch (Exception e) {
-			return Uni.createFrom().failure(e);
-		}
-	}
-
-	private static String getReplyBodyNoUni(List<String> acceptHeader, int endPoint,
-			ArrayListMultimap<String, String> additionalHeaders, Object expanded, boolean forceArrayResult,
-			Context ldContext, List<Object> contextLinks, String geometryProperty, String option) throws Exception {
-		String replyBody;
-		String s = null;
-		int sendingContentType = parseAcceptHeader(acceptHeader);
-		Map<String, Object> compacted;
-
-		compacted = JsonLdProcessor.compact(expanded, contextLinks, ldContext, opts, endPoint);
-
-		if (option != null && option.equals(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)) {
-			conciseRepresentation(compacted, null, "");
-		} else if (option != null && !option.equals(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE) && !option.isEmpty()) {
-			throw new ResponseException(ErrorType.BadRequestData, "option is invalid");
-
-		}
-
-		Object context = compacted.get(JsonLdConsts.CONTEXT);
-		Object result;
-		Object graph = compacted.get(JsonLdConsts.GRAPH);
-
-		if (graph != null) {
-			result = graph;
-		} else {
-			result = compacted;
-		}
-		if (forceArrayResult && !(result instanceof List)) {
-			ArrayList<Object> temp = new ArrayList<Object>();
-			temp.add(result);
-			result = temp;
-		}
-		if (additionalHeaders == null) {
-			additionalHeaders = ArrayListMultimap.create();
-		}
-		switch (sendingContentType) {
-		case 1:
-			additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON);
-			if (result instanceof Map) {
-				((Map) result).remove(JsonLdConsts.CONTEXT);
-			}
-			if (result instanceof List) {
-				List<Map<String, Object>> list = (List<Map<String, Object>>) result;
-				for (Map<String, Object> entry : list) {
-					entry.remove(JsonLdConsts.CONTEXT);
 				}
-			}
-
-			replyBody = JsonUtils.toPrettyString(result);
-			if (contextLinks != null) {
-				for (Object entry : contextLinks) {
-					if (entry instanceof String) {
-						additionalHeaders.put(com.google.common.net.HttpHeaders.LINK, "<" + entry
-								+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
-					} else {
-						additionalHeaders.put(HttpHeaders.LINK, "<" + getAtContextServing(entry)
-								+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
+				if (isWantedRel) {
+					String rawLink = rawLinkInfos[0];
+					if (rawLink.trim().startsWith("<")) {
+						rawLink = rawLink.substring(rawLink.indexOf("<") + 1, rawLink.indexOf(">"));
 					}
-
+					result.add(rawLink);
 				}
-			}
-			break;
-		case 2:
-			additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD);
-			if (result instanceof List) {
-				List<Map<String, Object>> list = (List<Map<String, Object>>) result;
-				for (Map<String, Object> entry : list) {
-					entry.put(JsonLdConsts.CONTEXT, context);
-				}
-			}
 
-			replyBody = JsonUtils.toPrettyString(result);
-			break;
-		case 3:
-			additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_NQUADS);
-			replyBody = RDFDatasetUtils.toNQuads((RDFDataset) JsonLdProcessor.toRDF(result));
-			break;
-		case 4:// geo+json
-			switch (endPoint) {
-			case AppConstants.QUERY_ENDPOINT:
-				additionalHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_GEO_JSON);
-
-				replyBody = JsonUtils.toPrettyString(generateGeoJson(result, geometryProperty, context));
-
-				break;
-			default:
-				throw new ResponseException(ErrorType.NotAcceptable,
-						"Provided accept types " + acceptHeader + " are not supported");
 			}
-			break;
-		case -1:
-		default:
-			throw new ResponseException(ErrorType.NotAcceptable,
-					"Provided accept types " + acceptHeader + " are not supported");
 		}
-		return replyBody;
-
+		return result;
 	}
 
-	@SuppressWarnings("unchecked")
-	private static void conciseRepresentation(Object compacted, Map<?, ?> parent, String key) {
-		// First Situation : if compacted have array
-		if (compacted instanceof ArrayList<?> list) {
-			list.forEach(item -> {
-				if (item instanceof Map<?, ?> mapItem) {
-					conciseRepresentation(mapItem, null, "");
-				}
-			});
-		} else if (compacted instanceof Map<?, ?> map) {
-			if (!map.containsKey(NGSIConstants.ID)) {
-				if (map.containsKey(NGSIConstants.TYPE)
-						&& !map.get(NGSIConstants.TYPE).equals(NGSIConstants.GEO_TYPE_POINT))
-					map.remove(NGSIConstants.TYPE); // if object is top element then type should not be removed
-				if (map.size() == 1 && map.containsKey(NGSIConstants.VALUE)) {
-					((Map<String, Object>) parent).put(key, map.get(NGSIConstants.VALUE));
-				}
-			}
-			map.forEach((str, nestedObj) -> {
-				if (nestedObj instanceof Map<?, ?> || nestedObj instanceof ArrayList<?>) {
-					conciseRepresentation(nestedObj, map, str.toString());
-				}
-			});
-		}
+	public static List<Object> getAtContext(HttpServerRequest request) {
+		return parseLinkHeaderNoUni(request.headers().getAll("Link"), NGSIConstants.HEADER_REL_LDCONTEXT);
+	}
+
+	public static Uni<List<Object>> parseLinkHeader(List<String> rawLinks, String headerRelLdcontext) {
+		return Uni.createFrom().item(parseLinkHeaderNoUni(rawLinks, headerRelLdcontext));
 
 	}
 
@@ -419,75 +227,7 @@ public final class HttpUtils {
 		return resultMap;
 	}
 
-	private static String getGeometry(HttpServerRequest request) {
-		String result = request.params().get(NGSIConstants.QUERY_PARAMETER_GEOMETRY_PROPERTY);
-		if (result == null) {
-			return NGSIConstants.NGSI_LD_LOCATION_SHORT;
-		}
-		return result;
-	}
-
-	private static String getAtContextServing(Object entry) {
-		// TODO Auto-generated method stub
-		return "http change this";
-	}
-
-	public static Uni<RestResponse<Object>> generateReply(String replyBody,
-			ArrayListMultimap<String, String> additionalHeaders, boolean compress) {
-		return generateReply(replyBody, additionalHeaders, HttpStatus.SC_OK, compress);
-	}
-
-	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, QueryResult qResult,
-			boolean forceArray, boolean count, Context context, List<Object> contextLinks, int endPoint,
-			String option) {
-		ArrayListMultimap<String, String> additionalHeaders = ArrayListMultimap.create();
-
-		if (count == true) {
-			additionalHeaders.put(NGSIConstants.COUNT_HEADER_RESULT, String.valueOf(qResult.getCount()));
-		}
-		if (qResult == null || qResult.getData() == null || qResult.getData().size() == 0) {
-			return HttpUtils.generateReply(request, Lists.newArrayList(), additionalHeaders, endPoint, option);
-		}
-		String nextLink = HttpUtils.generateNextLink(request, qResult);
-		String prevLink = HttpUtils.generatePrevLink(request, qResult);
-		ArrayList<Object> additionalLinks = new ArrayList<Object>();
-		if (nextLink != null) {
-			additionalLinks.add(nextLink);
-		}
-		if (prevLink != null) {
-			additionalLinks.add(prevLink);
-		}
-
-		if (!additionalLinks.isEmpty()) {
-			for (Object entry : additionalLinks) {
-				additionalHeaders.put(HttpHeaders.LINK, (String) entry);
-			}
-		}
-		return HttpUtils.generateReply(request, qResult.getData(), additionalHeaders, context, contextLinks, forceArray,
-				endPoint, option);
-	}
-
-	public static Uni<RestResponse<Object>> generateReply(String replyBody,
-			ArrayListMultimap<String, String> additionalHeaders, int status, boolean compress) {
-
-		ResponseBuilder<Object> builder = RestResponseBuilderImpl.create(status);
-
-		if (additionalHeaders != null) {
-			for (Entry<String, String> entry : additionalHeaders.entries()) {
-				builder = builder.header(entry.getKey(), entry.getValue());
-			}
-		}
-		Object body;
-		if (compress) {
-			body = zipResult(replyBody);
-			builder = builder.header(HttpHeaders.CONTENT_TYPE, "application/zip");
-		} else {
-			body = replyBody;
-		}
-		return Uni.createFrom().item(builder.entity(body).build());
-	}
-
-	private static byte[] zipResult(String replyBody) {
+	public static byte[] zipResult(String replyBody) {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		ZipOutputStream zipOutputStream = new ZipOutputStream(baos);
 		ZipEntry entry = new ZipEntry("index.json");
@@ -505,53 +245,19 @@ public final class HttpUtils {
 		return baos.toByteArray();
 	}
 
-	public static ArrayListMultimap<String, String> getHeaders(HttpServerRequest request) {
-		ArrayListMultimap<String, String> result = ArrayListMultimap.create();
-		for (Entry<String, String> entry : request.headers()) {
-			result.put(entry.getKey(), entry.getValue());
-		}
-		return result;
-	}
-
-	public static String getTenantFromHeaders(ArrayListMultimap<String, String> headers) {
-		if (headers.containsKey(NGSIConstants.TENANT_HEADER)) {
-			return headers.get(NGSIConstants.TENANT_HEADER).get(0);
-		}
-		return null;
-	}
-
-	public static String getInternalTenant(ArrayListMultimap<String, String> headers) {
-		if (headers == null) {
-			return AppConstants.INTERNAL_NULL_KEY;
-		}
-		String tenantId = getTenantFromHeaders(headers);
-		if (tenantId == null) {
-			return AppConstants.INTERNAL_NULL_KEY;
-		}
-		return tenantId;
-	}
-
-	public static String getInternalTenant(HttpServerRequest request) {
-		String tenant = request.headers().get(NGSIConstants.TENANT_HEADER);
-		if (tenant == null) {
-			return AppConstants.INTERNAL_NULL_KEY;
-		}
-		return tenant;
-	}
-
-	static String generateNextLink(HttpServerRequest request, QueryResult qResult) {
+	static String generateNextLink(MultiMap params, QueryResult qResult) {
 		if (qResult.getResultsLeftAfter() == null || qResult.getResultsLeftAfter() <= 0) {
 			return null;
 		}
-		return generateFollowUpLinkHeader(request, qResult.getOffset() + qResult.getLimit(), qResult.getLimit(),
+		return generateFollowUpLinkHeader(params, qResult.getOffset() + qResult.getLimit(), qResult.getLimit(),
 				qResult.getqToken(), "next");
 	}
 
-	public static String generateFollowUpLinkHeader(HttpServerRequest request, int offset, int limit, String token,
-			String rel) {
+	public static String generateFollowUpLinkHeader(MultiMap params, int offset, int limit, String token, String rel) {
 		StringBuilder builder = new StringBuilder("</");
 		builder.append("?");
-		for (Entry<String, String> entry : request.params().entries()) {
+
+		for (Entry<String, String> entry : params.entries()) {
 			String key = entry.getKey();
 			if (key.equals("offset")) {
 				continue;
@@ -564,14 +270,14 @@ public final class HttpUtils {
 			}
 			builder.append(key + "=" + entry.getValue() + "&");
 		}
-		builder.append("offset=" + offset + "&");
-		builder.append("limit=" + limit + "&");
-		// builder.append("qtoken=" + token);
+		builder.append("offset=" + offset);
+		builder.append("&limit=" + limit);
+		builder.append("&entityMap=" + token);
 		builder.append(">;rel=\"" + rel + "\"");
 		return builder.toString();
 	}
 
-	private static String generatePrevLink(HttpServerRequest request, QueryResult qResult) {
+	private static String generatePrevLink(MultiMap params, QueryResult qResult) {
 		if (qResult.getResultsLeftBefore() == null || qResult.getResultsLeftBefore() <= 0) {
 			return null;
 		}
@@ -580,178 +286,59 @@ public final class HttpUtils {
 			offset = 0;
 		}
 		int limit = qResult.getLimit();
-
-		return generateFollowUpLinkHeader(request, offset, limit, qResult.getqToken(), "prev");
+		return generateFollowUpLinkHeader(params, offset, limit, qResult.getqToken(), "prev");
 	}
 
 	public static RestResponse<Object> handleControllerExceptions(Throwable e) {
 		if (e instanceof ResponseException) {
 			ResponseException responseException = (ResponseException) e;
 			logger.debug("Exception :: ", responseException);
-			return RestResponseBuilderImpl.create(responseException.getError().getCode())
+			return RestResponseBuilderImpl.create(responseException.getErrorCode())
 					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-					.entity(new eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse(responseException).toJson())
-					.build();
+					.entity(responseException.getJson()).build();
 		}
 		if (e instanceof DateTimeParseException) {
 			logger.debug("Exception :: ", e);
 			return RestResponseBuilderImpl.create(HttpStatus.SC_BAD_REQUEST)
 					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-					.entity(new eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse(ErrorType.BadRequestData,
-							"Failed to parse provided datetime field.").toJson())
+					.entity(new ResponseException(ErrorType.BadRequestData, "Failed to parse provided datetime field.")
+							.getJson())
 					.build();
 		}
 		if (e instanceof JsonProcessingException || e instanceof JsonLdError) {
 			logger.debug("Exception :: ", e);
 			return RestResponseBuilderImpl.create(HttpStatus.SC_BAD_REQUEST)
 					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-					.entity(new eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse(ErrorType.InvalidRequest,
-							"There is an error in the provided json document").toJson())
+					.entity(new ResponseException(ErrorType.InvalidRequest,
+							"There is an error in the provided json document").getJson())
 					.build();
 		}
 		logger.error("Exception :: ", e);
 		return RestResponseBuilderImpl.create(HttpStatus.SC_INTERNAL_SERVER_ERROR)
 				.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-				.entity(new eu.neclab.ngsildbroker.commons.datatypes.NGSIRestResponse(ErrorType.InternalError,
-						e.getMessage()).toJson())
-				.build();
+				.entity(new ResponseException(ErrorType.InternalError, e.getMessage()).getJson()).build();
 	}
 
-	public static Uni<URI> validateUri(String uri) {
+	public static URI validateUri(String uri) throws ResponseException {
 		try {
 			return validateUri(new URI(uri));
 		} catch (URISyntaxException e) {
-			return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData, "id is not a URI"));
+			throw new ResponseException(ErrorType.BadRequestData, "id is not a URI");
 		}
 
 	}
 
-	public static Uni<URI> validateUri(URI uri) {
+	public static URI validateUri(URI uri) throws ResponseException {
 		if (!uri.isAbsolute()) {
-			return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData, "id is not a URI"));
+			throw new ResponseException(ErrorType.BadRequestData, "id is not a URI");
 		}
-		return Uni.createFrom().item(uri);
-
-	}
-
-	@SuppressWarnings("unchecked")
-	public static Uni<RestResponse<Object>> generateReply(HttpServerRequest request, UpdateResult update,
-			List<Object> context, int endpoint) {
-		if (update.getNotUpdated().isEmpty()) {
-			return Uni.createFrom().item(RestResponse.noContent());
-		}
-		Context ldContext = JsonLdProcessor.getCoreContextClone().parse(context, true);
-		Map<String, Object> expanded = update.toJsonMap();
-		Map<String, Object> compacted;
-		try {
-			compacted = JsonLdProcessor.compact(expanded, context, ldContext, opts, AppConstants.UPDATE_REQUEST);
-		} catch (JsonLdError | ResponseException e) {
-			return Uni.createFrom().failure(e);
-		}
-		Object updated = compacted.get(NGSIConstants.NGSI_LD_UPDATED_SHORT);
-		if (updated != null) {
-			List<String> result = new ArrayList<String>();
-			for (String entry : (List<String>) updated) {
-				HashMap<String, Object> tmp = new HashMap<String, Object>();
-				tmp.put(NGSIConstants.JSON_LD_VALUE, entry);
-				result.add((String) ldContext.compactValue("dummy", tmp));
-			}
-			compacted.put(NGSIConstants.NGSI_LD_UPDATED_SHORT, result);
-		}
-		Object resultContext = compacted.get(JsonLdConsts.CONTEXT);
-		Object result;
-		Object graph = compacted.get(JsonLdConsts.GRAPH);
-		if (graph != null) {
-			result = graph;
-		} else {
-			result = compacted;
-		}
-		int sendingContentType = parseAcceptHeader(request.headers().getAll(HttpHeaders.ACCEPT));
-		ArrayListMultimap<String, String> resultHeaders = ArrayListMultimap.create();
-		String replyBody;
-		switch (sendingContentType) {
-		case 1:
-			resultHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON);
-			((Map) result).remove(JsonLdConsts.CONTEXT);
-			try {
-				replyBody = JsonUtils.toPrettyString(result);
-			} catch (IOException e) {
-				return Uni.createFrom().failure(e);
-			}
-			for (Object entry : context) {
-				if (entry instanceof String) {
-					resultHeaders.put(HttpHeaders.LINK, "<" + entry
-							+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
-				} else {
-					resultHeaders.put(HttpHeaders.LINK, "<" + getAtContextServing(entry)
-							+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
-				}
-
-			}
-			break;
-		case 2:
-			resultHeaders.put(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD);
-			try {
-				replyBody = JsonUtils.toPrettyString(result);
-			} catch (IOException e) {
-				return Uni.createFrom().failure(e);
-			}
-			break;
-		default:
-			return Uni.createFrom()
-					.failure(new ResponseException(ErrorType.NotAcceptable, "Provided accept types are not supported"));
-		}
-		ResponseBuilder<Object> builder = RestResponseBuilderImpl.create(HttpStatus.SC_MULTI_STATUS).entity(replyBody);
-		for (Entry<String, String> entry : resultHeaders.entries()) {
-			builder = builder.header(entry.getKey(), entry.getValue());
-		}
-		return Uni.createFrom().item(builder.build());
-	}
-
-	public static RestResponse<String> generateNotification(String tenant, Object notificationData,
-			List<Object> context, String geometryProperty)
-			throws ResponseException, JsonGenerationException, JsonParseException, IOException, Exception {
-		Context ldContext = JsonLdProcessor.getCoreContextClone().parse(context, true);
-
-		ArrayListMultimap<String, String> headers = ArrayListMultimap.create();
-
-		List<String> acceptHeader = headers.get(io.vertx.mutiny.core.http.HttpHeaders.ACCEPT.toString());
-		if (acceptHeader == null || acceptHeader.isEmpty()) {
-			acceptHeader = new ArrayList<String>();
-			acceptHeader.add("application/json");
-		}
-		String body = getReplyBodyNoUni(acceptHeader, AppConstants.QUERY_ENDPOINT, headers, notificationData, true,
-				ldContext, context, geometryProperty, null);
-		// need to clean context for subscriptions. This is a bit bad practice but reply
-		// generation relies on side effects so clean up here
-		HashSet<Object> temp = Sets.newHashSet(context);
-		context.clear();
-		context.addAll(temp);
-
-		ResponseBuilder<String> builder = RestResponseBuilderImpl.ok(body);
-		for (String key : headers.keySet()) {
-			switch (key.toLowerCase()) {
-			case "postman-token":
-			case "accept-encoding":
-			case "user-agent":
-			case "host":
-			case "connection":
-			case "cache-control":
-			case "content-length":
-				break;
-			default:
-				for (String entry : Sets.newHashSet(headers.get(key))) {
-					builder = builder.header(key, entry);
-				}
-			}
-		}
-		return builder.build();
+		return uri;
 	}
 
 	@SuppressWarnings("unchecked")
 	public static MultiMap getAdditionalHeaders(Map<String, Object> registration, List<Object> context,
 			List<String> accept) {
-		HeadersMultiMap result = HeadersMultiMap.headers();
+		MultiMap result = HeadersMultiMap.headers();
 
 		// Context myContext = JsonLdProcessor.getCoreContextClone().parse(context,
 		// true);
@@ -789,28 +376,502 @@ public final class HttpUtils {
 		return mMap;
 	}
 
-	public static String utfDecoder(String data) {
-		try {
-			return URLDecoder.decode(data, NGSIConstants.ENCODE_FORMAT);
-		} catch (UnsupportedEncodingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+//	public static String utfDecoder(String data) {
+//		try {
+//			return URLDecoder.decode(data, NGSIConstants.ENCODE_FORMAT);
+//		} catch (UnsupportedEncodingException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//		return null;
+//
+//	}
+
+	public static RestResponse<Object> generateUpdateResultResponse(NGSILDOperationResult updateResult) {
+		if (updateResult.getFailures().isEmpty()) {
+			return RestResponse.noContent();
 		}
-		return null;
+		if (updateResult.getSuccesses().isEmpty()) {
+			if (updateResult.getFailures().size() == 1) {
+				ResponseException failure = updateResult.getFailures().get(0);
+				return handleControllerExceptions(failure);
+			}
+		} else {
+			boolean only404 = true;
+			for (ResponseException failure : updateResult.getFailures()) {
+				if (failure.getErrorCode() != 404) {
+					only404 = false;
+					break;
+				}
+			}
+			if (only404) {
+				return RestResponse.noContent();
+			}
+		}
+		return new RestResponseBuilderImpl().status(207).entity(new JsonObject(updateResult.getJson())).build();
 
 	}
 
-	/*
-	 * Return double to int if possible otherwise input is not changed 13.0 -> 13
-	 */
+	public static MultiMap getHeadersForRemoteCall(JsonArray headerFromReg, String tenant) {
+		MultiMap result = HeadersMultiMap.headers();
+		if (headerFromReg != null) {
+			headerFromReg.forEach(t -> {
+				JsonObject obj = (JsonObject) t;
+				obj.forEach(headerEntry -> {
+					result.add(headerEntry.getKey(), (String) headerEntry.getValue());
+				});
+			});
+		}
+		result.add("Accept", "application/json");
+		if (tenant != null) {
+			result.add(NGSIConstants.TENANT_HEADER, tenant);
+		}
+		return result;
+	}
+
+	public static MultiMap getHeadersForRemoteCallFromRegUpdate(List<Map<String, Object>> headerFromReg,
+			String tenant) {
+		MultiMap result = HeadersMultiMap.headers();
+		if (headerFromReg != null) {
+			headerFromReg.forEach(t -> {
+				t.forEach((key, value) -> {
+					result.add(key, (String) value);
+				});
+			});
+		}
+		result.add("Accept", "application/json");
+		if (!tenant.equals(AppConstants.INTERNAL_NULL_KEY)) {
+			result.add(NGSIConstants.TENANT_HEADER, tenant);
+		}
+		return result;
+	}
+
+	public static RestResponse<Object> generateEntityResult(List<Object> contextHeader, Context context,
+			int acceptHeader, Object entity, String geometryProperty, String options, LanguageQueryTerm langQuery) {
+
+		try {
+			Tuple2<Object, List<Tuple2<String, String>>> resultBodyAndHeaders = generateCompactedResult(contextHeader,
+					context, acceptHeader, entity, geometryProperty, options, langQuery, false);
+			ResponseBuilder<Object> resp = RestResponseBuilderImpl.ok();
+			List<Tuple2<String, String>> headers = resultBodyAndHeaders.getItem2();
+			for (Tuple2<String, String> entry : headers) {
+				resp = resp.header(entry.getItem1(), entry.getItem2());
+			}
+			return resp.entity(resultBodyAndHeaders.getItem1()).build();
+		} catch (Exception e) {
+			return handleControllerExceptions(e);
+		}
+	}
+
+	private static void makeConcise(Object compacted) {
+		makeConcise(compacted, null, null);
+	}
+
+	private static void makeConcise(Object compacted, Map<?, ?> parent, String key) {
+		if (compacted instanceof ArrayList<?> list) {
+			list.forEach(item -> {
+				if (item instanceof Map<?, ?> mapItem) {
+					makeConcise(mapItem, null, "");
+				}
+			});
+		} else if (compacted instanceof Map<?, ?> map) {
+			if (!map.containsKey(NGSIConstants.ID)) {
+				if (map.containsKey(NGSIConstants.TYPE)
+						&& !map.get(NGSIConstants.TYPE).equals(NGSIConstants.GEO_TYPE_POINT))
+					map.remove(NGSIConstants.TYPE); // if object is top element then type should not be removed
+				if (map.size() == 1 && map.containsKey(NGSIConstants.VALUE)) {
+					((Map<String, Object>) parent).put(key, map.get(NGSIConstants.VALUE));
+				}
+			}
+			map.forEach((str, nestedObj) -> {
+				if (!str.equals(NGSIConstants.JSON_LD_CONTEXT) && nestedObj instanceof Map<?, ?>
+						|| nestedObj instanceof ArrayList<?>) {
+					makeConcise(nestedObj, map, str.toString());
+				}
+			});
+		}
+
+	}
+
+	public static Tuple2<Object, List<Tuple2<String, String>>> generateCompactedResult(List<Object> contextHeader,
+			Context context, int acceptHeader, Object entity, String geometryProperty, String options,
+			LanguageQueryTerm langQuery, boolean forceArray) throws Exception {
+		String replyBody;
+		String contentType;
+		Object result;
+		Map<String, Object> compacted;
+		List<Tuple2<String, String>> headers = Lists.newArrayList();
+
+		Set<String> optionSet = null;
+		if (options != null) {
+			optionSet = Set.of(options.split(","));
+		}
+		Object finalCompacted;
+		switch (acceptHeader) {
+
+		case 1:
+			compacted = JsonLdProcessor.compact(entity, contextHeader, context, opts, -1, optionSet, langQuery);
+			Object bodyContext = compacted.remove(NGSIConstants.JSON_LD_CONTEXT);
+			if (contextHeader.isEmpty()) {
+				contextHeader.add(((List<Object>) bodyContext).get(0));
+			}
+			if (compacted.containsKey(JsonLdConsts.GRAPH)) {
+				finalCompacted = compacted.get(JsonLdConsts.GRAPH);
+			} else {
+				finalCompacted = compacted;
+			}
+			if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)) {
+				makeConcise(finalCompacted);
+			}
+			if (forceArray && !(finalCompacted instanceof List)) {
+				finalCompacted = List.of(finalCompacted);
+			}
+			replyBody = JsonUtils.toPrettyString(finalCompacted);
+			for (Object entry : contextHeader) {
+				headers.add(Tuple2.of(NGSIConstants.LINK_HEADER, getLinkHeader(entry)));
+			}
+
+			contentType = AppConstants.NGB_APPLICATION_JSON;
+			break;
+		case 2:
+			compacted = JsonLdProcessor.compact(entity, contextHeader, context, opts, -1, optionSet, langQuery);
+			if (compacted.containsKey(JsonLdConsts.GRAPH)) {
+				finalCompacted = compacted.get(JsonLdConsts.GRAPH);
+				bodyContext = compacted.get(NGSIConstants.JSON_LD_CONTEXT);
+				if (finalCompacted instanceof List) {
+					List<Map<String, Object>> tmpList = (List<Map<String, Object>>) finalCompacted;
+					for (Map<String, Object> entry : tmpList) {
+						entry.put(NGSIConstants.JSON_LD_CONTEXT, bodyContext);
+					}
+				} else if (finalCompacted instanceof Map) {
+					((Map<String, Object>) finalCompacted).put(NGSIConstants.JSON_LD_CONTEXT, bodyContext);
+				}
+			} else {
+				finalCompacted = compacted;
+			}
+			if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)) {
+				makeConcise(finalCompacted);
+			}
+			if (forceArray && !(finalCompacted instanceof List)) {
+				finalCompacted = List.of(finalCompacted);
+			}
+			contentType = AppConstants.NGB_APPLICATION_JSONLD;
+			replyBody = JsonUtils.toPrettyString(finalCompacted);
+			break;
+		case 3:
+			replyBody = RDFDatasetUtils.toNQuads((RDFDataset) JsonLdProcessor.toRDF(entity));
+			contentType = AppConstants.NGB_APPLICATION_NQUADS;
+			break;
+		case 4:// geo+json
+			compacted = JsonLdProcessor.compact(entity, contextHeader, context, opts, -1, optionSet, langQuery);
+			if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)) {
+				makeConcise(compacted);
+			}
+			if (forceArray && !(compacted instanceof List)) {
+				finalCompacted = List.of(compacted);
+			}
+			replyBody = JsonUtils.toPrettyString(generateGeoJson(compacted, geometryProperty, contextHeader));
+			contentType = AppConstants.NGB_APPLICATION_GEO_JSON;
+			break;
+		default:
+			return null;
+		}
+		if (options != null && options.contains("compress")) {
+			result = zipResult(replyBody);
+			contentType = AppConstants.NGB_APPLICATION_ZIP;
+		} else {
+			result = replyBody;
+		}
+		headers.add(Tuple2.of(HttpHeaders.CONTENT_TYPE, contentType));
+		return Tuple2.of(result, headers);
+	}
+
+	private static String getLinkHeader(Object entry) {
+		return "<" + entry + ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"";
+	}
+
+	public static String getTenant(HttpServerRequest request) {
+		String tenant = request.headers().get(NGSIConstants.TENANT_HEADER);
+		if (tenant == null) {
+			return AppConstants.INTERNAL_NULL_KEY;
+		}
+		return tenant;
+	}
+
+	public static Set<Attrib> getAttribsFromCompactedPayload(Map<String, Object> value) {
+		Set<Attrib> result = new HashSet<>(value.size() - 2);
+		String datasetId;
+		Map<String, Object> map;
+		for (Entry<String, Object> entry : value.entrySet()) {
+			datasetId = null;
+			if (DO_NOT_SCAN_ATTRIBS.contains(entry.getKey())) {
+				continue;
+			}
+			Object attribObj = entry.getValue();
+			if (attribObj instanceof Map) {
+				map = (Map<String, Object>) entry.getValue();
+				if (map.containsKey("datasetId")) {
+					datasetId = (String) map.get("datasetId");
+				}
+				result.add(new Attrib(entry.getKey(), datasetId));
+			} else if (attribObj instanceof List) {
+				List<Map<String, Object>> list = (List<Map<String, Object>>) attribObj;
+				for (Map<String, Object> attribEntry : list) {
+					if (attribEntry.containsKey("datasetId")) {
+						datasetId = (String) attribEntry.get("datasetId");
+					}
+					result.add(new Attrib(entry.getKey(), datasetId));
+				}
+
+			}
+
+		}
+		return result;
+	}
+
+	public static RestResponse<Object> generateBatchResult(List<NGSILDOperationResult> t) {
+		boolean isHavingError = false;
+		boolean isHavingSuccess = false;
+		boolean wasUpdated = false;
+		List<Map<String, Object>> result = new ArrayList<>();
+		for (NGSILDOperationResult r : t) {
+			if (!r.getFailures().isEmpty()) {
+				result.add(r.getJson());
+				isHavingError = true;
+			}
+			if (!r.getSuccesses().isEmpty()) {
+				result.add(r.getJson());
+				isHavingSuccess = true;
+			}
+			wasUpdated = wasUpdated || r.isWasUpdated();
+		}
+		if (isHavingError && !isHavingSuccess) {
+			String type = (String) result.get(0).get("type");
+			if (type.equalsIgnoreCase("Delete") || type.equalsIgnoreCase("Append"))
+				return RestResponse.status(RestResponse.Status.NOT_FOUND, result);
+			else
+				return RestResponse.status(RestResponse.Status.BAD_REQUEST, result);
+		}
+		if (!isHavingError && isHavingSuccess) {
+			String type = (String) result.get(0).get("type");
+			if ((type.equalsIgnoreCase("Upsert") && wasUpdated) || type.equalsIgnoreCase("Delete")
+					|| type.equalsIgnoreCase("Append"))
+				return RestResponse.status(RestResponse.Status.NO_CONTENT);
+			else
+				return RestResponse.status(RestResponse.Status.CREATED, generateBatchCreateSuccess(result));
+		}
+		return new RestResponseBuilderImpl<>().status(207).type(AppConstants.NGB_APPLICATION_JSON).entity(result)
+				.build();
+	}
+
+	private static List<String> generateBatchCreateSuccess(List<Map<String, Object>> resultInfo) {
+		List<String> result = new ArrayList<>(resultInfo.size());
+		resultInfo.forEach(entry -> {
+			result.add((String) entry.get(NGSIConstants.ID));
+		});
+		return result;
+	}
+
+	public static Context getContextFromPayload(Map<String, Object> originalPayload, List<Object> atContextHeader,
+			boolean atContextAllowed) throws ResponseException {
+		Context context = JsonLdProcessor.getCoreContextClone();
+		Object payloadAtContext = originalPayload.remove(NGSIConstants.JSON_LD_CONTEXT);
+		if (payloadAtContext == null) {
+			if (atContextAllowed) {
+				throw new ResponseException(ErrorType.BadRequestData, "@Context entry is needed");
+			}
+			context = context.parse(atContextHeader, true);
+		} else {
+			if (!atContextAllowed) {
+				throw new ResponseException(ErrorType.BadRequestData, "@context entry in body is not allowed");
+			}
+			context = context.parse(payloadAtContext, true);
+
+		}
+		return context;
+	}
+
+	public static RestResponse<Object> generateDeleteResult(NGSILDOperationResult result) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public static Tuple2<Context, Map<String, Object>> expandBody(HttpServerRequest request, String payload,
+			int payloadType) throws Exception {
+
+		if (payload == null || payload.isEmpty()) {
+			throw new ResponseException(ErrorType.InvalidRequest, "You have to provide a valid payload");
+		}
+		Map<String, Object> originalPayload;
+		originalPayload = (Map<String, Object>) JsonUtils.fromString(payload);
+
+		return expandBody(request, originalPayload, payloadType);
+	}
+
+	public static Tuple2<Context, Map<String, Object>> expandBody(HttpServerRequest request,
+			Map<String, Object> originalPayload, int payloadType) throws Exception {
+		boolean atContextAllowed;
+		List<Object> atContext = getAtContext(request);
+		atContextAllowed = HttpUtils.doPreflightCheck(request, atContext);
+		Context context = HttpUtils.getContextFromPayload(originalPayload, atContext, atContextAllowed);
+		Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor
+				.expand(context, originalPayload, opts, payloadType, atContextAllowed).get(0);
+		return Tuple2.of(context, resolved);
+	}
+
+	public static RestResponse<Object> generateCreateResult(NGSILDOperationResult operationResult, String baseUrl) {
+		List<ResponseException> fails = operationResult.getFailures();
+		List<CRUDSuccess> successes = operationResult.getSuccesses();
+		if (fails.isEmpty()) {
+			if (!operationResult.isWasUpdated()) {
+				try {
+					return RestResponse.created(new URI(baseUrl + operationResult.getEntityId()));
+				} catch (URISyntaxException e) {
+					return HttpUtils.handleControllerExceptions(e);
+				}
+			} else {
+				return RestResponse.noContent();
+			}
+		} else if (successes.isEmpty() && fails.size() == 1) {
+			return HttpUtils.handleControllerExceptions(fails.get(0));
+		} else {
+			try {
+				return new RestResponseBuilderImpl<Object>().status(207).type(AppConstants.NGB_APPLICATION_JSON)
+						.entity(JsonUtils.toPrettyString(operationResult.getJson())).build();
+			} catch (Exception e) {
+				return HttpUtils.handleControllerExceptions(e);
+			}
+		}
+	}
+
+	public static List<Object> getContextFromHeader(io.vertx.mutiny.core.MultiMap remoteHeaders) {
+		String tmp = remoteHeaders.get("Link").split(";")[0];
+		if (tmp.charAt(0) == '<') {
+			tmp = tmp.substring(1, tmp.length() - 1);
+		}
+		return Lists.newArrayList(tmp);
+	}
+
+	public static RestResponse<Object> generateSubscriptionResult(NGSILDOperationResult t, Context context) {
+		// TODO Auto-generated method stub
+		if (!t.getSuccesses().isEmpty())
+			return RestResponse.created(URI.create(AppConstants.SUBSCRIPTIONS_URL + t.getEntityId()));
+		return null;
+	}
+
+	public static String getTriggerReason(int triggerReason) {
+		// TODO Cases remaining for upsert(determine created or updated)
+		// and noLongerMatching due to update or delete attr
+		return switch (triggerReason) {
+		case AppConstants.CREATE_REQUEST -> "newlyMatching";
+		case AppConstants.UPDATE_REQUEST, AppConstants.APPEND_REQUEST -> "updated";
+		case AppConstants.DELETE_REQUEST -> "noLongerMatching";
+		default -> null;
+		};
+	}
+
+	public static RestResponse<Object> generateQueryResult(HttpServerRequest request, QueryResult queryResult,
+			String options, String geometryProperty, int acceptHeader, boolean count, int limit, LanguageQueryTerm lang,
+			Context context) {
+		ResponseBuilder<Object> builder = RestResponseBuilderImpl.ok();
+		if (count == true) {
+			builder = builder.header(NGSIConstants.COUNT_HEADER_RESULT, queryResult.getCount());
+		}
+		if (limit == 0) {
+			return builder.build();
+		}
+
+		try {
+			List<Object> atContext = request == null ? Lists.newArrayList() : getAtContext(request);
+			Tuple2<Object, List<Tuple2<String, String>>> resultAndHeaders = generateCompactedResult(atContext, context,
+					acceptHeader, queryResult.getData(), geometryProperty, options, lang, true);
+			String nextLink;
+			String prevLink;
+			if (request != null) {
+				MultiMap urlParams = request.params();
+				nextLink = HttpUtils.generateNextLink(urlParams, queryResult);
+				prevLink = HttpUtils.generatePrevLink(urlParams, queryResult);
+			} else {
+				prevLink = null;
+				nextLink = null;
+			}
+			builder = builder.header(NGSIConstants.ENTITY_MAP_TOKEN_HEADER, queryResult.getqToken());
+
+			if (nextLink != null) {
+				builder = builder.header(HttpHeaders.LINK, nextLink);
+			}
+			if (prevLink != null) {
+				builder = builder.header(HttpHeaders.LINK, prevLink);
+			}
+			List<Tuple2<String, String>> headers = resultAndHeaders.getItem2();
+			for (Tuple2<String, String> entry : headers) {
+				builder = builder.header(entry.getItem1(), entry.getItem2());
+			}
+
+			return builder.entity(resultAndHeaders.getItem1()).build();
+
+		} catch (Exception e) {
+			return handleControllerExceptions(e);
+		}
+	}
+
+	public static NGSILDOperationResult handleWebResponse(HttpResponse<Buffer> response, Throwable failure,
+			Integer[] integers, RemoteHost remoteHost, int operationType, String entityId, Set<Attrib> attrs) {
+
+		NGSILDOperationResult result = new NGSILDOperationResult(operationType, entityId);
+		if (failure != null) {
+			result.addFailure(new ResponseException(ErrorType.UnprocessableContextSourceRegistration,
+					failure.getMessage(), remoteHost, attrs));
+		} else {
+			int statusCode = response.statusCode();
+			if (ArrayUtils.contains(integers, statusCode)) {
+				result.addSuccess(new CRUDSuccess(remoteHost, attrs));
+			} else if (statusCode == 207) {
+				JsonObject jsonObj = response.bodyAsJsonObject();
+				if (jsonObj != null) {
+					NGSILDOperationResult remoteResult;
+					try {
+						remoteResult = NGSILDOperationResult.getFromPayload(jsonObj.getMap());
+					} catch (ResponseException e) {
+						result.addFailure(e);
+						return result;
+					}
+					result.getFailures().addAll(remoteResult.getFailures());
+					result.getSuccesses().addAll(remoteResult.getSuccesses());
+				}
+
+			} else {
+
+				JsonObject responseBody = response.bodyAsJsonObject();
+				if (responseBody == null) {
+					result.addFailure(new ResponseException(500, NGSIConstants.ERROR_UNEXPECTED_RESULT,
+							NGSIConstants.ERROR_UNEXPECTED_RESULT_NULL_TITLE, statusCode, remoteHost, attrs));
+
+				} else {
+					if (!responseBody.containsKey(NGSIConstants.ERROR_TYPE)
+							|| !responseBody.containsKey(NGSIConstants.ERROR_TITLE)
+							|| !responseBody.containsKey(NGSIConstants.ERROR_DETAIL)) {
+						result.addFailure(
+								new ResponseException(statusCode, responseBody.getString(NGSIConstants.ERROR_TYPE),
+										responseBody.getString(NGSIConstants.ERROR_TITLE),
+										responseBody.getMap().get(NGSIConstants.ERROR_DETAIL), remoteHost, attrs));
+					} else {
+						result.addFailure(new ResponseException(500, NGSIConstants.ERROR_UNEXPECTED_RESULT,
+								NGSIConstants.ERROR_UNEXPECTED_RESULT_NOT_EXPECTED_BODY_TITLE, responseBody.getMap(),
+								remoteHost, attrs));
+					}
+				}
+			}
+		}
+		return result;
+
+	}
+
 	public static Object doubleToInt(Object object) {
 		if (object instanceof Double) {
-			double d = ((Double) object).doubleValue();
+			double d = (Double) object;
 			int i = (int) d;
-			if (d == i)
-				return i;
-			else
-				return d;
+			return (d == i) ? i : d;
 		} else
 			return object;
 	}

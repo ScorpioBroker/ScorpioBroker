@@ -3,14 +3,14 @@ package eu.neclab.ngsildbroker.commons.datatypes.results;
 import java.util.List;
 import java.util.Map;
 
-import eu.neclab.ngsildbroker.commons.enums.ErrorType;
+import com.google.common.collect.Maps;
 
 /**
  * @author hebgen
  * @version 1.0
  * @created 11-Jun-2018 11:13:22
  */
-public class QueryResult extends BaseResult {
+public class QueryResult {
 
 	private String qToken;
 	private Integer limit;
@@ -18,12 +18,14 @@ public class QueryResult extends BaseResult {
 	private Long resultsLeftAfter;
 	private Long resultsLeftBefore;
 	private List<Map<String, Object>> data;
-	private Long count = 0l;
+	private Map<String, Map<String, Object>> entityId2Data = Maps.newHashMap();
+	private Long count = 0L;
 
-	public QueryResult(List<Map<String, Object>> data, String errorMsg, ErrorType errorType, int shortErrorMsg,
-			boolean success) {
-		super(errorMsg, errorType, shortErrorMsg, success);
-		this.data = data;
+	public QueryResult() {
+	}
+
+	public Long getResultsLeftBefore() {
+		return resultsLeftBefore;
 	}
 
 	public void setResultsLeftBefore(Long resultsLeftBefore) {
@@ -34,16 +36,16 @@ public class QueryResult extends BaseResult {
 		return resultsLeftAfter;
 	}
 
-	public Long getResultsLeftBefore() {
-		return resultsLeftBefore;
-	}
-
 	public void setResultsLeftAfter(Long resultsLeft) {
 		this.resultsLeftAfter = resultsLeft;
 	}
 
 	public String getqToken() {
 		return qToken;
+	}
+
+	public void setqToken(String qToken) {
+		this.qToken = qToken;
 	}
 
 	public Integer getLimit() {
@@ -70,10 +72,6 @@ public class QueryResult extends BaseResult {
 		this.data = data;
 	}
 
-	public void setqToken(String qToken) {
-		this.qToken = qToken;
-	}
-
 	public Long getCount() {
 		return count;
 	}
@@ -82,7 +80,15 @@ public class QueryResult extends BaseResult {
 		this.count = count;
 	}
 
-	public void finalize() throws Throwable {
-
+	public Map<String, Map<String, Object>> getEntityId2Data() {
+		return entityId2Data;
 	}
+
+	public void setEntityId2Data(Map<String, Map<String, Object>> entityId2Data) {
+		this.entityId2Data = entityId2Data;
+	}
+
+//	public void finalize() throws Throwable {
+//
+//	}
 }

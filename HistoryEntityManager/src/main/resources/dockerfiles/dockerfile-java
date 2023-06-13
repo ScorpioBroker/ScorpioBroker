@@ -1,0 +1,6 @@
+FROM openjdk:17.0.2-slim
+WORKDIR /usr/src/scorpio
+COPY target/quarkus-app ./
+ENV DBHOST=postgres
+ENV BUSHOST=kafka
+CMD java -jar quarkus-run.jar

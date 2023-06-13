@@ -59,7 +59,6 @@ public abstract class HistoryMessagingBase {
 						historyService.handleRequest(request).discardItems().await().indefinitely();
 					}
 				} catch (Exception e) {
-					e.printStackTrace();
 					logger.error("Internal history recording failed", e.getMessage());
 				}
 			}

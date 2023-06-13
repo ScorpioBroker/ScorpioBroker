@@ -1,7 +1,7 @@
 package eu.neclab.ngsildbroker.commons.interfaces;
 
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
 
 /**
  * @author hebgen
@@ -16,6 +16,6 @@ public interface NotificationHandler {
 	 * @param ldContext
 	 */
 
-	void notify(Notification notification, SubscriptionRequest subscriptionRequest, int maxRetries);
+	void notify(Notification notification, SubscriptionRequest subscriptionRequest);
 
 }

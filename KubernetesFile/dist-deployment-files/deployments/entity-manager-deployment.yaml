@@ -22,7 +22,7 @@ spec:
         service: entity-manager
     spec:
       containers:
-      - image: scorpiobroker/scorpio:EntityManager_latest
+      - image: scorpiobroker/entity-manager:java-kafka-eureka-latest
         imagePullPolicy: Always
         name: entity-manager
         ports:
@@ -36,12 +36,10 @@ spec:
               - -c
               - curl -X PUT "http://eureka:8761/eureka/apps/ENTITY-MANAGER/$HOSTNAME:entity-manager:1025/status?value=OUT_OF_SERVICE"
         readinessProbe:
-          exec:
-            command:
-            - sh
-            - -c
-            - curl --silent http://localhost:1025/actuator/health | grep --quiet -e
-              '^{\"status\"\:\"UP\".*}$'
+          httpGet:
+            path: /q/health
+            port: 1025
+            scheme: HTTP
           failureThreshold: 10
           initialDelaySeconds: 20
           periodSeconds: 5

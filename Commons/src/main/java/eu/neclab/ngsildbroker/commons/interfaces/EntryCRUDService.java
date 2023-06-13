@@ -1,48 +1,30 @@
 package eu.neclab.ngsildbroker.commons.interfaces;
 
+import java.util.List;
 import java.util.Map;
 
-import com.google.common.collect.ArrayListMultimap;
+import com.github.jsonldjava.core.Context;
 
 import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
-import eu.neclab.ngsildbroker.commons.datatypes.results.CreateResult;
-import eu.neclab.ngsildbroker.commons.datatypes.results.UpdateResult;
-import eu.neclab.ngsildbroker.commons.enums.ErrorType;
-import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.storage.StorageDAO;
+import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.tuples.Tuple2;
 
 public interface EntryCRUDService {
-	Uni<UpdateResult> updateEntry(String tenant, String entityId,
-			Map<String, Object> entry);
 
-	Uni<UpdateResult> appendToEntry(String tenant, String entityId,
-			Map<String, Object> entry, String[] options);
+	Uni<NGSILDOperationResult> createEntry(String tenant, Map<String, Object> resolved, Context originalContext);
 
-	Uni<CreateResult> createEntry(String tenant, Map<String, Object> resolved);
+	Uni<List<NGSILDOperationResult>> createMultipleEntry(String tenant,
+			List<Tuple2<Context, Map<String, Object>>> entity2Context);
 
-	Uni<Boolean> deleteEntry(String tenant, String entryId);
+	Uni<NGSILDOperationResult> updateEntry(String tenant, String entityId, Map<String, Object> entry,
+			Context originalContext);
 
-	Uni<UpdateResult> updateEntry(String tenant, String entityId, Map<String, Object> entry,
-			BatchInfo batchInfo);
+	Uni<NGSILDOperationResult> appendToEntry(String tenant, String entityId, Map<String, Object> entry,
+			String[] options, Context originalContext);
 
-	Uni<UpdateResult> appendToEntry(String tenant, String entityId,
-			Map<String, Object> entry, String[] options, BatchInfo batchInfo);
-
-	Uni<CreateResult> createEntry(String tenant, Map<String, Object> resolved,
-			BatchInfo batchInfo);
-
-	Uni<Boolean> deleteEntry(String tenant, String entryId, BatchInfo batchInfo);
+	Uni<NGSILDOperationResult> deleteEntry(String tenant, String entryId, Context originalContext);
 
 	Uni<Void> sendFail(BatchInfo batchInfo);
-
-	public static Uni<Map<String, Object>> validateIdAndGetBody(String entityId, String tenantId, StorageDAO dao) {
-		// null id check
-		if (entityId == null) {
-			return Uni.createFrom()
-					.failure(new ResponseException(ErrorType.BadRequestData, "empty entity id not allowed"));
-		}
-		return dao.getEntity(entityId, tenantId);
-	}
 
 }

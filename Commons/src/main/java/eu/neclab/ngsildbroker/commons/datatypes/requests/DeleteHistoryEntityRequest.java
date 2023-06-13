@@ -1,31 +1,16 @@
 package eu.neclab.ngsildbroker.commons.datatypes.requests;
 
-import com.google.common.collect.ArrayListMultimap;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
-import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
 
 public class DeleteHistoryEntityRequest extends HistoryEntityRequest {
 
-	private String resolvedAttrId;
-	private String instanceId;
-
-	public DeleteHistoryEntityRequest() {
+	public DeleteHistoryEntityRequest(String tenant, String entityId, BatchInfo batchInfo) {
+		super(tenant, entityId, null, batchInfo, AppConstants.DELETE_TEMPORAL_REQUEST);
 	}
 
-	public DeleteHistoryEntityRequest(String tenant, String resolvedAttrId,
-			String instanceId, String entityId) throws ResponseException {
-		super(tenant, null, entityId, AppConstants.DELETE_REQUEST);
-		this.resolvedAttrId = resolvedAttrId;
-		this.instanceId = instanceId;
-	}
-
-	public String getResolvedAttrId() {
-		return resolvedAttrId;
-	}
-
-	public String getInstanceId() {
-		return instanceId;
+	public DeleteHistoryEntityRequest(BaseRequest message) {
+		this(message.getTenant(), message.getId(), message.getBatchInfo());
 	}
 
 }

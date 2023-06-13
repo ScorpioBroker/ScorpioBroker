@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.google.common.collect.ArrayListMultimap;
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 
 /**
  * @author hebgen
@@ -26,7 +27,9 @@ public class EndPoint implements Serializable {
 	private ArrayListMultimap<String, String> receiverInfo;
 
 	public EndPoint() {
-
+		notifierInfo = new HashMap<>();
+		notifierInfo.put(NGSIConstants.MQTT_VERSION, NGSIConstants.MQTT_VERSION_5);
+		notifierInfo.put(NGSIConstants.MQTT_QOS, NGSIConstants.DEFAULT_MQTT_QOS.toString());
 	}
 
 	public EndPoint(EndPoint endPoint) {
@@ -63,9 +66,6 @@ public class EndPoint implements Serializable {
 	}
 
 	public String getAccept() {
-		if (accept == null) {
-			return "application/json";
-		}
 		return accept;
 	}
 
@@ -95,6 +95,12 @@ public class EndPoint implements Serializable {
 
 	public ArrayListMultimap<String, String> getReceiverInfo() {
 		return receiverInfo;
+	}
+
+	@Override
+	public String toString() {
+		return "EndPoint [accept=" + accept + ", uri=" + uri + ", notifierInfo=" + notifierInfo + ", receiverInfo="
+				+ receiverInfo + "]";
 	}
 
 }

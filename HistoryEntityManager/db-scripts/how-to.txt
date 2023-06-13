@@ -1,0 +1,15 @@
+NGB Database how-to for Ubuntu
+Tested in Ubuntu 18.04
+
+1. Install PostgreSQL 10
+$ sudo apt install postgresql-10 postgresql-client-10 postgresql-server-dev-10
+
+2. Install PostGIS
+$ sudo apt install postgresql-10-postgis-2.4 postgresql-10-postgis-scripts
+
+3. Create ngb user
+$ sudo su - postgres
+$ psql -c "create user ngb superuser createdb password 'ngb'";
+
+4. Create ngb database
+$ psql -c "create database ngb owner = ngb";

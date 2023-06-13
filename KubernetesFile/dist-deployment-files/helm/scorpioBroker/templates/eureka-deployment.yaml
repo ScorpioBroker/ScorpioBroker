@@ -6,6 +6,7 @@ metadata:
   name: {{ include "eureka.fullname" . }}
   labels:
     {{ include "eureka.labels" . | nindent 4 }}
+  namespace: scorpio-broker
 spec:
   replicas: {{ .Values.eureka.replicas }}
   strategy:

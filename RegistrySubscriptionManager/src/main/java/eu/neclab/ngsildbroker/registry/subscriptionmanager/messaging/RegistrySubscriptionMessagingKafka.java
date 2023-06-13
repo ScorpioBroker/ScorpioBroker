@@ -1,14 +1,14 @@
 package eu.neclab.ngsildbroker.registry.subscriptionmanager.messaging;
 
 import javax.inject.Singleton;
-
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.reactive.messaging.Acknowledgment;
+import org.eclipse.microprofile.reactive.messaging.Acknowledgment.Strategy;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.SubscriptionRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
-
 import io.quarkus.arc.profile.UnlessBuildProfile;
 import io.smallrye.mutiny.Uni;
 
@@ -20,15 +20,16 @@ public class RegistrySubscriptionMessagingKafka extends RegistrySubscriptionMess
 	boolean duplicate;
 
 	@Incoming(AppConstants.REGISTRY_RETRIEVE_CHANNEL)
+	@Acknowledgment(Strategy.PRE_PROCESSING)
 	public Uni<Void> handleCsource(BaseRequest busMessage) {
 		if (duplicate) {
-			return baseHandleCsource(MicroServiceUtils.deepCopyRequestMessage(busMessage), busMessage.getSendTimestamp());
+			return baseHandleCsource(MicroServiceUtils.deepCopyRequestMessage(busMessage));
 		}
-
-		return baseHandleCsource(busMessage, busMessage.getSendTimestamp());
+		return baseHandleCsource(busMessage);
 	}
 
 	@Incoming(AppConstants.INTERNAL_RETRIEVE_SUBS_CHANNEL)
+	@Acknowledgment(Strategy.PRE_PROCESSING)
 	public Uni<Void> handleSubscription(SubscriptionRequest busMessage) {
 		if (duplicate) {
 			return baseHandleSubscription(MicroServiceUtils.deepCopySubscriptionMessage(busMessage));

@@ -5,6 +5,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import com.github.jsonldjava.core.JsonLdOptions;
+
 /**
  * @version 1.0
  * @date 12-Jul-2018
@@ -80,7 +82,7 @@ public class AppConstants {
 	public static final List<String> FORCE_ARRAY_FIELDS = Arrays.asList(NGSIConstants.NGSI_LD_WATCHED_ATTRIBUTES,
 			NGSIConstants.NGSI_LD_ENTITIES, NGSIConstants.NGSI_LD_PROPERTIES, NGSIConstants.NGSI_LD_RELATIONSHIPS,
 			NGSIConstants.NGSI_LD_INFORMATION, NGSIConstants.NGSI_LD_RECEIVERINFO, NGSIConstants.NGSI_LD_NOTIFIERINFO,
-			NGSIConstants.NGSI_LD_UPDATED, NGSIConstants.NGSI_LD_NOT_UPDATED);
+			NGSIConstants.NGSI_LD_UPDATED, NGSIConstants.NGSI_LD_NOT_UPDATED, NGSIConstants.NGSI_LD_ATTRIBUTE_TYPES, NGSIConstants.NGSI_LD_TYPE_NAMES, NGSIConstants.NGSI_LD_TYPE_LIST);
 	public static final int ATTRIBUTE_PAYLOAD = 11;
 	public static final int NOTIFICAITION_RECEIVED = 12;
 	public static final int QUERY_PAYLOAD = 13;
@@ -93,14 +95,37 @@ public class AppConstants {
 	public static final int CREATE_REQUEST = 0;
 	public static final int APPEND_REQUEST = 1;
 	public static final int UPDATE_REQUEST = 2;
+	public static final int PARTIAL_UPDATE_REQUEST = 21;
 	public static final int DELETE_REQUEST = 3;
 	public static final int DELETE_ATTRIBUTE_REQUEST = 4;
+	public static final int CREATE_TEMPORAL_REQUEST = 5;
+	public static final int APPEND_TEMPORAL_REQUEST = 6;
+	public static final int UPDATE_TEMPORAL_INSTANCE_REQUEST = 7;
+	public static final int DELETE_TEMPORAL_REQUEST = 8;
+	public static final int DELETE_TEMPORAL_ATTRIBUTE_REQUEST = 9;
+	public static final int DELETE_TEMPORAL_ATTRIBUTE_INSTANCE_REQUEST = 10;
+	public static final int UPSERT_REQUEST = 11;
+
+	public static final int OPERATION_CREATE_REGISTRATION = 11;
+	public static final int OPERATION_UPDATE_REGISTRATION = 12;
+	public static final int OPERATION_DELETE_REGISTRATION = 13;
+
+	public static final int DELETE_SUBSCRIPTION_REQUEST = 14;
+	public static final int UPDATE_SUBSCRIPTION_REQUEST = 15;
+	public static final int CREATE_SUBSCRIPTION_REQUEST = 16;
+
 	public static final String NGB_APPLICATION_GEO_JSON = "application/geo+json";
-	public static final String INTERNAL_REGISTRATION_ID = "scorpio:hosted:registryentries";
+	public static final String INTERNAL_TYPE_REGISTRATION_ID = "scorpio:hosted:types";
+	public static final String INTERNAL_ATTRS_REGISTRATION_ID = "scorpio:hosted:attrs";
+	public static final String INTERNAL_TYPE_ATTRS_REGISTRATION_ID = "scorpio:hosted:typeattrs";
+	public static final String INTERNAL_ID_REGISTRATION_ID = "scorpio:hosted:ids";
+	public static final String INTERNAL_FULL_REGISTRATION_ID = "scorpio:hosted:full";
 	public static final String REGISTRY_CHANNEL = "registry";
 	public static final String REGISTRY_RETRIEVE_CHANNEL = "registryretrieve";
 	public static final String ENTITY_CHANNEL = "entity";
 	public static final String ENTITY_RETRIEVE_CHANNEL = "entityretrieve";
+	public static final String ENTITY_BATCH_CHANNEL = "entitybatch";
+	public static final String ENTITY_BATCH_RETRIEVE_CHANNEL = "entitybatchretrieve";
 	public static final String INTERNAL_SUBS_CHANNEL = "isubs";
 	public static final String INTERNAL_RETRIEVE_SUBS_CHANNEL = "isubsretrieve";
 	public static final String INTERNAL_NOTIFICATION_CHANNEL = "inotification";
@@ -114,7 +139,17 @@ public class AppConstants {
 	public static final String REG_SUB_ALIVE_CHANNEL = "regsubalive";
 	public static final String REG_SUB_ALIVE_RETRIEVE_CHANNEL = "regsubaliveretrieve";
 	public static final String HISTORY_CHANNEL = "history";
-	public static final String CONTENT_TYPE = "content-type";
 	public static final int BATCH_ERROR_REQUEST = 99;
+	public static final String SQL_ALREADY_EXISTS = "23505";
+	public static final String SQL_NOT_FOUND = "02000";
+	public static final String SQL_INVALID_OPERATOR = "42804";
+	public static final String NGB_APPLICATION_ZIP = "application/zip";
+	public static final int INTERNAL_NOTIFICATION_REQUEST = 99;
+	public static final int INTERVAL_NOTIFICATION_REQUEST = 100;
+	public static final String ATTRIBUTE_LIST_PREFIX = "urn:ngsi-ld:AttributeList:";
+	public static final String TYPE_LIST_PREFIX = "urn:ngsi-ld:EntityTypeList:";
+	public static final String CONTENT_TYPE = "content-type";
+
+	public static JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
 }

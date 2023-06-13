@@ -5,7 +5,7 @@ import java.util.UUID;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 
-abstract class BaseEntry {
+public abstract class BaseEntry {
 	private String name;
 	private Long observedAt = -1l;
 	private List<Property> properties;

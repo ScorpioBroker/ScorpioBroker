@@ -7,9 +7,9 @@ metadata:
   namespace: scorpio-broker
 spec:
   ports:
-  - name: "2027"
-    port: 2027
-    targetPort: 2027
+  - name: "2026"
+    port: 2026
+    targetPort: 2026
   selector:
     service: subscription-manager
 status: {}

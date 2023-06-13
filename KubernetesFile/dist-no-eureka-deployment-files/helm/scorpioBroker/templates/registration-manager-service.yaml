@@ -5,6 +5,7 @@ metadata:
   name: {{ include "registryManager.fullname" . }}
   labels:
     {{ include "registryManager.labels" . | nindent 4 }}
+  namespace: scorpio-broker
 spec:
   ports:
   - name: "1030"

@@ -2,9 +2,10 @@ package eu.neclab.ngsildbroker.commons.datatypes;
 
 import java.util.List;
 import java.util.Map;
-
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
+
+import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
 
 public class QueryParams {
 
@@ -29,7 +30,7 @@ public class QueryParams {
 	private String csf;
 	@SerializedName("georel")
 	@Expose
-	private GeoqueryRel georel;
+	private GeoQueryTerm georel;
 	@SerializedName("geometry")
 	@Expose
 	private String geometry;
@@ -68,20 +69,8 @@ public class QueryParams {
 	@SerializedName("offSet")
 	@Expose
 	private int offSet = 0;
-	@SerializedName("concise")
-	@Expose
-	private String concise;
-
-	public String getConcise() {
-		return concise;
-	}
-
-	public void setConcise(String concise) {
-		this.concise = concise;
-	}
-
 	private String check;
-	private int lastN = 20;
+	private int lastN;
 
 	private String scopeQ;
 
@@ -140,15 +129,15 @@ public class QueryParams {
 		return this;
 	}
 
-	public GeoqueryRel getGeorel() {
+	public GeoQueryTerm getGeorel() {
 		return georel;
 	}
 
-	public void setGeorel(GeoqueryRel georel) {
+	public void setGeorel(GeoQueryTerm georel) {
 		this.georel = georel;
 	}
 
-	public QueryParams withGeorel(GeoqueryRel georel) {
+	public QueryParams withGeorel(GeoQueryTerm georel) {
 		this.georel = georel;
 		return this;
 	}
