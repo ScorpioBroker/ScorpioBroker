@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -58,6 +59,7 @@ import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import eu.neclab.ngsildbroker.commons.tools.SubscriptionTools;
+import eu.neclab.ngsildbroker.subscriptionmanager.messaging.SubscriptionSyncService;
 import eu.neclab.ngsildbroker.subscriptionmanager.repository.SubscriptionInfoDAO;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import io.quarkus.scheduler.Scheduled;
@@ -110,6 +112,8 @@ public class SubscriptionService {
 
 	private Map<String, MqttClient> host2MqttClient = Maps.newHashMap();
 
+	private SubscriptionSyncService subscriptionSyncService = null;
+
 	@PostConstruct
 	void setup() {
 		this.webClient = WebClient.create(vertx);
@@ -148,34 +152,39 @@ public class SubscriptionService {
 		}
 		SubscriptionTools.setInitTimesSentAndFailed(request);
 		Map<String, Object> tmp = request.getContext().serialize();
-		return localContextService.createImplicitly(tenant, tmp).onItem()
-				.transformToUni(contextId -> {
-					return subDAO.createSubscription(request, contextId).onItem().transformToUni(t -> {
-						if (isIntervalSub(request)) {
-							this.tenant2subscriptionId2IntervalSubscription.put(request.getTenant(), request.getId(),
-									request);
-						} else {
-							tenant2subscriptionId2Subscription.put(tenant, request.getId(), request);
-						}
-						subscriptionId2RequestGlobal.put(request.getId(), request);
-						return internalSubEmitter.send(request).onItem().transform(v -> {
-							NGSILDOperationResult result = new NGSILDOperationResult(
-									AppConstants.CREATE_SUBSCRIPTION_REQUEST, request.getId());
-							result.addSuccess(new CRUDSuccess(null, null, request.getId(), Sets.newHashSet()));
-							return result;
-						});
-					}).onFailure().recoverWithUni(e -> {
-						if (e instanceof PgException
-								&& ((PgException) e).getCode().equals(AppConstants.SQL_ALREADY_EXISTS)) {
-							return Uni.createFrom().failure(new ResponseException(ErrorType.AlreadyExists,
-									"Subscription with id " + request.getId() + " exists"));
-						} else {
-							return Uni.createFrom()
-									.failure(new ResponseException(ErrorType.InternalError, e.getMessage()));
-						}
 
+		return localContextService.createImplicitly(tenant, tmp).onItem().transformToUni(contextId -> {
+			return subDAO.createSubscription(request, contextId).onItem().transformToUni(t -> {
+				if (isIntervalSub(request)) {
+					this.tenant2subscriptionId2IntervalSubscription.put(request.getTenant(), request.getId(), request);
+				} else {
+					tenant2subscriptionId2Subscription.put(tenant, request.getId(), request);
+				}
+				subscriptionId2RequestGlobal.put(request.getId(), request);
+				Uni<Void> syncService;
+				if (subscriptionSyncService != null) {
+					syncService = subscriptionSyncService.sync(request);
+				} else {
+					syncService = Uni.createFrom().voidItem();
+				}
+				return syncService.onItem().transformToUni(v2 -> {
+					return internalSubEmitter.send(request).onItem().transform(v -> {
+						NGSILDOperationResult result = new NGSILDOperationResult(
+								AppConstants.CREATE_SUBSCRIPTION_REQUEST, request.getId());
+						result.addSuccess(new CRUDSuccess(null, null, request.getId(), Sets.newHashSet()));
+						return result;
 					});
 				});
+			}).onFailure().recoverWithUni(e -> {
+				if (e instanceof PgException && ((PgException) e).getCode().equals(AppConstants.SQL_ALREADY_EXISTS)) {
+					return Uni.createFrom().failure(new ResponseException(ErrorType.AlreadyExists,
+							"Subscription with id " + request.getId() + " exists"));
+				} else {
+					return Uni.createFrom().failure(new ResponseException(ErrorType.InternalError, e.getMessage()));
+				}
+
+			});
+		});
 	}
 
 	public Uni<NGSILDOperationResult> updateSubscription(String tenant, String subscriptionId,
@@ -204,8 +213,17 @@ public class SubscriptionService {
 							tenant2subscriptionId2Subscription.put(tenant, updatedRequest.getId(), updatedRequest);
 							tenant2subscriptionId2IntervalSubscription.remove(tenant, updatedRequest.getId());
 						}
-						return internalSubEmitter.send(updatedRequest).onItem().transform(v -> {
-							return new NGSILDOperationResult(AppConstants.UPDATE_SUBSCRIPTION_REQUEST, request.getId());
+						Uni<Void> syncService;
+						if (subscriptionSyncService != null) {
+							syncService = subscriptionSyncService.sync(updatedRequest);
+						} else {
+							syncService = Uni.createFrom().voidItem();
+						}
+						return syncService.onItem().transformToUni(v2 -> {
+							return internalSubEmitter.send(updatedRequest).onItem().transform(v -> {
+								return new NGSILDOperationResult(AppConstants.UPDATE_SUBSCRIPTION_REQUEST,
+										request.getId());
+							});
 						});
 					});
 				});
@@ -217,8 +235,16 @@ public class SubscriptionService {
 			tenant2subscriptionId2IntervalSubscription.remove(tenant, subscriptionId);
 			tenant2subscriptionId2Subscription.remove(tenant, subscriptionId);
 			subscriptionId2RequestGlobal.remove(request.getId());
-			return internalSubEmitter.send(request).onItem().transform(v -> {
-				return new NGSILDOperationResult(AppConstants.DELETE_SUBSCRIPTION_REQUEST, request.getId());
+			Uni<Void> syncService;
+			if (subscriptionSyncService != null) {
+				syncService = subscriptionSyncService.sync(request);
+			} else {
+				syncService = Uni.createFrom().voidItem();
+			}
+			return syncService.onItem().transformToUni(v2 -> {
+				return internalSubEmitter.send(request).onItem().transform(v -> {
+					return new NGSILDOperationResult(AppConstants.DELETE_SUBSCRIPTION_REQUEST, request.getId());
+				});
 			});
 		});
 	}
@@ -467,7 +493,8 @@ public class SubscriptionService {
 		if (!sub.getIsActive() || sub.getExpiresAt() < System.currentTimeMillis()) {
 			return false;
 		}
-		if (!SubscriptionTools.evaluateGeoQuery(sub.getLdGeoQuery(), (List<Map<String, Object>>) entity.get(NGSIConstants.NGSI_LD_LOCATION))) {
+		if (!SubscriptionTools.evaluateGeoQuery(sub.getLdGeoQuery(),
+				(List<Map<String, Object>>) entity.get(NGSIConstants.NGSI_LD_LOCATION))) {
 			return false;
 		}
 		if (sub.getScopeQuery() != null) {
@@ -772,6 +799,88 @@ public class SubscriptionService {
 		if (!unis.isEmpty()) {
 			Uni.combine().all().unis(unis).discardItems().await().atMost(Duration.ofSeconds(30));
 		}
+	}
+
+	public Uni<Void> syncCreateSubscription(SubscriptionRequest sub) {
+		sub.getSubscription().setActive(false);
+		if (isIntervalSub(sub)) {
+			tenant2subscriptionId2IntervalSubscription.put(sub.getTenant(), sub.getId(), sub);
+		} else {
+			tenant2subscriptionId2Subscription.put(sub.getTenant(), sub.getId(), sub);
+		}
+		return Uni.createFrom().voidItem();
+	}
+
+	public Uni<Void> syncDeleteSubscription(SubscriptionRequest sub) {
+		sub.getSubscription().setActive(false);
+		if (isIntervalSub(sub)) {
+			tenant2subscriptionId2IntervalSubscription.remove(sub.getTenant(), sub.getId());
+		} else {
+			tenant2subscriptionId2Subscription.remove(sub.getTenant(), sub.getId());
+		}
+		return Uni.createFrom().voidItem();
+	}
+
+	public Uni<Void> syncUpdateSubscription(SubscriptionRequest sub) {
+		return subDAO.getSubscription(sub.getTenant(), sub.getId()).onFailure().recoverWithItem(e -> {
+			if (isIntervalSub(sub)) {
+				tenant2subscriptionId2IntervalSubscription.remove(sub.getTenant(), sub.getId());
+			} else {
+				tenant2subscriptionId2Subscription.remove(sub.getTenant(), sub.getId());
+			}
+			return null;
+		}).onItem().transformToUni(rows -> {
+			if (rows == null || rows.size() == 0) {
+				return Uni.createFrom().voidItem();
+			}
+			String tenant = sub.getTenant();
+			SubscriptionRequest updatedRequest;
+			try {
+				updatedRequest = new SubscriptionRequest(tenant, rows.iterator().next().getJsonObject(0).getMap(),
+						sub.getContext());
+			} catch (Exception e) {
+				return Uni.createFrom().voidItem();
+			}
+			updatedRequest.getSubscription().setActive(false);
+			if (isIntervalSub(updatedRequest)) {
+				tenant2subscriptionId2IntervalSubscription.put(tenant, updatedRequest.getId(), updatedRequest);
+				tenant2subscriptionId2Subscription.remove(tenant, updatedRequest.getId());
+			} else {
+				tenant2subscriptionId2Subscription.put(tenant, updatedRequest.getId(), updatedRequest);
+				tenant2subscriptionId2IntervalSubscription.remove(tenant, updatedRequest.getId());
+			}
+
+			return Uni.createFrom().voidItem();
+		});
+	}
+
+	public List<String> getAllSubscriptionIds() {
+		Set<String> tmp = Sets.newHashSet(tenant2subscriptionId2Subscription.columnKeySet());
+		tmp.addAll(tenant2subscriptionId2IntervalSubscription.columnKeySet());
+		return tmp.stream().sorted().collect(Collectors.toList());
+	}
+
+	public void activateSubs(List<String> mySubs) {
+		tenant2subscriptionId2Subscription.values().forEach(t -> {
+			if (mySubs.contains(t.getId())) {
+				t.getSubscription().setActive(true);
+			} else {
+				t.getSubscription().setActive(false);
+			}
+		});
+		tenant2subscriptionId2IntervalSubscription.values().forEach(t -> {
+			if (mySubs.contains(t.getId())) {
+				t.getSubscription().setActive(true);
+			} else {
+				t.getSubscription().setActive(false);
+			}
+		});
+
+	}
+
+	public void addSyncService(SubscriptionSyncService subscriptionSyncService) {
+		this.subscriptionSyncService = subscriptionSyncService;
+
 	}
 
 }
