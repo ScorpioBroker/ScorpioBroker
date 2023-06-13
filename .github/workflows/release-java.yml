@@ -76,7 +76,6 @@ jobs:
           docker push scorpiobroker/query-manager:java-kafka-${{steps.get-id.outputs.id}}
           docker push scorpiobroker/entity-manager:java-kafka-${{steps.get-id.outputs.id}}
           docker push scorpiobroker/all-in-one-runner:java-kafka-${{steps.get-id.outputs.id}}
-          docker push scorpiobroker/history-manager:java-kafka-latest
           docker push scorpiobroker/registry-subscription-manager:java-kafka-latest
           docker push scorpiobroker/registry-manager:java-kafka-latest
           docker push scorpiobroker/subscription-manager:java-kafka-latest
