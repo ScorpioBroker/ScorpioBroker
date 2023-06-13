@@ -1114,7 +1114,7 @@ public class RegistrySubscriptionService {
 		return false;
 	}
 
-	@Scheduled(every = "${scorpio.registry.subscription.checkinterval}", delay = 3)
+	@Scheduled(every = "${scorpio.registry.subscription.checkinterval}", delay = 5)
 	Uni<Void> checkIntervalSubs() {
 		List<Uni<Void>> unis = Lists.newArrayList();
 		for (Cell<String, String, SubscriptionRequest> cell : tenant2subscriptionId2IntervalSubscription.cellSet()) {
