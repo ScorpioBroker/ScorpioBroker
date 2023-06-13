@@ -35,7 +35,7 @@ services:
   scorpio:
     image: scorpiobroker/all-in-one-runner:java-kafka-latest
     ports:
-      - "2027:2027"
+      - "9090:9090"
     environment:
       DBHOST: postgres
       BUSHOST: kafka
