@@ -25,7 +25,7 @@ The follow features have been implemented in this release.
     - If the entityMap id is provided in the follow up query via the entityMap url parameter the entityMap entries will be retrieve
     - If the entityMap parameter is omitted the query will always retrieve the latest matching entities. This might causes inconsistencies between pages.
  - Support for deletedAt for attributes and entities in temporal recording.
- - @Context hosting/caching. A new endpoint /ngsi-ld/v1/jsonldContexts/ is provided to which users can store @contexts.
+ - at Context hosting/caching. A new endpoint /ngsi-ld/v1/jsonldContexts/ is provided to which users can store at contexts.
  	- Cache support in all operations. Custom @contexts provided in user requests are automatically cached 
 
   
