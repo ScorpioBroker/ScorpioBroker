@@ -11,6 +11,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
@@ -49,6 +50,7 @@ import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import eu.neclab.ngsildbroker.commons.tools.SubscriptionTools;
+import eu.neclab.ngsildbroker.registry.subscriptionmanager.messaging.RegistrySubscriptionSyncService;
 import eu.neclab.ngsildbroker.registry.subscriptionmanager.repository.RegistrySubscriptionInfoDAO;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import io.quarkus.scheduler.Scheduled;
@@ -86,6 +88,8 @@ public class RegistrySubscriptionService {
 	private WebClient webClient;
 
 	private Map<String, MqttClient> host2MqttClient = Maps.newHashMap();
+
+	private RegistrySubscriptionSyncService subscriptionSyncService;
 
 	@PostConstruct
 	void setup() {
@@ -136,26 +140,34 @@ public class RegistrySubscriptionService {
 			} else {
 				tenant2subscriptionId2Subscription.put(tenant, request.getId(), request);
 			}
-			return regDAO.getInitialNotificationData(request).onItem().transformToUni(rows -> {
-				List<Map<String, Object>> data = Lists.newArrayList();
-				rows.forEach(row -> {
-					data.add(row.getJsonObject(0).getMap());
+			Uni<Void> syncService;
+			if (subscriptionSyncService != null) {
+				syncService = subscriptionSyncService.sync(request);
+			} else {
+				syncService = Uni.createFrom().voidItem();
+			}
+			return syncService.onItem().transformToUni(v2 -> {
+				return regDAO.getInitialNotificationData(request).onItem().transformToUni(rows -> {
+					List<Map<String, Object>> data = Lists.newArrayList();
+					rows.forEach(row -> {
+						data.add(row.getJsonObject(0).getMap());
+					});
+					try {
+						return sendNotification(request,
+								SubscriptionTools.generateCsourceNotification(request, data,
+										AppConstants.INTERNAL_NOTIFICATION_REQUEST),
+								AppConstants.INTERNAL_NOTIFICATION_REQUEST).onItem().transform(v -> {
+									NGSILDOperationResult result = new NGSILDOperationResult(
+											AppConstants.CREATE_SUBSCRIPTION_REQUEST, request.getId());
+									result.addSuccess(new CRUDSuccess(null, null, request.getId(), Sets.newHashSet()));
+									return result;
+								});
+					} catch (Exception e) {
+						logger.error("Failed to send initial notifcation", e);
+						return Uni.createFrom().item(
+								new NGSILDOperationResult(AppConstants.CREATE_SUBSCRIPTION_REQUEST, request.getId()));
+					}
 				});
-				try {
-					return sendNotification(request,
-							SubscriptionTools.generateCsourceNotification(request, data,
-									AppConstants.INTERNAL_NOTIFICATION_REQUEST),
-							AppConstants.INTERNAL_NOTIFICATION_REQUEST).onItem().transform(v -> {
-								NGSILDOperationResult result = new NGSILDOperationResult(
-										AppConstants.CREATE_SUBSCRIPTION_REQUEST, request.getId());
-								result.addSuccess(new CRUDSuccess(null, null, request.getId(), Sets.newHashSet()));
-								return result;
-							});
-				} catch (Exception e) {
-					logger.error("Failed to send initial notifcation", e);
-					return Uni.createFrom()
-							.item(new NGSILDOperationResult(AppConstants.CREATE_SUBSCRIPTION_REQUEST, request.getId()));
-				}
 			});
 
 		}).onFailure().recoverWithUni(e -> {
@@ -187,17 +199,33 @@ public class RegistrySubscriptionService {
 				tenant2subscriptionId2Subscription.put(tenant, updatedRequest.getId(), updatedRequest);
 				tenant2subscriptionId2IntervalSubscription.remove(tenant, updatedRequest.getId());
 			}
-			return Uni.createFrom()
-					.item(new NGSILDOperationResult(AppConstants.UPDATE_SUBSCRIPTION_REQUEST, subscriptionId));
+			Uni<Void> syncService;
+			if (subscriptionSyncService != null) {
+				syncService = subscriptionSyncService.sync(updatedRequest);
+			} else {
+				syncService = Uni.createFrom().voidItem();
+			}
+			return syncService.onItem().transformToUni(v2 -> {
+				return Uni.createFrom()
+						.item(new NGSILDOperationResult(AppConstants.UPDATE_SUBSCRIPTION_REQUEST, subscriptionId));
+			});
 		});
 	}
 
 	public Uni<NGSILDOperationResult> deleteSubscription(String tenant, String subscriptionId) {
 		DeleteSubscriptionRequest request = new DeleteSubscriptionRequest(tenant, subscriptionId);
-		return regDAO.deleteSubscription(request).onItem().transform(t -> {
+		return regDAO.deleteSubscription(request).onItem().transformToUni(t -> {
 			tenant2subscriptionId2IntervalSubscription.remove(tenant, subscriptionId);
 			tenant2subscriptionId2Subscription.remove(tenant, subscriptionId);
-			return new NGSILDOperationResult(AppConstants.DELETE_SUBSCRIPTION_REQUEST, subscriptionId);
+			Uni<Void> syncService;
+			if (subscriptionSyncService != null) {
+				syncService = subscriptionSyncService.sync(request);
+			} else {
+				syncService = Uni.createFrom().voidItem();
+			}
+			return syncService.onItem().transform(v2 -> {
+				return new NGSILDOperationResult(AppConstants.DELETE_SUBSCRIPTION_REQUEST, subscriptionId);
+			});
 		});
 	}
 
@@ -1148,6 +1176,88 @@ public class RegistrySubscriptionService {
 			return Uni.createFrom().voidItem();
 		}
 		return Uni.combine().all().unis(unis).discardItems();
+	}
+
+	public Uni<Void> syncCreateSubscription(SubscriptionRequest sub) {
+		sub.getSubscription().setActive(false);
+		if (isIntervalSub(sub)) {
+			tenant2subscriptionId2IntervalSubscription.put(sub.getTenant(), sub.getId(), sub);
+		} else {
+			tenant2subscriptionId2Subscription.put(sub.getTenant(), sub.getId(), sub);
+		}
+		return Uni.createFrom().voidItem();
+	}
+
+	public Uni<Void> syncDeleteSubscription(SubscriptionRequest sub) {
+		sub.getSubscription().setActive(false);
+		if (isIntervalSub(sub)) {
+			tenant2subscriptionId2IntervalSubscription.remove(sub.getTenant(), sub.getId());
+		} else {
+			tenant2subscriptionId2Subscription.remove(sub.getTenant(), sub.getId());
+		}
+		return Uni.createFrom().voidItem();
+	}
+
+	public Uni<Void> syncUpdateSubscription(SubscriptionRequest sub) {
+		return regDAO.getSubscription(sub.getTenant(), sub.getId()).onFailure().recoverWithItem(e -> {
+			if (isIntervalSub(sub)) {
+				tenant2subscriptionId2IntervalSubscription.remove(sub.getTenant(), sub.getId());
+			} else {
+				tenant2subscriptionId2Subscription.remove(sub.getTenant(), sub.getId());
+			}
+			return null;
+		}).onItem().transformToUni(rows -> {
+			if (rows == null || rows.size() == 0) {
+				return Uni.createFrom().voidItem();
+			}
+			String tenant = sub.getTenant();
+			SubscriptionRequest updatedRequest;
+			try {
+				updatedRequest = new SubscriptionRequest(tenant, rows.iterator().next().getJsonObject(0).getMap(),
+						sub.getContext());
+			} catch (Exception e) {
+				return Uni.createFrom().voidItem();
+			}
+			updatedRequest.getSubscription().setActive(false);
+			if (isIntervalSub(updatedRequest)) {
+				tenant2subscriptionId2IntervalSubscription.put(tenant, updatedRequest.getId(), updatedRequest);
+				tenant2subscriptionId2Subscription.remove(tenant, updatedRequest.getId());
+			} else {
+				tenant2subscriptionId2Subscription.put(tenant, updatedRequest.getId(), updatedRequest);
+				tenant2subscriptionId2IntervalSubscription.remove(tenant, updatedRequest.getId());
+			}
+
+			return Uni.createFrom().voidItem();
+		});
+	}
+
+	public List<String> getAllSubscriptionIds() {
+		Set<String> tmp = Sets.newHashSet(tenant2subscriptionId2Subscription.columnKeySet());
+		tmp.addAll(tenant2subscriptionId2IntervalSubscription.columnKeySet());
+		return tmp.stream().sorted().collect(Collectors.toList());
+	}
+
+	public void activateSubs(List<String> mySubs) {
+		tenant2subscriptionId2Subscription.values().forEach(t -> {
+			if (mySubs.contains(t.getId())) {
+				t.getSubscription().setActive(true);
+			} else {
+				t.getSubscription().setActive(false);
+			}
+		});
+		tenant2subscriptionId2IntervalSubscription.values().forEach(t -> {
+			if (mySubs.contains(t.getId())) {
+				t.getSubscription().setActive(true);
+			} else {
+				t.getSubscription().setActive(false);
+			}
+		});
+
+	}
+
+	public void addSyncService(RegistrySubscriptionSyncService registrySubscriptionSyncService) {
+		this.subscriptionSyncService = registrySubscriptionSyncService;
+
 	}
 
 }
