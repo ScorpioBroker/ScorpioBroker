@@ -29,10 +29,13 @@ public class ContextService {
 
     WebClient webClient;
     JsonLdOptions jsonLdOptions = new JsonLdOptions();
+    
+    @Inject
+    Vertx vertx;
 
     @PostConstruct
     void init() {
-        webClient = WebClient.create(Vertx.vertx());
+        webClient = WebClient.create(vertx);
     }
 
     public Uni<RestResponse<Object>> getContextById(String id, boolean details) {
