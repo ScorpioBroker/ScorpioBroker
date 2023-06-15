@@ -63,14 +63,16 @@ public class HistoryDAO {
 			// return client.getConnection().onItem().transformToUni(conn -> {
 			Tuple tuple = Tuple.of(payload.remove(NGSIConstants.JSON_LD_ID),
 					((List<String>) payload.remove(NGSIConstants.JSON_LD_TYPE)).toArray(new String[0]),
-					DBUtil.getLocalDateTime(payload.remove(NGSIConstants.NGSI_LD_CREATED_AT)),
-					DBUtil.getLocalDateTime(payload.remove(NGSIConstants.NGSI_LD_MODIFIED_AT)));
+					((List<Map<String, String>>) payload.remove(NGSIConstants.NGSI_LD_CREATED_AT)).get(0)
+							.get(NGSIConstants.JSON_LD_VALUE),
+					((List<Map<String, String>>) payload.remove(NGSIConstants.NGSI_LD_MODIFIED_AT)).get(0)
+							.get(NGSIConstants.JSON_LD_VALUE));
 			String sql = "INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY + " (id, e_types, createdat, modifiedat";
 			Object scope = payload.remove(NGSIConstants.NGSI_LD_SCOPE);
 			if (scope == null) {
-				sql += ") VALUES($1, $2, $3, $4) ";
+				sql += ") VALUES($1, $2, $3::text::timestamp, $4::text::timestamp) ";
 			} else {
-				sql += ", scopes) VALUES($1, $2, $3, $4, getScopes($5)) ";
+				sql += ", scopes) VALUES($1, $2, $3::text::timestamp, $4::text::timestamp, getScopes($5)) ";
 			}
 
 			sql += "ON CONFLICT(id) DO UPDATE SET e_types = ARRAY(SELECT DISTINCT UNNEST("
@@ -389,31 +391,30 @@ public class HistoryDAO {
 
 	public Uni<Void> setAttributeDeleted(DeleteAttributeRequest request) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
-			//return client.getConnection().onItem().transformToUni(conn -> {
-				LocalDateTime now = LocalDateTime.ofInstant(Instant.ofEpochMilli(request.getSendTimestamp()),
-						ZoneId.of("Z"));
-				String nowString = SerializationTools.notifiedAt_formatter.format(now);
-				String instanceId = UUID.randomUUID().toString();
-				JsonObject deletePayload = getAttribDeletedPayload(nowString, instanceId, request.getDatasetId());
-				return client.preparedQuery("INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
-						+ " (temporalentity_id, attributeid, data, deletedat, instanceId) VALUES ($1, $2, $3::jsonb, $4, $5")
-						.execute(Tuple.of(request.getId(), request.getAttribName(), deletePayload, now, instanceId))
-						.onFailure().recoverWithUni(e -> {
-							if (e instanceof PgException) {
-								if (((PgException) e).getCode().equals(AppConstants.SQL_NOT_FOUND)) {
-									return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound,
-											request.getId() + " does not exist"));
-								}
+			// return client.getConnection().onItem().transformToUni(conn -> {
+			LocalDateTime now = LocalDateTime.ofInstant(Instant.ofEpochMilli(request.getSendTimestamp()),
+					ZoneId.of("Z"));
+			String nowString = SerializationTools.notifiedAt_formatter.format(now);
+			String instanceId = UUID.randomUUID().toString();
+			JsonObject deletePayload = getAttribDeletedPayload(nowString, instanceId, request.getDatasetId());
+			return client.preparedQuery("INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
+					+ " (temporalentity_id, attributeid, data, deletedat, instanceId) VALUES ($1, $2, $3::jsonb, $4, $5")
+					.execute(Tuple.of(request.getId(), request.getAttribName(), deletePayload, now, instanceId))
+					.onFailure().recoverWithUni(e -> {
+						if (e instanceof PgException) {
+							if (((PgException) e).getCode().equals(AppConstants.SQL_NOT_FOUND)) {
+								return Uni.createFrom().failure(
+										new ResponseException(ErrorType.NotFound, request.getId() + " does not exist"));
 							}
-							return Uni.createFrom().failure(e);
-						}).onItem().transformToUni(rows -> {
-							return client
-									.preparedQuery("UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY
-											+ " SET modifiedat = $1 WHERE id = $2")
-									.execute(Tuple.of(now, request.getId()));
-						}).onItem().transformToUni(t -> Uni.createFrom().voidItem());
-			});
-		//});
+						}
+						return Uni.createFrom().failure(e);
+					}).onItem().transformToUni(rows -> {
+						return client.preparedQuery(
+								"UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY + " SET modifiedat = $1 WHERE id = $2")
+								.execute(Tuple.of(now, request.getId()));
+					}).onItem().transformToUni(t -> Uni.createFrom().voidItem());
+		});
+		// });
 	}
 
 	private JsonObject getAttribDeletedPayload(String now, String instanceId, String datasetId) {
