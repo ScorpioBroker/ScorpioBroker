@@ -291,7 +291,7 @@ public class SubscriptionService {
 		Collection<SubscriptionRequest> potentialSubs = tenant2subscriptionId2Subscription.row(message.getTenant())
 				.values();
 		List<Uni<Void>> unis = Lists.newArrayList();
-		logger.info("checking subscriptions");
+		logger.debug("checking subscriptions");
 		for (SubscriptionRequest potentialSub : potentialSubs) {
 			switch (message.getRequestType()) {
 			case AppConstants.UPDATE_REQUEST, AppConstants.UPSERT_REQUEST, AppConstants.CREATE_REQUEST,
@@ -793,7 +793,7 @@ public class SubscriptionService {
 	public void unsubscribeToAllRemote() {
 		List<Uni<Void>> unis = new ArrayList<>(internalSubId2ExternalEndpoint.values().size());
 		for (String entry : internalSubId2ExternalEndpoint.values()) {
-			logger.info("Unsubscribing to remote host " + entry + " before shutdown");
+			logger.debug("Unsubscribing to remote host " + entry + " before shutdown");
 			unis.add(webClient.deleteAbs(entry).send().onItem().transformToUni(t -> Uni.createFrom().voidItem()));
 		}
 		if (!unis.isEmpty()) {
