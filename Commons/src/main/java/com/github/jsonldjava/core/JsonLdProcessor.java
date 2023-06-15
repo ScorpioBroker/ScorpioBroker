@@ -47,7 +47,9 @@ public class JsonLdProcessor {
 	}
 
 	public static Context getCoreContextClone() {
-		return coreContext.clone();
+		Context clone = coreContext.clone();
+		clone.inverse = null;
+		return clone;
 	}
 
 	/**
@@ -691,6 +693,10 @@ public class JsonLdProcessor {
 	 */
 	public static Object normalize(Object input) throws JsonLdError, ResponseException {
 		return normalize(input, new JsonLdOptions(""));
+	}
+
+	public static Context getCoreContext() {
+		return coreContext;
 	}
 
 }

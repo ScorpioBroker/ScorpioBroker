@@ -675,18 +675,23 @@ public final class HttpUtils {
 
 	public static Context getContextFromPayload(Map<String, Object> originalPayload, List<Object> atContextHeader,
 			boolean atContextAllowed) throws ResponseException {
-		Context context = JsonLdProcessor.getCoreContextClone();
+		Context context;
 		Object payloadAtContext = originalPayload.remove(NGSIConstants.JSON_LD_CONTEXT);
 		if (payloadAtContext == null) {
 			if (atContextAllowed) {
 				throw new ResponseException(ErrorType.BadRequestData, "@Context entry is needed");
 			}
-			context = context.parse(atContextHeader, true);
+			if (atContextHeader.isEmpty()) {
+				context = JsonLdProcessor.getCoreContext();
+			} else {
+				context = JsonLdProcessor.getCoreContextClone().parse(atContextHeader, true);
+			}
+
 		} else {
 			if (!atContextAllowed) {
 				throw new ResponseException(ErrorType.BadRequestData, "@context entry in body is not allowed");
 			}
-			context = context.parse(payloadAtContext, true);
+			context = JsonLdProcessor.getCoreContextClone().parse(payloadAtContext, true);
 
 		}
 		return context;
@@ -884,11 +889,9 @@ public final class HttpUtils {
 	public static Context getContext(List<Object> headerContext) {
 		Context context;
 		if (headerContext.isEmpty()) {
-			context = JsonLdProcessor.getCoreContextClone();
+			context = JsonLdProcessor.getCoreContext();
 		} else {
 			context = JsonLdProcessor.getCoreContextClone().parse(headerContext, false);
-			context.inverse = null;
-			context.getInverse();
 		}
 		return context;
 	}
