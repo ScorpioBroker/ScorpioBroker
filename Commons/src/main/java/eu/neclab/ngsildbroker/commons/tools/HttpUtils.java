@@ -50,6 +50,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.vertx.core.MultiMap;
@@ -708,6 +709,7 @@ public final class HttpUtils {
 		return expandBody(request, originalPayload, payloadType);
 	}
 
+	@Blocking
 	public static Tuple2<Context, Map<String, Object>> expandBody(HttpServerRequest request,
 			Map<String, Object> originalPayload, int payloadType) throws Exception {
 		boolean atContextAllowed;
