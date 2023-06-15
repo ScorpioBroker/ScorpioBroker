@@ -18,6 +18,8 @@ import javax.inject.Inject;
 import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.OnOverflow;
+import org.eclipse.microprofile.reactive.messaging.OnOverflow.Strategy;
 import org.locationtech.spatial4j.shape.Shape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,6 +80,7 @@ public class EntityService {
 	@Inject
 	@Channel(AppConstants.ENTITY_CHANNEL)
 	@Broadcast
+	@OnOverflow(value = Strategy.UNBOUNDED_BUFFER)
 	MutinyEmitter<BaseRequest> entityEmitter;
 
 	@Inject
