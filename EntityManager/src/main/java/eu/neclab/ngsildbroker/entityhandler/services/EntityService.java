@@ -664,12 +664,13 @@ public class EntityService {
 
 	private Uni<NGSILDOperationResult> createLocalEntity(CreateEntityRequest request, Context context) {
 		return entityDAO.createEntity(request).onItem().transform(v -> {
-			// return entityEmitter.send(request).onItem().transform(v2 -> {
+			entityEmitter.sendAndForget(request);
+
 			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, request.getId());
 			localResult.addSuccess(new CRUDSuccess(null, null, null, request.getPayload(), context));
 			return localResult;
+
 		});
-		// });
 	}
 
 	private Uni<NGSILDOperationResult> partialUpdateLocalEntity(UpdateEntityRequest request, Context context) {
