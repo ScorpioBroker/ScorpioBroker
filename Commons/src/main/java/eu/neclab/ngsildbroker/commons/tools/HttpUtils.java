@@ -714,7 +714,6 @@ public final class HttpUtils {
 		return expandBody(request, originalPayload, payloadType);
 	}
 
-	@Blocking
 	public static Tuple2<Context, Map<String, Object>> expandBody(HttpServerRequest request,
 			Map<String, Object> originalPayload, int payloadType) throws Exception {
 		boolean atContextAllowed;

@@ -60,10 +60,10 @@ public class EntityController {// implements EntityHandlerInterface {
 	 */
 	@Path("/entities")
 	@POST
-	public Uni<RestResponse<Object>> createEntity(HttpServerRequest req, String payload) {
+	public Uni<RestResponse<Object>> createEntity(HttpServerRequest req, Map<String, Object> body) {
 		Tuple2<Context, Map<String, Object>> tuple;
 		try {
-			Map<String, Object> body = (Map<String, Object>) JsonUtils.fromString(payload);
+			//Map<String, Object> body = (Map<String, Object>) JsonUtils.fromString(payload);
 			noConcise(body);
 			tuple = HttpUtils.expandBody(req, body, AppConstants.ENTITY_CREATE_PAYLOAD);
 		} catch (Exception e) {
