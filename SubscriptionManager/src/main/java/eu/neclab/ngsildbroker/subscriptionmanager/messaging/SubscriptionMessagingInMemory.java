@@ -18,7 +18,7 @@ import javax.inject.Singleton;
 public class SubscriptionMessagingInMemory extends SubscriptionMessagingBase {
 
 	@Incoming(AppConstants.ENTITY_CHANNEL)
-	@Acknowledgment(Strategy.NONE)
+	@Acknowledgment(Strategy.PRE_PROCESSING)
 	public Uni<Void> handleEntity(BaseRequest message) {
 		return baseHandleEntity(MicroServiceUtils.deepCopyRequestMessage(message));
 	}
