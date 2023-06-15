@@ -109,7 +109,7 @@ public class HistoryController {
 		}
 		try {
 			List<Object> ctx = HttpUtils.getAtContext(request);
-			context = JsonLdProcessor.getCoreContextClone().parse(ctx, false);
+			context = HttpUtils.getContext(ctx);
 			typeQueryTerm = QueryParser.parseTypeQuery(typeQuery, context);
 			attrsQueryTerm = QueryParser.parseAttrs(attrs, context);
 			qQueryTerm = QueryParser.parseQuery(q, context);

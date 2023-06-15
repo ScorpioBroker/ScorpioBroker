@@ -87,7 +87,7 @@ public class QueryController {
 		try {
 			HttpUtils.validateUri(entityId);
 			headerContext = HttpUtils.getAtContext(request);
-			context = JsonLdProcessor.getCoreContextClone().parse(headerContext, false);
+			context = HttpUtils.getContext(headerContext);
 			attrsQuery = QueryParser.parseAttrs(attrs, context);
 			langQuery = QueryParser.parseLangQuery(lang);
 		} catch (Exception e) {
@@ -154,7 +154,7 @@ public class QueryController {
 		LanguageQueryTerm langQuery;
 		try {
 			headerContext = HttpUtils.getAtContext(request);
-			context = JsonLdProcessor.getCoreContextClone().parse(headerContext, false);
+			context = HttpUtils.getContext(headerContext);
 			attrsQuery = QueryParser.parseAttrs(attrs, context);
 			typeQueryTerm = QueryParser.parseTypeQuery(typeQuery, context);
 			qQueryTerm = QueryParser.parseQuery(q, context);
@@ -247,12 +247,7 @@ public class QueryController {
 			return HttpUtils.getInvalidHeader();
 		}
 		List<Object> contextHeader = HttpUtils.getAtContext(request);
-		Context context;
-		if (contextHeader.isEmpty()) {
-			context = JsonLdProcessor.getCoreContextClone();
-		} else {
-			context = JsonLdProcessor.getCoreContextClone().parse(contextHeader, true);
-		}
+		Context context = HttpUtils.getContext(contextHeader);
 		if (details) {
 			return queryService.getTypesWithDetail(HttpUtils.getTenant(request), localOnly).onItem()
 					.transform(types -> {
@@ -275,12 +270,7 @@ public class QueryController {
 			return HttpUtils.getInvalidHeader();
 		}
 		List<Object> contextHeader = HttpUtils.getAtContext(request);
-		Context context;
-		if (contextHeader.isEmpty()) {
-			context = JsonLdProcessor.getCoreContextClone();
-		} else {
-			context = JsonLdProcessor.getCoreContextClone().parse(contextHeader, true);
-		}
+		Context context = HttpUtils.getContext(contextHeader);
 		return queryService
 				.getType(HttpUtils.getTenant(request), context.expandIri(type, false, true, null, null), localOnly)
 				.onItem().transform(map -> {
@@ -303,20 +293,19 @@ public class QueryController {
 		if (acceptHeader == -1) {
 			return HttpUtils.getInvalidHeader();
 		}
+		List<Object> contextHeader = HttpUtils.getAtContext(request);
+		Context context = HttpUtils.getContext(contextHeader);
 		if (!details) {
 			return queryService.getAttribs(HttpUtils.getTenant(request), localOnly).onItem().transform(map -> {
-				List<Object> contextHeader = HttpUtils.getAtContext(request);
-				return HttpUtils.generateEntityResult(contextHeader,
-						JsonLdProcessor.getCoreContextClone().parse(contextHeader, true), acceptHeader, map, null, null,
-						null);
+
+				return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, map, null, null, null);
 			});
 		} else {
 			return queryService.getAttribsWithDetails(HttpUtils.getTenant(request), localOnly).onItem()
 					.transform(list -> {
-						List<Object> contextHeader = HttpUtils.getAtContext(request);
-						return HttpUtils.generateEntityResult(contextHeader,
-								JsonLdProcessor.getCoreContextClone().parse(contextHeader, true), acceptHeader, list,
-								null, null, null);
+
+						return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, list, null, null,
+								null);
 					});
 		}
 
@@ -330,24 +319,18 @@ public class QueryController {
 		if (acceptHeader == -1) {
 			return HttpUtils.getInvalidHeader();
 		}
-		Context context;
-		List<Object> contextHeader = HttpUtils.getAtContext(request);
-		if (!contextHeader.isEmpty()) {
-			context = JsonLdProcessor.getCoreContextClone().parse(contextHeader, null, true);
-		} else {
-			context = JsonLdProcessor.getCoreContextClone();
-		}
+
+		List<Object> headerContext = HttpUtils.getAtContext(request);
+		Context context = HttpUtils.getContext(headerContext);
 		attribute = context.expandIri(attribute, false, true, null, null);
 		return queryService.getAttrib(HttpUtils.getTenant(request), attribute, localOnly).onItem().transform(map -> {
 			if (map.isEmpty()) {
 				return RestResponse.notFound();
 			} else {
-				return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, map, null, null, null);
+				return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, map, null, null, null);
 			}
 		});
 
 	}
-
-	
 
 }

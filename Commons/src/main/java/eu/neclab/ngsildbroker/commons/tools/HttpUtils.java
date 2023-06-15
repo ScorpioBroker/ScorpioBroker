@@ -880,4 +880,16 @@ public final class HttpUtils {
 		} else
 			return object;
 	}
+
+	public static Context getContext(List<Object> headerContext) {
+		Context context;
+		if (headerContext.isEmpty()) {
+			context = JsonLdProcessor.getCoreContextClone();
+		} else {
+			context = JsonLdProcessor.getCoreContextClone().parse(headerContext, false);
+			context.inverse = null;
+			context.getInverse();
+		}
+		return context;
+	}
 }
