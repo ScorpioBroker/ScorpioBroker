@@ -46,7 +46,7 @@ public abstract class EntityTools {
 		return BROKER_PREFIX + prefix + UUID.randomUUID().getLeastSignificantBits();
 
 	}
-	
+
 	public static Map<String, Object> prepareSplitUpEntityForSending(Map<String, Object> expanded, Context context)
 			throws JsonLdError, ResponseException {
 		if (expanded.containsKey(NGSIConstants.JSON_LD_TYPE)) {
@@ -383,8 +383,8 @@ public abstract class EntityTools {
 						if (map.containsKey(NGSIConstants.JSON_LD_TYPE)
 								&& map.get(NGSIConstants.JSON_LD_TYPE) instanceof List
 								&& !((List) map.get(NGSIConstants.JSON_LD_TYPE)).isEmpty()
-								&& ((List) map.get(NGSIConstants.JSON_LD_TYPE)).get(0).toString()
-										.matches(NGSIConstants.REGEX_NGSI_LD_ATTR_TYPES)) {
+								&& NGSIConstants.NGSI_LD_ATTR_TYPES
+										.contains(((List) map.get(NGSIConstants.JSON_LD_TYPE)).get(0).toString())) {
 							setTemporalProperties(map, createdAt, modifiedAt, rootOnly);
 						}
 					}
@@ -393,7 +393,7 @@ public abstract class EntityTools {
 			}
 		}
 	}
-	
+
 	public static String getCoordinates(List<Map<String, Object>> jsonCoordinates) {
 		String result = "";
 		boolean lon = true;

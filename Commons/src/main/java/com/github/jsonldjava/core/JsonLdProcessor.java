@@ -16,6 +16,7 @@ import com.github.jsonldjava.impl.NQuadTripleCallback;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import io.quarkus.vertx.http.runtime.devmode.Json;
 
 /**
  * This class implements the <a href=
@@ -42,6 +43,7 @@ public class JsonLdProcessor {
 		// this explicitly removes the features term from the core as it is a commonly
 		// used term and we don't need the geo json definition
 		JsonLdProcessor.coreContext.getTermDefinition("features").remove("@container");
+		JsonLdProcessor.coreContext.getInverse();
 	}
 
 	public static Context getCoreContextClone() {
