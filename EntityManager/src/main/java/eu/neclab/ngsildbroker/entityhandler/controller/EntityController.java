@@ -69,10 +69,10 @@ public class EntityController {// implements EntityHandlerInterface {
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 		}
-		logger.info("creating entity");
+		logger.debug("creating entity");
 		return entityService.createEntity(HttpUtils.getTenant(req), tuple.getItem2(), tuple.getItem1()).onItem()
 				.transform(opResult -> {
-					logger.info("Done creating entity");
+					logger.debug("Done creating entity");
 					return HttpUtils.generateCreateResult(opResult, AppConstants.ENTITES_URL);
 				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}

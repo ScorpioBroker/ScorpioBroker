@@ -722,26 +722,29 @@ public final class HttpUtils {
 	public static RestResponse<Object> generateCreateResult(NGSILDOperationResult operationResult, String baseUrl) {
 		List<ResponseException> fails = operationResult.getFailures();
 		List<CRUDSuccess> successes = operationResult.getSuccesses();
+		RestResponse<Object> response;
 		if (fails.isEmpty()) {
 			if (!operationResult.isWasUpdated()) {
 				try {
-					return RestResponse.created(new URI(baseUrl + operationResult.getEntityId()));
+					response = RestResponse.created(new URI(baseUrl + operationResult.getEntityId()));
 				} catch (URISyntaxException e) {
-					return HttpUtils.handleControllerExceptions(e);
+					response = HttpUtils.handleControllerExceptions(e);
 				}
 			} else {
-				return RestResponse.noContent();
+				response = RestResponse.noContent();
 			}
 		} else if (successes.isEmpty() && fails.size() == 1) {
-			return HttpUtils.handleControllerExceptions(fails.get(0));
+			response = HttpUtils.handleControllerExceptions(fails.get(0));
 		} else {
 			try {
-				return new RestResponseBuilderImpl<Object>().status(207).type(AppConstants.NGB_APPLICATION_JSON)
+				response = new RestResponseBuilderImpl<Object>().status(207).type(AppConstants.NGB_APPLICATION_JSON)
 						.entity(JsonUtils.toPrettyString(operationResult.getJson())).build();
 			} catch (Exception e) {
-				return HttpUtils.handleControllerExceptions(e);
+				response = HttpUtils.handleControllerExceptions(e);
 			}
 		}
+		logger.debug("sending restresponse");
+		return response;
 	}
 
 	public static List<Object> getContextFromHeader(io.vertx.mutiny.core.MultiMap remoteHeaders) {
