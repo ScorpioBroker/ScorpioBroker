@@ -669,7 +669,7 @@ public class EntityService {
 		return entityDAO.createEntity(request).onItem().transform(v -> {
 			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, request.getId());
 			localResult.addSuccess(new CRUDSuccess(null, null, null, request.getPayload(), context));
-			entityEmitter.sendAndForget(request);
+			//entityEmitter.sendAndForget(request);
 			return localResult;
 		});
 
