@@ -151,7 +151,10 @@ public class NGSILDOperationResult {
 				continue;
 			}
 
-			List<Map<String, Object>> tmp = ((List<Map<String, Object>>) entry.getValue());
+			List<Map<String, Object>> tmp;
+			if(entry.getValue() instanceof Map<?,?>){
+				tmp = List.of((Map<String, Object>) entry.getValue());
+			}else tmp= ((List<Map<String, Object>>) entry.getValue());
 			Object datasetId;
 			for (Map<String, Object> attribEntry : tmp) {
 				datasetId = attribEntry.get(NGSIConstants.NGSI_LD_DATA_SET_ID);

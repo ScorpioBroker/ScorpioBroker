@@ -1,5 +1,8 @@
 package eu.neclab.ngsildbroker.commons.constants;
 
+import com.google.common.collect.Sets;
+
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
@@ -146,6 +149,7 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_TEMPORAL_QUERY = "https://uri.etsi.org/ngsi-ld/temporalQ";
 	public final static String NGSI_LD_MANAGEMENTINTERVAL = "https://uri.etsi.org/ngsi-ld/managementInterval";
 	public static final String NGSI_LD_GEOREL = "https://uri.etsi.org/ngsi-ld/georel";
+	String NGSI_LD_SHOWCHANGES = "https://uri.etsi.org/ngsi-ld/showChanges";
 	// IMPORTANT! DO NOT MESS UP THIS ORDER!!! ONLY APPEND ON THE END NEW STUFF
 	public final static String[] NGSI_LD_PAYLOAD_KEYS = { JSON_LD_ID, JSON_LD_TYPE, JSON_LD_CONTEXT,
 			NGSI_LD_DEFAULT_PREFIX, NGSI_LD_HAS_VALUE, NGSI_LD_HAS_OBJECT, JSON_LD_VALUE, NGSI_LD_LOCATION,
@@ -378,6 +382,8 @@ public interface NGSIConstants {
 	public final static String QUERY_PARAMETER_CONCISE_VALUE = "concise";
 	public final static String QUERY_PARAMETER_CONCISE = "option";
 	public static final String SCOPE = "scope";
+	String PREVIOUS_VALUE = "previousValue";
+	String PREVIOUS_OBJECT = "previousObject";
 	public static final String NGSI_LD_REG_MODE = "https://uri.etsi.org/ngsi-ld/mode";
 	public static final String NGSI_LD_REG_MODE_AUX = "auxiliary";
 	public static final String NGSI_LD_REG_MODE_INC = "inclusive";
@@ -424,4 +430,5 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_REG_OPERATION_CANCOMPRESS = "canCompress";
 	public static final String ENTITY_MAP_TOKEN_HEADER = "NGSILD-EntityMap";
 
+	String NGSI_LD_NULL = "urn:ngsi-ld:null";
 }

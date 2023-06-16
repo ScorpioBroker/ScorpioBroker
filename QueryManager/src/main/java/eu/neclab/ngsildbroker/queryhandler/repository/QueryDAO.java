@@ -1,27 +1,11 @@
 package eu.neclab.ngsildbroker.queryhandler.repository;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
-import org.locationtech.spatial4j.context.SpatialContextFactory;
-import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
-import org.locationtech.spatial4j.io.GeoJSONReader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.github.jsonldjava.core.Context;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Table;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityMap;
@@ -48,6 +32,19 @@ import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowIterator;
 import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
+import org.locationtech.spatial4j.context.SpatialContextFactory;
+import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
+import org.locationtech.spatial4j.io.GeoJSONReader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @Singleton
 public class QueryDAO {
@@ -61,18 +58,18 @@ public class QueryDAO {
 
 	public Uni<Map<String, Object>> getEntity(String entityId, String tenantId, AttrsQueryTerm attrsQuery) {
 		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
-			String sql = "";
-			sql += "SELECT ENTITY";
-
-			Tuple tuple = Tuple.tuple();
+			String sql = "SELECT ";
 			if (attrsQuery != null) {
-				sql += "-$1 FROM ENTITY WHERE ID=$2";
-				tuple.addArrayOfString(attrsQuery.getAttrs().toArray(new String[0]));
+				for (String attrs : attrsQuery.getAttrs()) {
+					sql += "JSONB_BUILD_OBJECT('%s', ENTITY->'%s') ||";
+					sql = sql.formatted(attrs, attrs);
+				}
+				sql = sql.substring(0, sql.length() - 2);
 			} else {
-				sql += " FROM ENTITY WHERE ID=$1";
+				sql += "ENTITY ";
 			}
-			tuple.addString(entityId);
-			return client.preparedQuery(sql).execute(tuple).onItem().transformToUni(t -> {
+			sql += " FROM ENTITY WHERE ID='%s'".formatted(entityId);
+			return client.preparedQuery(sql).execute().onItem().transformToUni(t -> {
 				if (t.rowCount() == 0) {
 					return Uni.createFrom().item(new HashMap<String, Object>());
 				}
@@ -795,7 +792,7 @@ public class QueryDAO {
 			}
 			query.append(
 					" as ENTITY FROM b left join ENTITY on b.ID = ENTITY.ID) SELECT a.ID, c.ENTITY FROM a left outer join c on a.ID = c.ID");
-			
+
 			return client.preparedQuery(query.toString()).execute(tuple).onItem().transform(rows -> {
 				List<String> entityIds = Lists.newArrayList();
 				Map<String, Map<String, Object>> entities = Maps.newHashMap();
@@ -820,10 +817,10 @@ public class QueryDAO {
 			return Uni.createFrom().voidItem();
 		}
 		List<Tuple> batch = Lists.newArrayList();
-//			"q_token" text NOT NULL,
-//		    "entity_id" text,
-//			"remote_hosts" jsonb,
-//			"order_field" numeric NOT NULL
+		// "q_token" text NOT NULL,
+		// "entity_id" text,
+		// "remote_hosts" jsonb,
+		// "order_field" numeric NOT NULL
 		long count = 0;
 		for (EntityMapEntry entityId2RemoteHosts : entityMap.getEntityList()) {
 			Tuple tuple = Tuple.tuple();

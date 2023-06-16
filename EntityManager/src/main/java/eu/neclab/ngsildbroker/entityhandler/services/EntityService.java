@@ -324,9 +324,8 @@ public class EntityService {
 
 	public Uni<NGSILDOperationResult> deleteAttribute(String tenant, String entityId, String attribName,
 			String datasetId, boolean deleteAll, Context context) {
-		String expandedAttribName = context.get("@vocab") + attribName;
-
-		DeleteAttributeRequest request = new DeleteAttributeRequest(tenant, entityId, expandedAttribName, datasetId,
+//		String expandedAttribName = context.get("@vocab") + attribName;
+		DeleteAttributeRequest request = new DeleteAttributeRequest(tenant, entityId, attribName, datasetId,
 				deleteAll);
 		Set<RemoteHost> remoteHosts = getRemoteHostsForDeleteAttrib(request);
 		if (remoteHosts == null || remoteHosts.isEmpty()) {
@@ -352,7 +351,7 @@ public class EntityService {
 
 	private Uni<NGSILDOperationResult> localDeleteAttrib(DeleteAttributeRequest request, Context context) {
 		return entityDAO.deleteAttribute(request).onItem().transformToUni(resultEntity -> {
-			request.setPayload(resultEntity);
+			request.setPreviousEntity(resultEntity);
 			return entityEmitter.send(request).onItem().transform(v -> {
 				NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.DELETE_ATTRIBUTE_REQUEST,
 						request.getId());
@@ -590,7 +589,8 @@ public class EntityService {
 	}
 
 	private Uni<NGSILDOperationResult> updateLocalEntity(UpdateEntityRequest request, Context context) {
-		return entityDAO.updateEntity(request).onItem().transformToUni(notAppended -> {
+		return entityDAO.updateEntity(request).onItem().transformToUni(oldEntity -> {
+			request.setPreviousEntity(oldEntity);
 			return entityEmitter.send(request).onItem().transform(v2 -> {
 				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST,
 						request.getId());
@@ -675,6 +675,7 @@ public class EntityService {
 
 	private Uni<NGSILDOperationResult> partialUpdateLocalEntity(UpdateEntityRequest request, Context context) {
 		return entityDAO.partialUpdateAttribute(request).onItem().transformToUni(v -> {
+			request.setPreviousEntity(v.iterator().next().getJsonObject(0).getMap());
 			return entityEmitter.send(request).onItem().transform(v2 -> {
 				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.PARTIAL_UPDATE_REQUEST,
 						request.getId());
