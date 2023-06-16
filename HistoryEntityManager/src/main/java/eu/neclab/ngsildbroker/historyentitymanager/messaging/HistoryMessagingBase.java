@@ -28,7 +28,7 @@ public abstract class HistoryMessagingBase {
 	private static Logger logger = LoggerFactory.getLogger(HistoryMessagingBase.class);
 	private ConcurrentHashMap<String, ConcurrentLinkedQueue<BaseRequest>> tenant2Buffer = new ConcurrentHashMap<>();
 	private ConcurrentHashMap<String, Long> tenant2LastReceived = new ConcurrentHashMap<>();
-	private int maxSize = 1000;
+	private int maxSize = 10000;
 
 	@Inject
 	HistoryEntityService historyService;
