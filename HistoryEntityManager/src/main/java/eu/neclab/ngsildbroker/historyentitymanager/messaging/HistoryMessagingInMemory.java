@@ -40,7 +40,7 @@ public class HistoryMessagingInMemory extends HistoryMessagingBase {
 		return baseHandleCsource(MicroServiceUtils.deepCopyRequestMessage(busMessage));
 	}
 	
-	@Scheduled(every = "1s")
+	@Scheduled(every = "5s")
 	Uni<Void> checkBuffer() {
 		return super.checkBuffer();
 	}

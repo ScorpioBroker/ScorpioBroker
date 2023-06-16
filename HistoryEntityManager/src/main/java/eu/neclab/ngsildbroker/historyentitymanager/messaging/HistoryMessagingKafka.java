@@ -48,7 +48,7 @@ public class HistoryMessagingKafka extends HistoryMessagingBase {
 		return baseHandleCsource(busMessage);
 	}
 
-	@Scheduled(every = "1s")
+	@Scheduled(every = "5s")
 	Uni<Void> checkBuffer() {
 		return super.checkBuffer();
 	}
