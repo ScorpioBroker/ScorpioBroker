@@ -20,12 +20,14 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BatchRequest;
 import eu.neclab.ngsildbroker.historyentitymanager.service.HistoryEntityService;
 import io.quarkus.scheduler.Scheduled;
+import io.smallrye.common.annotation.Blocking;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 //import eu.neclab.ngsildbroker.historyentitymanager.service.HistoryEntityService;
 import io.smallrye.mutiny.Uni;
 
 public abstract class HistoryMessagingBase {
 
-	private static Logger logger = LoggerFactory.getLogger(HistoryMessagingBase.class);
+	protected static Logger logger = LoggerFactory.getLogger(HistoryMessagingBase.class);
 	private ConcurrentHashMap<String, ConcurrentLinkedQueue<BaseRequest>> tenant2Buffer = new ConcurrentHashMap<>();
 	private ConcurrentHashMap<String, Long> tenant2LastReceived = new ConcurrentHashMap<>();
 	private int maxSize = 20000;
