@@ -60,21 +60,22 @@ public class EntityController {// implements EntityHandlerInterface {
 	 */
 	@Path("/entities")
 	@POST
-	public Uni<RestResponse<Object>> createEntity(HttpServerRequest req, Map<String, Object> body) {
+	public Uni<RestResponse<Map<String, Object>>> createEntity(HttpServerRequest req, Map<String, Object> body) {
 		Tuple2<Context, Map<String, Object>> tuple;
 		try {
-			//Map<String, Object> body = (Map<String, Object>) JsonUtils.fromString(payload);
+			// Map<String, Object> body = (Map<String, Object>)
+			// JsonUtils.fromString(payload);
 			noConcise(body);
 			tuple = HttpUtils.expandBody(req, body, AppConstants.ENTITY_CREATE_PAYLOAD);
 		} catch (Exception e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptionsTest1(e));
 		}
 		logger.debug("creating entity");
 		return entityService.createEntity(HttpUtils.getTenant(req), tuple.getItem2(), tuple.getItem1()).onItem()
 				.transform(opResult -> {
 					logger.debug("Done creating entity");
-					return HttpUtils.generateCreateResult(opResult, AppConstants.ENTITES_URL);
-				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+					return HttpUtils.generateCreateResultTest1(opResult, AppConstants.ENTITES_URL);
+				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptionsTest1);
 	}
 
 	/**

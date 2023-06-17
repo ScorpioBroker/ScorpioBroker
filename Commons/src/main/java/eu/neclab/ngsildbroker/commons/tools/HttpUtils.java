@@ -320,6 +320,37 @@ public final class HttpUtils {
 				.entity(new ResponseException(ErrorType.InternalError, e.getMessage()).getJson()).build();
 	}
 
+	public static RestResponse<Map<String, Object>> handleControllerExceptionsTest1(Throwable e) {
+		RestResponseBuilderImpl<Map<String, Object>> builder = new RestResponseBuilderImpl<>();
+		if (e instanceof ResponseException) {
+			ResponseException responseException = (ResponseException) e;
+			logger.debug("Exception :: ", responseException);
+
+			return builder.entity(responseException.getJson()).status(responseException.getErrorCode())
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON).build();
+		}
+		if (e instanceof DateTimeParseException) {
+			logger.debug("Exception :: ", e);
+			return builder.status(HttpStatus.SC_BAD_REQUEST)
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+					.entity(new ResponseException(ErrorType.BadRequestData, "Failed to parse provided datetime field.")
+							.getJson())
+					.build();
+		}
+		if (e instanceof JsonProcessingException || e instanceof JsonLdError) {
+			logger.debug("Exception :: ", e);
+			return builder.status(HttpStatus.SC_BAD_REQUEST)
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+					.entity(new ResponseException(ErrorType.InvalidRequest,
+							"There is an error in the provided json document").getJson())
+					.build();
+		}
+		logger.error("Exception :: ", e);
+		return builder.status(HttpStatus.SC_INTERNAL_SERVER_ERROR)
+				.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+				.entity(new ResponseException(ErrorType.InternalError, e.getMessage()).getJson()).build();
+	}
+
 	public static URI validateUri(String uri) throws ResponseException {
 		try {
 			return validateUri(new URI(uri));
@@ -723,6 +754,34 @@ public final class HttpUtils {
 		Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor
 				.expand(context, originalPayload, opts, payloadType, atContextAllowed).get(0);
 		return Tuple2.of(context, resolved);
+	}
+	
+	public static RestResponse<Map<String, Object>> generateCreateResultTest1(NGSILDOperationResult operationResult, String baseUrl) {
+		List<ResponseException> fails = operationResult.getFailures();
+		List<CRUDSuccess> successes = operationResult.getSuccesses();
+		RestResponse<Map<String, Object>> response;
+		if (fails.isEmpty()) {
+			if (!operationResult.isWasUpdated()) {
+				try {
+					response = RestResponse.created(new URI(baseUrl + operationResult.getEntityId()));
+				} catch (URISyntaxException e) {
+					response = HttpUtils.handleControllerExceptionsTest1(e);
+				}
+			} else {
+				response = RestResponse.noContent();
+			}
+		} else if (successes.isEmpty() && fails.size() == 1) {
+			response = HttpUtils.handleControllerExceptionsTest1(fails.get(0));
+		} else {
+			try {
+				response = new RestResponseBuilderImpl<Map<String, Object>>().status(207).type(AppConstants.NGB_APPLICATION_JSON)
+						.entity(operationResult.getJson()).build();
+			} catch (Exception e) {
+				response = HttpUtils.handleControllerExceptionsTest1(e);
+			}
+		}
+		logger.debug("sending restresponse");
+		return response;
 	}
 
 	public static RestResponse<Object> generateCreateResult(NGSILDOperationResult operationResult, String baseUrl) {
