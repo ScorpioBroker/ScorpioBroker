@@ -10,6 +10,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import javax.inject.Inject;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +36,13 @@ public abstract class HistoryMessagingBase {
 	@Inject
 	HistoryEntityService historyService;
 
+	@ConfigProperty(name = "scorpio.history.autorecording", defaultValue = "true")
+	boolean autoRecording;
+
 	public Uni<Void> baseHandleEntity(BaseRequest message) {
+		if (!autoRecording) {
+			return Uni.createFrom().voidItem();
+		}
 		String tenant = message.getTenant();
 		ConcurrentLinkedQueue<BaseRequest> buffer = tenant2Buffer.get(message.getTenant());
 		if (buffer == null) {
@@ -50,6 +57,9 @@ public abstract class HistoryMessagingBase {
 	}
 
 	public Uni<Void> baseHandleBatch(BatchRequest message) {
+		if (!autoRecording) {
+			return Uni.createFrom().voidItem();
+		}
 		logger.debug("history manager batch handling got called");
 		return historyService.handleInternalBatchRequest(message);
 		// return Uni.createFrom().voidItem();
@@ -60,7 +70,6 @@ public abstract class HistoryMessagingBase {
 		return historyService.handleRegistryChange(message);
 	}
 
-	
 	Uni<Void> checkBuffer() {
 		List<Uni<Void>> unis = Lists.newArrayList();
 		for (Entry<String, ConcurrentLinkedQueue<BaseRequest>> tenant2BufferEntry : tenant2Buffer.entrySet()) {
