@@ -31,13 +31,15 @@ public abstract class HistoryMessagingBase {
 	protected static Logger logger = LoggerFactory.getLogger(HistoryMessagingBase.class);
 	private ConcurrentHashMap<String, ConcurrentLinkedQueue<BaseRequest>> tenant2Buffer = new ConcurrentHashMap<>();
 	private ConcurrentHashMap<String, Long> tenant2LastReceived = new ConcurrentHashMap<>();
-	private int maxSize = 20000;
+	
 
 	@Inject
 	HistoryEntityService historyService;
 
 	@ConfigProperty(name = "scorpio.history.autorecording", defaultValue = "true")
 	boolean autoRecording;
+	@ConfigProperty(name = "scorpio.history.autorecordingbuffersize", defaultValue = "50000")
+	private int maxSize;
 
 	public Uni<Void> baseHandleEntity(BaseRequest message) {
 		if (!autoRecording) {
@@ -71,6 +73,9 @@ public abstract class HistoryMessagingBase {
 	}
 
 	Uni<Void> checkBuffer() {
+		if (!autoRecording) {
+			return Uni.createFrom().voidItem();
+		}
 		List<Uni<Void>> unis = Lists.newArrayList();
 		for (Entry<String, ConcurrentLinkedQueue<BaseRequest>> tenant2BufferEntry : tenant2Buffer.entrySet()) {
 			ConcurrentLinkedQueue<BaseRequest> buffer = tenant2BufferEntry.getValue();

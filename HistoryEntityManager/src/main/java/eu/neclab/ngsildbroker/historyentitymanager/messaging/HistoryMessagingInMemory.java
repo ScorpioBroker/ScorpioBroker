@@ -44,7 +44,6 @@ public class HistoryMessagingInMemory extends HistoryMessagingBase {
 	
 	@Scheduled(every = "5s")
 	@RunOnVirtualThread
-	@Blocking
 	Uni<Void> checkBuffer() {
 		return super.checkBuffer();
 	}
