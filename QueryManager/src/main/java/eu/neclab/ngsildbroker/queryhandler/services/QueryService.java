@@ -1271,12 +1271,14 @@ public class QueryService {
 				}
 			}
 			return Tuple2.of(result, local.getItem1());
-		}).onItem().transformToUni(tuple -> {
+		}).onItem().transform(tuple -> {
 			EntityMap entityMap = tuple.getItem1();
 			Map<String, Map<String, Object>> localResults = tuple.getItem2();
-			return queryDAO.storeEntityMap(tenant, qToken, entityMap).onItem().transform(v -> {
-				return Tuple2.of(localResults, entityMap);
-			});
+			vertx.executeBlockingAndForget(queryDAO.storeEntityMap(tenant, qToken, entityMap));
+			// return queryDAO.storeEntityMap(tenant, qToken,
+			// entityMap).onItem().transform(v -> {
+			return Tuple2.of(localResults, entityMap);
+			// });
 		});
 
 	}

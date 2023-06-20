@@ -15,6 +15,8 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BatchRequest;
 import eu.neclab.ngsildbroker.historyentitymanager.service.HistoryEntityService;
@@ -75,18 +77,31 @@ public abstract class HistoryMessagingBase {
 			Long lastReceived = tenant2LastReceived.get(tenant);
 			if (buffer.size() >= maxSize || (lastReceived < System.currentTimeMillis() - 1000 && !buffer.isEmpty())) {
 				Map<Integer, List<Map<String, Object>>> opType2Payload = Maps.newHashMap();
+				List<BaseRequest> notBatch = Lists.newArrayList();
 				while (!buffer.isEmpty()) {
 					BaseRequest request = buffer.poll();
+					if (request.getRequestType() == AppConstants.DELETE_ATTRIBUTE_REQUEST) {
+						notBatch.add(request);
+						continue;
+					}
 					List<Map<String, Object>> payloads = opType2Payload.get(request.getRequestType());
 					if (payloads == null) {
 						payloads = Lists.newArrayList();
 						opType2Payload.put(request.getRequestType(), payloads);
 					}
-					payloads.add(request.getPayload());
+					Map<String, Object> payload = request.getPayload();
+					if (payload == null) {
+						payload = Maps.newHashMap();
+					}
+					payload.put(NGSIConstants.JSON_LD_ID, request.getId());
+					payloads.add(payload);
 				}
 				for (Entry<Integer, List<Map<String, Object>>> entry : opType2Payload.entrySet()) {
 					unis.add(historyService.handleInternalBatchRequest(
 							new BatchRequest(tenant, entry.getValue(), null, entry.getKey())));
+				}
+				for (BaseRequest entry : notBatch) {
+					unis.add(historyService.handleInternalRequest(entry));
 				}
 
 			}
