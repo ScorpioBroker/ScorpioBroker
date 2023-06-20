@@ -1,3 +1,9 @@
+RELEASE NOTES SCORPIO 4.0.1
+
+This addresses 
+ - an issue with the response time of Entity create update append and delete operations
+ - improves the performance of queries which create an entity map
+
 RELEASE NOTES SCORPIO 4.0.0/FIWARE-8.4
 
 
