@@ -795,7 +795,7 @@ public class QueryDAO {
 			}
 			query.append(
 					" as ENTITY FROM b left join ENTITY on b.ID = ENTITY.ID) SELECT a.ID, c.ENTITY FROM a left outer join c on a.ID = c.ID");
-
+			
 			return client.preparedQuery(query.toString()).execute(tuple).onItem().transform(rows -> {
 				List<String> entityIds = Lists.newArrayList();
 				Map<String, Map<String, Object>> entities = Maps.newHashMap();
