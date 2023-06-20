@@ -122,8 +122,10 @@ public class HistoryDAO {
 				if (payload.containsKey(NGSIConstants.JSON_LD_TYPE)) {
 					Tuple tuple = Tuple.of(entityId,
 							((List<String>) payload.remove(NGSIConstants.JSON_LD_TYPE)).toArray(new String[0]),
-							DBUtil.getLocalDateTime(payload.remove(NGSIConstants.NGSI_LD_CREATED_AT)),
-							DBUtil.getLocalDateTime(payload.remove(NGSIConstants.NGSI_LD_MODIFIED_AT)));
+							((List<Map<String, String>>) payload.remove(NGSIConstants.NGSI_LD_CREATED_AT)).get(0)
+									.get(NGSIConstants.JSON_LD_VALUE),
+							((List<Map<String, String>>) payload.remove(NGSIConstants.NGSI_LD_MODIFIED_AT)).get(0)
+									.get(NGSIConstants.JSON_LD_VALUE));
 					if (payload.containsKey(NGSIConstants.NGSI_LD_SCOPE)) {
 						tuple.addJsonArray(
 								new JsonArray((List<Map<String, String>>) payload.remove(NGSIConstants.NGSI_LD_SCOPE)));
@@ -134,7 +136,9 @@ public class HistoryDAO {
 
 				} else {
 					payload.remove(NGSIConstants.NGSI_LD_CREATED_AT);
-					Tuple tuple = Tuple.of(DBUtil.getLocalDateTime(payload.remove(NGSIConstants.NGSI_LD_MODIFIED_AT)));
+					Tuple tuple = Tuple
+							.of(((List<Map<String, String>>) payload.remove(NGSIConstants.NGSI_LD_MODIFIED_AT)).get(0)
+									.get(NGSIConstants.JSON_LD_VALUE));
 					if (payload.containsKey(NGSIConstants.NGSI_LD_SCOPE)) {
 						tuple.addJsonArray(
 								new JsonArray((List<Map<String, String>>) payload.remove(NGSIConstants.NGSI_LD_SCOPE)));
@@ -155,7 +159,7 @@ public class HistoryDAO {
 				}
 			}
 			String typeSql = "INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY
-					+ " (id, e_types, createdat, modifiedat, scopes) VALUES($1, $2, $3, $4, getScopes($5)) "
+					+ " (id, e_types, createdat, modifiedat, scopes) VALUES($1, $2, $3::text::timestamp, $4::text::timestamp, getScopes($5)) "
 					+ "ON CONFLICT(id) DO UPDATE SET e_types = ARRAY(SELECT DISTINCT UNNEST("
 					+ DBConstants.DBTABLE_TEMPORALENTITY
 					+ ".e_types || EXCLUDED.e_types)), modifiedat = EXCLUDED.modifiedat, ";
@@ -175,7 +179,7 @@ public class HistoryDAO {
 						+ " SET modifiedat = $1, scopes = CASE WHEN $2 IS NULL THEN scopes ELSE getScopes($2) END WHERE id=$3")
 						.executeBatch(batchNoType));
 			}
-			return Uni.combine().all().unis(tmpList).combinedWith(l -> {
+			return Uni.combine().all().unis(tmpList).combinedWith(l -> l).onItem().transformToUni(l -> {
 				return client
 						.preparedQuery("INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
 								+ " (temporalentity_id, attributeid, data) VALUES ($1, $2, $3::jsonb)")
@@ -220,9 +224,10 @@ public class HistoryDAO {
 			// return client.getConnection().onItem().transformToUni(conn -> {
 			Uni<RowSet<Row>> query1;
 			Tuple tuple = Tuple.tuple();
-			tuple.addLocalDateTime(DBUtil.getLocalDateTime(payload.remove(NGSIConstants.NGSI_LD_MODIFIED_AT)));
+			tuple.addString(((List<Map<String, String>>) payload.remove(NGSIConstants.NGSI_LD_MODIFIED_AT)).get(0)
+					.get(NGSIConstants.JSON_LD_VALUE));
 
-			String sql = "UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY + " SET modifiedat = $1";
+			String sql = "UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY + " SET modifiedat = $1::text::timestamp";
 			int dollarCount = 2;
 			if (payload.containsKey(NGSIConstants.JSON_LD_TYPE) && payload.get(NGSIConstants.JSON_LD_TYPE) != null) {
 				sql += ",e_types = ARRAY(SELECT DISTINCT UNNEST(e_types || $" + dollarCount + "))";
@@ -290,12 +295,12 @@ public class HistoryDAO {
 						return Uni.createFrom().failure(e);
 					}).onItem().transformToUni(rows -> {
 						return client
-								.preparedQuery("UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY
-										+ " SET modifiedat = $1 WHERE id = $2")
-								.execute(Tuple.of(
-										DBUtil.getLocalDateTime(
-												request.getPayload().get(NGSIConstants.NGSI_LD_MODIFIED_AT)),
-										request.getId()))
+								.preparedQuery(
+										"UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY
+												+ " SET modifiedat = $1::text::timestamp WHERE id = $2")
+								.execute(Tuple.of(((List<Map<String, String>>) request.getPayload()
+										.get(NGSIConstants.NGSI_LD_MODIFIED_AT)).get(0)
+										.get(NGSIConstants.JSON_LD_VALUE), request.getId()))
 								.onItem().transformToUni(t -> Uni.createFrom().voidItem());
 					});
 
