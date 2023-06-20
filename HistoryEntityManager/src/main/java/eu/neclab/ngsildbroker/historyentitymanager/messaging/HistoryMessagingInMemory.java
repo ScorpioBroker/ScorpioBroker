@@ -11,6 +11,8 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BatchRequest;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import io.quarkus.arc.profile.IfBuildProfile;
+import io.quarkus.scheduler.Scheduled;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.smallrye.mutiny.Uni;
 
 @Singleton
@@ -24,7 +26,7 @@ public class HistoryMessagingInMemory extends HistoryMessagingBase {
 		// reference so history will manipulate the subscriptions potentially
 		return baseHandleEntity(MicroServiceUtils.deepCopyRequestMessage(message));
 	}
-	
+
 	@Incoming(AppConstants.ENTITY_BATCH_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
 	public Uni<Void> handleBatchEntity(BatchRequest message) {
@@ -32,10 +34,16 @@ public class HistoryMessagingInMemory extends HistoryMessagingBase {
 		// reference so history will manipulate the subscriptions potentially
 		return baseHandleBatch(MicroServiceUtils.deepCopyRequestMessage(message));
 	}
-	
+
 	@Incoming(AppConstants.REGISTRY_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
 	public Uni<Void> handleCsource(BaseRequest busMessage) {
 		return baseHandleCsource(MicroServiceUtils.deepCopyRequestMessage(busMessage));
+	}
+
+	@Scheduled(every = "5s")
+	@RunOnVirtualThread
+	Uni<Void> checkBuffer() {
+		return super.checkBuffer();
 	}
 }

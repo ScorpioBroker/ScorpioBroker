@@ -35,11 +35,6 @@ public class DBUtil {
 		}
 	}
 
-	@SuppressWarnings("unchecked")
-	public static LocalDateTime getLocalDateTime(Object dateTimeEntry) {
-		return LocalDateTime.parse(((List<Map<String, String>>) dateTimeEntry).get(0).get(NGSIConstants.JSON_LD_VALUE),
-				SerializationTools.informatter);
-	}
 
 	public static RegistrationEntry getRegistrationEntry(Row row, String tenant, Logger logger) {
 //		cs_id bigint,
