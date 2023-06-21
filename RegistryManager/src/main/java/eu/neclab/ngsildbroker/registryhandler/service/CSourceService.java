@@ -52,12 +52,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-
 @Singleton
 public class CSourceService {
 	private final static Logger logger = LoggerFactory.getLogger(RegistryController.class);
 	List<String> scorpioFedList = ConfigProvider.getConfig().getValues("scorpio.federation", String.class);
-	Map<String, Map<String,String>> fedMap = new HashMap<>();
+	Map<String, Map<String, String>> fedMap = new HashMap<>();
 	@Inject
 	MicroServiceUtils microServiceUtils;
 
@@ -98,17 +97,21 @@ public class CSourceService {
 		} else {
 			FED_BROKERS = FED_BROKERS_CONFIG.split(",");
 		}
-		
-		if(scorpioFedList == null) return;
+
+		if (scorpioFedList == null)
+			return;
 		for (int i = 0; i < scorpioFedList.size(); i++) {
 			Map<String, String> details = new HashMap<>();
 			details.put("url", ConfigProvider.getConfig().getValue("scorpio.federation[" + i + "].url", String.class));
-			details.put("sourcetenant", ConfigProvider.getConfig().getValue("scorpio.federation[" + i + "].sourcetenant", String.class));
-			details.put("targettenant", ConfigProvider.getConfig().getValue("scorpio.federation[" + i + "].targettenant", String.class));
-			details.put("regtype", ConfigProvider.getConfig().getValue("scorpio.federation[" + i + "].regtype", String.class));
-			fedMap.put(scorpioFedList.get(i),details );
+			details.put("sourcetenant",
+					ConfigProvider.getConfig().getValue("scorpio.federation[" + i + "].sourcetenant", String.class));
+			details.put("targettenant",
+					ConfigProvider.getConfig().getValue("scorpio.federation[" + i + "].targettenant", String.class));
+			details.put("regtype",
+					ConfigProvider.getConfig().getValue("scorpio.federation[" + i + "].regtype", String.class));
+			fedMap.put(scorpioFedList.get(i), details);
 		}
-		
+
 	}
 
 	public Uni<NGSILDOperationResult> createRegistration(String tenant, Map<String, Object> registration) {
@@ -126,41 +129,38 @@ public class CSourceService {
 		} catch (Exception e) {
 			return Uni.createFrom().failure(e);
 		}
-		return cSourceInfoDAO.createRegistration(request).onItem().transformToUni(rowset -> {
-			return kafkaSenderInterface.send(request).onItem().transform(v -> {
-				NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.OPERATION_CREATE_REGISTRATION,
-						(String) registration.get(NGSIConstants.JSON_LD_ID));
-				result.addSuccess(new CRUDSuccess(null, null, request.getId(), Sets.newHashSet()));
-				return result;
-			});
-		}).onFailure().recoverWithUni(
-				e -> {
-					ErrorType error = ErrorType.InternalError;
-					String errorMsg = e.getMessage();
-					if (e instanceof PgException) {
-						if (((PgException) e).getCode().equals("23505")) {
-							error = ErrorType.AlreadyExists;
-							errorMsg = "Registration already exists";
-						}
-					}
-					e.printStackTrace();
-					return Uni.createFrom().failure(new ResponseException(error, errorMsg));
-				});
+		return cSourceInfoDAO.createRegistration(request).onItem().transform(rowset -> {
+			kafkaSenderInterface.sendAndForget(request);
+			NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.OPERATION_CREATE_REGISTRATION,
+					(String) registration.get(NGSIConstants.JSON_LD_ID));
+			result.addSuccess(new CRUDSuccess(null, null, request.getId(), Sets.newHashSet()));
+			return result;
+		}).onFailure().recoverWithUni(e -> {
+			ErrorType error = ErrorType.InternalError;
+			String errorMsg = e.getMessage();
+			if (e instanceof PgException) {
+				if (((PgException) e).getCode().equals("23505")) {
+					error = ErrorType.AlreadyExists;
+					errorMsg = "Registration already exists";
+				}
+			}
+			e.printStackTrace();
+			return Uni.createFrom().failure(new ResponseException(error, errorMsg));
+		});
 	}
 
 	public Uni<NGSILDOperationResult> updateRegistration(String tenant, String registrationId,
-														 Map<String, Object> entry) {
+			Map<String, Object> entry) {
 		AppendCSourceRequest request = new AppendCSourceRequest(tenant, registrationId, entry);
 		return cSourceInfoDAO.updateRegistration(request).onItem().transformToUni(rowset -> {
 			if (rowset.rowCount() > 0) {
 				// no need to query regs again they are not distributed
 				// request.setPayload(rowset.iterator().next().getJsonObject(0).getMap());
-				return kafkaSenderInterface.send(request).onItem().transform(v -> {
-					NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.OPERATION_UPDATE_REGISTRATION,
-							registrationId);
-					result.addSuccess(new CRUDSuccess(null, null, request.getId(), Sets.newHashSet()));
-					return result;
-				});
+				kafkaSenderInterface.sendAndForget(request);
+				NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.OPERATION_UPDATE_REGISTRATION,
+						registrationId);
+				result.addSuccess(new CRUDSuccess(null, null, request.getId(), Sets.newHashSet()));
+				return Uni.createFrom().item(result);
 			} else {
 				return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound, "Registration not found"));
 			}
@@ -197,12 +197,12 @@ public class CSourceService {
 			if (rowset.rowCount() > 0) {
 				// add the deleted entry
 				request.setPayload(rowset.iterator().next().getJsonObject(0).getMap());
-				return kafkaSenderInterface.send(request).onItem().transform(v -> {
-					NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.OPERATION_DELETE_REGISTRATION,
-							registrationId);
-					result.addSuccess(new CRUDSuccess(null, null, request.getId(), Sets.newHashSet()));
-					return result;
-				});
+				kafkaSenderInterface.sendAndForget(request);
+				NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.OPERATION_DELETE_REGISTRATION,
+						registrationId);
+				result.addSuccess(new CRUDSuccess(null, null, request.getId(), Sets.newHashSet()));
+				return Uni.createFrom().item(result);
+
 			} else {
 				return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound, "Registration not found"));
 			}
@@ -218,8 +218,8 @@ public class CSourceService {
 	}
 
 	public Uni<QueryResult> queryRegistrations(String tenant, Set<String> ids, TypeQueryTerm typeQuery,
-											   String idPattern, AttrsQueryTerm attrsQuery, CSFQueryTerm csf, GeoQueryTerm geoQuery,
-											   ScopeQueryTerm scopeQuery, int limit, int offset, boolean count) {
+			String idPattern, AttrsQueryTerm attrsQuery, CSFQueryTerm csf, GeoQueryTerm geoQuery,
+			ScopeQueryTerm scopeQuery, int limit, int offset, boolean count) {
 		return cSourceInfoDAO
 				.query(tenant, ids, typeQuery, idPattern, attrsQuery, csf, geoQuery, scopeQuery, limit, offset, count)
 				.onItem().transform(rows -> {
@@ -227,25 +227,25 @@ public class CSourceService {
 //					if (limit == 0 && count) {
 //						result.setCount(rows.iterator().next().getLong(0));
 //					} else {
-						RowIterator<Row> it = rows.iterator();
-						Row next = null;
-						List<Map<String, Object>> resultData = new ArrayList<Map<String, Object>>(rows.size());
-						while (it.hasNext()) {
-							next = it.next();
-							resultData.add(next.getJsonObject(0).getMap());
-						}
-						Long resultCount = -1l;//next.getLong(0);
-						result.setCount(resultCount);
-						long leftAfter = resultCount - (offset + limit);
-						if (leftAfter < 0) {
-							leftAfter = 0;
-						}
-						long leftBefore = offset;
-						result.setResultsLeftAfter(leftAfter);
-						result.setResultsLeftBefore(leftBefore);
-						result.setLimit(limit);
-						result.setOffset(offset);
-						result.setData(resultData);
+					RowIterator<Row> it = rows.iterator();
+					Row next = null;
+					List<Map<String, Object>> resultData = new ArrayList<Map<String, Object>>(rows.size());
+					while (it.hasNext()) {
+						next = it.next();
+						resultData.add(next.getJsonObject(0).getMap());
+					}
+					Long resultCount = -1l;// next.getLong(0);
+					result.setCount(resultCount);
+					long leftAfter = resultCount - (offset + limit);
+					if (leftAfter < 0) {
+						leftAfter = 0;
+					}
+					long leftBefore = offset;
+					result.setResultsLeftAfter(leftAfter);
+					result.setResultsLeftBefore(leftBefore);
+					result.setLimit(limit);
+					result.setOffset(offset);
+					result.setData(resultData);
 //					}
 					return result;
 				});
@@ -301,35 +301,33 @@ public class CSourceService {
 //						.combinedWith(l -> Uni.createFrom().voidItem());
 //			});
 //		});
-		Object[] brokersNames =  fedMap.keySet().toArray();
+		Object[] brokersNames = fedMap.keySet().toArray();
 		List<Uni<Void>> unis = new ArrayList<>();
-		for (Object brokerName: brokersNames) {
+		for (Object brokerName : brokersNames) {
 			Map<String, String> brokerDetails = fedMap.get(brokerName.toString());
 			String sourceTenant = brokerDetails.get("sourcetenant");
 			String targetTenant = brokerDetails.get("targettenant");
 			String regType = brokerDetails.get("regtype");
 			String url = brokerDetails.get("url");
-			String finalUrl = url.endsWith("/") ? url : url+"/";
-			unis.add(cSourceInfoDAO.isTenantPresent(sourceTenant).onItem().transformToUni(present->{
-						if(present){
-							return retrieveRegistration(sourceTenant,regType).onItem().transformToUni(body->{
-								String csourceId = microServiceUtils.getGatewayURL().toString();
-								body.put("@id",csourceId);
-								String compact;
-								try {
-									compact = JsonUtils.toPrettyString(JsonLdProcessor.compact(body, null, HttpUtils.opts));
-								} catch (Exception e) {
-									return Uni.createFrom().failure(new Throwable("Unable to compact"));
-								}
-								return webClient.patchAbs(finalUrl + "csourceRegistrations/" + csourceId)
-								.putHeader("Content-Type", "application/json")
-										.putHeader("NGSILD-Tenant",targetTenant)
-										.sendBuffer(Buffer.buffer(compact))
-										.onItem().transformToUni(i -> {
+			String finalUrl = url.endsWith("/") ? url : url + "/";
+			unis.add(cSourceInfoDAO.isTenantPresent(sourceTenant).onItem().transformToUni(present -> {
+				if (present) {
+					return retrieveRegistration(sourceTenant, regType).onItem().transformToUni(body -> {
+						String csourceId = microServiceUtils.getGatewayURL().toString();
+						body.put("@id", csourceId);
+						String compact;
+						try {
+							compact = JsonUtils.toPrettyString(JsonLdProcessor.compact(body, null, HttpUtils.opts));
+						} catch (Exception e) {
+							return Uni.createFrom().failure(new Throwable("Unable to compact"));
+						}
+						return webClient.patchAbs(finalUrl + "csourceRegistrations/" + csourceId)
+								.putHeader("Content-Type", "application/json").putHeader("NGSILD-Tenant", targetTenant)
+								.sendBuffer(Buffer.buffer(compact)).onItem().transformToUni(i -> {
 									if (i.statusCode() == HttpResponseStatus.NOT_FOUND.code()) {
 										return webClient.post(finalUrl + "csourceRegistrations/")
 												.putHeader("Content-Type", "application/json")
-												.putHeader("NGSILD-Tenant",targetTenant)
+												.putHeader("NGSILD-Tenant", targetTenant)
 												.sendBuffer(Buffer.buffer(compact)).onItem().transformToUni(r -> {
 													if (r.statusCode() >= 200 && r.statusCode() < 300) {
 														return Uni.createFrom().nullItem();
@@ -340,14 +338,13 @@ public class CSourceService {
 									}
 									return Uni.createFrom().voidItem();
 								}).onFailure().retry().atMost(5).onFailure().recoverWithUni(e -> {
-									logger.error("Failed to register with fed broker "+brokerName, e);
+									logger.error("Failed to register with fed broker " + brokerName, e);
 									return Uni.createFrom().voidItem();
 								});
-							});
-						}
+					});
+				}
 				return Uni.createFrom().voidItem();
-					}
-			));
+			}));
 		}
 		return Uni.combine().all().unis(unis).collectFailures().discardItems();
 	}

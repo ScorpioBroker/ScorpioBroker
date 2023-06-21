@@ -1,5 +1,11 @@
 RELEASE NOTES SCORPIO 4.0.1
 
+This release 
+ - improves further on the response time of Entity create update append and delete operations under heavy load
+ - addresses an issue with the count operator in queries.
+
+RELEASE NOTES SCORPIO 4.0.1
+
 This addresses 
  - an issue with the response time of Entity create update append and delete operations
  - improves the performance of queries which create an entity map
