@@ -182,8 +182,8 @@ public class QueryService {
 		if (unis.isEmpty()) {
 			QueryResult q = new QueryResult();
 			if(count){
-				q.setCount(resultCount)
-			};
+				q.setCount(resultCount);
+			}
 			q.setData(new ArrayList<Map<String, Object>>());
 			return Uni.createFrom().item(q);
 		}
