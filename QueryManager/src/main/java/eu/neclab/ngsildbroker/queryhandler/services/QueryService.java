@@ -1277,7 +1277,8 @@ public class QueryService {
 		}).onItem().transform(tuple -> {
 			EntityMap entityMap = tuple.getItem1();
 			Map<String, Map<String, Object>> localResults = tuple.getItem2();
-			vertx.executeBlockingAndForget(queryDAO.storeEntityMap(tenant, qToken, entityMap));
+			queryDAO.storeEntityMap(tenant, qToken, entityMap).subscribe().with(t -> {logger.debug("Stored entity map " + qToken);});
+			//vertx.executeBlockingAndForget(queryDAO.storeEntityMap(tenant, qToken, entityMap));
 			// return queryDAO.storeEntityMap(tenant, qToken,
 			// entityMap).onItem().transform(v -> {
 			return Tuple2.of(localResults, entityMap);
