@@ -353,9 +353,8 @@ public class EntityService {
 	private Uni<NGSILDOperationResult> localDeleteAttrib(DeleteAttributeRequest request, Context context) {
 		return entityDAO.deleteAttribute(request).onItem().transform(resultEntity -> {
 			request.setPayload(resultEntity);
-			entityEmitter.send(request).subscribe().with(v -> {
-				logger.debug("sent delete attrib " + request.getId() + ":" + request.getAttribName());
-			});
+			
+			entityEmitter.sendAndForget(request);
 			NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.DELETE_ATTRIBUTE_REQUEST,
 					request.getId());
 			result.addSuccess(new CRUDSuccess(null, null, null,
@@ -434,9 +433,7 @@ public class EntityService {
 	private Uni<NGSILDOperationResult> localDeleteEntity(DeleteEntityRequest request, Context context) {
 		return entityDAO.deleteEntity(request).onItem().transform(deleted -> {
 			request.setPayload(deleted);
-			entityEmitter.send(request).subscribe().with(v -> {
-				logger.debug("sent delete entity" + request.getId());
-			});
+			entityEmitter.sendAndForget(request);
 			NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.DELETE_REQUEST, request.getId());
 			result.addSuccess(new CRUDSuccess(null, null, null, deleted, context));
 			return result;
@@ -594,9 +591,7 @@ public class EntityService {
 
 	private Uni<NGSILDOperationResult> updateLocalEntity(UpdateEntityRequest request, Context context) {
 		return entityDAO.updateEntity(request).onItem().transform(notAppended -> {
-			entityEmitter.send(request).subscribe().with(v -> {
-				logger.debug("sent update entity" + request.getId());
-			});
+			entityEmitter.sendAndForget(request);
 			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, request.getId());
 			localResult.addSuccess(new CRUDSuccess(null, null, null, request.getPayload(), context));
 			return localResult;
@@ -667,9 +662,7 @@ public class EntityService {
 
 	private Uni<NGSILDOperationResult> createLocalEntity(CreateEntityRequest request, Context context) {
 		return entityDAO.createEntity(request).onItem().transform(v -> {
-			entityEmitter.send(request).subscribe().with(v2 -> {
-				logger.debug("sent delete entity" + request.getId());
-			});
+			entityEmitter.sendAndForget(request);
 			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, request.getId());
 			localResult.addSuccess(new CRUDSuccess(null, null, null, request.getPayload(), context));
 			return localResult;
@@ -678,9 +671,7 @@ public class EntityService {
 
 	private Uni<NGSILDOperationResult> partialUpdateLocalEntity(UpdateEntityRequest request, Context context) {
 		return entityDAO.partialUpdateAttribute(request).onItem().transform(v -> {
-			entityEmitter.send(request).subscribe().with(v2 -> {
-				logger.debug("sent partial update entity" + request.getId());
-			});
+			entityEmitter.sendAndForget(request);
 			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.PARTIAL_UPDATE_REQUEST,
 					request.getId());
 			localResult.addSuccess(new CRUDSuccess(null, null, null, request.getPayload(), context));
@@ -865,9 +856,7 @@ public class EntityService {
 			localResult.addSuccess(new CRUDSuccess(null, null, null, request.getPayload(), context));
 			if (!failedToAdd.isEmpty())
 				localResult.addFailure(new ResponseException(ErrorType.None, "Not added", failedToAdd));
-			entityEmitter.send(request).subscribe().with(v -> {
-				logger.debug("sent append entity" + request.getId());
-			});
+			entityEmitter.sendAndForget(request);
 			return localResult;
 
 		});
