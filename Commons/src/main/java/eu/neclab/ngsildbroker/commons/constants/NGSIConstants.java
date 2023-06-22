@@ -264,7 +264,7 @@ public interface NGSIConstants {
 	public static final String MQTT_VERSION_3 = "mqtt3.1.1";
 	public static final String[] VALID_MQTT_VERSION = { "mqtt5.0", "mqtt3.1.1" };
 	public static final Integer[] VALID_QOS = { 0, 1, 2 };
-	public static final String COUNT_HEADER_RESULT = "count";
+	public static final String COUNT_HEADER_RESULT = "NGSILD-Results-Count";
 	public static final Set<String> NGSI_LD_ATTR_TYPES = Sets.newHashSet(NGSI_LD_PROPERTY, NGSI_LD_RELATIONSHIP,
 			NGSI_LD_GEOPROPERTY, NGSI_LD_LANGPROPERTY);
 
