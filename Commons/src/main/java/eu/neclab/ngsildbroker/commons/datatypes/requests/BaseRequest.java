@@ -13,6 +13,7 @@ public class BaseRequest {
 	private long sendTimestamp = System.currentTimeMillis();
 	private BatchInfo batchInfo;
 	private String id;
+	private Map<String, Object> previousEntity;
 
 	public BaseRequest() {
 
@@ -74,6 +75,12 @@ public class BaseRequest {
 
 	public void setId(String id) {
 		this.id = id;
+	}
+	public void setPreviousEntity(Map<String,Object> previousEntity){
+		this.previousEntity = previousEntity;
+	}
+	public Map<String,Object> getPreviousEntity(){
+		return previousEntity;
 	}
 
 }

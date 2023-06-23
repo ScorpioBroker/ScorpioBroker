@@ -60,17 +60,11 @@ public class MicroServiceUtils {
 		switch (originalPayload.getRequestType()) {
 			case AppConstants.DELETE_ATTRIBUTE_REQUEST:
 				result = new DeleteAttributeRequest();
-				((DeleteAttributeRequest) result).setPreviousEntity(((DeleteAttributeRequest) originalPayload).getPreviousEntity());
+				result.setPreviousEntity(originalPayload.getPreviousEntity());
 				((DeleteAttributeRequest) result).setAttribName(((DeleteAttributeRequest) originalPayload).getAttribName());
 				((DeleteAttributeRequest) result).setDatasetId(((DeleteAttributeRequest) originalPayload).getDatasetId());
 				((DeleteAttributeRequest) result).setDeleteAll(((DeleteAttributeRequest) originalPayload).isDeleteAll());
 				break;
-			case AppConstants.UPDATE_REQUEST:
-			case AppConstants.PARTIAL_UPDATE_REQUEST:
-				UpdateEntityRequest req = (UpdateEntityRequest) originalPayload;
-				result = new UpdateEntityRequest(req.getTenant(),req.getId(),deepCopyMap(req.getPayload()),req.getAttrName(),req.getBatchInfo());
-				((UpdateEntityRequest) result).setPreviousEntity(req.getPreviousEntity());
-				return result;
 			default:
 				result = new BaseRequest();
 
@@ -80,6 +74,7 @@ public class MicroServiceUtils {
 		result.setTenant(originalPayload.getTenant());
 		result.setRequestType(originalPayload.getRequestType());
 		result.setBatchInfo(originalPayload.getBatchInfo());
+		result.setPreviousEntity(deepCopyMap(originalPayload.getPreviousEntity()));
 		return result;
 	}
 

@@ -292,14 +292,13 @@ public class SubscriptionService {
 		logger.debug("checking subscriptions");
 		for (SubscriptionRequest potentialSub : potentialSubs) {
 			switch (message.getRequestType()) {
-				case AppConstants.UPDATE_REQUEST, AppConstants.PARTIAL_UPDATE_REQUEST -> {
-					UpdateEntityRequest request = (UpdateEntityRequest) message;
+				case AppConstants.UPDATE_REQUEST, AppConstants.PARTIAL_UPDATE_REQUEST,AppConstants.MERGE_PATCH_REQUEST -> {
 					unis.add(localEntityService.getAllByIds(message.getTenant(), message.getId(), true).onItem()
 							.transformToUni(entityList -> {
 								Map<String, Object> payload = new HashMap<>();
 								if (potentialSub.getSubscription().getNotification().getShowChanges()) {
 									payload.put(JsonLdConsts.GRAPH,
-											List.of(compareMaps(request.getPreviousEntity(), entityList.get(0))));
+											List.of(compareMaps(message.getPreviousEntity(), entityList.get(0))));
 								} else
 									payload.put(JsonLdConsts.GRAPH, entityList);
 								return sendNotification(potentialSub, payload, message.getRequestType());
@@ -816,6 +815,10 @@ public class SubscriptionService {
 
 		for (Map.Entry<String, Object> entry : newMap.entrySet()) {
 			String key = entry.getKey();
+			if(key.equals(JsonLdConsts.TYPE)){
+				resultMap.put(key,newMap.get(key));
+				continue;
+			}
 			Object newValue = entry.getValue();
 			Object oldValue = oldMap.get(key);
 
@@ -849,18 +852,24 @@ public class SubscriptionService {
 		List<Object> valueList = List.of(propertyMap);
 
 		propertyMap.put(JsonLdConsts.TYPE, ((List<Map<String, Object>>) newValue).get(0).get(JsonLdConsts.TYPE));
-		if (((List<Map<String, Object>>) newValue).get(0).containsKey(NGSIConstants.NGSI_LD_HAS_VALUE))
+		if (((List<Map<String, Object>>) newValue).get(0).containsKey(NGSIConstants.NGSI_LD_HAS_VALUE)) {
 			propertyMap.put(NGSIConstants.VALUE,
 					((List<Map<String, Object>>) newValue).get(0).get(NGSIConstants.NGSI_LD_HAS_VALUE));
-		if (((List<Map<String, Object>>) newValue).get(0).containsKey(NGSIConstants.NGSI_LD_HAS_OBJECT))
+		}
+		if (((List<Map<String, Object>>) newValue).get(0).containsKey(NGSIConstants.NGSI_LD_HAS_OBJECT)) {
 			propertyMap.put(NGSIConstants.OBJECT,
 					((List<Map<String, Object>>) newValue).get(0).get(NGSIConstants.NGSI_LD_HAS_OBJECT));
-		if (((List<Map<String, Object>>) oldValue).get(0).containsKey(NGSIConstants.NGSI_LD_HAS_VALUE))
-			propertyMap.put(NGSIConstants.PREVIOUS_VALUE,
-					((List<Map<String, Object>>) oldValue).get(0).get(NGSIConstants.NGSI_LD_HAS_VALUE));
-		if (((List<Map<String, Object>>) oldValue).get(0).containsKey(NGSIConstants.NGSI_LD_HAS_OBJECT))
-			propertyMap.put(NGSIConstants.PREVIOUS_OBJECT,
-					((List<Map<String, Object>>) oldValue).get(0).get(NGSIConstants.NGSI_LD_HAS_OBJECT));
+		}
+		if(oldValue!=null){
+			if (((List<Map<String, Object>>) oldValue).get(0).containsKey(NGSIConstants.NGSI_LD_HAS_VALUE)) {
+				propertyMap.put(NGSIConstants.PREVIOUS_VALUE,
+						((List<Map<String, Object>>) oldValue).get(0).get(NGSIConstants.NGSI_LD_HAS_VALUE));
+			}
+			if (((List<Map<String, Object>>) oldValue).get(0).containsKey(NGSIConstants.NGSI_LD_HAS_OBJECT)) {
+				propertyMap.put(NGSIConstants.PREVIOUS_OBJECT,
+						((List<Map<String, Object>>) oldValue).get(0).get(NGSIConstants.NGSI_LD_HAS_OBJECT));
+			}
+		}
 
 		resultMap.put(key, valueList);
 	}

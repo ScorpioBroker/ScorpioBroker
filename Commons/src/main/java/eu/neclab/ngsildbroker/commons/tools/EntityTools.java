@@ -17,6 +17,7 @@ import com.google.common.collect.Sets;
 import java.util.Set;
 import java.util.UUID;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.BaseProperty;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoProperty;
@@ -348,9 +349,12 @@ public abstract class EntityTools {
 
 	}
 
-	public static Map<String, Object> addSysAttrs(Map<String, Object> resolved, long timeStamp) {
+	public static Map<String, Object> addSysAttrs(Map<String, Object> resolved, long timeStamp,int payloadType) {
 		String now = SerializationTools.formatter.format(Instant.ofEpochMilli(timeStamp));
-		setTemporalProperties(resolved, now, now, false);
+		if(List.of(AppConstants.CREATE_REQUEST,AppConstants.CREATE_TEMPORAL_REQUEST,AppConstants.CREATE_SUBSCRIPTION_REQUEST,AppConstants.CSOURCE_REG_CREATE_PAYLOAD).contains(payloadType)){
+			setTemporalProperties(resolved, now, now, false);
+		}
+		else setTemporalProperties(resolved, "", now, false);
 		return resolved;
 	}
 

@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.entityhandler.services;
 
+import com.github.jsonldjava.core.JsonLdConsts;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Table;
@@ -11,6 +12,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.BatchRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteAttributeRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.MergePatchRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.UpdateEntityRequest;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -374,4 +376,25 @@ public class EntityInfoDAO {
 		});
 	}
 
+	public Uni<Map<String,Object>> mergePatch(MergePatchRequest request) {
+		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
+			Map<String,Object> payload = request.getPayload();
+			if(payload.get(JsonLdConsts.TYPE) == null) payload.remove(JsonLdConsts.TYPE);
+			return client.preparedQuery("SELECT * FROM MERGE_JSON($1,$2)")
+					.execute(Tuple.of(request.getId(), new JsonObject(request.getPayload())))
+					.onFailure().recoverWithUni(e -> {
+						if (e instanceof PgException) {
+							if (((PgException) e).getCode().equals(AppConstants.SQL_NOT_FOUND)) {
+								return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound,
+										request.getId() + " not found"));
+							}
+						}
+						return Uni.createFrom().failure(e);
+					}).onItem().transformToUni(rows -> {
+						if(rows.iterator().next().getJsonObject(0)==null) return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound,
+								request.getId() + " not found"));
+						return Uni.createFrom().item(rows.iterator().next().getJsonObject(0).getMap());
+					});
+		});
+	}
 }

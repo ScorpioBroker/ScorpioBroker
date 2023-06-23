@@ -195,6 +195,7 @@ class NGSIObject {
 			break;
 		case AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD:
 		case AppConstants.ENTITY_UPDATE_PAYLOAD:
+		case AppConstants.MERGE_PATCH_REQUEST:
 			if (activeProperty == null) {
 				// we are in root
 //				if (hasAtId) {

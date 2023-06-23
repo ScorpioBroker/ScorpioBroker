@@ -10,7 +10,6 @@ public class DeleteAttributeRequest extends EntityRequest {
 	private String attribName;
 	private String datasetId;
 	private boolean deleteAll;
-	private Map<String,Object> previousEntity;
 
 	public DeleteAttributeRequest() {
 
@@ -50,12 +49,6 @@ public class DeleteAttributeRequest extends EntityRequest {
 
 	public void setDatasetId(String datasetId) {
 		this.datasetId = datasetId;
-	}
-	public void setPreviousEntity(Map<String,Object> previousEntity) {
-		this.previousEntity = previousEntity;
-	}
-	public Map<String,Object> getPreviousEntity() {
-		return previousEntity;
 	}
 
 }

@@ -2,6 +2,7 @@ package eu.neclab.ngsildbroker.entityhandler.services;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -15,6 +16,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 
+import eu.neclab.ngsildbroker.commons.datatypes.requests.MergePatchRequest;
 import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Channel;
@@ -713,6 +715,7 @@ public class EntityService {
 						}
 						break;
 					case AppConstants.UPDATE_REQUEST:
+					case AppConstants.MERGE_PATCH_REQUEST:
 						if (!regEntry.updateEntity()) {
 							continue;
 						}
@@ -771,6 +774,7 @@ public class EntityService {
 										regEntry.regMode(), regEntry.canDoZip(), regEntry.canDoIdQuery());
 								break;
 							case AppConstants.UPDATE_REQUEST:
+							case AppConstants.MERGE_PATCH_REQUEST:
 								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
 										regHost.cSourceId(), regEntry.appendAttrs(), false, regEntry.regMode(),
 										regEntry.canDoZip(), regEntry.canDoIdQuery());
@@ -827,7 +831,7 @@ public class EntityService {
 			if (originalScopes != null) {
 				toStore.put(NGSIConstants.NGSI_LD_SCOPE, originalScopes);
 			}
-			EntityTools.addSysAttrs(toStore, request.getSendTimestamp());
+			EntityTools.addSysAttrs(toStore, request.getSendTimestamp(), request.getRequestType());
 		}
 		return Tuple2.of(toStore, cId2RemoteHostEntity.values());
 	}
@@ -1358,4 +1362,77 @@ public class EntityService {
 		});
 	}
 
+	public Uni<NGSILDOperationResult> mergePatch(String tenant, String entityId, Map<String, Object> resolved, Context context) {
+		logger.debug("createMessage() :: started");
+		MergePatchRequest request = new MergePatchRequest(tenant,entityId,resolved,null);
+		Tuple2<Map<String, Object>, Collection<Tuple2<RemoteHost, Map<String, Object>>>> localAndRemote = splitEntity(
+				request);
+		Map<String, Object> localEntity = localAndRemote.getItem1();
+		Collection<Tuple2<RemoteHost, Map<String, Object>>> remoteEntitiesAndHosts = localAndRemote.getItem2();
+		if (remoteEntitiesAndHosts.isEmpty()) {
+			request.setPayload(localEntity);
+			return localMergePatch(request, context);
+		}
+		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(remoteEntitiesAndHosts.size());
+		for (Tuple2<RemoteHost, Map<String, Object>> remoteEntityAndHost : remoteEntitiesAndHosts) {
+			Map<String, Object> expanded = remoteEntityAndHost.getItem2();
+			Map<String, Object> compacted;
+			try {
+				compacted = prepareSplitUpEntityForSending(expanded, context);
+			} catch (JsonLdError | ResponseException e) {
+				logger.error("Failed to compact remote payload", e);
+				continue;
+			}
+			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
+			if (remoteHost.canDoSingleOp()) {
+				unis.add(webClient.post(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT)
+						.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(compacted)).onItemOrFailure()
+						.transform((response, failure) -> {
+							return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(201), remoteHost,
+									AppConstants.CREATE_REQUEST, request.getId(),
+									HttpUtils.getAttribsFromCompactedPayload(compacted));
+
+						}));
+			} else {
+				unis.add(webClient.post(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_CREATE)
+						.putHeaders(remoteHost.headers())
+						.sendJson(new JsonArray(Lists.newArrayList(new JsonObject(compacted)))).onItemOrFailure()
+						.transform((response, failure) -> {
+							return handleBatchResponse(response, failure, remoteHost, Lists.newArrayList(compacted),
+									ArrayUtils.toArray(201)).get(0);
+						}));
+			}
+
+		}
+		if (localEntity != null && !localEntity.isEmpty()) {
+			request.setPayload(localEntity);
+			unis.add(localMergePatch(request, context).onFailure().recoverWithItem(e -> {
+				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST,
+						request.getId());
+				if (e instanceof ResponseException) {
+					localResult.addFailure((ResponseException) e);
+				} else {
+					localResult.addFailure(new ResponseException(ErrorType.InternalError, e.getMessage()));
+				}
+
+				return localResult;
+
+			}));
+		}
+		return Uni.combine().all().unis(unis).combinedWith(list -> {
+			return getResult(list);
+		});
+	}
+
+	private Uni<NGSILDOperationResult> localMergePatch(MergePatchRequest request, Context context) {
+		return entityDAO.mergePatch(request).onItem().transformToUni(v -> {
+			request.setPreviousEntity(v);
+			return entityEmitter.send(request).onItem().transform(v2 -> {
+				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.MERGE_PATCH_REQUEST,
+						request.getId());
+				localResult.addSuccess(new CRUDSuccess(null, null, null, request.getPayload(), context));
+				return localResult;
+			});
+		});
+	}
 }
