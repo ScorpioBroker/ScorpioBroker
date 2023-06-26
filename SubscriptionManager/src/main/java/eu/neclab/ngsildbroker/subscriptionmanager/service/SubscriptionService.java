@@ -469,10 +469,14 @@ public class SubscriptionService {
 	private Uni<MqttClient> getMqttClient(NotificationParam notificationParam) {
 		URI host = notificationParam.getEndPoint().getUri();
 		String hostString = host.getUserInfo()+host.getHost() + host.getPort();
-		String[] usrPass = host.getUserInfo().split(":");
 		MqttClient client;
 		if (!host2MqttClient.containsKey(hostString)) {
-			client = MqttClient.create(vertx, new MqttClientOptions().setUsername(usrPass[0]).setPassword(usrPass[1]));
+			if(host.getUserInfo() != null){
+				String[] usrPass = host.getUserInfo().split(":");
+				client = MqttClient.create(vertx, new MqttClientOptions().setUsername(usrPass[0]).setPassword(usrPass[1]));
+			}else{
+				client = MqttClient.create(vertx, new MqttClientOptions());
+			}
 			return client.connect(host.getPort(), host.getHost()).onItem().transform(t -> {
 				host2MqttClient.put(hostString, client);
 				return client;
