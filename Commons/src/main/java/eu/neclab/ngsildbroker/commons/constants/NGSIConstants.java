@@ -431,4 +431,6 @@ public interface NGSIConstants {
 	public static final String ENTITY_MAP_TOKEN_HEADER = "NGSILD-EntityMap";
 
 	String NGSI_LD_NULL = "urn:ngsi-ld:null";
+	String HAS_VALUE_NULL = "[{https://uri.etsi.org/ngsi-ld/hasValue=[{@value=urn:ngsi-ld:null}]";
+	String HAS_OBJECT_NULL = "[{https://uri.etsi.org/ngsi-ld/hasObject=[{@id=urn:ngsi-ld:null}]";
 }

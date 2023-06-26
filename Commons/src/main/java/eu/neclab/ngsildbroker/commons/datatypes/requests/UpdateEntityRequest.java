@@ -9,8 +9,6 @@ public class UpdateEntityRequest extends EntityRequest {
 
 	private String attrName;
 
-//	private Map<String,Object> previousEntity;
-
 	public UpdateEntityRequest(String tenant, String id, Map<String, Object> payload, String attrName,
                                BatchInfo batchInfo) {
 		super(tenant, id, payload, batchInfo, AppConstants.UPDATE_REQUEST);
@@ -24,11 +22,4 @@ public class UpdateEntityRequest extends EntityRequest {
 	public void setAttrName(String attrName) {
 		this.attrName = attrName;
 	}
-
-//	public void setPreviousEntity(Map<String,Object> previousEntity){
-//		this.previousEntity = previousEntity;
-//	}
-//	public Map<String,Object> getPreviousEntity(){
-//		return previousEntity;
-//	}
 }

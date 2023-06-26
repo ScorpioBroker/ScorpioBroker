@@ -477,8 +477,8 @@ public class HistoryDAO {
 		for (String key: request.getPayload().keySet()
 			 ) {
 			String value = request.getPayload().get(key).toString();
-			if(value.contains("[{https://uri.etsi.org/ngsi-ld/hasValue=[{@value=urn:ngsi-ld:null}]")||
-			value.contains("[{https://uri.etsi.org/ngsi-ld/hasObject=[{@id=urn:ngsi-ld:null}]")){
+			if(value.contains(NGSIConstants.HAS_VALUE_NULL)||
+			value.contains(NGSIConstants.HAS_OBJECT_NULL)){
 				//separating deleted attr from payload
 				DeleteAttributeRequest deleteAttributeRequest = new DeleteAttributeRequest(request.getTenant(), request.getId(), key,null,false);
 				unis.add(setAttributeDeleted(deleteAttributeRequest));
