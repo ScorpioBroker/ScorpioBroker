@@ -35,7 +35,7 @@ public abstract class HistoryMessagingBase {
 	@ConfigProperty(name = "scorpio.history.autorecording", defaultValue = "true")
 	boolean autoRecording;
 	@ConfigProperty(name = "scorpio.history.autorecordingbuffersize", defaultValue = "50000")
-	private int maxSize;
+	int maxSize;
 
 	public Uni<Void> baseHandleEntity(BaseRequest message) {
 		if (!autoRecording) {

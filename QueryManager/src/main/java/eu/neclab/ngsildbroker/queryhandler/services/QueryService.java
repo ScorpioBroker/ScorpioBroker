@@ -81,7 +81,7 @@ public class QueryService {
 	private Table<String, String, List<RegistrationEntry>> tenant2CId2RegEntries = HashBasedTable.create();
 
 	@ConfigProperty(name = "scorpio.entitymap.cleanup.ttl", defaultValue = "30 sec")
-	private String entityMapTTL;
+	String entityMapTTL;
 
 	@PostConstruct
 	void setup() {
