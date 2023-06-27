@@ -268,7 +268,7 @@ public interface NGSIConstants {
 	public static final String MQTT_VERSION_3 = "mqtt3.1.1";
 	public static final String[] VALID_MQTT_VERSION = { "mqtt5.0", "mqtt3.1.1" };
 	public static final Integer[] VALID_QOS = { 0, 1, 2 };
-	public static final String COUNT_HEADER_RESULT = "count";
+	public static final String COUNT_HEADER_RESULT = "NGSILD-Results-Count";
 	public static final Set<String> NGSI_LD_ATTR_TYPES = Sets.newHashSet(NGSI_LD_PROPERTY, NGSI_LD_RELATIONSHIP,
 			NGSI_LD_GEOPROPERTY, NGSI_LD_LANGPROPERTY);
 
@@ -430,7 +430,8 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_REG_OPERATION_CANCOMPRESS = "canCompress";
 	public static final String ENTITY_MAP_TOKEN_HEADER = "NGSILD-EntityMap";
 
-	String NGSI_LD_NULL = "urn:ngsi-ld:null";
-	String HAS_VALUE_NULL = "[{https://uri.etsi.org/ngsi-ld/hasValue=[{@value=urn:ngsi-ld:null}]";
-	String HAS_OBJECT_NULL = "[{https://uri.etsi.org/ngsi-ld/hasObject=[{@id=urn:ngsi-ld:null}]";
+	public static final String NGSI_LD_NULL = "urn:ngsi-ld:null";
+	public static final String HAS_VALUE_NULL = "[{https://uri.etsi.org/ngsi-ld/hasValue=[{@value=urn:ngsi-ld:null}]";
+	public static final String HAS_OBJECT_NULL = "[{https://uri.etsi.org/ngsi-ld/hasObject=[{@id=urn:ngsi-ld:null}]";
 }
+

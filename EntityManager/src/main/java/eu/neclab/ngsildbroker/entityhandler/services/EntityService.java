@@ -351,15 +351,15 @@ public class EntityService {
 	}
 
 	private Uni<NGSILDOperationResult> localDeleteAttrib(DeleteAttributeRequest request, Context context) {
-		return entityDAO.deleteAttribute(request).onItem().transformToUni(resultEntity -> {
-			request.setPreviousEntity(resultEntity);
-			return entityEmitter.send(request).onItem().transform(v -> {
-				NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.DELETE_ATTRIBUTE_REQUEST,
-						request.getId());
-				result.addSuccess(new CRUDSuccess(null, null, null,
-						Set.of(new Attrib(request.getAttribName(), request.getDatasetId()))));
-				return result;
-			});
+		return entityDAO.deleteAttribute(request).onItem().transform(resultEntity -> {
+			request.setPayload(resultEntity);
+			
+			entityEmitter.sendAndForget(request);
+			NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.DELETE_ATTRIBUTE_REQUEST,
+					request.getId());
+			result.addSuccess(new CRUDSuccess(null, null, null,
+					Set.of(new Attrib(request.getAttribName(), request.getDatasetId()))));
+			return result;
 		});
 	}
 
@@ -430,13 +430,12 @@ public class EntityService {
 	}
 
 	private Uni<NGSILDOperationResult> localDeleteEntity(DeleteEntityRequest request, Context context) {
-		return entityDAO.deleteEntity(request).onItem().transformToUni(deleted -> {
+		return entityDAO.deleteEntity(request).onItem().transform(deleted -> {
 			request.setPayload(deleted);
-			return entityEmitter.send(request).onItem().transform(v -> {
-				NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.DELETE_REQUEST, request.getId());
-				result.addSuccess(new CRUDSuccess(null, null, null, deleted, context));
-				return result;
-			});
+			entityEmitter.sendAndForget(request);
+			NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.DELETE_REQUEST, request.getId());
+			result.addSuccess(new CRUDSuccess(null, null, null, deleted, context));
+			return result;
 		});
 	}
 
@@ -590,14 +589,11 @@ public class EntityService {
 	}
 
 	private Uni<NGSILDOperationResult> updateLocalEntity(UpdateEntityRequest request, Context context) {
-		return entityDAO.updateEntity(request).onItem().transformToUni(oldEntity -> {
-			request.setPreviousEntity(oldEntity);
-			return entityEmitter.send(request).onItem().transform(v2 -> {
-				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST,
-						request.getId());
-				localResult.addSuccess(new CRUDSuccess(null, null, null, request.getPayload(), context));
-				return localResult;
-			});
+		return entityDAO.updateEntity(request).onItem().transform(notAppended -> {
+			entityEmitter.sendAndForget(request);
+			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, request.getId());
+			localResult.addSuccess(new CRUDSuccess(null, null, null, request.getPayload(), context));
+			return localResult;
 		});
 	}
 
@@ -664,25 +660,21 @@ public class EntityService {
 	}
 
 	private Uni<NGSILDOperationResult> createLocalEntity(CreateEntityRequest request, Context context) {
-		return entityDAO.createEntity(request).onItem().transformToUni(v -> {
-			return entityEmitter.send(request).onItem().transform(v2 -> {
-				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST,
-						request.getId());
-				localResult.addSuccess(new CRUDSuccess(null, null, null, request.getPayload(), context));
-				return localResult;
-			});
+		return entityDAO.createEntity(request).onItem().transform(v -> {
+			entityEmitter.sendAndForget(request);
+			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, request.getId());
+			localResult.addSuccess(new CRUDSuccess(null, null, null, request.getPayload(), context));
+			return localResult;
 		});
 	}
 
 	private Uni<NGSILDOperationResult> partialUpdateLocalEntity(UpdateEntityRequest request, Context context) {
-		return entityDAO.partialUpdateAttribute(request).onItem().transformToUni(v -> {
-			request.setPreviousEntity(v.iterator().next().getJsonObject(0).getMap());
-			return entityEmitter.send(request).onItem().transform(v2 -> {
-				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.PARTIAL_UPDATE_REQUEST,
-						request.getId());
-				localResult.addSuccess(new CRUDSuccess(null, null, null, request.getPayload(), context));
-				return localResult;
-			});
+		return entityDAO.partialUpdateAttribute(request).onItem().transform(v -> {
+			entityEmitter.sendAndForget(request);
+			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.PARTIAL_UPDATE_REQUEST,
+					request.getId());
+			localResult.addSuccess(new CRUDSuccess(null, null, null, request.getPayload(), context));
+			return localResult;
 		});
 	}
 
@@ -854,7 +846,7 @@ public class EntityService {
 	}
 
 	private Uni<NGSILDOperationResult> appendLocal(AppendEntityRequest request, boolean noOverwrite, Context context) {
-		return entityDAO.appendToEntity2(request, noOverwrite).onItem().transformToUni(notAppended -> {
+		return entityDAO.appendToEntity2(request, noOverwrite).onItem().transform(notAppended -> {
 			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.APPEND_REQUEST, request.getId());
 			Set<Attrib> failedToAdd = Sets.newHashSet();
 			Map<String, Object> payload = request.getPayload();
@@ -865,9 +857,9 @@ public class EntityService {
 			localResult.addSuccess(new CRUDSuccess(null, null, null, request.getPayload(), context));
 			if (!failedToAdd.isEmpty())
 				localResult.addFailure(new ResponseException(ErrorType.None, "Not added", failedToAdd));
-			return entityEmitter.send(request).onItem().transform(v2 -> {
-				return localResult;
-			});
+			entityEmitter.sendAndForget(request);
+			return localResult;
+
 		});
 	}
 
@@ -948,7 +940,7 @@ public class EntityService {
 
 					}
 
-					if(request.getRequestPayload().isEmpty()) {
+					if (request.getRequestPayload().isEmpty()) {
 						return Uni.createFrom().item(result);
 					}
 					return batchEmitter.send(request).onItem().transform(v -> result);

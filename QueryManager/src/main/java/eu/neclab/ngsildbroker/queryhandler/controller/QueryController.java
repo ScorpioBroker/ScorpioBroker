@@ -138,11 +138,14 @@ public class QueryController {
 			return Uni.createFrom()
 					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.TooManyResults)));
 		}
-		if (id == null && typeQuery == null && attrs == null && geometry == null && q == null) {
+		if (id == null && typeQuery == null && attrs == null && geometry == null && q == null ) {
 			return Uni.createFrom()
 					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.InvalidRequest)));
 		}
-
+		if(actualLimit==0 && !count){
+			return Uni.createFrom()
+					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadLimitQuery)));
+		}
 		Context context;
 		List<Object> headerContext;
 		AttrsQueryTerm attrsQuery;
@@ -173,8 +176,8 @@ public class QueryController {
 		}
 		String token;
 		boolean tokenProvided;
-		String md5 = "" + Objects.hashCode(typeQuery, attrs, q, csf, geometry, georel, coordinates, geoproperty,
-				geometryProperty, lang, scopeQ, localOnly, options);
+		String md5 = String.valueOf(Objects.hashCode(typeQuery, attrs, q, csf, geometry, georel, coordinates, geoproperty,
+				geometryProperty, lang, scopeQ, localOnly, options));
 		String headerToken = request.headers().get(NGSIConstants.ENTITY_MAP_TOKEN_HEADER);
 		if (headerToken != null && entityMapToken != null) {
 			if (!headerToken.equals(entityMapToken)) {

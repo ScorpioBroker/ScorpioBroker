@@ -11,6 +11,7 @@ public enum ErrorType {
 	NotAcceptable(406, "https://uri.etsi.org/ngsi-ld/errors/NotAcceptable", "Not an acceptable request."),
 	InvalidRequest(400, "https://uri.etsi.org/ngsi-ld/errors/InvalidRequest", "Invalid request."),
 	BadRequestData(400, "https://uri.etsi.org/ngsi-ld/errors/BadRequestData", "Bad Request Data."),
+	BadLimitQuery(400, "https://uri.etsi.org/ngsi-ld/errors/BadRequestData", "Limit can only be 0 if count is true."),
 	TooComplexQuery(403, "https://uri.etsi.org/ngsi-ld/errors/TooComplexQuery", "Too complex query"),
 	TooManyResults(403, "https://uri.etsi.org/ngsi-ld/errors/TooManyResults ", "Too many results"),
 	NotFound(404, "https://uri.etsi.org/ngsi-ld/errors/ResourceNotFound", "Resource not found."),

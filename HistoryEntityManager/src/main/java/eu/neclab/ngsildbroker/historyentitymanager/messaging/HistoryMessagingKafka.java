@@ -11,6 +11,8 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BatchRequest;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import io.quarkus.arc.profile.UnlessBuildProfile;
+import io.quarkus.scheduler.Scheduled;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.smallrye.mutiny.Uni;
 
 @Singleton
@@ -45,5 +47,11 @@ public class HistoryMessagingKafka extends HistoryMessagingBase {
 			return baseHandleCsource(MicroServiceUtils.deepCopyRequestMessage(busMessage));
 		}
 		return baseHandleCsource(busMessage);
+	}
+
+	@Scheduled(every = "5s")
+	@RunOnVirtualThread
+	Uni<Void> checkBuffer() {
+		return super.checkBuffer();
 	}
 }

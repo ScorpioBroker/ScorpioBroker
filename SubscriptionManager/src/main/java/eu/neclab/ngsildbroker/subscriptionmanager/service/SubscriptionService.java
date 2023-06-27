@@ -20,6 +20,7 @@ import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import io.vertx.mqtt.MqttClientOptions;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
@@ -488,10 +489,15 @@ public class SubscriptionService {
 
 	private Uni<MqttClient> getMqttClient(NotificationParam notificationParam) {
 		URI host = notificationParam.getEndPoint().getUri();
-		String hostString = host.getHost() + host.getPort();
+		String hostString = host.getUserInfo()+host.getHost() + host.getPort();
 		MqttClient client;
 		if (!host2MqttClient.containsKey(hostString)) {
-			client = MqttClient.create(vertx);
+			if(host.getUserInfo() != null){
+				String[] usrPass = host.getUserInfo().split(":");
+				client = MqttClient.create(vertx, new MqttClientOptions().setUsername(usrPass[0]).setPassword(usrPass[1]));
+			}else{
+				client = MqttClient.create(vertx, new MqttClientOptions());
+			}
 			return client.connect(host.getPort(), host.getHost()).onItem().transform(t -> {
 				host2MqttClient.put(hostString, client);
 				return client;

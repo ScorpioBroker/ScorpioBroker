@@ -29,6 +29,7 @@ import eu.neclab.ngsildbroker.commons.tools.DBUtil;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
+import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowIterator;
 import io.vertx.mutiny.sqlclient.RowSet;
@@ -120,7 +121,12 @@ public class HistoryDAO {
 				if (rows.size() == 0) {
 					return new HashMap<>(0);
 				}
-				return rows.iterator().next().getJsonObject(0).getMap();
+				JsonObject json = rows.iterator().next().getJsonObject(0);
+				if (json == null) {
+					return new HashMap<>(0);
+				}
+				return json.getMap();
+
 			});
 		});
 
@@ -349,10 +355,10 @@ public class HistoryDAO {
 					Map<String, Object> entity;
 					while (it.hasNext()) {
 						next = it.next();
-						if(next.getJsonObject(0)!=null)
+						if (next.getJsonObject(0) != null)
 							entity = next.getJsonObject(0).getMap();
 						else
-							entity=new HashMap<>();
+							entity = new HashMap<>();
 						resultData.add(entity);
 					}
 					if (count) {

@@ -179,7 +179,7 @@ public class EntityServiceTest {
 		assertEquals(1, operationResult.getSuccesses().size());
 		assertEquals(0, operationResult.getFailures().size());
 		verify(entityDAO, times(1)).appendToEntity2(any(), anyBoolean());
-		verify(entityEmitter, times(1)).send(any(AppendEntityRequest.class));
+		verify(entityEmitter, times(1)).sendAndForget(any(AppendEntityRequest.class));
 	}
 
 	@Test
@@ -212,7 +212,7 @@ public class EntityServiceTest {
 					.deleteAttribute(tenant, entityId, "brandName", "datasetId", false, context).await().indefinitely();
 
 			verify(entityDAO, times(1)).deleteAttribute(any());
-			verify(entityEmitter, times(1)).send(any(DeleteAttributeRequest.class));
+			verify(entityEmitter, times(1)).sendAndForget(any(DeleteAttributeRequest.class));
 
 			assertEquals(entityId, operationResult.getEntityId());
 
@@ -236,7 +236,7 @@ public class EntityServiceTest {
 					.indefinitely();
 
 			verify(entityDAO, times(1)).deleteEntity(any());
-			verify(entityEmitter, times(1)).send(any(DeleteEntityRequest.class));
+			verify(entityEmitter, times(1)).sendAndForget(any(DeleteEntityRequest.class));
 
 			assertEquals(entityId, operationResult.getEntityId());
 
@@ -310,7 +310,7 @@ public class EntityServiceTest {
 
 		assertEquals(2, operationResultList.size());
 		verify(entityDAO, times(1)).batchCreateEntity(any());
-		verify(batchEmitter, times(1)).send(any(BatchRequest.class));
+		verify(batchEmitter, times(0)).send(any(BatchRequest.class));
 	}
 
 	@Test
@@ -391,8 +391,11 @@ public class EntityServiceTest {
 		contextList.add(context);
 
 		Map<String, Object> entityBatchDaoRes = new HashMap<>();
-		List<String> successes = new ArrayList<>();
-		successes.add(entityId);
+		List<Map<String, Boolean>> successes = new ArrayList<>();
+		Map<String, Boolean> map = new HashMap<>();
+		map.put(entityId, true);
+		successes.add(map);
+
 		List<Map<String, String>> failures = new ArrayList<>();
 		entityBatchDaoRes.put("success", successes);
 		entityBatchDaoRes.put("failure", failures);
