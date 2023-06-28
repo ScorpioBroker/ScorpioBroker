@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "5e0328e5-27a7-49ba-ba3f-e0df5e6ff4f7",
+		"_postman_id": "b6be3211-013e-4de6-9823-9f7fb6a7f4a7",
 		"name": "API Test",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
@@ -9615,7 +9615,7 @@
 																	"\r",
 																	"pm.test(\"Validate header with count\", function () {\r",
 																	"   \r",
-																	"    pm.expect(pm.response.headers.get('count')).to.eql('2');\r",
+																	"    pm.expect(pm.response.headers.get('NGSILD-Results-Count')).to.eql('2');\r",
 																	"});"
 																],
 																"type": "text/javascript"
@@ -9672,7 +9672,7 @@
 																	"\r",
 																	"pm.test(\"Validate header with count\", function () {\r",
 																	"   \r",
-																	"    pm.expect(pm.response.headers.get('count')).to.eql('2');\r",
+																	"    pm.expect(pm.response.headers.get('NGSILD-Results-Count')).to.eql('2');\r",
 																	"});\r",
 																	"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
@@ -9803,7 +9803,7 @@
 									"name": "Merge Patch",
 									"item": [
 										{
-											"name": "Partial Update Entity with no context Copy",
+											"name": "Partial Update Entity with no context",
 											"item": [
 												{
 													"name": "Create Simple Entity No Context",
@@ -10630,7 +10630,7 @@
 													"response": []
 												},
 												{
-													"name": "Update Subscription with no @context Copy",
+													"name": "Update Subscription with no @context",
 													"event": [
 														{
 															"listen": "test",
@@ -16611,7 +16611,7 @@
 															"response": []
 														},
 														{
-															"name": "Update relationship test field of the entity",
+															"name": "Delete stringproperty test field of the entity",
 															"event": [
 																{
 																	"listen": "test",
@@ -41468,24 +41468,6 @@
 					]
 				}
 			]
-		}
-	],
-	"variable": [
-		{
-			"key": "created",
-			"value": ""
-		},
-		{
-			"key": "entityId",
-			"value": ""
-		},
-		{
-			"key": "updated",
-			"value": ""
-		},
-		{
-			"key": "updatedAttrib",
-			"value": ""
 		}
 	]
 }
