@@ -1,6 +1,7 @@
 package eu.neclab.ngsildbroker.queryhandler.repository;
 
 import com.github.jsonldjava.core.Context;
+import com.github.jsonldjava.core.JsonLdConsts;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -58,18 +59,33 @@ public class QueryDAO {
 
 	public Uni<Map<String, Object>> getEntity(String entityId, String tenantId, AttrsQueryTerm attrsQuery) {
 		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
+			Tuple tuple = Tuple.tuple();
+			int dollerCount =1;
 			String sql = "SELECT ";
 			if (attrsQuery != null) {
-				for (String attrs : attrsQuery.getAttrs()) {
-					sql += "JSONB_BUILD_OBJECT('%s', ENTITY->'%s') ||";
-					sql = sql.formatted(attrs, attrs);
+				List<String> attrsList = new ArrayList<>(attrsQuery.getAttrs().stream().toList());
+				attrsList.addAll(List.of(JsonLdConsts.ID,JsonLdConsts.TYPE,NGSIConstants.NGSI_LD_CREATED_AT,
+						NGSIConstants.NGSI_LD_MODIFIED_AT));
+				for (String attrs : attrsList) {
+					sql += "JSONB_BUILD_OBJECT($"+dollerCount +", ENTITY->$"+dollerCount +") ||";
+					tuple.addString(attrs);
+					dollerCount++;
 				}
-				sql = sql.substring(0, sql.length() - 2);
+				sql +="CASE WHEN ENTITY-> $" +
+						dollerCount +
+						" IS NOT NULL THEN JSONB_BUILD_OBJECT( $" +
+						dollerCount +
+						" , ENTITY-> $" +
+						dollerCount +
+						" ) ELSE '{}'::jsonb END" ;
+				tuple.addString(NGSIConstants.NGSI_LD_SCOPE);
+				dollerCount++;
 			} else {
 				sql += "ENTITY ";
 			}
-			sql += " FROM ENTITY WHERE ID='%s'".formatted(entityId);
-			return client.preparedQuery(sql).execute().onItem().transformToUni(t -> {
+			sql += " FROM ENTITY WHERE ID=$"+ dollerCount;
+			tuple.addString(entityId);
+			return client.preparedQuery(sql).execute(tuple).onItem().transformToUni(t -> {
 				if (t.rowCount() == 0) {
 					return Uni.createFrom().item(new HashMap<String, Object>());
 				}
