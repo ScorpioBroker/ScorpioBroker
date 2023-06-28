@@ -1,4 +1,12 @@
-RELEASE NOTES SCORPIO 4.0.1
+RELEASE NOTES SCORPIO 4.0.3
+
+This release addresses the following issues
+
+ - A backward compatibility issue with q queries which use the id field. Generally we recommend to use the idPattern field for this
+ - An issue with batch upsert where it would sometimes overwrite other entities
+ - Proper support for authorization in mqtt notifications
+
+RELEASE NOTES SCORPIO 4.0.2
 
 This release 
  - improves further on the response time of Entity create update append and delete operations under heavy load
