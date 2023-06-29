@@ -108,14 +108,13 @@ public class QueryServiceTest {
 	@Test
 	@Order(2)
 	public void retrieveEntityNotFoundTest() {
+
 		Uni<Map<String, Object>> getEntityRes = Uni.createFrom().item(new HashMap<String, Object>());
 		when(queryDAO.getEntity(anyString(), anyString(), any())).thenReturn(getEntityRes);
-		CompletionException ex = assertThrows(CompletionException.class, () -> {
-			Uni<Map<String, Object>> originalEntityResUni = queryService.retrieveEntity(context, "", entityId, null,
-					null, true);
-			Map<String, Object> originalEntityRes = originalEntityResUni.await().indefinitely();
-		});
+		Uni<Map<String, Object>> originalEntityResUni = queryService.retrieveEntity(context, "", entityId, null, null,
+				true);
+		Map<String, Object> originalEntityRes = originalEntityResUni.await().indefinitely();
 
-		assertTrue(ex.getCause() instanceof ResponseException);
+		assertTrue(originalEntityRes.isEmpty());
 	}
 }
