@@ -17,12 +17,16 @@ public abstract class SubscriptionMessagingBase {
 
 	public Uni<Void> baseHandleEntity(BaseRequest message) {
 		logger.debug("CSource sub manager got called for csource: " + message.getId());
-		return subscriptionService.checkSubscriptions(message);
+		return subscriptionService.checkSubscriptions(message).onFailure().recoverWithUni(t->{
+			logger.debug("Exception Occurred in checkSubscriptions: " + t);
+			return Uni.createFrom().voidItem();});
 	}
 
 	public Uni<Void> baseHandleBatchEntities(BatchRequest message) {
 		logger.debug("CSource sub manager got called for csource: " + message.getEntityIds());
-		return subscriptionService.checkSubscriptions(message);
+		return subscriptionService.checkSubscriptions(message).onFailure().recoverWithUni(t->{
+			logger.debug("Exception Occurred in checkSubscriptions: " + t);
+			return Uni.createFrom().voidItem();});
 	}
 
 	public Uni<Void> baseHandleInternalNotification(InternalNotification message) {
