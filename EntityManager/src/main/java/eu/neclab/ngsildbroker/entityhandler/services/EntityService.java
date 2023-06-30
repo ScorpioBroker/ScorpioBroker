@@ -352,7 +352,7 @@ public class EntityService {
 
 	private Uni<NGSILDOperationResult> localDeleteAttrib(DeleteAttributeRequest request, Context context) {
 		return entityDAO.deleteAttribute(request).onItem().transform(resultEntity -> {
-			request.setPayload(resultEntity);
+			request.setPreviousEntity(resultEntity);
 			
 			entityEmitter.sendAndForget(request);
 			NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.DELETE_ATTRIBUTE_REQUEST,
@@ -670,6 +670,7 @@ public class EntityService {
 
 	private Uni<NGSILDOperationResult> partialUpdateLocalEntity(UpdateEntityRequest request, Context context) {
 		return entityDAO.partialUpdateAttribute(request).onItem().transform(v -> {
+			request.setPreviousEntity(v.iterator().next().getJsonObject(0).getMap());
 			entityEmitter.sendAndForget(request);
 			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.PARTIAL_UPDATE_REQUEST,
 					request.getId());
