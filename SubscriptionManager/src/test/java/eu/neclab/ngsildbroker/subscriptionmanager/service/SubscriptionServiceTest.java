@@ -3,6 +3,7 @@ package eu.neclab.ngsildbroker.subscriptionmanager.service;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -26,6 +27,7 @@ import org.mockito.MockitoAnnotations;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jsonldjava.core.Context;
 
+import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.DeleteSubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
@@ -62,6 +64,9 @@ public class SubscriptionServiceTest {
 
 	@Mock
 	LocalEntityService localEntityService;
+
+	@Mock
+	LocalContextService localContextService;
 
 	String subscriptionId = "urn:ngsi-ld:Subscription:1";
 	String notificationId = "urn:ngsi-ld:notify:1";
@@ -159,7 +164,7 @@ public class SubscriptionServiceTest {
 		NGSILDOperationResult result = uniResult.await().indefinitely();
 
 		assertEquals(subscriptionId, result.getEntityId());
-		verify(subDAO, times(1)).deleteSubscription(any());
+		verify(subDAO, times(1)).deleteSubscription(any(DeleteSubscriptionRequest.class));
 	}
 
 	@Test
@@ -259,7 +264,7 @@ public class SubscriptionServiceTest {
 		Uni<Void> resultUni = subscriptionService.remoteNotify(notificationId, resolved, context);
 		resultUni.await().indefinitely();
 
-		verify(localEntityService, times(0)).getEntityById(any(), any(), any());
+		verify(localEntityService, times(0)).getEntityById(any(), any(), anyBoolean());
 	}
 
 }
