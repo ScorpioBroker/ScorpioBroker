@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "2a8609d9-b933-435b-afcc-254a3fc4d92d",
+		"_postman_id": "6add55d9-bf44-4f9a-aad8-a86604a75410",
 		"name": "API Test",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
@@ -9497,7 +9497,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:storeSubscription4\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"Test2\"\r\n   \t\t}\r\n\t],\r\n    \"q\": \"speed>90\",\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"http://localhost:8080\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    }\r\n}"
+															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:storeSubscription4\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"Test2\"\r\n   \t\t}\r\n\t],\r\n    \"q\": \"speed>90\",\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"http://localhost:8080\",\r\n          \t\"accept\": \"application/json\",\r\n           \"receiverInfo\": [{\"blub\": \"bla\"}]\r\n       \t}\r\n    }\r\n}"
 														},
 														"url": {
 															"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions",
@@ -40218,6 +40218,10 @@
 		},
 		{
 			"key": "@context2",
+			"value": ""
+		},
+		{
+			"key": "subId",
 			"value": ""
 		}
 	]
