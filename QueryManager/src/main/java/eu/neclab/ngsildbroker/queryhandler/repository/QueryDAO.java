@@ -61,18 +61,18 @@ public class QueryDAO {
 
 	public Uni<Map<String, Object>> getEntity(String entityId, String tenantId, AttrsQueryTerm attrsQuery) {
 		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
-			String sql = "";
-			sql += "SELECT ENTITY";
-
 			Tuple tuple = Tuple.tuple();
+			int dollar = 1;
+			StringBuilder query = new StringBuilder("SELECT ");
 			if (attrsQuery != null) {
-				sql += "-$1 FROM ENTITY WHERE ID=$2";
-				tuple.addArrayOfString(attrsQuery.getAttrs().toArray(new String[0]));
+				dollar = attrsQuery.toSqlConstructEntity(query, tuple, dollar);
 			} else {
-				sql += " FROM ENTITY WHERE ID=$1";
+				query.append("ENTITY");
 			}
+			query.append(" FROM ENTITY WHERE ID=$");
+			query.append(dollar);
 			tuple.addString(entityId);
-			return client.preparedQuery(sql).execute(tuple).onItem().transformToUni(t -> {
+			return client.preparedQuery(query.toString()).execute(tuple).onItem().transformToUni(t -> {
 				if (t.rowCount() == 0) {
 					return Uni.createFrom().item(new HashMap<String, Object>());
 				}
@@ -106,23 +106,21 @@ public class QueryDAO {
 			int dollar = 1;
 			Tuple tuple = Tuple.tuple();
 			if (count && limit == 0) {
-				query.append("SELECT COUNT(ENTITY) ");
+				query.append("SELECT COUNT(ENTITY)");
 			} else if (count) {
-				query.append("SELECT ENTITY");
+				query.append("SELECT ");
 				if (attrsQuery != null) {
-					query.append("-$");
-					query.append(dollar);
-					dollar++;
-					tuple.addArrayOfString(attrsQuery.getAttrs().toArray(new String[0]));
+					dollar = attrsQuery.toSqlConstructEntity(query, tuple, dollar);
+				} else {
+					query.append("ENTITY");
 				}
 				query.append(", COUNT(*)");
 			} else {
-				query.append("SELECT ENTITY");
+				query.append("SELECT ");
 				if (attrsQuery != null) {
-					query.append("-$");
-					query.append(dollar);
-					dollar++;
-					tuple.addArrayOfString(attrsQuery.getAttrs().toArray(new String[0]));
+					dollar = attrsQuery.toSqlConstructEntity(query, tuple, dollar);
+				} else {
+					query.append("ENTITY");
 				}
 			}
 			query.append(" FROM ENTITY WHERE ");
@@ -788,17 +786,15 @@ public class QueryDAO {
 			query.append(dollar);
 			tuple.addInteger(offset);
 			dollar++;
-			query.append("), c as (SELECT ENTITY.ID, ENTITY.ENTITY");
+			query.append("), c as (SELECT ENTITY.ID, ");
 			if (attrsQuery != null) {
-				query.append("-$");
-				query.append(dollar);
-				dollar++;
-				tuple.addArrayOfString(attrsQuery.getAttrs().toArray(new String[0]));
+				dollar = attrsQuery.toSqlConstructEntity(query, tuple, dollar);
+			} else {
+				query.append("ENTITY.ENTITY");
 			}
-			query.append(
-					" as ENTITY FROM b left join ENTITY on b.ID = ENTITY.ID) SELECT ");
+			query.append(" as ENTITY FROM b left join ENTITY on b.ID = ENTITY.ID) SELECT ");
 			query.append("a.ID, c.ENTITY FROM a left outer join c on a.ID = c.ID");
-			
+
 			return client.preparedQuery(query.toString()).execute(tuple).onItem().transform(rows -> {
 				List<String> entityIds = Lists.newArrayList();
 				Map<String, Map<String, Object>> entities = Maps.newHashMap();
