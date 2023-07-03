@@ -6743,7 +6743,7 @@
 																],
 																"body": {
 																	"mode": "raw",
-																	"raw": "{\r\n    \"id\": \"urn:test:testentity2\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring1\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 1123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 1123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"differentvalues\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref2\"}\r\n}",
+																	"raw": "{\r\n    \"id\": \"urn:test:testentity2\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"fullydifferent\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 77777},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 555555},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"differentvalues\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref2\"}\r\n}",
 																	"options": {
 																		"raw": {
 																			"language": "json"
