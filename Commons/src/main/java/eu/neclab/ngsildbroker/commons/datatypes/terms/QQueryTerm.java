@@ -895,18 +895,20 @@ public class QQueryTerm {
 			addItemToTupel(tuple, operant);
 			break;
 		case NGSIConstants.QUERY_PATTERNOP:
-			attributeFilterProperty.append(" ~ $");
+			attributeFilterProperty.append("::text ~ $");
 			attributeFilterProperty.append(dollarCount);
 			// attributeFilterProperty.append("'");
 			dollarCount++;
-			addItemToTupel(tuple, operant);
+			tuple.addString(operant);
+			//addItemToTupel(tuple, operant);
 			break;
 		case NGSIConstants.QUERY_NOTPATTERNOP:
-			attributeFilterProperty.append(" !~ $");
+			attributeFilterProperty.append("::text !~ $");
 			attributeFilterProperty.append(dollarCount);
 			// attributeFilterProperty.append("'");
 			dollarCount++;
-			addItemToTupel(tuple, operant);
+			tuple.addString(operant);
+			//addItemToTupel(tuple, operant);
 			break;
 		}
 		return dollarCount;
@@ -995,9 +997,9 @@ public class QQueryTerm {
 				sql.append(currentSqlAttrib);
 				sql.append(" ->'");
 				sql.append(NGSIConstants.NGSI_LD_HAS_VALUE);
-				sql.append("') AS mostInnerValue WHERE mostInnerValue->'");
+				sql.append("') AS mostInnerValue WHERE (mostInnerValue->'");
 				sql.append(NGSIConstants.JSON_LD_VALUE);
-				sql.append("'");
+				sql.append("')");
 				dollarCount = applyOperator(sql, dollarCount, tuple);
 				sql.append(") WHEN ");
 
@@ -1010,9 +1012,9 @@ public class QQueryTerm {
 				sql.append(currentSqlAttrib);
 				sql.append(" ->'");
 				sql.append(NGSIConstants.NGSI_LD_HAS_OBJECT);
-				sql.append("') AS mostInnerValue WHERE mostInnerValue->'");
+				sql.append("') AS mostInnerValue WHERE (mostInnerValue->'");
 				sql.append(NGSIConstants.JSON_LD_ID);
-				sql.append("'");
+				sql.append("')");
 				dollarCount = applyOperator(sql, dollarCount, tuple);
 				sql.append(") WHEN ");
 
@@ -1021,11 +1023,11 @@ public class QQueryTerm {
 				sql.append(NGSIConstants.JSON_LD_TYPE);
 				sql.append(",0}' = '");
 				sql.append(NGSIConstants.NGSI_LD_DATE_TIME);
-				sql.append("' THEN ");
+				sql.append("' THEN (");
 				sql.append(currentSqlAttrib);
 				sql.append(" ->'");
 				sql.append(NGSIConstants.JSON_LD_VALUE);
-				sql.append("'");
+				sql.append("')");
 				dollarCount = applyOperator(sql, dollarCount, tuple);
 
 				sql.append(" ELSE FALSE END ");
