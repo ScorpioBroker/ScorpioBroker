@@ -1,6 +1,10 @@
-RELEASE NOTES SCORPIO 4.0.4/FIWARE-8.4
+RELEASE NOTES SCORPIO 4.0.5/FIWARE_8.4
 
 This release is also a re tagging for the FIWARE release to point it to the most up to date version on the FIWARE release.
+This release addresses and issue with the regex evaluation in q queries
+
+
+RELEASE NOTES SCORPIO 4.0.4
 
 This release addresses
 
