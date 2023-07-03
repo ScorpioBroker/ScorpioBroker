@@ -1,9 +1,9 @@
 {
 	"info": {
-		"_postman_id": "05ac823d-6b6b-46f7-8416-fa0dd316cd90",
+		"_postman_id": "97a0c8ef-4e5c-40e2-bbfd-636ba2a78987",
 		"name": "API Test",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "27293663"
+		"_exporter_id": "26387112"
 	},
 	"item": [
 		{
@@ -16821,7 +16821,7 @@
 																			"            });\r",
 																			"        });\r",
 																			"        //pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
-																			"}, 3000);\r",
+																			"}, 10000);\r",
 																			"    \r",
 																			"\r",
 																			"\r",
