@@ -291,35 +291,42 @@ public class SubscriptionService {
 	public Uni<Void> checkSubscriptions(BaseRequest message) {
 		Collection<SubscriptionRequest> potentialSubs = tenant2subscriptionId2Subscription.row(message.getTenant())
 				.values();
-		List<Uni<Void>> unis = Lists.newArrayList();
 		logger.debug("checking subscriptions");
-		for (SubscriptionRequest potentialSub : potentialSubs) {
-			switch (message.getRequestType()) {
-			case AppConstants.UPDATE_REQUEST, AppConstants.UPSERT_REQUEST, AppConstants.CREATE_REQUEST,
-					AppConstants.APPEND_REQUEST ->
-				unis.add(localEntityService.getAllByIds(message.getTenant(), message.getId(), true).onItem()
-						.transformToUni(entityList -> {
-							Map<String, Object> payload = new HashMap<>();
-							payload.put(JsonLdConsts.GRAPH, entityList);
-							return sendNotification(potentialSub, payload, message.getRequestType());
-						}));
-//TODO temp. commented because we need to check if the subscription is actually asking for it and the default is not to. so keeping default behaviour for now				
-//			case AppConstants.DELETE_REQUEST -> {
-//				unis.add(sendNotification(potentialSub, message.getPayload(), message.getRequestType()));
-//			}
-			case AppConstants.DELETE_ATTRIBUTE_REQUEST -> {
+		switch (message.getRequestType()) {
+		case AppConstants.UPDATE_REQUEST, AppConstants.UPSERT_REQUEST, AppConstants.CREATE_REQUEST,
+				AppConstants.APPEND_REQUEST:
+			return localEntityService.getEntityById(message.getTenant(), message.getId(), true).onItem()
+					.transformToUni(entity -> {
+						List<Uni<Void>> unis = Lists.newArrayList();
+						Map<String, Object> payload = new HashMap<>();
+						payload.put(JsonLdConsts.GRAPH, List.of(entity));
+						for (SubscriptionRequest potentialSub : potentialSubs) {
+							unis.add(sendNotification(potentialSub, payload, message.getRequestType()));
+						}
+						if (unis.isEmpty()) {
+							return Uni.createFrom().voidItem();
+						}
+
+						return Uni.combine().all().unis(unis).combinedWith(l -> null).onItem()
+								.transformToUni(l -> Uni.createFrom().voidItem());
+					});
+
+		case AppConstants.DELETE_ATTRIBUTE_REQUEST:
+			List<Uni<Void>> unis = Lists.newArrayList();
+			for (SubscriptionRequest potentialSub : potentialSubs) {
 				if (shouldFire(Sets.newHashSet(((DeleteAttributeRequest) message).getAttribName()), potentialSub)) {
 					unis.add(sendNotification(potentialSub, message.getPayload(), message.getRequestType()));
 				}
 			}
-			default -> {
+			if (unis.isEmpty()) {
+				return Uni.createFrom().voidItem();
 			}
-			}
+
+			return Uni.combine().all().unis(unis).combinedWith(l -> null).onItem()
+					.transformToUni(l -> Uni.createFrom().voidItem());
+		default:
+			throw new IllegalArgumentException("Unexpected value: " + message.getRequestType());
 		}
-		if (unis.isEmpty()) {
-			return Uni.createFrom().voidItem();
-		}
-		return Uni.combine().all().unis(unis).discardItems();
 	}
 
 	private Uni<Void> sendNotification(SubscriptionRequest potentialSub, Map<String, Object> reg, int triggerReason) {
@@ -468,13 +475,14 @@ public class SubscriptionService {
 
 	private Uni<MqttClient> getMqttClient(NotificationParam notificationParam) {
 		URI host = notificationParam.getEndPoint().getUri();
-		String hostString = host.getUserInfo()+host.getHost() + host.getPort();
+		String hostString = host.getUserInfo() + host.getHost() + host.getPort();
 		MqttClient client;
 		if (!host2MqttClient.containsKey(hostString)) {
-			if(host.getUserInfo() != null){
+			if (host.getUserInfo() != null) {
 				String[] usrPass = host.getUserInfo().split(":");
-				client = MqttClient.create(vertx, new MqttClientOptions().setUsername(usrPass[0]).setPassword(usrPass[1]));
-			}else{
+				client = MqttClient.create(vertx,
+						new MqttClientOptions().setUsername(usrPass[0]).setPassword(usrPass[1]));
+			} else {
 				client = MqttClient.create(vertx, new MqttClientOptions());
 			}
 			return client.connect(host.getPort(), host.getHost()).onItem().transform(t -> {
