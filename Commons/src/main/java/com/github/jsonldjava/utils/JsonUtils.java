@@ -304,7 +304,6 @@ public class JsonUtils {
 	 * @throws JsonParseException If there was a JSON related error during parsing.
 	 * @throws IOException        If there was an IO error during parsing.
 	 */
-	@Blocking
 	@RunOnVirtualThread
 	public static Object fromURL(java.net.URL url, CloseableHttpClient httpClient)
 			throws JsonParseException, IOException {
