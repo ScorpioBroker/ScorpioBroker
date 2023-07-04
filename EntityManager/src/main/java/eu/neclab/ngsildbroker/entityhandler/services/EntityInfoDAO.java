@@ -144,8 +144,6 @@ public class EntityInfoDAO {
 		});
 	}
 
-	@Blocking
-	@RunOnVirtualThread
 	public Uni<RowSet<Row>> upsertEntity(CreateEntityRequest request) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
 			String sql = "SELECT * FROM NGSILD_UPSERTENTITY($1::jsonb)";
