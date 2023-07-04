@@ -34,6 +34,8 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.storage.ClientManager;
 import eu.neclab.ngsildbroker.commons.tools.DBUtil;
+import io.smallrye.common.annotation.Blocking;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.vertx.core.json.JsonArray;
@@ -142,6 +144,8 @@ public class EntityInfoDAO {
 		});
 	}
 
+	@Blocking
+	@RunOnVirtualThread
 	public Uni<RowSet<Row>> upsertEntity(CreateEntityRequest request) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
 			String sql = "SELECT * FROM NGSILD_UPSERTENTITY($1::jsonb)";

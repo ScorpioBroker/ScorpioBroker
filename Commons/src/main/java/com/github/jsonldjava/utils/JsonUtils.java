@@ -27,6 +27,9 @@ import com.github.jsonldjava.core.DocumentLoader;
 import com.github.jsonldjava.core.JsonLdApi;
 import com.github.jsonldjava.core.JsonLdProcessor;
 
+import io.smallrye.common.annotation.Blocking;
+import io.smallrye.common.annotation.RunOnVirtualThread;
+
 import org.apache.commons.io.ByteOrderMark;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.BOMInputStream;
@@ -301,6 +304,8 @@ public class JsonUtils {
 	 * @throws JsonParseException If there was a JSON related error during parsing.
 	 * @throws IOException        If there was an IO error during parsing.
 	 */
+	@Blocking
+	@RunOnVirtualThread
 	public static Object fromURL(java.net.URL url, CloseableHttpClient httpClient)
 			throws JsonParseException, IOException {
 		final String protocol = url.getProtocol();
