@@ -62,9 +62,9 @@ public class ContextDao {
 	}
 
 	public Uni<RestResponse<Object>> hostContext(Map<String, Object> payload) {
-		String sql = "INSERT INTO public.contexts (id, body, kind) values($1, $2, 'hosted') returning id";
+		String sql = "INSERT INTO public.contexts (id, body, kind) values($1, $2, 'hosted') ON CONFLICT DO NOTHING returning id";
 		return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
-			return client.preparedQuery(sql).execute(Tuple.of("urn:" + UUID.randomUUID(), new JsonObject(payload)))
+			return client.preparedQuery(sql).execute(Tuple.of("urn:" + payload.hashCode(), new JsonObject(payload)))
 					.onItem().transformToUni(rows -> {
 						if (rows.size() > 0) {
 							return Uni.createFrom()

@@ -32,6 +32,9 @@ import java.util.regex.Pattern;
 
 import com.github.jsonldjava.utils.JsonUtils;
 
+import io.smallrye.mutiny.Uni;
+import io.vertx.mutiny.ext.web.client.WebClient;
+
 /**
  * Starting to migrate away from using plain java Maps as the internal RDF
  * dataset store. Currently each item just wraps a Map based on the old format
@@ -433,7 +436,7 @@ public class RDFDataset extends LinkedHashMap<String, Object> {
 	 * @param contextLike The context to parse
 	 * @throws JsonLdError If the context can't be parsed
 	 */
-	public void parseContext(Object contextLike) throws JsonLdError {
+	public Uni<Void> parseContext(Object contextLike, WebClient webClient) {
 		Context context;
 		if (api != null) {
 			context = new Context(api.opts);
@@ -441,24 +444,26 @@ public class RDFDataset extends LinkedHashMap<String, Object> {
 			context = new Context();
 		}
 		// Context will do our recursive parsing and initial IRI resolution
-		context = context.parse(contextLike, false);
-		// And then leak to us the potential 'prefixes'
-		final Map<String, String> prefixes = context.getPrefixes(true);
+		return context.parse(contextLike, false, webClient).onItem().transformToUni(ctx -> {
+			// And then leak to us the potential 'prefixes'
+			final Map<String, String> prefixes = context.getPrefixes(true);
 
-		for (final String key : prefixes.keySet()) {
-			final String val = prefixes.get(key);
-			if ("@vocab".equals(key)) {
-				if (val == null || isString(val)) {
-					setNamespace("", val);
-				} else {
+			for (final String key : prefixes.keySet()) {
+				final String val = prefixes.get(key);
+				if ("@vocab".equals(key)) {
+					if (val == null || isString(val)) {
+						setNamespace("", val);
+					} else {
+					}
+				} else if (!isKeyword(key)) {
+					setNamespace(key, val);
+					// TODO: should we make sure val is a valid URI prefix (i.e. it
+					// ends with /# or ?)
+					// or is it ok that full URIs for terms are used?
 				}
-			} else if (!isKeyword(key)) {
-				setNamespace(key, val);
-				// TODO: should we make sure val is a valid URI prefix (i.e. it
-				// ends with /# or ?)
-				// or is it ok that full URIs for terms are used?
 			}
-		}
+			return Uni.createFrom().voidItem();
+		});
 	}
 
 	/**

@@ -13,10 +13,15 @@ import com.github.jsonldjava.core.JsonLdError.Error;
 import com.github.jsonldjava.impl.NQuadRDFParser;
 import com.github.jsonldjava.impl.NQuadTripleCallback;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.storage.ClientManager;
 import io.quarkus.vertx.http.runtime.devmode.Json;
+import io.smallrye.mutiny.Uni;
+import io.vertx.mutiny.ext.web.client.WebClient;
+import io.vertx.mutiny.sqlclient.Row;
 
 /**
  * This class implements the <a href=
@@ -30,20 +35,35 @@ import io.quarkus.vertx.http.runtime.devmode.Json;
  */
 @SuppressWarnings({ "unchecked", "rawtypes" })
 public class JsonLdProcessor {
-	private static String coreContextUrl = null;
-	private static Context coreContext = null;
 
-	public synchronized static void init(String contextUrl) {
-		if (JsonLdProcessor.coreContextUrl != null) {
+	private static Context coreContext = null;
+	private static boolean initialized = false;
+	private static String coreContextUrl;
+
+	public synchronized static void init(ClientManager clientManager, WebClient webClient, String coreContextUrl) {
+		if (JsonLdProcessor.initialized) {
 			return;
 		}
-		JsonLdProcessor.coreContextUrl = contextUrl;
-		JsonLdProcessor.coreContext = new Context(new JsonLdOptions(JsonLdOptions.JSON_LD_1_1)).parse(coreContextUrl,
-				false);
-		// this explicitly removes the features term from the core as it is a commonly
-		// used term and we don't need the geo json definition
-		JsonLdProcessor.coreContext.getTermDefinition("features").remove("@container");
-		JsonLdProcessor.coreContext.getInverse();
+		JsonLdProcessor.initialized = true;
+		JsonLdProcessor.coreContextUrl = coreContextUrl;
+		clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
+			return client.preparedQuery("SELECT body FROM context WHERE id='" + AppConstants.INTERNAL_NULL_KEY + "'")
+					.execute().onItem().transform(rows -> {
+						return rows.iterator().next().getJsonObject(0).getMap();
+					});
+		}).onItem().transformToUni(coreContextMap -> {
+			return new Context(new JsonLdOptions(JsonLdOptions.JSON_LD_1_1)).parse(coreContextMap, false, webClient)
+					.onItem().transform(coreContext -> {
+						JsonLdProcessor.coreContext = coreContext;
+						JsonLdProcessor.coreContext.getTermDefinition("features").remove("@container");
+						JsonLdProcessor.coreContext.getInverse();
+						return null;
+					});
+			// this explicitly removes the features term from the core as it is a commonly
+			// used term and we don't need the geo json definition
+
+		}).await().indefinitely();
+
 	}
 
 	public static Context getCoreContextClone() {
@@ -65,20 +85,24 @@ public class JsonLdProcessor {
 	 * @throws JsonLdError       If there is an error while compacting.
 	 * @throws ResponseException
 	 */
-	public static Map<String, Object> compact(Object input, Object context, JsonLdOptions opts)
-			throws JsonLdError, ResponseException {
-		Context activeCtx;
+	public static Uni<Map<String, Object>> compact(Object input, Object context, JsonLdOptions opts,
+			WebClient webClient) {
 
-		activeCtx = coreContext.clone();
+		Uni<Context> activeCtx;
 		if (context != null) {
-			activeCtx = activeCtx.parse(context, true);
+			activeCtx = coreContext.clone().parse(context, true, webClient);
+		} else {
+			activeCtx = Uni.createFrom().item(coreContext.clone());
 		}
-		return compact(input, context, activeCtx, opts, -1);
+		return activeCtx.onItem().transformToUni(ctx -> {
+			return compact(input, context, ctx, opts, -1, webClient);
+		});
+
 	}
 
-	public static Map<String, Object> compact(Object input, Object context, Context activeCtx, JsonLdOptions opts,
-			int endPoint) throws JsonLdError, ResponseException {
-		return compact(input, context, activeCtx, opts, endPoint, null, null);
+	public static Uni<Map<String, Object>> compact(Object input, Object context, Context activeCtx, JsonLdOptions opts,
+			int endPoint, WebClient webClient) {
+		return compact(input, context, activeCtx, opts, endPoint, null, null, webClient);
 	}
 
 	/**
@@ -96,8 +120,8 @@ public class JsonLdProcessor {
 	 * @throws JsonLdError       If there is an error while compacting.
 	 * @throws ResponseException
 	 */
-	public static Map<String, Object> compact(Object input, Object context, Context activeCtx, JsonLdOptions opts,
-			int endPoint, Set<String> options, LanguageQueryTerm langQuery) throws JsonLdError, ResponseException {
+	public static Uni<Map<String, Object>> compact(Object input, Object context, Context activeCtx, JsonLdOptions opts,
+			int endPoint, Set<String> options, LanguageQueryTerm langQuery, WebClient webClient) {
 		// 1)
 		// TODO: look into java futures/promises
 
@@ -160,7 +184,7 @@ public class JsonLdProcessor {
 		}
 
 		// 9)
-		return (Map<String, Object>) compacted;
+		return Uni.createFrom().item((Map<String, Object>) compacted);
 	}
 
 	/**
@@ -175,78 +199,88 @@ public class JsonLdProcessor {
 	 * @throws JsonLdError       If there is an error while expanding.
 	 * @throws ResponseException
 	 */
-	public static List<Object> expand(List<Object> contextLinks, Object input, JsonLdOptions opts, int payloadType,
-			boolean atContextAllowed) throws JsonLdError, ResponseException {
+	public static Uni<List<Object>> expand(List<Object> contextLinks, Object input, JsonLdOptions opts, int payloadType,
+			boolean atContextAllowed, WebClient webClient) {
 		// 1)
 		// TODO: look into java futures/promises
 
 		// 2) TODO: better verification of DOMString IRI
+		Uni<Object> inputUni;
 		if (input instanceof String && ((String) input).contains(":")) {
-			try {
-				final RemoteDocument tmp = opts.getDocumentLoader().loadDocument((String) input);
-				input = tmp.getDocument();
-				// TODO: figure out how to deal with remote context
-			} catch (final Exception e) {
-				throw new JsonLdError(Error.LOADING_DOCUMENT_FAILED, e);
-			}
-			// if set the base in options should override the base iri in the
-			// active context
-			// thus only set this as the base iri if it's not already set in
-			// options
-			if (opts.getBase() == null) {
-				opts.setBase((String) input);
-			}
+			inputUni = opts.getDocumentLoader().loadDocument((String) input, webClient).onItem().transformToUni(tmp -> {
+				Object realInput;
+				try {
+					realInput = tmp.getDocument();
+				} catch (final Exception e) {
+					return Uni.createFrom().failure(new JsonLdError(Error.LOADING_DOCUMENT_FAILED, e));
+				}
+
+				// if set the base in options should override the base iri in the
+				// active context
+				// thus only set this as the base iri if it's not already set in
+				// options
+				if (opts.getBase() == null) {
+					opts.setBase((String) realInput);
+				}
+				return Uni.createFrom().item(realInput);
+			});
+
+		} else {
+			inputUni = Uni.createFrom().item(input);
 		}
 
 		// 3)
-		Context activeCtx = coreContext.clone();
+
+		Uni<Context> activeCtx;
 		if (contextLinks != null && !contextLinks.isEmpty()) {
-			activeCtx = activeCtx.parse(contextLinks, true);
+			activeCtx = coreContext.clone().parse(contextLinks, true, webClient);
+		} else {
+			activeCtx = Uni.createFrom().item(coreContext.clone());
 		}
 		// 4)
-		if (opts.getExpandContext() != null) {
-			Object exCtx = opts.getExpandContext();
-			if (exCtx instanceof Map && ((Map<String, Object>) exCtx).containsKey(JsonLdConsts.CONTEXT)) {
-				exCtx = ((Map<String, Object>) exCtx).get(JsonLdConsts.CONTEXT);
+		return Uni.combine().all().unis(activeCtx, inputUni).asTuple().onItem().transformToUni(tuple -> {
+			Object myInput = tuple.getItem2();
+			Context ctx = tuple.getItem1();
+			if (opts.getExpandContext() != null) {
+				Object exCtx = opts.getExpandContext();
+				if (exCtx instanceof Map && ((Map<String, Object>) exCtx).containsKey(JsonLdConsts.CONTEXT)) {
+					exCtx = ((Map<String, Object>) exCtx).get(JsonLdConsts.CONTEXT);
+				}
+				return ctx.parse(exCtx, true, webClient).onItem()
+						.transformToUni(ctx2 -> expand(ctx2, myInput, opts, payloadType, atContextAllowed, webClient));
+			} else {
+				return expand(ctx, myInput, opts, payloadType, atContextAllowed, webClient);
 			}
-			activeCtx = activeCtx.parse(exCtx, true);
-		}
-		return expand(activeCtx, input, opts, payloadType, atContextAllowed);
+		});
+
 	}
 
-	public static List<Object> expand(Context activeCtx, Object input, JsonLdOptions opts, int payloadType,
-			boolean atContextAllowed) throws JsonLdError, ResponseException {
+	public static Uni<List<Object>> expand(Context activeCtx, Object input, JsonLdOptions opts, int payloadType,
+			boolean atContextAllowed, WebClient webClient) {
 
 		// 5)
 		// TODO: add support for getting a context from HTTP when content-type
 		// is set to a jsonld compatable format
 
 		// 6)
-		Object expanded;
-		try {
-			expanded = new JsonLdApi(opts).expand(activeCtx, input, payloadType, atContextAllowed);
-		} catch (JsonLdError e) {
-			if (e.getType().equals(Error.LOADING_REMOTE_CONTEXT_FAILED)) {
-				throw new ResponseException(ErrorType.LdContextNotAvailable, e.getMessage());
-			}
-			throw e;
-		}
+		return new JsonLdApi(opts).expand(activeCtx, input, payloadType, atContextAllowed, webClient).onItem()
+				.transform(expanded -> {
+					// final step of Expansion Algorithm
+					if (expanded instanceof Map && ((Map) expanded).containsKey(JsonLdConsts.GRAPH)
+							&& ((Map) expanded).size() == 1) {
+						expanded = ((Map<String, Object>) expanded).get(JsonLdConsts.GRAPH);
+					} else if (expanded == null) {
+						expanded = new ArrayList<Object>();
+					}
 
-		// final step of Expansion Algorithm
-		if (expanded instanceof Map && ((Map) expanded).containsKey(JsonLdConsts.GRAPH)
-				&& ((Map) expanded).size() == 1) {
-			expanded = ((Map<String, Object>) expanded).get(JsonLdConsts.GRAPH);
-		} else if (expanded == null) {
-			expanded = new ArrayList<Object>();
-		}
-
-		// normalize to an array
-		if (!(expanded instanceof List)) {
-			final List<Object> tmp = new ArrayList<Object>();
-			tmp.add(expanded);
-			expanded = tmp;
-		}
-		return (List<Object>) expanded;
+					// normalize to an array
+					if (!(expanded instanceof List)) {
+						final List<Object> tmp = new ArrayList<Object>();
+						tmp.add(expanded);
+						expanded = tmp;
+					}
+					return (List<Object>) expanded;
+				});
 	}
 
 	/**
@@ -259,86 +293,88 @@ public class JsonLdProcessor {
 	 * @throws JsonLdError       If there is an error while expanding.
 	 * @throws ResponseException
 	 */
-	public static List<Object> expand(Object input) throws JsonLdError, ResponseException {
-		return expand(new ArrayList<>(0), input, new JsonLdOptions(""), -1, true);
+	public static Uni<List<Object>> expand(Object input, WebClient webClient) throws JsonLdError, ResponseException {
+		return expand(new ArrayList<>(0), input, new JsonLdOptions(""), -1, true, webClient);
 	}
 
-	public static Object flatten(Object input, Object context, JsonLdOptions opts)
-			throws JsonLdError, ResponseException {
+	public static Uni<Object> flatten(Object input, Object context, JsonLdOptions opts, WebClient webClient) {
 		// 2-6) NOTE: these are all the same steps as in expand
-		final Object expanded = expand(new ArrayList<>(0), input, opts, -1, true);
-		// 7)
-		if (context instanceof Map && ((Map<String, Object>) context).containsKey(JsonLdConsts.CONTEXT)) {
-			context = ((Map<String, Object>) context).get(JsonLdConsts.CONTEXT);
-		}
-		// 8) NOTE: blank node generation variables are members of JsonLdApi
-		// 9) NOTE: the next block is the Flattening Algorithm described in
-		// http://json-ld.org/spec/latest/json-ld-api/#flattening-algorithm
+		return expand(new ArrayList<>(0), input, opts, -1, true, webClient).onItem().transformToUni(expanded -> {
+			// 7)
+			Object myContext = context;
+			if (context instanceof Map && ((Map<String, Object>) context).containsKey(JsonLdConsts.CONTEXT)) {
+				myContext = ((Map<String, Object>) context).get(JsonLdConsts.CONTEXT);
+			}
+			// 8) NOTE: blank node generation variables are members of JsonLdApi
+			// 9) NOTE: the next block is the Flattening Algorithm described in
+			// http://json-ld.org/spec/latest/json-ld-api/#flattening-algorithm
 
-		// 1)
-		final Map<String, Object> nodeMap = newMap();
-		nodeMap.put(JsonLdConsts.DEFAULT, newMap());
-		// 2)
-		new JsonLdApi(opts).generateNodeMap(expanded, nodeMap);
-		// 3)
-		final Map<String, Object> defaultGraph = (Map<String, Object>) nodeMap.remove(JsonLdConsts.DEFAULT);
-		// 4)
-		for (final String graphName : nodeMap.keySet()) {
-			final Map<String, Object> graph = (Map<String, Object>) nodeMap.get(graphName);
-			// 4.1+4.2)
-			Map<String, Object> entry;
-			if (!defaultGraph.containsKey(graphName)) {
-				entry = newMap();
-				entry.put(JsonLdConsts.ID, graphName);
-				defaultGraph.put(graphName, entry);
-			} else {
-				entry = (Map<String, Object>) defaultGraph.get(graphName);
+			// 1)
+			final Map<String, Object> nodeMap = newMap();
+			nodeMap.put(JsonLdConsts.DEFAULT, newMap());
+			// 2)
+			new JsonLdApi(opts).generateNodeMap(expanded, nodeMap);
+			// 3)
+			final Map<String, Object> defaultGraph = (Map<String, Object>) nodeMap.remove(JsonLdConsts.DEFAULT);
+			// 4)
+			for (final String graphName : nodeMap.keySet()) {
+				final Map<String, Object> graph = (Map<String, Object>) nodeMap.get(graphName);
+				// 4.1+4.2)
+				Map<String, Object> entry;
+				if (!defaultGraph.containsKey(graphName)) {
+					entry = newMap();
+					entry.put(JsonLdConsts.ID, graphName);
+					defaultGraph.put(graphName, entry);
+				} else {
+					entry = (Map<String, Object>) defaultGraph.get(graphName);
+				}
+				// 4.3)
+				// TODO: SPEC doesn't specify that this should only be added if it
+				// doesn't exists
+				if (!entry.containsKey(JsonLdConsts.GRAPH)) {
+					entry.put(JsonLdConsts.GRAPH, new ArrayList<Object>());
+				}
+				final List<String> keys = new ArrayList<String>(graph.keySet());
+				Collections.sort(keys);
+				for (final String id : keys) {
+					final Map<String, Object> node = (Map<String, Object>) graph.get(id);
+					if (!(node.containsKey(JsonLdConsts.ID) && node.size() == 1)) {
+						((List<Object>) entry.get(JsonLdConsts.GRAPH)).add(node);
+					}
+				}
+
 			}
-			// 4.3)
-			// TODO: SPEC doesn't specify that this should only be added if it
-			// doesn't exists
-			if (!entry.containsKey(JsonLdConsts.GRAPH)) {
-				entry.put(JsonLdConsts.GRAPH, new ArrayList<Object>());
-			}
-			final List<String> keys = new ArrayList<String>(graph.keySet());
+			// 5)
+			final List<Object> flattened = new ArrayList<Object>();
+			// 6)
+			final List<String> keys = new ArrayList<String>(defaultGraph.keySet());
 			Collections.sort(keys);
 			for (final String id : keys) {
-				final Map<String, Object> node = (Map<String, Object>) graph.get(id);
+				final Map<String, Object> node = (Map<String, Object>) defaultGraph.get(id);
 				if (!(node.containsKey(JsonLdConsts.ID) && node.size() == 1)) {
-					((List<Object>) entry.get(JsonLdConsts.GRAPH)).add(node);
+					flattened.add(node);
 				}
 			}
-
-		}
-		// 5)
-		final List<Object> flattened = new ArrayList<Object>();
-		// 6)
-		final List<String> keys = new ArrayList<String>(defaultGraph.keySet());
-		Collections.sort(keys);
-		for (final String id : keys) {
-			final Map<String, Object> node = (Map<String, Object>) defaultGraph.get(id);
-			if (!(node.containsKey(JsonLdConsts.ID) && node.size() == 1)) {
-				flattened.add(node);
+			// 8)
+			if (context != null && !flattened.isEmpty()) {
+				Context activeCtx = new Context(opts);
+				return activeCtx.parse(context, false, webClient).onItem().transform(ctx -> {
+					// TODO: only instantiate one jsonldapi
+					Object compacted = new JsonLdApi(opts).compact(activeCtx, null, flattened, opts.getCompactArrays(),
+							-1, null, null);
+					if (!(compacted instanceof List)) {
+						final List<Object> tmp = new ArrayList<Object>();
+						tmp.add(compacted);
+						compacted = tmp;
+					}
+					final String alias = activeCtx.compactIri(JsonLdConsts.GRAPH);
+					final Map<String, Object> rval = activeCtx.serialize();
+					rval.put(alias, compacted);
+					return rval;
+				});
 			}
-		}
-		// 8)
-		if (context != null && !flattened.isEmpty()) {
-			Context activeCtx = new Context(opts);
-			activeCtx = activeCtx.parse(context, false);
-			// TODO: only instantiate one jsonldapi
-			Object compacted = new JsonLdApi(opts).compact(activeCtx, null, flattened, opts.getCompactArrays(), -1,
-					null, null);
-			if (!(compacted instanceof List)) {
-				final List<Object> tmp = new ArrayList<Object>();
-				tmp.add(compacted);
-				compacted = tmp;
-			}
-			final String alias = activeCtx.compactIri(JsonLdConsts.GRAPH);
-			final Map<String, Object> rval = activeCtx.serialize();
-			rval.put(alias, compacted);
-			return rval;
-		}
-		return flattened;
+			return Uni.createFrom().item(flattened);
+		});
 	}
 
 	/**
@@ -354,8 +390,8 @@ public class JsonLdProcessor {
 	 * @throws JsonLdError       If there is an error while flattening.
 	 * @throws ResponseException
 	 */
-	public static Object flatten(Object input, JsonLdOptions opts) throws JsonLdError, ResponseException {
-		return flatten(input, null, opts);
+	public static Uni<Object> flatten(Object input, JsonLdOptions opts, WebClient webClient) {
+		return flatten(input, null, opts, webClient);
 	}
 
 	/**
@@ -372,51 +408,61 @@ public class JsonLdProcessor {
 	 * @throws JsonLdError       If there is an error while framing.
 	 * @throws ResponseException
 	 */
-	public static Map<String, Object> frame(Object input, Object frame, JsonLdOptions opts)
-			throws JsonLdError, ResponseException {
+	public static Uni<Map<String, Object>> frame(Object input, Object frame, JsonLdOptions opts, WebClient webClient) {
+		Object myFrame;
 		if (frame instanceof Map) {
-			frame = JsonLdUtils.clone(frame);
+			myFrame = JsonLdUtils.clone(frame);
+		} else {
+			myFrame = frame;
 		}
 		// TODO string/IO input
 
 		// 2. Set expanded input to the result of using the expand method using
 		// input and options.
-		final Object expandedInput = expand(new ArrayList<>(0), input, opts, -1, true);
+		return expand(new ArrayList<>(0), input, opts, -1, true, webClient).onItem().transformToUni(expandedInput -> {
 
-		// 3. Set expanded frame to the result of using the expand method using
-		// frame and options with expandContext set to null and the
-		// frameExpansion option set to true.
-		final Object savedExpandedContext = opts.getExpandContext();
-		opts.setExpandContext(null);
-		opts.setFrameExpansion(true);
-		final List<Object> expandedFrame = expand(new ArrayList<>(0), frame, opts, -1, true);
-		opts.setExpandContext(savedExpandedContext);
+			// 3. Set expanded frame to the result of using the expand method using
+			// frame and options with expandContext set to null and the
+			// frameExpansion option set to true.
+			final Object savedExpandedContext = opts.getExpandContext();
+			opts.setExpandContext(null);
+			opts.setFrameExpansion(true);
+			return expand(new ArrayList<>(0), myFrame, opts, -1, true, webClient).onItem()
+					.transformToUni(expandedFrame -> {
+						opts.setExpandContext(savedExpandedContext);
 
-		// 4. Set context to the value of @context from frame, if it exists, or
-		// to a new empty
-		// context, otherwise.
-		final JsonLdApi api = new JsonLdApi(expandedInput, opts);
-		final Context activeCtx = api.context.parse(((Map<String, Object>) frame).get(JsonLdConsts.CONTEXT), false);
-		final List<Object> framed = api.frame(expandedInput, expandedFrame);
-		if (opts.getPruneBlankNodeIdentifiers()) {
-			JsonLdUtils.pruneBlankNodes(framed);
-		}
-		Object compacted = api.compact(activeCtx, null, framed, opts.getCompactArrays(), -1, null, null);
-		final Map<String, Object> rval = activeCtx.serialize();
-		final boolean addGraph = ((!(compacted instanceof List)) && !opts.getOmitGraph());
-		if (addGraph && !(compacted instanceof List)) {
-			final List<Object> tmp = new ArrayList<Object>();
-			tmp.add(compacted);
-			compacted = tmp;
-		}
-		if (addGraph || (compacted instanceof List)) {
-			final String alias = activeCtx.compactIri(JsonLdConsts.GRAPH);
-			rval.put(alias, compacted);
-		} else if (!addGraph && (compacted instanceof Map)) {
-			rval.putAll((Map) compacted);
-		}
-		JsonLdUtils.removePreserve(activeCtx, rval, opts);
-		return rval;
+						// 4. Set context to the value of @context from frame, if it exists, or
+						// to a new empty
+						// context, otherwise.
+						final JsonLdApi api = new JsonLdApi(expandedInput, opts);
+						return api.context
+								.parse(((Map<String, Object>) myFrame).get(JsonLdConsts.CONTEXT), false, webClient)
+								.onItem().transform(activeCtx -> {
+									final List<Object> framed = api.frame(expandedInput, expandedFrame);
+									if (opts.getPruneBlankNodeIdentifiers()) {
+										JsonLdUtils.pruneBlankNodes(framed);
+									}
+									Object compacted = api.compact(activeCtx, null, framed, opts.getCompactArrays(), -1,
+											null, null);
+									final Map<String, Object> rval = activeCtx.serialize();
+									final boolean addGraph = ((!(compacted instanceof List)) && !opts.getOmitGraph());
+									if (addGraph && !(compacted instanceof List)) {
+										final List<Object> tmp = new ArrayList<Object>();
+										tmp.add(compacted);
+										compacted = tmp;
+									}
+									if (addGraph || (compacted instanceof List)) {
+										final String alias = activeCtx.compactIri(JsonLdConsts.GRAPH);
+										rval.put(alias, compacted);
+									} else if (!addGraph && (compacted instanceof Map)) {
+										rval.putAll((Map) compacted);
+									}
+									JsonLdUtils.removePreserve(activeCtx, rval, opts);
+									return rval;
+								});
+					});
+		});
+
 	}
 
 	/**
@@ -461,7 +507,7 @@ public class JsonLdProcessor {
 	 *                           JSON-LD.
 	 * @throws ResponseException
 	 */
-	public static Object fromRDF(Object dataset, JsonLdOptions options) throws JsonLdError, ResponseException {
+	public static Uni<Object> fromRDF(Object dataset, JsonLdOptions options, WebClient webClient) {
 		// handle non specified serializer case
 
 		RDFParser parser = null;
@@ -478,7 +524,7 @@ public class JsonLdProcessor {
 		}
 
 		// convert from RDF
-		return fromRDF(dataset, options, parser);
+		return fromRDF(dataset, options, parser, webClient);
 	}
 
 	/**
@@ -492,8 +538,8 @@ public class JsonLdProcessor {
 	 * 
 	 * @throws ResponseException
 	 */
-	public static Object fromRDF(Object dataset) throws JsonLdError, ResponseException {
-		return fromRDF(dataset, new JsonLdOptions(""));
+	public static Uni<Object> fromRDF(Object dataset, WebClient webClient) {
+		return fromRDF(dataset, new JsonLdOptions(""), webClient);
 	}
 
 	/**
@@ -515,8 +561,7 @@ public class JsonLdProcessor {
 	 *                           JSON-LD.
 	 * @throws ResponseException
 	 */
-	public static Object fromRDF(Object input, JsonLdOptions options, RDFParser parser)
-			throws JsonLdError, ResponseException {
+	public static Uni<Object> fromRDF(Object input, JsonLdOptions options, RDFParser parser, WebClient webClient) {
 
 		final RDFDataset dataset = parser.parse(input);
 
@@ -526,17 +571,17 @@ public class JsonLdProcessor {
 		// re-process using the generated context if outputForm is set
 		if (options.outputForm != null) {
 			if (JsonLdConsts.EXPANDED.equals(options.outputForm)) {
-				return rval;
+				Uni.createFrom().item(rval);
 			} else if (JsonLdConsts.COMPACTED.equals(options.outputForm)) {
-				return compact(rval, dataset.getContext(), options);
+				return compact(rval, dataset.getContext(), options, webClient).onItem().transform(map -> (Object) map);
 			} else if (JsonLdConsts.FLATTENED.equals(options.outputForm)) {
-				return flatten(rval, dataset.getContext(), options);
+				return flatten(rval, dataset.getContext(), options, webClient);
 			} else {
-				throw new JsonLdError(JsonLdError.Error.UNKNOWN_ERROR,
-						"Output form was unknown: " + options.outputForm);
+				return Uni.createFrom().failure(new JsonLdError(JsonLdError.Error.UNKNOWN_ERROR,
+						"Output form was unknown: " + options.outputForm));
 			}
 		}
-		return rval;
+		return Uni.createFrom().item(rval);
 	}
 
 	/**
@@ -552,8 +597,8 @@ public class JsonLdProcessor {
 	 *                           JSON-LD.
 	 * @throws ResponseException
 	 */
-	public static Object fromRDF(Object input, RDFParser parser) throws JsonLdError, ResponseException {
-		return fromRDF(input, new JsonLdOptions(""), parser);
+	public static Uni<Object> fromRDF(Object input, RDFParser parser, WebClient webClient) {
+		return fromRDF(input, new JsonLdOptions(""), parser, webClient);
 	}
 
 	/**
@@ -574,42 +619,47 @@ public class JsonLdProcessor {
 	 *                           JSON-LD.
 	 * @throws ResponseException
 	 */
-	public static Object toRDF(Object input, JsonLdTripleCallback callback, JsonLdOptions options)
-			throws JsonLdError, ResponseException {
+	public static Uni<Object> toRDF(Object input, JsonLdTripleCallback callback, JsonLdOptions options,
+			WebClient webClient) {
+		return expand(new ArrayList<>(0), input, options, -1, true, webClient).onItem()
+				.transformToUni(expandedInput -> {
 
-		final Object expandedInput = expand(new ArrayList<>(0), input, options, -1, true);
+					final JsonLdApi api = new JsonLdApi(expandedInput, options);
+					final RDFDataset dataset = api.toRDF();
+					Uni<Void> uni = Uni.createFrom().voidItem();
+					// generate namespaces from context
+					if (options.useNamespaces) {
+						List<Map<String, Object>> _input;
+						if (input instanceof List) {
+							_input = (List<Map<String, Object>>) input;
+						} else {
+							_input = new ArrayList<Map<String, Object>>();
+							_input.add((Map<String, Object>) input);
+						}
 
-		final JsonLdApi api = new JsonLdApi(expandedInput, options);
-		final RDFDataset dataset = api.toRDF();
+						for (final Map<String, Object> e : _input) {
+							if (e.containsKey(JsonLdConsts.CONTEXT)) {
+								uni = uni.onItem().transformToUni(
+										v -> dataset.parseContext(e.get(JsonLdConsts.CONTEXT), webClient));
+							}
+						}
+					}
+					return uni.onItem().transformToUni(v -> {
+						if (callback != null) {
+							return Uni.createFrom().item(callback.call(dataset));
+						}
 
-		// generate namespaces from context
-		if (options.useNamespaces) {
-			List<Map<String, Object>> _input;
-			if (input instanceof List) {
-				_input = (List<Map<String, Object>>) input;
-			} else {
-				_input = new ArrayList<Map<String, Object>>();
-				_input.add((Map<String, Object>) input);
-			}
-			for (final Map<String, Object> e : _input) {
-				if (e.containsKey(JsonLdConsts.CONTEXT)) {
-					dataset.parseContext(e.get(JsonLdConsts.CONTEXT));
-				}
-			}
-		}
-
-		if (callback != null) {
-			return callback.call(dataset);
-		}
-
-		if (options.format != null) {
-			if (JsonLdConsts.APPLICATION_NQUADS.equals(options.format)) {
-				return new NQuadTripleCallback().call(dataset);
-			} else {
-				throw new JsonLdError(JsonLdError.Error.UNKNOWN_FORMAT, options.format);
-			}
-		}
-		return dataset;
+						if (options.format != null) {
+							if (JsonLdConsts.APPLICATION_NQUADS.equals(options.format)) {
+								return Uni.createFrom().item(new NQuadTripleCallback().call(dataset));
+							} else {
+								return Uni.createFrom()
+										.failure(new JsonLdError(JsonLdError.Error.UNKNOWN_FORMAT, options.format));
+							}
+						}
+						return Uni.createFrom().item(dataset);
+					});
+				});
 	}
 
 	/**
@@ -625,8 +675,8 @@ public class JsonLdProcessor {
 	 *                           JSON-LD.
 	 * @throws ResponseException
 	 */
-	public static Object toRDF(Object input, JsonLdOptions options) throws JsonLdError, ResponseException {
-		return toRDF(input, null, options);
+	public static Uni<Object> toRDF(Object input, JsonLdOptions options, WebClient webClient) {
+		return toRDF(input, null, options, webClient);
 	}
 
 	/**
@@ -641,8 +691,8 @@ public class JsonLdProcessor {
 	 *                           JSON-LD.
 	 * @throws ResponseException
 	 */
-	public static Object toRDF(Object input, JsonLdTripleCallback callback) throws JsonLdError, ResponseException {
-		return toRDF(input, callback, new JsonLdOptions(""));
+	public static Uni<Object> toRDF(Object input, JsonLdTripleCallback callback, WebClient webClient) {
+		return toRDF(input, callback, new JsonLdOptions(""), webClient);
 	}
 
 	/**
@@ -655,8 +705,8 @@ public class JsonLdProcessor {
 	 *                           JSON-LD.
 	 * @throws ResponseException
 	 */
-	public static Object toRDF(Object input) throws JsonLdError, ResponseException {
-		return toRDF(input, new JsonLdOptions(""));
+	public static Uni<Object> toRDF(Object input, WebClient webClient) {
+		return toRDF(input, new JsonLdOptions(""), webClient);
 	}
 
 	/**
@@ -672,13 +722,15 @@ public class JsonLdProcessor {
 	 * @throws JsonLdError       If there is an error normalizing the dataset.
 	 * @throws ResponseException
 	 */
-	public static Object normalize(Object input, JsonLdOptions options) throws JsonLdError, ResponseException {
+	public static Uni<Object> normalize(Object input, JsonLdOptions options, WebClient webClient) {
 
 		final JsonLdOptions opts = options.copy();
 		opts.format = null;
-		final RDFDataset dataset = (RDFDataset) toRDF(input, opts);
+		return toRDF(input, opts, webClient).onItem().transform(rdf -> {
+			final RDFDataset dataset = (RDFDataset) rdf;
 
-		return new JsonLdApi(options).normalize(dataset);
+			return new JsonLdApi(options).normalize(dataset);
+		});
 	}
 
 	/**
@@ -691,8 +743,8 @@ public class JsonLdProcessor {
 	 * @throws JsonLdError       If there is an error normalizing the dataset.
 	 * @throws ResponseException
 	 */
-	public static Object normalize(Object input) throws JsonLdError, ResponseException {
-		return normalize(input, new JsonLdOptions(""));
+	public static Uni<Object> normalize(Object input, WebClient webClient) {
+		return normalize(input, new JsonLdOptions(""), webClient);
 	}
 
 	public static Context getCoreContext() {

@@ -18,9 +18,13 @@ import java.util.Set;
 import com.github.jsonldjava.core.JsonLdError.Error;
 import com.github.jsonldjava.utils.JsonLdUrl;
 import com.github.jsonldjava.utils.Obj;
+import com.google.common.collect.Lists;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.tuples.Tuple2;
+import io.vertx.mutiny.ext.web.client.WebClient;
 
 /**
  * A helper class which still stores all the values in a map but gives member
@@ -146,9 +150,9 @@ public class Context extends LinkedHashMap<String, Object> {
 	 * @throws JsonLdError If there is an error parsing the contexts.
 	 */
 
-	public Context parse(Object localContext, List<String> remoteContexts, boolean checkToRemoveNGSILDContext)
-			throws JsonLdError {
-		return parse(localContext, remoteContexts, false, checkToRemoveNGSILDContext, true);
+	public Uni<Context> parse(Object localContext, List<String> remoteContexts, boolean checkToRemoveNGSILDContext,
+			WebClient webClient) {
+		return parse(localContext, remoteContexts, false, checkToRemoveNGSILDContext, true, webClient);
 	}
 
 	/**
@@ -168,10 +172,13 @@ public class Context extends LinkedHashMap<String, Object> {
 	 */
 	// GK: Note that parsing may also depend on some options: `override protected
 	// and `propagate`
-	private Context parse(Object localContext, List<String> remoteContexts, boolean parsingARemoteContext,
-			boolean checkToRemoveNGSILDContext, boolean root) throws JsonLdError {
-		if (remoteContexts == null) {
+	private Uni<Context> parse(Object localContext, List<String> remoteContextsInput, boolean parsingARemoteContext,
+			boolean checkToRemoveNGSILDContext, boolean root, WebClient webClient) {
+		List<String> remoteContexts;
+		if (remoteContextsInput == null) {
 			remoteContexts = new ArrayList<String>();
+		} else {
+			remoteContexts = remoteContextsInput;
 		}
 		Set<String> coreTermDefs = null;
 		if (checkToRemoveNGSILDContext) {
@@ -187,6 +194,7 @@ public class Context extends LinkedHashMap<String, Object> {
 			localContext = new ArrayList<Object>();
 			((List<Object>) localContext).add(temp);
 		}
+		List<Uni<Tuple2<RemoteDocument, Object>>> rds = Lists.newArrayList();
 		// 3)
 		for (final Object context : ((List<Object>) localContext)) {
 			// 3.1)
@@ -226,18 +234,8 @@ public class Context extends LinkedHashMap<String, Object> {
 					String encodedUrl = URLEncoder.encode(uri, StandardCharsets.UTF_8);
 					finalUrl = "http://localhost:9090/" + NGSIConstants.JSONLD_CONTEXTS + "createcache/" + encodedUrl;
 				}
-				final RemoteDocument rd = this.options.getDocumentLoader().loadDocument(finalUrl);
-				final Object remoteContext = rd.getDocument();
-				if (remoteContext == null
-						|| !((Map<String, Object>) remoteContext).containsKey(JsonLdConsts.CONTEXT)) {
-					// If the dereferenced document has no top-level JSON object
-					// with an @context member
-					throw new JsonLdError(Error.INVALID_REMOTE_CONTEXT, context);
-				}
-				final Object tempContext = ((Map<String, Object>) remoteContext).get(JsonLdConsts.CONTEXT);
-
-				// 3.2.4
-				result = result.parse(tempContext, remoteContexts, true, checkToRemoveNGSILDContext, false);
+				rds.add(this.options.getDocumentLoader().loadDocument(finalUrl, webClient).onItem()
+						.transform(rd -> Tuple2.of(rd, context)));
 				// 3.2.5
 				continue;
 			} else if (!(context instanceof Map)) {
@@ -338,7 +336,33 @@ public class Context extends LinkedHashMap<String, Object> {
 				result.createTermDefinition((Map<String, Object>) context, key, defined);
 			}
 		}
-		return result;
+		if (rds.isEmpty()) {
+			return Uni.createFrom().item(result);
+		} else {
+			Context finalResult = result;
+			return Uni.combine().all().unis(rds).combinedWith(list -> list).onItem().transformToUni(list -> {
+				Uni<Context> resultUni = Uni.createFrom().item(finalResult);
+				for (Object obj : list) {
+					Tuple2<RemoteDocument, Object> tuple = (Tuple2<RemoteDocument, Object>) obj;
+					RemoteDocument rd = tuple.getItem1();
+					Object context = tuple.getItem2();
+					final Object remoteContext = rd.getDocument();
+					if (remoteContext == null
+							|| !((Map<String, Object>) remoteContext).containsKey(JsonLdConsts.CONTEXT)) {
+						// If the dereferenced document has no top-level JSON object
+						// with an @context member
+						throw new JsonLdError(Error.INVALID_REMOTE_CONTEXT, context);
+					}
+					final Object tempContext = ((Map<String, Object>) remoteContext).get(JsonLdConsts.CONTEXT);
+					resultUni = resultUni.onItem().transformToUni(resultTmp -> resultTmp.parse(tempContext,
+							remoteContexts, true, checkToRemoveNGSILDContext, false, webClient));
+				}
+				return resultUni;
+			});
+
+			// 3.2.4
+
+		}
 	}
 
 	public boolean dontAddCoreContext() {
@@ -354,8 +378,8 @@ public class Context extends LinkedHashMap<String, Object> {
 		}
 	}
 
-	public Context parse(Object localContext, boolean checkToRemoveNGSILDContext) throws JsonLdError {
-		return this.parse(localContext, new ArrayList<String>(), checkToRemoveNGSILDContext);
+	public Uni<Context> parse(Object localContext, boolean checkToRemoveNGSILDContext, WebClient webClient) {
+		return this.parse(localContext, new ArrayList<String>(), checkToRemoveNGSILDContext, webClient);
 	}
 
 	/**
@@ -1268,8 +1292,8 @@ public class Context extends LinkedHashMap<String, Object> {
 //				ctx.put(term, defn);
 //			}
 			Object entry = termDefinitions.get(term);
-			if(entry instanceof Map) {
-				((Map)entry).remove(JsonLdConsts.REVERSE);
+			if (entry instanceof Map) {
+				((Map) entry).remove(JsonLdConsts.REVERSE);
 			}
 			ctx.put(term, entry);
 		}

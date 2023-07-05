@@ -24,11 +24,14 @@ import com.github.jsonldjava.core.JsonLdProcessor;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.storage.ClientManager;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.vertx.core.http.HttpServerRequest;
+import io.vertx.mutiny.core.Vertx;
+import io.vertx.mutiny.ext.web.client.WebClient;
 
 /**
  * 
@@ -44,12 +47,21 @@ public class EntityController {// implements EntityHandlerInterface {
 	@Inject
 	EntityService entityService;
 
+	@Inject
+	Vertx vertx;
+
+	@Inject
+	ClientManager clientManager;
+
 	@ConfigProperty(name = "ngsild.corecontext", defaultValue = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld")
 	String coreContext;
 
+	private WebClient webClient;
+
 	@PostConstruct
 	public void init() {
-		JsonLdProcessor.init(coreContext);
+		this.webClient = WebClient.create(vertx);
+		JsonLdProcessor.init(clientManager, webClient, coreContext);
 	}
 
 	/**
@@ -61,20 +73,16 @@ public class EntityController {// implements EntityHandlerInterface {
 	@Path("/entities")
 	@POST
 	public Uni<RestResponse<Object>> createEntity(HttpServerRequest req, Map<String, Object> body) {
-		Tuple2<Context, Map<String, Object>> tuple;
-		try {
-			//Map<String, Object> body = (Map<String, Object>) JsonUtils.fromString(payload);
-			noConcise(body);
-			tuple = HttpUtils.expandBody(req, body, AppConstants.ENTITY_CREATE_PAYLOAD);
-		} catch (Exception e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
-		}
+		noConcise(body);
 		logger.debug("creating entity");
-		return entityService.createEntity(HttpUtils.getTenant(req), tuple.getItem2(), tuple.getItem1()).onItem()
-				.transform(opResult -> {
-					logger.debug("Done creating entity");
-					return HttpUtils.generateCreateResult(opResult, AppConstants.ENTITES_URL);
-				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+		return HttpUtils.expandBody(req, body, AppConstants.ENTITY_CREATE_PAYLOAD, webClient).onItem()
+				.transformToUni(tuple -> {
+					return entityService.createEntity(HttpUtils.getTenant(req), tuple.getItem2(), tuple.getItem1())
+							.onItem().transform(opResult -> {
+								logger.debug("Done creating entity");
+								return HttpUtils.generateCreateResult(opResult, AppConstants.ENTITES_URL);
+							}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+				});
 	}
 
 	/**
@@ -88,19 +96,21 @@ public class EntityController {// implements EntityHandlerInterface {
 	@PATCH
 	@Path("/entities/{entityId}/attrs")
 	public Uni<RestResponse<Object>> updateEntity(HttpServerRequest request, @PathParam("entityId") String entityId,
-			String payload) {
-		Tuple2<Context, Map<String, Object>> tuple;
+			Map<String, Object> body) {
+
 		try {
-			Map<String, Object> body = (Map<String, Object>) JsonUtils.fromString(payload);
-			noConcise(body);
-			tuple = HttpUtils.expandBody(request, body, AppConstants.ENTITY_UPDATE_PAYLOAD);
 			HttpUtils.validateUri(entityId);
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 		}
-		return entityService.updateEntity(HttpUtils.getTenant(request), entityId, tuple.getItem2(), tuple.getItem1())
-				.onItem().transform(HttpUtils::generateUpdateResultResponse).onFailure()
-				.recoverWithItem(HttpUtils::handleControllerExceptions);
+		noConcise(body);
+		return HttpUtils.expandBody(request, body, AppConstants.ENTITY_UPDATE_PAYLOAD, webClient).onItem()
+				.transformToUni(tuple -> {
+					return entityService
+							.updateEntity(HttpUtils.getTenant(request), entityId, tuple.getItem2(), tuple.getItem1())
+							.onItem().transform(HttpUtils::generateUpdateResultResponse).onFailure()
+							.recoverWithItem(HttpUtils::handleControllerExceptions);
+				});
 	}
 
 	/**
@@ -114,21 +124,22 @@ public class EntityController {// implements EntityHandlerInterface {
 	@POST
 	@Path("/entities/{entityId}/attrs")
 	public Uni<RestResponse<Object>> appendEntity(HttpServerRequest request, @PathParam("entityId") String entityId,
-			String payload, @QueryParam("options") String options) {
-		Tuple2<Context, Map<String, Object>> tuple;
+			Map<String, Object> body, @QueryParam("options") String options) {
 		try {
-			Map<String, Object> body = (Map<String, Object>) JsonUtils.fromString(payload);
-			noConcise(body);
-			tuple = HttpUtils.expandBody(request, body, AppConstants.ENTITY_UPDATE_PAYLOAD);
 			HttpUtils.validateUri(entityId);
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 		}
 		boolean noOverwrite = options != null && options.contains(NGSIConstants.NO_OVERWRITE_OPTION);
-		return entityService
-				.appendToEntity(HttpUtils.getTenant(request), entityId, tuple.getItem2(), noOverwrite, tuple.getItem1())
-				.onItem().transform(HttpUtils::generateUpdateResultResponse).onFailure()
-				.recoverWithItem(HttpUtils::handleControllerExceptions);
+		noConcise(body);
+		return HttpUtils.expandBody(request, body, AppConstants.ENTITY_UPDATE_PAYLOAD, webClient).onItem()
+				.transformToUni(tuple -> {
+					return entityService
+							.appendToEntity(HttpUtils.getTenant(request), entityId, tuple.getItem2(), noOverwrite,
+									tuple.getItem1())
+							.onItem().transform(HttpUtils::generateUpdateResultResponse).onFailure()
+							.recoverWithItem(HttpUtils::handleControllerExceptions);
+				});
 	}
 
 	/**
@@ -142,35 +153,26 @@ public class EntityController {// implements EntityHandlerInterface {
 	@PATCH
 	@Path("/entities/{entityId}/attrs/{attrId}")
 	public Uni<RestResponse<Object>> partialUpdateAttribute(HttpServerRequest request,
-			@PathParam("entityId") String entityId, @PathParam("attrId") String attrib, String payload) {
-		Tuple2<Context, Map<String, Object>> tuple;
-		String expAttrib;
+			@PathParam("entityId") String entityId, @PathParam("attrId") String attrib, Map<String, Object> body) {
 		try {
-			Map<String, Object> body = (Map<String, Object>) JsonUtils.fromString(payload);
-			noConcise(body);
-			tuple = HttpUtils.expandBody(request, body, AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD);
 			HttpUtils.validateUri(entityId);
-			expAttrib = tuple.getItem1().expandIri(attrib, false, true, null, null);
+
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 		}
-		logger.trace("update entry :: started");
-		return entityService.partialUpdateAttribute(HttpUtils.getTenant(request), entityId, expAttrib, tuple.getItem2(),
-				tuple.getItem1()).onItem().transform(updateResult -> {
-					logger.trace("update entry :: completed");
-					return HttpUtils.generateUpdateResultResponse(updateResult);
-				}).onFailure().recoverWithItem(e -> {
-					return HttpUtils.handleControllerExceptions(e);
+		noConcise(body);
+		return HttpUtils.expandBody(request, body, AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, webClient).onItem()
+				.transformToUni(tuple -> {
+					String expAttrib = tuple.getItem1().expandIri(attrib, false, true, null, null);
+					logger.trace("update entry :: started");
+					return entityService.partialUpdateAttribute(HttpUtils.getTenant(request), entityId, expAttrib,
+							tuple.getItem2(), tuple.getItem1()).onItem().transform(updateResult -> {
+								logger.trace("update entry :: completed");
+								return HttpUtils.generateUpdateResultResponse(updateResult);
+							}).onFailure().recoverWithItem(e -> {
+								return HttpUtils.handleControllerExceptions(e);
+							});
 				});
-
-//				.onFailure().recoverWithUni(t -> entityService.patchToEndPoint(entityId, request, payload, attrib)
-//						.onItem().transform(isEndPointExist -> {
-//							if (isEndPointExist)
-//								return RestResponse.noContent();
-//							else {
-//								return HttpUtils.handleControllerExceptions(t);
-//							}
-//						}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions));
 	}
 
 	/**
@@ -187,22 +189,22 @@ public class EntityController {// implements EntityHandlerInterface {
 	public Uni<RestResponse<Object>> deleteAttribute(HttpServerRequest request, @PathParam("entityId") String entityId,
 			@PathParam("attrId") String attrId, @QueryParam("datasetId") String datasetId,
 			@QueryParam("deleteAll") boolean deleteAll) {
-		Context context;
-		try {
-			HttpUtils.validateUri(entityId);
-			context = JsonLdProcessor.getCoreContextClone().parse(HttpUtils.getAtContext(request), false);
-			attrId = context.expandIri(attrId, false, false, null, null);
-		} catch (Exception e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
-		}
-		logger.trace("delete attribute :: started");
-		return entityService
-				.deleteAttribute(HttpUtils.getTenant(request), entityId, attrId, datasetId, deleteAll, context).onItem()
-				.transform(opResult -> {
-					logger.trace("delete attribute :: completed");
-					return HttpUtils.generateDeleteResult(opResult);
+		return JsonLdProcessor.getCoreContextClone().parse(HttpUtils.getAtContext(request), false, webClient).onItem()
+				.transformToUni(context -> {
+					try {
+						HttpUtils.validateUri(entityId);
+					} catch (Exception e) {
+						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+					}
+					String expandedAttrId = context.expandIri(attrId, false, false, null, null);
+					logger.trace("delete attribute :: started");
+					return entityService.deleteAttribute(HttpUtils.getTenant(request), entityId, expandedAttrId,
+							datasetId, deleteAll, context).onItem().transform(opResult -> {
+								logger.trace("delete attribute :: completed");
+								return HttpUtils.generateDeleteResult(opResult);
 
-				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+							}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+				});
 
 	}
 

@@ -31,6 +31,7 @@ import eu.neclab.ngsildbroker.commons.enums.Format;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.QueryParser;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
+import io.vertx.mutiny.ext.web.client.WebClient;
 
 /**
  * @author hebgen
@@ -378,8 +379,8 @@ public class Subscription implements Serializable {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static Subscription expandSubscription(Map<String, Object> body, Context context, boolean update)
-			throws ResponseException {
+	public static Subscription expandSubscription(Map<String, Object> body, Context context, boolean update,
+			WebClient webClient) throws ResponseException {
 		Subscription subscription = new Subscription();
 
 		for (Entry<String, Object> mapEntry : body.entrySet()) {
@@ -443,7 +444,7 @@ public class Subscription implements Serializable {
 			case NGSIConstants.NGSI_LD_NOTIFICATION:
 				try {
 					NotificationParam notification = getNotificationParam(((List<Map<String, Object>>) mapValue).get(0),
-							context);
+							context, webClient);
 					subscription.setNotification(notification);
 				} catch (Exception e) {
 					throw new ResponseException(ErrorType.BadRequestData,
@@ -572,7 +573,8 @@ public class Subscription implements Serializable {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static NotificationParam getNotificationParam(Map<String, Object> map, Context context) throws Exception {
+	public static NotificationParam getNotificationParam(Map<String, Object> map, Context context, WebClient webClient)
+			throws Exception {
 		// Default accept
 		String accept = AppConstants.NGB_APPLICATION_JSONLD;
 		Format format = Format.normalized;
@@ -629,8 +631,9 @@ public class Subscription implements Serializable {
 						break;
 					case NGSIConstants.NGSI_LD_RECEIVERINFO:
 						ArrayListMultimap<String, String> receiverInfo = ArrayListMultimap.create();
-						Map<String, Object> compacted = JsonLdProcessor.compact(endPointEntry.getValue(), null, context,
-								opts, 999);
+						Map<String, Object> compacted = JsonLdProcessor
+								.compact(endPointEntry.getValue(), null, context, opts, 999, webClient).await()
+								.indefinitely();
 						List<Map<String, Object>> receiverInfos = (List<Map<String, Object>>) compacted
 								.get(JsonLdConsts.GRAPH);
 						if (receiverInfos == null) {

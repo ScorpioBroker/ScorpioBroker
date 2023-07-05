@@ -11,6 +11,7 @@ import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import io.vertx.mutiny.ext.web.client.WebClient;
 
 public class SubscriptionRequest extends BaseRequest {
 
@@ -18,17 +19,19 @@ public class SubscriptionRequest extends BaseRequest {
 
 	private Context context;
 
+	private WebClient webClient;
+
 	public SubscriptionRequest() {
 		// default constructor for serialization
 	}
 
-	public SubscriptionRequest(String tenant, Map<String, Object> subscription, Context context)
+	public SubscriptionRequest(String tenant, Map<String, Object> subscription, Context context, WebClient webClient)
 			throws ResponseException {
 		super(tenant, (String) subscription.get(NGSIConstants.JSON_LD_ID), subscription, null,
 				AppConstants.CREATE_SUBSCRIPTION_REQUEST);
 		this.context = context;
-		this.subscription = Subscription.expandSubscription(subscription, context, false);
-
+		this.subscription = Subscription.expandSubscription(subscription, context, false, webClient);
+		this.webClient = webClient;
 	}
 
 	protected SubscriptionRequest(String tenant, String subscriptionId, int deleteSubscriptionRequest) {
@@ -40,7 +43,7 @@ public class SubscriptionRequest extends BaseRequest {
 		super.setPayload(payload);
 		try {
 			if (payload != null)
-				this.subscription = Subscription.expandSubscription(payload, context, false);
+				this.subscription = Subscription.expandSubscription(payload, context, false, webClient);
 		} catch (ResponseException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

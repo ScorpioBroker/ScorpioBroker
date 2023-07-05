@@ -27,6 +27,8 @@ import eu.neclab.ngsildbroker.commons.datatypes.PropertyEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import io.smallrye.mutiny.Uni;
+import io.vertx.mutiny.ext.web.client.WebClient;
 
 public abstract class EntityTools {
 
@@ -47,8 +49,8 @@ public abstract class EntityTools {
 
 	}
 
-	public static Map<String, Object> prepareSplitUpEntityForSending(Map<String, Object> expanded, Context context)
-			throws JsonLdError, ResponseException {
+	public static Uni<Map<String, Object>> prepareSplitUpEntityForSending(Map<String, Object> expanded, Context context,
+			WebClient webClient) throws JsonLdError, ResponseException {
 		if (expanded.containsKey(NGSIConstants.JSON_LD_TYPE)) {
 			expanded.put(NGSIConstants.JSON_LD_TYPE,
 					Lists.newArrayList((Set<String>) expanded.get(NGSIConstants.JSON_LD_TYPE)));
@@ -61,7 +63,7 @@ public abstract class EntityTools {
 			}
 			expanded.put(NGSIConstants.NGSI_LD_SCOPE, finalScopes);
 		}
-		return JsonLdProcessor.compact(expanded, null, context, HttpUtils.opts, -1);
+		return JsonLdProcessor.compact(expanded, null, context, HttpUtils.opts, -1, webClient);
 
 	}
 

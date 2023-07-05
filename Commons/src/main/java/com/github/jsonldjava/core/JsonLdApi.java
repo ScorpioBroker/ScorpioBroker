@@ -23,13 +23,16 @@ import java.util.TreeMap;
 import com.github.jsonldjava.core.JsonLdConsts.Embed;
 import com.github.jsonldjava.core.JsonLdError.Error;
 import com.github.jsonldjava.utils.Obj;
+import com.google.common.collect.Lists;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
+import io.vertx.mutiny.ext.web.client.WebClient;
 
 /**
  * A container object to maintain state relating to JsonLdOptions and the
@@ -77,10 +80,10 @@ public class JsonLdApi {
 	 * @throws JsonLdError If there is an error initializing using the object and
 	 *                     options.
 	 */
-	public JsonLdApi(Object input, Object context, JsonLdOptions opts) throws JsonLdError {
-		this(opts);
-		initialize(input, null);
-	}
+//	public JsonLdApi(Object input, Object context, JsonLdOptions opts) throws JsonLdError {
+//		this(opts);
+//		initialize(input, null);
+//	}
 
 	/**
 	 * Constructs an empty JsonLdApi object using the given JsonLdOptions, and
@@ -115,9 +118,9 @@ public class JsonLdApi {
 		}
 		// TODO: string/IO input
 		this.context = new Context(opts);
-		if (context != null) {
-			this.context = this.context.parse(context, false);
-		}
+//		if (context != null) {
+//			this.context = this.context.parse(context, false);
+//		}
 	}
 //	public Object compact(Context activeCtx, String activeProperty, Object element, boolean compactArrays, int endPoint)
 //			throws JsonLdError {
@@ -630,7 +633,8 @@ public class JsonLdApi {
 
 	public Object expandWithCoreContext(Object geoProp) {
 		try {
-			return expand(JsonLdProcessor.getCoreContextClone(), geoProp, -2, false);
+			return expandSubLevels(JsonLdProcessor.getCoreContextClone(), NGSIConstants.NGSI_LD_LOCATION,
+					new NGSIObject(geoProp, null), -2, false).getElement();
 		} catch (JsonLdError | ResponseException e) {
 			// should never happen
 			e.printStackTrace();
@@ -673,7 +677,136 @@ public class JsonLdApi {
 	 * @throws JsonLdError If there was an error during expansion.
 	 */
 
-	public NGSIObject expand(Context activeCtx, String activeProperty, NGSIObject ngsiElement, int payloadType,
+	public Uni<NGSIObject> expand(Context activeCtx, String activeProperty, NGSIObject ngsiElement, int payloadType,
+			boolean atContextAllowed, WebClient webClient) {
+		final boolean frameExpansion = this.opts.getFrameExpansion();
+		// 1)
+		if (ngsiElement.getElement() == null) {
+			return Uni.createFrom().item(new NGSIObject(null, null));
+		}
+		Object element = ngsiElement.getElement();
+		// GK: This would be the point to set `propertyScopedContext` to the `@context`
+		// entry for any term definition associated with `activeProperty`.
+		// 3)
+		if (element instanceof List) {
+			// 3.1)
+			ngsiElement.setArray(true);
+
+			List<Uni<NGSIObject>> unis = Lists.newArrayList();
+			for (final Object item : (List<Object>) element) {
+				// 3.2.1)
+				unis.add(expand(activeCtx, activeProperty,
+						new NGSIObject(item, ngsiElement)
+								.setFromHasValue(ngsiElement.isHasAtValue() || ngsiElement.isFromHasValue()),
+						payloadType, atContextAllowed, webClient));
+			}
+
+			return Uni.combine().all().unis(unis).combinedWith(list -> list).onItem().transformToUni(list -> {
+				final List<Object> result = new ArrayList<Object>();
+				// 3.2)
+				NGSIObject resultElement = new NGSIObject(null, ngsiElement);
+				resultElement.fillUpForArray(ngsiElement);
+				resultElement.setFromHasValue(ngsiElement.isFromHasValue() || ngsiElement.isHasAtValue());
+				for (Object obj : list) {
+					NGSIObject ngsiV = (NGSIObject) obj;
+					final Object v = ngsiV.getElement();
+					resultElement.fillUpForArray(ngsiV);
+					// 3.2.2)
+					if ((JsonLdConsts.LIST.equals(activeProperty)
+							|| JsonLdConsts.LIST.equals(activeCtx.getContainer(activeProperty)))
+							&& (v instanceof List || (v instanceof Map
+									&& ((Map<String, Object>) v).containsKey(JsonLdConsts.LIST)))) {
+						// throw new JsonLdError(Error.LIST_OF_LISTS, "lists of lists are not
+						// permitted.");
+						if (v instanceof List) {
+							Object expandedValue = newMap();
+							((Map<String, Object>) expandedValue).put(JsonLdConsts.LIST, v);
+							result.add(expandedValue);
+						} else if (v instanceof Map) {
+							result.add(v);
+						}
+
+					}
+					// 3.2.3)
+					else {
+
+						if (v != null) {
+							if (v instanceof List) {
+								result.addAll((Collection<? extends Object>) v);
+							} else {
+								result.add(v);
+							}
+						}
+					}
+
+				}
+				resultElement.setElement(result);
+				try {
+					resultElement.validate(payloadType, activeProperty,
+							activeCtx.expandIri(activeProperty, false, true, null, null), this);
+				} catch (JsonLdError | ResponseException e) {
+					return Uni.createFrom().failure(e);
+				}
+				return Uni.createFrom().item(resultElement);
+			});
+
+		}
+		// 4)
+		else if (element instanceof Map) {
+			// access helper
+			final Map<String, Object> elem = (Map<String, Object>) element;
+			// 5)
+			// This would be the place to revert the active context from any previous
+			// type-scoped context if the active context has a `previousContext` entry (with
+			// some exceptions when called from a map, or if it's a value object or a
+			// subject reference).
+			// GK: If we found a `propertyScopedContext` above, we can parse it to create a
+			// new activeCtx using the `override protected` option
+			ngsiElement.setAtContextRequired(atContextAllowed);
+			Uni<Context> ctxUni;
+			Object bodyContext = elem.remove(JsonLdConsts.CONTEXT);
+			if (bodyContext != null) {
+				ngsiElement.setHasAtContext(true);
+				if (!atContextAllowed) {
+					return Uni.createFrom().failure(
+							new ResponseException(ErrorType.BadRequestData, "@context entry in body is not allowed"));
+				}
+				ctxUni = activeCtx.parse(bodyContext, true, webClient);
+			} else {
+				ctxUni = Uni.createFrom().item(activeCtx);
+			}
+			return ctxUni.onItem().transformToUni(ctx -> {
+				try {
+					return Uni.createFrom()
+							.item(expandSubLevels(ctx, activeProperty, ngsiElement, payloadType, atContextAllowed));
+				} catch (JsonLdError | ResponseException e) {
+					return Uni.createFrom().failure(e);
+				}
+			});
+		} else {
+			// 2.1)
+			if (activeProperty == null) {
+				return Uni.createFrom()
+						.failure(new ResponseException(ErrorType.BadRequestData, "null values are not allowed"));
+			}
+			if (JsonLdConsts.GRAPH.equals(activeProperty)) {
+				return Uni.createFrom().item(new NGSIObject(null, ngsiElement));
+			}
+			String expandedProperty = activeCtx.expandIri(activeProperty, false, true, null, null);
+			Object result = activeCtx.expandValue(activeProperty, element);
+			ngsiElement.setElement(result);
+			ngsiElement.setScalar(true);
+			try {
+				ngsiElement.validate(payloadType, activeProperty, expandedProperty, this);
+			} catch (ResponseException e) {
+				return Uni.createFrom().failure(e);
+			}
+			return Uni.createFrom().item(ngsiElement);
+		}
+
+	}
+
+	public NGSIObject expandSubLevels(Context activeCtx, String activeProperty, NGSIObject ngsiElement, int payloadType,
 			boolean atContextAllowed) throws JsonLdError, ResponseException {
 		final boolean frameExpansion = this.opts.getFrameExpansion();
 		// 1)
@@ -694,7 +827,7 @@ public class JsonLdApi {
 			resultElement.setFromHasValue(ngsiElement.isFromHasValue() || ngsiElement.isHasAtValue());
 			for (final Object item : (List<Object>) element) {
 				// 3.2.1)
-				NGSIObject ngsiV = expand(activeCtx, activeProperty,
+				NGSIObject ngsiV = expandSubLevels(activeCtx, activeProperty,
 						new NGSIObject(item, ngsiElement)
 								.setFromHasValue(ngsiElement.isHasAtValue() || ngsiElement.isFromHasValue()),
 						payloadType, atContextAllowed);
@@ -746,14 +879,14 @@ public class JsonLdApi {
 			// subject reference).
 			// GK: If we found a `propertyScopedContext` above, we can parse it to create a
 			// new activeCtx using the `override protected` option
-			ngsiElement.setAtContextRequired(atContextAllowed);
-			if (elem.containsKey(JsonLdConsts.CONTEXT)) {
-				ngsiElement.setHasAtContext(true);
-				if (!atContextAllowed) {
-					throw new ResponseException(ErrorType.BadRequestData, "@context entry in body is not allowed");
-				}
-				activeCtx = activeCtx.parse(elem.get(JsonLdConsts.CONTEXT), true);
-			}
+//			ngsiElement.setAtContextRequired(atContextAllowed);
+//			if (elem.containsKey(JsonLdConsts.CONTEXT)) {
+//				ngsiElement.setHasAtContext(true);
+//				if (!atContextAllowed) {
+//					throw new ResponseException(ErrorType.BadRequestData, "@context entry in body is not allowed");
+//				}
+//				activeCtx = activeCtx.parse(elem.get(JsonLdConsts.CONTEXT), true);
+//			}
 			// GK: This would be the place to remember this version of activeCtx as
 			// `typeScopedContext`.
 			// 6)
@@ -870,7 +1003,7 @@ public class JsonLdApi {
 					}
 					// 7.4.5)
 					else if (JsonLdConsts.GRAPH.equals(expandedProperty)) {
-						NGSIObject ngsiExpandedValue = expand(activeCtx, JsonLdConsts.GRAPH,
+						NGSIObject ngsiExpandedValue = expandSubLevels(activeCtx, JsonLdConsts.GRAPH,
 								new NGSIObject(value, ngsiElement), payloadType, atContextAllowed);
 						expandedValue = ngsiExpandedValue.getElement();
 					}
@@ -921,7 +1054,7 @@ public class JsonLdApi {
 							continue;
 						}
 						// 7.4.9.2)
-						NGSIObject ngsiExpandedValue = expand(activeCtx, activeProperty,
+						NGSIObject ngsiExpandedValue = expandSubLevels(activeCtx, activeProperty,
 								new NGSIObject(value, ngsiElement), payloadType, atContextAllowed);
 						expandedValue = ngsiExpandedValue.getElement();
 
@@ -941,7 +1074,7 @@ public class JsonLdApi {
 					}
 					// 7.4.10)
 					else if (JsonLdConsts.SET.equals(expandedProperty)) {
-						NGSIObject ngsiExpandedValue = expand(activeCtx, activeProperty,
+						NGSIObject ngsiExpandedValue = expandSubLevels(activeCtx, activeProperty,
 								new NGSIObject(value, ngsiElement), payloadType, atContextAllowed);
 						expandedValue = ngsiExpandedValue.getElement();
 					}
@@ -951,7 +1084,7 @@ public class JsonLdApi {
 							throw new JsonLdError(Error.INVALID_REVERSE_VALUE, "@reverse value must be an object");
 						}
 						// 7.4.11.1)
-						NGSIObject ngsiExpandedValue = expand(activeCtx, JsonLdConsts.REVERSE,
+						NGSIObject ngsiExpandedValue = expandSubLevels(activeCtx, JsonLdConsts.REVERSE,
 								new NGSIObject(value, ngsiElement), payloadType, atContextAllowed);
 						expandedValue = ngsiExpandedValue.getElement();
 						// NOTE: algorithm assumes the result is a map
@@ -1019,7 +1152,7 @@ public class JsonLdApi {
 							|| JsonLdConsts.REQUIRE_ALL.equals(expandedProperty)
 							|| JsonLdConsts.EMBED_CHILDREN.equals(expandedProperty)
 							|| JsonLdConsts.OMIT_DEFAULT.equals(expandedProperty))) {
-						NGSIObject ngsiExpandedValue = expand(activeCtx, expandedProperty,
+						NGSIObject ngsiExpandedValue = expandSubLevels(activeCtx, expandedProperty,
 								new NGSIObject(value, ngsiElement), payloadType, atContextAllowed);
 						expandedValue = ngsiExpandedValue.getElement();
 					}
@@ -1138,8 +1271,8 @@ public class JsonLdApi {
 							((List<Object>) indexValue).add(tmp);
 						}
 						// 7.6.2.2)
-						NGSIObject ngsiIndexValue = expand(activeCtx, key, new NGSIObject(indexValue, ngsiElement),
-								payloadType, atContextAllowed);
+						NGSIObject ngsiIndexValue = expandSubLevels(activeCtx, key,
+								new NGSIObject(indexValue, ngsiElement), payloadType, atContextAllowed);
 						indexValue = ngsiIndexValue.getElement();
 						// 7.6.2.3)
 						for (final Map<String, Object> item : (List<Map<String, Object>>) indexValue) {
@@ -1155,7 +1288,7 @@ public class JsonLdApi {
 				// 7.7)
 				else {
 
-					NGSIObject ngsiExpandedValue = expand(activeCtx, key,
+					NGSIObject ngsiExpandedValue = expandSubLevels(activeCtx, key,
 							new NGSIObject(value, ngsiElement)
 									.setFromHasValue(ngsiElement.isHasAtValue() || ngsiElement.isFromHasValue()),
 							payloadType, atContextAllowed);
@@ -1337,9 +1470,10 @@ public class JsonLdApi {
 	 * @throws JsonLdError       If there was an error during expansion.
 	 * @throws ResponseException
 	 */
-	public Object expand(Context activeCtx, Object element, int payloadType, boolean atContextAllowed)
-			throws JsonLdError, ResponseException {
-		return expand(activeCtx, null, new NGSIObject(element, null), payloadType, atContextAllowed).getElement();
+	public Uni<Object> expand(Context activeCtx, Object element, int payloadType, boolean atContextAllowed,
+			WebClient webClient) {
+		return expand(activeCtx, null, new NGSIObject(element, null), payloadType, atContextAllowed, webClient).onItem()
+				.transform(ngsiElem -> ngsiElem.getElement());
 	}
 
 	/***

@@ -1,10 +1,12 @@
 package com.github.jsonldjava.utils;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.io.StringBufferInputStream;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.Writer;
@@ -15,6 +17,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerationException;
@@ -26,6 +29,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jsonldjava.core.DocumentLoader;
 import com.github.jsonldjava.core.JsonLdApi;
 import com.github.jsonldjava.core.JsonLdProcessor;
+import com.google.common.net.HttpHeaders;
+
+import io.smallrye.mutiny.Uni;
+import io.vertx.mutiny.core.buffer.Buffer;
+import io.vertx.mutiny.ext.web.client.HttpResponse;
+import io.vertx.mutiny.ext.web.client.WebClient;
 
 import org.apache.commons.io.ByteOrderMark;
 import org.apache.commons.io.IOUtils;
@@ -94,7 +103,7 @@ public class JsonUtils {
 	 * @throws JsonParseException If there was a JSON related error during parsing.
 	 * @throws IOException        If there was an IO error during parsing.
 	 */
-	public static Object fromInputStream(InputStream input) throws IOException {
+	public static Uni<Object> fromInputStream(InputStream input) {
 		// filter BOMs from InputStream
 		try (final BOMInputStream bOMInputStream = new BOMInputStream(input, false, ByteOrderMark.UTF_8,
 				ByteOrderMark.UTF_16BE, ByteOrderMark.UTF_16LE, ByteOrderMark.UTF_32BE, ByteOrderMark.UTF_32LE);) {
@@ -110,9 +119,15 @@ public class JsonUtils {
 				}
 			}
 			return fromInputStream(bOMInputStream, charset);
+		} catch (IOException e) {
+			return Uni.createFrom().failure(e);
 		} finally {
 			if (input != null) {
-				input.close();
+				try {
+					input.close();
+				} catch (IOException e) {
+					return Uni.createFrom().failure(e);
+				}
 			}
 		}
 	}
@@ -145,10 +160,12 @@ public class JsonUtils {
 	 * @throws JsonParseException If there was a JSON related error during parsing.
 	 * @throws IOException        If there was an IO error during parsing.
 	 */
-	public static Object fromInputStream(InputStream input, Charset enc) throws IOException {
+	public static Uni<Object> fromInputStream(InputStream input, Charset enc) {
 		try (InputStreamReader in = new InputStreamReader(input, enc);
 				BufferedReader reader = new BufferedReader(in);) {
 			return fromReader(reader);
+		} catch (IOException e) {
+			return Uni.createFrom().failure(e);
 		}
 	}
 
@@ -162,8 +179,13 @@ public class JsonUtils {
 	 * @throws JsonParseException If there was a JSON related error during parsing.
 	 * @throws IOException        If there was an IO error during parsing.
 	 */
-	public static Object fromReader(Reader reader) throws IOException {
-		final JsonParser jp = JSON_FACTORY.createParser(reader);
+	public static Uni<Object> fromReader(Reader reader) {
+		JsonParser jp;
+		try {
+			jp = JSON_FACTORY.createParser(reader);
+		} catch (IOException e) {
+			return Uni.createFrom().failure(e);
+		}
 		return fromJsonParser(jp);
 	}
 
@@ -177,41 +199,49 @@ public class JsonUtils {
 	 * @throws JsonParseException If there was a JSON related error during parsing.
 	 * @throws IOException        If there was an IO error during parsing.
 	 */
-	public static Object fromJsonParser(JsonParser jp) throws IOException {
+	public static Uni<Object> fromJsonParser(JsonParser jp) {
 		Object rval;
-		final JsonToken initialToken = jp.nextToken();
+		JsonToken initialToken;
+		try {
+			initialToken = jp.nextToken();
 
-		if (initialToken == JsonToken.START_ARRAY) {
-			rval = jp.readValueAs(List.class);
-		} else if (initialToken == JsonToken.START_OBJECT) {
-			rval = jp.readValueAs(Map.class);
-		} else if (initialToken == JsonToken.VALUE_STRING) {
-			rval = jp.readValueAs(String.class);
-		} else if (initialToken == JsonToken.VALUE_FALSE || initialToken == JsonToken.VALUE_TRUE) {
-			rval = jp.readValueAs(Boolean.class);
-		} else if (initialToken == JsonToken.VALUE_NUMBER_FLOAT || initialToken == JsonToken.VALUE_NUMBER_INT) {
-			rval = jp.readValueAs(Number.class);
-		} else if (initialToken == JsonToken.VALUE_NULL) {
-			rval = null;
-		} else {
-			throw new JsonParseException(jp, "document doesn't start with a valid json element : " + initialToken,
-					jp.getCurrentLocation());
+			if (initialToken == JsonToken.START_ARRAY) {
+				rval = jp.readValueAs(List.class);
+			} else if (initialToken == JsonToken.START_OBJECT) {
+				rval = jp.readValueAs(Map.class);
+			} else if (initialToken == JsonToken.VALUE_STRING) {
+				rval = jp.readValueAs(String.class);
+			} else if (initialToken == JsonToken.VALUE_FALSE || initialToken == JsonToken.VALUE_TRUE) {
+				rval = jp.readValueAs(Boolean.class);
+			} else if (initialToken == JsonToken.VALUE_NUMBER_FLOAT || initialToken == JsonToken.VALUE_NUMBER_INT) {
+				rval = jp.readValueAs(Number.class);
+			} else if (initialToken == JsonToken.VALUE_NULL) {
+				rval = null;
+			} else {
+				return Uni.createFrom().failure(new JsonParseException(jp,
+						"document doesn't start with a valid json element : " + initialToken, jp.getCurrentLocation()));
+			}
+		} catch (IOException e) {
+			return Uni.createFrom().failure(e);
 		}
 
 		JsonToken t;
 		try {
 			t = jp.nextToken();
 		} catch (final JsonParseException ex) {
-			throw new JsonParseException(jp,
-					"Document contains more content after json-ld element - (possible mismatched {}?)",
-					jp.getCurrentLocation());
+			return Uni.createFrom()
+					.failure(new JsonParseException(jp,
+							"Document contains more content after json-ld element - (possible mismatched {}?)",
+							jp.getCurrentLocation()));
+		} catch (IOException e) {
+			return Uni.createFrom().failure(e);
 		}
 		if (t != null) {
-			throw new JsonParseException(jp,
+			return Uni.createFrom().failure(new JsonParseException(jp,
 					"Document contains possible json content after the json-ld element - (possible mismatched {}?)",
-					jp.getCurrentLocation());
+					jp.getCurrentLocation()));
 		}
-		return rval;
+		return Uni.createFrom().item(rval);
 	}
 
 	/**
@@ -301,8 +331,7 @@ public class JsonUtils {
 	 * @throws JsonParseException If there was a JSON related error during parsing.
 	 * @throws IOException        If there was an IO error during parsing.
 	 */
-	public static Object fromURL(java.net.URL url, CloseableHttpClient httpClient)
-			throws JsonParseException, IOException {
+	public static Uni<Object> fromURL(java.net.URL url, WebClient webClient) {
 		final String protocol = url.getProtocol();
 		// We can only use the Apache HTTPClient for HTTP/HTTPS, so use the
 		// native java client for the others
@@ -310,42 +339,52 @@ public class JsonUtils {
 			// Can't use the HTTP client for those!
 			// Fallback to Java's built-in JsonLdUrl handler. No need for
 			// Accept headers as it's likely to be file: or jar:
-			return fromInputStream(url.openStream());
+			try {
+				return fromInputStream(url.openStream());
+			} catch (IOException e) {
+				return Uni.createFrom().failure(e);
+			}
 		} else {
-			return fromJsonLdViaHttpUri(url, httpClient, 0);
+			return fromJsonLdViaHttpUri(url, webClient, 0);
 		}
 	}
 
-	private static Object fromJsonLdViaHttpUri(final URL url, final CloseableHttpClient httpClient, int linksFollowed)
-			throws IOException {
+	private static Uni<Object> fromJsonLdViaHttpUri(final URL url, WebClient webClient, int linksFollowed) {
 		final HttpUriRequest request = new HttpGet(url.toExternalForm());
 		// We prefer application/ld+json, but fallback to application/json
 		// or whatever is available
 		request.addHeader("Accept", ACCEPT_HEADER);
-		try (CloseableHttpResponse response = httpClient.execute(request)) {
-			final int status = response.getStatusLine().getStatusCode();
+		return webClient.get(url.toExternalForm()).send().onItem().transformToUni(result -> {
+			final int status = result.statusCode();
 			if (status != 200 && status != 203) {
-				throw new IOException("Can't retrieve " + url + ", status code: " + status);
+				return Uni.createFrom().failure(new IOException("Can't retrieve " + url + ", status code: " + status));
 			}
-			// follow alternate document location
-			// https://www.w3.org/TR/json-ld11/#alternate-document-location
-			URL alternateLink = alternateLink(url, response);
+			URL alternateLink;
+			try {
+				alternateLink = alternateLink(url, result);
+			} catch (MalformedURLException e) {
+				return Uni.createFrom().failure(e);
+			}
 			if (alternateLink != null) {
-				linksFollowed++;
-				if (linksFollowed > MAX_LINKS_FOLLOW) {
-					throw new IOException("Too many alternate links followed. This may indicate a cycle. Aborting.");
+
+				if (linksFollowed + 1 > MAX_LINKS_FOLLOW) {
+					return Uni.createFrom().failure(
+							new IOException("Too many alternate links followed. This may indicate a cycle. Aborting."));
 				}
-				return fromJsonLdViaHttpUri(alternateLink, httpClient, linksFollowed);
+				return fromJsonLdViaHttpUri(alternateLink, webClient, linksFollowed + 1);
 			}
-			return fromInputStream(response.getEntity().getContent());
-		}
+			return fromInputStream(new ByteArrayInputStream(result.bodyAsString().getBytes(StandardCharsets.UTF_8)));
+
+		});
+
 	}
 
-	private static URL alternateLink(URL url, CloseableHttpResponse response) throws MalformedURLException {
-		if (response.getEntity().getContentType() != null
-				&& !response.getEntity().getContentType().getValue().equals("application/ld+json")) {
-			for (Header header : response.getAllHeaders()) {
-				if (header.getName().equalsIgnoreCase("link")) {
+	private static URL alternateLink(URL url, HttpResponse<Buffer> result) throws MalformedURLException {
+
+		if (result.headers().contains(HttpHeaders.CONTENT_TYPE)
+				&& !result.headers().get(HttpHeaders.CONTENT_TYPE).equals("application/ld+json")) {
+			for (Entry<String, String> header : result.headers().entries()) {
+				if (header.getKey().equalsIgnoreCase("link")) {
 					String alternateLink = "";
 					boolean relAlternate = false;
 					boolean jsonld = false;
