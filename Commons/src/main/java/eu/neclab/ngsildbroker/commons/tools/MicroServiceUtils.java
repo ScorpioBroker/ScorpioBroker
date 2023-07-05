@@ -61,9 +61,9 @@ public class MicroServiceUtils {
 			case AppConstants.DELETE_ATTRIBUTE_REQUEST:
 				result = new DeleteAttributeRequest();
 				result.setPreviousEntity(originalPayload.getPreviousEntity());
-				((DeleteAttributeRequest) result).setAttribName(((DeleteAttributeRequest) originalPayload).getAttribName());
-				((DeleteAttributeRequest) result).setDatasetId(((DeleteAttributeRequest) originalPayload).getDatasetId());
-				((DeleteAttributeRequest) result).setDeleteAll(((DeleteAttributeRequest) originalPayload).isDeleteAll());
+				result.setAttribName(originalPayload.getAttribName());
+				result.setDatasetId(originalPayload.getDatasetId());
+				result.setDeleteAll(originalPayload.isDeleteAll());
 				break;
 			default:
 				result = new BaseRequest();

@@ -14,6 +14,9 @@ public class BaseRequest {
 	private BatchInfo batchInfo;
 	private String id;
 	private Map<String, Object> previousEntity;
+	private String attribName;
+	private String datasetId;
+	private boolean deleteAll;
 
 	public BaseRequest() {
 
@@ -81,6 +84,33 @@ public class BaseRequest {
 	}
 	public Map<String,Object> getPreviousEntity(){
 		return previousEntity;
+	}
+	public String getAttribName() {
+		return attribName;
+	}
+
+	public String getDatasetId() {
+		return datasetId;
+	}
+
+	public boolean deleteAll() {
+		return deleteAll;
+	}
+
+	public boolean isDeleteAll() {
+		return deleteAll;
+	}
+
+	public void setDeleteAll(boolean deleteAll) {
+		this.deleteAll = deleteAll;
+	}
+
+	public void setAttribName(String attribName) {
+		this.attribName = attribName;
+	}
+
+	public void setDatasetId(String datasetId) {
+		this.datasetId = datasetId;
 	}
 
 }
