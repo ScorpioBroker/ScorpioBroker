@@ -577,6 +577,7 @@ public class QQueryTerm {
 		result.append("ENTITY ? $");
 		result.append(dollarCount);
 
+
 		String[] splitted = getAttribute().split("\\[");
 		if (splitted.length > 1) {
 			splitted[1] = splitted[1].substring(0, splitted[1].length() - 1);
@@ -584,13 +585,24 @@ public class QQueryTerm {
 		String[] subAttribPath = splitted.length == 1 ? null : splitted[1].split("\\.");
 		String[] attribPath = splitted[0].split("\\.");
 		String attribName = linkHeaders.expandIri(attribPath[0], false, true, null, null);
-		result.append(" AND EXISTS (SELECT TRUE FROM JSONB_ARRAY_ELEMENTS(ENTITY -> $");
-		result.append(dollarCount);
-		dollarCount++;
-		tuple.addString(attribName);
-		result.append(") AS toplevel WHERE ");
-		dollarCount = commonWherePart(attribPath, subAttribPath, "toplevel", dollarCount, tuple, result, this);
-		// result.append(")");
+		if(attribName.equals("@id")){
+			result.append(" AND entity ->> $");
+			result.append(dollarCount);
+			dollarCount++;
+			tuple.addString(attribName);
+			result.append(" ~ $");
+			result.append(dollarCount);
+			dollarCount++;
+			tuple.addString(operant);
+		}else {
+			result.append(" AND EXISTS (SELECT TRUE FROM JSONB_ARRAY_ELEMENTS(ENTITY -> $");
+			result.append(dollarCount);
+			dollarCount++;
+			tuple.addString(attribName);
+			result.append(") AS toplevel WHERE ");
+			dollarCount = commonWherePart(attribPath, subAttribPath, "toplevel", dollarCount, tuple, result, this);
+			// result.append(")");
+		}
 		return dollarCount;
 	}
 
@@ -883,18 +895,20 @@ public class QQueryTerm {
 			addItemToTupel(tuple, operant);
 			break;
 		case NGSIConstants.QUERY_PATTERNOP:
-			attributeFilterProperty.append(" ~ $");
+			attributeFilterProperty.append("::text ~ $");
 			attributeFilterProperty.append(dollarCount);
 			// attributeFilterProperty.append("'");
 			dollarCount++;
-			addItemToTupel(tuple, operant);
+			tuple.addString(operant);
+			//addItemToTupel(tuple, operant);
 			break;
 		case NGSIConstants.QUERY_NOTPATTERNOP:
-			attributeFilterProperty.append(" !~ $");
+			attributeFilterProperty.append("::text !~ $");
 			attributeFilterProperty.append(dollarCount);
 			// attributeFilterProperty.append("'");
 			dollarCount++;
-			addItemToTupel(tuple, operant);
+			tuple.addString(operant);
+			//addItemToTupel(tuple, operant);
 			break;
 		}
 		return dollarCount;
@@ -983,9 +997,9 @@ public class QQueryTerm {
 				sql.append(currentSqlAttrib);
 				sql.append(" ->'");
 				sql.append(NGSIConstants.NGSI_LD_HAS_VALUE);
-				sql.append("') AS mostInnerValue WHERE mostInnerValue->'");
+				sql.append("') AS mostInnerValue WHERE (mostInnerValue->'");
 				sql.append(NGSIConstants.JSON_LD_VALUE);
-				sql.append("'");
+				sql.append("')");
 				dollarCount = applyOperator(sql, dollarCount, tuple);
 				sql.append(") WHEN ");
 
@@ -998,9 +1012,9 @@ public class QQueryTerm {
 				sql.append(currentSqlAttrib);
 				sql.append(" ->'");
 				sql.append(NGSIConstants.NGSI_LD_HAS_OBJECT);
-				sql.append("') AS mostInnerValue WHERE mostInnerValue->'");
+				sql.append("') AS mostInnerValue WHERE (mostInnerValue->'");
 				sql.append(NGSIConstants.JSON_LD_ID);
-				sql.append("'");
+				sql.append("')");
 				dollarCount = applyOperator(sql, dollarCount, tuple);
 				sql.append(") WHEN ");
 
@@ -1009,12 +1023,13 @@ public class QQueryTerm {
 				sql.append(NGSIConstants.JSON_LD_TYPE);
 				sql.append(",0}' = '");
 				sql.append(NGSIConstants.NGSI_LD_DATE_TIME);
-				sql.append("' THEN ");
+				sql.append("' THEN (");
 				sql.append(currentSqlAttrib);
 				sql.append(" ->'");
 				sql.append(NGSIConstants.JSON_LD_VALUE);
-				sql.append("'");
+				sql.append("')");
 				dollarCount = applyOperator(sql, dollarCount, tuple);
+
 				sql.append(" ELSE FALSE END ");
 
 			}

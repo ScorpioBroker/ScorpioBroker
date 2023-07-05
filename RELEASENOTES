@@ -1,4 +1,25 @@
-RELEASE NOTES SCORPIO 4.0.1
+RELEASE NOTES SCORPIO 4.0.5/FIWARE_8.4
+
+This release is also a re tagging for the FIWARE release to point it to the most up to date version on the FIWARE release.
+This release addresses and issue with the regex evaluation in q queries
+
+
+RELEASE NOTES SCORPIO 4.0.4
+
+This release addresses
+
+ - an issue with attrs queries 
+ - an issue with receiverInfo, notifierInfo, notUpdated and contextSourceInfo not being properly expanded and being detected as invalid key   
+
+RELEASE NOTES SCORPIO 4.0.3
+
+This release addresses the following issues
+
+ - A backward compatibility issue with q queries which use the id field. Generally we recommend to use the idPattern field for this
+ - An issue with batch upsert where it would sometimes overwrite other entities
+ - Proper support for authorization in mqtt notifications
+
+RELEASE NOTES SCORPIO 4.0.2
 
 This release 
  - improves further on the response time of Entity create update append and delete operations under heavy load
@@ -10,7 +31,7 @@ This addresses
  - an issue with the response time of Entity create update append and delete operations
  - improves the performance of queries which create an entity map
 
-RELEASE NOTES SCORPIO 4.0.0/FIWARE-8.4
+RELEASE NOTES SCORPIO 4.0.0
 
 
 

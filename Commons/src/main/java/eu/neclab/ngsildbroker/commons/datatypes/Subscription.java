@@ -1,5 +1,16 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
+import java.io.Serializable;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdConsts;
@@ -7,6 +18,7 @@ import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Sets;
+
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
@@ -19,17 +31,6 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.QueryParser;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 
-import java.io.Serializable;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-
 /**
  * @author hebgen
  * @version 1.0
@@ -38,8 +39,11 @@ import java.util.Set;
 
 public class Subscription implements Serializable {
 
-	static final JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
+	/**
+	 *
+	 */
 	private static final long serialVersionUID = -327073906884724592L;
+	static final JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 	private String description;
 	private Long expiresAt = Long.MAX_VALUE;
 	private String id;
@@ -786,5 +790,6 @@ public class Subscription implements Serializable {
 				+ ", ldTempQuery=" + ldTempQuery + ", ldQuery=" + ldQuery + ", csfQuery=" + csfQuery + ", scopeQuery="
 				+ scopeQuery + "]";
 	}
+	
 
 }

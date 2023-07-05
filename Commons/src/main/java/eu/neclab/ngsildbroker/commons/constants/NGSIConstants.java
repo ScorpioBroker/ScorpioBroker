@@ -254,8 +254,8 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_FORBIDDEN_KEY_CHARS = "<,\",',=,;,(,),>,?,*";
 	public static final String[] VALID_SUB_ENDPOINT_SCHEMAS = { "http", "https", "mqtt", "mqtts" };
 	public final static String QUERY_PARAMETER_DELETE_ALL = "deleteAll";
-	public static final String NGSI_LD_NOTIFIERINFO = "https://uri.etsi.org/ngsi-ld/default-context/notifierinfo";
-	public static final String NGSI_LD_RECEIVERINFO = "https://uri.etsi.org/ngsi-ld/default-context/receiverInfo";
+	public static final String NGSI_LD_NOTIFIERINFO = "https://uri.etsi.org/ngsi-ld/notifierinfo";
+	public static final String NGSI_LD_RECEIVERINFO = "https://uri.etsi.org/ngsi-ld/receiverInfo";
 	public static final String NGSI_LD_MQTT_QOS = "https://uri.etsi.org/ngsi-ld/default-context/qos";
 	public static final String NGSI_LD_MQTT_VERSION = "https://uri.etsi.org/ngsi-ld/default-context/version";
 	public static final Integer DEFAULT_MQTT_QOS = 0;
@@ -309,10 +309,10 @@ public interface NGSIConstants {
 	public static final String JSON_LD_LIST = "@list";
 	public static final String TENANT_HEADER = "NGSILD-Tenant";
 	public static final String NGSI_LD_REASON = "https://uri.etsi.org/ngsi-ld/reason";
-	public static final String NGSI_LD_NOT_UPDATED = "https://uri.etsi.org/ngsi-ld/default-context/notUpdated";
+	public static final String NGSI_LD_NOT_UPDATED = "https://uri.etsi.org/ngsi-ld/notUpdated";
 	public static final String NGSI_LD_UPDATED = "https://uri.etsi.org/ngsi-ld/updated";
 	public static final String NGSI_LD_UPDATED_SHORT = "updated";
-	public static final String NGSI_LD_CONTEXT_SOURCE_INFO = "https://uri.etsi.org/ngsi-ld/default-context/contextSourceInfo";
+	public static final String NGSI_LD_CONTEXT_SOURCE_INFO = "https://uri.etsi.org/ngsi-ld/contextSourceInfo";
 	public static final String NGSI_LD_CSF = "https://uri.etsi.org/ngsi-ld/csf";
 	public static final String NGSI_LD_TRIGGER_REASON = "https://uri.etsi.org/ngsi-ld/triggerReason";
 	public static final String QUERY_PARAMETER_SCOPE_QUERY = "scopeQ";

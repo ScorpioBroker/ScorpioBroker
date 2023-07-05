@@ -7,10 +7,6 @@ import java.util.Map;
 
 public class DeleteAttributeRequest extends EntityRequest {
 
-	private String attribName;
-	private String datasetId;
-	private boolean deleteAll;
-
 	public DeleteAttributeRequest() {
 
 	}

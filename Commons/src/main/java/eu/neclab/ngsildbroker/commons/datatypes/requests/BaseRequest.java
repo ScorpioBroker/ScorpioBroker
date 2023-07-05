@@ -14,9 +14,9 @@ public class BaseRequest {
 	private BatchInfo batchInfo;
 	private String id;
 	private Map<String, Object> previousEntity;
-	private String attribName;
-	private String datasetId;
-	private boolean deleteAll;
+	protected String attribName;
+	protected String datasetId;
+	protected boolean deleteAll;
 
 	public BaseRequest() {
 
