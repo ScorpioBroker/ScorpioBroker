@@ -17,6 +17,7 @@ import com.github.jsonldjava.core.JsonLdConsts;
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
@@ -359,10 +360,17 @@ public class Subscription implements Serializable {
 							}
 							case NGSIConstants.NGSI_LD_RECEIVERINFO -> {
 								ArrayListMultimap<String, String> receiverInfo = ArrayListMultimap.create();
-								Map<String, Object> compacted = JsonLdProcessor.compact(endPointEntry.getValue(), null,
-										context, opts, 999);
-								for (Map<String, Object> headerEntry : (List<Map<String, Object>>) compacted
-										.get(JsonLdConsts.GRAPH)) {
+								Map<String, Object> compacted = JsonLdProcessor.compact(endPointEntry.getValue(), null, context,
+										opts, 999);
+								List<Map<String, Object>> receiverInfos = (List<Map<String, Object>>) compacted
+										.get(JsonLdConsts.GRAPH);
+								if (receiverInfos == null) {
+									receiverInfos = Lists.newArrayList();
+									compacted.remove(NGSIConstants.JSON_LD_CONTEXT);
+									receiverInfos.add(compacted);
+								}
+
+								for (Map<String, Object> headerEntry : receiverInfos) {
 									headerEntry.forEach((t, u) -> {
 										receiverInfo.put(t, u.toString());
 									});
