@@ -604,6 +604,9 @@ public final class HttpUtils {
 			String replyBody = tuple.getItem1();
 			String contentType = tuple.getItem2();
 			List<Tuple2<String, String>> headers = tuple.getItem3();
+			if (headers == null) {
+				headers = Lists.newArrayList();
+			}
 			Object result;
 			if (options != null && options.contains("compress")) {
 				result = zipResult(replyBody);
@@ -705,7 +708,7 @@ public final class HttpUtils {
 	public static Uni<Context> getContextFromPayload(Map<String, Object> originalPayload, List<Object> atContextHeader,
 			boolean atContextAllowed, JsonLDService ldService) {
 
-		Object payloadAtContext = originalPayload.remove(NGSIConstants.JSON_LD_CONTEXT);
+		Object payloadAtContext = originalPayload.get(NGSIConstants.JSON_LD_CONTEXT);
 		if (payloadAtContext == null) {
 			if (atContextAllowed) {
 				return Uni.createFrom()

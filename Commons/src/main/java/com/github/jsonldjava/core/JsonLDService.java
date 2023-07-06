@@ -15,6 +15,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
 import eu.neclab.ngsildbroker.commons.storage.ClientManager;
 import io.quarkus.runtime.StartupEvent;
 import io.smallrye.mutiny.Uni;
+import io.vertx.ext.web.client.WebClientOptions;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.ext.web.client.WebClient;
 
@@ -36,7 +37,9 @@ public class JsonLDService {
 
 	@PostConstruct
 	void setup() {
-		this.webClient = WebClient.create(vertx);
+		WebClientOptions options = new WebClientOptions();
+		
+		this.webClient = WebClient.create(vertx, options );
 		this.coreContext = clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem()
 				.transformToUni(client -> {
 					return client
@@ -46,7 +49,7 @@ public class JsonLDService {
 							});
 				}).onItem().transformToUni(coreContextMap -> {
 					return new Context(new JsonLdOptions(JsonLdOptions.JSON_LD_1_1))
-							.parse(coreContextMap, false, webClient).onItem().transform(coreContext -> {
+							.parse(coreContextMap.get("@context"), false, webClient).onItem().transform(coreContext -> {
 								// this.coreContext = coreContext;
 								coreContext.getTermDefinition("features").remove("@container");
 								coreContext.getInverse();

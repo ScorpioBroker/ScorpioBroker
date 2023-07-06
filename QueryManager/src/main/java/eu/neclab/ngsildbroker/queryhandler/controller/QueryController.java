@@ -93,8 +93,9 @@ public class QueryController {
 			return queryService
 					.retrieveEntity(context, HttpUtils.getTenant(request), entityId, attrsQuery, langQuery, localOnly)
 					.onItem().transformToUni(entity -> {
-						if (doNotCompact)
+						if (doNotCompact) {
 							return Uni.createFrom().item(RestResponse.ok((Object) entity));
+						}
 						return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, entity,
 								geometryProperty, options, langQuery, ldService);
 					}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);

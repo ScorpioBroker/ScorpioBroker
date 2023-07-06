@@ -20,6 +20,7 @@ import com.github.jsonldjava.utils.JsonLdUrl;
 import com.github.jsonldjava.utils.Obj;
 import com.google.common.collect.Lists;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import io.smallrye.mutiny.Uni;
@@ -182,6 +183,7 @@ public class Context extends LinkedHashMap<String, Object> {
 		}
 		Set<String> coreTermDefs = null;
 		if (checkToRemoveNGSILDContext) {
+			remoteContexts.removeAll(NGSIConstants.CORE_CONTEXT_URLS);
 			coreTermDefs = JsonLdProcessor.getCoreContextClone().termDefinitions.keySet();
 		}
 		// 1. Initialize result to the result of cloning active context.
@@ -351,7 +353,7 @@ public class Context extends LinkedHashMap<String, Object> {
 							|| !((Map<String, Object>) remoteContext).containsKey(JsonLdConsts.CONTEXT)) {
 						// If the dereferenced document has no top-level JSON object
 						// with an @context member
-						throw new JsonLdError(Error.INVALID_REMOTE_CONTEXT, context);
+						return Uni.createFrom().failure(new JsonLdError(Error.INVALID_REMOTE_CONTEXT, context));
 					}
 					final Object tempContext = ((Map<String, Object>) remoteContext).get(JsonLdConsts.CONTEXT);
 					resultUni = resultUni.onItem().transformToUni(resultTmp -> resultTmp.parse(tempContext,

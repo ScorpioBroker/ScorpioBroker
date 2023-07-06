@@ -107,6 +107,9 @@ public class RegistrySubscriptionService {
 							return Tuple2.of(Tuple2.of(tuple.getItem1(), tuple.getItem2()), ctx);
 						}));
 			});
+			if (unis.isEmpty()) {
+				return Uni.createFrom().voidItem();
+			}
 			return Uni.combine().all().unis(unis).combinedWith(list -> {
 				for (Object obj : list) {
 					Tuple2<Tuple2<String, Map<String, Object>>, Context> tuple = (Tuple2<Tuple2<String, Map<String, Object>>, Context>) obj;

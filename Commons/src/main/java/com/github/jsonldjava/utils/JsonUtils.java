@@ -350,32 +350,38 @@ public class JsonUtils {
 	}
 
 	private static Uni<Object> fromJsonLdViaHttpUri(final URL url, WebClient webClient, int linksFollowed) {
-		final HttpUriRequest request = new HttpGet(url.toExternalForm());
+
 		// We prefer application/ld+json, but fallback to application/json
 		// or whatever is available
-		request.addHeader("Accept", ACCEPT_HEADER);
-		return webClient.get(url.toExternalForm()).send().onItem().transformToUni(result -> {
-			final int status = result.statusCode();
-			if (status != 200 && status != 203) {
-				return Uni.createFrom().failure(new IOException("Can't retrieve " + url + ", status code: " + status));
-			}
-			URL alternateLink;
-			try {
-				alternateLink = alternateLink(url, result);
-			} catch (MalformedURLException e) {
-				return Uni.createFrom().failure(e);
-			}
-			if (alternateLink != null) {
 
-				if (linksFollowed + 1 > MAX_LINKS_FOLLOW) {
-					return Uni.createFrom().failure(
-							new IOException("Too many alternate links followed. This may indicate a cycle. Aborting."));
-				}
-				return fromJsonLdViaHttpUri(alternateLink, webClient, linksFollowed + 1);
-			}
-			return fromInputStream(new ByteArrayInputStream(result.bodyAsString().getBytes(StandardCharsets.UTF_8)));
+		return webClient.getAbs(url.toExternalForm()).putHeader("Accept", ACCEPT_HEADER).send().onFailure()
+				.recoverWithUni(e -> {
+					e.printStackTrace();
+					return Uni.createFrom().failure(e);
+				}).onItem().transformToUni(result -> {
+					final int status = result.statusCode();
+					if (status != 200 && status != 203) {
+						return Uni.createFrom()
+								.failure(new IOException("Can't retrieve " + url + ", status code: " + status));
+					}
+					URL alternateLink;
+					try {
+						alternateLink = alternateLink(url, result);
+					} catch (MalformedURLException e) {
+						return Uni.createFrom().failure(e);
+					}
+					if (alternateLink != null) {
 
-		});
+						if (linksFollowed + 1 > MAX_LINKS_FOLLOW) {
+							return Uni.createFrom().failure(new IOException(
+									"Too many alternate links followed. This may indicate a cycle. Aborting."));
+						}
+						return fromJsonLdViaHttpUri(alternateLink, webClient, linksFollowed + 1);
+					}
+					return fromInputStream(
+							new ByteArrayInputStream(result.bodyAsString().getBytes(StandardCharsets.UTF_8)));
+
+				});
 
 	}
 
