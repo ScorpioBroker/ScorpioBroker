@@ -922,8 +922,10 @@ public class QueryService {
 						} else {
 							responseTypes = response.bodyAsString();
 							try {
-								return ldService.expand(HttpUtils.getContextFromHeader(remoteHeaders),
-										JsonUtils.fromString(responseTypes), opts, -1, false);
+								return JsonUtils.fromString(responseTypes).onItem().transformToUni(json -> {
+									return ldService.expand(HttpUtils.getContextFromHeader(remoteHeaders), json, opts,
+											-1, false);
+								});
 							} catch (Exception e) {
 								logger.debug("failed to handle response from host " + host + " : " + responseTypes, e);
 								return Uni.createFrom().item(Lists.newArrayList());

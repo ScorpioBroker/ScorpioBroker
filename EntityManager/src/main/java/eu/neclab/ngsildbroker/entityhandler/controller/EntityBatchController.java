@@ -1,6 +1,5 @@
 package eu.neclab.ngsildbroker.entityhandler.controller;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -17,7 +16,6 @@ import org.jboss.resteasy.reactive.RestResponse;
 
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLDService;
-import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.Lists;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
@@ -216,15 +214,8 @@ public class EntityBatchController {
 
 	@POST
 	@Path("/delete")
-	public Uni<RestResponse<Object>> deleteMultiple(HttpServerRequest request, String payload,
+	public Uni<RestResponse<Object>> deleteMultiple(HttpServerRequest request, List<String> entityIds,
 			@QueryParam("localOnly") boolean localOnly) {
-		List<String> entityIds;
-		try {
-			entityIds = (List<String>) JsonUtils.fromString(payload);
-		} catch (IOException e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
-		}
-
 		return entityService.deleteBatch(HttpUtils.getTenant(request), entityIds, localOnly).onItem()
 				.transform(opResults -> {
 					return HttpUtils.generateBatchResult(opResults);

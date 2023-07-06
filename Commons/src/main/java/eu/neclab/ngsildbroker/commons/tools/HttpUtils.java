@@ -742,14 +742,11 @@ public final class HttpUtils {
 			return Uni.createFrom()
 					.failure(new ResponseException(ErrorType.InvalidRequest, "You have to provide a valid payload"));
 		}
-		Map<String, Object> originalPayload;
-		try {
-			originalPayload = (Map<String, Object>) JsonUtils.fromString(payload);
-		} catch (IOException e) {
-			return Uni.createFrom().failure(e);
-		}
-
-		return expandBody(request, originalPayload, payloadType, ldService);
+		return JsonUtils.fromString(payload).onItem().transformToUni(json -> {
+			Map<String, Object> originalPayload;
+			originalPayload = (Map<String, Object>) json;
+			return expandBody(request, originalPayload, payloadType, ldService);
+		});
 	}
 
 	public static Uni<Tuple2<Context, Map<String, Object>>> expandBody(HttpServerRequest request,

@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.io.StringBufferInputStream;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.Writer;
@@ -18,6 +17,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import org.apache.commons.io.ByteOrderMark;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.input.BOMInputStream;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerationException;
@@ -35,22 +38,6 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpResponse;
 import io.vertx.mutiny.ext.web.client.WebClient;
-
-import org.apache.commons.io.ByteOrderMark;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.io.input.BOMInputStream;
-import org.apache.http.Header;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.client.protocol.RequestAcceptEncoding;
-import org.apache.http.client.protocol.ResponseContentEncoding;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.DefaultRedirectStrategy;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.client.cache.BasicHttpCacheStorage;
-import org.apache.http.impl.client.cache.CacheConfig;
-import org.apache.http.impl.client.cache.CachingHttpClientBuilder;
 
 /**
  * Functions used to make loading, parsing, and serializing JSON easy using
@@ -77,7 +64,6 @@ public class JsonUtils {
 	private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 	private static final JsonFactory JSON_FACTORY = new JsonFactory(JSON_MAPPER);
 
-	private static volatile CloseableHttpClient DEFAULT_HTTP_CLIENT;
 	// Avoid possible endless loop when following alternate locations
 	private static final int MAX_LINKS_FOLLOW = 20;
 
@@ -253,7 +239,7 @@ public class JsonUtils {
 	 * @throws JsonParseException If there was a JSON related error during parsing.
 	 * @throws IOException        If there was an IO error during parsing.
 	 */
-	public static Object fromString(String jsonString) throws JsonParseException, IOException {
+	public static Uni<Object> fromString(String jsonString) {
 		return fromReader(new StringReader(jsonString));
 	}
 
@@ -438,54 +424,7 @@ public class JsonUtils {
 		return context;
 	}
 
-	public static CloseableHttpClient getDefaultHttpClient() {
-		CloseableHttpClient result = DEFAULT_HTTP_CLIENT;
-		if (result == null) {
-			synchronized (JsonUtils.class) {
-				result = DEFAULT_HTTP_CLIENT;
-				if (result == null) {
-					result = DEFAULT_HTTP_CLIENT = JsonUtils.createDefaultHttpClient();
-				}
-			}
-		}
-		return result;
-	}
 
-	public static CloseableHttpClient createDefaultHttpClient() {
-		final CacheConfig cacheConfig = createDefaultCacheConfig();
-
-		final CloseableHttpClient result = createDefaultHttpClient(cacheConfig);
-
-		return result;
-	}
-
-	public static CacheConfig createDefaultCacheConfig() {
-		return CacheConfig.custom().build();
-//		return CacheConfig.custom().setMaxCacheEntries(500).setMaxObjectSize(1024 * 256).setSharedCache(false)
-//				.setHeuristicCachingEnabled(true).setHeuristicDefaultLifetime(86400).build();
-	}
-
-	public static CloseableHttpClient createDefaultHttpClient(final CacheConfig cacheConfig) {
-		return createDefaultHttpClientBuilder(cacheConfig).build();
-	}
-
-	public static HttpClientBuilder createDefaultHttpClientBuilder(final CacheConfig cacheConfig) {
-		// Common CacheConfig for both the JarCacheStorage and the underlying
-		// BasicHttpCacheStorage
-		return CachingHttpClientBuilder.create()
-				// allow caching
-				.setCacheConfig(cacheConfig)
-				// Wrap the local JarCacheStorage around a BasicHttpCacheStorage
-				.setHttpCacheStorage(new JarCacheStorage(null, cacheConfig, new BasicHttpCacheStorage(cacheConfig)))
-				// Support compressed data
-				// https://wayback.archive.org/web/20130901115452/http://hc.apache.org:80/httpcomponents-client-ga/tutorial/html/httpagent.html#d5e1238
-				.addInterceptorFirst(new RequestAcceptEncoding()).addInterceptorFirst(new ResponseContentEncoding())
-				.setRedirectStrategy(DefaultRedirectStrategy.INSTANCE)
-				// User agent customisation
-				.setUserAgent(JSONLD_JAVA_USER_AGENT)
-				// use system defaults for proxy etc.
-				.useSystemProperties();
-	}
 
 	private JsonUtils() {
 		// Static class, no access to constructor

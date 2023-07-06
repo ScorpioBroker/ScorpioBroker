@@ -244,12 +244,7 @@ public class RDFDataset extends LinkedHashMap<String, Object> {
 				// jsonld 1.1: 2.5 in https://w3c.github.io/json-ld-api/#algorithm-16
 				else if (RDF_JSON.equals(type)) {
 					rval.put("@type", "@json");
-					try {
-						rval.put("@value", JsonUtils.fromString(value));
-					} catch (IOException e) {
-						e.printStackTrace();
-						throw new JsonLdError(JsonLdError.Error.INVALID_JSON_LITERAL, value, e);
-					}
+					rval.put("@value", JsonUtils.fromString(value).await().indefinitely());
 				} else if (!XSD_STRING.equals(type)) {
 					rval.put("@type", type);
 				}

@@ -4,8 +4,6 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.http.impl.client.CloseableHttpClient;
-
 import com.github.jsonldjava.utils.JsonUtils;
 
 import io.smallrye.mutiny.Uni;
@@ -34,13 +32,16 @@ public class DocumentLoader {
 	 * @return This object for fluent addition of other injected documents.
 	 * @throws JsonLdError If loading of the document failed for any reason.
 	 */
-	public DocumentLoader addInjectedDoc(String url, String doc) throws JsonLdError {
-		try {
-			m_injectedDocs.put(url, JsonUtils.fromString(doc));
-			return this;
-		} catch (final Exception e) {
-			throw new JsonLdError(JsonLdError.Error.LOADING_INJECTED_CONTEXT_FAILED, url, e);
-		}
+	public Uni<DocumentLoader> addInjectedDoc(String url, String doc) {
+		return JsonUtils.fromString(doc).onItem().transformToUni(json -> {
+			try {
+				m_injectedDocs.put(url, json);
+				return Uni.createFrom().item(this);
+			} catch (final Exception e) {
+				return Uni.createFrom()
+						.failure(new JsonLdError(JsonLdError.Error.LOADING_INJECTED_CONTEXT_FAILED, url, e));
+			}
+		});
 	}
 
 	/**
@@ -76,35 +77,4 @@ public class DocumentLoader {
 		}
 	}
 
-	private volatile CloseableHttpClient httpClient;
-
-	/**
-	 * Get the {@link CloseableHttpClient} which will be used by this DocumentLoader
-	 * to resolve HTTP and HTTPS resources.
-	 *
-	 * @return The {@link CloseableHttpClient} which this DocumentLoader uses.
-	 */
-	public CloseableHttpClient getHttpClient() {
-		CloseableHttpClient result = httpClient;
-		if (result == null) {
-			synchronized (DocumentLoader.class) {
-				result = httpClient;
-				if (result == null) {
-					result = httpClient = JsonUtils.getDefaultHttpClient();
-				}
-			}
-		}
-		return result;
-	}
-
-	/**
-	 * Call this method to override the default CloseableHttpClient provided by
-	 * JsonUtils.getDefaultHttpClient.
-	 *
-	 * @param nextHttpClient The {@link CloseableHttpClient} to replace the default
-	 *                       with.
-	 */
-	public void setHttpClient(CloseableHttpClient nextHttpClient) {
-		httpClient = nextHttpClient;
-	}
 }
