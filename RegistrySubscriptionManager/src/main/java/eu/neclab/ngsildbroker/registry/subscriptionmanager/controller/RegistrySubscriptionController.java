@@ -1,8 +1,6 @@
 package eu.neclab.ngsildbroker.registry.subscriptionmanager.controller;
 
 import java.util.List;
-import java.util.Map;
-import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.ws.rs.DELETE;
@@ -16,15 +14,13 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.github.jsonldjava.core.Context;
-import com.github.jsonldjava.core.JsonLdProcessor;
+import com.github.jsonldjava.core.JsonLDService;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.registry.subscriptionmanager.service.RegistrySubscriptionService;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.tuples.Tuple2;
 import io.vertx.core.http.HttpServerRequest;
 
 @Singleton
@@ -44,22 +40,18 @@ public class RegistrySubscriptionController {
 	@ConfigProperty(name = "scorpio.subscription.max-limit", defaultValue = "1000")
 	int maxLimit;
 
-	@PostConstruct
-	public void init() {
-		JsonLdProcessor.init(coreContext);
-	}
+	@Inject
+	JsonLDService ldService;
 
 	@POST
 	public Uni<RestResponse<Object>> subscribe(HttpServerRequest request, String payload) {
-		Tuple2<Context, Map<String, Object>> tuple;
-		try {
-			tuple = HttpUtils.expandBody(request, payload, AppConstants.SUBSCRIPTION_CREATE_PAYLOAD);
-		} catch (Exception e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
-		}
-		return subService.createSubscription(HttpUtils.getTenant(request), tuple.getItem2(), tuple.getItem1()).onItem()
-				.transform(t -> HttpUtils.generateSubscriptionResult(t, tuple.getItem1())).onFailure()
-				.recoverWithItem(e -> HttpUtils.handleControllerExceptions(e));
+		return HttpUtils.expandBody(request, payload, AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, ldService).onItem()
+				.transformToUni(tuple -> {
+					return subService
+							.createSubscription(HttpUtils.getTenant(request), tuple.getItem2(), tuple.getItem1())
+							.onItem().transform(t -> HttpUtils.generateSubscriptionResult(t, tuple.getItem1()))
+							.onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e));
+				});
 	}
 
 	@GET
@@ -69,10 +61,13 @@ public class RegistrySubscriptionController {
 		if (acceptHeader == -1) {
 			return HttpUtils.getInvalidHeader();
 		}
+		int limitTBU;
 		if (limit == null) {
-			limit = defaultLimit;
+			limitTBU = defaultLimit;
+		} else {
+			limitTBU = limit;
 		}
-		if (limit > maxLimit) {
+		if (limitTBU > maxLimit) {
 			return Uni.createFrom()
 					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.TooManyResults)));
 		}
@@ -80,13 +75,14 @@ public class RegistrySubscriptionController {
 			return Uni.createFrom().item(HttpUtils
 					.handleControllerExceptions(new ResponseException(ErrorType.InvalidRequest, "invalid offset")));
 		}
+		return ldService.parse(HttpUtils.getAtContext(request)).onItem().transformToUni(ctx -> {
+			return subService.getAllSubscriptions(HttpUtils.getTenant(request), limitTBU, offset).onItem()
+					.transformToUni(subscriptions -> {
+						return HttpUtils.generateQueryResult(request, subscriptions, options, null, acceptHeader, false,
+								acceptHeader, null, ctx, ldService);
+					});
 
-		return subService.getAllSubscriptions(HttpUtils.getTenant(request), limit, offset).onItem()
-				.transform(subscriptions -> {
-					return HttpUtils.generateQueryResult(request, subscriptions, options, null, acceptHeader, false,
-							acceptHeader, null,
-							JsonLdProcessor.getCoreContextClone().parse(HttpUtils.getAtContext(request), true));
-				});
+		});
 
 	}
 
@@ -98,13 +94,14 @@ public class RegistrySubscriptionController {
 		if (acceptHeader == -1) {
 			return HttpUtils.getInvalidHeader();
 		}
-		return subService.getSubscription(HttpUtils.getTenant(request), subscriptionId).onItem()
-				.transform(subscription -> {
-					List<Object> contextHeader = HttpUtils.getAtContext(request);
-					Context context = JsonLdProcessor.getCoreContextClone().parse(contextHeader, true);
-					return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, subscription, null,
-							options, null);
-				});
+		List<Object> contextHeader = HttpUtils.getAtContext(request);
+		return ldService.parse(contextHeader).onItem().transformToUni(context -> {
+			return subService.getSubscription(HttpUtils.getTenant(request), subscriptionId).onItem()
+					.transformToUni(subscription -> {
+						return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, subscription, null,
+								options, null, ldService);
+					});
+		});
 
 	}
 
@@ -120,15 +117,13 @@ public class RegistrySubscriptionController {
 	@PATCH
 	public Uni<RestResponse<Object>> updateSubscription(HttpServerRequest request, @PathParam(value = "id") String id,
 			String payload) {
-		Tuple2<Context, Map<String, Object>> tuple;
-		try {
-			tuple = HttpUtils.expandBody(request, payload, AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD);
-		} catch (Exception e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
-		}
-		return subService.updateSubscription(HttpUtils.getTenant(request), id, tuple.getItem2(), tuple.getItem1())
-				.onItem().transform(t -> HttpUtils.generateSubscriptionResult(t, tuple.getItem1())).onFailure()
-				.recoverWithItem(e -> HttpUtils.handleControllerExceptions(e));
+		return HttpUtils.expandBody(request, payload, AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD, ldService).onItem()
+				.transformToUni(tuple -> {
+					return subService
+							.updateSubscription(HttpUtils.getTenant(request), id, tuple.getItem2(), tuple.getItem1())
+							.onItem().transform(t -> HttpUtils.generateSubscriptionResult(t, tuple.getItem1()))
+							.onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e));
+				});
 
 	}
 

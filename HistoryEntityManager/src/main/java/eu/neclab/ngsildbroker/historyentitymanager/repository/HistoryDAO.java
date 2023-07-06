@@ -13,7 +13,6 @@ import java.util.UUID;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import eu.neclab.ngsildbroker.commons.datatypes.requests.MergePatchRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

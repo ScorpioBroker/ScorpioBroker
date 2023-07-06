@@ -1,8 +1,6 @@
 package eu.neclab.ngsildbroker.historyquerymanager.controller;
 
-import com.github.jsonldjava.core.Context;
-import com.github.jsonldjava.core.JsonLdProcessor;
-
+import com.github.jsonldjava.core.JsonLDService;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AggrTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
@@ -24,7 +22,6 @@ import org.jboss.resteasy.reactive.RestResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.ws.rs.GET;
@@ -54,10 +51,8 @@ public class HistoryController {
 	@ConfigProperty(name = "ngsild.corecontext", defaultValue = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld")
 	String coreContext;
 
-	@PostConstruct
-	public void init() {
-		JsonLdProcessor.init(coreContext);
-	}
+	@Inject
+	JsonLDService ldService;
 
 	@GET
 	public Uni<RestResponse<Object>> queryTemporalEntities(HttpServerRequest request, @QueryParam("id") String ids,
@@ -77,19 +72,12 @@ public class HistoryController {
 		if (acceptHeader == -1) {
 			return HttpUtils.getInvalidHeader();
 		}
-		String[] idList = null;
-		if (ids != null)
+		String[] idList;
+		if (ids != null) {
 			idList = ids.split(",");
-		TypeQueryTerm typeQueryTerm;
-		AttrsQueryTerm attrsQueryTerm;
-		CSFQueryTerm csfQueryTerm;
-		QQueryTerm qQueryTerm;
-		GeoQueryTerm geoQueryTerm;
-		ScopeQueryTerm scopeQueryTerm;
-		AggrTerm aggrTerm;
-		LanguageQueryTerm languageQueryTerm;
-		TemporalQueryTerm temporalQueryTerm;
-		Context context;
+		} else {
+			idList = null;
+		}
 		int actualLimit;
 		if (limit == null) {
 			actualLimit = defaultLimit;
@@ -104,30 +92,45 @@ public class HistoryController {
 			return Uni.createFrom()
 					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.InvalidRequest)));
 		}
+		int lastNTBU;
 		if (lastN == null) {
-			lastN = defaultLastN;
+			lastNTBU = defaultLastN;
+		} else {
+			lastNTBU = lastN;
 		}
-		try {
-			List<Object> ctx = HttpUtils.getAtContext(request);
-			context = HttpUtils.getContext(ctx);
-			typeQueryTerm = QueryParser.parseTypeQuery(typeQuery, context);
-			attrsQueryTerm = QueryParser.parseAttrs(attrs, context);
-			qQueryTerm = QueryParser.parseQuery(q, context);
-			csfQueryTerm = QueryParser.parseCSFQuery(csf, context);
-			geoQueryTerm = QueryParser.parseGeoQuery(georel, coordinates, geometry, geoproperty, context);
-			scopeQueryTerm = QueryParser.parseScopeQuery(scopeQ);
-			temporalQueryTerm = QueryParser.parseTempQuery(timeProperty, timerel, timeAt, endTimeAt);
-			aggrTerm = QueryParser.parseAggrTerm(aggrMethods, aggrPeriodDuration);
-			languageQueryTerm = QueryParser.parseLangQuery(lang);
-		} catch (Exception e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
-		}
-		return historyQueryService.query(HttpUtils.getTenant(request), idList, typeQueryTerm, idPattern, attrsQueryTerm,
-				qQueryTerm, csfQueryTerm, geoQueryTerm, scopeQueryTerm, temporalQueryTerm, aggrTerm, languageQueryTerm,
-				lastN, actualLimit, offset, count, localOnly, context).onItem().transform(queryResult -> {
-					return HttpUtils.generateQueryResult(request, queryResult, options, geoproperty, acceptHeader,
-							count, actualLimit, languageQueryTerm, context);
-				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+		List<Object> ctx = HttpUtils.getAtContext(request);
+		return HttpUtils.getContext(ctx, ldService).onItem().transformToUni(context -> {
+			TypeQueryTerm typeQueryTerm;
+			AttrsQueryTerm attrsQueryTerm;
+			CSFQueryTerm csfQueryTerm;
+			QQueryTerm qQueryTerm;
+			GeoQueryTerm geoQueryTerm;
+			ScopeQueryTerm scopeQueryTerm;
+			AggrTerm aggrTerm;
+			LanguageQueryTerm languageQueryTerm;
+			TemporalQueryTerm temporalQueryTerm;
+			try {
+				typeQueryTerm = QueryParser.parseTypeQuery(typeQuery, context);
+				attrsQueryTerm = QueryParser.parseAttrs(attrs, context);
+				qQueryTerm = QueryParser.parseQuery(q, context);
+				csfQueryTerm = QueryParser.parseCSFQuery(csf, context);
+				geoQueryTerm = QueryParser.parseGeoQuery(georel, coordinates, geometry, geoproperty, context);
+				scopeQueryTerm = QueryParser.parseScopeQuery(scopeQ);
+				temporalQueryTerm = QueryParser.parseTempQuery(timeProperty, timerel, timeAt, endTimeAt);
+				aggrTerm = QueryParser.parseAggrTerm(aggrMethods, aggrPeriodDuration);
+				languageQueryTerm = QueryParser.parseLangQuery(lang);
+			} catch (Exception e) {
+				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+			}
+			return historyQueryService
+					.query(HttpUtils.getTenant(request), idList, typeQueryTerm, idPattern, attrsQueryTerm, qQueryTerm,
+							csfQueryTerm, geoQueryTerm, scopeQueryTerm, temporalQueryTerm, aggrTerm, languageQueryTerm,
+							lastNTBU, actualLimit, offset, count, localOnly, context)
+					.onItem().transformToUni(queryResult -> {
+						return HttpUtils.generateQueryResult(request, queryResult, options, geoproperty, acceptHeader,
+								count, actualLimit, languageQueryTerm, context, ldService);
+					}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+		});
 	}
 
 	@Path("/{entityId}")
@@ -146,30 +149,34 @@ public class HistoryController {
 		if (acceptHeader == -1) {
 			return HttpUtils.getInvalidHeader();
 		}
+		int lastNTBU;
 		if (lastN == null) {
-			lastN = defaultLastN;
+			lastNTBU = defaultLastN;
+		} else {
+			lastNTBU = lastN;
 		}
 
-		Context context;
 		List<Object> headerContext;
-		AttrsQueryTerm attrsQuery;
-		AggrTerm aggrQuery;
-		TemporalQueryTerm tempQuery;
-		try {
-			HttpUtils.validateUri(entityId);
-			headerContext = HttpUtils.getAtContext(request);
-			context = JsonLdProcessor.getCoreContextClone().parse(headerContext, false);
-			attrsQuery = QueryParser.parseAttrs(attrs, context);
-			aggrQuery = QueryParser.parseAggrTerm(aggrMethods, aggrPeriodDuration);
-			tempQuery = QueryParser.parseTempQuery(timeProperty, timeRel, timeAt, endTimeAt);
-		} catch (Exception e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
-		}
-		return historyQueryService.retrieveEntity(HttpUtils.getTenant(request), entityId, attrsQuery, aggrQuery,
-				tempQuery, lang, lastN.intValue(), localOnly, context).onItem().transform(entity -> {
-					return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, entity,
-							geometryProperty, optionsString, null);
-				});
+		headerContext = HttpUtils.getAtContext(request);
+		return ldService.parse(headerContext).onItem().transformToUni(context -> {
+			AttrsQueryTerm attrsQuery;
+			AggrTerm aggrQuery;
+			TemporalQueryTerm tempQuery;
+			try {
+				HttpUtils.validateUri(entityId);
+
+				attrsQuery = QueryParser.parseAttrs(attrs, context);
+				aggrQuery = QueryParser.parseAggrTerm(aggrMethods, aggrPeriodDuration);
+				tempQuery = QueryParser.parseTempQuery(timeProperty, timeRel, timeAt, endTimeAt);
+			} catch (Exception e) {
+				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+			}
+			return historyQueryService.retrieveEntity(HttpUtils.getTenant(request), entityId, attrsQuery, aggrQuery,
+					tempQuery, lang, lastNTBU, localOnly, context).onItem().transformToUni(entity -> {
+						return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, entity,
+								geometryProperty, optionsString, null, ldService);
+					});
+		});
 
 	}
 

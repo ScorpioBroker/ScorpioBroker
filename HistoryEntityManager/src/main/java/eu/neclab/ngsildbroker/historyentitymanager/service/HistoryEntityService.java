@@ -14,7 +14,6 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 
-import eu.neclab.ngsildbroker.commons.datatypes.requests.MergePatchRequest;
 import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Channel;
@@ -23,7 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.jsonldjava.core.Context;
-import com.github.jsonldjava.core.JsonLdError;
+import com.github.jsonldjava.core.JsonLDService;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -47,7 +46,6 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.UpdateAttrHistoryEntity
 import eu.neclab.ngsildbroker.commons.datatypes.results.Attrib;
 import eu.neclab.ngsildbroker.commons.datatypes.results.CRUDSuccess;
 import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
-import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
@@ -83,6 +81,9 @@ public class HistoryEntityService {
 
 	@Inject
 	Vertx vertx;
+
+	@Inject
+	JsonLDService ldService;
 
 	WebClient webClient;
 
@@ -124,26 +125,21 @@ public class HistoryEntityService {
 		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(remoteEntitiesAndHosts.size());
 		for (Tuple2<RemoteHost, Map<String, Object>> remoteEntityAndHost : remoteEntitiesAndHosts) {
 			Map<String, Object> expanded = remoteEntityAndHost.getItem2();
-			Map<String, Object> compacted;
-			try {
-				compacted = EntityTools.prepareSplitUpEntityForSending(expanded, originalContext);
-			} catch (JsonLdError | ResponseException e) {
-				logger.error("Failed to compact remote payload", e);
-				continue;
-			}
 			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
-
-			unis.add(webClient.post(remoteHost.host() + NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT)
-					.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(compacted)).onItemOrFailure()
-					.transform((response, failure) -> {
-						NGSILDOperationResult result = HttpUtils.handleWebResponse(response, failure,
-								ArrayUtils.toArray(201, 204), remoteHost, AppConstants.CREATE_TEMPORAL_REQUEST,
-								request.getId(), HttpUtils.getAttribsFromCompactedPayload(compacted));
-						if (response.statusCode() == 204) {
-							result.setWasUpdated(true);
-						}
-						return result;
-
+			unis.add(EntityTools.prepareSplitUpEntityForSending(expanded, originalContext, ldService).onItem()
+					.transformToUni(compacted -> {
+						return webClient.post(remoteHost.host() + NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT)
+								.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(compacted))
+								.onItemOrFailure().transform((response, failure) -> {
+									NGSILDOperationResult result = HttpUtils.handleWebResponse(response, failure,
+											ArrayUtils.toArray(201, 204), remoteHost,
+											AppConstants.CREATE_TEMPORAL_REQUEST, request.getId(),
+											HttpUtils.getAttribsFromCompactedPayload(compacted));
+									if (response.statusCode() == 204) {
+										result.setWasUpdated(true);
+									}
+									return result;
+								});
 					}));
 
 		}
@@ -184,26 +180,19 @@ public class HistoryEntityService {
 		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(remoteEntitiesAndHosts.size());
 		for (Tuple2<RemoteHost, Map<String, Object>> remoteEntityAndHost : remoteEntitiesAndHosts) {
 			Map<String, Object> expanded = remoteEntityAndHost.getItem2();
-			Map<String, Object> compacted;
-			try {
-				compacted = EntityTools.prepareSplitUpEntityForSending(expanded, originalContext);
-			} catch (JsonLdError | ResponseException e) {
-				logger.error("Failed to compact remote payload", e);
-				continue;
-			}
 			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
-
-			unis.add(webClient
-					.post(remoteHost.host() + NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT + "/"
-							+ NGSIConstants.QUERY_PARAMETER_ATTRS)
-					.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(compacted)).onItemOrFailure()
-					.transform((response, failure) -> {
-						return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(204), remoteHost,
-								AppConstants.APPEND_TEMPORAL_REQUEST, request.getId(),
-								HttpUtils.getAttribsFromCompactedPayload(compacted));
-
+			unis.add(EntityTools.prepareSplitUpEntityForSending(expanded, originalContext, ldService).onItem()
+					.transformToUni(compacted -> {
+						return webClient
+								.post(remoteHost.host() + NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT + "/"
+										+ NGSIConstants.QUERY_PARAMETER_ATTRS)
+								.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(compacted))
+								.onItemOrFailure().transform((response, failure) -> {
+									return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(204),
+											remoteHost, AppConstants.APPEND_TEMPORAL_REQUEST, request.getId(),
+											HttpUtils.getAttribsFromCompactedPayload(compacted));
+								});
 					}));
-
 		}
 		return Uni.combine().all().unis(unis).combinedWith(list -> {
 			NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.APPEND_TEMPORAL_REQUEST,
@@ -241,25 +230,19 @@ public class HistoryEntityService {
 		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(remoteEntitiesAndHosts.size());
 		for (Tuple2<RemoteHost, Map<String, Object>> remoteEntityAndHost : remoteEntitiesAndHosts) {
 			Map<String, Object> expanded = remoteEntityAndHost.getItem2();
-			Map<String, Object> compacted;
-			try {
-				compacted = EntityTools.prepareSplitUpEntityForSending(expanded, originalContext);
-			} catch (JsonLdError | ResponseException e) {
-				logger.error("Failed to compact remote payload", e);
-				continue;
-			}
 			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
-
-			unis.add(webClient
-					.post(remoteHost.host() + NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT + "/"
-							+ NGSIConstants.QUERY_PARAMETER_ATTRS + "/" + request.getAttrId() + "/"
-							+ request.getInstanceId())
-					.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(compacted)).onItemOrFailure()
-					.transform((response, failure) -> {
-						return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(204), remoteHost,
-								AppConstants.UPDATE_TEMPORAL_INSTANCE_REQUEST, request.getId(),
-								HttpUtils.getAttribsFromCompactedPayload(compacted));
-
+			unis.add(EntityTools.prepareSplitUpEntityForSending(expanded, originalContext, ldService).onItem()
+					.transformToUni(compacted -> {
+						return webClient
+								.post(remoteHost.host() + NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT + "/"
+										+ NGSIConstants.QUERY_PARAMETER_ATTRS + "/" + request.getAttrId() + "/"
+										+ request.getInstanceId())
+								.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(compacted))
+								.onItemOrFailure().transform((response, failure) -> {
+									return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(204),
+											remoteHost, AppConstants.UPDATE_TEMPORAL_INSTANCE_REQUEST, request.getId(),
+											HttpUtils.getAttribsFromCompactedPayload(compacted));
+								});
 					}));
 
 		}
@@ -502,11 +485,11 @@ public class HistoryEntityService {
 				logger.debug("Failed to record delete attrs", e);
 				return Uni.createFrom().voidItem();
 			});
-			case AppConstants.MERGE_PATCH_REQUEST:
-				return historyDAO.setMergePatch(request).onFailure().recoverWithUni(e -> {
-					logger.debug("Failed to record merge patch", e);
-					return Uni.createFrom().voidItem();
-				});
+		case AppConstants.MERGE_PATCH_REQUEST:
+			return historyDAO.setMergePatch(request).onFailure().recoverWithUni(e -> {
+				logger.debug("Failed to record merge patch", e);
+				return Uni.createFrom().voidItem();
+			});
 		default:
 			return Uni.createFrom().voidItem();
 		}

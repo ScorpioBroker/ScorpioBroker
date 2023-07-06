@@ -2,13 +2,11 @@ package eu.neclab.ngsildbroker.entityhandler.services;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Random;
 import java.util.Set;
 
 import javax.annotation.PostConstruct;
@@ -16,7 +14,6 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 
-import eu.neclab.ngsildbroker.commons.datatypes.requests.MergePatchRequest;
 import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Channel;
@@ -25,8 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.jsonldjava.core.Context;
-import com.github.jsonldjava.core.JsonLdError;
-import com.github.jsonldjava.core.JsonLdProcessor;
+import com.github.jsonldjava.core.JsonLDService;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -44,6 +40,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteAttributeRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.EntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.MergePatchRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.UpdateEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.UpsertEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.results.Attrib;
@@ -94,7 +91,8 @@ public class EntityService {
 
 	private Table<String, String, List<RegistrationEntry>> tenant2CId2RegEntries = HashBasedTable.create();
 
-	private Random random = new Random();
+	@Inject
+	JsonLDService jsonLdService;
 
 	@PostConstruct
 	void init() {
@@ -265,25 +263,20 @@ public class EntityService {
 		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(remoteEntitiesAndHosts.size());
 		for (Tuple2<RemoteHost, Map<String, Object>> remoteEntityAndHost : remoteEntitiesAndHosts) {
 			Map<String, Object> expanded = remoteEntityAndHost.getItem2();
-			Map<String, Object> compacted;
-			try {
-				compacted = prepareSplitUpEntityForSending(expanded, context);
-			} catch (JsonLdError | ResponseException e) {
-				logger.error("Failed to compact remote payload", e);
-				continue;
-			}
+
 			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
 			if (remoteHost.canDoSingleOp()) {
-				unis.add(webClient
-						.post(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + request.getId()
-								+ "/attrs/" + request.getAttrName())
-						.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(compacted)).onItemOrFailure()
-						.transform((response, failure) -> {
-							return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(204), remoteHost,
-									AppConstants.PARTIAL_UPDATE_REQUEST, request.getId(),
-									HttpUtils.getAttribsFromCompactedPayload(compacted));
-
-						}));
+				unis.add(prepareSplitUpEntityForSending(expanded, context).onItem().transformToUni(compacted -> {
+					return webClient
+							.post(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + request.getId()
+									+ "/attrs/" + request.getAttrName())
+							.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(compacted))
+							.onItemOrFailure().transform((response, failure) -> {
+								return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(204),
+										remoteHost, AppConstants.PARTIAL_UPDATE_REQUEST, request.getId(),
+										HttpUtils.getAttribsFromCompactedPayload(compacted));
+							});
+				}));
 			}
 
 		}
@@ -326,8 +319,7 @@ public class EntityService {
 
 	public Uni<NGSILDOperationResult> deleteAttribute(String tenant, String entityId, String attribName,
 			String datasetId, boolean deleteAll, Context context) {
-		DeleteAttributeRequest request = new DeleteAttributeRequest(tenant, entityId, attribName, datasetId,
-				deleteAll);
+		DeleteAttributeRequest request = new DeleteAttributeRequest(tenant, entityId, attribName, datasetId, deleteAll);
 		Set<RemoteHost> remoteHosts = getRemoteHostsForDeleteAttrib(request);
 		if (remoteHosts.isEmpty()) {
 			return localDeleteAttrib(request, context);
@@ -353,7 +345,7 @@ public class EntityService {
 	private Uni<NGSILDOperationResult> localDeleteAttrib(DeleteAttributeRequest request, Context context) {
 		return entityDAO.deleteAttribute(request).onItem().transform(resultEntity -> {
 			request.setPreviousEntity(resultEntity);
-			
+
 			entityEmitter.sendAndForget(request);
 			NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.DELETE_ATTRIBUTE_REQUEST,
 					request.getId());
@@ -471,34 +463,31 @@ public class EntityService {
 		}
 		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(remoteEntitiesAndHosts.size());
 		for (Tuple2<RemoteHost, Map<String, Object>> remoteEntityAndHost : remoteEntitiesAndHosts) {
-
-			Map<String, Object> compacted;
-			try {
-				compacted = prepareSplitUpEntityForSending(remoteEntityAndHost.getItem2(), context);
-			} catch (JsonLdError | ResponseException e) {
-				logger.error("Failed to compact remote payload", e);
-				continue;
-			}
 			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
 			if (remoteHost.canDoSingleOp()) {
-				unis.add(webClient
-						.post(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + request.getId()
-								+ "/attrs")
-						.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(compacted)).onItemOrFailure()
-						.transform((response, failure) -> {
-							return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(204), remoteHost,
-									AppConstants.APPEND_REQUEST, request.getId(),
-									HttpUtils.getAttribsFromCompactedPayload(compacted));
-
+				unis.add(prepareSplitUpEntityForSending(remoteEntityAndHost.getItem2(), context).onItem()
+						.transformToUni(compacted -> {
+							return webClient
+									.post(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/"
+											+ request.getId() + "/attrs")
+									.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(compacted))
+									.onItemOrFailure().transform((response, failure) -> {
+										return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(204),
+												remoteHost, AppConstants.APPEND_REQUEST, request.getId(),
+												HttpUtils.getAttribsFromCompactedPayload(compacted));
+									});
 						}));
 			} else {
-				compacted.put(NGSIConstants.QUERY_PARAMETER_ID, request.getId());
-				unis.add(webClient.post(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_UPDATE)
-						.putHeaders(remoteHost.headers())
-						.sendJson(new JsonArray(Lists.newArrayList(new JsonObject(compacted)))).onItemOrFailure()
-						.transform((response, failure) -> {
-							return handleBatchResponse(response, failure, remoteHost, Lists.newArrayList(compacted),
-									ArrayUtils.toArray(201)).get(0);
+				unis.add(prepareSplitUpEntityForSending(remoteEntityAndHost.getItem2(), context).onItem()
+						.transformToUni(compacted -> {
+							compacted.put(NGSIConstants.QUERY_PARAMETER_ID, request.getId());
+							return webClient.post(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_UPDATE)
+									.putHeaders(remoteHost.headers())
+									.sendJson(new JsonArray(Lists.newArrayList(new JsonObject(compacted))))
+									.onItemOrFailure().transform((response, failure) -> {
+										return handleBatchResponse(response, failure, remoteHost,
+												Lists.newArrayList(compacted), ArrayUtils.toArray(201)).get(0);
+									});
 						}));
 			}
 
@@ -537,24 +526,18 @@ public class EntityService {
 		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(remoteEntitiesAndHosts.size());
 		for (Tuple2<RemoteHost, Map<String, Object>> remoteEntityAndHost : remoteEntitiesAndHosts) {
 			Map<String, Object> expanded = remoteEntityAndHost.getItem2();
-			Map<String, Object> compacted;
-			try {
-				compacted = prepareSplitUpEntityForSending(expanded, context);
-			} catch (JsonLdError | ResponseException e) {
-				logger.error("Failed to compact remote payload", e);
-				continue;
-			}
 			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
-			unis.add(webClient
-					.patch(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + request.getId()
-							+ "/attrs")
-					.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(compacted)).onItemOrFailure()
-					.transform((response, failure) -> {
-						return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(201), remoteHost,
-								AppConstants.UPDATE_REQUEST, request.getId(),
-								HttpUtils.getAttribsFromCompactedPayload(compacted));
-
-					}));
+			unis.add(prepareSplitUpEntityForSending(expanded, context).onItem().transformToUni(compacted -> {
+				return webClient
+						.patch(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + request.getId()
+								+ "/attrs")
+						.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(compacted)).onItemOrFailure()
+						.transform((response, failure) -> {
+							return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(201), remoteHost,
+									AppConstants.UPDATE_REQUEST, request.getId(),
+									HttpUtils.getAttribsFromCompactedPayload(compacted));
+						});
+			}));
 
 		}
 		if (!localEntity.isEmpty()) {
@@ -611,33 +594,28 @@ public class EntityService {
 		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(remoteEntitiesAndHosts.size());
 		for (Tuple2<RemoteHost, Map<String, Object>> remoteEntityAndHost : remoteEntitiesAndHosts) {
 			Map<String, Object> expanded = remoteEntityAndHost.getItem2();
-			Map<String, Object> compacted;
-			try {
-				compacted = prepareSplitUpEntityForSending(expanded, context);
-			} catch (JsonLdError | ResponseException e) {
-				logger.error("Failed to compact remote payload", e);
-				continue;
-			}
 			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
 			if (remoteHost.canDoSingleOp()) {
-				unis.add(webClient.post(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT)
-						.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(compacted)).onItemOrFailure()
-						.transform((response, failure) -> {
-							return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(201), remoteHost,
-									AppConstants.CREATE_REQUEST, request.getId(),
-									HttpUtils.getAttribsFromCompactedPayload(compacted));
-
-						}));
+				unis.add(prepareSplitUpEntityForSending(expanded, context).onItem().transformToUni(compacted -> {
+					return webClient.post(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT)
+							.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(compacted))
+							.onItemOrFailure().transform((response, failure) -> {
+								return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(201),
+										remoteHost, AppConstants.CREATE_REQUEST, request.getId(),
+										HttpUtils.getAttribsFromCompactedPayload(compacted));
+							});
+				}));
 			} else {
-				unis.add(webClient.post(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_CREATE)
-						.putHeaders(remoteHost.headers())
-						.sendJson(new JsonArray(Lists.newArrayList(new JsonObject(compacted)))).onItemOrFailure()
-						.transform((response, failure) -> {
-							return handleBatchResponse(response, failure, remoteHost, Lists.newArrayList(compacted),
-									ArrayUtils.toArray(201)).get(0);
-						}));
+				unis.add(prepareSplitUpEntityForSending(expanded, context).onItem().transformToUni(compacted -> {
+					return webClient.post(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_CREATE)
+							.putHeaders(remoteHost.headers())
+							.sendJson(new JsonArray(Lists.newArrayList(new JsonObject(compacted)))).onItemOrFailure()
+							.transform((response, failure) -> {
+								return handleBatchResponse(response, failure, remoteHost, Lists.newArrayList(compacted),
+										ArrayUtils.toArray(201)).get(0);
+							});
+				}));
 			}
-
 		}
 		if (localEntity != null && !localEntity.isEmpty()) {
 			request.setPayload(localEntity);
@@ -864,8 +842,7 @@ public class EntityService {
 		});
 	}
 
-	private Map<String, Object> prepareSplitUpEntityForSending(Map<String, Object> expanded, Context context)
-			throws JsonLdError, ResponseException {
+	private Uni<Map<String, Object>> prepareSplitUpEntityForSending(Map<String, Object> expanded, Context context) {
 		if (expanded.containsKey(NGSIConstants.JSON_LD_TYPE)) {
 			expanded.put(NGSIConstants.JSON_LD_TYPE,
 					Lists.newArrayList((Set<String>) expanded.get(NGSIConstants.JSON_LD_TYPE)));
@@ -878,7 +855,7 @@ public class EntityService {
 			}
 			expanded.put(NGSIConstants.NGSI_LD_SCOPE, finalScopes);
 		}
-		return JsonLdProcessor.compact(expanded, null, context, HttpUtils.opts, -1);
+		return jsonLdService.compact(expanded, null, context, HttpUtils.opts, -1);
 
 	}
 
@@ -954,39 +931,41 @@ public class EntityService {
 		for (Entry<RemoteHost, List<Tuple2<Context, Map<String, Object>>>> entry : remoteHost2Batch.entrySet()) {
 			RemoteHost remoteHost = entry.getKey();
 			List<Tuple2<Context, Map<String, Object>>> tuples = entry.getValue();
-			List<Map<String, Object>> toSend = Lists.newArrayList();
+			List<Uni<Map<String, Object>>> compactedUnis = Lists.newArrayList();
 			for (Tuple2<Context, Map<String, Object>> tuple : tuples) {
 				Map<String, Object> expanded = tuple.getItem2();
 				Context context = tuple.getItem1();
-				Map<String, Object> compacted;
-				try {
-					compacted = JsonLdProcessor.compact(expanded, null, context, AppConstants.opts, -1);
-					toSend.add(compacted);
-				} catch (JsonLdError | ResponseException e) {
-					// TODO catch somehow ... however this will never happen this document has
-					// already been expanded from us
-					e.printStackTrace();
-				}
-
+				compactedUnis.add(jsonLdService.compact(expanded, null, context, AppConstants.opts, -1));
 			}
+
 			if (remoteHost.canDoBatchOp()) {
-				unis.add(webClient.post(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_CREATE)
-						.putHeaders(remoteHost.headers()).sendJson(new JsonArray(toSend)).onItemOrFailure()
-						.transform((response, failure) -> {
-							return handleBatchResponse(response, failure, remoteHost, toSend, ArrayUtils.toArray(201));
-						}));
+				unis.add(Uni.combine().all().unis(compactedUnis).combinedWith(list -> {
+					List<Map<String, Object>> toSend = Lists.newArrayList();
+					for (Object obj : list) {
+						toSend.add((Map<String, Object>) obj);
+					}
+					return toSend;
+				}).onItem().transformToUni(toSend -> {
+					return webClient.post(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_CREATE)
+							.putHeaders(remoteHost.headers()).sendJson(new JsonArray(toSend)).onItemOrFailure()
+							.transform((response, failure) -> {
+								return handleBatchResponse(response, failure, remoteHost, toSend,
+										ArrayUtils.toArray(201));
+							});
+				}));
 			} else {
 				List<Uni<NGSILDOperationResult>> singleUnis = new ArrayList<>();
-				for (Map<String, Object> entity : toSend) {
-					singleUnis.add(webClient.post(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT)
-							.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(entity)).onItemOrFailure()
-							.transform((response, failure) -> {
-								return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(201),
-										remoteHost, AppConstants.CREATE_REQUEST,
-										(String) entity.get(NGSIConstants.JSON_LD_ID),
-										HttpUtils.getAttribsFromCompactedPayload(entity));
-
-							}));
+				for (Uni<Map<String, Object>> compactedUni : compactedUnis) {
+					singleUnis.add(compactedUni.onItem().transformToUni(entity -> {
+						return webClient.post(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT)
+								.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(entity))
+								.onItemOrFailure().transform((response, failure) -> {
+									return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(201),
+											remoteHost, AppConstants.CREATE_REQUEST,
+											(String) entity.get(NGSIConstants.JSON_LD_ID),
+											HttpUtils.getAttribsFromCompactedPayload(entity));
+								});
+					}));
 				}
 				unis.add(Uni.combine().all().unis(singleUnis).combinedWith(list -> {
 					List<NGSILDOperationResult> result = Lists.newArrayList();
@@ -1077,41 +1056,43 @@ public class EntityService {
 		for (Entry<RemoteHost, List<Tuple2<Context, Map<String, Object>>>> entry : remoteHost2Batch.entrySet()) {
 			RemoteHost remoteHost = entry.getKey();
 			List<Tuple2<Context, Map<String, Object>>> tuples = entry.getValue();
-			List<Map<String, Object>> toSend = Lists.newArrayList();
+			List<Uni<Map<String, Object>>> compactedUnis = Lists.newArrayList();
 			for (Tuple2<Context, Map<String, Object>> tuple : tuples) {
 				Map<String, Object> expanded = tuple.getItem2();
 				Context context = tuple.getItem1();
-				Map<String, Object> compacted;
-				try {
-					compacted = JsonLdProcessor.compact(expanded, null, context, AppConstants.opts, -1);
-					toSend.add(compacted);
-				} catch (JsonLdError | ResponseException e) {
-					// TODO catch somehow ... however this will never happen this document has
-					// already been expanded from us
-					e.printStackTrace();
-				}
-
+				compactedUnis.add(jsonLdService.compact(expanded, null, context, AppConstants.opts, -1));
 			}
 			if (remoteHost.canDoBatchOp()) {
-				unis.add(webClient.post(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_UPDATE)
-						.putHeaders(remoteHost.headers()).sendJson(new JsonArray(toSend)).onItemOrFailure()
-						.transform((response, failure) -> {
-							return handleBatchResponse(response, failure, remoteHost, toSend, ArrayUtils.toArray(204));
-						}));
+				unis.add(Uni.combine().all().unis(compactedUnis).combinedWith(list -> {
+					List<Map<String, Object>> toSend = Lists.newArrayList();
+					for (Object obj : list) {
+						toSend.add((Map<String, Object>) obj);
+					}
+					return toSend;
+				}).onItem().transformToUni(toSend -> {
+					return webClient.post(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_UPDATE)
+							.putHeaders(remoteHost.headers()).sendJson(new JsonArray(toSend)).onItemOrFailure()
+							.transform((response, failure) -> {
+								return handleBatchResponse(response, failure, remoteHost, toSend,
+										ArrayUtils.toArray(204));
+							});
+				}));
 			} else {
 				List<Uni<NGSILDOperationResult>> singleUnis = new ArrayList<>();
-				for (Map<String, Object> entity : toSend) {
-					singleUnis.add(webClient
-							.post(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/"
-									+ entity.get(NGSIConstants.JSON_LD_ID) + "/" + NGSIConstants.QUERY_PARAMETER_ATTRS)
-							.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(entity)).onItemOrFailure()
-							.transform((response, failure) -> {
-								return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(201),
-										remoteHost, AppConstants.APPEND_REQUEST,
-										(String) entity.get(NGSIConstants.JSON_LD_ID),
-										HttpUtils.getAttribsFromCompactedPayload(entity));
-
-							}));
+				for (Uni<Map<String, Object>> compactedUni : compactedUnis) {
+					singleUnis.add(compactedUni.onItem().transformToUni(entity -> {
+						return webClient
+								.post(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/"
+										+ entity.get(NGSIConstants.JSON_LD_ID) + "/"
+										+ NGSIConstants.QUERY_PARAMETER_ATTRS)
+								.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(entity))
+								.onItemOrFailure().transform((response, failure) -> {
+									return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(201),
+											remoteHost, AppConstants.APPEND_REQUEST,
+											(String) entity.get(NGSIConstants.JSON_LD_ID),
+											HttpUtils.getAttribsFromCompactedPayload(entity));
+								});
+					}));
 				}
 				unis.add(Uni.combine().all().unis(singleUnis).combinedWith(list -> {
 					List<NGSILDOperationResult> result = Lists.newArrayList();
@@ -1200,54 +1181,57 @@ public class EntityService {
 		for (Entry<RemoteHost, List<Tuple2<Context, Map<String, Object>>>> entry : remoteHost2Batch.entrySet()) {
 			RemoteHost remoteHost = entry.getKey();
 			List<Tuple2<Context, Map<String, Object>>> tuples = entry.getValue();
-			List<Map<String, Object>> toSend = Lists.newArrayList();
+			List<Uni<Map<String, Object>>> compactedUnis = Lists.newArrayList();
 			for (Tuple2<Context, Map<String, Object>> tuple : tuples) {
 				Map<String, Object> expanded = tuple.getItem2();
 				Context context = tuple.getItem1();
-				Map<String, Object> compacted;
-				try {
-					compacted = JsonLdProcessor.compact(expanded, null, context, AppConstants.opts, -1);
-					toSend.add(compacted);
-				} catch (JsonLdError | ResponseException e) {
-					// TODO catch somehow ... however this will never happen this document has
-					// already been expanded from us
-					e.printStackTrace();
-				}
-
+				compactedUnis.add(jsonLdService.compact(expanded, null, context, AppConstants.opts, -1));
 			}
 			if (remoteHost.canDoBatchOp()) {
-				unis.add(webClient.post(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_UPSERT)
-						.putHeaders(remoteHost.headers()).sendJson(new JsonArray(toSend)).onItemOrFailure()
-						.transform((response, failure) -> {
-							return handleBatchResponse(response, failure, remoteHost, toSend, ArrayUtils.toArray(204));
-						}));
+				unis.add(Uni.combine().all().unis(compactedUnis).combinedWith(list -> {
+					List<Map<String, Object>> toSend = Lists.newArrayList();
+					for (Object obj : list) {
+						toSend.add((Map<String, Object>) obj);
+					}
+					return toSend;
+				}).onItem().transformToUni(toSend -> {
+					return webClient.post(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_UPSERT)
+							.putHeaders(remoteHost.headers()).sendJson(new JsonArray(toSend)).onItemOrFailure()
+							.transform((response, failure) -> {
+								return handleBatchResponse(response, failure, remoteHost, toSend,
+										ArrayUtils.toArray(204));
+							});
+				}));
 			} else {
 				List<Uni<NGSILDOperationResult>> singleUnis = new ArrayList<>();
-				for (Map<String, Object> entity : toSend) {
-					singleUnis.add(webClient
-							.post(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/"
-									+ entity.get(NGSIConstants.JSON_LD_ID) + "/" + NGSIConstants.QUERY_PARAMETER_ATTRS)
-							.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(entity)).onItemOrFailure()
-							.transformToUni((response, failure) -> {
-								if (response.statusCode() == 404) {
-									return webClient.post(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT)
-											.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(entity))
-											.onItemOrFailure().transform((response1, failure1) -> {
-												return HttpUtils.handleWebResponse(response1, failure1,
-														ArrayUtils.toArray(201), remoteHost,
-														AppConstants.CREATE_REQUEST,
-														(String) entity.get(NGSIConstants.JSON_LD_ID),
-														HttpUtils.getAttribsFromCompactedPayload(entity));
+				for (Uni<Map<String, Object>> compactedUni : compactedUnis) {
+					singleUnis.add(compactedUni.onItem().transformToUni(entity -> {
+						return webClient
+								.post(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/"
+										+ entity.get(NGSIConstants.JSON_LD_ID) + "/"
+										+ NGSIConstants.QUERY_PARAMETER_ATTRS)
+								.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(entity))
+								.onItemOrFailure().transformToUni((response, failure) -> {
+									if (response.statusCode() == 404) {
+										return webClient
+												.post(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT)
+												.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(entity))
+												.onItemOrFailure().transform((response1, failure1) -> {
+													return HttpUtils.handleWebResponse(response1, failure1,
+															ArrayUtils.toArray(201), remoteHost,
+															AppConstants.CREATE_REQUEST,
+															(String) entity.get(NGSIConstants.JSON_LD_ID),
+															HttpUtils.getAttribsFromCompactedPayload(entity));
 
-											});
-								}
-								return Uni.createFrom()
-										.item(HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(201),
-												remoteHost, AppConstants.APPEND_REQUEST,
-												(String) entity.get(NGSIConstants.JSON_LD_ID),
-												HttpUtils.getAttribsFromCompactedPayload(entity)));
-
-							}));
+												});
+									}
+									return Uni.createFrom()
+											.item(HttpUtils.handleWebResponse(response, failure,
+													ArrayUtils.toArray(201), remoteHost, AppConstants.APPEND_REQUEST,
+													(String) entity.get(NGSIConstants.JSON_LD_ID),
+													HttpUtils.getAttribsFromCompactedPayload(entity)));
+								});
+					}));
 				}
 				unis.add(Uni.combine().all().unis(singleUnis).combinedWith(list -> {
 					List<NGSILDOperationResult> result = Lists.newArrayList();
@@ -1354,9 +1338,10 @@ public class EntityService {
 		});
 	}
 
-	public Uni<NGSILDOperationResult> mergePatch(String tenant, String entityId, Map<String, Object> resolved, Context context) {
+	public Uni<NGSILDOperationResult> mergePatch(String tenant, String entityId, Map<String, Object> resolved,
+			Context context) {
 		logger.debug("createMessage() :: started");
-		MergePatchRequest request = new MergePatchRequest(tenant,entityId,resolved,null);
+		MergePatchRequest request = new MergePatchRequest(tenant, entityId, resolved, null);
 		Tuple2<Map<String, Object>, Collection<Tuple2<RemoteHost, Map<String, Object>>>> localAndRemote = splitEntity(
 				request);
 		Map<String, Object> localEntity = localAndRemote.getItem1();
@@ -1368,31 +1353,28 @@ public class EntityService {
 		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(remoteEntitiesAndHosts.size());
 		for (Tuple2<RemoteHost, Map<String, Object>> remoteEntityAndHost : remoteEntitiesAndHosts) {
 			Map<String, Object> expanded = remoteEntityAndHost.getItem2();
-			Map<String, Object> compacted;
-			try {
-				compacted = prepareSplitUpEntityForSending(expanded, context);
-			} catch (JsonLdError | ResponseException e) {
-				logger.error("Failed to compact remote payload", e);
-				continue;
-			}
 			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
-			if (remoteHost.canDoSingleOp()) {
-				unis.add(webClient.post(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT)
-						.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(compacted)).onItemOrFailure()
-						.transform((response, failure) -> {
-							return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(201), remoteHost,
-									AppConstants.CREATE_REQUEST, request.getId(),
-									HttpUtils.getAttribsFromCompactedPayload(compacted));
 
-						}));
+			if (remoteHost.canDoSingleOp()) {
+				unis.add(prepareSplitUpEntityForSending(expanded, context).onItem().transformToUni(compacted -> {
+					return webClient.post(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT)
+							.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(compacted))
+							.onItemOrFailure().transform((response, failure) -> {
+								return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(201),
+										remoteHost, AppConstants.CREATE_REQUEST, request.getId(),
+										HttpUtils.getAttribsFromCompactedPayload(compacted));
+							});
+				}));
 			} else {
-				unis.add(webClient.post(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_CREATE)
-						.putHeaders(remoteHost.headers())
-						.sendJson(new JsonArray(Lists.newArrayList(new JsonObject(compacted)))).onItemOrFailure()
-						.transform((response, failure) -> {
-							return handleBatchResponse(response, failure, remoteHost, Lists.newArrayList(compacted),
-									ArrayUtils.toArray(201)).get(0);
-						}));
+				unis.add(prepareSplitUpEntityForSending(expanded, context).onItem().transformToUni(compacted -> {
+					return webClient.post(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_CREATE)
+							.putHeaders(remoteHost.headers())
+							.sendJson(new JsonArray(Lists.newArrayList(new JsonObject(compacted)))).onItemOrFailure()
+							.transform((response, failure) -> {
+								return handleBatchResponse(response, failure, remoteHost, Lists.newArrayList(compacted),
+										ArrayUtils.toArray(201)).get(0);
+							});
+				}));
 			}
 
 		}

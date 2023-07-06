@@ -1,0 +1,117 @@
+package com.github.jsonldjava.core;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import javax.annotation.PostConstruct;
+import javax.enterprise.event.Observes;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
+import eu.neclab.ngsildbroker.commons.storage.ClientManager;
+import io.quarkus.runtime.StartupEvent;
+import io.smallrye.mutiny.Uni;
+import io.vertx.mutiny.core.Vertx;
+import io.vertx.mutiny.ext.web.client.WebClient;
+
+@Singleton
+public class JsonLDService {
+
+	private Context coreContext;
+
+	@ConfigProperty(name = "ngsild.corecontext", defaultValue = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld")
+	String coreContextUrl;
+
+	@Inject
+	ClientManager clientManager;
+
+	@Inject
+	Vertx vertx;
+
+	WebClient webClient;
+
+	@PostConstruct
+	void setup() {
+		this.webClient = WebClient.create(vertx);
+		this.coreContext = clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem()
+				.transformToUni(client -> {
+					return client
+							.preparedQuery("SELECT body FROM context WHERE id='" + AppConstants.INTERNAL_NULL_KEY + "'")
+							.execute().onItem().transform(rows -> {
+								return rows.iterator().next().getJsonObject(0).getMap();
+							});
+				}).onItem().transformToUni(coreContextMap -> {
+					return new Context(new JsonLdOptions(JsonLdOptions.JSON_LD_1_1))
+							.parse(coreContextMap, false, webClient).onItem().transform(coreContext -> {
+								// this.coreContext = coreContext;
+								coreContext.getTermDefinition("features").remove("@container");
+								coreContext.getInverse();
+								return coreContext;
+							});
+					// this explicitly removes the features term from the core as it is a commonly
+					// used term and we don't need the geo json definition
+
+				}).await().indefinitely();
+		JsonLdProcessor.init(coreContextUrl, coreContext);
+
+	}
+
+	// This is needed so that @postconstruct runs on the startup thread and not on a
+	// worker thread later on
+	void startup(@Observes StartupEvent event) {
+	}
+
+	public Context getCoreContextClone() {
+		Context clone = coreContext.clone();
+		clone.inverse = null;
+		return clone;
+	}
+
+	public Uni<Map<String, Object>> compact(Object input, Object context, JsonLdOptions opts) {
+		return JsonLdProcessor.compact(input, context, opts, webClient);
+	}
+
+	public Uni<Map<String, Object>> compact(Object input, Object context, Context activeCtx, JsonLdOptions opts,
+			int endPoint) {
+		return JsonLdProcessor.compact(input, context, activeCtx, opts, endPoint, webClient);
+	}
+
+	public Uni<Map<String, Object>> compact(Object input, Object context, Context activeCtx, JsonLdOptions opts,
+			int endPoint, Set<String> options, LanguageQueryTerm langQuery) {
+		return JsonLdProcessor.compact(input, context, activeCtx, opts, endPoint, options, langQuery, webClient);
+	}
+
+	public Uni<List<Object>> expand(List<Object> contextLinks, Object input, JsonLdOptions opts, int payloadType,
+			boolean atContextAllowed) {
+		return JsonLdProcessor.expand(contextLinks, input, opts, payloadType, atContextAllowed, webClient);
+	}
+
+	public Uni<List<Object>> expand(Context activeCtx, Object input, JsonLdOptions opts, int payloadType,
+			boolean atContextAllowed) {
+		return JsonLdProcessor.expand(activeCtx, input, opts, payloadType, atContextAllowed, webClient);
+	}
+
+	public Uni<List<Object>> expand(Object input) {
+		return JsonLdProcessor.expand(input, webClient);
+	}
+
+	public Context getCoreContext() {
+		return coreContext;
+	}
+
+	public Uni<Context> parse(Object headerContext) {
+		return getCoreContextClone().parse(headerContext, true, webClient);
+	}
+	public Uni<Context> parsePure(Object headerContext) {
+		return new Context().parse(headerContext, false, webClient);
+	}
+
+	public Uni<Object> toRDF(Object entity) {
+		return JsonLdProcessor.toRDF(entity, webClient);
+	}
+
+}

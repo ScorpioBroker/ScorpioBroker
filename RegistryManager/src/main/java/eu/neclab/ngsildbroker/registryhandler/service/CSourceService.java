@@ -1,6 +1,6 @@
 package eu.neclab.ngsildbroker.registryhandler.service;
 
-import com.github.jsonldjava.core.JsonLdProcessor;
+import com.github.jsonldjava.core.JsonLDService;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.Sets;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
@@ -62,6 +62,9 @@ public class CSourceService {
 
 	@Inject
 	CSourceDAO cSourceInfoDAO;
+
+	@Inject
+	JsonLDService ldService;
 
 	@Inject
 	@Channel(AppConstants.REGISTRY_CHANNEL)
@@ -315,35 +318,39 @@ public class CSourceService {
 					return retrieveRegistration(sourceTenant, regType).onItem().transformToUni(body -> {
 						String csourceId = microServiceUtils.getGatewayURL().toString();
 						body.put("@id", csourceId);
-						String compact;
-						try {
-							compact = JsonUtils.toPrettyString(JsonLdProcessor.compact(body, null, HttpUtils.opts));
-						} catch (Exception e) {
-							return Uni.createFrom().failure(new Throwable("Unable to compact"));
-						}
-						return webClient.patchAbs(finalUrl + "csourceRegistrations/" + csourceId)
-								.putHeader("Content-Type", "application/json").putHeader("NGSILD-Tenant", targetTenant)
-								.sendBuffer(Buffer.buffer(compact)).onItem().transformToUni(i -> {
-									if (i.statusCode() == HttpResponseStatus.NOT_FOUND.code()) {
-										return webClient.post(finalUrl + "csourceRegistrations/")
-												.putHeader("Content-Type", "application/json")
-												.putHeader("NGSILD-Tenant", targetTenant)
-												.sendBuffer(Buffer.buffer(compact)).onItem().transformToUni(r -> {
-													if (r.statusCode() >= 200 && r.statusCode() < 300) {
-														return Uni.createFrom().nullItem();
-													}
-													return Uni.createFrom().failure(new ResponseException(
-															ErrorType.InternalError, r.bodyAsString()));
-												});
-									}
-									return Uni.createFrom().voidItem();
-								}).onFailure().retry().atMost(5).onFailure().recoverWithUni(e -> {
-									logger.error("Failed to register with fed broker " + brokerName, e);
-									return Uni.createFrom().voidItem();
-								});
+						return ldService.compact(body, null, HttpUtils.opts).onItem().transformToUni(compacted -> {
+							String compact;
+							try {
+								compact = JsonUtils.toPrettyString(compacted);
+							} catch (Exception e) {
+								return Uni.createFrom().failure(new Throwable("Unable to compact"));
+							}
+							return webClient.patchAbs(finalUrl + "csourceRegistrations/" + csourceId)
+									.putHeader("Content-Type", "application/json")
+									.putHeader("NGSILD-Tenant", targetTenant).sendBuffer(Buffer.buffer(compact))
+									.onItem().transformToUni(i -> {
+										if (i.statusCode() == HttpResponseStatus.NOT_FOUND.code()) {
+											return webClient.post(finalUrl + "csourceRegistrations/")
+													.putHeader("Content-Type", "application/json")
+													.putHeader("NGSILD-Tenant", targetTenant)
+													.sendBuffer(Buffer.buffer(compact)).onItem().transformToUni(r -> {
+														if (r.statusCode() >= 200 && r.statusCode() < 300) {
+															return Uni.createFrom().nullItem();
+														}
+														return Uni.createFrom().failure(new ResponseException(
+																ErrorType.InternalError, r.bodyAsString()));
+													});
+										}
+										return Uni.createFrom().voidItem();
+									}).onFailure().retry().atMost(5).onFailure().recoverWithUni(e -> {
+										logger.error("Failed to register with fed broker " + brokerName, e);
+										return Uni.createFrom().voidItem();
+									});
+						});
 					});
 				}
 				return Uni.createFrom().voidItem();
+
 			}));
 		}
 		return Uni.combine().all().unis(unis).collectFailures().discardItems();

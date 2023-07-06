@@ -69,7 +69,7 @@ class NGSIObject {
 		this.expandedProperty = expandedProperty;
 	}
 
-	public NGSIObject setElement(Object element) throws ResponseException {
+	public NGSIObject setElement(Object element) {
 		this.element = element;
 		return this;
 	}

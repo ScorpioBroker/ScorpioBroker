@@ -8,6 +8,9 @@ import org.apache.http.impl.client.CloseableHttpClient;
 
 import com.github.jsonldjava.utils.JsonUtils;
 
+import io.smallrye.mutiny.Uni;
+import io.vertx.mutiny.ext.web.client.WebClient;
+
 /**
  * Resolves URLs to {@link RemoteDocument}s. Subclass this class to change the
  * behaviour of loadDocument to suit your purposes.
@@ -48,24 +51,27 @@ public class DocumentLoader {
 	 * @throws JsonLdError If there are errors loading or remote context loading has
 	 *                     been disallowed.
 	 */
-	public RemoteDocument loadDocument(String url) throws JsonLdError {
+	public Uni<RemoteDocument> loadDocument(String url, WebClient webClient) {
 		if (m_injectedDocs.containsKey(url)) {
 			try {
-				return new RemoteDocument(url, m_injectedDocs.get(url));
+				return Uni.createFrom().item(new RemoteDocument(url, m_injectedDocs.get(url)));
 			} catch (final Exception e) {
-				throw new JsonLdError(JsonLdError.Error.LOADING_INJECTED_CONTEXT_FAILED, url, e);
+				return Uni.createFrom()
+						.failure(new JsonLdError(JsonLdError.Error.LOADING_INJECTED_CONTEXT_FAILED, url, e));
 			}
 		} else {
 			final String disallowRemote = System.getProperty(DocumentLoader.DISALLOW_REMOTE_CONTEXT_LOADING);
 			if ("true".equalsIgnoreCase(disallowRemote)) {
-				throw new JsonLdError(JsonLdError.Error.LOADING_REMOTE_CONTEXT_FAILED,
-						"Remote context loading has been disallowed (url was " + url + ")");
+				return Uni.createFrom().failure(new JsonLdError(JsonLdError.Error.LOADING_REMOTE_CONTEXT_FAILED,
+						"Remote context loading has been disallowed (url was " + url + ")"));
 			}
 
 			try {
-				return new RemoteDocument(url, JsonUtils.fromURL(new URL(url), getHttpClient()));
+				return JsonUtils.fromURL(new URL(url), webClient).onItem()
+						.transform(body -> new RemoteDocument(url, body));
 			} catch (final Exception e) {
-				throw new JsonLdError(JsonLdError.Error.LOADING_REMOTE_CONTEXT_FAILED, url, e);
+				return Uni.createFrom()
+						.failure(new JsonLdError(JsonLdError.Error.LOADING_REMOTE_CONTEXT_FAILED, url, e));
 			}
 		}
 	}

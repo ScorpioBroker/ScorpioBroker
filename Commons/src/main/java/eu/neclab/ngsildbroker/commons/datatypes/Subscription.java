@@ -360,22 +360,22 @@ public class Subscription implements Serializable {
 							}
 							case NGSIConstants.NGSI_LD_RECEIVERINFO -> {
 								ArrayListMultimap<String, String> receiverInfo = ArrayListMultimap.create();
-								Map<String, Object> compacted = JsonLdProcessor.compact(endPointEntry.getValue(), null, context,
-										opts, 999);
-								List<Map<String, Object>> receiverInfos = (List<Map<String, Object>>) compacted
-										.get(JsonLdConsts.GRAPH);
-								if (receiverInfos == null) {
-									receiverInfos = Lists.newArrayList();
-									compacted.remove(NGSIConstants.JSON_LD_CONTEXT);
-									receiverInfos.add(compacted);
-								}
+//								Map<String, Object> compacted = JsonLdProcessor.compact(endPointEntry.getValue(), null, context,
+//										opts, 999);
+//								List<Map<String, Object>> receiverInfos = (List<Map<String, Object>>) compacted
+//										.get(JsonLdConsts.GRAPH);
+//								if (receiverInfos == null) {
+//									receiverInfos = Lists.newArrayList();
+//									compacted.remove(NGSIConstants.JSON_LD_CONTEXT);
+//									receiverInfos.add(compacted);
+//								}
 
-								for (Map<String, Object> headerEntry : receiverInfos) {
-									headerEntry.forEach((t, u) -> {
-										receiverInfo.put(t, u.toString());
-									});
-
-								}
+//								for (Map<String, Object> headerEntry : receiverInfos) {
+//									headerEntry.forEach((t, u) -> {
+//										receiverInfo.put(t, u.toString());
+//									});
+//
+//								}
 								endPoint.setReceiverInfo(receiverInfo);
 							}
 							default -> throw new ResponseException(ErrorType.BadRequestData,

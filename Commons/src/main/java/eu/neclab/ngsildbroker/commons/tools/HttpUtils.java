@@ -29,10 +29,10 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.jsonldjava.core.Context;
+import com.github.jsonldjava.core.JsonLDService;
 import com.github.jsonldjava.core.JsonLdConsts;
 import com.github.jsonldjava.core.JsonLdError;
 import com.github.jsonldjava.core.JsonLdOptions;
-import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.core.RDFDataset;
 import com.github.jsonldjava.core.RDFDatasetUtils;
 import com.github.jsonldjava.utils.JsonUtils;
@@ -50,9 +50,9 @@ import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
+import io.smallrye.mutiny.tuples.Tuple3;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.impl.headers.HeadersMultiMap;
@@ -337,8 +337,8 @@ public final class HttpUtils {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static MultiMap getAdditionalHeaders(Map<String, Object> registration, List<Object> context,
-			List<String> accept) {
+	public static Uni<MultiMap> getAdditionalHeaders(Map<String, Object> registration, List<Object> context,
+			List<String> accept, JsonLDService ldService) {
 		MultiMap result = HeadersMultiMap.headers();
 
 		// Context myContext = JsonLdProcessor.getCoreContextClone().parse(context,
@@ -353,17 +353,17 @@ public final class HttpUtils {
 		}
 		Object receiverInfo = registration.get(NGSIConstants.NGSI_LD_CONTEXT_SOURCE_INFO);
 		if (receiverInfo != null) {
-			try {
-				Map<String, Object> headerMap = JsonLdProcessor.compact(receiverInfo, context, opts);
+
+			return ldService.compact(receiverInfo, context, opts).onItem().transform(headerMap -> {
 				headerMap.remove(NGSIConstants.JSON_LD_CONTEXT);
 				for (Entry<String, Object> entry : headerMap.entrySet()) {
 					result.add(entry.getKey(), entry.getValue().toString());
 				}
-			} catch (Exception e) {
-				logger.error("Failed to read additional headers", e);
-			}
+				return result;
+			});
+
 		}
-		return result;
+		return Uni.createFrom().item(result);
 	}
 
 	public static MultiMap getQueryParamMap(HttpServerRequest request) {
@@ -447,21 +447,18 @@ public final class HttpUtils {
 		return result;
 	}
 
-	public static RestResponse<Object> generateEntityResult(List<Object> contextHeader, Context context,
-			int acceptHeader, Object entity, String geometryProperty, String options, LanguageQueryTerm langQuery) {
-
-		try {
-			Tuple2<Object, List<Tuple2<String, String>>> resultBodyAndHeaders = generateCompactedResult(contextHeader,
-					context, acceptHeader, entity, geometryProperty, options, langQuery, false);
-			ResponseBuilder<Object> resp = RestResponseBuilderImpl.ok();
-			List<Tuple2<String, String>> headers = resultBodyAndHeaders.getItem2();
-			for (Tuple2<String, String> entry : headers) {
-				resp = resp.header(entry.getItem1(), entry.getItem2());
-			}
-			return resp.entity(resultBodyAndHeaders.getItem1()).build();
-		} catch (Exception e) {
-			return handleControllerExceptions(e);
-		}
+	public static Uni<RestResponse<Object>> generateEntityResult(List<Object> contextHeader, Context context,
+			int acceptHeader, Object entity, String geometryProperty, String options, LanguageQueryTerm langQuery,
+			JsonLDService ldService) {
+		return generateCompactedResult(contextHeader, context, acceptHeader, entity, geometryProperty, options,
+				langQuery, false, ldService).onItem().transform(resultBodyAndHeaders -> {
+					ResponseBuilder<Object> resp = RestResponseBuilderImpl.ok();
+					List<Tuple2<String, String>> headers = resultBodyAndHeaders.getItem2();
+					for (Tuple2<String, String> entry : headers) {
+						resp = resp.header(entry.getItem1(), entry.getItem2());
+					}
+					return resp.entity(resultBodyAndHeaders.getItem1()).build();
+				});
 	}
 
 	private static void makeConcise(Object compacted) {
@@ -494,97 +491,129 @@ public final class HttpUtils {
 
 	}
 
-	public static Tuple2<Object, List<Tuple2<String, String>>> generateCompactedResult(List<Object> contextHeader,
+	public static Uni<Tuple2<Object, List<Tuple2<String, String>>>> generateCompactedResult(List<Object> contextHeader,
 			Context context, int acceptHeader, Object entity, String geometryProperty, String options,
-			LanguageQueryTerm langQuery, boolean forceArray) throws Exception {
-		String replyBody;
-		String contentType;
-		Object result;
-		Map<String, Object> compacted;
-		List<Tuple2<String, String>> headers = Lists.newArrayList();
+			LanguageQueryTerm langQuery, boolean forceArray, JsonLDService ldService) {
 
 		Set<String> optionSet = null;
 		if (options != null) {
 			optionSet = Set.of(options.split(","));
 		}
-		Object finalCompacted;
+
+		Uni<Tuple3<String, String, List<Tuple2<String, String>>>> uni;
 		switch (acceptHeader) {
 
 		case 1:
-			compacted = JsonLdProcessor.compact(entity, contextHeader, context, opts, -1, optionSet, langQuery);
-			Object bodyContext = compacted.remove(NGSIConstants.JSON_LD_CONTEXT);
-			if (contextHeader.isEmpty()) {
-				contextHeader.add(((List<Object>) bodyContext).get(0));
-			}
-			if (compacted.containsKey(JsonLdConsts.GRAPH)) {
-				finalCompacted = compacted.get(JsonLdConsts.GRAPH);
-			} else {
-				finalCompacted = compacted;
-			}
-			if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)) {
-				makeConcise(finalCompacted);
-			}
-			if (forceArray && !(finalCompacted instanceof List)) {
-				finalCompacted = List.of(finalCompacted);
-			}
-			replyBody = JsonUtils.toPrettyString(finalCompacted);
-			for (Object entry : contextHeader) {
-				headers.add(Tuple2.of(NGSIConstants.LINK_HEADER, getLinkHeader(entry)));
-			}
+			uni = ldService.compact(entity, contextHeader, context, opts, -1, optionSet, langQuery).onItem()
+					.transformToUni(compacted -> {
+						List<Tuple2<String, String>> headers = Lists.newArrayList();
+						Object bodyContext = compacted.remove(NGSIConstants.JSON_LD_CONTEXT);
+						Object finalCompacted;
+						if (contextHeader.isEmpty()) {
+							contextHeader.add(((List<Object>) bodyContext).get(0));
+						}
+						if (compacted.containsKey(JsonLdConsts.GRAPH)) {
+							finalCompacted = compacted.get(JsonLdConsts.GRAPH);
+						} else {
+							finalCompacted = compacted;
+						}
+						if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)) {
+							makeConcise(finalCompacted);
+						}
+						if (forceArray && !(finalCompacted instanceof List)) {
+							finalCompacted = List.of(finalCompacted);
+						}
 
-			contentType = AppConstants.NGB_APPLICATION_JSON;
+						for (Object entry : contextHeader) {
+							headers.add(Tuple2.of(NGSIConstants.LINK_HEADER, getLinkHeader(entry)));
+						}
+
+						try {
+							return Uni.createFrom().item(Tuple3.of(JsonUtils.toPrettyString(finalCompacted),
+									AppConstants.NGB_APPLICATION_JSON, headers));
+						} catch (IOException e) {
+							return Uni.createFrom().failure(e);
+						}
+					});
 			break;
 		case 2:
-			compacted = JsonLdProcessor.compact(entity, contextHeader, context, opts, -1, optionSet, langQuery);
-			if (compacted.containsKey(JsonLdConsts.GRAPH)) {
-				finalCompacted = compacted.get(JsonLdConsts.GRAPH);
-				bodyContext = compacted.get(NGSIConstants.JSON_LD_CONTEXT);
-				if (finalCompacted instanceof List) {
-					List<Map<String, Object>> tmpList = (List<Map<String, Object>>) finalCompacted;
-					for (Map<String, Object> entry : tmpList) {
-						entry.put(NGSIConstants.JSON_LD_CONTEXT, bodyContext);
-					}
-				} else if (finalCompacted instanceof Map) {
-					((Map<String, Object>) finalCompacted).put(NGSIConstants.JSON_LD_CONTEXT, bodyContext);
-				}
-			} else {
-				finalCompacted = compacted;
-			}
-			if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)) {
-				makeConcise(finalCompacted);
-			}
-			if (forceArray && !(finalCompacted instanceof List)) {
-				finalCompacted = List.of(finalCompacted);
-			}
-			contentType = AppConstants.NGB_APPLICATION_JSONLD;
-			replyBody = JsonUtils.toPrettyString(finalCompacted);
+			uni = ldService.compact(entity, contextHeader, context, opts, -1, optionSet, langQuery).onItem()
+					.transformToUni(compacted -> {
+						Object finalCompacted;
+						if (compacted.containsKey(JsonLdConsts.GRAPH)) {
+							finalCompacted = compacted.get(JsonLdConsts.GRAPH);
+							Object bodyContext = compacted.get(NGSIConstants.JSON_LD_CONTEXT);
+							if (finalCompacted instanceof List) {
+								List<Map<String, Object>> tmpList = (List<Map<String, Object>>) finalCompacted;
+								for (Map<String, Object> entry : tmpList) {
+									entry.put(NGSIConstants.JSON_LD_CONTEXT, bodyContext);
+								}
+							} else if (finalCompacted instanceof Map) {
+								((Map<String, Object>) finalCompacted).put(NGSIConstants.JSON_LD_CONTEXT, bodyContext);
+							}
+						} else {
+							finalCompacted = compacted;
+						}
+						if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)) {
+							makeConcise(finalCompacted);
+						}
+						if (forceArray && !(finalCompacted instanceof List)) {
+							finalCompacted = List.of(finalCompacted);
+						}
+
+						try {
+							return Uni.createFrom().item(Tuple3.of(JsonUtils.toPrettyString(finalCompacted),
+									AppConstants.NGB_APPLICATION_JSONLD, null));
+						} catch (IOException e) {
+							return Uni.createFrom().failure(e);
+						}
+					});
 			break;
 		case 3:
-			replyBody = RDFDatasetUtils.toNQuads((RDFDataset) JsonLdProcessor.toRDF(entity));
-			contentType = AppConstants.NGB_APPLICATION_NQUADS;
+			uni = ldService.toRDF(entity).onItem().transform(rdf -> {
+				return Tuple3.of(RDFDatasetUtils.toNQuads((RDFDataset) rdf), AppConstants.NGB_APPLICATION_NQUADS, null);
+			});
 			break;
 		case 4:// geo+json
-			compacted = JsonLdProcessor.compact(entity, contextHeader, context, opts, -1, optionSet, langQuery);
-			if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)) {
-				makeConcise(compacted);
-			}
-			if (forceArray && !(compacted instanceof List)) {
-				finalCompacted = List.of(compacted);
-			}
-			replyBody = JsonUtils.toPrettyString(generateGeoJson(compacted, geometryProperty, contextHeader));
-			contentType = AppConstants.NGB_APPLICATION_GEO_JSON;
+			uni = ldService.compact(entity, contextHeader, context, opts, -1, optionSet, langQuery).onItem()
+					.transformToUni(compacted -> {
+						Object finalCompacted;
+						if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)) {
+							makeConcise(compacted);
+						}
+						if (forceArray && !(compacted instanceof List)) {
+							finalCompacted = List.of(compacted);
+						} else {
+							finalCompacted = compacted;
+						}
+						try {
+							return Uni.createFrom()
+									.item(Tuple3.of(
+											JsonUtils.toPrettyString(
+													generateGeoJson(finalCompacted, geometryProperty, contextHeader)),
+											AppConstants.NGB_APPLICATION_GEO_JSON, null));
+						} catch (IOException e) {
+							return Uni.createFrom().failure(e);
+						}
+					});
 			break;
 		default:
-			return null;
+			return Uni.createFrom().nullItem();
 		}
-		if (options != null && options.contains("compress")) {
-			result = zipResult(replyBody);
-			contentType = AppConstants.NGB_APPLICATION_ZIP;
-		} else {
-			result = replyBody;
-		}
-		headers.add(Tuple2.of(HttpHeaders.CONTENT_TYPE, contentType));
-		return Tuple2.of(result, headers);
+		return uni.onItem().transform(tuple -> {
+			String replyBody = tuple.getItem1();
+			String contentType = tuple.getItem2();
+			List<Tuple2<String, String>> headers = tuple.getItem3();
+			Object result;
+			if (options != null && options.contains("compress")) {
+				result = zipResult(replyBody);
+				contentType = AppConstants.NGB_APPLICATION_ZIP;
+			} else {
+				result = replyBody;
+			}
+			headers.add(Tuple2.of(HttpHeaders.CONTENT_TYPE, contentType));
+			return Tuple2.of(result, headers);
+		});
 	}
 
 	private static String getLinkHeader(Object entry) {
@@ -673,28 +702,29 @@ public final class HttpUtils {
 		return result;
 	}
 
-	public static Context getContextFromPayload(Map<String, Object> originalPayload, List<Object> atContextHeader,
-			boolean atContextAllowed) throws ResponseException {
-		Context context;
+	public static Uni<Context> getContextFromPayload(Map<String, Object> originalPayload, List<Object> atContextHeader,
+			boolean atContextAllowed, JsonLDService ldService) {
+
 		Object payloadAtContext = originalPayload.remove(NGSIConstants.JSON_LD_CONTEXT);
 		if (payloadAtContext == null) {
 			if (atContextAllowed) {
-				throw new ResponseException(ErrorType.BadRequestData, "@Context entry is needed");
+				return Uni.createFrom()
+						.failure(new ResponseException(ErrorType.BadRequestData, "@Context entry is needed"));
 			}
 			if (atContextHeader.isEmpty()) {
-				context = JsonLdProcessor.getCoreContext();
+				return Uni.createFrom().item(ldService.getCoreContext());
 			} else {
-				context = JsonLdProcessor.getCoreContextClone().parse(atContextHeader, true);
+				return ldService.parse(atContextHeader);
 			}
 
 		} else {
 			if (!atContextAllowed) {
-				throw new ResponseException(ErrorType.BadRequestData, "@context entry in body is not allowed");
+				return Uni.createFrom().failure(
+						new ResponseException(ErrorType.BadRequestData, "@context entry in body is not allowed"));
 			}
-			context = JsonLdProcessor.getCoreContextClone().parse(payloadAtContext, true);
+			return ldService.parse(atContextHeader);
 
 		}
-		return context;
 	}
 
 	public static RestResponse<Object> generateDeleteResult(NGSILDOperationResult result) {
@@ -702,27 +732,42 @@ public final class HttpUtils {
 		return null;
 	}
 
-	public static Tuple2<Context, Map<String, Object>> expandBody(HttpServerRequest request, String payload,
-			int payloadType) throws Exception {
+	public static Uni<Tuple2<Context, Map<String, Object>>> expandBody(HttpServerRequest request, String payload,
+			int payloadType, JsonLDService ldService) {
 
 		if (payload == null || payload.isEmpty()) {
-			throw new ResponseException(ErrorType.InvalidRequest, "You have to provide a valid payload");
+			return Uni.createFrom()
+					.failure(new ResponseException(ErrorType.InvalidRequest, "You have to provide a valid payload"));
 		}
 		Map<String, Object> originalPayload;
-		originalPayload = (Map<String, Object>) JsonUtils.fromString(payload);
+		try {
+			originalPayload = (Map<String, Object>) JsonUtils.fromString(payload);
+		} catch (IOException e) {
+			return Uni.createFrom().failure(e);
+		}
 
-		return expandBody(request, originalPayload, payloadType);
+		return expandBody(request, originalPayload, payloadType, ldService);
 	}
 
-	public static Tuple2<Context, Map<String, Object>> expandBody(HttpServerRequest request,
-			Map<String, Object> originalPayload, int payloadType) throws Exception {
+	public static Uni<Tuple2<Context, Map<String, Object>>> expandBody(HttpServerRequest request,
+			Map<String, Object> originalPayload, int payloadType, JsonLDService ldService) {
 		boolean atContextAllowed;
 		List<Object> atContext = getAtContext(request);
-		atContextAllowed = HttpUtils.doPreflightCheck(request, atContext);
-		Context context = HttpUtils.getContextFromPayload(originalPayload, atContext, atContextAllowed);
-		Map<String, Object> resolved = (Map<String, Object>) JsonLdProcessor
-				.expand(context, originalPayload, opts, payloadType, atContextAllowed).get(0);
-		return Tuple2.of(context, resolved);
+		try {
+			atContextAllowed = HttpUtils.doPreflightCheck(request, atContext);
+		} catch (ResponseException e) {
+			return Uni.createFrom().failure(e);
+		}
+		return HttpUtils.getContextFromPayload(originalPayload, atContext, atContextAllowed, ldService).onItem()
+				.transformToUni(context -> {
+					return ldService.expand(context, originalPayload, opts, payloadType, atContextAllowed).onItem()
+							.transform(list -> {
+								Map<String, Object> resolved = (Map<String, Object>) list.get(0);
+								return Tuple2.of(context, resolved);
+							});
+
+				});
+
 	}
 
 	public static RestResponse<Object> generateCreateResult(NGSILDOperationResult operationResult, String baseUrl) {
@@ -779,49 +824,48 @@ public final class HttpUtils {
 		};
 	}
 
-	public static RestResponse<Object> generateQueryResult(HttpServerRequest request, QueryResult queryResult,
+	public static Uni<RestResponse<Object>> generateQueryResult(HttpServerRequest request, QueryResult queryResult,
 			String options, String geometryProperty, int acceptHeader, boolean count, int limit, LanguageQueryTerm lang,
-			Context context) {
-		ResponseBuilder<Object> builder = RestResponseBuilderImpl.ok();
+			Context context, JsonLDService ldService) {
+		ResponseBuilder<Object> builder;
 		if (count == true) {
-			builder = builder.header(NGSIConstants.COUNT_HEADER_RESULT, queryResult.getCount());
+			builder = RestResponseBuilderImpl.ok().header(NGSIConstants.COUNT_HEADER_RESULT, queryResult.getCount());
+		} else {
+			builder = RestResponseBuilderImpl.ok();
 		}
 		if (limit == 0) {
-			return builder.build();
+			return Uni.createFrom().item(builder.build());
 		}
+		List<Object> atContext = request == null ? Lists.newArrayList() : getAtContext(request);
+		return generateCompactedResult(atContext, context, acceptHeader, queryResult.getData(), geometryProperty,
+				options, lang, true, ldService).onItem().transform(resultAndHeaders -> {
+					String nextLink;
+					String prevLink;
+					if (request != null) {
+						MultiMap urlParams = request.params();
+						nextLink = HttpUtils.generateNextLink(urlParams, queryResult);
+						prevLink = HttpUtils.generatePrevLink(urlParams, queryResult);
+					} else {
+						prevLink = null;
+						nextLink = null;
+					}
+					ResponseBuilder<Object> myBuilder = builder.header(NGSIConstants.ENTITY_MAP_TOKEN_HEADER,
+							queryResult.getqToken());
 
-		try {
-			List<Object> atContext = request == null ? Lists.newArrayList() : getAtContext(request);
-			Tuple2<Object, List<Tuple2<String, String>>> resultAndHeaders = generateCompactedResult(atContext, context,
-					acceptHeader, queryResult.getData(), geometryProperty, options, lang, true);
-			String nextLink;
-			String prevLink;
-			if (request != null) {
-				MultiMap urlParams = request.params();
-				nextLink = HttpUtils.generateNextLink(urlParams, queryResult);
-				prevLink = HttpUtils.generatePrevLink(urlParams, queryResult);
-			} else {
-				prevLink = null;
-				nextLink = null;
-			}
-			builder = builder.header(NGSIConstants.ENTITY_MAP_TOKEN_HEADER, queryResult.getqToken());
+					if (nextLink != null) {
+						myBuilder = myBuilder.header(HttpHeaders.LINK, nextLink);
+					}
+					if (prevLink != null) {
+						myBuilder = myBuilder.header(HttpHeaders.LINK, prevLink);
+					}
+					List<Tuple2<String, String>> headers = resultAndHeaders.getItem2();
+					for (Tuple2<String, String> entry : headers) {
+						myBuilder = myBuilder.header(entry.getItem1(), entry.getItem2());
+					}
 
-			if (nextLink != null) {
-				builder = builder.header(HttpHeaders.LINK, nextLink);
-			}
-			if (prevLink != null) {
-				builder = builder.header(HttpHeaders.LINK, prevLink);
-			}
-			List<Tuple2<String, String>> headers = resultAndHeaders.getItem2();
-			for (Tuple2<String, String> entry : headers) {
-				builder = builder.header(entry.getItem1(), entry.getItem2());
-			}
+					return myBuilder.entity(resultAndHeaders.getItem1()).build();
+				});
 
-			return builder.entity(resultAndHeaders.getItem1()).build();
-
-		} catch (Exception e) {
-			return handleControllerExceptions(e);
-		}
 	}
 
 	public static NGSILDOperationResult handleWebResponse(HttpResponse<Buffer> response, Throwable failure,
@@ -885,12 +929,12 @@ public final class HttpUtils {
 			return object;
 	}
 
-	public static Context getContext(List<Object> headerContext) {
-		Context context;
+	public static Uni<Context> getContext(List<Object> headerContext, JsonLDService ldService) {
+		Uni<Context> context;
 		if (headerContext.isEmpty()) {
-			context = JsonLdProcessor.getCoreContext();
+			context = Uni.createFrom().item(ldService.getCoreContext());
 		} else {
-			context = JsonLdProcessor.getCoreContextClone().parse(headerContext, false);
+			context = ldService.parse(headerContext);
 		}
 		return context;
 	}
