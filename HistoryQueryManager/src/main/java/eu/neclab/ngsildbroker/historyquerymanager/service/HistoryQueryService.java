@@ -115,7 +115,7 @@ public class HistoryQueryService {
 			String url = remoteHost.host() + NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT + "?" + entry.getValue();
 
 			remoteCalls.add(
-					webClient.get(url).putHeaders(remoteHost.headers()).send().onItem().transformToUni(response -> {
+					webClient.getAbs(url).putHeaders(remoteHost.headers()).send().onItem().transformToUni(response -> {
 
 						if (response == null || response.statusCode() != 200) {
 							return Uni.createFrom().nullItem();
@@ -209,7 +209,7 @@ public class HistoryQueryService {
 				}
 
 				remoteCalls.add(
-						webClient.get(url).putHeaders(remoteHost.headers()).send().onItem().transformToUni(response -> {
+						webClient.getAbs(url).putHeaders(remoteHost.headers()).send().onItem().transformToUni(response -> {
 							if (response == null || response.statusCode() != 200) {
 								return Uni.createFrom().nullItem();
 							} else {
