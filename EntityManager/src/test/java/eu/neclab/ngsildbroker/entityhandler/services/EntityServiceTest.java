@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import io.vertx.mutiny.sqlclient.Row;
+import io.vertx.mutiny.sqlclient.RowSet;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -145,7 +147,7 @@ public class EntityServiceTest {
 
 		UpdateEntityRequest request = new UpdateEntityRequest(tenant, entityId, resolved, null, null);
 
-		Uni<Void> updateEntityRes = Uni.createFrom().voidItem();
+		Uni<Map<String,Object>> updateEntityRes = Uni.createFrom().nothing();
 		when(entityDAO.updateEntity(any())).thenReturn(updateEntityRes);
 
 		Uni<Void> emitterResponse = Uni.createFrom().nullItem();
@@ -184,7 +186,7 @@ public class EntityServiceTest {
 	@Order(4)
 	public void partialUpdateAttributeTest() {
 
-		Uni<Void> partialUpdateAttributeRes = Uni.createFrom().nullItem();
+		Uni<RowSet<Row>> partialUpdateAttributeRes = Uni.createFrom().nullItem();
 		when(entityDAO.partialUpdateAttribute(any())).thenReturn(partialUpdateAttributeRes);
 
 		NGSILDOperationResult operationResult = entityService

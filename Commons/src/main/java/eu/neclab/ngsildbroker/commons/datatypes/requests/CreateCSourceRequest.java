@@ -12,7 +12,7 @@ public class CreateCSourceRequest extends CSourceRequest {
 	public CreateCSourceRequest(String tenant, Map<String, Object> resolved) {
 		super(tenant, (String) resolved.get(NGSIConstants.JSON_LD_ID), resolved, new BatchInfo(-1, -1),
 				AppConstants.CREATE_REQUEST);
-		EntityTools.addSysAttrs(getPayload(), getSendTimestamp());
+		EntityTools.addSysAttrs(getPayload(), getSendTimestamp(),getRequestType());
 	}
 
 }

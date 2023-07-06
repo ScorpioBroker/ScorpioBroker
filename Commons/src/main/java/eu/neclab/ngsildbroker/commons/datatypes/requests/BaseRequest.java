@@ -13,6 +13,10 @@ public class BaseRequest {
 	private long sendTimestamp = System.currentTimeMillis();
 	private BatchInfo batchInfo;
 	private String id;
+	private Map<String, Object> previousEntity;
+	protected String attribName;
+	protected String datasetId;
+	protected boolean deleteAll;
 
 	public BaseRequest() {
 
@@ -74,6 +78,39 @@ public class BaseRequest {
 
 	public void setId(String id) {
 		this.id = id;
+	}
+	public void setPreviousEntity(Map<String,Object> previousEntity){
+		this.previousEntity = previousEntity;
+	}
+	public Map<String,Object> getPreviousEntity(){
+		return previousEntity;
+	}
+	public String getAttribName() {
+		return attribName;
+	}
+
+	public String getDatasetId() {
+		return datasetId;
+	}
+
+	public boolean deleteAll() {
+		return deleteAll;
+	}
+
+	public boolean isDeleteAll() {
+		return deleteAll;
+	}
+
+	public void setDeleteAll(boolean deleteAll) {
+		this.deleteAll = deleteAll;
+	}
+
+	public void setAttribName(String attribName) {
+		this.attribName = attribName;
+	}
+
+	public void setDatasetId(String datasetId) {
+		this.datasetId = datasetId;
 	}
 
 }

@@ -14,6 +14,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 
+import eu.neclab.ngsildbroker.commons.datatypes.requests.MergePatchRequest;
 import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Channel;
@@ -501,6 +502,11 @@ public class HistoryEntityService {
 				logger.debug("Failed to record delete attrs", e);
 				return Uni.createFrom().voidItem();
 			});
+			case AppConstants.MERGE_PATCH_REQUEST:
+				return historyDAO.setMergePatch(request).onFailure().recoverWithUni(e -> {
+					logger.debug("Failed to record merge patch", e);
+					return Uni.createFrom().voidItem();
+				});
 		default:
 			return Uni.createFrom().voidItem();
 		}
@@ -683,7 +689,7 @@ public class HistoryEntityService {
 			if (originalScopes != null) {
 				toStore.put(NGSIConstants.NGSI_LD_SCOPE, originalScopes);
 			}
-			EntityTools.addSysAttrs(toStore, request.getSendTimestamp());
+			EntityTools.addSysAttrs(toStore, request.getSendTimestamp(), request.getRequestType());
 		}
 		return Tuple2.of(toStore, cId2RemoteHostEntity.values());
 	}

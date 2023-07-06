@@ -1,8 +1,10 @@
 {
 	"info": {
-		"_postman_id": "0c278e1f-fbb9-4e4b-959b-08eeb9d9f22a",
+		"_postman_id": "4c36edf9-6526-4b74-a13f-55b51716dcfd",
 		"name": "API Test",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "23549240",
+		"_collection_link": "https://lively-flare-564396.postman.co/workspace/Scorpio~19b8073e-6570-45c0-bafd-07d48ddfc38c/collection/23549240-4c36edf9-6526-4b74-a13f-55b51716dcfd?action=share&creator=23549240&source=collection_link"
 	},
 	"item": [
 		{
@@ -3625,6 +3627,228 @@
 										{
 											"name": "Change existing relationship with append no context",
 											"item": []
+										}
+									]
+								},
+								{
+									"name": "Merge Patch",
+									"item": [
+										{
+											"name": "Partial Update Entity with no context",
+											"item": [
+												{
+													"name": "Create Simple Entity No Context",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"console.log(payloadBody.id);\r",
+																	"var entityId = payloadBody.id;\r",
+																	"pm.collectionVariables.set(\"created\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"entityId\", entityId);\r",
+																	"pm.test(\"Status code is 201\", function () {\r",
+																	"    pm.response.to.have.status(201);\r",
+																	"});\r",
+																	"pm.test(\"Check location header\", function () {\r",
+																	"    pm.response.to.have.header(\"Location\");\r",
+																	"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+																	"});\r",
+																	"\r",
+																	"\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Update string test field of the entity",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"var entityId = pm.collectionVariables.get(\"entityId\");\r",
+																	"pm.collectionVariables.set(\"updated\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"updatedAttrib\", \"stringproperty\");\r",
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});\r",
+																	"\r",
+																	"\r",
+																	"\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "PATCH",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"updatedteststring\"}\r\n}",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities/{{entityId}}",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities",
+																"{{entityId}}"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Get Updated Entity and Validate String Entry",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var expectedUpdatedValue = pm.collectionVariables.get(\"updated\");\r",
+																	"var expectedUpdatedKey = pm.collectionVariables.get(\"updatedAttrib\");\r",
+																	"pm.test(\"Status code is 200\", function () {\r",
+																	"    pm.response.to.have.status(200);\r",
+																	"});\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "",
+																"value": "",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"url": {
+															"raw": "{{query-manager}}/ngsi-ld/v1/entities/{{entityId}}",
+															"host": [
+																"{{query-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities",
+																"{{entityId}}"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Delete Entity",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});\r",
+																	"pm.collectionVariables.clear();"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "DELETE",
+														"header": [],
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities/{{entityId}}",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities",
+																"{{entityId}}"
+															]
+														}
+													},
+													"response": []
+												}
+											]
 										}
 									]
 								},
@@ -14578,7 +14802,7 @@
 																			"            console.log(\"Retrieving notifications from testserver\")\r",
 																			"            console.log(notificationServer + \"/\" + subId)\r",
 																			"            console.log(value);\r",
-																			"            pm.expect(value.length).to.eql(1);\r",
+																			"            pm.expect(value.length).to.eql(2);\r",
 																			"            });\r",
 																			"        });\r",
 																			"        //pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
@@ -14922,7 +15146,7 @@
 																			"            console.log(\"Retrieving notifications from testserver\")\r",
 																			"            console.log(notificationServer + \"/\" + subId)\r",
 																			"            console.log(value);\r",
-																			"            pm.expect(value.length).to.eql(1);\r",
+																			"            pm.expect(value.length).to.eql(2);\r",
 																			"            });\r",
 																			"        });\r",
 																			"        //pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
@@ -14993,6 +15217,1374 @@
 																			"pm.test(\"Status code is 204\", function () {\r",
 																			"    pm.response.to.have.status(204);\r",
 																			"});"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "DELETE",
+																"header": [],
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities/{{entityId}}",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities",
+																		"{{entityId}}"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Delete Subcription",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 204\", function () {\r",
+																			"    pm.response.to.have.status(204);\r",
+																			"});\r",
+																			"pm.collectionVariables.clear();"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "DELETE",
+																"header": [],
+																"url": {
+																	"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions/{{subId}}",
+																	"host": [
+																		"{{subscription-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"subscriptions",
+																		"{{subId}}"
+																	]
+																}
+															},
+															"response": []
+														}
+													]
+												}
+											]
+										},
+										{
+											"name": "Trigger Type with showChanges",
+											"item": [
+												{
+													"name": "fully update entity",
+													"item": [
+														{
+															"name": "Create Subscription With Id No Context",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																			"var subId = payloadBody.id;\r",
+																			"pm.collectionVariables.set(\"subId\", subId);\r",
+																			"pm.test(\"Status code is 201\", function () {\r",
+																			"    pm.response.to.have.status(201);\r",
+																			"});\r",
+																			"\r",
+																			"pm.test(\"Check location header\", function () {\r",
+																			"    pm.response.to.have.header(\"Location\");\r",
+																			"    pm.expect(pm.response.headers.get(\"Location\")).to.include(subId);\r",
+																			"});"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "POST",
+																"header": [
+																	{
+																		"key": "Content-Type",
+																		"value": "application/json",
+																		"type": "default"
+																	}
+																],
+																"body": {
+																	"mode": "raw",
+																	"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:mytest00001\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"TestType\"\r\n   \t\t}\r\n\t],\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n        \"showChanges\":true,\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"{{notificationserver}}\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    }\r\n}\r\n\r\n"
+																},
+																"url": {
+																	"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions",
+																	"host": [
+																		"{{subscription-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"subscriptions"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Create Simple Entity No Context",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																			"console.log(payloadBody.id);\r",
+																			"var entityId = payloadBody.id;\r",
+																			"pm.collectionVariables.set(\"entityId\", entityId);\r",
+																			"var subId = pm.collectionVariables.get(\"subId\");\r",
+																			"\r",
+																			"pm.test(\"Status code is 201\", function () {\r",
+																			"    pm.response.to.have.status(201);\r",
+																			"});\r",
+																			"pm.test(\"Check location header\", function () {\r",
+																			"    pm.response.to.have.header(\"Location\");\r",
+																			"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+																			"});\r",
+																			"setTimeout(function(){\r",
+																			"    var notificationServer = pm.environment.get(\"notificationserver-external\");\r",
+																			"    pm.sendRequest(notificationServer + \"/\" + subId, function (err, response) {\r",
+																			"            pm.test(\"Check for notification\", function () {\r",
+																			"            var value = response.json();\r",
+																			"            console.log(\"Retrieving notifications from testserver\")\r",
+																			"            console.log(notificationServer + \"/\" + subId)\r",
+																			"            console.log(value);\r",
+																			"            pm.expect(value.length).to.eql(1);\r",
+																			"            notification = value[0].body;\r",
+																			"            headers = value[0].headers;\r",
+																			"            pm.expect(notification.type).to.eql(\"Notification\");\r",
+																			"            pm.expect(notification).to.have.property(\"id\");\r",
+																			"            pm.expect(notification.data.length).to.eql(1);\r",
+																			"            var notificationData = notification.data[0];\r",
+																			"            delete notificationData[\"createdAt\"];\r",
+																			"            delete notificationData[\"modifiedAt\"];\r",
+																			"            console.log(\"expected notification: \" + JSON.stringify(payloadBody));\r",
+																			"            console.log(\"received notification: \" + JSON.stringify(notificationData));\r",
+																			"            pm.expect(notificationData).to.eql(payloadBody);\r",
+																			"            });\r",
+																			"        });\r",
+																			"        //pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
+																			"}, 3000);\r",
+																			"    \r",
+																			"\r",
+																			"\r",
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																},
+																{
+																	"listen": "prerequest",
+																	"script": {
+																		"exec": [
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "POST",
+																"header": [
+																	{
+																		"key": "Content-Type",
+																		"value": "application/json",
+																		"type": "default"
+																	},
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default",
+																		"disabled": true
+																	}
+																],
+																"body": {
+																	"mode": "raw",
+																	"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
+																	"options": {
+																		"raw": {
+																			"language": "json"
+																		}
+																	}
+																},
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Delete Subcription",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 204\", function () {\r",
+																			"    pm.response.to.have.status(204);\r",
+																			"});"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "DELETE",
+																"header": [],
+																"url": {
+																	"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions/{{subId}}",
+																	"host": [
+																		"{{subscription-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"subscriptions",
+																		"{{subId}}"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Delete Entity",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 204\", function () {\r",
+																			"    pm.response.to.have.status(204);\r",
+																			"});\r",
+																			"pm.collectionVariables.clear();"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "DELETE",
+																"header": [],
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities/{{entityId}}",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities",
+																		"{{entityId}}"
+																	]
+																}
+															},
+															"response": []
+														}
+													]
+												},
+												{
+													"name": "paritially update entity",
+													"item": [
+														{
+															"name": "Create Subscription With Id No Context",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																			"var subId = payloadBody.id;\r",
+																			"pm.collectionVariables.set(\"subId\", subId);\r",
+																			"pm.test(\"Status code is 201\", function () {\r",
+																			"    pm.response.to.have.status(201);\r",
+																			"});\r",
+																			"\r",
+																			"pm.test(\"Check location header\", function () {\r",
+																			"    pm.response.to.have.header(\"Location\");\r",
+																			"    pm.expect(pm.response.headers.get(\"Location\")).to.include(subId);\r",
+																			"});"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "POST",
+																"header": [
+																	{
+																		"key": "Content-Type",
+																		"value": "application/json",
+																		"type": "default"
+																	}
+																],
+																"body": {
+																	"mode": "raw",
+																	"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:mytest00002\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"TestType\"\r\n   \t\t}\r\n\t],\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n        \"showChanges\":true,\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"{{notificationserver}}\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    }\r\n}\r\n\r\n"
+																},
+																"url": {
+																	"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions",
+																	"host": [
+																		"{{subscription-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"subscriptions"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Create Simple Entity No Context",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																			"console.log(payloadBody.id);\r",
+																			"var entityId = payloadBody.id;\r",
+																			"pm.collectionVariables.set(\"entityId\", entityId);\r",
+																			"var subId = pm.collectionVariables.get(\"subId\");\r",
+																			"\r",
+																			"pm.test(\"Status code is 201\", function () {\r",
+																			"    pm.response.to.have.status(201);\r",
+																			"});\r",
+																			"pm.test(\"Check location header\", function () {\r",
+																			"    pm.response.to.have.header(\"Location\");\r",
+																			"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+																			"});\r",
+																			"setTimeout(function(){\r",
+																			"    var notificationServer = pm.environment.get(\"notificationserver-external\");\r",
+																			"    pm.sendRequest(notificationServer + \"/\" + subId, function (err, response) {\r",
+																			"            pm.test(\"Check for notification\", function () {\r",
+																			"            var value = response.json();\r",
+																			"            console.log(\"Retrieving notifications from testserver\")\r",
+																			"            console.log(notificationServer + \"/\" + subId)\r",
+																			"            console.log(value);\r",
+																			"            pm.expect(value.length).to.eql(1);\r",
+																			"            notification = value[0].body;\r",
+																			"            headers = value[0].headers;\r",
+																			"            pm.expect(notification.type).to.eql(\"Notification\");\r",
+																			"            pm.expect(notification).to.have.property(\"id\");\r",
+																			"            pm.expect(notification.data.length).to.eql(1);\r",
+																			"            var notificationData = notification.data[0];\r",
+																			"            delete notificationData[\"createdAt\"];\r",
+																			"            delete notificationData[\"modifiedAt\"];\r",
+																			"            console.log(\"expected notification: \" + JSON.stringify(payloadBody));\r",
+																			"            console.log(\"received notification: \" + JSON.stringify(notificationData));\r",
+																			"            pm.expect(notificationData).to.eql(payloadBody);\r",
+																			"            });\r",
+																			"        });\r",
+																			"        //pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
+																			"}, 3000);\r",
+																			"    \r",
+																			"\r",
+																			"\r",
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																},
+																{
+																	"listen": "prerequest",
+																	"script": {
+																		"exec": [
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "POST",
+																"header": [
+																	{
+																		"key": "Content-Type",
+																		"value": "application/json",
+																		"type": "default"
+																	},
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default",
+																		"disabled": true
+																	}
+																],
+																"body": {
+																	"mode": "raw",
+																	"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
+																	"options": {
+																		"raw": {
+																			"language": "json"
+																		}
+																	}
+																},
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Update relationship test field of the entity",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																			"var entityId = pm.collectionVariables.get(\"entityId\");\r",
+																			"pm.collectionVariables.set(\"updated\", payloadBody);\r",
+																			"pm.collectionVariables.set(\"updatedAttrib\", \"testrelationship\");\r",
+																			"var subId = pm.collectionVariables.get(\"subId\");\r",
+																			"pm.test(\"Status code is 204\", function () {\r",
+																			"    pm.response.to.have.status(204);\r",
+																			"});\r",
+																			"setTimeout(function(){\r",
+																			"    var notificationServer = pm.environment.get(\"notificationserver-external\");\r",
+																			"    pm.sendRequest(notificationServer + \"/\" + subId, function (err, response) {\r",
+																			"            pm.test(\"Check for notification\", function () {\r",
+																			"            var value = response.json();\r",
+																			"            console.log(\"Retrieving notifications from testserver\")\r",
+																			"            console.log(notificationServer + \"/\" + subId)\r",
+																			"            console.log(value);\r",
+																			"            pm.expect(value.length).to.eql(2);\r",
+																			"            notification = value[1].body;\r",
+																			"            headers = value[1].headers;\r",
+																			"            pm.expect(notification.type).to.eql(\"Notification\");\r",
+																			"            pm.expect(notification).to.have.property(\"id\");\r",
+																			"            pm.expect(notification.data.length).to.eql(1);\r",
+																			"            pm.expect(notification.data[0].testrelationship).to.have.property(\"previousObject\");\r",
+																			"        \r",
+																			"            });\r",
+																			"        });\r",
+																			"        //pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
+																			"}, 3000);\r",
+																			"\r",
+																			"\r",
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "PATCH",
+																"header": [
+																	{
+																		"key": "Content-Type",
+																		"value": "application/json",
+																		"type": "default"
+																	}
+																],
+																"body": {
+																	"mode": "raw",
+																	"raw": "{\"type\": \"Relationship\", \"object\": \"urn:testref1:updated\"}",
+																	"options": {
+																		"raw": {
+																			"language": "json"
+																		}
+																	}
+																},
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities/{{entityId}}/attrs/testrelationship",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities",
+																		"{{entityId}}",
+																		"attrs",
+																		"testrelationship"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Delete Subcription",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 204\", function () {\r",
+																			"    pm.response.to.have.status(204);\r",
+																			"});"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "DELETE",
+																"header": [],
+																"url": {
+																	"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions/{{subId}}",
+																	"host": [
+																		"{{subscription-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"subscriptions",
+																		"{{subId}}"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Delete Entity",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 204\", function () {\r",
+																			"    pm.response.to.have.status(204);\r",
+																			"});\r",
+																			"pm.collectionVariables.clear();"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "DELETE",
+																"header": [],
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities/{{entityId}}",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities",
+																		"{{entityId}}"
+																	]
+																}
+															},
+															"response": []
+														}
+													]
+												},
+												{
+													"name": "Trigger Merge Patch",
+													"item": [
+														{
+															"name": "Create Subscription With Id No Context",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																			"var subId = payloadBody.id;\r",
+																			"pm.collectionVariables.set(\"subId\", subId);\r",
+																			"pm.test(\"Status code is 201\", function () {\r",
+																			"    pm.response.to.have.status(201);\r",
+																			"});\r",
+																			"\r",
+																			"pm.test(\"Check location header\", function () {\r",
+																			"    pm.response.to.have.header(\"Location\");\r",
+																			"    pm.expect(pm.response.headers.get(\"Location\")).to.include(subId);\r",
+																			"});"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "POST",
+																"header": [
+																	{
+																		"key": "Content-Type",
+																		"value": "application/json",
+																		"type": "default"
+																	}
+																],
+																"body": {
+																	"mode": "raw",
+																	"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:mytest00003\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"TestType\"\r\n   \t\t}\r\n\t],\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n        \"showChanges\":true,\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"{{notificationserver}}\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    }\r\n}\r\n\r\n"
+																},
+																"url": {
+																	"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions",
+																	"host": [
+																		"{{subscription-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"subscriptions"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Create Simple Entity No Context",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																			"console.log(payloadBody.id);\r",
+																			"var entityId = payloadBody.id;\r",
+																			"pm.collectionVariables.set(\"entityId\", entityId);\r",
+																			"var subId = pm.collectionVariables.get(\"subId\");\r",
+																			"\r",
+																			"pm.test(\"Status code is 201\", function () {\r",
+																			"    pm.response.to.have.status(201);\r",
+																			"});\r",
+																			"pm.test(\"Check location header\", function () {\r",
+																			"    pm.response.to.have.header(\"Location\");\r",
+																			"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+																			"});\r",
+																			"setTimeout(function(){\r",
+																			"    var notificationServer = pm.environment.get(\"notificationserver-external\");\r",
+																			"    pm.sendRequest(notificationServer + \"/\" + subId, function (err, response) {\r",
+																			"            pm.test(\"Check for notification\", function () {\r",
+																			"            var value = response.json();\r",
+																			"            console.log(\"Retrieving notifications from testserver\")\r",
+																			"            console.log(notificationServer + \"/\" + subId)\r",
+																			"            console.log(value);\r",
+																			"            pm.expect(value.length).to.eql(1);\r",
+																			"            notification = value[0].body;\r",
+																			"            headers = value[0].headers;\r",
+																			"            pm.expect(notification.type).to.eql(\"Notification\");\r",
+																			"            pm.expect(notification).to.have.property(\"id\");\r",
+																			"            pm.expect(notification.data.length).to.eql(1);\r",
+																			"            var notificationData = notification.data[0];\r",
+																			"            delete notificationData[\"createdAt\"];\r",
+																			"            delete notificationData[\"modifiedAt\"];\r",
+																			"            console.log(\"expected notification: \" + JSON.stringify(payloadBody));\r",
+																			"            console.log(\"received notification: \" + JSON.stringify(notificationData));\r",
+																			"            pm.expect(notificationData).to.eql(payloadBody);\r",
+																			"            });\r",
+																			"        });\r",
+																			"        //pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
+																			"}, 3000);\r",
+																			"    \r",
+																			"\r",
+																			"\r",
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																},
+																{
+																	"listen": "prerequest",
+																	"script": {
+																		"exec": [
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "POST",
+																"header": [
+																	{
+																		"key": "Content-Type",
+																		"value": "application/json",
+																		"type": "default"
+																	},
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default",
+																		"disabled": true
+																	}
+																],
+																"body": {
+																	"mode": "raw",
+																	"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
+																	"options": {
+																		"raw": {
+																			"language": "json"
+																		}
+																	}
+																},
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Update relationship test field of the entity",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																			"var entityId = pm.collectionVariables.get(\"entityId\");\r",
+																			"pm.collectionVariables.set(\"updated\", payloadBody);\r",
+																			"pm.collectionVariables.set(\"updatedAttrib\", \"testrelationship\");\r",
+																			"var subId = pm.collectionVariables.get(\"subId\");\r",
+																			"pm.test(\"Status code is 204\", function () {\r",
+																			"    pm.response.to.have.status(204);\r",
+																			"});\r",
+																			"setTimeout(function(){\r",
+																			"    var notificationServer = pm.environment.get(\"notificationserver-external\");\r",
+																			"    pm.sendRequest(notificationServer + \"/\" + subId, function (err, response) {\r",
+																			"            pm.test(\"Check for notification\", function () {\r",
+																			"            var value = response.json();\r",
+																			"            console.log(\"Retrieving notifications from testserver\")\r",
+																			"            console.log(notificationServer + \"/\" + subId)\r",
+																			"            console.log(value);\r",
+																			"            pm.expect(value.length).to.eql(2);\r",
+																			"            notification = value[1].body;\r",
+																			"            headers = value[1].headers;\r",
+																			"            pm.expect(notification.type).to.eql(\"Notification\");\r",
+																			"            pm.expect(notification).to.have.property(\"id\");\r",
+																			"            pm.expect(notification.data.length).to.eql(1);\r",
+																			"            pm.expect(notification.data[0].stringproperty).to.have.property(\"previousValue\");\r",
+																			"        \r",
+																			"            });\r",
+																			"        });\r",
+																			"        //pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
+																			"}, 3000);\r",
+																			"\r",
+																			"\r",
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "PATCH",
+																"header": [
+																	{
+																		"key": "Content-Type",
+																		"value": "application/json",
+																		"type": "default"
+																	}
+																],
+																"body": {
+																	"mode": "raw",
+																	"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"updatedteststring\"},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:ngsi-ld:null\"}\r\n}",
+																	"options": {
+																		"raw": {
+																			"language": "json"
+																		}
+																	}
+																},
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities/{{entityId}}",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities",
+																		"{{entityId}}"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Delete Subcription",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 204\", function () {\r",
+																			"    pm.response.to.have.status(204);\r",
+																			"});"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "DELETE",
+																"header": [],
+																"url": {
+																	"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions/{{subId}}",
+																	"host": [
+																		"{{subscription-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"subscriptions",
+																		"{{subId}}"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Delete Entity",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 204\", function () {\r",
+																			"    pm.response.to.have.status(204);\r",
+																			"});\r",
+																			"pm.collectionVariables.clear();"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "DELETE",
+																"header": [],
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities/{{entityId}}",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities",
+																		"{{entityId}}"
+																	]
+																}
+															},
+															"response": []
+														}
+													]
+												},
+												{
+													"name": "delete attibute",
+													"item": [
+														{
+															"name": "Create Subscription With Id No Context",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																			"var subId = payloadBody.id;\r",
+																			"pm.collectionVariables.set(\"subId\", subId);\r",
+																			"pm.test(\"Status code is 201\", function () {\r",
+																			"    pm.response.to.have.status(201);\r",
+																			"});\r",
+																			"\r",
+																			"pm.test(\"Check location header\", function () {\r",
+																			"    pm.response.to.have.header(\"Location\");\r",
+																			"    pm.expect(pm.response.headers.get(\"Location\")).to.include(subId);\r",
+																			"});"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "POST",
+																"header": [
+																	{
+																		"key": "Content-Type",
+																		"value": "application/json",
+																		"type": "default"
+																	}
+																],
+																"body": {
+																	"mode": "raw",
+																	"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:mytest00004\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"TestType\"\r\n   \t\t}\r\n\t],\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n        \"showChanges\":true,\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"{{notificationserver}}\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    }\r\n}\r\n\r\n"
+																},
+																"url": {
+																	"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions",
+																	"host": [
+																		"{{subscription-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"subscriptions"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Create Simple Entity No Context",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																			"console.log(payloadBody.id);\r",
+																			"var entityId = payloadBody.id;\r",
+																			"pm.collectionVariables.set(\"entityId\", entityId);\r",
+																			"var subId = pm.collectionVariables.get(\"subId\");\r",
+																			"\r",
+																			"pm.test(\"Status code is 201\", function () {\r",
+																			"    pm.response.to.have.status(201);\r",
+																			"});\r",
+																			"pm.test(\"Check location header\", function () {\r",
+																			"    pm.response.to.have.header(\"Location\");\r",
+																			"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+																			"});\r",
+																			"setTimeout(function(){\r",
+																			"    var notificationServer = pm.environment.get(\"notificationserver-external\");\r",
+																			"    pm.sendRequest(notificationServer + \"/\" + subId, function (err, response) {\r",
+																			"            pm.test(\"Check for notification\", function () {\r",
+																			"            var value = response.json();\r",
+																			"            console.log(\"Retrieving notifications from testserver\")\r",
+																			"            console.log(notificationServer + \"/\" + subId)\r",
+																			"            console.log(value);\r",
+																			"            pm.expect(value.length).to.eql(1);\r",
+																			"            notification = value[0].body;\r",
+																			"            headers = value[0].headers;\r",
+																			"            pm.expect(notification.type).to.eql(\"Notification\");\r",
+																			"            pm.expect(notification).to.have.property(\"id\");\r",
+																			"            pm.expect(notification.data.length).to.eql(1);\r",
+																			"            var notificationData = notification.data[0];\r",
+																			"            delete notificationData[\"createdAt\"];\r",
+																			"            delete notificationData[\"modifiedAt\"];\r",
+																			"            console.log(\"expected notification: \" + JSON.stringify(payloadBody));\r",
+																			"            console.log(\"received notification: \" + JSON.stringify(notificationData));\r",
+																			"            pm.expect(notificationData).to.eql(payloadBody);\r",
+																			"            });\r",
+																			"        });\r",
+																			"        //pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
+																			"}, 3000);\r",
+																			"    \r",
+																			"\r",
+																			"\r",
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																},
+																{
+																	"listen": "prerequest",
+																	"script": {
+																		"exec": [
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "POST",
+																"header": [
+																	{
+																		"key": "Content-Type",
+																		"value": "application/json",
+																		"type": "default"
+																	},
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default",
+																		"disabled": true
+																	}
+																],
+																"body": {
+																	"mode": "raw",
+																	"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
+																	"options": {
+																		"raw": {
+																			"language": "json"
+																		}
+																	}
+																},
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Delete stringproperty test field of the entity",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 204\", function () {\r",
+																			"    pm.response.to.have.status(204);\r",
+																			"});\r",
+																			"var entityId = pm.collectionVariables.get(\"entityId\");\r",
+																			"var subId = pm.collectionVariables.get(\"subId\");\r",
+																			"\r",
+																			"setTimeout(function(){\r",
+																			"    var notificationServer = pm.environment.get(\"notificationserver-external\");\r",
+																			"    pm.sendRequest(notificationServer + \"/\" + subId, function (err, response) {\r",
+																			"            pm.test(\"Check for notification\", function () {\r",
+																			"            var value = response.json();\r",
+																			"            console.log(\"Retrieving notifications from testserver\")\r",
+																			"            console.log(notificationServer + \"/\" + subId)\r",
+																			"            console.log(value);\r",
+																			"            pm.expect(value.length).to.eql(2);\r",
+																			"            notification = value[1].body;\r",
+																			"            headers = value[1].headers;\r",
+																			"            pm.expect(notification.type).to.eql(\"Notification\");\r",
+																			"            pm.expect(notification).to.have.property(\"id\");\r",
+																			"            pm.expect(notification.data.length).to.eql(1);\r",
+																			"            pm.expect(notification.data[0].stringproperty.previousValue).to.eql(\"teststring\");\r",
+																			"        \r",
+																			"            });\r",
+																			"        });\r",
+																			"        //pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
+																			"}, 5000);\r",
+																			"\r",
+																			"\r",
+																			"\r",
+																			"\r",
+																			"\r",
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "DELETE",
+																"header": [
+																	{
+																		"key": "Content-Type",
+																		"value": "application/json",
+																		"type": "default"
+																	}
+																],
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities/{{entityId}}/attrs/stringproperty",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities",
+																		"{{entityId}}",
+																		"attrs",
+																		"stringproperty"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Delete Subcription",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 204\", function () {\r",
+																			"    pm.response.to.have.status(204);\r",
+																			"});"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "DELETE",
+																"header": [],
+																"url": {
+																	"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions/{{subId}}",
+																	"host": [
+																		"{{subscription-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"subscriptions",
+																		"{{subId}}"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Delete Entity",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 204\", function () {\r",
+																			"    pm.response.to.have.status(204);\r",
+																			"});\r",
+																			"pm.collectionVariables.clear();"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "DELETE",
+																"header": [],
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities/{{entityId}}",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities",
+																		"{{entityId}}"
+																	]
+																}
+															},
+															"response": []
+														}
+													]
+												},
+												{
+													"name": "delete entity",
+													"item": [
+														{
+															"name": "Create Subscription With Id No Context",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																			"var subId = payloadBody.id;\r",
+																			"pm.collectionVariables.set(\"subId\", subId);\r",
+																			"pm.test(\"Status code is 201\", function () {\r",
+																			"    pm.response.to.have.status(201);\r",
+																			"});\r",
+																			"\r",
+																			"pm.test(\"Check location header\", function () {\r",
+																			"    pm.response.to.have.header(\"Location\");\r",
+																			"    pm.expect(pm.response.headers.get(\"Location\")).to.include(subId);\r",
+																			"});"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "POST",
+																"header": [
+																	{
+																		"key": "Content-Type",
+																		"value": "application/json",
+																		"type": "default"
+																	}
+																],
+																"body": {
+																	"mode": "raw",
+																	"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:mytest00005\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"TestType\"\r\n   \t\t}\r\n\t],\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n        \"showChanges\":true,\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"{{notificationserver}}\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    }\r\n}\r\n\r\n"
+																},
+																"url": {
+																	"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions",
+																	"host": [
+																		"{{subscription-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"subscriptions"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Create Simple Entity No Context",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																			"console.log(payloadBody.id);\r",
+																			"var entityId = payloadBody.id;\r",
+																			"pm.collectionVariables.set(\"entityId\", entityId);\r",
+																			"var subId = pm.collectionVariables.get(\"subId\");\r",
+																			"\r",
+																			"pm.test(\"Status code is 201\", function () {\r",
+																			"    pm.response.to.have.status(201);\r",
+																			"});\r",
+																			"pm.test(\"Check location header\", function () {\r",
+																			"    pm.response.to.have.header(\"Location\");\r",
+																			"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+																			"});\r",
+																			"setTimeout(function(){\r",
+																			"    var notificationServer = pm.environment.get(\"notificationserver-external\");\r",
+																			"    pm.sendRequest(notificationServer + \"/\" + subId, function (err, response) {\r",
+																			"            pm.test(\"Check for notification\", function () {\r",
+																			"            var value = response.json();\r",
+																			"            console.log(\"Retrieving notifications from testserver\")\r",
+																			"            console.log(notificationServer + \"/\" + subId)\r",
+																			"            console.log(value);\r",
+																			"            pm.expect(value.length).to.eql(1);\r",
+																			"            notification = value[0].body;\r",
+																			"            headers = value[0].headers;\r",
+																			"            pm.expect(notification.type).to.eql(\"Notification\");\r",
+																			"            pm.expect(notification).to.have.property(\"id\");\r",
+																			"            pm.expect(notification.data.length).to.eql(1);\r",
+																			"            var notificationData = notification.data[0];\r",
+																			"            delete notificationData[\"createdAt\"];\r",
+																			"            delete notificationData[\"modifiedAt\"];\r",
+																			"            console.log(\"expected notification: \" + JSON.stringify(payloadBody));\r",
+																			"            console.log(\"received notification: \" + JSON.stringify(notificationData));\r",
+																			"            pm.expect(notificationData).to.eql(payloadBody);\r",
+																			"            });\r",
+																			"        });\r",
+																			"        //pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
+																			"}, 3000);\r",
+																			"    \r",
+																			"\r",
+																			"\r",
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																},
+																{
+																	"listen": "prerequest",
+																	"script": {
+																		"exec": [
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "POST",
+																"header": [
+																	{
+																		"key": "Content-Type",
+																		"value": "application/json",
+																		"type": "default"
+																	},
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default",
+																		"disabled": true
+																	}
+																],
+																"body": {
+																	"mode": "raw",
+																	"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
+																	"options": {
+																		"raw": {
+																			"language": "json"
+																		}
+																	}
+																},
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Delete Entity",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 204\", function () {\r",
+																			"    pm.response.to.have.status(204);\r",
+																			"});\r",
+																			"var entityId = pm.collectionVariables.get(\"entityId\");\r",
+																			"var subId = pm.collectionVariables.get(\"subId\");\r",
+																			"\r",
+																			"setTimeout(function(){\r",
+																			"    var notificationServer = pm.environment.get(\"notificationserver-external\");\r",
+																			"    pm.sendRequest(notificationServer + \"/\" + subId, function (err, response) {\r",
+																			"            pm.test(\"Check for notification\", function () {\r",
+																			"            var value = response.json();\r",
+																			"            console.log(\"Retrieving notifications from testserver\")\r",
+																			"            console.log(notificationServer + \"/\" + subId)\r",
+																			"            console.log(value);\r",
+																			"            pm.expect(value.length).to.eql(2);\r",
+																			"            notification = value[1].body;\r",
+																			"            headers = value[1].headers;\r",
+																			"            pm.expect(notification.type).to.eql(\"Notification\");\r",
+																			"            pm.expect(notification).to.have.property(\"id\");\r",
+																			"            pm.expect(notification.data.length).to.eql(1);\r",
+																			"            pm.expect(notification.data[0]).to.have.property(\"deletedAt\");\r",
+																			"        \r",
+																			"            });\r",
+																			"        });\r",
+																			"        //pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
+																			"}, 3000);\r",
+																			"\r",
+																			"\r",
+																			"\r",
+																			"\r",
+																			"\r",
+																			""
 																		],
 																		"type": "text/javascript"
 																	}
@@ -15271,7 +16863,7 @@
 																			"            console.log(\"Retrieving notifications from testserver\")\r",
 																			"            console.log(notificationServer + \"/\" + subId)\r",
 																			"            console.log(value);\r",
-																			"            pm.expect(value.length).to.eql(1);\r",
+																			"            pm.expect(value.length).to.eql(2);\r",
 																			"            });\r",
 																			"        });\r",
 																			"        //pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
@@ -15617,7 +17209,7 @@
 																	"            console.log(\"Retrieving notifications from testserver\")\r",
 																	"            console.log(notificationServer + \"/\" + subId)\r",
 																	"            console.log(value);\r",
-																	"            pm.expect(value.length).to.eql(1);\r",
+																	"            pm.expect(value.length).to.eql(2);\r",
 																	"            });\r",
 																	"        });\r",
 																	"        //pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
@@ -33936,7 +35528,7 @@
 																			"            console.log(\"Retrieving notifications from testserver\")\r",
 																			"            console.log(notificationServer + \"/\" + subId)\r",
 																			"            console.log(value);\r",
-																			"            pm.expect(value.length).to.eql(1);\r",
+																			"            pm.expect(value.length).to.eql(2);\r",
 																			"            });\r",
 																			"        });\r",
 																			"        //pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
@@ -34313,7 +35905,7 @@
 																			"            console.log(\"Retrieving notifications from testserver\")\r",
 																			"            console.log(notificationServer + \"/\" + subId)\r",
 																			"            console.log(value);\r",
-																			"            pm.expect(value.length).to.eql(1);\r",
+																			"            pm.expect(value.length).to.eql(2);\r",
 																			"            });\r",
 																			"        });\r",
 																			"        //pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
@@ -34695,7 +36287,7 @@
 																			"            console.log(\"Retrieving notifications from testserver\")\r",
 																			"            console.log(notificationServer + \"/\" + subId)\r",
 																			"            console.log(value);\r",
-																			"            pm.expect(value.length).to.eql(1);\r",
+																			"            pm.expect(value.length).to.eql(2);\r",
 																			"            });\r",
 																			"        });\r",
 																			"        //pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
@@ -35074,7 +36666,7 @@
 																	"            console.log(\"Retrieving notifications from testserver\")\r",
 																	"            console.log(notificationServer + \"/\" + subId)\r",
 																	"            console.log(value);\r",
-																	"            pm.expect(value.length).to.eql(1);\r",
+																	"            pm.expect(value.length).to.eql(2);\r",
 																	"            });\r",
 																	"        });\r",
 																	"        //pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
@@ -41300,44 +42892,6 @@
 					]
 				}
 			]
-		}
-	],
-	"variable": [
-		{
-			"key": "created",
-			"value": ""
-		},
-		{
-			"key": "entityId1",
-			"value": ""
-		},
-		{
-			"key": "entityId2",
-			"value": ""
-		},
-		{
-			"key": "@context1",
-			"value": ""
-		},
-		{
-			"key": "@context2",
-			"value": ""
-		},
-		{
-			"key": "subId",
-			"value": ""
-		},
-		{
-			"key": "createdTBF",
-			"value": ""
-		},
-		{
-			"key": "entityIdTBF",
-			"value": ""
-		},
-		{
-			"key": "entityTypeTBF",
-			"value": ""
 		}
 	]
 }

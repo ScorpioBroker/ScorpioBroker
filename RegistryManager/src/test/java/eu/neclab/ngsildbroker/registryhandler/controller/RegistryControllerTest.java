@@ -2,20 +2,29 @@ package eu.neclab.ngsildbroker.registryhandler.controller;
 
 import static io.restassured.RestAssured.given;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response.Status;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateCSourceRequest;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.reactive.messaging.MutinyEmitter;
 
 @QuarkusTest
 @TestMethodOrder(OrderAnnotation.class)
@@ -27,8 +36,13 @@ public class RegistryControllerTest {
 	private String updatePayload;
 	private String updatePayloadBadRequest;
 
+	@Mock
+	MutinyEmitter<BaseRequest> kafkaSenderInterface;
+
 	@BeforeEach
 	public void setup() {
+
+		MockitoAnnotations.openMocks(this);
 
 		payload = "{\r\n" + "    \"id\": \"urn:ngsi-ld:ContextSourceRegistration:A505\",\r\n"
 				+ "    \"type\": \"ContextSourceRegistration\",\r\n" + "    \"brandName\": {\r\n"
@@ -72,6 +86,10 @@ public class RegistryControllerTest {
 	@Test
 	@Order(1)
 	public void registerCSourceTest() throws Exception {
+
+		Uni<Void> kafkaResponse = Uni.createFrom().nullItem();
+		when(kafkaSenderInterface.send(any(CreateCSourceRequest.class))).thenReturn(kafkaResponse);
+
 		ExtractableResponse<Response> response = given().body(payload)
 				.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
 				.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
@@ -123,6 +141,9 @@ public class RegistryControllerTest {
 	@Test
 	@Order(4)
 	public void updateCSourceTest() throws Exception {
+
+		Uni<Void> kafkaResponse = Uni.createFrom().nullItem();
+		when(kafkaSenderInterface.send(any(CreateCSourceRequest.class))).thenReturn(kafkaResponse);
 
 		ExtractableResponse<Response> response = given().body(updatePayload)
 				.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
@@ -272,6 +293,10 @@ public class RegistryControllerTest {
 	@Test
 	@Order(13)
 	public void deleteCsourceTest() {
+
+		Uni<Void> kafkaResponse = Uni.createFrom().nullItem();
+		when(kafkaSenderInterface.send(any(CreateCSourceRequest.class))).thenReturn(kafkaResponse);
+
 		try {
 			ExtractableResponse<Response> response = given()
 					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)

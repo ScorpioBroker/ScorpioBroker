@@ -1,9 +1,10 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
-import java.io.Serializable;
-import java.util.Set;
 import com.google.common.collect.Sets;
 import eu.neclab.ngsildbroker.commons.enums.Format;
+
+import java.io.Serializable;
+import java.util.Set;
 
 /**
  * @author hebgen
@@ -24,6 +25,7 @@ public class NotificationParam implements Serializable {
 	private long lastNotification;
 	private long lastSuccessfulNotification;
 	private long lastFailedNotification;
+	private Boolean showChanges = false;
 
 	// duplicate
 	public NotificationParam(NotificationParam notification) {
@@ -116,10 +118,17 @@ public class NotificationParam implements Serializable {
 
 	@Override
 	public String toString() {
-		return "NotificationParam [attributeNames=" + attributeNames + ", endPoint=" + endPoint + ", format=" + format
+		return "NotificationParam [attributeNames=" + attributeNames + ", endPoint=" + endPoint + ", format=" + format +",showChanges=" + showChanges
 				+ ", timesSent=" + timesSent + ", lastNotification=" + lastNotification
 				+ ", lastSuccessfulNotification=" + lastSuccessfulNotification + ", lastFailedNotification="
 				+ lastFailedNotification + "]";
 	}
 
+	public Boolean getShowChanges() {
+		return showChanges;
+	}
+
+	public void setShowChanges(Boolean showChanges) {
+		this.showChanges = showChanges;
+	}
 }

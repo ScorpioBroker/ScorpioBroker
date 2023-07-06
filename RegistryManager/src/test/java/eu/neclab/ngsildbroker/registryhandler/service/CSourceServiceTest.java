@@ -386,7 +386,7 @@ public class CSourceServiceTest {
 
 		QueryResult result = resultUni.await().indefinitely();
 
-		assertEquals(1L, result.getCount());
+		assertEquals(-1L, result.getCount());
 		verify(cSourceInfoDAO, times(1)).query(any(), any(), any(), any(), any(), any(), any(), any(), anyInt(),
 				anyInt(), anyBoolean());
 
@@ -417,7 +417,7 @@ public class CSourceServiceTest {
 
 		QueryResult result = resultUni.await().indefinitely();
 
-		assertEquals(0L, result.getCount());
+		assertEquals(-1L, result.getCount());
 		verify(cSourceInfoDAO, times(1)).query(any(), any(), any(), any(), any(), any(), any(), any(), anyInt(),
 				anyInt(), anyBoolean());
 

@@ -14,6 +14,8 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 import com.github.jsonldjava.utils.JsonUtils;
+import eu.neclab.ngsildbroker.commons.enums.ErrorType;
+import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.slf4j.Logger;
@@ -191,7 +193,7 @@ public class EntityController {// implements EntityHandlerInterface {
 		try {
 			HttpUtils.validateUri(entityId);
 			context = JsonLdProcessor.getCoreContextClone().parse(HttpUtils.getAtContext(request), false);
-			attrId = context.expandIri(attrId, false, false, null, null);
+			attrId = context.expandIri(attrId, false, true, null, null);
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 		}
@@ -294,5 +296,25 @@ public class EntityController {// implements EntityHandlerInterface {
 			}
 
 		}
+	}
+	@PATCH
+	@Path("/entities/{entityId}")
+	public Uni<RestResponse<Object>> mergePatch(HttpServerRequest request,@PathParam("entityId") String entityId ,String payload){
+		Tuple2<Context, Map<String, Object>> tuple;
+		Map<String, Object> body;
+		try {
+			body = (Map<String, Object>) JsonUtils.fromString(payload);
+			noConcise(body);
+			tuple = HttpUtils.expandBody(request, body, AppConstants.MERGE_PATCH_REQUEST);
+			if(!entityId.equals(body.get(NGSIConstants.ID)) && body.get(NGSIConstants.ID) != null){
+				throw new ResponseException(ErrorType.BadRequestData, "Id can not be updated");
+			}
+		} catch (Exception e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+		}
+		return entityService.mergePatch(HttpUtils.getTenant(request),entityId,tuple.getItem2(),tuple.getItem1())
+				.onItem().transform(HttpUtils::generateUpdateResultResponse).onFailure()
+				.recoverWithItem(HttpUtils::handleControllerExceptions);
+
 	}
 }

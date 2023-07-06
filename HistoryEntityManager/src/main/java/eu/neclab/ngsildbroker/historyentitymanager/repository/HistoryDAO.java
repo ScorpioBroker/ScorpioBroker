@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -12,6 +13,7 @@ import java.util.UUID;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import eu.neclab.ngsildbroker.commons.datatypes.requests.MergePatchRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -403,7 +405,7 @@ public class HistoryDAO {
 			String instanceId = UUID.randomUUID().toString();
 			JsonObject deletePayload = getAttribDeletedPayload(nowString, instanceId, request.getDatasetId());
 			return client.preparedQuery("INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
-					+ " (temporalentity_id, attributeid, data, deletedat, instanceId) VALUES ($1, $2, $3::jsonb, $4, $5")
+					+ " (temporalentity_id, attributeid, data, deletedat, instanceId) VALUES ($1, $2, $3::jsonb, $4, $5)")
 					.execute(Tuple.of(request.getId(), request.getAttribName(), deletePayload, now, instanceId))
 					.onFailure().recoverWithUni(e -> {
 						if (e instanceof PgException) {
@@ -473,4 +475,28 @@ public class HistoryDAO {
 
 	}
 
+	public Uni<Void> setMergePatch(BaseRequest request) {
+		Map<String,Object> newPayload= new HashMap<>();
+
+		List<Uni<Void>> unis = new ArrayList<>();
+		for (String key: request.getPayload().keySet()
+			 ) {
+			String value = request.getPayload().get(key).toString();
+			if(value.contains(NGSIConstants.HAS_VALUE_NULL)||
+			value.contains(NGSIConstants.HAS_OBJECT_NULL)){
+				//separating deleted attr from payload
+				DeleteAttributeRequest deleteAttributeRequest = new DeleteAttributeRequest(request.getTenant(), request.getId(), key,null,false);
+				unis.add(setAttributeDeleted(deleteAttributeRequest));
+			}
+			else{
+				newPayload.put(key,request.getPayload().get(key));
+			}
+		}
+		if(newPayload.size()>2){//size > 2 because there is always id and modifiedat present in the payload
+			AppendHistoryEntityRequest appendHistoryEntityRequest = new AppendHistoryEntityRequest(request.getTenant(),
+					newPayload, request.getId(), request.getBatchInfo());
+			unis.add(appendToHistoryEntity(appendHistoryEntityRequest));
+		}
+		return Uni.combine().all().unis(unis).collectFailures().discardItems();
+	}
 }

@@ -128,6 +128,12 @@ public class Constants {
 		allowedScalars.put(AppConstants.CSOURCE_REG_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_ID_PATTERN);
 		allowedScalars.put(AppConstants.CSOURCE_REG_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_COORDINATES);
 		allowedScalars.put(AppConstants.CSOURCE_REG_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_SCOPE);
+		allowedScalars.put(AppConstants.MERGE_PATCH_PAYLOAD, NGSIConstants.NGSI_LD_HAS_OBJECT);
+		allowedScalars.put(AppConstants.MERGE_PATCH_PAYLOAD, NGSIConstants.NGSI_LD_HAS_VALUE);
+		allowedScalars.put(AppConstants.MERGE_PATCH_PAYLOAD, NGSIConstants.NGSI_LD_COORDINATES);
+		allowedScalars.put(AppConstants.MERGE_PATCH_PAYLOAD, NGSIConstants.NGSI_LD_UNIT_CODE);
+		allowedScalars.put(AppConstants.MERGE_PATCH_PAYLOAD, NGSIConstants.NGSI_LD_DATA_SET_ID);
+		allowedScalars.put(AppConstants.MERGE_PATCH_PAYLOAD, NGSIConstants.NGSI_LD_SCOPE);
 
 	}
 }

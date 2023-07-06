@@ -1037,6 +1037,7 @@ public class JsonLdApi {
 				} else {
 					switch (payloadType) {
 					case AppConstants.ENTITY_CREATE_PAYLOAD:
+					case AppConstants.MERGE_PATCH_PAYLOAD:
 					case AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD:
 					case AppConstants.ENTITY_UPDATE_PAYLOAD:
 					case AppConstants.ENTITY_RETRIEVED_PAYLOAD:

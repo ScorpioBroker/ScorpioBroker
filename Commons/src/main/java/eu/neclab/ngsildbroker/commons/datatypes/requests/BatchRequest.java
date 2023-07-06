@@ -61,6 +61,9 @@ public class BatchRequest extends BaseRequest {
 	}
 
 	public Map<String,Object> getPayload(){
+		if(requestPayload == null || requestPayload.isEmpty()){
+			return null;
+		}
 		Map<String,Object> payload = new HashMap<>();
 		payload.put(JsonLdConsts.GRAPH,requestPayload);
 		return payload;

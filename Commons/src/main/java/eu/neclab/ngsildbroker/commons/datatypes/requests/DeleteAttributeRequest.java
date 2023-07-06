@@ -3,11 +3,9 @@ package eu.neclab.ngsildbroker.commons.datatypes.requests;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
 
-public class DeleteAttributeRequest extends EntityRequest {
+import java.util.Map;
 
-	private String attribName;
-	private String datasetId;
-	private boolean deleteAll;
+public class DeleteAttributeRequest extends EntityRequest {
 
 	public DeleteAttributeRequest() {
 
