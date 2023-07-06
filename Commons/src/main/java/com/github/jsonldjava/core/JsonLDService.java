@@ -40,7 +40,7 @@ public class JsonLDService {
 		this.coreContext = clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem()
 				.transformToUni(client -> {
 					return client
-							.preparedQuery("SELECT body FROM context WHERE id='" + AppConstants.INTERNAL_NULL_KEY + "'")
+							.preparedQuery("SELECT body FROM contexts WHERE id='" + AppConstants.INTERNAL_NULL_KEY + "'")
 							.execute().onItem().transform(rows -> {
 								return rows.iterator().next().getJsonObject(0).getMap();
 							});
