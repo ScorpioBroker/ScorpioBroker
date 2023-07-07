@@ -85,8 +85,7 @@ public class JsonLdProcessor {
 	 * @throws JsonLdError       If there is an error while compacting.
 	 * @throws ResponseException
 	 */
-	static Uni<Map<String, Object>> compact(Object input, Object context, JsonLdOptions opts,
-			WebClient webClient) {
+	static Uni<Map<String, Object>> compact(Object input, Object context, JsonLdOptions opts, WebClient webClient) {
 
 		return compact(input, context, null, opts, -1, webClient);
 
@@ -626,8 +625,7 @@ public class JsonLdProcessor {
 	 *                           JSON-LD.
 	 * @throws ResponseException
 	 */
-	static Uni<Object> toRDF(Object input, JsonLdTripleCallback callback, JsonLdOptions options,
-			WebClient webClient) {
+	static Uni<Object> toRDF(Object input, JsonLdTripleCallback callback, JsonLdOptions options, WebClient webClient) {
 		return expand(new ArrayList<>(0), input, options, -1, true, webClient).onItem()
 				.transformToUni(expandedInput -> {
 
@@ -756,6 +754,64 @@ public class JsonLdProcessor {
 
 	static Context getCoreContext() {
 		return coreContext;
+	}
+
+	public static Map<String, Object> compactWithLoadedContext(Object input, Object context, Context activeCtx,
+			JsonLdOptions opts, int endPoint) {
+		final Object expanded = input;// expand(null, input, opts, -1, false);// input;//
+
+		Object compacted = new JsonLdApi(opts).compact(activeCtx, null, expanded, opts.getCompactArrays(), endPoint,
+				null, null);
+
+		// final step of Compaction Algorithm
+		// TODO: SPEC: the result result is a NON EMPTY array,
+		if (compacted instanceof List) {
+			// if (((List<Object>) compacted).isEmpty()) {
+			// compacted = newMap();
+			// } else {
+			final Map<String, Object> tmp = newMap();
+			// TODO: SPEC: doesn't specify to use vocab = true here
+			tmp.put(activeCtx.compactIri(JsonLdConsts.GRAPH, true), compacted);
+			compacted = tmp;
+			// }
+		}
+		Object contextTBU;
+		if (context == null) {
+			contextTBU = new ArrayList<Object>();
+		} else {
+			contextTBU = context;
+		}
+		if (compacted != null) {
+			// TODO: figure out if we can make "@context" appear at the start of
+			// the keySet
+			if (!activeCtx.dontAddCoreContext()) {
+				if (contextTBU instanceof List) {
+					((List) contextTBU).add(coreContextUrl);
+				} else {
+					ArrayList<Object> temp = new ArrayList<Object>();
+					temp.add(context);
+					temp.add(coreContextUrl);
+					contextTBU = temp;
+				}
+			}
+			if ((context instanceof Map && !((Map<String, Object>) context).isEmpty())
+					|| (context instanceof List && !((List<Object>) context).isEmpty())) {
+				if (!(context instanceof List)) {
+					((Map<String, Object>) compacted).put(JsonLdConsts.CONTEXT, Lists.newArrayList(context));
+				} else {
+					((Map<String, Object>) compacted).put(JsonLdConsts.CONTEXT, context);
+				}
+//				if (context instanceof List && ((List<Object>) context).size() == 1 && opts.getCompactArrays()) {
+//					((Map<String, Object>) compacted).put(JsonLdConsts.CONTEXT, ((List<Object>) context).get(0));
+//				} else {
+
+//				}
+			}
+		}
+
+		// 9)
+		return (Map<String, Object>) compacted;
+
 	}
 
 }
