@@ -129,8 +129,8 @@ public class HistoryController {
 					.onItem().transformToUni(queryResult -> {
 						return HttpUtils.generateQueryResult(request, queryResult, options, geoproperty, acceptHeader,
 								count, actualLimit, languageQueryTerm, context, ldService);
-					}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
-		});
+					});
+		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
 	@Path("/{entityId}")
@@ -176,7 +176,7 @@ public class HistoryController {
 						return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, entity,
 								geometryProperty, optionsString, null, ldService);
 					});
-		});
+		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
 	}
 

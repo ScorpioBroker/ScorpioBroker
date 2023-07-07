@@ -254,7 +254,7 @@ public class EntityOperationsQueryController {
 			} catch (Exception e) {
 				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 			}
-		});
+		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
 	}
 }

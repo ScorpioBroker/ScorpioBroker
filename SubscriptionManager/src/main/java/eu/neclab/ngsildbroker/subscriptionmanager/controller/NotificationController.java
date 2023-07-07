@@ -38,9 +38,8 @@ public class NotificationController {
 		return HttpUtils.expandBody(request, payload, AppConstants.NOTIFICAITION_RECEIVED, ldService).onItem()
 				.transformToUni(tuple -> {
 					return subscriptionManager.remoteNotify(id, tuple.getItem2(), tuple.getItem1()).onItem()
-							.transform(v -> RestResponse.ok()).onFailure()
-							.recoverWithItem(HttpUtils::handleControllerExceptions);
-				});
+							.transform(v -> RestResponse.ok());
+				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
 	}
 

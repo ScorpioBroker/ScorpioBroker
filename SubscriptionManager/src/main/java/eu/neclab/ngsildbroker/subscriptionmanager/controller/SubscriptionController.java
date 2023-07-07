@@ -53,9 +53,8 @@ public class SubscriptionController {
 				.transformToUni(tuple -> {
 					return subService
 							.createSubscription(HttpUtils.getTenant(request), tuple.getItem2(), tuple.getItem1())
-							.onItem().transform(t -> HttpUtils.generateSubscriptionResult(t, tuple.getItem1()))
-							.onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
-				});
+							.onItem().transform(t -> HttpUtils.generateSubscriptionResult(t, tuple.getItem1()));
+				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
 	@GET
@@ -85,7 +84,7 @@ public class SubscriptionController {
 						return HttpUtils.generateQueryResult(request, subscriptions, options, null, acceptHeader, false,
 								actualLimit, null, ctx, ldService);
 					});
-		});
+		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
 	}
 
@@ -111,7 +110,8 @@ public class SubscriptionController {
 	@DELETE
 	public Uni<RestResponse<Object>> deleteSubscription(HttpServerRequest request, @PathParam(value = "id") String id) {
 		return subService.deleteSubscription(HttpUtils.getTenant(request), id).onItem()
-				.transform(t -> HttpUtils.generateDeleteResult(t));
+				.transform(t -> HttpUtils.generateDeleteResult(t)).onFailure()
+				.recoverWithItem(HttpUtils::handleControllerExceptions);
 
 	}
 
@@ -132,9 +132,8 @@ public class SubscriptionController {
 				.transformToUni(tuple -> {
 					return subService
 							.updateSubscription(HttpUtils.getTenant(request), id, tuple.getItem2(), tuple.getItem1())
-							.onItem().transform(t -> HttpUtils.generateSubscriptionResult(t, tuple.getItem1()))
-							.onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e));
-				});
+							.onItem().transform(t -> HttpUtils.generateSubscriptionResult(t, tuple.getItem1()));
+				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
 	}
 

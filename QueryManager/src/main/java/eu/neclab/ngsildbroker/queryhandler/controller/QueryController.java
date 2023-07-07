@@ -98,8 +98,8 @@ public class QueryController {
 						}
 						return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, entity,
 								geometryProperty, options, langQuery, ldService);
-					}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
-		});
+					});
+		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
 	}
 
@@ -238,8 +238,8 @@ public class QueryController {
 						}
 						return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty,
 								acceptHeader, count, actualLimit, langQuery, context, ldService);
-					}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
-		});
+					});
+		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
 	@Path("/types")
@@ -266,7 +266,7 @@ public class QueryController {
 							ldService);
 				});
 			}
-		});
+		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
 	}
 
@@ -290,7 +290,7 @@ public class QueryController {
 									null, ldService);
 						}
 					});
-		});
+		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
 	}
 
@@ -317,7 +317,7 @@ public class QueryController {
 									null, null, ldService);
 						});
 			}
-		});
+		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
 	}
 
@@ -341,7 +341,7 @@ public class QueryController {
 									null, ldService);
 						}
 					});
-		});
+		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
 	}
 

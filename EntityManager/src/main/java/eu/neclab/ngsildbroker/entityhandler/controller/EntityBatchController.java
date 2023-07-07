@@ -100,7 +100,7 @@ public class EntityBatchController {
 						opResults.addAll(fails);
 						return HttpUtils.generateBatchResult(opResults);
 					});
-		});
+		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
 	}
 
@@ -150,7 +150,7 @@ public class EntityBatchController {
 						opResults.addAll(fails);
 						return HttpUtils.generateBatchResult(opResults);
 					});
-		});
+		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
 	}
 
@@ -209,7 +209,7 @@ public class EntityBatchController {
 						opResults.addAll(fails);
 						return HttpUtils.generateBatchResult(opResults);
 					});
-		});
+		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
 	@POST
@@ -219,7 +219,7 @@ public class EntityBatchController {
 		return entityService.deleteBatch(HttpUtils.getTenant(request), entityIds, localOnly).onItem()
 				.transform(opResults -> {
 					return HttpUtils.generateBatchResult(opResults);
-				});
+				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
 }

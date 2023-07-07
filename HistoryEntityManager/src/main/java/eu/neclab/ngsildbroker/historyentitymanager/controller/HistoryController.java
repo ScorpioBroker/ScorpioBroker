@@ -48,10 +48,8 @@ public class HistoryController {
 					return historyService.createEntry(HttpUtils.getTenant(request), tuple.getItem2(), tuple.getItem1())
 							.onItem().transform(opResult -> {
 								return HttpUtils.generateCreateResult(opResult, AppConstants.HISTORY_URL);
-							}).onFailure().recoverWithItem(error -> {
-								return HttpUtils.handleControllerExceptions(error);
 							});
-				});
+				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
 	@Path("/{entityId}")
@@ -67,10 +65,8 @@ public class HistoryController {
 			return historyService.deleteEntry(HttpUtils.getTenant(request), entityId, ctx).onItem()
 					.transform(result -> {
 						return HttpUtils.generateDeleteResult(result);
-					}).onFailure().recoverWithItem(error -> {
-						return HttpUtils.handleControllerExceptions(error);
 					});
-		});
+		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
 	@Path("/{entityId}/attrs")
@@ -88,10 +84,8 @@ public class HistoryController {
 							.appendToEntry(HttpUtils.getTenant(request), entityId, tuple.getItem2(), tuple.getItem1())
 							.onItem().transform(opResult -> {
 								return HttpUtils.generateUpdateResultResponse(opResult);
-							}).onFailure().recoverWithItem(error -> {
-								return HttpUtils.handleControllerExceptions(error);
 							});
-				});
+				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
 	@Path("/{entityId}/attrs/{attrId}")
@@ -110,10 +104,8 @@ public class HistoryController {
 							context.expandIri(attrId, false, true, null, null), datasetId, deleteAll, context)
 					.onItem().transform(opResult -> {
 						return HttpUtils.generateDeleteResult(opResult);
-					}).onFailure().recoverWithItem(error -> {
-						return HttpUtils.handleControllerExceptions(error);
 					});
-		});
+		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
 	}
 
@@ -134,10 +126,8 @@ public class HistoryController {
 							tuple.getItem1().expandIri(attrId, false, true, null, null), instanceId, tuple.getItem2(),
 							tuple.getItem1()).onItem().transform(opResult -> {
 								return HttpUtils.generateUpdateResultResponse(opResult);
-							}).onFailure().recoverWithItem(error -> {
-								return HttpUtils.handleControllerExceptions(error);
 							});
-				});
+				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
 	}
 
@@ -157,9 +147,7 @@ public class HistoryController {
 							context.expandIri(attrId, false, true, null, null), instanceId, context)
 					.onItem().transform(opResult -> {
 						return HttpUtils.generateDeleteResult(opResult);
-					}).onFailure().recoverWithItem(error -> {
-						return HttpUtils.handleControllerExceptions(error);
 					});
-		});
+		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 }

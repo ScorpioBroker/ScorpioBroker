@@ -113,8 +113,8 @@ public class RegistryController {
 					.onItem().transformToUni(queryResult -> {
 						return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty,
 								acceptHeader, count, actualLimit, null, context, ldService);
-					}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
-		});
+					});
+		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
 	@POST
@@ -124,10 +124,8 @@ public class RegistryController {
 					return csourceService.createRegistration(HttpUtils.getTenant(request), tuple.getItem2()).onItem()
 							.transform(opResult -> {
 								return HttpUtils.generateCreateResult(opResult, AppConstants.CSOURCE_URL);
-							}).onFailure().recoverWithItem(error -> {
-								return HttpUtils.handleControllerExceptions(error);
 							});
-				});
+				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
 	}
 
@@ -152,8 +150,8 @@ public class RegistryController {
 					.transformToUni(entity -> {
 						return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, entity, null, null,
 								null, ldService);
-					}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
-		});
+					});
+		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
 	@Path("/{registrationId}")
@@ -166,10 +164,8 @@ public class RegistryController {
 							.updateRegistration(HttpUtils.getTenant(request), registrationId, tuple.getItem2()).onItem()
 							.transform(opResult -> {
 								return HttpUtils.generateUpdateResultResponse(opResult);
-							}).onFailure().recoverWithItem(error -> {
-								return HttpUtils.handleControllerExceptions(error);
 							});
-				});
+				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
 	@Path("/{registrationId}")
@@ -187,7 +183,6 @@ public class RegistryController {
 		}
 		return csourceService.deleteRegistration(HttpUtils.getTenant(request), registrationId).onItem()
 				.transform(opResult -> {
-
 					return HttpUtils.generateDeleteResult(opResult);
 				}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e));
 	}

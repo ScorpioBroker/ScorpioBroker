@@ -64,8 +64,8 @@ public class EntityController {// implements EntityHandlerInterface {
 							.onItem().transform(opResult -> {
 								logger.debug("Done creating entity");
 								return HttpUtils.generateCreateResult(opResult, AppConstants.ENTITES_URL);
-							}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
-				});
+							});
+				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
 	}
 
@@ -92,9 +92,8 @@ public class EntityController {// implements EntityHandlerInterface {
 					logger.debug("patch attrs");
 					return entityService
 							.updateEntity(HttpUtils.getTenant(req), entityId, tuple.getItem2(), tuple.getItem1())
-							.onItem().transform(HttpUtils::generateUpdateResultResponse).onFailure()
-							.recoverWithItem(HttpUtils::handleControllerExceptions);
-				});
+							.onItem().transform(HttpUtils::generateUpdateResultResponse);
+				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
 	/**
@@ -119,12 +118,9 @@ public class EntityController {// implements EntityHandlerInterface {
 		return HttpUtils.expandBody(req, body, AppConstants.ENTITY_UPDATE_PAYLOAD, ldService).onItem()
 				.transformToUni(tuple -> {
 					logger.debug("post attrs");
-					return entityService
-							.appendToEntity(HttpUtils.getTenant(req), entityId, tuple.getItem2(), noOverwrite,
-									tuple.getItem1())
-							.onItem().transform(HttpUtils::generateUpdateResultResponse).onFailure()
-							.recoverWithItem(HttpUtils::handleControllerExceptions);
-				});
+					return entityService.appendToEntity(HttpUtils.getTenant(req), entityId, tuple.getItem2(),
+							noOverwrite, tuple.getItem1()).onItem().transform(HttpUtils::generateUpdateResultResponse);
+				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
 	}
 
@@ -155,8 +151,8 @@ public class EntityController {// implements EntityHandlerInterface {
 							tuple.getItem2(), tuple.getItem1()).onItem().transform(updateResult -> {
 								logger.trace("update entry :: completed");
 								return HttpUtils.generateUpdateResultResponse(updateResult);
-							}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e));
-				});
+							});
+				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
 	}
 
@@ -188,8 +184,8 @@ public class EntityController {// implements EntityHandlerInterface {
 						logger.trace("delete attribute :: completed");
 						return HttpUtils.generateDeleteResult(opResult);
 
-					}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
-		});
+					});
+		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
 	}
 
@@ -209,9 +205,8 @@ public class EntityController {// implements EntityHandlerInterface {
 		}
 		return ldService.parse(HttpUtils.getAtContext(request)).onItem().transformToUni(context -> {
 			return entityService.deleteEntity(HttpUtils.getTenant(request), entityId, context).onItem()
-					.transform(HttpUtils::generateDeleteResult).onFailure()
-					.recoverWithItem(HttpUtils::handleControllerExceptions);
-		});
+					.transform(HttpUtils::generateDeleteResult);
+		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
 	}
 
@@ -299,9 +294,8 @@ public class EntityController {// implements EntityHandlerInterface {
 				.transformToUni(tuple -> {
 					return entityService
 							.mergePatch(HttpUtils.getTenant(request), entityId, tuple.getItem2(), tuple.getItem1())
-							.onItem().transform(HttpUtils::generateUpdateResultResponse).onFailure()
-							.recoverWithItem(HttpUtils::handleControllerExceptions);
-				});
+							.onItem().transform(HttpUtils::generateUpdateResultResponse);
+				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
 	}
 }
