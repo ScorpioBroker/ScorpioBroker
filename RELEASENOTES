@@ -1,3 +1,14 @@
+RELEASE NOTES SCORPIO 4.0.6
+
+This release 
+ - adds support for merge-patch behaviour
+ - adds support previous value in subscriptions
+ - removes the last usage of blocking i/o in scorpio making it fully reactive 
+ - sets a default idle timeout for database connections. default is 15 seconds and can be changed with the environment variable QUARKUS_DATASOURCE_REACTIVE_IDLE_TIMEOUT to another duration (e.g. 60s)
+ - adjusting the default connection pool per tenant to 50 connections. This can be changed with environment variable QUARKUS_DATASOURCE_REACTIVE_MAX_SIZE. The default max connections in postgres is 100. 
+   This should be considered when setting up your system. 
+ - self hosting of the core context 
+
 RELEASE NOTES SCORPIO 4.0.5/FIWARE_8.4
 
 This release is also a re tagging for the FIWARE release to point it to the most up to date version on the FIWARE release.
