@@ -436,7 +436,7 @@ public final class HttpUtils {
 		if (headerFromReg != null) {
 			headerFromReg.forEach(t -> {
 				t.forEach((key, value) -> {
-					result.add(key, (String) value);
+					result.add(key, ((List<Map<String,Object>>)value).get(0).get("@value").toString());
 				});
 			});
 		}
