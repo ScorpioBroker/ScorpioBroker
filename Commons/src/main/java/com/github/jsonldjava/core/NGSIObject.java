@@ -1,13 +1,13 @@
 package com.github.jsonldjava.core;
 
-import com.github.jsonldjava.utils.JsonUtils;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -69,7 +69,7 @@ class NGSIObject {
 		this.expandedProperty = expandedProperty;
 	}
 
-	public NGSIObject setElement(Object element) throws ResponseException {
+	public NGSIObject setElement(Object element) {
 		this.element = element;
 		return this;
 	}
@@ -334,12 +334,12 @@ class NGSIObject {
 			throws ResponseException {
 		if (isScalar) {
 			switch (expandedProperty) {
-				case NGSIConstants.NGSI_LD_SHOWCHANGES:
-					if (!(this.element instanceof Map<?,?> map && map.get(JsonLdConsts.VALUE) instanceof Boolean)) {
-						throw new ResponseException(ErrorType.BadRequestData,
-								"The key " + activeProperty + " is an invalid entry.");
-					}
-					return;
+			case NGSIConstants.NGSI_LD_SHOWCHANGES:
+				if (!(this.element instanceof Map<?, ?> map && map.get(JsonLdConsts.VALUE) instanceof Boolean)) {
+					throw new ResponseException(ErrorType.BadRequestData,
+							"The key " + activeProperty + " is an invalid entry.");
+				}
+				return;
 			case NGSIConstants.NGSI_LD_TIME_INTERVAL:
 				if (!(this.element instanceof Map) || !(((Map<String, Object>) this.element)
 						.get(NGSIConstants.JSON_LD_VALUE) instanceof Integer)) {
@@ -697,11 +697,13 @@ class NGSIObject {
 			if (!(atValue instanceof String)) {
 				throw new ResponseException(ErrorType.BadRequestData, "Invalid value for GeoProperty");
 			}
+			ObjectMapper mapper = new ObjectMapper();
+
 			try {
-				geoPropMap.put(NGSIConstants.NGSI_LD_HAS_VALUE,
-						Arrays.asList(api.expandWithCoreContext(JsonUtils.fromString((String) atValue))));
-			} catch (IOException e) {
-				throw new ResponseException(ErrorType.BadRequestData, "Invalid value for GeoProperty");
+				geoPropMap.put(NGSIConstants.NGSI_LD_HAS_VALUE, Arrays.asList(
+						api.expandWithCoreContext(mapper.treeToValue(mapper.readTree((String) atValue), Map.class))));
+			} catch (JsonProcessingException | IllegalArgumentException e) {
+				throw new ResponseException(ErrorType.BadRequestData, "Can't read location entry");
 			}
 		}
 	}

@@ -1,6 +1,7 @@
 package com.github.jsonldjava.utils;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -15,6 +16,11 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+
+import org.apache.commons.io.ByteOrderMark;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.input.BOMInputStream;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerationException;
@@ -26,22 +32,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jsonldjava.core.DocumentLoader;
 import com.github.jsonldjava.core.JsonLdApi;
 import com.github.jsonldjava.core.JsonLdProcessor;
+import com.google.common.net.HttpHeaders;
 
-import org.apache.commons.io.ByteOrderMark;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.io.input.BOMInputStream;
-import org.apache.http.Header;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.client.protocol.RequestAcceptEncoding;
-import org.apache.http.client.protocol.ResponseContentEncoding;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.DefaultRedirectStrategy;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.client.cache.BasicHttpCacheStorage;
-import org.apache.http.impl.client.cache.CacheConfig;
-import org.apache.http.impl.client.cache.CachingHttpClientBuilder;
+import io.smallrye.mutiny.Uni;
+import io.vertx.mutiny.core.buffer.Buffer;
+import io.vertx.mutiny.ext.web.client.HttpResponse;
+import io.vertx.mutiny.ext.web.client.WebClient;
 
 /**
  * Functions used to make loading, parsing, and serializing JSON easy using
@@ -68,7 +64,6 @@ public class JsonUtils {
 	private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 	private static final JsonFactory JSON_FACTORY = new JsonFactory(JSON_MAPPER);
 
-	private static volatile CloseableHttpClient DEFAULT_HTTP_CLIENT;
 	// Avoid possible endless loop when following alternate locations
 	private static final int MAX_LINKS_FOLLOW = 20;
 
@@ -94,7 +89,7 @@ public class JsonUtils {
 	 * @throws JsonParseException If there was a JSON related error during parsing.
 	 * @throws IOException        If there was an IO error during parsing.
 	 */
-	public static Object fromInputStream(InputStream input) throws IOException {
+	public static Uni<Object> fromInputStream(InputStream input) {
 		// filter BOMs from InputStream
 		try (final BOMInputStream bOMInputStream = new BOMInputStream(input, false, ByteOrderMark.UTF_8,
 				ByteOrderMark.UTF_16BE, ByteOrderMark.UTF_16LE, ByteOrderMark.UTF_32BE, ByteOrderMark.UTF_32LE);) {
@@ -110,9 +105,15 @@ public class JsonUtils {
 				}
 			}
 			return fromInputStream(bOMInputStream, charset);
+		} catch (IOException e) {
+			return Uni.createFrom().failure(e);
 		} finally {
 			if (input != null) {
-				input.close();
+				try {
+					input.close();
+				} catch (IOException e) {
+					return Uni.createFrom().failure(e);
+				}
 			}
 		}
 	}
@@ -145,10 +146,12 @@ public class JsonUtils {
 	 * @throws JsonParseException If there was a JSON related error during parsing.
 	 * @throws IOException        If there was an IO error during parsing.
 	 */
-	public static Object fromInputStream(InputStream input, Charset enc) throws IOException {
+	public static Uni<Object> fromInputStream(InputStream input, Charset enc) {
 		try (InputStreamReader in = new InputStreamReader(input, enc);
 				BufferedReader reader = new BufferedReader(in);) {
 			return fromReader(reader);
+		} catch (IOException e) {
+			return Uni.createFrom().failure(e);
 		}
 	}
 
@@ -162,8 +165,13 @@ public class JsonUtils {
 	 * @throws JsonParseException If there was a JSON related error during parsing.
 	 * @throws IOException        If there was an IO error during parsing.
 	 */
-	public static Object fromReader(Reader reader) throws IOException {
-		final JsonParser jp = JSON_FACTORY.createParser(reader);
+	public static Uni<Object> fromReader(Reader reader) {
+		JsonParser jp;
+		try {
+			jp = JSON_FACTORY.createParser(reader);
+		} catch (IOException e) {
+			return Uni.createFrom().failure(e);
+		}
 		return fromJsonParser(jp);
 	}
 
@@ -177,41 +185,49 @@ public class JsonUtils {
 	 * @throws JsonParseException If there was a JSON related error during parsing.
 	 * @throws IOException        If there was an IO error during parsing.
 	 */
-	public static Object fromJsonParser(JsonParser jp) throws IOException {
+	public static Uni<Object> fromJsonParser(JsonParser jp) {
 		Object rval;
-		final JsonToken initialToken = jp.nextToken();
+		JsonToken initialToken;
+		try {
+			initialToken = jp.nextToken();
 
-		if (initialToken == JsonToken.START_ARRAY) {
-			rval = jp.readValueAs(List.class);
-		} else if (initialToken == JsonToken.START_OBJECT) {
-			rval = jp.readValueAs(Map.class);
-		} else if (initialToken == JsonToken.VALUE_STRING) {
-			rval = jp.readValueAs(String.class);
-		} else if (initialToken == JsonToken.VALUE_FALSE || initialToken == JsonToken.VALUE_TRUE) {
-			rval = jp.readValueAs(Boolean.class);
-		} else if (initialToken == JsonToken.VALUE_NUMBER_FLOAT || initialToken == JsonToken.VALUE_NUMBER_INT) {
-			rval = jp.readValueAs(Number.class);
-		} else if (initialToken == JsonToken.VALUE_NULL) {
-			rval = null;
-		} else {
-			throw new JsonParseException(jp, "document doesn't start with a valid json element : " + initialToken,
-					jp.getCurrentLocation());
+			if (initialToken == JsonToken.START_ARRAY) {
+				rval = jp.readValueAs(List.class);
+			} else if (initialToken == JsonToken.START_OBJECT) {
+				rval = jp.readValueAs(Map.class);
+			} else if (initialToken == JsonToken.VALUE_STRING) {
+				rval = jp.readValueAs(String.class);
+			} else if (initialToken == JsonToken.VALUE_FALSE || initialToken == JsonToken.VALUE_TRUE) {
+				rval = jp.readValueAs(Boolean.class);
+			} else if (initialToken == JsonToken.VALUE_NUMBER_FLOAT || initialToken == JsonToken.VALUE_NUMBER_INT) {
+				rval = jp.readValueAs(Number.class);
+			} else if (initialToken == JsonToken.VALUE_NULL) {
+				rval = null;
+			} else {
+				return Uni.createFrom().failure(new JsonParseException(jp,
+						"document doesn't start with a valid json element : " + initialToken, jp.getCurrentLocation()));
+			}
+		} catch (IOException e) {
+			return Uni.createFrom().failure(e);
 		}
 
 		JsonToken t;
 		try {
 			t = jp.nextToken();
 		} catch (final JsonParseException ex) {
-			throw new JsonParseException(jp,
-					"Document contains more content after json-ld element - (possible mismatched {}?)",
-					jp.getCurrentLocation());
+			return Uni.createFrom()
+					.failure(new JsonParseException(jp,
+							"Document contains more content after json-ld element - (possible mismatched {}?)",
+							jp.getCurrentLocation()));
+		} catch (IOException e) {
+			return Uni.createFrom().failure(e);
 		}
 		if (t != null) {
-			throw new JsonParseException(jp,
+			return Uni.createFrom().failure(new JsonParseException(jp,
 					"Document contains possible json content after the json-ld element - (possible mismatched {}?)",
-					jp.getCurrentLocation());
+					jp.getCurrentLocation()));
 		}
-		return rval;
+		return Uni.createFrom().item(rval);
 	}
 
 	/**
@@ -223,7 +239,7 @@ public class JsonUtils {
 	 * @throws JsonParseException If there was a JSON related error during parsing.
 	 * @throws IOException        If there was an IO error during parsing.
 	 */
-	public static Object fromString(String jsonString) throws JsonParseException, IOException {
+	public static Uni<Object> fromString(String jsonString) {
 		return fromReader(new StringReader(jsonString));
 	}
 
@@ -301,8 +317,7 @@ public class JsonUtils {
 	 * @throws JsonParseException If there was a JSON related error during parsing.
 	 * @throws IOException        If there was an IO error during parsing.
 	 */
-	public static Object fromURL(java.net.URL url, CloseableHttpClient httpClient)
-			throws JsonParseException, IOException {
+	public static Uni<Object> fromURL(java.net.URL url, WebClient webClient) {
 		final String protocol = url.getProtocol();
 		// We can only use the Apache HTTPClient for HTTP/HTTPS, so use the
 		// native java client for the others
@@ -310,42 +325,58 @@ public class JsonUtils {
 			// Can't use the HTTP client for those!
 			// Fallback to Java's built-in JsonLdUrl handler. No need for
 			// Accept headers as it's likely to be file: or jar:
-			return fromInputStream(url.openStream());
+			try {
+				return fromInputStream(url.openStream());
+			} catch (IOException e) {
+				return Uni.createFrom().failure(e);
+			}
 		} else {
-			return fromJsonLdViaHttpUri(url, httpClient, 0);
+			return fromJsonLdViaHttpUri(url, webClient, 0);
 		}
 	}
 
-	private static Object fromJsonLdViaHttpUri(final URL url, final CloseableHttpClient httpClient, int linksFollowed)
-			throws IOException {
-		final HttpUriRequest request = new HttpGet(url.toExternalForm());
+	private static Uni<Object> fromJsonLdViaHttpUri(final URL url, WebClient webClient, int linksFollowed) {
+
 		// We prefer application/ld+json, but fallback to application/json
 		// or whatever is available
-		request.addHeader("Accept", ACCEPT_HEADER);
-		try (CloseableHttpResponse response = httpClient.execute(request)) {
-			final int status = response.getStatusLine().getStatusCode();
-			if (status != 200 && status != 203) {
-				throw new IOException("Can't retrieve " + url + ", status code: " + status);
-			}
-			// follow alternate document location
-			// https://www.w3.org/TR/json-ld11/#alternate-document-location
-			URL alternateLink = alternateLink(url, response);
-			if (alternateLink != null) {
-				linksFollowed++;
-				if (linksFollowed > MAX_LINKS_FOLLOW) {
-					throw new IOException("Too many alternate links followed. This may indicate a cycle. Aborting.");
-				}
-				return fromJsonLdViaHttpUri(alternateLink, httpClient, linksFollowed);
-			}
-			return fromInputStream(response.getEntity().getContent());
-		}
+
+		return webClient.getAbs(url.toExternalForm()).putHeader("Accept", ACCEPT_HEADER).send().onFailure()
+				.recoverWithUni(e -> {
+					e.printStackTrace();
+					return Uni.createFrom().failure(e);
+				}).onItem().transformToUni(result -> {
+					final int status = result.statusCode();
+					if (status != 200 && status != 203) {
+						return Uni.createFrom()
+								.failure(new IOException("Can't retrieve " + url + ", status code: " + status));
+					}
+					URL alternateLink;
+					try {
+						alternateLink = alternateLink(url, result);
+					} catch (MalformedURLException e) {
+						return Uni.createFrom().failure(e);
+					}
+					if (alternateLink != null) {
+
+						if (linksFollowed + 1 > MAX_LINKS_FOLLOW) {
+							return Uni.createFrom().failure(new IOException(
+									"Too many alternate links followed. This may indicate a cycle. Aborting."));
+						}
+						return fromJsonLdViaHttpUri(alternateLink, webClient, linksFollowed + 1);
+					}
+					return fromInputStream(
+							new ByteArrayInputStream(result.bodyAsString().getBytes(StandardCharsets.UTF_8)));
+
+				});
+
 	}
 
-	private static URL alternateLink(URL url, CloseableHttpResponse response) throws MalformedURLException {
-		if (response.getEntity().getContentType() != null
-				&& !response.getEntity().getContentType().getValue().equals("application/ld+json")) {
-			for (Header header : response.getAllHeaders()) {
-				if (header.getName().equalsIgnoreCase("link")) {
+	private static URL alternateLink(URL url, HttpResponse<Buffer> result) throws MalformedURLException {
+
+		if (result.headers().contains(HttpHeaders.CONTENT_TYPE)
+				&& !result.headers().get(HttpHeaders.CONTENT_TYPE).equals("application/ld+json")) {
+			for (Entry<String, String> header : result.headers().entries()) {
+				if (header.getKey().equalsIgnoreCase("link")) {
 					String alternateLink = "";
 					boolean relAlternate = false;
 					boolean jsonld = false;
@@ -393,54 +424,7 @@ public class JsonUtils {
 		return context;
 	}
 
-	public static CloseableHttpClient getDefaultHttpClient() {
-		CloseableHttpClient result = DEFAULT_HTTP_CLIENT;
-		if (result == null) {
-			synchronized (JsonUtils.class) {
-				result = DEFAULT_HTTP_CLIENT;
-				if (result == null) {
-					result = DEFAULT_HTTP_CLIENT = JsonUtils.createDefaultHttpClient();
-				}
-			}
-		}
-		return result;
-	}
 
-	public static CloseableHttpClient createDefaultHttpClient() {
-		final CacheConfig cacheConfig = createDefaultCacheConfig();
-
-		final CloseableHttpClient result = createDefaultHttpClient(cacheConfig);
-
-		return result;
-	}
-
-	public static CacheConfig createDefaultCacheConfig() {
-		return CacheConfig.custom().build();
-//		return CacheConfig.custom().setMaxCacheEntries(500).setMaxObjectSize(1024 * 256).setSharedCache(false)
-//				.setHeuristicCachingEnabled(true).setHeuristicDefaultLifetime(86400).build();
-	}
-
-	public static CloseableHttpClient createDefaultHttpClient(final CacheConfig cacheConfig) {
-		return createDefaultHttpClientBuilder(cacheConfig).build();
-	}
-
-	public static HttpClientBuilder createDefaultHttpClientBuilder(final CacheConfig cacheConfig) {
-		// Common CacheConfig for both the JarCacheStorage and the underlying
-		// BasicHttpCacheStorage
-		return CachingHttpClientBuilder.create()
-				// allow caching
-				.setCacheConfig(cacheConfig)
-				// Wrap the local JarCacheStorage around a BasicHttpCacheStorage
-				.setHttpCacheStorage(new JarCacheStorage(null, cacheConfig, new BasicHttpCacheStorage(cacheConfig)))
-				// Support compressed data
-				// https://wayback.archive.org/web/20130901115452/http://hc.apache.org:80/httpcomponents-client-ga/tutorial/html/httpagent.html#d5e1238
-				.addInterceptorFirst(new RequestAcceptEncoding()).addInterceptorFirst(new ResponseContentEncoding())
-				.setRedirectStrategy(DefaultRedirectStrategy.INSTANCE)
-				// User agent customisation
-				.setUserAgent(JSONLD_JAVA_USER_AGENT)
-				// use system defaults for proxy etc.
-				.useSystemProperties();
-	}
 
 	private JsonUtils() {
 		// Static class, no access to constructor

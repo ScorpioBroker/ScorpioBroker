@@ -18,9 +18,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.jsonldjava.core.Context;
-import com.github.jsonldjava.core.JsonLdError;
+import com.github.jsonldjava.core.JsonLDService;
 import com.github.jsonldjava.core.JsonLdOptions;
-import com.github.jsonldjava.core.JsonLdProcessor;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
@@ -73,6 +72,9 @@ public class QueryService {
 
 	@Inject
 	Vertx vertx;
+
+	@Inject
+	JsonLDService ldService;
 
 	private WebClient webClient;
 
@@ -156,22 +158,20 @@ public class QueryService {
 				unis.add(webClient
 						.get(remoteHost.host() + "/" + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT
 								+ remoteHost.queryString())
-						.putHeaders(remoteHost.headers()).send().onItem().transform(response -> {
-							Map<String, Map<String, Object>> result = Maps.newHashMap();
+						.putHeaders(remoteHost.headers()).send().onItem().transformToUni(response -> {
 							if (response != null && response.statusCode() == 200) {
-								List<Object> expanded;
-								try {
-									expanded = JsonLdProcessor.expand(response.bodyAsJsonArray().getList());
-									expanded.forEach(obj -> {
-										Map<String, Object> entity = (Map<String, Object>) obj;
-										entity.put(EntityTools.REG_MODE_KEY, remoteHost.regMode());
-										result.put((String) entity.get(NGSIConstants.JSON_LD_ID), entity);
-									});
-								} catch (JsonLdError | ResponseException e) {
-									e.printStackTrace();
-								}
+								return ldService.expand(response.bodyAsJsonArray().getList()).onItem()
+										.transform(expanded -> {
+											Map<String, Map<String, Object>> result = Maps.newHashMap();
+											expanded.forEach(obj -> {
+												Map<String, Object> entity = (Map<String, Object>) obj;
+												entity.put(EntityTools.REG_MODE_KEY, remoteHost.regMode());
+												result.put((String) entity.get(NGSIConstants.JSON_LD_ID), entity);
+											});
+											return result;
+										});
 							}
-							return result;
+							return Uni.createFrom().item(Maps.newHashMap());
 						}));
 			}
 		}
@@ -181,7 +181,7 @@ public class QueryService {
 
 		if (unis.isEmpty()) {
 			QueryResult q = new QueryResult();
-			if(count){
+			if (count) {
 				q.setCount(resultCount);
 			}
 			q.setData(new ArrayList<Map<String, Object>>());
@@ -914,7 +914,7 @@ public class QueryService {
 			String host = row.getString(0);
 			MultiMap remoteHeaders = MultiMap
 					.newInstance(HttpUtils.getHeadersForRemoteCall(row.getJsonArray(2), row.getString(1)));
-			unis.add(webClient.get(host + endpoint).putHeaders(remoteHeaders).send().onFailure().recoverWithNull()
+			unis.add(webClient.getAbs(host + endpoint).putHeaders(remoteHeaders).send().onFailure().recoverWithNull()
 					.onItem().transformToUni(response -> {
 						String responseTypes;
 						if (response == null || response.statusCode() != 200) {
@@ -922,9 +922,10 @@ public class QueryService {
 						} else {
 							responseTypes = response.bodyAsString();
 							try {
-								return Uni.createFrom()
-										.item(JsonLdProcessor.expand(HttpUtils.getContextFromHeader(remoteHeaders),
-												JsonUtils.fromString(responseTypes), opts, -1, false));
+								return JsonUtils.fromString(responseTypes).onItem().transformToUni(json -> {
+									return ldService.expand(HttpUtils.getContextFromHeader(remoteHeaders), json, opts,
+											-1, false);
+								});
 							} catch (Exception e) {
 								logger.debug("failed to handle response from host " + host + " : " + responseTypes, e);
 								return Uni.createFrom().item(Lists.newArrayList());
@@ -959,22 +960,21 @@ public class QueryService {
 			unis.add(webClient
 					.get(remoteHost.host() + "/" + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + entityId
 							+ remoteHost.queryString())
-					.putHeaders(remoteHost.headers()).send().onItem().transform(response -> {
+					.putHeaders(remoteHost.headers()).send().onItem().transformToUni(response -> {
 						if (response == null || response.statusCode() != 200) {
-							return new HashMap<String, Object>();
+							return Uni.createFrom().item(new HashMap<String, Object>());
 						}
 						Map<String, Object> result = response.bodyAsJsonObject().getMap();
-						try {
-							result = (Map<String, Object>) JsonLdProcessor
-									.expand(HttpUtils.getContextFromHeader(remoteHost.headers()), result, opts, -1,
-											false)
-									.get(0);
-						} catch (JsonLdError | ResponseException e1) {
-							logger.warn("Failed to expand body from remote source", e1);
-							return new HashMap<String, Object>();
-						}
-						result.put(EntityTools.REG_MODE_KEY, remoteHost.regMode());
-						return result;
+						return ldService
+								.expand(HttpUtils.getContextFromHeader(remoteHost.headers()), result, opts, -1, false)
+								.onItem().transform(expanded -> {
+									Map<String, Object> myResult = (Map<String, Object>) expanded.get(0);
+									myResult.put(EntityTools.REG_MODE_KEY, remoteHost.regMode());
+									return myResult;
+								}).onFailure().recoverWithItem(e -> {
+									logger.warn("Failed to expand body from remote source", e);
+									return new HashMap<String, Object>();
+								});
 					}).onFailure().recoverWithItem(e -> {
 						logger.warn("Failed to retrieve infos from host " + remoteHost);
 						return new HashMap<String, Object>();
@@ -1277,8 +1277,11 @@ public class QueryService {
 		}).onItem().transform(tuple -> {
 			EntityMap entityMap = tuple.getItem1();
 			Map<String, Map<String, Object>> localResults = tuple.getItem2();
-			queryDAO.storeEntityMap(tenant, qToken, entityMap).subscribe().with(t -> {logger.debug("Stored entity map " + qToken);});
-			//vertx.executeBlockingAndForget(queryDAO.storeEntityMap(tenant, qToken, entityMap));
+			queryDAO.storeEntityMap(tenant, qToken, entityMap).subscribe().with(t -> {
+				logger.debug("Stored entity map " + qToken);
+			});
+			// vertx.executeBlockingAndForget(queryDAO.storeEntityMap(tenant, qToken,
+			// entityMap));
 			// return queryDAO.storeEntityMap(tenant, qToken,
 			// entityMap).onItem().transform(v -> {
 			return Tuple2.of(localResults, entityMap);

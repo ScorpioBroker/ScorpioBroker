@@ -11,22 +11,25 @@ import org.slf4j.LoggerFactory;
 import javax.inject.Inject;
 
 public abstract class SubscriptionMessagingBase {
+
 	private static final Logger logger = LoggerFactory.getLogger(SubscriptionMessagingBase.class);
 	@Inject
 	SubscriptionService subscriptionService;
 
 	public Uni<Void> baseHandleEntity(BaseRequest message) {
-		logger.debug("CSource sub manager got called for csource: " + message.getId());
-		return subscriptionService.checkSubscriptions(message).onFailure().recoverWithUni(t->{
+		logger.debug("Subscription sub manager got called for entity: " + message.getId());
+		return subscriptionService.checkSubscriptions(message).onFailure().recoverWithUni(t -> {
 			logger.debug("Exception Occurred in checkSubscriptions: " + t);
-			return Uni.createFrom().voidItem();});
+			return Uni.createFrom().voidItem();
+		});
 	}
 
 	public Uni<Void> baseHandleBatchEntities(BatchRequest message) {
-		logger.debug("CSource sub manager got called for csource: " + message.getEntityIds());
-		return subscriptionService.checkSubscriptions(message).onFailure().recoverWithUni(t->{
+		logger.debug("Subscription sub manager got called for batch request: " + message.getEntityIds());
+		return subscriptionService.checkSubscriptions(message).onFailure().recoverWithUni(t -> {
 			logger.debug("Exception Occurred in checkSubscriptions: " + t);
-			return Uni.createFrom().voidItem();});
+			return Uni.createFrom().voidItem();
+		});
 	}
 
 	public Uni<Void> baseHandleInternalNotification(InternalNotification message) {

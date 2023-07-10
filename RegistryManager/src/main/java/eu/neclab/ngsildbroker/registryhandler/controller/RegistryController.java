@@ -1,8 +1,6 @@
 package eu.neclab.ngsildbroker.registryhandler.controller;
 
 import java.util.List;
-import java.util.Map;
-import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.ws.rs.DELETE;
@@ -17,8 +15,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.github.jsonldjava.core.Context;
-import com.github.jsonldjava.core.JsonLdProcessor;
+import com.github.jsonldjava.core.JsonLDService;
 import com.google.common.collect.Sets;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
@@ -34,7 +31,6 @@ import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.QueryParser;
 import eu.neclab.ngsildbroker.registryhandler.service.CSourceService;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.tuples.Tuple2;
 import io.vertx.core.http.HttpServerRequest;
 
 /**
@@ -57,10 +53,8 @@ public class RegistryController {
 	@ConfigProperty(name = "ngsild.corecontext", defaultValue = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld")
 	String coreContext;
 
-	@PostConstruct
-	public void init() {
-		JsonLdProcessor.init(coreContext);
-	}
+	@Inject
+	JsonLDService ldService;
 
 	@GET
 	public Uni<RestResponse<Object>> queryCSource(HttpServerRequest request, @QueryParam("id") String ids,
@@ -92,53 +86,46 @@ public class RegistryController {
 					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.InvalidRequest)));
 		}
 
-		Context context;
-		List<Object> headerContext;
-		AttrsQueryTerm attrsQuery;
-		TypeQueryTerm typeQueryTerm;
-		QQueryTerm qQueryTerm;
-		CSFQueryTerm csfQueryTerm;
-		GeoQueryTerm geoQueryTerm;
-		ScopeQueryTerm scopeQueryTerm;
+		List<Object> headerContext = HttpUtils.getAtContext(request);
+		return ldService.parse(headerContext).onItem().transformToUni(context -> {
+			AttrsQueryTerm attrsQuery;
+			TypeQueryTerm typeQueryTerm;
+			QQueryTerm qQueryTerm;
+			CSFQueryTerm csfQueryTerm;
+			GeoQueryTerm geoQueryTerm;
+			ScopeQueryTerm scopeQueryTerm;
 
-		try {
-			headerContext = HttpUtils.getAtContext(request);
-			context = JsonLdProcessor.getCoreContextClone().parse(headerContext, false);
-			attrsQuery = QueryParser.parseAttrs(attrs, context);
-			typeQueryTerm = QueryParser.parseTypeQuery(type, context);
-			qQueryTerm = QueryParser.parseQuery(q, context);
-			csfQueryTerm = QueryParser.parseCSFQuery(csf, context);
-			geoQueryTerm = QueryParser.parseGeoQuery(georel, coordinates, geometry, geoproperty, context);
-			scopeQueryTerm = QueryParser.parseScopeQuery(scopeQ);
-		} catch (Exception e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
-		}
+			try {
+				attrsQuery = QueryParser.parseAttrs(attrs, context);
+				typeQueryTerm = QueryParser.parseTypeQuery(type, context);
+				qQueryTerm = QueryParser.parseQuery(q, context);
+				csfQueryTerm = QueryParser.parseCSFQuery(csf, context);
+				geoQueryTerm = QueryParser.parseGeoQuery(georel, coordinates, geometry, geoproperty, context);
+				scopeQueryTerm = QueryParser.parseScopeQuery(scopeQ);
+			} catch (Exception e) {
+				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+			}
 
-		return csourceService.queryRegistrations(HttpUtils.getTenant(request),
-				ids == null ? null : Sets.newHashSet(ids.split(",")), typeQueryTerm, idPattern, attrsQuery,
-				csfQueryTerm, geoQueryTerm, scopeQueryTerm, actualLimit, offset, count).onItem()
-				.transform(queryResult -> {
-
-					return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty, acceptHeader,
-							count, actualLimit, null, context);
-				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+			return csourceService
+					.queryRegistrations(HttpUtils.getTenant(request),
+							ids == null ? null : Sets.newHashSet(ids.split(",")), typeQueryTerm, idPattern, attrsQuery,
+							csfQueryTerm, geoQueryTerm, scopeQueryTerm, actualLimit, offset, count)
+					.onItem().transformToUni(queryResult -> {
+						return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty,
+								acceptHeader, count, actualLimit, null, context, ldService);
+					});
+		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
 	@POST
 	public Uni<RestResponse<Object>> registerCSource(HttpServerRequest request, String payload) {
-
-		Tuple2<Context, Map<String, Object>> tuple;
-		try {
-			tuple = HttpUtils.expandBody(request, payload, AppConstants.CSOURCE_REG_CREATE_PAYLOAD);
-		} catch (Exception e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
-		}
-		return csourceService.createRegistration(HttpUtils.getTenant(request), tuple.getItem2()).onItem()
-				.transform(opResult -> {
-					return HttpUtils.generateCreateResult(opResult, AppConstants.CSOURCE_URL);
-				}).onFailure().recoverWithItem(error -> {
-					return HttpUtils.handleControllerExceptions(error);
-				});
+		return HttpUtils.expandBody(request, payload, AppConstants.CSOURCE_REG_CREATE_PAYLOAD, ldService).onItem()
+				.transformToUni(tuple -> {
+					return csourceService.createRegistration(HttpUtils.getTenant(request), tuple.getItem2()).onItem()
+							.transform(opResult -> {
+								return HttpUtils.generateCreateResult(opResult, AppConstants.CSOURCE_URL);
+							});
+				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
 	}
 
@@ -152,39 +139,33 @@ public class RegistryController {
 			return HttpUtils.getInvalidHeader();
 		}
 
-		Context context;
-		List<Object> headerContext;
 		try {
 			HttpUtils.validateUri(registrationId);
-			headerContext = HttpUtils.getAtContext(request);
-			context = JsonLdProcessor.getCoreContextClone().parse(headerContext, false);
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 		}
-		return csourceService.retrieveRegistration(HttpUtils.getTenant(request), registrationId).onItem()
-				.transform(entity -> {
-					return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, entity, null, null,
-							null);
-				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
-
+		List<Object> headerContext = HttpUtils.getAtContext(request);
+		return ldService.parse(headerContext).onItem().transformToUni(context -> {
+			return csourceService.retrieveRegistration(HttpUtils.getTenant(request), registrationId).onItem()
+					.transformToUni(entity -> {
+						return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, entity, null, null,
+								null, ldService);
+					});
+		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
 	@Path("/{registrationId}")
 	@PATCH
 	public Uni<RestResponse<Object>> updateCSource(HttpServerRequest request,
 			@PathParam("registrationId") String registrationId, String payload) {
-		Tuple2<Context, Map<String, Object>> tuple;
-		try {
-			tuple = HttpUtils.expandBody(request, payload, AppConstants.CSOURCE_REG_UPDATE_PAYLOAD);
-		} catch (Exception e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
-		}
-		return csourceService.updateRegistration(HttpUtils.getTenant(request), registrationId, tuple.getItem2())
-				.onItem().transform(opResult -> {
-					return HttpUtils.generateUpdateResultResponse(opResult);
-				}).onFailure().recoverWithItem(error -> {
-					return HttpUtils.handleControllerExceptions(error);
-				});
+		return HttpUtils.expandBody(request, payload, AppConstants.CSOURCE_REG_UPDATE_PAYLOAD, ldService).onItem()
+				.transformToUni(tuple -> {
+					return csourceService
+							.updateRegistration(HttpUtils.getTenant(request), registrationId, tuple.getItem2()).onItem()
+							.transform(opResult -> {
+								return HttpUtils.generateUpdateResultResponse(opResult);
+							});
+				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
 	@Path("/{registrationId}")
@@ -202,7 +183,6 @@ public class RegistryController {
 		}
 		return csourceService.deleteRegistration(HttpUtils.getTenant(request), registrationId).onItem()
 				.transform(opResult -> {
-
 					return HttpUtils.generateDeleteResult(opResult);
 				}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e));
 	}

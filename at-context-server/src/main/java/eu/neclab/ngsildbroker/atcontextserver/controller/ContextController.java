@@ -24,72 +24,74 @@ import java.util.Map;
 @Path("/ngsi-ld/v1/jsonldContexts/")
 public class ContextController {
 
-    @Inject
-    ContextService contextService;
+	@Inject
+	ContextService contextService;
 
-    @GET
-    @Path("{contextId}")
-    public Uni<RestResponse<Object>> getContextById(@PathParam("contextId") String id,
-            @QueryParam("details") boolean details) {
-        return contextService.getContextById(id, details)
-                .onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
-    }
+	@GET
+	@Path("{contextId}")
+	public Uni<RestResponse<Object>> getContextById(@PathParam("contextId") String id,
+			@QueryParam("details") boolean details) {
+		return contextService.getContextById(id, details).onFailure()
+				.recoverWithItem(HttpUtils::handleControllerExceptions);
+	}
 
-    @GET
-    public Uni<RestResponse<Object>> getContexts(@QueryParam("kind") String kind,
-            @QueryParam("details") boolean details) {
-        return contextService.getContexts(kind, details)
-                .onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
-    }
+	@GET
+	public Uni<RestResponse<Object>> getContexts(@QueryParam("kind") String kind,
+			@QueryParam("details") boolean details) {
+		return contextService.getContexts(kind, details).onFailure()
+				.recoverWithItem(HttpUtils::handleControllerExceptions);
+	}
 
-    @POST
-    @Consumes(MediaType.APPLICATION_JSON)
-    public Uni<RestResponse<Object>> createContext(String payload) {
-        Map<String, Object> payloadMap = new HashMap<>();
-        try {
-            Map<String, Object> contextBody = (Map<String, Object>) ((Map<String, Object>) JsonUtils
-                    .fromString(payload)).get(NGSIConstants.JSON_LD_CONTEXT);
-            if (contextBody == null)
-                throw new Exception("Bad Request");
-            else
-                payloadMap.put(NGSIConstants.JSON_LD_CONTEXT, contextBody);
-        } catch (Exception e) {
-            return Uni.createFrom().item(
-                    HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData)));
-        }
-        return contextService.createContextHosted(payloadMap)
-                .onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
-    }
+	@POST
+	@Consumes(MediaType.APPLICATION_JSON)
+	public Uni<RestResponse<Object>> createContext(String payload) {
+		return JsonUtils.fromString(payload).onItem().transformToUni(json -> {
+			Map<String, Object> payloadMap = new HashMap<>();
+			try {
+				Map<String, Object> contextBody = (Map<String, Object>) ((Map<String, Object>) json)
+						.get(NGSIConstants.JSON_LD_CONTEXT);
+				if (contextBody == null)
+					throw new Exception("Bad Request");
+				else
+					payloadMap.put(NGSIConstants.JSON_LD_CONTEXT, contextBody);
+			} catch (Exception e) {
+				return Uni.createFrom()
+						.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData)));
+			}
+			return contextService.createContextHosted(payloadMap).onFailure()
+					.recoverWithItem(HttpUtils::handleControllerExceptions);
+		});
+	}
 
-    @DELETE
-    @Path("{contextId}")
-    public Uni<RestResponse<Object>> deleteContextById(@PathParam("contextId") String id,
-            @QueryParam("reload") boolean reload) {
-        return contextService.deleteById(id, reload)
-                .onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
-    }
+	@DELETE
+	@Path("{contextId}")
+	public Uni<RestResponse<Object>> deleteContextById(@PathParam("contextId") String id,
+			@QueryParam("reload") boolean reload) {
+		return contextService.deleteById(id, reload).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+	}
 
-    @GET
-    @Path("/createcache/{url}")
-    public Uni<RestResponse<Object>> loadCache(@PathParam("url") String url) {
-        return contextService.createOrGetCache(url);
-    }
+	@GET
+	@Path("/createcache/{url}")
+	public Uni<RestResponse<Object>> loadCache(@PathParam("url") String url) {
+		return contextService.createOrGetCache(url);
+	}
 
-    @POST
-    @Path("/createimplicitly/")
-    public Uni<RestResponse<Object>> createImplicitly(String payload) {
-        Map<String, Object> payloadMap = new HashMap<>();
-        try {
-            Map<String, Object> contextBody = (Map<String, Object>) ((Map<String, Object>) JsonUtils
-                    .fromString(payload)).get("@context");
-            if (contextBody == null)
-                throw new Exception("Bad Request");
-            else
-                payloadMap.put(NGSIConstants.JSON_LD_CONTEXT, contextBody);
-        } catch (Exception e) {
-            return Uni.createFrom().item(
-                    HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData)));
-        }
-        return contextService.createImplicitly(payloadMap);
-    }
+	@POST
+	@Path("/createimplicitly/")
+	public Uni<RestResponse<Object>> createImplicitly(String payload) {
+		return JsonUtils.fromString(payload).onItem().transformToUni(json -> {
+			Map<String, Object> payloadMap = new HashMap<>();
+			try {
+				Map<String, Object> contextBody = (Map<String, Object>) ((Map<String, Object>) json).get("@context");
+				if (contextBody == null)
+					throw new Exception("Bad Request");
+				else
+					payloadMap.put(NGSIConstants.JSON_LD_CONTEXT, contextBody);
+			} catch (Exception e) {
+				return Uni.createFrom()
+						.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData)));
+			}
+			return contextService.createImplicitly(payloadMap);
+		});
+	}
 }

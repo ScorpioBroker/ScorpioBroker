@@ -1,7 +1,6 @@
 package eu.neclab.ngsildbroker.queryhandler.services;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -12,8 +11,6 @@ import static org.mockito.Mockito.when;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletionException;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.Order;
@@ -29,7 +26,6 @@ import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 
 import eu.neclab.ngsildbroker.commons.datatypes.RegistrationEntry;
-import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.queryhandler.controller.CustomProfile;
 import eu.neclab.ngsildbroker.queryhandler.repository.QueryDAO;
 import io.quarkus.test.junit.QuarkusTest;
