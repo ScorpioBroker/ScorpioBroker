@@ -17,8 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.jsonldjava.core.Context;
-import com.github.jsonldjava.core.JsonLdError;
-import com.github.jsonldjava.core.JsonLdProcessor;
+import com.github.jsonldjava.core.JsonLDService;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -55,6 +54,9 @@ import io.vertx.pgclient.PgException;
 public class HistoryQueryService {
 
 	private final static Logger logger = LoggerFactory.getLogger(HistoryQueryService.class);
+
+	@Inject
+	JsonLDService ldService;
 
 	@Inject
 	Vertx vertx;
@@ -112,37 +114,32 @@ public class HistoryQueryService {
 			RemoteHost remoteHost = entry.getKey();
 			String url = remoteHost.host() + NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT + "?" + entry.getValue();
 
-			remoteCalls.add(webClient.get(url).putHeaders(remoteHost.headers()).send().onItem().transform(response -> {
-				QueryResult result = new QueryResult();
-				List<Object> responseEntity;
-				if (response == null || response.statusCode() != 200) {
-					responseEntity = null;
-				} else {
-					responseEntity = response.bodyAsJsonArray().getList();
-					try {
-						responseEntity = JsonLdProcessor.expand(HttpUtils.getContextFromHeader(remoteHost.headers()),
-								responseEntity, HttpUtils.opts, -1, false);
-					} catch (JsonLdError e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					} catch (ResponseException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-					List<Map<String, Object>> resultList = new ArrayList<>(responseEntity.size());
-					for (Object entry2 : responseEntity) {
-						Map<String, Object> tmp = (Map<String, Object>) entry2;
-						tmp.put(EntityTools.REG_MODE_KEY, remoteHost.regMode());
-						resultList.add(tmp);
-					}
-					result.setData(resultList);
-					if (count) {
-						result.setCount(Long.parseLong(response.getHeader(NGSIConstants.COUNT_HEADER_RESULT)));
-					}
+			remoteCalls.add(
+					webClient.getAbs(url).putHeaders(remoteHost.headers()).send().onItem().transformToUni(response -> {
 
-				}
-				return result;
-			}));
+						if (response == null || response.statusCode() != 200) {
+							return Uni.createFrom().nullItem();
+						} else {
+							List<Object> responseEntity = response.bodyAsJsonArray().getList();
+							return ldService.expand(HttpUtils.getContextFromHeader(remoteHost.headers()),
+									responseEntity, HttpUtils.opts, -1, false).onItem().transform(expanded -> {
+										QueryResult result = new QueryResult();
+										List<Map<String, Object>> resultList = new ArrayList<>(responseEntity.size());
+										for (Object entry2 : responseEntity) {
+											Map<String, Object> tmp = (Map<String, Object>) entry2;
+											tmp.put(EntityTools.REG_MODE_KEY, remoteHost.regMode());
+											resultList.add(tmp);
+										}
+										result.setData(resultList);
+										if (count) {
+											result.setCount(Long
+													.parseLong(response.getHeader(NGSIConstants.COUNT_HEADER_RESULT)));
+										}
+										return result;
+									});
+						}
+
+					}));
 		}
 		remoteCalls.add(0, local);
 		return Uni.combine().all().unis(remoteCalls).combinedWith(list -> {
@@ -211,30 +208,19 @@ public class HistoryQueryService {
 					url = url.substring(0, url.length() - 1);
 				}
 
-				remoteCalls
-						.add(webClient.get(url).putHeaders(remoteHost.headers()).send().onItem().transform(response -> {
-							Map<String, Object> responseEntity;
+				remoteCalls.add(
+						webClient.getAbs(url).putHeaders(remoteHost.headers()).send().onItem().transformToUni(response -> {
 							if (response == null || response.statusCode() != 200) {
-								responseEntity = null;
+								return Uni.createFrom().nullItem();
 							} else {
-								responseEntity = response.bodyAsJsonObject().getMap();
-								try {
-									responseEntity = (Map<String, Object>) JsonLdProcessor
-											.expand(HttpUtils.getContextFromHeader(remoteHost.headers()),
-													responseEntity, HttpUtils.opts, -1, false)
-											.get(0);
-								} catch (JsonLdError e) {
-									// TODO Auto-generated catch block
-									e.printStackTrace();
-								} catch (ResponseException e) {
-									// TODO Auto-generated catch block
-									e.printStackTrace();
-								}
-
-								responseEntity.put(EntityTools.REG_MODE_KEY, remoteHost.regMode());
-
+								Map<String, Object> responseEntity = response.bodyAsJsonObject().getMap();
+								return ldService.expand(HttpUtils.getContextFromHeader(remoteHost.headers()),
+										responseEntity, HttpUtils.opts, -1, false).onItem().transform(expanded -> {
+											Map<String, Object> result = (Map<String, Object>) expanded.get(0);
+											result.put(EntityTools.REG_MODE_KEY, remoteHost.regMode());
+											return result;
+										});
 							}
-							return responseEntity;
 						}));
 			}
 			Uni<Map<String, Object>> remote = Uni.combine().all().unis(remoteCalls).combinedWith(list -> {

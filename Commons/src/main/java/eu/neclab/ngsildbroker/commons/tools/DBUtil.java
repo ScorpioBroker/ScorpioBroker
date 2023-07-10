@@ -3,10 +3,6 @@ package eu.neclab.ngsildbroker.commons.tools;
 import java.io.IOException;
 import java.net.URI;
 import java.text.ParseException;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-
 import org.locationtech.spatial4j.context.SpatialContextFactory;
 import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
 import org.locationtech.spatial4j.exception.InvalidShapeException;
@@ -14,7 +10,6 @@ import org.locationtech.spatial4j.io.GeoJSONReader;
 import org.locationtech.spatial4j.shape.Shape;
 import org.slf4j.Logger;
 
-import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.RegistrationEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.RemoteHost;
 import io.vertx.mutiny.core.MultiMap;

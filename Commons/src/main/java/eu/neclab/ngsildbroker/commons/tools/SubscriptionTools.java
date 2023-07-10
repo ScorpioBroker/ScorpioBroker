@@ -1,10 +1,7 @@
 package eu.neclab.ngsildbroker.commons.tools;
 
+import com.github.jsonldjava.core.JsonLDService;
 import com.github.jsonldjava.core.JsonLdConsts;
-import com.github.jsonldjava.core.JsonLdError;
-import com.github.jsonldjava.core.JsonLdProcessor;
-import com.github.jsonldjava.core.RDFDataset;
-import com.github.jsonldjava.core.RDFDatasetUtils;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
@@ -18,7 +15,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.Subscripti
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import io.smallrye.mutiny.tuples.Tuple2;
+import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple4;
 import io.vertx.core.http.impl.headers.HeadersMultiMap;
 import io.vertx.mutiny.core.MultiMap;
@@ -199,62 +196,68 @@ public class SubscriptionTools {
 		return result;
 	}
 
-	public static Map<String, Object> generateNotification(SubscriptionRequest potentialSub, Object entity)
-			throws Exception {
-		Map<String, Object> notification = Maps.newLinkedHashMap();
-		notification.put(NGSIConstants.QUERY_PARAMETER_ID,
-				"notification:" + UUID.randomUUID().getLeastSignificantBits());
-		notification.put(NGSIConstants.QUERY_PARAMETER_TYPE, NGSIConstants.NOTIFICATION);
-		notification.put(NGSIConstants.NGSI_LD_SUBSCRIPTION_ID_SHORT, potentialSub.getId());
-		notification.put(NGSIConstants.NGSI_LD_NOTIFIED_AT_SHORT, SerializationTools.notifiedAt_formatter
-				.format(LocalDateTime.ofInstant(Instant.ofEpochMilli(System.currentTimeMillis()), ZoneId.of("Z"))));
+	public static Uni<Map<String, Object>> generateNotification(SubscriptionRequest potentialSub, Object entity,
+			JsonLDService ldService) {
 
 //		Object data = HttpUtils.generateCompactedResult(Lists.newArrayList(), potentialSub.getContext(),
 //				HttpUtils.parseAcceptHeader(
 //						List.of(potentialSub.getSubscription().getNotification().getEndPoint().getAccept())),
 //				entity, null, null, null, true).getItem1();
-		Map<String, Object> compacted = JsonLdProcessor.compact(entity, null, potentialSub.getContext(), HttpUtils.opts,
-				-1);
-		List<Map<String, Object>> data = (List<Map<String, Object>>) compacted.getOrDefault(JsonLdConsts.GRAPH,
-				List.of(compacted));
-		int acceptHeader = HttpUtils
-				.parseAcceptHeader(List.of(potentialSub.getSubscription().getNotification().getEndPoint().getAccept()));
-		switch (acceptHeader) {
-		case 1:
-			data.forEach(entry -> entry.remove(NGSIConstants.JSON_LD_CONTEXT));
-			break;
-		case 2:
-			// ld+
-			//data.forEach(entry -> entry.remove(NGSIConstants.JSON_LD_CONTEXT));
-			break;
-		case 3:
-			break;
-		case 4:// geo+json
-			break;
-		default:
-			break;
-		}
+		return ldService.compact(entity, null, potentialSub.getContext(), HttpUtils.opts, -1).onItem()
+				.transform(compacted -> {
+					Map<String, Object> notification = Maps.newLinkedHashMap();
+					notification.put(NGSIConstants.QUERY_PARAMETER_ID,
+							"notification:" + UUID.randomUUID().getLeastSignificantBits());
+					notification.put(NGSIConstants.QUERY_PARAMETER_TYPE, NGSIConstants.NOTIFICATION);
+					notification.put(NGSIConstants.NGSI_LD_SUBSCRIPTION_ID_SHORT, potentialSub.getId());
+					notification.put(NGSIConstants.NGSI_LD_NOTIFIED_AT_SHORT,
+							SerializationTools.notifiedAt_formatter.format(LocalDateTime
+									.ofInstant(Instant.ofEpochMilli(System.currentTimeMillis()), ZoneId.of("Z"))));
+					List<Map<String, Object>> data = (List<Map<String, Object>>) compacted
+							.getOrDefault(JsonLdConsts.GRAPH, List.of(compacted));
+					int acceptHeader = HttpUtils.parseAcceptHeader(
+							List.of(potentialSub.getSubscription().getNotification().getEndPoint().getAccept()));
+					switch (acceptHeader) {
+					case 1:
+						data.forEach(entry -> entry.remove(NGSIConstants.JSON_LD_CONTEXT));
+						break;
+					case 2:
+						// ld+
+						// data.forEach(entry -> entry.remove(NGSIConstants.JSON_LD_CONTEXT));
+						break;
+					case 3:
+						break;
+					case 4:// geo+json
+						break;
+					default:
+						break;
+					}
 
-		notification.put(NGSIConstants.NGSI_LD_DATA_SHORT, data);
+					notification.put(NGSIConstants.NGSI_LD_DATA_SHORT, data);
 
-		return notification;
+					return notification;
+				});
 	}
 
-	public static Map<String, Object> generateCsourceNotification(SubscriptionRequest potentialSub, Object reg,
-			int triggerReason) throws JsonLdError, ResponseException {
-		Map<String, Object> notification = Maps.newLinkedHashMap();
-		notification.put(NGSIConstants.QUERY_PARAMETER_ID,
-				"csourcenotification:" + UUID.randomUUID().getLeastSignificantBits());
-		notification.put(NGSIConstants.QUERY_PARAMETER_TYPE, NGSIConstants.NOTIFICATION);
-		notification.put(NGSIConstants.NGSI_LD_SUBSCRIPTION_ID_SHORT, potentialSub.getId());
-		notification.put(NGSIConstants.NGSI_LD_NOTIFIED_AT_SHORT, SerializationTools.notifiedAt_formatter
-				.format(LocalDateTime.ofInstant(Instant.ofEpochMilli(System.currentTimeMillis()), ZoneId.of("Z"))));
-		Map<String, Object> compacted = JsonLdProcessor.compact(reg, null, potentialSub.getContext(), HttpUtils.opts,
-				-1);
-		notification.put(NGSIConstants.NGSI_LD_DATA_SHORT,
-				compacted.getOrDefault(JsonLdConsts.GRAPH, List.of(compacted)));
-		notification.put(NGSIConstants.NGSI_LD_TRIGGER_REASON_SHORT, HttpUtils.getTriggerReason(triggerReason));
-		return notification;
+	public static Uni<Map<String, Object>> generateCsourceNotification(SubscriptionRequest potentialSub, Object reg,
+			int triggerReason, JsonLDService ldService) {
+		return ldService.compact(reg, null, potentialSub.getContext(), HttpUtils.opts, -1).onItem()
+				.transform(compacted -> {
+					Map<String, Object> notification = Maps.newLinkedHashMap();
+					notification.put(NGSIConstants.QUERY_PARAMETER_ID,
+							"csourcenotification:" + UUID.randomUUID().getLeastSignificantBits());
+					notification.put(NGSIConstants.QUERY_PARAMETER_TYPE, NGSIConstants.NOTIFICATION);
+					notification.put(NGSIConstants.NGSI_LD_SUBSCRIPTION_ID_SHORT, potentialSub.getId());
+					notification.put(NGSIConstants.NGSI_LD_NOTIFIED_AT_SHORT,
+							SerializationTools.notifiedAt_formatter.format(LocalDateTime
+									.ofInstant(Instant.ofEpochMilli(System.currentTimeMillis()), ZoneId.of("Z"))));
+
+					notification.put(NGSIConstants.NGSI_LD_DATA_SHORT,
+							compacted.getOrDefault(JsonLdConsts.GRAPH, List.of(compacted)));
+					notification.put(NGSIConstants.NGSI_LD_TRIGGER_REASON_SHORT,
+							HttpUtils.getTriggerReason(triggerReason));
+					return notification;
+				});
 	}
 
 	public static MultiMap getHeaders(NotificationParam notificationParam) {

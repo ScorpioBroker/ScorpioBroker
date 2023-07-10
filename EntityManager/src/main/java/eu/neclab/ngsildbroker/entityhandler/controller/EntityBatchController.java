@@ -1,11 +1,9 @@
 package eu.neclab.ngsildbroker.entityhandler.controller;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.ws.rs.POST;
@@ -17,8 +15,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.RestResponse;
 
 import com.github.jsonldjava.core.Context;
-import com.github.jsonldjava.core.JsonLdProcessor;
-import com.github.jsonldjava.utils.JsonUtils;
+import com.github.jsonldjava.core.JsonLDService;
 import com.google.common.collect.Lists;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
@@ -28,6 +25,7 @@ import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
+import io.smallrye.mutiny.tuples.Tuple3;
 import io.vertx.core.http.HttpServerRequest;
 
 @Singleton
@@ -54,82 +52,106 @@ public class EntityBatchController {
 
 	Random random = new Random();
 
-	@PostConstruct
-	public void init() {
-		JsonLdProcessor.init(coreContext);
-	}
+	@Inject
+	JsonLDService ldService;
 
 	@POST
 	@Path("/create")
-	public Uni<RestResponse<Object>> createMultiple(HttpServerRequest request, String payload,
-			@QueryParam("localOnly") boolean localOnly) {
-		List<Map<String, Object>> compactedEntities;
-		try {
-			compactedEntities = (List<Map<String, Object>>) JsonUtils.fromString(payload);
-		} catch (IOException e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
-		}
-		List<Map<String, Object>> expandedEntities = Lists.newArrayList();
-		List<Context> contexts = Lists.newArrayList();
-		List<NGSILDOperationResult> fails = Lists.newArrayList();
+	public Uni<RestResponse<Object>> createMultiple(HttpServerRequest request,
+			List<Map<String, Object>> compactedEntities, @QueryParam("localOnly") boolean localOnly) {
+		List<Uni<Tuple2<String, Object>>> unis = Lists.newArrayList();
 		for (Map<String, Object> compactedEntity : compactedEntities) {
-			try {
-				Tuple2<Context, Map<String, Object>> tuple = HttpUtils.expandBody(request, compactedEntity,
-						AppConstants.CREATE_REQUEST);
-				expandedEntities.add(tuple.getItem2());
-				contexts.add(tuple.getItem1());
-			} catch (Exception e) {
-				e.printStackTrace();
-				NGSILDOperationResult failureResults = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, (String) compactedEntity.get("id"));
-				if (e instanceof ResponseException) {
-					failureResults.addFailure((ResponseException) e);
-				} else {
-					failureResults.addFailure(new ResponseException(ErrorType.InvalidRequest, e.getMessage()));
-				}
-				fails.add(failureResults);
-			}
+			unis.add(HttpUtils.expandBody(request, compactedEntity, AppConstants.CREATE_REQUEST, ldService).onItem()
+					.transform(i -> Tuple2.of((String) compactedEntity.get("id"), (Object) i)).onFailure()
+					.recoverWithItem(e -> Tuple2.of((String) compactedEntity.get("id"), (Object) e)));
 		}
-		return entityService.createBatch(HttpUtils.getTenant(request), expandedEntities, contexts, localOnly).onItem()
-				.transform(opResults -> {
-					opResults.addAll(fails);
-					return HttpUtils.generateBatchResult(opResults);
-				});
+		return Uni.combine().all().unis(unis).collectFailures().combinedWith(list -> {
+			List<NGSILDOperationResult> fails = Lists.newArrayList();
+			List<Map<String, Object>> expandedEntities = Lists.newArrayList();
+			List<Context> contexts = Lists.newArrayList();
+			for (Object obj : list) {
+				Tuple2<String, Object> tuple = (Tuple2<String, Object>) obj;
+				String entityId = tuple.getItem1();
+				Object obj2 = tuple.getItem2();
+				if (obj2 instanceof Exception) {
+					NGSILDOperationResult failureResults = new NGSILDOperationResult(AppConstants.CREATE_REQUEST,
+							entityId);
+					if (obj2 instanceof ResponseException) {
+						failureResults.addFailure((ResponseException) obj2);
+					} else {
+						failureResults.addFailure(
+								new ResponseException(ErrorType.InvalidRequest, ((Exception) obj2).getMessage()));
+					}
+					fails.add(failureResults);
+				} else {
+					Tuple2<Context, Map<String, Object>> tuple2 = (Tuple2<Context, Map<String, Object>>) obj2;
+					expandedEntities.add(tuple2.getItem2());
+					contexts.add(tuple2.getItem1());
+				}
+			}
+			return Tuple3.of(fails, expandedEntities, contexts);
+
+		}).onItem().transformToUni(tuple -> {
+			List<NGSILDOperationResult> fails = tuple.getItem1();
+			List<Map<String, Object>> expandedEntities = tuple.getItem2();
+			List<Context> contexts = tuple.getItem3();
+			return entityService.createBatch(HttpUtils.getTenant(request), expandedEntities, contexts, localOnly)
+					.onItem().transform(opResults -> {
+						opResults.addAll(fails);
+						return HttpUtils.generateBatchResult(opResults);
+					});
+		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+
 	}
 
 	@POST
 	@Path("/upsert")
-	public Uni<RestResponse<Object>> upsertMultiple(HttpServerRequest request, String payload,
-			@QueryParam(value = "options") String options, 	@QueryParam("localOnly") boolean localOnly) {
-		List<Map<String, Object>> compactedEntities;
-		try {
-			compactedEntities = (List<Map<String, Object>>) JsonUtils.fromString(payload);
-		} catch (IOException e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
-		}
-		List<Map<String, Object>> expandedEntities = Lists.newArrayList();
-		List<Context> contexts = Lists.newArrayList();
-		List<NGSILDOperationResult> fails = Lists.newArrayList();
+	public Uni<RestResponse<Object>> upsertMultiple(HttpServerRequest request,
+			List<Map<String, Object>> compactedEntities, @QueryParam(value = "options") String options,
+			@QueryParam("localOnly") boolean localOnly) {
+		List<Uni<Tuple2<String, Object>>> unis = Lists.newArrayList();
 		for (Map<String, Object> compactedEntity : compactedEntities) {
-			try {
-				Tuple2<Context, Map<String, Object>> tuple = HttpUtils.expandBody(request, compactedEntity,
-						AppConstants.ENTITY_CREATE_PAYLOAD);
-				expandedEntities.add(tuple.getItem2());
-				contexts.add(tuple.getItem1());
-			} catch (Exception e) {
-				NGSILDOperationResult failureResults = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, (String) compactedEntity.get("id"));
-				if (e instanceof ResponseException) {
-					failureResults.addFailure((ResponseException) e);
-				} else {
-					failureResults.addFailure(new ResponseException(ErrorType.InvalidRequest, e.getMessage()));
-				}
-				fails.add(failureResults);
-			}
+			unis.add(HttpUtils.expandBody(request, compactedEntity, AppConstants.CREATE_REQUEST, ldService).onItem()
+					.transform(i -> Tuple2.of((String) compactedEntity.get("id"), (Object) i)).onFailure()
+					.recoverWithItem(e -> Tuple2.of((String) compactedEntity.get("id"), (Object) e)));
 		}
-		return entityService.upsertBatch(HttpUtils.getTenant(request), expandedEntities, contexts, localOnly).onItem()
-				.transform(opResults -> {
-					opResults.addAll(fails);
-					return HttpUtils.generateBatchResult(opResults);
-				});
+		return Uni.combine().all().unis(unis).collectFailures().combinedWith(list -> {
+			List<NGSILDOperationResult> fails = Lists.newArrayList();
+			List<Map<String, Object>> expandedEntities = Lists.newArrayList();
+			List<Context> contexts = Lists.newArrayList();
+			for (Object obj : list) {
+				Tuple2<String, Object> tuple = (Tuple2<String, Object>) obj;
+				String entityId = tuple.getItem1();
+				Object obj2 = tuple.getItem2();
+				if (obj2 instanceof Exception) {
+					NGSILDOperationResult failureResults = new NGSILDOperationResult(AppConstants.CREATE_REQUEST,
+							entityId);
+					if (obj2 instanceof ResponseException) {
+						failureResults.addFailure((ResponseException) obj2);
+					} else {
+						failureResults.addFailure(
+								new ResponseException(ErrorType.InvalidRequest, ((Exception) obj2).getMessage()));
+					}
+					fails.add(failureResults);
+				} else {
+					Tuple2<Context, Map<String, Object>> tuple2 = (Tuple2<Context, Map<String, Object>>) obj2;
+					expandedEntities.add(tuple2.getItem2());
+					contexts.add(tuple2.getItem1());
+				}
+			}
+			return Tuple3.of(fails, expandedEntities, contexts);
+
+		}).onItem().transformToUni(tuple -> {
+			List<NGSILDOperationResult> fails = tuple.getItem1();
+			List<Map<String, Object>> expandedEntities = tuple.getItem2();
+			List<Context> contexts = tuple.getItem3();
+			return entityService.upsertBatch(HttpUtils.getTenant(request), expandedEntities, contexts, localOnly)
+					.onItem().transform(opResults -> {
+						opResults.addAll(fails);
+						return HttpUtils.generateBatchResult(opResults);
+					});
+		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+
 	}
 
 	/**
@@ -143,55 +165,61 @@ public class EntityBatchController {
 	 */
 	@POST
 	@Path("/update")
-	public Uni<RestResponse<Object>> appendMultiple(HttpServerRequest request, String payload,
-			@QueryParam(value = "options") String options, @QueryParam("localOnly") boolean localOnly) {
-		List<Map<String, Object>> compactedEntities;
-		try {
-			compactedEntities = (List<Map<String, Object>>) JsonUtils.fromString(payload);
-		} catch (IOException e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
-		}
-		List<Map<String, Object>> expandedEntities = Lists.newArrayList();
-		List<Context> contexts = Lists.newArrayList();
-		List<NGSILDOperationResult> fails = Lists.newArrayList();
+	public Uni<RestResponse<Object>> appendMultiple(HttpServerRequest request,
+			List<Map<String, Object>> compactedEntities, @QueryParam(value = "options") String options,
+			@QueryParam("localOnly") boolean localOnly) {
+		List<Uni<Tuple2<String, Object>>> unis = Lists.newArrayList();
 		for (Map<String, Object> compactedEntity : compactedEntities) {
-			try {
-				Tuple2<Context, Map<String, Object>> tuple = HttpUtils.expandBody(request, compactedEntity,
-						AppConstants.APPEND_REQUEST);
-				expandedEntities.add(tuple.getItem2());
-				contexts.add(tuple.getItem1());
-			} catch (Exception e) {
-				e.printStackTrace();
-				NGSILDOperationResult failureResults = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, (String) compactedEntity.get("id"));
-				if (e instanceof ResponseException) {
-					failureResults.addFailure((ResponseException) e);
-				} else {
-					failureResults.addFailure(new ResponseException(ErrorType.InvalidRequest, e.getMessage()));
-				}
-				fails.add(failureResults);
-			}
+			unis.add(HttpUtils.expandBody(request, compactedEntity, AppConstants.APPEND_REQUEST, ldService).onItem()
+					.transform(i -> Tuple2.of((String) compactedEntity.get("id"), (Object) i)).onFailure()
+					.recoverWithItem(e -> Tuple2.of((String) compactedEntity.get("id"), (Object) e)));
 		}
-		return entityService.appendBatch(HttpUtils.getTenant(request), expandedEntities, contexts, localOnly).onItem()
-				.transform(opResults -> {
-					opResults.addAll(fails);
-					return HttpUtils.generateBatchResult(opResults);
-				});
+		return Uni.combine().all().unis(unis).collectFailures().combinedWith(list -> {
+			List<NGSILDOperationResult> fails = Lists.newArrayList();
+			List<Map<String, Object>> expandedEntities = Lists.newArrayList();
+			List<Context> contexts = Lists.newArrayList();
+			for (Object obj : list) {
+				Tuple2<String, Object> tuple = (Tuple2<String, Object>) obj;
+				String entityId = tuple.getItem1();
+				Object obj2 = tuple.getItem2();
+				if (obj2 instanceof Exception) {
+					NGSILDOperationResult failureResults = new NGSILDOperationResult(AppConstants.APPEND_REQUEST,
+							entityId);
+					if (obj2 instanceof ResponseException) {
+						failureResults.addFailure((ResponseException) obj2);
+					} else {
+						failureResults.addFailure(
+								new ResponseException(ErrorType.InvalidRequest, ((Exception) obj2).getMessage()));
+					}
+					fails.add(failureResults);
+				} else {
+					Tuple2<Context, Map<String, Object>> tuple2 = (Tuple2<Context, Map<String, Object>>) obj2;
+					expandedEntities.add(tuple2.getItem2());
+					contexts.add(tuple2.getItem1());
+				}
+			}
+			return Tuple3.of(fails, expandedEntities, contexts);
+
+		}).onItem().transformToUni(tuple -> {
+			List<NGSILDOperationResult> fails = tuple.getItem1();
+			List<Map<String, Object>> expandedEntities = tuple.getItem2();
+			List<Context> contexts = tuple.getItem3();
+			return entityService.appendBatch(HttpUtils.getTenant(request), expandedEntities, contexts, localOnly)
+					.onItem().transform(opResults -> {
+						opResults.addAll(fails);
+						return HttpUtils.generateBatchResult(opResults);
+					});
+		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
 	@POST
 	@Path("/delete")
-	public Uni<RestResponse<Object>> deleteMultiple(HttpServerRequest request, String payload,	@QueryParam("localOnly") boolean localOnly) {
-		List<String> entityIds;
-		try {
-			entityIds = (List<String>) JsonUtils.fromString(payload);
-		} catch (IOException e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
-		}
-		
+	public Uni<RestResponse<Object>> deleteMultiple(HttpServerRequest request, List<String> entityIds,
+			@QueryParam("localOnly") boolean localOnly) {
 		return entityService.deleteBatch(HttpUtils.getTenant(request), entityIds, localOnly).onItem()
 				.transform(opResults -> {
 					return HttpUtils.generateBatchResult(opResults);
-				});
+				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
 }

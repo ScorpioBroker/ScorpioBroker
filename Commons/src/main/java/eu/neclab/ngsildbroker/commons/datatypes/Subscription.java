@@ -360,7 +360,7 @@ public class Subscription implements Serializable {
 							}
 							case NGSIConstants.NGSI_LD_RECEIVERINFO -> {
 								ArrayListMultimap<String, String> receiverInfo = ArrayListMultimap.create();
-								Map<String, Object> compacted = JsonLdProcessor.compact(endPointEntry.getValue(), null, context,
+								Map<String, Object> compacted = JsonLdProcessor.compactWithLoadedContext(endPointEntry.getValue(), null, context,
 										opts, 999);
 								List<Map<String, Object>> receiverInfos = (List<Map<String, Object>>) compacted
 										.get(JsonLdConsts.GRAPH);

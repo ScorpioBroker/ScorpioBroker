@@ -9,8 +9,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import com.github.jsonldjava.core.Context;
-import com.github.jsonldjava.core.JsonLdError;
-import com.github.jsonldjava.core.JsonLdProcessor;
+import com.github.jsonldjava.core.JsonLDService;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -27,7 +26,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.Property;
 import eu.neclab.ngsildbroker.commons.datatypes.PropertyEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
-import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import io.smallrye.mutiny.Uni;
 
 public abstract class EntityTools {
 
@@ -48,8 +47,8 @@ public abstract class EntityTools {
 
 	}
 
-	public static Map<String, Object> prepareSplitUpEntityForSending(Map<String, Object> expanded, Context context)
-			throws JsonLdError, ResponseException {
+	public static Uni<Map<String, Object>> prepareSplitUpEntityForSending(Map<String, Object> expanded, Context context,
+			JsonLDService ldService) {
 		if (expanded.containsKey(NGSIConstants.JSON_LD_TYPE)) {
 			expanded.put(NGSIConstants.JSON_LD_TYPE,
 					Lists.newArrayList((Set<String>) expanded.get(NGSIConstants.JSON_LD_TYPE)));
@@ -62,7 +61,7 @@ public abstract class EntityTools {
 			}
 			expanded.put(NGSIConstants.NGSI_LD_SCOPE, finalScopes);
 		}
-		return JsonLdProcessor.compact(expanded, null, context, HttpUtils.opts, -1);
+		return ldService.compact(expanded, null, context, HttpUtils.opts, -1);
 
 	}
 
@@ -349,12 +348,14 @@ public abstract class EntityTools {
 
 	}
 
-	public static Map<String, Object> addSysAttrs(Map<String, Object> resolved, long timeStamp,int payloadType) {
+	public static Map<String, Object> addSysAttrs(Map<String, Object> resolved, long timeStamp, int payloadType) {
 		String now = SerializationTools.formatter.format(Instant.ofEpochMilli(timeStamp));
-		if(List.of(AppConstants.CREATE_REQUEST,AppConstants.UPSERT_REQUEST,AppConstants.CREATE_TEMPORAL_REQUEST,AppConstants.CREATE_SUBSCRIPTION_REQUEST,AppConstants.CSOURCE_REG_CREATE_PAYLOAD).contains(payloadType)){
+		if (List.of(AppConstants.CREATE_REQUEST, AppConstants.UPSERT_REQUEST, AppConstants.CREATE_TEMPORAL_REQUEST,
+				AppConstants.CREATE_SUBSCRIPTION_REQUEST, AppConstants.CSOURCE_REG_CREATE_PAYLOAD)
+				.contains(payloadType)) {
 			setTemporalProperties(resolved, now, now, false);
-		}
-		else setTemporalProperties(resolved, "", now, false);
+		} else
+			setTemporalProperties(resolved, "", now, false);
 		return resolved;
 	}
 

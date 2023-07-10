@@ -1,6 +1,13 @@
 package eu.neclab.ngsildbroker.commons.storage;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.time.Duration;
 import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
@@ -44,7 +51,7 @@ public class ClientManager {
 	Vertx vertx;
 
 	@ConfigProperty(name = "quarkus.datasource.reactive.url")
-	String reactiveBaseUrl;
+	String reactiveDefaultUrl;
 	@ConfigProperty(name = "quarkus.datasource.jdbc.url")
 	String jdbcBaseUrl;
 	@ConfigProperty(name = "quarkus.datasource.jdbc.driver")
@@ -53,6 +60,12 @@ public class ClientManager {
 	String username;
 	@ConfigProperty(name = "quarkus.datasource.password")
 	String password;
+	
+	@ConfigProperty(name = "quarkus.datasource.reactive.max-size")
+	int reactiveMaxSize;
+	@ConfigProperty(name = "quarkus.datasource.reactive.idle-timeout")
+	Duration idleTime;
+	
 	@ConfigProperty(name = "pool.minsize")
 	int minsize;
 	@ConfigProperty(name = "pool.maxsize")
@@ -60,10 +73,13 @@ public class ClientManager {
 	@ConfigProperty(name = "pool.initialSize")
 	int initialSize;
 
-	protected HashMap<String, Uni<PgPool>> tenant2Client = Maps.newHashMap();
+	private String reactiveBaseUrl;
+	protected ConcurrentMap<String, Uni<PgPool>> tenant2Client = Maps.newConcurrentMap();
 
 	@PostConstruct
-	void loadTenantClients() {
+	void loadTenantClients() throws URISyntaxException {
+		URI uri = new URI(reactiveDefaultUrl);
+		reactiveBaseUrl = uri.getScheme() + "://" + uri.getHost() + ":" + uri.getPort() + "/";
 		tenant2Client.put(AppConstants.INTERNAL_NULL_KEY, Uni.createFrom().item(pgClient));
 	}
 
@@ -82,8 +98,15 @@ public class ClientManager {
 	private Uni<PgPool> getTenant(String tenant, boolean createDB) {
 		return determineTargetDataSource(tenant, createDB).onItem().transformToUni(Unchecked.function(finalDataBase -> {
 			PoolOptions options = new PoolOptions();
-			PgPool pool = PgPool.pool(vertx, PgConnectOptions.fromUri(reactiveBaseUrl).setUser(username)
-					.setPassword(password).setDatabase(finalDataBase), options);
+			options.setName(finalDataBase);
+			options.setShared(true);
+			options.setMaxSize(reactiveMaxSize);
+			options.setIdleTimeout((int) idleTime.getSeconds());
+			options.setIdleTimeoutUnit(TimeUnit.SECONDS);
+			
+
+			PgPool pool = PgPool.pool(vertx, PgConnectOptions.fromUri(reactiveBaseUrl + finalDataBase).setUser(username)
+					.setPassword(password).setCachePreparedStatements(true), options);
 			Uni<PgPool> result = Uni.createFrom().item(pool);
 			tenant2Client.put(tenant, result);
 			return result;
@@ -117,7 +140,7 @@ public class ClientManager {
 
 	}
 
-	public HashMap<String, Uni<PgPool>> getAllClients() {
+	public ConcurrentMap<String, Uni<PgPool>> getAllClients() {
 		return tenant2Client;
 	}
 
