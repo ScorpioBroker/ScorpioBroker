@@ -4,7 +4,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.commons.lang3.ArrayUtils;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.LineString;
@@ -15,10 +14,8 @@ import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
 import org.locationtech.spatial4j.shape.Shape;
 import org.locationtech.spatial4j.shape.jts.JtsGeometry;
 import org.locationtech.spatial4j.shape.jts.JtsPoint;
-
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
@@ -45,69 +42,6 @@ public record RegistrationEntry(String cId, String eId, String eIdp, String type
 		boolean retrieveAttrTypeInfo, boolean createSubscription, boolean updateSubscription,
 		boolean retrieveSubscription, boolean querySubscription, boolean deleteSubscription, boolean canDoIdQuery,
 		boolean canDoZip, RemoteHost host) {
-
-	/**
-	 * 
-	 * @param id
-	 * @param type
-	 * @param prop
-	 * @param rel
-	 * @param originalScopes
-	 * @return Matching types and matching scopes if no scopes are in the registry-
-	 *         the original scopes will be returned scopes can be null if there no
-	 *         scopes in the entity if no match is possible it will return null
-	 */
-	public Tuple2<Set<String>, Set<String>> matches(String id, List<String> types, String prop, String rel,
-			Object originalScopes, Shape location) {
-		if (id != null && this.eId != null && !id.equals(eId)) {
-			return null;
-		}
-		if (this.eIdp != null && !id.matches(eIdp)) {
-			return null;
-		}
-		if (prop != null && (eRel != null || eProp != null && !prop.equals(eProp))) {
-			return null;
-		}
-		if (rel != null && (eProp != null || eRel != null && !rel.equals(eRel))) {
-			return null;
-		}
-		if ((location != null && this.location == null) || (location != null && this.location != null
-				&& SpatialPredicate.IsWithin.evaluate(location, this.location))) {
-			return null;
-		}
-		if (this.type != null && types != null && !types.contains(this.type)) {
-			return null;
-		}
-		if (this.scopes != null && originalScopes == null) {
-			return null;
-		}
-		Set<String> resultScopes = getOverlap((List<Map<String, String>>) originalScopes);
-		Set<String> resultType = null;
-		if (this.type == null && types != null) {
-			resultType = Sets.newHashSet(types);
-		} else if (types != null) {
-			resultType = Sets.newHashSet(this.type);
-		}
-
-		return Tuple2.of(resultType, resultScopes);
-	}
-
-	private Set<String> getOverlap(List<Map<String, String>> originalScopes) {
-		Set<String> result = Sets.newHashSet();
-		if (originalScopes == null) {
-			if (this.scopes == null) {
-				return null;
-			}
-			originalScopes = Lists.newArrayList();
-		}
-		for (Map<String, String> scopeEntry : originalScopes) {
-			String scope = scopeEntry.get(NGSIConstants.JSON_LD_VALUE);
-			if (this.scopes == null || ArrayUtils.contains(this.scopes, scope)) {
-				result.add(scope);
-			}
-		}
-		return result;
-	}
 
 	public static List<RegistrationEntry> fromRegPayload(Map<String, Object> payload) {
 		List<RegistrationEntry> result = Lists.newArrayList();
@@ -148,18 +82,18 @@ public record RegistrationEntry(String cId, String eId, String eIdp, String type
 			String modeText = ((List<Map<String, String>>) payload.get(NGSIConstants.NGSI_LD_REG_MODE)).get(0)
 					.get(NGSIConstants.JSON_LD_VALUE);
 			switch (modeText) {
-			case NGSIConstants.NGSI_LD_REG_MODE_AUX:
-				mode = 0;
-				break;
-			case NGSIConstants.NGSI_LD_REG_MODE_INC:
-				mode = 1;
-				break;
-			case NGSIConstants.NGSI_LD_REG_MODE_RED:
-				mode = 2;
-				break;
-			case NGSIConstants.NGSI_LD_REG_MODE_EXC:
-				mode = 3;
-				break;
+				case NGSIConstants.NGSI_LD_REG_MODE_AUX:
+					mode = 0;
+					break;
+				case NGSIConstants.NGSI_LD_REG_MODE_INC:
+					mode = 1;
+					break;
+				case NGSIConstants.NGSI_LD_REG_MODE_RED:
+					mode = 2;
+					break;
+				case NGSIConstants.NGSI_LD_REG_MODE_EXC:
+					mode = 3;
+					break;
 
 			}
 		}
@@ -215,120 +149,132 @@ public record RegistrationEntry(String cId, String eId, String eIdp, String type
 					.get(NGSIConstants.NGSI_LD_REG_OPERATIONS)) {
 				String operation = opEntry.get(NGSIConstants.JSON_LD_VALUE);
 				switch (operation) {
-				case NGSIConstants.NGSI_LD_REG_OPERATION_CREATEENTITY:
-					tmpCreateEntity = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_UPDATEENTITY:
-					tmpUpdateEntity = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_APPENDATTRS:
-					tmpAppendAttrs = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_UPDATEATTRS:
-					tmpUpdateAttrs = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_DELETEATTRS:
-					tmpDeleteAttrs = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_DELETEENTITY:
-					tmpDeleteEntity = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_CREATEBATCH:
-					tmpCreateBatch = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_UPSERTBATCH:
-					tmpUpsertBatch = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_UPDATEBATCH:
-					tmpUpdateBatch = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_DELETEBATCH:
-					tmpDeleteBatch = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_UPSERTTEMPORAL:
-					tmpUpsertTemporal = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_APPENDATTRSTEMPORAL:
-					tmpAppendAttrsTemporal = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_DELETEATTRSTEMPORAL:
-					tmpDeleteAttrsTemporal = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_UPDATEATTRSTEMPORAL:
-					tmpUpdateAttrsTemporal = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_DELETEATTRINSTANCETEMPORAL:
-					tmpDeleteAttrInstanceTemporal = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_DELETETEMPORAL:
-					tmpDeleteTemporal = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_MERGEENTITY:
-					tmpMergeEntity = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_REPLACEENTITY:
-					tmpReplaceEntity = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_REPLACEATTRS:
-					tmpReplaceAttrs = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_MERGEBATCH:
-					tmpMergeBatch = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVEENTITY:
-					tmpRetrieveEntity = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_QUERYENTITY:
-					tmpQueryEntity = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_QUERYBATCH:
-					tmpQueryBatch = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVETEMPORAL:
-					tmpRetrieveTemporal = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_QUERYTEMPORAL:
-					tmpQueryTemporal = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVEENTITYTYPES:
-					tmpRetrieveEntityTypes = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVEENTITYTYPEDETAILS:
-					tmpRetrieveEntityTypeDetails = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVEENTITYTYPEINFO:
-					tmpRetrieveEntityTypeInfo = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVEATTRTYPES:
-					tmpRetrieveAttrTypes = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVEATTRTYPEDETAILS:
-					tmpRetrieveAttrTypeDetails = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVEATTRTYPEINFO:
-					tmpRetrieveAttrTypeInfo = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_CREATESUBSCRIPTION:
-					tmpCreateSubscription = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_UPDATESUBSCRIPTION:
-					tmpUpdateSubscription = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVESUBSCRIPTION:
-					tmpRetrieveSubscription = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_QUERYSUBSCRIPTION:
-					tmpQuerySubscription = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_DELETESUBSCRIPTION:
-					tmpDeleteSubscription = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_ENTITYMAP:
-					tmpEntityMap = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_CANCOMPRESS:
-					tmpCanCompress = true;
-					break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_FEDERATION_OPS:
+						tmpRetrieveEntity = tmpQueryEntity = tmpRetrieveEntityTypes = tmpRetrieveEntityTypeDetails = tmpRetrieveEntityTypeInfo = tmpRetrieveAttrTypes = tmpRetrieveAttrTypeDetails = tmpRetrieveAttrTypeInfo = tmpCreateSubscription = tmpUpdateSubscription = tmpRetrieveSubscription = tmpQuerySubscription = tmpDeleteSubscription = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_UPDATE_OPS:
+						tmpUpdateEntity = tmpUpdateAttrs = tmpReplaceEntity = tmpReplaceAttrs = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVE_OPS:
+						tmpRetrieveEntity = tmpQueryEntity = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_REDIRECTION_OPS:
+						tmpCreateEntity = tmpUpdateEntity = tmpAppendAttrs = tmpUpdateAttrs = tmpDeleteAttrs = tmpDeleteEntity = tmpMergeEntity = tmpReplaceEntity = tmpReplaceAttrs = tmpRetrieveEntity = tmpQueryEntity = tmpRetrieveEntityTypes = tmpRetrieveEntityTypeDetails = tmpRetrieveEntityTypeInfo = tmpRetrieveAttrTypes = tmpRetrieveAttrTypeDetails = tmpRetrieveAttrTypeInfo = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_CREATEENTITY:
+						tmpCreateEntity = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_UPDATEENTITY:
+						tmpUpdateEntity = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_APPENDATTRS:
+						tmpAppendAttrs = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_UPDATEATTRS:
+						tmpUpdateAttrs = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_DELETEATTRS:
+						tmpDeleteAttrs = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_DELETEENTITY:
+						tmpDeleteEntity = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_CREATEBATCH:
+						tmpCreateBatch = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_UPSERTBATCH:
+						tmpUpsertBatch = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_UPDATEBATCH:
+						tmpUpdateBatch = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_DELETEBATCH:
+						tmpDeleteBatch = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_UPSERTTEMPORAL:
+						tmpUpsertTemporal = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_APPENDATTRSTEMPORAL:
+						tmpAppendAttrsTemporal = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_DELETEATTRSTEMPORAL:
+						tmpDeleteAttrsTemporal = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_UPDATEATTRSTEMPORAL:
+						tmpUpdateAttrsTemporal = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_DELETEATTRINSTANCETEMPORAL:
+						tmpDeleteAttrInstanceTemporal = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_DELETETEMPORAL:
+						tmpDeleteTemporal = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_MERGEENTITY:
+						tmpMergeEntity = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_REPLACEENTITY:
+						tmpReplaceEntity = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_REPLACEATTRS:
+						tmpReplaceAttrs = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_MERGEBATCH:
+						tmpMergeBatch = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVEENTITY:
+						tmpRetrieveEntity = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_QUERYENTITY:
+						tmpQueryEntity = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_QUERYBATCH:
+						tmpQueryBatch = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVETEMPORAL:
+						tmpRetrieveTemporal = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_QUERYTEMPORAL:
+						tmpQueryTemporal = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVEENTITYTYPES:
+						tmpRetrieveEntityTypes = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVEENTITYTYPEDETAILS:
+						tmpRetrieveEntityTypeDetails = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVEENTITYTYPEINFO:
+						tmpRetrieveEntityTypeInfo = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVEATTRTYPES:
+						tmpRetrieveAttrTypes = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVEATTRTYPEDETAILS:
+						tmpRetrieveAttrTypeDetails = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVEATTRTYPEINFO:
+						tmpRetrieveAttrTypeInfo = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_CREATESUBSCRIPTION:
+						tmpCreateSubscription = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_UPDATESUBSCRIPTION:
+						tmpUpdateSubscription = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVESUBSCRIPTION:
+						tmpRetrieveSubscription = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_QUERYSUBSCRIPTION:
+						tmpQuerySubscription = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_DELETESUBSCRIPTION:
+						tmpDeleteSubscription = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_ENTITYMAP:
+						tmpEntityMap = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_CANCOMPRESS:
+						tmpCanCompress = true;
+						break;
 				}
 			}
 		} else {
@@ -475,6 +421,68 @@ public record RegistrationEntry(String cId, String eId, String eIdp, String type
 		return result;
 	}
 
+	/**
+	 * @param id
+	 * @param type
+	 * @param prop
+	 * @param rel
+	 * @param originalScopes
+	 * @return Matching types and matching scopes if no scopes are in the registry-
+	 *         the original scopes will be returned scopes can be null if there no
+	 *         scopes in the entity if no match is possible it will return null
+	 */
+	public Tuple2<Set<String>, Set<String>> matches(String id, List<String> types, String prop, String rel,
+			Object originalScopes, Shape location) {
+		if (id != null && this.eId != null && !id.equals(eId)) {
+			return null;
+		}
+		if (this.eIdp != null && !id.matches(eIdp)) {
+			return null;
+		}
+		if (prop != null && (eRel != null || eProp != null && !prop.equals(eProp))) {
+			return null;
+		}
+		if (rel != null && (eProp != null || eRel != null && !rel.equals(eRel))) {
+			return null;
+		}
+		if ((location != null && this.location == null) || (location != null && this.location != null
+				&& SpatialPredicate.IsWithin.evaluate(location, this.location))) {
+			return null;
+		}
+		if (this.type != null && types != null && !types.contains(this.type)) {
+			return null;
+		}
+		if (this.scopes != null && originalScopes == null) {
+			return null;
+		}
+		Set<String> resultScopes = getOverlap((List<Map<String, String>>) originalScopes);
+		Set<String> resultType = null;
+		if (this.type == null && types != null) {
+			resultType = Sets.newHashSet(types);
+		} else if (types != null) {
+			resultType = Sets.newHashSet(this.type);
+		}
+
+		return Tuple2.of(resultType, resultScopes);
+	}
+
+	private Set<String> getOverlap(List<Map<String, String>> originalScopes) {
+		Set<String> result = Sets.newHashSet();
+		if (originalScopes == null) {
+			if (this.scopes == null) {
+				return null;
+			}
+			originalScopes = Lists.newArrayList();
+		}
+		for (Map<String, String> scopeEntry : originalScopes) {
+			String scope = scopeEntry.get(NGSIConstants.JSON_LD_VALUE);
+			if (this.scopes == null || ArrayUtils.contains(this.scopes, scope)) {
+				result.add(scope);
+			}
+		}
+		return result;
+	}
+
 	public QueryInfos matches(String[] id, String idPattern, TypeQueryTerm typeQuery, AttrsQueryTerm attrsQuery,
 			QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery) {
 		QueryInfos result = new QueryInfos();
@@ -572,220 +580,221 @@ public record RegistrationEntry(String cId, String eId, String eIdp, String type
 					result.setGeo(geoShape);
 				} else {
 					switch (geoQuery.getGeorel()) {
-					case NGSIConstants.GEO_REL_EQUALS:
-						result.setGeoOp(NGSIConstants.GEO_REL_EQUALS);
-						switch (geoQuery.getGeometry()) {
-						case NGSIConstants.GEO_TYPE_POINT:
+						case NGSIConstants.GEO_REL_EQUALS:
+							result.setGeoOp(NGSIConstants.GEO_REL_EQUALS);
+							switch (geoQuery.getGeometry()) {
+								case NGSIConstants.GEO_TYPE_POINT:
+									if (location instanceof JtsPoint) {
+										if (SpatialPredicate.IsEqualTo.evaluate(location, geoShape)) {
+											result.setGeo(geoShape);
+										} else {
+											return null;
+										}
+									} else {
+										if (SpatialPredicate.IsWithin.evaluate(location, geoShape)) {
+											result.setGeo(geoShape);
+										} else {
+											return null;
+										}
+									}
+									break;
+								case NGSIConstants.GEO_TYPE_LINESTRING:
+								case NGSIConstants.GEO_TYPE_MULTI_LINESTRING:
+									if (location instanceof JtsPoint) {
+										// point can never be queried for equality with a string
+										return null;
+									} else {
+										if (SpatialPredicate.IsWithin.evaluate(location, geoShape)) {
+											result.setGeo(geoShape);
+										} else {
+											return null;
+										}
+									}
+									break;
+								case NGSIConstants.GEO_TYPE_POLYGON:
+								case NGSIConstants.GEO_TYPE_MULTI_POLYGON:
+									if (location instanceof JtsPoint
+											|| ((JtsGeometry) location).getGeom() instanceof LineString
+											|| ((JtsGeometry) location).getGeom() instanceof MultiLineString) {
+										// point can never be queried for equality with a string
+										return null;
+									} else {
+										if (SpatialPredicate.IsWithin.evaluate(location, geoShape)) {
+											result.setGeo(geoShape);
+										} else {
+											return null;
+										}
+									}
+									break;
+								default:
+									return null;
+							}
+							break;
+						case NGSIConstants.GEO_REL_NEAR:
+							Shape toCheck = geoShape;
+							if (geoQuery.getDistanceType().equals(NGSIConstants.GEO_REL_MIN_DISTANCE)) {
+								toCheck = new JtsGeometry(((Geometry) toCheck).reverse(), JtsSpatialContext.GEO, true,
+										true);
+							}
 							if (location instanceof JtsPoint) {
-								if (SpatialPredicate.IsEqualTo.evaluate(location, geoShape)) {
-									result.setGeo(geoShape);
+								if (SpatialPredicate.IsWithin.evaluate(toCheck, location)) {
+									result.setGeo(location);
+									result.setGeoOp(NGSIConstants.GEO_REL_EQUALS);
 								} else {
 									return null;
 								}
 							} else {
-								if (SpatialPredicate.IsWithin.evaluate(location, geoShape)) {
+								if (SpatialPredicate.IsWithin.evaluate(toCheck, location)) {
 									result.setGeo(geoShape);
+									result.setGeoOp(NGSIConstants.GEO_REL_NEAR);
+								} else if (SpatialPredicate.IsWithin.evaluate(location, toCheck)) {
+									result.setGeo(location);
+									result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
+								} else if (SpatialPredicate.Intersects.evaluate(location, toCheck)) {
+									Geometry geom1 = ((JtsGeometry) toCheck).getGeom();
+									Geometry geom2 = ((JtsGeometry) location).getGeom();
+									Geometry intersection = geom1.intersection(geom2);
+									result.setGeo(new JtsGeometry(intersection, JtsSpatialContext.GEO, true, true));
+									result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
 								} else {
+
 									return null;
 								}
 							}
 							break;
-						case NGSIConstants.GEO_TYPE_LINESTRING:
-						case NGSIConstants.GEO_TYPE_MULTI_LINESTRING:
+						case NGSIConstants.GEO_REL_WITHIN:
 							if (location instanceof JtsPoint) {
-								// point can never be queried for equality with a string
-								return null;
-							} else {
-								if (SpatialPredicate.IsWithin.evaluate(location, geoShape)) {
-									result.setGeo(geoShape);
+								if (SpatialPredicate.IsWithin.evaluate(geoShape, location)) {
+									result.setGeo(location);
+									result.setGeoOp(NGSIConstants.GEO_REL_EQUALS);
 								} else {
 									return null;
 								}
-							}
-							break;
-						case NGSIConstants.GEO_TYPE_POLYGON:
-						case NGSIConstants.GEO_TYPE_MULTI_POLYGON:
-							if (location instanceof JtsPoint || ((JtsGeometry) location).getGeom() instanceof LineString
-									|| ((JtsGeometry) location).getGeom() instanceof MultiLineString) {
-								// point can never be queried for equality with a string
-								return null;
 							} else {
-								if (SpatialPredicate.IsWithin.evaluate(location, geoShape)) {
+								if (SpatialPredicate.IsWithin.evaluate(geoShape, location)) {
 									result.setGeo(geoShape);
-								} else {
-									return null;
-								}
-							}
-							break;
-						default:
-							return null;
-						}
-						break;
-					case NGSIConstants.GEO_REL_NEAR:
-						Shape toCheck = geoShape;
-						if (geoQuery.getDistanceType().equals(NGSIConstants.GEO_REL_MIN_DISTANCE)) {
-							toCheck = new JtsGeometry(((Geometry) toCheck).reverse(), JtsSpatialContext.GEO, true,
-									true);
-						}
-						if (location instanceof JtsPoint) {
-							if (SpatialPredicate.IsWithin.evaluate(toCheck, location)) {
-								result.setGeo(location);
-								result.setGeoOp(NGSIConstants.GEO_REL_EQUALS);
-							} else {
-								return null;
-							}
-						} else {
-							if (SpatialPredicate.IsWithin.evaluate(toCheck, location)) {
-								result.setGeo(geoShape);
-								result.setGeoOp(NGSIConstants.GEO_REL_NEAR);
-							} else if (SpatialPredicate.IsWithin.evaluate(location, toCheck)) {
-								result.setGeo(location);
-								result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
-							} else if (SpatialPredicate.Intersects.evaluate(location, toCheck)) {
-								Geometry geom1 = ((JtsGeometry) toCheck).getGeom();
-								Geometry geom2 = ((JtsGeometry) location).getGeom();
-								Geometry intersection = geom1.intersection(geom2);
-								result.setGeo(new JtsGeometry(intersection, JtsSpatialContext.GEO, true, true));
-								result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
-							} else {
-
-								return null;
-							}
-						}
-						break;
-					case NGSIConstants.GEO_REL_WITHIN:
-						if (location instanceof JtsPoint) {
-							if (SpatialPredicate.IsWithin.evaluate(geoShape, location)) {
-								result.setGeo(location);
-								result.setGeoOp(NGSIConstants.GEO_REL_EQUALS);
-							} else {
-								return null;
-							}
-						} else {
-							if (SpatialPredicate.IsWithin.evaluate(geoShape, location)) {
-								result.setGeo(geoShape);
-								result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
-							} else if (SpatialPredicate.IsWithin.evaluate(location, geoShape)) {
-								result.setGeo(location);
-								result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
-							} else if (SpatialPredicate.Intersects.evaluate(location, geoShape)) {
-								Geometry geom1 = ((JtsGeometry) geoShape).getGeom();
-								Geometry geom2 = ((JtsGeometry) location).getGeom();
-								Geometry intersection = geom1.intersection(geom2);
-								result.setGeo(new JtsGeometry(intersection, JtsSpatialContext.GEO, true, true));
-								result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
-							} else {
-								return null;
-							}
-						}
-
-						break;
-					case NGSIConstants.GEO_REL_CONTAINS:
-						if (location instanceof JtsPoint) {
-							if (SpatialPredicate.Contains.evaluate(geoShape, location)) {
-								result.setGeo(location);
-								result.setGeoOp(NGSIConstants.GEO_REL_EQUALS);
-							} else {
-								return null;
-							}
-						} else {
-							if (SpatialPredicate.IsWithin.evaluate(geoShape, location)) {
-								result.setGeo(geoShape);
-								result.setGeoOp(NGSIConstants.GEO_REL_CONTAINS);
-							} else if (SpatialPredicate.IsWithin.evaluate(location, geoShape)) {
-								result.setGeo(location);
-								result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
-							} else if (SpatialPredicate.Intersects.evaluate(location, geoShape)) {
-								Geometry geom1 = ((JtsGeometry) geoShape).getGeom();
-								Geometry geom2 = ((JtsGeometry) location).getGeom();
-								Geometry intersection = geom1.intersection(geom2);
-								result.setGeo(new JtsGeometry(intersection, JtsSpatialContext.GEO, true, true));
-								result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
-							} else {
-								return null;
-							}
-						}
-						break;
-					case NGSIConstants.GEO_REL_INTERSECTS:
-						if (location instanceof JtsPoint) {
-							if (SpatialPredicate.Intersects.evaluate(geoShape, location)) {
-								result.setGeo(location);
-								result.setGeoOp(NGSIConstants.GEO_REL_EQUALS);
-							} else {
-								return null;
-							}
-						} else {
-							if (SpatialPredicate.IsWithin.evaluate(geoShape, location)) {
-								result.setGeo(geoShape);
-								result.setGeoOp(NGSIConstants.GEO_REL_INTERSECTS);
-							} else if (SpatialPredicate.IsWithin.evaluate(location, geoShape)) {
-								result.setGeo(location);
-								result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
-							} else if (SpatialPredicate.Intersects.evaluate(location, geoShape)) {
-								Geometry geom1 = ((JtsGeometry) geoShape).getGeom();
-								Geometry geom2 = ((JtsGeometry) location).getGeom();
-								Geometry intersection = geom1.intersection(geom2);
-								result.setGeo(new JtsGeometry(intersection, JtsSpatialContext.GEO, true, true));
-								result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
-							} else {
-								return null;
-							}
-						}
-						break;
-					case NGSIConstants.GEO_REL_DISJOINT:
-						if (location instanceof Point) {
-							if (SpatialPredicate.IsDisjointTo.evaluate(geoShape, location)) {
-								result.setGeo(location);
-								result.setGeoOp(NGSIConstants.GEO_REL_EQUALS);
-							} else {
-								return null;
-							}
-						} else {
-							if (SpatialPredicate.IsDisjointTo.evaluate(geoShape, location)) {
-								result.setGeo(location);
-								result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
-							} else {
-								Geometry geom1 = ((JtsGeometry) geoShape).getGeom().reverse();
-								Geometry geom2 = ((JtsGeometry) location).getGeom();
-								if (geom1.intersects(geom2)) {
+									result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
+								} else if (SpatialPredicate.IsWithin.evaluate(location, geoShape)) {
+									result.setGeo(location);
+									result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
+								} else if (SpatialPredicate.Intersects.evaluate(location, geoShape)) {
+									Geometry geom1 = ((JtsGeometry) geoShape).getGeom();
+									Geometry geom2 = ((JtsGeometry) location).getGeom();
 									Geometry intersection = geom1.intersection(geom2);
 									result.setGeo(new JtsGeometry(intersection, JtsSpatialContext.GEO, true, true));
 									result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
 								} else {
 									return null;
 								}
+							}
 
-							}
-						}
-						break;
-					case NGSIConstants.GEO_REL_OVERLAPS:
-						if (location instanceof Point) {
-							if (SpatialPredicate.Intersects.evaluate(geoShape, location)) {
-								result.setGeo(location);
-								result.setGeoOp(NGSIConstants.GEO_REL_EQUALS);
+							break;
+						case NGSIConstants.GEO_REL_CONTAINS:
+							if (location instanceof JtsPoint) {
+								if (SpatialPredicate.Contains.evaluate(geoShape, location)) {
+									result.setGeo(location);
+									result.setGeoOp(NGSIConstants.GEO_REL_EQUALS);
+								} else {
+									return null;
+								}
 							} else {
-								return null;
+								if (SpatialPredicate.IsWithin.evaluate(geoShape, location)) {
+									result.setGeo(geoShape);
+									result.setGeoOp(NGSIConstants.GEO_REL_CONTAINS);
+								} else if (SpatialPredicate.IsWithin.evaluate(location, geoShape)) {
+									result.setGeo(location);
+									result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
+								} else if (SpatialPredicate.Intersects.evaluate(location, geoShape)) {
+									Geometry geom1 = ((JtsGeometry) geoShape).getGeom();
+									Geometry geom2 = ((JtsGeometry) location).getGeom();
+									Geometry intersection = geom1.intersection(geom2);
+									result.setGeo(new JtsGeometry(intersection, JtsSpatialContext.GEO, true, true));
+									result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
+								} else {
+									return null;
+								}
 							}
-						} else {
-							if (SpatialPredicate.IsWithin.evaluate(geoShape, location)) {
-								result.setGeo(geoShape);
-								result.setGeoOp(NGSIConstants.GEO_REL_OVERLAPS);
-							} else if (SpatialPredicate.IsWithin.evaluate(location, geoShape)) {
-								result.setGeo(location);
-								result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
-							} else if (SpatialPredicate.Intersects.evaluate(location, geoShape)) {
-								Geometry geom1 = ((JtsGeometry) geoShape).getGeom();
-								Geometry geom2 = ((JtsGeometry) location).getGeom();
-								Geometry intersection = geom1.intersection(geom2);
-								result.setGeo(new JtsGeometry(intersection, JtsSpatialContext.GEO, true, true));
-								result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
+							break;
+						case NGSIConstants.GEO_REL_INTERSECTS:
+							if (location instanceof JtsPoint) {
+								if (SpatialPredicate.Intersects.evaluate(geoShape, location)) {
+									result.setGeo(location);
+									result.setGeoOp(NGSIConstants.GEO_REL_EQUALS);
+								} else {
+									return null;
+								}
 							} else {
-								return null;
+								if (SpatialPredicate.IsWithin.evaluate(geoShape, location)) {
+									result.setGeo(geoShape);
+									result.setGeoOp(NGSIConstants.GEO_REL_INTERSECTS);
+								} else if (SpatialPredicate.IsWithin.evaluate(location, geoShape)) {
+									result.setGeo(location);
+									result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
+								} else if (SpatialPredicate.Intersects.evaluate(location, geoShape)) {
+									Geometry geom1 = ((JtsGeometry) geoShape).getGeom();
+									Geometry geom2 = ((JtsGeometry) location).getGeom();
+									Geometry intersection = geom1.intersection(geom2);
+									result.setGeo(new JtsGeometry(intersection, JtsSpatialContext.GEO, true, true));
+									result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
+								} else {
+									return null;
+								}
 							}
-						}
-						break;
-					default:
-						break;
+							break;
+						case NGSIConstants.GEO_REL_DISJOINT:
+							if (location instanceof Point) {
+								if (SpatialPredicate.IsDisjointTo.evaluate(geoShape, location)) {
+									result.setGeo(location);
+									result.setGeoOp(NGSIConstants.GEO_REL_EQUALS);
+								} else {
+									return null;
+								}
+							} else {
+								if (SpatialPredicate.IsDisjointTo.evaluate(geoShape, location)) {
+									result.setGeo(location);
+									result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
+								} else {
+									Geometry geom1 = ((JtsGeometry) geoShape).getGeom().reverse();
+									Geometry geom2 = ((JtsGeometry) location).getGeom();
+									if (geom1.intersects(geom2)) {
+										Geometry intersection = geom1.intersection(geom2);
+										result.setGeo(new JtsGeometry(intersection, JtsSpatialContext.GEO, true, true));
+										result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
+									} else {
+										return null;
+									}
+
+								}
+							}
+							break;
+						case NGSIConstants.GEO_REL_OVERLAPS:
+							if (location instanceof Point) {
+								if (SpatialPredicate.Intersects.evaluate(geoShape, location)) {
+									result.setGeo(location);
+									result.setGeoOp(NGSIConstants.GEO_REL_EQUALS);
+								} else {
+									return null;
+								}
+							} else {
+								if (SpatialPredicate.IsWithin.evaluate(geoShape, location)) {
+									result.setGeo(geoShape);
+									result.setGeoOp(NGSIConstants.GEO_REL_OVERLAPS);
+								} else if (SpatialPredicate.IsWithin.evaluate(location, geoShape)) {
+									result.setGeo(location);
+									result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
+								} else if (SpatialPredicate.Intersects.evaluate(location, geoShape)) {
+									Geometry geom1 = ((JtsGeometry) geoShape).getGeom();
+									Geometry geom2 = ((JtsGeometry) location).getGeom();
+									Geometry intersection = geom1.intersection(geom2);
+									result.setGeo(new JtsGeometry(intersection, JtsSpatialContext.GEO, true, true));
+									result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
+								} else {
+									return null;
+								}
+							}
+							break;
+						default:
+							break;
 
 					}
 

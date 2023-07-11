@@ -386,6 +386,10 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_REG_MODE_EXC = "exclusive";
 	public static final String NGSI_LD_REG_MODE_RED = "redirect";
 	public static final String NGSI_LD_REG_OPERATIONS = "https://uri.etsi.org/ngsi-ld/operations";
+	public static final String NGSI_LD_REG_OPERATION_FEDERATION_OPS = "federationOps";
+	public static final String NGSI_LD_REG_OPERATION_UPDATE_OPS = "updateOps";
+	public static final String NGSI_LD_REG_OPERATION_RETRIEVE_OPS = "retrieveOps";
+	public static final String NGSI_LD_REG_OPERATION_REDIRECTION_OPS = "redirectionOps";
 	public static final String NGSI_LD_REG_OPERATION_CREATEENTITY = "createEntity";
 	public static final String NGSI_LD_REG_OPERATION_UPDATEENTITY = "updateEntity";
 	public static final String NGSI_LD_REG_OPERATION_APPENDATTRS = "appendAttrs";
