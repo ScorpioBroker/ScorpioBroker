@@ -13,6 +13,17 @@ jobs:
           java-version: 1.17
       - name: Install zip
         uses: montudor/action-zip@v1
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.ECR_ID }}
+          aws-secret-access-key: ${{ secrets.ECR_TOKEN }}
+          aws-region: us-east-1
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+        with:
+          registry-type: public
       - name: Build testserver
         run: |
           cd testserver
@@ -24,8 +35,8 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-java-with-kafka
         run: |
-          rm ./BrokerParent/pom.xml
-          mv ./BrokerParent/build-pom.xml ./BrokerParent/pom.xml
+#          rm ./BrokerParent/pom.xml
+#          mv ./BrokerParent/build-pom.xml ./BrokerParent/pom.xml
           mvn clean package -DskipTests -Dkafka -Pkafka -Ddocker -Ddocker-tag=java-kafka-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=kafka
       - name: docker tag 
         run: |
@@ -38,6 +49,24 @@ jobs:
           docker tag scorpiobroker/query-manager:java-kafka-${{steps.get-id.outputs.id}} scorpiobroker/query-manager:java-kafka-latest
           docker tag scorpiobroker/entity-manager:java-kafka-${{steps.get-id.outputs.id}} scorpiobroker/entity-manager:java-kafka-latest
           docker tag scorpiobroker/all-in-one-runner:java-kafka-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:java-kafka-latest
+          docker tag scorpiobroker/at-context-server:java-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/at-context-server:java-kafka-latest
+          docker tag scorpiobroker/history-entity-manager:java-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-entity-manager:java-kafka-latest
+          docker tag scorpiobroker/history-query-manager:java-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-query-manager:java-kafka-latest
+          docker tag scorpiobroker/registry-subscription-manager:java-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-subscription-manager:java-kafka-latest
+          docker tag scorpiobroker/registry-manager:java-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-manager:java-kafka-latest
+          docker tag scorpiobroker/subscription-manager:java-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/subscription-manager:java-kafka-latest
+          docker tag scorpiobroker/query-manager:java-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/query-manager:java-kafka-latest
+          docker tag scorpiobroker/entity-manager:java-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/entity-manager:java-kafka-latest
+          docker tag scorpiobroker/all-in-one-runner:java-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:java-kafka-latest
+          docker tag scorpiobroker/at-context-server:java-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/at-context-server:java-kafka-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/history-entity-manager:java-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-entity-manager:java-kafka-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/history-query-manager:java-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-query-manager:java-kafka-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/registry-subscription-manager:java-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-subscription-manager:java-kafka-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/registry-manager:java-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-manager:java-kafka-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/subscription-manager:java-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/subscription-manager:java-kafka-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/query-manager:java-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/query-manager:java-kafka-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/entity-manager:java-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/entity-manager:java-kafka-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/all-in-one-runner:java-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:java-kafka-${{steps.get-id.outputs.id}}
       - name: start docker aaio 
         run: |
           docker-compose -f ./compose-files/docker-compose-java-aaio-kafka-test.yml up &
@@ -82,6 +111,21 @@ jobs:
           docker push scorpiobroker/query-manager:java-kafka-latest
           docker push scorpiobroker/entity-manager:java-kafka-latest
           docker push scorpiobroker/all-in-one-runner:java-kafka-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/at-context-server:java-kafka-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-entity-manager:java-kafka-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-query-manager:java-kafka-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-subscription-manager:java-kafka-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-manager:java-kafka-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/subscription-manager:java-kafka-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/query-manager:java-kafka-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/entity-manager:java-kafka-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:java-kafka-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-subscription-manager:java-kafka-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-manager:java-kafka-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/subscription-manager:java-kafka-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/query-manager:java-kafka-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/entity-manager:java-kafka-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:java-kafka-latest
       - name: Create Release ${{steps.get-id.outputs.id}}-java-kafka
         id: create_release
         uses: actions/create-release@v1
@@ -199,6 +243,18 @@ jobs:
           java-version: 1.17
       - name: Install zip
         uses: montudor/action-zip@v1
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.ECR_ID }}
+          aws-secret-access-key: ${{ secrets.ECR_TOKEN }}
+          aws-region: us-east-1
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+        with:
+          registry-type: public
+
       - name: Build testserver
         run: |
           cd testserver
@@ -210,12 +266,14 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-java
         run: |
-          rm ./BrokerParent/pom.xml
-          mv ./BrokerParent/build-pom.xml ./BrokerParent/pom.xml
+#          rm ./BrokerParent/pom.xml
+#          mv ./BrokerParent/build-pom.xml ./BrokerParent/pom.xml
           mvn clean package -DskipTests -Din-memory -Pin-memory -Ddocker -Ddocker-tag=java-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=in-memory
       - name: docker tag
         run: |
           docker tag scorpiobroker/all-in-one-runner:java-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:java-latest
+          docker tag scorpiobroker/all-in-one-runner:java-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:java-latest
+          docker tag scorpiobroker/all-in-one-runner:java-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:java-${{steps.get-id.outputs.id}}
       - name: start docker aaio 
         run: |
           docker-compose -f ./compose-files/docker-compose-java-aaio-test.yml up &
@@ -236,6 +294,8 @@ jobs:
         run: |
           docker push scorpiobroker/all-in-one-runner:java-${{steps.get-id.outputs.id}}
           docker push scorpiobroker/all-in-one-runner:java-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:java-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:java-${{steps.get-id.outputs.id}}
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
