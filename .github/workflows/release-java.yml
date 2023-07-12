@@ -35,8 +35,6 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-java-with-kafka
         run: |
-#          rm ./BrokerParent/pom.xml
-#          mv ./BrokerParent/build-pom.xml ./BrokerParent/pom.xml
           mvn clean package -DskipTests -Dkafka -Pkafka -Ddocker -Ddocker-tag=java-kafka-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=kafka
       - name: docker tag 
         run: |
@@ -266,8 +264,6 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-java
         run: |
-#          rm ./BrokerParent/pom.xml
-#          mv ./BrokerParent/build-pom.xml ./BrokerParent/pom.xml
           mvn clean package -DskipTests -Din-memory -Pin-memory -Ddocker -Ddocker-tag=java-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=in-memory
       - name: docker tag
         run: |
