@@ -13,6 +13,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteAttributeRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.MergePatchRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.ReplaceAttribRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.ReplaceEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.UpdateEntityRequest;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
@@ -409,6 +410,27 @@ public class EntityInfoDAO {
 							update entity set entity = $1::jsonb, e_types = $2 where id = $3
 							RETURNING (SELECT ENTITY FROM old_entity) AS old_entity""")
 					.execute(Tuple.of(new JsonObject(request.getPayload()),types,request.getId())).onItem().transformToUni(rows -> {
+						if (rows.rowCount() == 0) {
+							return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
+						}
+						return Uni.createFrom().item(rows.iterator().next().getJsonObject(0).getMap());
+					});
+		});
+	}
+
+
+
+
+	public Uni<Map<String, Object>> replaceAttrib(ReplaceAttribRequest request) {
+		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
+			return client.preparedQuery("""
+							WITH old_entity AS (SELECT ENTITY
+							FROM ENTITY
+							WHERE id = $2)
+							update entity set entity = entity::jsonb||$1
+							where id = $2
+							RETURNING (SELECT ENTITY FROM old_entity) AS old_entity""")
+					.execute(Tuple.of(new JsonObject(request.getPayload()),request.getId())).onItem().transformToUni(rows -> {
 						if (rows.rowCount() == 0) {
 							return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
 						}

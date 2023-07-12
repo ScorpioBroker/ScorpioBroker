@@ -301,12 +301,39 @@ public class EntityController {// implements EntityHandlerInterface {
 	}
 	@Path("/entities/{entityId}")
 	@PUT
-	public Uni<RestResponse<Object>> replaceEntity(HttpServerRequest request, Map<String, Object> body) {
+	public Uni<RestResponse<Object>> replaceEntity(@PathParam("entityId") String entityId, HttpServerRequest request, Map<String, Object> body) {
 		logger.debug("replacing entity");
 		noConcise(body);
+
 		return HttpUtils.expandBody(request, body, AppConstants.REPLACE_ENTITY_PAYLOAD, ldService).onItem()
 				.transformToUni(tuple -> {
+					if(!body.get(NGSIConstants.ID).equals(entityId)){
+						return 	Uni.createFrom().item(HttpUtils.handleControllerExceptions(
+									new ResponseException(ErrorType.BadRequestData, "Id can not be updated")));
+					}
 					return entityService.replaceEntity(HttpUtils.getTenant(request), tuple.getItem2(), tuple.getItem1()).onItem()
+							.transform(opResult -> {
+
+								logger.debug("Done replacing entity");
+								return HttpUtils.generateUpdateResultResponse(opResult);
+							}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+				});
+	}
+
+
+	@Path("/entities/{entityId}/attrs/{attrId}")
+	@PUT
+	public Uni<RestResponse<Object>> replaceAttribute(@PathParam("attrId") String attrId,@PathParam("entityId") String entityId, HttpServerRequest request, Map<String, Object> body) {
+		logger.debug("replacing Attrs");
+		noConcise(body);
+		return HttpUtils.expandBody(request, body, AppConstants.PARTIAL_UPDATE_REQUEST, ldService).onItem()
+				.transformToUni(tuple -> {
+					if(body.get(NGSIConstants.ID)!=null && !body.get(NGSIConstants.ID).equals(entityId)){
+						return 	Uni.createFrom().item(HttpUtils.handleControllerExceptions(
+								new ResponseException(ErrorType.BadRequestData, "Id can not be updated")));
+					}
+					String finalAttrId = tuple.getItem1().expandIri(attrId, false, true, null, null);
+					return entityService.replaceAttribute(HttpUtils.getTenant(request), tuple.getItem2(), tuple.getItem1(),entityId,finalAttrId).onItem()
 							.transform(opResult -> {
 								logger.debug("Done replacing entity");
 								return HttpUtils.generateUpdateResultResponse(opResult);
