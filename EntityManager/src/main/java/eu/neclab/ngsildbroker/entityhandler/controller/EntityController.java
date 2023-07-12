@@ -9,6 +9,7 @@ import javax.inject.Inject;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.PATCH;
 import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
@@ -28,7 +29,7 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
 
 /**
- * 
+ *
  * @version 1.0
  * @date 10-Jul-2018
  */
@@ -49,7 +50,7 @@ public class EntityController {// implements EntityHandlerInterface {
 
 	/**
 	 * Method(POST) for "/ngsi-ld/v1/entities/" rest endpoint.
-	 * 
+	 *
 	 * @param payload jsonld message
 	 * @return ResponseEntity object
 	 */
@@ -71,7 +72,7 @@ public class EntityController {// implements EntityHandlerInterface {
 
 	/**
 	 * Method(PATCH) for "/ngsi-ld/v1/entities/{entityId}/attrs" rest endpoint.
-	 * 
+	 *
 	 * @param entityId
 	 * @param payload  json ld message
 	 * @return ResponseEntity object
@@ -98,7 +99,7 @@ public class EntityController {// implements EntityHandlerInterface {
 
 	/**
 	 * Method(POST) for "/ngsi-ld/v1/entities/{entityId}/attrs" rest endpoint.
-	 * 
+	 *
 	 * @param entityId
 	 * @param payload  jsonld message
 	 * @return ResponseEntity object
@@ -127,7 +128,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	/**
 	 * Method(PATCH) for "/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}" rest
 	 * endpoint.
-	 * 
+	 *
 	 * @param entityId
 	 * @param payload
 	 * @return
@@ -159,7 +160,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	/**
 	 * Method(DELETE) for "/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}" rest
 	 * endpoint.
-	 * 
+	 *
 	 * @param entityId
 	 * @param attrId
 	 * @return
@@ -191,7 +192,7 @@ public class EntityController {// implements EntityHandlerInterface {
 
 	/**
 	 * Method(DELETE) for "/ngsi-ld/v1/entities/{entityId}" rest endpoint.
-	 * 
+	 *
 	 * @param entityId
 	 * @return
 	 */
@@ -297,5 +298,19 @@ public class EntityController {// implements EntityHandlerInterface {
 							.onItem().transform(HttpUtils::generateUpdateResultResponse);
 				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
+	}
+	@Path("/entities/{entityId}")
+	@PUT
+	public Uni<RestResponse<Object>> replaceEntity(HttpServerRequest request, Map<String, Object> body) {
+		logger.debug("replacing entity");
+		noConcise(body);
+		return HttpUtils.expandBody(request, body, AppConstants.REPLACE_ENTITY_PAYLOAD, ldService).onItem()
+				.transformToUni(tuple -> {
+					return entityService.replaceEntity(HttpUtils.getTenant(request), tuple.getItem2(), tuple.getItem1()).onItem()
+							.transform(opResult -> {
+								logger.debug("Done replacing entity");
+								return HttpUtils.generateUpdateResultResponse(opResult);
+							}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+				});
 	}
 }

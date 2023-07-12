@@ -67,6 +67,7 @@ public class AppConstants {
 	public static final String NGB_APPLICATION_JSON_PATCH = "application/merge-patch+json";
 	public static final int ENTITY_CREATE_PAYLOAD = 0;
 	public static final int MERGE_PATCH_PAYLOAD = 17;
+	public static final int REPLACE_ENTITY_PAYLOAD = 22;
 	public static final int ENTITY_UPDATE_PAYLOAD = 1;
 	public static final int ENTITY_RETRIEVED_PAYLOAD = 2;
 	public static final int SUBSCRIPTION_CREATE_PAYLOAD = 3;
@@ -97,6 +98,7 @@ public class AppConstants {
 	public static final int APPEND_REQUEST = 1;
 	public static final int UPDATE_REQUEST = 2;
 	public static final int MERGE_PATCH_REQUEST = 17;
+	public static final int REPLACE_ENTITY_REQUEST = 22;
 	public static final int PARTIAL_UPDATE_REQUEST = 21;
 	public static final int DELETE_REQUEST = 3;
 	public static final int DELETE_ATTRIBUTE_REQUEST = 4;

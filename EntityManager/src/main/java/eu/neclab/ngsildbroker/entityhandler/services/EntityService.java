@@ -8,12 +8,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
-
+import eu.neclab.ngsildbroker.commons.datatypes.requests.ReplaceEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.MergePatchRequest;
 import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Channel;
@@ -22,7 +22,6 @@ import org.eclipse.microprofile.reactive.messaging.OnOverflow.Strategy;
 import org.locationtech.spatial4j.shape.Shape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLDService;
 import com.google.common.collect.HashBasedTable;
@@ -30,7 +29,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Table;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.RegistrationEntry;
@@ -749,6 +747,7 @@ public class EntityService {
 								break;
 							case AppConstants.UPDATE_REQUEST:
 							case AppConstants.MERGE_PATCH_REQUEST:
+							case AppConstants.REPLACE_ENTITY_REQUEST:
 								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
 										regHost.cSourceId(), regEntry.appendAttrs(), false, regEntry.regMode(),
 										regEntry.canDoZip(), regEntry.canDoIdQuery());
@@ -1336,9 +1335,8 @@ public class EntityService {
 			return result;
 		});
 	}
-
 	public Uni<NGSILDOperationResult> mergePatch(String tenant, String entityId, Map<String, Object> resolved,
-			Context context) {
+												 Context context) {
 		logger.debug("createMessage() :: started");
 		MergePatchRequest request = new MergePatchRequest(tenant, entityId, resolved, null);
 		Tuple2<Map<String, Object>, Collection<Tuple2<RemoteHost, Map<String, Object>>>> localAndRemote = splitEntity(
@@ -1406,6 +1404,74 @@ public class EntityService {
 				localResult.addSuccess(new CRUDSuccess(null, null, null, request.getPayload(), context));
 				return localResult;
 			});
+		});
+	}
+	public Uni<NGSILDOperationResult> replaceEntity(String tenant,Map<String, Object> resolved, Context context) {
+		logger.debug("createMessage() :: started");
+
+		ReplaceEntityRequest request = new ReplaceEntityRequest(tenant, resolved,null);
+		Tuple2<Map<String, Object>, Collection<Tuple2<RemoteHost, Map<String, Object>>>> localAndRemote = splitEntity(
+				request);
+		Map<String, Object> localEntity = localAndRemote.getItem1();
+		Collection<Tuple2<RemoteHost, Map<String, Object>>> remoteEntitiesAndHosts = localAndRemote.getItem2();
+		if (remoteEntitiesAndHosts.isEmpty()) {
+			request.setPayload(localEntity);
+			return replaceLocalEntity(request, context);
+		}
+		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(remoteEntitiesAndHosts.size());
+		for (Tuple2<RemoteHost, Map<String, Object>> remoteEntityAndHost : remoteEntitiesAndHosts) {
+			Map<String, Object> expanded = remoteEntityAndHost.getItem2();
+			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
+			if (remoteHost.canDoSingleOp()) {
+				unis.add(prepareSplitUpEntityForSending(expanded, context).onItem().transformToUni(compacted->{
+					return webClient.post(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT)
+							.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(compacted)).onItemOrFailure()
+							.transform((response, failure) -> {
+								return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(201), remoteHost,
+										AppConstants.CREATE_REQUEST, request.getId(),
+										HttpUtils.getAttribsFromCompactedPayload(compacted));
+							});
+				}));
+
+			} else {
+				unis.add(prepareSplitUpEntityForSending(expanded, context).onItem().transformToUni(compacted->{
+					return webClient.post(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_CREATE)
+							.putHeaders(remoteHost.headers())
+							.sendJson(new JsonArray(Lists.newArrayList(new JsonObject(compacted)))).onItemOrFailure()
+							.transform((response, failure) -> {
+								return handleBatchResponse(response, failure, remoteHost, Lists.newArrayList(compacted),
+										ArrayUtils.toArray(201)).get(0);
+							});
+				}));
+			}
+
+		}
+		if (localEntity != null && !localEntity.isEmpty()) {
+			request.setPayload(localEntity);
+			unis.add(replaceLocalEntity(request, context).onFailure().recoverWithItem(e -> {
+				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST,
+						request.getId());
+				if (e instanceof ResponseException) {
+					localResult.addFailure((ResponseException) e);
+				} else {
+					localResult.addFailure(new ResponseException(ErrorType.InternalError, e.getMessage()));
+				}
+
+				return localResult;
+
+			}));
+		}
+		return Uni.combine().all().unis(unis).combinedWith(list -> {
+			return getResult(list);
+		});
+	}
+	private Uni<NGSILDOperationResult> replaceLocalEntity(ReplaceEntityRequest request, Context context) {
+		return entityDAO.replaceEntity(request).onItem().transform(v -> {
+			entityEmitter.sendAndForget(request);
+			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.REPLACE_ENTITY_REQUEST,
+					request.getId());
+			localResult.addSuccess(new CRUDSuccess(null, null, null, request.getPayload(), context));
+			return localResult;
 		});
 	}
 }
