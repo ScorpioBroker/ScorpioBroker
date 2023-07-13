@@ -304,7 +304,7 @@ public class EntityService {
 		});
 	}
 
-	public Uni<Boolean> patchToEndPoint(String entityId, HttpServerRequest request, String payload, String attrId) {
+	public Uni<Boolean> patchToEndPoint(String entityId, HttpServerRequest request, Map<String, Object> body, String attrId) {
 		String tenantId = HttpUtils.getTenant(request);
 		return entityDAO.getEndpoint(entityId, tenantId).onItem().transformToUni(endPoint -> {
 			if (endPoint != null && !endPoint.equals("")) {
@@ -312,7 +312,7 @@ public class EntityService {
 				return webClient.patchAbs(endPoint + "/ngsi-ld/v1/entities/" + entityId + "/attrs/" + attrId)
 						.putHeader(NGSIConstants.TENANT_HEADER, tenantId)
 						.putHeader(AppConstants.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-						.sendJsonObject(new JsonObject(payload)).onItem().transform(ar -> {
+						.sendJsonObject(new JsonObject(body)).onItem().transform(ar -> {
 							logger.trace("patchToEndPoint() :: completed");
 							return true;
 						});
