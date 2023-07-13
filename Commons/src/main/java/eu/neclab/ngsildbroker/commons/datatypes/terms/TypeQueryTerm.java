@@ -569,20 +569,20 @@ public class TypeQueryTerm {
 		this.allTypes = allTypes;
 	}
 
-	public void toRequestString(StringBuilder result) {
+	public void toRequestString(StringBuilder result, Context context) {
 		if (firstChild != null) {
 			result.append('(');
-			firstChild.toRequestString(result);
+			firstChild.toRequestString(result, context);
 			result.append(')');
 		} else {
-			result.append(type);
+			result.append(context.compactIri(type));
 			if (hasNext()) {
 				if (isNextAnd()) {
 					result.append(';');
 				} else {
 					result.append('|');
 				}
-				next.toRequestString(result);
+				next.toRequestString(result, context);
 			}
 		}
 
