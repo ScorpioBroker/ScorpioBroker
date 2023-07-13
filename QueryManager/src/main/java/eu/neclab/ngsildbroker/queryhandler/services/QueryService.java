@@ -391,7 +391,9 @@ public class QueryService {
 						queryInfos.getAttrs().add(regEntry.eRel());
 					} else {
 						queryInfos.setFullAttrsFound(true);
-						queryInfos.setAttrs(attrsQuery.getAttrs());
+						if (attrsQuery != null && attrsQuery.getAttrs() != null && !attrsQuery.getAttrs().isEmpty()) {
+							queryInfos.setAttrs(attrsQuery.getAttrs());
+						}
 					}
 				}
 			}
