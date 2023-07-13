@@ -1,3 +1,9 @@
+RELEASE NOTES SCORPIO 4.0.7
+
+This release 
+ - increases the default timeout for transactions
+ - addresses an issue in a db migration related to ownership change 
+
 RELEASE NOTES SCORPIO 4.0.6
 
 This release 
