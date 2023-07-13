@@ -60,12 +60,15 @@ public class ClientManager {
 	String username;
 	@ConfigProperty(name = "quarkus.datasource.password")
 	String password;
-	
+
 	@ConfigProperty(name = "quarkus.datasource.reactive.max-size")
 	int reactiveMaxSize;
 	@ConfigProperty(name = "quarkus.datasource.reactive.idle-timeout")
 	Duration idleTime;
-	
+
+	@ConfigProperty(name = "quarkus.transaction-manager.default-transaction-timeout")
+	Duration connectionTime;
+
 	@ConfigProperty(name = "pool.minsize")
 	int minsize;
 	@ConfigProperty(name = "pool.maxsize")
@@ -103,7 +106,8 @@ public class ClientManager {
 			options.setMaxSize(reactiveMaxSize);
 			options.setIdleTimeout((int) idleTime.getSeconds());
 			options.setIdleTimeoutUnit(TimeUnit.SECONDS);
-			
+			options.setConnectionTimeout((int) connectionTime.getSeconds());
+			options.setConnectionTimeoutUnit(TimeUnit.SECONDS);
 
 			PgPool pool = PgPool.pool(vertx, PgConnectOptions.fromUri(reactiveBaseUrl + finalDataBase).setUser(username)
 					.setPassword(password).setCachePreparedStatements(true), options);

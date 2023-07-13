@@ -57,7 +57,10 @@ public abstract class HistoryMessagingBase {
 		if (!autoRecording) {
 			return Uni.createFrom().voidItem();
 		}
-		logger.debug("history manager batch handling got called");
+		logger.debug("history manager batch handling got called: with ids: " + message.getEntityIds());
+		if (message.getRequestPayload().isEmpty()) {
+			return Uni.createFrom().voidItem();
+		}
 		return historyService.handleInternalBatchRequest(message);
 	}
 

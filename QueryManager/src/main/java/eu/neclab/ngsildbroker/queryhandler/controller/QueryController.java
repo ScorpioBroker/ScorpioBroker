@@ -15,6 +15,8 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.jaxrs.RestResponseBuilderImpl;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.github.jsonldjava.core.JsonLDService;
@@ -41,6 +43,8 @@ import io.vertx.core.http.HttpServerRequest;
 @Singleton
 @Path("/ngsi-ld/v1")
 public class QueryController {
+
+	private static Logger logger = LoggerFactory.getLogger(QueryController.class);
 
 	@Inject
 	JsonLDService ldService;
@@ -80,6 +84,7 @@ public class QueryController {
 
 		List<Object> headerContext;
 		headerContext = HttpUtils.getAtContext(request);
+		logger.debug("retrieve called: " + request.path());
 		return HttpUtils.getContext(headerContext, ldService).onItem().transformToUni(context -> {
 			AttrsQueryTerm attrsQuery;
 			LanguageQueryTerm langQuery;
@@ -146,7 +151,7 @@ public class QueryController {
 			return Uni.createFrom()
 					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadLimitQuery)));
 		}
-
+		logger.debug("Query called: " + request.path());
 		List<Object> headerContext;
 		headerContext = HttpUtils.getAtContext(request);
 		return HttpUtils.getContext(headerContext, ldService).onItem().transformToUni(context -> {

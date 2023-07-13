@@ -919,10 +919,11 @@ public class EntityService {
 
 			}
 
-			if (request.getRequestPayload().isEmpty()) {
-				return result;
+			
+			if (!request.getRequestPayload().isEmpty()) {
+				logger.debug("Create batch request sending to kafka " + request.getEntityIds());
+				batchEmitter.sendAndForget(request);
 			}
-			batchEmitter.sendAndForget(request);
 			return result;
 		});
 		if (localOnly) {
@@ -1045,7 +1046,10 @@ public class EntityService {
 				});
 
 			}
-			batchEmitter.sendAndForget(request);
+			if (!request.getRequestPayload().isEmpty()) {
+				logger.debug("Append batch request sending to kafka " + request.getEntityIds());
+				batchEmitter.sendAndForget(request);
+			}
 			return result;
 		});
 		if (localOnly) {
@@ -1168,7 +1172,10 @@ public class EntityService {
 				});
 
 			}
-			batchEmitter.sendAndForget(request);
+			if (!request.getEntityIds().isEmpty()) {
+				logger.debug("Upsert batch request sending to kafka " + request.getEntityIds());
+				batchEmitter.sendAndForget(request);
+			}
 			return result;
 		});
 		if (localOnly) {
@@ -1289,7 +1296,10 @@ public class EntityService {
 					}
 					BatchRequest request = new BatchRequest(tenant, null, null, AppConstants.DELETE_REQUEST);
 					request.setEntityIds(successes);
-					batchEmitter.sendAndForget(request);
+					if (!request.getEntityIds().isEmpty()) {
+						logger.debug("Delete batch request sending to kafka " + request.getEntityIds());
+						batchEmitter.sendAndForget(request);
+					}
 					return result;
 				});
 
