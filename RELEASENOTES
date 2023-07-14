@@ -1,3 +1,10 @@
+
+RELEASE NOTES SCORPIO 4.0.9
+
+In this release 
+ - the /q/info endpoint is enabled providing build info
+ - /q/health is available since version 3.0.0
+
 RELEASE NOTES SCORPIO 4.0.7
 
 This release 
