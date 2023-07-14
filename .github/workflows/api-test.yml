@@ -24,8 +24,6 @@ jobs:
           sleep 30
       - name: build-java-with-kafka
         run: |
-          rm ./BrokerParent/pom.xml
-          mv ./BrokerParent/build-pom.xml ./BrokerParent/pom.xml
           mvn clean package -DskipTests -Pkafka -Dkafka -Ddocker -Ddocker-tag=java-kafka-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=kafka
       - name: stop kafka & postgis for unit tests
         run: |
@@ -86,8 +84,6 @@ jobs:
           sleep 30
       - name: build-java
         run: |
-          rm ./BrokerParent/pom.xml
-          mv ./BrokerParent/build-pom.xml ./BrokerParent/pom.xml
           mvn clean package -DskipTests -Din-memory -Pin-memory -Ddocker -Ddocker-tag=java-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=in-memory
       - name: stop postgis for unit tests
         run: |
