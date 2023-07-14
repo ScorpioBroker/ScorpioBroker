@@ -1,7 +1,7 @@
 package eu.neclab.ngsildbroker.subscriptionmanager.controller;
 
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response.Status;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.Response.Status;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;

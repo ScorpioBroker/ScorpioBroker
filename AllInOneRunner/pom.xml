@@ -3,52 +3,51 @@
 	<parent>
 		<groupId>eu.neclab.ngsildbroker</groupId>
 		<artifactId>broker-parent</artifactId>
-		<version>3.0.0-SNAPSHOT</version>
+		<version>4.0.9-SNAPSHOT</version>
 		<relativePath>../BrokerParent</relativePath>
 	</parent>
 	<artifactId>all-in-one-runner</artifactId>
 	<name>AllInOneRunner</name>
-
 	<dependencies>
 		<dependency>
 			<groupId>eu.neclab.ngsildbroker</groupId>
 			<artifactId>at-context-server</artifactId>
-			<version>1.0.0-SNAPSHOT</version>
+			<version>${parent.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>eu.neclab.ngsildbroker</groupId>
 			<artifactId>entity-manager</artifactId>
-			<version>3.0.0-SNAPSHOT</version>
+			<version>${parent.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>eu.neclab.ngsildbroker</groupId>
 			<artifactId>history-entity-manager</artifactId>
-			<version>3.0.0-SNAPSHOT</version>
+			<version>${parent.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>eu.neclab.ngsildbroker</groupId>
 			<artifactId>history-query-manager</artifactId>
-			<version>3.0.0-SNAPSHOT</version>
+			<version>${parent.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>eu.neclab.ngsildbroker</groupId>
 			<artifactId>query-manager</artifactId>
-			<version>3.0.0-SNAPSHOT</version>
+			<version>${parent.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>eu.neclab.ngsildbroker</groupId>
 			<artifactId>registry-manager</artifactId>
-			<version>3.0.0-SNAPSHOT</version>
+			<version>${parent.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>eu.neclab.ngsildbroker</groupId>
 			<artifactId>registry-subscription-manager</artifactId>
-			<version>3.0.0-SNAPSHOT</version>
+			<version>${parent.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>eu.neclab.ngsildbroker</groupId>
 			<artifactId>subscription-manager</artifactId>
-			<version>3.0.0-SNAPSHOT</version>
+			<version>${parent.version}</version>
 		</dependency>
 	</dependencies>
 	<profiles>

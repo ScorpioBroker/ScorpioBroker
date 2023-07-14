@@ -1,6 +1,6 @@
 package eu.neclab.ngsildbroker.historymanager.messaging;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;

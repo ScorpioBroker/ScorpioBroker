@@ -1,6 +1,6 @@
 package eu.neclab.ngsildbroker.registry.subscriptionmanager.messaging;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Acknowledgment;
 import org.eclipse.microprofile.reactive.messaging.Acknowledgment.Strategy;

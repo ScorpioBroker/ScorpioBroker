@@ -3,8 +3,8 @@ package eu.neclab.ngsildbroker.historymanager.repository;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import com.github.jsonldjava.core.Context;
 
