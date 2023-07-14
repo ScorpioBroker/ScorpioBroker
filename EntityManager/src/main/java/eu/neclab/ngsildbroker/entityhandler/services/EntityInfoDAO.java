@@ -424,13 +424,19 @@ public class EntityInfoDAO {
 	public Uni<Map<String, Object>> replaceAttrib(ReplaceAttribRequest request) {
 		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
 			return client.preparedQuery("""
-							WITH old_entity AS (SELECT ENTITY
-							FROM ENTITY
-							WHERE id = $2)
-							update entity set entity = entity::jsonb||$1
-							where id = $2
-							RETURNING (SELECT ENTITY FROM old_entity) AS old_entity""")
-					.execute(Tuple.of(new JsonObject(request.getPayload()),request.getId())).onItem().transformToUni(rows -> {
+							WITH old_entity AS (
+							  SELECT ENTITY
+							  FROM ENTITY
+							  WHERE id = $2
+							)
+							UPDATE entity
+							SET entity = entity::jsonb || $1
+							WHERE id = $2
+							  AND ENTITY ? $3
+							  AND (ENTITY-> $3 )::jsonb->$4 IS NULL
+							RETURNING (SELECT ENTITY FROM old_entity) AS old_entity;
+							""")
+					.execute(Tuple.of(new JsonObject(request.getPayload()),request.getId(),request.getAttribName(),request.getDatasetId())).onItem().transformToUni(rows -> {
 						if (rows.rowCount() == 0) {
 							return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
 						}

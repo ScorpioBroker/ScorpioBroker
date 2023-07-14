@@ -341,6 +341,7 @@ public interface NGSIConstants {
 	public static final String ENDPOINT_TEMPORAL_BATCH_DELETE = "/ngsi-ld/v1/temporal/entityOperations/delete";
 	public static final String ENDPOINT_TEMPORAL_CREATE_DELETE = "/ngsi-ld/v1/temporal/entityOperations/create";
 	public static final String ENDPOINT_TEMPROAL_BATCH_APPEND = "/ngsi-ld/v1/temporal/entityOperations/append";
+	public static final String NGSI_LD_REPLACE_ATTRIB_ENDPOINT = "/ngsi-ld/v1/entities";
 	public static final String AGGR_METH_TOTAL_COUNT = "totalCount";
 	public static final String AGGR_METH_DISTINCT_COUNT = "distinctCount";
 	public static final String AGGR_METH_SUM = "sum";

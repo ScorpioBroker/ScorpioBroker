@@ -1489,23 +1489,22 @@ public class EntityService {
 			resolved= temp;
 		}
 		ReplaceAttribRequest request = new ReplaceAttribRequest(tenant, resolved,null,entityId,attrId);
-		Tuple2<Map<String, Object>, Collection<Tuple2<RemoteHost, Map<String, Object>>>> localAndRemote = splitEntity(
+	    Tuple2<Map<String, Object>, Collection<Tuple2<RemoteHost, Map<String, Object>>>> localAndRemote = splitEntity(
 				request);
 		Map<String, Object> localEntity = localAndRemote.getItem1();
 		Collection<Tuple2<RemoteHost, Map<String, Object>>> remoteEntitiesAndHosts = localAndRemote.getItem2();
 		localEntity.remove(NGSIConstants.JSON_LD_TYPE);
-
+		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(remoteEntitiesAndHosts.size());
 		if (remoteEntitiesAndHosts.isEmpty()) {
 			request.setPayload(localEntity);
 			return replaceLocalAttrib(request, context);
 		}
-		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(remoteEntitiesAndHosts.size());
 		for (Tuple2<RemoteHost, Map<String, Object>> remoteEntityAndHost : remoteEntitiesAndHosts) {
 			Map<String, Object> expanded = remoteEntityAndHost.getItem2();
 			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
 			if (remoteHost.canDoSingleOp()) {
 				unis.add(prepareSplitUpEntityForSending(expanded, context).onItem().transformToUni(compacted->{
-					return webClient.post(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT)
+					return webClient.post(remoteHost.host() + NGSIConstants.NGSI_LD_REPLACE_ATTRIB_ENDPOINT+"/"+entityId+"/"+"attrs" +"/"+attrId)
 							.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(compacted)).onItemOrFailure()
 							.transform((response, failure) -> {
 								return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(201), remoteHost,
@@ -1514,18 +1513,7 @@ public class EntityService {
 							});
 				}));
 
-			} else {
-				unis.add(prepareSplitUpEntityForSending(expanded, context).onItem().transformToUni(compacted->{
-					return webClient.post(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_CREATE)
-							.putHeaders(remoteHost.headers())
-							.sendJson(new JsonArray(Lists.newArrayList(new JsonObject(compacted)))).onItemOrFailure()
-							.transform((response, failure) -> {
-								return handleBatchResponse(response, failure, remoteHost, Lists.newArrayList(compacted),
-										ArrayUtils.toArray(201)).get(0);
-							});
-				}));
 			}
-
 		}
 		if (localEntity != null && !localEntity.isEmpty()) {
 			request.setPayload(localEntity);

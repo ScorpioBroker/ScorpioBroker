@@ -13,6 +13,9 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
+
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -303,8 +306,12 @@ public class EntityController {// implements EntityHandlerInterface {
 	@PUT
 	public Uni<RestResponse<Object>> replaceEntity(@PathParam("entityId") String entityId, HttpServerRequest request, Map<String, Object> body) {
 		logger.debug("replacing entity");
+		try {
+			HttpUtils.validateUri(entityId);
+		} catch (Exception e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+		}
 		noConcise(body);
-
 		return HttpUtils.expandBody(request, body, AppConstants.REPLACE_ENTITY_PAYLOAD, ldService).onItem()
 				.transformToUni(tuple -> {
 					if(!body.get(NGSIConstants.ID).equals(entityId)){
@@ -325,17 +332,18 @@ public class EntityController {// implements EntityHandlerInterface {
 	@PUT
 	public Uni<RestResponse<Object>> replaceAttribute(@PathParam("attrId") String attrId,@PathParam("entityId") String entityId, HttpServerRequest request, Map<String, Object> body) {
 		logger.debug("replacing Attrs");
+		try {
+			HttpUtils.validateUri(entityId);
+		} catch (Exception e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+		}
 		noConcise(body);
 		return HttpUtils.expandBody(request, body, AppConstants.PARTIAL_UPDATE_REQUEST, ldService).onItem()
 				.transformToUni(tuple -> {
-					if(body.get(NGSIConstants.ID)!=null && !body.get(NGSIConstants.ID).equals(entityId)){
-						return 	Uni.createFrom().item(HttpUtils.handleControllerExceptions(
-								new ResponseException(ErrorType.BadRequestData, "Id can not be updated")));
-					}
 					String finalAttrId = tuple.getItem1().expandIri(attrId, false, true, null, null);
 					return entityService.replaceAttribute(HttpUtils.getTenant(request), tuple.getItem2(), tuple.getItem1(),entityId,finalAttrId).onItem()
 							.transform(opResult -> {
-								logger.debug("Done replacing entity");
+								logger.debug("Done replacing attribute");
 								return HttpUtils.generateUpdateResultResponse(opResult);
 							}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 				});
