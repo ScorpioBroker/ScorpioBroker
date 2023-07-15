@@ -21,8 +21,8 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
 		SyncMessage.class, AliveAnnouncement.class, GeoRelation.class }, serialization = true)
 public class NativeReflectionConfig {
 
-	@BuildStep
-	ReflectiveClassBuildItem excludeJSONParser() {
-		return ReflectiveClassBuildItem.builder("org.noggit.JSONParser").build();
-	}
+//	@BuildStep
+//	ReflectiveClassBuildItem excludeJSONParser() {
+//		return ReflectiveClassBuildItem.builder("org.noggit.JSONParser").build();
+//	}
 }
