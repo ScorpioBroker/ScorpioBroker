@@ -199,9 +199,24 @@
 			<artifactId>smallrye-reactive-messaging-in-memory</artifactId>
 		</dependency>
 		<dependency>
-      		<groupId>io.quarkus</groupId>
-      		<artifactId>quarkus-info</artifactId>
-    	</dependency>
+			<groupId>org.apache.camel.quarkus</groupId>
+			<artifactId>camel-quarkus-smallrye-reactive-messaging</artifactId>
+			<version>3.0.0-M2</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.camel.quarkus</groupId>
+			<artifactId>camel-quarkus-kafka</artifactId>
+			<version>3.0.0-M2</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.camel.quarkus</groupId>
+			<artifactId>camel-quarkus-jackson</artifactId>
+			<version>3.0.0-M2</version>
+		</dependency>
+		<dependency>
+			<groupId>io.quarkus</groupId>
+			<artifactId>quarkus-info</artifactId>
+		</dependency>
 	</dependencies>
 	<profiles>
 		<profile>
