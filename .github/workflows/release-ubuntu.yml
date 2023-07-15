@@ -11,6 +11,7 @@ jobs:
         with:
           java-version: '17' # for a specific JDK 17; or '17' for the latest JDK 17
           distribution: 'mandrel'
+          version: 'mandrel-latest'
       - name: Install zip
         uses: montudor/action-zip@v1
       - name: Configure AWS Credentials
@@ -62,6 +63,7 @@ jobs:
         with:
           java-version: '17' # for a specific JDK 17; or '17' for the latest JDK 17
           distribution: 'mandrel'
+          version: 'mandrel-latest'
       - name: Install zip
         uses: montudor/action-zip@v1
       - name: Configure AWS Credentials
