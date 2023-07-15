@@ -1,4 +1,6 @@
 name: Build native
+on:
+  - push
 jobs:
   build-java-kafka:
     runs-on: ubuntu-latest
@@ -59,7 +61,8 @@ jobs:
         uses: graalvm/setup-graalvm@v1
         with:
           java-version: '17' # for a specific JDK 17; or '17' for the latest JDK 17
-          distribution: 'mandrel'      - name: Install zip
+          distribution: 'mandrel'
+      - name: Install zip
         uses: montudor/action-zip@v1
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
