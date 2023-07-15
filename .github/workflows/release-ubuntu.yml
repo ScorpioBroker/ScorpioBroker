@@ -2,58 +2,6 @@ name: Build native
 on:
   - push
 jobs:
-  build-java-kafka:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2     
-      - name: Setup GraalVM
-        uses: graalvm/setup-graalvm@v1
-        with:
-          java-version: '17' # for a specific JDK 17; or '17' for the latest JDK 17
-          distribution: 'mandrel'
-          version: 'mandrel-latest'
-      - name: Install zip
-        uses: montudor/action-zip@v1
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.ECR_ID }}
-          aws-secret-access-key: ${{ secrets.ECR_TOKEN }}
-          aws-region: us-east-1
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
-        with:
-          registry-type: public
-      - name: Build testserver
-        run: |
-          cd testserver
-          docker build -t testserver .
-      - name: build-native-with-kafka
-        run: |
-          mvn clean package -DskipTests -Dkafka -Dnative -Pkafka -Ddocker -Ddocker-tag=ubuntu-kafka-latest -Dos=java -Dquarkus.profile=kafka
-      - name: start docker aaio 
-        run: |
-          docker-compose -f ./compose-files/docker-compose-ubuntu-aaio-kafka-test.yml up &
-          sleep 120
-      - name: newman action
-        uses: matt-ball/newman-action@master
-        with:
-          collection: api-test.json
-          environment: api-test-aaio-environment.json
-      - name: Stopping Scorpio 
-        run: docker-compose -f ./compose-files/docker-compose-ubuntu-aaio-kafka-test.yml down
-#      - name: start docker dist 
-#        run: |
-#          docker-compose -f ./compose-files/docker-compose-java-dist-kafka-test.yml up &
-#          sleep 120
-#      - name: newman action
-#        uses: matt-ball/newman-action@master
-#        with:
-#          collection: api-test.json
-#          environment: api-test-dist-environment.json
-#      - name: Stopping Scorpio 
-#        run: docker-compose -f ./compose-files/docker-compose-java-dist-kafka-test.yml down
   build-java-aaio:
     runs-on: ubuntu-latest
     steps:
