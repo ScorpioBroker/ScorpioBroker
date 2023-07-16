@@ -153,8 +153,6 @@ jobs:
   build-macos-aaio:
     runs-on: macos-latest
     steps:
-    runs-on: macos-latest
-    steps:
       - uses: actions/checkout@v2     
       - name: Setup GraalVM
         uses: graalvm/setup-graalvm@v1
