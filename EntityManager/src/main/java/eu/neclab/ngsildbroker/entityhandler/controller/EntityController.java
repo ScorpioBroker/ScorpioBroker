@@ -152,9 +152,15 @@ public class EntityController {// implements EntityHandlerInterface {
 								logger.trace("update entry :: completed");
 								return HttpUtils.generateUpdateResultResponse(updateResult);
 							});
-				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
-
-	}
+				  }).onFailure().recoverWithUni(t -> entityService.patchToEndPoint(entityId, req, body, attrib)
+	                        .onItem().transform(isEndPointExist -> {
+	                            if (isEndPointExist)
+	                                return RestResponse.noContent();
+	                            else {
+	                                return HttpUtils.handleControllerExceptions(t);
+	                            }
+	                        }).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions));
+	    }
 
 	/**
 	 * Method(DELETE) for "/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}" rest
