@@ -103,6 +103,9 @@ jobs:
           docker push scorpiobroker/query-manager:java-kafka-${{steps.get-id.outputs.id}}
           docker push scorpiobroker/entity-manager:java-kafka-${{steps.get-id.outputs.id}}
           docker push scorpiobroker/all-in-one-runner:java-kafka-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/at-context-server:java-kafka-latest
+          docker push scorpiobroker/history-entity-manager:java-kafka-latest
+          docker push scorpiobroker/history-query-manager:java-kafka-latest
           docker push scorpiobroker/registry-subscription-manager:java-kafka-latest
           docker push scorpiobroker/registry-manager:java-kafka-latest
           docker push scorpiobroker/subscription-manager:java-kafka-latest
@@ -118,6 +121,9 @@ jobs:
           docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/query-manager:java-kafka-${{steps.get-id.outputs.id}}
           docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/entity-manager:java-kafka-${{steps.get-id.outputs.id}}
           docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:java-kafka-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/at-context-server:java-kafka-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-entity-manager:java-kafka-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-query-manager:java-kafka-latest
           docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-subscription-manager:java-kafka-latest
           docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-manager:java-kafka-latest
           docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/subscription-manager:java-kafka-latest
@@ -135,6 +141,18 @@ jobs:
           draft: false
           prerelease: false
           body_path: RELEASENOTES
+      - name: Zip aaio release
+        working-directory: AllInOneRunner/target/quarkus-app
+        run: zip -qq -r all-in-one-runner.zip *
+      - name: Upload Release all-in-one-runner
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: ./AllInOneRunner/target/quarkus-app/all-in-one-runner.zip
+          asset_name: all-in-one-runner-java-${{steps.get-id.outputs.id}}.zip
+          asset_content_type: application/zip
       - name: Zip at-context-server release
         working-directory: at-context-server/target/quarkus-app
         run: zip -qq -r at-context-server.zip *
@@ -306,7 +324,7 @@ jobs:
       - name: Zip aaio release
         working-directory: AllInOneRunner/target/quarkus-app
         run: zip -qq -r all-in-one-runner.zip *
-      - name: Upload Release Asset
+      - name: Upload Release all-in-one-runner
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
