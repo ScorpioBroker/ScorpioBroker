@@ -46,24 +46,6 @@ jobs:
           docker tag scorpiobroker/query-manager:ubuntu-kafka-${{steps.get-id.outputs.id}} scorpiobroker/query-manager:ubuntu-kafka-latest
           docker tag scorpiobroker/entity-manager:ubuntu-kafka-${{steps.get-id.outputs.id}} scorpiobroker/entity-manager:ubuntu-kafka-latest
           docker tag scorpiobroker/all-in-one-runner:ubuntu-kafka-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:ubuntu-kafka-latest
-          docker tag scorpiobroker/at-context-server:ubuntu-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/at-context-server:ubuntu-kafka-latest
-          docker tag scorpiobroker/history-entity-manager:ubuntu-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-entity-manager:ubuntu-kafka-latest
-          docker tag scorpiobroker/history-query-manager:ubuntu-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-query-manager:ubuntu-kafka-latest
-          docker tag scorpiobroker/registry-subscription-manager:ubuntu-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-subscription-manager:ubuntu-kafka-latest
-          docker tag scorpiobroker/registry-manager:ubuntu-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-manager:ubuntu-kafka-latest
-          docker tag scorpiobroker/subscription-manager:ubuntu-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/subscription-manager:ubuntu-kafka-latest
-          docker tag scorpiobroker/query-manager:ubuntu-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/query-manager:ubuntu-kafka-latest
-          docker tag scorpiobroker/entity-manager:ubuntu-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/entity-manager:ubuntu-kafka-latest
-          docker tag scorpiobroker/all-in-one-runner:ubuntu-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:ubuntu-kafka-latest
-          docker tag scorpiobroker/at-context-server:ubuntu-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/at-context-server:ubuntu-kafka-${{steps.get-id.outputs.id}}
-          docker tag scorpiobroker/history-entity-manager:ubuntu-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-entity-manager:ubuntu-kafka-${{steps.get-id.outputs.id}}
-          docker tag scorpiobroker/history-query-manager:ubuntu-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-query-manager:ubuntu-kafka-${{steps.get-id.outputs.id}}
-          docker tag scorpiobroker/registry-subscription-manager:ubuntu-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-subscription-manager:ubuntu-kafka-${{steps.get-id.outputs.id}}
-          docker tag scorpiobroker/registry-manager:ubuntu-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-manager:ubuntu-kafka-${{steps.get-id.outputs.id}}
-          docker tag scorpiobroker/subscription-manager:ubuntu-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/subscription-manager:ubuntu-kafka-${{steps.get-id.outputs.id}}
-          docker tag scorpiobroker/query-manager:ubuntu-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/query-manager:ubuntu-kafka-${{steps.get-id.outputs.id}}
-          docker tag scorpiobroker/entity-manager:ubuntu-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/entity-manager:ubuntu-kafka-${{steps.get-id.outputs.id}}
-          docker tag scorpiobroker/all-in-one-runner:ubuntu-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:ubuntu-kafka-${{steps.get-id.outputs.id}}
       - name: start docker aaio 
         run: |
           docker-compose -f ./compose-files/docker-compose-ubuntu-aaio-kafka-test.yml up &
@@ -116,8 +98,6 @@ jobs:
       - name: docker tag
         run: |
           docker tag scorpiobroker/all-in-one-runner:ubuntu-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:ubuntu-latest
-          docker tag scorpiobroker/all-in-one-runner:ubuntu-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:ubuntu-latest
-          docker tag scorpiobroker/all-in-one-runner:ubuntu-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:ubuntu-${{steps.get-id.outputs.id}}
       - name: start docker aaio 
         run: |
           docker-compose -f ./compose-files/docker-compose-ubuntu-aaio-test.yml up &
