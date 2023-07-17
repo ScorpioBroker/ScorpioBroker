@@ -214,6 +214,11 @@
 			<version>3.0.0-M2</version>
 		</dependency>
 		<dependency>
+			<groupId>org.apache.camel.quarkus</groupId>
+			<artifactId>camel-quarkus-paho-mqtt5</artifactId>
+			<version>3.0.0-M2</version>
+		</dependency>
+		<dependency>
 			<groupId>io.quarkus</groupId>
 			<artifactId>quarkus-info</artifactId>
 		</dependency>

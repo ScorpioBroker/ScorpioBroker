@@ -16,6 +16,7 @@ import javax.sql.DataSource;
 import com.google.common.collect.Maps;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.flywaydb.core.Flyway;
+import org.flywaydb.core.api.Location;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
@@ -184,10 +185,16 @@ public class ClientManager {
 
 	public Boolean flywayMigrate(DataSource tenantDataSource) {
 		try {
+			
 			Flyway flyway = Flyway.configure().dataSource(tenantDataSource).locations("classpath:db/migration")
 					.baselineOnMigrate(true).outOfOrder(true).load();
-			flyway.repair();
+			try {
+				flyway.repair();
+			} catch (Exception e) {
+				logger.error("Repair failed try manual repair", e);
+			}
 			flyway.migrate();
+
 		} catch (Exception e) {
 			logger.error("failed to create tenant database", e);
 			return false;
