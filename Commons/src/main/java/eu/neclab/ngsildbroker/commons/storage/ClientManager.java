@@ -183,14 +183,19 @@ public class ClientManager {
 	}
 
 	public Boolean flywayMigrate(DataSource tenantDataSource) {
+		Flyway flyway = Flyway.configure().dataSource(tenantDataSource).locations("classpath:db/migration")
+				.baselineOnMigrate(true).outOfOrder(true).cleanDisabled(true).load();
 		try {
-			Flyway flyway = Flyway.configure().dataSource(tenantDataSource).locations("classpath:db/migration")
-					.baselineOnMigrate(true).outOfOrder(true).load();
-			flyway.repair();
 			flyway.migrate();
 		} catch (Exception e) {
-			logger.error("failed to create tenant database", e);
-			return false;
+			logger.warn("failed to create tenant database attempting repair", e);
+			try {
+				flyway.repair();
+			} catch (Exception e1) {
+				logger.error("repair failed", e);
+				return false;
+			}
+
 		}
 
 		return true;
