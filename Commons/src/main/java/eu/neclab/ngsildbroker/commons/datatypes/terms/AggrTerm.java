@@ -12,7 +12,7 @@ public class AggrTerm  implements Serializable {
 	private String period;
 	private Set<String> aggrFunctions;
 
-	AggrTerm() {
+	public AggrTerm() {
 		// for serialization
 	}
 

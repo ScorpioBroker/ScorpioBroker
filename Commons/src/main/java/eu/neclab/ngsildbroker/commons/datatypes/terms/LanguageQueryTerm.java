@@ -13,7 +13,7 @@ public class LanguageQueryTerm implements Serializable {
 	 */
 	private static final long serialVersionUID = -3970320741960527943L;
 
-	LanguageQueryTerm() {
+	public LanguageQueryTerm() {
 		// for serialization
 	}
 	ArrayList<Tuple2<Set<String>, Float>> entries;

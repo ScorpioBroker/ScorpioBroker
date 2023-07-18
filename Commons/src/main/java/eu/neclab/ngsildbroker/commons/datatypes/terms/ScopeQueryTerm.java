@@ -20,7 +20,7 @@ public class ScopeQueryTerm  implements Serializable {
 	private ScopeQueryTerm firstChild = null;
 	private ScopeQueryTerm parent = null;
 	
-	ScopeQueryTerm() {
+	public ScopeQueryTerm() {
 		// for serialization
 	}
 
