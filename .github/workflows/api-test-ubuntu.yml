@@ -1,6 +1,9 @@
 name: API Test Ubuntu
 on: 
   push:
+    branches:
+      - 'development-quarkus'
+  pull_request:
 jobs:
   build-ubuntu-kafka:
     runs-on: ubuntu-latest
