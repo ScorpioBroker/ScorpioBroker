@@ -72,7 +72,6 @@ public class MicroServiceUtils {
 		result.setPayload(deepCopyMap(originalPayload.getPayload()));
 		result.setTenant(originalPayload.getTenant());
 		result.setRequestType(originalPayload.getRequestType());
-		result.setBatchInfo(originalPayload.getBatchInfo());
 		result.setPreviousEntity(deepCopyMap(originalPayload.getPreviousEntity()));
 		return result;
 	}
@@ -158,7 +157,6 @@ public class MicroServiceUtils {
 		}
 		result.setTenant(originalPayload.getTenant());
 		result.setRequestType(originalPayload.getRequestType());
-		result.setBatchInfo(originalPayload.getBatchInfo());
 		return result;
 	}
 

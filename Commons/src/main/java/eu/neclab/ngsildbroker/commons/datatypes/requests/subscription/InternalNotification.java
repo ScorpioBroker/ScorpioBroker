@@ -14,7 +14,7 @@ public class InternalNotification extends BaseRequest {
 	}
 
 	public InternalNotification(String tenant, String subscriptionId, Map<String, Object> notification) {
-		super(tenant, subscriptionId, notification, null, AppConstants.INTERNAL_NOTIFICATION_REQUEST);
+		super(tenant, subscriptionId, notification, AppConstants.INTERNAL_NOTIFICATION_REQUEST);
 	}
 
 }

@@ -23,7 +23,7 @@ public class SubscriptionRequest extends BaseRequest {
 
 	public SubscriptionRequest(String tenant, Map<String, Object> subscription, Context context)
 			throws ResponseException {
-		super(tenant, (String) subscription.get(NGSIConstants.JSON_LD_ID), subscription, null,
+		super(tenant, (String) subscription.get(NGSIConstants.JSON_LD_ID), subscription,
 				AppConstants.CREATE_SUBSCRIPTION_REQUEST);
 		this.context = context;
 		this.subscription = Subscription.expandSubscription(subscription, context, false);
@@ -31,7 +31,7 @@ public class SubscriptionRequest extends BaseRequest {
 	}
 
 	protected SubscriptionRequest(String tenant, String subscriptionId, int deleteSubscriptionRequest) {
-		super(tenant, subscriptionId, null, null, deleteSubscriptionRequest);
+		super(tenant, subscriptionId, null, deleteSubscriptionRequest);
 	}
 
 	@Override

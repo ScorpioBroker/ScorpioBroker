@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.commons.serialization.messaging;
 
+import com.github.jsonldjava.core.Context;
 import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.datatypes.AliveAnnouncement;
@@ -12,11 +13,12 @@ import eu.neclab.ngsildbroker.commons.datatypes.NotificationParam;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.SyncMessage;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
 @RegisterForReflection(targets = { ArrayListMultimap.class, SubscriptionRequest.class, Subscription.class,
 		NotificationParam.class, EndPoint.class, EntityInfo.class, LDTemporalQuery.class, LDGeoQuery.class,
-		SyncMessage.class, AliveAnnouncement.class, GeoRelation.class }, serialization = true)
+		SyncMessage.class, AliveAnnouncement.class, GeoRelation.class, Context.class, GeoQueryTerm.class }, serialization = true)
 public class NativeReflectionConfig {
 
 }

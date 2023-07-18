@@ -122,7 +122,7 @@ public class EntityServiceTest {
 	@Order(1)
 	public void createEntryTest() throws Exception {
 
-		CreateEntityRequest request = new CreateEntityRequest(tenant, resolved, null);
+		CreateEntityRequest request = new CreateEntityRequest(tenant, resolved);
 
 		Uni<Void> createEntityRes = Uni.createFrom().voidItem();
 		when(entityDAO.createEntity(any())).thenReturn(createEntityRes);
@@ -145,7 +145,7 @@ public class EntityServiceTest {
 	@Order(2)
 	public void updateEntryTest() {
 
-		UpdateEntityRequest request = new UpdateEntityRequest(tenant, entityId, resolved, null, null);
+		UpdateEntityRequest request = new UpdateEntityRequest(tenant, entityId, resolved, null);
 
 		Uni<Map<String,Object>> updateEntityRes = Uni.createFrom().nothing();
 		when(entityDAO.updateEntity(any())).thenReturn(updateEntityRes);
