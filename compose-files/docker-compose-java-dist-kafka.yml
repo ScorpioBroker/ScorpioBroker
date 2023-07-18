@@ -1,10 +1,6 @@
 version: '3'
 
 services:
-  testserver:
-    image: testserver
-    ports:
-     - "8080:8080"
   zookeeper:
     image: zookeeper
     ports:
@@ -33,7 +29,7 @@ services:
       POSTGRES_PASSWORD: ngb
       POSTGRES_DB: ngb
   emgr:
-    image: scorpiobroker/entity-manager:ubuntu-kafka-latest
+    image: scorpiobroker/entity-manager:java-kafka-latest
     environment:
       DBHOST: postgres
       BUSHOST: kafka
@@ -42,8 +38,8 @@ services:
       - "1025:1025"
     depends_on:
       - kafka
-  histmgr:
-    image: scorpiobroker/history-manager:ubuntu-kafka-latest
+  histemgr:
+    image: scorpiobroker/history-entity-manager:java-kafka-latest
     environment:
       DBHOST: postgres
       BUSHOST: kafka
@@ -52,8 +48,28 @@ services:
       - "1040:1040"
     depends_on:
       - kafka
+  histqmgr:
+    image: scorpiobroker/history-query-manager:java-kafka-latest
+    environment:
+      DBHOST: postgres
+      BUSHOST: kafka
+      QUARKUS_EUREKA_SERVICE-URL_DEFAULT: "http://eureka:8761/eureka"
+    ports:
+      - "1041:1041"
+    depends_on:
+      - kafka
+  at-context-server:
+    image: scorpiobroker/at-context-server:java-kafka-latest
+    environment:
+      DBHOST: postgres
+      BUSHOST: kafka
+      QUARKUS_EUREKA_SERVICE-URL_DEFAULT: "http://eureka:8761/eureka"
+    ports:
+      - "1042:1042"
+    depends_on:
+      - kafka
   qrymgr:
-    image: scorpiobroker/query-manager:ubuntu-kafka-latest
+    image: scorpiobroker/query-manager:java-kafka-latest
     environment:
       DBHOST: postgres
       BUSHOST: kafka
@@ -64,7 +80,7 @@ services:
       - kafka
       - postgres
   regmgr:
-    image: scorpiobroker/registry-manager:ubuntu-kafka-latest
+    image: scorpiobroker/registry-manager:java-kafka-latest
     environment:
       DBHOST: postgres
       BUSHOST: kafka
@@ -75,7 +91,7 @@ services:
       - kafka
       - postgres
   regsbsmgr:
-    image: scorpiobroker/registry-subscription-manager:ubuntu-kafka-latest
+    image: scorpiobroker/registry-subscription-manager:java-kafka-latest
     environment:
       DBHOST: postgres
       BUSHOST: kafka
@@ -86,7 +102,7 @@ services:
       - kafka
       - postgres
   sbsmgr:
-    image: scorpiobroker/subscription-manager:ubuntu-kafka-latest
+    image: scorpiobroker/subscription-manager:java-kafka-latest
     environment:
       DBHOST: postgres
       BUSHOST: kafka
