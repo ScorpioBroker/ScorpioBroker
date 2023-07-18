@@ -26,11 +26,13 @@ To get you quickly started you can just choose on of the provided docker-compose
  - [ubuntu native all-in-one runner without kafka integration, no scaling but less resource requirements](https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/development-quarkus/compose-files/docker-compose-ubuntu-aaio.yml)
  - [ubuntu native distributed microservices](https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/development-quarkus/compose-files/docker-compose-ubuntu-dist-kafka.yml)
 
-If you have a local PostgreSQL (and Kafka) setup you can also download pre builds from the [releases](https://github.com/ScorpioBroker/ScorpioBroker/releases)
+
+If you have a local PostgreSQL (and Kafka) setup you can also download pre builds for Ubuntu, Windows and MacOS from the [releases](https://github.com/ScorpioBroker/ScorpioBroker/releases)
 
 To get a good collection of NGSI-LD operations and examples we recommend to have a look at our [test suite](https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/development-quarkus/api-test.json). 
 It is Postman based and you can just import it together with the respective environment settings [all-in-one](https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/development-quarkus/api-test-aaio-environment.json) or [distributed](https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/development-quarkus/api-test-dist-environment.json)
 
+We also provide all docker images on the [Amazon Public ECR](https://gallery.ecr.aws/scorpiobroker?page=1)
 
 Scorpio is an NGSI-LD compliant context broker developed by NEC Laboratories Europe and NEC Technologies India. It implements the full [NGSI-LD API](https://www.etsi.org/deliver/etsi_gs/CIM/001_099/009/01.02.02_60/gs_CIM009v010202p.pdf) as specified by the ETSI Industry Specification Group on cross cutting Context Information Management ([ETSI ISG CIM](https://www.etsi.org/committee/cim)).
 
