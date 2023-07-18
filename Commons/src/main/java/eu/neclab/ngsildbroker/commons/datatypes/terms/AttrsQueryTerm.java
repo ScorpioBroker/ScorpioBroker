@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.commons.datatypes.terms;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Set;
 
@@ -10,11 +11,19 @@ import com.google.common.collect.Sets;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import io.vertx.mutiny.sqlclient.Tuple;
 
-public class AttrsQueryTerm {
+public class AttrsQueryTerm implements Serializable {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 7407313014717911008L;
 	Set<String> compactedAttrs = Sets.newHashSet();
 	Set<String> attrs = Sets.newHashSet();
 	Context context;
+
+	AttrsQueryTerm() {
+		// for serialization
+	}
 
 	public AttrsQueryTerm(Context context) {
 		this.context = context;

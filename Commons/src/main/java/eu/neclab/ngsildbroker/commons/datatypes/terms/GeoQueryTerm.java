@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.commons.datatypes.terms;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,7 +34,11 @@ import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple4;
 import io.vertx.mutiny.sqlclient.Tuple;
 
-public class GeoQueryTerm {
+public class GeoQueryTerm implements Serializable {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 5761071087346264542L;
 	private String geometry;
 	private String coordinates;
 	private List<Object> coordinatesAsList = Lists.newArrayList();
@@ -43,9 +48,10 @@ public class GeoQueryTerm {
 	private Double distanceValue = null;
 	private Context context;
 
-	public GeoQueryTerm() {
+	GeoQueryTerm() {
 		// for serialization
 	}
+
 	public GeoQueryTerm(Context context) {
 		this.context = context;
 	}
@@ -104,7 +110,6 @@ public class GeoQueryTerm {
 		return geoproperty;
 	}
 
-	
 	public void setGeoproperty(String geoproperty) {
 		this.geoproperty = context.expandIri(geoproperty, false, true, context, null);
 	}

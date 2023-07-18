@@ -1,16 +1,25 @@
 package eu.neclab.ngsildbroker.commons.datatypes.terms;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import io.vertx.mutiny.sqlclient.Tuple;
 
-public class TemporalQueryTerm {
+public class TemporalQueryTerm implements Serializable {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -7210245825517808470L;
 	String timeProperty;
 	String timerel;
 	String timeAt;
 	String endTimeAt;
+
+	TemporalQueryTerm() {
+		// for serialization
+	}
 
 	public TemporalQueryTerm(String timeProperty, String timerel, String timeAt, String endTimeAt) {
 		this.timeProperty = timeProperty;
