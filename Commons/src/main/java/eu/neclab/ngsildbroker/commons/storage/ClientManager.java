@@ -27,6 +27,9 @@ import io.agroal.api.configuration.AgroalDataSourceConfiguration.DataSourceImple
 import io.agroal.api.configuration.supplier.AgroalDataSourceConfigurationSupplier;
 import io.agroal.api.security.NamePrincipal;
 import io.agroal.api.security.SimplePassword;
+import io.quarkus.arc.Arc;
+import io.quarkus.flyway.runtime.FlywayContainer;
+import io.quarkus.flyway.runtime.FlywayContainerProducer;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.unchecked.Unchecked;
@@ -183,8 +186,10 @@ public class ClientManager {
 	}
 
 	public Boolean flywayMigrate(DataSource tenantDataSource) {
-		Flyway flyway = Flyway.configure().dataSource(tenantDataSource).locations("classpath:db/migration")
-				.baselineOnMigrate(true).outOfOrder(true).cleanDisabled(true).load();
+
+        FlywayContainerProducer flywayProducer = Arc.container().instance(FlywayContainerProducer.class).get();
+        FlywayContainer flywayContainer = flywayProducer.createFlyway(tenantDataSource, "<default>", true, true);
+        Flyway flyway = flywayContainer.getFlyway();
 		try {
 			flyway.migrate();
 		} catch (Exception e) {
