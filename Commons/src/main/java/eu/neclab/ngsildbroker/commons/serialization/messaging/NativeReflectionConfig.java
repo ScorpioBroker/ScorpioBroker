@@ -13,12 +13,20 @@ import eu.neclab.ngsildbroker.commons.datatypes.NotificationParam;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.SyncMessage;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.TemporalQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
 @RegisterForReflection(targets = { ArrayListMultimap.class, SubscriptionRequest.class, Subscription.class,
 		NotificationParam.class, EndPoint.class, EntityInfo.class, LDTemporalQuery.class, LDGeoQuery.class,
-		SyncMessage.class, AliveAnnouncement.class, GeoRelation.class, Context.class, GeoQueryTerm.class }, serialization = true)
+		SyncMessage.class, AliveAnnouncement.class, GeoRelation.class, Context.class, GeoQueryTerm.class,
+		TemporalQueryTerm.class, LanguageQueryTerm.class, AttrsQueryTerm.class, LanguageQueryTerm.class,
+		QQueryTerm.class, ScopeQueryTerm.class, TypeQueryTerm.class }, serialization = true)
 public class NativeReflectionConfig {
 
 }
