@@ -3,12 +3,8 @@ package eu.neclab.ngsildbroker.commons.storage;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
@@ -27,6 +23,9 @@ import io.agroal.api.configuration.AgroalDataSourceConfiguration.DataSourceImple
 import io.agroal.api.configuration.supplier.AgroalDataSourceConfigurationSupplier;
 import io.agroal.api.security.NamePrincipal;
 import io.agroal.api.security.SimplePassword;
+import io.quarkus.arc.Arc;
+import io.quarkus.flyway.runtime.FlywayContainer;
+import io.quarkus.flyway.runtime.FlywayContainerProducer;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.unchecked.Unchecked;
@@ -183,14 +182,22 @@ public class ClientManager {
 	}
 
 	public Boolean flywayMigrate(DataSource tenantDataSource) {
+
+        FlywayContainerProducer flywayProducer = Arc.container().instance(FlywayContainerProducer.class).get();
+        FlywayContainer flywayContainer = flywayProducer.createFlyway(tenantDataSource, "<default>", true, true);
+        Flyway flyway = flywayContainer.getFlyway();
 		try {
-			Flyway flyway = Flyway.configure().dataSource(tenantDataSource).locations("classpath:db/migration")
-					.baselineOnMigrate(true).outOfOrder(true).load();
-			flyway.repair();
 			flyway.migrate();
 		} catch (Exception e) {
-			logger.error("failed to create tenant database", e);
-			return false;
+			logger.warn("failed to create tenant database attempting repair", e);
+			try {
+				flyway.repair();
+				flyway.migrate();
+			} catch (Exception e1) {
+				logger.error("repair failed", e);
+				return false;
+			}
+
 		}
 
 		return true;

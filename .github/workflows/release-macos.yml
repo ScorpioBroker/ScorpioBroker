@@ -1,0 +1,216 @@
+name: Release macos version
+on: 
+  push:
+    branches: "quarkus-release/**"
+jobs:
+  build-macos-kafka:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2     
+      - name: Setup GraalVM
+        uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: '17' # for a specific JDK 17; or '17' for the latest JDK 17
+          distribution: 'mandrel'
+          version: 'mandrel-latest'
+      - name: docker-login
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.ECR_ID }}
+          aws-secret-access-key: ${{ secrets.ECR_TOKEN }}
+          aws-region: us-east-1
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+        with:
+          registry-type: public
+      - name: Build testserver
+        run: |
+          cd testserver
+          docker build -t testserver .
+      - name: Get release number
+        id: get-id
+        run: |
+          id=$(echo ${{github.ref_name}} | cut -d/ -f2)
+          echo "::set-output name=id::$id"
+      - name: Get build number
+        id: get-build-id
+        run: |
+          cd BrokerParent
+          id=$(mvn help:evaluate -Dexpression="project.version" -q -DforceStdout)
+          echo "::set-output name=id::$id"
+      - name: build-macos-with-kafka
+        run: |
+          mvn clean package -DskipTests -Dkafka -Pkafka -Dnative -Ddocker-tag=macos-kafka-${{steps.get-id.outputs.id}} -Dos=macos -Dquarkus.profile=kafka
+#      - name: start docker dist 
+#        run: |
+#          docker-compose -f ./compose-files/docker-compose-macos-dist-kafka-test.yml up &
+#          sleep 120
+#      - name: newman action
+#        uses: matt-ball/newman-action@master
+#        with:
+#          collection: api-test.json
+#          environment: api-test-dist-environment.json
+#      - name: Stopping Scorpio 
+#        run: docker-compose -f ./compose-files/docker-compose-macos-dist-kafka-test.yml down
+      - name: Create Release ${{steps.get-id.outputs.id}}-macos-kafka
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          tag_name: ${{steps.get-id.outputs.id}}-macos-kafka
+          release_name: ${{steps.get-id.outputs.id}}-macos-kafka
+          draft: false
+          prerelease: false
+          body_path: RELEASENOTES
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: AllInOneRunner/target/all-in-one-runner-${{steps.get-build-id.outputs.id}}-runner
+          asset_name: scorpio-all-in-one-runner-${{steps.get-id.outputs.id}}-macos-kafka
+          asset_content_type: application/octet-stream
+      - name: Upload Release at-context-server
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: ./at-context-server/target/quarkus-app/at-context-server-${{steps.get-build-id.outputs.id}}-runner
+          asset_name: at-context-server-macos-kafka-${{steps.get-id.outputs.id}}-macos-kafka
+          asset_content_type: application/octet-stream
+      - name: Upload Release history-query-manager
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: ./HistoryQueryManager/target/quarkus-app/history-query-manager-${{steps.get-build-id.outputs.id}}-runner
+          asset_name: history-query-manager-macos-kafka-${{steps.get-id.outputs.id}}-macos-kafka
+          asset_content_type: application/octet-stream
+      - name: Upload Release history-entity-manager
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: ./HistoryEntityManager/target/quarkus-app/history-entity-manager-${{steps.get-build-id.outputs.id}}-runner
+          asset_name: history-entity-manager-macos-kafka-${{steps.get-id.outputs.id}}-macos-kafka
+          asset_content_type: application/octet-stream
+      - name: Upload Release registry-subscription-manager
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: ./RegistrySubscriptionManager/target/quarkus-app/registry-subscription-manager-${{steps.get-build-id.outputs.id}}-runner
+          asset_name: registry-subscription-manager-macos-kafka-${{steps.get-id.outputs.id}}-macos-kafka
+          asset_content_type: application/octet-stream
+      - name: Upload Release registry-manager 
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: ./RegistryManager/target/quarkus-app/registry-manager-${{steps.get-build-id.outputs.id}}-runner
+          asset_name: registry-manager-macos-kafka-${{steps.get-id.outputs.id}}-macos-kafka
+          asset_content_type: application/octet-stream
+      - name: Upload Release subscription-manager 
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: ./SubscriptionManager/target/quarkus-app/subscription-manager-${{steps.get-build-id.outputs.id}}-runner
+          asset_name: subscription-manager-macos-kafka-${{steps.get-id.outputs.id}}-macos-kafka
+          asset_content_type: application/octet-stream
+      - name: Upload Release query-manager 
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: ./QueryManager/target/quarkus-app/query-manager-${{steps.get-build-id.outputs.id}}-runner
+          asset_name: query-manager-macos-kafka-${{steps.get-id.outputs.id}}-macos-kafka
+          asset_content_type: application/octet-stream
+      - name: Upload Release entity-manager
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: ./EntityManager/target/quarkus-app/entity-manager-${{steps.get-build-id.outputs.id}}-runner
+          asset_name: entity-manager-macos-kafka-${{steps.get-id.outputs.id}}-macos-kafka
+          asset_content_type: application/octet-stream
+  build-macos-aaio:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2     
+      - name: Setup GraalVM
+        uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: '17' # for a specific JDK 17; or '17' for the latest JDK 17
+          distribution: 'mandrel'
+          version: 'mandrel-latest'
+      - name: docker-login
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.ECR_ID }}
+          aws-secret-access-key: ${{ secrets.ECR_TOKEN }}
+          aws-region: us-east-1
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+        with:
+          registry-type: public
+      - name: Build testserver
+        run: |
+          cd testserver
+          docker build -t testserver .
+      - name: Get release number
+        id: get-id
+        run: |
+          id=$(echo ${{github.ref_name}} | cut -d/ -f2)
+          echo "::set-output name=id::$id"
+      - name: Get build number
+        id: get-build-id
+        run: |
+          cd BrokerParent
+          id=$(mvn help:evaluate -Dexpression="project.version" -q -DforceStdout)
+          echo "::set-output name=id::$id"
+      - name: build-macos
+        run: |
+          mvn clean package -DskipTests -Din-memory -Pin-memory -Dnative -tag=macos-${{steps.get-id.outputs.id}} -Dos=macos -Dquarkus.profile=in-memory
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          tag_name: ${{steps.get-id.outputs.id}}-macos
+          release_name: ${{steps.get-id.outputs.id}}-macos
+          draft: false
+          prerelease: false
+          body_path: RELEASENOTES
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: AllInOneRunner/target/all-in-one-runner-${{steps.get-build-id.outputs.id}}-runner
+          asset_name: scorpio-all-in-one-runner-${{steps.get-id.outputs.id}}-macos
+          asset_content_type: application/octet-stream

@@ -1,7 +1,5 @@
 package eu.neclab.ngsildbroker.commons.datatypes.requests;
 
-import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -11,7 +9,7 @@ public class BaseRequest {
 	protected Map<String, Object> payload = new HashMap<>();
 	private int requestType;
 	private long sendTimestamp = System.currentTimeMillis();
-	private BatchInfo batchInfo;
+
 	private String id;
 	private Map<String, Object> previousEntity;
 	protected String attribName;
@@ -22,12 +20,10 @@ public class BaseRequest {
 
 	}
 
-	protected BaseRequest(String tenant, String id, Map<String, Object> requestPayload, BatchInfo batchInfo,
-			int requestType) {
+	protected BaseRequest(String tenant, String id, Map<String, Object> requestPayload, int requestType) {
 		super();
 		this.tenant = tenant;
 		this.requestType = requestType;
-		this.batchInfo = batchInfo;
 		this.id = id;
 		this.payload = requestPayload;
 	}
@@ -46,14 +42,6 @@ public class BaseRequest {
 
 	public void setRequestType(int requestType) {
 		this.requestType = requestType;
-	}
-
-	public BatchInfo getBatchInfo() {
-		return batchInfo;
-	}
-
-	public void setBatchInfo(BatchInfo batchInfo) {
-		this.batchInfo = batchInfo;
 	}
 
 	public Map<String, Object> getPayload() {
@@ -79,12 +67,15 @@ public class BaseRequest {
 	public void setId(String id) {
 		this.id = id;
 	}
-	public void setPreviousEntity(Map<String,Object> previousEntity){
+
+	public void setPreviousEntity(Map<String, Object> previousEntity) {
 		this.previousEntity = previousEntity;
 	}
-	public Map<String,Object> getPreviousEntity(){
+
+	public Map<String, Object> getPreviousEntity() {
 		return previousEntity;
 	}
+
 	public String getAttribName() {
 		return attribName;
 	}

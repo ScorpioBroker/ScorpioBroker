@@ -13,7 +13,7 @@ public class UpdateSubscriptionRequest extends BaseRequest {
 
 	public UpdateSubscriptionRequest(String tenant, String subscriptionId, Map<String, Object> update,
 			Context context) {
-		super(tenant, subscriptionId, update, null, AppConstants.UPDATE_SUBSCRIPTION_REQUEST);
+		super(tenant, subscriptionId, update, AppConstants.UPDATE_SUBSCRIPTION_REQUEST);
 		this.context = context;
 	}
 

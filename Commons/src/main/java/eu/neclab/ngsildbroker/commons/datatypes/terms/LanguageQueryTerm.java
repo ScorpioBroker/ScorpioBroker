@@ -1,12 +1,21 @@
 package eu.neclab.ngsildbroker.commons.datatypes.terms;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Set;
 
 import io.smallrye.mutiny.tuples.Tuple2;
 
-public class LanguageQueryTerm {
+public class LanguageQueryTerm implements Serializable {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -3970320741960527943L;
+
+	public LanguageQueryTerm() {
+		// for serialization
+	}
 	ArrayList<Tuple2<Set<String>, Float>> entries;
 
 	public ArrayList<Tuple2<Set<String>, Float>> getEntries() {

@@ -4,7 +4,6 @@ import java.util.Map;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
 
 public class UpsertEntityRequest extends EntityRequest {
 
@@ -15,8 +14,8 @@ public class UpsertEntityRequest extends EntityRequest {
 
 	}
 
-	public UpsertEntityRequest(String tenant, Map<String, Object> resolved, BatchInfo batchInfo) {
-		super(tenant, (String) resolved.get(NGSIConstants.JSON_LD_ID), resolved, batchInfo,
+	public UpsertEntityRequest(String tenant, Map<String, Object> resolved) {
+		super(tenant, (String) resolved.get(NGSIConstants.JSON_LD_ID), resolved,
 				AppConstants.UPSERT_REQUEST);
 
 	}

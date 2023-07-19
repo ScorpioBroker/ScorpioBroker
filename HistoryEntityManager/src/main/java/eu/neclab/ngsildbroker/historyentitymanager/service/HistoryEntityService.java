@@ -106,7 +106,7 @@ public class HistoryEntityService {
 	public Uni<NGSILDOperationResult> createEntry(String tenant, Map<String, Object> resolved,
 			Context originalContext) {
 		logger.debug("createMessage() :: started");
-		CreateHistoryEntityRequest request = new CreateHistoryEntityRequest(tenant, resolved, null);
+		CreateHistoryEntityRequest request = new CreateHistoryEntityRequest(tenant, resolved);
 		Tuple2<Map<String, Object>, Collection<Tuple2<RemoteHost, Map<String, Object>>>> splitted = splitEntity(
 				request);
 		Map<String, Object> localEntity = splitted.getItem1();
@@ -162,7 +162,7 @@ public class HistoryEntityService {
 
 	public Uni<NGSILDOperationResult> appendToEntry(String tenant, String entityId, Map<String, Object> appendEntry,
 			Context originalContext) {
-		AppendHistoryEntityRequest request = new AppendHistoryEntityRequest(tenant, appendEntry, entityId, null);
+		AppendHistoryEntityRequest request = new AppendHistoryEntityRequest(tenant, appendEntry, entityId);
 		Tuple2<Map<String, Object>, Collection<Tuple2<RemoteHost, Map<String, Object>>>> splitted = splitEntity(
 				request);
 		Map<String, Object> localEntity = splitted.getItem1();
@@ -211,7 +211,7 @@ public class HistoryEntityService {
 	public Uni<NGSILDOperationResult> updateInstanceOfAttr(String tenant, String entityId, String attribId,
 			String instanceId, Map<String, Object> payload, Context originalContext) {
 		UpdateAttrHistoryEntityRequest request = new UpdateAttrHistoryEntityRequest(tenant, entityId, attribId,
-				instanceId, payload, null);
+				instanceId, payload);
 		Tuple2<Map<String, Object>, Collection<Tuple2<RemoteHost, Map<String, Object>>>> splitted = splitEntity(
 				request);
 		Map<String, Object> localEntity = splitted.getItem1();
@@ -261,7 +261,7 @@ public class HistoryEntityService {
 	}
 
 	public Uni<NGSILDOperationResult> deleteEntry(String tenant, String entityId, Context originalContext) {
-		DeleteHistoryEntityRequest request = new DeleteHistoryEntityRequest(tenant, entityId, null);
+		DeleteHistoryEntityRequest request = new DeleteHistoryEntityRequest(tenant, entityId);
 		Uni<NGSILDOperationResult> local = historyDAO.deleteHistoryEntity(request).onItem().transform(v -> {
 			NGSILDOperationResult result;
 			result = new NGSILDOperationResult(AppConstants.DELETE_TEMPORAL_REQUEST, request.getId());
@@ -304,7 +304,7 @@ public class HistoryEntityService {
 	public Uni<NGSILDOperationResult> deleteAttrFromEntry(String tenant, String entityId, String attrId,
 			String datasetId, boolean deleteAll, Context originalContext) {
 		DeleteAttrHistoryEntityRequest request = new DeleteAttrHistoryEntityRequest(tenant, entityId, attrId, datasetId,
-				deleteAll, null);
+				deleteAll);
 		Uni<NGSILDOperationResult> local = historyDAO.deleteAttrFromHistoryEntity(request).onItem().transform(v -> {
 			NGSILDOperationResult result;
 			result = new NGSILDOperationResult(AppConstants.DELETE_TEMPORAL_ATTRIBUTE_REQUEST, request.getId());
@@ -352,7 +352,7 @@ public class HistoryEntityService {
 	public Uni<NGSILDOperationResult> deleteInstanceOfAttr(String tenant, String entityId, String attribId,
 			String instanceId, Context originalContext) {
 		DeleteAttrInstanceHistoryEntityRequest request = new DeleteAttrInstanceHistoryEntityRequest(tenant, entityId,
-				attribId, instanceId, null);
+				attribId, instanceId);
 
 		Uni<NGSILDOperationResult> local = historyDAO.deleteAttrInstanceInHistoryEntity(request).onItem()
 				.transform(v -> {

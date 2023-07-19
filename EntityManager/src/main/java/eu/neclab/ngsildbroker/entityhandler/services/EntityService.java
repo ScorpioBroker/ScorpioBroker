@@ -254,7 +254,7 @@ public class EntityService {
 			effectivePayload = Maps.newHashMap();
 			effectivePayload.put(attribName, Lists.newArrayList(payload));
 		}
-		UpdateEntityRequest request = new UpdateEntityRequest(tenant, entityId, effectivePayload, attribName, null);
+		UpdateEntityRequest request = new UpdateEntityRequest(tenant, entityId, effectivePayload, attribName);
 		request.setRequestType(AppConstants.PARTIAL_UPDATE_REQUEST);
 		Tuple2<Map<String, Object>, Collection<Tuple2<RemoteHost, Map<String, Object>>>> splitted = splitEntity(
 				request);
@@ -304,7 +304,8 @@ public class EntityService {
 		});
 	}
 
-	public Uni<Boolean> patchToEndPoint(String entityId, HttpServerRequest request, Map<String, Object> body, String attrId) {
+	public Uni<Boolean> patchToEndPoint(String entityId, HttpServerRequest request, Map<String, Object> body,
+			String attrId) {
 		String tenantId = HttpUtils.getTenant(request);
 		return entityDAO.getEndpoint(entityId, tenantId).onItem().transformToUni(endPoint -> {
 			if (endPoint != null && !endPoint.equals("")) {
@@ -384,7 +385,7 @@ public class EntityService {
 	}
 
 	public Uni<NGSILDOperationResult> deleteEntity(String tenant, String entityId, Context context) {
-		DeleteEntityRequest request = new DeleteEntityRequest(tenant, entityId, null);
+		DeleteEntityRequest request = new DeleteEntityRequest(tenant, entityId);
 		Set<RemoteHost> remoteHosts = getRemoteHostsForDelete(request);
 
 		if (remoteHosts.isEmpty()) {
@@ -456,7 +457,7 @@ public class EntityService {
 
 	public Uni<NGSILDOperationResult> appendToEntity(String tenant, String entityId, Map<String, Object> payload,
 			boolean noOverwrite, Context context) {
-		AppendEntityRequest request = new AppendEntityRequest(tenant, entityId, payload, null);
+		AppendEntityRequest request = new AppendEntityRequest(tenant, entityId, payload);
 		Tuple2<Map<String, Object>, Collection<Tuple2<RemoteHost, Map<String, Object>>>> localAndRemote = splitEntity(
 				request);
 		Map<String, Object> localEntity = localAndRemote.getItem1();
@@ -518,7 +519,7 @@ public class EntityService {
 
 	public Uni<NGSILDOperationResult> updateEntity(String tenant, String entityId, Map<String, Object> payload,
 			Context context) {
-		UpdateEntityRequest request = new UpdateEntityRequest(tenant, entityId, payload, null, null);
+		UpdateEntityRequest request = new UpdateEntityRequest(tenant, entityId, payload, null);
 		Tuple2<Map<String, Object>, Collection<Tuple2<RemoteHost, Map<String, Object>>>> localAndRemote = splitEntity(
 				request);
 		Map<String, Object> localEntity = localAndRemote.getItem1();
@@ -586,7 +587,7 @@ public class EntityService {
 
 	public Uni<NGSILDOperationResult> createEntity(String tenant, Map<String, Object> resolved, Context context) {
 		logger.debug("createMessage() :: started");
-		CreateEntityRequest request = new CreateEntityRequest(tenant, resolved, null);
+		CreateEntityRequest request = new CreateEntityRequest(tenant, resolved);
 		Tuple2<Map<String, Object>, Collection<Tuple2<RemoteHost, Map<String, Object>>>> localAndRemote = splitEntity(
 				request);
 		Map<String, Object> localEntity = localAndRemote.getItem1();
@@ -871,7 +872,7 @@ public class EntityService {
 		List<Map<String, Object>> localEntities = Lists.newArrayList();
 		while (itEntities.hasNext() && itContext.hasNext()) {
 			Tuple2<Map<String, Object>, Collection<Tuple2<RemoteHost, Map<String, Object>>>> split = splitEntity(
-					new CreateEntityRequest(tenant, itEntities.next(), null));
+					new CreateEntityRequest(tenant, itEntities.next()));
 			Map<String, Object> local = split.getItem1();
 			Context context = itContext.next();
 			if (local != null) {
@@ -919,7 +920,6 @@ public class EntityService {
 
 			}
 
-			
 			if (!request.getRequestPayload().isEmpty()) {
 				logger.debug("Create batch request sending to kafka " + request.getEntityIds());
 				batchEmitter.sendAndForget(request);
@@ -999,7 +999,7 @@ public class EntityService {
 		while (itEntities.hasNext() && itContext.hasNext()) {
 			Map<String, Object> entity = itEntities.next();
 			Tuple2<Map<String, Object>, Collection<Tuple2<RemoteHost, Map<String, Object>>>> split = splitEntity(
-					new AppendEntityRequest(tenant, (String) entity.get(NGSIConstants.JSON_LD_ID), entity, null));
+					new AppendEntityRequest(tenant, (String) entity.get(NGSIConstants.JSON_LD_ID), entity));
 			Map<String, Object> local = split.getItem1();
 			Context context = itContext.next();
 			if (local != null) {
@@ -1126,7 +1126,7 @@ public class EntityService {
 		List<Map<String, Object>> localEntities = Lists.newArrayList();
 		while (itEntities.hasNext() && itContext.hasNext()) {
 			Tuple2<Map<String, Object>, Collection<Tuple2<RemoteHost, Map<String, Object>>>> split = splitEntity(
-					new UpsertEntityRequest(tenant, itEntities.next(), null));
+					new UpsertEntityRequest(tenant, itEntities.next()));
 			Map<String, Object> local = split.getItem1();
 			Context context = itContext.next();
 			if (local != null) {
@@ -1261,7 +1261,7 @@ public class EntityService {
 	public Uni<List<NGSILDOperationResult>> deleteBatch(String tenant, List<String> entityIds, boolean localOnly) {
 		Map<RemoteHost, List<String>> host2Ids = Maps.newHashMap();
 		for (String entityId : entityIds) {
-			DeleteEntityRequest request = new DeleteEntityRequest(tenant, entityId, null);
+			DeleteEntityRequest request = new DeleteEntityRequest(tenant, entityId);
 			Set<RemoteHost> remoteHosts = getRemoteHostsForDelete(request);
 			for (RemoteHost remoteHost : remoteHosts) {
 				if (host2Ids.containsKey(remoteHost)) {
@@ -1350,7 +1350,7 @@ public class EntityService {
 	public Uni<NGSILDOperationResult> mergePatch(String tenant, String entityId, Map<String, Object> resolved,
 			Context context) {
 		logger.debug("createMessage() :: started");
-		MergePatchRequest request = new MergePatchRequest(tenant, entityId, resolved, null);
+		MergePatchRequest request = new MergePatchRequest(tenant, entityId, resolved);
 		Tuple2<Map<String, Object>, Collection<Tuple2<RemoteHost, Map<String, Object>>>> localAndRemote = splitEntity(
 				request);
 		Map<String, Object> localEntity = localAndRemote.getItem1();

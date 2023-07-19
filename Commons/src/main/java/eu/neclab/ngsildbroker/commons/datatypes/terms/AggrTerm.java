@@ -1,11 +1,20 @@
 package eu.neclab.ngsildbroker.commons.datatypes.terms;
 
+import java.io.Serializable;
 import java.util.Set;
 
-public class AggrTerm {
+public class AggrTerm  implements Serializable {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -4795426642930378574L;
 	private String period;
 	private Set<String> aggrFunctions;
+
+	public AggrTerm() {
+		// for serialization
+	}
 
 	public String getPeriod() {
 		return period;
