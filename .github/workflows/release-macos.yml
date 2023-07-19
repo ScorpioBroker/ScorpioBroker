@@ -25,7 +25,7 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-macos-with-kafka
         run: |
-          mvn clean package -DskipTests -Dkafka -Pkafka -Dnative -Ddocker-tag=macos-kafka-${{steps.get-id.outputs.id}} -Dos=macos -Dquarkus.profile=kafka
+          mvn clean package -DskipTests -Dkafka -Pkafka -Dnative -Dos=macos -Dquarkus.profile=kafka
       - name: Create Release ${{steps.get-id.outputs.id}}-macos-kafka
         id: create_release
         uses: actions/create-release@v1
@@ -140,7 +140,7 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-macos
         run: |
-          mvn clean package -DskipTests -Din-memory -Pin-memory -Dnative -tag=macos-${{steps.get-id.outputs.id}} -Dos=macos -Dquarkus.profile=in-memory
+          mvn clean package -DskipTests -Din-memory -Pin-memory -Dnative -Dos=macos -Dquarkus.profile=in-memory
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
