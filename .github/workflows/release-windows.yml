@@ -34,7 +34,7 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-windows-with-kafka
         run: |
-          mvn clean package -DskipTests -Dkafka -Pkafka -Dnative -Dos=windows -Dquarkus.profile=kafka
+          mvn clean package -DskipTests -Dkafka -Pkafka -Dnative -Dos=windows -D"quarkus.profile=kafka"
       - name: Create Release ${{steps.get-id.outputs.id}}-windows-kafka.exe
         id: create_release
         uses: actions/create-release@v1
@@ -158,7 +158,7 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-windows
         run: |
-          mvn clean package -DskipTests -Din-memory -Pin-memory -Dnative -Dos=windows -Dquarkus.profile=in-memory
+          mvn clean package -DskipTests -Din-memory -Pin-memory -Dnative -Dos=windows -D"quarkus.profile=in-memory"
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
