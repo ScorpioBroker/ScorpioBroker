@@ -19,26 +19,6 @@ jobs:
           java-version: '17' # for a specific JDK 17; or '17' for the latest JDK 17
           distribution: 'mandrel'
           version: 'mandrel-latest'
-      - name: docker-login
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKER_USER }}
-          password: ${{ secrets.DOCKER_TOKEN }}
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.ECR_ID }}
-          aws-secret-access-key: ${{ secrets.ECR_TOKEN }}
-          aws-region: us-east-1
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
-        with:
-          registry-type: public
-      - name: Build testserver
-        run: |
-          cd testserver
-          docker build -t testserver .
       - name: Get release number
         id: get-id
         shell: pwsh
@@ -55,17 +35,6 @@ jobs:
       - name: build-windows-with-kafka
         run: |
           mvn clean package -DskipTests -Dkafka -Pkafka -Dnative -Ddocker-tag=windows-kafka-${{steps.get-id.outputs.id}} -Dos=windows -Dquarkus.profile=kafka
-#      - name: start docker dist 
-#        run: |
-#          docker-compose -f ./compose-files/docker-compose-windows-dist-kafka-test.yml up &
-#          sleep 120
-#      - name: newman action
-#        uses: matt-ball/newman-action@master
-#        with:
-#          collection: api-test.json
-#          environment: api-test-dist-environment.json
-#      - name: Stopping Scorpio 
-#        run: docker-compose -f ./compose-files/docker-compose-windows-dist-kafka-test.yml down
       - name: Create Release ${{steps.get-id.outputs.id}}-windows-kafka.exe
         id: create_release
         uses: actions/create-release@v1
@@ -174,26 +143,6 @@ jobs:
           java-version: '17' # for a specific JDK 17; or '17' for the latest JDK 17
           distribution: 'mandrel'
           version: 'mandrel-latest'
-      - name: docker-login
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKER_USER }}
-          password: ${{ secrets.DOCKER_TOKEN }}
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.ECR_ID }}
-          aws-secret-access-key: ${{ secrets.ECR_TOKEN }}
-          aws-region: us-east-1
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
-        with:
-          registry-type: public
-      - name: Build testserver
-        run: |
-          cd testserver
-          docker build -t testserver .
       - name: Get release number
         id: get-id
         shell: pwsh
