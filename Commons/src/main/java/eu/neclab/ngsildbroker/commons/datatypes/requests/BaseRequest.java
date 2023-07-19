@@ -1,9 +1,10 @@
 package eu.neclab.ngsildbroker.commons.datatypes.requests;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
-public class BaseRequest {
+public class BaseRequest implements Serializable{
 
 	private String tenant;
 	protected Map<String, Object> payload = new HashMap<>();
