@@ -312,12 +312,14 @@ public class EntityController {// implements EntityHandlerInterface {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 		}
 		noConcise(body);
+		body.put(NGSIConstants.ID,entityId);
+		if(!body.containsKey(NGSIConstants.TYPE)){
+			return 	Uni.createFrom().item(HttpUtils.handleControllerExceptions(
+					new ResponseException(ErrorType.BadRequestData, "Type can not be null")));
+		}
 		return HttpUtils.expandBody(request, body, AppConstants.REPLACE_ENTITY_PAYLOAD, ldService).onItem()
 				.transformToUni(tuple -> {
-					if(!body.get(NGSIConstants.ID).equals(entityId)){
-						return 	Uni.createFrom().item(HttpUtils.handleControllerExceptions(
-									new ResponseException(ErrorType.BadRequestData, "Id can not be updated")));
-					}
+
 					return entityService.replaceEntity(HttpUtils.getTenant(request), tuple.getItem2(), tuple.getItem1()).onItem()
 							.transform(opResult -> {
 
