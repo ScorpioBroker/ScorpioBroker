@@ -42,6 +42,9 @@ jobs:
       - name: build-ubuntu-with-kafka
         run: |
           mvn clean package -DskipTests -Dkafka -Pkafka -Dnative -Ddocker -Ddocker-tag=ubuntu-kafka-${{steps.get-id.outputs.id}} -Dos=ubuntu -Dquarkus.profile=kafka
+      - name: dir build
+        run: |
+          ls -laR
       - name: docker tag 
         run: |
           docker tag scorpiobroker/at-context-server:ubuntu-kafka-${{steps.get-id.outputs.id}} scorpiobroker/at-context-server:ubuntu-kafka-latest
