@@ -468,6 +468,8 @@ public class HistoryEntityService {
 					});
 		case AppConstants.APPEND_REQUEST:
 		case AppConstants.UPDATE_REQUEST:
+		case AppConstants.REPLACE_ENTITY_REQUEST:
+		case AppConstants.REPLACE_ATTRIBUTE_REQUEST:
 			return historyDAO.appendToHistoryEntity(new AppendHistoryEntityRequest(request)).onItem()
 					.transformToUni(resultTable -> {
 						return Uni.createFrom().voidItem();

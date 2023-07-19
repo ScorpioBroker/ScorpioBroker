@@ -17,7 +17,7 @@ public class ReplaceEntityRequest extends EntityRequest {
 
 	public ReplaceEntityRequest(String tenant, Map<String, Object> resolved, BatchInfo batchInfo) {
 		super(tenant, (String) resolved.get(NGSIConstants.JSON_LD_ID), resolved, batchInfo,
-				AppConstants.CREATE_REQUEST);
+				AppConstants.REPLACE_ENTITY_REQUEST);
 
 	}
 

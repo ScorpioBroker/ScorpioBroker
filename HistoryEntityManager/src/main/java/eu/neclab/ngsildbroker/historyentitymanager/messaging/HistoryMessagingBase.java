@@ -84,6 +84,10 @@ public abstract class HistoryMessagingBase {
 						notBatch.add(request);
 						continue;
 					}
+					if (request.getRequestType() == AppConstants.REPLACE_ATTRIBUTE_REQUEST) {
+						notBatch.add(request);
+						continue;
+					}
 					List<Map<String, Object>> payloads = opType2Payload.get(request.getRequestType());
 					if (payloads == null) {
 						payloads = Lists.newArrayList();

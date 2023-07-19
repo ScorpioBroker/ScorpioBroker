@@ -20,9 +20,8 @@ public class ReplaceAttribRequest extends EntityRequest {
 
 	public ReplaceAttribRequest(String tenant, Map<String, Object> resolved, BatchInfo batchInfo,String entityId,String attrId) {
 		super(tenant,entityId, resolved, batchInfo,
-				AppConstants.CREATE_REQUEST);
+				AppConstants.REPLACE_ATTRIBUTE_REQUEST);
 		this.attribName=attrId;
-
-	}
+   }
 
 }

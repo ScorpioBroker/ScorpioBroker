@@ -118,6 +118,8 @@ public class AppConstants {
 	public static final int UPDATE_SUBSCRIPTION_REQUEST = 15;
 	public static final int CREATE_SUBSCRIPTION_REQUEST = 16;
 
+	public static final int REPLACE_ATTRIBUTE_REQUEST = 23;
+
 	public static final String NGB_APPLICATION_GEO_JSON = "application/geo+json";
 	public static final String INTERNAL_TYPE_REGISTRATION_ID = "scorpio:hosted:types";
 	public static final String INTERNAL_ATTRS_REGISTRATION_ID = "scorpio:hosted:attrs";
