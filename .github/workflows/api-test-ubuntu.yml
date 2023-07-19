@@ -3,6 +3,10 @@ on:
   push:
     branches:
       - 'development-quarkus'
+    path:
+      - '**.java'
+      - '**.sql'
+      - '**/pom.xml'
   pull_request:
 jobs:
   build-ubuntu-kafka:
