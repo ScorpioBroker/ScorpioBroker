@@ -407,7 +407,7 @@ public class EntityInfoDAO {
 							SELECT ENTITY
 							FROM ENTITY
 							WHERE id = $3)
-							update entity set entity = $1::jsonb, e_types = $2 where id = $3
+							update entity set entity = jsonb_build_object('https://uri.etsi.org/ngsi-ld/createdAt' , entity->'https://uri.etsi.org/ngsi-ld/createdAt') || $1::jsonb, e_types = $2 where id = $3
 							RETURNING (SELECT ENTITY FROM old_entity) AS old_entity""")
 					.execute(Tuple.of(new JsonObject(request.getPayload()),types,request.getId())).onItem().transformToUni(rows -> {
 						if (rows.rowCount() == 0) {

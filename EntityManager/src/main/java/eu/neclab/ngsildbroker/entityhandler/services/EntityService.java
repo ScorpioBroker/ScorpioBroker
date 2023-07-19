@@ -692,11 +692,13 @@ public class EntityService {
 						break;
 					case AppConstants.UPDATE_REQUEST:
 					case AppConstants.MERGE_PATCH_REQUEST:
+					case AppConstants.REPLACE_ENTITY_REQUEST:
 						if (!regEntry.updateEntity()) {
 							continue;
 						}
 						break;
 					case AppConstants.PARTIAL_UPDATE_REQUEST:
+					case AppConstants.REPLACE_ATTRIBUTE_REQUEST:
 						if (!regEntry.updateAttrs()) {
 							continue;
 						}
