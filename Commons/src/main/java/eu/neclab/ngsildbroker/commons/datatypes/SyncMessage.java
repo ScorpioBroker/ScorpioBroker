@@ -2,8 +2,13 @@ package eu.neclab.ngsildbroker.commons.datatypes;
 
 import java.io.Serializable;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
 
+@JsonSerialize
+@JsonDeserialize
 public class SyncMessage implements Serializable {
 
 	/**

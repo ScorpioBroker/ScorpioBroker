@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.subscriptionmanager.messaging;
 
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -10,6 +11,7 @@ import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
+import org.apache.camel.CamelContext;
 import org.eclipse.microprofile.reactive.messaging.Acknowledgment;
 import org.eclipse.microprofile.reactive.messaging.Acknowledgment.Strategy;
 import org.eclipse.microprofile.reactive.messaging.Channel;
@@ -17,6 +19,8 @@ import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.Sets;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
@@ -53,9 +57,25 @@ public class SubscriptionSyncService {
 
 	@Inject
 	SubscriptionService subService;
+	
+	@Inject
+	CamelContext context;
 
 	@PostConstruct
 	public void setup() {
+		System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@2");
+		try {
+			System.out.println(JsonUtils.toPrettyString(context.getGlobalOptions()));
+		} catch (JsonGenerationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@2");
+		context.getGlobalOptions().put("CamelJacksonEnableTypeConverter", "true");
+		context.getGlobalOptions().put("CamelJacksonTypeConverterToPojo", "true");
 		INSTANCE_ID = new AliveAnnouncement(SYNC_ID);
 		subService.addSyncService(this);
 	}
@@ -98,11 +118,12 @@ public class SubscriptionSyncService {
 
 	@Incoming(AppConstants.SUB_ALIVE_RETRIEVE_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
-	Uni<Void> listenForAlive(AliveAnnouncement message) {
-		if (message.getId().equals(SYNC_ID)) {
-			return Uni.createFrom().voidItem();
-		}
-		currentInstances.add(message.getId());
+	Uni<Void> listenForAlive(byte[] message) {
+		System.out.println(new String(message));
+//		if (message.getId().equals(SYNC_ID)) {
+//			return Uni.createFrom().voidItem();
+//		}
+//		currentInstances.add(message.getId());
 		return Uni.createFrom().voidItem();
 
 	}
