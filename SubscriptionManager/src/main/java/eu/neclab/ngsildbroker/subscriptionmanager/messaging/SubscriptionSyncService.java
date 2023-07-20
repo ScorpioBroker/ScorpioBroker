@@ -57,25 +57,10 @@ public class SubscriptionSyncService {
 
 	@Inject
 	SubscriptionService subService;
-	
-	@Inject
-	CamelContext context;
+
 
 	@PostConstruct
 	public void setup() {
-		System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@2");
-		try {
-			System.out.println(JsonUtils.toPrettyString(context.getGlobalOptions()));
-		} catch (JsonGenerationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@2");
-		context.getGlobalOptions().put("CamelJacksonEnableTypeConverter", "true");
-		context.getGlobalOptions().put("CamelJacksonTypeConverterToPojo", "true");
 		INSTANCE_ID = new AliveAnnouncement(SYNC_ID);
 		subService.addSyncService(this);
 	}
@@ -118,12 +103,12 @@ public class SubscriptionSyncService {
 
 	@Incoming(AppConstants.SUB_ALIVE_RETRIEVE_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
-	Uni<Void> listenForAlive(byte[] message) {
-		System.out.println(new String(message));
-//		if (message.getId().equals(SYNC_ID)) {
-//			return Uni.createFrom().voidItem();
-//		}
-//		currentInstances.add(message.getId());
+	Uni<Void> listenForAlive(AliveAnnouncement message) {
+		System.out.println("[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[");
+		if (message.getId().equals(SYNC_ID)) {
+			return Uni.createFrom().voidItem();
+		}
+		currentInstances.add(message.getId());
 		return Uni.createFrom().voidItem();
 
 	}
