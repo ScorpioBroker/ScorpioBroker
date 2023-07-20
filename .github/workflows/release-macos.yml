@@ -52,7 +52,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./at-context-server/target/quarkus-app/at-context-server-${{steps.get-build-id.outputs.id}}-runner
+          asset_path: ./at-context-server/target/at-context-server-${{steps.get-build-id.outputs.id}}-runner
           asset_name: at-context-server-macos-kafka-${{steps.get-id.outputs.id}}-macos-kafka
           asset_content_type: application/octet-stream
       - name: Upload Release history-query-manager
@@ -61,7 +61,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./HistoryQueryManager/target/quarkus-app/history-query-manager-${{steps.get-build-id.outputs.id}}-runner
+          asset_path: ./HistoryQueryManager/target/history-query-manager-${{steps.get-build-id.outputs.id}}-runner
           asset_name: history-query-manager-macos-kafka-${{steps.get-id.outputs.id}}-macos-kafka
           asset_content_type: application/octet-stream
       - name: Upload Release history-entity-manager
@@ -70,7 +70,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./HistoryEntityManager/target/quarkus-app/history-entity-manager-${{steps.get-build-id.outputs.id}}-runner
+          asset_path: ./HistoryEntityManager/target/history-entity-manager-${{steps.get-build-id.outputs.id}}-runner
           asset_name: history-entity-manager-macos-kafka-${{steps.get-id.outputs.id}}-macos-kafka
           asset_content_type: application/octet-stream
       - name: Upload Release registry-subscription-manager
@@ -79,7 +79,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./RegistrySubscriptionManager/target/quarkus-app/registry-subscription-manager-${{steps.get-build-id.outputs.id}}-runner
+          asset_path: ./RegistrySubscriptionManager/target/registry-subscription-manager-${{steps.get-build-id.outputs.id}}-runner
           asset_name: registry-subscription-manager-macos-kafka-${{steps.get-id.outputs.id}}-macos-kafka
           asset_content_type: application/octet-stream
       - name: Upload Release registry-manager 
@@ -88,7 +88,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./RegistryManager/target/quarkus-app/registry-manager-${{steps.get-build-id.outputs.id}}-runner
+          asset_path: ./RegistryManager/target/registry-manager-${{steps.get-build-id.outputs.id}}-runner
           asset_name: registry-manager-macos-kafka-${{steps.get-id.outputs.id}}-macos-kafka
           asset_content_type: application/octet-stream
       - name: Upload Release subscription-manager 
@@ -97,7 +97,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./SubscriptionManager/target/quarkus-app/subscription-manager-${{steps.get-build-id.outputs.id}}-runner
+          asset_path: ./SubscriptionManager/target/subscription-manager-${{steps.get-build-id.outputs.id}}-runner
           asset_name: subscription-manager-macos-kafka-${{steps.get-id.outputs.id}}-macos-kafka
           asset_content_type: application/octet-stream
       - name: Upload Release query-manager 
@@ -106,7 +106,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./QueryManager/target/quarkus-app/query-manager-${{steps.get-build-id.outputs.id}}-runner
+          asset_path: ./QueryManager/target/query-manager-${{steps.get-build-id.outputs.id}}-runner
           asset_name: query-manager-macos-kafka-${{steps.get-id.outputs.id}}-macos-kafka
           asset_content_type: application/octet-stream
       - name: Upload Release entity-manager
@@ -115,7 +115,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./EntityManager/target/quarkus-app/entity-manager-${{steps.get-build-id.outputs.id}}-runner
+          asset_path: ./EntityManager/target/entity-manager-${{steps.get-build-id.outputs.id}}-runner
           asset_name: entity-manager-macos-kafka-${{steps.get-id.outputs.id}}-macos-kafka
           asset_content_type: application/octet-stream
   build-macos-aaio:
