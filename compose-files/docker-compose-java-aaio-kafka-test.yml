@@ -5,25 +5,10 @@ services:
     image: testserver
     ports:
      - "8080:8080"
-  zookeeper:
-    image: zookeeper
+  mosquitto:
+    image: eclipse-mosquitto
     ports:
-      - "2181"
-  kafka:
-    image: bitnami/kafka
-    ports:
-      - "9092"
-    environment:
-      KAFKA_ADVERTISED_HOST_NAME: kafka
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_PORT: 9092
-      KAFKA_LOG_RETENTION_MS: 10000
-      KAFKA_LOG_RETENTION_CHECK_INTERVAL_MS: 5000
-      ALLOW_PLAINTEXT_LISTENER: "yes"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    depends_on:
-      - zookeeper
+     - "1883"
   postgres:
     image: postgis/postgis
     ports:
@@ -38,7 +23,7 @@ services:
       - "9090:9090"
     environment:
       DBHOST: postgres
-      BUSHOST: kafka
+      BUSHOST: mosquitto
     depends_on:
       - postgres
       - kafka
