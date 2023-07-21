@@ -6,7 +6,7 @@ services:
     ports:
      - "8080:8080"
   mosquitto:
-    image: eclipse-mosquitto
+    image: emqx
     ports:
      - "1883"
   postgres:
