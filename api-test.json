@@ -1,9 +1,10 @@
 {
 	"info": {
-		"_postman_id": "7f94e90b-e371-4cfb-b3ad-66f572edefc7",
+		"_postman_id": "2d1fd8f3-d778-4e68-bfd3-4b31da98aba3",
 		"name": "API Test",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "26387112"
+		"_exporter_id": "23549240",
+		"_collection_link": "https://lively-flare-564396.postman.co/workspace/Scorpio~19b8073e-6570-45c0-bafd-07d48ddfc38c/collection/23549240-2d1fd8f3-d778-4e68-bfd3-4b31da98aba3?action=share&creator=23549240&source=collection_link"
 	},
 	"item": [
 		{
@@ -17910,7 +17911,7 @@
 																	}
 																},
 																"url": {
-																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities/{{entityId}}/attrs/testrelationship",
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities/{{entityId}}",
 																	"host": [
 																		"{{entity-manager}}"
 																	],
@@ -17918,9 +17919,7 @@
 																		"ngsi-ld",
 																		"v1",
 																		"entities",
-																		"{{entityId}}",
-																		"attrs",
-																		"testrelationship"
+																		"{{entityId}}"
 																	]
 																}
 															},
@@ -18222,7 +18221,7 @@
 																],
 																"body": {
 																	"mode": "raw",
-																	"raw": "{\r\n    \"testrelationship\": {\"type\": \"Property\", \"value\": \"replaceojbect\"}\r\n}",
+																	"raw": "{\r\n    \"testrelationship\": {\"type\": \"Property\", \"value\": \"replacedValue\"}\r\n}",
 																	"options": {
 																		"raw": {
 																			"language": "json"
@@ -18230,7 +18229,7 @@
 																	}
 																},
 																"url": {
-																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities/{{entityId}}",
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities/{{entityId}}/attrs/testrelationship",
 																	"host": [
 																		"{{entity-manager}}"
 																	],
@@ -18238,7 +18237,9 @@
 																		"ngsi-ld",
 																		"v1",
 																		"entities",
-																		"{{entityId}}"
+																		"{{entityId}}",
+																		"attrs",
+																		"testrelationship"
 																	]
 																}
 															},
