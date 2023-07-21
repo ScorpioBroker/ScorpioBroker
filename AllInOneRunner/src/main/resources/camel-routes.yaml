@@ -1,0 +1,10 @@
+- route:
+    id: "subsalive"
+    from:
+      uri: "${mysettings.messageprotocol}:${scorpio.topics.subalive}?brokerUrl=tcp://${bootstrap.servers}"
+      steps:
+        - marshal:
+            json:
+              library: Jackson
+        - to: reactive-streams:SUB_ALIVE
+
