@@ -17853,7 +17853,7 @@
 																			"            console.log(\"Retrieving notifications from testserver\")\r",
 																			"            console.log(notificationServer + \"/\" + subId)\r",
 																			"            console.log(value);\r",
-																			"            pm.expect(value.length).to.eql(1);\r",
+																			"            pm.expect(value.length).to.eql(2);\r",
 																			"            notification = value[0].body;\r",
 																			"            headers = value[0].headers;\r",
 																			"            pm.expect(notification.type).to.eql(\"Notification\");\r",
@@ -18171,7 +18171,7 @@
 																			"            console.log(\"Retrieving notifications from testserver\")\r",
 																			"            console.log(notificationServer + \"/\" + subId)\r",
 																			"            console.log(value);\r",
-																			"            pm.expect(value.length).to.eql(1);\r",
+																			"            pm.expect(value.length).to.eql(2);\r",
 																			"            notification = value[0].body;\r",
 																			"            headers = value[0].headers;\r",
 																			"            pm.expect(notification.type).to.eql(\"Notification\");\r",
@@ -18298,7 +18298,7 @@
 																"method": "DELETE",
 																"header": [],
 																"url": {
-																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities/{{entityId}}",
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities/urn:test:testentity1",
 																	"host": [
 																		"{{entity-manager}}"
 																	],
@@ -18306,7 +18306,7 @@
 																		"ngsi-ld",
 																		"v1",
 																		"entities",
-																		"{{entityId}}"
+																		"urn:test:testentity1"
 																	]
 																}
 															},
