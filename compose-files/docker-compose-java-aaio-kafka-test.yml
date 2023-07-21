@@ -5,10 +5,10 @@ services:
     image: testserver
     ports:
      - "8080:8080"
-  mosquitto:
+  emqx:
     image: emqx
     ports:
-     - "1883"
+     - "1883:1883"
   postgres:
     image: postgis/postgis
     ports:
@@ -23,7 +23,7 @@ services:
       - "9090:9090"
     environment:
       DBHOST: postgres
-      BUSHOST: mosquitto
+      BUSHOST: emqx
     depends_on:
       - postgres
-      - mosquitto
+      - emqx
