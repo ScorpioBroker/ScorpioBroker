@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "d6662696-1820-4ece-a116-f851b0477efd",
+		"_postman_id": "7f94e90b-e371-4cfb-b3ad-66f572edefc7",
 		"name": "API Test",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "26387112"
@@ -17712,7 +17712,7 @@
 																],
 																"body": {
 																	"mode": "raw",
-																	"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:mytest00002\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"TestType\"\r\n   \t\t}\r\n\t],\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n        \"showChanges\":true,\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"{{notificationserver}}\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    }\r\n}\r\n\r\n"
+																	"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:mytest00012\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"TestType\"\r\n   \t\t}\r\n\t],\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n        \"showChanges\":true,\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"{{notificationserver}}\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    }\r\n}\r\n\r\n"
 																},
 																"url": {
 																	"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions",
@@ -17829,7 +17829,7 @@
 															"response": []
 														},
 														{
-															"name": "Create Simple Entity No Context Copy",
+															"name": "Replace Entity No Context",
 															"event": [
 																{
 																	"listen": "test",
@@ -17902,7 +17902,7 @@
 																],
 																"body": {
 																	"mode": "raw",
-																	"raw": "{\r\n    \"testrelationship\": {\"type\": \"Property\", \"value\": \"replaceojbect\"}\r\n}",
+																	"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"replaceteststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 254},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.458},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Property\", \"value\": \"replaceojbect\"}\r\n}\r\n",
 																	"options": {
 																		"raw": {
 																			"language": "json"
@@ -18032,7 +18032,7 @@
 																],
 																"body": {
 																	"mode": "raw",
-																	"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:mytest00002\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"TestType\"\r\n   \t\t}\r\n\t],\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n        \"showChanges\":true,\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"{{notificationserver}}\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    }\r\n}\r\n\r\n"
+																	"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:mytest00022\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"TestType\"\r\n   \t\t}\r\n\t],\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n        \"showChanges\":true,\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"{{notificationserver}}\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    }\r\n}\r\n\r\n"
 																},
 																"url": {
 																	"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions",
@@ -18149,7 +18149,7 @@
 															"response": []
 														},
 														{
-															"name": "Create Simple Entity No Context Copy",
+															"name": "Replace Attribute No Context",
 															"event": [
 																{
 																	"listen": "test",
@@ -18222,7 +18222,7 @@
 																],
 																"body": {
 																	"mode": "raw",
-																	"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"replaceteststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 254},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.458},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Property\", \"value\": \"replaceojbect\"}\r\n}",
+																	"raw": "{\r\n    \"testrelationship\": {\"type\": \"Property\", \"value\": \"replaceojbect\"}\r\n}",
 																	"options": {
 																		"raw": {
 																			"language": "json"
