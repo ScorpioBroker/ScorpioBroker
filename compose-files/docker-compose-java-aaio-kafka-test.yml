@@ -26,4 +26,4 @@ services:
       BUSHOST: mosquitto
     depends_on:
       - postgres
-      - kafka
+      - mosquitto
