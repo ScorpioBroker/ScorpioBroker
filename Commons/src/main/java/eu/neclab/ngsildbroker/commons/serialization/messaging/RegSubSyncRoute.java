@@ -105,7 +105,7 @@ public class RegSubSyncRoute extends RouteBuilder {
 	}
 
 	@Override
-	@Retry(maxRetries = 3, delay = 1, delayUnit = ChronoUnit.SECONDS)
+	@Retry(maxRetries = 3, delay = 5, delayUnit = ChronoUnit.SECONDS)
 	public void configure() throws Exception {
 		System.out.println("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
 //		from("direct:sendMyObject").marshal().json().to("paho-mqtt5:REG_SUB_ALIVE");
