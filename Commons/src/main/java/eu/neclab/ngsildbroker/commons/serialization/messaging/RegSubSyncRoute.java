@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.commons.serialization.messaging;
 
+import java.net.ConnectException;
 import java.time.temporal.ChronoUnit;
 
 import org.apache.camel.CamelContext;
@@ -38,58 +39,58 @@ public class RegSubSyncRoute extends RouteBuilder {
 //			scorpio.topics.regsubsync=REG_SUB_SYNC
 	@Inject
 	CamelContext camelContext;
-	
+
 	@ConfigProperty(name = "mp.messaging.outgoing.subalive.endpoint-uri")
 	String subAliveEndpointOut;
-	
+
 	@ConfigProperty(name = "mp.messaging.outgoing.regsubalive.endpoint-uri")
 	String regSubAliveEndpointOut;
-	
+
 	@ConfigProperty(name = "mp.messaging.outgoing.subsync.endpoint-uri")
 	String subSyncEndpointOut;
-	
+
 	@ConfigProperty(name = "mp.messaging.outgoing.regsubsync.endpoint-uri")
 	String regSubSyncEndpointOut;
-	
+
 	@ConfigProperty(name = "mp.messaging.outgoing.entity.endpoint-uri")
 	String entityEndpointOut;
-	
+
 	@ConfigProperty(name = "mp.messaging.outgoing.entitybatch.endpoint-uri")
 	String batchEndpointOut;
-	
+
 	@ConfigProperty(name = "mp.messaging.outgoing.registry.endpoint-uri")
 	String registryEndpointOut;
-	
+
 	@ConfigProperty(name = "mp.messaging.outgoing.isubs.endpoint-uri")
 	String iSubsEndpointOut;
-	
+
 	@ConfigProperty(name = "mp.messaging.outgoing.inotification.endpoint-uri")
 	String iNotificationEndpointOut;
-	
+
 	@ConfigProperty(name = "mp.messaging.incoming.subaliveretrieve.endpoint-uri")
 	String subAliveEndpointIn;
-	
+
 	@ConfigProperty(name = "mp.messaging.incoming.regsubaliveretrieve.endpoint-uri")
 	String regSubAliveEndpointIn;
-	
+
 	@ConfigProperty(name = "mp.messaging.incoming.subsyncretrieve.endpoint-uri")
 	String subSyncEndpointIn;
-	
+
 	@ConfigProperty(name = "mp.messaging.incoming.regsubsyncretrieve.endpoint-uri")
 	String regSubSyncEndpointIn;
-	
+
 	@ConfigProperty(name = "mp.messaging.incoming.entityretrieve.endpoint-uri")
 	String entityEndpointIn;
-	
+
 	@ConfigProperty(name = "mp.messaging.incoming.entitybatchretrieve.endpoint-uri")
 	String batchEndpointIn;
-	
+
 	@ConfigProperty(name = "mp.messaging.incoming.registryretrieve.endpoint-uri")
 	String registryEndpointIn;
-	
+
 	@ConfigProperty(name = "mp.messaging.incoming.isubsretrieve.endpoint-uri")
 	String iSubsEndpointIn;
-	
+
 	@ConfigProperty(name = "mp.messaging.incoming.inotificationretrieve.endpoint-uri")
 	String iNotificationEndpointIn;
 
@@ -105,23 +106,28 @@ public class RegSubSyncRoute extends RouteBuilder {
 	}
 
 	@Override
-	@Retry(maxRetries = 3, delay = 5, delayUnit = ChronoUnit.SECONDS)
 	public void configure() throws Exception {
 		System.out.println("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
 //		from("direct:sendMyObject").marshal().json().to("paho-mqtt5:REG_SUB_ALIVE");
 //		from("direct:sendMyObject").marshal().json();
-		from(regSubAliveEndpointOut).unmarshal().json(AliveAnnouncement.class).to(regSubAliveEndpointIn);
-		from(subAliveEndpointOut).unmarshal().json(AliveAnnouncement.class).to(subAliveEndpointIn);
-		from(regSubSyncEndpointOut).unmarshal().json(SyncMessage.class).to(regSubSyncEndpointIn);
-		from(subSyncEndpointOut).unmarshal().json(SyncMessage.class).to(subSyncEndpointIn);
-		from(entityEndpointOut).unmarshal().json(BaseRequest.class).to(entityEndpointIn);
-		from(batchEndpointOut).unmarshal().json(BatchRequest.class).to(batchEndpointIn);
-		from(registryEndpointOut).unmarshal().json(BaseRequest.class).to(registryEndpointIn);
-		from(iSubsEndpointOut).unmarshal().json(SubscriptionRequest.class).to(iSubsEndpointIn);
-		from(iNotificationEndpointOut).unmarshal().json(InternalNotification.class).to(iNotificationEndpointIn);
-		
-		
-		
+		from(regSubAliveEndpointOut).onException(ConnectException.class).maximumRedeliveries(5).delay(1000).end()
+				.unmarshal().json(AliveAnnouncement.class).to(regSubAliveEndpointIn);
+		from(subAliveEndpointOut).onException(ConnectException.class).maximumRedeliveries(5).delay(1000).end()
+				.unmarshal().json(AliveAnnouncement.class).to(subAliveEndpointIn);
+		from(regSubSyncEndpointOut).onException(ConnectException.class).maximumRedeliveries(5).delay(1000).end()
+				.unmarshal().json(SyncMessage.class).to(regSubSyncEndpointIn);
+		from(subSyncEndpointOut).onException(ConnectException.class).maximumRedeliveries(5).delay(1000).end()
+				.unmarshal().json(SyncMessage.class).to(subSyncEndpointIn);
+		from(entityEndpointOut).onException(ConnectException.class).maximumRedeliveries(5).delay(1000).end().unmarshal()
+				.json(BaseRequest.class).to(entityEndpointIn);
+		from(batchEndpointOut).onException(ConnectException.class).maximumRedeliveries(5).delay(1000).end().unmarshal()
+				.json(BatchRequest.class).to(batchEndpointIn);
+		from(registryEndpointOut).onException(ConnectException.class).maximumRedeliveries(5).delay(1000).end()
+				.unmarshal().json(BaseRequest.class).to(registryEndpointIn);
+		from(iSubsEndpointOut).onException(ConnectException.class).maximumRedeliveries(5).delay(1000).end().unmarshal()
+				.json(SubscriptionRequest.class).to(iSubsEndpointIn);
+		from(iNotificationEndpointOut).onException(ConnectException.class).maximumRedeliveries(5).delay(1000).end()
+				.unmarshal().json(InternalNotification.class).to(iNotificationEndpointIn);
 
 	}
 
