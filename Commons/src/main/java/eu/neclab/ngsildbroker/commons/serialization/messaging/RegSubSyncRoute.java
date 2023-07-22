@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.commons.serialization.messaging;
 
+import java.io.IOException;
 import java.net.ConnectException;
 import java.time.temporal.ChronoUnit;
 
@@ -110,24 +111,44 @@ public class RegSubSyncRoute extends RouteBuilder {
 		System.out.println("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
 //		from("direct:sendMyObject").marshal().json().to("paho-mqtt5:REG_SUB_ALIVE");
 //		from("direct:sendMyObject").marshal().json();
-		from(regSubAliveEndpointOut).onException(ConnectException.class).maximumRedeliveries(5).delay(1000).end()
-				.unmarshal().json(AliveAnnouncement.class).to(regSubAliveEndpointIn);
-		from(subAliveEndpointOut).onException(ConnectException.class).maximumRedeliveries(5).delay(1000).end()
-				.unmarshal().json(AliveAnnouncement.class).to(subAliveEndpointIn);
-		from(regSubSyncEndpointOut).onException(ConnectException.class).maximumRedeliveries(5).delay(1000).end()
-				.unmarshal().json(SyncMessage.class).to(regSubSyncEndpointIn);
-		from(subSyncEndpointOut).onException(ConnectException.class).maximumRedeliveries(5).delay(1000).end()
-				.unmarshal().json(SyncMessage.class).to(subSyncEndpointIn);
-		from(entityEndpointOut).onException(ConnectException.class).maximumRedeliveries(5).delay(1000).end().unmarshal()
-				.json(BaseRequest.class).to(entityEndpointIn);
-		from(batchEndpointOut).onException(ConnectException.class).maximumRedeliveries(5).delay(1000).end().unmarshal()
-				.json(BatchRequest.class).to(batchEndpointIn);
-		from(registryEndpointOut).onException(ConnectException.class).maximumRedeliveries(5).delay(1000).end()
-				.unmarshal().json(BaseRequest.class).to(registryEndpointIn);
-		from(iSubsEndpointOut).onException(ConnectException.class).maximumRedeliveries(5).delay(1000).end().unmarshal()
-				.json(SubscriptionRequest.class).to(iSubsEndpointIn);
-		from(iNotificationEndpointOut).onException(ConnectException.class).maximumRedeliveries(5).delay(1000).end()
-				.unmarshal().json(InternalNotification.class).to(iNotificationEndpointIn);
+		onException(ConnectException.class).maximumRedeliveries(3).delay(5000);
+
+		from(regSubAliveEndpointOut).onException(Exception.class).maximumRedeliveries(5).maximumRedeliveryDelay(5000)
+				.to("log:retry").handled(true).end().unmarshal().json(AliveAnnouncement.class).to(regSubAliveEndpointIn)
+				.onException(Exception.class).maximumRedeliveries(5).maximumRedeliveryDelay(5000).to("log:retry")
+				.handled(true).end();
+		from(subAliveEndpointOut).onException(Exception.class).maximumRedeliveries(5).maximumRedeliveryDelay(5000)
+				.to("log:retry").handled(true).end().unmarshal().json(AliveAnnouncement.class).to(subAliveEndpointIn)
+				.onException(Exception.class).maximumRedeliveries(5).maximumRedeliveryDelay(5000).to("log:retry")
+				.handled(true).end();
+		from(regSubSyncEndpointOut).onException(Exception.class).maximumRedeliveries(5).maximumRedeliveryDelay(5000)
+				.to("log:retry").handled(true).end().unmarshal().json(SyncMessage.class).to(regSubSyncEndpointIn)
+				.onException(Exception.class).maximumRedeliveries(5).maximumRedeliveryDelay(5000).to("log:retry")
+				.handled(true).end();
+		from(subSyncEndpointOut).onException(Exception.class).maximumRedeliveries(5).maximumRedeliveryDelay(5000)
+				.to("log:retry").handled(true).end().unmarshal().json(SyncMessage.class).to(subSyncEndpointIn)
+				.onException(Exception.class).maximumRedeliveries(5).maximumRedeliveryDelay(5000).to("log:retry")
+				.handled(true).end();
+		from(entityEndpointOut).onException(Exception.class).maximumRedeliveries(5).maximumRedeliveryDelay(5000)
+				.to("log:retry").handled(true).end().unmarshal().json(BaseRequest.class).to(entityEndpointIn)
+				.onException(Exception.class).maximumRedeliveries(5).maximumRedeliveryDelay(5000).to("log:retry")
+				.handled(true).end();
+		from(batchEndpointOut).onException(Exception.class).maximumRedeliveries(5).maximumRedeliveryDelay(5000)
+				.to("log:retry").handled(true).end().unmarshal().json(BatchRequest.class).to(batchEndpointIn)
+				.onException(Exception.class).maximumRedeliveries(5).maximumRedeliveryDelay(5000).to("log:retry")
+				.handled(true).end();
+		from(registryEndpointOut).onException(Exception.class).maximumRedeliveries(5).maximumRedeliveryDelay(5000)
+				.to("log:retry").handled(true).end().unmarshal().json(BaseRequest.class).to(registryEndpointIn)
+				.onException(Exception.class).maximumRedeliveries(5).maximumRedeliveryDelay(5000).to("log:retry")
+				.handled(true).end();
+		from(iSubsEndpointOut).onException(Exception.class).maximumRedeliveries(5).maximumRedeliveryDelay(5000)
+				.to("log:retry").handled(true).end().unmarshal().json(SubscriptionRequest.class).to(iSubsEndpointIn)
+				.onException(Exception.class).maximumRedeliveries(5).maximumRedeliveryDelay(5000).to("log:retry")
+				.handled(true).end();
+		from(iNotificationEndpointOut).onException(Exception.class).maximumRedeliveries(5).maximumRedeliveryDelay(5000)
+				.to("log:retry").handled(true).end().unmarshal().json(InternalNotification.class)
+				.to(iNotificationEndpointIn).onException(Exception.class).maximumRedeliveries(5)
+				.maximumRedeliveryDelay(5000).to("log:retry").handled(true).end();
 
 	}
 
