@@ -9,6 +9,11 @@ import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
 public class UpsertEntityRequest extends EntityRequest {
 
 	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 4685549934770083725L;
+
+	/**
 	 * constructor for serialization
 	 */
 	public UpsertEntityRequest() {

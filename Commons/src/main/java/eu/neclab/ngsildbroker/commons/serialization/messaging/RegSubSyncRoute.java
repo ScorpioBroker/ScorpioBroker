@@ -7,8 +7,10 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import eu.neclab.ngsildbroker.commons.datatypes.AliveAnnouncement;
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
+import eu.neclab.ngsildbroker.commons.datatypes.SyncMessage;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BatchRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.InternalNotification;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
 import io.quarkus.arc.profile.IfBuildProfile;
 import io.quarkus.arc.profile.UnlessBuildProfile;
@@ -106,13 +108,13 @@ public class RegSubSyncRoute extends RouteBuilder {
 //		from("direct:sendMyObject").marshal().json();
 		from(regSubAliveEndpointOut).unmarshal().json(AliveAnnouncement.class).to(regSubAliveEndpointIn);
 		from(subAliveEndpointOut).unmarshal().json(AliveAnnouncement.class).to(subAliveEndpointIn);
-		from(regSubSyncEndpointOut).unmarshal().json(AliveAnnouncement.class).to(regSubSyncEndpointIn);
-		from(subSyncEndpointOut).unmarshal().json(AliveAnnouncement.class).to(subSyncEndpointIn);
+		from(regSubSyncEndpointOut).unmarshal().json(SyncMessage.class).to(regSubSyncEndpointIn);
+		from(subSyncEndpointOut).unmarshal().json(SyncMessage.class).to(subSyncEndpointIn);
 		from(entityEndpointOut).unmarshal().json(BaseRequest.class).to(entityEndpointIn);
 		from(batchEndpointOut).unmarshal().json(BatchRequest.class).to(batchEndpointIn);
 		from(registryEndpointOut).unmarshal().json(BaseRequest.class).to(registryEndpointIn);
 		from(iSubsEndpointOut).unmarshal().json(SubscriptionRequest.class).to(iSubsEndpointIn);
-		from(iNotificationEndpointOut).unmarshal().json(Notification.class).to(iNotificationEndpointIn);
+		from(iNotificationEndpointOut).unmarshal().json(InternalNotification.class).to(iNotificationEndpointIn);
 		
 		
 		

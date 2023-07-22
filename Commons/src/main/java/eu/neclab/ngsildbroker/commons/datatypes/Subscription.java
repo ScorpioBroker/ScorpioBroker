@@ -726,9 +726,7 @@ public class Subscription implements Serializable {
 		}
 	}
 
-	public QQueryTerm getCsf() {
-		return csfQuery;
-	}
+	
 
 	public String getScopeQueryString() {
 		return scopeQueryString;

@@ -3,9 +3,15 @@ package eu.neclab.ngsildbroker.commons.datatypes;
 import java.io.Serializable;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
+import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import com.google.common.collect.ArrayListMultimap;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 
@@ -24,6 +30,7 @@ public class EndPoint implements Serializable {
 	private String accept;
 	private URI uri;
 	private Map<String, String> notifierInfo;
+	@JsonIgnore
 	private ArrayListMultimap<String, String> receiverInfo;
 
 	public EndPoint() {
@@ -95,6 +102,27 @@ public class EndPoint implements Serializable {
 
 	public ArrayListMultimap<String, String> getReceiverInfo() {
 		return receiverInfo;
+	}
+
+	@JsonGetter("receiverInfo")
+	public Map<String, Collection<String>> getReceiverInfoMap() {
+		return receiverInfo == null ? null : receiverInfo.asMap();
+	}
+
+	@JsonSetter("receiverInfo")
+	public void setReceiverInfoMap(Map<String, Collection<String>> map) {
+		if(map == null) {
+			return;
+		}
+		ArrayListMultimap<String, String> tmp = ArrayListMultimap.create();
+		for (Entry<String, Collection<String>> entry : map.entrySet()) {
+			Collection<String> values = entry.getValue();
+			String key = entry.getKey();
+			for (String value : values) {
+				tmp.put(key, value);
+			}
+		}
+		this.receiverInfo = tmp;
 	}
 
 	@Override

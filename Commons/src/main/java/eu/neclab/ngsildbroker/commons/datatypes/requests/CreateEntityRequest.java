@@ -9,6 +9,11 @@ import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
 public class CreateEntityRequest extends EntityRequest {
 
 	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -2420450841350939189L;
+
+	/**
 	 * constructor for serialization
 	 */
 	public CreateEntityRequest() {

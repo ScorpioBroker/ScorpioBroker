@@ -274,7 +274,7 @@ public class RegistrySubscriptionInfoDAO {
 			}
 
 			sql += ") select csource.reg from a left join csource on a.cs_id = csource.id";
-			if (subscription.getCsf() != null) {
+			if (subscription.getCsfQuery() != null) {
 				// if (sqlAdded) {
 				// sql += " and ";
 				// }

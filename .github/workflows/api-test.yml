@@ -41,7 +41,7 @@ jobs:
           docker tag scorpiobroker/all-in-one-runner:java-kafka-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:java-kafka-latest
       - name: start docker aaio 
         run: |
-          docker-compose -f ./compose-files/docker-compose-java-aaio-kafka-test.yml up &
+          docker-compose -f ./compose-files/docker-compose-java-aaio-kafka-test.yml up > log.out &
           sleep 120
       - name: newman action
         uses: matt-ball/newman-action@master
@@ -50,6 +50,9 @@ jobs:
           environment: api-test-aaio-environment.json
       - name: Stopping Scorpio 
         run: docker-compose -f ./compose-files/docker-compose-java-aaio-kafka-test.yml down
+      - name: print log
+        run: |
+          cat log.out
 #      - name: start docker dist 
 #        run: |
 #          docker-compose -f ./compose-files/docker-compose-java-dist-kafka-test.yml up &

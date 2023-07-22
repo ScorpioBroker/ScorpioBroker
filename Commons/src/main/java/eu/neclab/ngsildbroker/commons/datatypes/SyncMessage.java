@@ -18,6 +18,9 @@ public class SyncMessage implements Serializable {
 	private String syncId;
 	private SubscriptionRequest request;
 
+	SyncMessage() {
+		// TODO Auto-generated constructor stub
+	}
 	public SyncMessage(String syncId, SubscriptionRequest request) {
 		super();
 		this.syncId = syncId;

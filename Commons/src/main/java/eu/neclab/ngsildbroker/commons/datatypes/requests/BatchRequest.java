@@ -13,6 +13,10 @@ import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 
 public class BatchRequest extends BaseRequest {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -3640664052782539124L;
 	private String tenant;
 	private List<Map<String, Object>> requestPayload;
 	private List<Context> contexts;
@@ -20,6 +24,9 @@ public class BatchRequest extends BaseRequest {
 	private int requestType;
 	private long sendTimestamp = System.currentTimeMillis();
 
+	BatchRequest() {
+		// Serialize
+	}
 	public BatchRequest(String tenant, List<Map<String, Object>> requestPayload, List<Context> contexts,
 			int requestType) {
 		this.tenant = tenant;

@@ -6,6 +6,8 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 public class BaseRequest implements Serializable{
 
 	/**
@@ -16,6 +18,7 @@ public class BaseRequest implements Serializable{
 	protected Map<String, Object> payload = new HashMap<>();
 	private int requestType;
 	private long sendTimestamp = System.currentTimeMillis();
+	@JsonIgnore
 	private BatchInfo batchInfo;
 	private String id;
 	private Map<String, Object> previousEntity;

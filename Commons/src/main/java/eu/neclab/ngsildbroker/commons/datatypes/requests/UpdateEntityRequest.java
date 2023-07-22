@@ -7,19 +7,18 @@ import java.util.Map;
 
 public class UpdateEntityRequest extends EntityRequest {
 
-	private String attrName;
+	
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -4626344157475548782L;
 
 	public UpdateEntityRequest(String tenant, String id, Map<String, Object> payload, String attrName,
                                BatchInfo batchInfo) {
 		super(tenant, id, payload, batchInfo, AppConstants.UPDATE_REQUEST);
-		this.attrName = attrName;
+		this.attribName = attrName;
 	}
 
-	public String getAttrName() {
-		return attrName;
-	}
-
-	public void setAttrName(String attrName) {
-		this.attrName = attrName;
-	}
+	
 }
