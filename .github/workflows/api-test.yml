@@ -51,6 +51,7 @@ jobs:
       - name: Stopping Scorpio 
         run: docker-compose -f ./compose-files/docker-compose-java-aaio-kafka-test.yml down
       - name: print log
+        if: always()
         run: |
           cat log.out
 #      - name: start docker dist 
