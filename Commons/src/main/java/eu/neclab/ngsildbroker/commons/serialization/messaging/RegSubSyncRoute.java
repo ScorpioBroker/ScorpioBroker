@@ -1,9 +1,12 @@
 package eu.neclab.ngsildbroker.commons.serialization.messaging;
 
+import java.time.temporal.ChronoUnit;
+
 import org.apache.camel.CamelContext;
 import org.apache.camel.Endpoint;
 import org.apache.camel.builder.RouteBuilder;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.faulttolerance.Retry;
 
 import eu.neclab.ngsildbroker.commons.datatypes.AliveAnnouncement;
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
@@ -102,6 +105,7 @@ public class RegSubSyncRoute extends RouteBuilder {
 	}
 
 	@Override
+	@Retry(maxRetries = 3, delay = 1, delayUnit = ChronoUnit.SECONDS)
 	public void configure() throws Exception {
 		System.out.println("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
 //		from("direct:sendMyObject").marshal().json().to("paho-mqtt5:REG_SUB_ALIVE");
