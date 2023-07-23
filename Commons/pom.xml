@@ -15,10 +15,15 @@
 		</repository>
 	</repositories>
 	<dependencies>
+
+
 		<dependency>
-			<groupId>io.quarkus</groupId>
-			<artifactId>quarkus-smallrye-fault-tolerance</artifactId>
+			<groupId>org.apache.camel.quarkus</groupId>
+			<artifactId>camel-quarkus-microprofile-fault-tolerance</artifactId>
+			<version>3.0.0-M2</version>
 		</dependency>
+
+
 		<dependency>
 			<groupId>org.locationtech.spatial4j</groupId>
 			<artifactId>spatial4j</artifactId>
