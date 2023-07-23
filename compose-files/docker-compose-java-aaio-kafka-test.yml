@@ -17,6 +17,8 @@ services:
       POSTGRES_USER: ngb
       POSTGRES_PASSWORD: ngb
       POSTGRES_DB: ngb
+    depends_on:
+      - emqx
   scorpio:
     image: scorpiobroker/all-in-one-runner:java-kafka-latest
     ports:
