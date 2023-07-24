@@ -27,7 +27,7 @@ services:
       DBHOST: postgres
       BUSHOST: emqx
     restart:
-      on-failure: 10
+      - on-failure
     depends_on:
       - postgres
       - emqx
