@@ -26,6 +26,7 @@ services:
     environment:
       DBHOST: postgres
       BUSHOST: emqx
+    restart: on-failure
     depends_on:
       - postgres
       - emqx
