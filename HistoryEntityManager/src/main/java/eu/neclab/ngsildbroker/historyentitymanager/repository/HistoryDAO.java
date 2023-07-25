@@ -10,8 +10,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -475,25 +475,23 @@ public class HistoryDAO {
 	}
 
 	public Uni<Void> setMergePatch(BaseRequest request) {
-		Map<String,Object> newPayload= new HashMap<>();
+		Map<String, Object> newPayload = new HashMap<>();
 
 		List<Uni<Void>> unis = new ArrayList<>();
-		for (String key: request.getPayload().keySet()
-			 ) {
+		for (String key : request.getPayload().keySet()) {
 			String value = request.getPayload().get(key).toString();
-			if(value.contains(NGSIConstants.HAS_VALUE_NULL)||
-			value.contains(NGSIConstants.HAS_OBJECT_NULL)){
-				//separating deleted attr from payload
-				DeleteAttributeRequest deleteAttributeRequest = new DeleteAttributeRequest(request.getTenant(), request.getId(), key,null,false);
+			if (value.contains(NGSIConstants.HAS_VALUE_NULL) || value.contains(NGSIConstants.HAS_OBJECT_NULL)) {
+				// separating deleted attr from payload
+				DeleteAttributeRequest deleteAttributeRequest = new DeleteAttributeRequest(request.getTenant(),
+						request.getId(), key, null, false);
 				unis.add(setAttributeDeleted(deleteAttributeRequest));
-			}
-			else{
-				newPayload.put(key,request.getPayload().get(key));
+			} else {
+				newPayload.put(key, request.getPayload().get(key));
 			}
 		}
-		if(newPayload.size()>2){//size > 2 because there is always id and modifiedat present in the payload
+		if (newPayload.size() > 2) {// size > 2 because there is always id and modifiedat present in the payload
 			AppendHistoryEntityRequest appendHistoryEntityRequest = new AppendHistoryEntityRequest(request.getTenant(),
-					newPayload, request.getId(), request.getBatchInfo());
+					newPayload, request.getId());
 			unis.add(appendToHistoryEntity(appendHistoryEntityRequest));
 		}
 		return Uni.combine().all().unis(unis).collectFailures().discardItems();

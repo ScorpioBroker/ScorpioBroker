@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.commons.datatypes.terms;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -22,8 +23,12 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import io.vertx.mutiny.sqlclient.Tuple;
 
-public class QQueryTerm {
+public class QQueryTerm  implements Serializable {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -7136298831314992504L;
 	private static final String RANGE = ".+\\.\\..+";
 	private static final String LIST = ".+(,.+)+";
 	private static final String URI = "\\w+:(\\/?\\/?)[^\\s^;]+";
@@ -42,6 +47,10 @@ public class QQueryTerm {
 	private String operator = "";
 	private String operant = "";
 	private Set<String> allAttribs = Sets.newHashSet();
+	
+	QQueryTerm() {
+		// for serialization
+	}
 
 	public QQueryTerm(Context context) {
 		this.linkHeaders = context;

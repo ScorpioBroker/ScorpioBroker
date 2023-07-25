@@ -4,18 +4,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.PATCH;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.QueryParam;
-
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.PATCH;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.QueryParam;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -32,7 +29,7 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
 
 /**
- *
+ * 
  * @version 1.0
  * @date 10-Jul-2018
  */
@@ -53,8 +50,8 @@ public class EntityController {// implements EntityHandlerInterface {
 
 	/**
 	 * Method(POST) for "/ngsi-ld/v1/entities/" rest endpoint.
-	 *
-	 * @param payload jsonld message
+	 * 
+	 * @param body jsonld message
 	 * @return ResponseEntity object
 	 */
 	@Path("/entities")
@@ -75,9 +72,9 @@ public class EntityController {// implements EntityHandlerInterface {
 
 	/**
 	 * Method(PATCH) for "/ngsi-ld/v1/entities/{entityId}/attrs" rest endpoint.
-	 *
+	 * 
 	 * @param entityId
-	 * @param payload  json ld message
+	 * @param body  json ld message
 	 * @return ResponseEntity object
 	 */
 
@@ -102,9 +99,9 @@ public class EntityController {// implements EntityHandlerInterface {
 
 	/**
 	 * Method(POST) for "/ngsi-ld/v1/entities/{entityId}/attrs" rest endpoint.
-	 *
+	 * 
 	 * @param entityId
-	 * @param payload  jsonld message
+	 * @param body  jsonld message
 	 * @return ResponseEntity object
 	 */
 
@@ -131,9 +128,9 @@ public class EntityController {// implements EntityHandlerInterface {
 	/**
 	 * Method(PATCH) for "/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}" rest
 	 * endpoint.
-	 *
+	 * 
 	 * @param entityId
-	 * @param payload
+	 * @param body
 	 * @return
 	 */
 	@PATCH
@@ -156,14 +153,20 @@ public class EntityController {// implements EntityHandlerInterface {
 								logger.trace("update entry :: completed");
 								return HttpUtils.generateUpdateResultResponse(updateResult);
 							});
-				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
-
-	}
+				  }).onFailure().recoverWithUni(t -> entityService.patchToEndPoint(entityId, req, body, attrib)
+	                        .onItem().transform(isEndPointExist -> {
+	                            if (isEndPointExist)
+	                                return RestResponse.noContent();
+	                            else {
+	                                return HttpUtils.handleControllerExceptions(t);
+	                            }
+	                        }).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions));
+	    }
 
 	/**
 	 * Method(DELETE) for "/ngsi-ld/v1/entities/{entityId}/attrs/{attrId}" rest
 	 * endpoint.
-	 *
+	 * 
 	 * @param entityId
 	 * @param attrId
 	 * @return
@@ -195,7 +198,7 @@ public class EntityController {// implements EntityHandlerInterface {
 
 	/**
 	 * Method(DELETE) for "/ngsi-ld/v1/entities/{entityId}" rest endpoint.
-	 *
+	 * 
 	 * @param entityId
 	 * @return
 	 */

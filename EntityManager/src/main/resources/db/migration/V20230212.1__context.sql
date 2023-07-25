@@ -7,5 +7,3 @@ CREATE TABLE IF NOT EXISTS public.contexts
     PRIMARY KEY (id)
 );
 ALTER TABLE public.contexts alter createdat set default now();
-ALTER TABLE IF EXISTS public.contexts
-    OWNER to ngb;

@@ -9,10 +9,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import javax.annotation.PostConstruct;
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
-import javax.inject.Inject;
+
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
 
 import com.github.jsonldjava.utils.Obj;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.ReplaceAttribRequest;
@@ -26,6 +27,7 @@ import org.eclipse.microprofile.reactive.messaging.OnOverflow.Strategy;
 import org.locationtech.spatial4j.shape.Shape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLDService;
 import com.google.common.collect.HashBasedTable;
@@ -33,6 +35,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Table;
+
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.RegistrationEntry;
@@ -256,7 +259,7 @@ public class EntityService {
 			effectivePayload = Maps.newHashMap();
 			effectivePayload.put(attribName, Lists.newArrayList(payload));
 		}
-		UpdateEntityRequest request = new UpdateEntityRequest(tenant, entityId, effectivePayload, attribName, null);
+		UpdateEntityRequest request = new UpdateEntityRequest(tenant, entityId, effectivePayload, attribName);
 		request.setRequestType(AppConstants.PARTIAL_UPDATE_REQUEST);
 		Tuple2<Map<String, Object>, Collection<Tuple2<RemoteHost, Map<String, Object>>>> splitted = splitEntity(
 				request);
@@ -274,7 +277,7 @@ public class EntityService {
 			if (remoteHost.canDoSingleOp()) {
 				unis.add(prepareSplitUpEntityForSending(expanded, context).onItem().transformToUni(compacted -> {
 					return webClient
-							.post(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + request.getId()
+							.postAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + request.getId()
 									+ "/attrs/" + request.getAttrName())
 							.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(compacted))
 							.onItemOrFailure().transform((response, failure) -> {
@@ -306,7 +309,8 @@ public class EntityService {
 		});
 	}
 
-	public Uni<Boolean> patchToEndPoint(String entityId, HttpServerRequest request, String payload, String attrId) {
+	public Uni<Boolean> patchToEndPoint(String entityId, HttpServerRequest request, Map<String, Object> body,
+			String attrId) {
 		String tenantId = HttpUtils.getTenant(request);
 		return entityDAO.getEndpoint(entityId, tenantId).onItem().transformToUni(endPoint -> {
 			if (endPoint != null && !endPoint.equals("")) {
@@ -314,7 +318,7 @@ public class EntityService {
 				return webClient.patchAbs(endPoint + "/ngsi-ld/v1/entities/" + entityId + "/attrs/" + attrId)
 						.putHeader(NGSIConstants.TENANT_HEADER, tenantId)
 						.putHeader(AppConstants.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-						.sendJsonObject(new JsonObject(payload)).onItem().transform(ar -> {
+						.sendJsonObject(new JsonObject(body)).onItem().transform(ar -> {
 							logger.trace("patchToEndPoint() :: completed");
 							return true;
 						});
@@ -333,7 +337,7 @@ public class EntityService {
 		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(remoteHosts.size());
 		for (RemoteHost remoteHost : remoteHosts) {
 			unis.add(webClient
-					.delete(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + request.getId())
+					.deleteAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + request.getId())
 					.putHeaders(remoteHost.headers()).send().onItemOrFailure().transform((response, failure) -> {
 						Set<Attrib> attribs = new HashSet<>();
 						attribs.add(new Attrib(null, entityId));
@@ -386,7 +390,7 @@ public class EntityService {
 	}
 
 	public Uni<NGSILDOperationResult> deleteEntity(String tenant, String entityId, Context context) {
-		DeleteEntityRequest request = new DeleteEntityRequest(tenant, entityId, null);
+		DeleteEntityRequest request = new DeleteEntityRequest(tenant, entityId);
 		Set<RemoteHost> remoteHosts = getRemoteHostsForDelete(request);
 
 		if (remoteHosts.isEmpty()) {
@@ -396,7 +400,7 @@ public class EntityService {
 		for (RemoteHost remoteHost : remoteHosts) {
 			if (remoteHost.canDoSingleOp()) {
 				unis.add(webClient
-						.delete(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + request.getId())
+						.deleteAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + request.getId())
 						.putHeaders(remoteHost.headers()).send().onItemOrFailure().transform((response, failure) -> {
 							Set<Attrib> attribs = new HashSet<>();
 							attribs.add(new Attrib(null, entityId));
@@ -406,7 +410,7 @@ public class EntityService {
 						}));
 			} else {
 
-				unis.add(webClient.post(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_DELETE)
+				unis.add(webClient.postAbs(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_DELETE)
 						.putHeaders(remoteHost.headers())
 						.sendJson(new JsonArray(Lists.newArrayList(new JsonObject(request.getId())))).onItemOrFailure()
 						.transform((response, failure) -> {
@@ -458,7 +462,7 @@ public class EntityService {
 
 	public Uni<NGSILDOperationResult> appendToEntity(String tenant, String entityId, Map<String, Object> payload,
 			boolean noOverwrite, Context context) {
-		AppendEntityRequest request = new AppendEntityRequest(tenant, entityId, payload, null);
+		AppendEntityRequest request = new AppendEntityRequest(tenant, entityId, payload);
 		Tuple2<Map<String, Object>, Collection<Tuple2<RemoteHost, Map<String, Object>>>> localAndRemote = splitEntity(
 				request);
 		Map<String, Object> localEntity = localAndRemote.getItem1();
@@ -474,7 +478,7 @@ public class EntityService {
 				unis.add(prepareSplitUpEntityForSending(remoteEntityAndHost.getItem2(), context).onItem()
 						.transformToUni(compacted -> {
 							return webClient
-									.post(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/"
+									.postAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/"
 											+ request.getId() + "/attrs")
 									.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(compacted))
 									.onItemOrFailure().transform((response, failure) -> {
@@ -487,7 +491,7 @@ public class EntityService {
 				unis.add(prepareSplitUpEntityForSending(remoteEntityAndHost.getItem2(), context).onItem()
 						.transformToUni(compacted -> {
 							compacted.put(NGSIConstants.QUERY_PARAMETER_ID, request.getId());
-							return webClient.post(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_UPDATE)
+							return webClient.postAbs(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_UPDATE)
 									.putHeaders(remoteHost.headers())
 									.sendJson(new JsonArray(Lists.newArrayList(new JsonObject(compacted))))
 									.onItemOrFailure().transform((response, failure) -> {
@@ -520,7 +524,7 @@ public class EntityService {
 
 	public Uni<NGSILDOperationResult> updateEntity(String tenant, String entityId, Map<String, Object> payload,
 			Context context) {
-		UpdateEntityRequest request = new UpdateEntityRequest(tenant, entityId, payload, null, null);
+		UpdateEntityRequest request = new UpdateEntityRequest(tenant, entityId, payload, null);
 		Tuple2<Map<String, Object>, Collection<Tuple2<RemoteHost, Map<String, Object>>>> localAndRemote = splitEntity(
 				request);
 		Map<String, Object> localEntity = localAndRemote.getItem1();
@@ -535,7 +539,7 @@ public class EntityService {
 			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
 			unis.add(prepareSplitUpEntityForSending(expanded, context).onItem().transformToUni(compacted -> {
 				return webClient
-						.patch(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + request.getId()
+						.patchAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + request.getId()
 								+ "/attrs")
 						.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(compacted)).onItemOrFailure()
 						.transform((response, failure) -> {
@@ -588,7 +592,7 @@ public class EntityService {
 
 	public Uni<NGSILDOperationResult> createEntity(String tenant, Map<String, Object> resolved, Context context) {
 		logger.debug("createMessage() :: started");
-		CreateEntityRequest request = new CreateEntityRequest(tenant, resolved, null);
+		CreateEntityRequest request = new CreateEntityRequest(tenant, resolved);
 		Tuple2<Map<String, Object>, Collection<Tuple2<RemoteHost, Map<String, Object>>>> localAndRemote = splitEntity(
 				request);
 		Map<String, Object> localEntity = localAndRemote.getItem1();
@@ -603,7 +607,7 @@ public class EntityService {
 			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
 			if (remoteHost.canDoSingleOp()) {
 				unis.add(prepareSplitUpEntityForSending(expanded, context).onItem().transformToUni(compacted -> {
-					return webClient.post(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT)
+					return webClient.postAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT)
 							.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(compacted))
 							.onItemOrFailure().transform((response, failure) -> {
 								return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(201),
@@ -613,7 +617,7 @@ public class EntityService {
 				}));
 			} else {
 				unis.add(prepareSplitUpEntityForSending(expanded, context).onItem().transformToUni(compacted -> {
-					return webClient.post(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_CREATE)
+					return webClient.postAbs(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_CREATE)
 							.putHeaders(remoteHost.headers())
 							.sendJson(new JsonArray(Lists.newArrayList(new JsonObject(compacted)))).onItemOrFailure()
 							.transform((response, failure) -> {
@@ -876,7 +880,7 @@ public class EntityService {
 		List<Map<String, Object>> localEntities = Lists.newArrayList();
 		while (itEntities.hasNext() && itContext.hasNext()) {
 			Tuple2<Map<String, Object>, Collection<Tuple2<RemoteHost, Map<String, Object>>>> split = splitEntity(
-					new CreateEntityRequest(tenant, itEntities.next(), null));
+					new CreateEntityRequest(tenant, itEntities.next()));
 			Map<String, Object> local = split.getItem1();
 			Context context = itContext.next();
 			if (local != null) {
@@ -924,10 +928,10 @@ public class EntityService {
 
 			}
 
-			if (request.getRequestPayload().isEmpty()) {
-				return result;
+			if (!request.getRequestPayload().isEmpty()) {
+				logger.debug("Create batch request sending to kafka " + request.getEntityIds());
+				batchEmitter.sendAndForget(request);
 			}
-			batchEmitter.sendAndForget(request);
 			return result;
 		});
 		if (localOnly) {
@@ -953,7 +957,7 @@ public class EntityService {
 					}
 					return toSend;
 				}).onItem().transformToUni(toSend -> {
-					return webClient.post(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_CREATE)
+					return webClient.postAbs(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_CREATE)
 							.putHeaders(remoteHost.headers()).sendJson(new JsonArray(toSend)).onItemOrFailure()
 							.transform((response, failure) -> {
 								return handleBatchResponse(response, failure, remoteHost, toSend,
@@ -964,7 +968,7 @@ public class EntityService {
 				List<Uni<NGSILDOperationResult>> singleUnis = new ArrayList<>();
 				for (Uni<Map<String, Object>> compactedUni : compactedUnis) {
 					singleUnis.add(compactedUni.onItem().transformToUni(entity -> {
-						return webClient.post(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT)
+						return webClient.postAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT)
 								.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(entity))
 								.onItemOrFailure().transform((response, failure) -> {
 									return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(201),
@@ -1003,7 +1007,7 @@ public class EntityService {
 		while (itEntities.hasNext() && itContext.hasNext()) {
 			Map<String, Object> entity = itEntities.next();
 			Tuple2<Map<String, Object>, Collection<Tuple2<RemoteHost, Map<String, Object>>>> split = splitEntity(
-					new AppendEntityRequest(tenant, (String) entity.get(NGSIConstants.JSON_LD_ID), entity, null));
+					new AppendEntityRequest(tenant, (String) entity.get(NGSIConstants.JSON_LD_ID), entity));
 			Map<String, Object> local = split.getItem1();
 			Context context = itContext.next();
 			if (local != null) {
@@ -1050,7 +1054,10 @@ public class EntityService {
 				});
 
 			}
-			batchEmitter.sendAndForget(request);
+			if (!request.getRequestPayload().isEmpty()) {
+				logger.debug("Append batch request sending to kafka " + request.getEntityIds());
+				batchEmitter.sendAndForget(request);
+			}
 			return result;
 		});
 		if (localOnly) {
@@ -1075,7 +1082,7 @@ public class EntityService {
 					}
 					return toSend;
 				}).onItem().transformToUni(toSend -> {
-					return webClient.post(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_UPDATE)
+					return webClient.postAbs(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_UPDATE)
 							.putHeaders(remoteHost.headers()).sendJson(new JsonArray(toSend)).onItemOrFailure()
 							.transform((response, failure) -> {
 								return handleBatchResponse(response, failure, remoteHost, toSend,
@@ -1087,7 +1094,7 @@ public class EntityService {
 				for (Uni<Map<String, Object>> compactedUni : compactedUnis) {
 					singleUnis.add(compactedUni.onItem().transformToUni(entity -> {
 						return webClient
-								.post(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/"
+								.postAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/"
 										+ entity.get(NGSIConstants.JSON_LD_ID) + "/"
 										+ NGSIConstants.QUERY_PARAMETER_ATTRS)
 								.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(entity))
@@ -1127,7 +1134,7 @@ public class EntityService {
 		List<Map<String, Object>> localEntities = Lists.newArrayList();
 		while (itEntities.hasNext() && itContext.hasNext()) {
 			Tuple2<Map<String, Object>, Collection<Tuple2<RemoteHost, Map<String, Object>>>> split = splitEntity(
-					new UpsertEntityRequest(tenant, itEntities.next(), null));
+					new UpsertEntityRequest(tenant, itEntities.next()));
 			Map<String, Object> local = split.getItem1();
 			Context context = itContext.next();
 			if (local != null) {
@@ -1173,7 +1180,10 @@ public class EntityService {
 				});
 
 			}
-			batchEmitter.sendAndForget(request);
+			if (!request.getEntityIds().isEmpty()) {
+				logger.debug("Upsert batch request sending to kafka " + request.getEntityIds());
+				batchEmitter.sendAndForget(request);
+			}
 			return result;
 		});
 		if (localOnly) {
@@ -1198,7 +1208,7 @@ public class EntityService {
 					}
 					return toSend;
 				}).onItem().transformToUni(toSend -> {
-					return webClient.post(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_UPSERT)
+					return webClient.postAbs(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_UPSERT)
 							.putHeaders(remoteHost.headers()).sendJson(new JsonArray(toSend)).onItemOrFailure()
 							.transform((response, failure) -> {
 								return handleBatchResponse(response, failure, remoteHost, toSend,
@@ -1210,14 +1220,14 @@ public class EntityService {
 				for (Uni<Map<String, Object>> compactedUni : compactedUnis) {
 					singleUnis.add(compactedUni.onItem().transformToUni(entity -> {
 						return webClient
-								.post(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/"
+								.postAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/"
 										+ entity.get(NGSIConstants.JSON_LD_ID) + "/"
 										+ NGSIConstants.QUERY_PARAMETER_ATTRS)
 								.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(entity))
 								.onItemOrFailure().transformToUni((response, failure) -> {
 									if (response.statusCode() == 404) {
 										return webClient
-												.post(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT)
+												.postAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT)
 												.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(entity))
 												.onItemOrFailure().transform((response1, failure1) -> {
 													return HttpUtils.handleWebResponse(response1, failure1,
@@ -1259,7 +1269,7 @@ public class EntityService {
 	public Uni<List<NGSILDOperationResult>> deleteBatch(String tenant, List<String> entityIds, boolean localOnly) {
 		Map<RemoteHost, List<String>> host2Ids = Maps.newHashMap();
 		for (String entityId : entityIds) {
-			DeleteEntityRequest request = new DeleteEntityRequest(tenant, entityId, null);
+			DeleteEntityRequest request = new DeleteEntityRequest(tenant, entityId);
 			Set<RemoteHost> remoteHosts = getRemoteHostsForDelete(request);
 			for (RemoteHost remoteHost : remoteHosts) {
 				if (host2Ids.containsKey(remoteHost)) {
@@ -1294,7 +1304,10 @@ public class EntityService {
 					}
 					BatchRequest request = new BatchRequest(tenant, null, null, AppConstants.DELETE_REQUEST);
 					request.setEntityIds(successes);
-					batchEmitter.sendAndForget(request);
+					if (!request.getEntityIds().isEmpty()) {
+						logger.debug("Delete batch request sending to kafka " + request.getEntityIds());
+						batchEmitter.sendAndForget(request);
+					}
 					return result;
 				});
 
@@ -1308,7 +1321,7 @@ public class EntityService {
 			RemoteHost remoteHost = entry.getKey();
 			List<String> toSend = entry.getValue();
 			if (remoteHost.canDoBatchOp()) {
-				unis.add(webClient.post(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_DELETE)
+				unis.add(webClient.postAbs(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_DELETE)
 						.putHeaders(remoteHost.headers()).sendJson(new JsonArray(toSend)).onItemOrFailure()
 						.transform((response, failure) -> {
 							return handleBatchDeleteResponse(response, failure, remoteHost, toSend,
@@ -1318,7 +1331,7 @@ public class EntityService {
 				List<Uni<NGSILDOperationResult>> singleUnis = new ArrayList<>();
 				for (String entityId : toSend) {
 					singleUnis.add(webClient
-							.delete(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + entityId)
+							.deleteAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + entityId)
 							.putHeaders(remoteHost.headers()).send().onItemOrFailure()
 							.transform((response, failure) -> {
 								return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(201),
@@ -1344,7 +1357,7 @@ public class EntityService {
 	public Uni<NGSILDOperationResult> mergePatch(String tenant, String entityId, Map<String, Object> resolved,
 												 Context context) {
 		logger.debug("createMessage() :: started");
-		MergePatchRequest request = new MergePatchRequest(tenant, entityId, resolved, null);
+		MergePatchRequest request = new MergePatchRequest(tenant, entityId, resolved);
 		Tuple2<Map<String, Object>, Collection<Tuple2<RemoteHost, Map<String, Object>>>> localAndRemote = splitEntity(
 				request);
 		Map<String, Object> localEntity = localAndRemote.getItem1();
@@ -1360,12 +1373,22 @@ public class EntityService {
 
 			if (remoteHost.canDoSingleOp()) {
 				unis.add(prepareSplitUpEntityForSending(expanded, context).onItem().transformToUni(compacted -> {
-					return webClient.patch(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT+"/"+entityId)
+					return webClient.patchAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT+"/"+entityId)
 							.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(compacted))
 							.onItemOrFailure().transform((response, failure) -> {
 								return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(201),
 										remoteHost, AppConstants.CREATE_REQUEST, request.getId(),
 										HttpUtils.getAttribsFromCompactedPayload(compacted));
+							});
+				}));
+			} else {
+				unis.add(prepareSplitUpEntityForSending(expanded, context).onItem().transformToUni(compacted -> {
+					return webClient.post(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_CREATE)
+							.putHeaders(remoteHost.headers())
+							.sendJson(new JsonArray(Lists.newArrayList(new JsonObject(compacted)))).onItemOrFailure()
+							.transform((response, failure) -> {
+								return handleBatchResponse(response, failure, remoteHost, Lists.newArrayList(compacted),
+										ArrayUtils.toArray(201)).get(0);
 							});
 				}));
 			}
@@ -1405,7 +1428,7 @@ public class EntityService {
 	public Uni<NGSILDOperationResult> replaceEntity(String tenant,Map<String, Object> resolved, Context context) {
 		logger.debug("ReplaceMessage() :: started");
 
-		ReplaceEntityRequest request = new ReplaceEntityRequest(tenant, resolved,null);
+		ReplaceEntityRequest request = new ReplaceEntityRequest(tenant, resolved);
 		Tuple2<Map<String, Object>, Collection<Tuple2<RemoteHost, Map<String, Object>>>> localAndRemote = splitEntity(
 				request);
 		Map<String, Object> localEntity = localAndRemote.getItem1();
@@ -1420,7 +1443,7 @@ public class EntityService {
 			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
 			if (remoteHost.canDoSingleOp()) {
 				unis.add(prepareSplitUpEntityForSending(expanded, context).onItem().transformToUni(compacted->{
-					return webClient.put(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT+"/"+request.getId())
+					return webClient.putAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT+"/"+request.getId())
 							.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(compacted)).onItemOrFailure()
 							.transform((response, failure) -> {
 								return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(201), remoteHost,
@@ -1473,7 +1496,7 @@ public class EntityService {
 			temp.put(attrId,List.of(resolved));
 			resolved= temp;
 		}
-		ReplaceAttribRequest request = new ReplaceAttribRequest(tenant, resolved,null,entityId,attrId);
+		ReplaceAttribRequest request = new ReplaceAttribRequest(tenant, resolved,entityId,attrId);
 	    Tuple2<Map<String, Object>, Collection<Tuple2<RemoteHost, Map<String, Object>>>> localAndRemote = splitEntity(
 				request);
 		Map<String, Object> localEntity = localAndRemote.getItem1();
@@ -1489,7 +1512,7 @@ public class EntityService {
 			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
 			if (remoteHost.canDoSingleOp()) {
 				unis.add(prepareSplitUpEntityForSending(expanded, context).onItem().transformToUni(compacted->{
-					return webClient.put(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT+"/"+entityId+"/"+"attrs" +"/"+attrId)
+					return webClient.putAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT+"/"+entityId+"/"+"attrs" +"/"+attrId)
 							.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(compacted)).onItemOrFailure()
 							.transform((response, failure) -> {
 								return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(201), remoteHost,

@@ -3,17 +3,17 @@
 	<groupId>eu.neclab.ngsildbroker</groupId>
 	<artifactId>broker-parent</artifactId>
 	<name>BrokerParent</name>
-	<version>3.0.0-SNAPSHOT</version>
+	<version>4.1.0-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<properties>
-		<compiler-plugin.version>3.8.1</compiler-plugin.version>
+		<compiler-plugin.version>3.11.0</compiler-plugin.version>
 		<failsafe.useModulePath>false</failsafe.useModulePath>
 		<maven.compiler.release>17</maven.compiler.release>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
 		<quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
-		<quarkus.platform.version>2.15.2.Final</quarkus.platform.version>
+		<quarkus.platform.version>3.2.0.Final</quarkus.platform.version>
 		<surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
 		<java.version>17</java.version>
 		<maven.compiler.source>${java.version}</maven.compiler.source>
@@ -49,7 +49,7 @@
 			<plugin>
 				<groupId>org.jboss.jandex</groupId>
 				<artifactId>jandex-maven-plugin</artifactId>
-				<version>1.2.2</version>
+				<version>1.2.3</version>
 				<executions>
 					<execution>
 						<id>make-index</id>
@@ -83,7 +83,7 @@
 			<dependency>
 				<groupId>eu.neclab.ngsildbroker</groupId>
 				<artifactId>commons</artifactId>
-				<version>3.0.0-SNAPSHOT</version>
+				<version>${version}</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
@@ -180,7 +180,7 @@
 		<dependency>
 			<groupId>io.quarkiverse.loggingmanager</groupId>
 			<artifactId>quarkus-logging-manager</artifactId>
-			<version>2.1.3</version>
+			<version>3.0.0</version>
 		</dependency>
 		<dependency>
 			<groupId>io.quarkus</groupId>
@@ -198,6 +198,10 @@
 			<groupId>io.smallrye.reactive</groupId>
 			<artifactId>smallrye-reactive-messaging-in-memory</artifactId>
 		</dependency>
+		<dependency>
+      		<groupId>io.quarkus</groupId>
+      		<artifactId>quarkus-info</artifactId>
+    	</dependency>
 	</dependencies>
 	<profiles>
 		<profile>

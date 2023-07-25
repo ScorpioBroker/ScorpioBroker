@@ -13,9 +13,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.annotation.PostConstruct;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.slf4j.Logger;

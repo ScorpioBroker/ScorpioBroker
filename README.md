@@ -8,15 +8,31 @@
 <br>
 [![Documentation badge](https://img.shields.io/readthedocs/scorpio.svg)](https://scorpio.readthedocs.io/en/latest/?badge=latest) 
 ![Status](https://nexus.lab.fiware.org/static/badges/statuses/full.svg) 
-![NGSI-LD Test Suite](https://github.com/scorpiobroker/scorpiobroker/actions/workflows/node.js.yml/badge.svg) 
+![NGSI-LD Test Suite Java](https://github.com/scorpiobroker/scorpiobroker/actions/workflows/api-test.yml/badge.svg) 
+![NGSI-LD Test Suite Ubuntu](https://github.com/scorpiobroker/scorpiobroker/actions/workflows/api-test-ubuntu.yml/badge.svg) 
 ![PMD](https://github.com/scorpiobroker/scorpiobroker/actions/workflows/pmd.yml/badge.svg) 
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/4781/badge)](https://bestpractices.coreinfrastructure.org/projects/4781)
 
 Hello there!
 
-Welcome to the Scorpio NGSI-LD Broker. Scorpio currently is provided in two main versions. One build with Spring Boot and our new version build with Quarkus. 
-You are currently in the Quarkus branch.
-If you are looking for Spring related examples and docker-compose files please go [here](https://github.com/scorpiobroker/scorpiobroker)
+Welcome to the Scorpio NGSI-LD Broker.
+You are currently in the Scorpios main branch.
+
+To get you quickly started you can just choose on of the provided docker-compose files and start it up. 
+ - [java based all-in-one runner](https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/development-quarkus/compose-files/docker-compose-java-aaio-kafka.yml)
+ - [java based all-in-one runner without kafka integration, no scaling but less resource requirements](https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/development-quarkus/compose-files/docker-compose-java-aaio.yml)
+ - [java based distributed microservices](https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/development-quarkus/compose-files/docker-compose-java-dist-kafka.yml)
+ - [ubuntu native all-in-one runner](https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/development-quarkus/compose-files/docker-compose-ubuntu-aaio-kafka.yml)
+ - [ubuntu native all-in-one runner without kafka integration, no scaling but less resource requirements](https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/development-quarkus/compose-files/docker-compose-ubuntu-aaio.yml)
+ - [ubuntu native distributed microservices](https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/development-quarkus/compose-files/docker-compose-ubuntu-dist-kafka.yml)
+
+
+If you have a local PostgreSQL (and Kafka) setup you can also download pre builds for Ubuntu, Windows and MacOS from the [releases](https://github.com/ScorpioBroker/ScorpioBroker/releases)
+
+To get a good collection of NGSI-LD operations and examples we recommend to have a look at our [test suite](https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/development-quarkus/api-test.json). 
+It is Postman based and you can just import it together with the respective environment settings [all-in-one](https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/development-quarkus/api-test-aaio-environment.json) or [distributed](https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/development-quarkus/api-test-dist-environment.json)
+
+We also provide all docker images on the [Amazon Public ECR](https://gallery.ecr.aws/scorpiobroker?page=1)
 
 Scorpio is an NGSI-LD compliant context broker developed by NEC Laboratories Europe and NEC Technologies India. It implements the full [NGSI-LD API](https://www.etsi.org/deliver/etsi_gs/CIM/001_099/009/01.02.02_60/gs_CIM009v010202p.pdf) as specified by the ETSI Industry Specification Group on cross cutting Context Information Management ([ETSI ISG CIM](https://www.etsi.org/committee/cim)).
 

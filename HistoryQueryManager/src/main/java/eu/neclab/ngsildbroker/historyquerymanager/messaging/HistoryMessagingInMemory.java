@@ -1,6 +1,6 @@
 package eu.neclab.ngsildbroker.historyquerymanager.messaging;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import org.eclipse.microprofile.reactive.messaging.Acknowledgment;
 import org.eclipse.microprofile.reactive.messaging.Acknowledgment.Strategy;

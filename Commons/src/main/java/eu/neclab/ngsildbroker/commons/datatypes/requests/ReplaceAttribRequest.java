@@ -1,10 +1,8 @@
 package eu.neclab.ngsildbroker.commons.datatypes.requests;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
-import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
 
-import java.util.HashMap;
+
 import java.util.Map;
 
 public class ReplaceAttribRequest extends EntityRequest {
@@ -18,8 +16,8 @@ public class ReplaceAttribRequest extends EntityRequest {
 
 	}
 
-	public ReplaceAttribRequest(String tenant, Map<String, Object> resolved, BatchInfo batchInfo,String entityId,String attrId) {
-		super(tenant,entityId, resolved, batchInfo,
+	public ReplaceAttribRequest(String tenant, Map<String, Object> resolved  ,String entityId,String attrId) {
+		super(tenant,entityId, resolved,
 				AppConstants.REPLACE_ATTRIBUTE_REQUEST);
 		this.attribName=attrId;
    }

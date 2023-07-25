@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.commons.datatypes.terms;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -14,8 +15,12 @@ import eu.neclab.ngsildbroker.commons.datatypes.BaseProperty;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import io.vertx.mutiny.sqlclient.Tuple;
 
-public class TypeQueryTerm {
+public class TypeQueryTerm implements Serializable {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -7987777238025017539L;
 	private Context context;
 	private TypeQueryTerm next = null;
 	private TypeQueryTerm prev = null;
@@ -24,6 +29,10 @@ public class TypeQueryTerm {
 	private TypeQueryTerm parent = null;
 	private String type = null;
 	private Set<String> allTypes = null;
+
+	TypeQueryTerm() {
+		// for serialization
+	}
 
 	public TypeQueryTerm(Context context) {
 		this.context = context;
@@ -435,7 +444,6 @@ public class TypeQueryTerm {
 //		return equals(obj, false);
 //	}
 
-
 	public int toSql(StringBuilder result, Tuple tuple, int dollar) {
 		if (type == null || type.isEmpty()) {
 			TypeQueryTerm current = this;
@@ -569,20 +577,20 @@ public class TypeQueryTerm {
 		this.allTypes = allTypes;
 	}
 
-	public void toRequestString(StringBuilder result) {
+	public void toRequestString(StringBuilder result, Context context) {
 		if (firstChild != null) {
 			result.append('(');
-			firstChild.toRequestString(result);
+			firstChild.toRequestString(result, context);
 			result.append(')');
 		} else {
-			result.append(type);
+			result.append(context.compactIri(type));
 			if (hasNext()) {
 				if (isNextAnd()) {
 					result.append(';');
 				} else {
 					result.append('|');
 				}
-				next.toRequestString(result);
+				next.toRequestString(result, context);
 			}
 		}
 

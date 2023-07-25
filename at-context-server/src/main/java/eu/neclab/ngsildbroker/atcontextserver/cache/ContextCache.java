@@ -16,9 +16,9 @@ import io.vertx.mutiny.ext.web.client.WebClient;
 
 import org.jboss.resteasy.reactive.RestResponse;
 
-import javax.annotation.PostConstruct;
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;

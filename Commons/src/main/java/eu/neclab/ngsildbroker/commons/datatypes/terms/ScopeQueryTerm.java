@@ -1,11 +1,16 @@
 package eu.neclab.ngsildbroker.commons.datatypes.terms;
 
+import java.io.Serializable;
 import java.util.List;
 
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 
-public class ScopeQueryTerm {
+public class ScopeQueryTerm  implements Serializable {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -3852848071227315655L;
 	private static final String REGEX_PLUS = "[^\\/]+";
 	private static final String REGEX_HASH = ".*";
 	private String[] scopeLevels = null;
@@ -14,6 +19,10 @@ public class ScopeQueryTerm {
 	private boolean nextAnd = true;
 	private ScopeQueryTerm firstChild = null;
 	private ScopeQueryTerm parent = null;
+	
+	public ScopeQueryTerm() {
+		// for serialization
+	}
 
 	public String[] getScopeLevels() {
 		return scopeLevels;

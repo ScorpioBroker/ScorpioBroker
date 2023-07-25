@@ -5,8 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response.Status;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.Response.Status;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;

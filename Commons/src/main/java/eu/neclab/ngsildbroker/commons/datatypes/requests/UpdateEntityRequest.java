@@ -1,17 +1,14 @@
 package eu.neclab.ngsildbroker.commons.datatypes.requests;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.BatchInfo;
-
 import java.util.Map;
 
 public class UpdateEntityRequest extends EntityRequest {
 
 	private String attrName;
 
-	public UpdateEntityRequest(String tenant, String id, Map<String, Object> payload, String attrName,
-                               BatchInfo batchInfo) {
-		super(tenant, id, payload, batchInfo, AppConstants.UPDATE_REQUEST);
+	public UpdateEntityRequest(String tenant, String id, Map<String, Object> payload, String attrName) {
+		super(tenant, id, payload, AppConstants.UPDATE_REQUEST);
 		this.attrName = attrName;
 	}
 

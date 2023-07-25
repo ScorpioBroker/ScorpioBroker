@@ -13,7 +13,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -72,7 +72,6 @@ public class MicroServiceUtils {
 		result.setPayload(deepCopyMap(originalPayload.getPayload()));
 		result.setTenant(originalPayload.getTenant());
 		result.setRequestType(originalPayload.getRequestType());
-		result.setBatchInfo(originalPayload.getBatchInfo());
 		result.setPreviousEntity(deepCopyMap(originalPayload.getPreviousEntity()));
 		return result;
 	}
@@ -158,7 +157,6 @@ public class MicroServiceUtils {
 		}
 		result.setTenant(originalPayload.getTenant());
 		result.setRequestType(originalPayload.getRequestType());
-		result.setBatchInfo(originalPayload.getBatchInfo());
 		return result;
 	}
 

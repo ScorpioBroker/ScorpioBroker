@@ -9,7 +9,7 @@
 	<parent>
 		<artifactId>broker-parent</artifactId>
 		<groupId>eu.neclab.ngsildbroker</groupId>
-		<version>3.0.0-SNAPSHOT</version>
+		<version>4.1.0-SNAPSHOT</version>
 		<relativePath>./BrokerParent</relativePath>
 	</parent>
 	<modules>

@@ -799,7 +799,11 @@ public final class HttpUtils {
 	}
 
 	public static List<Object> getContextFromHeader(io.vertx.mutiny.core.MultiMap remoteHeaders) {
-		String tmp = remoteHeaders.get("Link").split(";")[0];
+		String link = remoteHeaders.get("Link");
+		if(link == null) {
+			return Lists.newArrayList();
+		}
+		String tmp = link.split(";")[0];
 		if (tmp.charAt(0) == '<') {
 			tmp = tmp.substring(1, tmp.length() - 1);
 		}

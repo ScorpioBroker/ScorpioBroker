@@ -24,8 +24,6 @@ jobs:
           sleep 30
       - name: build-java-with-kafka
         run: |
-          rm ./BrokerParent/pom.xml
-          mv ./BrokerParent/build-pom.xml ./BrokerParent/pom.xml
           mvn clean package -DskipTests -Pkafka -Dkafka -Ddocker -Ddocker-tag=java-kafka-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=kafka
       - name: stop kafka & postgis for unit tests
         run: |
@@ -43,15 +41,20 @@ jobs:
           docker tag scorpiobroker/all-in-one-runner:java-kafka-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:java-kafka-latest
       - name: start docker aaio 
         run: |
-          docker-compose -f ./compose-files/docker-compose-java-aaio-kafka-test.yml up &
+          docker-compose -f ./compose-files/docker-compose-java-aaio-kafka-test.yml up > dockerout.log &
           sleep 120
       - name: newman action
         uses: matt-ball/newman-action@master
         with:
           collection: api-test.json
           environment: api-test-aaio-environment.json
-      - name: Stopping Scorpio 
+      - name: Stopping Scorpio
+        if: always()
         run: docker-compose -f ./compose-files/docker-compose-java-aaio-kafka-test.yml down
+      - name: print log
+        if: always()
+        run: |
+          cat dockerout.log
 #      - name: start docker dist 
 #        run: |
 #          docker-compose -f ./compose-files/docker-compose-java-dist-kafka-test.yml up &
@@ -86,8 +89,6 @@ jobs:
           sleep 30
       - name: build-java
         run: |
-          rm ./BrokerParent/pom.xml
-          mv ./BrokerParent/build-pom.xml ./BrokerParent/pom.xml
           mvn clean package -DskipTests -Din-memory -Pin-memory -Ddocker -Ddocker-tag=java-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=in-memory
       - name: stop postgis for unit tests
         run: |
@@ -97,7 +98,7 @@ jobs:
           docker tag scorpiobroker/all-in-one-runner:java-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:java-latest
       - name: start docker aaio 
         run: |
-          docker-compose -f ./compose-files/docker-compose-java-aaio-test.yml up &
+          docker-compose -f ./compose-files/docker-compose-java-aaio-test.yml up > dockerout.log &
           sleep 120
       - name: newman action
         uses: matt-ball/newman-action@master
@@ -105,4 +106,9 @@ jobs:
           collection: api-test.json
           environment: api-test-aaio-environment.json
       - name: Stopping Scorpio 
+        if: always()
         run: docker-compose -f ./compose-files/docker-compose-java-aaio-test.yml down 
+      - name: print log
+        if: always()
+        run: |
+          cat dockerout.log

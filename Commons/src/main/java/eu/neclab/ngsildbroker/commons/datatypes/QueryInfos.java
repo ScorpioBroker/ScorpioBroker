@@ -120,7 +120,7 @@ public class QueryInfos {
 		}
 		if (!types.isEmpty() && typeQuery != null) {
 			result.append("type=");
-			typeQuery.toRequestString(result);
+			typeQuery.toRequestString(result, context);
 			result.append('&');
 		}
 		if (!attrs.isEmpty()) {

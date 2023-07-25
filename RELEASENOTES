@@ -1,3 +1,41 @@
+RELEASE NOTES SCORPIO 4.1.0
+
+With this release we are reintroducing native releases for Scorpio.
+Scorpio will be release as an 
+ - all in one variant, with and without kafka usage (without kafka can't scale but requires less resources) 
+ - seperated micro services (individual scaling possible)
+with following build variants
+ - Java:
+   - Release on github
+   - Docker images provided on dockerhub and AWS Public ECR
+ - Ubuntu x64:
+   - Release on github
+   - Docker images provided on dockerhub and AWS Public ECR
+ - Windows x64:
+   - Release on github
+ - MacOS x64:
+   - Release on github
+
+This release also:
+
+ - adds legacy support for older IoT Agents which are not using the CSourceRegistry operations properly
+
+RELEASE NOTES SCORPIO 4.0.9
+
+In this release 
+ - the /q/info endpoint is enabled providing build info
+ - /q/health is available since version 3.0.0
+
+RELEASE NOTES SCORPIO 4.0.8
+
+This release addresses a few issues with remote queries and registry loading from the database
+
+RELEASE NOTES SCORPIO 4.0.7
+
+This release 
+ - increases the default timeout for transactions
+ - addresses an issue in a db migration related to ownership change 
+
 RELEASE NOTES SCORPIO 4.0.6
 
 This release 
@@ -8,7 +46,7 @@ This release
  - adjusting the default connection pool per tenant to 50 connections. This can be changed with environment variable QUARKUS_DATASOURCE_REACTIVE_MAX_SIZE. The default max connections in postgres is 100. 
    This should be considered when setting up your system. 
  - self hosting of the core context 
-
+	
 RELEASE NOTES SCORPIO 4.0.5/FIWARE_8.4
 
 This release is also a re tagging for the FIWARE release to point it to the most up to date version on the FIWARE release.

@@ -11,7 +11,7 @@ public class DeleteCSourceRequest extends CSourceRequest {
 	}
 
 	public DeleteCSourceRequest(String tenant, String registrationId) {
-		super(tenant, registrationId, null, null, AppConstants.DELETE_REQUEST);
+		super(tenant, registrationId, null, AppConstants.DELETE_REQUEST);
 
 	}
 

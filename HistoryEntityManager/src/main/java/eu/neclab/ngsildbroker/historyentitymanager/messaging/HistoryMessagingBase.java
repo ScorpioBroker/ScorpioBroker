@@ -6,7 +6,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
@@ -57,7 +57,10 @@ public abstract class HistoryMessagingBase {
 		if (!autoRecording) {
 			return Uni.createFrom().voidItem();
 		}
-		logger.debug("history manager batch handling got called");
+		logger.debug("history manager batch handling got called: with ids: " + message.getEntityIds());
+		if (message.getRequestPayload().isEmpty()) {
+			return Uni.createFrom().voidItem();
+		}
 		return historyService.handleInternalBatchRequest(message);
 	}
 
