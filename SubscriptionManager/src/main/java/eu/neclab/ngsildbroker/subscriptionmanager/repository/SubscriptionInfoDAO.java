@@ -70,34 +70,33 @@ public class SubscriptionInfoDAO {
 
 	public Uni<Void> updateNotificationSuccess(String tenant, String id, String date) {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
-			return client
-					.preparedQuery("UPDATE subscriptions SET subscription = subscription || ('{\""
-							+ NGSIConstants.NGSI_LD_TIMES_SENT + "\": [{\"" + NGSIConstants.JSON_LD_VALUE
-							+ "\": '|| (subscription#>>'{" + NGSIConstants.NGSI_LD_TIMES_SENT + ",0, "
-							+ NGSIConstants.JSON_LD_VALUE + "}')::integer + 1 ||'}],\""
-							+ NGSIConstants.NGSI_LD_LAST_SUCCESS + "\": [{\"" + NGSIConstants.JSON_LD_TYPE + "\": \""
-							+ NGSIConstants.NGSI_LD_DATE_TIME + "\", \"" + NGSIConstants.JSON_LD_VALUE
-							+ "\": \"$1\"}],\"" + NGSIConstants.NGSI_LD_LAST_NOTIFICATION + "\": [{\""
-							+ NGSIConstants.JSON_LD_TYPE + "\": \"" + NGSIConstants.NGSI_LD_DATE_TIME + "\", \""
-							+ NGSIConstants.JSON_LD_VALUE + "\": \"$1\"}]}')::jsonb WHERE subscription_id=$2")
-					.execute(Tuple.of(date, id)).onFailure().retry().atMost(3).onItem()
+			String sql = "UPDATE subscriptions SET subscription = jsonb_set(jsonb_set(jsonb_set(subscription, '{"
+					+ NGSIConstants.NGSI_LD_TIMES_SENT + "}', jsonb_build_array(jsonb_build_object('"
+					+ NGSIConstants.JSON_LD_VALUE + "', (subscription #>> '{" + NGSIConstants.NGSI_LD_TIMES_SENT + ",0,"
+					+ NGSIConstants.JSON_LD_VALUE + "}')::integer + 1)), true), '{" + NGSIConstants.NGSI_LD_LAST_SUCCESS
+					+ "}', jsonb_build_array(jsonb_build_object('" + NGSIConstants.JSON_LD_TYPE + "', '"
+					+ NGSIConstants.NGSI_LD_DATE_TIME + "', '" + NGSIConstants.JSON_LD_VALUE + "', $1)), true),'{"
+					+ NGSIConstants.NGSI_LD_LAST_NOTIFICATION + "}', jsonb_build_array(jsonb_build_object('"
+					+ NGSIConstants.JSON_LD_TYPE + "', '" + NGSIConstants.NGSI_LD_DATE_TIME + "', '"
+					+ NGSIConstants.JSON_LD_VALUE + "', $1)), true) WHERE subscription_id=$2";
+			return client.preparedQuery(sql).execute(Tuple.of(date, id)).onFailure().retry().atMost(3).onItem()
 					.transformToUni(t -> Uni.createFrom().voidItem());
 		});
 	}
 
 	public Uni<Void> updateNotificationFailure(String tenant, String id, String date) {
-		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> client
-				.preparedQuery("UPDATE subscriptions SET subscription = subscription || ('{\""
-						+ NGSIConstants.NGSI_LD_TIMES_FAILED + "\": [{\"" + NGSIConstants.JSON_LD_VALUE
-						+ "\": '|| (subscription#>>'{" + NGSIConstants.NGSI_LD_TIMES_FAILED + ",0, "
-						+ NGSIConstants.JSON_LD_VALUE + "}')::integer + 1 ||'}],\"" + NGSIConstants.NGSI_LD_LAST_FAILURE
-						+ "\": [{\"" + NGSIConstants.JSON_LD_TYPE + "\": \"" + NGSIConstants.NGSI_LD_DATE_TIME
-						+ "\", \"" + NGSIConstants.JSON_LD_VALUE + "\": \"$1\"}],\""
-						+ NGSIConstants.NGSI_LD_LAST_NOTIFICATION + "\": [{\"" + NGSIConstants.JSON_LD_TYPE + "\": \""
-						+ NGSIConstants.NGSI_LD_DATE_TIME + "\", \"" + NGSIConstants.JSON_LD_VALUE
-						+ "\": \"$1\"}]}')::jsonb WHERE subscription_id=$2")
-				.execute(Tuple.of(date, id)).onFailure().retry().atMost(3).onItem()
-				.transformToUni(t -> Uni.createFrom().voidItem()));
+		String sql = "UPDATE subscriptions SET subscription = jsonb_set(jsonb_set(jsonb_set(subscription, '{"
+				+ NGSIConstants.NGSI_LD_TIMES_FAILED + "}', jsonb_build_array(jsonb_build_object('"
+				+ NGSIConstants.JSON_LD_VALUE + "', (subscription #>> '{" + NGSIConstants.NGSI_LD_TIMES_FAILED + ",0,"
+				+ NGSIConstants.JSON_LD_VALUE + "}')::integer + 1)), true), '{" + NGSIConstants.NGSI_LD_LAST_FAILURE
+				+ "}', jsonb_build_array(jsonb_build_object('" + NGSIConstants.JSON_LD_TYPE + "', '"
+				+ NGSIConstants.NGSI_LD_DATE_TIME + "', '" + NGSIConstants.JSON_LD_VALUE + "', $1)), true),'{"
+				+ NGSIConstants.NGSI_LD_LAST_NOTIFICATION + "}', jsonb_build_array(jsonb_build_object('"
+				+ NGSIConstants.JSON_LD_TYPE + "', '" + NGSIConstants.NGSI_LD_DATE_TIME + "', '"
+				+ NGSIConstants.JSON_LD_VALUE + "', $1)), true) WHERE subscription_id=$2";
+		return clientManager.getClient(tenant, false).onItem()
+				.transformToUni(client -> client.preparedQuery(sql).execute(Tuple.of(date, id)).onFailure().retry()
+						.atMost(3).onItem().transformToUni(t -> Uni.createFrom().voidItem()));
 	}
 
 	public Uni<List<Tuple3<String, Map<String, Object>, Map<String, Object>>>> loadSubscriptions() {
