@@ -311,7 +311,8 @@ public class SubscriptionService {
 		logger.debug("checking subscriptions");
 		for (SubscriptionRequest potentialSub : potentialSubs) {
 			switch (message.getRequestType()) {
-			case AppConstants.UPDATE_REQUEST, AppConstants.PARTIAL_UPDATE_REQUEST, AppConstants.MERGE_PATCH_REQUEST -> {
+				case AppConstants.UPDATE_REQUEST, AppConstants.PARTIAL_UPDATE_REQUEST, AppConstants.MERGE_PATCH_REQUEST,
+						AppConstants.REPLACE_ENTITY_REQUEST,AppConstants.REPLACE_ATTRIBUTE_REQUEST -> {
 				unis.add(localEntityService.getAllByIds(message.getTenant(), message.getId(), true).onItem()
 						.transformToUni(entityList -> {
 							Map<String, Object> payload = new HashMap<>();

@@ -13,6 +13,8 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteAttributeRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.MergePatchRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.ReplaceAttribRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.ReplaceEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.UpdateEntityRequest;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -393,6 +395,51 @@ public class EntityInfoDAO {
 					}).onItem().transformToUni(rows -> {
 						if(rows.iterator().next().getJsonObject(0)==null) return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound,
 								request.getId() + " not found"));
+						return Uni.createFrom().item(rows.iterator().next().getJsonObject(0).getMap());
+					});
+		});
+	}
+	public Uni<Map<String, Object>> replaceEntity(ReplaceEntityRequest request) {
+		String[] types = ((List<String>) request.getPayload().get(NGSIConstants.JSON_LD_TYPE)).toArray(new String[0]);
+		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
+			return client.preparedQuery("""
+							WITH old_entity AS (
+							SELECT ENTITY
+							FROM ENTITY
+							WHERE id = $3)
+							update entity set entity = jsonb_build_object('https://uri.etsi.org/ngsi-ld/createdAt' , entity->'https://uri.etsi.org/ngsi-ld/createdAt') || $1::jsonb, e_types = $2 where id = $3
+							RETURNING (SELECT ENTITY FROM old_entity) AS old_entity""")
+					.execute(Tuple.of(new JsonObject(request.getPayload()),types,request.getId())).onItem().transformToUni(rows -> {
+						if (rows.rowCount() == 0) {
+							return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
+						}
+						return Uni.createFrom().item(rows.iterator().next().getJsonObject(0).getMap());
+					});
+		});
+	}
+
+
+
+
+	public Uni<Map<String, Object>> replaceAttrib(ReplaceAttribRequest request) {
+		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
+			return client.preparedQuery("""
+							WITH old_entity AS (
+							  SELECT ENTITY
+							  FROM ENTITY
+							  WHERE id = $2
+							)
+							UPDATE entity
+							SET entity = entity::jsonb || $1
+							WHERE id = $2
+							  AND ENTITY ? $3
+							  AND (ENTITY-> $3 )::jsonb->$4 IS NULL
+							RETURNING (SELECT ENTITY FROM old_entity) AS old_entity;
+							""")
+					.execute(Tuple.of(new JsonObject(request.getPayload()),request.getId(),request.getAttribName(),request.getDatasetId())).onItem().transformToUni(rows -> {
+						if (rows.rowCount() == 0) {
+							return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
+						}
 						return Uni.createFrom().item(rows.iterator().next().getJsonObject(0).getMap());
 					});
 		});

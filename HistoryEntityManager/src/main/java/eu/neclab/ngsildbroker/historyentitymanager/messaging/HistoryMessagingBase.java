@@ -83,11 +83,14 @@ public abstract class HistoryMessagingBase {
 				List<BaseRequest> notBatch = Lists.newArrayList();
 				while (!buffer.isEmpty()) {
 					BaseRequest request = buffer.poll();
-					if (request.getRequestType() == AppConstants.DELETE_ATTRIBUTE_REQUEST) {
+					if (request.getRequestType() == AppConstants.DELETE_ATTRIBUTE_REQUEST
+							|| request.getRequestType() == AppConstants.REPLACE_ATTRIBUTE_REQUEST
+					        || request.getRequestType() == AppConstants.REPLACE_ENTITY_REQUEST
+							|| request.getRequestType() == AppConstants.MERGE_PATCH_REQUEST) {
 						notBatch.add(request);
 						continue;
 					}
-					List<Map<String, Object>> payloads = opType2Payload.get(request.getRequestType());
+				 List<Map<String, Object>> payloads = opType2Payload.get(request.getRequestType());
 					if (payloads == null) {
 						payloads = Lists.newArrayList();
 						opType2Payload.put(request.getRequestType(), payloads);

@@ -90,6 +90,8 @@ public class NGSILDOperationResult {
 				return "Delete Attribute";
 			case AppConstants.UPSERT_REQUEST:
 				return "Upsert";
+			case AppConstants.REPLACE_ENTITY_REQUEST:
+				return "Replace Entity";
 			default:
 				return "Unknown Operation";
 		}
@@ -109,6 +111,8 @@ public class NGSILDOperationResult {
 				return AppConstants.DELETE_ATTRIBUTE_REQUEST;
 			case "Upsert":
 				return AppConstants.UPSERT_REQUEST;
+			case "Replace Entity":
+				return AppConstants.REPLACE_ENTITY_REQUEST;
 		default:
 			return -1;
 		}

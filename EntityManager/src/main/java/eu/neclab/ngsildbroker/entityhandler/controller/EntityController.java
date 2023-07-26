@@ -9,6 +9,7 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
@@ -50,7 +51,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	/**
 	 * Method(POST) for "/ngsi-ld/v1/entities/" rest endpoint.
 	 * 
-	 * @param payload jsonld message
+	 * @param body jsonld message
 	 * @return ResponseEntity object
 	 */
 	@Path("/entities")
@@ -73,7 +74,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	 * Method(PATCH) for "/ngsi-ld/v1/entities/{entityId}/attrs" rest endpoint.
 	 * 
 	 * @param entityId
-	 * @param payload  json ld message
+	 * @param body  json ld message
 	 * @return ResponseEntity object
 	 */
 
@@ -100,7 +101,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	 * Method(POST) for "/ngsi-ld/v1/entities/{entityId}/attrs" rest endpoint.
 	 * 
 	 * @param entityId
-	 * @param payload  jsonld message
+	 * @param body  jsonld message
 	 * @return ResponseEntity object
 	 */
 
@@ -129,7 +130,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	 * endpoint.
 	 * 
 	 * @param entityId
-	 * @param payload
+	 * @param body
 	 * @return
 	 */
 	@PATCH
@@ -303,5 +304,53 @@ public class EntityController {// implements EntityHandlerInterface {
 							.onItem().transform(HttpUtils::generateUpdateResultResponse);
 				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
+	}
+	@Path("/entities/{entityId}")
+	@PUT
+	public Uni<RestResponse<Object>> replaceEntity(@PathParam("entityId") String entityId, HttpServerRequest request, Map<String, Object> body) {
+		logger.debug("replacing entity");
+		try {
+			HttpUtils.validateUri(entityId);
+		} catch (Exception e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+		}
+		noConcise(body);
+		body.put(NGSIConstants.ID,entityId);
+		if(!body.containsKey(NGSIConstants.TYPE)){
+			return 	Uni.createFrom().item(HttpUtils.handleControllerExceptions(
+					new ResponseException(ErrorType.BadRequestData, "Type can not be null")));
+		}
+		return HttpUtils.expandBody(request, body, AppConstants.REPLACE_ENTITY_PAYLOAD, ldService).onItem()
+				.transformToUni(tuple -> {
+
+					return entityService.replaceEntity(HttpUtils.getTenant(request), tuple.getItem2(), tuple.getItem1()).onItem()
+							.transform(opResult -> {
+
+								logger.debug("Done replacing entity");
+								return HttpUtils.generateUpdateResultResponse(opResult);
+							}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+				});
+	}
+
+
+	@Path("/entities/{entityId}/attrs/{attrId}")
+	@PUT
+	public Uni<RestResponse<Object>> replaceAttribute(@PathParam("attrId") String attrId,@PathParam("entityId") String entityId, HttpServerRequest request, Map<String, Object> body) {
+		logger.debug("replacing Attrs");
+		try {
+			HttpUtils.validateUri(entityId);
+		} catch (Exception e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+		}
+		noConcise(body);
+		return HttpUtils.expandBody(request, body, AppConstants.PARTIAL_UPDATE_REQUEST, ldService).onItem()
+				.transformToUni(tuple -> {
+					String finalAttrId = tuple.getItem1().expandIri(attrId, false, true, null, null);
+					return entityService.replaceAttribute(HttpUtils.getTenant(request), tuple.getItem2(), tuple.getItem1(),entityId,finalAttrId).onItem()
+							.transform(opResult -> {
+								logger.debug("Done replacing attribute");
+								return HttpUtils.generateUpdateResultResponse(opResult);
+							}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+				});
 	}
 }
