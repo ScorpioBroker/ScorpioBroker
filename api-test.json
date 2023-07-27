@@ -19639,8 +19639,9 @@
 																	"\r",
 																	"    var json = pm.response.json();\r",
 																	"    pm.expect(json['timesSent']).to.eql(1);\r",
-																	"    pm.expect(json['lastNotification']).to.match(\"\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}Z\");\r",
-																	"    pm.expect(json['lastSuccess']).to.match(\"\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}Z\");\r",
+																	"    let regex = new RegExp(\"\\\\d{4}-\\\\d{2}-\\\\d{2}T\\\\d{2}:\\\\d{2}:\\\\d{2}\\\\.\\\\d{6}Z\");\r",
+																	"    pm.expect(json['lastNotification']).to.match(regex);\r",
+																	"    pm.expect(json['lastSuccess']).to.match(regex);\r",
 																	"    pm.expect(json['lastSuccess']).to.eql(json['lastNotification']);\r",
 																	"\r",
 																	"});"
@@ -19873,8 +19874,9 @@
 																	"\r",
 																	"    var json = pm.response.json();\r",
 																	"    pm.expect(json['timesFailed']).to.eql(1);\r",
-																	"    pm.expect(json['lastNotification']).to.match(\"\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}Z\");\r",
-																	"    pm.expect(json['lastFailure']).to.match(\"\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}Z\");\r",
+																	"    let regex = new RegExp(\"\\\\d{4}-\\\\d{2}-\\\\d{2}T\\\\d{2}:\\\\d{2}:\\\\d{2}\\\\.\\\\d{6}Z\");\r",
+																	"    pm.expect(json['lastNotification']).to.match(regex);\r",
+																	"    pm.expect(json['lastFailure']).to.match(regex);\r",
 																	"    pm.expect(json['lastFailure']).to.eql(json['lastNotification']);\r",
 																	"\r",
 																	"});"
@@ -45063,6 +45065,16 @@
 					]
 				}
 			]
+		}
+	],
+	"variable": [
+		{
+			"key": "subId",
+			"value": ""
+		},
+		{
+			"key": "entityId",
+			"value": ""
 		}
 	]
 }
