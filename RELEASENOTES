@@ -1,3 +1,10 @@
+RELEASE NOTES SCORPIO 4.1.1
+
+This release 
+
+ - adds support for the NGSI-LD replace functionality 
+ - fixes an issue with the lastFailure and lastSuccess fields in subscriptions
+ 
 RELEASE NOTES SCORPIO 4.1.0
 
 With this release we are reintroducing native releases for Scorpio.
