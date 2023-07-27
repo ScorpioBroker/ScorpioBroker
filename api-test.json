@@ -73,7 +73,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"street\": {\r\n        \"type\": \"LanguageProperty\",\r\n        \"languageMap\": {\r\n            \"fr\": \"Grand Place\",\r\n            \"nl\": \"Grote Markt\"\r\n        }\r\n    }\r\n\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -19806,6 +19806,9 @@
 																	"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
 																	"});\r",
 																	"\r",
+																	"setTimeout(function(){\r",
+																	"    console.log(\"waiting for sent fail\");\r",
+																	"}, 3000);\r",
 																	""
 																],
 																"type": "text/javascript"
@@ -19870,7 +19873,7 @@
 																	"    pm.response.to.have.status(200);\r",
 																	"});\r",
 																	"\r",
-																	"pm.test(\"Check response body for time sent\", function (){\r",
+																	"pm.test(\"Check response body for time failed\", function (){\r",
 																	"\r",
 																	"    var json = pm.response.json();\r",
 																	"    pm.expect(json['timesFailed']).to.eql(1);\r",
@@ -45074,6 +45077,10 @@
 		},
 		{
 			"key": "entityId",
+			"value": ""
+		},
+		{
+			"key": "created",
 			"value": ""
 		}
 	]
