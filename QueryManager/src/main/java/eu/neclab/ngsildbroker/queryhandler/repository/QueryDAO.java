@@ -189,8 +189,10 @@ public class QueryDAO {
 				query.append(offSet);
 			}
 			query.append(';');
-
-			return client.preparedQuery(query.toString()).execute(tuple);
+			String queryString = query.toString();
+			logger.debug("SQL REQUEST: " + queryString);
+			logger.debug("SQL TUPLE: " + tuple.deepToString());
+			return client.preparedQuery(queryString).execute(tuple);
 		});
 	}
 
@@ -792,11 +794,12 @@ public class QueryDAO {
 			} else {
 				query.append("ENTITY.ENTITY");
 			}
-			query.append(
-					" as ENTITY FROM b left join ENTITY on b.ID = ENTITY.ID) SELECT ");
+			query.append(" as ENTITY FROM b left join ENTITY on b.ID = ENTITY.ID) SELECT ");
 			query.append("a.ID, c.ENTITY FROM a left outer join c on a.ID = c.ID");
-			
-			return client.preparedQuery(query.toString()).execute(tuple).onItem().transform(rows -> {
+			String queryString = query.toString();
+			logger.debug("SQL REQUEST: " + queryString);
+			logger.debug("SQL TUPLE: " + tuple.deepToString());
+			return client.preparedQuery(queryString).execute(tuple).onItem().transform(rows -> {
 				List<String> entityIds = Lists.newArrayList();
 				Map<String, Map<String, Object>> entities = Maps.newHashMap();
 				;
