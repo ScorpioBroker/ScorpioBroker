@@ -343,8 +343,10 @@ public class HistoryDAO {
 			dollarCount++;
 			tuple.addInteger(limit);
 			tuple.addInteger(offset);
-
-			return client.preparedQuery(sql.toString()).execute(tuple).onItem().transform(rows -> {
+			String sqlString = sql.toString();
+			logger.debug("SQL QUERY: " + sqlString);
+			logger.debug("SQL TUPLE: " + tuple.deepToString());
+			return client.preparedQuery(sqlString).execute(tuple).onItem().transform(rows -> {
 				QueryResult result = new QueryResult();
 				if (limit == 0 && count) {
 					result.setCount(rows.iterator().next().getLong(0));
@@ -727,40 +729,40 @@ public class HistoryDAO {
 				sql.append("JSONB_BUILD_ARRAY(JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_LIST + "', Z.sumdata)))");
 				break;
 			case NGSIConstants.AGGR_METH_MIN:
-				sql.append("case when Z.sumdata is not null then ");
+				sql.append("case when Z.mindata is not null then ");
 				sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.NGSI_LD_MIN + "', ");
 				sql.append("JSONB_BUILD_ARRAY(JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_LIST + "', Z.MINDATA)))");
 				break;
 			case NGSIConstants.AGGR_METH_MAX:
-				sql.append("case when Z.sumdata is not null then ");
+				sql.append("case when Z.maxdata is not null then ");
 				sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.NGSI_LD_MAX + "', ");
 				sql.append("JSONB_BUILD_ARRAY(JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_LIST + "', Z.MAXDATA)))");
 
 				break;
 			case NGSIConstants.AGGR_METH_AVG:
-				sql.append("case when Z.sumdata is not null then ");
+				sql.append("case when Z.avgdata is not null then ");
 				sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.NGSI_LD_AVG + "', ");
 				sql.append("JSONB_BUILD_ARRAY(JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_LIST + "', Z.AVGDATA)))");
 				break;
 			case NGSIConstants.AGGR_METH_STDDEV:
-				sql.append("case when Z.sumdata is not null then ");
+				sql.append("case when Z.STDDEVDATA is not null then ");
 				sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.NGSI_LD_STDDEV + "', ");
 				sql.append(
 						"JSONB_BUILD_ARRAY(JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_LIST + "', Z.STDDEVDATA)))");
 				break;
 			case NGSIConstants.AGGR_METH_SUMSQ:
-				sql.append("case when Z.sumdata is not null then ");
+				sql.append("case when Z.sumsqdata is not null then ");
 				sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.NGSI_LD_SUMSQ + "', ");
 				sql.append("JSONB_BUILD_ARRAY(JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_LIST + "', Z.SUMSQDATA)))");
 				break;
 			case NGSIConstants.AGGR_METH_TOTAL_COUNT:
-				sql.append("case when Z.sumdata is not null then ");
+				sql.append("case when Z.TOTALCOUNTDATA is not null then ");
 				sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.NGSI_LD_TOTALCOUNT + "', ");
 				sql.append("JSONB_BUILD_ARRAY(JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_LIST
 						+ "', Z.TOTALCOUNTDATA)))");
 				break;
 			case NGSIConstants.AGGR_METH_DISTINCT_COUNT:
-				sql.append("case when Z.sumdata is not null then ");
+				sql.append("case when Z.DISTINCTCOUNTDATA is not null then ");
 				sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.NGSI_LD_DISTINCTCOUNT + "', ");
 				sql.append("JSONB_BUILD_ARRAY(JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_LIST
 						+ "', Z.DISTINCTCOUNTDATA)))");
