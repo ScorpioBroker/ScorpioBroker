@@ -96,11 +96,26 @@ public class HistoryQueryService {
 					if (e instanceof PgException) {
 						PgException pge = (PgException) e;
 						if (pge.getCode().equals(AppConstants.SQL_INVALID_OPERATOR)) {
+							pge.printStackTrace();
 							return Uni.createFrom().failure(
-									new ResponseException(ErrorType.InvalidRequest, "Invalid operator in q query"));
+									new ResponseException(ErrorType.InvalidRequest, "Invalid operator in q query or aggr query"));
 						}
 					}
 					return Uni.createFrom().failure(e);
+				}).onItem().transform(qResult -> {
+					if(aggrQuery != null && (aggrQuery.getAggrFunctions().contains(NGSIConstants.AGGR_METH_MAX) || aggrQuery.getAggrFunctions().contains(NGSIConstants.AGGR_METH_MIN))) {
+						List<Map<String, Object>> data = qResult.getData();
+						for(Map<String, Object> entries: data) {
+							for(Entry<String, Object> entry: entries.entrySet()) {
+								if(NGSIConstants.ENTITY_BASE_PROPS.contains(entry.getKey())) {
+									continue;
+								}
+								
+							}
+							
+						}
+					}
+					return qResult;
 				});
 		if (localOnly) {
 			return local;

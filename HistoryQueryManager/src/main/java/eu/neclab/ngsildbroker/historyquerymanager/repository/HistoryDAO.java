@@ -500,7 +500,8 @@ public class HistoryDAO {
 				sql.append("))) as MINDATA");
 				break;
 			case NGSIConstants.AGGR_METH_MAX:
-				sql.append("MAX(CASE ");
+				
+				sql.append("(MAX(CASE ");
 				sql.append("WHEN JSONB_TYPEOF(DATA#> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
 						+ NGSIConstants.JSON_LD_VALUE + "}') = 'number' THEN (DATA#>> '{"
 						+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE + "}') ");
@@ -513,7 +514,7 @@ public class HistoryDAO {
 				sql.append("WHEN JSONB_TYPEOF(DATA#> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
 						+ NGSIConstants.JSON_LD_VALUE + "}') = 'array' THEN (JSONB_ARRAY_LENGTH(DATA#> ('{"
 						+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE + "}')))::text ");
-				sql.append("ELSE NULL END)), ");
+				sql.append("ELSE NULL END))), ");
 				sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_VALUE + "', pr.period), ");
 				sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_VALUE + "', pr.period + ");
 				dollarplus = getPeriod(sql, dollarCount, tempQuery, aggrQuery);
@@ -595,7 +596,7 @@ public class HistoryDAO {
 				sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_VALUE + "', pr.period), ");
 				sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_VALUE + "', pr.period + ");
 				dollarplus = getPeriod(sql, dollarCount, tempQuery, aggrQuery);
-				sql.append("))) as TOTALCOUNTDATA");
+				sql.append("))) as DISTINCTCOUNTDATA");
 				break;
 			default:
 				break;

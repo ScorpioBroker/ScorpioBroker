@@ -436,5 +436,7 @@ public interface NGSIConstants {
 	public static final String LANGUAGE_PROPERTY = "LanguageProperty";
 	public static final String LANGUAGE_MAP = "languageMap";
 	
+	public static final Set<String> ENTITY_BASE_PROPS = Sets.newHashSet(JSON_LD_ID, JSON_LD_TYPE, NGSI_LD_CREATED_AT, NGSI_LD_MODIFIED_AT, NGSI_LD_SCOPE);
+	
 }
 
