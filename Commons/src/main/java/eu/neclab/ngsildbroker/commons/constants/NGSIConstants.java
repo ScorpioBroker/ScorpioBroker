@@ -433,5 +433,8 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_NULL = "urn:ngsi-ld:null";
 	public static final String HAS_VALUE_NULL = "[{https://uri.etsi.org/ngsi-ld/hasValue=[{@value=urn:ngsi-ld:null}]";
 	public static final String HAS_OBJECT_NULL = "[{https://uri.etsi.org/ngsi-ld/hasObject=[{@id=urn:ngsi-ld:null}]";
+	public static final String LANGUAGE_PROPERTY = "LanguageProperty";
+	public static final String LANGUAGE_MAP = "languageMap";
+	
 }
 

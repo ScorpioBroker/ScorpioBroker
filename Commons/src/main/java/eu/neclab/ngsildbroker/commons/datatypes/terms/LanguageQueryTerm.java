@@ -4,6 +4,8 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Set;
 
+import com.google.common.collect.Lists;
+
 import io.smallrye.mutiny.tuples.Tuple2;
 
 public class LanguageQueryTerm implements Serializable {
@@ -16,7 +18,8 @@ public class LanguageQueryTerm implements Serializable {
 	public LanguageQueryTerm() {
 		// for serialization
 	}
-	ArrayList<Tuple2<Set<String>, Float>> entries;
+
+	ArrayList<Tuple2<Set<String>, Float>> entries = Lists.newArrayList();
 
 	public ArrayList<Tuple2<Set<String>, Float>> getEntries() {
 		return entries;
