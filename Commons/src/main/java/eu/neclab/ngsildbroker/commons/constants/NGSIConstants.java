@@ -379,6 +379,8 @@ public interface NGSIConstants {
 	public final static String QUERY_PARAMETER_CONCISE = "option";
 	public static final String SCOPE = "scope";
 	public static final String PREVIOUS_VALUE = "previousValue";
+
+	public static final String PREVIOUS_LANGUAGE_MAP = "previousLanguageMap";
 	public static final String PREVIOUS_OBJECT = "previousObject";
 	public static final String NGSI_LD_REG_MODE = "https://uri.etsi.org/ngsi-ld/mode";
 	public static final String NGSI_LD_REG_MODE_AUX = "auxiliary";
