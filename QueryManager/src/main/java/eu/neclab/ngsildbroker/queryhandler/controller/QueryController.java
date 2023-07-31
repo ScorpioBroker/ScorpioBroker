@@ -6,6 +6,7 @@ import java.util.List;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -73,10 +74,13 @@ public class QueryController {
 	@Path("/entities/{entityId}")
 	@GET
 	public Uni<RestResponse<Object>> getEntity(HttpServerRequest request, @QueryParam(value = "attrs") String attrs,
-			@QueryParam(value = "options") String options, @QueryParam(value = "lang") String lang,
-			@QueryParam(value = "geometryProperty") String geometryProperty,
-			@QueryParam(value = "localOnly") boolean localOnly, @PathParam("entityId") String entityId,
-			@QueryParam(value = "doNotCompact") boolean doNotCompact) {
+											   @QueryParam(value = "options") String options, @QueryParam(value = "lang") String lang,
+											   @QueryParam(value = "geometryProperty") String geometryProperty,
+											   @QueryParam(value = "localOnly") boolean localOnly, @PathParam("entityId") String entityId,
+											   @QueryParam(value = "doNotCompact") boolean doNotCompact,
+											   @QueryParam("containedBy")@DefaultValue("") String containedBy,
+											   @QueryParam("join")String join,
+											   @QueryParam("idsOnly")boolean idsOnly) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		if (acceptHeader == -1) {
 			return HttpUtils.getInvalidHeader();
@@ -96,7 +100,7 @@ public class QueryController {
 				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 			}
 			return queryService
-					.retrieveEntity(context, HttpUtils.getTenant(request), entityId, attrsQuery, langQuery, localOnly)
+					.retrieveEntity(context, HttpUtils.getTenant(request), entityId, attrsQuery, langQuery, localOnly,containedBy,join,idsOnly,null)
 					.onItem().transformToUni(entity -> {
 						if (doNotCompact) {
 							return Uni.createFrom().item(RestResponse.ok((Object) entity));
