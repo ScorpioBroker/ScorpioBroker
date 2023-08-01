@@ -2,6 +2,7 @@ package eu.neclab.ngsildbroker.queryhandler.services;
 
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLDService;
+import com.github.jsonldjava.core.JsonLdConsts;
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.HashBasedTable;
@@ -59,6 +60,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @ApplicationScoped
 public class QueryService {
@@ -932,31 +934,50 @@ public class QueryService {
 
     public Uni<Map<String, Object>> retrieveEntity(Context context, String tenant, String entityId,
                                                    AttrsQueryTerm attrsQuery, LanguageQueryTerm lang, boolean localOnly, String containedBy, String join,
-                                                   boolean idsOnly, List<Map<String, Object>> relResult) {
-        if (relResult == null) {
-            relResult = new ArrayList<>();
+                                                   boolean idsOnly, int joinLevel, List<Map<String, Object>> relResult) {
+//        if (relResult == null) {
+//            relResult = new ArrayList<>();
+//        }
+//        List<Map<String, Object>> finalRelResult = relResult;
+//        AtomicInteger joinLvl = new AtomicInteger(joinLevel);
+//        Uni<Map<String, Object>> local = queryDAO.getEntity(entityId, tenant, attrsQuery)
+//                .onItem().transformToUni(ent -> {
+//                    if(containedBy.contains((String) ent.get("@id")) || joinLvl.get()==0){
+//                        return Uni.createFrom().item(Map.of("@graph", finalRelResult));
+//                    }
+//                    finalRelResult.add(ent);
+//                    List<Uni<Map<String,Object>>> unisOfMaps = new ArrayList<>();
+//                    for (String key : ent.keySet()) {
+//                        if (ent.get(key) instanceof List<?> attrib
+//                                && attrib.get(0) instanceof Map<?, ?>
+//                                && ((Map<String, Object>) attrib.get(0)).containsKey("https://uri.etsi.org/ngsi-ld/default-context/objectType")
+//                                && (!containedBy.contains((String) ent.get("@id")))) {
+//                            // call recursively
+//                            // and put result in list
+//                            unisOfMaps.add(retrieveEntity(context, tenant, (String) ((Map<String, List<Map<String, Object>>>) attrib.get(0)).get("https://uri.etsi.org/ngsi-ld/hasObject").get(0).get("@id"),
+//                                    attrsQuery, lang, localOnly, containedBy + ent.get("@id"), "flat", idsOnly, joinLvl.decrementAndGet(),finalRelResult));
+//
+//                        }
+//                    }
+//                    if(!unisOfMaps.isEmpty()){
+//                        return Uni.combine().all().unis(unisOfMaps).collectFailures().combinedWith(x->x).onItemOrFailure()
+//                                .transformToUni((list,fail)->{
+//                                    return Uni.createFrom().item(Map.of("@graph", finalRelResult));
+//                                });
+//                    }
+//                    return Uni.createFrom().item(Map.of("@graph", finalRelResult));
+//                });
+        Uni<Map<String, Object>> local;
+        if(idsOnly){
+            local = joinFlat(tenant, entityId, attrsQuery, containedBy,  joinLevel, relResult);
         }
-        List<Map<String, Object>> finalRelResult = relResult;
-        Uni<Map<String, Object>> local = queryDAO.getEntity(entityId, tenant, attrsQuery)
-                .onItem().transformToUni(ent -> {
-                    if(containedBy.contains((String) ent.get("@id"))){
-                        return Uni.createFrom().item(Map.of("@graph", finalRelResult));
-                    }
-                    finalRelResult.add(ent);
-                    for (String key : ent.keySet()) {
-                        if (ent.get(key) instanceof List<?> attrib
-                                && attrib.get(0) instanceof Map<?, ?>
-                                && ((Map<String, Object>) attrib.get(0)).containsKey("https://uri.etsi.org/ngsi-ld/default-context/objectType")
-                                && (!containedBy.contains((String) ent.get("@id")))) {
-                            // call recursively
-                            // and put result in list
-                            return retrieveEntity(context, tenant, (String) ((Map<String, List<Map<String, Object>>>) attrib.get(0)).get("https://uri.etsi.org/ngsi-ld/hasObject").get(0).get("@id"),
-                                    attrsQuery, lang, localOnly, containedBy + ent.get("@id"), "flat", idsOnly, finalRelResult);
-
-                        }
-                    }
-                    return Uni.createFrom().item(Map.of("@graph", finalRelResult));
-                });
+        else if (join.equals("flat")) {
+            local = joinFlat(tenant, entityId, attrsQuery, containedBy,  joinLevel, relResult);
+        } else if (join.equals("inline")) {
+            local = joinFlat(tenant, entityId, attrsQuery, containedBy,  joinLevel, relResult);
+        } else {
+            local = queryDAO.getEntity(entityId, tenant, attrsQuery);
+        }
 
         if (localOnly) {
             return local;
@@ -1312,6 +1333,42 @@ public class QueryService {
             // });
         });
 
+    }
+
+    public Uni<Map<String, Object>> joinFlat(String tenant, String entityId,
+                                             AttrsQueryTerm attrsQuery, String containedBy,
+                                             int joinLevel, List<Map<String, Object>> relResult) {
+        if (relResult == null) {
+            relResult = new ArrayList<>();
+        }
+        List<Map<String, Object>> finalRelResult = relResult;
+        AtomicInteger joinLvl = new AtomicInteger(joinLevel);
+        return queryDAO.getEntity(entityId, tenant, attrsQuery)
+                .onItem().transformToUni(ent -> {
+                    if (containedBy.contains((String) ent.get(JsonLdConsts.ID)) || joinLvl.get() == 0) {
+                        return Uni.createFrom().item(Map.of(JsonLdConsts.GRAPH, finalRelResult));
+                    }
+                    joinLvl.set(joinLvl.decrementAndGet());
+                    finalRelResult.add(ent);
+                    List<Uni<Map<String, Object>>> unisOfMaps = new ArrayList<>();
+                    for (String key : ent.keySet()) {
+                        if (ent.get(key) instanceof List<?> attrib
+                                && attrib.get(0) instanceof Map<?, ?>
+                                && ((Map<String, Object>) attrib.get(0)).containsKey(NGSIConstants.NGSI_LD_OBJECT_TYPE)
+                                && (!containedBy.contains((String) ent.get(JsonLdConsts.ID)))) {
+                            unisOfMaps.add(joinFlat(tenant, (String) ((Map<String, List<Map<String, Object>>>) attrib.get(0)).get(NGSIConstants.NGSI_LD_HAS_OBJECT).get(0).get(JsonLdConsts.ID),
+                                    attrsQuery, containedBy + ent.get(JsonLdConsts.ID), joinLvl.get(), finalRelResult));
+
+                        }
+                    }
+                    if (!unisOfMaps.isEmpty()) {
+                        return Uni.combine().all().unis(unisOfMaps).collectFailures().combinedWith(x -> x).onItemOrFailure()
+                                .transformToUni((list, fail) -> {
+                                    return Uni.createFrom().item(Map.of(JsonLdConsts.GRAPH, finalRelResult));
+                                });
+                    }
+                    return Uni.createFrom().item(Map.of(JsonLdConsts.GRAPH, finalRelResult));
+                });
     }
 
     @Scheduled(every = "${scorpio.entitymap.cleanup.schedule}", delayed = "${scorpio.startupdelay}")

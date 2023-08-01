@@ -80,7 +80,8 @@ public class QueryController {
 											   @QueryParam(value = "doNotCompact") boolean doNotCompact,
 											   @QueryParam("containedBy")@DefaultValue("") String containedBy,
 											   @QueryParam("join")String join,
-											   @QueryParam("idsOnly")boolean idsOnly) {
+											   @QueryParam("idsOnly")boolean idsOnly,
+											   @QueryParam("joinLevel")@DefaultValue("1")int joinLevel) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		if (acceptHeader == -1) {
 			return HttpUtils.getInvalidHeader();
@@ -100,7 +101,8 @@ public class QueryController {
 				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 			}
 			return queryService
-					.retrieveEntity(context, HttpUtils.getTenant(request), entityId, attrsQuery, langQuery, localOnly,containedBy,join,idsOnly,null)
+					.retrieveEntity(context, HttpUtils.getTenant(request), entityId, attrsQuery, langQuery,
+							localOnly,containedBy,join,idsOnly,joinLevel,null)
 					.onItem().transformToUni(entity -> {
 						if (doNotCompact) {
 							return Uni.createFrom().item(RestResponse.ok((Object) entity));
