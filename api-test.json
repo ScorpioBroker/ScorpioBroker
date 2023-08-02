@@ -21876,6 +21876,7 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"   responseBody = pm.response.json()[0];\r",
+																	"   console.log(responseBody);\r",
 																	"   pm.expect(responseBody[\"speed\"][0][\"sumsq\"][0][0]).to.eql(14681.0);\r",
 																	"   \r",
 																	"   pm.expect(responseBody[\"speed\"][1][\"distinctCount\"][0][0]).to.eql(2);\r",
