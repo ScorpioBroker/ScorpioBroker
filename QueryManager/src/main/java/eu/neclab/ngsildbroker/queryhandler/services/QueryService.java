@@ -969,14 +969,19 @@ public class QueryService {
 //                });
         Uni<Map<String, Object>> local;
         if(idsOnly){
-            local = joinFlat(tenant, entityId, attrsQuery, containedBy,  joinLevel, relResult);
+            //TODO
+            local = null;
+        }
+        else if (join==null) {
+            local = queryDAO.getEntity(entityId, tenant, attrsQuery);
         }
         else if (join.equals("flat")) {
             local = joinFlat(tenant, entityId, attrsQuery, containedBy,  joinLevel, relResult);
         } else if (join.equals("inline")) {
-            local = joinFlat(tenant, entityId, attrsQuery, containedBy,  joinLevel, relResult);
+            //TODO
+            local = null;
         } else {
-            local = queryDAO.getEntity(entityId, tenant, attrsQuery);
+            return Uni.createFrom().failure(new Throwable("join can not be" + join));
         }
 
         if (localOnly) {
