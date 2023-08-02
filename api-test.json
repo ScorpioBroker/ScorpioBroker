@@ -21810,7 +21810,6 @@
 																	"var entityId = payloadBody.id;\r",
 																	"pm.collectionVariables.set(\"created\", payloadBody);\r",
 																	"pm.collectionVariables.set(\"entityId\", entityId);\r",
-																	"pm.collectionVariables.set(\"@context\", payloadBody[\"@context\"][0]);\r",
 																	"pm.test(\"Status code is 201\", function () {\r",
 																	"    pm.response.to.have.status(201);\r",
 																	"});\r",
@@ -21843,7 +21842,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"urn:test:testbatchentity1005\",\r\n    \"type\": \"Vehicle\",\r\n    \"brandName\": [\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": \"Mercedes\"\r\n        }\r\n    ],\r\n    \"speed\": [\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 91,\r\n            \"observedAt\": \"2022-09-10T13:21:24.000Z\"\r\n        },\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 80,\r\n            \"observedAt\": \"2022-09-10T12:21:24.000Z\"\r\n        }\r\n    ]\r\n}"
+															"raw": "{\r\n    \"id\": \"urn:test:testbatchentity100510101\",\r\n    \"type\": \"Vehicle\",\r\n    \"brandName\": [\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": \"Mercedes\"\r\n        }\r\n    ],\r\n    \"speed\": [\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 91,\r\n            \"observedAt\": \"2022-09-10T13:21:24.000Z\"\r\n        },\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 80,\r\n            \"observedAt\": \"2022-09-10T12:21:24.000Z\"\r\n        }\r\n    ]\r\n}"
 														},
 														"url": {
 															"raw": "{{history-entity-manager}}/ngsi-ld/v1/temporal/entities",
