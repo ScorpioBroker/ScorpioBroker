@@ -5,10 +5,17 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.github.jsonldjava.core.JsonLdConsts;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Table;
@@ -357,10 +364,59 @@ public class HistoryDAO {
 					Map<String, Object> entity;
 					while (it.hasNext()) {
 						next = it.next();
-						if (next.getJsonObject(0) != null)
+						if (next.getJsonObject(0) != null) {
 							entity = next.getJsonObject(0).getMap();
-						else
+						} else {
 							entity = new HashMap<>();
+						}
+						if (aggrQuery != null && (aggrQuery.getAggrFunctions().contains(NGSIConstants.AGGR_METH_MAX)
+								|| aggrQuery.getAggrFunctions().contains(NGSIConstants.AGGR_METH_MIN))) {
+							for (Entry<String, Object> entry : entity.entrySet()) {
+								if (NGSIConstants.ENTITY_BASE_PROPS.contains(entry.getKey())) {
+									continue;
+								}
+								List<Map<String, List<Map<String, List>>>> tmp = (List<Map<String, List<Map<String, List>>>>) entry
+										.getValue();
+								for (Map<String, List<Map<String, List>>> listEntry : tmp) {
+
+									List<Map<String, List>> maxes = listEntry.get(NGSIConstants.NGSI_LD_MAX);
+									if (maxes != null) {
+										for (Map<String, List> max : maxes) {
+											List<Map<String, List<Map<String, Object>>>> subMaxes = max
+													.get(JsonLdConsts.LIST);
+											for (Map<String, List<Map<String, Object>>> subMax : subMaxes) {
+												List<Map<String, Object>> realValues = subMax.get(JsonLdConsts.LIST);
+												String potentialValue = (String) realValues.get(0)
+														.get(JsonLdConsts.VALUE);
+												if (NumberUtils.isCreatable(potentialValue)) {
+													realValues.get(0).put(JsonLdConsts.VALUE,
+															NumberUtils.createNumber(potentialValue));
+												}
+
+											}
+										}
+									}
+									List<Map<String, List>> mins = listEntry.get(NGSIConstants.NGSI_LD_MIN);
+									if (mins != null) {
+										for (Map<String, List> min : mins) {
+											List<Map<String, List<Map<String, Object>>>> subMins = min
+													.get(JsonLdConsts.LIST);
+											for (Map<String, List<Map<String, Object>>> subMin : subMins) {
+												List<Map<String, Object>> realValues = subMin.get(JsonLdConsts.LIST);
+												String potentialValue = (String) realValues.get(0)
+														.get(JsonLdConsts.VALUE);
+												if (NumberUtils.isCreatable(potentialValue)) {
+													realValues.get(0).put(JsonLdConsts.VALUE,
+															NumberUtils.createNumber(potentialValue));
+												}
+
+											}
+										}
+									}
+								}
+							}
+						}
+
 						resultData.add(entity);
 					}
 					if (count) {
@@ -500,7 +556,7 @@ public class HistoryDAO {
 				sql.append("))) as MINDATA");
 				break;
 			case NGSIConstants.AGGR_METH_MAX:
-				
+
 				sql.append("(MAX(CASE ");
 				sql.append("WHEN JSONB_TYPEOF(DATA#> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
 						+ NGSIConstants.JSON_LD_VALUE + "}') = 'number' THEN (DATA#>> '{"
