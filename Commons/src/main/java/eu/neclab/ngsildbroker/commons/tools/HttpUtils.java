@@ -418,10 +418,14 @@ public final class HttpUtils {
 		if (headerFromReg != null) {
 			headerFromReg.forEach(t -> {
 				JsonObject obj = (JsonObject) t;
-				obj.forEach(headerEntry -> {
-					result.add(headerEntry.getKey(), (String) headerEntry.getValue());
-				});
-			});
+			 	result.add(obj.getJsonArray(NGSIConstants.NGSI_LD_HAS_KEY).getJsonObject(0).getString(JsonLdConsts.VALUE)
+						,obj.getJsonArray(NGSIConstants.NGSI_LD_HAS_VALUE).getJsonObject(0).getString(JsonLdConsts.VALUE));
+			 });
+		}
+		if(result.contains(NGSIConstants.JSONLD_CONTEXT)){
+			String linkHeader = "<%s>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"',"
+					.formatted(result.get(NGSIConstants.JSONLD_CONTEXT));
+			result.remove(NGSIConstants.JSONLD_CONTEXT).add("Link",linkHeader);
 		}
 		result.add("Accept", "application/json");
 		if (tenant != null) {
@@ -435,10 +439,15 @@ public final class HttpUtils {
 		MultiMap result = HeadersMultiMap.headers();
 		if (headerFromReg != null) {
 			headerFromReg.forEach(t -> {
-				t.forEach((key, value) -> {
-					result.add(key, ((List<Map<String,Object>>)value).get(0).get("@value").toString());
-				});
+				JsonObject obj = new JsonObject(t);
+				result.add(obj.getJsonArray(NGSIConstants.NGSI_LD_HAS_KEY).getJsonObject(0).getString(JsonLdConsts.VALUE)
+						,obj.getJsonArray(NGSIConstants.NGSI_LD_HAS_VALUE).getJsonObject(0).getString(JsonLdConsts.VALUE));
 			});
+		}
+		if(result.contains(NGSIConstants.JSONLD_CONTEXT)){
+			String linkHeader = "<%s>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"',"
+					.formatted(result.get(NGSIConstants.JSONLD_CONTEXT));
+			result.remove(NGSIConstants.JSONLD_CONTEXT).add("Link",linkHeader);
 		}
 		result.add("Accept", "application/json");
 		if (!tenant.equals(AppConstants.INTERNAL_NULL_KEY)) {
@@ -745,7 +754,8 @@ public final class HttpUtils {
 		return JsonUtils.fromString(payload).onItem().transformToUni(json -> {
 			Map<String, Object> originalPayload;
 			originalPayload = (Map<String, Object>) json;
-			return expandBody(request, originalPayload, payloadType, ldService);
+		    return expandBody(request, originalPayload, payloadType, ldService);
+
 		});
 	}
 

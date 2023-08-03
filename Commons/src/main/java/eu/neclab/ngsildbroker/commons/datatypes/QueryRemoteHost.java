@@ -113,7 +113,11 @@ public record QueryRemoteHost(String host, String tenant, MultiMap headers, Stri
 
 	public static QueryRemoteHost fromRemoteHost(RemoteHost remoteHost, String queryString, boolean canDoIdQuery,
 			boolean canDoZip, String remoteToken) {
-		return new QueryRemoteHost(remoteHost.host(), remoteHost.tenant(), remoteHost.headers(), remoteHost.cSourceId(),
+		String finalHost=remoteHost.host();
+		if(remoteHost.host().endsWith("/")){
+			finalHost= remoteHost.host().substring(0,remoteHost.host().length()-1);
+		}
+		return new QueryRemoteHost(finalHost, remoteHost.tenant(), remoteHost.headers(), remoteHost.cSourceId(),
 				remoteHost.canDoSingleOp(), remoteHost.canDoBatchOp(), remoteHost.regMode(), queryString, canDoIdQuery,
 				canDoZip, remoteToken);
 	}
