@@ -435,6 +435,6 @@ public interface NGSIConstants {
 	public static final String HAS_OBJECT_NULL = "[{https://uri.etsi.org/ngsi-ld/hasObject=[{@id=urn:ngsi-ld:null}]";
 	public static final String LANGUAGE_PROPERTY = "LanguageProperty";
 	public static final String LANGUAGE_MAP = "languageMap";
-	
+	public final static String NGSI_LD_HAS_KEY ="https://uri.etsi.org/ngsi-ld/hasKey";
 }
 

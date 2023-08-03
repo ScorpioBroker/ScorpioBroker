@@ -418,10 +418,9 @@ public final class HttpUtils {
 		if (headerFromReg != null) {
 			headerFromReg.forEach(t -> {
 				JsonObject obj = (JsonObject) t;
-				obj.forEach(headerEntry -> {
-					result.add(headerEntry.getKey(), (String) headerEntry.getValue());
-				});
-			});
+			 	result.add(obj.getJsonArray(NGSIConstants.NGSI_LD_HAS_KEY).getJsonObject(0).getString(JsonLdConsts.VALUE)
+						,obj.getJsonArray(NGSIConstants.NGSI_LD_HAS_VALUE).getJsonObject(0).getString(JsonLdConsts.VALUE));
+			 });
 		}
 		result.add("Accept", "application/json");
 		if (tenant != null) {
@@ -745,7 +744,8 @@ public final class HttpUtils {
 		return JsonUtils.fromString(payload).onItem().transformToUni(json -> {
 			Map<String, Object> originalPayload;
 			originalPayload = (Map<String, Object>) json;
-			return expandBody(request, originalPayload, payloadType, ldService);
+		    return expandBody(request, originalPayload, payloadType, ldService);
+
 		});
 	}
 
