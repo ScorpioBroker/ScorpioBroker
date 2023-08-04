@@ -14,6 +14,7 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.ext.web.client.WebClient;
 
+import jakarta.ws.rs.core.Response;
 import org.jboss.resteasy.reactive.RestResponse;
 
 import jakarta.annotation.PostConstruct;
@@ -68,9 +69,9 @@ public class ContextCache {
 		if (details)
 			return load(uri).onItem().transform(RestResponse::ok);
 		else
-			return load(uri).onItem().transform(map -> {
-				if (map == null || map.isEmpty())
-					return RestResponse.notFound();
+			return load(uri).onItemOrFailure().transform((map,fail) -> {
+				if (fail!=null || map == null || map.isEmpty())
+					return RestResponse.status(Response.Status.SERVICE_UNAVAILABLE);
 				else
 					return RestResponse.ok(map.get(NGSIConstants.BODY));
 			});

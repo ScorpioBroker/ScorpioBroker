@@ -12,16 +12,15 @@ import java.io.Writer;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLDecoder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-
 import org.apache.commons.io.ByteOrderMark;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.BOMInputStream;
-
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -33,7 +32,6 @@ import com.github.jsonldjava.core.DocumentLoader;
 import com.github.jsonldjava.core.JsonLdApi;
 import com.github.jsonldjava.core.JsonLdProcessor;
 import com.google.common.net.HttpHeaders;
-
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpResponse;
@@ -347,8 +345,9 @@ public class JsonUtils {
 				}).onItem().transformToUni(result -> {
 					final int status = result.statusCode();
 					if (status != 200 && status != 203) {
+						String finalUrl = URLDecoder.decode(url.getPath().split("createcache/")[1],StandardCharsets.UTF_8);
 						return Uni.createFrom()
-								.failure(new IOException("Can't retrieve " + url + ", status code: " + status));
+								.failure(new IOException("Can't retrieve " + finalUrl + ", status code: " + status));
 					}
 					URL alternateLink;
 					try {

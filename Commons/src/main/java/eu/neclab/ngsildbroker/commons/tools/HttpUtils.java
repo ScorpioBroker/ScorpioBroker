@@ -298,6 +298,13 @@ public final class HttpUtils {
 					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
 					.entity(responseException.getJson()).build();
 		}
+		if(e instanceof IOException ioException){
+			logger.debug("Exception :: ", ioException);
+			return RestResponseBuilderImpl.create(ErrorType.LdContextNotAvailable.getCode())
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+					.entity(new ResponseException(ErrorType.LdContextNotAvailable)
+							.getJson()).build();
+		}
 		if (e instanceof DateTimeParseException) {
 			logger.debug("Exception :: ", e);
 			return RestResponseBuilderImpl.create(HttpStatus.SC_BAD_REQUEST)
@@ -682,8 +689,12 @@ public final class HttpUtils {
 			String type = (String) result.get(0).get("type");
 			if (type.equalsIgnoreCase("Delete") || type.equalsIgnoreCase("Append"))
 				return RestResponse.status(RestResponse.Status.NOT_FOUND, result);
-			else
+			else if(result.get(0).get("failure").toString().contains("503")){
+				return RestResponse.status(RestResponse.Status.SERVICE_UNAVAILABLE, result);
+			}
+			else {
 				return RestResponse.status(RestResponse.Status.BAD_REQUEST, result);
+			}
 		}
 		if (!isHavingError && isHavingSuccess) {
 			String type = (String) result.get(0).get("type");
