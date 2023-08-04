@@ -369,6 +369,7 @@ public interface NGSIConstants {
 	public static final String CREATEDAT = "createdat";
 	public static final String URL = "url";
 	public static final String JSONLD_CONTEXTS = "ngsi-ld/v1/jsonldContexts/";
+	public static final String JSONLD_CONTEXT="jsonldContext";
 	public static final String NGSI_LD_ATTRIBUTES_ENDPOINT = "/ngsi-ld/v1/attributes";
 	public static final List<String> GEO_KEYWORDS = Arrays.asList(NGSIConstants.GEO_TYPE_POINT,
 			NGSIConstants.GEO_TYPE_POLYGON, NGSIConstants.GEO_TYPE_LINESTRING, NGSIConstants.GEO_TYPE_MULTI_POLYGON);
@@ -436,6 +437,6 @@ public interface NGSIConstants {
 	public static final String HAS_OBJECT_NULL = "[{https://uri.etsi.org/ngsi-ld/hasObject=[{@id=urn:ngsi-ld:null}]";
 	public static final String LANGUAGE_PROPERTY = "LanguageProperty";
 	public static final String LANGUAGE_MAP = "languageMap";
-	
+	public final static String NGSI_LD_HAS_KEY ="https://uri.etsi.org/ngsi-ld/hasKey";
 }
 
