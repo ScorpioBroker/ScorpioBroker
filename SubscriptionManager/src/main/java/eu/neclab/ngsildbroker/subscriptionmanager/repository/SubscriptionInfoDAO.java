@@ -3,17 +3,16 @@ package eu.neclab.ngsildbroker.subscriptionmanager.repository;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-
 import com.google.common.collect.Lists;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.DeleteSubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.UpdateSubscriptionRequest;
+import eu.neclab.ngsildbroker.commons.enums.ErrorType;
+import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.storage.ClientManager;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
@@ -52,7 +51,14 @@ public class SubscriptionInfoDAO {
 	public Uni<RowSet<Row>> deleteSubscription(DeleteSubscriptionRequest request) {
 		return clientManager.getClient(request.getTenant(), false).onItem()
 				.transformToUni(client -> client.preparedQuery("DELETE FROM subscriptions WHERE subscription_id=$1")
-						.execute(Tuple.of(request.getId())));
+						.execute(Tuple.of(request.getId())
+								).onItem().transformToUni(rows -> {
+									if (rows.rowCount() == 0) {
+										return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
+									}
+									return Uni.createFrom().item(rows);
+								})
+						);
 	}
 
 	public Uni<RowSet<Row>> getAllSubscriptions(String tenant, int limit, int offset) {
