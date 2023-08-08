@@ -157,7 +157,7 @@ public class QueryService {
 				// unis.add(queryDAO.getEntities(conn, entry.getValue(), attrsQuery));
 			} else {
 				unis.add(webClient
-						.getAbs(remoteHost.host() + "/" + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT
+						.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT
 								+ remoteHost.queryString() + "&options=sysAttrs")
 						.putHeaders(remoteHost.headers()).send().onItem().transformToUni(response -> {
 							if (response != null && response.statusCode() == 200) {
@@ -969,7 +969,7 @@ public class QueryService {
 			}
 			unis.add(
 					webClient
-							.getAbs(remoteHost.host() + "/" + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + entityId
+							.getAbs(remoteHost.host()  + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + entityId
 									+ queryString)
 							.putHeaders(remoteHost.headers()).send().onItem().transformToUni(response -> {
 								if (response == null || response.statusCode() != 200) {
@@ -1220,8 +1220,9 @@ public class QueryService {
 						entityMapString = "&entityMap=true";
 					}
 					unis.add(webClient
-							.getAbs(remoteHost.host() + "/" + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT
+							.getAbs(remoteHost.host()  + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT
 									+ remoteHost.queryString() + entityMapString)
+									.putHeaders(remoteHost.headers())
 							.send().onItem().transform(response -> {
 								List<String> result;
 								if (response != null && response.statusCode() == 200) {
@@ -1237,8 +1238,8 @@ public class QueryService {
 							}));
 				} else {
 					unis.add(webClient
-							.getAbs(remoteHost.host() + "/" + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT
-									+ remoteHost.queryString() + "&limit=1000")
+							.getAbs(remoteHost.host()  + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT
+									+ remoteHost.queryString() + "&limit=1000").putHeaders(remoteHost.headers())
 							.putHeader(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).send().onItem()
 							.transform(response -> {
 								List<String> result = Lists.newArrayList();
