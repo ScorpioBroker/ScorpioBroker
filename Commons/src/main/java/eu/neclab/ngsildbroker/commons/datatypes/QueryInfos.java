@@ -126,7 +126,7 @@ public class QueryInfos {
 		if (!attrs.isEmpty()) {
 			result.append("attrs=");
 			for (String attr : attrs) {
-				result.append(context.compactIri(attr));
+				result.append(attr);
 				result.append(',');
 			}
 			result.setCharAt(result.length() - 1, '&');

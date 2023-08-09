@@ -583,7 +583,7 @@ public class TypeQueryTerm implements Serializable {
 			firstChild.toRequestString(result, context);
 			result.append(')');
 		} else {
-			result.append(context.compactIri(type));
+			result.append(type);
 			if (hasNext()) {
 				if (isNextAnd()) {
 					result.append(';');
