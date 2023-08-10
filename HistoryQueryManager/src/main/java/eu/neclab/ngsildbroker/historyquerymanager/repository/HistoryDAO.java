@@ -31,6 +31,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TemporalQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
+import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.storage.ClientManager;
 import eu.neclab.ngsildbroker.commons.tools.DBUtil;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
@@ -216,7 +217,7 @@ public class HistoryDAO {
 
 			int dollarCount = 1;
 			String entityInfos = "entityInfos";
-			StringBuilder sql = new StringBuilder("with " + entityInfos
+			StringBuilder sql = new StringBuilder("with entityInfos"
 					+ " as (select id , e_types, temporalentity.createdat as raw_createdat, temporalentity.modifiedat as raw_modifiedat, case when scopes is null then null else getScopeEntry(scopes) end as scopes, jsonb_build_array(jsonb_build_object('@type', '"
 					+ NGSIConstants.NGSI_LD_DATE_TIME
 					+ "', '@value', to_char(temporalentity.createdat, 'YYYY-MM-DDThh:mm:ss.usZ'))) as r_createdat, jsonb_build_array(jsonb_build_object('@type', '"
@@ -248,25 +249,66 @@ public class HistoryDAO {
 			if (scopeQuery != null) {
 				scopeQuery.toSql(sql);
 			}
+			sql.append("), ");
+			if (geoQuery != null) {
+				String newEntityInfos = "geoFilteredInfos";
+				sql.append(newEntityInfos);
+				sql.append(" as (SELECT ");
+				sql.append(entityInfos);
+				sql.append(".* FROM ");
+				sql.append(entityInfos);
+				sql.append(" LEFT JOIN ");
+				sql.append(DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE);
+				sql.append(" ON ");
+				sql.append(DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE);
+				sql.append(".temporalentity_id = ");
+				sql.append(entityInfos);
+				sql.append(".id WHERE ");
+				dollarCount = geoQuery.toTempSql(sql, tuple, dollarCount, tempQuery);
+				sql.append("), ");
+				entityInfos = newEntityInfos;
+			}
+			if (qQuery != null) {
+				int[] tmp = qQuery.toTempSql(sql, dollarCount, tuple, 0, entityInfos, tempQuery);
+				dollarCount = tmp[0];
+				String newEntityInfos = "filteredEntityInfo";
+				sql.append(newEntityInfos);
+				sql.append(" as (SELECT ");
+				sql.append(entityInfos);
+				sql.append(".* FROM filtered");
+				sql.append(tmp[1] - 1);
+				sql.append(" LEFT JOIN ");
+				sql.append(entityInfos);
+				sql.append(" ON filtered");
+				sql.append(tmp[1] - 1);
+				sql.append(".id = ");
+				sql.append(entityInfos);
+				sql.append(".id), ");
+				entityInfos = newEntityInfos;
+			}
+			
+			
+			sql.append("ATTRIBUTEDATA AS (SELECT ID, ATTRIBID, DATA, GEOVALUE, SCOPES, E_TYPES, R_CREATEDAT, R_MODIFIEDAT, R_DELETEDAT FROM ");
 			sql.append(
-					"), ATTRIBUTEDATA AS (SELECT ID, ATTRIBID, DATA, SCOPES, E_TYPES, R_CREATEDAT, R_MODIFIEDAT, R_DELETEDAT FROM ");
-			sql.append(
-					"(SELECT ENTITYINFOS.ID AS ID, TEAI.ATTRIBUTEID AS ATTRIBID, TEAI.DATA AS DATA, ENTITYINFOS.SCOPES AS SCOPES, "
-							+ "ENTITYINFOS.E_TYPES AS E_TYPES, ENTITYINFOS.R_CREATEDAT AS R_CREATEDAT, ENTITYINFOS.R_MODIFIEDAT AS R_MODIFIEDAT"
-							+ ", ENTITYINFOS.R_DELETEDAT AS R_DELETEDAT, ROW_NUMBER() OVER "
+					"(SELECT "+entityInfos+".ID AS ID, TEAI.ATTRIBUTEID AS ATTRIBID, TEAI.DATA AS DATA, TEAI.GEOVALUE AS GEOVALUE, "+entityInfos+".SCOPES AS SCOPES, "
+							+ entityInfos+".E_TYPES AS E_TYPES, "+entityInfos+".R_CREATEDAT AS R_CREATEDAT, "+entityInfos+".R_MODIFIEDAT AS R_MODIFIEDAT"
+							+ ", "+entityInfos+".R_DELETEDAT AS R_DELETEDAT, ROW_NUMBER() OVER "
 							+ "(PARTITION BY TEAI.temporalentity_id, TEAI.ATTRIBUTEID ORDER BY TEAI.");
 			String temporalProperty = "observedAt";
 			sql.append(temporalProperty);
 			sql.append(
-					") AS RN FROM ENTITYINFOS LEFT JOIN TEMPORALENTITYATTRINSTANCE TEAI ON TEAI.TEMPORALENTITY_ID = ENTITYINFOS.ID WHERE 1=1");
+					") AS RN FROM "+entityInfos+" LEFT JOIN TEMPORALENTITYATTRINSTANCE TEAI ON TEAI.TEMPORALENTITY_ID = "+entityInfos+".ID WHERE 1=1");
 			if (tempQuery != null) {
 				sql.append(" AND TEAI.");
 				dollarCount = tempQuery.toSql(sql, tuple, dollarCount);
 
 			}
-			if (geoQuery != null) {
-				sql.append(" AND TEAI.");
-				dollarCount = geoQuery.toTempSql(sql, tuple, dollarCount, tempQuery);
+			if(geoQuery != null) {
+				try {
+					dollarCount = geoQuery.toTempSql(sql, tuple, dollarCount);
+				} catch (ResponseException e) {
+					return Uni.createFrom().failure(e);
+				}
 			}
 			if (attrsQuery != null) {
 				sql.append("AND TEAI.attributeId in (");
@@ -284,12 +326,12 @@ public class HistoryDAO {
 			tuple.addInteger(lastN);
 			dollarCount++;
 			sql.append(" ), ");
-
+			entityInfos = "ATTRIBUTEDATA";
+			
 			sql.append(
 					"temp1 as (select id, SCOPES, E_TYPES, R_CREATEDAT, R_MODIFIEDAT, R_DELETEDAT, attribid, jsonb_agg(data) as data from attributedata group by id, e_types, scopes, r_createdat, r_modifiedat, r_deletedat, attribid)");
-			if(count) {
-			sql.append(
-					", temp2 as (select count(distinct id) as e_count from temp1)");
+			if (count) {
+				sql.append(", temp2 as (select count(distinct id) as e_count from temp1)");
 			}
 			/*
 			 * if (qQuery != null) { int[] tmp = qQuery.toTempSql(sql, dollarCount, tuple,
@@ -318,11 +360,12 @@ public class HistoryDAO {
 				sql.append(", temp2.e_count");
 			}
 			sql.append(" FROM temp1");
-			if(count) {
+			if (count) {
 				sql.append(",temp2");
 			}
-			sql.append(" group by temp1.id, temp1.e_types, temp1.scopes, temp1.r_createdat, temp1.r_modifiedat, temp1.r_deletedat");
-			if(count) {
+			sql.append(
+					" group by temp1.id, temp1.e_types, temp1.scopes, temp1.r_createdat, temp1.r_modifiedat, temp1.r_deletedat");
+			if (count) {
 				sql.append(",temp2.e_count");
 			}
 			sql.append(" OFFSET $");

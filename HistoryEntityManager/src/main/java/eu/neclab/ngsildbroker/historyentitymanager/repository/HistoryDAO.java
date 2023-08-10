@@ -90,22 +90,31 @@ public class HistoryDAO {
 			logger.debug(sql);
 			return client.preparedQuery(sql).execute(tuple).onItem().transformToUni(rows -> {
 				List<Tuple> batch = Lists.newArrayList();
+				Object location = payload.get(NGSIConstants.NGSI_LD_LOCATION);
+				JsonObject geoLocation = null;
+				String insertSql;
+				if (location != null) {
+					List<Map<String, List<Map<String, Object>>>> tmp = (List<Map<String, List<Map<String, Object>>>>) location;
+					geoLocation = new JsonObject(tmp.get(0).get(NGSIConstants.NGSI_LD_HAS_VALUE).get(0));
+					insertSql = "INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
+							+ " (temporalentity_id, attributeid, data, location) VALUES ($1, $2, $3::jsonb, ST_SetSRID(ST_GeomFromGeoJSON(getGeoJson($4)))";
+				} else {
+					insertSql = "INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
+							+ " (temporalentity_id, attributeid, data) VALUES ($1, $2, $3::jsonb)";
+				}
 				for (Entry<String, Object> entry : payload.entrySet()) {
 					@SuppressWarnings("unchecked")
 					List<Map<String, Object>> entries = (List<Map<String, Object>>) entry.getValue();
 					for (Map<String, Object> attribEntry : entries) {
 						attribEntry.put(NGSIConstants.NGSI_LD_INSTANCE_ID, List
 								.of(Map.of(NGSIConstants.JSON_LD_ID, "instanceid:" + UUID.randomUUID().toString())));
-						batch.add(Tuple.of(request.getId(), entry.getKey(), new JsonObject(attribEntry)));
+						batch.add(Tuple.of(request.getId(), entry.getKey(), new JsonObject(attribEntry), geoLocation));
 					}
 				}
-				logger.debug("INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
-						+ " (temporalentity_id, attributeid, data) VALUES ($1, $2, $3::jsonb)");
+				logger.debug(insertSql);
 
-				return client
-						.preparedQuery("INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
-								+ " (temporalentity_id, attributeid, data) VALUES ($1, $2, $3::jsonb)")
-						.executeBatch(batch).onItem().transform(rows1 -> !rows.iterator().next().getBoolean(0));
+				return client.preparedQuery(insertSql).executeBatch(batch).onItem()
+						.transform(rows1 -> !rows.iterator().next().getBoolean(0));
 
 			});
 		});
@@ -118,8 +127,16 @@ public class HistoryDAO {
 			List<Tuple> batchNoType = Lists.newArrayList();
 			List<Tuple> batchType = Lists.newArrayList();
 			List<Tuple> batchAttribs = Lists.newArrayList();
+			List<Tuple> batchAttribsWtihLocation = Lists.newArrayList();
 			for (Map<String, Object> payload : request.getRequestPayload()) {
 				String entityId = (String) payload.remove(NGSIConstants.JSON_LD_ID);
+				Object location = payload.get(NGSIConstants.NGSI_LD_LOCATION);
+				JsonObject geoLocation = null;
+
+				if (location != null) {
+					List<Map<String, List<Map<String, Object>>>> tmp = (List<Map<String, List<Map<String, Object>>>>) location;
+					geoLocation = new JsonObject(tmp.get(0).get(NGSIConstants.NGSI_LD_HAS_VALUE).get(0));
+				}
 				if (payload.containsKey(NGSIConstants.JSON_LD_TYPE)) {
 					Tuple tuple = Tuple.of(entityId,
 							((List<String>) payload.remove(NGSIConstants.JSON_LD_TYPE)).toArray(new String[0]),
@@ -149,13 +166,25 @@ public class HistoryDAO {
 					tuple.addString(entityId);
 					batchNoType.add(tuple);
 				}
+				List<Tuple> attribsToFill;
+				if (location == null) {
+					attribsToFill = batchAttribs;
+				} else {
+					attribsToFill = batchAttribsWtihLocation;
+				}
 				for (Entry<String, Object> entry : payload.entrySet()) {
 					@SuppressWarnings("unchecked")
 					List<Map<String, Object>> entries = (List<Map<String, Object>>) entry.getValue();
 					for (Map<String, Object> attribEntry : entries) {
 						attribEntry.put(NGSIConstants.NGSI_LD_INSTANCE_ID, List
 								.of(Map.of(NGSIConstants.JSON_LD_ID, "instanceid:" + UUID.randomUUID().toString())));
-						batchAttribs.add(Tuple.of(entityId, entry.getKey(), new JsonObject(attribEntry)));
+						if (location != null) {
+							attribsToFill
+									.add(Tuple.of(entityId, entry.getKey(), new JsonObject(attribEntry), geoLocation));
+						} else {
+							attribsToFill.add(Tuple.of(entityId, entry.getKey(), new JsonObject(attribEntry)));
+						}
+
 					}
 				}
 			}
@@ -181,10 +210,20 @@ public class HistoryDAO {
 						.executeBatch(batchNoType));
 			}
 			return Uni.combine().all().unis(tmpList).combinedWith(l -> l).onItem().transformToUni(l -> {
-				return client
-						.preparedQuery("INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
-								+ " (temporalentity_id, attributeid, data) VALUES ($1, $2, $3::jsonb)")
-						.executeBatch(batchAttribs);
+				List<Uni<RowSet<Row>>> attribList = Lists.newArrayList();
+				if (batchAttribs.isEmpty()) {
+					attribList.add(client
+							.preparedQuery("INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
+									+ " (temporalentity_id, attributeid, data) VALUES ($1, $2, $3::jsonb)")
+							.executeBatch(batchAttribs));
+				}
+				if (batchAttribsWtihLocation.isEmpty()) {
+					attribList.add(client.preparedQuery("INSERT INTO "
+							+ DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
+							+ " (temporalentity_id, attributeid, data) VALUES ($1, $2, $3::jsonb, ST_SetSRID(ST_GeomFromGeoJSON(getGeoJson($4))))")
+							.executeBatch(batchAttribs));
+				}
+				return Uni.combine().all().unis(attribList).combinedWith(l2 -> l2).onItem().transform(l1 -> l1);
 
 			}).onItem().transformToUni(t -> Uni.createFrom().voidItem());
 		});

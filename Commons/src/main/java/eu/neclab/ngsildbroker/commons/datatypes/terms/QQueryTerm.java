@@ -962,10 +962,10 @@ public class QQueryTerm  implements Serializable {
 		String[] attribPath = splitted[0].split("\\.");
 		String attribName = linkHeaders.expandIri(attribPath[0], false, true, null, null);
 		tuple.addString(attribName);
-		if (tempQuery != null) {
-			sql.append(" AND TEAI.");
-			dollarCount = tempQuery.toSql(sql, tuple, dollarCount);
-		}
+//		if (tempQuery != null) {
+//			sql.append(" AND TEAI.");
+//			dollarCount = tempQuery.toSql(sql, tuple, dollarCount);
+//		}
 		String currentSqlAttrib = "TEAI.data";
 		if (!current.getOperator().isEmpty() || attribPath.length > 1 || subAttribPath != null) {
 			sql.append(" AND ");
