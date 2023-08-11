@@ -167,6 +167,10 @@ public class SubscriptionService {
 		} catch (ResponseException e) {
 			return Uni.createFrom().failure(e);
 		}
+		if(request.getId()==null){
+			String id = "urn:"+UUID.randomUUID().toString();
+			request.setId(id);
+		}
 		SubscriptionTools.setInitTimesSentAndFailed(request);
 		Map<String, Object> tmp = request.getContext().serialize();
 		return localContextService.createImplicitly(tenant, tmp).onItem().transformToUni(contextId -> {
@@ -319,8 +323,9 @@ public class SubscriptionService {
 							if (potentialSub.getSubscription().getNotification().getShowChanges()) {
 								payload.put(JsonLdConsts.GRAPH,
 										List.of(compareMaps(message.getPreviousEntity(), entityList.get(0))));
-							} else
+							} else {
 								payload.put(JsonLdConsts.GRAPH, entityList);
+							}
 							return sendNotification(potentialSub, payload, message.getRequestType());
 						}));
 			}
