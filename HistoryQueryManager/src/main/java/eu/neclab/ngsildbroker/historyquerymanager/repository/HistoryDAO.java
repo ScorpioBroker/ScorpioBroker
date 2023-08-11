@@ -217,6 +217,7 @@ public class HistoryDAO {
 
 			int dollarCount = 1;
 			String entityInfos = "entityInfos";
+			StringBuilder laterSql = new StringBuilder();
 			StringBuilder sql = new StringBuilder("with entityInfos"
 					+ " as (select id , e_types, temporalentity.createdat as raw_createdat, temporalentity.modifiedat as raw_modifiedat, case when scopes is null then null else getScopeEntry(scopes) end as scopes, jsonb_build_array(jsonb_build_object('@type', '"
 					+ NGSIConstants.NGSI_LD_DATE_TIME
@@ -250,60 +251,28 @@ public class HistoryDAO {
 				scopeQuery.toSql(sql);
 			}
 			sql.append("), ");
-			if (geoQuery != null) {
-				String newEntityInfos = "geoFilteredInfos";
-				sql.append(newEntityInfos);
-				sql.append(" as (SELECT ");
-				sql.append(entityInfos);
-				sql.append(".* FROM ");
-				sql.append(entityInfos);
-				sql.append(" LEFT JOIN ");
-				sql.append(DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE);
-				sql.append(" ON ");
-				sql.append(DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE);
-				sql.append(".temporalentity_id = ");
-				sql.append(entityInfos);
-				sql.append(".id WHERE ");
-				dollarCount = geoQuery.toTempSql(sql, tuple, dollarCount, tempQuery);
-				sql.append("), ");
-				entityInfos = newEntityInfos;
-			}
-			if (qQuery != null) {
-				int[] tmp = qQuery.toTempSql(sql, dollarCount, tuple, 0, entityInfos, tempQuery);
-				dollarCount = tmp[0];
-				String newEntityInfos = "filteredEntityInfo";
-				sql.append(newEntityInfos);
-				sql.append(" as (SELECT ");
-				sql.append(entityInfos);
-				sql.append(".* FROM filtered");
-				sql.append(tmp[1] - 1);
-				sql.append(" LEFT JOIN ");
-				sql.append(entityInfos);
-				sql.append(" ON filtered");
-				sql.append(tmp[1] - 1);
-				sql.append(".id = ");
-				sql.append(entityInfos);
-				sql.append(".id), ");
-				entityInfos = newEntityInfos;
-			}
-			
-			
-			sql.append("ATTRIBUTEDATA AS (SELECT ID, ATTRIBID, DATA, GEOVALUE, SCOPES, E_TYPES, R_CREATEDAT, R_MODIFIEDAT, R_DELETEDAT FROM ");
+
 			sql.append(
-					"(SELECT "+entityInfos+".ID AS ID, TEAI.ATTRIBUTEID AS ATTRIBID, TEAI.DATA AS DATA, TEAI.GEOVALUE AS GEOVALUE, "+entityInfos+".SCOPES AS SCOPES, "
-							+ entityInfos+".E_TYPES AS E_TYPES, "+entityInfos+".R_CREATEDAT AS R_CREATEDAT, "+entityInfos+".R_MODIFIEDAT AS R_MODIFIEDAT"
-							+ ", "+entityInfos+".R_DELETEDAT AS R_DELETEDAT, ROW_NUMBER() OVER "
-							+ "(PARTITION BY TEAI.temporalentity_id, TEAI.ATTRIBUTEID ORDER BY TEAI.");
+					"ATTRIBUTEDATA AS (SELECT ID, ATTRIBID, DATA, GEOVALUE, SCOPES, E_TYPES, R_CREATEDAT, R_MODIFIEDAT, R_DELETEDAT FROM ");
+			sql.append("(SELECT " + entityInfos
+					+ ".ID AS ID, TEAI.ATTRIBUTEID AS ATTRIBID, TEAI.DATA AS DATA, TEAI.GEOVALUE AS GEOVALUE, "
+					+ entityInfos + ".SCOPES AS SCOPES, " + entityInfos + ".E_TYPES AS E_TYPES, " + entityInfos
+					+ ".R_CREATEDAT AS R_CREATEDAT, " + entityInfos + ".R_MODIFIEDAT AS R_MODIFIEDAT" + ", "
+					+ entityInfos + ".R_DELETEDAT AS R_DELETEDAT, ROW_NUMBER() OVER "
+					+ "(PARTITION BY TEAI.temporalentity_id, TEAI.ATTRIBUTEID ORDER BY TEAI.");
 			String temporalProperty = "observedAt";
+
 			sql.append(temporalProperty);
-			sql.append(
-					") AS RN FROM "+entityInfos+" LEFT JOIN TEMPORALENTITYATTRINSTANCE TEAI ON TEAI.TEMPORALENTITY_ID = "+entityInfos+".ID WHERE 1=1");
+			sql.append(") AS RN FROM " + entityInfos
+					+ " LEFT JOIN TEMPORALENTITYATTRINSTANCE TEAI ON TEAI.TEMPORALENTITY_ID = " + entityInfos
+					+ ".ID WHERE 1=1");
 			if (tempQuery != null) {
 				sql.append(" AND TEAI.");
 				dollarCount = tempQuery.toSql(sql, tuple, dollarCount);
 
 			}
-			if(geoQuery != null) {
+			if (geoQuery != null) {
+				sql.append(" AND ");
 				try {
 					dollarCount = geoQuery.toTempSql(sql, tuple, dollarCount);
 				} catch (ResponseException e) {
@@ -311,7 +280,7 @@ public class HistoryDAO {
 				}
 			}
 			if (attrsQuery != null) {
-				sql.append("AND TEAI.attributeId in (");
+				sql.append(" AND TEAI.attributeId in (");
 				for (String attr : attrsQuery.getAttrs()) {
 					sql.append('$');
 					sql.append(dollarCount);
@@ -319,19 +288,57 @@ public class HistoryDAO {
 					tuple.addString(attr);
 					dollarCount++;
 				}
+				if (qQuery != null) {
+					for (String attr : qQuery.getAllAttibs()) {
+						sql.append('$');
+						sql.append(dollarCount);
+						sql.append(',');
+						tuple.addString(attr);
+						dollarCount++;
+					}
+				}
 				sql.setCharAt(sql.length() - 1, ')');
 			}
-			sql.append(") AS A1 WHERE RN <= $");
-			sql.append(dollarCount);
-			tuple.addInteger(lastN);
-			dollarCount++;
+			if (qQuery != null) {
+				sql.append(" AND CASE ");
+				dollarCount = qQuery.toTempSql(sql, laterSql, tuple, dollarCount);
+				sql.append("ELSE TRUE END");
+			}
+			sql.append(") AS A1");
+			if (aggrQuery == null) {
+				sql.append(" WHERE RN <= $");
+				sql.append(dollarCount);
+				tuple.addInteger(lastN);
+				dollarCount++;
+			}
+
 			sql.append(" ), ");
-			entityInfos = "ATTRIBUTEDATA";
-			
+			entityInfos = "temp1";
+
 			sql.append(
 					"temp1 as (select id, SCOPES, E_TYPES, R_CREATEDAT, R_MODIFIEDAT, R_DELETEDAT, attribid, jsonb_agg(data) as data from attributedata group by id, e_types, scopes, r_createdat, r_modifiedat, r_deletedat, attribid)");
+			if (!laterSql.isEmpty()) {
+				sql.append(
+						", TEMP3 AS (SELECT ID AS FILTERED_ID FROM (SELECT ID, ARRAY_AGG(attribid) as attribs from temp1 group by id)  as x WHERE ");
+				sql.append(laterSql);
+				sql.append("), temp4 as (SELECT * FROM temp3 left join temp1 on temp3.FILTERED_ID = temp1.id");
+				if (attrsQuery != null) {
+					sql.append(" WHERE attribid in (");
+
+					for (String attr : attrsQuery.getAttrs()) {
+						sql.append('$');
+						sql.append(dollarCount);
+						sql.append(',');
+						tuple.addString(attr);
+						dollarCount++;
+					}
+					sql.setCharAt(sql.length() - 1, ')');
+				}
+				sql.append(")");
+				entityInfos = "temp4";
+			}
 			if (count) {
-				sql.append(", temp2 as (select count(distinct id) as e_count from temp1)");
+				sql.append(", temp2 as (select count(distinct id) as e_count from " + entityInfos + ")");
 			}
 			/*
 			 * if (qQuery != null) { int[] tmp = qQuery.toTempSql(sql, dollarCount, tuple,
@@ -348,23 +355,25 @@ public class HistoryDAO {
 			// tuple);
 			// attachAggrQueryBottomPart(sql, aggrQuery);
 
-			sql.append(" select (jsonb_build_object('" + NGSIConstants.JSON_LD_ID + "', temp1.id, '"
-					+ NGSIConstants.JSON_LD_TYPE + "', temp1.e_types, '" + NGSIConstants.NGSI_LD_CREATED_AT
-					+ "', temp1.r_createdat, '" + NGSIConstants.NGSI_LD_MODIFIED_AT
-					+ "', temp1.r_modifiedat) || jsonb_object_agg(temp1.attribid, temp1.data) FILTER (WHERE temp1.data is not null)) || (case when "
-					+ "temp1.r_deletedat is null then '{}'::jsonb else jsonb_build_object('"
-					+ NGSIConstants.NGSI_LD_DELETED_AT + "', " + "temp1.r_deletedat) end) || (case when "
-					+ "temp1.scopes is null then '{}'::jsonb else jsonb_build_object('" + NGSIConstants.NGSI_LD_SCOPE
-					+ "', " + "temp1.scopes) end)");
+			sql.append(" select (jsonb_build_object('" + NGSIConstants.JSON_LD_ID + "', " + entityInfos + ".id, '"
+					+ NGSIConstants.JSON_LD_TYPE + "', " + entityInfos + ".e_types, '"
+					+ NGSIConstants.NGSI_LD_CREATED_AT + "', " + entityInfos + ".r_createdat, '"
+					+ NGSIConstants.NGSI_LD_MODIFIED_AT + "', " + entityInfos + ".r_modifiedat) || jsonb_object_agg("
+					+ entityInfos + ".attribid, " + entityInfos + ".data) FILTER (WHERE " + entityInfos
+					+ ".data is not null)) || (case when " + entityInfos
+					+ ".r_deletedat is null then '{}'::jsonb else jsonb_build_object('"
+					+ NGSIConstants.NGSI_LD_DELETED_AT + "', " + entityInfos + ".r_deletedat) end) || (case when "
+					+ entityInfos + ".scopes is null then '{}'::jsonb else jsonb_build_object('"
+					+ NGSIConstants.NGSI_LD_SCOPE + "', " + entityInfos + ".scopes) end)");
 			if (count) {
 				sql.append(", temp2.e_count");
 			}
-			sql.append(" FROM temp1");
+			sql.append(" FROM " + entityInfos);
 			if (count) {
 				sql.append(",temp2");
 			}
-			sql.append(
-					" group by temp1.id, temp1.e_types, temp1.scopes, temp1.r_createdat, temp1.r_modifiedat, temp1.r_deletedat");
+			sql.append(" group by " + entityInfos + ".id, " + entityInfos + ".e_types, " + entityInfos + ".scopes, "
+					+ entityInfos + ".r_createdat, " + entityInfos + ".r_modifiedat, " + entityInfos + ".r_deletedat");
 			if (count) {
 				sql.append(",temp2.e_count");
 			}
