@@ -102,7 +102,7 @@ public class QueryController {
 			}
 			return queryService
 					.retrieveEntity(context, HttpUtils.getTenant(request), entityId, attrsQuery, langQuery,
-							localOnly,containedBy,join,idsOnly,joinLevel,null)
+							localOnly,containedBy,join,idsOnly,joinLevel)
 					.onItem().transformToUni(entity -> {
 						if (doNotCompact) {
 							return Uni.createFrom().item(RestResponse.ok((Object) entity));
@@ -133,7 +133,9 @@ public class QueryController {
 			@QueryParam("geometryProperty") String geometryProperty, @QueryParam("lang") String lang,
 			@QueryParam("scopeQ") String scopeQ, @QueryParam("localOnly") boolean localOnly,
 			@QueryParam("options") String options, @QueryParam("limit") Integer limit, @QueryParam("offset") int offset,
-			@QueryParam("count") boolean count, @QueryParam("idsOnly") boolean idsOnly,
+			@QueryParam("count") boolean count, @QueryParam("containedBy")@DefaultValue("") String containedBy,
+			@QueryParam("join")String join, @QueryParam("idsOnly")boolean idsOnly,
+			@QueryParam("joinLevel")@DefaultValue("1")int joinLevel,
 			@QueryParam("doNotCompact") boolean doNotCompact, @QueryParam("entityMap") String entityMapToken) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		if (acceptHeader == -1) {
@@ -217,7 +219,7 @@ public class QueryController {
 			if (idsOnly) {
 				return queryService
 						.queryForEntityIds(HttpUtils.getTenant(request), ids, typeQueryTerm, idPattern, attrsQuery,
-								qQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, context)
+								qQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, context, true,join,containedBy,joinLevel)
 						.onItem().transform(list -> {
 							String body;
 							Object result = "[]";
@@ -243,7 +245,7 @@ public class QueryController {
 
 			return queryService.query(HttpUtils.getTenant(request), token, tokenProvided, ids, typeQueryTerm, idPattern,
 					attrsQuery, qQueryTerm, csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset,
-					count, localOnly, context).onItem().transformToUni(queryResult -> {
+					count, localOnly, context,false,join,containedBy,joinLevel).onItem().transformToUni(queryResult -> {
 						if (doNotCompact) {
 							return Uni.createFrom().item(RestResponse.ok((Object) queryResult.getData()));
 						}
