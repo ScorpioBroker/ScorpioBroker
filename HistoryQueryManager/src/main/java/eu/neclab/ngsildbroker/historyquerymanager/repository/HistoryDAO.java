@@ -53,8 +53,7 @@ public class HistoryDAO {
 
 	/**
 	 * 
-	 * @param tenant
-	 * @param entityId
+	 * @param tenant     * @param entityId
 	 * @param attrsQuery
 	 * @param aggrQuery
 	 * @param tempQuery
@@ -253,14 +252,34 @@ public class HistoryDAO {
 			sql.append("), ");
 
 			sql.append(
-					"ATTRIBUTEDATA AS (SELECT ID, ATTRIBID, DATA, GEOVALUE, SCOPES, E_TYPES, R_CREATEDAT, R_MODIFIEDAT, R_DELETEDAT FROM ");
+					"ATTRIBUTEDATA AS (SELECT ID, ATTRIBID, DATA, GEOVALUE, SCOPES, E_TYPES, R_CREATEDAT, R_MODIFIEDAT, R_DELETEDAT, MODIFIEDAT, CREATEDAT, OBSERVEDAT, DELETEDAT, RAW_CREATEDAT, RAW_MODIFIEDAT FROM ");
 			sql.append("(SELECT " + entityInfos
 					+ ".ID AS ID, TEAI.ATTRIBUTEID AS ATTRIBID, TEAI.DATA AS DATA, TEAI.GEOVALUE AS GEOVALUE, "
 					+ entityInfos + ".SCOPES AS SCOPES, " + entityInfos + ".E_TYPES AS E_TYPES, " + entityInfos
 					+ ".R_CREATEDAT AS R_CREATEDAT, " + entityInfos + ".R_MODIFIEDAT AS R_MODIFIEDAT" + ", "
-					+ entityInfos + ".R_DELETEDAT AS R_DELETEDAT, ROW_NUMBER() OVER "
+					+ entityInfos + ".R_DELETEDAT AS R_DELETEDAT, MODIFIEDAT, CREATEDAT, OBSERVEDAT, DELETEDAT, "
+					+ entityInfos + ".RAW_CREATEDAT AS RAW_CREATEDAT, " + entityInfos
+					+ ".RAW_MODIFIEDAT AS RAW_MODIFIEDAT,  ROW_NUMBER() OVER "
 					+ "(PARTITION BY TEAI.temporalentity_id, TEAI.ATTRIBUTEID ORDER BY TEAI.");
+
 			String temporalProperty = "observedAt";
+			if (tempQuery != null) {
+				switch (tempQuery.getTimeProperty()) {
+
+				case NGSIConstants.NGSI_LD_CREATED_AT:
+					temporalProperty = "createdAt";
+					break;
+				case NGSIConstants.NGSI_LD_MODIFIED_AT:
+					temporalProperty = "modifiedAt";
+					break;
+				case NGSIConstants.NGSI_LD_OBSERVED_AT:
+					temporalProperty = "observedAt";
+					break;
+				case NGSIConstants.NGSI_LD_DELETED_AT:
+					temporalProperty = "deletedAt";
+					break;
+				}
+			}
 
 			sql.append(temporalProperty);
 			sql.append(") AS RN FROM " + entityInfos
@@ -313,10 +332,22 @@ public class HistoryDAO {
 			}
 
 			sql.append(" ), ");
+			entityInfos = "attributedata";
+			if (aggrQuery != null) {
+				sql.append(
+						"temp1 as (select distinct id, SCOPES, E_TYPES, R_CREATEDAT, R_MODIFIEDAT, R_DELETEDAT, attribid, u.data"
+								+ " as data from " + entityInfos + " as TEAI LEFT JOIN LATERAL (");
+				dollarCount = attachTopAggrQuery(sql, aggrQuery, tempQuery, dollarCount, tuple);
+				sql.append(
+						" WHERE TEAI.attribid = TEAI2.attribid AND TEAI.id = TEAI2.id ");
+				attachAggrQueryBottomPart(sql, aggrQuery);
+			} else {
+				sql.append(
+						"temp1 as (select id, SCOPES, E_TYPES, R_CREATEDAT, R_MODIFIEDAT, R_DELETEDAT, attribid, jsonb_agg(data)"
+								+ " as data from " + entityInfos
+								+ " group by id, e_types, scopes, r_createdat, r_modifiedat, r_deletedat, attribid)");
+			}
 			entityInfos = "temp1";
-
-			sql.append(
-					"temp1 as (select id, SCOPES, E_TYPES, R_CREATEDAT, R_MODIFIEDAT, R_DELETEDAT, attribid, jsonb_agg(data) as data from attributedata group by id, e_types, scopes, r_createdat, r_modifiedat, r_deletedat, attribid)");
 			if (!laterSql.isEmpty()) {
 				sql.append(
 						", TEMP3 AS (SELECT ID AS FILTERED_ID FROM (SELECT ID, ARRAY_AGG(attribid) as attribs from temp1 group by id)  as x WHERE ");
@@ -337,9 +368,11 @@ public class HistoryDAO {
 				sql.append(")");
 				entityInfos = "temp4";
 			}
+
 			if (count) {
 				sql.append(", temp2 as (select count(distinct id) as e_count from " + entityInfos + ")");
 			}
+
 			/*
 			 * if (qQuery != null) { int[] tmp = qQuery.toTempSql(sql, dollarCount, tuple,
 			 * 0, entityInfos, tempQuery); dollarCount = tmp[0]; String newEntityInfos =
@@ -714,7 +747,7 @@ public class HistoryDAO {
 		}
 
 		dollarCount += dollarplus;
-		sql.append(" FROM TEMPORALENTITYATTRINSTANCE TEAI2 RIGHT JOIN generate_series (");
+		sql.append(" FROM ATTRIBUTEDATA TEAI2 RIGHT JOIN generate_series (");
 		if (tempQuery == null) {
 			sql.append(
 					"TEAI.raw_createdat, TEAI.raw_modifiedat - (TEAI.RAW_MODIFIEDAT - TEAI.RAW_CREATEDAT)::interval");
