@@ -144,6 +144,7 @@ public class HistoryDAO {
 		if (aggrQuery.getPeriod() != null) {
 			sql.append("$");
 			sql.append(dollarCount);
+			sql.append("::text::interval");
 		} else {
 			if (tempQuery != null) {
 				switch (tempQuery.getTimerel()) {
@@ -750,7 +751,7 @@ public class HistoryDAO {
 		sql.append(" FROM ATTRIBUTEDATA TEAI2 RIGHT JOIN generate_series (");
 		if (tempQuery == null) {
 			sql.append(
-					"TEAI.raw_createdat, TEAI.raw_modifiedat - (TEAI.RAW_MODIFIEDAT - TEAI.RAW_CREATEDAT)::interval");
+					"TEAI.raw_createdat, TEAI.raw_modifiedat");
 		} else {
 			switch (tempQuery.getTimerel()) {
 			case NGSIConstants.TIME_REL_BEFORE:
@@ -780,20 +781,16 @@ public class HistoryDAO {
 		}
 		dollarplus = 1;
 		if (aggrQuery.getPeriod() != null) {
-			sql.append("-$");
+			sql.append(", $");
 			sql.append(dollarCount);
-			sql.append("::interval, $");
+			sql.append("::text::interval) as pr(period) on teai2.modifiedat between pr.period and pr.period + $");
 			sql.append(dollarCount);
-			sql.append("::interval) as pr(period) on teai2.modifiedat between pr.period and pr.period + $");
-			sql.append(dollarCount);
+			sql.append("::text::interval");
 			tuple.addString(aggrQuery.getPeriod());
 		} else {
 			if (tempQuery != null) {
 				switch (tempQuery.getTimerel()) {
 				case NGSIConstants.TIME_REL_BEFORE:
-					sql.append("-(TEAI.raw_createdat - $");
-					sql.append(dollarCount);
-					sql.append(")::interval");
 					sql.append(",(TEAI.raw_createdat - $");
 					sql.append(dollarCount);
 					sql.append(
@@ -803,9 +800,6 @@ public class HistoryDAO {
 					tuple.addLocalDateTime(LocalDateTime.parse(tempQuery.getTimeAt(), SerializationTools.informatter));
 					break;
 				case NGSIConstants.TIME_REL_AFTER:
-					sql.append("-($");
-					sql.append(dollarCount);
-					sql.append("- TEAI.raw_modifiedat)::interval");
 					sql.append(",($");
 					sql.append(dollarCount);
 					sql.append(
@@ -815,11 +809,7 @@ public class HistoryDAO {
 					tuple.addLocalDateTime(LocalDateTime.parse(tempQuery.getTimeAt(), SerializationTools.informatter));
 					break;
 				case NGSIConstants.TIME_REL_BETWEEN:
-					sql.append("- ($");
-					sql.append(dollarCount);
-					sql.append("- $");
-					sql.append(dollarCount + 1);
-					sql.append(")::interval,($");
+					sql.append(",($");
 					sql.append(dollarCount);
 					sql.append("- $");
 					sql.append(dollarCount + 1);
@@ -840,8 +830,9 @@ public class HistoryDAO {
 						",CASE WHEN (TEAI.raw_modifiedAt - TEAI.raw_createdAt)::interval = '0s'::interval THEN '1s'::interval ELSE (TEAI.raw_modifiedAt - TEAI.raw_createdAt)::interval END) as pr(period) on teai2.modifiedat between pr.period and pr.period + (TEAI.raw_modifiedAt - TEAI.raw_createdAt)::interval");
 				dollarplus = 0;
 			}
-			dollarCount += dollarplus;
+			
 		}
+		dollarCount += dollarplus;
 		return dollarCount;
 	}
 
