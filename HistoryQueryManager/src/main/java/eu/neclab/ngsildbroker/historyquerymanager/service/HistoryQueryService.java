@@ -95,10 +95,11 @@ public class HistoryQueryService {
 				.recoverWithUni(e -> {
 					if (e instanceof PgException) {
 						PgException pge = (PgException) e;
+						logger.debug("At position " + pge.getPosition());
+						logger.debug("failed to query", pge);
 						if (pge.getCode().equals(AppConstants.SQL_INVALID_OPERATOR)) {
-							pge.printStackTrace();
-							return Uni.createFrom().failure(
-									new ResponseException(ErrorType.InvalidRequest, "Invalid operator in q query or aggr query"));
+							return Uni.createFrom().failure(new ResponseException(ErrorType.InvalidRequest,
+									"Invalid operator in q query or aggr query"));
 						}
 					}
 					return Uni.createFrom().failure(e);
@@ -209,8 +210,8 @@ public class HistoryQueryService {
 					url = url.substring(0, url.length() - 1);
 				}
 
-				remoteCalls.add(
-						webClient.getAbs(url).putHeaders(remoteHost.headers()).send().onItem().transformToUni(response -> {
+				remoteCalls.add(webClient.getAbs(url).putHeaders(remoteHost.headers()).send().onItem()
+						.transformToUni(response -> {
 							if (response == null || response.statusCode() != 200) {
 								return Uni.createFrom().nullItem();
 							} else {

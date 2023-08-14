@@ -149,6 +149,8 @@ public class AppConstants {
 	public static final String SQL_ALREADY_EXISTS = "23505";
 	public static final String SQL_NOT_FOUND = "02000";
 	public static final String SQL_INVALID_OPERATOR = "42804";
+	public static final String SQL_INVALID_INTERVAL = "22007";
+	
 	public static final String NGB_APPLICATION_ZIP = "application/zip";
 	public static final int INTERNAL_NOTIFICATION_REQUEST = 99;
 	public static final int INTERVAL_NOTIFICATION_REQUEST = 100;
