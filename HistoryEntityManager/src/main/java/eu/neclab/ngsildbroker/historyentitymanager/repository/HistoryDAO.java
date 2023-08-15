@@ -88,6 +88,7 @@ public class HistoryDAO {
 			sql += "RETURNING (" + DBConstants.DBTABLE_TEMPORALENTITY + ".modifiedat = "
 					+ DBConstants.DBTABLE_TEMPORALENTITY + ".createdat)";
 			logger.debug(sql);
+			logger.debug(tuple.deepToString());
 			return client.preparedQuery(sql).execute(tuple).onItem().transformToUni(rows -> {
 				List<Tuple> batch = Lists.newArrayList();
 				Object location = payload.get(NGSIConstants.NGSI_LD_LOCATION);
@@ -108,7 +109,12 @@ public class HistoryDAO {
 					for (Map<String, Object> attribEntry : entries) {
 						attribEntry.put(NGSIConstants.NGSI_LD_INSTANCE_ID, List
 								.of(Map.of(NGSIConstants.JSON_LD_ID, "instanceid:" + UUID.randomUUID().toString())));
-						batch.add(Tuple.of(request.getId(), entry.getKey(), new JsonObject(attribEntry), geoLocation));
+						if (location != null) {
+							batch.add(Tuple.of(request.getId(), entry.getKey(), new JsonObject(attribEntry),
+									geoLocation));
+						} else {
+							batch.add(Tuple.of(request.getId(), entry.getKey(), new JsonObject(attribEntry)));
+						}
 					}
 				}
 				logger.debug(insertSql);
