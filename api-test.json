@@ -21842,7 +21842,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"urn:test:testbatchentity100510101\",\r\n    \"type\": \"Vehicle\",\r\n    \"brandName\": [\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": \"Mercedes\",\r\n            \"observedAt\": \"2022-09-10T13:21:24.000Z\"\r\n        }\r\n    ],\r\n    \"speed\": [\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 91,\r\n            \"observedAt\": \"2022-09-10T13:21:24.000Z\"\r\n        },\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 80,\r\n            \"observedAt\": \"2022-09-10T12:21:24.000Z\"\r\n        }\r\n    ],\r\n    \"speed2\": [\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 91\r\n        },\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 80\r\n        }\r\n    ]\r\n}"
+															"raw": "{\r\n    \"id\": \"urn:test:testbatchentity:MyTempTestType100510101\",\r\n    \"type\": \"MyTempTestType\",\r\n    \"brandName\": [\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": \"Mercedes\",\r\n            \"observedAt\": \"2022-09-10T13:21:24.000Z\"\r\n        }\r\n    ],\r\n    \"speed\": [\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 91,\r\n            \"observedAt\": \"2022-09-10T13:21:24.000Z\"\r\n        },\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 80,\r\n            \"observedAt\": \"2022-09-10T12:21:24.000Z\"\r\n        }\r\n    ],\r\n    \"speed2\": [\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 91\r\n        },\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 80\r\n        }\r\n    ]\r\n}"
 														},
 														"url": {
 															"raw": "{{history-entity-manager}}/ngsi-ld/v1/temporal/entities",
@@ -21906,7 +21906,7 @@
 															}
 														],
 														"url": {
-															"raw": "{{history-query-manager}}/ngsi-ld/v1/temporal/entities?type=Vehicle&aggrMethods=max,min,avg,sum,sumsq,stddev,totalCount,distinctCount&timeproperty=observedAt",
+															"raw": "{{history-query-manager}}/ngsi-ld/v1/temporal/entities?type=MyTempTestType&aggrMethods=max,min,avg,sum,sumsq,stddev,totalCount,distinctCount&timeproperty=observedAt",
 															"host": [
 																"{{history-query-manager}}"
 															],
@@ -21919,7 +21919,7 @@
 															"query": [
 																{
 																	"key": "type",
-																	"value": "Vehicle"
+																	"value": "MyTempTestType"
 																},
 																{
 																	"key": "aggrMethods",
@@ -21984,7 +21984,7 @@
 															}
 														],
 														"url": {
-															"raw": "{{history-query-manager}}/ngsi-ld/v1/temporal/entities?type=Vehicle&aggrMethods=max,min,avg,sum,sumsq,stddev,totalCount,distinctCount&timeproperty=modifiedAt",
+															"raw": "{{history-query-manager}}/ngsi-ld/v1/temporal/entities?type=MyTempTestType&aggrMethods=max,min,avg,sum,sumsq,stddev,totalCount,distinctCount&timeproperty=modifiedAt",
 															"host": [
 																"{{history-query-manager}}"
 															],
@@ -21997,7 +21997,7 @@
 															"query": [
 																{
 																	"key": "type",
-																	"value": "Vehicle"
+																	"value": "MyTempTestType"
 																},
 																{
 																	"key": "aggrMethods",
@@ -22062,7 +22062,7 @@
 															}
 														],
 														"url": {
-															"raw": "{{history-query-manager}}/ngsi-ld/v1/temporal/entities?type=Vehicle&aggrMethods=max,min,avg,sum,sumsq,stddev,totalCount,distinctCount&aggrPeriodDuration=PT10S",
+															"raw": "{{history-query-manager}}/ngsi-ld/v1/temporal/entities?type=MyTempTestType&aggrMethods=max,min,avg,sum,sumsq,stddev,totalCount,distinctCount&aggrPeriodDuration=PT10S",
 															"host": [
 																"{{history-query-manager}}"
 															],
@@ -22075,7 +22075,7 @@
 															"query": [
 																{
 																	"key": "type",
-																	"value": "Vehicle"
+																	"value": "MyTempTestType"
 																},
 																{
 																	"key": "aggrMethods",
@@ -22134,7 +22134,7 @@
 															}
 														],
 														"url": {
-															"raw": "{{history-query-manager}}/ngsi-ld/v1/temporal/entities?type=Vehicle&aggrMethods=max,min,avg,sum,sumsq,stddev,totalCount,distinctCount&aggrPeriodDuration=PT1H&timerel=after&timeAt=2022-09-10T13%3A11%3A34.000000Z",
+															"raw": "{{history-query-manager}}/ngsi-ld/v1/temporal/entities?type=MyTempTestType&aggrMethods=max,min,avg,sum,sumsq,stddev,totalCount,distinctCount&aggrPeriodDuration=PT1H&timerel=after&timeAt=2022-09-10T13%3A11%3A34.000000Z",
 															"host": [
 																"{{history-query-manager}}"
 															],
@@ -22147,7 +22147,7 @@
 															"query": [
 																{
 																	"key": "type",
-																	"value": "Vehicle"
+																	"value": "MyTempTestType"
 																},
 																{
 																	"key": "aggrMethods",
@@ -22213,7 +22213,7 @@
 															}
 														],
 														"url": {
-															"raw": "{{history-query-manager}}/ngsi-ld/v1/temporal/entities?type=Vehicle&aggrMethods=max,min,avg,sum,sumsq,stddev,totalCount,distinctCount&aggrPeriodDuration=PT1H&timerel=before&timeAt=2022-09-10T13%3A11%3A34.000000Z",
+															"raw": "{{history-query-manager}}/ngsi-ld/v1/temporal/entities?type=MyTempTestType&aggrMethods=max,min,avg,sum,sumsq,stddev,totalCount,distinctCount&aggrPeriodDuration=PT1H&timerel=before&timeAt=2022-09-10T13%3A11%3A34.000000Z",
 															"host": [
 																"{{history-query-manager}}"
 															],
@@ -22226,7 +22226,7 @@
 															"query": [
 																{
 																	"key": "type",
-																	"value": "Vehicle"
+																	"value": "MyTempTestType"
 																},
 																{
 																	"key": "aggrMethods",
@@ -22292,7 +22292,7 @@
 															}
 														],
 														"url": {
-															"raw": "{{history-query-manager}}/ngsi-ld/v1/temporal/entities?type=Vehicle&aggrMethods=max,min,avg,sum,sumsq,stddev,totalCount,distinctCount&aggrPeriodDuration=PT1H&timerel=between&endTimeAt=2022-09-10T13%3A11%3A34.000000Z&timeAt=2022-09-10T12%3A11%3A34.000000Z",
+															"raw": "{{history-query-manager}}/ngsi-ld/v1/temporal/entities?type=MyTempTestType&aggrMethods=max,min,avg,sum,sumsq,stddev,totalCount,distinctCount&aggrPeriodDuration=PT1H&timerel=between&endTimeAt=2022-09-10T13%3A11%3A34.000000Z&timeAt=2022-09-10T12%3A11%3A34.000000Z",
 															"host": [
 																"{{history-query-manager}}"
 															],
@@ -22305,7 +22305,7 @@
 															"query": [
 																{
 																	"key": "type",
-																	"value": "Vehicle"
+																	"value": "MyTempTestType"
 																},
 																{
 																	"key": "aggrMethods",
@@ -22375,7 +22375,7 @@
 															}
 														],
 														"url": {
-															"raw": "{{history-query-manager}}/ngsi-ld/v1/temporal/entities?type=Vehicle",
+															"raw": "{{history-query-manager}}/ngsi-ld/v1/temporal/entities?type=MyTempTestType",
 															"host": [
 																"{{history-query-manager}}"
 															],
@@ -22388,7 +22388,7 @@
 															"query": [
 																{
 																	"key": "type",
-																	"value": "Vehicle"
+																	"value": "MyTempTestType"
 																},
 																{
 																	"key": "aggrMethods",
@@ -22443,7 +22443,7 @@
 															}
 														],
 														"url": {
-															"raw": "{{history-query-manager}}/ngsi-ld/v1/temporal/entities?type=Vehicle&timerel=after&timeAt=2022-09-10T13%3A11%3A34.000000Z",
+															"raw": "{{history-query-manager}}/ngsi-ld/v1/temporal/entities?type=MyTempTestType&timerel=after&timeAt=2022-09-10T13%3A11%3A34.000000Z",
 															"host": [
 																"{{history-query-manager}}"
 															],
@@ -22456,7 +22456,7 @@
 															"query": [
 																{
 																	"key": "type",
-																	"value": "Vehicle"
+																	"value": "MyTempTestType"
 																},
 																{
 																	"key": "aggrMethods",
@@ -22521,7 +22521,7 @@
 															}
 														],
 														"url": {
-															"raw": "{{history-query-manager}}/ngsi-ld/v1/temporal/entities?type=Vehicle&timerel=after&timeAt=2022-09-10T13%3A11%3A34.000000Z&timeproperty=modifiedAt",
+															"raw": "{{history-query-manager}}/ngsi-ld/v1/temporal/entities?type=MyTempTestType&timerel=after&timeAt=2022-09-10T13%3A11%3A34.000000Z&timeproperty=modifiedAt",
 															"host": [
 																"{{history-query-manager}}"
 															],
@@ -22534,7 +22534,7 @@
 															"query": [
 																{
 																	"key": "type",
-																	"value": "Vehicle"
+																	"value": "MyTempTestType"
 																},
 																{
 																	"key": "aggrMethods",
@@ -22601,7 +22601,7 @@
 															}
 														],
 														"url": {
-															"raw": "{{history-query-manager}}/ngsi-ld/v1/temporal/entities?type=Vehicle&timerel=before&timeAt=2022-09-10T13%3A11%3A34.000000Z",
+															"raw": "{{history-query-manager}}/ngsi-ld/v1/temporal/entities?type=MyTempTestType&timerel=before&timeAt=2022-09-10T13%3A11%3A34.000000Z",
 															"host": [
 																"{{history-query-manager}}"
 															],
@@ -22614,7 +22614,7 @@
 															"query": [
 																{
 																	"key": "type",
-																	"value": "Vehicle"
+																	"value": "MyTempTestType"
 																},
 																{
 																	"key": "aggrMethods",
@@ -22678,7 +22678,7 @@
 															}
 														],
 														"url": {
-															"raw": "{{history-query-manager}}/ngsi-ld/v1/temporal/entities?type=Vehicle&timerel=between&timeAt=2022-09-10T11%3A11%3A34.000000Z&endTimeAt=2022-09-10T14%3A11%3A34.000000Z",
+															"raw": "{{history-query-manager}}/ngsi-ld/v1/temporal/entities?type=MyTempTestType&timerel=between&timeAt=2022-09-10T11%3A11%3A34.000000Z&endTimeAt=2022-09-10T14%3A11%3A34.000000Z",
 															"host": [
 																"{{history-query-manager}}"
 															],
@@ -22691,7 +22691,7 @@
 															"query": [
 																{
 																	"key": "type",
-																	"value": "Vehicle"
+																	"value": "MyTempTestType"
 																},
 																{
 																	"key": "aggrMethods",
@@ -22745,7 +22745,7 @@
 														"method": "DELETE",
 														"header": [],
 														"url": {
-															"raw": "{{history-entity-manager}}/ngsi-ld/v1/temporal/entities/urn:test:testbatchentity100510101",
+															"raw": "{{history-entity-manager}}/ngsi-ld/v1/temporal/entities/urn:test:testbatchentity:MyTempTestType100510101",
 															"host": [
 																"{{history-entity-manager}}"
 															],
@@ -22754,7 +22754,7 @@
 																"v1",
 																"temporal",
 																"entities",
-																"urn:test:testbatchentity100510101"
+																"urn:test:testbatchentity:MyTempTestType100510101"
 															]
 														}
 													},
@@ -46610,11 +46610,15 @@
 	],
 	"variable": [
 		{
+			"key": "entityId",
+			"value": ""
+		},
+		{
 			"key": "created",
 			"value": ""
 		},
 		{
-			"key": "entityId",
+			"key": "cSourceId",
 			"value": ""
 		}
 	]
