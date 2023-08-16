@@ -243,7 +243,7 @@ public class HistoryDAO {
 				}
 				if (!batchAttribsWtihLocation.isEmpty()) {
 					sql = "INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
-							+ " (temporalentity_id, attributeid, data) VALUES ($1, $2, $3::jsonb, ST_SetSRID(ST_GeomFromGeoJSON(getGeoJson($4)), 4326))";
+							+ " (temporalentity_id, attributeid, data, location) VALUES ($1, $2, $3::jsonb, ST_SetSRID(ST_GeomFromGeoJSON(getGeoJson($4)), 4326))";
 					logger.debug("batch location " + sql);
 					attribList.add(client.preparedQuery(sql).executeBatch(batchAttribsWtihLocation));
 				}
