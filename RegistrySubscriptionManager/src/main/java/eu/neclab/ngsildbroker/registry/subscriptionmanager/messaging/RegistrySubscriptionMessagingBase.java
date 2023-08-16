@@ -19,11 +19,17 @@ public abstract class RegistrySubscriptionMessagingBase {
 
 	public Uni<Void> baseHandleCsource(BaseRequest message) {
 		logger.debug("CSource sub manager got called for csource: " + message.getId());
-		return subscriptionService.checkSubscriptions(message);
+		return subscriptionService.checkSubscriptions(message).onFailure().recoverWithUni(e -> {
+			logger.debug("failed to handle registry entry", e);
+			return Uni.createFrom().voidItem();
+		});
 	}
 
 	public Uni<Void> baseHandleSubscription(SubscriptionRequest message) {
 		logger.debug("CSource sub manager got called for internal sub: " + message.getId());
-		return subscriptionService.handleInternalSubscription(message);
+		return subscriptionService.handleInternalSubscription(message).onFailure().recoverWithUni(e -> {
+			logger.debug("failed to handle registry entry", e);
+			return Uni.createFrom().voidItem();
+		});
 	}
 }

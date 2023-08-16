@@ -143,32 +143,32 @@ public class GeoQueryTerm implements Serializable {
 		this.distanceValue = distanceValue;
 	}
 
-	public Tuple4<Character, String, Integer, List<Object>> toSql(char startChar, Character prevResult, int dollar)
-			throws ResponseException {
-		StringBuilder builder = new StringBuilder();
-		List<Object> tupleItems = Lists.newArrayList();
-		builder.append(startChar);
-		builder.append(" as (SELECT attr2iid.iid FROM ");
-		if (prevResult != null) {
-			builder.append(prevResult);
-			builder.append(" LEFT JOIN attr2iid ON ");
-			builder.append(prevResult);
-			builder.append(".iid = attr2iid.iid WHERE ");
-		} else {
-			builder.append(" attr2iid WHERE ");
-		}
-		builder.append(" isGeo AND attr=$");
-		builder.append(dollar);
-		dollar++;
-		tupleItems.add(geoproperty);
-		builder.append(" AND ");
-		Tuple2<StringBuilder, Integer> tmp = getGeoSQLQuery(tupleItems, dollar, "geo_value");
-		builder.append(tmp.getItem1());
+//	public Tuple4<Character, String, Integer, List<Object>> toSql(char startChar, Character prevResult, int dollar)
+//			throws ResponseException {
+//		StringBuilder builder = new StringBuilder();
+//		List<Object> tupleItems = Lists.newArrayList();
+//		builder.append(startChar);
+//		builder.append(" as (SELECT attr2iid.iid FROM ");
+//		if (prevResult != null) {
+//			builder.append(prevResult);
+//			builder.append(" LEFT JOIN attr2iid ON ");
+//			builder.append(prevResult);
+//			builder.append(".iid = attr2iid.iid WHERE ");
+//		} else {
+//			builder.append(" attr2iid WHERE ");
+//		}
+//		builder.append(" isGeo AND attr=$");
+//		builder.append(dollar);
+//		dollar++;
+//		tupleItems.add(geoproperty);
+//		builder.append(" AND ");
+//		Tuple2<StringBuilder, Integer> tmp = getGeoSQLQuery(tupleItems, dollar, "geo_value");
+//		builder.append(tmp.getItem1());
+//
+//		return Tuple4.of(startChar, builder.toString(), tmp.getItem2(), tupleItems);
+//	}
 
-		return Tuple4.of(startChar, builder.toString(), tmp.getItem2(), tupleItems);
-	}
-
-	public Tuple2<StringBuilder, Integer> getGeoSQLQuery(List<Object> tupleItems, int dollar, String fieldName)
+	public Tuple2<StringBuilder, Integer> getGeoSQLQuery(Tuple tuple, int dollar, String fieldName)
 			throws ResponseException {
 		String referenceValue = "ST_SetSRID(ST_GeomFromGeoJSON('{\"type\": \"" + geometry + "\", \"coordinates\": "
 				+ coordinates + " }'), 4326)";
