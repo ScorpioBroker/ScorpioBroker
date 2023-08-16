@@ -28,6 +28,7 @@ BEGIN
 
   END LOOP;
 merged_json := jsonb_strip_nulls(replace(merged_json::text,'"urn:ngsi-ld:null"','null')::jsonb);
+merged_json := regexp_replace(merged_json::text, '{"@language": "[^"]*"}', 'null', 'g')::jsonb;
 while merged_json::text like '%[]%'
 	or merged_json::text like '%{}%'
 	or merged_json::text like '%null%' loop
