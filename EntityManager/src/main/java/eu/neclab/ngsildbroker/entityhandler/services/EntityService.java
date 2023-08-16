@@ -583,6 +583,7 @@ public class EntityService {
 
 	private Uni<NGSILDOperationResult> updateLocalEntity(UpdateEntityRequest request, Context context) {
 		return entityDAO.updateEntity(request).onItem().transform(notAppended -> {
+			request.setPreviousEntity(notAppended);
 			entityEmitter.sendAndForget(request);
 			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, request.getId());
 			localResult.addSuccess(new CRUDSuccess(null, null, null, request.getPayload(), context));
@@ -814,7 +815,7 @@ public class EntityService {
 			if (originalScopes != null) {
 				toStore.put(NGSIConstants.NGSI_LD_SCOPE, originalScopes);
 			}
-			EntityTools.addSysAttrs(toStore, request.getSendTimestamp(), request.getRequestType());
+			EntityTools.addSysAttrs(toStore, request.getSendTimestamp());
 		}
 		return Tuple2.of(toStore, cId2RemoteHostEntity.values());
 	}

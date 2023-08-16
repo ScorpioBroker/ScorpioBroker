@@ -11,7 +11,7 @@ public class BaseRequest {
 	private long sendTimestamp = System.currentTimeMillis();
 
 	private String id;
-	private Map<String, Object> previousEntity;
+	protected Map<String, Object> previousEntity;
 	protected String attribName;
 	protected String datasetId;
 	protected boolean deleteAll;

@@ -470,7 +470,7 @@ public final class HttpUtils {
 				});
 	}
 
-	private static void makeConcise(Object compacted) {
+	public static void makeConcise(Object compacted) {
 		makeConcise(compacted, null, null);
 	}
 
@@ -490,12 +490,12 @@ public final class HttpUtils {
 					((Map<String, Object>) parent).put(key, map.get(NGSIConstants.VALUE));
 				}
 			}
-			map.forEach((str, nestedObj) -> {
-				if (!str.equals(NGSIConstants.JSON_LD_CONTEXT) && nestedObj instanceof Map<?, ?>
-						|| nestedObj instanceof ArrayList<?>) {
-					makeConcise(nestedObj, map, str.toString());
-				}
-			});
+			for(Object k : map.keySet()){
+				if (!k.equals(NGSIConstants.JSON_LD_CONTEXT) && map.get(k) instanceof Map<?, ?>
+ 						|| map.get(k)  instanceof ArrayList<?>) {
+ 					makeConcise(map.get(k) , map, k.toString());
+ 				}
+			}
 		}
 
 	}
