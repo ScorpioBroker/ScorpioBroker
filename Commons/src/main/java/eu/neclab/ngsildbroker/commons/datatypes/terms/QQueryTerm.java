@@ -23,7 +23,7 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import io.vertx.mutiny.sqlclient.Tuple;
 
-public class QQueryTerm  implements Serializable {
+public class QQueryTerm implements Serializable {
 
 	/**
 	 * 
@@ -47,7 +47,7 @@ public class QQueryTerm  implements Serializable {
 	private String operator = "";
 	private String operant = "";
 	private Set<String> allAttribs = Sets.newHashSet();
-	
+
 	QQueryTerm() {
 		// for serialization
 	}
@@ -586,7 +586,6 @@ public class QQueryTerm  implements Serializable {
 		result.append("ENTITY ? $");
 		result.append(dollarCount);
 
-
 		String[] splitted = getAttribute().split("\\[");
 		if (splitted.length > 1) {
 			splitted[1] = splitted[1].substring(0, splitted[1].length() - 1);
@@ -594,7 +593,7 @@ public class QQueryTerm  implements Serializable {
 		String[] subAttribPath = splitted.length == 1 ? null : splitted[1].split("\\.");
 		String[] attribPath = splitted[0].split("\\.");
 		String attribName = linkHeaders.expandIri(attribPath[0], false, true, null, null);
-		if(attribName.equals("@id")){
+		if (attribName.equals("@id")) {
 			result.append(" AND entity ->> $");
 			result.append(dollarCount);
 			dollarCount++;
@@ -603,7 +602,7 @@ public class QQueryTerm  implements Serializable {
 			result.append(dollarCount);
 			dollarCount++;
 			tuple.addString(operant);
-		}else {
+		} else {
 			result.append(" AND EXISTS (SELECT TRUE FROM JSONB_ARRAY_ELEMENTS(ENTITY -> $");
 			result.append(dollarCount);
 			dollarCount++;
@@ -909,7 +908,7 @@ public class QQueryTerm  implements Serializable {
 			// attributeFilterProperty.append("'");
 			dollarCount++;
 			tuple.addString(operant);
-			//addItemToTupel(tuple, operant);
+			// addItemToTupel(tuple, operant);
 			break;
 		case NGSIConstants.QUERY_NOTPATTERNOP:
 			attributeFilterProperty.append("::text !~ $");
@@ -917,7 +916,7 @@ public class QQueryTerm  implements Serializable {
 			// attributeFilterProperty.append("'");
 			dollarCount++;
 			tuple.addString(operant);
-			//addItemToTupel(tuple, operant);
+			// addItemToTupel(tuple, operant);
 			break;
 		}
 		return dollarCount;
@@ -951,25 +950,25 @@ public class QQueryTerm  implements Serializable {
 
 	private int temporalSqlWherePart(StringBuilder sql, int dollarCount, Tuple tuple, QQueryTerm current,
 			TemporalQueryTerm tempQuery) {
-		sql.append("(TEAI.ATTRIBUTEID=$");
-		sql.append(dollarCount);
-		dollarCount++;
+//		sql.append("(TEAI.ATTRIBUTEID=$");
+//		sql.append(dollarCount);
+//		dollarCount++;
 		String[] splitted = current.getAttribute().split("\\[");
 		if (splitted.length > 1) {
 			splitted[1] = splitted[1].substring(0, splitted[1].length() - 1);
 		}
 		String[] subAttribPath = splitted.length == 1 ? null : splitted[1].split("\\.");
 		String[] attribPath = splitted[0].split("\\.");
-		String attribName = linkHeaders.expandIri(attribPath[0], false, true, null, null);
-		tuple.addString(attribName);
-		if (tempQuery != null) {
-			sql.append(" AND TEAI.");
-			dollarCount = tempQuery.toSql(sql, tuple, dollarCount);
-		}
+//		String attribName = linkHeaders.expandIri(attribPath[0], false, true, null, null);
+//		tuple.addString(attribName);
+//		if (tempQuery != null) {
+//			sql.append(" AND TEAI.");
+//			dollarCount = tempQuery.toSql(sql, tuple, dollarCount);
+//		}
 		String currentSqlAttrib = "TEAI.data";
-		if (!current.getOperator().isEmpty() || attribPath.length > 1 || subAttribPath != null) {
-			sql.append(" AND ");
-		}
+//		if (!current.getOperator().isEmpty() || attribPath.length > 1 || subAttribPath != null) {
+//			sql.append(" AND ");
+//		}
 
 		return commonWherePart(attribPath, subAttribPath, currentSqlAttrib, dollarCount, tuple, sql, current);
 	}
@@ -1149,6 +1148,45 @@ public class QQueryTerm  implements Serializable {
 		}
 		sql.append("), ");
 		return new int[] { dollarCount, charCount };
+	}
+
+	public int toTempSql(StringBuilder sql, StringBuilder laterSql, Tuple tuple, int dollarCount) {
+		QQueryTerm current = this;
+		
+		while(current != null) {
+			if (firstChild != null) {
+				laterSql.append("(");
+				dollarCount = firstChild.toTempSql(sql, laterSql, tuple, dollarCount);
+				laterSql.append(")");
+			}
+			laterSql.append("$");
+			laterSql.append(dollarCount);
+			laterSql.append(" = any(attribs)");
+			tuple.addString(linkHeaders.expandIri(current.attribute, false, true, null, null));
+			if(current.hasNext()) {
+				if(current.isNextAnd()) {
+					laterSql.append(" AND ");
+				}else {
+					laterSql.append(" OR ");
+				}
+			}
+			dollarCount++;
+			if(current.getOperant() != null) {
+				sql.append(" WHEN TEAI.attributeid=$");
+				sql.append(dollarCount-1);
+				sql.append(" THEN (");
+				
+				dollarCount = temporalSqlWherePart(sql, dollarCount, tuple, current, null);	
+			}
+			
+			
+			
+			current = current.getNext();
+		}
+		
+		
+		
+		return dollarCount;
 	}
 
 }

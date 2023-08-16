@@ -66,22 +66,26 @@ public class TemporalQueryTerm implements Serializable {
 		case NGSIConstants.TIME_REL_BEFORE:
 			sql.append(" < $");
 			sql.append(dollarCount);
-			tuple.addLocalDateTime(LocalDateTime.parse(getTimeAt(), SerializationTools.informatter));
+			sql.append("::text::timestamp");
+			tuple.addString(getTimeAt());
 			dollarCount++;
 			break;
 		case NGSIConstants.TIME_REL_AFTER:
 			sql.append(" > $");
 			sql.append(dollarCount);
-			tuple.addLocalDateTime(LocalDateTime.parse(getTimeAt(), SerializationTools.informatter));
+			sql.append("::text::timestamp");
+			tuple.addString(getTimeAt());
 			dollarCount++;
 			break;
 		case NGSIConstants.TIME_REL_BETWEEN:
 			sql.append(" between $");
 			sql.append(dollarCount);
+			sql.append("::text::timestamp");
 			sql.append(" AND $");
 			sql.append((dollarCount + 1));
-			tuple.addLocalDateTime(LocalDateTime.parse(getTimeAt(), SerializationTools.informatter));
-			tuple.addLocalDateTime(LocalDateTime.parse(getEndTimeAt(), SerializationTools.informatter));
+			sql.append("::text::timestamp");
+			tuple.addString(getTimeAt());
+			tuple.addString(getEndTimeAt());
 			dollarCount += 2;
 			break;
 		}

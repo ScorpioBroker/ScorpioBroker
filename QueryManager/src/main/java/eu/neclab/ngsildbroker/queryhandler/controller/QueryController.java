@@ -2,7 +2,6 @@ package eu.neclab.ngsildbroker.queryhandler.controller;
 
 import java.io.IOException;
 import java.util.List;
-
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import jakarta.ws.rs.Consumes;
@@ -10,20 +9,17 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
-
 import org.apache.commons.lang3.RandomStringUtils;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.jaxrs.RestResponseBuilderImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.github.jsonldjava.core.JsonLDService;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.base.Objects;
 import com.google.common.net.HttpHeaders;
-
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
@@ -211,7 +207,7 @@ public class QueryController {
 			if (idsOnly) {
 				return queryService
 						.queryForEntityIds(HttpUtils.getTenant(request), ids, typeQueryTerm, idPattern, attrsQuery,
-								qQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, context)
+								qQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, context, request.headers())
 						.onItem().transform(list -> {
 							String body;
 							Object result = "[]";
@@ -237,7 +233,7 @@ public class QueryController {
 
 			return queryService.query(HttpUtils.getTenant(request), token, tokenProvided, ids, typeQueryTerm, idPattern,
 					attrsQuery, qQueryTerm, csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset,
-					count, localOnly, context).onItem().transformToUni(queryResult -> {
+					count, localOnly, context, request.headers()).onItem().transformToUni(queryResult -> {
 						if (doNotCompact) {
 							return Uni.createFrom().item(RestResponse.ok((Object) queryResult.getData()));
 						}

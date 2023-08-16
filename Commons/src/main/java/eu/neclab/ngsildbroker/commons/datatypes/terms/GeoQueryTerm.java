@@ -259,6 +259,66 @@ public class GeoQueryTerm implements Serializable {
 		return dollar;
 	}
 
+	public int toTempSql(StringBuilder query, Tuple tuple, int dollar) throws ResponseException{
+		String dbColumn;
+		if (!geoproperty.equals(NGSIConstants.NGSI_LD_LOCATION)) {
+//			query.append("data @> '{\"");
+//			query.append(geoproperty);
+//			query.append("\": [{\"");
+//			query.append(NGSIConstants.JSON_LD_TYPE);
+//			query.append("\":[\"");
+//			query.append(NGSIConstants.NGSI_LD_GEOPROPERTY);
+//			query.append("\"]}]}' AND ");
+//			dbColumn = "ST_SetSRID(ST_GeomFromGeoJSON( getGeoJson( " + "data#>'{" + geoproperty + ",0,"
+//					+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0}') ), 4326)";
+			throw new ResponseException(ErrorType.InvalidRequest, "Unfortunatley the temporal api can only support geoqueries on the location field");
+		} else {
+			dbColumn = "location";
+		}
+
+		String referenceValue = "ST_SetSRID(ST_GeomFromGeoJSON('{\"type\": \"" + geometry + "\", \"coordinates\": "
+				+ coordinates + " }'), 4326)";
+		String sqlPostgisFunction = DBConstants.NGSILD_TO_POSTGIS_GEO_OPERATORS_MAPPING.get(georel);
+		switch (georel) {
+		case NGSIConstants.GEO_REL_NEAR:
+			if (distanceType.equals(NGSIConstants.GEO_REL_MIN_DISTANCE)) {
+				query.append("NOT ");
+			}
+			query.append(sqlPostgisFunction);
+			query.append("( ");
+			query.append(dbColumn);
+			query.append("::geography, ");
+			query.append(referenceValue);
+			query.append("::geography, ");
+			query.append(distanceValue);
+			query.append(") ");
+//			query.append("or ");
+//			query.append(sqlPostgisFunction);
+//			query.append("( ");
+//			query.append(dbColumn);
+//			query.append(", ");
+//			query.append(referenceValue);
+//			query.append(", ");
+//			query.append(distanceValue);
+//			query.append(") ");
+			break;
+		case NGSIConstants.GEO_REL_WITHIN:
+		case NGSIConstants.GEO_REL_CONTAINS:
+		case NGSIConstants.GEO_REL_OVERLAPS:
+		case NGSIConstants.GEO_REL_INTERSECTS:
+		case NGSIConstants.GEO_REL_EQUALS:
+		case NGSIConstants.GEO_REL_DISJOINT:
+			query.append(sqlPostgisFunction);
+			query.append("( ");
+			query.append(dbColumn);
+			query.append(", ");
+			query.append(referenceValue);
+			query.append(") ");
+			break;
+		}
+		return dollar;
+	}
+
 	public int toTempSql(StringBuilder query, Tuple tuple, int dollar, TemporalQueryTerm tempQuery) {
 		String dbColumn = "geovalue";
 		query.append("attributeid = $");

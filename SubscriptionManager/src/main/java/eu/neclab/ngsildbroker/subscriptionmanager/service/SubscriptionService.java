@@ -890,14 +890,23 @@ public class SubscriptionService {
 			propertyMap.put(NGSIConstants.VALUE,
 					((List<Map<String, Object>>) newValue).get(0).get(NGSIConstants.NGSI_LD_HAS_VALUE));
 		}
+		if (((List<Map<String, Object>>) newValue).get(0).containsKey(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP)) {
+			propertyMap.put(NGSIConstants.LANGUAGE_MAP,
+					((List<Map<String, Object>>) newValue).get(0).get(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP));
+		}
 		if (((List<Map<String, Object>>) newValue).get(0).containsKey(NGSIConstants.NGSI_LD_HAS_OBJECT)) {
 			propertyMap.put(NGSIConstants.OBJECT,
 					((List<Map<String, Object>>) newValue).get(0).get(NGSIConstants.NGSI_LD_HAS_OBJECT));
 		}
+
 		if (oldValue != null) {
 			if (((List<Map<String, Object>>) oldValue).get(0).containsKey(NGSIConstants.NGSI_LD_HAS_VALUE)) {
 				propertyMap.put(NGSIConstants.PREVIOUS_VALUE,
 						((List<Map<String, Object>>) oldValue).get(0).get(NGSIConstants.NGSI_LD_HAS_VALUE));
+			}
+			if (((List<Map<String, Object>>) oldValue).get(0).containsKey(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP)) {
+				propertyMap.put(NGSIConstants.PREVIOUS_LANGUAGE_MAP,
+						((List<Map<String, Object>>) oldValue).get(0).get(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP));
 			}
 			if (((List<Map<String, Object>>) oldValue).get(0).containsKey(NGSIConstants.NGSI_LD_HAS_OBJECT)) {
 				propertyMap.put(NGSIConstants.PREVIOUS_OBJECT,
