@@ -16,7 +16,6 @@ import com.google.common.collect.Sets;
 import java.util.Set;
 import java.util.UUID;
 
-import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.BaseProperty;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoProperty;

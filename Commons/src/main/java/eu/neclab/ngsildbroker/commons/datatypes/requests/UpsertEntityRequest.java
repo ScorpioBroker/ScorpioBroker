@@ -8,6 +8,11 @@ import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 public class UpsertEntityRequest extends EntityRequest {
 
 	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -3200833211917228827L;
+
+	/**
 	 * constructor for serialization
 	 */
 	public UpsertEntityRequest() {

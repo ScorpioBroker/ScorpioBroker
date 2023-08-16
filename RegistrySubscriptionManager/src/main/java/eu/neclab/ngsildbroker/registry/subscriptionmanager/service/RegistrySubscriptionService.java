@@ -551,8 +551,8 @@ public class RegistrySubscriptionService {
 				return false;
 			}
 		}
-		if (sub.getCsf() != null) {
-			if (!sub.getCsf().calculate(EntityTools.getBaseProperties(reg))) {
+		if (sub.getCsfQuery() != null) {
+			if (!sub.getCsfQuery().calculate(EntityTools.getBaseProperties(reg))) {
 				return false;
 			}
 		}

@@ -13,6 +13,10 @@ import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 
 public class BatchRequest extends BaseRequest {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -3640664052782539124L;
 	private String tenant;
 	private List<Map<String, Object>> requestPayload;
 	private List<Context> contexts;
@@ -35,6 +39,10 @@ public class BatchRequest extends BaseRequest {
 		}
 	}
 
+	BatchRequest() {
+		// Serialize
+	}
+
 	public int getRequestType() {
 		return requestType;
 	}
@@ -42,7 +50,10 @@ public class BatchRequest extends BaseRequest {
 	public List<String> getEntityIds() {
 		return entityIds;
 	}
-	public String getId(){return String.join(",",entityIds);}
+
+	public String getId() {
+		return String.join(",", entityIds);
+	}
 
 	public void setEntityIds(List<String> entityIds) {
 		this.entityIds = entityIds;
@@ -60,14 +71,15 @@ public class BatchRequest extends BaseRequest {
 		return requestPayload;
 	}
 
-	public Map<String,Object> getPayload(){
-		if(requestPayload == null || requestPayload.isEmpty()){
+	public Map<String, Object> getPayload() {
+		if (requestPayload == null || requestPayload.isEmpty()) {
 			return null;
 		}
-		Map<String,Object> payload = new HashMap<>();
-		payload.put(JsonLdConsts.GRAPH,requestPayload);
+		Map<String, Object> payload = new HashMap<>();
+		payload.put(JsonLdConsts.GRAPH, requestPayload);
 		return payload;
 	}
+
 	public List<Context> getContexts() {
 		return contexts;
 	}
