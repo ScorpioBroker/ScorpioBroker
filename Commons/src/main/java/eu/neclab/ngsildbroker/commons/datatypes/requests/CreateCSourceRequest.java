@@ -11,7 +11,7 @@ public class CreateCSourceRequest extends CSourceRequest {
 	public CreateCSourceRequest(String tenant, Map<String, Object> resolved) {
 		super(tenant, (String) resolved.get(NGSIConstants.JSON_LD_ID), resolved,
 				AppConstants.CREATE_REQUEST);
-		EntityTools.addSysAttrs(getPayload(), getSendTimestamp(),getRequestType());
+		EntityTools.addSysAttrs(getPayload(), getSendTimestamp());
 	}
 
 }

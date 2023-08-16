@@ -4,6 +4,7 @@ DECLARE
   merged_json JSONB;
   key TEXT;
   value JSONB;
+  value2 JSONB;
   previous_entity JSONB;
 BEGIN
   merged_json := (Select entity from entity where id =a);
@@ -19,7 +20,14 @@ BEGIN
     ELSIF merged_json ? key THEN
           -- Update the value
 		  raise notice '%', 'update';
-         merged_json := jsonb_set(merged_json, ARRAY[key], value, true);
+         value2 := (value->0)::jsonb ;
+         IF jsonb_typeof(value2) = 'object' THEN
+         	value2 :=value2 - 'https://uri.etsi.org/ngsi-ld/createdAt';
+         end if;
+         merged_json :=  jsonb_set(merged_json, ARRAY[key], jsonb_build_array(value2), true);
+         IF previous_entity->key->0 ? 'https://uri.etsi.org/ngsi-ld/createdAt' then
+      		 merged_json := jsonb_set(merged_json, ARRAY[key,'0','https://uri.etsi.org/ngsi-ld/createdAt'], (previous_entity->key->0->'https://uri.etsi.org/ngsi-ld/createdAt'), true);
+      	 end if;
       ELSE
         -- Add the key-value pair
 		raise notice '%', 'add';

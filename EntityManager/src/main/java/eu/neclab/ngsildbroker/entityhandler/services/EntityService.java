@@ -815,7 +815,7 @@ public class EntityService {
 			if (originalScopes != null) {
 				toStore.put(NGSIConstants.NGSI_LD_SCOPE, originalScopes);
 			}
-			EntityTools.addSysAttrs(toStore, request.getSendTimestamp(), request.getRequestType());
+			EntityTools.addSysAttrs(toStore, request.getSendTimestamp());
 		}
 		return Tuple2.of(toStore, cId2RemoteHostEntity.values());
 	}
