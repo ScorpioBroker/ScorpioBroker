@@ -48,6 +48,7 @@ import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowIterator;
 import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
+import io.vertx.pgclient.PgException;
 
 @Singleton
 public class QueryDAO {
@@ -814,6 +815,11 @@ public class QueryDAO {
 				});
 				return Tuple2.of(entities, entityIds);
 			});
+		}).onFailure().recoverWithUni(e -> {
+			if (e instanceof PgException pge) {
+				logger.debug(pge.getPosition());
+			}
+			return Uni.createFrom().failure(e);
 		});
 	}
 

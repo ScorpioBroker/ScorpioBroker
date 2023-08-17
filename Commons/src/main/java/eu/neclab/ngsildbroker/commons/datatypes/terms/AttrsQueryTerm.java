@@ -51,29 +51,41 @@ public class AttrsQueryTerm implements Serializable {
 	}
 
 	public int toSqlConstructEntity(StringBuilder query, Tuple tuple, int dollar) {
-		List<String> attrsList = Lists.newArrayList(getAttrs());
-		attrsList.add(NGSIConstants.JSON_LD_ID);
-		attrsList.add(NGSIConstants.JSON_LD_TYPE);
-		attrsList.add(NGSIConstants.NGSI_LD_CREATED_AT);
-		attrsList.add(NGSIConstants.NGSI_LD_MODIFIED_AT);
-		for (String attrs : attrsList) {
-			query.append("JSONB_BUILD_OBJECT($");
+		
+		query.append("JSONB_BUILD_OBJECT('");
+		query.append(NGSIConstants.JSON_LD_ID);
+		query.append("', ENTITY -> '");
+		query.append(NGSIConstants.JSON_LD_ID);
+		query.append("', '");
+		query.append(NGSIConstants.JSON_LD_TYPE);
+		query.append("', ENTITY -> '");
+		query.append(NGSIConstants.JSON_LD_TYPE);
+		query.append("', '");
+		query.append(NGSIConstants.NGSI_LD_CREATED_AT);
+		query.append("', ENTITY -> '");
+		query.append(NGSIConstants.NGSI_LD_CREATED_AT);
+		query.append("', '");
+		query.append(NGSIConstants.NGSI_LD_MODIFIED_AT);
+		query.append("', ENTITY -> '");
+		query.append(NGSIConstants.NGSI_LD_MODIFIED_AT);
+		query.append("'");
+		
+		for (String attrs : getAttrs()) {
+			query.append(",$");
 			query.append(dollar);
 			query.append(", ENTITY->$");
 			query.append(dollar);
-			query.append(") ||");
 			tuple.addString(attrs);
 			dollar++;
 		}
-		query.append("CASE WHEN ENTITY-> $");
-		query.append(dollar);
-		query.append(" IS NOT NULL THEN JSONB_BUILD_OBJECT( $");
-		query.append(dollar);
-		query.append(" , ENTITY-> $");
-		query.append(dollar);
-		query.append(" ) ELSE '{}'::jsonb END");
-		tuple.addString(NGSIConstants.NGSI_LD_SCOPE);
-		dollar++;
+		query.append(") || ");
+		query.append("CASE WHEN ENTITY-> '");
+		query.append(NGSIConstants.NGSI_LD_SCOPE);
+		query.append("' IS NOT NULL THEN JSONB_BUILD_OBJECT('");
+		query.append(NGSIConstants.NGSI_LD_SCOPE);
+		query.append("' , ENTITY-> '");
+		query.append(NGSIConstants.NGSI_LD_SCOPE);
+		query.append("' ) ELSE '{}'::jsonb END");
 		return dollar;
 	}
 

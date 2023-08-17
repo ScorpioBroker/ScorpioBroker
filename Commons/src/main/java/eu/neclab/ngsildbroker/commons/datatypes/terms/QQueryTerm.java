@@ -930,8 +930,10 @@ public class QQueryTerm implements Serializable {
 			if (listItem.toLowerCase().equals("true") || listItem.toLowerCase().equals("false")) {
 				tuple.addBoolean(Boolean.parseBoolean(listItem));
 			} else {
-				if (listItem.charAt(0) == '"' && listItem.charAt(listItem.length() - 1) == '"') {
-					listItem = listItem.substring(1, listItem.length() - 1);
+				if (!listItem.matches(DATETIME)) {
+					if (listItem.charAt(0) != '"' || listItem.charAt(listItem.length() - 1) != '"') {
+						listItem = '"' + listItem + '"';
+					}
 				}
 				tuple.addString(listItem);
 			}
@@ -1152,8 +1154,8 @@ public class QQueryTerm implements Serializable {
 
 	public int toTempSql(StringBuilder sql, StringBuilder laterSql, Tuple tuple, int dollarCount) {
 		QQueryTerm current = this;
-		
-		while(current != null) {
+
+		while (current != null) {
 			if (firstChild != null) {
 				laterSql.append("(");
 				dollarCount = firstChild.toTempSql(sql, laterSql, tuple, dollarCount);
@@ -1163,29 +1165,25 @@ public class QQueryTerm implements Serializable {
 			laterSql.append(dollarCount);
 			laterSql.append(" = any(attribs)");
 			tuple.addString(linkHeaders.expandIri(current.attribute, false, true, null, null));
-			if(current.hasNext()) {
-				if(current.isNextAnd()) {
+			if (current.hasNext()) {
+				if (current.isNextAnd()) {
 					laterSql.append(" AND ");
-				}else {
+				} else {
 					laterSql.append(" OR ");
 				}
 			}
 			dollarCount++;
-			if(current.getOperant() != null) {
+			if (current.getOperant() != null) {
 				sql.append(" WHEN TEAI.attributeid=$");
-				sql.append(dollarCount-1);
+				sql.append(dollarCount - 1);
 				sql.append(" THEN (");
-				
-				dollarCount = temporalSqlWherePart(sql, dollarCount, tuple, current, null);	
+
+				dollarCount = temporalSqlWherePart(sql, dollarCount, tuple, current, null);
 			}
-			
-			
-			
+
 			current = current.getNext();
 		}
-		
-		
-		
+
 		return dollarCount;
 	}
 

@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "bf4b6211-f232-48e4-9e40-0bdf161e3698",
+		"_postman_id": "d3b8a692-7792-481e-bdc1-a7317ec4e0ad",
 		"name": "API Test",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
@@ -10706,6 +10706,71 @@
 																{
 																	"key": "attrs",
 																	"value": "stringproperty"
+																}
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Query for entity type tbf and q",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 200\", function () {\r",
+																	"    pm.response.to.have.status(200);\r",
+																	"});\r",
+																	"\r",
+																	"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
+																	"    var jsonData = pm.response.json();\r",
+																	"    pm.expect(jsonData.length).to.eql(1);\r",
+																	"    var entity = jsonData[0];\r",
+																	"    var keys = Object.keys(entity);\r",
+																	"    pm.expect(keys.length).to.eql(3);\r",
+																	"    pm.expect(keys).to.contain(\"id\");\r",
+																	"    pm.expect(keys).to.contain(\"type\");\r",
+																	"    pm.expect(keys).to.contain(\"stringproperty\");\r",
+																	"    pm.expect(keys).to.not.contain(\"intproperty\");\r",
+																	"    \r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default"
+															}
+														],
+														"url": {
+															"raw": "{{query-manager}}/ngsi-ld/v1/entities?type={{entityTypeTBF}}&attrs=stringproperty&q=stringproperty==teststring",
+															"host": [
+																"{{query-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities"
+															],
+															"query": [
+																{
+																	"key": "type",
+																	"value": "{{entityTypeTBF}}"
+																},
+																{
+																	"key": "attrs",
+																	"value": "stringproperty"
+																},
+																{
+																	"key": "q",
+																	"value": "stringproperty==teststring"
 																}
 															]
 														}
@@ -46619,6 +46684,26 @@
 		},
 		{
 			"key": "cSourceId",
+			"value": ""
+		},
+		{
+			"key": "createdTBF",
+			"value": ""
+		},
+		{
+			"key": "entityIdTBF",
+			"value": ""
+		},
+		{
+			"key": "entityTypeTBF",
+			"value": ""
+		},
+		{
+			"key": "createdTBNF",
+			"value": ""
+		},
+		{
+			"key": "entityIdTBNF",
 			"value": ""
 		}
 	]
