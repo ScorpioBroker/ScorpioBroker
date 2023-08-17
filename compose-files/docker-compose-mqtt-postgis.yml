@@ -1,0 +1,21 @@
+version: '3'
+
+services:
+  testserver:
+    image: testserver
+    ports:
+     - "8080:8080"
+  emqx:
+    image: emqx
+    ports:
+     - "1883:1883"
+  postgres:
+    image: postgis/postgis
+    ports:
+      - "5432"
+    environment:
+      POSTGRES_USER: ngb
+      POSTGRES_PASSWORD: ngb
+      POSTGRES_DB: ngb
+    depends_on:
+      - emqx
