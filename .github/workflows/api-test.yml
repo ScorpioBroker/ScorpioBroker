@@ -1,6 +1,60 @@
 name: API test against Java version
 on: [push,pull_request]
 jobs:
+  build-java-mqtt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2     
+      - name: Set up JDK 1.17
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.17
+      - name: Build testserver
+        run: |
+          cd testserver
+          docker build -t testserver .
+      - name: Get release number
+        id: get-id
+        run: |
+          id=$(echo ${{github.ref_name}} | cut -d/ -f2)
+          echo "::set-output name=id::$id"
+      - name: start mqtt & postgis for unit tests
+        run: |
+          docker-compose -f ./compose-files/docker-compose-mqtt-postgis.yml up &
+          sleep 30
+      - name: build-java-with-mqtt
+        run: |
+          mvn clean package -DskipTests -Pmqtt -Dmqtt -Ddocker -Ddocker-tag=java-mqtt-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=mqtt
+      - name: stop mqtt & postgis for unit tests
+        run: |
+          docker-compose -f ./compose-files/docker-compose-mqtt-postgis.yml down
+      - name: docker tag 
+        run: |
+          docker tag scorpiobroker/at-context-server:java-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/at-context-server:java-mqtt-latest
+          docker tag scorpiobroker/history-entity-manager:java-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/history-entity-manager:java-mqtt-latest
+          docker tag scorpiobroker/history-query-manager:java-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/history-query-manager:java-mqtt-latest
+          docker tag scorpiobroker/registry-subscription-manager:java-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/registry-subscription-manager:java-mqtt-latest
+          docker tag scorpiobroker/registry-manager:java-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/registry-manager:java-mqtt-latest
+          docker tag scorpiobroker/subscription-manager:java-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/subscription-manager:java-mqtt-latest
+          docker tag scorpiobroker/query-manager:java-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/query-manager:java-mqtt-latest
+          docker tag scorpiobroker/entity-manager:java-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/entity-manager:java-mqtt-latest
+          docker tag scorpiobroker/all-in-one-runner:java-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:java-mqtt-latest
+      - name: start docker aaio 
+        run: |
+          docker-compose -f ./compose-files/docker-compose-java-aaio-mqtt-test.yml up > dockerout.log &
+          sleep 120
+      - name: newman action
+        uses: matt-ball/newman-action@master
+        with:
+          collection: api-test.json
+          environment: api-test-aaio-environment.json
+      - name: Stopping Scorpio
+        if: always()
+        run: docker-compose -f ./compose-files/docker-compose-java-aaio-mqtt-test.yml down
+      - name: print log
+        if: always()
+        run: |
+          cat dockerout.log
   build-java-kafka:
     runs-on: ubuntu-latest
     steps:
