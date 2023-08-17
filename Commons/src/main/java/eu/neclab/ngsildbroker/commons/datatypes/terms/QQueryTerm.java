@@ -842,65 +842,70 @@ public class QQueryTerm implements Serializable {
 				for (String listItem : operant.split(",")) {
 					attributeFilterProperty.append("$");
 					attributeFilterProperty.append(dollarCount);
+					dollarCount++;
+					addItemToTupel(tuple, listItem, attributeFilterProperty);
 					attributeFilterProperty.append("::");
 					attributeFilterProperty.append(typecast);
 					attributeFilterProperty.append(',');
-					dollarCount++;
-					addItemToTupel(tuple, listItem);
+
 				}
 				attributeFilterProperty.setCharAt(attributeFilterProperty.length() - 1, ')');
 			} else if (operant.matches(RANGE)) {
 				String[] myRange = operant.split("\\.\\.");
 				attributeFilterProperty.append(" between $");
 				attributeFilterProperty.append(dollarCount);
+				addItemToTupel(tuple, myRange[0], attributeFilterProperty);
 				attributeFilterProperty.append("::");
 				attributeFilterProperty.append(typecast);
 				attributeFilterProperty.append(" and $");
 				attributeFilterProperty.append(dollarCount + 1);
+				addItemToTupel(tuple, myRange[1], attributeFilterProperty);
 				attributeFilterProperty.append("::" + typecast);
 				dollarCount += 2;
-				addItemToTupel(tuple, myRange[0]);
-				addItemToTupel(tuple, myRange[1]);
+
 			} else {
 				attributeFilterProperty.append(" = $");
 				attributeFilterProperty.append(dollarCount);
-				attributeFilterProperty.append("::" + typecast);
 				dollarCount++;
-				addItemToTupel(tuple, operant);
+				addItemToTupel(tuple, operant, attributeFilterProperty);
+				attributeFilterProperty.append("::" + typecast);
+
 			}
 
 			break;
 		case NGSIConstants.QUERY_GREATEREQ:
 			attributeFilterProperty.append(" >= $");
 			attributeFilterProperty.append(dollarCount);
+			dollarCount++;
+			addItemToTupel(tuple, operant, attributeFilterProperty);
 			attributeFilterProperty.append("::");
 			attributeFilterProperty.append(typecast);
-			dollarCount++;
-			addItemToTupel(tuple, operant);
+
 			break;
 		case NGSIConstants.QUERY_LESSEQ:
 			attributeFilterProperty.append(" <= $");
 			attributeFilterProperty.append(dollarCount);
+			dollarCount++;
+			addItemToTupel(tuple, operant, attributeFilterProperty);
 			attributeFilterProperty.append("::");
 			attributeFilterProperty.append(typecast);
-			dollarCount++;
-			addItemToTupel(tuple, operant);
+
 			break;
 		case NGSIConstants.QUERY_GREATER:
 			attributeFilterProperty.append(" > $");
 			attributeFilterProperty.append(dollarCount);
+			dollarCount++;
+			addItemToTupel(tuple, operant, attributeFilterProperty);
 			attributeFilterProperty.append("::");
 			attributeFilterProperty.append(typecast);
-			dollarCount++;
-			addItemToTupel(tuple, operant);
 			break;
 		case NGSIConstants.QUERY_LESS:
 			attributeFilterProperty.append(" < $");
 			attributeFilterProperty.append(dollarCount);
+			dollarCount++;
+			addItemToTupel(tuple, operant, attributeFilterProperty);
 			attributeFilterProperty.append("::");
 			attributeFilterProperty.append(typecast);
-			dollarCount++;
-			addItemToTupel(tuple, operant);
 			break;
 		case NGSIConstants.QUERY_PATTERNOP:
 			attributeFilterProperty.append("::text ~ $");
@@ -922,7 +927,7 @@ public class QQueryTerm implements Serializable {
 		return dollarCount;
 	}
 
-	private void addItemToTupel(Tuple tuple, String listItem) {
+	private void addItemToTupel(Tuple tuple, String listItem, StringBuilder sql) {
 		try {
 			double tmp = Double.parseDouble(listItem);
 			tuple.addDouble(tmp);
@@ -934,7 +939,9 @@ public class QQueryTerm implements Serializable {
 					if (listItem.charAt(0) != '"' || listItem.charAt(listItem.length() - 1) != '"') {
 						listItem = '"' + listItem + '"';
 					}
+					sql.append("::text");
 				}
+
 				tuple.addString(listItem);
 			}
 		}
