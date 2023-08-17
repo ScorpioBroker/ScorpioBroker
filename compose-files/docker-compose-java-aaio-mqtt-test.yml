@@ -20,7 +20,7 @@ services:
     depends_on:
       - emqx
   scorpio:
-    image: scorpiobroker/all-in-one-runner:java-kafka-latest
+    image: scorpiobroker/all-in-one-runner:java-mqtt-latest
     ports:
       - "9090:9090"
     environment:
