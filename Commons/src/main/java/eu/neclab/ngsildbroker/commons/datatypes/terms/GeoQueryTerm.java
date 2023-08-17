@@ -442,6 +442,7 @@ public class GeoQueryTerm implements Serializable {
 		return queryShape;
 	}
 
+	@JsonIgnore
 	public void toRequestString(StringBuilder result, Shape geo, String georel) {
 		result.append("geoproperty=");
 		result.append(geoproperty);
