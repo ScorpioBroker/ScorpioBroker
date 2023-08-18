@@ -91,17 +91,17 @@ public class QueryController {
 		headerContext = HttpUtils.getAtContext(request);
 		logger.debug("retrieve called: " + request.path());
 		return HttpUtils.getContext(headerContext, ldService).onItem().transformToUni(context -> {
-			AttrsQueryTerm attrsQuery;
+//			AttrsQueryTerm attrsQuery;
 			LanguageQueryTerm langQuery;
 			try {
 				HttpUtils.validateUri(entityId);
-				attrsQuery = QueryParser.parseAttrs(attrs, context);
+//				attrsQuery = QueryParser.parseAttrs(attrs, context);
 				langQuery = QueryParser.parseLangQuery(lang);
 			} catch (Exception e) {
 				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 			}
 			return queryService
-					.retrieveEntity(context, HttpUtils.getTenant(request), entityId, attrsQuery, langQuery,
+					.retrieveEntity(context, HttpUtils.getTenant(request), entityId, attrs, langQuery,
 							localOnly,containedBy,join,idsOnly,joinLevel)
 					.onItem().transformToUni(entity -> {
 						if (doNotCompact) {

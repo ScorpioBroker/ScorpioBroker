@@ -4,9 +4,12 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.PrimitiveIterator.OfInt;
 import java.util.Set;
+import java.util.Stack;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
@@ -203,7 +206,7 @@ public class QueryParser {
 	}
 
 	public static AttrsQueryTerm parseAttrs(String attrs, Context context) throws ResponseException {
-		if (attrs == null) {
+		if (attrs == null || attrs.isEmpty()) {
 			return null;
 		}
 		AttrsQueryTerm result = new AttrsQueryTerm(context);
@@ -456,6 +459,41 @@ public class QueryParser {
 		}
 		result.sort();
 		return result;
+	}
+
+	public static Map<String, Object> parseInput(String input) {
+		if(input==null || input.isEmpty()){
+			return new HashMap<>();
+		}
+		Stack<Map<String, Object>> stack = new Stack<>();
+		Map<String, Object> resultMap = new HashMap<>();
+		stack.push(resultMap);
+
+		StringBuilder keyBuilder = new StringBuilder();
+		for (char c : input.toCharArray()) {
+			if (c == '{') {
+				String key = keyBuilder.toString();
+				Map<String, Object> childMap = new HashMap<>();
+				stack.peek().put(key, childMap);
+				stack.push(childMap);
+				keyBuilder.setLength(0);
+			} else if (c == '}') {
+				if (keyBuilder.length() > 0) {
+					stack.peek().put(keyBuilder.toString(), null);
+					keyBuilder.setLength(0);
+				}
+				stack.pop();
+			} else if (c == ',') {
+				if (keyBuilder.length() > 0) {
+					stack.peek().put(keyBuilder.toString(), null);
+					keyBuilder.setLength(0);
+				}
+			} else {
+				keyBuilder.append(c);
+			}
+		}
+
+		return resultMap;
 	}
 
 }

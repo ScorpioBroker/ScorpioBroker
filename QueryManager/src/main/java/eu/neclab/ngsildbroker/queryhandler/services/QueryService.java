@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.github.jsonldjava.core.JsonLdConsts;
+import eu.neclab.ngsildbroker.commons.tools.QueryParser;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
@@ -943,20 +944,27 @@ public class QueryService {
 	}
 
 	public Uni<Map<String, Object>> retrieveEntity(Context context, String tenant, String entityId,
-												   AttrsQueryTerm attrsQuery, LanguageQueryTerm lang, boolean localOnly, String containedBy, String join,
+												   String attrs, LanguageQueryTerm lang, boolean localOnly, String containedBy, String join,
 												   boolean idsOnly, int joinLevel) {
+		Map<String,Object> attrsMap = QueryParser.parseInput(attrs);
+		AttrsQueryTerm attrsQuery;
+		try {
+			attrsQuery = QueryParser.parseAttrs(attrs, context);
+		} catch (ResponseException e) {
+			throw new RuntimeException(e);
+		}
 		Uni<Map<String, Object>> local;
 		if(idsOnly){
 			//TODO
-			local = idsOnly(getEntityFlat(tenant, entityId, attrsQuery, containedBy,  joinLevel, null));
+			local = idsOnly(getEntityFlat(tenant, entityId, attrsMap, containedBy,  joinLevel, null, context));
 		}
 		else if (join==null) {
 			local = queryDAO.getEntity(entityId, tenant, attrsQuery);
 		}
 		else if (join.equals("flat")) {
-			local = getEntityFlat(tenant, entityId, attrsQuery, containedBy,  joinLevel, null);
+			local = getEntityFlat(tenant, entityId, attrsMap, containedBy,  joinLevel, null,context);
 		} else if (join.equals("inline")) {
-			local = getEntityInline(tenant, entityId, attrsQuery, containedBy,  joinLevel);
+			local = getEntityInline(tenant, entityId, attrsMap, containedBy,  joinLevel,context);
 		} else {
 			return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData));
 		}
@@ -1340,12 +1348,20 @@ public class QueryService {
 	}
 
 	public Uni<Map<String, Object>> getEntityFlat(String tenant, String entityId,
-												  AttrsQueryTerm attrsQuery, String containedBy,
-												  int joinLevel, List<Map<String, Object>> relResult) {
+												  Map<String,Object> attrsMap, String containedBy,
+												  int joinLevel, List<Map<String, Object>> relResult, Context context) {
 		if (relResult == null) {
 			relResult = new ArrayList<>();
 		}
 		List<Map<String, Object>> finalRelResult = relResult;
+		AttrsQueryTerm attrsQuery = null;
+		if(attrsMap != null && !attrsMap.isEmpty()){
+			try {
+				attrsQuery = QueryParser.parseAttrs(String.join(",", attrsMap.keySet()), context);
+			} catch (ResponseException e) {
+				throw new RuntimeException(e);
+			}
+		}
 		AtomicInteger joinLvl = new AtomicInteger(joinLevel);
 		return queryDAO.getEntity(entityId, tenant, attrsQuery)
 				.onItem().transformToUni(ent -> {
@@ -1360,8 +1376,14 @@ public class QueryService {
 								&& attrib.get(0) instanceof Map<?, ?>
 								&& ((Map<String, Object>) attrib.get(0)).containsKey(NGSIConstants.NGSI_LD_OBJECT_TYPE)
 								&& (!containedBy.contains((String) ent.get(JsonLdConsts.ID)))) {
+							Map<String,Object> finalAttrs=new HashMap<>();
+                           if(attrsMap!=null && !attrsMap.isEmpty()){
+							   String toRemove = attrsMap.keySet().iterator().next();
+							   finalAttrs = (Map<String, Object>) attrsMap.getOrDefault(toRemove,new HashMap<>());
+							   attrsMap.remove(toRemove);
+						   }
 							unisOfMaps.add(getEntityFlat(tenant, (String) ((Map<String, List<Map<String, Object>>>) attrib.get(0)).get(NGSIConstants.NGSI_LD_HAS_OBJECT).get(0).get(JsonLdConsts.ID),
-									attrsQuery, containedBy + ent.get(JsonLdConsts.ID), joinLvl.get(), finalRelResult));
+                                    finalAttrs, containedBy + ent.get(JsonLdConsts.ID), joinLvl.get(), finalRelResult, context));
 
 						}
 					}
@@ -1376,8 +1398,16 @@ public class QueryService {
 	}
 
 	public Uni<Map<String, Object>> getEntityInline(String tenant, String entityId,
-													AttrsQueryTerm attrsQuery, String containedBy,
-													int joinLevel) {
+													Map<String,Object> attrsMap, String containedBy,
+													int joinLevel, Context context) {
+		AttrsQueryTerm attrsQuery = null;
+		if(attrsMap != null && !attrsMap.isEmpty()){
+			try {
+				attrsQuery = QueryParser.parseAttrs(String.join(",", attrsMap.keySet()), context);
+			} catch (ResponseException e) {
+				throw new RuntimeException(e);
+			}
+		}
 		AtomicInteger joinLvl = new AtomicInteger(joinLevel);
 		return queryDAO.getEntity(entityId, tenant, attrsQuery)
 				.onItem().transformToUni(ent -> {
@@ -1391,8 +1421,14 @@ public class QueryService {
 								&& attrib.get(0) instanceof Map<?, ?>
 								&& ((Map<String, Object>) attrib.get(0)).containsKey(NGSIConstants.NGSI_LD_OBJECT_TYPE)
 								&& (!containedBy.contains((String) ent.get(JsonLdConsts.ID)))) {
+							Map<String,Object> finalAttrsMap=new HashMap<>();
+							if(attrsMap!=null && !attrsMap.isEmpty()){
+								String toRemove = attrsMap.keySet().iterator().next();
+								finalAttrsMap = (Map<String, Object>) attrsMap.getOrDefault(toRemove,new HashMap<>());
+								attrsMap.remove(toRemove);
+							}
 							unisOfMaps.add(getEntityInline(tenant, (String) ((Map<String, List<Map<String, Object>>>) attrib.get(0)).get(NGSIConstants.NGSI_LD_HAS_OBJECT).get(0).get(JsonLdConsts.ID),
-									attrsQuery, containedBy + ent.get(JsonLdConsts.ID), joinLvl.get()).onItem().transform(map->{
+									finalAttrsMap, containedBy + ent.get(JsonLdConsts.ID), joinLvl.get(), context).onItem().transform(map->{
 								((List<Map<String,Object>>)ent.get(key)).get(0).put("entity",map);
 								return ent;
 							}));
