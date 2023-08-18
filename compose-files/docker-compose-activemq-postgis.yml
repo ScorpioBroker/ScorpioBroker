@@ -18,4 +18,4 @@ services:
       POSTGRES_PASSWORD: ngb
       POSTGRES_DB: ngb
     depends_on:
-      - emqx
+      - activemq
