@@ -55,6 +55,114 @@ jobs:
         if: always()
         run: |
           cat dockerout.log
+  build-java-activemq:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2     
+      - name: Set up JDK 1.17
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.17
+      - name: Build testserver
+        run: |
+          cd testserver
+          docker build -t testserver .
+      - name: Get release number
+        id: get-id
+        run: |
+          id=$(echo ${{github.ref_name}} | cut -d/ -f2)
+          echo "::set-output name=id::$id"
+      - name: start activemq & postgis for unit tests
+        run: |
+          docker-compose -f ./compose-files/docker-compose-activemq-postgis.yml up &
+          sleep 30
+      - name: build-java-with-activemq
+        run: |
+          mvn clean package -DskipTests -Pactivemq -Dactivemq -Ddocker -Ddocker-tag=java-activemq-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=activemq
+      - name: stop activemq & postgis for unit tests
+        run: |
+          docker-compose -f ./compose-files/docker-compose-activemq-postgis.yml down
+      - name: docker tag 
+        run: |
+          docker tag scorpiobroker/at-context-server:java-activemq-${{steps.get-id.outputs.id}} scorpiobroker/at-context-server:java-activemq-latest
+          docker tag scorpiobroker/history-entity-manager:java-activemq-${{steps.get-id.outputs.id}} scorpiobroker/history-entity-manager:java-activemq-latest
+          docker tag scorpiobroker/history-query-manager:java-activemq-${{steps.get-id.outputs.id}} scorpiobroker/history-query-manager:java-activemq-latest
+          docker tag scorpiobroker/registry-subscription-manager:java-activemq-${{steps.get-id.outputs.id}} scorpiobroker/registry-subscription-manager:java-activemq-latest
+          docker tag scorpiobroker/registry-manager:java-activemq-${{steps.get-id.outputs.id}} scorpiobroker/registry-manager:java-activemq-latest
+          docker tag scorpiobroker/subscription-manager:java-activemq-${{steps.get-id.outputs.id}} scorpiobroker/subscription-manager:java-activemq-latest
+          docker tag scorpiobroker/query-manager:java-activemq-${{steps.get-id.outputs.id}} scorpiobroker/query-manager:java-activemq-latest
+          docker tag scorpiobroker/entity-manager:java-activemq-${{steps.get-id.outputs.id}} scorpiobroker/entity-manager:java-activemq-latest
+          docker tag scorpiobroker/all-in-one-runner:java-activemq-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:java-activemq-latest
+      - name: start docker aaio 
+        run: |
+          docker-compose -f ./compose-files/docker-compose-java-aaio-activemq-test.yml up > dockerout.log &
+          sleep 120
+      - name: newman action
+        uses: matt-ball/newman-action@master
+        with:
+          collection: api-test.json
+          environment: api-test-aaio-environment.json
+      - name: Stopping Scorpio
+        if: always()
+        run: docker-compose -f ./compose-files/docker-compose-java-aaio-activemq-test.yml down
+      - name: print log
+        if: always()
+        run: |
+          cat dockerout.log
+  build-java-rabbitmq:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2     
+      - name: Set up JDK 1.17
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.17
+      - name: Build testserver
+        run: |
+          cd testserver
+          docker build -t testserver .
+      - name: Get release number
+        id: get-id
+        run: |
+          id=$(echo ${{github.ref_name}} | cut -d/ -f2)
+          echo "::set-output name=id::$id"
+      - name: start rabbitmq & postgis for unit tests
+        run: |
+          docker-compose -f ./compose-files/docker-compose-rabbitmq-postgis.yml up &
+          sleep 30
+      - name: build-java-with-rabbitmq
+        run: |
+          mvn clean package -DskipTests -Prabbitmq -Drabbitmq -Ddocker -Ddocker-tag=java-rabbitmq-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=rabbitmq
+      - name: stop rabbitmq & postgis for unit tests
+        run: |
+          docker-compose -f ./compose-files/docker-compose-rabbitmq-postgis.yml down
+      - name: docker tag 
+        run: |
+          docker tag scorpiobroker/at-context-server:java-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/at-context-server:java-rabbitmq-latest
+          docker tag scorpiobroker/history-entity-manager:java-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/history-entity-manager:java-rabbitmq-latest
+          docker tag scorpiobroker/history-query-manager:java-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/history-query-manager:java-rabbitmq-latest
+          docker tag scorpiobroker/registry-subscription-manager:java-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/registry-subscription-manager:java-rabbitmq-latest
+          docker tag scorpiobroker/registry-manager:java-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/registry-manager:java-rabbitmq-latest
+          docker tag scorpiobroker/subscription-manager:java-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/subscription-manager:java-rabbitmq-latest
+          docker tag scorpiobroker/query-manager:java-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/query-manager:java-rabbitmq-latest
+          docker tag scorpiobroker/entity-manager:java-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/entity-manager:java-rabbitmq-latest
+          docker tag scorpiobroker/all-in-one-runner:java-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:java-rabbitmq-latest
+      - name: start docker aaio 
+        run: |
+          docker-compose -f ./compose-files/docker-compose-java-aaio-rabbitmq-test.yml up > dockerout.log &
+          sleep 120
+      - name: newman action
+        uses: matt-ball/newman-action@master
+        with:
+          collection: api-test.json
+          environment: api-test-aaio-environment.json
+      - name: Stopping Scorpio
+        if: always()
+        run: docker-compose -f ./compose-files/docker-compose-java-aaio-rabbitmq-test.yml down
+      - name: print log
+        if: always()
+        run: |
+          cat dockerout.log
   build-java-kafka:
     runs-on: ubuntu-latest
     steps:

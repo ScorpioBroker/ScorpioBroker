@@ -5,14 +5,14 @@ services:
     image: testserver
     ports:
      - "8080:8080"
-  rabbitmq:
-    image: rabbitmq
+  activemq:
+    image: apache/activemq-classic
     ports:
-     - "5672:5672"
+     - "61616:61616"
   postgres:
     image: postgis/postgis
     ports:
-      - "5432:5432"
+      - "5432"
     environment:
       POSTGRES_USER: ngb
       POSTGRES_PASSWORD: ngb

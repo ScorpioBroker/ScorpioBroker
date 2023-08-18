@@ -12,10 +12,21 @@ services:
   postgres:
     image: postgis/postgis
     ports:
-      - "5432:5432"
+      - "5432"
     environment:
       POSTGRES_USER: ngb
       POSTGRES_PASSWORD: ngb
       POSTGRES_DB: ngb
     depends_on:
-      - emqx
+      - rabbitmq
+  scorpio:
+    image: scorpiobroker/all-in-one-runner:java-rabbitmq-latest
+    ports:
+      - "9090:9090"
+    environment:
+      DBHOST: postgres
+      BUSHOST: rabbitmq
+    restart: on-failure
+    depends_on:
+      - postgres
+      - rabbitmq
