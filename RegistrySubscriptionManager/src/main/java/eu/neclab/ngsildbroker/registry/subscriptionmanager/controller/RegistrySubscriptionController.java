@@ -93,6 +93,11 @@ public class RegistrySubscriptionController {
 		if (acceptHeader == -1) {
 			return HttpUtils.getInvalidHeader();
 		}
+		try {
+			HttpUtils.validateUri(subscriptionId);
+		} catch (Exception e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+		}
 		List<Object> contextHeader = HttpUtils.getAtContext(request);
 		return ldService.parse(contextHeader).onItem().transformToUni(context -> {
 			return subService.getSubscription(HttpUtils.getTenant(request), subscriptionId).onItem()
@@ -107,6 +112,11 @@ public class RegistrySubscriptionController {
 	@Path("/{id}")
 	@DELETE
 	public Uni<RestResponse<Object>> deleteSubscription(HttpServerRequest request, @PathParam(value = "id") String id) {
+		try {
+			HttpUtils.validateUri(id);
+		} catch (Exception e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+		}
 		return subService.deleteSubscription(HttpUtils.getTenant(request), id).onItem()
 				.transform(t -> HttpUtils.generateDeleteResult(t)).onFailure()
 				.recoverWithItem(HttpUtils::handleControllerExceptions);
@@ -117,6 +127,11 @@ public class RegistrySubscriptionController {
 	@PATCH
 	public Uni<RestResponse<Object>> updateSubscription(HttpServerRequest request, @PathParam(value = "id") String id,
 			String payload) {
+		try {
+			HttpUtils.validateUri(id);
+		} catch (Exception e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+		}
 		return HttpUtils.expandBody(request, payload, AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD, ldService).onItem()
 				.transformToUni(tuple -> {
 					return subService

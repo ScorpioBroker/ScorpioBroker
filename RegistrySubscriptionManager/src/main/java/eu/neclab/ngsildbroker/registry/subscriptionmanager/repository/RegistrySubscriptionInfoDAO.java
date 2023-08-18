@@ -15,6 +15,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.DeleteSubs
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.UpdateSubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
+import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.storage.ClientManager;
 import io.smallrye.mutiny.Uni;
@@ -71,10 +72,16 @@ public class RegistrySubscriptionInfoDAO {
 	}
 
 	public Uni<RowSet<Row>> deleteSubscription(DeleteSubscriptionRequest request) {
-		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
-			return client.preparedQuery("DELETE FROM registry_subscriptions WHERE subscription_id=$1")
-					.execute(Tuple.of(request.getId()));
-		});
+		return clientManager.getClient(request.getTenant(), false).onItem()
+				.transformToUni(client -> client.preparedQuery("DELETE FROM registry_subscriptions WHERE subscription_id=$1")
+						.execute(Tuple.of(request.getId())
+								).onItem().transformToUni(rows -> {
+									if (rows.rowCount() == 0) {
+										return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
+									}
+									return Uni.createFrom().item(rows);
+								})
+						);
 	}
 
 	public Uni<RowSet<Row>> getAllSubscriptions(String tenant, int limit, int offset) {
