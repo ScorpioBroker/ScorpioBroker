@@ -5,10 +5,10 @@ services:
     image: testserver
     ports:
      - "8080:8080"
-  emqx:
-    image: emqx
+  rabbitmq:
+    image: rabbitmq
     ports:
-     - "1883:1883"
+     - "5672:5672"
   postgres:
     image: postgis/postgis
     ports:
@@ -18,4 +18,4 @@ services:
       POSTGRES_PASSWORD: ngb
       POSTGRES_DB: ngb
     depends_on:
-      - emqx
+      - rabbitmq
