@@ -6,7 +6,7 @@ services:
     ports:
      - "8080:8080"
   rabbitmq:
-    image: rabbitmq
+    image: rabbitmq:management
     ports:
      - "5672:5672"
   postgres:
