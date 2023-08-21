@@ -194,12 +194,44 @@
 			<groupId>io.quarkus</groupId>
 			<artifactId>quarkus-info</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>org.apache.camel.quarkus</groupId>
+			<artifactId>camel-quarkus-smallrye-reactive-messaging</artifactId>
+			<version>3.0.0-RC2</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.camel.quarkus</groupId>
+			<artifactId>camel-quarkus-jackson</artifactId>
+			<version>3.0.0-RC2</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.camel.quarkus</groupId>
+			<artifactId>camel-quarkus-dataformat</artifactId>
+			<version>3.0.0-RC2</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.camel.quarkus</groupId>
+			<artifactId>camel-quarkus-rabbitmq</artifactId>
+			<version>2.16.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.camel.quarkus</groupId>
+			<artifactId>camel-quarkus-log</artifactId>
+			<version>3.0.0-RC2</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.camel.quarkus</groupId>
+			<artifactId>camel-quarkus-microprofile-fault-tolerance</artifactId>
+			<version>3.0.0-RC2</version>
+		</dependency>
 	</dependencies>
 	<profiles>
 		<profile>
 			<id>in-memory</id>
 			<activation>
-				<activeByDefault>true</activeByDefault>
+				<property>
+					<name>in-memory</name>
+				</property>
 			</activation>
 			<dependencies>
 				<dependency>
@@ -290,9 +322,9 @@
 					<version>3.0.0-RC2</version>
 				</dependency>
 				<dependency>
-    				<groupId>org.apache.camel.quarkus</groupId>
-    				<artifactId>camel-quarkus-aws2-sqs</artifactId>
-    				<version>3.0.0-RC2</version>
+					<groupId>org.apache.camel.quarkus</groupId>
+					<artifactId>camel-quarkus-aws2-sqs</artifactId>
+					<version>3.0.0-RC2</version>
 				</dependency>
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
@@ -325,9 +357,9 @@
 					<version>3.0.0-RC2</version>
 				</dependency>
 				<dependency>
-    				<groupId>org.apache.camel.quarkus</groupId>
-    				<artifactId>camel-quarkus-amqp</artifactId>
-    				<version>3.0.0-RC2</version>
+					<groupId>org.apache.camel.quarkus</groupId>
+					<artifactId>camel-quarkus-amqp</artifactId>
+					<version>3.0.0-RC2</version>
 				</dependency>
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
@@ -370,9 +402,13 @@
 					<version>3.0.0-RC2</version>
 				</dependency>
 				<dependency>
-    				<groupId>org.apache.activemq</groupId>
-    				<artifactId>activemq-pool</artifactId>
-    				<version>5.18.2</version>
+					<groupId>org.amqphub.quarkus</groupId>
+					<artifactId>quarkus-qpid-jms</artifactId>
+				</dependency>
+				<dependency>
+					<groupId>org.apache.activemq</groupId>
+					<artifactId>activemq-pool</artifactId>
+					<version>5.18.2</version>
 				</dependency>
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
@@ -410,9 +446,9 @@
 					<version>3.0.0-RC2</version>
 				</dependency>
 				<dependency>
-    				<groupId>org.apache.camel.quarkus</groupId>
-    				<artifactId>camel-quarkus-azure-eventhubs</artifactId>
-    				<version>3.0.0-RC2</version>
+					<groupId>org.apache.camel.quarkus</groupId>
+					<artifactId>camel-quarkus-azure-eventhubs</artifactId>
+					<version>3.0.0-RC2</version>
 				</dependency>
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
@@ -450,9 +486,9 @@
 					<version>3.0.0-RC2</version>
 				</dependency>
 				<dependency>
-    				<groupId>org.apache.camel.quarkus</groupId>
-    				<artifactId>camel-quarkus-google-pubsub</artifactId>
-    				<version>3.0.0-RC2</version>
+					<groupId>org.apache.camel.quarkus</groupId>
+					<artifactId>camel-quarkus-google-pubsub</artifactId>
+					<version>3.0.0-RC2</version>
 				</dependency>
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
@@ -469,6 +505,7 @@
 		<profile>
 			<id>rabbitmq</id>
 			<activation>
+				<activeByDefault>true</activeByDefault>
 				<property>
 					<name>rabbitmq</name>
 				</property>
@@ -490,9 +527,9 @@
 					<version>3.0.0-RC2</version>
 				</dependency>
 				<dependency>
-    				<groupId>org.apache.camel.quarkus</groupId>
-    				<artifactId>camel-quarkus-rabbitmq</artifactId>
-				    <version>2.16.0</version>
+					<groupId>org.apache.camel.quarkus</groupId>
+					<artifactId>camel-quarkus-rabbitmq</artifactId>
+					<version>2.16.0</version>
 				</dependency>
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
