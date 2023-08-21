@@ -301,6 +301,11 @@
 					<artifactId>camel-quarkus-log</artifactId>
 					<version>3.0.0-RC2</version>
 				</dependency>
+				<dependency>
+					<groupId>org.apache.camel.quarkus</groupId>
+					<artifactId>camel-quarkus-microprofile-fault-tolerance</artifactId>
+					<version>3.0.0-RC2</version>
+				</dependency>
 			</dependencies>
 		</profile>
 		<profile>
@@ -368,21 +373,6 @@
 				</dependency>
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
-					<artifactId>camel-quarkus-activemq</artifactId>
-					<version>3.0.0-RC2</version>
-				</dependency>
-				<dependency>
-					<groupId>org.apache.camel</groupId>
-					<artifactId>camel-jms</artifactId>
-					<version>3.0.0-RC2</version>
-				</dependency>
-				<dependency>
-					<groupId>org.apache.activemq</groupId>
-					<artifactId>activemq-pool</artifactId>
-					<version>5.18.2</version>
-				</dependency>
-				<dependency>
-					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-log</artifactId>
 					<version>3.0.0-RC2</version>
 				</dependency>
@@ -391,6 +381,21 @@
 					<artifactId>camel-quarkus-microprofile-fault-tolerance</artifactId>
 					<version>3.0.0-RC2</version>
 				</dependency>
+				<dependency>
+					<groupId>org.apache.camel.quarkus</groupId>
+					<artifactId>camel-quarkus-activemq</artifactId>
+					<version>3.0.0-RC2</version>
+				</dependency>
+				<dependency>
+					<groupId>org.apache.camel</groupId>
+					<artifactId>camel-jms</artifactId>
+					<version>3.0.0-RC2</version>
+				</dependency>
+				<!--<dependency>
+					<groupId>org.apache.activemq</groupId>
+					<artifactId>activemq-pool</artifactId>
+					<version>5.18.2</version>
+				</dependency>-->
 			</dependencies>
 		</profile>
 		<profile>
