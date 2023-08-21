@@ -245,16 +245,28 @@ public class EntityInfoDAO {
 					    FROM ENTITY
 					    WHERE ID = '%s'
 					)""".formatted(request.getId());
-
+			sql+= """
+                    ,json_data AS (
+                        SELECT jsonb_strip_nulls(jsonb_object_agg(
+                                   key,
+                                   CASE
+                                       WHEN jsonb_typeof(value->0) = 'object' and (value->0)?'https://uri.etsi.org/ngsi-ld/createdAt' THEN
+                                           jsonb_set(value, '{0,https://uri.etsi.org/ngsi-ld/createdAt}', old_entity.entity->key->0->'https://uri.etsi.org/ngsi-ld/createdAt', true)
+                                       ELSE
+                                           value
+                                   END
+                               )) AS modified_data
+                        FROM JSONB_EACH($1::jsonb)
+                        CROSS JOIN old_entity
+                    )""";
+			tuple.addJsonObject(new JsonObject(payload));
 			sql += " UPDATE ENTITY SET ";
 			if (types != null) {
-				sql += "e_types = ARRAY(SELECT DISTINCT UNNEST(e_types || $1)), ENTITY = (jsonb_set(ENTITY, '{@type}', array_to_json(e_types)::jsonb) || $2)";
+				sql += "e_types = ARRAY(SELECT DISTINCT UNNEST(e_types || $2)), ENTITY = (jsonb_set(ENTITY, '{@type}', array_to_json(e_types)::jsonb) || (select * from json_data)-'https://uri.etsi.org/ngsi-ld/createdAt')";
 				dollar = 3;
 				tuple.addArrayOfString(((List<String>) types).toArray(new String[0]));
-				tuple.addJsonObject(new JsonObject(payload));
 			} else {
-				sql += " ENTITY = (ENTITY || $1) ";
-				tuple.addJsonObject(new JsonObject(payload));
+				sql += " ENTITY = (ENTITY || (select * from json_data)-'https://uri.etsi.org/ngsi-ld/createdAt') ";
 			}
 			if (!toBeRemoved.isEmpty()) {
 				for (String remove : toBeRemoved) {
