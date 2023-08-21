@@ -76,21 +76,15 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v1
         with:
           registry-type: public
-
-      - name: Get release number
-        id: get-id
-        run: |
-          id=testsqs
-          echo "::set-output name=id::$id"
       - name: build-java
         run: |
-          mvn clean package -DskipTests -Dsqs -Psqs -Ddocker -Ddocker-tag=java-sqs-{{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=sqs
+          mvn clean package -DskipTests -Dsqs -Psqs -Ddocker -Ddocker-tag=java-sqs-testsqs -Dos=java -Dquarkus.profile=sqs
       - name: docker tag
         run: |
-          docker tag scorpiobroker/all-in-one-runner:java-sqs-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:java-sqs-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/all-in-one-runner:java-sqs-testsqs ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:java-sqs-testsqs
       - name: docker push
         run: |
-          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:java-sqs-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:java-sqs-testsqs
   build-java-rabbitmq:
     runs-on: ubuntu-latest
     steps:
