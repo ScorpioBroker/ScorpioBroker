@@ -11483,17 +11483,10 @@
 																			"    var entitySecond = jsonData[1];\r",
 																			"    var entityThired = jsonData[2];\r",
 																			"    var keysFirstEntity = Object.keys(entityFirst);\r",
-																			"    var keysSecondEntity = Object.keys(entitySecond);\r",
-																			"    var keysThiredEntity = Object.keys(entityThired);\r",
-																			"    console.log(\"key \",keysFirstEntity);\r",
-																			"     console.log(\"key \",keysSecondEntity);\r",
-																			"      console.log(\"key \",keysThiredEntity);\r",
+																			"     console.log(\"key \",keysFirstEntity);\r",
 																			"    pm.expect(keysFirstEntity.length).to.eql(7);\r",
-																			"    pm.expect(keysSecondEntity.length).to.eql(6);\r",
-																			"    pm.expect(keysThiredEntity.length).to.eql(5);\r",
-																			"    pm.expect(keysFirstEntity).to.contain(\"id\");\r",
-																			"    pm.expect(keysSecondEntity).to.contain(\"id\");\r",
-																			"    pm.expect(keysThiredEntity).to.contain(\"id\");\r",
+																			"     pm.expect(keysFirstEntity).to.contain(\"id\");\r",
+																			"    \r",
 																			"  });"
 																		],
 																		"type": "text/javascript"
@@ -11524,84 +11517,6 @@
 																		{
 																			"key": "options",
 																			"value": "concise"
-																		},
-																		{
-																			"key": "join",
-																			"value": "flat"
-																		},
-																		{
-																			"key": "joinLevel",
-																			"value": "10"
-																		}
-																	]
-																}
-															},
-															"response": []
-														},
-														{
-															"name": "Get Created Entity flat with key values",
-															"event": [
-																{
-																	"listen": "test",
-																	"script": {
-																		"exec": [
-																			"var expected = pm.collectionVariables.get(\"created\");\r",
-																			"pm.test(\"Status code is 200\", function () {\r",
-																			"    pm.response.to.have.status(200);\r",
-																			"});\r",
-																			"\r",
-																			"pm.test(\"Validate that result\", function () {\r",
-																			"    var jsonData = pm.response.json();\r",
-																			"    console.log(\"data \",jsonData);\r",
-																			"    pm.expect(jsonData.length).to.eql(3);\r",
-																			"    var entityFirst = jsonData[0];\r",
-																			"    var entitySecond = jsonData[1];\r",
-																			"    var entityThired = jsonData[2];\r",
-																			"     var keysFirstEntity = Object.keys(entityFirst);\r",
-																			"     var keysSecondEntity = Object.keys(entitySecond);\r",
-																			"    var keysThiredEntity = Object.keys(entityThired);\r",
-																			"     console.log(\"key 1 \",keysFirstEntity.length);\r",
-																			"      console.log(\"key 2\",keysSecondEntity.length);\r",
-																			"      console.log(\"key 3\",keysThiredEntity.length);  \r",
-																			"      pm.expect(keysFirstEntity.length).to.eql(6);\r",
-																			"     \r",
-																			"       pm.expect(keysFirstEntity).to.contain(\"id\");\r",
-																			"    \r",
-																			"    \r",
-																			"    pm.expect(keysFirstEntity).to.contain(\"cropType\");\r",
-																			"    pm.expect(keysFirstEntity).to.contain(\"observation\");\r",
-																			"   \r",
-																			"    \r",
-																			"});"
-																		],
-																		"type": "text/javascript"
-																	}
-																}
-															],
-															"request": {
-																"method": "GET",
-																"header": [
-																	{
-																		"key": "Accept",
-																		"value": "application/json",
-																		"type": "default"
-																	}
-																],
-																"url": {
-																	"raw": "{{query-manager}}/ngsi-ld/v1/entities/urn:ngsi-ld:AgriParcel:001?options=keyValues&join=flat&joinLevel=10",
-																	"host": [
-																		"{{query-manager}}"
-																	],
-																	"path": [
-																		"ngsi-ld",
-																		"v1",
-																		"entities",
-																		"urn:ngsi-ld:AgriParcel:001"
-																	],
-																	"query": [
-																		{
-																			"key": "options",
-																			"value": "keyValues"
 																		},
 																		{
 																			"key": "join",
@@ -12094,6 +12009,1746 @@
 																		{
 																			"key": "idsOnly",
 																			"value": "true"
+																		},
+																		{
+																			"key": "joinLevel",
+																			"value": "6"
+																		}
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Delete First Entity",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 204\", function () {\r",
+																			"    pm.response.to.have.status(204);\r",
+																			"});\r",
+																			"pm.collectionVariables.clear();"
+																		],
+																		"type": "text/javascript"
+																	}
+																},
+																{
+																	"listen": "prerequest",
+																	"script": {
+																		"exec": [
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "DELETE",
+																"header": [
+																	{
+																		"key": "Content-Type",
+																		"value": "application/json",
+																		"type": "default"
+																	},
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default",
+																		"disabled": true
+																	}
+																],
+																"body": {
+																	"mode": "raw",
+																	"raw": "{\r\n    \"id\": \"urn:ngsi-ld:AgriParcel:001\",\r\n    \"type\": \"AgriParcel\",\r\n    \"soilType\": {\r\n        \"type\": \"Property\",\r\n        \"value\": \"Loamy\"\r\n    },\r\n    \"cropType\": {\r\n        \"type\": \"Relationship\",\r\n        \"object\": \"urn:ngsi-ld:AgriCrop:BuckWheat\"\r\n    },\r\n    \"location\": {\r\n        \"type\": \"GeoProperty\",\r\n        \"value\": {\r\n            \"type\": \"Point\",\r\n            \"coords\": [\r\n                13,\r\n                58\r\n            ]\r\n        }\r\n    },\r\n    \"prediction\": {\r\n        \"type\": \"Relationship\",\r\n        \"object\": \"urn:ngsi-ld:WeatherForecast:XXX\",\r\n        \"objectType\": \"WeatherForecast\"\r\n    },\r\n    \"observation\": {\r\n        \"type\": \"Relationship\",\r\n        \"object\": \"urn:ngsi-ld:WeatherObserved:001\",\r\n        \"providedBy\": {\r\n            \"type\": \"Relationship\",\r\n            \"object\": \"urn:ngsi-ld:Device:ABC\"\r\n        },\r\n        \"objectType\": \"WeatherObserved\"\r\n    }\r\n}",
+																	"options": {
+																		"raw": {
+																			"language": "json"
+																		}
+																	}
+																},
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities/urn:ngsi-ld:AgriParcel:001",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities",
+																		"urn:ngsi-ld:AgriParcel:001"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Delete Second Entity",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 204\", function () {\r",
+																			"    pm.response.to.have.status(204);\r",
+																			"});\r",
+																			"pm.collectionVariables.clear();"
+																		],
+																		"type": "text/javascript"
+																	}
+																},
+																{
+																	"listen": "prerequest",
+																	"script": {
+																		"exec": [
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "DELETE",
+																"header": [
+																	{
+																		"key": "Content-Type",
+																		"value": "application/json",
+																		"type": "default"
+																	},
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default",
+																		"disabled": true
+																	}
+																],
+																"body": {
+																	"mode": "raw",
+																	"raw": "{\r\n    \"id\": \"urn:ngsi-ld:AgriParcel:001\",\r\n    \"type\": \"AgriParcel\",\r\n    \"soilType\": {\r\n        \"type\": \"Property\",\r\n        \"value\": \"Loamy\"\r\n    },\r\n    \"cropType\": {\r\n        \"type\": \"Relationship\",\r\n        \"object\": \"urn:ngsi-ld:AgriCrop:BuckWheat\"\r\n    },\r\n    \"location\": {\r\n        \"type\": \"GeoProperty\",\r\n        \"value\": {\r\n            \"type\": \"Point\",\r\n            \"coords\": [\r\n                13,\r\n                58\r\n            ]\r\n        }\r\n    },\r\n    \"prediction\": {\r\n        \"type\": \"Relationship\",\r\n        \"object\": \"urn:ngsi-ld:WeatherForecast:XXX\",\r\n        \"objectType\": \"WeatherForecast\"\r\n    },\r\n    \"observation\": {\r\n        \"type\": \"Relationship\",\r\n        \"object\": \"urn:ngsi-ld:WeatherObserved:001\",\r\n        \"providedBy\": {\r\n            \"type\": \"Relationship\",\r\n            \"object\": \"urn:ngsi-ld:Device:ABC\"\r\n        },\r\n        \"objectType\": \"WeatherObserved\"\r\n    }\r\n}",
+																	"options": {
+																		"raw": {
+																			"language": "json"
+																		}
+																	}
+																},
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities/urn:ngsi-ld:WeatherForecast:XXX",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities",
+																		"urn:ngsi-ld:WeatherForecast:XXX"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Delete Thired Entity",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 204\", function () {\r",
+																			"    pm.response.to.have.status(204);\r",
+																			"});\r",
+																			"pm.collectionVariables.clear();"
+																		],
+																		"type": "text/javascript"
+																	}
+																},
+																{
+																	"listen": "prerequest",
+																	"script": {
+																		"exec": [
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "DELETE",
+																"header": [
+																	{
+																		"key": "Content-Type",
+																		"value": "application/json",
+																		"type": "default"
+																	},
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default",
+																		"disabled": true
+																	}
+																],
+																"body": {
+																	"mode": "raw",
+																	"raw": "{\r\n    \"id\": \"urn:ngsi-ld:AgriParcel:001\",\r\n    \"type\": \"AgriParcel\",\r\n    \"soilType\": {\r\n        \"type\": \"Property\",\r\n        \"value\": \"Loamy\"\r\n    },\r\n    \"cropType\": {\r\n        \"type\": \"Relationship\",\r\n        \"object\": \"urn:ngsi-ld:AgriCrop:BuckWheat\"\r\n    },\r\n    \"location\": {\r\n        \"type\": \"GeoProperty\",\r\n        \"value\": {\r\n            \"type\": \"Point\",\r\n            \"coords\": [\r\n                13,\r\n                58\r\n            ]\r\n        }\r\n    },\r\n    \"prediction\": {\r\n        \"type\": \"Relationship\",\r\n        \"object\": \"urn:ngsi-ld:WeatherForecast:XXX\",\r\n        \"objectType\": \"WeatherForecast\"\r\n    },\r\n    \"observation\": {\r\n        \"type\": \"Relationship\",\r\n        \"object\": \"urn:ngsi-ld:WeatherObserved:001\",\r\n        \"providedBy\": {\r\n            \"type\": \"Relationship\",\r\n            \"object\": \"urn:ngsi-ld:Device:ABC\"\r\n        },\r\n        \"objectType\": \"WeatherObserved\"\r\n    }\r\n}",
+																	"options": {
+																		"raw": {
+																			"language": "json"
+																		}
+																	}
+																},
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities/urn:ngsi-ld:WeatherObserved:001",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities",
+																		"urn:ngsi-ld:WeatherObserved:001"
+																	]
+																}
+															},
+															"response": []
+														}
+													]
+												},
+												{
+													"name": "Inline Param",
+													"item": [
+														{
+															"name": "Create First Simple Entity No Context",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																			"console.log(payloadBody.id);\r",
+																			"var entityId = payloadBody.id;\r",
+																			"pm.collectionVariables.set(\"created\", payloadBody);\r",
+																			"pm.collectionVariables.set(\"entityId\", entityId);\r",
+																			"pm.test(\"Status code is 201\", function () {\r",
+																			"    pm.response.to.have.status(201);\r",
+																			"});\r",
+																			"pm.test(\"Check location header\", function () {\r",
+																			"    pm.response.to.have.header(\"Location\");\r",
+																			"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+																			"});\r",
+																			"\r",
+																			"\r",
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																},
+																{
+																	"listen": "prerequest",
+																	"script": {
+																		"exec": [
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "POST",
+																"header": [
+																	{
+																		"key": "Content-Type",
+																		"value": "application/json",
+																		"type": "default"
+																	},
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default",
+																		"disabled": true
+																	}
+																],
+																"body": {
+																	"mode": "raw",
+																	"raw": "{\r\n    \"id\": \"urn:ngsi-ld:AgriParcel:001\",\r\n    \"type\": \"AgriParcel\",\r\n    \"soilType\": {\r\n        \"type\": \"Property\",\r\n        \"value\": \"Loamy\"\r\n    },\r\n    \"cropType\": {\r\n        \"type\": \"Relationship\",\r\n        \"object\": \"urn:ngsi-ld:AgriCrop:BuckWheat\"\r\n    },\r\n    \"location\": {\r\n        \"type\": \"GeoProperty\",\r\n        \"value\": {\r\n            \"type\": \"Point\",\r\n            \"coords\": [\r\n                13,\r\n                58\r\n            ]\r\n        }\r\n    },\r\n    \"prediction\": {\r\n        \"type\": \"Relationship\",\r\n        \"object\": \"urn:ngsi-ld:WeatherForecast:XXX\",\r\n        \"objectType\": \"WeatherForecast\"\r\n    },\r\n    \"observation\": {\r\n        \"type\": \"Relationship\",\r\n        \"object\": \"urn:ngsi-ld:WeatherObserved:001\",\r\n        \"providedBy\": {\r\n            \"type\": \"Relationship\",\r\n            \"object\": \"urn:ngsi-ld:Device:ABC\"\r\n        },\r\n        \"objectType\": \"WeatherObserved\"\r\n    }\r\n}",
+																	"options": {
+																		"raw": {
+																			"language": "json"
+																		}
+																	}
+																},
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Create Second Simple Entity No Context",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																			"console.log(payloadBody.id);\r",
+																			"var entityId = payloadBody.id;\r",
+																			"pm.collectionVariables.set(\"created\", payloadBody);\r",
+																			"pm.collectionVariables.set(\"entityId\", entityId);\r",
+																			"pm.test(\"Status code is 201\", function () {\r",
+																			"    pm.response.to.have.status(201);\r",
+																			"});\r",
+																			"pm.test(\"Check location header\", function () {\r",
+																			"    pm.response.to.have.header(\"Location\");\r",
+																			"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+																			"});\r",
+																			"\r",
+																			"\r",
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																},
+																{
+																	"listen": "prerequest",
+																	"script": {
+																		"exec": [
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "POST",
+																"header": [
+																	{
+																		"key": "Content-Type",
+																		"value": "application/json",
+																		"type": "default"
+																	},
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default",
+																		"disabled": true
+																	}
+																],
+																"body": {
+																	"mode": "raw",
+																	"raw": "{\r\n    \"id\": \"urn:ngsi-ld:WeatherForecast:XXX\",\r\n    \"type\": \"WeatherForecast\",\r\n    \"humidity\": {\r\n        \"type\": \"Property\",\r\n        \"value\": 98,\r\n        \"unitCode\": \"PCT\"\r\n    },\r\n    \"temperature\": {\r\n        \"type\": \"Property\",\r\n        \"value\": 30,\r\n        \"unitCode\": \"CEL\"\r\n    },\r\n    \"windSpeed\": {\r\n        \"type\": \"Property\",\r\n        \"value\": 3,\r\n        \"unitCode\": \"MPH\"\r\n    },\r\n    \"description\": {\r\n        \"type\": \"Property\",\r\n        \"value\": \"Rain\"\r\n    } \r\n}",
+																	"options": {
+																		"raw": {
+																			"language": "json"
+																		}
+																	}
+																},
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Create Thired Simple Entity No Context",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																			"console.log(payloadBody.id);\r",
+																			"var entityId = payloadBody.id;\r",
+																			"pm.collectionVariables.set(\"created\", payloadBody);\r",
+																			"pm.collectionVariables.set(\"entityId\", entityId);\r",
+																			"pm.test(\"Status code is 201\", function () {\r",
+																			"    pm.response.to.have.status(201);\r",
+																			"});\r",
+																			"pm.test(\"Check location header\", function () {\r",
+																			"    pm.response.to.have.header(\"Location\");\r",
+																			"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+																			"});\r",
+																			"\r",
+																			"\r",
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																},
+																{
+																	"listen": "prerequest",
+																	"script": {
+																		"exec": [
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "POST",
+																"header": [
+																	{
+																		"key": "Content-Type",
+																		"value": "application/json",
+																		"type": "default"
+																	},
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default",
+																		"disabled": true
+																	}
+																],
+																"body": {
+																	"mode": "raw",
+																	"raw": "{\r\n    \"id\": \"urn:ngsi-ld:WeatherObserved:001\",\r\n    \"type\": \"WeatherObserved\",\r\n    \"humidity\": {\r\n        \"type\": \"Property\",\r\n        \"value\": 80,\r\n        \"unitCode\": \"PCT\"\r\n    },\r\n    \"temperature\": {\r\n        \"type\": \"Property\",\r\n        \"value\": 30,\r\n        \"unitCode\": \"CEL\"\r\n    },\r\n    \"windSpeed\": {\r\n        \"type\": \"Property\",\r\n        \"value\": 3,\r\n        \"unitCode\": \"MPH\"\r\n    } \r\n}",
+																	"options": {
+																		"raw": {
+																			"language": "json"
+																		}
+																	}
+																},
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Get Created Entity Inline with normalized",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"var expected = pm.collectionVariables.get(\"created\");\r",
+																			"pm.test(\"Status code is 200\", function () {\r",
+																			"    pm.response.to.have.status(200);\r",
+																			"});\r",
+																			"\r",
+																			"pm.test(\"Response has correct ID\", function() {\r",
+																			"    pm.expect(pm.response.json().id).to.equal(\"urn:ngsi-ld:AgriParcel:001\");\r",
+																			"});\r",
+																			"pm.test(\"Validate that result\", function () {\r",
+																			"    var jsonData = pm.response.json();\r",
+																			"    console.log(\"data \",jsonData);\r",
+																			"    const cropType = pm.response.json().cropType;\r",
+																			"    pm.expect(cropType.type).to.equal(\"Relationship\");\r",
+																			"    pm.expect(cropType.object).to.equal(\"urn:ngsi-ld:AgriCrop:BuckWheat\");\r",
+																			"});\r",
+																			"pm.test(\"Location has correct type and coordinates\", function() {\r",
+																			"    const location = pm.response.json().location;\r",
+																			"    pm.expect(location.type).to.equal(\"GeoProperty\");\r",
+																			"    pm.expect(location.value.type).to.equal(\"Point\");\r",
+																			"    pm.expect(location.value.coords[0]).to.equal(13);\r",
+																			"    pm.expect(location.value.coords[1]).to.equal(58);\r",
+																			"});"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "GET",
+																"header": [
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default"
+																	}
+																],
+																"url": {
+																	"raw": "{{query-manager}}/ngsi-ld/v1/entities/urn:ngsi-ld:AgriParcel:001?options=normalized&join=inline&joinLevel=6",
+																	"host": [
+																		"{{query-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities",
+																		"urn:ngsi-ld:AgriParcel:001"
+																	],
+																	"query": [
+																		{
+																			"key": "options",
+																			"value": "normalized"
+																		},
+																		{
+																			"key": "join",
+																			"value": "inline"
+																		},
+																		{
+																			"key": "joinLevel",
+																			"value": "6"
+																		}
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Get Created Entity Inline with concise",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"var expected = pm.collectionVariables.get(\"created\");\r",
+																			"pm.test(\"Status code is 200\", function () {\r",
+																			"    pm.response.to.have.status(200);\r",
+																			"});\r",
+																			"\r",
+																			"pm.test(\"Response has correct ID\", function() {\r",
+																			"    pm.expect(pm.response.json().id).to.equal(\"urn:ngsi-ld:AgriParcel:001\");\r",
+																			"});\r",
+																			"pm.test(\"Response has correct structure\", function () {\r",
+																			"    pm.response.to.have.status(200);\r",
+																			"    pm.response.to.be.json;\r",
+																			"    var jsonData = pm.response.json();\r",
+																			"    pm.expect(jsonData).to.have.property(\"id\");\r",
+																			"    pm.expect(jsonData).to.have.property(\"type\");\r",
+																			"    pm.expect(jsonData).to.have.property(\"cropType\");\r",
+																			"    pm.expect(jsonData).to.have.property(\"observation\");\r",
+																			"    pm.expect(jsonData).to.have.property(\"prediction\");\r",
+																			"    pm.expect(jsonData).to.have.property(\"soilType\");\r",
+																			"    pm.expect(jsonData).to.have.property(\"location\");\r",
+																			"});\r",
+																			"pm.test(\"Observation entity has required properties\", function () {\r",
+																			"    var observationEntity = pm.response.json().observation.entity;\r",
+																			"    pm.expect(observationEntity).to.have.property(\"id\");\r",
+																			"    pm.expect(observationEntity).to.have.property(\"type\");\r",
+																			"    pm.expect(observationEntity).to.have.property(\"humidity\");\r",
+																			"    pm.expect(observationEntity).to.have.property(\"temperature\");\r",
+																			"    pm.expect(observationEntity).to.have.property(\"windSpeed\");\r",
+																			"});\r",
+																			"\r",
+																			"pm.test(\"Location coordinates are correct\", function () {\r",
+																			"    var locationCoords = pm.response.json().location.coords;\r",
+																			"    pm.expect(locationCoords).to.be.an('array').that.has.lengthOf(2);\r",
+																			"    pm.expect(locationCoords[0]).to.eql(13);\r",
+																			"    pm.expect(locationCoords[1]).to.eql(58);\r",
+																			"});\r",
+																			"\r",
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "GET",
+																"header": [
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default"
+																	}
+																],
+																"url": {
+																	"raw": "{{query-manager}}/ngsi-ld/v1/entities/urn:ngsi-ld:AgriParcel:001?options=concise&join=inline&joinLevel=10",
+																	"host": [
+																		"{{query-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities",
+																		"urn:ngsi-ld:AgriParcel:001"
+																	],
+																	"query": [
+																		{
+																			"key": "options",
+																			"value": "concise"
+																		},
+																		{
+																			"key": "join",
+																			"value": "inline"
+																		},
+																		{
+																			"key": "joinLevel",
+																			"value": "10"
+																		}
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Delete First Entity",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 204\", function () {\r",
+																			"    pm.response.to.have.status(204);\r",
+																			"});\r",
+																			"pm.collectionVariables.clear();"
+																		],
+																		"type": "text/javascript"
+																	}
+																},
+																{
+																	"listen": "prerequest",
+																	"script": {
+																		"exec": [
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "DELETE",
+																"header": [
+																	{
+																		"key": "Content-Type",
+																		"value": "application/json",
+																		"type": "default"
+																	},
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default",
+																		"disabled": true
+																	}
+																],
+																"body": {
+																	"mode": "raw",
+																	"raw": "{\r\n    \"id\": \"urn:ngsi-ld:AgriParcel:001\",\r\n    \"type\": \"AgriParcel\",\r\n    \"soilType\": {\r\n        \"type\": \"Property\",\r\n        \"value\": \"Loamy\"\r\n    },\r\n    \"cropType\": {\r\n        \"type\": \"Relationship\",\r\n        \"object\": \"urn:ngsi-ld:AgriCrop:BuckWheat\"\r\n    },\r\n    \"location\": {\r\n        \"type\": \"GeoProperty\",\r\n        \"value\": {\r\n            \"type\": \"Point\",\r\n            \"coords\": [\r\n                13,\r\n                58\r\n            ]\r\n        }\r\n    },\r\n    \"prediction\": {\r\n        \"type\": \"Relationship\",\r\n        \"object\": \"urn:ngsi-ld:WeatherForecast:XXX\",\r\n        \"objectType\": \"WeatherForecast\"\r\n    },\r\n    \"observation\": {\r\n        \"type\": \"Relationship\",\r\n        \"object\": \"urn:ngsi-ld:WeatherObserved:001\",\r\n        \"providedBy\": {\r\n            \"type\": \"Relationship\",\r\n            \"object\": \"urn:ngsi-ld:Device:ABC\"\r\n        },\r\n        \"objectType\": \"WeatherObserved\"\r\n    }\r\n}",
+																	"options": {
+																		"raw": {
+																			"language": "json"
+																		}
+																	}
+																},
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities/urn:ngsi-ld:AgriParcel:001",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities",
+																		"urn:ngsi-ld:AgriParcel:001"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Delete Second Entity",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 204\", function () {\r",
+																			"    pm.response.to.have.status(204);\r",
+																			"});\r",
+																			"pm.collectionVariables.clear();"
+																		],
+																		"type": "text/javascript"
+																	}
+																},
+																{
+																	"listen": "prerequest",
+																	"script": {
+																		"exec": [
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "DELETE",
+																"header": [
+																	{
+																		"key": "Content-Type",
+																		"value": "application/json",
+																		"type": "default"
+																	},
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default",
+																		"disabled": true
+																	}
+																],
+																"body": {
+																	"mode": "raw",
+																	"raw": "{\r\n    \"id\": \"urn:ngsi-ld:AgriParcel:001\",\r\n    \"type\": \"AgriParcel\",\r\n    \"soilType\": {\r\n        \"type\": \"Property\",\r\n        \"value\": \"Loamy\"\r\n    },\r\n    \"cropType\": {\r\n        \"type\": \"Relationship\",\r\n        \"object\": \"urn:ngsi-ld:AgriCrop:BuckWheat\"\r\n    },\r\n    \"location\": {\r\n        \"type\": \"GeoProperty\",\r\n        \"value\": {\r\n            \"type\": \"Point\",\r\n            \"coords\": [\r\n                13,\r\n                58\r\n            ]\r\n        }\r\n    },\r\n    \"prediction\": {\r\n        \"type\": \"Relationship\",\r\n        \"object\": \"urn:ngsi-ld:WeatherForecast:XXX\",\r\n        \"objectType\": \"WeatherForecast\"\r\n    },\r\n    \"observation\": {\r\n        \"type\": \"Relationship\",\r\n        \"object\": \"urn:ngsi-ld:WeatherObserved:001\",\r\n        \"providedBy\": {\r\n            \"type\": \"Relationship\",\r\n            \"object\": \"urn:ngsi-ld:Device:ABC\"\r\n        },\r\n        \"objectType\": \"WeatherObserved\"\r\n    }\r\n}",
+																	"options": {
+																		"raw": {
+																			"language": "json"
+																		}
+																	}
+																},
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities/urn:ngsi-ld:WeatherForecast:XXX",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities",
+																		"urn:ngsi-ld:WeatherForecast:XXX"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Delete Thired Entity",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 204\", function () {\r",
+																			"    pm.response.to.have.status(204);\r",
+																			"});\r",
+																			"pm.collectionVariables.clear();"
+																		],
+																		"type": "text/javascript"
+																	}
+																},
+																{
+																	"listen": "prerequest",
+																	"script": {
+																		"exec": [
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "DELETE",
+																"header": [
+																	{
+																		"key": "Content-Type",
+																		"value": "application/json",
+																		"type": "default"
+																	},
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default",
+																		"disabled": true
+																	}
+																],
+																"body": {
+																	"mode": "raw",
+																	"raw": "{\r\n    \"id\": \"urn:ngsi-ld:AgriParcel:001\",\r\n    \"type\": \"AgriParcel\",\r\n    \"soilType\": {\r\n        \"type\": \"Property\",\r\n        \"value\": \"Loamy\"\r\n    },\r\n    \"cropType\": {\r\n        \"type\": \"Relationship\",\r\n        \"object\": \"urn:ngsi-ld:AgriCrop:BuckWheat\"\r\n    },\r\n    \"location\": {\r\n        \"type\": \"GeoProperty\",\r\n        \"value\": {\r\n            \"type\": \"Point\",\r\n            \"coords\": [\r\n                13,\r\n                58\r\n            ]\r\n        }\r\n    },\r\n    \"prediction\": {\r\n        \"type\": \"Relationship\",\r\n        \"object\": \"urn:ngsi-ld:WeatherForecast:XXX\",\r\n        \"objectType\": \"WeatherForecast\"\r\n    },\r\n    \"observation\": {\r\n        \"type\": \"Relationship\",\r\n        \"object\": \"urn:ngsi-ld:WeatherObserved:001\",\r\n        \"providedBy\": {\r\n            \"type\": \"Relationship\",\r\n            \"object\": \"urn:ngsi-ld:Device:ABC\"\r\n        },\r\n        \"objectType\": \"WeatherObserved\"\r\n    }\r\n}",
+																	"options": {
+																		"raw": {
+																			"language": "json"
+																		}
+																	}
+																},
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities/urn:ngsi-ld:WeatherObserved:001",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities",
+																		"urn:ngsi-ld:WeatherObserved:001"
+																	]
+																}
+															},
+															"response": []
+														}
+													]
+												},
+												{
+													"name": "Flat Param with attrs",
+													"item": [
+														{
+															"name": "Create First Simple Entity No Context",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																			"console.log(payloadBody.id);\r",
+																			"var entityId = payloadBody.id;\r",
+																			"pm.collectionVariables.set(\"created\", payloadBody);\r",
+																			"pm.collectionVariables.set(\"entityId\", entityId);\r",
+																			"pm.test(\"Status code is 201\", function () {\r",
+																			"    pm.response.to.have.status(201);\r",
+																			"});\r",
+																			"pm.test(\"Check location header\", function () {\r",
+																			"    pm.response.to.have.header(\"Location\");\r",
+																			"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+																			"});\r",
+																			"\r",
+																			"\r",
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																},
+																{
+																	"listen": "prerequest",
+																	"script": {
+																		"exec": [
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "POST",
+																"header": [
+																	{
+																		"key": "Content-Type",
+																		"value": "application/json",
+																		"type": "default"
+																	},
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default",
+																		"disabled": true
+																	}
+																],
+																"body": {
+																	"mode": "raw",
+																	"raw": "{\r\n    \"id\": \"urn:ngsi-ld:AgriParcel:001\",\r\n    \"type\": \"AgriParcel\",\r\n    \"soilType\": {\r\n        \"type\": \"Property\",\r\n        \"value\": \"Loamy\"\r\n    },\r\n    \"cropType\": {\r\n        \"type\": \"Relationship\",\r\n        \"object\": \"urn:ngsi-ld:AgriCrop:BuckWheat\"\r\n    },\r\n    \"location\": {\r\n        \"type\": \"GeoProperty\",\r\n        \"value\": {\r\n            \"type\": \"Point\",\r\n            \"coords\": [\r\n                13,\r\n                58\r\n            ]\r\n        }\r\n    },\r\n    \"prediction\": {\r\n        \"type\": \"Relationship\",\r\n        \"object\": \"urn:ngsi-ld:WeatherForecast:XXX\",\r\n        \"objectType\": \"WeatherForecast\"\r\n    },\r\n    \"observation\": {\r\n        \"type\": \"Relationship\",\r\n        \"object\": \"urn:ngsi-ld:WeatherObserved:001\",\r\n        \"providedBy\": {\r\n            \"type\": \"Relationship\",\r\n            \"object\": \"urn:ngsi-ld:Device:ABC\"\r\n        },\r\n        \"objectType\": \"WeatherObserved\"\r\n    }\r\n}",
+																	"options": {
+																		"raw": {
+																			"language": "json"
+																		}
+																	}
+																},
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Create Second Simple Entity No Context",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																			"console.log(payloadBody.id);\r",
+																			"var entityId = payloadBody.id;\r",
+																			"pm.collectionVariables.set(\"created\", payloadBody);\r",
+																			"pm.collectionVariables.set(\"entityId\", entityId);\r",
+																			"pm.test(\"Status code is 201\", function () {\r",
+																			"    pm.response.to.have.status(201);\r",
+																			"});\r",
+																			"pm.test(\"Check location header\", function () {\r",
+																			"    pm.response.to.have.header(\"Location\");\r",
+																			"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+																			"});\r",
+																			"\r",
+																			"\r",
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																},
+																{
+																	"listen": "prerequest",
+																	"script": {
+																		"exec": [
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "POST",
+																"header": [
+																	{
+																		"key": "Content-Type",
+																		"value": "application/json",
+																		"type": "default"
+																	},
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default",
+																		"disabled": true
+																	}
+																],
+																"body": {
+																	"mode": "raw",
+																	"raw": "{\r\n    \"id\": \"urn:ngsi-ld:WeatherForecast:XXX\",\r\n    \"type\": \"WeatherForecast\",\r\n    \"humidity\": {\r\n        \"type\": \"Property\",\r\n        \"value\": 98,\r\n        \"unitCode\": \"PCT\"\r\n    },\r\n    \"temperature\": {\r\n        \"type\": \"Property\",\r\n        \"value\": 30,\r\n        \"unitCode\": \"CEL\"\r\n    },\r\n    \"windSpeed\": {\r\n        \"type\": \"Property\",\r\n        \"value\": 3,\r\n        \"unitCode\": \"MPH\"\r\n    },\r\n    \"description\": {\r\n        \"type\": \"Property\",\r\n        \"value\": \"Rain\"\r\n    } \r\n}",
+																	"options": {
+																		"raw": {
+																			"language": "json"
+																		}
+																	}
+																},
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Create Thired Simple Entity No Context",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																			"console.log(payloadBody.id);\r",
+																			"var entityId = payloadBody.id;\r",
+																			"pm.collectionVariables.set(\"created\", payloadBody);\r",
+																			"pm.collectionVariables.set(\"entityId\", entityId);\r",
+																			"pm.test(\"Status code is 201\", function () {\r",
+																			"    pm.response.to.have.status(201);\r",
+																			"});\r",
+																			"pm.test(\"Check location header\", function () {\r",
+																			"    pm.response.to.have.header(\"Location\");\r",
+																			"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+																			"});\r",
+																			"\r",
+																			"\r",
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																},
+																{
+																	"listen": "prerequest",
+																	"script": {
+																		"exec": [
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "POST",
+																"header": [
+																	{
+																		"key": "Content-Type",
+																		"value": "application/json",
+																		"type": "default"
+																	},
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default",
+																		"disabled": true
+																	}
+																],
+																"body": {
+																	"mode": "raw",
+																	"raw": "{\r\n    \"id\": \"urn:ngsi-ld:WeatherObserved:001\",\r\n    \"type\": \"WeatherObserved\",\r\n    \"humidity\": {\r\n        \"type\": \"Property\",\r\n        \"value\": 80,\r\n        \"unitCode\": \"PCT\"\r\n    },\r\n    \"temperature\": {\r\n        \"type\": \"Property\",\r\n        \"value\": 30,\r\n        \"unitCode\": \"CEL\"\r\n    },\r\n    \"windSpeed\": {\r\n        \"type\": \"Property\",\r\n        \"value\": 3,\r\n        \"unitCode\": \"MPH\"\r\n    } \r\n}",
+																	"options": {
+																		"raw": {
+																			"language": "json"
+																		}
+																	}
+																},
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Get Created Entity Flat with normalized",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"var expected = pm.collectionVariables.get(\"created\");\r",
+																			"pm.test(\"Status code is 200\", function () {\r",
+																			"    pm.response.to.have.status(200);\r",
+																			"});\r",
+																			"\r",
+																			"\r",
+																			"\r",
+																			"pm.test(\"Validate that result\", function () {\r",
+																			"    var jsonData = pm.response.json();\r",
+																			"    console.log(\"data \",jsonData);\r",
+																			"    pm.expect(jsonData.length).to.eql(2);\r",
+																			"    var entityFirst = jsonData[0];\r",
+																			"    var entitySecond = jsonData[1];\r",
+																			"    var keysFirstEntity = Object.keys(entityFirst);\r",
+																			"    console.log(\"key \",keysFirstEntity);\r",
+																			"    pm.expect(keysFirstEntity.length).to.eql(4);\r",
+																			"    pm.expect(keysFirstEntity).to.contain(\"type\");\r",
+																			"    pm.expect(keysFirstEntity).to.contain(\"observation\");\r",
+																			"     var keys2Entity = Object.keys(entitySecond);\r",
+																			"     console.log(\"key \",keys2Entity);\r",
+																			"    pm.expect(keysFirstEntity.length).to.eql(4);\r",
+																			"    pm.expect(keys2Entity).to.contain(\"humidity\");\r",
+																			"    pm.expect(keys2Entity).to.contain(\"windSpeed\");\r",
+																			"    \r",
+																			"});"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "GET",
+																"header": [
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default"
+																	}
+																],
+																"url": {
+																	"raw": "{{query-manager}}/ngsi-ld/v1/entities/urn:ngsi-ld:AgriParcel:001?options=normalized&join=flat&attrs=soilType%2Cobservation%7Bhumidity%2CwindSpeed%7D%20%20&joinLevel=6",
+																	"host": [
+																		"{{query-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities",
+																		"urn:ngsi-ld:AgriParcel:001"
+																	],
+																	"query": [
+																		{
+																			"key": "options",
+																			"value": "normalized"
+																		},
+																		{
+																			"key": "join",
+																			"value": "flat"
+																		},
+																		{
+																			"key": "attrs",
+																			"value": "soilType%2Cobservation%7Bhumidity%2CwindSpeed%7D%20%20"
+																		},
+																		{
+																			"key": "joinLevel",
+																			"value": "6"
+																		}
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Get Created Entity Flat with concise",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"var expected = pm.collectionVariables.get(\"created\");\r",
+																			"pm.test(\"Status code is 200\", function () {\r",
+																			"    pm.response.to.have.status(200);\r",
+																			"});\r",
+																			"\r",
+																			"\r",
+																			"\r",
+																			"pm.test(\"Validate that result\", function () {\r",
+																			"    var jsonData = pm.response.json();\r",
+																			"    console.log(\"data \",jsonData);\r",
+																			"    pm.expect(jsonData.length).to.eql(2);\r",
+																			"    var entityFirst = jsonData[0];\r",
+																			"    var entitySecond = jsonData[1];\r",
+																			"    var keysFirstEntity = Object.keys(entityFirst);\r",
+																			"    console.log(\"key \",keysFirstEntity);\r",
+																			"    pm.expect(keysFirstEntity.length).to.eql(4);\r",
+																			"    pm.expect(keysFirstEntity).to.contain(\"type\");\r",
+																			"    pm.expect(keysFirstEntity).to.contain(\"observation\");\r",
+																			"     var keys2Entity = Object.keys(entitySecond);\r",
+																			"     console.log(\"key \",keys2Entity);\r",
+																			"    pm.expect(keysFirstEntity.length).to.eql(4);\r",
+																			"    pm.expect(keys2Entity).to.contain(\"humidity\");\r",
+																			"    pm.expect(keys2Entity).to.contain(\"windSpeed\");\r",
+																			"    \r",
+																			"});"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "GET",
+																"header": [
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default"
+																	}
+																],
+																"url": {
+																	"raw": "{{query-manager}}/ngsi-ld/v1/entities/urn:ngsi-ld:AgriParcel:001?options=concise&join=flat&attrs=soilType%2Cobservation%7Bhumidity%2CwindSpeed%7D%20%20&joinLevel=6",
+																	"host": [
+																		"{{query-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities",
+																		"urn:ngsi-ld:AgriParcel:001"
+																	],
+																	"query": [
+																		{
+																			"key": "options",
+																			"value": "concise"
+																		},
+																		{
+																			"key": "join",
+																			"value": "flat"
+																		},
+																		{
+																			"key": "attrs",
+																			"value": "soilType%2Cobservation%7Bhumidity%2CwindSpeed%7D%20%20"
+																		},
+																		{
+																			"key": "joinLevel",
+																			"value": "6"
+																		}
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Delete First Entity",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 204\", function () {\r",
+																			"    pm.response.to.have.status(204);\r",
+																			"});\r",
+																			"pm.collectionVariables.clear();"
+																		],
+																		"type": "text/javascript"
+																	}
+																},
+																{
+																	"listen": "prerequest",
+																	"script": {
+																		"exec": [
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "DELETE",
+																"header": [
+																	{
+																		"key": "Content-Type",
+																		"value": "application/json",
+																		"type": "default"
+																	},
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default",
+																		"disabled": true
+																	}
+																],
+																"body": {
+																	"mode": "raw",
+																	"raw": "{\r\n    \"id\": \"urn:ngsi-ld:AgriParcel:001\",\r\n    \"type\": \"AgriParcel\",\r\n    \"soilType\": {\r\n        \"type\": \"Property\",\r\n        \"value\": \"Loamy\"\r\n    },\r\n    \"cropType\": {\r\n        \"type\": \"Relationship\",\r\n        \"object\": \"urn:ngsi-ld:AgriCrop:BuckWheat\"\r\n    },\r\n    \"location\": {\r\n        \"type\": \"GeoProperty\",\r\n        \"value\": {\r\n            \"type\": \"Point\",\r\n            \"coords\": [\r\n                13,\r\n                58\r\n            ]\r\n        }\r\n    },\r\n    \"prediction\": {\r\n        \"type\": \"Relationship\",\r\n        \"object\": \"urn:ngsi-ld:WeatherForecast:XXX\",\r\n        \"objectType\": \"WeatherForecast\"\r\n    },\r\n    \"observation\": {\r\n        \"type\": \"Relationship\",\r\n        \"object\": \"urn:ngsi-ld:WeatherObserved:001\",\r\n        \"providedBy\": {\r\n            \"type\": \"Relationship\",\r\n            \"object\": \"urn:ngsi-ld:Device:ABC\"\r\n        },\r\n        \"objectType\": \"WeatherObserved\"\r\n    }\r\n}",
+																	"options": {
+																		"raw": {
+																			"language": "json"
+																		}
+																	}
+																},
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities/urn:ngsi-ld:AgriParcel:001",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities",
+																		"urn:ngsi-ld:AgriParcel:001"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Delete Second Entity",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 204\", function () {\r",
+																			"    pm.response.to.have.status(204);\r",
+																			"});\r",
+																			"pm.collectionVariables.clear();"
+																		],
+																		"type": "text/javascript"
+																	}
+																},
+																{
+																	"listen": "prerequest",
+																	"script": {
+																		"exec": [
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "DELETE",
+																"header": [
+																	{
+																		"key": "Content-Type",
+																		"value": "application/json",
+																		"type": "default"
+																	},
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default",
+																		"disabled": true
+																	}
+																],
+																"body": {
+																	"mode": "raw",
+																	"raw": "{\r\n    \"id\": \"urn:ngsi-ld:AgriParcel:001\",\r\n    \"type\": \"AgriParcel\",\r\n    \"soilType\": {\r\n        \"type\": \"Property\",\r\n        \"value\": \"Loamy\"\r\n    },\r\n    \"cropType\": {\r\n        \"type\": \"Relationship\",\r\n        \"object\": \"urn:ngsi-ld:AgriCrop:BuckWheat\"\r\n    },\r\n    \"location\": {\r\n        \"type\": \"GeoProperty\",\r\n        \"value\": {\r\n            \"type\": \"Point\",\r\n            \"coords\": [\r\n                13,\r\n                58\r\n            ]\r\n        }\r\n    },\r\n    \"prediction\": {\r\n        \"type\": \"Relationship\",\r\n        \"object\": \"urn:ngsi-ld:WeatherForecast:XXX\",\r\n        \"objectType\": \"WeatherForecast\"\r\n    },\r\n    \"observation\": {\r\n        \"type\": \"Relationship\",\r\n        \"object\": \"urn:ngsi-ld:WeatherObserved:001\",\r\n        \"providedBy\": {\r\n            \"type\": \"Relationship\",\r\n            \"object\": \"urn:ngsi-ld:Device:ABC\"\r\n        },\r\n        \"objectType\": \"WeatherObserved\"\r\n    }\r\n}",
+																	"options": {
+																		"raw": {
+																			"language": "json"
+																		}
+																	}
+																},
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities/urn:ngsi-ld:WeatherForecast:XXX",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities",
+																		"urn:ngsi-ld:WeatherForecast:XXX"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Delete Thired Entity",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 204\", function () {\r",
+																			"    pm.response.to.have.status(204);\r",
+																			"});\r",
+																			"pm.collectionVariables.clear();"
+																		],
+																		"type": "text/javascript"
+																	}
+																},
+																{
+																	"listen": "prerequest",
+																	"script": {
+																		"exec": [
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "DELETE",
+																"header": [
+																	{
+																		"key": "Content-Type",
+																		"value": "application/json",
+																		"type": "default"
+																	},
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default",
+																		"disabled": true
+																	}
+																],
+																"body": {
+																	"mode": "raw",
+																	"raw": "{\r\n    \"id\": \"urn:ngsi-ld:AgriParcel:001\",\r\n    \"type\": \"AgriParcel\",\r\n    \"soilType\": {\r\n        \"type\": \"Property\",\r\n        \"value\": \"Loamy\"\r\n    },\r\n    \"cropType\": {\r\n        \"type\": \"Relationship\",\r\n        \"object\": \"urn:ngsi-ld:AgriCrop:BuckWheat\"\r\n    },\r\n    \"location\": {\r\n        \"type\": \"GeoProperty\",\r\n        \"value\": {\r\n            \"type\": \"Point\",\r\n            \"coords\": [\r\n                13,\r\n                58\r\n            ]\r\n        }\r\n    },\r\n    \"prediction\": {\r\n        \"type\": \"Relationship\",\r\n        \"object\": \"urn:ngsi-ld:WeatherForecast:XXX\",\r\n        \"objectType\": \"WeatherForecast\"\r\n    },\r\n    \"observation\": {\r\n        \"type\": \"Relationship\",\r\n        \"object\": \"urn:ngsi-ld:WeatherObserved:001\",\r\n        \"providedBy\": {\r\n            \"type\": \"Relationship\",\r\n            \"object\": \"urn:ngsi-ld:Device:ABC\"\r\n        },\r\n        \"objectType\": \"WeatherObserved\"\r\n    }\r\n}",
+																	"options": {
+																		"raw": {
+																			"language": "json"
+																		}
+																	}
+																},
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities/urn:ngsi-ld:WeatherObserved:001",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities",
+																		"urn:ngsi-ld:WeatherObserved:001"
+																	]
+																}
+															},
+															"response": []
+														}
+													]
+												},
+												{
+													"name": "Inline Param with attrs",
+													"item": [
+														{
+															"name": "Create First Simple Entity No Context",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																			"console.log(payloadBody.id);\r",
+																			"var entityId = payloadBody.id;\r",
+																			"pm.collectionVariables.set(\"created\", payloadBody);\r",
+																			"pm.collectionVariables.set(\"entityId\", entityId);\r",
+																			"pm.test(\"Status code is 201\", function () {\r",
+																			"    pm.response.to.have.status(201);\r",
+																			"});\r",
+																			"pm.test(\"Check location header\", function () {\r",
+																			"    pm.response.to.have.header(\"Location\");\r",
+																			"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+																			"});\r",
+																			"\r",
+																			"\r",
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																},
+																{
+																	"listen": "prerequest",
+																	"script": {
+																		"exec": [
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "POST",
+																"header": [
+																	{
+																		"key": "Content-Type",
+																		"value": "application/json",
+																		"type": "default"
+																	},
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default",
+																		"disabled": true
+																	}
+																],
+																"body": {
+																	"mode": "raw",
+																	"raw": "{\r\n    \"id\": \"urn:ngsi-ld:AgriParcel:001\",\r\n    \"type\": \"AgriParcel\",\r\n    \"soilType\": {\r\n        \"type\": \"Property\",\r\n        \"value\": \"Loamy\"\r\n    },\r\n    \"cropType\": {\r\n        \"type\": \"Relationship\",\r\n        \"object\": \"urn:ngsi-ld:AgriCrop:BuckWheat\"\r\n    },\r\n    \"location\": {\r\n        \"type\": \"GeoProperty\",\r\n        \"value\": {\r\n            \"type\": \"Point\",\r\n            \"coords\": [\r\n                13,\r\n                58\r\n            ]\r\n        }\r\n    },\r\n    \"prediction\": {\r\n        \"type\": \"Relationship\",\r\n        \"object\": \"urn:ngsi-ld:WeatherForecast:XXX\",\r\n        \"objectType\": \"WeatherForecast\"\r\n    },\r\n    \"observation\": {\r\n        \"type\": \"Relationship\",\r\n        \"object\": \"urn:ngsi-ld:WeatherObserved:001\",\r\n        \"providedBy\": {\r\n            \"type\": \"Relationship\",\r\n            \"object\": \"urn:ngsi-ld:Device:ABC\"\r\n        },\r\n        \"objectType\": \"WeatherObserved\"\r\n    }\r\n}",
+																	"options": {
+																		"raw": {
+																			"language": "json"
+																		}
+																	}
+																},
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Create Second Simple Entity No Context",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																			"console.log(payloadBody.id);\r",
+																			"var entityId = payloadBody.id;\r",
+																			"pm.collectionVariables.set(\"created\", payloadBody);\r",
+																			"pm.collectionVariables.set(\"entityId\", entityId);\r",
+																			"pm.test(\"Status code is 201\", function () {\r",
+																			"    pm.response.to.have.status(201);\r",
+																			"});\r",
+																			"pm.test(\"Check location header\", function () {\r",
+																			"    pm.response.to.have.header(\"Location\");\r",
+																			"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+																			"});\r",
+																			"\r",
+																			"\r",
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																},
+																{
+																	"listen": "prerequest",
+																	"script": {
+																		"exec": [
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "POST",
+																"header": [
+																	{
+																		"key": "Content-Type",
+																		"value": "application/json",
+																		"type": "default"
+																	},
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default",
+																		"disabled": true
+																	}
+																],
+																"body": {
+																	"mode": "raw",
+																	"raw": "{\r\n    \"id\": \"urn:ngsi-ld:WeatherForecast:XXX\",\r\n    \"type\": \"WeatherForecast\",\r\n    \"humidity\": {\r\n        \"type\": \"Property\",\r\n        \"value\": 98,\r\n        \"unitCode\": \"PCT\"\r\n    },\r\n    \"temperature\": {\r\n        \"type\": \"Property\",\r\n        \"value\": 30,\r\n        \"unitCode\": \"CEL\"\r\n    },\r\n    \"windSpeed\": {\r\n        \"type\": \"Property\",\r\n        \"value\": 3,\r\n        \"unitCode\": \"MPH\"\r\n    },\r\n    \"description\": {\r\n        \"type\": \"Property\",\r\n        \"value\": \"Rain\"\r\n    } \r\n}",
+																	"options": {
+																		"raw": {
+																			"language": "json"
+																		}
+																	}
+																},
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Create Thired Simple Entity No Context",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																			"console.log(payloadBody.id);\r",
+																			"var entityId = payloadBody.id;\r",
+																			"pm.collectionVariables.set(\"created\", payloadBody);\r",
+																			"pm.collectionVariables.set(\"entityId\", entityId);\r",
+																			"pm.test(\"Status code is 201\", function () {\r",
+																			"    pm.response.to.have.status(201);\r",
+																			"});\r",
+																			"pm.test(\"Check location header\", function () {\r",
+																			"    pm.response.to.have.header(\"Location\");\r",
+																			"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+																			"});\r",
+																			"\r",
+																			"\r",
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																},
+																{
+																	"listen": "prerequest",
+																	"script": {
+																		"exec": [
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "POST",
+																"header": [
+																	{
+																		"key": "Content-Type",
+																		"value": "application/json",
+																		"type": "default"
+																	},
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default",
+																		"disabled": true
+																	}
+																],
+																"body": {
+																	"mode": "raw",
+																	"raw": "{\r\n    \"id\": \"urn:ngsi-ld:WeatherObserved:001\",\r\n    \"type\": \"WeatherObserved\",\r\n    \"humidity\": {\r\n        \"type\": \"Property\",\r\n        \"value\": 80,\r\n        \"unitCode\": \"PCT\"\r\n    },\r\n    \"temperature\": {\r\n        \"type\": \"Property\",\r\n        \"value\": 30,\r\n        \"unitCode\": \"CEL\"\r\n    },\r\n    \"windSpeed\": {\r\n        \"type\": \"Property\",\r\n        \"value\": 3,\r\n        \"unitCode\": \"MPH\"\r\n    } \r\n}",
+																	"options": {
+																		"raw": {
+																			"language": "json"
+																		}
+																	}
+																},
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Get Created Entity Inline with normalized Copy",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"var expected = pm.collectionVariables.get(\"created\");\r",
+																			"pm.test(\"Status code is 200\", function () {\r",
+																			"    pm.response.to.have.status(200);\r",
+																			"});\r",
+																			"\r",
+																			"pm.test(\"Response has correct ID\", function() {\r",
+																			"    pm.expect(pm.response.json().id).to.equal(\"urn:ngsi-ld:AgriParcel:001\");\r",
+																			"});\r",
+																			"pm.test(\"Response has correct structure\", function () {\r",
+																			"    pm.response.to.have.status(200);\r",
+																			"    pm.response.to.be.json;\r",
+																			"    var jsonData = pm.response.json();\r",
+																			"    pm.expect(jsonData).to.have.property(\"id\");\r",
+																			"    pm.expect(jsonData).to.have.property(\"type\");\r",
+																			"    pm.expect(jsonData).to.have.property(\"observation\");\r",
+																			"    pm.expect(jsonData).to.have.property(\"soilType\");\r",
+																			" \r",
+																			"});\r",
+																			"pm.test(\"Observation entity has required properties\", function () {\r",
+																			"    var observationEntity = pm.response.json().observation.entity;\r",
+																			"    pm.expect(observationEntity).to.have.property(\"id\");\r",
+																			"    pm.expect(observationEntity).to.have.property(\"type\");\r",
+																			"    pm.expect(observationEntity).to.have.property(\"humidity\");\r",
+																			"    pm.expect(observationEntity).to.have.property(\"windSpeed\");\r",
+																			"});\r",
+																			"\r",
+																			"\r",
+																			"\r",
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "GET",
+																"header": [
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default"
+																	}
+																],
+																"url": {
+																	"raw": "{{query-manager}}/ngsi-ld/v1/entities/urn:ngsi-ld:AgriParcel:001?options=normalized&join=inline&attrs=soilType%2Cobservation%7Bhumidity%2CwindSpeed%7D%20%20&joinLevel=6",
+																	"host": [
+																		"{{query-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities",
+																		"urn:ngsi-ld:AgriParcel:001"
+																	],
+																	"query": [
+																		{
+																			"key": "options",
+																			"value": "normalized"
+																		},
+																		{
+																			"key": "join",
+																			"value": "inline"
+																		},
+																		{
+																			"key": "attrs",
+																			"value": "soilType%2Cobservation%7Bhumidity%2CwindSpeed%7D%20%20"
+																		},
+																		{
+																			"key": "joinLevel",
+																			"value": "6"
+																		}
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Get Created Entity Inline with concise",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"var expected = pm.collectionVariables.get(\"created\");\r",
+																			"pm.test(\"Status code is 200\", function () {\r",
+																			"    pm.response.to.have.status(200);\r",
+																			"});\r",
+																			"\r",
+																			"pm.test(\"Response has correct ID\", function() {\r",
+																			"    pm.expect(pm.response.json().id).to.equal(\"urn:ngsi-ld:AgriParcel:001\");\r",
+																			"});\r",
+																			"pm.test(\"Response has correct structure\", function () {\r",
+																			"    pm.response.to.have.status(200);\r",
+																			"    pm.response.to.be.json;\r",
+																			"    var jsonData = pm.response.json();\r",
+																			"    pm.expect(jsonData).to.have.property(\"id\");\r",
+																			"    pm.expect(jsonData).to.have.property(\"type\");\r",
+																			"    pm.expect(jsonData).to.have.property(\"observation\");\r",
+																			"    pm.expect(jsonData).to.have.property(\"soilType\");\r",
+																			" \r",
+																			"});\r",
+																			"pm.test(\"Observation entity has required properties\", function () {\r",
+																			"    var observationEntity = pm.response.json().observation.entity;\r",
+																			"    pm.expect(observationEntity).to.have.property(\"id\");\r",
+																			"    pm.expect(observationEntity).to.have.property(\"type\");\r",
+																			"    pm.expect(observationEntity).to.have.property(\"humidity\");\r",
+																			"    pm.expect(observationEntity).to.have.property(\"windSpeed\");\r",
+																			"});\r",
+																			"\r",
+																			"\r",
+																			"\r",
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "GET",
+																"header": [
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default"
+																	}
+																],
+																"url": {
+																	"raw": "{{query-manager}}/ngsi-ld/v1/entities/urn:ngsi-ld:AgriParcel:001?options=concise&join=inline&attrs=soilType%2Cobservation%7Bhumidity%2CwindSpeed%7D%20%20&joinLevel=6",
+																	"host": [
+																		"{{query-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities",
+																		"urn:ngsi-ld:AgriParcel:001"
+																	],
+																	"query": [
+																		{
+																			"key": "options",
+																			"value": "concise"
+																		},
+																		{
+																			"key": "join",
+																			"value": "inline"
+																		},
+																		{
+																			"key": "attrs",
+																			"value": "soilType%2Cobservation%7Bhumidity%2CwindSpeed%7D%20%20"
 																		},
 																		{
 																			"key": "joinLevel",
@@ -44209,26 +45864,6 @@
 							"item": []
 						}
 					]
-				}
-			],
-			"event": [
-				{
-					"listen": "prerequest",
-					"script": {
-						"type": "text/javascript",
-						"exec": [
-							""
-						]
-					}
-				},
-				{
-					"listen": "test",
-					"script": {
-						"type": "text/javascript",
-						"exec": [
-							""
-						]
-					}
 				}
 			]
 		},
