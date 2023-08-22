@@ -344,9 +344,9 @@ public class EntityInfoDAO {
 			if (types != null) {
 				sql += "e_types = ARRAY(SELECT DISTINCT UNNEST(e_types || $1)), ";
 				if (noOverwrite) {
-					sql += "ENTITY = ($2 || jsonb_set(ENTITY, '{@type}', array_to_json(e_types)::jsonb))";
+					sql += "ENTITY = (($2::jsonb - 'https://uri.etsi.org/ngsi-ld/createdAt') || jsonb_set(ENTITY, '{@type}', array_to_json(e_types)::jsonb))";
 				} else {
-					sql += "ENTITY = (jsonb_set(ENTITY, '{@type}', array_to_json(e_types)::jsonb) || $2)";
+					sql += "ENTITY = (jsonb_set(ENTITY, '{@type}', array_to_json(e_types)::jsonb) || ($2::jsonb - 'https://uri.etsi.org/ngsi-ld/createdAt'))";
 				}
 
 				dollar = 3;
@@ -354,9 +354,9 @@ public class EntityInfoDAO {
 				tuple.addJsonObject(new JsonObject(payload));
 			} else {
 				if (noOverwrite) {
-					sql += " ENTITY = ($1 || ENTITY) ";
+					sql += " ENTITY = (($1::jsonb - 'https://uri.etsi.org/ngsi-ld/createdAt') || ENTITY) ";
 				} else {
-					sql += " ENTITY = (ENTITY || $1) ";
+					sql += " ENTITY = (ENTITY || ($1::jsonb - 'https://uri.etsi.org/ngsi-ld/createdAt')) ";
 				}
 				tuple.addJsonObject(new JsonObject(payload));
 			}
