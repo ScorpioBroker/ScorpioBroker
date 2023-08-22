@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "f13b93d2-75c5-4333-bded-a41a871c7717",
+		"_postman_id": "700f44d5-8d1c-4fc0-ab32-0d5f2ac94ac0",
 		"name": "API Test",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "26387112"
@@ -464,6 +464,181 @@
 															{
 																"key": "Link",
 																"value": "{{link}}",
+																"type": "default"
+															}
+														],
+														"url": {
+															"raw": "{{query-manager}}/ngsi-ld/v1/entities/{{entityId}}",
+															"host": [
+																"{{query-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities",
+																"{{entityId}}"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Delete Entity",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});\r",
+																	"pm.collectionVariables.clear();"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "DELETE",
+														"header": [],
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities/{{entityId}}",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities",
+																"{{entityId}}"
+															]
+														}
+													},
+													"response": []
+												}
+											]
+										},
+										{
+											"name": "Entity Concise",
+											"item": [
+												{
+													"name": "Create Simple Entity No Context",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"console.log(payloadBody.id);\r",
+																	"var entityId = payloadBody.id;\r",
+																	"pm.collectionVariables.set(\"created\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"entityId\", entityId);\r",
+																	"pm.test(\"Status code is 201\", function () {\r",
+																	"    pm.response.to.have.status(201);\r",
+																	"});\r",
+																	"pm.test(\"Check location header\", function () {\r",
+																	"    pm.response.to.have.header(\"Location\");\r",
+																	"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+																	"});\r",
+																	"\r",
+																	"\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity999\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": \"teststring\",\r\n    \"intproperty\": 123,\r\n    \"floatproperty\": 123.456,\r\n    \"complexproperty\": {\"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"object\": \"urn:testref1\"},\r\n    \"street\": {\r\n        \"languageMap\": {\r\n            \"fr\": \"Grand Place\",\r\n            \"nl\": \"Grote Markt\"\r\n        }\r\n    }\r\n\r\n}",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Get Created Entity and Validate content",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var expected = {\r",
+																	"    \"id\": \"urn:test:testentity999\",\r",
+																	"    \"type\": \"TestType\",\r",
+																	"    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r",
+																	"    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r",
+																	"    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r",
+																	"    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r",
+																	"    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r",
+																	"    \"street\": {\r",
+																	"        \"type\": \"LanguageProperty\",\r",
+																	"        \"languageMap\": {\r",
+																	"            \"fr\": \"Grand Place\",\r",
+																	"            \"nl\": \"Grote Markt\"\r",
+																	"        }\r",
+																	"    }\r",
+																	"\r",
+																	"};\r",
+																	"pm.test(\"Status code is 200\", function () {\r",
+																	"    pm.response.to.have.status(200);\r",
+																	"});\r",
+																	"pm.test(\"Validate content\", function () {\r",
+																	"    var jsonData = pm.response.json();\r",
+																	"    console.log(\"Expected: \" + expected);\r",
+																	"    console.log(\"Received: \" + jsonData);\r",
+																	"    pm.expect(jsonData).to.eql(expected);\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Accept",
+																"value": "application/json",
 																"type": "default"
 															}
 														],
@@ -10532,6 +10707,71 @@
 																{
 																	"key": "attrs",
 																	"value": "stringproperty"
+																}
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Query for entity type tbf and q",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 200\", function () {\r",
+																	"    pm.response.to.have.status(200);\r",
+																	"});\r",
+																	"\r",
+																	"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
+																	"    var jsonData = pm.response.json();\r",
+																	"    pm.expect(jsonData.length).to.eql(1);\r",
+																	"    var entity = jsonData[0];\r",
+																	"    var keys = Object.keys(entity);\r",
+																	"    pm.expect(keys.length).to.eql(3);\r",
+																	"    pm.expect(keys).to.contain(\"id\");\r",
+																	"    pm.expect(keys).to.contain(\"type\");\r",
+																	"    pm.expect(keys).to.contain(\"stringproperty\");\r",
+																	"    pm.expect(keys).to.not.contain(\"intproperty\");\r",
+																	"    \r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default"
+															}
+														],
+														"url": {
+															"raw": "{{query-manager}}/ngsi-ld/v1/entities?type={{entityTypeTBF}}&attrs=stringproperty&q=stringproperty==teststring",
+															"host": [
+																"{{query-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities"
+															],
+															"query": [
+																{
+																	"key": "type",
+																	"value": "{{entityTypeTBF}}"
+																},
+																{
+																	"key": "attrs",
+																	"value": "stringproperty"
+																},
+																{
+																	"key": "q",
+																	"value": "stringproperty==teststring"
 																}
 															]
 														}
@@ -24398,6 +24638,978 @@
 																"temporal",
 																"entities",
 																"{{entityId}}"
+															]
+														}
+													},
+													"response": []
+												}
+											]
+										}
+									]
+								},
+								{
+									"name": "Temporal Queries",
+									"item": [
+										{
+											"name": "Prep",
+											"item": [
+												{
+													"name": "Create temporal entity with  @context in body",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"console.log(payloadBody.id);\r",
+																	"var entityId = payloadBody.id;\r",
+																	"pm.collectionVariables.set(\"created\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"entityId\", entityId);\r",
+																	"pm.test(\"Status code is 201\", function () {\r",
+																	"    pm.response.to.have.status(201);\r",
+																	"});\r",
+																	"pm.test(\"Check location header\", function () {\r",
+																	"    pm.response.to.have.header(\"Location\");\r",
+																	"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+																	"});\r",
+																	"\r",
+																	"\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "Accept",
+																"value": "application/ld+json",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n    \"id\": \"urn:test:testbatchentity:MyTempTestType100510101\",\r\n    \"type\": \"MyTempTestType\",\r\n    \"brandName\": [\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": \"Mercedes\",\r\n            \"observedAt\": \"2022-09-10T13:21:24.000Z\"\r\n        }\r\n    ],\r\n    \"speed\": [\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 91,\r\n            \"observedAt\": \"2022-09-10T13:21:24.000Z\"\r\n        },\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 80,\r\n            \"observedAt\": \"2022-09-10T12:21:24.000Z\"\r\n        }\r\n    ],\r\n    \"speed2\": [\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 91\r\n        },\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 80\r\n        }\r\n    ]\r\n}"
+														},
+														"url": {
+															"raw": "{{history-entity-manager}}/ngsi-ld/v1/temporal/entities",
+															"host": [
+																"{{history-entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"temporal",
+																"entities"
+															]
+														}
+													},
+													"response": []
+												}
+											]
+										},
+										{
+											"name": "AggrQueries",
+											"item": [
+												{
+													"name": "Get Created Temporal Entity by type and all aggr methods",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Content-Type is present\", function () {\r",
+																	"    pm.response.to.have.header(\"Content-Type\");\r",
+																	"});\r",
+																	"var expected = pm.collectionVariables.get(\"created\");\r",
+																	"pm.test(\"Status code is 200\", function () {\r",
+																	"    pm.response.to.have.status(200);\r",
+																	"});\r",
+																	"pm.test(\"Validate content\", function () {\r",
+																	"   responseBody = pm.response.json()[0];\r",
+																	"   console.log(responseBody);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"sumsq\"][0][0]).to.eql(14681.0);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"distinctCount\"][0][0]).to.eql(2);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"min\"][0][0]).to.eql(80);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"avg\"][0][0]).to.eql(85.5);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"max\"][0][0]).to.eql(91);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"sum\"][0][0]).to.eql(171);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"stddev\"][0][0]).to.eql(7.7781745930520225);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"totalCount\"][0][0]).to.eql(2);\r",
+																	"\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Accept",
+																"value": "application/ld+json",
+																"type": "default"
+															}
+														],
+														"url": {
+															"raw": "{{history-query-manager}}/ngsi-ld/v1/temporal/entities?type=MyTempTestType&aggrMethods=max,min,avg,sum,sumsq,stddev,totalCount,distinctCount&timeproperty=observedAt",
+															"host": [
+																"{{history-query-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"temporal",
+																"entities"
+															],
+															"query": [
+																{
+																	"key": "type",
+																	"value": "MyTempTestType"
+																},
+																{
+																	"key": "aggrMethods",
+																	"value": "max,min,avg,sum,sumsq,stddev,totalCount,distinctCount"
+																},
+																{
+																	"key": "timeproperty",
+																	"value": "observedAt"
+																}
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Get Created Temporal Entity by type and all aggr methods modifiedAt",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Content-Type is present\", function () {\r",
+																	"    pm.response.to.have.header(\"Content-Type\");\r",
+																	"});\r",
+																	"var expected = pm.collectionVariables.get(\"created\");\r",
+																	"pm.test(\"Status code is 200\", function () {\r",
+																	"    pm.response.to.have.status(200);\r",
+																	"});\r",
+																	"pm.test(\"Validate content\", function () {\r",
+																	"   responseBody = pm.response.json()[0];\r",
+																	"   console.log(responseBody);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"sumsq\"][0][0]).to.eql(14681.0);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"distinctCount\"][0][0]).to.eql(2);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"min\"][0][0]).to.eql(80);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"avg\"][0][0]).to.eql(85.5);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"max\"][0][0]).to.eql(91);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"sum\"][0][0]).to.eql(171);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"stddev\"][0][0]).to.eql(7.7781745930520225);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"totalCount\"][0][0]).to.eql(2);\r",
+																	"   pm.expect(responseBody[\"speed2\"][\"sumsq\"][0][0]).to.eql(14681.0);\r",
+																	"   pm.expect(responseBody[\"speed2\"][\"distinctCount\"][0][0]).to.eql(2);\r",
+																	"   pm.expect(responseBody[\"speed2\"][\"min\"][0][0]).to.eql(80);\r",
+																	"   pm.expect(responseBody[\"speed2\"][\"avg\"][0][0]).to.eql(85.5);\r",
+																	"   pm.expect(responseBody[\"speed2\"][\"max\"][0][0]).to.eql(91);\r",
+																	"   pm.expect(responseBody[\"speed2\"][\"sum\"][0][0]).to.eql(171);\r",
+																	"   pm.expect(responseBody[\"speed2\"][\"stddev\"][0][0]).to.eql(7.7781745930520225);\r",
+																	"   pm.expect(responseBody[\"speed2\"][\"totalCount\"][0][0]).to.eql(2);\r",
+																	"\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Accept",
+																"value": "application/ld+json",
+																"type": "default"
+															}
+														],
+														"url": {
+															"raw": "{{history-query-manager}}/ngsi-ld/v1/temporal/entities?type=MyTempTestType&aggrMethods=max,min,avg,sum,sumsq,stddev,totalCount,distinctCount&timeproperty=modifiedAt",
+															"host": [
+																"{{history-query-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"temporal",
+																"entities"
+															],
+															"query": [
+																{
+																	"key": "type",
+																	"value": "MyTempTestType"
+																},
+																{
+																	"key": "aggrMethods",
+																	"value": "max,min,avg,sum,sumsq,stddev,totalCount,distinctCount"
+																},
+																{
+																	"key": "timeproperty",
+																	"value": "modifiedAt"
+																}
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Get Created Temporal Entity by type and all aggr methods with duration",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Content-Type is present\", function () {\r",
+																	"    pm.response.to.have.header(\"Content-Type\");\r",
+																	"});\r",
+																	"var expected = pm.collectionVariables.get(\"created\");\r",
+																	"pm.test(\"Status code is 200\", function () {\r",
+																	"    pm.response.to.have.status(200);\r",
+																	"});\r",
+																	"pm.test(\"Validate content\", function () {\r",
+																	"   responseBody = pm.response.json()[0];\r",
+																	"   console.log(responseBody);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"sumsq\"][0][0]).to.eql(6400.0);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"distinctCount\"][0][0]).to.eql(1);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"min\"][0][0]).to.eql(80);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"avg\"][0][0]).to.eql(80);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"max\"][0][0]).to.eql(80);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"sum\"][0][0]).to.eql(80);\r",
+																	"   //pm.expect(responseBody[\"speed\"][\"stddev\"][0][0]).to.eql(7.7781745930520225);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"totalCount\"][0][0]).to.eql(1);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"sumsq\"][1][0]).to.eql(8281.0);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"distinctCount\"][1][0]).to.eql(1);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"min\"][1][0]).to.eql(91);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"avg\"][1][0]).to.eql(91);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"max\"][1][0]).to.eql(91);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"sum\"][1][0]).to.eql(91);\r",
+																	"   //pm.expect(responseBody[\"speed\"][\"stddev\"][0][0]).to.eql(7.7781745930520225);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"totalCount\"][1][0]).to.eql(1);\r",
+																	"\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Accept",
+																"value": "application/ld+json",
+																"type": "default"
+															}
+														],
+														"url": {
+															"raw": "{{history-query-manager}}/ngsi-ld/v1/temporal/entities?type=MyTempTestType&aggrMethods=max,min,avg,sum,sumsq,stddev,totalCount,distinctCount&aggrPeriodDuration=PT10S",
+															"host": [
+																"{{history-query-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"temporal",
+																"entities"
+															],
+															"query": [
+																{
+																	"key": "type",
+																	"value": "MyTempTestType"
+																},
+																{
+																	"key": "aggrMethods",
+																	"value": "max,min,avg,sum,sumsq,stddev,totalCount,distinctCount"
+																},
+																{
+																	"key": "aggrPeriodDuration",
+																	"value": "PT10S"
+																}
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Get Created Temporal Entity by type and all aggr methods with duration Copy",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Content-Type is present\", function () {\r",
+																	"    pm.response.to.have.header(\"Content-Type\");\r",
+																	"});\r",
+																	"var expected = pm.collectionVariables.get(\"created\");\r",
+																	"pm.test(\"Status code is 200\", function () {\r",
+																	"    pm.response.to.have.status(200);\r",
+																	"});\r",
+																	"pm.test(\"Validate content\", function () {\r",
+																	"   responseBody = pm.response.json()[0];\r",
+																	"   console.log(responseBody);\r",
+																	"   \r",
+																	"   pm.expect(responseBody[\"speed\"][\"sumsq\"][0][0]).to.eql(8281.0);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"distinctCount\"][0][0]).to.eql(1);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"min\"][0][0]).to.eql(91);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"avg\"][0][0]).to.eql(91);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"max\"][0][0]).to.eql(91);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"sum\"][0][0]).to.eql(91);\r",
+																	"   //No STDDEV for one entry\r",
+																	"   //pm.expect(responseBody[\"speed\"][\"stddev\"][0][0]).to.eql(7.7781745930520225);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"totalCount\"][0][0]).to.eql(1);\r",
+																	"\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Accept",
+																"value": "application/ld+json",
+																"type": "default"
+															}
+														],
+														"url": {
+															"raw": "{{history-query-manager}}/ngsi-ld/v1/temporal/entities?type=MyTempTestType&aggrMethods=max,min,avg,sum,sumsq,stddev,totalCount,distinctCount&aggrPeriodDuration=PT1H&timerel=after&timeAt=2022-09-10T13%3A11%3A34.000000Z",
+															"host": [
+																"{{history-query-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"temporal",
+																"entities"
+															],
+															"query": [
+																{
+																	"key": "type",
+																	"value": "MyTempTestType"
+																},
+																{
+																	"key": "aggrMethods",
+																	"value": "max,min,avg,sum,sumsq,stddev,totalCount,distinctCount"
+																},
+																{
+																	"key": "aggrPeriodDuration",
+																	"value": "PT1H"
+																},
+																{
+																	"key": "timerel",
+																	"value": "after"
+																},
+																{
+																	"key": "timeAt",
+																	"value": "2022-09-10T13%3A11%3A34.000000Z"
+																}
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Get Created Temporal Entity by type and all aggr methods with duration before",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Content-Type is present\", function () {\r",
+																	"    pm.response.to.have.header(\"Content-Type\");\r",
+																	"});\r",
+																	"var expected = pm.collectionVariables.get(\"created\");\r",
+																	"pm.test(\"Status code is 200\", function () {\r",
+																	"    pm.response.to.have.status(200);\r",
+																	"});\r",
+																	"pm.test(\"Validate content\", function () {\r",
+																	"   responseBody = pm.response.json()[0];\r",
+																	"   console.log(responseBody);\r",
+																	"   \r",
+																	"   pm.expect(responseBody[\"speed\"][\"sumsq\"][0][0]).to.eql(6400.0);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"distinctCount\"][0][0]).to.eql(1);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"min\"][0][0]).to.eql(80);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"avg\"][0][0]).to.eql(80);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"max\"][0][0]).to.eql(80);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"sum\"][0][0]).to.eql(80);\r",
+																	"   //pm.expect(responseBody[\"speed\"][\"stddev\"][0][0]).to.eql(7.7781745930520225);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"totalCount\"][0][0]).to.eql(1);\r",
+																	"\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Accept",
+																"value": "application/ld+json",
+																"type": "default"
+															}
+														],
+														"url": {
+															"raw": "{{history-query-manager}}/ngsi-ld/v1/temporal/entities?type=MyTempTestType&aggrMethods=max,min,avg,sum,sumsq,stddev,totalCount,distinctCount&aggrPeriodDuration=PT1H&timerel=before&timeAt=2022-09-10T13%3A11%3A34.000000Z",
+															"host": [
+																"{{history-query-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"temporal",
+																"entities"
+															],
+															"query": [
+																{
+																	"key": "type",
+																	"value": "MyTempTestType"
+																},
+																{
+																	"key": "aggrMethods",
+																	"value": "max,min,avg,sum,sumsq,stddev,totalCount,distinctCount"
+																},
+																{
+																	"key": "aggrPeriodDuration",
+																	"value": "PT1H"
+																},
+																{
+																	"key": "timerel",
+																	"value": "before"
+																},
+																{
+																	"key": "timeAt",
+																	"value": "2022-09-10T13%3A11%3A34.000000Z"
+																}
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Get Created Temporal Entity by type and all aggr methods with duration between",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Content-Type is present\", function () {\r",
+																	"    pm.response.to.have.header(\"Content-Type\");\r",
+																	"});\r",
+																	"var expected = pm.collectionVariables.get(\"created\");\r",
+																	"pm.test(\"Status code is 200\", function () {\r",
+																	"    pm.response.to.have.status(200);\r",
+																	"});\r",
+																	"pm.test(\"Validate content\", function () {\r",
+																	"   responseBody = pm.response.json()[0];\r",
+																	"   console.log(responseBody);\r",
+																	"   \r",
+																	"   pm.expect(responseBody[\"speed\"][\"sumsq\"][0][0]).to.eql(6400.0);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"distinctCount\"][0][0]).to.eql(1);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"min\"][0][0]).to.eql(80);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"avg\"][0][0]).to.eql(80);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"max\"][0][0]).to.eql(80);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"sum\"][0][0]).to.eql(80);\r",
+																	"   //pm.expect(responseBody[\"speed\"][\"stddev\"][0][0]).to.eql(7.7781745930520225);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"totalCount\"][0][0]).to.eql(1);\r",
+																	"\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Accept",
+																"value": "application/ld+json",
+																"type": "default"
+															}
+														],
+														"url": {
+															"raw": "{{history-query-manager}}/ngsi-ld/v1/temporal/entities?type=MyTempTestType&aggrMethods=max,min,avg,sum,sumsq,stddev,totalCount,distinctCount&aggrPeriodDuration=PT1H&timerel=between&endTimeAt=2022-09-10T13%3A11%3A34.000000Z&timeAt=2022-09-10T12%3A11%3A34.000000Z",
+															"host": [
+																"{{history-query-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"temporal",
+																"entities"
+															],
+															"query": [
+																{
+																	"key": "type",
+																	"value": "MyTempTestType"
+																},
+																{
+																	"key": "aggrMethods",
+																	"value": "max,min,avg,sum,sumsq,stddev,totalCount,distinctCount"
+																},
+																{
+																	"key": "aggrPeriodDuration",
+																	"value": "PT1H"
+																},
+																{
+																	"key": "timerel",
+																	"value": "between"
+																},
+																{
+																	"key": "endTimeAt",
+																	"value": "2022-09-10T13%3A11%3A34.000000Z"
+																},
+																{
+																	"key": "timeAt",
+																	"value": "2022-09-10T12%3A11%3A34.000000Z"
+																}
+															]
+														}
+													},
+													"response": []
+												}
+											]
+										},
+										{
+											"name": "TempQueries",
+											"item": [
+												{
+													"name": "Get Created Temporal Entity by type and all aggr methods",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Content-Type is present\", function () {\r",
+																	"    pm.response.to.have.header(\"Content-Type\");\r",
+																	"});\r",
+																	"var expected = pm.collectionVariables.get(\"created\");\r",
+																	"pm.test(\"Status code is 200\", function () {\r",
+																	"    pm.response.to.have.status(200);\r",
+																	"});\r",
+																	"pm.test(\"Validate content\", function () {\r",
+																	"   responseBody = pm.response.json()[0];\r",
+																	"   console.log(responseBody);\r",
+																	"   pm.expect(responseBody[\"brandName\"][\"value\"]).to.eql(\"Mercedes\");\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"value\"]).to.eql(91);\r",
+																	"   pm.expect(responseBody[\"speed\"][1][\"value\"]).to.eql(80);\r",
+																	"   pm.expect(responseBody[\"speed2\"][0][\"value\"]).to.eql(91);\r",
+																	"   pm.expect(responseBody[\"speed2\"][1][\"value\"]).to.eql(80);\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Accept",
+																"value": "application/ld+json",
+																"type": "default"
+															}
+														],
+														"url": {
+															"raw": "{{history-query-manager}}/ngsi-ld/v1/temporal/entities?type=MyTempTestType",
+															"host": [
+																"{{history-query-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"temporal",
+																"entities"
+															],
+															"query": [
+																{
+																	"key": "type",
+																	"value": "MyTempTestType"
+																},
+																{
+																	"key": "aggrMethods",
+																	"value": "max,min,avg,sum,sumsq,stddev,totalCount,distinctCount",
+																	"disabled": true
+																},
+																{
+																	"key": "timeproperty",
+																	"value": "observedAt",
+																	"disabled": true
+																}
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Get Created Temporal Entity by type after",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Content-Type is present\", function () {\r",
+																	"    pm.response.to.have.header(\"Content-Type\");\r",
+																	"});\r",
+																	"var expected = pm.collectionVariables.get(\"created\");\r",
+																	"pm.test(\"Status code is 200\", function () {\r",
+																	"    pm.response.to.have.status(200);\r",
+																	"});\r",
+																	"pm.test(\"Validate content\", function () {\r",
+																	"   responseBody = pm.response.json()[0];\r",
+																	"   console.log(responseBody);\r",
+																	"    pm.expect(responseBody[\"brandName\"][\"value\"]).to.eql(\"Mercedes\");\r",
+																	"   pm.expect(responseBody[\"speed\"][\"value\"]).to.eql(91);\r",
+																	"   pm.expect(responseBody).to.not.have.property(\"speed2\");\r",
+																	"   \r",
+																	"\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Accept",
+																"value": "application/ld+json",
+																"type": "default"
+															}
+														],
+														"url": {
+															"raw": "{{history-query-manager}}/ngsi-ld/v1/temporal/entities?type=MyTempTestType&timerel=after&timeAt=2022-09-10T13%3A11%3A34.000000Z",
+															"host": [
+																"{{history-query-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"temporal",
+																"entities"
+															],
+															"query": [
+																{
+																	"key": "type",
+																	"value": "MyTempTestType"
+																},
+																{
+																	"key": "aggrMethods",
+																	"value": "max,min,avg,sum,sumsq,stddev,totalCount,distinctCount",
+																	"disabled": true
+																},
+																{
+																	"key": "aggrPeriodDuration",
+																	"value": "PT1H",
+																	"disabled": true
+																},
+																{
+																	"key": "timerel",
+																	"value": "after"
+																},
+																{
+																	"key": "timeAt",
+																	"value": "2022-09-10T13%3A11%3A34.000000Z"
+																}
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Get Created Temporal Entity by type after modifiedAt",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Content-Type is present\", function () {\r",
+																	"    pm.response.to.have.header(\"Content-Type\");\r",
+																	"});\r",
+																	"var expected = pm.collectionVariables.get(\"created\");\r",
+																	"pm.test(\"Status code is 200\", function () {\r",
+																	"    pm.response.to.have.status(200);\r",
+																	"});\r",
+																	"pm.test(\"Validate content\", function () {\r",
+																	"   responseBody = pm.response.json()[0];\r",
+																	"   console.log(responseBody);\r",
+																	"    pm.expect(responseBody[\"brandName\"][\"value\"]).to.eql(\"Mercedes\");\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"value\"]).to.eql(91);\r",
+																	"   pm.expect(responseBody[\"speed\"][1][\"value\"]).to.eql(80);\r",
+																	"   pm.expect(responseBody[\"speed2\"][0][\"value\"]).to.eql(91);\r",
+																	"   pm.expect(responseBody[\"speed2\"][1][\"value\"]).to.eql(80);\r",
+																	"   \r",
+																	"\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Accept",
+																"value": "application/ld+json",
+																"type": "default"
+															}
+														],
+														"url": {
+															"raw": "{{history-query-manager}}/ngsi-ld/v1/temporal/entities?type=MyTempTestType&timerel=after&timeAt=2022-09-10T13%3A11%3A34.000000Z&timeproperty=modifiedAt",
+															"host": [
+																"{{history-query-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"temporal",
+																"entities"
+															],
+															"query": [
+																{
+																	"key": "type",
+																	"value": "MyTempTestType"
+																},
+																{
+																	"key": "aggrMethods",
+																	"value": "max,min,avg,sum,sumsq,stddev,totalCount,distinctCount",
+																	"disabled": true
+																},
+																{
+																	"key": "aggrPeriodDuration",
+																	"value": "PT1H",
+																	"disabled": true
+																},
+																{
+																	"key": "timerel",
+																	"value": "after"
+																},
+																{
+																	"key": "timeAt",
+																	"value": "2022-09-10T13%3A11%3A34.000000Z"
+																},
+																{
+																	"key": "timeproperty",
+																	"value": "modifiedAt"
+																}
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Get Created Temporal Entity by type before",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Content-Type is present\", function () {\r",
+																	"    pm.response.to.have.header(\"Content-Type\");\r",
+																	"});\r",
+																	"var expected = pm.collectionVariables.get(\"created\");\r",
+																	"pm.test(\"Status code is 200\", function () {\r",
+																	"    pm.response.to.have.status(200);\r",
+																	"});\r",
+																	"pm.test(\"Validate content\", function () {\r",
+																	"   responseBody = pm.response.json()[0];\r",
+																	"   console.log(responseBody);\r",
+																	"   pm.expect(responseBody[\"speed\"][\"value\"]).to.eql(80);\r",
+																	"   pm.expect(responseBody).to.not.have.property(\"speed2\");\r",
+																	"   pm.expect(responseBody).to.not.have.property(\"Mercedes\");\r",
+																	"   \r",
+																	"\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Accept",
+																"value": "application/ld+json",
+																"type": "default"
+															}
+														],
+														"url": {
+															"raw": "{{history-query-manager}}/ngsi-ld/v1/temporal/entities?type=MyTempTestType&timerel=before&timeAt=2022-09-10T13%3A11%3A34.000000Z",
+															"host": [
+																"{{history-query-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"temporal",
+																"entities"
+															],
+															"query": [
+																{
+																	"key": "type",
+																	"value": "MyTempTestType"
+																},
+																{
+																	"key": "aggrMethods",
+																	"value": "max,min,avg,sum,sumsq,stddev,totalCount,distinctCount",
+																	"disabled": true
+																},
+																{
+																	"key": "aggrPeriodDuration",
+																	"value": "PT1H",
+																	"disabled": true
+																},
+																{
+																	"key": "timerel",
+																	"value": "before"
+																},
+																{
+																	"key": "timeAt",
+																	"value": "2022-09-10T13%3A11%3A34.000000Z"
+																}
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Get Created Temporal Entity by type after modifiedAt Copy",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Content-Type is present\", function () {\r",
+																	"    pm.response.to.have.header(\"Content-Type\");\r",
+																	"});\r",
+																	"var expected = pm.collectionVariables.get(\"created\");\r",
+																	"pm.test(\"Status code is 200\", function () {\r",
+																	"    pm.response.to.have.status(200);\r",
+																	"});\r",
+																	"pm.test(\"Validate content\", function () {\r",
+																	"   responseBody = pm.response.json()[0];\r",
+																	"   console.log(responseBody);\r",
+																	"    pm.expect(responseBody[\"brandName\"][\"value\"]).to.eql(\"Mercedes\");\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"value\"]).to.eql(91);\r",
+																	"   pm.expect(responseBody[\"speed\"][1][\"value\"]).to.eql(80);\r",
+																	"   pm.expect(responseBody).to.not.have.property(\"speed2\");\r",
+																	"   \r",
+																	"\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Accept",
+																"value": "application/ld+json",
+																"type": "default"
+															}
+														],
+														"url": {
+															"raw": "{{history-query-manager}}/ngsi-ld/v1/temporal/entities?type=MyTempTestType&timerel=between&timeAt=2022-09-10T11%3A11%3A34.000000Z&endTimeAt=2022-09-10T14%3A11%3A34.000000Z",
+															"host": [
+																"{{history-query-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"temporal",
+																"entities"
+															],
+															"query": [
+																{
+																	"key": "type",
+																	"value": "MyTempTestType"
+																},
+																{
+																	"key": "aggrMethods",
+																	"value": "max,min,avg,sum,sumsq,stddev,totalCount,distinctCount",
+																	"disabled": true
+																},
+																{
+																	"key": "aggrPeriodDuration",
+																	"value": "PT1H",
+																	"disabled": true
+																},
+																{
+																	"key": "timerel",
+																	"value": "between"
+																},
+																{
+																	"key": "timeAt",
+																	"value": "2022-09-10T11%3A11%3A34.000000Z"
+																},
+																{
+																	"key": "endTimeAt",
+																	"value": "2022-09-10T14%3A11%3A34.000000Z"
+																}
+															]
+														}
+													},
+													"response": []
+												}
+											]
+										},
+										{
+											"name": "After",
+											"item": [
+												{
+													"name": "delete temp",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});\r",
+																	"pm.collectionVariables.clear();"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "DELETE",
+														"header": [],
+														"url": {
+															"raw": "{{history-entity-manager}}/ngsi-ld/v1/temporal/entities/urn:test:testbatchentity:MyTempTestType100510101",
+															"host": [
+																"{{history-entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"temporal",
+																"entities",
+																"urn:test:testbatchentity:MyTempTestType100510101"
 															]
 														}
 													},
@@ -45865,6 +47077,26 @@
 						}
 					]
 				}
+			],
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
 			]
 		},
 		{
@@ -48229,6 +49461,20 @@
 					]
 				}
 			]
+		}
+	],
+	"variable": [
+		{
+			"key": "created",
+			"value": ""
+		},
+		{
+			"key": "entityId",
+			"value": ""
+		},
+		{
+			"key": "@context",
+			"value": ""
 		}
 	]
 }

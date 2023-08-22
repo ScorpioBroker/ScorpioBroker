@@ -372,6 +372,9 @@ public class QueryParser {
 			throw new ResponseException(ErrorType.InvalidRequest, timeProperty + " is not an allowed timeproperty. Use "
 					+ StringUtils.join(NGSIConstants.ALLOWED_TIME_PROPERTIES, " or "));
 		}
+		if (timeRel == null) {
+			return new TemporalQueryTerm(timeProperty, null, null, null);
+		}
 		switch (timeRel) {
 		case NGSIConstants.TIME_REL_AFTER:
 			if (endTimeAt != null) {

@@ -1,3 +1,40 @@
+RELEASE NOTES SCORPIO 4.1.3
+
+This release add various bug fixes and a performance improvement on temporal queries. 
+These improvements require some restructuring of the temporal database. 
+If you have a big temporal database the migration can require a several hours to complete. 
+ATTENTION!!!
+DO NOT STOP OR RESTART SCORPIO WHILE THE MIGRATION IS RUNNING!
+Don't be worried if you see no CPU activity on Scorpio during this phase. The database does most of the work.
+If you stop Scorpio during this phase there is a chance that the executing query is still running in the database.
+This can pile up and make your DB slow. 
+
+As an alternative you can also run Flyway as standalone container to run the migrations.
+This is also a good way to get something repaired.
+
+You can add the following to your existing docker-compose file
+flyway:
+    image: flyway/flyway
+    command: -url=jdbc:postgresql://postgres:5432/ngb -user=ngb -password=ngb -connectRetries=60 -baselineOnMigrate=true migrate -X
+    volumes:
+      - "./scorpiobroker/AllInOneRunner/src/main/resources/db/migration:/flyway/sql"
+    depends_on:
+      - postgres
+    restart: on-failure
+
+it needs the migration files mounted on /flyway/sql
+this assumes you have cloned the git repo into the same folder as your compose file. change the volume mount if needed.
+after run
+docker-compose -f <your compose file> stop scorpio
+to stop scorpio
+docker-compose -f <your compose file> start flyway
+to start the migration
+after finish start scorpio again 
+docker-compose -f <your compose file> start scorpio
+
+I would recommend commenting or removing the flyway entry afterwards.   
+
+
 RELEASE NOTES SCORPIO 4.1.1
 
 This release 

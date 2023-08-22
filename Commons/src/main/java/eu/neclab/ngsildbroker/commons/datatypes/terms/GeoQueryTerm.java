@@ -143,32 +143,32 @@ public class GeoQueryTerm implements Serializable {
 		this.distanceValue = distanceValue;
 	}
 
-	public Tuple4<Character, String, Integer, List<Object>> toSql(char startChar, Character prevResult, int dollar)
-			throws ResponseException {
-		StringBuilder builder = new StringBuilder();
-		List<Object> tupleItems = Lists.newArrayList();
-		builder.append(startChar);
-		builder.append(" as (SELECT attr2iid.iid FROM ");
-		if (prevResult != null) {
-			builder.append(prevResult);
-			builder.append(" LEFT JOIN attr2iid ON ");
-			builder.append(prevResult);
-			builder.append(".iid = attr2iid.iid WHERE ");
-		} else {
-			builder.append(" attr2iid WHERE ");
-		}
-		builder.append(" isGeo AND attr=$");
-		builder.append(dollar);
-		dollar++;
-		tupleItems.add(geoproperty);
-		builder.append(" AND ");
-		Tuple2<StringBuilder, Integer> tmp = getGeoSQLQuery(tupleItems, dollar, "geo_value");
-		builder.append(tmp.getItem1());
+//	public Tuple4<Character, String, Integer, List<Object>> toSql(char startChar, Character prevResult, int dollar)
+//			throws ResponseException {
+//		StringBuilder builder = new StringBuilder();
+//		List<Object> tupleItems = Lists.newArrayList();
+//		builder.append(startChar);
+//		builder.append(" as (SELECT attr2iid.iid FROM ");
+//		if (prevResult != null) {
+//			builder.append(prevResult);
+//			builder.append(" LEFT JOIN attr2iid ON ");
+//			builder.append(prevResult);
+//			builder.append(".iid = attr2iid.iid WHERE ");
+//		} else {
+//			builder.append(" attr2iid WHERE ");
+//		}
+//		builder.append(" isGeo AND attr=$");
+//		builder.append(dollar);
+//		dollar++;
+//		tupleItems.add(geoproperty);
+//		builder.append(" AND ");
+//		Tuple2<StringBuilder, Integer> tmp = getGeoSQLQuery(tupleItems, dollar, "geo_value");
+//		builder.append(tmp.getItem1());
+//
+//		return Tuple4.of(startChar, builder.toString(), tmp.getItem2(), tupleItems);
+//	}
 
-		return Tuple4.of(startChar, builder.toString(), tmp.getItem2(), tupleItems);
-	}
-
-	public Tuple2<StringBuilder, Integer> getGeoSQLQuery(List<Object> tupleItems, int dollar, String fieldName)
+	public Tuple2<StringBuilder, Integer> getGeoSQLQuery(Tuple tuple, int dollar, String fieldName)
 			throws ResponseException {
 		String referenceValue = "ST_SetSRID(ST_GeomFromGeoJSON('{\"type\": \"" + geometry + "\", \"coordinates\": "
 				+ coordinates + " }'), 4326)";
@@ -212,6 +212,66 @@ public class GeoQueryTerm implements Serializable {
 			query.append("\"]}]}' AND ");
 			dbColumn = "ST_SetSRID(ST_GeomFromGeoJSON( getGeoJson( " + "data#>'{" + geoproperty + ",0,"
 					+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0}') ), 4326)";
+		} else {
+			dbColumn = "location";
+		}
+
+		String referenceValue = "ST_SetSRID(ST_GeomFromGeoJSON('{\"type\": \"" + geometry + "\", \"coordinates\": "
+				+ coordinates + " }'), 4326)";
+		String sqlPostgisFunction = DBConstants.NGSILD_TO_POSTGIS_GEO_OPERATORS_MAPPING.get(georel);
+		switch (georel) {
+		case NGSIConstants.GEO_REL_NEAR:
+			if (distanceType.equals(NGSIConstants.GEO_REL_MIN_DISTANCE)) {
+				query.append("NOT ");
+			}
+			query.append(sqlPostgisFunction);
+			query.append("( ");
+			query.append(dbColumn);
+			query.append("::geography, ");
+			query.append(referenceValue);
+			query.append("::geography, ");
+			query.append(distanceValue);
+			query.append(") ");
+//			query.append("or ");
+//			query.append(sqlPostgisFunction);
+//			query.append("( ");
+//			query.append(dbColumn);
+//			query.append(", ");
+//			query.append(referenceValue);
+//			query.append(", ");
+//			query.append(distanceValue);
+//			query.append(") ");
+			break;
+		case NGSIConstants.GEO_REL_WITHIN:
+		case NGSIConstants.GEO_REL_CONTAINS:
+		case NGSIConstants.GEO_REL_OVERLAPS:
+		case NGSIConstants.GEO_REL_INTERSECTS:
+		case NGSIConstants.GEO_REL_EQUALS:
+		case NGSIConstants.GEO_REL_DISJOINT:
+			query.append(sqlPostgisFunction);
+			query.append("( ");
+			query.append(dbColumn);
+			query.append(", ");
+			query.append(referenceValue);
+			query.append(") ");
+			break;
+		}
+		return dollar;
+	}
+
+	public int toTempSql(StringBuilder query, Tuple tuple, int dollar) throws ResponseException{
+		String dbColumn;
+		if (!geoproperty.equals(NGSIConstants.NGSI_LD_LOCATION)) {
+//			query.append("data @> '{\"");
+//			query.append(geoproperty);
+//			query.append("\": [{\"");
+//			query.append(NGSIConstants.JSON_LD_TYPE);
+//			query.append("\":[\"");
+//			query.append(NGSIConstants.NGSI_LD_GEOPROPERTY);
+//			query.append("\"]}]}' AND ");
+//			dbColumn = "ST_SetSRID(ST_GeomFromGeoJSON( getGeoJson( " + "data#>'{" + geoproperty + ",0,"
+//					+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0}') ), 4326)";
+			throw new ResponseException(ErrorType.InvalidRequest, "Unfortunatley the temporal api can only support geoqueries on the location field");
 		} else {
 			dbColumn = "location";
 		}

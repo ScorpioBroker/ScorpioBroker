@@ -306,7 +306,7 @@ public class Subscription implements Serializable {
 	public static NotificationParam getNotificationParam(Map<String, Object> map, Context context) throws Exception {
 		// Default accept
 		String accept = AppConstants.NGB_APPLICATION_JSONLD;
-		Format format = Format.normalized;
+	 	Format format = Format.normalized;
 		Set<String> watchedAttribs = Sets.newHashSet();
 		String mqttVersion = null;
 		Integer qos = null;
@@ -390,8 +390,10 @@ public class Subscription implements Serializable {
 					String formatString = (String) ((List<Map<String, Object>>) entry.getValue()).get(0)
 							.get(NGSIConstants.JSON_LD_VALUE);
 					if (formatString.equalsIgnoreCase("keyvalues")) {
-						format = Format.keyValues;
-					}
+							format = Format.keyValues;
+					}if(formatString.equalsIgnoreCase("concise")){
+							format =Format.concise;
+				    }
 					break;
 				case NGSIConstants.NGSI_LD_SHOWCHANGES:
 					notifyParam.setShowChanges(

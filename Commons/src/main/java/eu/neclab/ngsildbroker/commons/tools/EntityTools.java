@@ -348,14 +348,9 @@ public abstract class EntityTools {
 
 	}
 
-	public static Map<String, Object> addSysAttrs(Map<String, Object> resolved, long timeStamp, int payloadType) {
+	public static Map<String, Object> addSysAttrs(Map<String, Object> resolved, long timeStamp) {
 		String now = SerializationTools.formatter.format(Instant.ofEpochMilli(timeStamp));
-		if (List.of(AppConstants.CREATE_REQUEST, AppConstants.UPSERT_REQUEST, AppConstants.CREATE_TEMPORAL_REQUEST,
-				AppConstants.CREATE_SUBSCRIPTION_REQUEST, AppConstants.CSOURCE_REG_CREATE_PAYLOAD)
-				.contains(payloadType)) {
 			setTemporalProperties(resolved, now, now, false);
-		} else
-			setTemporalProperties(resolved, "", now, false);
 		return resolved;
 	}
 

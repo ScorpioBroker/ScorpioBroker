@@ -15,11 +15,9 @@ import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
-
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLDService;
 import com.github.jsonldjava.core.JsonLdOptions;
@@ -29,8 +27,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Table;
-import com.google.common.net.HttpHeaders;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityMap;
@@ -65,6 +61,7 @@ import io.vertx.mutiny.ext.web.client.WebClient;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowIterator;
 import io.vertx.mutiny.sqlclient.RowSet;
+import static eu.neclab.ngsildbroker.commons.tools.HttpUtils.parseLinkHeaderNoUni;
 
 @ApplicationScoped
 public class QueryService {
@@ -106,20 +103,20 @@ public class QueryService {
 	public Uni<QueryResult> query(String tenant, String qToken, boolean tokenProvided, String[] id,
 								  TypeQueryTerm typeQuery, String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery, CSFQueryTerm csf,
 								  GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, int limit, int offSet,
-								  boolean count, boolean localOnly, Context context, boolean idsOnly, String join, String containedBy, int joinLevel) {
+								  boolean count, boolean localOnly, Context context, io.vertx.core.MultiMap headersFromReq) {
 		if (localOnly) {
 			return localQueryLevel1(tenant, id, typeQuery, idPattern, attrsQuery, qQuery, geoQuery, scopeQuery,
 					langQuery, limit, offSet, count);
 		}
 		if (!tokenProvided) {
 			return getAndStoreEntityIdList(tenant, id, idPattern, qToken, typeQuery, attrsQuery, geoQuery, qQuery,
-					scopeQuery, langQuery, limit, offSet, context, idsOnly, join, containedBy, joinLevel).onItem().transformToUni(t -> {
+					scopeQuery, langQuery, limit, offSet, context,headersFromReq).onItem().transformToUni(t -> {
 						Map<String, Map<String, Object>> localResults = t.getItem1();
 						EntityMap entityMap = t.getItem2();
 						List<EntityMapEntry> resultEntityMap = entityMap.getSubMap(offSet, limit + offSet);
 						Long resultCount = (long) entityMap.size();
 						return handleEntityMap(resultCount, resultEntityMap, attrsQuery, localResults, count, limit,
-								offSet, qToken);
+								offSet, qToken,headersFromReq);
 					});
 		} else {
 			return queryDAO.getEntityMap(tenant, qToken, limit, offSet, count).onItem().transformToUni(t -> {
@@ -127,15 +124,15 @@ public class QueryService {
 				EntityMap entityMap = t.getItem2();
 				Map<String, Map<String, Object>> localResults = t.getItem3();
 				return handleEntityMap(resultCount, entityMap.getEntityList(), attrsQuery, localResults, count, limit,
-						offSet, qToken);
+						offSet, qToken, headersFromReq);
 
 			});
 		}
 	}
 
 	private Uni<QueryResult> handleEntityMap(Long resultCount, List<EntityMapEntry> resultEntityMap,
-			AttrsQueryTerm attrsQuery, Map<String, Map<String, Object>> localResults, boolean count, int limit,
-			int offSet, String qToken) {
+											 AttrsQueryTerm attrsQuery, Map<String, Map<String, Object>> localResults, boolean count, int limit,
+											 int offSet, String qToken, io.vertx.core.MultiMap headersFromReq) {
 		Map<QueryRemoteHost, List<String>> remoteHost2EntityIds = Maps.newHashMap();
 		// has to be linked. We want to keep order here
 		Map<String, Map<String, Map<String, Map<String, Object>>>> entityId2AttrName2DatasetId2AttrValue = Maps
@@ -159,13 +156,24 @@ public class QueryService {
 				// Already here now
 				// unis.add(queryDAO.getEntities(conn, entry.getValue(), attrsQuery));
 			} else {
+				List<Object> contextLinks;
+				String linkHead;
+				if(!remoteHost.headers().contains("Link")){
+					linkHead = headersFromReq.get("Link");
+					contextLinks= parseLinkHeaderNoUni(headersFromReq.getAll("Link"),NGSIConstants.HEADER_REL_LDCONTEXT);
+				}else{
+					linkHead = remoteHost.headers().get("Link");
+					contextLinks= parseLinkHeaderNoUni(remoteHost.headers().getAll("Link"),NGSIConstants.HEADER_REL_LDCONTEXT);
+				}
 				unis.add(webClient
 						.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT
 								+ remoteHost.queryString() + "&options=sysAttrs")
-						.putHeaders(remoteHost.headers()).send().onItem().transformToUni(response -> {
+						.putHeaders(remoteHost.headers()).putHeader("Link",linkHead).send().onItem().transformToUni(response -> {
 							if (response != null && response.statusCode() == 200) {
-								return ldService.expand(response.bodyAsJsonArray().getList()).onItem()
-										.transform(expanded -> {
+								return ldService.expand(contextLinks,
+												response.bodyAsJsonArray().getList(),
+												opts,AppConstants.QUERY_PAYLOAD,false)
+										.onItem().transform(expanded -> {
 											Map<String, Map<String, Object>> result = Maps.newHashMap();
 											expanded.forEach(obj -> {
 												Map<String, Object> entity = (Map<String, Object>) obj;
@@ -1207,10 +1215,9 @@ public class QueryService {
 
 	public Uni<List<String>> queryForEntityIds(String tenant, String[] ids, TypeQueryTerm typeQueryTerm,
 											   String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQueryTerm, GeoQueryTerm geoQueryTerm,
-											   ScopeQueryTerm scopeQueryTerm, LanguageQueryTerm queryTerm, Context context,
-											   boolean idsOnly, String join, String containedBy, int joinLevel) {
+											   ScopeQueryTerm scopeQueryTerm, LanguageQueryTerm queryTerm, Context context, io.vertx.core.MultiMap headersFromReq,boolean idsOnly, String join, String containedBy, int joinLevel) {
 		return getAndStoreEntityIdList(tenant, ids, idPattern, idPattern, typeQueryTerm, attrsQuery, geoQueryTerm,
-				qQueryTerm, scopeQueryTerm, queryTerm, 0, 0, context, idsOnly, join, containedBy,joinLevel).onItem().transform(t -> {
+				qQueryTerm, scopeQueryTerm, queryTerm, 0, 0, context, headersFromReq).onItem().transform(t -> {
 					// List<Map<String, Object>> localResults = t.getItem1();
 
 					List<String> result = Lists.newArrayList();
@@ -1226,25 +1233,10 @@ public class QueryService {
 	private Uni<Tuple2<Map<String, Map<String, Object>>, EntityMap>> getAndStoreEntityIdList(String tenant, String[] id,
 																							 String idPattern, String qToken, TypeQueryTerm typeQuery, AttrsQueryTerm attrsQuery, GeoQueryTerm geoQuery,
 																							 QQueryTerm qQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, int limit, int offset,
-																							 Context context, boolean idsOnly, String join, String containedBy, int joinLevel) {
-		Uni<Tuple2<Map<String, Map<String, Object>>, List<String>>> localIds;
-		if(idsOnly || join==null){
-			localIds = queryDAO.queryForEntityIds(tenant, id,
-					typeQuery, idPattern, attrsQuery, qQuery, geoQuery, scopeQuery, context, limit, offset);
-		}
-		else if(join.equals("flat")){
-			//todo
-			localIds = null;
-		}
-		else if(join.equals("inline")){
-			//todo
-			localIds = null;
-		}
-		else{
-			return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData));
-		}
-
-		List<QueryRemoteHost> remoteHost2Query = getRemoteQueries(tenant, id, typeQuery, idPattern, attrsQuery, qQuery,
+																							 Context context,io.vertx.core.MultiMap headersFromReq) {
+		Uni<Tuple2<Map<String, Map<String, Object>>, List<String>>> localIds = queryDAO.queryForEntityIds(tenant, id,typeQuery,
+				                                  idPattern, attrsQuery, qQuery, geoQuery, scopeQuery, context, limit, offset);
+			List<QueryRemoteHost> remoteHost2Query = getRemoteQueries(tenant, id, typeQuery, idPattern, attrsQuery, qQuery,
 				geoQuery, scopeQuery, langQuery, context);
 		Uni<Map<QueryRemoteHost, List<String>>> remoteIds;
 		if (remoteHost2Query.isEmpty()) {
@@ -1252,6 +1244,13 @@ public class QueryService {
 		} else {
 			List<Uni<Tuple2<QueryRemoteHost, List<String>>>> unis = Lists.newArrayList();
 			for (QueryRemoteHost remoteHost : remoteHost2Query) {
+				String linkHead="";
+				if(!remoteHost.headers().contains("Link") && headersFromReq.contains("Link")){
+					linkHead = headersFromReq.get("Link");
+				}
+				else{
+					linkHead = remoteHost.headers().get("Link");
+				}
 				if (remoteHost.canDoIdQuery()) {
 					String entityMapString;
 					if (remoteHost.canDoZip()) {
@@ -1263,7 +1262,7 @@ public class QueryService {
 					unis.add(webClient
 							.getAbs(remoteHost.host()  + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT
 									+ remoteHost.queryString() + entityMapString)
-									.putHeaders(remoteHost.headers())
+									.putHeaders(remoteHost.headers()).putHeader("Link",linkHead)
 							.send().onItem().transform(response -> {
 								List<String> result;
 								if (response != null && response.statusCode() == 200) {
@@ -1281,7 +1280,7 @@ public class QueryService {
 					unis.add(webClient
 							.getAbs(remoteHost.host()  + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT
 									+ remoteHost.queryString() + "&limit=1000").putHeaders(remoteHost.headers())
-							.putHeader(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).send().onItem()
+							.putHeader("Link",linkHead).send().onItem()
 							.transform(response -> {
 								List<String> result = Lists.newArrayList();
 								if (response != null && response.statusCode() == 200) {

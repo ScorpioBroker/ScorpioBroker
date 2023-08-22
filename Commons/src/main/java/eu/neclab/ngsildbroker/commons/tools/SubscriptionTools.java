@@ -14,6 +14,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.InternalNo
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
+import eu.neclab.ngsildbroker.commons.enums.Format;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple4;
@@ -217,7 +218,10 @@ public class SubscriptionTools {
 							.getOrDefault(JsonLdConsts.GRAPH, List.of(compacted));
 					int acceptHeader = HttpUtils.parseAcceptHeader(
 							List.of(potentialSub.getSubscription().getNotification().getEndPoint().getAccept()));
-					switch (acceptHeader) {
+				   if(potentialSub.getSubscription().getNotification().getFormat()==Format.concise){
+						HttpUtils.makeConcise(compacted);
+					}
+				switch (acceptHeader) {
 					case 1:
 						data.forEach(entry -> entry.remove(NGSIConstants.JSON_LD_CONTEXT));
 						break;

@@ -249,9 +249,8 @@ public class EntityController {// implements EntityHandlerInterface {
 				parentMap.put(keyOfObject, newMap);
 
 			}
-			if (NGSIConstants.LANGUAGE_MAP.equals(keyOfObject) && parentMap != null
-					&& NGSIConstants.LANGUAGE_PROPERTY.equals(parentMap.get(NGSIConstants.TYPE))) {
-				return;
+			if (map.containsKey(NGSIConstants.LANGUAGE_MAP)) {
+				((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.LANGUAGE_PROPERTY);
 			}
 
 			// Iterate through every element of Map
@@ -265,7 +264,8 @@ public class EntityController {// implements EntityHandlerInterface {
 						&& !key.equals(NGSIConstants.QUERY_PARAMETER_DATA_SET_ID) && !key.equals(NGSIConstants.OBJECT)
 						&& !key.equals(NGSIConstants.VALUE) && !key.equals(NGSIConstants.SCOPE)
 						&& !key.equals(NGSIConstants.QUERY_PARAMETER_UNIT_CODE)
-						&& !key.equals("objectType")) {
+						&& !key.equals(NGSIConstants.LANGUAGE_MAP)
+						&& !key.equals(NGSIConstants.OBJECT_TYPE)) {
 					noConcise(map.get(key), (Map<String, Object>) map, key.toString());
 				}
 			}

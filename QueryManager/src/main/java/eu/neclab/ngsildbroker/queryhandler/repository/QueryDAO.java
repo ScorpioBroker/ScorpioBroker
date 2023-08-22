@@ -48,6 +48,7 @@ import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowIterator;
 import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
+import io.vertx.pgclient.PgException;
 
 @Singleton
 public class QueryDAO {
@@ -189,8 +190,10 @@ public class QueryDAO {
 				query.append(offSet);
 			}
 			query.append(';');
-
-			return client.preparedQuery(query.toString()).execute(tuple);
+			String queryString = query.toString();
+			logger.debug("SQL REQUEST: " + queryString);
+			logger.debug("SQL TUPLE: " + tuple.deepToString());
+			return client.preparedQuery(queryString).execute(tuple);
 		});
 	}
 
@@ -792,11 +795,12 @@ public class QueryDAO {
 			} else {
 				query.append("ENTITY.ENTITY");
 			}
-			query.append(
-					" as ENTITY FROM b left join ENTITY on b.ID = ENTITY.ID) SELECT ");
+			query.append(" as ENTITY FROM b left join ENTITY on b.ID = ENTITY.ID) SELECT ");
 			query.append("a.ID, c.ENTITY FROM a left outer join c on a.ID = c.ID");
-			
-			return client.preparedQuery(query.toString()).execute(tuple).onItem().transform(rows -> {
+			String queryString = query.toString();
+			logger.debug("SQL REQUEST: " + queryString);
+			logger.debug("SQL TUPLE: " + tuple.deepToString());
+			return client.preparedQuery(queryString).execute(tuple).onItem().transform(rows -> {
 				List<String> entityIds = Lists.newArrayList();
 				Map<String, Map<String, Object>> entities = Maps.newHashMap();
 				;
@@ -811,6 +815,11 @@ public class QueryDAO {
 				});
 				return Tuple2.of(entities, entityIds);
 			});
+		}).onFailure().recoverWithUni(e -> {
+			if (e instanceof PgException pge) {
+				logger.debug(pge.getPosition());
+			}
+			return Uni.createFrom().failure(e);
 		});
 	}
 

@@ -381,6 +381,8 @@ public interface NGSIConstants {
 	public final static String QUERY_PARAMETER_CONCISE = "option";
 	public static final String SCOPE = "scope";
 	public static final String PREVIOUS_VALUE = "previousValue";
+
+	public static final String PREVIOUS_LANGUAGE_MAP = "previousLanguageMap";
 	public static final String PREVIOUS_OBJECT = "previousObject";
 	public static final String NGSI_LD_REG_MODE = "https://uri.etsi.org/ngsi-ld/mode";
 	public static final String NGSI_LD_REG_MODE_AUX = "auxiliary";
@@ -437,6 +439,8 @@ public interface NGSIConstants {
 	public static final String HAS_OBJECT_NULL = "[{https://uri.etsi.org/ngsi-ld/hasObject=[{@id=urn:ngsi-ld:null}]";
 	public static final String LANGUAGE_PROPERTY = "LanguageProperty";
 	public static final String LANGUAGE_MAP = "languageMap";
+	public static final Set<String> ENTITY_BASE_PROPS = Sets.newHashSet(JSON_LD_ID, JSON_LD_TYPE, NGSI_LD_CREATED_AT, NGSI_LD_MODIFIED_AT, NGSI_LD_SCOPE);
 	public final static String NGSI_LD_HAS_KEY ="https://uri.etsi.org/ngsi-ld/hasKey";
+	public static final String OBJECT_TYPE = "objectType";
 }
 
