@@ -26,6 +26,8 @@ import jakarta.inject.Singleton;
 import java.util.List;
 import java.util.Set;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+
 @Singleton
 public class CSourceDAO {
 
@@ -34,6 +36,9 @@ public class CSourceDAO {
 
 	@Inject
 	MicroServiceUtils microServiceUtils;
+
+	@ConfigProperty(name = "scorpio.atcontexturl")
+	String atContextUrl;
 
 	public Uni<RowSet<Row>> getRegistrationById(String tenant, String id) {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
@@ -48,16 +53,20 @@ public class CSourceDAO {
 			}
 			case AppConstants.INTERNAL_ATTRS_REGISTRATION_ID -> {
 				String sql = """
-							SELECT JSONB_SET('{"https://uri.etsi.org/ngsi-ld/endpoint": [{"@value": "http://localhost:9090"}],"@id": "scorpio:hosted:attrs","https://uri.etsi.org/ngsi-ld/information": [{"https://uri.etsi.org/ngsi-ld/entities": [{}]}],"@type": ["https://uri.etsi.org/ngsi-ld/ContextSourceRegistration"]  }'::JSONB,
-							'{https://uri.etsi.org/ngsi-ld/information,0,https://uri.etsi.org/ngsi-ld/entities,0}',
-							JSONB_BUILD_OBJECT('https://uri.etsi.org/ngsi-ld/propertyNames',
-								JSONB_AGG(JSONB_BUILD_OBJECT('@id',	ATTRIBNAME)) FILTER
-								(WHERE ENTITY #>> (ATTRIBNAME || '{0,@type,0}'::text[]) = ANY('{https://uri.etsi.org/ngsi-ld/Property, https://uri.etsi.org/ngsi-ld/GeoProperty, https://uri.etsi.org/ngsi-ld/LanguageProperty}')),
-								'https://uri.etsi.org/ngsi-ld/relationshipNames',
-								JSONB_AGG(JSONB_BUILD_OBJECT('@id',	ATTRIBNAME)) FILTER
-								(WHERE ENTITY #>> (ATTRIBNAME || '{0,@type,0}'::text[]) = ANY('{https://uri.etsi.org/ngsi-ld/Relationship}'))))
-						FROM ENTITY, Jsonb_object_keys(ENTITY) as attribname
-												""";
+						SELECT JSONB_SET('{"https://uri.etsi.org/ngsi-ld/endpoint": [{"@value": "
+						""";
+				sql += atContextUrl;
+				sql += """
+						"}],"@id": "scorpio:hosted:attrs","https://uri.etsi.org/ngsi-ld/information": [{"https://uri.etsi.org/ngsi-ld/entities": [{}]}],"@type": ["https://uri.etsi.org/ngsi-ld/ContextSourceRegistration"]  }'::JSONB,
+								'{https://uri.etsi.org/ngsi-ld/information,0,https://uri.etsi.org/ngsi-ld/entities,0}',
+								JSONB_BUILD_OBJECT('https://uri.etsi.org/ngsi-ld/propertyNames',
+									JSONB_AGG(JSONB_BUILD_OBJECT('@id',	ATTRIBNAME)) FILTER
+									(WHERE ENTITY #>> (ATTRIBNAME || '{0,@type,0}'::text[]) = ANY('{https://uri.etsi.org/ngsi-ld/Property, https://uri.etsi.org/ngsi-ld/GeoProperty, https://uri.etsi.org/ngsi-ld/LanguageProperty}')),
+									'https://uri.etsi.org/ngsi-ld/relationshipNames',
+									JSONB_AGG(JSONB_BUILD_OBJECT('@id',	ATTRIBNAME)) FILTER
+									(WHERE ENTITY #>> (ATTRIBNAME || '{0,@type,0}'::text[]) = ANY('{https://uri.etsi.org/ngsi-ld/Relationship}'))))
+							FROM ENTITY, Jsonb_object_keys(ENTITY) as attribname
+													""";
 
 				return client.preparedQuery(sql).execute();
 			}

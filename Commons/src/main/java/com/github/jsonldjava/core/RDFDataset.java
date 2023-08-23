@@ -431,12 +431,12 @@ public class RDFDataset extends LinkedHashMap<String, Object> {
 	 * @param contextLike The context to parse
 	 * @throws JsonLdError If the context can't be parsed
 	 */
-	public Uni<Void> parseContext(Object contextLike, WebClient webClient) {
+	public Uni<Void> parseContext(Object contextLike, WebClient webClient, String atContextUrl) {
 		Context context;
 		if (api != null) {
-			context = new Context(api.opts);
+			context = new Context(atContextUrl, api.opts);
 		} else {
-			context = new Context();
+			context = new Context(atContextUrl);
 		}
 		// Context will do our recursive parsing and initial IRI resolution
 		return context.parse(contextLike, false, webClient).onItem().transformToUni(ctx -> {

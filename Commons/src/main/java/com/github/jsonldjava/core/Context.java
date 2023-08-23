@@ -44,14 +44,16 @@ public class Context extends LinkedHashMap<String, Object> {
 	public Map<String, Object> inverse = null;
 
 	private boolean dontAddCoreContext;
+	private String atContextUrl;
 
-	public Context() {
-		this(new JsonLdOptions());
+	public Context(String atContextUrl) {
+		this(atContextUrl, new JsonLdOptions());
 	}
 
-	public Context(JsonLdOptions opts) {
+	public Context(String atContextUrl, JsonLdOptions opts) {
 		super();
 		init(opts);
+		this.atContextUrl = atContextUrl;
 	}
 
 	public Context(Map<String, Object> map, JsonLdOptions opts) {
@@ -204,7 +206,7 @@ public class Context extends LinkedHashMap<String, Object> {
 				// is not true, this should fail with 'invalid context nullification'.
 				// GK: Note, if `propagate` is false, the previous context should be associated
 				// with this new (null) context for potential rollback.
-				result = new Context(this.options);
+				result = new Context(atContextUrl, this.options);
 				continue;
 			} else if (context instanceof Context) {
 				result = ((Context) context).clone();
@@ -233,7 +235,7 @@ public class Context extends LinkedHashMap<String, Object> {
 				if (uri != null && !(uri.contains(microServiceUtils.getGatewayURL().toString())
 						|| uri.contains("localhost") || uri.contains(NGSIConstants.IMPLICITLYCREATED))) {
 					String encodedUrl = URLEncoder.encode(uri, StandardCharsets.UTF_8);
-					finalUrl = "http://localhost:9090/" + NGSIConstants.JSONLD_CONTEXTS + "createcache/" + encodedUrl;
+					finalUrl = atContextUrl + "/" + NGSIConstants.JSONLD_CONTEXTS + "createcache/" + encodedUrl;
 				}
 				rds.add(this.options.getDocumentLoader().loadDocument(finalUrl, webClient).onItem()
 						.transform(rd -> Tuple2.of(rd, context)));

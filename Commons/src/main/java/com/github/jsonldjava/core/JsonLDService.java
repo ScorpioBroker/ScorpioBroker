@@ -26,6 +26,9 @@ public class JsonLDService {
 
 	@ConfigProperty(name = "ngsild.corecontext", defaultValue = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld")
 	String coreContextUrl;
+	
+	@ConfigProperty(name = "scorpio.atcontexturl")
+	String atContextUrl;
 
 	@Inject
 	ClientManager clientManager;
@@ -48,7 +51,7 @@ public class JsonLDService {
 								return rows.iterator().next().getJsonObject(0).getMap();
 							});
 				}).onItem().transformToUni(coreContextMap -> {
-					return new Context(new JsonLdOptions(JsonLdOptions.JSON_LD_1_1))
+					return new Context(atContextUrl, new JsonLdOptions(JsonLdOptions.JSON_LD_1_1))
 							.parse(coreContextMap.get("@context"), false, webClient).onItem().transform(coreContext -> {
 								// this.coreContext = coreContext;
 								coreContext.getTermDefinition("features").remove("@container");
@@ -110,11 +113,11 @@ public class JsonLDService {
 		return getCoreContextClone().parse(headerContext, true, webClient);
 	}
 	public Uni<Context> parsePure(Object headerContext) {
-		return new Context().parse(headerContext, false, webClient);
+		return new Context(atContextUrl).parse(headerContext, false, webClient);
 	}
 
 	public Uni<Object> toRDF(Object entity) {
-		return JsonLdProcessor.toRDF(entity, webClient);
+		return JsonLdProcessor.toRDF(entity, webClient, atContextUrl);
 	}
 
 }

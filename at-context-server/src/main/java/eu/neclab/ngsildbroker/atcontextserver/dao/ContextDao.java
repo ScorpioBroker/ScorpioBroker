@@ -12,6 +12,7 @@ import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.jaxrs.RestResponseBuilderImpl;
 
@@ -30,6 +31,9 @@ import io.vertx.pgclient.PgException;
 public class ContextDao {
 	@Inject
 	ClientManager clientManager;
+
+	@ConfigProperty(name = "scorpio.atcontexturl")
+	String atContextUrl;
 
 	@PostConstruct
 	void setup() {
@@ -50,7 +54,7 @@ public class ContextDao {
 					Map<String, Object> map = row.toJson().getMap();
 					if (details) {
 						map.put(row.getColumnName(1), ((JsonObject) map.get(row.getColumnName(1))).getMap());
-						map.put("url", "http://localhost:9090/" + NGSIConstants.JSONLD_CONTEXTS + map.get("id"));
+						map.put("url", atContextUrl + "/" + NGSIConstants.JSONLD_CONTEXTS + map.get("id"));
 						return Uni.createFrom().item(RestResponse.ok(map));
 					} else
 						return Uni.createFrom().item(RestResponse.ok(row.getJson("body")));
@@ -67,12 +71,13 @@ public class ContextDao {
 			return client.preparedQuery(sql).execute(Tuple.of("urn:" + UUID.randomUUID(), new JsonObject(payload)))
 					.onItem().transformToUni(rows -> {
 						if (rows.size() > 0) {
-							return Uni.createFrom()
-									.item(RestResponseBuilderImpl.create(201)
-											.entity(new JsonObject("{\"url\":\"" + "http://localhost:9090/"
-													+ NGSIConstants.JSONLD_CONTEXTS
-													+ rows.iterator().next().getString(0) + "\"}"))
-											.build());
+							return Uni
+									.createFrom().item(
+											RestResponseBuilderImpl.create(201)
+													.entity(new JsonObject("{\"url\":\"" + atContextUrl + "/"
+															+ NGSIConstants.JSONLD_CONTEXTS
+															+ rows.iterator().next().getString(0) + "\"}"))
+													.build());
 						} else
 							return Uni.createFrom().failure(new Throwable("Server Error"));
 					});
@@ -110,11 +115,11 @@ public class ContextDao {
 
 					if (details) {
 						map.put(i.getColumnName(1), ((JsonObject) map.get(i.getColumnName(1))).getMap());
-						map.put("url", "http://localhost:9090/" + NGSIConstants.JSONLD_CONTEXTS
+						map.put("url", atContextUrl + "/" + NGSIConstants.JSONLD_CONTEXTS
 								+ URLEncoder.encode(map.get("id").toString(), StandardCharsets.UTF_8));
 						contexts.add(map);
 					} else {
-						contexts.add("http://localhost:9090/" + NGSIConstants.JSONLD_CONTEXTS
+						contexts.add(atContextUrl + "/" + NGSIConstants.JSONLD_CONTEXTS
 								+ URLEncoder.encode(map.get("id").toString(), StandardCharsets.UTF_8));
 					}
 

@@ -4,6 +4,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,6 +43,9 @@ public class RegistrySubscriptionInfoDAO {
 	Vertx vertx;
 	WebClient webClient;
 
+	@ConfigProperty(name = "scorpio.atcontexturl")
+	String atContextUrl;
+
 	@PostConstruct
 	void setup() {
 		webClient = WebClient.create(vertx);
@@ -49,7 +53,7 @@ public class RegistrySubscriptionInfoDAO {
 
 	public Uni<RowSet<Row>> createSubscription(SubscriptionRequest request) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(
-				client -> webClient.postAbs("http://localhost:9090/ngsi-ld/v1/jsonldContexts/createimplicitly/")
+				client -> webClient.postAbs(atContextUrl + "/ngsi-ld/v1/jsonldContexts/createimplicitly/")
 						.sendJsonObject(new JsonObject(request.getContext().serialize())).onItemOrFailure()
 						.transformToUni((item, failure) -> {
 							if (failure != null)
@@ -64,7 +68,7 @@ public class RegistrySubscriptionInfoDAO {
 
 	public Uni<Tuple2<Map<String, Object>, Object>> updateSubscription(UpdateSubscriptionRequest request) {
 		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(
-				client -> webClient.postAbs("http://localhost:9090/ngsi-ld/v1/jsonldContexts/createimplicitly/")
+				client -> webClient.postAbs(atContextUrl + "/ngsi-ld/v1/jsonldContexts/createimplicitly/")
 						.sendJsonObject(new JsonObject(request.getContext().serialize())).onItemOrFailure()
 						.transformToUni((item, failure) -> {
 							if (failure != null)
@@ -197,7 +201,7 @@ public class RegistrySubscriptionInfoDAO {
 
 	public Uni<RowSet<Row>> getInitialNotificationData(SubscriptionRequest subscriptionRequest) {
 		return clientManager.getClient(subscriptionRequest.getTenant(), false).onItem().transformToUni(client -> {
-			
+
 			Tuple tuple = Tuple.tuple();
 			String sql = "with a as (select cs_id from csourceinformation WHERE ";
 			boolean sqlAdded = false;
@@ -211,7 +215,7 @@ public class RegistrySubscriptionInfoDAO {
 					sql += "((e_id is null or e_id  = $" + dollar + ") and (e_id_p is null or e_id_p ~ $" + dollar
 							+ "))";
 					dollar++;
-					
+
 					tuple.addString(entityInformation.getId().toString());
 					if (entityInformation.getType() != null) {
 						sql += " and ";
@@ -241,7 +245,8 @@ public class RegistrySubscriptionInfoDAO {
 				if (sqlAdded) {
 					sql += " and ";
 				}
-				sql += "(e_prop is null or e_prop = any($" + dollar + ")) and (e_rel is null or e_rel = any($" + dollar + "))";
+				sql += "(e_prop is null or e_prop = any($" + dollar + ")) and (e_rel is null or e_rel = any($" + dollar
+						+ "))";
 				tuple.addArrayOfString(subscription.getAttributeNames().toArray(new String[0]));
 				dollar++;
 				sqlAdded = true;
@@ -291,7 +296,7 @@ public class RegistrySubscriptionInfoDAO {
 				// }
 				// dollar++;
 			}
-			
+
 			logger.debug("SQL I noti: " + sql);
 			logger.debug("Tuple I noti: " + tuple.deepToString());
 			return client.preparedQuery(sql).execute(tuple).onFailure().retry().atMost(3);

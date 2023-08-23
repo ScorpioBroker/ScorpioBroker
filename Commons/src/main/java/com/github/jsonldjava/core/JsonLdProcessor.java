@@ -303,7 +303,8 @@ public class JsonLdProcessor {
 		return expand(new ArrayList<>(0), input, new JsonLdOptions(""), -1, true, webClient);
 	}
 
-	static Uni<Object> flatten(Object input, Object context, JsonLdOptions opts, WebClient webClient) {
+	static Uni<Object> flatten(Object input, Object context, JsonLdOptions opts, WebClient webClient,
+			String atContextUrl) {
 		// 2-6) NOTE: these are all the same steps as in expand
 		return expand(new ArrayList<>(0), input, opts, -1, true, webClient).onItem().transformToUni(expanded -> {
 			// 7)
@@ -363,7 +364,7 @@ public class JsonLdProcessor {
 			}
 			// 8)
 			if (context != null && !flattened.isEmpty()) {
-				Context activeCtx = new Context(opts);
+				Context activeCtx = new Context(atContextUrl, opts);
 				return activeCtx.parse(context, false, webClient).onItem().transform(ctx -> {
 					// TODO: only instantiate one jsonldapi
 					Object compacted = new JsonLdApi(opts).compact(activeCtx, null, flattened, opts.getCompactArrays(),
@@ -396,8 +397,8 @@ public class JsonLdProcessor {
 	 * @throws JsonLdError       If there is an error while flattening.
 	 * @throws ResponseException
 	 */
-	static Uni<Object> flatten(Object input, JsonLdOptions opts, WebClient webClient) {
-		return flatten(input, null, opts, webClient);
+	static Uni<Object> flatten(Object input, JsonLdOptions opts, WebClient webClient, String atContextUrl) {
+		return flatten(input, null, opts, webClient, atContextUrl);
 	}
 
 	/**
@@ -414,7 +415,8 @@ public class JsonLdProcessor {
 	 * @throws JsonLdError       If there is an error while framing.
 	 * @throws ResponseException
 	 */
-	static Uni<Map<String, Object>> frame(Object input, Object frame, JsonLdOptions opts, WebClient webClient) {
+	static Uni<Map<String, Object>> frame(Object input, Object frame, JsonLdOptions opts, WebClient webClient,
+			String atContextUrl) {
 		Object myFrame;
 		if (frame instanceof Map) {
 			myFrame = JsonLdUtils.clone(frame);
@@ -440,7 +442,7 @@ public class JsonLdProcessor {
 						// 4. Set context to the value of @context from frame, if it exists, or
 						// to a new empty
 						// context, otherwise.
-						final JsonLdApi api = new JsonLdApi(expandedInput, opts);
+						final JsonLdApi api = new JsonLdApi(expandedInput, opts, atContextUrl);
 						return api.context
 								.parse(((Map<String, Object>) myFrame).get(JsonLdConsts.CONTEXT), false, webClient)
 								.onItem().transform(activeCtx -> {
@@ -513,7 +515,7 @@ public class JsonLdProcessor {
 	 *                           JSON-LD.
 	 * @throws ResponseException
 	 */
-	static Uni<Object> fromRDF(Object dataset, JsonLdOptions options, WebClient webClient) {
+	static Uni<Object> fromRDF(Object dataset, JsonLdOptions options, WebClient webClient, String atContextUrl) {
 		// handle non specified serializer case
 
 		RDFParser parser = null;
@@ -530,7 +532,7 @@ public class JsonLdProcessor {
 		}
 
 		// convert from RDF
-		return fromRDF(dataset, options, parser, webClient);
+		return fromRDF(dataset, options, parser, webClient, atContextUrl);
 	}
 
 	/**
@@ -544,8 +546,8 @@ public class JsonLdProcessor {
 	 * 
 	 * @throws ResponseException
 	 */
-	static Uni<Object> fromRDF(Object dataset, WebClient webClient) {
-		return fromRDF(dataset, new JsonLdOptions(""), webClient);
+	static Uni<Object> fromRDF(Object dataset, WebClient webClient, String atContextUrl) {
+		return fromRDF(dataset, new JsonLdOptions(""), webClient, atContextUrl);
 	}
 
 	/**
@@ -567,7 +569,8 @@ public class JsonLdProcessor {
 	 *                           JSON-LD.
 	 * @throws ResponseException
 	 */
-	static Uni<Object> fromRDF(Object input, JsonLdOptions options, RDFParser parser, WebClient webClient) {
+	static Uni<Object> fromRDF(Object input, JsonLdOptions options, RDFParser parser, WebClient webClient,
+			String atContextUrl) {
 
 		final RDFDataset dataset = parser.parse(input);
 
@@ -581,7 +584,7 @@ public class JsonLdProcessor {
 			} else if (JsonLdConsts.COMPACTED.equals(options.outputForm)) {
 				return compact(rval, dataset.getContext(), options, webClient).onItem().transform(map -> (Object) map);
 			} else if (JsonLdConsts.FLATTENED.equals(options.outputForm)) {
-				return flatten(rval, dataset.getContext(), options, webClient);
+				return flatten(rval, dataset.getContext(), options, webClient, atContextUrl);
 			} else {
 				return Uni.createFrom().failure(new JsonLdError(JsonLdError.Error.UNKNOWN_ERROR,
 						"Output form was unknown: " + options.outputForm));
@@ -603,8 +606,8 @@ public class JsonLdProcessor {
 	 *                           JSON-LD.
 	 * @throws ResponseException
 	 */
-	static Uni<Object> fromRDF(Object input, RDFParser parser, WebClient webClient) {
-		return fromRDF(input, new JsonLdOptions(""), parser, webClient);
+	static Uni<Object> fromRDF(Object input, RDFParser parser, WebClient webClient, String atContextUrl) {
+		return fromRDF(input, new JsonLdOptions(""), parser, webClient, atContextUrl);
 	}
 
 	/**
@@ -625,11 +628,12 @@ public class JsonLdProcessor {
 	 *                           JSON-LD.
 	 * @throws ResponseException
 	 */
-	static Uni<Object> toRDF(Object input, JsonLdTripleCallback callback, JsonLdOptions options, WebClient webClient) {
+	static Uni<Object> toRDF(Object input, JsonLdTripleCallback callback, JsonLdOptions options, WebClient webClient,
+			String atContextUrl) {
 		return expand(new ArrayList<>(0), input, options, -1, true, webClient).onItem()
 				.transformToUni(expandedInput -> {
 
-					final JsonLdApi api = new JsonLdApi(expandedInput, options);
+					final JsonLdApi api = new JsonLdApi(expandedInput, options, atContextUrl);
 					final RDFDataset dataset = api.toRDF();
 					Uni<Void> uni = Uni.createFrom().voidItem();
 					// generate namespaces from context
@@ -644,8 +648,8 @@ public class JsonLdProcessor {
 
 						for (final Map<String, Object> e : _input) {
 							if (e.containsKey(JsonLdConsts.CONTEXT)) {
-								uni = uni.onItem().transformToUni(
-										v -> dataset.parseContext(e.get(JsonLdConsts.CONTEXT), webClient));
+								uni = uni.onItem().transformToUni(v -> dataset.parseContext(e.get(JsonLdConsts.CONTEXT),
+										webClient, atContextUrl));
 							}
 						}
 					}
@@ -680,8 +684,8 @@ public class JsonLdProcessor {
 	 *                           JSON-LD.
 	 * @throws ResponseException
 	 */
-	static Uni<Object> toRDF(Object input, JsonLdOptions options, WebClient webClient) {
-		return toRDF(input, null, options, webClient);
+	static Uni<Object> toRDF(Object input, JsonLdOptions options, WebClient webClient, String atContextUrl) {
+		return toRDF(input, null, options, webClient, atContextUrl);
 	}
 
 	/**
@@ -696,8 +700,8 @@ public class JsonLdProcessor {
 	 *                           JSON-LD.
 	 * @throws ResponseException
 	 */
-	static Uni<Object> toRDF(Object input, JsonLdTripleCallback callback, WebClient webClient) {
-		return toRDF(input, callback, new JsonLdOptions(""), webClient);
+	static Uni<Object> toRDF(Object input, JsonLdTripleCallback callback, WebClient webClient, String atContextUrl) {
+		return toRDF(input, callback, new JsonLdOptions(""), webClient, atContextUrl);
 	}
 
 	/**
@@ -710,8 +714,8 @@ public class JsonLdProcessor {
 	 *                           JSON-LD.
 	 * @throws ResponseException
 	 */
-	static Uni<Object> toRDF(Object input, WebClient webClient) {
-		return toRDF(input, new JsonLdOptions(""), webClient);
+	static Uni<Object> toRDF(Object input, WebClient webClient, String atContextUrl) {
+		return toRDF(input, new JsonLdOptions(""), webClient, atContextUrl);
 	}
 
 	/**
@@ -727,11 +731,11 @@ public class JsonLdProcessor {
 	 * @throws JsonLdError       If there is an error normalizing the dataset.
 	 * @throws ResponseException
 	 */
-	static Uni<Object> normalize(Object input, JsonLdOptions options, WebClient webClient) {
+	static Uni<Object> normalize(Object input, JsonLdOptions options, WebClient webClient, String atContextUrl) {
 
 		final JsonLdOptions opts = options.copy();
 		opts.format = null;
-		return toRDF(input, opts, webClient).onItem().transform(rdf -> {
+		return toRDF(input, opts, webClient, atContextUrl).onItem().transform(rdf -> {
 			final RDFDataset dataset = (RDFDataset) rdf;
 
 			return new JsonLdApi(options).normalize(dataset);
@@ -748,8 +752,8 @@ public class JsonLdProcessor {
 	 * @throws JsonLdError       If there is an error normalizing the dataset.
 	 * @throws ResponseException
 	 */
-	static Uni<Object> normalize(Object input, WebClient webClient) {
-		return normalize(input, new JsonLdOptions(""), webClient);
+	static Uni<Object> normalize(Object input, WebClient webClient, String atContextUrl) {
+		return normalize(input, new JsonLdOptions(""), webClient, atContextUrl);
 	}
 
 	static Context getCoreContext() {

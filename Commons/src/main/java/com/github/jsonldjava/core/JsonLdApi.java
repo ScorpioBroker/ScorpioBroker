@@ -65,9 +65,9 @@ public class JsonLdApi {
 	 * @throws JsonLdError If there is an error initializing using the object and
 	 *                     options.
 	 */
-	public JsonLdApi(Object input, JsonLdOptions opts) throws JsonLdError {
+	public JsonLdApi(Object input, JsonLdOptions opts, String atContextUrl) throws JsonLdError {
 		this(opts);
-		initialize(input, null);
+		initialize(input, null, atContextUrl);
 	}
 
 	/**
@@ -112,12 +112,12 @@ public class JsonLdApi {
 	 * @throws JsonLdError If there was an error cloning the object, or in parsing
 	 *                     the context.
 	 */
-	private void initialize(Object input, Object context) throws JsonLdError {
+	private void initialize(Object input, Object context, String atContextUrl) throws JsonLdError {
 		if (input instanceof List || input instanceof Map) {
 			this.value = JsonLdUtils.clone(input);
 		}
 		// TODO: string/IO input
-		this.context = new Context(opts);
+		this.context = new Context(atContextUrl, opts);
 //		if (context != null) {
 //			this.context = this.context.parse(context, false);
 //		}
