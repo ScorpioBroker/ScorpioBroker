@@ -415,12 +415,19 @@ public class EntityInfoDAO {
 		String[] types = ((List<String>) request.getPayload().get(NGSIConstants.JSON_LD_TYPE)).toArray(new String[0]);
 		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
 			return client.preparedQuery("""
-							WITH old_entity AS (
-							SELECT ENTITY
-							FROM ENTITY
-							WHERE id = $3)
-							update entity set entity = jsonb_build_object('https://uri.etsi.org/ngsi-ld/createdAt' , entity->'https://uri.etsi.org/ngsi-ld/createdAt') || $1::jsonb, e_types = $2 where id = $3
-							RETURNING (SELECT ENTITY FROM old_entity) AS old_entity""")
+                            WITH old_entity AS (
+                            SELECT ENTITY
+                            FROM ENTITY
+                            WHERE id = $3),
+                            json_data AS (
+                             SELECT jsonb_strip_nulls(jsonb_object_agg(
+                             key,
+                             CASE WHEN jsonb_typeof(value->0) = 'object' and (value->0)?'https://uri.etsi.org/ngsi-ld/createdAt' THEN
+                             jsonb_set(value, '{0,https://uri.etsi.org/ngsi-ld/createdAt}', old_entity.entity->key->0->'https://uri.etsi.org/ngsi-ld/createdAt', true)
+                             ELSE value
+                             END )) FROM JSONB_EACH($1::jsonb) CROSS JOIN old_entity )
+                            update entity set entity = (select * from json_data) || jsonb_build_object('https://uri.etsi.org/ngsi-ld/createdAt' , entity->'https://uri.etsi.org/ngsi-ld/createdAt') , e_types = $2 where id = $3
+                            RETURNING (SELECT ENTITY FROM old_entity) AS old_entity""")
 					.execute(Tuple.of(new JsonObject(request.getPayload()),types,request.getId())).onItem().transformToUni(rows -> {
 						if (rows.rowCount() == 0) {
 							return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
@@ -440,9 +447,16 @@ public class EntityInfoDAO {
 							  SELECT ENTITY
 							  FROM ENTITY
 							  WHERE id = $2
-							)
+							),
+							json_data AS (
+							SELECT jsonb_strip_nulls(jsonb_object_agg(
+							key,
+							CASE WHEN jsonb_typeof(value->0) = 'object' and (value->0)?'https://uri.etsi.org/ngsi-ld/createdAt' THEN
+							jsonb_set(value, '{0,https://uri.etsi.org/ngsi-ld/createdAt}', old_entity.entity->key->0->'https://uri.etsi.org/ngsi-ld/createdAt', true)
+							ELSE value
+							END )) FROM JSONB_EACH($1::jsonb) CROSS JOIN old_entity )
 							UPDATE entity
-							SET entity = entity::jsonb || $1
+							SET entity = entity::jsonb || ((select * from json_data) - 'https://uri.etsi.org/ngsi-ld/createdAt')
 							WHERE id = $2
 							  AND ENTITY ? $3
 							  AND (ENTITY-> $3 )::jsonb->$4 IS NULL
