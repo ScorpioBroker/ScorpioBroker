@@ -18,7 +18,9 @@ Example for Follow Relationship in a Query
 
 1. Create Operation
 =========================
-In order to create the entities, we can hit the endpoint **http://<IP Address>:<port>/ngsi-ld/v1/entities/**  with the given payloads.
+You can create entities by sending an HTTP POST request given below:
+
+	POST - **http://localhost:9090/ngsi-ld/v1/entities/**  with the given payloads.
 
 Example of AgriParcel entity with objectType modifications:
 
@@ -124,8 +126,6 @@ To retrieve AgriParcel entity in concise format and with inline sub-entities, yo
 	
 	GET - **http://localhost:9090/ngsi-ld/v1/entities/urn:ngsi-ld:AgriParcel:001?options=concise&join=inline&joinLevel=3**
 
-Here,  we have to give joinLevel parameter because by default joinLevel=1
-
 Response:
 
 .. code-block:: JSON
@@ -195,8 +195,6 @@ Response:
 To retrieve AgriParcel entity in concise format and with flat sub-entities, you can send an HTTP GET to - **http://<IP Address>:<port>/ngsi-ld/v1/entities/{entityId}?options=concise&join=flat** and we will get target entities returned in list.
 	
 	GET - **http://localhost:9090/ngsi-ld/v1/entities/urn:ngsi-ld:AgriParcel:001?options=concise&join=flat&joinLevel=3**
-
-Here,  we have to give joinLevel parameter because by default joinLevel=1
 
 Response:
 
@@ -270,8 +268,6 @@ To retrieve entities with idsOnly parameter, you can send an HTTP GET to - **htt
 	
 	GET - **http://localhost:9090/ngsi-ld/v1/entities/urn:ngsi-ld:AgriParcel:001?idsOnly=true&joinLevel=3**
 
-Here,  we have to give joinLevel parameter because by default joinLevel=1
-
 Response:
 
 .. code-block:: JSON
@@ -296,9 +292,8 @@ Example: Give me the data corresponding to soil type and the observed humidity a
 
 	GET - **http://localhost:9090/ngsi-ld/v1/entities/urn:ngsi-ld:AgriParcel:001?options=concise&join=inline&attrs=soilType,observation{humidity,windSpeed}&joinLevel=3**
 
-Here,  we have to give joinLevel parameter because by default joinLevel=1
+**Note:** You should use URL encoder here for consistency.
 
-**Note:** You should use URL encoder here, i.e. ‘:’ gets replaced by %3A. For consistency you should always encode your URLs.
 Response:
 
 .. code-block:: JSON
