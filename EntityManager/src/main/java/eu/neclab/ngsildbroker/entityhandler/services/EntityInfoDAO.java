@@ -393,6 +393,7 @@ public class EntityInfoDAO {
 	public Uni<Map<String,Object>> mergePatch(MergePatchRequest request) {
 		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
 			Map<String,Object> payload = request.getPayload();
+			payload.remove(NGSIConstants.NGSI_LD_CREATED_AT);
 			if(payload.get(JsonLdConsts.TYPE) == null) payload.remove(JsonLdConsts.TYPE);
 			return client.preparedQuery("SELECT * FROM MERGE_JSON($1,$2)")
 					.execute(Tuple.of(request.getId(), new JsonObject(request.getPayload())))
