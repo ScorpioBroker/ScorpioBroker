@@ -149,7 +149,7 @@ public class CamelRoutesSQS extends RouteBuilder {
 
 		from(batchSQSEndpoint).onException(Exception.class).maximumRedeliveries(5).maximumRedeliveryDelay(5000)
 				.to("log:retry").handled(true).end().aggregate(header("JMSCorrelationID"), new MyAggregationStrategy())
-				.completionPredicate(header("CamelSplitComplete").isEqualTo(true)).unmarshal().json(BatchRequest.class)
+				.completionPredicate(header("CamelSplitComplete").isEqualTo(true)).end().unmarshal().json(BatchRequest.class)
 				.to(batchEndpointIn).onException(Exception.class).maximumRedeliveries(5).maximumRedeliveryDelay(5000)
 				.to("log:retry").handled(true).end();
 		from(registryEndpointOut).onException(Exception.class).maximumRedeliveries(5).maximumRedeliveryDelay(5000)
