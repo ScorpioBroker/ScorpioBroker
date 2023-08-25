@@ -969,9 +969,9 @@ public class QueryService {
 		else if (join==null) {
 			local = queryDAO.getEntity(entityId, tenant, attrsQuery);
 		}
-		else if (join.equals("flat")) {
+		else if (join.equals(NGSIConstants.FLAT)) {
 			local = getEntityFlat(tenant, entityId, attrsMap, containedBy,  joinLevel, null,context);
-		} else if (join.equals("inline")) {
+		} else if (join.equals(NGSIConstants.INLINE)) {
 			local = getEntityInline(tenant, entityId, attrsMap, containedBy,  joinLevel,context);
 		} else {
 			return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData));

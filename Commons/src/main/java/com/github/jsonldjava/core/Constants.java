@@ -75,21 +75,21 @@ public class Constants {
 		allowedScalars.put(AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_SCOPE_Q);
 
 		allowedScalars.put(AppConstants.ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_OBJECT);
-		allowedScalars.put(AppConstants.ENTITY_CREATE_PAYLOAD, "https://uri.etsi.org/ngsi-ld/default-context/objectType");
+		allowedScalars.put(AppConstants.ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_OBJECT_TYPE);
 		allowedScalars.put(AppConstants.ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_VALUE);
 		allowedScalars.put(AppConstants.ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_COORDINATES);
 		allowedScalars.put(AppConstants.ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_UNIT_CODE);
 		allowedScalars.put(AppConstants.ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_DATA_SET_ID);
 		allowedScalars.put(AppConstants.ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_SCOPE);
 		allowedScalars.put(AppConstants.ENTITY_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_OBJECT);
-		allowedScalars.put(AppConstants.ENTITY_UPDATE_PAYLOAD, "https://uri.etsi.org/ngsi-ld/default-context/objectType");
+		allowedScalars.put(AppConstants.ENTITY_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_OBJECT_TYPE);
 		allowedScalars.put(AppConstants.ENTITY_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_VALUE);
 		allowedScalars.put(AppConstants.ENTITY_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_COORDINATES);
 		allowedScalars.put(AppConstants.ENTITY_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_UNIT_CODE);
 		allowedScalars.put(AppConstants.ENTITY_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_DATA_SET_ID);
 		allowedScalars.put(AppConstants.ENTITY_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_SCOPE);
 		allowedScalars.put(AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_OBJECT);
-		allowedScalars.put(AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, "https://uri.etsi.org/ngsi-ld/default-context/objectType");
+		allowedScalars.put(AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_OBJECT_TYPE);
 		allowedScalars.put(AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_VALUE);
 		allowedScalars.put(AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_COORDINATES);
 		allowedScalars.put(AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_UNIT_CODE);
@@ -132,7 +132,7 @@ public class Constants {
 		allowedScalars.put(AppConstants.CSOURCE_REG_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_COORDINATES);
 		allowedScalars.put(AppConstants.CSOURCE_REG_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_SCOPE);
 		allowedScalars.put(AppConstants.MERGE_PATCH_PAYLOAD, NGSIConstants.NGSI_LD_HAS_OBJECT);
-		allowedScalars.put(AppConstants.MERGE_PATCH_PAYLOAD, "https://uri.etsi.org/ngsi-ld/default-context/objectType");
+		allowedScalars.put(AppConstants.MERGE_PATCH_PAYLOAD, NGSIConstants.NGSI_LD_OBJECT_TYPE);
 		allowedScalars.put(AppConstants.MERGE_PATCH_PAYLOAD, NGSIConstants.NGSI_LD_HAS_VALUE);
 		allowedScalars.put(AppConstants.MERGE_PATCH_PAYLOAD, NGSIConstants.NGSI_LD_COORDINATES);
 		allowedScalars.put(AppConstants.MERGE_PATCH_PAYLOAD, NGSIConstants.NGSI_LD_UNIT_CODE);

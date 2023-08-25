@@ -38,6 +38,8 @@ public interface NGSIConstants {
 	public final static String CSOURCE_TYPE = "type";
 	public final static String CSOURCE_TIMESTAMP = "timestamp";
 	public final static String CSOURCE_COORDINATES = "coordinates";
+	public final static String FLAT = "flat";
+	public final static String INLINE = "inline";
 	public final static String NGSI_LD_SUBSCRIPTION_NAME = "https://uri.etsi.org/ngsi-ld/subscriptionName";
 	public final static String CSOURCEREGISTRATION_NAME = "registrationName";
 	public final static String OBJECT = "object";
