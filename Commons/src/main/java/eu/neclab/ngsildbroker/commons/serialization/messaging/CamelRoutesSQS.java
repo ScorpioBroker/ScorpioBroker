@@ -22,6 +22,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BatchRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.InternalNotification;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
+import io.quarkus.arc.profile.IfBuildProfile;
 import io.quarkus.arc.profile.UnlessBuildProfile;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.annotation.PostConstruct;
@@ -30,7 +31,7 @@ import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 
 @ApplicationScoped
-@UnlessBuildProfile(anyOf = { "in-memory", "kafka" })
+@IfBuildProfile("sqs")
 public class CamelRoutesSQS extends RouteBuilder {
 //	scorpio.topics.entity=ENTITY
 //			scorpio.topics.entitybatch=ENTITYBATCH

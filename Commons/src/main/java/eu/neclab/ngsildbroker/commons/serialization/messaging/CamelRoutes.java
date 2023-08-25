@@ -21,7 +21,7 @@ import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 
 @ApplicationScoped
-@UnlessBuildProfile(anyOf = {"in-memory", "kafka"})
+@UnlessBuildProfile(anyOf = {"in-memory", "kafka", "sqs"})
 public class CamelRoutes extends RouteBuilder {
 //	scorpio.topics.entity=ENTITY
 //			scorpio.topics.entitybatch=ENTITYBATCH
