@@ -142,10 +142,10 @@ public class CamelRoutesSQS extends RouteBuilder {
 				.onException(Exception.class).maximumRedeliveries(5).maximumRedeliveryDelay(5000).to("log:retry")
 				.handled(true).end();
 
-		from("batchEndpointOut").split().method(MySplitter.class, "splitBySize")
+		from(batchEndpointOut).split().method(MySplitter.class, "splitBySize")
 				.setHeader("CamelSplitSize", simple("${property.CamelSplitSize}"))
 				.setHeader("CamelSplitIndex", simple("${property.CamelSplitIndex}"))
-				.setHeader("CamelSplitComplete", simple("${property.CamelSplitComplete}")).to("batchSQSEndpoint");
+				.setHeader("CamelSplitComplete", simple("${property.CamelSplitComplete}")).to(batchSQSEndpoint);
 
 		from(batchSQSEndpoint).onException(Exception.class).maximumRedeliveries(5).maximumRedeliveryDelay(5000)
 				.to("log:retry").handled(true).end().aggregate(header("JMSCorrelationID"), new MyAggregationStrategy())
