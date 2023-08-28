@@ -1,12 +1,18 @@
 package eu.neclab.ngsildbroker.historyquerymanager.service;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import com.github.jsonldjava.core.JsonLdConsts;
+import io.vertx.core.http.HttpServerRequest;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
@@ -50,6 +56,8 @@ import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.ext.web.client.WebClient;
 import io.vertx.pgclient.PgException;
 
+import static eu.neclab.ngsildbroker.commons.tools.HttpUtils.parseLinkHeaderNoUni;
+
 @Singleton
 public class HistoryQueryService {
 
@@ -86,9 +94,9 @@ public class HistoryQueryService {
 	}
 
 	public Uni<QueryResult> query(String tenant, String[] entityIds, TypeQueryTerm typeQuery, String idPattern,
-			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, CSFQueryTerm csf, GeoQueryTerm geoQuery,
-			ScopeQueryTerm scopeQuery, TemporalQueryTerm tempQuery, AggrTerm aggrQuery, LanguageQueryTerm langQuery,
-			Integer lastN, Integer limit, Integer offSet, Boolean count, Boolean localOnly, Context context) {
+								  AttrsQueryTerm attrsQuery, QQueryTerm qQuery, CSFQueryTerm csf, GeoQueryTerm geoQuery,
+								  ScopeQueryTerm scopeQuery, TemporalQueryTerm tempQuery, AggrTerm aggrQuery, LanguageQueryTerm langQuery,
+								  Integer lastN, Integer limit, Integer offSet, Boolean count, Boolean localOnly, Context context, HttpServerRequest request) {
 
 		Uni<QueryResult> local = historyDAO.query(tenant, entityIds, typeQuery, idPattern, attrsQuery, qQuery,
 				tempQuery, aggrQuery, geoQuery, scopeQuery, lastN, limit, offSet, count).onFailure()
@@ -107,7 +115,7 @@ public class HistoryQueryService {
 		if (localOnly) {
 			return local;
 		}
-		Map<RemoteHost, String> remoteHosts = getRemoteHostsForQuery(tenant, idPattern, attrsQuery);
+		Map<RemoteHost, String> remoteHosts = getRemoteHostsForQuery(tenant,request.query(),context);
 		if (remoteHosts.isEmpty()) {
 			return local;
 		}
@@ -115,21 +123,29 @@ public class HistoryQueryService {
 		for (Entry<RemoteHost, String> entry : remoteHosts.entrySet()) {
 			RemoteHost remoteHost = entry.getKey();
 			String url = remoteHost.host() + NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT + "?" + entry.getValue();
-
+			String linkHead;
+			List<Object> contextLinks;
+			if(!remoteHost.headers().contains(NGSIConstants.LINK_HEADER)){
+				linkHead = request.headers().get(NGSIConstants.LINK_HEADER);
+				contextLinks= parseLinkHeaderNoUni(request.headers().getAll(NGSIConstants.LINK_HEADER),NGSIConstants.HEADER_REL_LDCONTEXT);
+			}else{
+				linkHead = remoteHost.headers().get(NGSIConstants.LINK_HEADER);
+				contextLinks= parseLinkHeaderNoUni(remoteHost.headers().getAll(NGSIConstants.LINK_HEADER),NGSIConstants.HEADER_REL_LDCONTEXT);
+			}
 			remoteCalls.add(
-					webClient.getAbs(url).putHeaders(remoteHost.headers()).send().onItem().transformToUni(response -> {
+					webClient.getAbs(url).putHeaders(remoteHost.headers()).putHeader(NGSIConstants.LINK_HEADER,linkHead).send().onItem().transformToUni(response -> {
 
 						if (response == null || response.statusCode() != 200) {
 							return Uni.createFrom().nullItem();
 						} else {
 							List<Object> responseEntity = response.bodyAsJsonArray().getList();
-							return ldService.expand(HttpUtils.getContextFromHeader(remoteHost.headers()),
+							return ldService.expand(contextLinks,
 									responseEntity, HttpUtils.opts, -1, false).onItem().transform(expanded -> {
 										QueryResult result = new QueryResult();
-										List<Map<String, Object>> resultList = new ArrayList<>(responseEntity.size());
-										for (Object entry2 : responseEntity) {
+										List<Map<String, Object>> resultList = new ArrayList<>(expanded.size());
+										for (Object entry2 : expanded) {
 											Map<String, Object> tmp = (Map<String, Object>) entry2;
-											tmp.put(EntityTools.REG_MODE_KEY, remoteHost.regMode());
+//											tmp.put(EntityTools.REG_MODE_KEY, remoteHost.regMode());
 											resultList.add(tmp);
 										}
 										result.setData(resultList);
@@ -167,12 +183,13 @@ public class HistoryQueryService {
 	}
 
 	private void mergeInResult(Map<String, Map<String, Object>> entityId2Entity, List<Map<String, Object>> data) {
-		// TODO Auto-generated method stub
-
+		for (Map<String,Object> item : data) {
+			entityId2Entity.put((String) item.getOrDefault(NGSIConstants.ID,item.get(JsonLdConsts.ID)),item);
+		}
 	}
 
 	/**
-	 * 
+	 *
 	 * @param tenant
 	 * @param entityId
 	 * @param attrsQuery
@@ -356,54 +373,106 @@ public class HistoryQueryService {
 		return result;
 	}
 
-	private Map<RemoteHost, String> getRemoteHostsForQuery(String tenant, String entityId, AttrsQueryTerm attrsQuery) {
-		Map<RemoteHost, String> result = Maps.newHashMap();
-
+	private Map<RemoteHost, String> getRemoteHostsForQuery(String tenant, String query,Context context) {
+		Map<RemoteHost, String> result = new HashMap<>();
+		Map<String,String> queryMap = queryStrToMap(query);
+		Set<String> filteredIds = new HashSet<>();
+		Set<String> entityIds = new HashSet<>(Arrays.asList(queryMap.getOrDefault("id","").split(",")));
+		Set<String> filteredTypes = new HashSet<>();
+		Set<String> types = new HashSet<>(Arrays.asList(queryMap.getOrDefault("type","").split(",")));
 		for (RegistrationEntry regEntry : tenant2CId2RegEntries.row(tenant).values()) {
 			if (!regEntry.retrieveTemporal()) {
 				continue;
 			}
-			if ((regEntry.eId() == null && regEntry.eIdp() == null)
-					|| (regEntry.eId() != null && regEntry.eId().equals(entityId))
-					|| (regEntry.eIdp() != null && entityId.matches(regEntry.eIdp()))) {
-				RemoteHost remoteHost = new RemoteHost(regEntry.host().host(), regEntry.host().tenant(),
-						regEntry.host().headers(), regEntry.host().cSourceId(), true, false, regEntry.regMode(),
-						regEntry.canDoZip(), regEntry.canDoIdQuery());
 
-				Set<String> attribs;
-				if (result.containsKey(remoteHost)) {
-//					attribs = result.get(remoteHost);
-				} else {
-					attribs = Sets.newHashSet();
-					// result.put(remoteHost, attribs);
-				}
-				if (regEntry.eProp() != null) {
-					// attribs.add(regEntry.eProp());
-				}
-				if (regEntry.eRel() != null) {
-					// attribs.add(regEntry.eRel());
+			RemoteHost remoteHost = new RemoteHost(regEntry.host().host(), regEntry.host().tenant(),
+					regEntry.host().headers(), regEntry.host().cSourceId(), true, false, regEntry.regMode(),
+					regEntry.canDoZip(), regEntry.canDoIdQuery());
+
+			if(regEntry.eId() != null || regEntry.eIdp() != null){
+				for (String id:entityIds) {
+					if((regEntry.eId() != null && regEntry.eId().equals(id))
+						||  (regEntry.eIdp() != null && id.matches(regEntry.eIdp()))){
+						filteredIds.add(id);
+					}
 				}
 			}
+			else{
+				filteredIds = entityIds;
+			}
+
+			if(regEntry.type() != null ){
+				for (String type:types) {
+					if( regEntry.type().equals(context.expandIri(type, false, true, null, null))) {
+						filteredTypes.add(type);
+					}
+				}
+			}
+			else{
+				filteredTypes=types;
+			}
+
+                queryMap.put("id",String.join(",",filteredIds));
+				queryMap.put("type",String.join(",",filteredTypes));
+
+            if (regEntry.eProp() != null || regEntry.eRel() != null) {
+                Set<String> uniqueAttrs = new HashSet<>( Arrays.asList(queryMap.getOrDefault("attrs","").split(",")));
+                uniqueAttrs.add(regEntry.eProp());
+                uniqueAttrs.add(regEntry.eRel());
+				uniqueAttrs.remove("");
+				uniqueAttrs.remove(null);
+                queryMap.put("attrs",String.join(",",uniqueAttrs));
+            }
+			result.put(remoteHost,queryMapToStr(queryMap));
 		}
-//		if (attrsQuery != null) {
-//			for (Entry<RemoteHost, Set<String>> entry : result.entrySet()) {
-//				Set<String> regAttrs = entry.getValue();
-//				if (regAttrs.isEmpty()) {
-//					regAttrs.addAll(attrsQuery.getAttrs());
-//				} else {
-//					regAttrs.retainAll(attrsQuery.getAttrs());
-//				}
-//			}
-//		}
 		return result;
+	}
+	private static Map<String, String> queryStrToMap(String queryString) {
+		Map<String, String> paramMap = new HashMap<>();
+
+		String[] paramPairs = queryString.split("&");
+		for (String paramPair : paramPairs) {
+			String[] keyValue = paramPair.split("=");
+			if (keyValue.length == 2) {
+				String key = keyValue[0];
+				String value = keyValue[1];
+				paramMap.put(key, value);
+			}
+		}
+
+		return paramMap;
+	}
+	public static String queryMapToStr(Map<String, String> paramMap) {
+		StringBuilder queryStringBuilder = new StringBuilder();
+		List<String> keyList = paramMap.keySet().stream().toList();
+        for (String key : keyList) {
+            if (paramMap.get(key).isEmpty()) {
+                paramMap.remove(key);
+            }
+        }
+
+		for (Map.Entry<String, String> entry : paramMap.entrySet()) {
+			if (!queryStringBuilder.isEmpty()) {
+				queryStringBuilder.append("&");
+			}
+			try {
+				String key = URLEncoder.encode(entry.getKey(), StandardCharsets.UTF_8);
+				String value = URLEncoder.encode(entry.getValue(), StandardCharsets.UTF_8);
+				queryStringBuilder.append(key).append("=").append(value);
+			} catch (Exception ignored) {}
+		}
+
+		return queryStringBuilder.toString();
 	}
 
 	public Uni<Void> handleRegistryChange(BaseRequest req) {
 		tenant2CId2RegEntries.remove(req.getTenant(), req.getId());
 		if (req.getRequestType() != AppConstants.DELETE_REQUEST) {
-			for (RegistrationEntry regEntry : RegistrationEntry.fromRegPayload(req.getPayload())) {
+			List<RegistrationEntry> lsReg = RegistrationEntry.fromRegPayload(req.getPayload());
+			int count=0;
+			for (RegistrationEntry regEntry : lsReg) {
 				if (regEntry.retrieveTemporal() || regEntry.queryTemporal()) {
-					tenant2CId2RegEntries.put(req.getTenant(), req.getId(), regEntry);
+					tenant2CId2RegEntries.put(req.getTenant(), req.getId()+count++, regEntry);
 				}
 			}
 		}

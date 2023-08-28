@@ -127,7 +127,7 @@ public class HistoryController {
 			return historyQueryService
 					.query(HttpUtils.getTenant(request), idList, typeQueryTerm, idPattern, attrsQueryTerm, qQueryTerm,
 							csfQueryTerm, geoQueryTerm, scopeQueryTerm, temporalQueryTerm, aggrTerm, languageQueryTerm,
-							lastNTBU, actualLimit, offset, count, localOnly, context)
+							lastNTBU, actualLimit, offset, count, localOnly, context, request)
 					.onItem().transformToUni(queryResult -> {
 						return HttpUtils.generateQueryResult(request, queryResult, options, geoproperty, acceptHeader,
 								count, actualLimit, languageQueryTerm, context, ldService);
