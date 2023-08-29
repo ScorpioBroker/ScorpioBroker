@@ -1,21 +1,23 @@
-package eu.neclab.ngsildbroker.subscriptionmanager.messaging;
+package eu.neclab.ngsildbroker.historyentitymanager.messaging;
 
 import jakarta.inject.Singleton;
+
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Acknowledgment;
-import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Acknowledgment.Strategy;
+import org.eclipse.microprofile.reactive.messaging.Incoming;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BatchRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.InternalNotification;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
-import io.quarkus.arc.profile.UnlessBuildProfile;
+import io.quarkus.arc.profile.IfBuildProfile;
+import io.quarkus.scheduler.Scheduled;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.smallrye.mutiny.Uni;
 
 @Singleton
-@UnlessBuildProfile(anyOf = {"in-memory", "sqs"})
-public class SubscriptionMessagingKafka extends SubscriptionMessagingBase {
+@IfBuildProfile(anyOf = {"sqs"})
+public class HistoryMessagingSQS extends HistoryMessagingBase {
 
 	@ConfigProperty(name = "scorpio.messaging.duplicate", defaultValue = "false")
 	boolean duplicate;
@@ -29,18 +31,25 @@ public class SubscriptionMessagingKafka extends SubscriptionMessagingBase {
 		return baseHandleEntity(message);
 	}
 
-	@Incoming(AppConstants.INTERNAL_RETRIEVE_NOTIFICATION_CHANNEL)
-	@Acknowledgment(Strategy.PRE_PROCESSING)
-	public Uni<Void> handleInternalNotification(InternalNotification message) {
-		return baseHandleInternalNotification(message);
+	public Uni<Void> handleBatchEntity(BatchRequest message) {
+		if (duplicate) {
+			return baseHandleBatch(MicroServiceUtils.deepCopyRequestMessage(message));
+		}
+		return baseHandleBatch(message);
 	}
 
-	@Incoming(AppConstants.ENTITY_BATCH_RETRIEVE_CHANNEL)
+	@Incoming(AppConstants.REGISTRY_RETRIEVE_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
-	public Uni<Void> handleBatchEntities(BatchRequest message) {
+	public Uni<Void> handleCsource(BaseRequest busMessage) {
 		if (duplicate) {
-			return baseHandleBatchEntities(MicroServiceUtils.deepCopyRequestMessage(message));
+			return baseHandleCsource(MicroServiceUtils.deepCopyRequestMessage(busMessage));
 		}
-		return baseHandleBatchEntities(message);
+		return baseHandleCsource(busMessage);
+	}
+
+	@Scheduled(every = "5s")
+	@RunOnVirtualThread
+	Uni<Void> checkBuffer() {
+		return super.checkBuffer();
 	}
 }

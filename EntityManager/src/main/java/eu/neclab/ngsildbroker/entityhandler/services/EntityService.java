@@ -13,6 +13,7 @@ import java.util.Set;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.inject.Decorated;
 import jakarta.inject.Inject;
 
 import eu.neclab.ngsildbroker.commons.datatypes.requests.ReplaceAttribRequest;
@@ -86,7 +87,7 @@ public class EntityService {
 	MutinyEmitter<BaseRequest> entityEmitter;
 
 	@Inject
-	@Channel(AppConstants.ENTITY_BATCH_CHANNEL)
+	@Channel("direct:batch")//AppConstants.ENTITY_BATCH_CHANNEL)
 	@Broadcast
 	@OnOverflow(value = Strategy.UNBOUNDED_BUFFER)
 	MutinyEmitter<BatchRequest> batchEmitter;

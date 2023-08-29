@@ -10,12 +10,12 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BatchRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.InternalNotification;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
-import io.quarkus.arc.profile.UnlessBuildProfile;
+import io.quarkus.arc.profile.IfBuildProfile;
 import io.smallrye.mutiny.Uni;
 
 @Singleton
-@UnlessBuildProfile(anyOf = {"in-memory", "sqs"})
-public class SubscriptionMessagingKafka extends SubscriptionMessagingBase {
+@IfBuildProfile("sqs")
+public class SubscriptionMessagingSQS extends SubscriptionMessagingBase {
 
 	@ConfigProperty(name = "scorpio.messaging.duplicate", defaultValue = "false")
 	boolean duplicate;
@@ -35,8 +35,6 @@ public class SubscriptionMessagingKafka extends SubscriptionMessagingBase {
 		return baseHandleInternalNotification(message);
 	}
 
-	@Incoming(AppConstants.ENTITY_BATCH_RETRIEVE_CHANNEL)
-	@Acknowledgment(Strategy.PRE_PROCESSING)
 	public Uni<Void> handleBatchEntities(BatchRequest message) {
 		if (duplicate) {
 			return baseHandleBatchEntities(MicroServiceUtils.deepCopyRequestMessage(message));

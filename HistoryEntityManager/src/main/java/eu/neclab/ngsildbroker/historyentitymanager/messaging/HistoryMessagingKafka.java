@@ -16,7 +16,7 @@ import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.smallrye.mutiny.Uni;
 
 @Singleton
-@UnlessBuildProfile("in-memory")
+@UnlessBuildProfile(anyOf = {"in-memory", "sqs"})
 public class HistoryMessagingKafka extends HistoryMessagingBase {
 
 	@ConfigProperty(name = "scorpio.messaging.duplicate", defaultValue = "false")
