@@ -57,7 +57,7 @@ public class SubscriptionMessagingKafka extends SubscriptionMessagingBase {
 			try {
 				message = objectMapper.readValue(byteMessage, BaseRequest.class);
 			} catch (IOException e) {
-				logger.error("failed to read sync message", e);
+				logger.error("failed to read entity", e);
 				return;
 			}
 			baseHandleEntity(message).runSubscriptionOn(executor).subscribe();
@@ -72,7 +72,7 @@ public class SubscriptionMessagingKafka extends SubscriptionMessagingBase {
 			try {
 				message = objectMapper.readValue(byteMessage, BatchRequest.class);
 			} catch (IOException e) {
-				logger.error("failed to read sync message", e);
+				logger.error("failed to read batch entity", e);
 				return;
 			}
 			baseHandleBatchEntities(message).runSubscriptionOn(executor).subscribe();
@@ -87,7 +87,7 @@ public class SubscriptionMessagingKafka extends SubscriptionMessagingBase {
 			try {
 				message = objectMapper.readValue(byteMessage, InternalNotification.class);
 			} catch (IOException e) {
-				logger.error("failed to read sync message", e);
+				logger.error("failed to read notification message", e);
 				return;
 			}
 			baseHandleInternalNotification(message).runSubscriptionOn(executor).subscribe();
