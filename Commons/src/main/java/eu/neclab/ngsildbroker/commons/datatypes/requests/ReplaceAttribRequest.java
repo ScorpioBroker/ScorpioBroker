@@ -8,6 +8,11 @@ import java.util.Map;
 public class ReplaceAttribRequest extends EntityRequest {
 
 	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 6257331818411623405L;
+
+	/**
 	 * constructor for serialization
 	 */
 

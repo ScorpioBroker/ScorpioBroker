@@ -9,6 +9,11 @@ import java.util.Map;
 public class ReplaceEntityRequest extends EntityRequest {
 
 	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -8302516364252441861L;
+
+	/**
 	 * constructor for serialization
 	 */
 	public ReplaceEntityRequest() {

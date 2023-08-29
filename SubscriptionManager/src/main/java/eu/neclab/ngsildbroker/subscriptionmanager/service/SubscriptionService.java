@@ -20,11 +20,13 @@ import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
 import org.apache.commons.lang3.StringUtils;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLDService;
 import com.github.jsonldjava.core.JsonLdConsts;
@@ -90,7 +92,7 @@ public class SubscriptionService {
 	@Inject
 	@Channel(AppConstants.INTERNAL_SUBS_CHANNEL)
 	@Broadcast
-	MutinyEmitter<SubscriptionRequest> internalSubEmitter;
+	MutinyEmitter<byte[]> internalSubEmitter;
 
 	@Inject
 	Vertx vertx;
@@ -102,6 +104,12 @@ public class SubscriptionService {
 	@RestClient
 	@Inject
 	LocalContextService localContextService;
+
+	@Inject
+	ObjectMapper objectMapper;
+
+	@ConfigProperty(name = "scorpio.messaging.maxSize")
+	int messageSize;
 
 	@Inject
 	MicroServiceUtils microServiceUtils;
@@ -128,7 +136,7 @@ public class SubscriptionService {
 							return Tuple2.of(Tuple2.of(tuple.getItem1(), tuple.getItem2()), ctx);
 						}));
 			});
-			if(unis.isEmpty()) {
+			if (unis.isEmpty()) {
 				return Uni.createFrom().voidItem();
 			}
 			return Uni.combine().all().unis(unis).combinedWith(list -> {
@@ -167,8 +175,8 @@ public class SubscriptionService {
 		} catch (ResponseException e) {
 			return Uni.createFrom().failure(e);
 		}
-		if(request.getId()==null){
-			String id = "urn:"+UUID.randomUUID().toString();
+		if (request.getId() == null) {
+			String id = "urn:" + UUID.randomUUID().toString();
 			request.setId(id);
 		}
 		SubscriptionTools.setInitTimesSentAndFailed(request);
@@ -187,13 +195,13 @@ public class SubscriptionService {
 				} else {
 					syncService = Uni.createFrom().voidItem();
 				}
-				return syncService.onItem().transformToUni(v2 -> {
-					return internalSubEmitter.send(request).onItem().transform(v -> {
-						NGSILDOperationResult result = new NGSILDOperationResult(
-								AppConstants.CREATE_SUBSCRIPTION_REQUEST, request.getId());
-						result.addSuccess(new CRUDSuccess(null, null, request.getId(), Sets.newHashSet()));
-						return result;
-					});
+				return syncService.onItem().transform(v2 -> {
+					MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, internalSubEmitter,
+							objectMapper);
+					NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.CREATE_SUBSCRIPTION_REQUEST,
+							request.getId());
+					result.addSuccess(new CRUDSuccess(null, null, request.getId(), Sets.newHashSet()));
+					return result;
 				});
 			}).onFailure().recoverWithUni(e -> {
 				if (e instanceof PgException && ((PgException) e).getCode().equals(AppConstants.SQL_ALREADY_EXISTS)) {
@@ -230,7 +238,7 @@ public class SubscriptionService {
 							} else {
 								syncService = Uni.createFrom().voidItem();
 							}
-							return syncService.onItem().transformToUni(v2 -> {
+							return syncService.onItem().transform(v2 -> {
 								if (isIntervalSub(updatedRequest)) {
 									tenant2subscriptionId2IntervalSubscription.put(tenant, updatedRequest.getId(),
 											updatedRequest);
@@ -240,10 +248,10 @@ public class SubscriptionService {
 											updatedRequest);
 									tenant2subscriptionId2IntervalSubscription.remove(tenant, updatedRequest.getId());
 								}
-								return internalSubEmitter.send(updatedRequest).onItem().transform(v -> {
-									return new NGSILDOperationResult(AppConstants.UPDATE_SUBSCRIPTION_REQUEST,
-											request.getId());
-								});
+								MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize,
+										internalSubEmitter, objectMapper);
+								return new NGSILDOperationResult(AppConstants.UPDATE_SUBSCRIPTION_REQUEST,
+										request.getId());
 							});
 						});
 					});
@@ -262,10 +270,10 @@ public class SubscriptionService {
 			} else {
 				syncService = Uni.createFrom().voidItem();
 			}
-			return syncService.onItem().transformToUni(v2 -> {
-				return internalSubEmitter.send(request).onItem().transform(v -> {
-					return new NGSILDOperationResult(AppConstants.DELETE_SUBSCRIPTION_REQUEST, request.getId());
-				});
+			return syncService.onItem().transform(v2 -> {
+				MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, internalSubEmitter,
+						objectMapper);
+				return new NGSILDOperationResult(AppConstants.DELETE_SUBSCRIPTION_REQUEST, request.getId());
 			});
 		});
 	}
@@ -315,8 +323,8 @@ public class SubscriptionService {
 		logger.debug("checking subscriptions");
 		for (SubscriptionRequest potentialSub : potentialSubs) {
 			switch (message.getRequestType()) {
-				case AppConstants.UPDATE_REQUEST, AppConstants.PARTIAL_UPDATE_REQUEST, AppConstants.MERGE_PATCH_REQUEST,
-						AppConstants.REPLACE_ENTITY_REQUEST,AppConstants.REPLACE_ATTRIBUTE_REQUEST -> {
+			case AppConstants.UPDATE_REQUEST, AppConstants.PARTIAL_UPDATE_REQUEST, AppConstants.MERGE_PATCH_REQUEST,
+					AppConstants.REPLACE_ENTITY_REQUEST, AppConstants.REPLACE_ATTRIBUTE_REQUEST -> {
 				unis.add(localEntityService.getAllByIds(message.getTenant(), message.getId(), true).onItem()
 						.transformToUni(entityList -> {
 							Map<String, Object> payload = new HashMap<>();

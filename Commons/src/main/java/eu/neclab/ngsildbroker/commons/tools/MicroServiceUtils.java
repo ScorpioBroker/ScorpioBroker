@@ -1,5 +1,7 @@
 package eu.neclab.ngsildbroker.commons.tools;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -8,6 +10,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BatchRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteAttributeRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
+import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.vertx.core.http.impl.headers.HeadersMultiMap;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
@@ -18,7 +21,9 @@ import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -53,6 +58,53 @@ public class MicroServiceUtils {
 					e);
 		}
 	}
+	
+	public static void serializeAndSplitObjectAndEmit(Object obj, int messageSize, MutinyEmitter<byte[]> emitter, ObjectMapper objectMapper) {
+		byte[] data;
+		try {
+			data = objectMapper.writeValueAsBytes(obj);
+		} catch (JsonProcessingException e) {
+			logger.error("Failed to serialize object", e);
+			return;
+		}
+		int size = data.length;
+		List<byte[]> result;
+		int id = data.hashCode();
+		if (size <= messageSize) {
+			result = new ArrayList<>(1);
+			result.add(data);
+		} else {
+			int messageSizeToUse = messageSize - 9;
+			int chunks = (int) Math.ceil((double) size / messageSizeToUse);
+			result = new ArrayList<>(chunks);
+			for (int i = 0; i < chunks; i++) {
+				int from = i * messageSizeToUse + ((i + 1) * 9);
+				int length = Math.min(messageSizeToUse, size - from);
+				int to = Math.min(from + messageSizeToUse, size);
+				ByteBuffer buffer = ByteBuffer.allocate(length + 9);
+				if (i == 0) {
+					buffer.put((byte) '#');
+					buffer.putInt(id);
+					buffer.putInt(chunks);
+				} else if (i + 1 < chunks) {
+					buffer.put((byte) '$');
+					buffer.putInt(id);
+					buffer.putInt(i);
+				} else {
+					buffer.put((byte) '%');
+					buffer.putInt(id);
+					buffer.putInt(i);
+				}
+				buffer.put(Arrays.copyOfRange(data, from, to));
+				result.add(buffer.array());
+			}
+		}
+
+		for(byte[] message: result) {
+			emitter.sendAndForget(message);
+		}
+	}
+
 
 	public static BaseRequest deepCopyRequestMessage(BaseRequest originalPayload) {
 		BaseRequest result;

@@ -28,6 +28,7 @@ import org.locationtech.spatial4j.shape.Shape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLDService;
 import com.google.common.collect.HashBasedTable;
@@ -85,13 +86,13 @@ public class EntityService {
 	@Channel(AppConstants.ENTITY_CHANNEL)
 	@Broadcast
 	@OnOverflow(value = Strategy.UNBOUNDED_BUFFER)
-	MutinyEmitter<BaseRequest> entityEmitter;
+	MutinyEmitter<byte[]> entityEmitter;
 
 	@Inject
 	@Channel(AppConstants.ENTITY_BATCH_CHANNEL)
 	@Broadcast
 	@OnOverflow(value = Strategy.UNBOUNDED_BUFFER)
-	MutinyEmitter<BatchRequest> batchEmitter;
+	MutinyEmitter<byte[]> batchEmitter;
 
 	@Inject
 	Vertx vertx;
@@ -102,6 +103,11 @@ public class EntityService {
 
 	@Inject
 	JsonLDService jsonLdService;
+	@Inject
+	ObjectMapper objectMapper;
+
+	@ConfigProperty(name = "scorpio.messaging.maxSize")
+	int messageSize;
 
 	@PostConstruct
 	void init() {
@@ -278,7 +284,7 @@ public class EntityService {
 				unis.add(prepareSplitUpEntityForSending(expanded, context).onItem().transformToUni(compacted -> {
 					return webClient
 							.postAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + request.getId()
-									+ "/attrs/" + request.getAttrName())
+									+ "/attrs/" + request.getAttribName())
 							.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(compacted))
 							.onItemOrFailure().transform((response, failure) -> {
 								return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(204),
@@ -356,7 +362,7 @@ public class EntityService {
 		return entityDAO.deleteAttribute(request).onItem().transform(resultEntity -> {
 			request.setPreviousEntity(resultEntity);
 
-			entityEmitter.sendAndForget(request);
+			MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
 			NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.DELETE_ATTRIBUTE_REQUEST,
 					request.getId());
 			result.addSuccess(new CRUDSuccess(null, null, null,
@@ -434,7 +440,7 @@ public class EntityService {
 	private Uni<NGSILDOperationResult> localDeleteEntity(DeleteEntityRequest request, Context context) {
 		return entityDAO.deleteEntity(request).onItem().transform(deleted -> {
 			request.setPayload(deleted);
-			entityEmitter.sendAndForget(request);
+			MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
 			NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.DELETE_REQUEST, request.getId());
 			result.addSuccess(new CRUDSuccess(null, null, null, deleted, context));
 			return result;
@@ -584,7 +590,7 @@ public class EntityService {
 	private Uni<NGSILDOperationResult> updateLocalEntity(UpdateEntityRequest request, Context context) {
 		return entityDAO.updateEntity(request).onItem().transform(notAppended -> {
 			request.setPreviousEntity(notAppended);
-			entityEmitter.sendAndForget(request);
+			MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
 			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, request.getId());
 			localResult.addSuccess(new CRUDSuccess(null, null, null, request.getPayload(), context));
 			return localResult;
@@ -650,7 +656,7 @@ public class EntityService {
 
 	private Uni<NGSILDOperationResult> createLocalEntity(CreateEntityRequest request, Context context) {
 		return entityDAO.createEntity(request).onItem().transform(v -> {
-			entityEmitter.sendAndForget(request);
+			MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
 			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, request.getId());
 			localResult.addSuccess(new CRUDSuccess(null, null, null, request.getPayload(), context));
 			return localResult;
@@ -660,7 +666,7 @@ public class EntityService {
 	private Uni<NGSILDOperationResult> partialUpdateLocalEntity(UpdateEntityRequest request, Context context) {
 		return entityDAO.partialUpdateAttribute(request).onItem().transform(v -> {
 			request.setPreviousEntity(v.iterator().next().getJsonObject(0).getMap());
-			entityEmitter.sendAndForget(request);
+			MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
 			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.PARTIAL_UPDATE_REQUEST,
 					request.getId());
 			localResult.addSuccess(new CRUDSuccess(null, null, null, request.getPayload(), context));
@@ -850,7 +856,7 @@ public class EntityService {
 			localResult.addSuccess(new CRUDSuccess(null, null, null, request.getPayload(), context));
 			if (!failedToAdd.isEmpty())
 				localResult.addFailure(new ResponseException(ErrorType.None, "Not added", failedToAdd));
-			entityEmitter.sendAndForget(request);
+			MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
 			return localResult;
 
 		});
@@ -931,7 +937,7 @@ public class EntityService {
 
 			if (!request.getRequestPayload().isEmpty()) {
 				logger.debug("Create batch request sending to kafka " + request.getEntityIds());
-				batchEmitter.sendAndForget(request);
+				MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, batchEmitter, objectMapper);
 			}
 			return result;
 		});
@@ -1057,7 +1063,7 @@ public class EntityService {
 			}
 			if (!request.getRequestPayload().isEmpty()) {
 				logger.debug("Append batch request sending to kafka " + request.getEntityIds());
-				batchEmitter.sendAndForget(request);
+				MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, batchEmitter, objectMapper);
 			}
 			return result;
 		});
@@ -1183,7 +1189,7 @@ public class EntityService {
 			}
 			if (!request.getEntityIds().isEmpty()) {
 				logger.debug("Upsert batch request sending to kafka " + request.getEntityIds());
-				batchEmitter.sendAndForget(request);
+				MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, batchEmitter, objectMapper);
 			}
 			return result;
 		});
@@ -1307,7 +1313,8 @@ public class EntityService {
 					request.setEntityIds(successes);
 					if (!request.getEntityIds().isEmpty()) {
 						logger.debug("Delete batch request sending to kafka " + request.getEntityIds());
-						batchEmitter.sendAndForget(request);
+						MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, batchEmitter,
+								objectMapper);
 					}
 					return result;
 				});
@@ -1355,8 +1362,9 @@ public class EntityService {
 			return result;
 		});
 	}
+
 	public Uni<NGSILDOperationResult> mergePatch(String tenant, String entityId, Map<String, Object> resolved,
-												 Context context) {
+			Context context) {
 		logger.debug("createMessage() :: started");
 		MergePatchRequest request = new MergePatchRequest(tenant, entityId, resolved);
 		Tuple2<Map<String, Object>, Collection<Tuple2<RemoteHost, Map<String, Object>>>> localAndRemote = splitEntity(
@@ -1374,7 +1382,8 @@ public class EntityService {
 
 			if (remoteHost.canDoSingleOp()) {
 				unis.add(prepareSplitUpEntityForSending(expanded, context).onItem().transformToUni(compacted -> {
-					return webClient.patchAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT+"/"+entityId)
+					return webClient
+							.patchAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + entityId)
 							.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(compacted))
 							.onItemOrFailure().transform((response, failure) -> {
 								return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(201),
@@ -1416,17 +1425,18 @@ public class EntityService {
 	}
 
 	private Uni<NGSILDOperationResult> localMergePatch(MergePatchRequest request, Context context) {
-		return entityDAO.mergePatch(request).onItem().transformToUni(v -> {
+		return entityDAO.mergePatch(request).onItem().transform(v -> {
 			request.setPreviousEntity(v);
-			return entityEmitter.send(request).onItem().transform(v2 -> {
-				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.MERGE_PATCH_REQUEST,
-						request.getId());
-				localResult.addSuccess(new CRUDSuccess(null, null, null, request.getPayload(), context));
-				return localResult;
-			});
+			MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
+			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.MERGE_PATCH_REQUEST,
+					request.getId());
+			localResult.addSuccess(new CRUDSuccess(null, null, null, request.getPayload(), context));
+			return localResult;
+
 		});
 	}
-	public Uni<NGSILDOperationResult> replaceEntity(String tenant,Map<String, Object> resolved, Context context) {
+
+	public Uni<NGSILDOperationResult> replaceEntity(String tenant, Map<String, Object> resolved, Context context) {
 		logger.debug("ReplaceMessage() :: started");
 
 		ReplaceEntityRequest request = new ReplaceEntityRequest(tenant, resolved);
@@ -1443,16 +1453,17 @@ public class EntityService {
 			Map<String, Object> expanded = remoteEntityAndHost.getItem2();
 			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
 			if (remoteHost.canDoSingleOp()) {
-				unis.add(prepareSplitUpEntityForSending(expanded, context).onItem().transformToUni(compacted->{
-					return webClient.putAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT+"/"+request.getId())
-							.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(compacted)).onItemOrFailure()
-							.transform((response, failure) -> {
-								return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(201), remoteHost,
-										AppConstants.CREATE_REQUEST, request.getId(),
+				unis.add(prepareSplitUpEntityForSending(expanded, context).onItem().transformToUni(compacted -> {
+					return webClient
+							.putAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + request.getId())
+							.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(compacted))
+							.onItemOrFailure().transform((response, failure) -> {
+								return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(201),
+										remoteHost, AppConstants.CREATE_REQUEST, request.getId(),
 										HttpUtils.getAttribsFromCompactedPayload(compacted));
 							});
 				}));
-		}
+			}
 
 		}
 		if (localEntity != null && !localEntity.isEmpty()) {
@@ -1474,10 +1485,11 @@ public class EntityService {
 			return getResult(list);
 		});
 	}
+
 	private Uni<NGSILDOperationResult> replaceLocalEntity(ReplaceEntityRequest request, Context context) {
 		return entityDAO.replaceEntity(request).onItem().transform(v -> {
 			request.setPreviousEntity(v);
-			entityEmitter.sendAndForget(request);
+			MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
 			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.REPLACE_ENTITY_REQUEST,
 					request.getId());
 			localResult.addSuccess(new CRUDSuccess(null, null, null, request.getPayload(), context));
@@ -1485,20 +1497,19 @@ public class EntityService {
 		});
 	}
 
-
-
-	public Uni<NGSILDOperationResult> replaceAttribute(String tenant,Map<String, Object> resolved, Context context,String entityId,String attrId) {
+	public Uni<NGSILDOperationResult> replaceAttribute(String tenant, Map<String, Object> resolved, Context context,
+			String entityId, String attrId) {
 		logger.debug("ReplaceMessage() :: started");
-		if(!resolved.containsKey(attrId)){
-			if(resolved.size()==1){
-			return 	Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData));
+		if (!resolved.containsKey(attrId)) {
+			if (resolved.size() == 1) {
+				return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData));
 			}
 			Map<String, Object> temp = new HashMap<>();
-			temp.put(attrId,List.of(resolved));
-			resolved= temp;
+			temp.put(attrId, List.of(resolved));
+			resolved = temp;
 		}
-		ReplaceAttribRequest request = new ReplaceAttribRequest(tenant, resolved,entityId,attrId);
-	    Tuple2<Map<String, Object>, Collection<Tuple2<RemoteHost, Map<String, Object>>>> localAndRemote = splitEntity(
+		ReplaceAttribRequest request = new ReplaceAttribRequest(tenant, resolved, entityId, attrId);
+		Tuple2<Map<String, Object>, Collection<Tuple2<RemoteHost, Map<String, Object>>>> localAndRemote = splitEntity(
 				request);
 		Map<String, Object> localEntity = localAndRemote.getItem1();
 		Collection<Tuple2<RemoteHost, Map<String, Object>>> remoteEntitiesAndHosts = localAndRemote.getItem2();
@@ -1512,12 +1523,14 @@ public class EntityService {
 			Map<String, Object> expanded = remoteEntityAndHost.getItem2();
 			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
 			if (remoteHost.canDoSingleOp()) {
-				unis.add(prepareSplitUpEntityForSending(expanded, context).onItem().transformToUni(compacted->{
-					return webClient.putAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT+"/"+entityId+"/"+"attrs" +"/"+attrId)
-							.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(compacted)).onItemOrFailure()
-							.transform((response, failure) -> {
-								return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(201), remoteHost,
-										AppConstants.CREATE_REQUEST, request.getId(),
+				unis.add(prepareSplitUpEntityForSending(expanded, context).onItem().transformToUni(compacted -> {
+					return webClient
+							.putAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + entityId + "/"
+									+ "attrs" + "/" + attrId)
+							.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(compacted))
+							.onItemOrFailure().transform((response, failure) -> {
+								return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(201),
+										remoteHost, AppConstants.CREATE_REQUEST, request.getId(),
 										HttpUtils.getAttribsFromCompactedPayload(compacted));
 							});
 				}));
@@ -1543,10 +1556,11 @@ public class EntityService {
 			return getResult(list);
 		});
 	}
+
 	private Uni<NGSILDOperationResult> replaceLocalAttrib(ReplaceAttribRequest request, Context context) {
 		return entityDAO.replaceAttrib(request).onItem().transform(v -> {
 			request.setPreviousEntity(v);
-			entityEmitter.sendAndForget(request);
+			MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
 			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.REPLACE_ENTITY_REQUEST,
 					request.getId());
 			localResult.addSuccess(new CRUDSuccess(null, null, null, request.getPayload(), context));

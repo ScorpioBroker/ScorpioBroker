@@ -6,6 +6,10 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 
 public class UpdateAttrHistoryEntityRequest extends HistoryEntityRequest {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -4591627988809549757L;
 	private String instanceId;
 	private String attrId;
 

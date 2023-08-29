@@ -2,6 +2,12 @@ package eu.neclab.ngsildbroker.commons.datatypes;
 
 import java.io.Serializable;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
+@JsonSerialize
+@JsonDeserialize
 public class AliveAnnouncement implements Serializable {
 
 	/**
@@ -14,6 +20,7 @@ public class AliveAnnouncement implements Serializable {
 		// for serialization
 	}
 
+	@JsonCreator
 	public AliveAnnouncement(String id) {
 		this.id = id;
 	}

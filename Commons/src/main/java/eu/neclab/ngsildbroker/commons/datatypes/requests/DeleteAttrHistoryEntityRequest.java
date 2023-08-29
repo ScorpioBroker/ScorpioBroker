@@ -4,6 +4,10 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 
 public class DeleteAttrHistoryEntityRequest extends HistoryEntityRequest {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -5546291614045250694L;
 	private boolean deleteAll;
 	private String datasetId;
 	private String attribName;

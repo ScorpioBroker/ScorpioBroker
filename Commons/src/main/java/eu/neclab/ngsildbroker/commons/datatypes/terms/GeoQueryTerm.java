@@ -21,6 +21,7 @@ import org.locationtech.spatial4j.shape.jts.JtsGeometry;
 import org.locationtech.spatial4j.shape.jts.JtsPoint;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.github.jsonldjava.core.Context;
 import com.google.common.collect.Lists;
@@ -374,6 +375,7 @@ public class GeoQueryTerm implements Serializable {
 	}
 
 	@JsonIgnore
+	@JsonIgnoreProperties
 	public Shape getShape() {
 		Shape queryShape;
 		List<List<Double>> tmp;
@@ -442,7 +444,8 @@ public class GeoQueryTerm implements Serializable {
 		}
 		return queryShape;
 	}
-
+	
+	@JsonIgnore
 	public void toRequestString(StringBuilder result, Shape geo, String georel) {
 		result.append("geoproperty=");
 		result.append(geoproperty);
