@@ -458,7 +458,7 @@ public class HistoryDAO {
 
 	}
 
-	public Uni<Void> setAttributeDeleted(DeleteAttributeRequest request) {
+	public Uni<Void> setAttributeDeleted(BaseRequest request) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
 			// return client.getConnection().onItem().transformToUni(conn -> {
 			LocalDateTime now = LocalDateTime.ofInstant(Instant.ofEpochMilli(request.getSendTimestamp()),

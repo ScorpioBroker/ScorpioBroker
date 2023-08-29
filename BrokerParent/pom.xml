@@ -83,7 +83,7 @@
 			<dependency>
 				<groupId>eu.neclab.ngsildbroker</groupId>
 				<artifactId>commons</artifactId>
-				<version>${version}</version>
+				<version>${project.version}</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
@@ -199,9 +199,9 @@
 			<artifactId>smallrye-reactive-messaging-in-memory</artifactId>
 		</dependency>
 		<dependency>
-      		<groupId>io.quarkus</groupId>
-      		<artifactId>quarkus-info</artifactId>
-    	</dependency>
+			<groupId>io.quarkus</groupId>
+			<artifactId>quarkus-info</artifactId>
+		</dependency>
 	</dependencies>
 	<profiles>
 		<profile>
