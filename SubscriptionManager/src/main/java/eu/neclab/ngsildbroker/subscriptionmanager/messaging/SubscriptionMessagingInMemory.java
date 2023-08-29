@@ -26,14 +26,16 @@ import eu.neclab.ngsildbroker.commons.serialization.messaging.CollectMessageList
 import eu.neclab.ngsildbroker.commons.serialization.messaging.MessageCollector;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import io.netty.channel.EventLoopGroup;
+import io.quarkus.arc.profile.IfBuildProfile;
 import io.quarkus.arc.profile.UnlessBuildProfile;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Vertx;
 
 @Singleton
-public class SubscriptionMessagingKafka extends SubscriptionMessagingBase {
+@IfBuildProfile("in-memory")
+public class SubscriptionMessagingInMemory extends SubscriptionMessagingBase {
 
-	private static final Logger logger = LoggerFactory.getLogger(SubscriptionMessagingKafka.class);
+	private static final Logger logger = LoggerFactory.getLogger(SubscriptionMessagingInMemory.class);
 	private MessageCollector collector = new MessageCollector();
 
 	@Inject
@@ -94,21 +96,21 @@ public class SubscriptionMessagingKafka extends SubscriptionMessagingBase {
 		}
 	};
 
-	@Incoming(AppConstants.ENTITY_RETRIEVE_CHANNEL)
+	@Incoming(AppConstants.ENTITY_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
 	public Uni<Void> handleEntity(byte[] byteMessage) {
 		collector.collect(byteMessage, collectListenerEntity);
 		return Uni.createFrom().voidItem();
 	}
 
-	@Incoming(AppConstants.INTERNAL_RETRIEVE_NOTIFICATION_CHANNEL)
+	@Incoming(AppConstants.INTERNAL_NOTIFICATION_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
 	public Uni<Void> handleInternalNotification(byte[] byteMessage) {
 		collector.collect(byteMessage, collectListenerINotification);
 		return Uni.createFrom().voidItem();
 	}
 
-	@Incoming(AppConstants.ENTITY_BATCH_RETRIEVE_CHANNEL)
+	@Incoming(AppConstants.ENTITY_BATCH_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
 	public Uni<Void> handleBatchEntities(byte[] byteMessage) {
 		collector.collect(byteMessage, collectListenerBatchEntity);

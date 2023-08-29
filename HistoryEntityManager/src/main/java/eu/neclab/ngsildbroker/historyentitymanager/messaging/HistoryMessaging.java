@@ -16,6 +16,8 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.BatchRequest;
 import eu.neclab.ngsildbroker.commons.serialization.messaging.CollectMessageListener;
 import eu.neclab.ngsildbroker.commons.serialization.messaging.MessageCollector;
 import io.netty.channel.EventLoopGroup;
+import io.quarkus.arc.profile.IfBuildProfile;
+import io.quarkus.arc.profile.UnlessBuildProfile;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.smallrye.mutiny.Uni;
@@ -25,9 +27,10 @@ import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
 @Singleton
-public class HistoryMessagingKafka extends HistoryMessagingBase {
+@UnlessBuildProfile("in-memory")
+public class HistoryMessaging extends HistoryMessagingBase {
 
-	private static final Logger logger = LoggerFactory.getLogger(HistoryMessagingKafka.class);
+	private static final Logger logger = LoggerFactory.getLogger(HistoryMessaging.class);
 	private MessageCollector collector = new MessageCollector();
 
 	@Inject
