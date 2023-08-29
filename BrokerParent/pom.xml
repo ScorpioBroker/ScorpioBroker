@@ -184,7 +184,7 @@
 		</dependency>
 		<dependency>
 			<groupId>io.quarkus</groupId>
-			<artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>
+			<artifactId>quarkus-smallrye-reactive-messaging</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>io.strimzi</groupId>
@@ -193,10 +193,6 @@
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>io.smallrye.reactive</groupId>
-			<artifactId>smallrye-reactive-messaging-in-memory</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>io.quarkus</groupId>
@@ -284,7 +280,6 @@
 		<profile>
 			<id>sqs</id>
 			<activation>
-				<activeByDefault>true</activeByDefault>
 				<property>
 					<name>sqs</name>
 				</property>
