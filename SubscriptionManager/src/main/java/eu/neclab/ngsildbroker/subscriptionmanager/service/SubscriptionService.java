@@ -380,7 +380,10 @@ public class SubscriptionService {
 		if (unis.isEmpty()) {
 			return Uni.createFrom().voidItem();
 		}
-		return Uni.combine().all().unis(unis).discardItems();
+		return Uni.combine().all().unis(unis).combinedWith(t -> {
+			System.out.println(t);
+			return t;
+		}).onItem().transformToUni(t2 -> Uni.createFrom().voidItem());
 	}
 
 	private Uni<Void> sendNotification(SubscriptionRequest potentialSub, Map<String, Object> reg, int triggerReason) {

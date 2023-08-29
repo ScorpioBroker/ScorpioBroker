@@ -50,7 +50,7 @@ public class RegistrySubscriptionSyncService {
 	private Set<String> currentInstances = Sets.newHashSet();
 
 	private Set<String> lastInstances = Sets.newHashSet();
-	
+
 	private MessageCollector collector = new MessageCollector();
 
 	@Inject
@@ -69,7 +69,7 @@ public class RegistrySubscriptionSyncService {
 	Vertx vertx;
 
 	private EventLoopGroup executor;
-	
+
 	CollectMessageListener collectListenerSubs = new CollectMessageListener() {
 
 		@Override
@@ -88,13 +88,16 @@ public class RegistrySubscriptionSyncService {
 			}
 			switch (sub.getRequestType()) {
 			case AppConstants.DELETE_REQUEST:
-				subService.syncDeleteSubscription(sub).runSubscriptionOn(executor).subscribe();
+				subService.syncDeleteSubscription(sub).runSubscriptionOn(executor).subscribe()
+						.with(v -> logger.debug("done handling delete"));
 				break;
 			case AppConstants.UPDATE_REQUEST:
-				subService.syncUpdateSubscription(sub).runSubscriptionOn(executor).subscribe();
+				subService.syncUpdateSubscription(sub).runSubscriptionOn(executor).subscribe()
+						.with(v -> logger.debug("done handling update"));
 				break;
 			case AppConstants.CREATE_REQUEST:
-				subService.syncCreateSubscription(sub).runSubscriptionOn(executor).subscribe();
+				subService.syncCreateSubscription(sub).runSubscriptionOn(executor).subscribe()
+						.with(v -> logger.debug("done handling create"));
 				break;
 			default:
 				return;
@@ -122,6 +125,7 @@ public class RegistrySubscriptionSyncService {
 
 	@ConfigProperty(name = "scorpio.messaging.maxSize")
 	int messageSize;
+
 	@PostConstruct
 	public void setup() {
 		INSTANCE_ID = new AliveAnnouncement(SYNC_ID);
@@ -145,7 +149,6 @@ public class RegistrySubscriptionSyncService {
 		currentInstances.clear();
 		return Uni.createFrom().voidItem();
 	}
-	
 
 	@Incoming(AppConstants.REG_SUB_SYNC_RETRIEVE_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
@@ -185,5 +188,4 @@ public class RegistrySubscriptionSyncService {
 		return Uni.createFrom().voidItem();
 	}
 
-	
 }

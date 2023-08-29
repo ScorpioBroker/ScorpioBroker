@@ -30,7 +30,7 @@ import io.vertx.mutiny.core.Vertx;
 @Singleton
 @IfBuildProfile("in-memory")
 public class QueryManagerMessagingInMemory extends QueryManagerMessagingBase {
-	
+
 	private static final Logger logger = LoggerFactory.getLogger(QueryManagerMessagingInMemory.class);
 	@Inject
 	Vertx vertx;
@@ -39,7 +39,7 @@ public class QueryManagerMessagingInMemory extends QueryManagerMessagingBase {
 	ObjectMapper objectMapper;
 
 	private EventLoopGroup executor;
-	
+
 	private MessageCollector collector = new MessageCollector();
 
 	@PostConstruct
@@ -58,10 +58,10 @@ public class QueryManagerMessagingInMemory extends QueryManagerMessagingBase {
 				logger.error("failed to read sync message", e);
 				return;
 			}
-			baseHandleCsource(message).runSubscriptionOn(executor).subscribe();
+			baseHandleCsource(message).runSubscriptionOn(executor).subscribe()
+					.with(v -> logger.debug("done handling registry"));
 		}
 	};
-
 
 	@Incoming(AppConstants.REGISTRY_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)

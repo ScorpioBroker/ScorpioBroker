@@ -51,7 +51,8 @@ public class HistoryMessagingKafka extends HistoryMessagingBase {
 				logger.error("failed to read sync message", e);
 				return;
 			}
-			baseHandleCsource(message).runSubscriptionOn(executor).subscribe();
+			baseHandleCsource(message).runSubscriptionOn(executor).subscribe()
+					.with(v -> logger.debug("done handling registry"));
 		}
 	};
 

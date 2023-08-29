@@ -117,13 +117,16 @@ public class SubscriptionSyncService {
 			}
 			switch (sub.getRequestType()) {
 			case AppConstants.DELETE_REQUEST:
-				subService.syncDeleteSubscription(sub).runSubscriptionOn(executor).subscribe();
+				subService.syncDeleteSubscription(sub).runSubscriptionOn(executor).subscribe()
+						.with(v -> logger.debug("done handling delete"));
 				break;
 			case AppConstants.UPDATE_REQUEST:
-				subService.syncUpdateSubscription(sub).runSubscriptionOn(executor).subscribe();
+				subService.syncUpdateSubscription(sub).runSubscriptionOn(executor).subscribe()
+						.with(v -> logger.debug("done handling update"));
 				break;
 			case AppConstants.CREATE_REQUEST:
-				subService.syncCreateSubscription(sub).runSubscriptionOn(executor).subscribe();
+				subService.syncCreateSubscription(sub).runSubscriptionOn(executor).subscribe()
+						.with(v -> logger.debug("done handling create"));
 				break;
 			default:
 				return;

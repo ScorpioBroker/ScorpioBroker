@@ -55,10 +55,11 @@ public class RegistrySubscriptionMessagingInMemory extends RegistrySubscriptionM
 				logger.error("failed to read sync message", e);
 				return;
 			}
-			baseHandleCsource(message).runSubscriptionOn(executor).subscribe();
+			baseHandleCsource(message).runSubscriptionOn(executor).subscribe()
+					.with(v -> logger.debug("done handling registry"));
 		}
 	};
-	
+
 	CollectMessageListener collectListenerSubscription = new CollectMessageListener() {
 
 		@Override
@@ -70,13 +71,10 @@ public class RegistrySubscriptionMessagingInMemory extends RegistrySubscriptionM
 				logger.error("failed to read sync message", e);
 				return;
 			}
-			baseHandleSubscription(message).runSubscriptionOn(executor).subscribe();
+			baseHandleSubscription(message).runSubscriptionOn(executor).subscribe()
+					.with(v -> logger.debug("done handling sub"));
 		}
 	};
-
-
-	
-
 
 	@Incoming(AppConstants.REGISTRY_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)

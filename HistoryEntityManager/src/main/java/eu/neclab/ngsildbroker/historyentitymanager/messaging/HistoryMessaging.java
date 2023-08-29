@@ -57,7 +57,7 @@ public class HistoryMessaging extends HistoryMessagingBase {
 				logger.error("failed to read sync message", e);
 				return;
 			}
-			baseHandleEntity(message).runSubscriptionOn(executor).subscribe();
+			baseHandleEntity(message).runSubscriptionOn(executor).subscribe().with(v -> logger.debug("done handling entity"));
 		}
 	};
 
@@ -72,7 +72,7 @@ public class HistoryMessaging extends HistoryMessagingBase {
 				logger.error("failed to read sync message", e);
 				return;
 			}
-			baseHandleBatch(message).runSubscriptionOn(executor).subscribe();
+			baseHandleBatch(message).runSubscriptionOn(executor).subscribe().with(v -> logger.debug("done handling batch"));
 		}
 	};
 
@@ -87,7 +87,7 @@ public class HistoryMessaging extends HistoryMessagingBase {
 				logger.error("failed to read sync message", e);
 				return;
 			}
-			baseHandleCsource(message).runSubscriptionOn(executor).subscribe();
+			baseHandleCsource(message).runSubscriptionOn(executor).subscribe().with(v -> logger.debug("done handling registry"));
 		}
 	};
 

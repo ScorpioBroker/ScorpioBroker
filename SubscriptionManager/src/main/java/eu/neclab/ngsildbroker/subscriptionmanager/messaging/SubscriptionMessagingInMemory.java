@@ -62,7 +62,9 @@ public class SubscriptionMessagingInMemory extends SubscriptionMessagingBase {
 				logger.error("failed to read entity", e);
 				return;
 			}
-			baseHandleEntity(message).runSubscriptionOn(executor).subscribe();
+			baseHandleEntity(message).runSubscriptionOn(executor).subscribe()
+					.with(v -> logger.debug("done handling entity"));
+			;
 		}
 	};
 
@@ -77,7 +79,8 @@ public class SubscriptionMessagingInMemory extends SubscriptionMessagingBase {
 				logger.error("failed to read batch entity", e);
 				return;
 			}
-			baseHandleBatchEntities(message).runSubscriptionOn(executor).subscribe();
+			baseHandleBatchEntities(message).runSubscriptionOn(executor).subscribe()
+					.with(v -> logger.debug("done handling batch"));
 		}
 	};
 
@@ -92,7 +95,8 @@ public class SubscriptionMessagingInMemory extends SubscriptionMessagingBase {
 				logger.error("failed to read notification message", e);
 				return;
 			}
-			baseHandleInternalNotification(message).runSubscriptionOn(executor).subscribe();
+			baseHandleInternalNotification(message).runSubscriptionOn(executor).subscribe()
+					.with(v -> logger.debug("done handling notification"));
 		}
 	};
 
