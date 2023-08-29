@@ -58,8 +58,9 @@ public class MicroServiceUtils {
 					e);
 		}
 	}
-	
-	public static void serializeAndSplitObjectAndEmit(Object obj, int messageSize, MutinyEmitter<byte[]> emitter, ObjectMapper objectMapper) {
+
+	public static void serializeAndSplitObjectAndEmit(Object obj, int messageSize, MutinyEmitter<String> emitter,
+			ObjectMapper objectMapper) {
 		byte[] data;
 		try {
 			data = objectMapper.writeValueAsBytes(obj);
@@ -100,24 +101,23 @@ public class MicroServiceUtils {
 			}
 		}
 
-		for(byte[] message: result) {
-			emitter.sendAndForget(message);
+		for (byte[] message : result) {
+			emitter.sendAndForget(new String(message));
 		}
 	}
-
 
 	public static BaseRequest deepCopyRequestMessage(BaseRequest originalPayload) {
 		BaseRequest result;
 		switch (originalPayload.getRequestType()) {
-			case AppConstants.DELETE_ATTRIBUTE_REQUEST:
-				result = new DeleteAttributeRequest();
-				result.setPreviousEntity(originalPayload.getPreviousEntity());
-				result.setAttribName(originalPayload.getAttribName());
-				result.setDatasetId(originalPayload.getDatasetId());
-				result.setDeleteAll(originalPayload.isDeleteAll());
-				break;
-			default:
-				result = new BaseRequest();
+		case AppConstants.DELETE_ATTRIBUTE_REQUEST:
+			result = new DeleteAttributeRequest();
+			result.setPreviousEntity(originalPayload.getPreviousEntity());
+			result.setAttribName(originalPayload.getAttribName());
+			result.setDatasetId(originalPayload.getDatasetId());
+			result.setDeleteAll(originalPayload.isDeleteAll());
+			break;
+		default:
+			result = new BaseRequest();
 
 		}
 		result.setId(originalPayload.getId());
@@ -162,7 +162,7 @@ public class MicroServiceUtils {
 			} else if (originalValue instanceof Boolean) {
 				copiedValue = ((Boolean) originalValue).booleanValue();
 			} else if (originalValue == null) {
-				//System.out.println(entry.getKey() + " was null");
+				// System.out.println(entry.getKey() + " was null");
 				continue;
 			} else {
 				copiedValue = originalValue.toString();

@@ -92,7 +92,7 @@ public class SubscriptionService {
 	@Inject
 	@Channel(AppConstants.INTERNAL_SUBS_CHANNEL)
 	@Broadcast
-	MutinyEmitter<byte[]> internalSubEmitter;
+	MutinyEmitter<String> internalSubEmitter;
 
 	@Inject
 	Vertx vertx;

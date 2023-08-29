@@ -77,7 +77,7 @@ public class HistoryEntityService {
 
 	@Inject
 	@Channel(AppConstants.HISTORY_CHANNEL)
-	MutinyEmitter<byte[]> kafkaSenderInterface;
+	MutinyEmitter<String> kafkaSenderInterface;
 
 	@Inject
 	Vertx vertx;

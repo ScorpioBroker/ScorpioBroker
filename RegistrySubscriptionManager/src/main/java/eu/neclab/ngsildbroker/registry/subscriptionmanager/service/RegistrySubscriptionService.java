@@ -79,7 +79,7 @@ public class RegistrySubscriptionService {
 	@Inject
 	@Channel(AppConstants.INTERNAL_NOTIFICATION_CHANNEL)
 	@Broadcast
-	MutinyEmitter<byte[]> internalNotificationSender;
+	MutinyEmitter<String> internalNotificationSender;
 
 	@Inject
 	ObjectMapper objectMapper;

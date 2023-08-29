@@ -70,7 +70,7 @@ public class CSourceService {
 	@Inject
 	@Channel(AppConstants.REGISTRY_CHANNEL)
 	@Broadcast
-	MutinyEmitter<byte[]> emitter;
+	MutinyEmitter<String> emitter;
 
 	@ConfigProperty(name = "scorpio.federation.registrationtype", defaultValue = "types")
 	String AUTO_REG_MODE;

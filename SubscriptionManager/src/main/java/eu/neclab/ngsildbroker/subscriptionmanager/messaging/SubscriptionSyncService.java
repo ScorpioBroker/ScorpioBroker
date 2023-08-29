@@ -55,11 +55,11 @@ public class SubscriptionSyncService {
 
 	@Inject
 	@Channel(AppConstants.SUB_ALIVE_CHANNEL)
-	MutinyEmitter<byte[]> aliveEmitter;
+	MutinyEmitter<String> aliveEmitter;
 
 	@Inject
 	@Channel(AppConstants.SUB_SYNC_CHANNEL)
-	MutinyEmitter<byte[]> syncEmitter;
+	MutinyEmitter<String> syncEmitter;
 
 	@Inject
 	SubscriptionService subService;
@@ -154,15 +154,15 @@ public class SubscriptionSyncService {
 
 	@Incoming(AppConstants.SUB_SYNC_RETRIEVE_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
-	Uni<Void> listenForSubs(byte[] byteMessage) {
-		collector.collect(byteMessage, collectListenerSubs);
+	Uni<Void> listenForSubs(String byteMessage) {
+		collector.collect(byteMessage.getBytes(), collectListenerSubs);
 		return Uni.createFrom().voidItem();
 	}
 
 	@Incoming(AppConstants.SUB_ALIVE_RETRIEVE_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
-	Uni<Void> listenForAlive(byte[] byteMessage) {
-		collector.collect(byteMessage, collectListenerAlive);
+	Uni<Void> listenForAlive(String byteMessage) {
+		collector.collect(byteMessage.getBytes(), collectListenerAlive);
 		return Uni.createFrom().voidItem();
 	}
 

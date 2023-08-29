@@ -65,8 +65,8 @@ public class QueryManagerMessagingInMemory extends QueryManagerMessagingBase {
 
 	@Incoming(AppConstants.REGISTRY_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
-	public Uni<Void> handleCsource(byte[] byteMessage) {
-		collector.collect(byteMessage, collectListenerRegistry);
+	public Uni<Void> handleCsource(String byteMessage) {
+		collector.collect(byteMessage.getBytes(), collectListenerRegistry);
 		return Uni.createFrom().voidItem();
 	}
 }

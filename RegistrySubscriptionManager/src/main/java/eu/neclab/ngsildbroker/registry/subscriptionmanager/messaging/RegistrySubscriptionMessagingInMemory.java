@@ -78,15 +78,15 @@ public class RegistrySubscriptionMessagingInMemory extends RegistrySubscriptionM
 
 	@Incoming(AppConstants.REGISTRY_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
-	public Uni<Void> handleCsource(byte[] byteMessage) {
-		collector.collect(byteMessage, collectListenerRegistry);
+	public Uni<Void> handleCsource(String byteMessage) {
+		collector.collect(byteMessage.getBytes(), collectListenerRegistry);
 		return Uni.createFrom().voidItem();
 	}
 
 	@Incoming(AppConstants.INTERNAL_SUBS_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
-	public Uni<Void> handleSubscription(byte[] byteMessage) {
-		collector.collect(byteMessage, collectListenerSubscription);
+	public Uni<Void> handleSubscription(String byteMessage) {
+		collector.collect(byteMessage.getBytes(), collectListenerSubscription);
 		return Uni.createFrom().voidItem();
 	}
 }

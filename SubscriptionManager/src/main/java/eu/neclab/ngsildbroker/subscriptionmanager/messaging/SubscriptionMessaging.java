@@ -100,22 +100,22 @@ public class SubscriptionMessaging extends SubscriptionMessagingBase {
 
 	@Incoming(AppConstants.ENTITY_RETRIEVE_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
-	public Uni<Void> handleEntity(byte[] byteMessage) {
-		collector.collect(byteMessage, collectListenerEntity);
+	public Uni<Void> handleEntity(String byteMessage) {
+		collector.collect(byteMessage.getBytes(), collectListenerEntity);
 		return Uni.createFrom().voidItem();
 	}
 
 	@Incoming(AppConstants.INTERNAL_RETRIEVE_NOTIFICATION_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
-	public Uni<Void> handleInternalNotification(byte[] byteMessage) {
-		collector.collect(byteMessage, collectListenerINotification);
+	public Uni<Void> handleInternalNotification(String byteMessage) {
+		collector.collect(byteMessage.getBytes(), collectListenerINotification);
 		return Uni.createFrom().voidItem();
 	}
 
 	@Incoming(AppConstants.ENTITY_BATCH_RETRIEVE_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
-	public Uni<Void> handleBatchEntities(byte[] byteMessage) {
-		collector.collect(byteMessage, collectListenerBatchEntity);
+	public Uni<Void> handleBatchEntities(String byteMessage) {
+		collector.collect(byteMessage.getBytes(), collectListenerBatchEntity);
 		return Uni.createFrom().voidItem();
 	}
 }

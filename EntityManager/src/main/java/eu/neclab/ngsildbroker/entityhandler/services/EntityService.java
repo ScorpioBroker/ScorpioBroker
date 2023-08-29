@@ -86,13 +86,13 @@ public class EntityService {
 	@Channel(AppConstants.ENTITY_CHANNEL)
 	@Broadcast
 	@OnOverflow(value = Strategy.UNBOUNDED_BUFFER)
-	MutinyEmitter<byte[]> entityEmitter;
+	MutinyEmitter<String> entityEmitter;
 
 	@Inject
 	@Channel(AppConstants.ENTITY_BATCH_CHANNEL)
 	@Broadcast
 	@OnOverflow(value = Strategy.UNBOUNDED_BUFFER)
-	MutinyEmitter<byte[]> batchEmitter;
+	MutinyEmitter<String> batchEmitter;
 
 	@Inject
 	Vertx vertx;
