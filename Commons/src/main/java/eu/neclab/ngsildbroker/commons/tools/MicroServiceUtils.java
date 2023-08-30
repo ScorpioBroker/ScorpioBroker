@@ -17,11 +17,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import jakarta.inject.Singleton;
+
+import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetEncoder;
+import java.nio.charset.CoderResult;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -59,51 +65,60 @@ public class MicroServiceUtils {
 		}
 	}
 
+	public static void main(String[] args) throws Exception {
+
+	}
+
 	public static void serializeAndSplitObjectAndEmit(Object obj, int messageSize, MutinyEmitter<String> emitter,
 			ObjectMapper objectMapper) {
-		byte[] data;
+		String data;
 		try {
-			data = objectMapper.writeValueAsBytes(obj);
+			data = objectMapper.writeValueAsString(obj);
 		} catch (JsonProcessingException e) {
 			logger.error("Failed to serialize object", e);
 			return;
 		}
-		int size = data.length;
-		List<byte[]> result;
+		int size = data.getBytes().length;
+
+		List<String> result;
 		int id = data.hashCode();
 		if (size <= messageSize) {
 			result = new ArrayList<>(1);
 			result.add(data);
 		} else {
-			int messageSizeToUse = messageSize - 9;
-			int chunks = (int) Math.ceil((double) size / messageSizeToUse);
-			result = new ArrayList<>(chunks);
-			for (int i = 0; i < chunks; i++) {
-				int from = i * messageSizeToUse + ((i + 1) * 9);
-				int length = Math.min(messageSizeToUse, size - from);
-				int to = Math.min(from + messageSizeToUse, size);
-				ByteBuffer buffer = ByteBuffer.allocate(length + 9);
-				if (i == 0) {
-					buffer.put((byte) '#');
-					buffer.putInt(id);
-					buffer.putInt(chunks);
-				} else if (i + 1 < chunks) {
-					buffer.put((byte) '$');
-					buffer.putInt(id);
-					buffer.putInt(i);
-				} else {
-					buffer.put((byte) '%');
-					buffer.putInt(id);
-					buffer.putInt(i);
-				}
-				buffer.put(Arrays.copyOfRange(data, from, to));
-				result.add(buffer.array());
+			int messageSizeToUse = messageSize - 23;
+			result = splitStringByByteLength(data, messageSizeToUse);
+		}
+		for (String message : result) {
+			emitter.sendAndForget(message);
+		}
+	}
+
+	public static List<String> splitStringByByteLength(String src, int maxsize) {
+		String id = String.format("%011d", src.hashCode());
+		Charset cs = Charset.forName("UTF-16");
+		CharsetEncoder coder = cs.newEncoder();
+		ByteBuffer out = ByteBuffer.allocate(maxsize); // output buffer of required size
+		CharBuffer in = CharBuffer.wrap(src);
+		List<String> result = new ArrayList<>(); // a list to store the chunks
+		int pos = 0;
+		int i = 0;
+		while (true) {
+			CoderResult cr = coder.encode(in, out, true); // try to encode as much as possible
+			int newpos = src.length() - in.length();
+			String posS = String.format("%011d", i);
+			String s = "$" + id + posS + src.substring(pos, newpos);
+			i++;
+			result.add(s); // add what has been encoded to the list
+			pos = newpos; // store new input position
+			out.rewind(); // and rewind output buffer
+			if (!cr.isOverflow()) {
+				break; // everything has been encoded
 			}
 		}
-
-		for (byte[] message : result) {
-			emitter.sendAndForget(new String(message));
-		}
+		result.set(0, "#" + id + String.format("%011d", i) + result.get(0).substring(23));
+		result.set(result.size(), "%" + result.get(result.size()).substring(1));
+		return result;
 	}
 
 	public static BaseRequest deepCopyRequestMessage(BaseRequest originalPayload) {

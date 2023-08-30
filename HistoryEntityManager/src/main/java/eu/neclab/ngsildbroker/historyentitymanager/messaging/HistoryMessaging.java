@@ -49,7 +49,7 @@ public class HistoryMessaging extends HistoryMessagingBase {
 	CollectMessageListener collectListenerEntity = new CollectMessageListener() {
 
 		@Override
-		public void collected(byte[] byteMessage) {
+		public void collected(String byteMessage) {
 			BaseRequest message;
 			try {
 				message = objectMapper.readValue(byteMessage, BaseRequest.class);
@@ -64,7 +64,7 @@ public class HistoryMessaging extends HistoryMessagingBase {
 	CollectMessageListener collectListenerBatchEntity = new CollectMessageListener() {
 
 		@Override
-		public void collected(byte[] byteMessage) {
+		public void collected(String byteMessage) {
 			BatchRequest message;
 			try {
 				message = objectMapper.readValue(byteMessage, BatchRequest.class);
@@ -79,7 +79,7 @@ public class HistoryMessaging extends HistoryMessagingBase {
 	CollectMessageListener collectListenerRegistry = new CollectMessageListener() {
 
 		@Override
-		public void collected(byte[] byteMessage) {
+		public void collected(String byteMessage) {
 			BaseRequest message;
 			try {
 				message = objectMapper.readValue(byteMessage, BaseRequest.class);
@@ -94,21 +94,21 @@ public class HistoryMessaging extends HistoryMessagingBase {
 	@Incoming(AppConstants.REGISTRY_RETRIEVE_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
 	public Uni<Void> handleCsource(String byteMessage) {
-		collector.collect(byteMessage.getBytes(), collectListenerRegistry);
+		collector.collect(byteMessage, collectListenerRegistry);
 		return Uni.createFrom().voidItem();
 	}
 
 	@Incoming(AppConstants.ENTITY_RETRIEVE_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
 	public Uni<Void> handleEntity(String byteMessage) {
-		collector.collect(byteMessage.getBytes(), collectListenerEntity);
+		collector.collect(byteMessage, collectListenerEntity);
 		return Uni.createFrom().voidItem();
 	}
 
 	@Incoming(AppConstants.ENTITY_BATCH_RETRIEVE_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
 	public Uni<Void> handleBatchEntities(String byteMessage) {
-		collector.collect(byteMessage.getBytes(), collectListenerBatchEntity);
+		collector.collect(byteMessage, collectListenerBatchEntity);
 		return Uni.createFrom().voidItem();
 	}
 

@@ -53,7 +53,7 @@ public class SubscriptionMessaging extends SubscriptionMessagingBase {
 	CollectMessageListener collectListenerEntity = new CollectMessageListener() {
 
 		@Override
-		public void collected(byte[] byteMessage) {
+		public void collected(String byteMessage) {
 			BaseRequest message;
 			try {
 				message = objectMapper.readValue(byteMessage, BaseRequest.class);
@@ -69,7 +69,7 @@ public class SubscriptionMessaging extends SubscriptionMessagingBase {
 	CollectMessageListener collectListenerBatchEntity = new CollectMessageListener() {
 
 		@Override
-		public void collected(byte[] byteMessage) {
+		public void collected(String byteMessage) {
 			BatchRequest message;
 			try {
 				message = objectMapper.readValue(byteMessage, BatchRequest.class);
@@ -85,7 +85,7 @@ public class SubscriptionMessaging extends SubscriptionMessagingBase {
 	CollectMessageListener collectListenerINotification = new CollectMessageListener() {
 
 		@Override
-		public void collected(byte[] byteMessage) {
+		public void collected(String byteMessage) {
 			InternalNotification message;
 			try {
 				message = objectMapper.readValue(byteMessage, InternalNotification.class);
@@ -101,21 +101,21 @@ public class SubscriptionMessaging extends SubscriptionMessagingBase {
 	@Incoming(AppConstants.ENTITY_RETRIEVE_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
 	public Uni<Void> handleEntity(String byteMessage) {
-		collector.collect(byteMessage.getBytes(), collectListenerEntity);
+		collector.collect(byteMessage, collectListenerEntity);
 		return Uni.createFrom().voidItem();
 	}
 
 	@Incoming(AppConstants.INTERNAL_RETRIEVE_NOTIFICATION_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
 	public Uni<Void> handleInternalNotification(String byteMessage) {
-		collector.collect(byteMessage.getBytes(), collectListenerINotification);
+		collector.collect(byteMessage, collectListenerINotification);
 		return Uni.createFrom().voidItem();
 	}
 
 	@Incoming(AppConstants.ENTITY_BATCH_RETRIEVE_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
 	public Uni<Void> handleBatchEntities(String byteMessage) {
-		collector.collect(byteMessage.getBytes(), collectListenerBatchEntity);
+		collector.collect(byteMessage, collectListenerBatchEntity);
 		return Uni.createFrom().voidItem();
 	}
 }

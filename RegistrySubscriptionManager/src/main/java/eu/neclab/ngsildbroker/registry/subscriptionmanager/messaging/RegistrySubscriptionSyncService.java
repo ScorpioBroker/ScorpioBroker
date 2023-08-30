@@ -73,7 +73,7 @@ public class RegistrySubscriptionSyncService {
 	CollectMessageListener collectListenerSubs = new CollectMessageListener() {
 
 		@Override
-		public void collected(byte[] byteMessage) {
+		public void collected(String byteMessage) {
 			SyncMessage message;
 			try {
 				message = objectMapper.readValue(byteMessage, SyncMessage.class);
@@ -108,7 +108,7 @@ public class RegistrySubscriptionSyncService {
 	CollectMessageListener collectListenerAlive = new CollectMessageListener() {
 
 		@Override
-		public void collected(byte[] byteMessage) {
+		public void collected(String byteMessage) {
 			AliveAnnouncement message;
 			try {
 				message = objectMapper.readValue(byteMessage, AliveAnnouncement.class);
@@ -153,14 +153,14 @@ public class RegistrySubscriptionSyncService {
 	@Incoming(AppConstants.REG_SUB_SYNC_RETRIEVE_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
 	Uni<Void> listenForSubs(String byteMessage) {
-		collector.collect(byteMessage.getBytes(), collectListenerSubs);
+		collector.collect(byteMessage, collectListenerSubs);
 		return Uni.createFrom().voidItem();
 	}
 
 	@Incoming(AppConstants.REG_SUB_ALIVE_RETRIEVE_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
 	Uni<Void> listenForAlive(String byteMessage) {
-		collector.collect(byteMessage.getBytes(), collectListenerAlive);
+		collector.collect(byteMessage, collectListenerAlive);
 		return Uni.createFrom().voidItem();
 	}
 

@@ -47,7 +47,7 @@ public class RegistrySubscriptionMessagingInMemory extends RegistrySubscriptionM
 	CollectMessageListener collectListenerRegistry = new CollectMessageListener() {
 
 		@Override
-		public void collected(byte[] byteMessage) {
+		public void collected(String byteMessage) {
 			BaseRequest message;
 			try {
 				message = objectMapper.readValue(byteMessage, BaseRequest.class);
@@ -63,7 +63,7 @@ public class RegistrySubscriptionMessagingInMemory extends RegistrySubscriptionM
 	CollectMessageListener collectListenerSubscription = new CollectMessageListener() {
 
 		@Override
-		public void collected(byte[] byteMessage) {
+		public void collected(String byteMessage) {
 			SubscriptionRequest message;
 			try {
 				message = objectMapper.readValue(byteMessage, SubscriptionRequest.class);
@@ -79,14 +79,14 @@ public class RegistrySubscriptionMessagingInMemory extends RegistrySubscriptionM
 	@Incoming(AppConstants.REGISTRY_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
 	public Uni<Void> handleCsource(String byteMessage) {
-		collector.collect(byteMessage.getBytes(), collectListenerRegistry);
+		collector.collect(byteMessage, collectListenerRegistry);
 		return Uni.createFrom().voidItem();
 	}
 
 	@Incoming(AppConstants.INTERNAL_SUBS_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
 	public Uni<Void> handleSubscription(String byteMessage) {
-		collector.collect(byteMessage.getBytes(), collectListenerSubscription);
+		collector.collect(byteMessage, collectListenerSubscription);
 		return Uni.createFrom().voidItem();
 	}
 }
