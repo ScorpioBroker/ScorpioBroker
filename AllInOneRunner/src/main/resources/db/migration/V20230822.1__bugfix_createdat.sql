@@ -23,9 +23,11 @@ BEGIN
 		END IF;
 	END LOOP;
 	tmp := tmp || attribValues;
-	tmp := jsonb_set(tmp,ARRAY['0','https://uri.etsi.org/ngsi-ld/createdAt'], Entity->attribName->0->'https://uri.etsi.org/ngsi-ld/createdAt');
-	Entity := jsonb_set(Entity,ARRAY['https://uri.etsi.org/ngsi-ld/modifiedAt'], tmp->0->'https://uri.etsi.org/ngsi-ld/modifiedAt');
-	RETURN jsonb_set(ENTITY,ARRAY[attribName], tmp);
+	IF not attribValues ? 'https://uri.etsi.org/ngsi-ld/modifiedAt' THEN
+	Entity := jsonb_set(Entity,Array['https://uri.etsi.org/ngsi-ld/modifiedAt','0'],jsonb_build_object('@type', 'https://uri.etsi.org/ngsi-ld/DateTime','@value', to_char(timezone('utc', now()), 'YYYY-MM-DD"T"HH24:MI:SS') || 'Z'));
+	tmp := jsonb_set(tmp,Array['0','https://uri.etsi.org/ngsi-ld/modifiedAt'], Entity->'https://uri.etsi.org/ngsi-ld/modifiedAt',true);
+	END IF;
+	RETURN jsonb_set(Entity,Array[attribName,'0'], (Entity->attribName->0) || (tmp->0),true);
 END;
 $ENTITYPU$ LANGUAGE PLPGSQL;
 

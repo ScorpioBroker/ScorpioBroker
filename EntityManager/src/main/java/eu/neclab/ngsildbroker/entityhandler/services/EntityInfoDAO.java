@@ -96,14 +96,14 @@ public class EntityInfoDAO {
 		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
 			Object objPayload = request.getPayload().get(request.getAttrName());
 			Tuple tuple;
-			if (objPayload instanceof List<?> payloads) {
-				tuple = Tuple.of(request.getAttrName(), new JsonArray(payloads), request.getId());
+			List<Object> payloads = new ArrayList<>();
+			if (objPayload instanceof List<?> ) {
+				payloads = (List<Object>) objPayload;
 			} else {
-				List<Object> payloads = new ArrayList<>();
 				payloads.add(objPayload);
-				tuple = Tuple.of(request.getAttrName(), new JsonArray(payloads), request.getId());
 			}
-//			String sql = "UPDATE ENTITY SET ENTITY = NGSILD_PARTIALUPDATE(ENTITY, $1, $2) WHERE id=$3 AND ENTITY ? $1 RETURNING ENTITY";
+			((Map<String,Object>)payloads.get(0)).remove(NGSIConstants.NGSI_LD_CREATED_AT);
+			tuple = Tuple.of(request.getAttrName(), new JsonArray(payloads), request.getId());
 			String sql = """
 					WITH old_entity AS (
 					    SELECT ENTITY
