@@ -17,7 +17,7 @@ import com.google.common.collect.Sets;
 public class MessageCollector {
 
 	private final static Logger logger = LoggerFactory.getLogger(MessageCollector.class);
-	private HashMap<Integer, List<String>> messageId2Collector = Maps.newHashMap();
+	private HashMap<String, List<String>> messageId2Collector = Maps.newHashMap();
 	private HashMap<String, Integer> messageId2MessageLength = Maps.newHashMap();
 	private HashSet<String> completenessAttempted = Sets.newHashSet();
 	private HashMap<String, Long> id2LastWrite = Maps.newHashMap();
@@ -27,14 +27,17 @@ public class MessageCollector {
 		char firstChar = input.charAt(0);
 		if (firstChar == '#') {
 			String id = input.substring(1, 12);
-			int nrChunks = Integer.parseInt(input.substring(13, 24));
+			int nrChunks = Integer.parseInt(input.substring(12, 23));
 			List<String> collector = messageId2Collector.get(id);
+			String result = input.substring(23);
 			if (collector == null) {
 				collector = new ArrayList<>(nrChunks);
+				collector.add(result);
+				messageId2Collector.put(id, collector);
+			} else {
+				collector.set(0, result);
 			}
-			String result = input.substring(25);
 
-			collector.set(0, result);
 			id2LastWrite.put(id, System.currentTimeMillis());
 			messageId2MessageLength.put(id, nrChunks);
 
@@ -46,14 +49,23 @@ public class MessageCollector {
 			}
 		} else if (firstChar == '$') {
 			String id = input.substring(1, 12);
-			int pos = Integer.parseInt(input.substring(13, 24));
+			int pos = Integer.parseInt(input.substring(12, 23));
 			List<String> collector = messageId2Collector.get(id);
 			if (collector == null) {
 				collector = new ArrayList<>();
+				messageId2Collector.put(id, collector);
 			}
-			String result = input.substring(25);
-
-			collector.set(0, result);
+			String result = input.substring(23);
+			if (collector.size() == pos) {
+				collector.add(result);
+			} else if (collector.size() > pos) {
+				collector.set(pos, result);
+			} else {
+				for (int i = collector.size(); i <= pos; i++) {
+					collector.add(null);
+				}
+				collector.set(pos, result);
+			}
 			id2LastWrite.put(id, System.currentTimeMillis());
 			if (completenessAttempted.contains(id)) {
 				StringBuilder bos = new StringBuilder();
@@ -63,14 +75,23 @@ public class MessageCollector {
 			}
 		} else if (firstChar == '%') {
 			String id = input.substring(1, 12);
-			int pos = Integer.parseInt(input.substring(13, 24));
+			int pos = Integer.parseInt(input.substring(12, 23));
 			List<String> collector = messageId2Collector.get(id);
 			if (collector == null) {
 				collector = new ArrayList<>();
+				messageId2Collector.put(id, collector);
 			}
-			String result = input.substring(25);
-
-			collector.set(0, result);
+			String result = input.substring(23);
+			if (collector.size() - 1 == pos) {
+				collector.add(result);
+			} else if (collector.size() - 1 > pos) {
+				collector.set(pos, result);
+			} else {
+				for (int i = collector.size(); i <= pos; i++) {
+					collector.add(null);
+				}
+				collector.set(pos, result);
+			}
 			id2LastWrite.put(id, System.currentTimeMillis());
 			StringBuilder bos = new StringBuilder();
 			if (checkForCompleteness(bos, collector, id)) {

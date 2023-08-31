@@ -58,7 +58,7 @@ public abstract class HistoryMessagingBase {
 			return Uni.createFrom().voidItem();
 		}
 		logger.debug("history manager batch handling got called: with ids: " + message.getEntityIds());
-		if (message.getRequestPayload().isEmpty()) {
+		if (message.getRequestType() != AppConstants.DELETE_REQUEST && message.getRequestPayload().isEmpty()) {
 			return Uni.createFrom().voidItem();
 		}
 		return historyService.handleInternalBatchRequest(message);
@@ -85,12 +85,12 @@ public abstract class HistoryMessagingBase {
 					BaseRequest request = buffer.poll();
 					if (request.getRequestType() == AppConstants.DELETE_ATTRIBUTE_REQUEST
 							|| request.getRequestType() == AppConstants.REPLACE_ATTRIBUTE_REQUEST
-					        || request.getRequestType() == AppConstants.REPLACE_ENTITY_REQUEST
+							|| request.getRequestType() == AppConstants.REPLACE_ENTITY_REQUEST
 							|| request.getRequestType() == AppConstants.MERGE_PATCH_REQUEST) {
 						notBatch.add(request);
 						continue;
 					}
-				 List<Map<String, Object>> payloads = opType2Payload.get(request.getRequestType());
+					List<Map<String, Object>> payloads = opType2Payload.get(request.getRequestType());
 					if (payloads == null) {
 						payloads = Lists.newArrayList();
 						opType2Payload.put(request.getRequestType(), payloads);

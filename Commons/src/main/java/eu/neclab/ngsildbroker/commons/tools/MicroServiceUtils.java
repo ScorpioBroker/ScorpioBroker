@@ -117,7 +117,7 @@ public class MicroServiceUtils {
 			}
 		}
 		result.set(0, "#" + id + String.format("%011d", i) + result.get(0).substring(23));
-		result.set(result.size(), "%" + result.get(result.size()).substring(1));
+		result.set(result.size() -  1, "%" + result.get(result.size() - 1).substring(1));
 		return result;
 	}
 
