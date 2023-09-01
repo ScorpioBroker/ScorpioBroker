@@ -36,12 +36,7 @@ import com.google.common.collect.Table;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.RegistrationEntry;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendEntityRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.BatchRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateEntityRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteAttributeRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.UpdateEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
 import eu.neclab.ngsildbroker.entityhandler.controller.CustomProfile;
