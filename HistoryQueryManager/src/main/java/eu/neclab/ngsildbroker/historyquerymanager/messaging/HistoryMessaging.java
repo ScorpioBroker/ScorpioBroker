@@ -15,7 +15,10 @@ public class HistoryMessaging extends HistoryMessagingBase {
 
 	@Incoming(AppConstants.REGISTRY_RETRIEVE_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
-	public Uni<Void> handleCsource(String byteMessage) {
-		return handleCsourceRaw(byteMessage);
+	public Uni<Void> handleCsource(Object byteMessage) {
+		if(byteMessage instanceof byte[] bytes) {
+			byteMessage = new String(bytes);
+		}
+		return handleCsourceRaw((String) byteMessage);
 	}
 }
