@@ -96,14 +96,14 @@ public class EntityInfoDAO {
 		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
 			Object objPayload = request.getPayload().get(request.getAttrName());
 			Tuple tuple;
-			if (objPayload instanceof List<?> payloads) {
-				tuple = Tuple.of(request.getAttrName(), new JsonArray(payloads), request.getId());
+			List<Object> payloads = new ArrayList<>();
+			if (objPayload instanceof List<?> ) {
+				payloads = (List<Object>) objPayload;
 			} else {
-				List<Object> payloads = new ArrayList<>();
 				payloads.add(objPayload);
-				tuple = Tuple.of(request.getAttrName(), new JsonArray(payloads), request.getId());
 			}
-//			String sql = "UPDATE ENTITY SET ENTITY = NGSILD_PARTIALUPDATE(ENTITY, $1, $2) WHERE id=$3 AND ENTITY ? $1 RETURNING ENTITY";
+			((Map<String,Object>)payloads.get(0)).remove(NGSIConstants.NGSI_LD_CREATED_AT);
+			tuple = Tuple.of(request.getAttrName(), new JsonArray(payloads), request.getId());
 			String sql = """
 					WITH old_entity AS (
 					    SELECT ENTITY
@@ -245,16 +245,28 @@ public class EntityInfoDAO {
 					    FROM ENTITY
 					    WHERE ID = '%s'
 					)""".formatted(request.getId());
-
+			sql+= """
+                    ,json_data AS (
+                        SELECT jsonb_strip_nulls(jsonb_object_agg(
+                                   key,
+                                   CASE
+                                       WHEN jsonb_typeof(value->0) = 'object' and (value->0)?'https://uri.etsi.org/ngsi-ld/createdAt' THEN
+                                           jsonb_set(value, '{0,https://uri.etsi.org/ngsi-ld/createdAt}', old_entity.entity->key->0->'https://uri.etsi.org/ngsi-ld/createdAt', true)
+                                       ELSE
+                                           value
+                                   END
+                               )) AS modified_data
+                        FROM JSONB_EACH($1::jsonb)
+                        CROSS JOIN old_entity
+                    )""";
+			tuple.addJsonObject(new JsonObject(payload));
 			sql += " UPDATE ENTITY SET ";
 			if (types != null) {
-				sql += "e_types = ARRAY(SELECT DISTINCT UNNEST(e_types || $1)), ENTITY = (jsonb_set(ENTITY, '{@type}', array_to_json(e_types)::jsonb) || $2)";
+				sql += "e_types = ARRAY(SELECT DISTINCT UNNEST(e_types || $2)), ENTITY = (jsonb_set(ENTITY, '{@type}', array_to_json(e_types)::jsonb) || (select * from json_data)-'https://uri.etsi.org/ngsi-ld/createdAt')";
 				dollar = 3;
 				tuple.addArrayOfString(((List<String>) types).toArray(new String[0]));
-				tuple.addJsonObject(new JsonObject(payload));
 			} else {
-				sql += " ENTITY = (ENTITY || $1) ";
-				tuple.addJsonObject(new JsonObject(payload));
+				sql += " ENTITY = (ENTITY || (select * from json_data)-'https://uri.etsi.org/ngsi-ld/createdAt') ";
 			}
 			if (!toBeRemoved.isEmpty()) {
 				for (String remove : toBeRemoved) {
@@ -332,9 +344,9 @@ public class EntityInfoDAO {
 			if (types != null) {
 				sql += "e_types = ARRAY(SELECT DISTINCT UNNEST(e_types || $1)), ";
 				if (noOverwrite) {
-					sql += "ENTITY = ($2 || jsonb_set(ENTITY, '{@type}', array_to_json(e_types)::jsonb))";
+					sql += "ENTITY = (($2::jsonb - 'https://uri.etsi.org/ngsi-ld/createdAt') || jsonb_set(ENTITY, '{@type}', array_to_json(e_types)::jsonb))";
 				} else {
-					sql += "ENTITY = (jsonb_set(ENTITY, '{@type}', array_to_json(e_types)::jsonb) || $2)";
+					sql += "ENTITY = (jsonb_set(ENTITY, '{@type}', array_to_json(e_types)::jsonb) || ($2::jsonb - 'https://uri.etsi.org/ngsi-ld/createdAt'))";
 				}
 
 				dollar = 3;
@@ -342,9 +354,9 @@ public class EntityInfoDAO {
 				tuple.addJsonObject(new JsonObject(payload));
 			} else {
 				if (noOverwrite) {
-					sql += " ENTITY = ($1 || ENTITY) ";
+					sql += " ENTITY = (($1::jsonb - 'https://uri.etsi.org/ngsi-ld/createdAt') || ENTITY) ";
 				} else {
-					sql += " ENTITY = (ENTITY || $1) ";
+					sql += " ENTITY = (ENTITY || ($1::jsonb - 'https://uri.etsi.org/ngsi-ld/createdAt')) ";
 				}
 				tuple.addJsonObject(new JsonObject(payload));
 			}
@@ -381,6 +393,7 @@ public class EntityInfoDAO {
 	public Uni<Map<String,Object>> mergePatch(MergePatchRequest request) {
 		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
 			Map<String,Object> payload = request.getPayload();
+			payload.remove(NGSIConstants.NGSI_LD_CREATED_AT);
 			if(payload.get(JsonLdConsts.TYPE) == null) payload.remove(JsonLdConsts.TYPE);
 			return client.preparedQuery("SELECT * FROM MERGE_JSON($1,$2)")
 					.execute(Tuple.of(request.getId(), new JsonObject(request.getPayload())))
@@ -403,12 +416,19 @@ public class EntityInfoDAO {
 		String[] types = ((List<String>) request.getPayload().get(NGSIConstants.JSON_LD_TYPE)).toArray(new String[0]);
 		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
 			return client.preparedQuery("""
-							WITH old_entity AS (
-							SELECT ENTITY
-							FROM ENTITY
-							WHERE id = $3)
-							update entity set entity = jsonb_build_object('https://uri.etsi.org/ngsi-ld/createdAt' , entity->'https://uri.etsi.org/ngsi-ld/createdAt') || $1::jsonb, e_types = $2 where id = $3
-							RETURNING (SELECT ENTITY FROM old_entity) AS old_entity""")
+                            WITH old_entity AS (
+                            SELECT ENTITY
+                            FROM ENTITY
+                            WHERE id = $3),
+                            json_data AS (
+                             SELECT jsonb_strip_nulls(jsonb_object_agg(
+                             key,
+                             CASE WHEN jsonb_typeof(value->0) = 'object' and (value->0)?'https://uri.etsi.org/ngsi-ld/createdAt' THEN
+                             jsonb_set(value, '{0,https://uri.etsi.org/ngsi-ld/createdAt}', old_entity.entity->key->0->'https://uri.etsi.org/ngsi-ld/createdAt', true)
+                             ELSE value
+                             END )) FROM JSONB_EACH($1::jsonb) CROSS JOIN old_entity )
+                            update entity set entity = (select * from json_data) || jsonb_build_object('https://uri.etsi.org/ngsi-ld/createdAt' , entity->'https://uri.etsi.org/ngsi-ld/createdAt') , e_types = $2 where id = $3
+                            RETURNING (SELECT ENTITY FROM old_entity) AS old_entity""")
 					.execute(Tuple.of(new JsonObject(request.getPayload()),types,request.getId())).onItem().transformToUni(rows -> {
 						if (rows.rowCount() == 0) {
 							return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
@@ -428,9 +448,16 @@ public class EntityInfoDAO {
 							  SELECT ENTITY
 							  FROM ENTITY
 							  WHERE id = $2
-							)
+							),
+							json_data AS (
+							SELECT jsonb_strip_nulls(jsonb_object_agg(
+							key,
+							CASE WHEN jsonb_typeof(value->0) = 'object' and (value->0)?'https://uri.etsi.org/ngsi-ld/createdAt' THEN
+							jsonb_set(value, '{0,https://uri.etsi.org/ngsi-ld/createdAt}', old_entity.entity->key->0->'https://uri.etsi.org/ngsi-ld/createdAt', true)
+							ELSE value
+							END )) FROM JSONB_EACH($1::jsonb) CROSS JOIN old_entity )
 							UPDATE entity
-							SET entity = entity::jsonb || $1
+							SET entity = entity::jsonb || ((select * from json_data) - 'https://uri.etsi.org/ngsi-ld/createdAt')
 							WHERE id = $2
 							  AND ENTITY ? $3
 							  AND (ENTITY-> $3 )::jsonb->$4 IS NULL
