@@ -1,17 +1,17 @@
 package eu.neclab.ngsildbroker.historyentitymanager.messaging;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import jakarta.inject.Inject;
-
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
@@ -19,9 +19,17 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BatchRequest;
+import eu.neclab.ngsildbroker.commons.serialization.messaging.CollectMessageListener;
+import eu.neclab.ngsildbroker.commons.serialization.messaging.MessageCollector;
 import eu.neclab.ngsildbroker.historyentitymanager.service.HistoryEntityService;
+import io.netty.channel.EventLoopGroup;
+import io.quarkus.scheduler.Scheduled;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 //import eu.neclab.ngsildbroker.historyentitymanager.service.HistoryEntityService;
 import io.smallrye.mutiny.Uni;
+import io.vertx.mutiny.core.Vertx;
+import jakarta.annotation.PostConstruct;
+import jakarta.inject.Inject;
 
 public abstract class HistoryMessagingBase {
 
@@ -36,6 +44,83 @@ public abstract class HistoryMessagingBase {
 	boolean autoRecording;
 	@ConfigProperty(name = "scorpio.history.autorecordingbuffersize", defaultValue = "50000")
 	int maxSize;
+	private MessageCollector collector = new MessageCollector();
+
+	@Inject
+	Vertx vertx;
+
+	@Inject
+	ObjectMapper objectMapper;
+
+	private EventLoopGroup executor;
+
+	@PostConstruct
+	public void setup() {
+		this.executor = vertx.getDelegate().nettyEventLoopGroup();
+	}
+
+	CollectMessageListener collectListenerEntity = new CollectMessageListener() {
+
+		@Override
+		public void collected(String byteMessage) {
+			BaseRequest message;
+			try {
+				message = objectMapper.readValue(byteMessage, BaseRequest.class);
+			} catch (IOException e) {
+				logger.error("failed to read sync message", e);
+				return;
+			}
+			baseHandleEntity(message).runSubscriptionOn(executor).subscribe()
+					.with(v -> logger.debug("done handling entity"));
+		}
+	};
+
+	CollectMessageListener collectListenerBatchEntity = new CollectMessageListener() {
+
+		@Override
+		public void collected(String byteMessage) {
+			BatchRequest message;
+			try {
+				message = objectMapper.readValue(byteMessage, BatchRequest.class);
+			} catch (IOException e) {
+				logger.error("failed to read sync message", e);
+				return;
+			}
+			baseHandleBatch(message).runSubscriptionOn(executor).subscribe()
+					.with(v -> logger.debug("done handling batch"));
+		}
+	};
+
+	CollectMessageListener collectListenerRegistry = new CollectMessageListener() {
+
+		@Override
+		public void collected(String byteMessage) {
+			BaseRequest message;
+			try {
+				message = objectMapper.readValue(byteMessage, BaseRequest.class);
+			} catch (IOException e) {
+				logger.error("failed to read sync message", e);
+				return;
+			}
+			baseHandleCsource(message).runSubscriptionOn(executor).subscribe()
+					.with(v -> logger.debug("done handling registry"));
+		}
+	};
+
+	public Uni<Void> handleCsourceRaw(String byteMessage) {
+		collector.collect(byteMessage, collectListenerRegistry);
+		return Uni.createFrom().voidItem();
+	}
+
+	public Uni<Void> handleEntityRaw(String byteMessage) {
+		collector.collect(byteMessage, collectListenerEntity);
+		return Uni.createFrom().voidItem();
+	}
+
+	public Uni<Void> handleBatchEntitiesRaw(String byteMessage) {
+		collector.collect(byteMessage, collectListenerBatchEntity);
+		return Uni.createFrom().voidItem();
+	}
 
 	public Uni<Void> baseHandleEntity(BaseRequest message) {
 		if (!autoRecording) {
@@ -69,6 +154,8 @@ public abstract class HistoryMessagingBase {
 		return historyService.handleRegistryChange(message);
 	}
 
+	@Scheduled(every = "5s")
+	@RunOnVirtualThread
 	Uni<Void> checkBuffer() {
 		if (!autoRecording) {
 			return Uni.createFrom().voidItem();
@@ -117,6 +204,11 @@ public abstract class HistoryMessagingBase {
 		}
 		return Uni.combine().all().unis(unis).combinedWith(list -> null).onItem()
 				.transformToUni(list -> Uni.createFrom().voidItem());
+	}
+
+	@Scheduled(every = "20s")
+	void purge() {
+		collector.purge(30000);
 	}
 
 }

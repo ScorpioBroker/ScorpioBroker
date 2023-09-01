@@ -7,10 +7,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map.Entry;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
@@ -121,6 +123,27 @@ public class MessageCollector {
 			bos.append(part);
 		}
 		return true;
+	}
+
+	public void purge(int delta) {
+		long currentTime = System.currentTimeMillis();
+		List<String> toDelete = Lists.newArrayList();
+		for (Entry<String, Long> entry : id2LastWrite.entrySet()) {
+			if (entry.getValue() + delta < currentTime) {
+				toDelete.add(entry.getKey());
+			}
+		}
+		if (toDelete.isEmpty()) {
+			logger.debug("nothing to purge");
+			return;
+		}
+		for (String id : toDelete) {
+			logger.debug("purging message " + id);
+			messageId2Collector.remove(id);
+			messageId2MessageLength.remove(id);
+			completenessAttempted.remove(id);
+			id2LastWrite.remove(id);
+		}
 	}
 
 }

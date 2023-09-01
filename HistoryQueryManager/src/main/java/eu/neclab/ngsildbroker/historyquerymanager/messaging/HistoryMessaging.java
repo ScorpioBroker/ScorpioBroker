@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.historyentitymanager.messaging;
+package eu.neclab.ngsildbroker.historyquerymanager.messaging;
 
 import org.eclipse.microprofile.reactive.messaging.Acknowledgment;
 import org.eclipse.microprofile.reactive.messaging.Acknowledgment.Strategy;
@@ -18,17 +18,4 @@ public class HistoryMessaging extends HistoryMessagingBase {
 	public Uni<Void> handleCsource(String byteMessage) {
 		return handleCsourceRaw(byteMessage);
 	}
-
-	@Incoming(AppConstants.ENTITY_RETRIEVE_CHANNEL)
-	@Acknowledgment(Strategy.PRE_PROCESSING)
-	public Uni<Void> handleEntity(String byteMessage) {
-		return handleEntityRaw(byteMessage);
-	}
-
-	@Incoming(AppConstants.ENTITY_BATCH_RETRIEVE_CHANNEL)
-	@Acknowledgment(Strategy.PRE_PROCESSING)
-	public Uni<Void> handleBatchEntities(String byteMessage) {
-		return handleBatchEntitiesRaw(byteMessage);
-	}
-
 }

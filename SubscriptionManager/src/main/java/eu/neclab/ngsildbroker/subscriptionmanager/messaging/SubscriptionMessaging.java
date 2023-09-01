@@ -27,6 +27,7 @@ import eu.neclab.ngsildbroker.commons.serialization.messaging.MessageCollector;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import io.netty.channel.EventLoopGroup;
 import io.quarkus.arc.profile.UnlessBuildProfile;
+import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Vertx;
 
@@ -34,88 +35,22 @@ import io.vertx.mutiny.core.Vertx;
 @UnlessBuildProfile("in-memory")
 public class SubscriptionMessaging extends SubscriptionMessagingBase {
 
-	private static final Logger logger = LoggerFactory.getLogger(SubscriptionMessaging.class);
-	private MessageCollector collector = new MessageCollector();
-
-	@Inject
-	Vertx vertx;
-
-	@Inject
-	ObjectMapper objectMapper;
-
-	private EventLoopGroup executor;
-
-	@PostConstruct
-	public void setup() {
-		this.executor = vertx.getDelegate().nettyEventLoopGroup();
-	}
-
-	CollectMessageListener collectListenerEntity = new CollectMessageListener() {
-
-		@Override
-		public void collected(String byteMessage) {
-			BaseRequest message;
-			try {
-				message = objectMapper.readValue(byteMessage, BaseRequest.class);
-			} catch (IOException e) {
-				logger.error("failed to read entity", e);
-				return;
-			}
-			baseHandleEntity(message).runSubscriptionOn(executor).subscribe()
-					.with(v -> logger.debug("done handling entity"));
-		}
-	};
-
-	CollectMessageListener collectListenerBatchEntity = new CollectMessageListener() {
-
-		@Override
-		public void collected(String byteMessage) {
-			BatchRequest message;
-			try {
-				message = objectMapper.readValue(byteMessage, BatchRequest.class);
-			} catch (IOException e) {
-				logger.error("failed to read batch entity", e);
-				return;
-			}
-			baseHandleBatchEntities(message).runSubscriptionOn(executor).subscribe()
-					.with(v -> logger.debug("done handling batch"));
-		}
-	};
-
-	CollectMessageListener collectListenerINotification = new CollectMessageListener() {
-
-		@Override
-		public void collected(String byteMessage) {
-			InternalNotification message;
-			try {
-				message = objectMapper.readValue(byteMessage, InternalNotification.class);
-			} catch (IOException e) {
-				logger.error("failed to read notification message", e);
-				return;
-			}
-			baseHandleInternalNotification(message).runSubscriptionOn(executor).subscribe()
-					.with(v -> logger.debug("done handling notification"));
-		}
-	};
-
 	@Incoming(AppConstants.ENTITY_RETRIEVE_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
 	public Uni<Void> handleEntity(String byteMessage) {
-		collector.collect(byteMessage, collectListenerEntity);
-		return Uni.createFrom().voidItem();
+		return handleEntityRaw(byteMessage);
 	}
 
 	@Incoming(AppConstants.INTERNAL_RETRIEVE_NOTIFICATION_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
 	public Uni<Void> handleInternalNotification(String byteMessage) {
-		collector.collect(byteMessage, collectListenerINotification);
-		return Uni.createFrom().voidItem();
+		return handleInternalNotificationRaw(byteMessage);
 	}
 
 	@Incoming(AppConstants.ENTITY_BATCH_RETRIEVE_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
 	public Uni<Void> handleBatchEntities(String byteMessage) {
-		collector.collect(byteMessage, collectListenerBatchEntity);
-		return Uni.createFrom().voidItem();
+		return handleBatchEntitiesRaw(byteMessage);
 	}
+
 }
