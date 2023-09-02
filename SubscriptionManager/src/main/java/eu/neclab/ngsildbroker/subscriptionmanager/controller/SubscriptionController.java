@@ -3,7 +3,18 @@ package eu.neclab.ngsildbroker.subscriptionmanager.controller;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
+import com.github.jsonldjava.core.JsonLDService;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.resteasy.reactive.RestResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+import eu.neclab.ngsildbroker.commons.enums.ErrorType;
+import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
+import io.smallrye.mutiny.Uni;
+import io.vertx.core.http.HttpServerRequest;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
@@ -12,21 +23,6 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
-
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.resteasy.reactive.RestResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.github.jsonldjava.core.JsonLDService;
-
-import eu.neclab.ngsildbroker.commons.constants.AppConstants;
-import eu.neclab.ngsildbroker.commons.enums.ErrorType;
-import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
-import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
-import io.smallrye.mutiny.Uni;
-import io.vertx.core.http.HttpServerRequest;
 
 @Path("/ngsi-ld/v1/subscriptions")
 public class SubscriptionController {
@@ -96,6 +92,11 @@ public class SubscriptionController {
 		if (acceptHeader == -1) {
 			return HttpUtils.getInvalidHeader();
 		}
+		try {
+			HttpUtils.validateUri(subscriptionId);
+		} catch (Exception e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+		}
 		List<Object> contextHeader = HttpUtils.getAtContext(request);
 		return ldService.parse(contextHeader).onItem().transformToUni(context -> {
 			return subService.getSubscription(HttpUtils.getTenant(request), subscriptionId).onItem()
@@ -109,6 +110,11 @@ public class SubscriptionController {
 	@Path("/{id}")
 	@DELETE
 	public Uni<RestResponse<Object>> deleteSubscription(HttpServerRequest request, @PathParam(value = "id") String id) {
+		try {
+			HttpUtils.validateUri(id);
+		} catch (Exception e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+		}
 		return subService.deleteSubscription(HttpUtils.getTenant(request), id).onItem()
 				.transform(t -> HttpUtils.generateDeleteResult(t)).onFailure()
 				.recoverWithItem(HttpUtils::handleControllerExceptions);
@@ -119,6 +125,11 @@ public class SubscriptionController {
 	@PATCH
 	public Uni<RestResponse<Object>> updateSubscription(HttpServerRequest request, @PathParam(value = "id") String id,
 			Map<String, Object> map) {
+		try {
+			HttpUtils.validateUri(id);
+		} catch (Exception e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+		}
 		List<String> contexts = (List<String>) map.get("@context");
 		List<String> finalContexts = new ArrayList<>();
 		if (contexts != null) {
@@ -136,5 +147,4 @@ public class SubscriptionController {
 				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
 	}
-
 }
