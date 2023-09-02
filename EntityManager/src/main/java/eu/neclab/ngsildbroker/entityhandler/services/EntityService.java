@@ -15,6 +15,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 
+import com.github.jsonldjava.utils.Obj;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.ReplaceAttribRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.ReplaceEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.MergePatchRequest;
@@ -47,6 +48,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteAttributeRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.EntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.MergePatchRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.UpdateEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.UpsertEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.results.Attrib;

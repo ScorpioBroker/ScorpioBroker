@@ -1,7 +1,10 @@
 package eu.neclab.ngsildbroker.commons.datatypes.terms;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
+
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import io.vertx.mutiny.sqlclient.Tuple;
 
 public class TemporalQueryTerm implements Serializable {

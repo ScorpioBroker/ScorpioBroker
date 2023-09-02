@@ -1,9 +1,11 @@
 package eu.neclab.ngsildbroker.commons.datatypes.terms;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.Set;
 
 import com.github.jsonldjava.core.Context;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;

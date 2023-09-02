@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.subscriptionmanager.messaging;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BatchRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.InternalNotification;
@@ -13,6 +14,9 @@ import io.vertx.mutiny.core.Vertx;
 
 import java.io.IOException;
 
+import org.eclipse.microprofile.reactive.messaging.Acknowledgment;
+import org.eclipse.microprofile.reactive.messaging.Incoming;
+import org.eclipse.microprofile.reactive.messaging.Acknowledgment.Strategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
