@@ -45,7 +45,6 @@ import eu.neclab.ngsildbroker.commons.datatypes.EntityInfo;
 import eu.neclab.ngsildbroker.commons.datatypes.NotificationParam;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteAttributeRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.DeleteSubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.InternalNotification;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
@@ -322,6 +321,9 @@ public class SubscriptionService {
 		List<Uni<Void>> unis = Lists.newArrayList();
 		logger.debug("checking subscriptions");
 		for (SubscriptionRequest potentialSub : potentialSubs) {
+			if (potentialSub.getSendTimestamp() > message.getSendTimestamp()) {
+				continue;
+			}
 			switch (message.getRequestType()) {
 			case AppConstants.UPDATE_REQUEST, AppConstants.PARTIAL_UPDATE_REQUEST, AppConstants.MERGE_PATCH_REQUEST,
 					AppConstants.REPLACE_ENTITY_REQUEST, AppConstants.REPLACE_ATTRIBUTE_REQUEST -> {

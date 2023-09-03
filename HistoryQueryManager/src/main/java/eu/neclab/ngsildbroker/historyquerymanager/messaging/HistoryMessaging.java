@@ -5,12 +5,14 @@ import org.eclipse.microprofile.reactive.messaging.Acknowledgment.Strategy;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+import io.quarkus.arc.profile.IfBuildProfile;
 import io.quarkus.arc.profile.UnlessBuildProfile;
+import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
 import jakarta.inject.Singleton;
 
 @Singleton
-@UnlessBuildProfile("in-memory")
+@IfBuildProfile(anyOf = {"sqs", "mqtt", "rabbitmq"})
 public class HistoryMessaging extends HistoryMessagingBase {
 
 	@Incoming(AppConstants.REGISTRY_RETRIEVE_CHANNEL)
@@ -20,5 +22,10 @@ public class HistoryMessaging extends HistoryMessagingBase {
 			byteMessage = new String(bytes);
 		}
 		return handleCsourceRaw((String) byteMessage);
+	}
+	
+	@Scheduled(every = "20s", delayed = "5s")
+	void purge() {
+		super.purge();
 	}
 }

@@ -51,7 +51,7 @@ public class RegistrySubscriptionSyncService {
 
 	private Set<String> lastInstances = Sets.newHashSet();
 
-	private MessageCollector collector = new MessageCollector();
+	private MessageCollector collector = new MessageCollector(this.getClass().getName());
 
 	@Inject
 	@Channel(AppConstants.REG_SUB_ALIVE_CHANNEL)

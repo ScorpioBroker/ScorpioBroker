@@ -33,7 +33,7 @@ public abstract class EntityMessagingBase {
 
 	private EventLoopGroup executor;
 
-	private MessageCollector collector = new MessageCollector();
+	private MessageCollector collector = new MessageCollector(this.getClass().getName());
 
 	@PostConstruct
 	public void setup() {
@@ -66,7 +66,6 @@ public abstract class EntityMessagingBase {
 		return entityService.handleRegistryChange(message);
 	}
 
-	@Scheduled(every = "20s")
 	void purge() {
 		collector.purge(30000);
 	}

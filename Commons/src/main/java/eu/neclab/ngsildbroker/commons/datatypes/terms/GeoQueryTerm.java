@@ -32,7 +32,6 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.SubscriptionTools;
 import io.smallrye.mutiny.tuples.Tuple2;
-import io.smallrye.mutiny.tuples.Tuple4;
 import io.vertx.mutiny.sqlclient.Tuple;
 
 public class GeoQueryTerm implements Serializable {

@@ -26,7 +26,7 @@ public abstract class RegistrySubscriptionMessagingBase {
 	@Inject
 	RegistrySubscriptionService subscriptionService;
 
-	private MessageCollector collector = new MessageCollector();
+	private MessageCollector collector = new MessageCollector(this.getClass().getName());
 
 	@Inject
 	Vertx vertx;
@@ -99,7 +99,6 @@ public abstract class RegistrySubscriptionMessagingBase {
 		});
 	}
 
-	@Scheduled(every = "20s")
 	void purge() {
 		collector.purge(30000);
 	}

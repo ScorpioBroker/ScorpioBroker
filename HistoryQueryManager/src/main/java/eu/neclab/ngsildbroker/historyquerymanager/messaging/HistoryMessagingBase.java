@@ -33,7 +33,7 @@ public abstract class HistoryMessagingBase {
 
 	private EventLoopGroup executor;
 
-	private MessageCollector collector = new MessageCollector();
+	private MessageCollector collector = new MessageCollector(this.getClass().getName());
 
 	@PostConstruct
 	public void setup() {
@@ -66,7 +66,6 @@ public abstract class HistoryMessagingBase {
 		return historyService.handleRegistryChange(message);
 	}
 
-	@Scheduled(every = "20s")
 	void purge() {
 		collector.purge(30000);
 	}

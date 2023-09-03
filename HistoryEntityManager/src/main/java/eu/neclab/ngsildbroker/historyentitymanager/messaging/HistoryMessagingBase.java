@@ -44,7 +44,7 @@ public abstract class HistoryMessagingBase {
 	boolean autoRecording;
 	@ConfigProperty(name = "scorpio.history.autorecordingbuffersize", defaultValue = "50000")
 	int maxSize;
-	private MessageCollector collector = new MessageCollector();
+	private MessageCollector collector = new MessageCollector(this.getClass().getName());
 
 	@Inject
 	Vertx vertx;
@@ -206,7 +206,6 @@ public abstract class HistoryMessagingBase {
 				.transformToUni(list -> Uni.createFrom().voidItem());
 	}
 
-	@Scheduled(every = "20s")
 	void purge() {
 		collector.purge(30000);
 	}

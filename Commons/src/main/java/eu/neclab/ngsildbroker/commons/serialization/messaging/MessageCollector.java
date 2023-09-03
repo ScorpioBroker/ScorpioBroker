@@ -1,8 +1,5 @@
 package eu.neclab.ngsildbroker.commons.serialization.messaging;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -23,15 +20,20 @@ public class MessageCollector {
 	private HashMap<String, Integer> messageId2MessageLength = Maps.newHashMap();
 	private HashSet<String> completenessAttempted = Sets.newHashSet();
 	private HashMap<String, Long> id2LastWrite = Maps.newHashMap();
+	private String parentName;
 
+	public MessageCollector(String parentName) {
+		this.parentName = parentName;
+	}
+	
 	public void collect(String input, CollectMessageListener listener) {
 
 		char firstChar = input.charAt(0);
 		if (firstChar == '#') {
-			String id = input.substring(1, 12);
-			int nrChunks = Integer.parseInt(input.substring(12, 23));
+			String id = input.substring(1, 21);
+			int nrChunks = Integer.parseInt(input.substring(21, 32));
 			List<String> collector = messageId2Collector.get(id);
-			String result = input.substring(23);
+			String result = input.substring(32);
 			if (collector == null) {
 				collector = new ArrayList<>(nrChunks);
 				collector.add(result);
@@ -50,23 +52,27 @@ public class MessageCollector {
 				}
 			}
 		} else if (firstChar == '$') {
-			String id = input.substring(1, 12);
-			int pos = Integer.parseInt(input.substring(12, 23));
+			String id = input.substring(1, 21);
+			int pos = Integer.parseInt(input.substring(21, 32));
 			List<String> collector = messageId2Collector.get(id);
 			if (collector == null) {
 				collector = new ArrayList<>();
 				messageId2Collector.put(id, collector);
 			}
-			String result = input.substring(23);
+			String result = input.substring(32);
 			if (collector.size() == pos) {
 				collector.add(result);
 			} else if (collector.size() > pos) {
 				collector.set(pos, result);
 			} else {
+				try {
 				for (int i = collector.size(); i <= pos; i++) {
 					collector.add(null);
 				}
 				collector.set(pos, result);
+				} catch(OutOfMemoryError e){
+					System.out.println();
+				}
 			}
 			id2LastWrite.put(id, System.currentTimeMillis());
 			if (completenessAttempted.contains(id)) {
@@ -76,14 +82,14 @@ public class MessageCollector {
 				}
 			}
 		} else if (firstChar == '%') {
-			String id = input.substring(1, 12);
-			int pos = Integer.parseInt(input.substring(12, 23));
+			String id = input.substring(1, 21);
+			int pos = Integer.parseInt(input.substring(21, 32));
 			List<String> collector = messageId2Collector.get(id);
 			if (collector == null) {
 				collector = new ArrayList<>();
 				messageId2Collector.put(id, collector);
 			}
-			String result = input.substring(23);
+			String result = input.substring(32);
 			if (collector.size() - 1 == pos) {
 				collector.add(result);
 			} else if (collector.size() - 1 > pos) {
@@ -134,11 +140,11 @@ public class MessageCollector {
 			}
 		}
 		if (toDelete.isEmpty()) {
-			logger.debug("nothing to purge");
+			logger.debug(parentName + " nothing to purge");
 			return;
 		}
 		for (String id : toDelete) {
-			logger.debug("purging message " + id);
+			logger.debug(parentName + " purging message " + id);
 			messageId2Collector.remove(id);
 			messageId2MessageLength.remove(id);
 			completenessAttempted.remove(id);

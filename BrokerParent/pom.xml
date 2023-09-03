@@ -187,10 +187,6 @@
 			<artifactId>quarkus-smallrye-reactive-messaging</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>io.strimzi</groupId>
-			<artifactId>kafka-oauth-client</artifactId>
-		</dependency>
-		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
 		</dependency>
@@ -198,6 +194,24 @@
 			<groupId>io.quarkus</groupId>
 			<artifactId>quarkus-info</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>org.apache.camel.quarkus</groupId>
+			<artifactId>camel-quarkus-smallrye-reactive-messaging</artifactId>
+			<version>3.0.0-RC2</version>
+		</dependency>
+
+
+		<dependency>
+			<groupId>org.apache.camel.quarkus</groupId>
+			<artifactId>camel-quarkus-aws2-sqs</artifactId>
+			<version>3.0.0-RC2</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.camel.quarkus</groupId>
+			<artifactId>camel-quarkus-log</artifactId>
+			<version>3.0.0-RC2</version>
+		</dependency>
+
 	</dependencies>
 	<profiles>
 		<profile>
@@ -463,11 +477,6 @@
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-rabbitmq</artifactId>
 					<version>2.16.0</version>
-				</dependency>
-				<dependency>
-					<groupId>org.apache.camel.quarkus</groupId>
-					<artifactId>camel-quarkus-log</artifactId>
-					<version>3.0.0-RC2</version>
 				</dependency>
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>

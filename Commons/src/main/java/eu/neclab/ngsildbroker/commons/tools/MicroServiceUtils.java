@@ -18,7 +18,6 @@ import org.slf4j.LoggerFactory;
 
 import jakarta.inject.Singleton;
 
-import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -28,8 +27,8 @@ import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
+import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -65,10 +64,6 @@ public class MicroServiceUtils {
 		}
 	}
 
-	public static void main(String[] args) throws Exception {
-
-	}
-
 	public static void serializeAndSplitObjectAndEmit(Object obj, int messageSize, MutinyEmitter<String> emitter,
 			ObjectMapper objectMapper) {
 		String data;
@@ -86,7 +81,7 @@ public class MicroServiceUtils {
 			result = new ArrayList<>(1);
 			result.add(data);
 		} else {
-			int messageSizeToUse = messageSize - 23;
+			int messageSizeToUse = messageSize - 32;
 			result = splitStringByByteLength(data, messageSizeToUse);
 		}
 		for (String message : result) {
@@ -95,7 +90,9 @@ public class MicroServiceUtils {
 	}
 
 	public static List<String> splitStringByByteLength(String src, int maxsize) {
-		String id = String.format("%011d", src.hashCode());
+		String id = String.format("%020d", src.hashCode() * System.currentTimeMillis());
+		logger.debug("Splitting into size " + maxsize);
+		logger.debug(src);
 		Charset cs = Charset.forName("UTF-16");
 		CharsetEncoder coder = cs.newEncoder();
 		ByteBuffer out = ByteBuffer.allocate(maxsize); // output buffer of required size

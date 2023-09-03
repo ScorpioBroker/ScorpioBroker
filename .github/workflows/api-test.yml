@@ -82,9 +82,9 @@ jobs:
       - name: docker tag
         run: |
           docker tag scorpiobroker/all-in-one-runner:java-sqs-testsqs ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:java-sqs-testsqs
-#      - name: docker push
-#        run: |
-#          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:java-sqs-testsqs
+      - name: docker push
+        run: |
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:java-sqs-testsqs
   build-java-rabbitmq:
     runs-on: ubuntu-latest
     steps:
