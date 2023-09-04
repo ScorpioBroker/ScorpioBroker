@@ -145,6 +145,7 @@ public class SubscriptionService {
 					try {
 						request = new SubscriptionRequest(tuple.getItem1().getItem1(), tuple.getItem1().getItem2(),
 								tuple.getItem2());
+						request.setSendTimestamp(-1);
 						if (isIntervalSub(request)) {
 							this.tenant2subscriptionId2IntervalSubscription.put(request.getTenant(), request.getId(),
 									request);
@@ -321,7 +322,7 @@ public class SubscriptionService {
 		List<Uni<Void>> unis = Lists.newArrayList();
 		logger.debug("checking subscriptions");
 		for (SubscriptionRequest potentialSub : potentialSubs) {
-			if (potentialSub.getSendTimestamp() > message.getSendTimestamp()) {
+			if (potentialSub.getSendTimestamp() != -1 && potentialSub.getSendTimestamp() > message.getSendTimestamp()) {
 				continue;
 			}
 			switch (message.getRequestType()) {
