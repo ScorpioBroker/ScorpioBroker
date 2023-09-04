@@ -154,6 +154,9 @@ public abstract class EntityTools {
 				case NGSIConstants.NGSI_LD_DATE_TIME:
 					prop = generateFakeProperty(typeString, ((List<Map<String, Object>>) value).get(0));
 					break;
+				case NGSIConstants.NGSI_LD_LANGPROPERTY:
+					prop = generateFakeProperty(key, tmp);
+					break;
 				case NGSIConstants.NGSI_LD_PROPERTY:
 				default:
 					prop = SerializationTools.parseProperty((List<Map<String, Object>>) value, key);
@@ -350,7 +353,7 @@ public abstract class EntityTools {
 
 	public static Map<String, Object> addSysAttrs(Map<String, Object> resolved, long timeStamp) {
 		String now = SerializationTools.formatter.format(Instant.ofEpochMilli(timeStamp));
-			setTemporalProperties(resolved, now, now, false);
+		setTemporalProperties(resolved, now, now, false);
 		return resolved;
 	}
 

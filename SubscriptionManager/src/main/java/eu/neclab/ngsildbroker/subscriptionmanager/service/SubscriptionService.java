@@ -128,7 +128,7 @@ public class SubscriptionService {
 							return Tuple2.of(Tuple2.of(tuple.getItem1(), tuple.getItem2()), ctx);
 						}));
 			});
-			if(unis.isEmpty()) {
+			if (unis.isEmpty()) {
 				return Uni.createFrom().voidItem();
 			}
 			return Uni.combine().all().unis(unis).combinedWith(list -> {
@@ -167,9 +167,10 @@ public class SubscriptionService {
 		} catch (ResponseException e) {
 			return Uni.createFrom().failure(e);
 		}
-		if(request.getId()==null){
-			String id = "urn:"+UUID.randomUUID().toString();
+		if (request.getId() == null) {
+			String id = "urn:" + UUID.randomUUID().toString();
 			request.setId(id);
+			subscription.put(NGSIConstants.JSON_LD_ID, id);
 		}
 		SubscriptionTools.setInitTimesSentAndFailed(request);
 		Map<String, Object> tmp = request.getContext().serialize();
@@ -315,8 +316,8 @@ public class SubscriptionService {
 		logger.debug("checking subscriptions");
 		for (SubscriptionRequest potentialSub : potentialSubs) {
 			switch (message.getRequestType()) {
-				case AppConstants.UPDATE_REQUEST, AppConstants.PARTIAL_UPDATE_REQUEST, AppConstants.MERGE_PATCH_REQUEST,
-						AppConstants.REPLACE_ENTITY_REQUEST,AppConstants.REPLACE_ATTRIBUTE_REQUEST -> {
+			case AppConstants.UPDATE_REQUEST, AppConstants.PARTIAL_UPDATE_REQUEST, AppConstants.MERGE_PATCH_REQUEST,
+					AppConstants.REPLACE_ENTITY_REQUEST, AppConstants.REPLACE_ATTRIBUTE_REQUEST -> {
 				unis.add(localEntityService.getAllByIds(message.getTenant(), message.getId(), true).onItem()
 						.transformToUni(entityList -> {
 							Map<String, Object> payload = new HashMap<>();
