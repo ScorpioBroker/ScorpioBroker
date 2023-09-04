@@ -31,6 +31,8 @@ public abstract class SubscriptionMessagingBase {
 		logger.debug("Subscription sub manager got called for entity: " + message.getId());
 		return subscriptionService.checkSubscriptions(message).onFailure().recoverWithUni(t -> {
 			logger.debug("Exception Occurred in checkSubscriptions: " + t);
+			t.printStackTrace();
+			logger.debug(t.getStackTrace().toString());
 			return Uni.createFrom().voidItem();
 		});
 	}

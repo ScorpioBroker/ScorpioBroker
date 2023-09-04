@@ -170,14 +170,14 @@ public class SubscriptionService {
 	public Uni<NGSILDOperationResult> createSubscription(String tenant, Map<String, Object> subscription,
 			Context contextLink) {
 		SubscriptionRequest request;
+		if (!subscription.containsKey(NGSIConstants.JSON_LD_ID)) {
+			String id = "urn:" + UUID.randomUUID().toString();
+			subscription.put(NGSIConstants.JSON_LD_ID, id);
+		}
 		try {
 			request = new SubscriptionRequest(tenant, subscription, contextLink);
 		} catch (ResponseException e) {
 			return Uni.createFrom().failure(e);
-		}
-		if (request.getId() == null) {
-			String id = "urn:" + UUID.randomUUID().toString();
-			request.setId(id);
 		}
 		SubscriptionTools.setInitTimesSentAndFailed(request);
 		Map<String, Object> tmp = request.getContext().serialize();
