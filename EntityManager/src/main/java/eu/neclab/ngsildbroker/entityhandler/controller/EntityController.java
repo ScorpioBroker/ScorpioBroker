@@ -263,7 +263,8 @@ public class EntityController {// implements EntityHandlerInterface {
 						&& !key.equals(NGSIConstants.QUERY_PARAMETER_DATA_SET_ID) && !key.equals(NGSIConstants.OBJECT)
 						&& !key.equals(NGSIConstants.VALUE) && !key.equals(NGSIConstants.SCOPE)
 						&& !key.equals(NGSIConstants.QUERY_PARAMETER_UNIT_CODE)
-						&& !key.equals(NGSIConstants.LANGUAGE_MAP)) {
+						&& !key.equals(NGSIConstants.LANGUAGE_MAP)
+						&& !key.equals(NGSIConstants.VOCAB)) {
 					noConcise(map.get(key), (Map<String, Object>) map, key.toString());
 				}
 			}

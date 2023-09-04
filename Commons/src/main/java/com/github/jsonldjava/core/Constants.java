@@ -76,6 +76,7 @@ public class Constants {
 
 		allowedScalars.put(AppConstants.ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_OBJECT);
 		allowedScalars.put(AppConstants.ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_VALUE);
+		allowedScalars.put(AppConstants.ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_VOCAB);
 		allowedScalars.put(AppConstants.ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_COORDINATES);
 		allowedScalars.put(AppConstants.ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_UNIT_CODE);
 		allowedScalars.put(AppConstants.ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_DATA_SET_ID);

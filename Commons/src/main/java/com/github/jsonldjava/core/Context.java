@@ -1232,7 +1232,7 @@ public class Context extends LinkedHashMap<String, Object> {
 		}
 		// 3)
 		rval.put(JsonLdConsts.VALUE, value);
-		// 4)
+	  // 4)
 		if (td != null && td.containsKey(JsonLdConsts.TYPE)) {
 			rval.put(JsonLdConsts.TYPE, td.get(JsonLdConsts.TYPE));
 		}
