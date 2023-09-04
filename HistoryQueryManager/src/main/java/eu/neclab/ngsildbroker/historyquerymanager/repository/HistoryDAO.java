@@ -116,8 +116,12 @@ public class HistoryDAO {
 								RowIterator<Row> it2 = tuple.getItem2().iterator();
 								while (it2.hasNext()) {
 									Row row = it2.next();
-									result.put(tenant, row.getString(1),
-											List.of(DBUtil.getRegistrationEntry(row, tenant, logger)));
+									List<RegistrationEntry> entries = result.get(tenant, row.getString(1));
+									if (entries == null) {
+										entries = Lists.newArrayList();
+										result.put(tenant, row.getString(1), entries);
+									}
+									entries.add(DBUtil.getRegistrationEntry(row, tenant, logger));
 								}
 							}
 							return result;
