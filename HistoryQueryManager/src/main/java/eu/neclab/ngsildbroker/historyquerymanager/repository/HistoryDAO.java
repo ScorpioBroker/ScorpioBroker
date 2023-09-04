@@ -91,7 +91,7 @@ public class HistoryDAO {
 
 	}
 
-	public Uni<Table<String, String, RegistrationEntry>> getAllRegistries() {
+	public Uni<Table<String, String, List<RegistrationEntry>>> getAllRegistries() {
 		return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
 			return client.preparedQuery("SELECT tenant_id FROM tenant").execute().onItem()
 					.transformToUni(tenantRows -> {
@@ -108,7 +108,7 @@ public class HistoryDAO {
 									}));
 						}
 						return Uni.combine().all().unis(unis).combinedWith(list -> {
-							Table<String, String, RegistrationEntry> result = HashBasedTable.create();
+							Table<String, String, List<RegistrationEntry>> result = HashBasedTable.create();
 							for (Object obj : list) {
 								@SuppressWarnings("unchecked")
 								Tuple2<String, RowSet<Row>> tuple = (Tuple2<String, RowSet<Row>>) obj;
@@ -117,7 +117,7 @@ public class HistoryDAO {
 								while (it2.hasNext()) {
 									Row row = it2.next();
 									result.put(tenant, row.getString(1),
-											DBUtil.getRegistrationEntry(row, tenant, logger));
+											List.of(DBUtil.getRegistrationEntry(row, tenant, logger)));
 								}
 							}
 							return result;

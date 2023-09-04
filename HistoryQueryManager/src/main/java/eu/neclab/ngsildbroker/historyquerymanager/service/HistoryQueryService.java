@@ -77,7 +77,7 @@ public class HistoryQueryService {
 	@ConfigProperty(name = "scorpio.directDB", defaultValue = "true")
 	boolean directDB;
 
-	private Table<String, String, RegistrationEntry> tenant2CId2RegEntries = HashBasedTable.create();
+	private Table<String, String, List<RegistrationEntry>> tenant2CId2RegEntries = HashBasedTable.create();
 
 	@PostConstruct
 	void init() {
@@ -94,9 +94,10 @@ public class HistoryQueryService {
 	}
 
 	public Uni<QueryResult> query(String tenant, String[] entityIds, TypeQueryTerm typeQuery, String idPattern,
-								  AttrsQueryTerm attrsQuery, QQueryTerm qQuery, CSFQueryTerm csf, GeoQueryTerm geoQuery,
-								  ScopeQueryTerm scopeQuery, TemporalQueryTerm tempQuery, AggrTerm aggrQuery, LanguageQueryTerm langQuery,
-								  Integer lastN, Integer limit, Integer offSet, Boolean count, Boolean localOnly, Context context, HttpServerRequest request) {
+			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, CSFQueryTerm csf, GeoQueryTerm geoQuery,
+			ScopeQueryTerm scopeQuery, TemporalQueryTerm tempQuery, AggrTerm aggrQuery, LanguageQueryTerm langQuery,
+			Integer lastN, Integer limit, Integer offSet, Boolean count, Boolean localOnly, Context context,
+			HttpServerRequest request) {
 
 		Uni<QueryResult> local = historyDAO.query(tenant, entityIds, typeQuery, idPattern, attrsQuery, qQuery,
 				tempQuery, aggrQuery, geoQuery, scopeQuery, lastN, limit, offSet, count).onFailure()
@@ -115,7 +116,7 @@ public class HistoryQueryService {
 		if (localOnly) {
 			return local;
 		}
-		Map<RemoteHost, String> remoteHosts = getRemoteHostsForQuery(tenant,request.query(),context);
+		Map<RemoteHost, String> remoteHosts = getRemoteHostsForQuery(tenant, request.query(), context);
 		if (remoteHosts.isEmpty()) {
 			return local;
 		}
@@ -125,22 +126,24 @@ public class HistoryQueryService {
 			String url = remoteHost.host() + NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT + "?" + entry.getValue();
 			String linkHead;
 			List<Object> contextLinks;
-			if(!remoteHost.headers().contains(NGSIConstants.LINK_HEADER)){
+			if (!remoteHost.headers().contains(NGSIConstants.LINK_HEADER)) {
 				linkHead = request.headers().get(NGSIConstants.LINK_HEADER);
-				contextLinks= parseLinkHeaderNoUni(request.headers().getAll(NGSIConstants.LINK_HEADER),NGSIConstants.HEADER_REL_LDCONTEXT);
-			}else{
+				contextLinks = parseLinkHeaderNoUni(request.headers().getAll(NGSIConstants.LINK_HEADER),
+						NGSIConstants.HEADER_REL_LDCONTEXT);
+			} else {
 				linkHead = remoteHost.headers().get(NGSIConstants.LINK_HEADER);
-				contextLinks= parseLinkHeaderNoUni(remoteHost.headers().getAll(NGSIConstants.LINK_HEADER),NGSIConstants.HEADER_REL_LDCONTEXT);
+				contextLinks = parseLinkHeaderNoUni(remoteHost.headers().getAll(NGSIConstants.LINK_HEADER),
+						NGSIConstants.HEADER_REL_LDCONTEXT);
 			}
-			remoteCalls.add(
-					webClient.getAbs(url).putHeaders(remoteHost.headers()).putHeader(NGSIConstants.LINK_HEADER,linkHead).send().onItem().transformToUni(response -> {
+			remoteCalls.add(webClient.getAbs(url).putHeaders(remoteHost.headers())
+					.putHeader(NGSIConstants.LINK_HEADER, linkHead).send().onItem().transformToUni(response -> {
 
 						if (response == null || response.statusCode() != 200) {
 							return Uni.createFrom().nullItem();
 						} else {
 							List<Object> responseEntity = response.bodyAsJsonArray().getList();
-							return ldService.expand(contextLinks,
-									responseEntity, HttpUtils.opts, -1, false).onItem().transform(expanded -> {
+							return ldService.expand(contextLinks, responseEntity, HttpUtils.opts, -1, false).onItem()
+									.transform(expanded -> {
 										QueryResult result = new QueryResult();
 										List<Map<String, Object>> resultList = new ArrayList<>(expanded.size());
 										for (Object entry2 : expanded) {
@@ -183,8 +186,8 @@ public class HistoryQueryService {
 	}
 
 	private void mergeInResult(Map<String, Map<String, Object>> entityId2Entity, List<Map<String, Object>> data) {
-		for (Map<String,Object> item : data) {
-			entityId2Entity.put((String) item.getOrDefault(NGSIConstants.ID,item.get(JsonLdConsts.ID)),item);
+		for (Map<String, Object> item : data) {
+			entityId2Entity.put((String) item.getOrDefault(NGSIConstants.ID, item.get(JsonLdConsts.ID)), item);
 		}
 	}
 
@@ -334,99 +337,103 @@ public class HistoryQueryService {
 			AttrsQueryTerm attrsQuery) {
 		Map<RemoteHost, Set<String>> result = Maps.newHashMap();
 
-		for (RegistrationEntry regEntry : tenant2CId2RegEntries.row(tenant).values()) {
-			if (!regEntry.retrieveTemporal()) {
-				continue;
+		for (List<RegistrationEntry> regEntries : tenant2CId2RegEntries.row(tenant).values()) {
+			for (RegistrationEntry regEntry : regEntries) {
+				if (!regEntry.retrieveTemporal()) {
+					continue;
+				}
+				if ((regEntry.eId() == null && regEntry.eIdp() == null)
+						|| (regEntry.eId() != null && regEntry.eId().equals(entityId))
+						|| (regEntry.eIdp() != null && entityId.matches(regEntry.eIdp()))) {
+					RemoteHost remoteHost = new RemoteHost(regEntry.host().host(), regEntry.host().tenant(),
+							regEntry.host().headers(), regEntry.host().cSourceId(), true, false, regEntry.regMode(),
+							regEntry.canDoZip(), regEntry.canDoIdQuery());
+
+					Set<String> attribs;
+					if (result.containsKey(remoteHost)) {
+						attribs = result.get(remoteHost);
+					} else {
+						attribs = Sets.newHashSet();
+						result.put(remoteHost, attribs);
+					}
+					if (regEntry.eProp() != null) {
+						attribs.add(regEntry.eProp());
+					}
+					if (regEntry.eRel() != null) {
+						attribs.add(regEntry.eRel());
+					}
+				}
 			}
-			if ((regEntry.eId() == null && regEntry.eIdp() == null)
-					|| (regEntry.eId() != null && regEntry.eId().equals(entityId))
-					|| (regEntry.eIdp() != null && entityId.matches(regEntry.eIdp()))) {
+			if (attrsQuery != null) {
+				for (Entry<RemoteHost, Set<String>> entry : result.entrySet()) {
+					Set<String> regAttrs = entry.getValue();
+					if (regAttrs.isEmpty()) {
+						regAttrs.addAll(attrsQuery.getAttrs());
+					} else {
+						regAttrs.retainAll(attrsQuery.getAttrs());
+					}
+				}
+			}
+		}
+		return result;
+	}
+
+	private Map<RemoteHost, String> getRemoteHostsForQuery(String tenant, String query, Context context) {
+		Map<RemoteHost, String> result = new HashMap<>();
+		Map<String, String> queryMap = queryStrToMap(query);
+		Set<String> filteredIds = new HashSet<>();
+		Set<String> entityIds = new HashSet<>(Arrays.asList(queryMap.getOrDefault("id", "").split(",")));
+		Set<String> filteredTypes = new HashSet<>();
+		Set<String> types = new HashSet<>(Arrays.asList(queryMap.getOrDefault("type", "").split(",")));
+		for (List<RegistrationEntry> regEntries : tenant2CId2RegEntries.row(tenant).values()) {
+			for (RegistrationEntry regEntry : regEntries) {
+				if (!regEntry.retrieveTemporal()) {
+					continue;
+				}
+
 				RemoteHost remoteHost = new RemoteHost(regEntry.host().host(), regEntry.host().tenant(),
 						regEntry.host().headers(), regEntry.host().cSourceId(), true, false, regEntry.regMode(),
 						regEntry.canDoZip(), regEntry.canDoIdQuery());
 
-				Set<String> attribs;
-				if (result.containsKey(remoteHost)) {
-					attribs = result.get(remoteHost);
+				if (regEntry.eId() != null || regEntry.eIdp() != null) {
+					for (String id : entityIds) {
+						if ((regEntry.eId() != null && regEntry.eId().equals(id))
+								|| (regEntry.eIdp() != null && id.matches(regEntry.eIdp()))) {
+							filteredIds.add(id);
+						}
+					}
 				} else {
-					attribs = Sets.newHashSet();
-					result.put(remoteHost, attribs);
+					filteredIds = entityIds;
 				}
-				if (regEntry.eProp() != null) {
-					attribs.add(regEntry.eProp());
-				}
-				if (regEntry.eRel() != null) {
-					attribs.add(regEntry.eRel());
-				}
-			}
-		}
-		if (attrsQuery != null) {
-			for (Entry<RemoteHost, Set<String>> entry : result.entrySet()) {
-				Set<String> regAttrs = entry.getValue();
-				if (regAttrs.isEmpty()) {
-					regAttrs.addAll(attrsQuery.getAttrs());
+
+				if (regEntry.type() != null) {
+					for (String type : types) {
+						if (regEntry.type().equals(context.expandIri(type, false, true, null, null))) {
+							filteredTypes.add(type);
+						}
+					}
 				} else {
-					regAttrs.retainAll(attrsQuery.getAttrs());
+					filteredTypes = types;
 				}
+
+				queryMap.put("id", String.join(",", filteredIds));
+				queryMap.put("type", String.join(",", filteredTypes));
+
+				if (regEntry.eProp() != null || regEntry.eRel() != null) {
+					Set<String> uniqueAttrs = new HashSet<>(
+							Arrays.asList(queryMap.getOrDefault("attrs", "").split(",")));
+					uniqueAttrs.add(regEntry.eProp());
+					uniqueAttrs.add(regEntry.eRel());
+					uniqueAttrs.remove("");
+					uniqueAttrs.remove(null);
+					queryMap.put("attrs", String.join(",", uniqueAttrs));
+				}
+				result.put(remoteHost, queryMapToStr(queryMap));
 			}
 		}
 		return result;
 	}
 
-	private Map<RemoteHost, String> getRemoteHostsForQuery(String tenant, String query,Context context) {
-		Map<RemoteHost, String> result = new HashMap<>();
-		Map<String,String> queryMap = queryStrToMap(query);
-		Set<String> filteredIds = new HashSet<>();
-		Set<String> entityIds = new HashSet<>(Arrays.asList(queryMap.getOrDefault("id","").split(",")));
-		Set<String> filteredTypes = new HashSet<>();
-		Set<String> types = new HashSet<>(Arrays.asList(queryMap.getOrDefault("type","").split(",")));
-		for (RegistrationEntry regEntry : tenant2CId2RegEntries.row(tenant).values()) {
-			if (!regEntry.retrieveTemporal()) {
-				continue;
-			}
-
-			RemoteHost remoteHost = new RemoteHost(regEntry.host().host(), regEntry.host().tenant(),
-					regEntry.host().headers(), regEntry.host().cSourceId(), true, false, regEntry.regMode(),
-					regEntry.canDoZip(), regEntry.canDoIdQuery());
-
-			if(regEntry.eId() != null || regEntry.eIdp() != null){
-				for (String id:entityIds) {
-					if((regEntry.eId() != null && regEntry.eId().equals(id))
-						||  (regEntry.eIdp() != null && id.matches(regEntry.eIdp()))){
-						filteredIds.add(id);
-					}
-				}
-			}
-			else{
-				filteredIds = entityIds;
-			}
-
-			if(regEntry.type() != null ){
-				for (String type:types) {
-					if( regEntry.type().equals(context.expandIri(type, false, true, null, null))) {
-						filteredTypes.add(type);
-					}
-				}
-			}
-			else{
-				filteredTypes=types;
-			}
-
-                queryMap.put("id",String.join(",",filteredIds));
-				queryMap.put("type",String.join(",",filteredTypes));
-
-            if (regEntry.eProp() != null || regEntry.eRel() != null) {
-                Set<String> uniqueAttrs = new HashSet<>( Arrays.asList(queryMap.getOrDefault("attrs","").split(",")));
-                uniqueAttrs.add(regEntry.eProp());
-                uniqueAttrs.add(regEntry.eRel());
-				uniqueAttrs.remove("");
-				uniqueAttrs.remove(null);
-                queryMap.put("attrs",String.join(",",uniqueAttrs));
-            }
-			result.put(remoteHost,queryMapToStr(queryMap));
-		}
-		return result;
-	}
 	private static Map<String, String> queryStrToMap(String queryString) {
 		Map<String, String> paramMap = new HashMap<>();
 
@@ -442,39 +449,37 @@ public class HistoryQueryService {
 
 		return paramMap;
 	}
+
 	public static String queryMapToStr(Map<String, String> paramMap) {
 		StringBuilder queryStringBuilder = new StringBuilder();
 		List<String> keyList = paramMap.keySet().stream().toList();
-        for (String key : keyList) {
-            if (paramMap.get(key).isEmpty()) {
-                paramMap.remove(key);
-            }
-        }
+		for (String key : keyList) {
+			if (paramMap.get(key).isEmpty()) {
+				paramMap.remove(key);
+			}
+		}
 
 		for (Map.Entry<String, String> entry : paramMap.entrySet()) {
 			if (!queryStringBuilder.isEmpty()) {
 				queryStringBuilder.append("&");
 			}
-			try {
-				String key = URLEncoder.encode(entry.getKey(), StandardCharsets.UTF_8);
-				String value = URLEncoder.encode(entry.getValue(), StandardCharsets.UTF_8);
-				queryStringBuilder.append(key).append("=").append(value);
-			} catch (Exception ignored) {}
+			String key = URLEncoder.encode(entry.getKey(), StandardCharsets.UTF_8);
+			String value = URLEncoder.encode(entry.getValue(), StandardCharsets.UTF_8);
+			queryStringBuilder.append(key).append("=").append(value);
 		}
-
 		return queryStringBuilder.toString();
 	}
 
 	public Uni<Void> handleRegistryChange(BaseRequest req) {
 		tenant2CId2RegEntries.remove(req.getTenant(), req.getId());
 		if (req.getRequestType() != AppConstants.DELETE_REQUEST) {
-			List<RegistrationEntry> lsReg = RegistrationEntry.fromRegPayload(req.getPayload());
-			int count=0;
-			for (RegistrationEntry regEntry : lsReg) {
+			List<RegistrationEntry> newRegs = Lists.newArrayList();
+			for (RegistrationEntry regEntry : RegistrationEntry.fromRegPayload(req.getPayload())) {
 				if (regEntry.retrieveTemporal() || regEntry.queryTemporal()) {
-					tenant2CId2RegEntries.put(req.getTenant(), req.getId()+count++, regEntry);
+					newRegs.add(regEntry);
 				}
 			}
+			tenant2CId2RegEntries.put(req.getTenant(), req.getId(), newRegs);
 		}
 		return Uni.createFrom().voidItem();
 	}
