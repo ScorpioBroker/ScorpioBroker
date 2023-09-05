@@ -38,6 +38,8 @@ public interface NGSIConstants {
 	public final static String CSOURCE_TYPE = "type";
 	public final static String CSOURCE_TIMESTAMP = "timestamp";
 	public final static String CSOURCE_COORDINATES = "coordinates";
+	public final static String FLAT = "flat";
+	public final static String INLINE = "inline";
 	public final static String NGSI_LD_SUBSCRIPTION_NAME = "https://uri.etsi.org/ngsi-ld/subscriptionName";
 	public final static String CSOURCEREGISTRATION_NAME = "registrationName";
 	public final static String OBJECT = "object";
@@ -52,6 +54,7 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_PROPERTY = "https://uri.etsi.org/ngsi-ld/Property";
 	public final static String NGSI_LD_HAS_VALUE = "https://uri.etsi.org/ngsi-ld/hasValue";
 	public final static String NGSI_LD_HAS_OBJECT = "https://uri.etsi.org/ngsi-ld/hasObject";
+	public final static String NGSI_LD_OBJECT_TYPE = "https://uri.etsi.org/ngsi-ld/default-context/objectType";
 	public final static String NGSI_LD_COORDINATES = "https://purl.org/geojson/vocab#coordinates"; // "https://uri.etsi.org/ngsi-ld/coordinates";
 	public final static String NGSI_LD_GEOPROPERTY = "https://uri.etsi.org/ngsi-ld/GeoProperty";
 	public final static String NGSI_LD_LANGPROPERTY = "https://uri.etsi.org/ngsi-ld/LanguageProperty";
@@ -443,12 +446,8 @@ public interface NGSIConstants {
 	public static final String HAS_OBJECT_NULL = "[{https://uri.etsi.org/ngsi-ld/hasObject=[{@id=urn:ngsi-ld:null}]";
 	public static final String LANGUAGE_PROPERTY = "LanguageProperty";
 	public static final String LANGUAGE_MAP = "languageMap";
-
-	
 	public static final Set<String> ENTITY_BASE_PROPS = Sets.newHashSet(JSON_LD_ID, JSON_LD_TYPE, NGSI_LD_CREATED_AT, NGSI_LD_MODIFIED_AT, NGSI_LD_SCOPE);
-	
-
 	public final static String NGSI_LD_HAS_KEY ="https://uri.etsi.org/ngsi-ld/hasKey";
-
+	public static final String OBJECT_TYPE = "objectType";
 }
 

@@ -2,24 +2,29 @@ package eu.neclab.ngsildbroker.queryhandler.controller;
 
 import java.io.IOException;
 import java.util.List;
+
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
+
 import org.apache.commons.lang3.RandomStringUtils;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.jaxrs.RestResponseBuilderImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.github.jsonldjava.core.JsonLDService;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.base.Objects;
 import com.google.common.net.HttpHeaders;
+
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
@@ -69,10 +74,14 @@ public class QueryController {
 	@Path("/entities/{entityId}")
 	@GET
 	public Uni<RestResponse<Object>> getEntity(HttpServerRequest request, @QueryParam(value = "attrs") String attrs,
-			@QueryParam(value = "options") String options, @QueryParam(value = "lang") String lang,
-			@QueryParam(value = "geometryProperty") String geometryProperty,
-			@QueryParam(value = "localOnly") boolean localOnly, @PathParam("entityId") String entityId,
-			@QueryParam(value = "doNotCompact") boolean doNotCompact) {
+											   @QueryParam(value = "options") String options, @QueryParam(value = "lang") String lang,
+											   @QueryParam(value = "geometryProperty") String geometryProperty,
+											   @QueryParam(value = "localOnly") boolean localOnly, @PathParam("entityId") String entityId,
+											   @QueryParam(value = "doNotCompact") boolean doNotCompact,
+											   @QueryParam("containedBy")@DefaultValue("") String containedBy,
+											   @QueryParam("join")String join,
+											   @QueryParam("idsOnly")boolean idsOnly,
+											   @QueryParam("joinLevel")@DefaultValue("1")int joinLevel) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		if (acceptHeader == -1) {
 			return HttpUtils.getInvalidHeader();
@@ -82,17 +91,18 @@ public class QueryController {
 		headerContext = HttpUtils.getAtContext(request);
 		logger.debug("retrieve called: " + request.path());
 		return HttpUtils.getContext(headerContext, ldService).onItem().transformToUni(context -> {
-			AttrsQueryTerm attrsQuery;
+//			AttrsQueryTerm attrsQuery;
 			LanguageQueryTerm langQuery;
 			try {
 				HttpUtils.validateUri(entityId);
-				attrsQuery = QueryParser.parseAttrs(attrs, context);
+//				attrsQuery = QueryParser.parseAttrs(attrs, context);
 				langQuery = QueryParser.parseLangQuery(lang);
 			} catch (Exception e) {
 				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 			}
 			return queryService
-					.retrieveEntity(context, HttpUtils.getTenant(request), entityId, attrsQuery, langQuery, localOnly)
+					.retrieveEntity(context, HttpUtils.getTenant(request), entityId, attrs, langQuery,
+							localOnly,containedBy,join,idsOnly,joinLevel)
 					.onItem().transformToUni(entity -> {
 						if (doNotCompact) {
 							return Uni.createFrom().item(RestResponse.ok((Object) entity));
@@ -123,7 +133,9 @@ public class QueryController {
 			@QueryParam("geometryProperty") String geometryProperty, @QueryParam("lang") String lang,
 			@QueryParam("scopeQ") String scopeQ, @QueryParam("localOnly") boolean localOnly,
 			@QueryParam("options") String options, @QueryParam("limit") Integer limit, @QueryParam("offset") int offset,
-			@QueryParam("count") boolean count, @QueryParam("idsOnly") boolean idsOnly,
+			@QueryParam("count") boolean count, @QueryParam("containedBy")@DefaultValue("") String containedBy,
+			@QueryParam("join")String join, @QueryParam("idsOnly")boolean idsOnly,
+			@QueryParam("joinLevel")@DefaultValue("1")int joinLevel,
 			@QueryParam("doNotCompact") boolean doNotCompact, @QueryParam("entityMap") String entityMapToken) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		if (acceptHeader == -1) {
@@ -207,7 +219,7 @@ public class QueryController {
 			if (idsOnly) {
 				return queryService
 						.queryForEntityIds(HttpUtils.getTenant(request), ids, typeQueryTerm, idPattern, attrsQuery,
-								qQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, context, request.headers())
+								qQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, context, request.headers(), true,join,containedBy,joinLevel)
 						.onItem().transform(list -> {
 							String body;
 							Object result = "[]";

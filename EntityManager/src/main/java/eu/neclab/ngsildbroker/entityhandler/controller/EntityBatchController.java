@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.entityhandler.controller;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -78,7 +79,12 @@ public class EntityBatchController {
 							entityId);
 					if (obj2 instanceof ResponseException) {
 						failureResults.addFailure((ResponseException) obj2);
-					} else {
+					}
+					else if(obj2 instanceof IOException){
+						failureResults.addFailure(
+								new ResponseException(ErrorType.LdContextNotAvailable, ((Exception) obj2).getMessage()));
+					}
+					else {
 						failureResults.addFailure(
 								new ResponseException(ErrorType.InvalidRequest, ((Exception) obj2).getMessage()));
 					}
