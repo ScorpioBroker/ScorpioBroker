@@ -1,3 +1,9 @@
+RELEASE NOTES SCORPIO 4.1.4
+
+This release includes various fixes and the ability to directly inline entities from relationships in queries 
+please check the doc here for examples 
+https://github.com/ScorpioBroker/ScorpioBroker/blob/development-quarkus/docs/en/source/followRelationship.rst
+
 RELEASE NOTES SCORPIO 4.1.3
 
 This release add various bug fixes and a performance improvement on temporal queries. 
