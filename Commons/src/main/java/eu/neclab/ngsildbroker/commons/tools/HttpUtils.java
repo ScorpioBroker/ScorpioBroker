@@ -37,6 +37,7 @@ import com.github.jsonldjava.core.RDFDataset;
 import com.github.jsonldjava.core.RDFDatasetUtils;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.net.HttpHeaders;
 
@@ -203,25 +204,26 @@ public final class HttpUtils {
 	@SuppressWarnings("unchecked")
 	private static Object generateGeoJson(Object result, String geometry, Object context)
 			throws JsonParseException, IOException {
-		Map<String, Object> resultMap = new HashMap<String, Object>();
+		Map<String, Object> resultMap = Maps.newLinkedHashMap();
 		if (result instanceof List) {
-			resultMap.put(NGSIConstants.CSOURCE_TYPE, NGSIConstants.FEATURE_COLLECTION);
+			resultMap.put(NGSIConstants.TYPE, NGSIConstants.FEATURE_COLLECTION);
 			ArrayList<Object> value = new ArrayList<Object>();
 			for (Object entry : (List<Object>) result) {
 				Object valueEntry = generateGeoJson(entry, geometry, context);
 				((Map<String, Object>) valueEntry).remove(NGSIConstants.JSON_LD_CONTEXT);
 				value.add(valueEntry);
 			}
-			resultMap.put(NGSIConstants.JSON_LD_CONTEXT, context);
 			resultMap.put(NGSIConstants.FEATURES, value);
+			resultMap.put(NGSIConstants.JSON_LD_CONTEXT, context);
 		} else {
 			Map<String, Object> entryMap = (Map<String, Object>) result;
 			resultMap.put(NGSIConstants.QUERY_PARAMETER_ID, entryMap.remove(NGSIConstants.QUERY_PARAMETER_ID));
-			resultMap.put(NGSIConstants.CSOURCE_TYPE, NGSIConstants.FEATURE);
+			resultMap.put(NGSIConstants.TYPE, NGSIConstants.FEATURE);
 			Object geometryEntry = entryMap.get(geometry);
 			if (geometryEntry != null) {
 				resultMap.put(NGSIConstants.GEOMETRY, ((Map<String, Object>) geometryEntry).get(NGSIConstants.VALUE));
 			}
+			entryMap.remove(NGSIConstants.JSON_LD_CONTEXT);
 			resultMap.put(NGSIConstants.PROPERTIES, entryMap);
 			resultMap.put(NGSIConstants.JSON_LD_CONTEXT, context);
 		}
@@ -298,12 +300,11 @@ public final class HttpUtils {
 					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
 					.entity(responseException.getJson()).build();
 		}
-		if(e instanceof IOException ioException){
+		if (e instanceof IOException ioException) {
 			logger.debug("Exception :: ", ioException);
 			return RestResponseBuilderImpl.create(ErrorType.LdContextNotAvailable.getCode())
 					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-					.entity(new ResponseException(ErrorType.LdContextNotAvailable)
-							.getJson()).build();
+					.entity(new ResponseException(ErrorType.LdContextNotAvailable).getJson()).build();
 		}
 		if (e instanceof DateTimeParseException) {
 			logger.debug("Exception :: ", e);
@@ -425,14 +426,16 @@ public final class HttpUtils {
 		if (headerFromReg != null) {
 			headerFromReg.forEach(t -> {
 				JsonObject obj = (JsonObject) t;
-			 	result.add(obj.getJsonArray(NGSIConstants.NGSI_LD_HAS_KEY).getJsonObject(0).getString(JsonLdConsts.VALUE)
-						,obj.getJsonArray(NGSIConstants.NGSI_LD_HAS_VALUE).getJsonObject(0).getString(JsonLdConsts.VALUE));
-			 });
+				result.add(
+						obj.getJsonArray(NGSIConstants.NGSI_LD_HAS_KEY).getJsonObject(0).getString(JsonLdConsts.VALUE),
+						obj.getJsonArray(NGSIConstants.NGSI_LD_HAS_VALUE).getJsonObject(0)
+								.getString(JsonLdConsts.VALUE));
+			});
 		}
-		if(result.contains(NGSIConstants.JSONLD_CONTEXT)){
+		if (result.contains(NGSIConstants.JSONLD_CONTEXT)) {
 			String linkHeader = "<%s>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"',"
 					.formatted(result.get(NGSIConstants.JSONLD_CONTEXT));
-			result.remove(NGSIConstants.JSONLD_CONTEXT).add("Link",linkHeader);
+			result.remove(NGSIConstants.JSONLD_CONTEXT).add("Link", linkHeader);
 		}
 		result.add("Accept", "application/json");
 		if (tenant != null) {
@@ -447,14 +450,16 @@ public final class HttpUtils {
 		if (headerFromReg != null) {
 			headerFromReg.forEach(t -> {
 				JsonObject obj = new JsonObject(t);
-				result.add(obj.getJsonArray(NGSIConstants.NGSI_LD_HAS_KEY).getJsonObject(0).getString(JsonLdConsts.VALUE)
-						,obj.getJsonArray(NGSIConstants.NGSI_LD_HAS_VALUE).getJsonObject(0).getString(JsonLdConsts.VALUE));
+				result.add(
+						obj.getJsonArray(NGSIConstants.NGSI_LD_HAS_KEY).getJsonObject(0).getString(JsonLdConsts.VALUE),
+						obj.getJsonArray(NGSIConstants.NGSI_LD_HAS_VALUE).getJsonObject(0)
+								.getString(JsonLdConsts.VALUE));
 			});
 		}
-		if(result.contains(NGSIConstants.JSONLD_CONTEXT)){
+		if (result.contains(NGSIConstants.JSONLD_CONTEXT)) {
 			String linkHeader = "<%s>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"',"
 					.formatted(result.get(NGSIConstants.JSONLD_CONTEXT));
-			result.remove(NGSIConstants.JSONLD_CONTEXT).add("Link",linkHeader);
+			result.remove(NGSIConstants.JSONLD_CONTEXT).add("Link", linkHeader);
 		}
 		result.add("Accept", "application/json");
 		if (!tenant.equals(AppConstants.INTERNAL_NULL_KEY)) {
@@ -497,11 +502,11 @@ public final class HttpUtils {
 					((Map<String, Object>) parent).put(key, map.get(NGSIConstants.VALUE));
 				}
 			}
-			for(Object k : map.keySet()){
+			for (Object k : map.keySet()) {
 				if (!k.equals(NGSIConstants.JSON_LD_CONTEXT) && map.get(k) instanceof Map<?, ?>
- 						|| map.get(k)  instanceof ArrayList<?>) {
- 					makeConcise(map.get(k) , map, k.toString());
- 				}
+						|| map.get(k) instanceof ArrayList<?>) {
+					makeConcise(map.get(k), map, k.toString());
+				}
 			}
 		}
 
@@ -593,14 +598,24 @@ public final class HttpUtils {
 		case 4:// geo+json
 			uni = ldService.compact(entity, contextHeader, context, opts, -1, optionSet, langQuery).onItem()
 					.transformToUni(compacted -> {
-						Object finalCompacted;
-						if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)) {
-							makeConcise(compacted);
+						Object finalCompacted = compacted;
+						if (compacted.containsKey(JsonLdConsts.GRAPH)) {
+							finalCompacted = compacted.get(JsonLdConsts.GRAPH);
+							Object bodyContext = compacted.get(NGSIConstants.JSON_LD_CONTEXT);
+							if (finalCompacted instanceof List) {
+								List<Map<String, Object>> tmpList = (List<Map<String, Object>>) finalCompacted;
+								for (Map<String, Object> entry : tmpList) {
+									entry.put(NGSIConstants.JSON_LD_CONTEXT, bodyContext);
+								}
+							} else if (finalCompacted instanceof Map) {
+								((Map<String, Object>) finalCompacted).put(NGSIConstants.JSON_LD_CONTEXT, bodyContext);
+							}
 						}
-						if (forceArray && !(compacted instanceof List)) {
-							finalCompacted = List.of(compacted);
-						} else {
-							finalCompacted = compacted;
+						if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)) {
+							makeConcise(finalCompacted);
+						}
+						if (forceArray && !(finalCompacted instanceof List)) {
+							finalCompacted = List.of(finalCompacted);
 						}
 						try {
 							return Uni.createFrom()
@@ -698,10 +713,9 @@ public final class HttpUtils {
 			String type = (String) result.get(0).get("type");
 			if (type.equalsIgnoreCase("Delete") || type.equalsIgnoreCase("Append"))
 				return RestResponse.status(RestResponse.Status.NOT_FOUND, result);
-			else if(result.get(0).get("failure").toString().contains("503")){
+			else if (result.get(0).get("failure").toString().contains("503")) {
 				return RestResponse.status(RestResponse.Status.SERVICE_UNAVAILABLE, result);
-			}
-			else {
+			} else {
 				return RestResponse.status(RestResponse.Status.BAD_REQUEST, result);
 			}
 		}
@@ -765,7 +779,7 @@ public final class HttpUtils {
 		return JsonUtils.fromString(payload).onItem().transformToUni(json -> {
 			Map<String, Object> originalPayload;
 			originalPayload = (Map<String, Object>) json;
-		    return expandBody(request, originalPayload, payloadType, ldService);
+			return expandBody(request, originalPayload, payloadType, ldService);
 
 		});
 	}
@@ -821,7 +835,7 @@ public final class HttpUtils {
 
 	public static List<Object> getContextFromHeader(io.vertx.mutiny.core.MultiMap remoteHeaders) {
 		String link = remoteHeaders.get("Link");
-		if(link == null) {
+		if (link == null) {
 			return Lists.newArrayList();
 		}
 		String tmp = link.split(";")[0];
