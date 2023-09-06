@@ -219,6 +219,9 @@ public final class HttpUtils {
 			Map<String, Object> entryMap = (Map<String, Object>) result;
 			resultMap.put(NGSIConstants.QUERY_PARAMETER_ID, entryMap.remove(NGSIConstants.QUERY_PARAMETER_ID));
 			resultMap.put(NGSIConstants.TYPE, NGSIConstants.FEATURE);
+			if(geometry == null) {
+				geometry = NGSIConstants.NGSI_LD_LOCATION_SHORT;
+			}
 			Object geometryEntry = entryMap.get(geometry);
 			if (geometryEntry != null) {
 				resultMap.put(NGSIConstants.GEOMETRY, ((Map<String, Object>) geometryEntry).get(NGSIConstants.VALUE));
