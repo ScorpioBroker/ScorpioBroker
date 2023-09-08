@@ -169,6 +169,9 @@ public class QueryParser {
 		if (!operant.equals("")) {
 			current.setOperant(operant);
 		}
+
+		String expandedOpt = context.expandIri(operant.replaceAll("\"",""),false, true, null, null);
+		root.setExpandedOpt(expandedOpt);
 		return root;
 	}
 
