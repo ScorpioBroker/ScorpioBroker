@@ -1,9 +1,9 @@
 {
 	"info": {
-		"_postman_id": "700f44d5-8d1c-4fc0-ab32-0d5f2ac94ac0",
+		"_postman_id": "f99ca56a-9f79-49ca-9b4c-fb02e771103a",
 		"name": "API Test",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "26387112"
+		"_exporter_id": "20183875"
 	},
 	"item": [
 		{
@@ -234,7 +234,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld\"]\r\n}",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -1634,7 +1634,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld\"]\r\n}",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -1690,7 +1690,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststringupdated\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123456},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456789},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values updated\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1:updated\"},\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld\"]\r\n}",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststringupdated\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123456},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456789},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values updated\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1:updated\"},\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -14306,7 +14306,7 @@
 															"query": [
 																{
 																	"key": "",
-																	"value": null,
+																	"value": "",
 																	"disabled": true
 																}
 															]
@@ -14388,7 +14388,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:storeSubscription4\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"Test2\"\r\n   \t\t}\r\n\t],\r\n    \"q\": \"speed>90\",\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"http://localhost:8080\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    },\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld\"]\r\n}"
+															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:storeSubscription4\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"Test2\"\r\n   \t\t}\r\n\t],\r\n    \"q\": \"speed>90\",\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"http://localhost:8080\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    },\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}"
 														},
 														"url": {
 															"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions",
@@ -14468,7 +14468,7 @@
 															"query": [
 																{
 																	"key": "",
-																	"value": null,
+																	"value": "",
 																	"disabled": true
 																}
 															]
@@ -14797,7 +14797,7 @@
 															"query": [
 																{
 																	"key": "",
-																	"value": null,
+																	"value": "",
 																	"disabled": true
 																}
 															]
@@ -14900,7 +14900,7 @@
 															"query": [
 																{
 																	"key": "",
-																	"value": null,
+																	"value": "",
 																	"disabled": true
 																}
 															]
@@ -14982,7 +14982,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:storeSubscription4\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"Test2\"\r\n   \t\t}\r\n\t],\r\n    \"q\": \"speed>90\",\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"http://localhost:8080\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    },\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld\"]\r\n}"
+															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:storeSubscription4\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"Test2\"\r\n   \t\t}\r\n\t],\r\n    \"q\": \"speed>90\",\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"http://localhost:8080\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    },\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}"
 														},
 														"url": {
 															"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions",
@@ -15050,7 +15050,7 @@
 															"query": [
 																{
 																	"key": "",
-																	"value": null,
+																	"value": "",
 																	"disabled": true
 																}
 															]
@@ -15090,7 +15090,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:storeSubscription4\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"Test3\"\r\n   \t\t}\r\n\t],\r\n    \"q\": \"speed>100\",\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"http://localhost:8080\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    },\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld\"]\r\n}"
+															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:storeSubscription4\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"Test3\"\r\n   \t\t}\r\n\t],\r\n    \"q\": \"speed>100\",\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"http://localhost:8080\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    },\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}"
 														},
 														"url": {
 															"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions/{{subId}}",
@@ -15159,7 +15159,7 @@
 															"query": [
 																{
 																	"key": "",
-																	"value": null,
+																	"value": "",
 																	"disabled": true
 																}
 															]
@@ -23622,7 +23622,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:ContextSourceRegistration:csr1a3456\",\r\n\t\"type\": \"ContextSourceRegistration\",\r\n\t\"information\": [{\r\n\t\t\t\"entities\": [{\r\n\t\t\t\t\"type\": \"Test2\"\r\n\t\t\t}]\r\n\t\t}\r\n\t],\r\n\t\"endpoint\": \"http://localhost:9080\",\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld\"]\r\n}",
+															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:ContextSourceRegistration:csr1a3456\",\r\n\t\"type\": \"ContextSourceRegistration\",\r\n\t\"information\": [{\r\n\t\t\t\"entities\": [{\r\n\t\t\t\t\"type\": \"Test2\"\r\n\t\t\t}]\r\n\t\t}\r\n\t],\r\n\t\"endpoint\": \"http://localhost:9080\",\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -27786,7 +27786,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"tenanttest:urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld\"]\r\n}",
+															"raw": "{\r\n    \"id\": \"tenanttest:urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -29125,7 +29125,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"tenanttest:urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld\"]\r\n}",
+															"raw": "{\r\n    \"id\": \"tenanttest:urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -29186,7 +29186,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"tenanttest:urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststringupdated\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123456},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456789},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values updated\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1:updated\"},\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld\"]\r\n}",
+															"raw": "{\r\n    \"id\": \"tenanttest:urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststringupdated\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123456},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456789},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values updated\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1:updated\"},\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -38205,7 +38205,7 @@
 															"query": [
 																{
 																	"key": "",
-																	"value": null,
+																	"value": "",
 																	"disabled": true
 																}
 															]
@@ -38298,7 +38298,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n\t\"id\": \"tenanttest:urn:ngsi-ld:Subscription:storeSubscription4\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"Test2\"\r\n   \t\t}\r\n\t],\r\n    \"q\": \"speed>90\",\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"http://localhost:8080\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    },\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld\"]\r\n}"
+															"raw": "{\r\n\t\"id\": \"tenanttest:urn:ngsi-ld:Subscription:storeSubscription4\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"Test2\"\r\n   \t\t}\r\n\t],\r\n    \"q\": \"speed>90\",\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"http://localhost:8080\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    },\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}"
 														},
 														"url": {
 															"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions",
@@ -38373,7 +38373,7 @@
 															"query": [
 																{
 																	"key": "",
-																	"value": null,
+																	"value": "",
 																	"disabled": true
 																}
 															]
@@ -38738,7 +38738,7 @@
 															"query": [
 																{
 																	"key": "",
-																	"value": null,
+																	"value": "",
 																	"disabled": true
 																}
 															]
@@ -38853,7 +38853,7 @@
 															"query": [
 																{
 																	"key": "",
-																	"value": null,
+																	"value": "",
 																	"disabled": true
 																}
 															]
@@ -38946,7 +38946,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n\t\"id\": \"tenanttest:urn:ngsi-ld:Subscription:storeSubscription4\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"Test2\"\r\n   \t\t}\r\n\t],\r\n    \"q\": \"speed>90\",\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"http://localhost:8080\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    },\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld\"]\r\n}"
+															"raw": "{\r\n\t\"id\": \"tenanttest:urn:ngsi-ld:Subscription:storeSubscription4\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"Test2\"\r\n   \t\t}\r\n\t],\r\n    \"q\": \"speed>90\",\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"http://localhost:8080\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    },\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}"
 														},
 														"url": {
 															"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions",
@@ -39021,7 +39021,7 @@
 															"query": [
 																{
 																	"key": "",
-																	"value": null,
+																	"value": "",
 																	"disabled": true
 																}
 															]
@@ -39066,7 +39066,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n\t\"id\": \"tenanttest:urn:ngsi-ld:Subscription:storeSubscription4\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"Test3\"\r\n   \t\t}\r\n\t],\r\n    \"q\": \"speed>100\",\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"http://localhost:8080\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    },\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld\"]\r\n}"
+															"raw": "{\r\n\t\"id\": \"tenanttest:urn:ngsi-ld:Subscription:storeSubscription4\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"Test3\"\r\n   \t\t}\r\n\t],\r\n    \"q\": \"speed>100\",\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"http://localhost:8080\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    },\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}"
 														},
 														"url": {
 															"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions/{{subId}}",
@@ -39142,7 +39142,7 @@
 															"query": [
 																{
 																	"key": "",
-																	"value": null,
+																	"value": "",
 																	"disabled": true
 																}
 															]
@@ -44511,7 +44511,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n\t\"id\": \"tenanttest:urn:ngsi-ld:ContextSourceRegistration:csr1a3456\",\r\n\t\"type\": \"ContextSourceRegistration\",\r\n\t\"information\": [{\r\n\t\t\t\"entities\": [{\r\n\t\t\t\t\"type\": \"Test2\"\r\n\t\t\t}]\r\n\t\t}\r\n\t],\r\n\t\"endpoint\": \"http://localhost:9080\",\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld\"]\r\n}",
+															"raw": "{\r\n\t\"id\": \"tenanttest:urn:ngsi-ld:ContextSourceRegistration:csr1a3456\",\r\n\t\"type\": \"ContextSourceRegistration\",\r\n\t\"information\": [{\r\n\t\t\t\"entities\": [{\r\n\t\t\t\t\"type\": \"Test2\"\r\n\t\t\t}]\r\n\t\t}\r\n\t],\r\n\t\"endpoint\": \"http://localhost:9080\",\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -49461,20 +49461,6 @@
 					]
 				}
 			]
-		}
-	],
-	"variable": [
-		{
-			"key": "created",
-			"value": ""
-		},
-		{
-			"key": "entityId",
-			"value": ""
-		},
-		{
-			"key": "@context",
-			"value": ""
 		}
 	]
 }
