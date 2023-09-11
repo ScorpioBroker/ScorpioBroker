@@ -151,6 +151,7 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_SHOWCHANGES = "https://uri.etsi.org/ngsi-ld/showChanges";
 	public final static String NGSI_LD_HAS_VOCAB = "https://uri.etsi.org/ngsi-ld/hasVocab";
 	public final static String NGSI_LD_VocabularyProperty = "https://uri.etsi.org/ngsi-ld/VocabularyProperty";
+	public final static String VOCABULARYPROPERTY = "VocabularyProperty";
 
 	// IMPORTANT! DO NOT MESS UP THIS ORDER!!! ONLY APPEND ON THE END NEW STUFF
 	public final static String[] NGSI_LD_PAYLOAD_KEYS = { JSON_LD_ID, JSON_LD_TYPE, JSON_LD_CONTEXT,
@@ -388,7 +389,7 @@ public interface NGSIConstants {
 	public final static String QUERY_PARAMETER_CONCISE = "option";
 	public static final String SCOPE = "scope";
 	public static final String PREVIOUS_VALUE = "previousValue";
-
+	public static final String PREVIOUS_VOCAB = "previousVocab";
 	public static final String PREVIOUS_LANGUAGE_MAP = "previousLanguageMap";
 	public static final String PREVIOUS_OBJECT = "previousObject";
 	public static final String NGSI_LD_REG_MODE = "https://uri.etsi.org/ngsi-ld/mode";
