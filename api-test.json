@@ -606,6 +606,7 @@
 																	"    \"id\": \"urn:test:testentity999\",\r",
 																	"    \"type\": \"TestType\",\r",
 																	"    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r",
+																	"    \"vocabproperty\": {\"type\": \"VocabularyProperty\", \"vocab\": \"x\"},\r",
 																	"    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r",
 																	"    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r",
 																	"    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r",
@@ -1551,7 +1552,7 @@
 																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
 																	"var entityId = pm.collectionVariables.get(\"entityId\");\r",
 																	"pm.collectionVariables.set(\"updated\", payloadBody);\r",
-																	"pm.collectionVariables.set(\"updatedAttrib\", \"testrelationship\");\r",
+																	"pm.collectionVariables.set(\"updatedAttrib\", \"vocabproperty\");\r",
 																	"pm.test(\"Status code is 204\", function () {\r",
 																	"    pm.response.to.have.status(204);\r",
 																	"});\r",
@@ -1583,7 +1584,7 @@
 															}
 														},
 														"url": {
-															"raw": "{{entity-manager}}/ngsi-ld/v1/entities/{{entityId}}/attrs/testrelationship",
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities/{{entityId}}/attrs/vocabproperty",
 															"host": [
 																"{{entity-manager}}"
 															],
@@ -1593,7 +1594,7 @@
 																"entities",
 																"{{entityId}}",
 																"attrs",
-																"testrelationship"
+																"vocabproperty"
 															]
 														}
 													},
@@ -49984,6 +49985,24 @@
 					]
 				}
 			]
+		}
+	],
+	"variable": [
+		{
+			"key": "created",
+			"value": ""
+		},
+		{
+			"key": "entityId",
+			"value": ""
+		},
+		{
+			"key": "updated",
+			"value": ""
+		},
+		{
+			"key": "updatedAttrib",
+			"value": ""
 		}
 	]
 }
