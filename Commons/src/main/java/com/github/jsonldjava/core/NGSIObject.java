@@ -604,8 +604,7 @@ class NGSIObject {
 			return;
 		}
 		if (isScalar) {
-			System.out.println("testing "+Constants.allowedScalars.get(payloadType).contains(expandedProperty));
-			if (Constants.allowedDateTimes.get(payloadType).contains(expandedProperty)) {
+ 			if (Constants.allowedDateTimes.get(payloadType).contains(expandedProperty)) {
 				validateDateTime(activeProperty);
 				return;
 			}
