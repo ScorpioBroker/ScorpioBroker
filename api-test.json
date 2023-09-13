@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "700f44d5-8d1c-4fc0-ab32-0d5f2ac94ac0",
+		"_postman_id": "4db5203c-ebe3-4fcd-9a15-82b6e94a648c",
 		"name": "API Test",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "26387112"
@@ -74,7 +74,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"street\": {\r\n        \"type\": \"LanguageProperty\",\r\n        \"languageMap\": {\r\n            \"fr\": \"Grand Place\",\r\n            \"nl\": \"Grote Markt\"\r\n        }\r\n    }\r\n\r\n}",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabularyProperty\", \"vocab\": \"x\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"street\": {\r\n        \"type\": \"LanguageProperty\",\r\n        \"languageMap\": {\r\n            \"fr\": \"Grand Place\",\r\n            \"nl\": \"Grote Markt\"\r\n        }\r\n    }\r\n\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -234,7 +234,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld\"]\r\n}",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabularyProperty\", \"vocab\": \"x\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -399,7 +399,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabularyProperty\", \"vocab\": \"x\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -574,7 +574,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"urn:test:testentity999\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": \"teststring\",\r\n    \"intproperty\": 123,\r\n    \"floatproperty\": 123.456,\r\n    \"complexproperty\": {\"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"object\": \"urn:testref1\"},\r\n    \"street\": {\r\n        \"languageMap\": {\r\n            \"fr\": \"Grand Place\",\r\n            \"nl\": \"Grote Markt\"\r\n        }\r\n    }\r\n\r\n}",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity999\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": \"teststring\",\r\n    \"vocabproperty\": {\"vocab\": \"x\"},\r\n    \"intproperty\": 123,\r\n    \"floatproperty\": 123.456,\r\n    \"complexproperty\": {\"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"object\": \"urn:testref1\"},\r\n    \"street\": {\r\n        \"languageMap\": {\r\n            \"fr\": \"Grand Place\",\r\n            \"nl\": \"Grote Markt\"\r\n        }\r\n    }\r\n\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -606,6 +606,7 @@
 																	"    \"id\": \"urn:test:testentity999\",\r",
 																	"    \"type\": \"TestType\",\r",
 																	"    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r",
+																	"    \"vocabproperty\": {\"type\": \"VocabularyProperty\", \"vocab\": \"x\"},\r",
 																	"    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r",
 																	"    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r",
 																	"    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r",
@@ -754,7 +755,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabularyProperty\", \"vocab\": \"x\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -810,7 +811,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststringupdated\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123456},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456789},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values updated\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1:updated\"}\r\n}",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststringupdated\"},\r\n    \"vocabproperty\": {\"type\": \"VocabularyProperty\", \"vocab\": \"y\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123456},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456789},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values updated\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1:updated\"}\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -975,7 +976,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabularyProperty\", \"vocab\": \"x\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -1542,6 +1543,115 @@
 													"response": []
 												},
 												{
+													"name": "Update vocab test field of the entity",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"var entityId = pm.collectionVariables.get(\"entityId\");\r",
+																	"pm.collectionVariables.set(\"updated\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"updatedAttrib\", \"vocabproperty\");\r",
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});\r",
+																	"\r",
+																	"\r",
+																	"\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "PATCH",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\"type\": \"VocabularyProperty\", \"vocab\": \"y\"}",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities/{{entityId}}/attrs/vocabproperty",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities",
+																"{{entityId}}",
+																"attrs",
+																"vocabproperty"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Get Updated Entity and Validate Vocab Entry",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var expectedUpdatedValue = pm.collectionVariables.get(\"updated\");\r",
+																	"var expectedUpdatedKey = pm.collectionVariables.get(\"updatedAttrib\");\r",
+																	"pm.test(\"Status code is 200\", function () {\r",
+																	"    pm.response.to.have.status(200);\r",
+																	"});\r",
+																	"pm.test(\"Validate content\", function () {\r",
+																	"    var jsonData = pm.response.json();\r",
+																	"    pm.expect(jsonData[expectedUpdatedKey]).to.eql(expectedUpdatedValue);\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "",
+																"value": "",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"url": {
+															"raw": "{{query-manager}}/ngsi-ld/v1/entities/{{entityId}}",
+															"host": [
+																"{{query-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities",
+																"{{entityId}}"
+															]
+														}
+													},
+													"response": []
+												},
+												{
 													"name": "Delete Entity",
 													"event": [
 														{
@@ -1634,7 +1744,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld\"]\r\n}",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabularyProperty\", \"vocab\": \"x\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -1690,7 +1800,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststringupdated\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123456},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456789},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values updated\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1:updated\"},\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld\"]\r\n}",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststringupdated\"},\r\n    \"vocabproperty\": {\"type\": \"VocabularyProperty\", \"vocab\": \"y\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123456},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456789},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values updated\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1:updated\"},\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -3863,7 +3973,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabularyProperty\", \"vocab\": \"x\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -14196,6 +14306,420 @@
 											]
 										}
 									]
+								},
+								{
+									"name": "vocab Tests",
+									"item": [
+										{
+											"name": "host context one",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															" \r",
+															" \r",
+															"  \r",
+															"console.log(pm.response.json().url);\r",
+															"var urlOne = pm.response.json().url;\r",
+															"pm.collectionVariables.set(\"urlOne\", urlOne);\r",
+															"pm.test(\"Status code is 201\", function () {\r",
+															"    pm.response.to.have.status(201);\r",
+															"});\r",
+															"\r",
+															"\r",
+															"\r",
+															"\r",
+															""
+														],
+														"type": "text/javascript"
+													}
+												},
+												{
+													"listen": "prerequest",
+													"script": {
+														"exec": [
+															""
+														],
+														"type": "text/javascript"
+													}
+												}
+											],
+											"request": {
+												"method": "POST",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json",
+														"type": "default"
+													},
+													{
+														"key": "Accept",
+														"value": "application/json",
+														"type": "default",
+														"disabled": true
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\r\n    \"@context\": {\r\n        \"testvalue\": \"https://uri.etsi.org/ngsi-ld/default-context/x\"\r\n    }\r\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{entity-manager}}/ngsi-ld/v1/jsonldContexts",
+													"host": [
+														"{{entity-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"jsonldContexts"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "host context two",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															" console.log(pm.response.json().url);\r",
+															"var urlTwo = pm.response.json().url;\r",
+															"pm.collectionVariables.set(\"urlTwo\", urlTwo);\r",
+															"pm.test(\"Status code is 201\", function () {\r",
+															"    pm.response.to.have.status(201);\r",
+															"});\r",
+															"\r",
+															"\r",
+															"\r",
+															"\r",
+															""
+														],
+														"type": "text/javascript"
+													}
+												},
+												{
+													"listen": "prerequest",
+													"script": {
+														"exec": [
+															""
+														],
+														"type": "text/javascript"
+													}
+												}
+											],
+											"request": {
+												"method": "POST",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json",
+														"type": "default"
+													},
+													{
+														"key": "Accept",
+														"value": "application/json",
+														"type": "default",
+														"disabled": true
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\r\n    \"@context\": {\r\n        \"updatevalue\": \"https://uri.etsi.org/ngsi-ld/default-context/x\"\r\n    }\r\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{entity-manager}}/ngsi-ld/v1/jsonldContexts",
+													"host": [
+														"{{entity-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"jsonldContexts"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Create Simple Entity No Context Copy",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+															"console.log(payloadBody.id);\r",
+															"var entityId = payloadBody.id;\r",
+															"pm.collectionVariables.set(\"created\", payloadBody);\r",
+															"pm.collectionVariables.set(\"entityId\", entityId);\r",
+															"pm.test(\"Status code is 201\", function () {\r",
+															"    pm.response.to.have.status(201);\r",
+															"});\r",
+															"pm.test(\"Check location header\", function () {\r",
+															"    pm.response.to.have.header(\"Location\");\r",
+															"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+															"});\r",
+															"\r",
+															"\r",
+															""
+														],
+														"type": "text/javascript"
+													}
+												},
+												{
+													"listen": "prerequest",
+													"script": {
+														"exec": [
+															""
+														],
+														"type": "text/javascript"
+													}
+												}
+											],
+											"request": {
+												"method": "POST",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json",
+														"type": "default"
+													},
+													{
+														"key": "Accept",
+														"value": "application/json",
+														"type": "default",
+														"disabled": true
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\r\n    \"id\": \"urn:test:testentity123\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n     \"vocabproperty\": {\"type\": \"VocabularyProperty\", \"vocab\": \"x\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"street\": {\r\n        \"type\": \"LanguageProperty\",\r\n        \"languageMap\": {\r\n            \"fr\": \"Grand Place\",\r\n            \"nl\": \"Grote Markt\"\r\n        }\r\n    }\r\n\r\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+													"host": [
+														"{{entity-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"entities"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Get Created Entity with link one",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"var expected = \"testvalue\";\r",
+															"var expectedLink = pm.collectionVariables.get(\"link\");\r",
+															"pm.test(\"Status code is 200\", function () {\r",
+															"    pm.response.to.have.status(200);\r",
+															"});\r",
+															"pm.test(\"Validate content\", function () {\r",
+															"    var jsonData = pm.response.json();\r",
+															"    pm.expect(jsonData.vocabproperty.vocab).to.eql(expected);\r",
+															"});\r",
+															""
+														],
+														"type": "text/javascript"
+													}
+												}
+											],
+											"request": {
+												"method": "GET",
+												"header": [
+													{
+														"key": "Accept",
+														"value": "application/json",
+														"type": "text"
+													},
+													{
+														"key": "Link",
+														"value": "<{{urlOne}}>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
+														"type": "text"
+													}
+												],
+												"url": {
+													"raw": "{{query-manager}}/ngsi-ld/v1/entities/{{entityId}}",
+													"host": [
+														"{{query-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"entities",
+														"{{entityId}}"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Get Created Entity with link two",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"var expected = \"updatevalue\";\r",
+															"var expectedLink = pm.collectionVariables.get(\"link\");\r",
+															"pm.test(\"Status code is 200\", function () {\r",
+															"    pm.response.to.have.status(200);\r",
+															"});\r",
+															"pm.test(\"Validate content\", function () {\r",
+															"    var jsonData = pm.response.json();\r",
+															"    pm.expect(jsonData.vocabproperty.vocab).to.eql(expected);\r",
+															"});\r",
+															""
+														],
+														"type": "text/javascript"
+													}
+												}
+											],
+											"request": {
+												"method": "GET",
+												"header": [
+													{
+														"key": "Accept",
+														"value": "application/json",
+														"type": "text"
+													},
+													{
+														"key": "Link",
+														"value": "<{{urlTwo}}>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
+														"type": "text"
+													}
+												],
+												"url": {
+													"raw": "{{query-manager}}/ngsi-ld/v1/entities/{{entityId}}",
+													"host": [
+														"{{query-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"entities",
+														"{{entityId}}"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Delete Entity",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 204\", function () {\r",
+															"    pm.response.to.have.status(204);\r",
+															"});\r",
+															""
+														],
+														"type": "text/javascript"
+													}
+												}
+											],
+											"request": {
+												"method": "DELETE",
+												"header": [],
+												"url": {
+													"raw": "{{entity-manager}}/ngsi-ld/v1/entities/{{entityId}}",
+													"host": [
+														"{{entity-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"entities",
+														"{{entityId}}"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Delete Context One",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 204\", function () {\r",
+															"    pm.response.to.have.status(204);\r",
+															"});\r",
+															""
+														],
+														"type": "text/javascript"
+													}
+												}
+											],
+											"request": {
+												"method": "DELETE",
+												"header": [],
+												"url": {
+													"raw": "{{urlOne}}",
+													"host": [
+														"{{urlOne}}"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Delete Context Two",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 204\", function () {\r",
+															"    pm.response.to.have.status(204);\r",
+															"});\r",
+															"pm.collectionVariables.clear();"
+														],
+														"type": "text/javascript"
+													}
+												}
+											],
+											"request": {
+												"method": "DELETE",
+												"header": [],
+												"url": {
+													"raw": "{{urlTwo}}",
+													"host": [
+														"{{urlTwo}}"
+													]
+												}
+											},
+											"response": []
+										}
+									]
 								}
 							]
 						},
@@ -14388,7 +14912,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:storeSubscription4\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"Test2\"\r\n   \t\t}\r\n\t],\r\n    \"q\": \"speed>90\",\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"http://localhost:8080\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    },\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld\"]\r\n}"
+															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:storeSubscription4\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"Test2\"\r\n   \t\t}\r\n\t],\r\n    \"q\": \"speed>90\",\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"http://localhost:8080\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    },\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}"
 														},
 														"url": {
 															"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions",
@@ -14982,7 +15506,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:storeSubscription4\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"Test2\"\r\n   \t\t}\r\n\t],\r\n    \"q\": \"speed>90\",\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"http://localhost:8080\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    },\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld\"]\r\n}"
+															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:storeSubscription4\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"Test2\"\r\n   \t\t}\r\n\t],\r\n    \"q\": \"speed>90\",\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"http://localhost:8080\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    },\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}"
 														},
 														"url": {
 															"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions",
@@ -15090,7 +15614,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:storeSubscription4\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"Test3\"\r\n   \t\t}\r\n\t],\r\n    \"q\": \"speed>100\",\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"http://localhost:8080\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    },\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld\"]\r\n}"
+															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:storeSubscription4\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"Test3\"\r\n   \t\t}\r\n\t],\r\n    \"q\": \"speed>100\",\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"http://localhost:8080\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    },\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}"
 														},
 														"url": {
 															"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions/{{subId}}",
@@ -19864,7 +20388,7 @@
 																],
 																"body": {
 																	"mode": "raw",
-																	"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
+																	"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabularyProperty\", \"vocab\": \"x\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
 																	"options": {
 																		"raw": {
 																			"language": "json"
@@ -20086,7 +20610,7 @@
 																],
 																"body": {
 																	"mode": "raw",
-																	"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
+																	"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabularyProperty\", \"vocab\": \"x\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
 																	"options": {
 																		"raw": {
 																			"language": "json"
@@ -23622,7 +24146,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:ContextSourceRegistration:csr1a3456\",\r\n\t\"type\": \"ContextSourceRegistration\",\r\n\t\"information\": [{\r\n\t\t\t\"entities\": [{\r\n\t\t\t\t\"type\": \"Test2\"\r\n\t\t\t}]\r\n\t\t}\r\n\t],\r\n\t\"endpoint\": \"http://localhost:9080\",\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld\"]\r\n}",
+															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:ContextSourceRegistration:csr1a3456\",\r\n\t\"type\": \"ContextSourceRegistration\",\r\n\t\"information\": [{\r\n\t\t\t\"entities\": [{\r\n\t\t\t\t\"type\": \"Test2\"\r\n\t\t\t}]\r\n\t\t}\r\n\t],\r\n\t\"endpoint\": \"http://localhost:9080\",\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -27786,7 +28310,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"tenanttest:urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld\"]\r\n}",
+															"raw": "{\r\n    \"id\": \"tenanttest:urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -29125,7 +29649,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"tenanttest:urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld\"]\r\n}",
+															"raw": "{\r\n    \"id\": \"tenanttest:urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -29186,7 +29710,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"tenanttest:urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststringupdated\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123456},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456789},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values updated\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1:updated\"},\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld\"]\r\n}",
+															"raw": "{\r\n    \"id\": \"tenanttest:urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststringupdated\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123456},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456789},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values updated\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1:updated\"},\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -38298,7 +38822,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n\t\"id\": \"tenanttest:urn:ngsi-ld:Subscription:storeSubscription4\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"Test2\"\r\n   \t\t}\r\n\t],\r\n    \"q\": \"speed>90\",\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"http://localhost:8080\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    },\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld\"]\r\n}"
+															"raw": "{\r\n\t\"id\": \"tenanttest:urn:ngsi-ld:Subscription:storeSubscription4\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"Test2\"\r\n   \t\t}\r\n\t],\r\n    \"q\": \"speed>90\",\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"http://localhost:8080\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    },\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}"
 														},
 														"url": {
 															"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions",
@@ -38946,7 +39470,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n\t\"id\": \"tenanttest:urn:ngsi-ld:Subscription:storeSubscription4\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"Test2\"\r\n   \t\t}\r\n\t],\r\n    \"q\": \"speed>90\",\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"http://localhost:8080\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    },\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld\"]\r\n}"
+															"raw": "{\r\n\t\"id\": \"tenanttest:urn:ngsi-ld:Subscription:storeSubscription4\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"Test2\"\r\n   \t\t}\r\n\t],\r\n    \"q\": \"speed>90\",\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"http://localhost:8080\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    },\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}"
 														},
 														"url": {
 															"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions",
@@ -39066,7 +39590,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n\t\"id\": \"tenanttest:urn:ngsi-ld:Subscription:storeSubscription4\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"Test3\"\r\n   \t\t}\r\n\t],\r\n    \"q\": \"speed>100\",\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"http://localhost:8080\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    },\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld\"]\r\n}"
+															"raw": "{\r\n\t\"id\": \"tenanttest:urn:ngsi-ld:Subscription:storeSubscription4\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"Test3\"\r\n   \t\t}\r\n\t],\r\n    \"q\": \"speed>100\",\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"http://localhost:8080\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    },\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}"
 														},
 														"url": {
 															"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions/{{subId}}",
@@ -44511,7 +45035,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n\t\"id\": \"tenanttest:urn:ngsi-ld:ContextSourceRegistration:csr1a3456\",\r\n\t\"type\": \"ContextSourceRegistration\",\r\n\t\"information\": [{\r\n\t\t\t\"entities\": [{\r\n\t\t\t\t\"type\": \"Test2\"\r\n\t\t\t}]\r\n\t\t}\r\n\t],\r\n\t\"endpoint\": \"http://localhost:9080\",\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld\"]\r\n}",
+															"raw": "{\r\n\t\"id\": \"tenanttest:urn:ngsi-ld:ContextSourceRegistration:csr1a3456\",\r\n\t\"type\": \"ContextSourceRegistration\",\r\n\t\"information\": [{\r\n\t\t\t\"entities\": [{\r\n\t\t\t\t\"type\": \"Test2\"\r\n\t\t\t}]\r\n\t\t}\r\n\t],\r\n\t\"endpoint\": \"http://localhost:9080\",\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -49473,7 +49997,11 @@
 			"value": ""
 		},
 		{
-			"key": "@context",
+			"key": "updated",
+			"value": ""
+		},
+		{
+			"key": "updatedAttrib",
 			"value": ""
 		}
 	]

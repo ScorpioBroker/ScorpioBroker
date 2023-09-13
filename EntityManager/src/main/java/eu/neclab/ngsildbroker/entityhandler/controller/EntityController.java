@@ -229,6 +229,11 @@ public class EntityController {// implements EntityHandlerInterface {
 				((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.RELATIONSHIP);
 
 			}
+			//Map have vocab but not type
+			if (map.containsKey(NGSIConstants.VOCAB)) {
+				((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.VOCABULARYPROPERTY);
+
+			}
 			// Map have value but not type
 			if (map.containsKey(NGSIConstants.VALUE) && !map.containsKey(NGSIConstants.TYPE)) {
 				// for GeoProperty
@@ -265,6 +270,7 @@ public class EntityController {// implements EntityHandlerInterface {
 						&& !key.equals(NGSIConstants.VALUE) && !key.equals(NGSIConstants.SCOPE)
 						&& !key.equals(NGSIConstants.QUERY_PARAMETER_UNIT_CODE)
 						&& !key.equals(NGSIConstants.LANGUAGE_MAP)
+						&& !key.equals(NGSIConstants.VOCAB)
 						&& !key.equals(NGSIConstants.OBJECT_TYPE)) {
 					noConcise(map.get(key), (Map<String, Object>) map, key.toString());
 				}
@@ -297,10 +303,9 @@ public class EntityController {// implements EntityHandlerInterface {
 			Map<String, Object> body) {
 
 		if (!entityId.equals(body.get(NGSIConstants.ID)) && body.get(NGSIConstants.ID) != null) {
-			Uni.createFrom().item(HttpUtils.handleControllerExceptions(
+			return 	Uni.createFrom().item(HttpUtils.handleControllerExceptions(
 					new ResponseException(ErrorType.BadRequestData, "Id can not be updated")));
 		}
-
 		noConcise(body);
 		return HttpUtils.expandBody(request, body, AppConstants.MERGE_PATCH_REQUEST, ldService).onItem()
 				.transformToUni(tuple -> {

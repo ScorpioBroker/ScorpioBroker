@@ -1179,7 +1179,9 @@ public class JsonLdApi {
 					case AppConstants.TEMP_ENTITY_RETRIEVED_PAYLOAD:
 						if (NGSIConstants.NGSI_LD_HAS_VALUE.equals(expandedProperty)) {
 							ngsiElement.setHasAtValue(true);
-						} else if (NGSIConstants.NGSI_LD_HAS_OBJECT.equals(expandedProperty)) {
+						}else if (NGSIConstants.NGSI_LD_HAS_VOCAB.equals(expandedProperty)) {
+							ngsiElement.setHasVocab(true);
+						}else if (NGSIConstants.NGSI_LD_HAS_OBJECT.equals(expandedProperty)) {
 							ngsiElement.setHasAtObject(true);
 						} else if (NGSIConstants.NGSI_LD_DATE_TIME.equals(expandedProperty)) {
 							ngsiElement.setDateTime(true);
