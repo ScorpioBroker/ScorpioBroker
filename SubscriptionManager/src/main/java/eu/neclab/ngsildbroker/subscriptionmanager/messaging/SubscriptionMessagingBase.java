@@ -7,7 +7,6 @@ import eu.neclab.ngsildbroker.commons.serialization.messaging.CollectMessageList
 import eu.neclab.ngsildbroker.commons.serialization.messaging.MessageCollector;
 import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
 import io.netty.channel.EventLoopGroup;
-import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Vertx;
 
@@ -61,6 +60,7 @@ public abstract class SubscriptionMessagingBase {
 
 	@PostConstruct
 	public void setup() {
+		System.out.println("sub");
 		this.executor = vertx.getDelegate().nettyEventLoopGroup();
 	}
 

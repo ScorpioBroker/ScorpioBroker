@@ -12,7 +12,6 @@ import eu.neclab.ngsildbroker.commons.serialization.messaging.CollectMessageList
 import eu.neclab.ngsildbroker.commons.serialization.messaging.MessageCollector;
 import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
 import io.netty.channel.EventLoopGroup;
-import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Vertx;
 import jakarta.annotation.PostConstruct;

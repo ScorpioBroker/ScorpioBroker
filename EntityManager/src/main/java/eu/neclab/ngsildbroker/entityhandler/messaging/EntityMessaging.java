@@ -11,7 +11,7 @@ import io.smallrye.mutiny.Uni;
 import jakarta.inject.Singleton;
 
 @Singleton
-@IfBuildProfile(anyOf = {"sqs", "mqtt", "rabbitmq"})
+@IfBuildProfile(anyOf = {"sqs", "mqtt", "rabbitmq", "kafka"})
 public class EntityMessaging extends EntityMessagingBase {
 
 
