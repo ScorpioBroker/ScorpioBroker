@@ -61,6 +61,7 @@ import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import eu.neclab.ngsildbroker.commons.tools.SubscriptionTools;
 import eu.neclab.ngsildbroker.subscriptionmanager.messaging.SubscriptionSyncService;
+import eu.neclab.ngsildbroker.subscriptionmanager.messaging.SyncService;
 import eu.neclab.ngsildbroker.subscriptionmanager.repository.SubscriptionInfoDAO;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import io.quarkus.scheduler.Scheduled;
@@ -123,7 +124,7 @@ public class SubscriptionService {
 	private WebClient webClient;
 
 	private Map<String, MqttClient> host2MqttClient = Maps.newHashMap();
-	private SubscriptionSyncService subscriptionSyncService = null;
+	private SyncService subscriptionSyncService = null;
 
 	@PostConstruct
 	void setup() {
@@ -1028,7 +1029,7 @@ public class SubscriptionService {
 
 	}
 
-	public void addSyncService(SubscriptionSyncService subscriptionSyncService) {
+	public void addSyncService(SyncService subscriptionSyncService) {
 		this.subscriptionSyncService = subscriptionSyncService;
 
 	}

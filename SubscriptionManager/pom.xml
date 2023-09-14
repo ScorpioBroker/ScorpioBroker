@@ -25,6 +25,8 @@
 						<configuration>
 							<excludes>
 								<exclude>eu/neclab/ngsildbroker/subscriptionmanager/messaging/SubscriptionMessagingInMemory.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/subscriptionmanager/messaging/SubscriptionMessaging.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/subscriptionmanager/messaging/SubscriptionSyncService.java</exclude>
 							</excludes>
 						</configuration>
 					</plugin>
@@ -46,6 +48,77 @@
 						<configuration>
 							<excludes>
 								<exclude>eu/neclab/ngsildbroker/subscriptionmanager/messaging/SubscriptionMessagingKafka.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/subscriptionmanager/messaging/SubscriptionMessaging.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/subscriptionmanager/messaging/SubscriptionSyncService.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/subscriptionmanager/messaging/SubscriptionSyncServiceKafka.java</exclude>
+							</excludes>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
+			<id>mqtt</id>
+			<activation>
+				<property>
+					<name>mqtt</name>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-compiler-plugin</artifactId>
+						<configuration>
+							<excludes>
+								<exclude>eu/neclab/ngsildbroker/subscriptionmanager/messaging/SubscriptionMessagingKafka.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/subscriptionmanager/messaging/SubscriptionMessagingInMemory.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/subscriptionmanager/messaging/SubscriptionSyncServiceKafka.java</exclude>
+							</excludes>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
+			<id>rabbitmq</id>
+			<activation>
+				<property>
+					<name>rabbitmq</name>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-compiler-plugin</artifactId>
+						<configuration>
+							<excludes>
+								<exclude>eu/neclab/ngsildbroker/subscriptionmanager/messaging/SubscriptionMessagingKafka.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/subscriptionmanager/messaging/SubscriptionMessagingInMemory.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/subscriptionmanager/messaging/SubscriptionSyncServiceKafka.java</exclude>
+							</excludes>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
+			<id>sqs</id>
+			<activation>
+				<property>
+					<name>sqs</name>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-compiler-plugin</artifactId>
+						<configuration>
+							<excludes>
+								<exclude>eu/neclab/ngsildbroker/subscriptionmanager/messaging/SubscriptionMessagingKafka.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/subscriptionmanager/messaging/SubscriptionMessagingInMemory.java</exclude>
 							</excludes>
 						</configuration>
 					</plugin>

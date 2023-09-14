@@ -53,6 +53,7 @@ import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import eu.neclab.ngsildbroker.commons.tools.SubscriptionTools;
 import eu.neclab.ngsildbroker.registry.subscriptionmanager.messaging.RegistrySubscriptionSyncService;
+import eu.neclab.ngsildbroker.registry.subscriptionmanager.messaging.SyncService;
 import eu.neclab.ngsildbroker.registry.subscriptionmanager.repository.RegistrySubscriptionInfoDAO;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import io.quarkus.scheduler.Scheduled;
@@ -99,7 +100,7 @@ public class RegistrySubscriptionService {
 
 	private Map<String, MqttClient> host2MqttClient = Maps.newHashMap();
 
-	private RegistrySubscriptionSyncService subscriptionSyncService;
+	private SyncService subscriptionSyncService;
 
 	@Inject
 	JsonLDService ldService;
@@ -1296,7 +1297,7 @@ public class RegistrySubscriptionService {
 
 	}
 
-	public void addSyncService(RegistrySubscriptionSyncService registrySubscriptionSyncService) {
+	public void addSyncService(SyncService registrySubscriptionSyncService) {
 		this.subscriptionSyncService = registrySubscriptionSyncService;
 
 	}

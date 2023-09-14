@@ -12,7 +12,7 @@ import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
 
 @Singleton
-@IfBuildProfile(anyOf = { "sqs", "mqtt", "rabbitmq", "kafka" })
+@IfBuildProfile(anyOf = { "sqs", "mqtt", "rabbitmq" })
 public class SubscriptionMessaging extends SubscriptionMessagingBase {
 
 	@Incoming(AppConstants.ENTITY_RETRIEVE_CHANNEL)

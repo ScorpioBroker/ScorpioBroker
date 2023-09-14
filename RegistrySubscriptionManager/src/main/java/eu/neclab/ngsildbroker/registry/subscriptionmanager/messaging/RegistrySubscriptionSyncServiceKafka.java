@@ -39,8 +39,8 @@ import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.vertx.mutiny.core.Vertx;
 
 @Singleton
-@IfBuildProfile(anyOf = { "sqs", "mqtt", "rabbitmq" })
-public class RegistrySubscriptionSyncService implements SyncService {
+@IfBuildProfile("kafka")
+public class RegistrySubscriptionSyncServiceKafka implements SyncService {
 
 	public static final String SYNC_ID = UUID.randomUUID().toString();
 
@@ -153,27 +153,15 @@ public class RegistrySubscriptionSyncService implements SyncService {
 
 	@Incoming(AppConstants.REG_SUB_SYNC_RETRIEVE_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
-	Uni<Void> listenForSubs(Object byteMessage) {
-		String tmp;
-		if(byteMessage instanceof byte[] tmp1) {
-			tmp = new String(tmp1);
-		}else {
-			tmp = (String) byteMessage;
-		}
-		collector.collect(tmp, collectListenerSubs);
+	Uni<Void> listenForSubs(String byteMessage) {
+		collector.collect(byteMessage, collectListenerSubs);
 		return Uni.createFrom().voidItem();
 	}
 
 	@Incoming(AppConstants.REG_SUB_ALIVE_RETRIEVE_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
-	Uni<Void> listenForAlive(Object byteMessage) {
-		String tmp;
-		if(byteMessage instanceof byte[] tmp1) {
-			tmp = new String(tmp1);
-		}else {
-			tmp = (String) byteMessage;
-		}
-		collector.collect(tmp, collectListenerAlive);
+	Uni<Void> listenForAlive(String byteMessage) {
+		collector.collect(byteMessage, collectListenerAlive);
 		return Uni.createFrom().voidItem();
 	}
 

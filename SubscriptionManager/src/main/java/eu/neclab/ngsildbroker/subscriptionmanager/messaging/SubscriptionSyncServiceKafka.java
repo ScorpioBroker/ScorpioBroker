@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.registry.subscriptionmanager.messaging;
+package eu.neclab.ngsildbroker.subscriptionmanager.messaging;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -29,7 +29,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.Subscripti
 import eu.neclab.ngsildbroker.commons.serialization.messaging.CollectMessageListener;
 import eu.neclab.ngsildbroker.commons.serialization.messaging.MessageCollector;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
-import eu.neclab.ngsildbroker.registry.subscriptionmanager.service.RegistrySubscriptionService;
+import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
 import io.netty.channel.EventLoopGroup;
 import io.quarkus.arc.profile.IfBuildProfile;
 import io.quarkus.arc.profile.UnlessBuildProfile;
@@ -39,8 +39,8 @@ import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.vertx.mutiny.core.Vertx;
 
 @Singleton
-@IfBuildProfile(anyOf = { "sqs", "mqtt", "rabbitmq" })
-public class RegistrySubscriptionSyncService implements SyncService {
+@IfBuildProfile("kafka")
+public class SubscriptionSyncServiceKafka implements SyncService {
 
 	public static final String SYNC_ID = UUID.randomUUID().toString();
 
@@ -55,21 +55,51 @@ public class RegistrySubscriptionSyncService implements SyncService {
 	private MessageCollector collector = new MessageCollector(this.getClass().getName());
 
 	@Inject
-	@Channel(AppConstants.REG_SUB_ALIVE_CHANNEL)
+	@Channel(AppConstants.SUB_ALIVE_CHANNEL)
 	MutinyEmitter<String> aliveEmitter;
 
 	@Inject
-	@Channel(AppConstants.REG_SUB_SYNC_CHANNEL)
+	@Channel(AppConstants.SUB_SYNC_CHANNEL)
 	MutinyEmitter<String> syncEmitter;
 
 	@Inject
-	RegistrySubscriptionService subService;
+	SubscriptionService subService;
+
 	@Inject
 	ObjectMapper objectMapper;
+
+	@ConfigProperty(name = "scorpio.messaging.maxSize")
+	int messageSize;
+
 	@Inject
 	Vertx vertx;
 
 	private EventLoopGroup executor;
+
+	@PostConstruct
+	public void setup() {
+		INSTANCE_ID = new AliveAnnouncement(SYNC_ID);
+		subService.addSyncService(this);
+		this.executor = vertx.getDelegate().nettyEventLoopGroup();
+	}
+
+	@Scheduled(every = "${scorpio.sync.announcement-time}", delayed = "${scorpio.startupdelay}")
+	Uni<Void> syncTask() {
+		System.out.println("running sync");
+		MicroServiceUtils.serializeAndSplitObjectAndEmit(INSTANCE_ID, messageSize, aliveEmitter, objectMapper);
+		return Uni.createFrom().voidItem();
+	}
+
+	@Scheduled(every = "${scorpio.sync.check-time}", delayed = "${scorpio.startupdelay}")
+	Uni<Void> checkTask() {
+		if (!currentInstances.equals(lastInstances)) {
+			recalculateSubscriptions();
+		}
+		lastInstances.clear();
+		lastInstances.addAll(currentInstances);
+		currentInstances.clear();
+		return Uni.createFrom().voidItem();
+	}
 
 	CollectMessageListener collectListenerSubs = new CollectMessageListener() {
 
@@ -124,56 +154,17 @@ public class RegistrySubscriptionSyncService implements SyncService {
 		}
 	};
 
-	@ConfigProperty(name = "scorpio.messaging.maxSize")
-	int messageSize;
-
-	@PostConstruct
-	public void setup() {
-		INSTANCE_ID = new AliveAnnouncement(SYNC_ID);
-		subService.addSyncService(this);
-		this.executor = vertx.getDelegate().nettyEventLoopGroup();
-	}
-
-	@Scheduled(every = "${scorpio.sync.announcement-time}", delayed = "${scorpio.startupdelay}")
-	Uni<Void> syncTask() {
-		MicroServiceUtils.serializeAndSplitObjectAndEmit(INSTANCE_ID, messageSize, aliveEmitter, objectMapper);
-		return Uni.createFrom().voidItem();
-	}
-
-	@Scheduled(every = "${scorpio.sync.check-time}", delayed = "${scorpio.startupdelay}")
-	Uni<Void> checkTask() {
-		if (!currentInstances.equals(lastInstances)) {
-			recalculateSubscriptions();
-		}
-		lastInstances.clear();
-		lastInstances.addAll(currentInstances);
-		currentInstances.clear();
-		return Uni.createFrom().voidItem();
-	}
-
-	@Incoming(AppConstants.REG_SUB_SYNC_RETRIEVE_CHANNEL)
+	@Incoming(AppConstants.SUB_SYNC_RETRIEVE_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
-	Uni<Void> listenForSubs(Object byteMessage) {
-		String tmp;
-		if(byteMessage instanceof byte[] tmp1) {
-			tmp = new String(tmp1);
-		}else {
-			tmp = (String) byteMessage;
-		}
-		collector.collect(tmp, collectListenerSubs);
+	Uni<Void> listenForSubs(String byteMessage) {
+		collector.collect(byteMessage, collectListenerSubs);
 		return Uni.createFrom().voidItem();
 	}
 
-	@Incoming(AppConstants.REG_SUB_ALIVE_RETRIEVE_CHANNEL)
+	@Incoming(AppConstants.SUB_ALIVE_RETRIEVE_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
-	Uni<Void> listenForAlive(Object byteMessage) {
-		String tmp;
-		if(byteMessage instanceof byte[] tmp1) {
-			tmp = new String(tmp1);
-		}else {
-			tmp = (String) byteMessage;
-		}
-		collector.collect(tmp, collectListenerAlive);
+	Uni<Void> listenForAlive(String byteMessage) {
+		collector.collect(byteMessage, collectListenerAlive);
 		return Uni.createFrom().voidItem();
 	}
 

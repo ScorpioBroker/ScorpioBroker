@@ -31,6 +31,7 @@ import eu.neclab.ngsildbroker.commons.serialization.messaging.MessageCollector;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
 import io.netty.channel.EventLoopGroup;
+import io.quarkus.arc.profile.IfBuildProfile;
 import io.quarkus.arc.profile.UnlessBuildProfile;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
@@ -38,8 +39,8 @@ import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.vertx.mutiny.core.Vertx;
 
 @Singleton
-@UnlessBuildProfile("in-memory")
-public class SubscriptionSyncService {
+@IfBuildProfile(anyOf = { "sqs", "mqtt", "rabbitmq" })
+public class SubscriptionSyncService implements SyncService {
 
 	public static final String SYNC_ID = UUID.randomUUID().toString();
 
@@ -84,7 +85,6 @@ public class SubscriptionSyncService {
 
 	@Scheduled(every = "${scorpio.sync.announcement-time}", delayed = "${scorpio.startupdelay}")
 	Uni<Void> syncTask() {
-		System.out.println("running sync");
 		MicroServiceUtils.serializeAndSplitObjectAndEmit(INSTANCE_ID, messageSize, aliveEmitter, objectMapper);
 		return Uni.createFrom().voidItem();
 	}
@@ -155,15 +155,27 @@ public class SubscriptionSyncService {
 
 	@Incoming(AppConstants.SUB_SYNC_RETRIEVE_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
-	Uni<Void> listenForSubs(String byteMessage) {
-		collector.collect(byteMessage, collectListenerSubs);
+	Uni<Void> listenForSubs(Object byteMessage) {
+		String tmp;
+		if (byteMessage instanceof byte[] tmp1) {
+			tmp = new String(tmp1);
+		} else {
+			tmp = (String) byteMessage;
+		}
+		collector.collect(tmp, collectListenerSubs);
 		return Uni.createFrom().voidItem();
 	}
 
 	@Incoming(AppConstants.SUB_ALIVE_RETRIEVE_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
-	Uni<Void> listenForAlive(String byteMessage) {
-		collector.collect(byteMessage, collectListenerAlive);
+	Uni<Void> listenForAlive(Object byteMessage) {
+		String tmp;
+		if (byteMessage instanceof byte[] tmp1) {
+			tmp = new String(tmp1);
+		} else {
+			tmp = (String) byteMessage;
+		}
+		collector.collect(tmp, collectListenerAlive);
 		return Uni.createFrom().voidItem();
 	}
 
