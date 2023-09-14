@@ -366,14 +366,14 @@ public class SubscriptionService {
 				}
 			}
 			case AppConstants.DELETE_ATTRIBUTE_REQUEST -> {
-				DeleteAttributeRequest request = (DeleteAttributeRequest) message;
-				if (shouldFire(Sets.newHashSet(request.getAttribName()), potentialSub)) {
+				
+				if (shouldFire(Sets.newHashSet(message.getAttribName()), potentialSub)) {
 					unis.add(localEntityService.getAllByIds(message.getTenant(), message.getId(), true).onItem()
 							.transformToUni(entityList -> {
 								Map<String, Object> payload = new HashMap<>();
 								if (potentialSub.getSubscription().getNotification().getShowChanges()) {
 									payload.put(JsonLdConsts.GRAPH,
-											List.of(compareMaps(request.getPreviousEntity(), entityList.get(0))));
+											List.of(compareMaps(message.getPreviousEntity(), entityList.get(0))));
 								} else
 									payload.put(JsonLdConsts.GRAPH, entityList);
 								return sendNotification(potentialSub, payload, message.getRequestType());
