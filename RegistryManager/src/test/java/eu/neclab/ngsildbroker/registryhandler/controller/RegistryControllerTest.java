@@ -37,7 +37,7 @@ public class RegistryControllerTest {
 	private String updatePayloadBadRequest;
 
 	@Mock
-	MutinyEmitter<BaseRequest> kafkaSenderInterface;
+	MutinyEmitter<String> kafkaSenderInterface;
 
 	@BeforeEach
 	public void setup() {
@@ -88,7 +88,7 @@ public class RegistryControllerTest {
 	public void registerCSourceTest() throws Exception {
 
 		Uni<Void> kafkaResponse = Uni.createFrom().nullItem();
-		when(kafkaSenderInterface.send(any(CreateCSourceRequest.class))).thenReturn(kafkaResponse);
+		when(kafkaSenderInterface.send(any(String.class))).thenReturn(kafkaResponse);
 
 		ExtractableResponse<Response> response = given().body(payload)
 				.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
@@ -143,7 +143,7 @@ public class RegistryControllerTest {
 	public void updateCSourceTest() throws Exception {
 
 		Uni<Void> kafkaResponse = Uni.createFrom().nullItem();
-		when(kafkaSenderInterface.send(any(CreateCSourceRequest.class))).thenReturn(kafkaResponse);
+		when(kafkaSenderInterface.send(any(String.class))).thenReturn(kafkaResponse);
 
 		ExtractableResponse<Response> response = given().body(updatePayload)
 				.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
@@ -295,7 +295,7 @@ public class RegistryControllerTest {
 	public void deleteCsourceTest() {
 
 		Uni<Void> kafkaResponse = Uni.createFrom().nullItem();
-		when(kafkaSenderInterface.send(any(CreateCSourceRequest.class))).thenReturn(kafkaResponse);
+		when(kafkaSenderInterface.send(any(String.class))).thenReturn(kafkaResponse);
 
 		try {
 			ExtractableResponse<Response> response = given()
