@@ -11,27 +11,36 @@ import io.smallrye.mutiny.Uni;
 import jakarta.inject.Singleton;
 
 @Singleton
-@IfBuildProfile("kafka")
-public class HistoryMessagingKafka extends HistoryMessagingBase {
+@IfBuildProfile(anyOf = {"sqs", "mqtt", "rabbitmq"})
+public class HistoryMessaging extends HistoryMessagingBase {
 
 	@Incoming(AppConstants.REGISTRY_RETRIEVE_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
-	public Uni<Void> handleCsource(String byteMessage) {
-		return handleCsourceRaw(byteMessage);
+	public Uni<Void> handleCsource(Object byteMessage) {
+		if(byteMessage instanceof byte[] bytes) {
+			byteMessage = new String(bytes);
+		}
+		return handleCsourceRaw((String) byteMessage);
 	}
 
 	@Incoming(AppConstants.ENTITY_RETRIEVE_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
-	public Uni<Void> handleEntity(String byteMessage) {
-		return handleEntityRaw(byteMessage);
+	public Uni<Void> handleEntity(Object byteMessage) {
+		if(byteMessage instanceof byte[] bytes) {
+			byteMessage = new String(bytes);
+		}
+		return handleEntityRaw((String) byteMessage);
 	}
 
 	@Incoming(AppConstants.ENTITY_BATCH_RETRIEVE_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
-	public Uni<Void> handleBatchEntities(String byteMessage) {
-		return handleBatchEntitiesRaw(byteMessage);
+	public Uni<Void> handleBatchEntities(Object byteMessage) {
+		if(byteMessage instanceof byte[] bytes) {
+			byteMessage = new String(bytes);
+		}
+		return handleBatchEntitiesRaw((String) byteMessage);
 	}
-
+	
 	@Scheduled(every = "20s", delayed = "5s")
 	void purge() {
 		super.purge();

@@ -7,6 +7,11 @@ import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 
 public class CreateHistoryEntityRequest extends HistoryEntityRequest {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -6553802452235074090L;
+
 	public CreateHistoryEntityRequest(String tenant, Map<String, Object> resolved) {
 		super(tenant, (String) resolved.get(NGSIConstants.JSON_LD_ID), resolved, 
 				AppConstants.CREATE_TEMPORAL_REQUEST);

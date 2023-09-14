@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.entityhandler.messaging;
+package eu.neclab.ngsildbroker.queryhandler.messaging;
 
 import org.eclipse.microprofile.reactive.messaging.Acknowledgment;
 import org.eclipse.microprofile.reactive.messaging.Acknowledgment.Strategy;
@@ -11,18 +11,19 @@ import io.smallrye.mutiny.Uni;
 import jakarta.inject.Singleton;
 
 @Singleton
-@IfBuildProfile("kafka")
-public class EntityMessagingKafka extends EntityMessagingBase {
+@IfBuildProfile(anyOf = {"sqs", "mqtt", "rabbitmq"})
+public class QueryManagerMessaging extends QueryManagerMessagingBase {
 
 	@Incoming(AppConstants.REGISTRY_RETRIEVE_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
-	public Uni<Void> handleCsource(String byteMessage) {
-		return handleCsourceRaw(byteMessage);
+	public Uni<Void> handleCsource(Object byteMessage) {
+		if(byteMessage instanceof byte[] bytes) {
+			byteMessage = new String(bytes);
+		}
+		return handleCsourceRaw((String) byteMessage);
 	}
-
 	@Scheduled(every = "20s", delayed = "5s")
 	void purge() {
 		super.purge();
 	}
-
 }

@@ -344,11 +344,11 @@ public class HistoryDAO {
 	public Uni<Void> updateAttrInstanceInHistoryEntity(UpdateAttrHistoryEntityRequest request) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
 			Object payload = new JsonObject(
-					((List<Map<String, Object>>) request.getPayload().get(request.getAttrId())).get(0));
+					((List<Map<String, Object>>) request.getPayload().get(request.getAttribName())).get(0));
 			// return client.getConnection().onItem().transformToUni(conn -> {
 			return client.preparedQuery("UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
 					+ " SET data = data || $1::jsonb WHERE attributeid=$2 AND instanceid=$3 AND temporalentity_id=$4")
-					.execute(Tuple.of(payload, request.getAttrId(), request.getInstanceId(), request.getId()))
+					.execute(Tuple.of(payload, request.getAttribName(), request.getInstanceId(), request.getId()))
 					.onFailure().recoverWithUni(e -> {
 						if (e instanceof PgException) {
 							if (((PgException) e).getCode().equals(AppConstants.SQL_NOT_FOUND)) {
@@ -424,7 +424,7 @@ public class HistoryDAO {
 			return client
 					.preparedQuery("DELETE FROM " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
 							+ " WHERE attributeid=$1 AND instanceid=$2 AND temporalentity_id=$3")
-					.execute(Tuple.of(request.getAttrId(), request.getInstanceId(), request.getId())).onFailure()
+					.execute(Tuple.of(request.getAttribName(), request.getInstanceId(), request.getId())).onFailure()
 					.recoverWithUni(e -> {
 						if (e instanceof PgException) {
 							if (((PgException) e).getCode().equals(AppConstants.SQL_NOT_FOUND)) {
@@ -458,7 +458,7 @@ public class HistoryDAO {
 
 	}
 
-	public Uni<Void> setAttributeDeleted(DeleteAttributeRequest request) {
+	public Uni<Void> setAttributeDeleted(BaseRequest request) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
 			// return client.getConnection().onItem().transformToUni(conn -> {
 			LocalDateTime now = LocalDateTime.ofInstant(Instant.ofEpochMilli(request.getSendTimestamp()),

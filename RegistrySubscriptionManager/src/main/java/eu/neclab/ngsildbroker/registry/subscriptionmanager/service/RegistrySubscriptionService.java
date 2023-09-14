@@ -17,10 +17,12 @@ import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLDService;
 import com.google.common.collect.HashBasedTable;
@@ -47,6 +49,7 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import eu.neclab.ngsildbroker.commons.tools.SubscriptionTools;
 import eu.neclab.ngsildbroker.registry.subscriptionmanager.messaging.RegistrySubscriptionSyncService;
@@ -76,7 +79,13 @@ public class RegistrySubscriptionService {
 	@Inject
 	@Channel(AppConstants.INTERNAL_NOTIFICATION_CHANNEL)
 	@Broadcast
-	MutinyEmitter<InternalNotification> internalNotificationSender;
+	MutinyEmitter<String> internalNotificationSender;
+
+	@Inject
+	ObjectMapper objectMapper;
+
+	@ConfigProperty(name = "scorpio.messaging.maxSize")
+	int messageSize;
 
 	@Inject
 	Vertx vertx;
@@ -314,8 +323,12 @@ public class RegistrySubscriptionService {
 						Uni<Void> toSend;
 						switch (notificationParam.getEndPoint().getUri().getScheme()) {
 						case "internal":
-							toSend = internalNotificationSender.send(new InternalNotification(potentialSub.getTenant(),
-									potentialSub.getId(), notification));
+							MicroServiceUtils
+									.serializeAndSplitObjectAndEmit(
+											new InternalNotification(potentialSub.getTenant(), potentialSub.getId(),
+													notification),
+											messageSize, internalNotificationSender, objectMapper);
+							toSend = Uni.createFrom().voidItem();
 							break;
 						case "mqtt":
 						case "mqtts":
@@ -1125,8 +1138,10 @@ public class RegistrySubscriptionService {
 				});
 				return SubscriptionTools.generateCsourceNotification(message, data,
 						AppConstants.INTERNAL_NOTIFICATION_REQUEST, ldService).onItem().transformToUni(noti -> {
-							return internalNotificationSender
-									.send(new InternalNotification(message.getTenant(), message.getId(), noti));
+							MicroServiceUtils.serializeAndSplitObjectAndEmit(
+									new InternalNotification(message.getTenant(), message.getId(), noti), messageSize,
+									internalNotificationSender, objectMapper);
+							return Uni.createFrom().voidItem();
 						});
 
 			});
