@@ -25,7 +25,7 @@
 						<configuration>
 							<excludes>
 								<exclude>eu/neclab/ngsildbroker/queryhandler/messaging/QueryManagerMessagingInMemory.java</exclude>
-								<exclude>eu/neclab/ngsildbroker/queryhandler/messaging/QueryManagerMessaging.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/queryhandler/messaging/QueryManagerMessagingByteArray.java</exclude>
 							</excludes>
 						</configuration>
 					</plugin>
@@ -46,8 +46,8 @@
 						<artifactId>maven-compiler-plugin</artifactId>
 						<configuration>
 							<excludes>
-								<exclude>eu/neclab/ngsildbroker/queryhandler/messaging/QueryManagerMessagingKafka.java</exclude>
-								<exclude>eu/neclab/ngsildbroker/queryhandler/messaging/QueryManagerMessaging.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/queryhandler/messaging/QueryManagerMessagingString.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/queryhandler/messaging/QueryManagerMessagingByteArray.java</exclude>
 							</excludes>
 						</configuration>
 					</plugin>
@@ -68,7 +68,7 @@
 						<artifactId>maven-compiler-plugin</artifactId>
 						<configuration>
 							<excludes>
-								<exclude>eu/neclab/ngsildbroker/queryhandler/messaging/QueryManagerMessagingKafka.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/queryhandler/messaging/QueryManagerMessagingByteArray.java</exclude>
 								<exclude>eu/neclab/ngsildbroker/queryhandler/messaging/QueryManagerMessagingInMemory.java</exclude>
 							</excludes>
 						</configuration>
@@ -90,7 +90,7 @@
 						<artifactId>maven-compiler-plugin</artifactId>
 						<configuration>
 							<excludes>
-								<exclude>eu/neclab/ngsildbroker/queryhandler/messaging/QueryManagerMessagingKafka.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/queryhandler/messaging/QueryManagerMessagingString.java</exclude>
 								<exclude>eu/neclab/ngsildbroker/queryhandler/messaging/QueryManagerMessagingInMemory.java</exclude>
 							</excludes>
 						</configuration>
@@ -112,7 +112,7 @@
 						<artifactId>maven-compiler-plugin</artifactId>
 						<configuration>
 							<excludes>
-								<exclude>eu/neclab/ngsildbroker/queryhandler/messaging/QueryManagerMessagingKafka.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/queryhandler/messaging/QueryManagerMessagingString.java</exclude>
 								<exclude>eu/neclab/ngsildbroker/queryhandler/messaging/QueryManagerMessagingInMemory.java</exclude>
 							</excludes>
 						</configuration>

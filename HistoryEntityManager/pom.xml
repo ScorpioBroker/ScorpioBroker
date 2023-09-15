@@ -26,7 +26,7 @@
 						<configuration>
 							<excludes>
 								<exclude>eu/neclab/ngsildbroker/historyentitymanager/messaging/HistoryMessagingInMemory.java</exclude>
-								<exclude>eu/neclab/ngsildbroker/historyentitymanager/messaging/HistoryMessaging.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/historyentitymanager/messaging/HistoryMessagingByteArray.java</exclude>
 							</excludes>
 						</configuration>
 					</plugin>
@@ -48,7 +48,7 @@
 						<configuration>
 							<excludes>
 								<exclude>eu/neclab/ngsildbroker/historyentitymanager/messaging/HistoryMessagingKafka.java</exclude>
-								<exclude>eu/neclab/ngsildbroker/historyentitymanager/messaging/HistoryMessaging.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/historyentitymanager/messaging/HistoryMessagingByteArray.java</exclude>
 							</excludes>
 						</configuration>
 					</plugin>
@@ -69,7 +69,7 @@
 						<artifactId>maven-compiler-plugin</artifactId>
 						<configuration>
 							<excludes>
-								<exclude>eu/neclab/ngsildbroker/historyentitymanager/messaging/HistoryMessagingKafka.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/historyentitymanager/messaging/HistoryMessagingByteArray.java</exclude>
 								<exclude>eu/neclab/ngsildbroker/historyentitymanager/messaging/HistoryMessagingInMemory.java</exclude>
 							</excludes>
 						</configuration>
@@ -91,7 +91,7 @@
 						<artifactId>maven-compiler-plugin</artifactId>
 						<configuration>
 							<excludes>
-								<exclude>eu/neclab/ngsildbroker/historyentitymanager/messaging/HistoryMessagingKafka.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/historyentitymanager/messaging/HistoryMessagingString.java</exclude>
 								<exclude>eu/neclab/ngsildbroker/historyentitymanager/messaging/HistoryMessagingInMemory.java</exclude>
 							</excludes>
 						</configuration>
@@ -113,7 +113,7 @@
 						<artifactId>maven-compiler-plugin</artifactId>
 						<configuration>
 							<excludes>
-								<exclude>eu/neclab/ngsildbroker/historyentitymanager/messaging/HistoryMessagingKafka.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/historyentitymanager/messaging/HistoryMessagingString.java</exclude>
 								<exclude>eu/neclab/ngsildbroker/historyentitymanager/messaging/HistoryMessagingInMemory.java</exclude>
 							</excludes>
 						</configuration>

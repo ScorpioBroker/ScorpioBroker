@@ -12,8 +12,8 @@ import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
 
 @Singleton
-@IfBuildProfile("kafka")
-public class SubscriptionMessagingKafka extends SubscriptionMessagingBase {
+@IfBuildProfile(anyOf = { "sqs", "kafka" })
+public class SubscriptionMessagingString extends SubscriptionMessagingBase {
 
 	@Incoming(AppConstants.ENTITY_RETRIEVE_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
@@ -32,7 +32,7 @@ public class SubscriptionMessagingKafka extends SubscriptionMessagingBase {
 	public Uni<Void> handleBatchEntities(String byteMessage) {
 		return handleBatchEntitiesRaw(byteMessage);
 	}
-	
+
 	@Scheduled(every = "20s", delayed = "5s")
 	void purge() {
 		super.purge();

@@ -25,8 +25,8 @@
 						<configuration>
 							<excludes>
 								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionMessagingInMemory.java</exclude>
-								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionMessaging.java</exclude>
-								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionSyncService.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionMessagingByteArray.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionSyncServiceByteArray.java</exclude>
 							</excludes>
 						</configuration>
 					</plugin>
@@ -47,10 +47,10 @@
 						<artifactId>maven-compiler-plugin</artifactId>
 						<configuration>
 							<excludes>
-								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionMessagingKafka.java</exclude>
-								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionMessaging.java</exclude>
-								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionSyncService.java</exclude>
-								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionSyncServiceKafka.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionMessagingString.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionMessagingByteArray.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionSyncServiceByteArray.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionSyncServiceString.java</exclude>
 							</excludes>
 						</configuration>
 					</plugin>
@@ -71,9 +71,9 @@
 						<artifactId>maven-compiler-plugin</artifactId>
 						<configuration>
 							<excludes>
-								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionMessagingKafka.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionMessagingByteArray.java</exclude>
 								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionMessagingInMemory.java</exclude>
-								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionSyncServiceKafka.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionSyncServiceByteArray.java</exclude>
 							</excludes>
 						</configuration>
 					</plugin>
@@ -94,9 +94,9 @@
 						<artifactId>maven-compiler-plugin</artifactId>
 						<configuration>
 							<excludes>
-								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionMessagingKafka.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionMessagingString.java</exclude>
 								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionMessagingInMemory.java</exclude>
-								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionSyncServiceKafka.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionSyncServiceString.java</exclude>
 							</excludes>
 						</configuration>
 					</plugin>
@@ -117,9 +117,9 @@
 						<artifactId>maven-compiler-plugin</artifactId>
 						<configuration>
 							<excludes>
-								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionMessagingKafka.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionMessagingString.java</exclude>
 								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionMessagingInMemory.java</exclude>
-								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionSyncServiceKafka.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionSyncServiceString.java</exclude>
 							</excludes>
 						</configuration>
 					</plugin>

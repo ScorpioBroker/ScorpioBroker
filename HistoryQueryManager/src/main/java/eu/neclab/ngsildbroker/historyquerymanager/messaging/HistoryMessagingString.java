@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.historyentitymanager.messaging;
+package eu.neclab.ngsildbroker.historyquerymanager.messaging;
 
 import org.eclipse.microprofile.reactive.messaging.Acknowledgment;
 import org.eclipse.microprofile.reactive.messaging.Acknowledgment.Strategy;
@@ -11,8 +11,8 @@ import io.smallrye.mutiny.Uni;
 import jakarta.inject.Singleton;
 
 @Singleton
-@IfBuildProfile("kafka")
-public class HistoryMessagingKafka extends HistoryMessagingBase {
+@IfBuildProfile(anyOf = { "sqs", "kafka" })
+public class HistoryMessagingString extends HistoryMessagingBase {
 
 	@Incoming(AppConstants.REGISTRY_RETRIEVE_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
@@ -20,21 +20,8 @@ public class HistoryMessagingKafka extends HistoryMessagingBase {
 		return handleCsourceRaw(byteMessage);
 	}
 
-	@Incoming(AppConstants.ENTITY_RETRIEVE_CHANNEL)
-	@Acknowledgment(Strategy.PRE_PROCESSING)
-	public Uni<Void> handleEntity(String byteMessage) {
-		return handleEntityRaw(byteMessage);
-	}
-
-	@Incoming(AppConstants.ENTITY_BATCH_RETRIEVE_CHANNEL)
-	@Acknowledgment(Strategy.PRE_PROCESSING)
-	public Uni<Void> handleBatchEntities(String byteMessage) {
-		return handleBatchEntitiesRaw(byteMessage);
-	}
-
 	@Scheduled(every = "20s", delayed = "5s")
 	void purge() {
 		super.purge();
 	}
-
 }

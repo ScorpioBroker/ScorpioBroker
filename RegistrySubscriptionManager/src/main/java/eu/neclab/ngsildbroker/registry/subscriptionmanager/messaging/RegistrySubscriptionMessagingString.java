@@ -11,25 +11,19 @@ import io.smallrye.mutiny.Uni;
 import jakarta.inject.Singleton;
 
 @Singleton
-@IfBuildProfile(anyOf = { "sqs", "mqtt", "rabbitmq" })
-public class RegistrySubscriptionMessaging extends RegistrySubscriptionMessagingBase {
+@IfBuildProfile(anyOf = { "sqs", "kafka" })
+public class RegistrySubscriptionMessagingString extends RegistrySubscriptionMessagingBase {
 
 	@Incoming(AppConstants.REGISTRY_RETRIEVE_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
-	public Uni<Void> handleCsource(Object byteMessage) {
-		if (byteMessage instanceof byte[] bytes) {
-			byteMessage = new String(bytes);
-		}
-		return handleCsourceRaw((String) byteMessage);
+	public Uni<Void> handleCsource(String byteMessage) {
+		return handleCsourceRaw(byteMessage);
 	}
 
 	@Incoming(AppConstants.INTERNAL_RETRIEVE_SUBS_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
-	public Uni<Void> handleSubscription(Object byteMessage) {
-		if (byteMessage instanceof byte[] bytes) {
-			byteMessage = new String(bytes);
-		}
-		return handleSubscriptionRaw((String) byteMessage);
+	public Uni<Void> handleSubscription(String byteMessage) {
+		return handleSubscriptionRaw(byteMessage);
 	}
 
 	@Scheduled(every = "20s", delayed = "5s")

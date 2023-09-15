@@ -39,8 +39,8 @@ import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.vertx.mutiny.core.Vertx;
 
 @Singleton
-@IfBuildProfile("kafka")
-public class SubscriptionSyncServiceKafka implements SyncService {
+@IfBuildProfile(anyOf = { "mqtt", "rabbitmq" })
+public class SubscriptionSyncServiceByteArray implements SyncService {
 
 	public static final String SYNC_ID = UUID.randomUUID().toString();
 
@@ -85,7 +85,6 @@ public class SubscriptionSyncServiceKafka implements SyncService {
 
 	@Scheduled(every = "${scorpio.sync.announcement-time}", delayed = "${scorpio.startupdelay}")
 	Uni<Void> syncTask() {
-		System.out.println("running sync");
 		MicroServiceUtils.serializeAndSplitObjectAndEmit(INSTANCE_ID, messageSize, aliveEmitter, objectMapper);
 		return Uni.createFrom().voidItem();
 	}
@@ -156,15 +155,15 @@ public class SubscriptionSyncServiceKafka implements SyncService {
 
 	@Incoming(AppConstants.SUB_SYNC_RETRIEVE_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
-	Uni<Void> listenForSubs(String byteMessage) {
-		collector.collect(byteMessage, collectListenerSubs);
+	Uni<Void> listenForSubs(byte[] byteMessage) {
+		collector.collect(new String(byteMessage), collectListenerSubs);
 		return Uni.createFrom().voidItem();
 	}
 
 	@Incoming(AppConstants.SUB_ALIVE_RETRIEVE_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
-	Uni<Void> listenForAlive(String byteMessage) {
-		collector.collect(byteMessage, collectListenerAlive);
+	Uni<Void> listenForAlive(byte[] byteMessage) {
+		collector.collect(new String(byteMessage), collectListenerAlive);
 		return Uni.createFrom().voidItem();
 	}
 

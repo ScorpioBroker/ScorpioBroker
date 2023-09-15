@@ -31,7 +31,7 @@
 						<configuration>
 							<excludes>
 								<exclude>eu/neclab/ngsildbroker/entityhandler/messaging/EntityMessagingInMemory.java</exclude>
-								<exclude>eu/neclab/ngsildbroker/entityhandler/messaging/EntityMessaging.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/entityhandler/messaging/EntityMessagingByteArray.java</exclude>
 							</excludes>
 						</configuration>
 					</plugin>
@@ -52,8 +52,8 @@
 						<artifactId>maven-compiler-plugin</artifactId>
 						<configuration>
 							<excludes>
-								<exclude>eu/neclab/ngsildbroker/entityhandler/messaging/EntityMessagingKafka.java</exclude>
-								<exclude>eu/neclab/ngsildbroker/entityhandler/messaging/EntityMessaging.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/entityhandler/messaging/EntityMessagingString.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/entityhandler/messaging/EntityMessagingByteArray.java</exclude>
 							</excludes>
 						</configuration>
 					</plugin>
@@ -74,7 +74,7 @@
 						<artifactId>maven-compiler-plugin</artifactId>
 						<configuration>
 							<excludes>
-								<exclude>eu/neclab/ngsildbroker/entityhandler/messaging/EntityMessagingKafka.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/entityhandler/messaging/EntityMessagingByteArray.java</exclude>
 								<exclude>eu/neclab/ngsildbroker/entityhandler/messaging/EntityMessagingInMemory.java</exclude>
 							</excludes>
 						</configuration>
@@ -96,7 +96,7 @@
 						<artifactId>maven-compiler-plugin</artifactId>
 						<configuration>
 							<excludes>
-								<exclude>eu/neclab/ngsildbroker/entityhandler/messaging/EntityMessagingKafka.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/entityhandler/messaging/EntityMessagingString.java</exclude>
 								<exclude>eu/neclab/ngsildbroker/entityhandler/messaging/EntityMessagingInMemory.java</exclude>
 							</excludes>
 						</configuration>
@@ -118,7 +118,7 @@
 						<artifactId>maven-compiler-plugin</artifactId>
 						<configuration>
 							<excludes>
-								<exclude>eu/neclab/ngsildbroker/entityhandler/messaging/EntityMessagingKafka.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/entityhandler/messaging/EntityMessagingString.java</exclude>
 								<exclude>eu/neclab/ngsildbroker/entityhandler/messaging/EntityMessagingInMemory.java</exclude>
 							</excludes>
 						</configuration>

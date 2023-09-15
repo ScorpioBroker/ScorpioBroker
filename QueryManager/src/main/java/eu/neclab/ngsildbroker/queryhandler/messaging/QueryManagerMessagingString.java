@@ -11,17 +11,15 @@ import io.smallrye.mutiny.Uni;
 import jakarta.inject.Singleton;
 
 @Singleton
-@IfBuildProfile(anyOf = {"sqs", "mqtt", "rabbitmq"})
-public class QueryManagerMessaging extends QueryManagerMessagingBase {
+@IfBuildProfile(anyOf = { "sqs", "kafka" })
+public class QueryManagerMessagingString extends QueryManagerMessagingBase {
 
 	@Incoming(AppConstants.REGISTRY_RETRIEVE_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
-	public Uni<Void> handleCsource(Object byteMessage) {
-		if(byteMessage instanceof byte[] bytes) {
-			byteMessage = new String(bytes);
-		}
-		return handleCsourceRaw((String) byteMessage);
+	public Uni<Void> handleCsource(String byteMessage) {
+		return handleCsourceRaw(byteMessage);
 	}
+
 	@Scheduled(every = "20s", delayed = "5s")
 	void purge() {
 		super.purge();

@@ -25,8 +25,8 @@
 						<configuration>
 							<excludes>
 								<exclude>eu/neclab/ngsildbroker/subscriptionmanager/messaging/SubscriptionMessagingInMemory.java</exclude>
-								<exclude>eu/neclab/ngsildbroker/subscriptionmanager/messaging/SubscriptionMessaging.java</exclude>
-								<exclude>eu/neclab/ngsildbroker/subscriptionmanager/messaging/SubscriptionSyncService.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/subscriptionmanager/messaging/SubscriptionMessagingByteArray.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/subscriptionmanager/messaging/SubscriptionSyncServiceByteArray.java</exclude>
 							</excludes>
 						</configuration>
 					</plugin>
@@ -47,10 +47,10 @@
 						<artifactId>maven-compiler-plugin</artifactId>
 						<configuration>
 							<excludes>
-								<exclude>eu/neclab/ngsildbroker/subscriptionmanager/messaging/SubscriptionMessagingKafka.java</exclude>
-								<exclude>eu/neclab/ngsildbroker/subscriptionmanager/messaging/SubscriptionMessaging.java</exclude>
-								<exclude>eu/neclab/ngsildbroker/subscriptionmanager/messaging/SubscriptionSyncService.java</exclude>
-								<exclude>eu/neclab/ngsildbroker/subscriptionmanager/messaging/SubscriptionSyncServiceKafka.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/subscriptionmanager/messaging/SubscriptionMessagingString.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/subscriptionmanager/messaging/SubscriptionMessagingByteArray.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/subscriptionmanager/messaging/SubscriptionSyncServiceByteArray.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/subscriptionmanager/messaging/SubscriptionSyncServiceString.java</exclude>
 							</excludes>
 						</configuration>
 					</plugin>
@@ -71,9 +71,9 @@
 						<artifactId>maven-compiler-plugin</artifactId>
 						<configuration>
 							<excludes>
-								<exclude>eu/neclab/ngsildbroker/subscriptionmanager/messaging/SubscriptionMessagingKafka.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/subscriptionmanager/messaging/SubscriptionMessagingString.java</exclude>
 								<exclude>eu/neclab/ngsildbroker/subscriptionmanager/messaging/SubscriptionMessagingInMemory.java</exclude>
-								<exclude>eu/neclab/ngsildbroker/subscriptionmanager/messaging/SubscriptionSyncServiceKafka.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/subscriptionmanager/messaging/SubscriptionSyncServiceString.java</exclude>
 							</excludes>
 						</configuration>
 					</plugin>
@@ -94,9 +94,9 @@
 						<artifactId>maven-compiler-plugin</artifactId>
 						<configuration>
 							<excludes>
-								<exclude>eu/neclab/ngsildbroker/subscriptionmanager/messaging/SubscriptionMessagingKafka.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/subscriptionmanager/messaging/SubscriptionMessagingString.java</exclude>
 								<exclude>eu/neclab/ngsildbroker/subscriptionmanager/messaging/SubscriptionMessagingInMemory.java</exclude>
-								<exclude>eu/neclab/ngsildbroker/subscriptionmanager/messaging/SubscriptionSyncServiceKafka.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/subscriptionmanager/messaging/SubscriptionSyncServiceString.java</exclude>
 							</excludes>
 						</configuration>
 					</plugin>
@@ -117,7 +117,7 @@
 						<artifactId>maven-compiler-plugin</artifactId>
 						<configuration>
 							<excludes>
-								<exclude>eu/neclab/ngsildbroker/subscriptionmanager/messaging/SubscriptionMessagingKafka.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/subscriptionmanager/messaging/SubscriptionMessagingByteArray.java</exclude>
 								<exclude>eu/neclab/ngsildbroker/subscriptionmanager/messaging/SubscriptionMessagingInMemory.java</exclude>
 							</excludes>
 						</configuration>
