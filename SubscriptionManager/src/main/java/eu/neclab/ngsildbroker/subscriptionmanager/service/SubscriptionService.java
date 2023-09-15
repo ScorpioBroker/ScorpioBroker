@@ -60,7 +60,7 @@ import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import eu.neclab.ngsildbroker.commons.tools.SubscriptionTools;
-import eu.neclab.ngsildbroker.subscriptionmanager.messaging.SubscriptionSyncService;
+
 import eu.neclab.ngsildbroker.subscriptionmanager.messaging.SyncService;
 import eu.neclab.ngsildbroker.subscriptionmanager.repository.SubscriptionInfoDAO;
 import io.netty.handler.codec.mqtt.MqttQoS;
