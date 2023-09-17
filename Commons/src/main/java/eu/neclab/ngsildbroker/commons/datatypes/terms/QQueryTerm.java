@@ -45,7 +45,8 @@ public class QQueryTerm implements Serializable {
 	private String attribute = "";
 	private String operator = "";
 	private String operant = "";
-	private   String expandedOpt = "";
+	private String expandedOpt = "";
+
 	public String getExpandedOpt() {
 		return expandedOpt;
 	}
@@ -53,7 +54,6 @@ public class QQueryTerm implements Serializable {
 	public void setExpandedOpt(String expandedOpt) {
 		this.expandedOpt = expandedOpt;
 	}
-
 
 	private Set<String> allAttribs = Sets.newHashSet();
 
@@ -602,7 +602,7 @@ public class QQueryTerm implements Serializable {
 		String[] subAttribPath = splitted.length == 1 ? null : splitted[1].split("\\.");
 		String[] attribPath = splitted[0].split("\\.");
 		String attribName = linkHeaders.expandIri(attribPath[0], false, true, null, null);
-    	if (attribName.equals("@id")) {
+		if (attribName.equals("@id")) {
 			result.append(" AND entity ->> $");
 			result.append(dollarCount);
 			dollarCount++;
@@ -644,7 +644,7 @@ public class QQueryTerm implements Serializable {
 		}
 		if (reservedDbColumn != null) {
 			attributeFilterProperty.append(reservedDbColumn);
-			dollarCount = applyOperator(attributeFilterProperty, dollarCount, tuple,false);
+			dollarCount = applyOperator(attributeFilterProperty, dollarCount, tuple, false);
 		} else {
 			/*
 			 * EXISTS (SELECT FROM
@@ -697,7 +697,7 @@ public class QQueryTerm implements Serializable {
 					attributeFilterProperty.append(">");
 				}
 				attributeFilterProperty.append("'{@id}' ");
-				dollarCount = applyOperator(attributeFilterProperty, dollarCount, tuple,false);
+				dollarCount = applyOperator(attributeFilterProperty, dollarCount, tuple, false);
 				attributeFilterProperty.append(")) OR ");
 			}
 			attributeFilterProperty.append("(EXISTS (SELECT FROM jsonb_array_elements(");
@@ -721,7 +721,7 @@ public class QQueryTerm implements Serializable {
 			} else if (operant.matches(TIME)) {
 				attributeFilterProperty.append("::time ");
 			}
-			dollarCount = applyOperator(attributeFilterProperty, dollarCount, tuple,false);
+			dollarCount = applyOperator(attributeFilterProperty, dollarCount, tuple, false);
 			attributeFilterProperty.append(")) OR ");
 			/**
 			 * attributeFilterProperty.append('('); if(operant.matches(CHECKTYPE)) {
@@ -769,7 +769,7 @@ public class QQueryTerm implements Serializable {
 			} else if (operant.matches(TIME)) {
 				attributeFilterProperty.append("::time ");
 			}
-			dollarCount = applyOperator(attributeFilterProperty, dollarCount, tuple,false);
+			dollarCount = applyOperator(attributeFilterProperty, dollarCount, tuple, false);
 			for (int i = 0; i < attribPath.size(); i++) {
 				attributeFilterProperty.append(')');
 			}
@@ -833,11 +833,12 @@ public class QQueryTerm implements Serializable {
 		return attribPath;
 	}
 
-	private int applyOperator(StringBuilder attributeFilterProperty, int dollarCount, Tuple tuple,Boolean needExpanded) {
-		String finalOperant ;
-		if(needExpanded){
+	private int applyOperator(StringBuilder attributeFilterProperty, int dollarCount, Tuple tuple,
+			Boolean needExpanded) {
+		String finalOperant;
+		if (needExpanded) {
 			finalOperant = expandedOpt;
-		}else {
+		} else {
 			finalOperant = operant;
 		}
 		String typecast = "jsonb";
@@ -968,6 +969,9 @@ public class QQueryTerm implements Serializable {
 	}
 
 	public void addAttrib(String attrib) {
+		System.out.println("Attrib: " + attrib);
+		System.out.println("allAttribs: " + allAttribs.toString());
+		System.out.println("linkHeaders: " + linkHeaders.toString());
 		allAttribs.add(linkHeaders.expandIri(attrib, false, true, null, null));
 	}
 
@@ -1031,7 +1035,7 @@ public class QQueryTerm implements Serializable {
 				sql.append("') AS mostInnerValue WHERE (mostInnerValue->'");
 				sql.append(NGSIConstants.JSON_LD_VALUE);
 				sql.append("')");
-				dollarCount = applyOperator(sql, dollarCount, tuple,false);
+				dollarCount = applyOperator(sql, dollarCount, tuple, false);
 				sql.append(") WHEN ");
 
 				sql.append(currentSqlAttrib);
@@ -1046,7 +1050,7 @@ public class QQueryTerm implements Serializable {
 				sql.append("') AS mostInnerValue WHERE (mostInnerValue->'");
 				sql.append(NGSIConstants.JSON_LD_ID);
 				sql.append("')");
-				dollarCount = applyOperator(sql, dollarCount, tuple,false);
+				dollarCount = applyOperator(sql, dollarCount, tuple, false);
 				sql.append(") WHEN ");
 
 				sql.append(currentSqlAttrib);
@@ -1061,7 +1065,7 @@ public class QQueryTerm implements Serializable {
 				sql.append("') AS mostInnerValue WHERE (mostInnerValue->'");
 				sql.append(NGSIConstants.JSON_LD_ID);
 				sql.append("')");
-     			dollarCount = applyOperator(sql, dollarCount, tuple,true);
+				dollarCount = applyOperator(sql, dollarCount, tuple, true);
 //				for (int i=0;i<tuple.size();i++){
 //					if(i==tuple.size()-1){
 //						tuple.getDelegate().
@@ -1072,7 +1076,7 @@ public class QQueryTerm implements Serializable {
 //				}
 //			 // tuple = tmp;
 
-    			sql.append(") WHEN ");
+				sql.append(") WHEN ");
 
 				sql.append(currentSqlAttrib);
 				sql.append(" #>>'{");
@@ -1084,7 +1088,7 @@ public class QQueryTerm implements Serializable {
 				sql.append(" ->'");
 				sql.append(NGSIConstants.JSON_LD_VALUE);
 				sql.append("')");
-				dollarCount = applyOperator(sql, dollarCount, tuple,false);
+				dollarCount = applyOperator(sql, dollarCount, tuple, false);
 
 				sql.append(" ELSE FALSE END ");
 
@@ -1127,7 +1131,7 @@ public class QQueryTerm implements Serializable {
 				sql.append("->'");
 				sql.append(NGSIConstants.JSON_LD_VALUE);
 				sql.append("'");
-				dollarCount = applyOperator(sql, dollarCount, tuple,false);
+				dollarCount = applyOperator(sql, dollarCount, tuple, false);
 			}
 
 			for (int i = 0; i < subAttribPath.length; i++) {
@@ -1156,7 +1160,7 @@ public class QQueryTerm implements Serializable {
 				sql.append("LANGPROP -> '");
 				sql.append(NGSIConstants.JSON_LD_VALUE);
 				sql.append("'");
-				dollarCount = current.applyOperator(sql, dollarCount, tuple,false);
+				dollarCount = current.applyOperator(sql, dollarCount, tuple, false);
 			}
 			sql.append(")  ELSE FALSE END ");
 		}
@@ -1231,6 +1235,14 @@ public class QQueryTerm implements Serializable {
 		}
 
 		return dollarCount;
+	}
+
+	public Context getLinkHeaders() {
+		return linkHeaders;
+	}
+
+	public void setLinkHeaders(Context linkHeaders) {
+		this.linkHeaders = linkHeaders;
 	}
 
 }
