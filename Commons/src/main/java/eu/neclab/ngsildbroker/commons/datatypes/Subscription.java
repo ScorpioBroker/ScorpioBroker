@@ -186,6 +186,7 @@ public class Subscription implements Serializable {
 								(String) ((List<Map<String, Object>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE),
 								context);
 					} catch (Exception e) {
+						e.printStackTrace();
 						throw new ResponseException(ErrorType.BadRequestData, "Failed to parse q");
 					}
 					break;

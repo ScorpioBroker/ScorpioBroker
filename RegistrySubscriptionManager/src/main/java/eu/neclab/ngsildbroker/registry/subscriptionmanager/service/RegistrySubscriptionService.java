@@ -105,10 +105,15 @@ public class RegistrySubscriptionService {
 	@Inject
 	JsonLDService ldService;
 
+	@ConfigProperty(name = "scorpio.alltypesub.type", defaultValue = "*")
+	private String allTypeSubType;
+
+	private String ALL_TYPES_SUB;
+
 	@PostConstruct
 	void setup() {
 		this.webClient = WebClient.create(vertx);
-
+		ALL_TYPES_SUB = NGSIConstants.NGSI_LD_DEFAULT_PREFIX + allTypeSubType;
 		regDAO.loadSubscriptions().onItem().transformToUni(subs -> {
 			List<Uni<Tuple2<Tuple2<String, Map<String, Object>>, Context>>> unis = Lists.newArrayList();
 			subs.forEach(tuple -> {
@@ -496,6 +501,9 @@ public class RegistrySubscriptionService {
 		}
 
 		for (EntityInfo entityInfo : sub.getEntities()) {
+			if (entityInfo.getType().equals(ALL_TYPES_SUB)) {
+				return true;
+			}
 			if (entityInfo.getId() != null && entityInfo.getType() != null && sub.getAttributeNames() != null) {
 				if (checkRegForIdTypeAttrs(entityInfo.getId(), entityInfo.getType(), sub.getAttributeNames(),
 						(List<Map<String, Object>>) reg.get(NGSIConstants.NGSI_LD_INFORMATION))) {
@@ -1113,6 +1121,7 @@ public class RegistrySubscriptionService {
 			message.setSubscription(Subscription.expandSubscription(message.getPayload(), message.getContext(), false));
 		} catch (ResponseException e) {
 			logger.error("Failed to load internal subscription", e);
+			return Uni.createFrom().voidItem();
 		}
 		boolean sendNotification = !tenant2subscriptionId2Subscription.contains(message.getTenant(), message.getId());
 		try {
