@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.registry.subscriptionmanager.service;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
@@ -22,9 +23,11 @@ import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLDService;
+import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -1116,6 +1119,17 @@ public class RegistrySubscriptionService {
 		if (message.getRequestType() == AppConstants.DELETE_SUBSCRIPTION_REQUEST) {
 			tenant2subscriptionId2Subscription.remove(message.getTenant(), message.getId());
 			return Uni.createFrom().voidItem();
+		}
+		try {
+			System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+			System.out.println(JsonUtils.toPrettyString(message.getPayload()));
+			System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+		} catch (JsonGenerationException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
 		}
 		try {
 			message.setSubscription(Subscription.expandSubscription(message.getPayload(), message.getContext(), false));
