@@ -191,6 +191,8 @@ You can find a set of example calls, as a Postman collection, in the Examples fo
 ### EU Acknowledgetment
 This activity has received funding from the European Union’s Horizon 2020 research and innovation programme under Grant Agreement No. 731993 (Autopilot), No. 814918 (Fed4IoT) and No. 767498 (MIDIH, Open Call (MoLe). 
 <img src="https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/master/img/flag_yellow_low.jpg" width="160">
+- [ODALA project](https://odalaproject.eu/)
+- [SALTED project](https://salted-project.eu/)
 - [AUTOPILOT project: Automated driving Progressed by Internet Of Things](https://autopilot-project.eu/) <img src="https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/master/img/autopilot.png" width="160">
 - [Fed4IoT project](https://fed4iot.org/)
 - [MIDIH Project](https://midih.eu/), Open Call (MoLe)

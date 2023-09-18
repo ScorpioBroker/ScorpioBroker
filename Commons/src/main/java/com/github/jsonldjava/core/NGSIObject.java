@@ -42,6 +42,11 @@ class NGSIObject {
 	private boolean hasAtContext = false;
 	private boolean atContextRequired = false;
 
+
+
+	private boolean isVocabProperty = false;
+	private boolean hasVocab=false;
+
 	private HashSet<String> datasetIds = new HashSet<String>();
 	private String id;
 	private String expandedProperty;
@@ -56,7 +61,9 @@ class NGSIObject {
 		this.parent = parent;
 
 	}
+	public boolean isVocabProperty() {return isVocabProperty;}
 
+	public boolean isHasVocab() {return hasVocab;}
 	public Object getElement() {
 		return element;
 	}
@@ -167,6 +174,8 @@ class NGSIObject {
 			this.isDateTime = true;
 		} else if (NGSIConstants.NGSI_LD_LANGPROPERTY.equals(type)) {
 			this.isLanguageProperty = true;
+		}else if (NGSIConstants.NGSI_LD_VocabularyProperty.equals(type)) {
+			this.isVocabProperty = true;
 		}
 
 		return this;
@@ -591,7 +600,7 @@ class NGSIObject {
 			return;
 		}
 		if (isScalar) {
-			if (Constants.allowedDateTimes.get(payloadType).contains(expandedProperty)) {
+ 			if (Constants.allowedDateTimes.get(payloadType).contains(expandedProperty)) {
 				validateDateTime(activeProperty);
 				return;
 			}
@@ -611,15 +620,18 @@ class NGSIObject {
 			validateArray();
 		} else {
 			if (isLdKeyWord && parent == null && !isProperty && !isRelationship && !isGeoProperty && !isDateTime
-					&& !isLanguageProperty) {
+					&& !isLanguageProperty && !isVocabProperty) {
 				return;
 			}
-			if (!isProperty && !isRelationship && !isGeoProperty && !isDateTime && !isLanguageProperty) {
+			if (!isProperty && !isRelationship && !isGeoProperty && !isDateTime && !isLanguageProperty && !isVocabProperty) {
 				throw new ResponseException(ErrorType.BadRequestData,
 						"The key " + activeProperty + " is an invalid entry.");
 			}
 			if (isProperty && !hasValue) {
 				throw new ResponseException(ErrorType.BadRequestData, "You can't have properties without a value");
+			}
+			if (isVocabProperty && !hasVocab) {
+				throw new ResponseException(ErrorType.BadRequestData, "You can't have vocabulary property without a vocab");
 			}
 			if ((isRelationship && !hasObject)) {
 				throw new ResponseException(ErrorType.BadRequestData, "You can't have relationships without an object");
@@ -702,6 +714,14 @@ class NGSIObject {
 				throw new ResponseException(ErrorType.BadRequestData, "Can't read location entry");
 			}
 		}
+	}
+
+	public void setVocabProperty(boolean vocabProperty) {
+		this.isVocabProperty = vocabProperty;
+	}
+
+	public void setHasVocab(boolean hasVocab) {
+		this.hasVocab = hasVocab;
 	}
 
 	private void validateMultiPolygon(Object geoValue) throws ResponseException {
@@ -821,7 +841,8 @@ class NGSIObject {
 		this.isArray = this.isArray || ngsiV.isArray;
 		this.isLdKeyWord = this.isLdKeyWord || ngsiV.isLdKeyWord;
 		this.isScalar = this.isScalar || ngsiV.isScalar;
-		if ((ngsiV.isRelationship || ngsiV.isProperty || ngsiV.isLanguageProperty)) {
+		this.isVocabProperty = this.isVocabProperty || ngsiV.isVocabProperty;
+		if ((ngsiV.isRelationship || ngsiV.isProperty || ngsiV.isLanguageProperty || ngsiV.isVocabProperty)) {
 			if (ngsiV.datasetIds.isEmpty()) {
 				this.datasetIds.add(NGSIConstants.DEFAULT_DATA_SET_ID);
 			} else {
