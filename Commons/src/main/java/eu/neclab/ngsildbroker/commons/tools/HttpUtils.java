@@ -296,8 +296,7 @@ public final class HttpUtils {
 	}
 
 	public static RestResponse<Object> handleControllerExceptions(Throwable e) {
-		if (e instanceof ResponseException) {
-			ResponseException responseException = (ResponseException) e;
+		if (e instanceof ResponseException responseException) {
 			logger.debug("Exception :: ", responseException);
 			return RestResponseBuilderImpl.create(responseException.getErrorCode())
 					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
@@ -762,7 +761,7 @@ public final class HttpUtils {
 				return Uni.createFrom().failure(
 						new ResponseException(ErrorType.BadRequestData, "@context entry in body is not allowed"));
 			}
-			return ldService.parse(atContextHeader);
+			return ldService.parse(payloadAtContext);
 
 		}
 	}

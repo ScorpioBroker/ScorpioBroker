@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.commons.tools;
 
+import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLDService;
 import com.github.jsonldjava.core.JsonLdConsts;
 import com.github.jsonldjava.utils.JsonUtils;
@@ -204,7 +205,8 @@ public class SubscriptionTools {
 //				HttpUtils.parseAcceptHeader(
 //						List.of(potentialSub.getSubscription().getNotification().getEndPoint().getAccept())),
 //				entity, null, null, null, true).getItem1();
-		return ldService.compact(entity, null, potentialSub.getContext(), HttpUtils.opts, -1).onItem()
+		return getContextForNotification(ldService,potentialSub).onItem().transformToUni(context -> {
+		return ldService.compact(entity, null, context, HttpUtils.opts, -1).onItem()
 				.transform(compacted -> {
 					Map<String, Object> notification = Maps.newLinkedHashMap();
 					notification.put(NGSIConstants.QUERY_PARAMETER_ID,
@@ -241,8 +243,16 @@ public class SubscriptionTools {
 
 					return notification;
 				});
+		});
 	}
 
+	public static Uni<Context> getContextForNotification(JsonLDService ldService,SubscriptionRequest potentialSub){
+		if(potentialSub.getPayload().containsKey(NGSIConstants.NGSI_LD_JSONLD_CONTEXT)){
+			Object payloadAtContext = ((List<Map<String,Object>>)potentialSub.getPayload().get(NGSIConstants.NGSI_LD_JSONLD_CONTEXT)).get(0).get(JsonLdConsts.VALUE);
+			return ldService.parse(payloadAtContext);
+		}
+        return Uni.createFrom().item(potentialSub.getContext());
+    }
 	public static Uni<Map<String, Object>> generateCsourceNotification(SubscriptionRequest potentialSub, Object reg,
 			int triggerReason, JsonLDService ldService) {
 		return ldService.compact(reg, null, potentialSub.getContext(), HttpUtils.opts, -1).onItem()

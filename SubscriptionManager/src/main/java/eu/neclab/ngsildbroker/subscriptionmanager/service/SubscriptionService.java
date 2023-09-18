@@ -163,7 +163,7 @@ public class SubscriptionService {
 			Context contextLink) {
 		SubscriptionRequest request;
 		if (!subscription.containsKey(NGSIConstants.JSON_LD_ID)) {
-			String id = "urn:" + UUID.randomUUID().toString();
+			String id = "urn:" + UUID.randomUUID();
 			subscription.put(NGSIConstants.JSON_LD_ID, id);
 		}
 		try {
