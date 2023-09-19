@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.jsonldjava.core.JsonLdError.Error;
 import com.github.jsonldjava.utils.JsonLdUrl;
 import com.github.jsonldjava.utils.Obj;
@@ -36,6 +37,7 @@ import io.vertx.mutiny.ext.web.client.WebClient;
 @SuppressWarnings("unchecked")
 public class Context extends LinkedHashMap<String, Object> {
 
+	@JsonIgnore
 	MicroServiceUtils microServiceUtils = new MicroServiceUtils();
 	private static final long serialVersionUID = 2894534897574805571L;
 
