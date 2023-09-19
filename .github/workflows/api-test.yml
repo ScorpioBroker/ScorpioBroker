@@ -78,13 +78,13 @@ jobs:
           registry-type: public
       - name: build-java
         run: |
-          mvn clean package -DskipTests -Dsqs -Psqs -Ddocker -Ddocker-tag=java-sqs-testsqs -Dos=java -Dquarkus.profile=sqs
+          mvn clean package -DskipTests -Dsqs -Psqs -Ddocker -Ddocker-tag=java-sqs-finaltest -Dos=java -Dquarkus.profile=sqs
       - name: docker tag
         run: |
-          docker tag scorpiobroker/all-in-one-runner:java-sqs-testsqs ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:java-sqs-testsqs
-      #- name: docker push
-      #  run: |
-      #    docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:java-sqs-testsqs
+          docker tag scorpiobroker/all-in-one-runner:java-sqs-finaltest ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:java-sqs-finaltest
+      - name: docker push
+        run: |
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:java-sqs-finaltest
   build-java-rabbitmq:
     runs-on: ubuntu-latest
     steps:
