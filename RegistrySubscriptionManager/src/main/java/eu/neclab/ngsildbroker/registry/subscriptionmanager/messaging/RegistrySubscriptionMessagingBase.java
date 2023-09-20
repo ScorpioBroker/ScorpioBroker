@@ -38,7 +38,6 @@ public abstract class RegistrySubscriptionMessagingBase {
 
 	@PostConstruct
 	public void setup() {
-		System.out.println("regsub");
 		this.executor = vertx.getDelegate().nettyEventLoopGroup();
 	}
 

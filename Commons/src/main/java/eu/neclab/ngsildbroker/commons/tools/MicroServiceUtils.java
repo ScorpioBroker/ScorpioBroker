@@ -171,7 +171,6 @@ public class MicroServiceUtils {
 			} else if (originalValue instanceof Boolean) {
 				copiedValue = ((Boolean) originalValue).booleanValue();
 			} else if (originalValue == null) {
-				//System.out.println(entry.getKey() + " was null");
 				continue;
 			} else {
 				copiedValue = originalValue.toString();

@@ -60,7 +60,6 @@ public abstract class SubscriptionMessagingBase {
 
 	@PostConstruct
 	public void setup() {
-		System.out.println("sub");
 		this.executor = vertx.getDelegate().nettyEventLoopGroup();
 	}
 

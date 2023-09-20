@@ -747,7 +747,6 @@ public class Subscription implements Serializable {
 	}
 
 	public void setLdQueryString(String ldQueryString, Context ldContext) throws ResponseException {
-		System.out.println("id" + this.id);
 		if (ldQueryString.strip().isBlank()) {
 			ldQueryString = null;
 		}

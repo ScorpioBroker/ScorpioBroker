@@ -25,7 +25,7 @@ public class MessageCollector {
 	public MessageCollector(String parentName) {
 		this.parentName = parentName;
 	}
-	
+
 	public void collect(String input, CollectMessageListener listener) {
 
 		char firstChar = input.charAt(0);
@@ -65,14 +65,12 @@ public class MessageCollector {
 			} else if (collector.size() > pos) {
 				collector.set(pos, result);
 			} else {
-				try {
+
 				for (int i = collector.size(); i <= pos; i++) {
 					collector.add(null);
 				}
 				collector.set(pos, result);
-				} catch(OutOfMemoryError e){
-					System.out.println();
-				}
+
 			}
 			id2LastWrite.put(id, System.currentTimeMillis());
 			if (completenessAttempted.contains(id)) {

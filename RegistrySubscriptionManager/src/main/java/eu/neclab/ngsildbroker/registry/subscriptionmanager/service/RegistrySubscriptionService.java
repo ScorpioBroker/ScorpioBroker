@@ -1121,17 +1121,6 @@ public class RegistrySubscriptionService {
 			return Uni.createFrom().voidItem();
 		}
 		try {
-			System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
-			System.out.println(JsonUtils.toPrettyString(message.getPayload()));
-			System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
-		} catch (JsonGenerationException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		} catch (IOException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-		try {
 			message.setSubscription(Subscription.expandSubscription(message.getPayload(), message.getContext(), false));
 		} catch (ResponseException e) {
 			logger.error("Failed to load internal subscription", e);

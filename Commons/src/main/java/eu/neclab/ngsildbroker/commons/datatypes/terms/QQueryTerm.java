@@ -969,9 +969,6 @@ public class QQueryTerm implements Serializable {
 	}
 
 	public void addAttrib(String attrib) {
-		System.out.println("Attrib: " + attrib);
-		System.out.println("allAttribs: " + allAttribs.toString());
-		System.out.println("linkHeaders: " + linkHeaders);
 		allAttribs.add(linkHeaders.expandIri(attrib, false, true, null, null));
 	}
 

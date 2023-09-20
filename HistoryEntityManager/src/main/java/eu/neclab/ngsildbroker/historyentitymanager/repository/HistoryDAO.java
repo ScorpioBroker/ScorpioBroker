@@ -332,9 +332,6 @@ public class HistoryDAO {
 						.preparedQuery("INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
 								+ " (temporalentity_id, attributeid, data) VALUES ($1, $2, $3::jsonb)")
 						.executeBatch(batch);
-//				}).eventually(() -> {
-//					System.out.println("conn closed");
-//					return conn.close();
 			}).onItem().transformToUni(t -> Uni.createFrom().voidItem());
 
 		});
