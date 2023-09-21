@@ -164,14 +164,14 @@ public interface NGSIConstants {
 			NGSI_LD_DESCRIPTION, NGSI_LD_GEO_REL, NGSI_LD_TIME_STAMP, NGSI_LD_TIMESTAMP_START, NGSI_LD_TIMESTAMP_END,
 			NGSI_LD_SUBSCRIPTION_ID, NGSI_LD_NOTIFIED_AT, NGSI_LD_DATA, NGSI_LD_INTERNAL, NGSI_LD_LAST_NOTIFICATION,
 			NGSI_LD_LAST_FAILURE, NGSI_LD_LAST_SUCCESS, NGSI_LD_TIMES_SENT, NGSI_LD_UNIT_CODE, NGSI_LD_DATA_SET_ID,
-			NGSI_LD_MANAGEMENTINTERVAL,NGSI_LD_HAS_VOCAB };
+			NGSI_LD_MANAGEMENTINTERVAL, NGSI_LD_HAS_VOCAB };
 
 	public final static String[] NGSI_LD_SUBSCRIPTON_PAYLOAD_KEYS = { JSON_LD_ID, JSON_LD_TYPE, JSON_LD_CONTEXT,
 			NGSI_LD_ENTITIES, NGSI_LD_ID_PATTERN, NGSI_LD_GEO_QUERY, NGSI_LD_NOTIFICATION, NGSI_LD_ATTRIBUTES,
 			NGSI_LD_ENDPOINT, NGSI_LD_ACCEPT, NGSI_LD_URI, NGSI_LD_FORMAT, NGSI_LD_QUERY, NGSI_LD_WATCHED_ATTRIBUTES,
 			NGSI_LD_TIMES_SENT, NGSI_LD_THROTTLING, NGSI_LD_TIME_INTERVAL, NGSI_LD_EXPIRES, NGSI_LD_STATUS,
 			NGSI_LD_DESCRIPTION, NGSI_LD_IS_ACTIVE, NGSI_LD_TIMESTAMP_END, NGSI_LD_TIMESTAMP_START,
-			NGSI_LD_SUBSCRIPTION_NAME,NGSI_LD_HAS_VOCAB };
+			NGSI_LD_SUBSCRIPTION_NAME, NGSI_LD_HAS_VOCAB };
 
 	public final static String GEO_JSON_COORDINATES = "coordinates";
 	public final static String GEO_JSON_TYPE = "type";
@@ -273,7 +273,7 @@ public interface NGSIConstants {
 	public static final Integer[] VALID_QOS = { 0, 1, 2 };
 	public static final String COUNT_HEADER_RESULT = "NGSILD-Results-Count";
 	public static final Set<String> NGSI_LD_ATTR_TYPES = Sets.newHashSet(NGSI_LD_PROPERTY, NGSI_LD_RELATIONSHIP,
-			NGSI_LD_GEOPROPERTY, NGSI_LD_LANGPROPERTY,NGSI_LD_VocabularyProperty);
+			NGSI_LD_GEOPROPERTY, NGSI_LD_LANGPROPERTY, NGSI_LD_VocabularyProperty);
 
 	public final static String NOTIFICATION = "Notification";
 
@@ -349,7 +349,7 @@ public interface NGSIConstants {
 	public static final String ENDPOINT_TEMPORAL_BATCH_DELETE = "/ngsi-ld/v1/temporal/entityOperations/delete";
 	public static final String ENDPOINT_TEMPORAL_CREATE_DELETE = "/ngsi-ld/v1/temporal/entityOperations/create";
 	public static final String ENDPOINT_TEMPROAL_BATCH_APPEND = "/ngsi-ld/v1/temporal/entityOperations/append";
- 	public static final String AGGR_METH_TOTAL_COUNT = "totalCount";
+	public static final String AGGR_METH_TOTAL_COUNT = "totalCount";
 	public static final String AGGR_METH_DISTINCT_COUNT = "distinctCount";
 	public static final String AGGR_METH_SUM = "sum";
 	public static final String AGGR_METH_AVG = "avg";
@@ -376,7 +376,7 @@ public interface NGSIConstants {
 	public static final String CREATEDAT = "createdat";
 	public static final String URL = "url";
 	public static final String JSONLD_CONTEXTS = "ngsi-ld/v1/jsonldContexts/";
-	public static final String JSONLD_CONTEXT="jsonldContext";
+	public static final String JSONLD_CONTEXT = "jsonldContext";
 	public static final String NGSI_LD_ATTRIBUTES_ENDPOINT = "/ngsi-ld/v1/attributes";
 	public static final List<String> GEO_KEYWORDS = Arrays.asList(NGSIConstants.GEO_TYPE_POINT,
 			NGSIConstants.GEO_TYPE_POLYGON, NGSIConstants.GEO_TYPE_LINESTRING, NGSIConstants.GEO_TYPE_MULTI_POLYGON);
@@ -447,9 +447,9 @@ public interface NGSIConstants {
 	public static final String HAS_OBJECT_NULL = "[{https://uri.etsi.org/ngsi-ld/hasObject=[{@id=urn:ngsi-ld:null}]";
 	public static final String LANGUAGE_PROPERTY = "LanguageProperty";
 	public static final String LANGUAGE_MAP = "languageMap";
-	public static final Set<String> ENTITY_BASE_PROPS = Sets.newHashSet(JSON_LD_ID, JSON_LD_TYPE, NGSI_LD_CREATED_AT, NGSI_LD_MODIFIED_AT, NGSI_LD_SCOPE);
-	public final static String NGSI_LD_HAS_KEY ="https://uri.etsi.org/ngsi-ld/hasKey";
+	public static final Set<String> ENTITY_BASE_PROPS = Sets.newHashSet(JSON_LD_ID, JSON_LD_TYPE, NGSI_LD_CREATED_AT,
+			NGSI_LD_MODIFIED_AT, NGSI_LD_SCOPE);
+	public final static String NGSI_LD_HAS_KEY = "https://uri.etsi.org/ngsi-ld/hasKey";
 	public static final String OBJECT_TYPE = "objectType";
 	public static final String NGSI_LD_JSONLD_CONTEXT = "https://uri.etsi.org/ngsi-ld/default-context/jsonldContext";
 }
-
