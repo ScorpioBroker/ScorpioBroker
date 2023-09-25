@@ -1,10 +1,15 @@
 package eu.neclab.ngsildbroker.commons.datatypes.requests;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
-public class BaseRequest {
+public class BaseRequest implements Serializable {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -8749175274463827625L;
 	private String tenant;
 	protected Map<String, Object> payload = new HashMap<>();
 	private int requestType;

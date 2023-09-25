@@ -53,27 +53,4 @@
 			<artifactId>commons-io</artifactId>
 		</dependency>
 	</dependencies>
-	<profiles>
-		<profile>
-			<id>in-memory</id>
-			<activation>
-				<property>
-					<name>in-memory</name>
-				</property>
-			</activation>
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-compiler-plugin</artifactId>
-						<configuration>
-							<excludes>
-								<exclude>eu/neclab/ngsildbroker/commons/serialization/messaging/**</exclude>
-							</excludes>
-						</configuration>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
-	</profiles>
 </project>

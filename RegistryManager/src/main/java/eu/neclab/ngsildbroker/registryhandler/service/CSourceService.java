@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.registryhandler.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jsonldjava.core.JsonLDService;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.Sets;
@@ -69,7 +70,7 @@ public class CSourceService {
 	@Inject
 	@Channel(AppConstants.REGISTRY_CHANNEL)
 	@Broadcast
-	MutinyEmitter<BaseRequest> kafkaSenderInterface;
+	MutinyEmitter<String> emitter;
 
 	@ConfigProperty(name = "scorpio.federation.registrationtype", defaultValue = "types")
 	String AUTO_REG_MODE;
@@ -87,6 +88,12 @@ public class CSourceService {
 
 	@Inject
 	Vertx vertx;
+	
+	@Inject
+	ObjectMapper objectMapper;
+
+	@ConfigProperty(name = "scorpio.messaging.maxSize")
+	int messageSize;
 
 	Map<String, Object> myRegistryInformation;
 
@@ -133,7 +140,7 @@ public class CSourceService {
 			return Uni.createFrom().failure(e);
 		}
 		return cSourceInfoDAO.createRegistration(request).onItem().transform(rowset -> {
-			kafkaSenderInterface.sendAndForget(request);
+			MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, emitter, objectMapper);
 			NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.OPERATION_CREATE_REGISTRATION,
 					(String) registration.get(NGSIConstants.JSON_LD_ID));
 			result.addSuccess(new CRUDSuccess(null, null, request.getId(), Sets.newHashSet()));
@@ -159,7 +166,7 @@ public class CSourceService {
 			if (rowset.rowCount() > 0) {
 				// no need to query regs again they are not distributed
 				// request.setPayload(rowset.iterator().next().getJsonObject(0).getMap());
-				kafkaSenderInterface.sendAndForget(request);
+				MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, emitter, objectMapper);
 				NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.OPERATION_UPDATE_REGISTRATION,
 						registrationId);
 				result.addSuccess(new CRUDSuccess(null, null, request.getId(), Sets.newHashSet()));
@@ -200,7 +207,7 @@ public class CSourceService {
 			if (rowset.rowCount() > 0) {
 				// add the deleted entry
 				request.setPayload(rowset.iterator().next().getJsonObject(0).getMap());
-				kafkaSenderInterface.sendAndForget(request);
+				MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, emitter, objectMapper);
 				NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.OPERATION_DELETE_REGISTRATION,
 						registrationId);
 				result.addSuccess(new CRUDSuccess(null, null, request.getId(), Sets.newHashSet()));

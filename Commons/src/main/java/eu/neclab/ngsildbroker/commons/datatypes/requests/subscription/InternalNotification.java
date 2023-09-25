@@ -9,6 +9,11 @@ public class InternalNotification extends BaseRequest {
 
 	
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -6832696880800268499L;
+
 	public InternalNotification() {
 		// for serialzation
 	}

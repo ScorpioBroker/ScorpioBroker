@@ -4,6 +4,11 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 
 public class DeleteEntityRequest extends EntityRequest {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -6604422774913112354L;
+
 	public DeleteEntityRequest() {
 	}
 

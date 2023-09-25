@@ -13,6 +13,11 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 
 public class SubscriptionRequest extends BaseRequest {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 6085042631683979741L;
+
 	private Subscription subscription;
 
 	private Context context;

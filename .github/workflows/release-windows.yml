@@ -127,6 +127,254 @@ jobs:
           asset_path: ./EntityManager/target/entity-manager-${{steps.get-build-id.outputs.id}}-runner.exe
           asset_name: entity-manager-windows-kafka-${{steps.get-id.outputs.id}}-windows-kafka.exe
           asset_content_type: application/octet-stream
+  build-windows-mqtt:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2     
+      - name: Configure Pagefile
+        uses: al-cheb/configure-pagefile-action@v1.2
+        with:
+          minimum-size: 16GB
+          maximum-size: 16GB
+          disk-root: "C:"
+      - name: Setup GraalVM
+        uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: '17' # for a specific JDK 17; or '17' for the latest JDK 17
+          distribution: 'mandrel'
+          version: 'mandrel-latest'
+      - name: Get release number
+        id: get-id
+        shell: pwsh
+        run: |
+          $id='${{github.ref_name}}'.split('/')[1]
+          echo "::set-output name=id::$id"
+      - name: Get build number
+        id: get-build-id
+        shell: pwsh
+        run: |
+          cd BrokerParent
+          $id=$(mvn help:evaluate -Dexpression="project.version" -q -DforceStdout)
+          echo "::set-output name=id::$id"
+      - name: build-windows-with-mqtt
+        run: |
+          mvn clean package -DskipTests -Dmqtt -Pmqtt -Dnative -Dos=windows -D"quarkus.profile=mqtt"
+      - name: Create Release ${{steps.get-id.outputs.id}}-windows-mqtt
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          tag_name: ${{steps.get-id.outputs.id}}-windows-mqtt.exe
+          release_name: ${{steps.get-id.outputs.id}}-windows-mqtt.exe
+          draft: false
+          prerelease: false
+          body_path: RELEASENOTES
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: AllInOneRunner/target/all-in-one-runner-${{steps.get-build-id.outputs.id}}-runner.exe
+          asset_name: scorpio-all-in-one-runner-${{steps.get-id.outputs.id}}-windows-mqtt.exe
+          asset_content_type: application/octet-stream
+      - name: Upload Release at-context-server
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: ./at-context-server/target/at-context-server-${{steps.get-build-id.outputs.id}}-runner.exe
+          asset_name: at-context-server-windows-mqtt-${{steps.get-id.outputs.id}}-windows-mqtt.exe
+          asset_content_type: application/octet-stream
+      - name: Upload Release history-query-manager
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: ./HistoryQueryManager/target/history-query-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+          asset_name: history-query-manager-windows-mqtt-${{steps.get-id.outputs.id}}-windows-mqtt.exe
+          asset_content_type: application/octet-stream
+      - name: Upload Release history-entity-manager
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: ./HistoryEntityManager/target/history-entity-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+          asset_name: history-entity-manager-windows-mqtt-${{steps.get-id.outputs.id}}-windows-mqtt.exe
+          asset_content_type: application/octet-stream
+      - name: Upload Release registry-subscription-manager
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: ./RegistrySubscriptionManager/target/registry-subscription-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+          asset_name: registry-subscription-manager-windows-mqtt-${{steps.get-id.outputs.id}}-windows-mqtt.exe
+          asset_content_type: application/octet-stream
+      - name: Upload Release registry-manager 
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: ./RegistryManager/target/registry-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+          asset_name: registry-manager-windows-mqtt-${{steps.get-id.outputs.id}}-windows-mqtt.exe
+          asset_content_type: application/octet-stream
+      - name: Upload Release subscription-manager 
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: ./SubscriptionManager/target/subscription-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+          asset_name: subscription-manager-windows-mqtt-${{steps.get-id.outputs.id}}-windows-mqtt.exe
+          asset_content_type: application/octet-stream
+      - name: Upload Release query-manager 
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: ./QueryManager/target/query-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+          asset_name: query-manager-windows-mqtt-${{steps.get-id.outputs.id}}-windows-mqtt.exe
+          asset_content_type: application/octet-stream
+      - name: Upload Release entity-manager
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: ./EntityManager/target/entity-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+          asset_name: entity-manager-windows-mqtt-${{steps.get-id.outputs.id}}-windows-mqtt.exe
+          asset_content_type: application/octet-stream
+  build-windows-rabbitmq:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2     
+      - name: Configure Pagefile
+        uses: al-cheb/configure-pagefile-action@v1.2
+        with:
+          minimum-size: 16GB
+          maximum-size: 16GB
+          disk-root: "C:"
+      - name: Setup GraalVM
+        uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: '17' # for a specific JDK 17; or '17' for the latest JDK 17
+          distribution: 'mandrel'
+          version: 'mandrel-latest'
+      - name: Get release number
+        id: get-id
+        shell: pwsh
+        run: |
+          $id='${{github.ref_name}}'.split('/')[1]
+          echo "::set-output name=id::$id"
+      - name: Get build number
+        id: get-build-id
+        shell: pwsh
+        run: |
+          cd BrokerParent
+          $id=$(mvn help:evaluate -Dexpression="project.version" -q -DforceStdout)
+          echo "::set-output name=id::$id"
+      - name: build-windows-with-rabbitmq
+        run: |
+          mvn clean package -DskipTests -Drabbitmq -Prabbitmq -Dnative -Dos=windows -D"quarkus.profile=rabbitmq"
+      - name: Create Release ${{steps.get-id.outputs.id}}-windows-rabbitmq
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          tag_name: ${{steps.get-id.outputs.id}}-windows-rabbitmq.exe
+          release_name: ${{steps.get-id.outputs.id}}-windows-rabbitmq.exe
+          draft: false
+          prerelease: false
+          body_path: RELEASENOTES
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: AllInOneRunner/target/all-in-one-runner-${{steps.get-build-id.outputs.id}}-runner.exe
+          asset_name: scorpio-all-in-one-runner-${{steps.get-id.outputs.id}}-windows-rabbitmq.exe
+          asset_content_type: application/octet-stream
+      - name: Upload Release at-context-server
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: ./at-context-server/target/at-context-server-${{steps.get-build-id.outputs.id}}-runner.exe
+          asset_name: at-context-server-windows-rabbitmq-${{steps.get-id.outputs.id}}-windows-rabbitmq.exe
+          asset_content_type: application/octet-stream
+      - name: Upload Release history-query-manager
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: ./HistoryQueryManager/target/history-query-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+          asset_name: history-query-manager-windows-rabbitmq-${{steps.get-id.outputs.id}}-windows-rabbitmq.exe
+          asset_content_type: application/octet-stream
+      - name: Upload Release history-entity-manager
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: ./HistoryEntityManager/target/history-entity-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+          asset_name: history-entity-manager-windows-rabbitmq-${{steps.get-id.outputs.id}}-windows-rabbitmq.exe
+          asset_content_type: application/octet-stream
+      - name: Upload Release registry-subscription-manager
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: ./RegistrySubscriptionManager/target/registry-subscription-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+          asset_name: registry-subscription-manager-windows-rabbitmq-${{steps.get-id.outputs.id}}-windows-rabbitmq.exe
+          asset_content_type: application/octet-stream
+      - name: Upload Release registry-manager 
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: ./RegistryManager/target/registry-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+          asset_name: registry-manager-windows-rabbitmq-${{steps.get-id.outputs.id}}-windows-rabbitmq.exe
+          asset_content_type: application/octet-stream
+      - name: Upload Release subscription-manager 
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: ./SubscriptionManager/target/subscription-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+          asset_name: subscription-manager-windows-rabbitmq-${{steps.get-id.outputs.id}}-windows-rabbitmq.exe
+          asset_content_type: application/octet-stream
+      - name: Upload Release query-manager 
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: ./QueryManager/target/query-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+          asset_name: query-manager-windows-rabbitmq-${{steps.get-id.outputs.id}}-windows-rabbitmq.exe
+          asset_content_type: application/octet-stream
+      - name: Upload Release entity-manager
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: ./EntityManager/target/entity-manager-${{steps.get-build-id.outputs.id}}-runner.exe
+          asset_name: entity-manager-windows-rabbitmq-${{steps.get-id.outputs.id}}-windows-rabbitmq.exe
+          asset_content_type: application/octet-stream
   build-windows-aaio:
     runs-on: windows-latest
     steps:
