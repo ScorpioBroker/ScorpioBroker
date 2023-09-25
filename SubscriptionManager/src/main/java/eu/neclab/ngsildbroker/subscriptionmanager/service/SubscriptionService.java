@@ -693,9 +693,9 @@ public class SubscriptionService {
 			SubscriptionRequest request = cell.getValue();
 			Subscription sub = request.getSubscription();
 			long now = System.currentTimeMillis();
-			if (sub.getNotification().getLastNotification() + sub.getTimeInterval() < now) {
-
-				unis.add(queryFromSubscription(request).onItem().transformToUni(queryResult -> {
+ 			if (sub.getNotification().getLastNotification() + sub.getTimeInterval()*1000 < now) {
+				sub.getNotification().setLastNotification(now);
+ 				unis.add(queryFromSubscription(request).onItem().transformToUni(queryResult -> {
 					if (queryResult.isEmpty()) {
 						return Uni.createFrom().voidItem();
 					}
