@@ -1,7 +1,13 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+
+import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import com.google.common.collect.ArrayListMultimap;
 
 /**
@@ -17,6 +23,7 @@ public class Notification {
 	private int triggerReason;
 	private List<Object> context;
 	private String type;
+	@JsonIgnore
 	private ArrayListMultimap<String, String> headers;
 
 	public Notification() {
@@ -34,6 +41,27 @@ public class Notification {
 		this.type = type;
 		this.context = context;
 		this.headers = headers;
+	}
+
+	@JsonGetter("headers")
+	public Map<String, Collection<String>> getHeadersMap() {
+		return headers == null ? null : headers.asMap();
+	}
+
+	@JsonSetter("headers")
+	public void setHeadersMap(Map<String, Collection<String>> map) {
+		if (map == null) {
+			return;
+		}
+		ArrayListMultimap<String, String> tmp = ArrayListMultimap.create();
+		for (Entry<String, Collection<String>> entry : map.entrySet()) {
+			Collection<String> values = entry.getValue();
+			String key = entry.getKey();
+			for (String value : values) {
+				tmp.put(key, value);
+			}
+		}
+		this.headers = tmp;
 	}
 
 	public String getId() {
@@ -67,7 +95,6 @@ public class Notification {
 	public void setData(List<Map<String, Object>> data) {
 		this.data = data;
 	}
-
 
 	public int getTriggerReason() {
 		return triggerReason;

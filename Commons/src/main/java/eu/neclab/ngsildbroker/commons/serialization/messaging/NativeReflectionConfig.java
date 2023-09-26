@@ -1,6 +1,7 @@
 package eu.neclab.ngsildbroker.commons.serialization.messaging;
 
 import com.github.jsonldjava.core.Context;
+import com.github.jsonldjava.core.JsonLdOptions;
 import com.google.common.collect.ArrayListMultimap;
 
 import eu.neclab.ngsildbroker.commons.datatypes.AliveAnnouncement;
@@ -12,7 +13,12 @@ import eu.neclab.ngsildbroker.commons.datatypes.LDTemporalQuery;
 import eu.neclab.ngsildbroker.commons.datatypes.NotificationParam;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.SyncMessage;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.BatchRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.DeleteSubscriptionRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.InternalNotification;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.UpdateSubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
@@ -26,7 +32,9 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
 		NotificationParam.class, EndPoint.class, EntityInfo.class, LDTemporalQuery.class, LDGeoQuery.class,
 		SyncMessage.class, AliveAnnouncement.class, GeoRelation.class, Context.class, GeoQueryTerm.class,
 		TemporalQueryTerm.class, LanguageQueryTerm.class, AttrsQueryTerm.class, LanguageQueryTerm.class,
-		QQueryTerm.class, ScopeQueryTerm.class, TypeQueryTerm.class }, serialization = true)
+		QQueryTerm.class, ScopeQueryTerm.class, TypeQueryTerm.class, InternalNotification.class, BatchRequest.class,
+		BaseRequest.class, DeleteSubscriptionRequest.class, UpdateSubscriptionRequest.class,
+		JsonLdOptions.class }, serialization = true)
 public class NativeReflectionConfig {
 
 }

@@ -58,7 +58,7 @@ public class CSourceServiceTest {
 	CSourceDAO cSourceInfoDAO;
 
 	@Mock
-	MutinyEmitter<BaseRequest> kafkaSenderInterface;
+	MutinyEmitter<String> kafkaSenderInterface;
 
 	@Mock
 	MicroServiceUtils microServiceUtils;
@@ -108,7 +108,7 @@ public class CSourceServiceTest {
 		when(cSourceInfoDAO.createRegistration(any())).thenReturn(uniRowsetMock);
 
 		Uni<Void> kafkaResponse = Uni.createFrom().nullItem();
-		when(kafkaSenderInterface.send(any(CreateCSourceRequest.class))).thenReturn(kafkaResponse);
+		when(kafkaSenderInterface.send(any(String.class))).thenReturn(kafkaResponse);
 
 		Uni<NGSILDOperationResult> resultUni = CSourceService.createRegistration(tenant, resolved);
 		NGSILDOperationResult result = resultUni.await().indefinitely();
@@ -124,7 +124,7 @@ public class CSourceServiceTest {
 	public void createRegistrationExistTest() {
 
 		Uni<Void> kafkaResponse = Uni.createFrom().nullItem();
-		when(kafkaSenderInterface.send(any(CreateCSourceRequest.class))).thenReturn(kafkaResponse);
+		when(kafkaSenderInterface.send(any(String.class))).thenReturn(kafkaResponse);
 
 		PgException sqlException = new PgException("duplicate key value violates unique constraint", "", "23505", "");
 
@@ -145,7 +145,7 @@ public class CSourceServiceTest {
 	public void createRegistrationErrorTest() {
 
 		Uni<Void> kafkaResponse = Uni.createFrom().nullItem();
-		when(kafkaSenderInterface.send(any(CreateCSourceRequest.class))).thenReturn(kafkaResponse);
+		when(kafkaSenderInterface.send(any(String.class))).thenReturn(kafkaResponse);
 
 		when(cSourceInfoDAO.createRegistration(any()))
 				.thenReturn(Uni.createFrom().failure(new RuntimeException("Something went wrong")));
@@ -165,7 +165,7 @@ public class CSourceServiceTest {
 	public void updateRegistrationTest() {
 
 		Uni<Void> kafkaResponse = Uni.createFrom().nullItem();
-		when(kafkaSenderInterface.send(any(AppendCSourceRequest.class))).thenReturn(kafkaResponse);
+		when(kafkaSenderInterface.send(any(String.class))).thenReturn(kafkaResponse);
 
 		RowSet<Row> rowSetMock = mock(RowSet.class);
 		when(rowSetMock.rowCount()).thenReturn(1);
@@ -187,7 +187,7 @@ public class CSourceServiceTest {
 	public void updateRegistrationNotFoundTest() {
 
 		Uni<Void> kafkaResponse = Uni.createFrom().nullItem();
-		when(kafkaSenderInterface.send(any(AppendCSourceRequest.class))).thenReturn(kafkaResponse);
+		when(kafkaSenderInterface.send(any(String.class))).thenReturn(kafkaResponse);
 
 		RowSet<Row> rowSetMock = mock(RowSet.class);
 		when(rowSetMock.rowCount()).thenReturn(0);
@@ -210,7 +210,7 @@ public class CSourceServiceTest {
 	public void updateRegistrationErrorTest() {
 
 		Uni<Void> kafkaResponse = Uni.createFrom().nullItem();
-		when(kafkaSenderInterface.send(any(AppendCSourceRequest.class))).thenReturn(kafkaResponse);
+		when(kafkaSenderInterface.send(any(String.class))).thenReturn(kafkaResponse);
 
 		when(cSourceInfoDAO.updateRegistration(any()))
 				.thenReturn(Uni.createFrom().failure(new RuntimeException("Something went wrong")));
@@ -298,7 +298,7 @@ public class CSourceServiceTest {
 	public void deleteRegistrationTest() {
 
 		Uni<Void> kafkaResponse = Uni.createFrom().nullItem();
-		when(kafkaSenderInterface.send(any(DeleteCSourceRequest.class))).thenReturn(kafkaResponse);
+		when(kafkaSenderInterface.send(any(String.class))).thenReturn(kafkaResponse);
 
 		Row rowMock = mock(Row.class);
 		RowSet<Row> rowSetMock = mock(RowSet.class);
@@ -327,7 +327,7 @@ public class CSourceServiceTest {
 	public void deleteRegistrationNotFoundTest() {
 
 		Uni<Void> kafkaResponse = Uni.createFrom().nullItem();
-		when(kafkaSenderInterface.send(any(DeleteCSourceRequest.class))).thenReturn(kafkaResponse);
+		when(kafkaSenderInterface.send(any(String.class))).thenReturn(kafkaResponse);
 
 		RowSet<Row> rowSetMock = mock(RowSet.class);
 		when(rowSetMock.rowCount()).thenReturn(0);
@@ -350,7 +350,7 @@ public class CSourceServiceTest {
 	public void deleteRegistrationErrorTest() {
 
 		Uni<Void> kafkaResponse = Uni.createFrom().nullItem();
-		when(kafkaSenderInterface.send(any(DeleteCSourceRequest.class))).thenReturn(kafkaResponse);
+		when(kafkaSenderInterface.send(any(String.class))).thenReturn(kafkaResponse);
 
 		when(cSourceInfoDAO.deleteRegistration(any()))
 				.thenReturn(Uni.createFrom().failure(new RuntimeException("Something went wrong")));

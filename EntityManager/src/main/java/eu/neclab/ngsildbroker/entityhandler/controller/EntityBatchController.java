@@ -11,6 +11,8 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
 
+import static eu.neclab.ngsildbroker.commons.tools.EntityTools.noConcise;
+
 import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.RestResponse;
@@ -62,6 +64,7 @@ public class EntityBatchController {
 			List<Map<String, Object>> compactedEntities, @QueryParam("localOnly") boolean localOnly) {
 		List<Uni<Tuple2<String, Object>>> unis = Lists.newArrayList();
 		for (Map<String, Object> compactedEntity : compactedEntities) {
+			noConcise(compactedEntity);
 			unis.add(HttpUtils.expandBody(request, compactedEntity, AppConstants.CREATE_REQUEST, ldService).onItem()
 					.transform(i -> Tuple2.of((String) compactedEntity.get("id"), (Object) i)).onFailure()
 					.recoverWithItem(e -> Tuple2.of((String) compactedEntity.get("id"), (Object) e)));
@@ -117,6 +120,7 @@ public class EntityBatchController {
 			@QueryParam("localOnly") boolean localOnly) {
 		List<Uni<Tuple2<String, Object>>> unis = Lists.newArrayList();
 		for (Map<String, Object> compactedEntity : compactedEntities) {
+			noConcise(compactedEntity);
 			unis.add(HttpUtils.expandBody(request, compactedEntity, AppConstants.CREATE_REQUEST, ldService).onItem()
 					.transform(i -> Tuple2.of((String) compactedEntity.get("id"), (Object) i)).onFailure()
 					.recoverWithItem(e -> Tuple2.of((String) compactedEntity.get("id"), (Object) e)));
@@ -176,6 +180,7 @@ public class EntityBatchController {
 			@QueryParam("localOnly") boolean localOnly) {
 		List<Uni<Tuple2<String, Object>>> unis = Lists.newArrayList();
 		for (Map<String, Object> compactedEntity : compactedEntities) {
+			noConcise(compactedEntity);
 			unis.add(HttpUtils.expandBody(request, compactedEntity, AppConstants.APPEND_REQUEST, ldService).onItem()
 					.transform(i -> Tuple2.of((String) compactedEntity.get("id"), (Object) i)).onFailure()
 					.recoverWithItem(e -> Tuple2.of((String) compactedEntity.get("id"), (Object) e)));

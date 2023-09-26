@@ -9,6 +9,10 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 
 public class UpdateSubscriptionRequest extends BaseRequest {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 53529246590592034L;
 	private Context context;
 
 	public UpdateSubscriptionRequest(String tenant, String subscriptionId, Map<String, Object> update,

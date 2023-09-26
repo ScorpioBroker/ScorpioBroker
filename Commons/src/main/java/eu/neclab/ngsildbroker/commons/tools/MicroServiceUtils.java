@@ -1,5 +1,7 @@
 package eu.neclab.ngsildbroker.commons.tools;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -12,12 +14,18 @@ import io.vertx.core.http.impl.headers.HeadersMultiMap;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import io.smallrye.reactive.messaging.MutinyEmitter;
 
 import jakarta.inject.Singleton;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetEncoder;
+import java.nio.charset.CoderResult;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +41,59 @@ public class MicroServiceUtils {
 	@ConfigProperty(name = "mysettings.gateway.port")
 	int port;
 
+	public static void serializeAndSplitObjectAndEmit(Object obj, int messageSize, MutinyEmitter<String> emitter,
+			ObjectMapper objectMapper) {
+		String data;
+		try {
+			data = objectMapper.writeValueAsString(obj);
+		} catch (JsonProcessingException e) {
+			logger.error("Failed to serialize object", e);
+			return;
+		}
+		int size = data.getBytes().length;
+
+		List<String> result;
+		int id = data.hashCode();
+		if (size <= messageSize) {
+			result = new ArrayList<>(1);
+			result.add(data);
+		} else {
+			int messageSizeToUse = messageSize - 32;
+			result = splitStringByByteLength(data, messageSizeToUse);
+		}
+		for (String message : result) {
+			emitter.sendAndForget(message);
+		}
+	}
+
+	public static List<String> splitStringByByteLength(String src, int maxsize) {
+		String id = String.format("%020d", src.hashCode() * System.currentTimeMillis());
+		logger.debug("Splitting into size " + maxsize);
+		logger.debug(src);
+		Charset cs = Charset.forName("UTF-16");
+		CharsetEncoder coder = cs.newEncoder();
+		ByteBuffer out = ByteBuffer.allocate(maxsize); // output buffer of required size
+		CharBuffer in = CharBuffer.wrap(src);
+		List<String> result = new ArrayList<>(); // a list to store the chunks
+		int pos = 0;
+		int i = 0;
+		while (true) {
+			CoderResult cr = coder.encode(in, out, true); // try to encode as much as possible
+			int newpos = src.length() - in.length();
+			String posS = String.format("%011d", i);
+			String s = "$" + id + posS + src.substring(pos, newpos);
+			i++;
+			result.add(s); // add what has been encoded to the list
+			pos = newpos; // store new input position
+			out.rewind(); // and rewind output buffer
+			if (!cr.isOverflow()) {
+				break; // everything has been encoded
+			}
+		}
+		result.set(0, "#" + id + String.format("%011d", i) + result.get(0).substring(23));
+		result.set(result.size() -  1, "%" + result.get(result.size() - 1).substring(1));
+		return result;
+	}
 	public URI getGatewayURL() {
 		logger.trace("getGatewayURL() :: started");
 		String url = null;
@@ -110,7 +171,6 @@ public class MicroServiceUtils {
 			} else if (originalValue instanceof Boolean) {
 				copiedValue = ((Boolean) originalValue).booleanValue();
 			} else if (originalValue == null) {
-				//System.out.println(entry.getKey() + " was null");
 				continue;
 			} else {
 				copiedValue = originalValue.toString();

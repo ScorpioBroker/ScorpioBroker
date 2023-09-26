@@ -1,9 +1,8 @@
 {
 	"info": {
-		"_postman_id": "4db5203c-ebe3-4fcd-9a15-82b6e94a648c",
+		"_postman_id": "9dbfa800-5bdc-4dfe-86e7-8193cca105e0",
 		"name": "API Test",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "26387112"
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
 		{
@@ -10052,10 +10051,10 @@
 																	"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
 																	"    pm.expect(jsonData.length).to.eql(4);\r",
-																	"    pm.expect(jsonData[0]).to.eql(pm.collectionVariables.get(\"created4level\"));\r",
-																	"    pm.expect(jsonData[1]).to.eql(pm.collectionVariables.get(\"created2level\"));\r",
-																	"    pm.expect(jsonData[2]).to.eql(pm.collectionVariables.get(\"created1level\"));\r",
-																	"    pm.expect(jsonData[3]).to.eql(pm.collectionVariables.get(\"createdmulti\"));\r",
+																	"    pm.expect(jsonData).to.deep.include(pm.collectionVariables.get(\"created4level\"));\r",
+																	"    pm.expect(jsonData).to.deep.include(pm.collectionVariables.get(\"created2level\"));\r",
+																	"    pm.expect(jsonData).to.deep.include(pm.collectionVariables.get(\"created1level\"));\r",
+																	"    pm.expect(jsonData).to.deep.include(pm.collectionVariables.get(\"createdmulti\"));\r",
 																	"    \r",
 																	"});"
 																],
@@ -10110,9 +10109,9 @@
 																	"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
 																	"    pm.expect(jsonData.length).to.eql(3);\r",
-																	"    pm.expect(jsonData[0]).to.eql(pm.collectionVariables.get(\"created4level\"));\r",
-																	"    pm.expect(jsonData[1]).to.eql(pm.collectionVariables.get(\"created2level\"));\r",
-																	"    pm.expect(jsonData[2]).to.eql(pm.collectionVariables.get(\"createdmulti\"));\r",
+																	"    pm.expect(jsonData).to.deep.include(pm.collectionVariables.get(\"created4level\"));\r",
+																	"    pm.expect(jsonData).to.deep.include(pm.collectionVariables.get(\"created2level\"));\r",
+																	"    pm.expect(jsonData).to.deep.include(pm.collectionVariables.get(\"createdmulti\"));\r",
 																	"    \r",
 																	"});"
 																],
@@ -10167,8 +10166,8 @@
 																	"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
 																	"    pm.expect(jsonData.length).to.eql(2);\r",
-																	"    pm.expect(jsonData[0]).to.eql(pm.collectionVariables.get(\"created4level\"));\r",
-																	"    pm.expect(jsonData[1]).to.eql(pm.collectionVariables.get(\"createdmulti\"));\r",
+																	"    pm.expect(jsonData).to.deep.include(pm.collectionVariables.get(\"created4level\"));\r",
+																	"    pm.expect(jsonData).to.deep.include(pm.collectionVariables.get(\"createdmulti\"));\r",
 																	"    \r",
 																	"});"
 																],
@@ -10223,8 +10222,8 @@
 																	"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
 																	"    pm.expect(jsonData.length).to.eql(2);\r",
-																	"    pm.expect(jsonData[0]).to.eql(pm.collectionVariables.get(\"created2level\"));\r",
-																	"    pm.expect(jsonData[1]).to.eql(pm.collectionVariables.get(\"created2levelnotfound\"));\r",
+																	"    pm.expect(jsonData).to.deep.include(pm.collectionVariables.get(\"created2level\"));\r",
+																	"    pm.expect(jsonData).to.deep.include(pm.collectionVariables.get(\"created2levelnotfound\"));\r",
 																	"});"
 																],
 																"type": "text/javascript"
@@ -10278,7 +10277,7 @@
 																	"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
 																	"    pm.expect(jsonData.length).to.eql(1);\r",
-																	"    pm.expect(jsonData[0]).to.eql(pm.collectionVariables.get(\"createdmulti\"));\r",
+																	"    pm.expect(jsonData).to.deep.include(pm.collectionVariables.get(\"createdmulti\"));\r",
 																	"});"
 																],
 																"type": "text/javascript"
@@ -10333,10 +10332,10 @@
 																	"    var jsonData = pm.response.json();\r",
 																	"    pm.expect(jsonData.length).to.eql(4);\r",
 																	"    console.log(\"length :: \",jsonData.length);\r",
-																	"     pm.expect(jsonData[0]).to.eql(pm.collectionVariables.get(\"created4level\"));\r",
-																	"     pm.expect(jsonData[1]).to.eql(pm.collectionVariables.get(\"created4levelnotfound\"));\r",
-																	"     pm.expect(jsonData[2]).to.eql(pm.collectionVariables.get(\"created2levelnotfound\"));\r",
-																	"\t pm.expect(jsonData[3]).to.eql(pm.collectionVariables.get(\"createdmulti\"));\r",
+																	"     pm.expect(jsonData).to.deep.include(pm.collectionVariables.get(\"created4level\"));\r",
+																	"     pm.expect(jsonData).to.deep.include(pm.collectionVariables.get(\"created4levelnotfound\"));\r",
+																	"     pm.expect(jsonData).to.deep.include(pm.collectionVariables.get(\"created2levelnotfound\"));\r",
+																	"\t pm.expect(jsonData).to.deep.include(pm.collectionVariables.get(\"createdmulti\"));\r",
 																	"});"
 																],
 																"type": "text/javascript"
@@ -37768,10 +37767,10 @@
 																	"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
 																	"    pm.expect(jsonData.length).to.eql(4);\r",
-																	"    pm.expect(jsonData[0]).to.eql(pm.collectionVariables.get(\"created4level\"));\r",
-																	"    pm.expect(jsonData[1]).to.eql(pm.collectionVariables.get(\"created2level\"));\r",
-																	"    pm.expect(jsonData[2]).to.eql(pm.collectionVariables.get(\"created1level\"));\r",
-																	"    pm.expect(jsonData[3]).to.eql(pm.collectionVariables.get(\"createdmulti\"));\r",
+																	"    pm.expect(jsonData).to.deep.include(pm.collectionVariables.get(\"created4level\"));\r",
+																	"    pm.expect(jsonData).to.deep.include(pm.collectionVariables.get(\"created2level\"));\r",
+																	"    pm.expect(jsonData).to.deep.include(pm.collectionVariables.get(\"created1level\"));\r",
+																	"    pm.expect(jsonData).to.deep.include(pm.collectionVariables.get(\"createdmulti\"));\r",
 																	"    \r",
 																	"});"
 																],
@@ -37831,9 +37830,9 @@
 																	"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
 																	"    pm.expect(jsonData.length).to.eql(3);\r",
-																	"    pm.expect(jsonData[0]).to.eql(pm.collectionVariables.get(\"created4level\"));\r",
-																	"    pm.expect(jsonData[1]).to.eql(pm.collectionVariables.get(\"created2level\"));\r",
-																	"    pm.expect(jsonData[2]).to.eql(pm.collectionVariables.get(\"createdmulti\"));\r",
+																	"    pm.expect(jsonData).to.deep.include(pm.collectionVariables.get(\"created4level\"));\r",
+																	"    pm.expect(jsonData).to.deep.include(pm.collectionVariables.get(\"created2level\"));\r",
+																	"    pm.expect(jsonData).to.deep.include(pm.collectionVariables.get(\"createdmulti\"));\r",
 																	"    \r",
 																	"});"
 																],
@@ -37893,8 +37892,8 @@
 																	"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
 																	"    pm.expect(jsonData.length).to.eql(2);\r",
-																	"    pm.expect(jsonData[0]).to.eql(pm.collectionVariables.get(\"created4level\"));\r",
-																	"    pm.expect(jsonData[1]).to.eql(pm.collectionVariables.get(\"createdmulti\"));\r",
+																	"    pm.expect(jsonData).to.deep.include(pm.collectionVariables.get(\"created4level\"));\r",
+																	"    pm.expect(jsonData).to.deep.include(pm.collectionVariables.get(\"createdmulti\"));\r",
 																	"    \r",
 																	"});"
 																],
@@ -37954,8 +37953,8 @@
 																	"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
 																	"    pm.expect(jsonData.length).to.eql(2);\r",
-																	"    pm.expect(jsonData[0]).to.eql(pm.collectionVariables.get(\"created2level\"));\r",
-																	"    pm.expect(jsonData[1]).to.eql(pm.collectionVariables.get(\"created2levelnotfound\"));\r",
+																	"    pm.expect(jsonData).to.deep.include(pm.collectionVariables.get(\"created2level\"));\r",
+																	"    pm.expect(jsonData).to.deep.include(pm.collectionVariables.get(\"created2levelnotfound\"));\r",
 																	"});"
 																],
 																"type": "text/javascript"
@@ -38014,7 +38013,7 @@
 																	"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
 																	"    pm.expect(jsonData.length).to.eql(1);\r",
-																	"    pm.expect(jsonData[0]).to.eql(pm.collectionVariables.get(\"createdmulti\"));\r",
+																	"    pm.expect(jsonData).to.deep.include(pm.collectionVariables.get(\"createdmulti\"));\r",
 																	"});"
 																],
 																"type": "text/javascript"
@@ -49989,19 +49988,59 @@
 	],
 	"variable": [
 		{
-			"key": "created",
+			"key": "created4level",
 			"value": ""
 		},
 		{
-			"key": "entityId",
+			"key": "entityId4level",
 			"value": ""
 		},
 		{
-			"key": "updated",
+			"key": "created4levelnotfound",
 			"value": ""
 		},
 		{
-			"key": "updatedAttrib",
+			"key": "entityId4levelnotfound",
+			"value": ""
+		},
+		{
+			"key": "created2level",
+			"value": ""
+		},
+		{
+			"key": "entityId2level",
+			"value": ""
+		},
+		{
+			"key": "created2levelnotfound",
+			"value": ""
+		},
+		{
+			"key": "entityId2levelnotfound",
+			"value": ""
+		},
+		{
+			"key": "created1level",
+			"value": ""
+		},
+		{
+			"key": "entityId1level",
+			"value": ""
+		},
+		{
+			"key": "created1levelnotfound",
+			"value": ""
+		},
+		{
+			"key": "entityId1levelnotfound",
+			"value": ""
+		},
+		{
+			"key": "createdmulti",
+			"value": ""
+		},
+		{
+			"key": "entityIdmulti",
 			"value": ""
 		}
 	]

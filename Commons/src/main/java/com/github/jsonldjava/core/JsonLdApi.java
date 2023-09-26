@@ -2620,6 +2620,11 @@ public class JsonLdApi {
 						final String id = (String) ((Map<String, Object>) quad.get(attr)).get("value");
 						if (!bnodes.containsKey(id)) {
 							bnodes.put(id, new LinkedHashMap<String, List<Object>>() {
+								/**
+								 * 
+								 */
+								private static final long serialVersionUID = -3809863660799245111L;
+
 								{
 									put("quads", new ArrayList<Object>());
 								}

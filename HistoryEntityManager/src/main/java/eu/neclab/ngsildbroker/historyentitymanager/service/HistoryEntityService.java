@@ -77,7 +77,7 @@ public class HistoryEntityService {
 
 	@Inject
 	@Channel(AppConstants.HISTORY_CHANNEL)
-	MutinyEmitter<BaseRequest> kafkaSenderInterface;
+	MutinyEmitter<String> kafkaSenderInterface;
 
 	@Inject
 	Vertx vertx;
@@ -235,7 +235,7 @@ public class HistoryEntityService {
 					.transformToUni(compacted -> {
 						return webClient
 								.post(remoteHost.host() + NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT + "/"
-										+ NGSIConstants.QUERY_PARAMETER_ATTRS + "/" + request.getAttrId() + "/"
+										+ NGSIConstants.QUERY_PARAMETER_ATTRS + "/" + request.getAttribName() + "/"
 										+ request.getInstanceId())
 								.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(compacted))
 								.onItemOrFailure().transform((response, failure) -> {
@@ -426,7 +426,7 @@ public class HistoryEntityService {
 				if ((regEntry.eId() == null && regEntry.eIdp() == null)
 						|| (regEntry.eId() != null && regEntry.eId().equals(request.getId()))
 						|| (regEntry.eIdp() != null && request.getId().matches(regEntry.eIdp()))
-								&& (regEntry.eProp() == null || regEntry.eProp().equals(request.getAttrId()))) {
+								&& (regEntry.eProp() == null || regEntry.eProp().equals(request.getAttribName()))) {
 					result.add(new RemoteHost(regEntry.host().host(), regEntry.host().tenant(),
 							regEntry.host().headers(), regEntry.host().cSourceId(), true, false, regEntry.regMode(),
 							regEntry.canDoZip(), regEntry.canDoIdQuery()));
@@ -483,7 +483,7 @@ public class HistoryEntityService {
 				return Uni.createFrom().voidItem();
 			});
 		case AppConstants.DELETE_ATTRIBUTE_REQUEST:
-			return historyDAO.setAttributeDeleted((DeleteAttributeRequest) request).onFailure().recoverWithUni(e -> {
+			return historyDAO.setAttributeDeleted(request).onFailure().recoverWithUni(e -> {
 				logger.debug("Failed to record delete attrs", e);
 				return Uni.createFrom().voidItem();
 			});
