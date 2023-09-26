@@ -92,9 +92,10 @@ public class EntityInfoDAO {
 		});
 	}
 
+	@SuppressWarnings("unchecked")
 	public Uni<RowSet<Row>> partialUpdateAttribute(UpdateEntityRequest request) {
 		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
-			Object objPayload = request.getPayload().get(request.getAttrName());
+			Object objPayload = request.getPayload().get(request.getAttribName());
 			Tuple tuple;
 			List<Object> payloads = new ArrayList<>();
 			if (objPayload instanceof List<?> ) {
@@ -103,7 +104,7 @@ public class EntityInfoDAO {
 				payloads.add(objPayload);
 			}
 			((Map<String,Object>)payloads.get(0)).remove(NGSIConstants.NGSI_LD_CREATED_AT);
-			tuple = Tuple.of(request.getAttrName(), new JsonArray(payloads), request.getId());
+			tuple = Tuple.of(request.getAttribName(), new JsonArray(payloads), request.getId());
 			String sql = """
 					WITH old_entity AS (
 					    SELECT ENTITY

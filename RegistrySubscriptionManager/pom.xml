@@ -25,6 +25,8 @@
 						<configuration>
 							<excludes>
 								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionMessagingInMemory.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionMessagingByteArray.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionSyncServiceByteArray.java</exclude>
 							</excludes>
 						</configuration>
 					</plugin>
@@ -45,13 +47,86 @@
 						<artifactId>maven-compiler-plugin</artifactId>
 						<configuration>
 							<excludes>
-								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionMessagingKafka.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionMessagingString.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionMessagingByteArray.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionSyncServiceByteArray.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionSyncServiceString.java</exclude>
 							</excludes>
 						</configuration>
 					</plugin>
 				</plugins>
 			</build>
 		</profile>
+		<profile>
+			<id>sqs</id>
+			<activation>
+				<property>
+					<name>sqs</name>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-compiler-plugin</artifactId>
+						<configuration>
+							<excludes>
+								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionMessagingByteArray.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionMessagingInMemory.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionSyncServiceByteArray.java</exclude>
+							</excludes>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
+			<id>rabbitmq</id>
+			<activation>
+				<property>
+					<name>rabbitmq</name>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-compiler-plugin</artifactId>
+						<configuration>
+							<excludes>
+								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionMessagingString.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionMessagingInMemory.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionSyncServiceString.java</exclude>
+							</excludes>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
+			<id>mqtt</id>
+			<activation>
+				<property>
+					<name>mqtt</name>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-compiler-plugin</artifactId>
+						<configuration>
+							<excludes>
+								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionMessagingString.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionMessagingInMemory.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionSyncServiceString.java</exclude>
+							</excludes>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+
 		<profile>
 			<id>docker</id>
 			<activation>

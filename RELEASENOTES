@@ -1,3 +1,22 @@
+RELEASE NOTES SCORPIO 4.1.5
+
+With this release we are adding support for various message buses using the Apache Camel extension for the messaging between our 
+microservices. For now we have added support for MQTT, Rabbit MQ and AWS SQS.
+Since we leveraging Apache Camel you can supply various configuration options via parameters in the connection URI.
+You can do this by setting the environment variable MYSETTINGS_MESSAGECONNECTION_OPTIONS. This is the full parameter part of a URI
+so you got to start with a leading question mark, e.g. for mqtt MYSETTINGS_MESSAGECONNECTION_OPTIONS=?clientId=MySpecialID&qos=1
+Please visit the respective connector websites from Camel for all options
+https://camel.apache.org/components/3.20.x/paho-mqtt5-component.html
+https://camel.apache.org/components/3.20.x/rabbitmq-component.html
+https://camel.apache.org/components/3.20.x/aws2-sqs-component.html  
+
+You can still use the BUSHOST and BUSPORT environment variables to configure the host address. 
+You can find new compose examples in the compose-files folder.
+
+Support for Vocab properties added
+
+Various bugfixes
+
 RELEASE NOTES SCORPIO 4.1.4
 
 This release includes various fixes and the ability to directly inline entities from relationships in queries 

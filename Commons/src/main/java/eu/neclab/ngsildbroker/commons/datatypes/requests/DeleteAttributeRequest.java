@@ -4,6 +4,11 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 
 public class DeleteAttributeRequest extends EntityRequest {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 7154593675061044742L;
+
 	public DeleteAttributeRequest() {
 
 	}
@@ -14,34 +19,6 @@ public class DeleteAttributeRequest extends EntityRequest {
 		this.attribName = attribName;
 		this.datasetId = datasetId;
 		this.deleteAll = deleteAll;
-	}
-
-	public String getAttribName() {
-		return attribName;
-	}
-
-	public String getDatasetId() {
-		return datasetId;
-	}
-
-	public boolean deleteAll() {
-		return deleteAll;
-	}
-
-	public boolean isDeleteAll() {
-		return deleteAll;
-	}
-
-	public void setDeleteAll(boolean deleteAll) {
-		this.deleteAll = deleteAll;
-	}
-
-	public void setAttribName(String attribName) {
-		this.attribName = attribName;
-	}
-
-	public void setDatasetId(String datasetId) {
-		this.datasetId = datasetId;
 	}
 
 }

@@ -1,17 +1,14 @@
 package eu.neclab.ngsildbroker.subscriptionmanager.messaging;
 
+import jakarta.inject.Singleton;
+
+import org.eclipse.microprofile.reactive.messaging.Acknowledgment;
+import org.eclipse.microprofile.reactive.messaging.Incoming;
+import org.eclipse.microprofile.reactive.messaging.Acknowledgment.Strategy;
+
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.BatchRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.InternalNotification;
-import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import io.quarkus.arc.profile.IfBuildProfile;
 import io.smallrye.mutiny.Uni;
-import org.eclipse.microprofile.reactive.messaging.Acknowledgment;
-import org.eclipse.microprofile.reactive.messaging.Acknowledgment.Strategy;
-import org.eclipse.microprofile.reactive.messaging.Incoming;
-
-import jakarta.inject.Singleton;
 
 @Singleton
 @IfBuildProfile("in-memory")
@@ -19,19 +16,19 @@ public class SubscriptionMessagingInMemory extends SubscriptionMessagingBase {
 
 	@Incoming(AppConstants.ENTITY_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
-	public Uni<Void> handleEntity(BaseRequest message) {
-		return baseHandleEntity(MicroServiceUtils.deepCopyRequestMessage(message));
-	}
-
-	@Incoming(AppConstants.ENTITY_BATCH_CHANNEL)
-	@Acknowledgment(Strategy.PRE_PROCESSING)
-	public Uni<Void> handleBatchEntities(BatchRequest message) {
-		return baseHandleBatchEntities(MicroServiceUtils.deepCopyRequestMessage(message));
+	public Uni<Void> handleEntity(String byteMessage) {
+		return handleEntityRaw(byteMessage);
 	}
 
 	@Incoming(AppConstants.INTERNAL_NOTIFICATION_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
-	public Uni<Void> handleInternalNotification(InternalNotification message) {
-		return baseHandleInternalNotification(message);
+	public Uni<Void> handleInternalNotification(String byteMessage) {
+		return handleInternalNotificationRaw(byteMessage);
+	}
+
+	@Incoming(AppConstants.ENTITY_BATCH_CHANNEL)
+	@Acknowledgment(Strategy.PRE_PROCESSING)
+	public Uni<Void> handleBatchEntities(String byteMessage) {
+		return handleBatchEntitiesRaw(byteMessage);
 	}
 }

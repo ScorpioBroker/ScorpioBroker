@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.registry.subscriptionmanager.service;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
@@ -17,12 +18,16 @@ import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLDService;
+import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -47,9 +52,11 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import eu.neclab.ngsildbroker.commons.tools.SubscriptionTools;
-import eu.neclab.ngsildbroker.registry.subscriptionmanager.messaging.RegistrySubscriptionSyncService;
+
+import eu.neclab.ngsildbroker.registry.subscriptionmanager.messaging.SyncService;
 import eu.neclab.ngsildbroker.registry.subscriptionmanager.repository.RegistrySubscriptionInfoDAO;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import io.quarkus.scheduler.Scheduled;
@@ -76,7 +83,13 @@ public class RegistrySubscriptionService {
 	@Inject
 	@Channel(AppConstants.INTERNAL_NOTIFICATION_CHANNEL)
 	@Broadcast
-	MutinyEmitter<InternalNotification> internalNotificationSender;
+	MutinyEmitter<String> internalNotificationSender;
+
+	@Inject
+	ObjectMapper objectMapper;
+
+	@ConfigProperty(name = "scorpio.messaging.maxSize")
+	int messageSize;
 
 	@Inject
 	Vertx vertx;
@@ -90,15 +103,20 @@ public class RegistrySubscriptionService {
 
 	private Map<String, MqttClient> host2MqttClient = Maps.newHashMap();
 
-	private RegistrySubscriptionSyncService subscriptionSyncService;
+	private SyncService subscriptionSyncService;
 
 	@Inject
 	JsonLDService ldService;
 
+	@ConfigProperty(name = "scorpio.alltypesub.type", defaultValue = "*")
+	private String allTypeSubType;
+
+	private String ALL_TYPES_SUB;
+
 	@PostConstruct
 	void setup() {
 		this.webClient = WebClient.create(vertx);
-
+		ALL_TYPES_SUB = NGSIConstants.NGSI_LD_DEFAULT_PREFIX + allTypeSubType;
 		regDAO.loadSubscriptions().onItem().transformToUni(subs -> {
 			List<Uni<Tuple2<Tuple2<String, Map<String, Object>>, Context>>> unis = Lists.newArrayList();
 			subs.forEach(tuple -> {
@@ -314,8 +332,12 @@ public class RegistrySubscriptionService {
 						Uni<Void> toSend;
 						switch (notificationParam.getEndPoint().getUri().getScheme()) {
 						case "internal":
-							toSend = internalNotificationSender.send(new InternalNotification(potentialSub.getTenant(),
-									potentialSub.getId(), notification));
+							MicroServiceUtils
+									.serializeAndSplitObjectAndEmit(
+											new InternalNotification(potentialSub.getTenant(), potentialSub.getId(),
+													notification),
+											messageSize, internalNotificationSender, objectMapper);
+							toSend = Uni.createFrom().voidItem();
 							break;
 						case "mqtt":
 						case "mqtts":
@@ -482,6 +504,9 @@ public class RegistrySubscriptionService {
 		}
 
 		for (EntityInfo entityInfo : sub.getEntities()) {
+			if (entityInfo.getType().equals(ALL_TYPES_SUB)) {
+				return true;
+			}
 			if (entityInfo.getId() != null && entityInfo.getType() != null && sub.getAttributeNames() != null) {
 				if (checkRegForIdTypeAttrs(entityInfo.getId(), entityInfo.getType(), sub.getAttributeNames(),
 						(List<Map<String, Object>>) reg.get(NGSIConstants.NGSI_LD_INFORMATION))) {
@@ -1099,6 +1124,7 @@ public class RegistrySubscriptionService {
 			message.setSubscription(Subscription.expandSubscription(message.getPayload(), message.getContext(), false));
 		} catch (ResponseException e) {
 			logger.error("Failed to load internal subscription", e);
+			return Uni.createFrom().voidItem();
 		}
 		boolean sendNotification = !tenant2subscriptionId2Subscription.contains(message.getTenant(), message.getId());
 		try {
@@ -1125,8 +1151,10 @@ public class RegistrySubscriptionService {
 				});
 				return SubscriptionTools.generateCsourceNotification(message, data,
 						AppConstants.INTERNAL_NOTIFICATION_REQUEST, ldService).onItem().transformToUni(noti -> {
-							return internalNotificationSender
-									.send(new InternalNotification(message.getTenant(), message.getId(), noti));
+							MicroServiceUtils.serializeAndSplitObjectAndEmit(
+									new InternalNotification(message.getTenant(), message.getId(), noti), messageSize,
+									internalNotificationSender, objectMapper);
+							return Uni.createFrom().voidItem();
 						});
 
 			});
@@ -1281,7 +1309,7 @@ public class RegistrySubscriptionService {
 
 	}
 
-	public void addSyncService(RegistrySubscriptionSyncService registrySubscriptionSyncService) {
+	public void addSyncService(SyncService registrySubscriptionSyncService) {
 		this.subscriptionSyncService = registrySubscriptionSyncService;
 
 	}

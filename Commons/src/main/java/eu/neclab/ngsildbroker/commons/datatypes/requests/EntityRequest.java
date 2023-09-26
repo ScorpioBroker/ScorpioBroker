@@ -4,6 +4,11 @@ import java.util.Map;
 
 public class EntityRequest extends BaseRequest {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1963944233396659861L;
+
 	public EntityRequest() {
 
 	}

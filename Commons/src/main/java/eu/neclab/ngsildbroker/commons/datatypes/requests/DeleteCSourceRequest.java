@@ -5,6 +5,11 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 public class DeleteCSourceRequest extends CSourceRequest {
 
 	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 68012134767909099L;
+
+	/**
 	 * constructor for serialization
 	 */
 	public DeleteCSourceRequest() {

@@ -1,5 +1,29 @@
 package eu.neclab.ngsildbroker.subscriptionmanager.service;
 
+import java.net.URI;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+import org.apache.commons.lang3.StringUtils;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.rest.client.inject.RestClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLDService;
 import com.github.jsonldjava.core.JsonLdConsts;
@@ -17,7 +41,6 @@ import eu.neclab.ngsildbroker.commons.datatypes.EntityInfo;
 import eu.neclab.ngsildbroker.commons.datatypes.NotificationParam;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteAttributeRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.DeleteSubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.InternalNotification;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
@@ -32,7 +55,7 @@ import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import eu.neclab.ngsildbroker.commons.tools.SubscriptionTools;
-import eu.neclab.ngsildbroker.subscriptionmanager.messaging.SubscriptionSyncService;
+import eu.neclab.ngsildbroker.subscriptionmanager.messaging.SyncService;
 import eu.neclab.ngsildbroker.subscriptionmanager.repository.SubscriptionInfoDAO;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import io.quarkus.scheduler.Scheduled;
@@ -49,30 +72,6 @@ import io.vertx.mutiny.mqtt.MqttClient;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowIterator;
 import io.vertx.pgclient.PgException;
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
-import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
-import org.apache.commons.lang3.StringUtils;
-import org.eclipse.microprofile.reactive.messaging.Channel;
-import org.eclipse.microprofile.rest.client.inject.RestClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.net.URI;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
 @Singleton
 public class SubscriptionService {
 
@@ -87,7 +86,13 @@ public class SubscriptionService {
 	@Inject
 	@Channel(AppConstants.INTERNAL_SUBS_CHANNEL)
 	@Broadcast
-	MutinyEmitter<SubscriptionRequest> internalSubEmitter;
+	MutinyEmitter<String> internalSubEmitter;
+
+	@Inject
+	ObjectMapper objectMapper;
+
+	@ConfigProperty(name = "scorpio.messaging.maxSize")
+	int messageSize;
 
 	@Inject
 	Vertx vertx;
@@ -102,6 +107,12 @@ public class SubscriptionService {
 
 	@Inject
 	MicroServiceUtils microServiceUtils;
+
+	@ConfigProperty(name = "scorpio.alltypesub.type", defaultValue = "*")
+	private String allTypeSubType;
+
+	private String ALL_TYPES_SUB;
+
 	private Table<String, String, SubscriptionRequest> tenant2subscriptionId2Subscription = HashBasedTable.create();
 	private Table<String, String, SubscriptionRequest> tenant2subscriptionId2IntervalSubscription = HashBasedTable
 			.create();
@@ -112,7 +123,7 @@ public class SubscriptionService {
 	private WebClient webClient;
 
 	private Map<String, MqttClient> host2MqttClient = Maps.newHashMap();
-	private SubscriptionSyncService subscriptionSyncService = null;
+	private SyncService subscriptionSyncService = null;
 
 	private static Map<String, Object> compareMaps(Map<String, Object> oldMap, Map<String, Object> newMap) {
 		Map<String, Object> resultMap = new HashMap<>();
@@ -198,6 +209,7 @@ public class SubscriptionService {
 	@PostConstruct
 	void setup() {
 		this.webClient = WebClient.create(vertx);
+		ALL_TYPES_SUB = NGSIConstants.NGSI_LD_DEFAULT_PREFIX + allTypeSubType;
 		subDAO.loadSubscriptions().onItem().transformToUni(subs -> {
 			List<Uni<Tuple2<Tuple2<String, Map<String, Object>>, Context>>> unis = Lists.newArrayList();
 			subs.forEach(tuple -> {
@@ -216,6 +228,7 @@ public class SubscriptionService {
 					try {
 						request = new SubscriptionRequest(tuple.getItem1().getItem1(), tuple.getItem1().getItem2(),
 								tuple.getItem2());
+						request.setSendTimestamp(-1);
 						if (isIntervalSub(request)) {
 							this.tenant2subscriptionId2IntervalSubscription.put(request.getTenant(), request.getId(),
 									request);
@@ -265,13 +278,14 @@ public class SubscriptionService {
 				} else {
 					syncService = Uni.createFrom().voidItem();
 				}
-				return syncService.onItem().transformToUni(v2 -> {
-					return internalSubEmitter.send(request).onItem().transform(v -> {
-						NGSILDOperationResult result = new NGSILDOperationResult(
-								AppConstants.CREATE_SUBSCRIPTION_REQUEST, request.getId());
-						result.addSuccess(new CRUDSuccess(null, null, request.getId(), Sets.newHashSet()));
-						return result;
-					});
+				return syncService.onItem().transform(v2 -> {
+					MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, internalSubEmitter,
+							objectMapper);
+					NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.CREATE_SUBSCRIPTION_REQUEST,
+							request.getId());
+					result.addSuccess(new CRUDSuccess(null, null, request.getId(), Sets.newHashSet()));
+					return result;
+
 				});
 			}).onFailure().recoverWithUni(e -> {
 				if (e instanceof PgException && ((PgException) e).getCode().equals(AppConstants.SQL_ALREADY_EXISTS)) {
@@ -283,6 +297,7 @@ public class SubscriptionService {
 
 			});
 		});
+
 	}
 
 	public Uni<NGSILDOperationResult> updateSubscription(String tenant, String subscriptionId,
@@ -308,7 +323,7 @@ public class SubscriptionService {
 							} else {
 								syncService = Uni.createFrom().voidItem();
 							}
-							return syncService.onItem().transformToUni(v2 -> {
+							return syncService.onItem().transform(v2 -> {
 								if (isIntervalSub(updatedRequest)) {
 									tenant2subscriptionId2IntervalSubscription.put(tenant, updatedRequest.getId(),
 											updatedRequest);
@@ -318,10 +333,10 @@ public class SubscriptionService {
 											updatedRequest);
 									tenant2subscriptionId2IntervalSubscription.remove(tenant, updatedRequest.getId());
 								}
-								return internalSubEmitter.send(updatedRequest).onItem().transform(v -> {
-									return new NGSILDOperationResult(AppConstants.UPDATE_SUBSCRIPTION_REQUEST,
-											request.getId());
-								});
+								MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize,
+										internalSubEmitter, objectMapper);
+								return new NGSILDOperationResult(AppConstants.UPDATE_SUBSCRIPTION_REQUEST,
+										request.getId());
 							});
 						});
 					});
@@ -340,10 +355,10 @@ public class SubscriptionService {
 			} else {
 				syncService = Uni.createFrom().voidItem();
 			}
-			return syncService.onItem().transformToUni(v2 -> {
-				return internalSubEmitter.send(request).onItem().transform(v -> {
-					return new NGSILDOperationResult(AppConstants.DELETE_SUBSCRIPTION_REQUEST, request.getId());
-				});
+			return syncService.onItem().transform(v2 -> {
+				MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, internalSubEmitter,
+						objectMapper);
+				return new NGSILDOperationResult(AppConstants.DELETE_SUBSCRIPTION_REQUEST, request.getId());
 			});
 		});
 	}
@@ -392,59 +407,62 @@ public class SubscriptionService {
 		List<Uni<Void>> unis = Lists.newArrayList();
 		logger.debug("checking subscriptions");
 		for (SubscriptionRequest potentialSub : potentialSubs) {
+			if (potentialSub.getSendTimestamp() != -1 && potentialSub.getSendTimestamp() > message.getSendTimestamp()) {
+				continue;
+			}
 			switch (message.getRequestType()) {
-				case AppConstants.UPDATE_REQUEST, AppConstants.PARTIAL_UPDATE_REQUEST, AppConstants.MERGE_PATCH_REQUEST,
-						AppConstants.REPLACE_ENTITY_REQUEST, AppConstants.REPLACE_ATTRIBUTE_REQUEST -> {
+			case AppConstants.UPDATE_REQUEST, AppConstants.PARTIAL_UPDATE_REQUEST, AppConstants.MERGE_PATCH_REQUEST,
+					AppConstants.REPLACE_ENTITY_REQUEST, AppConstants.REPLACE_ATTRIBUTE_REQUEST -> {
+				unis.add(localEntityService.getAllByIds(message.getTenant(), message.getId(), true).onItem()
+						.transformToUni(entityList -> {
+							Map<String, Object> payload = new HashMap<>();
+							if (potentialSub.getSubscription().getNotification().getShowChanges()) {
+								payload.put(JsonLdConsts.GRAPH,
+										List.of(compareMaps(message.getPreviousEntity(), entityList.get(0))));
+							} else {
+								payload.put(JsonLdConsts.GRAPH, entityList);
+							}
+							return sendNotification(potentialSub, payload, message.getRequestType());
+						}));
+			}
+			case AppConstants.UPSERT_REQUEST, AppConstants.CREATE_REQUEST, AppConstants.APPEND_REQUEST ->
+				unis.add(localEntityService.getAllByIds(message.getTenant(), message.getId(), true).onItem()
+						.transformToUni(entityList -> {
+							Map<String, Object> payload = new HashMap<>();
+							payload.put(JsonLdConsts.GRAPH, entityList);
+							return sendNotification(potentialSub, payload, message.getRequestType());
+						}));
+			case AppConstants.DELETE_REQUEST -> {
+				if (message.getPayload() != null && shouldFire(message.getPayload().keySet(), potentialSub)
+						&& shouldSendOut(potentialSub, message.getPayload())) {
+					Map<String, Object> payload = new HashMap<>();
+					payload.put(NGSIConstants.QUERY_PARAMETER_DELETED_AT,
+							SerializationTools.notifiedAt_formatter.format(LocalDateTime
+									.ofInstant(Instant.ofEpochMilli(System.currentTimeMillis()), ZoneId.of("Z"))));
+					if (potentialSub.getSubscription().getNotification().getShowChanges()) {
+						payload.putAll(message.getPayload());
+					} else
+						payload.put(JsonLdConsts.ID, message.getId());
+					unis.add(sendNotification(potentialSub, payload, message.getRequestType()));
+				}
+			}
+			case AppConstants.DELETE_ATTRIBUTE_REQUEST -> {
+
+				if (shouldFire(Sets.newHashSet(message.getAttribName()), potentialSub)) {
 					unis.add(localEntityService.getAllByIds(message.getTenant(), message.getId(), true).onItem()
 							.transformToUni(entityList -> {
 								Map<String, Object> payload = new HashMap<>();
 								if (potentialSub.getSubscription().getNotification().getShowChanges()) {
 									payload.put(JsonLdConsts.GRAPH,
 											List.of(compareMaps(message.getPreviousEntity(), entityList.get(0))));
-								} else {
+								} else
 									payload.put(JsonLdConsts.GRAPH, entityList);
-								}
 								return sendNotification(potentialSub, payload, message.getRequestType());
 							}));
 				}
-				case AppConstants.UPSERT_REQUEST, AppConstants.CREATE_REQUEST, AppConstants.APPEND_REQUEST ->
-					unis.add(localEntityService.getAllByIds(message.getTenant(), message.getId(), true).onItem()
-							.transformToUni(entityList -> {
-								Map<String, Object> payload = new HashMap<>();
-								payload.put(JsonLdConsts.GRAPH, entityList);
-								return sendNotification(potentialSub, payload, message.getRequestType());
-							}));
-				case AppConstants.DELETE_REQUEST -> {
-					if (message.getPayload() != null && shouldFire(message.getPayload().keySet(), potentialSub)
-							&& shouldSendOut(potentialSub, message.getPayload())) {
-						Map<String, Object> payload = new HashMap<>();
-						payload.put(NGSIConstants.QUERY_PARAMETER_DELETED_AT,
-								SerializationTools.notifiedAt_formatter.format(LocalDateTime
-										.ofInstant(Instant.ofEpochMilli(System.currentTimeMillis()), ZoneId.of("Z"))));
-						if (potentialSub.getSubscription().getNotification().getShowChanges()) {
-							payload.putAll(message.getPayload());
-						} else
-							payload.put(JsonLdConsts.ID, message.getId());
-						unis.add(sendNotification(potentialSub, payload, message.getRequestType()));
-					}
-				}
-				case AppConstants.DELETE_ATTRIBUTE_REQUEST -> {
-					DeleteAttributeRequest request = (DeleteAttributeRequest) message;
-					if (shouldFire(Sets.newHashSet(request.getAttribName()), potentialSub)) {
-						unis.add(localEntityService.getAllByIds(message.getTenant(), message.getId(), true).onItem()
-								.transformToUni(entityList -> {
-									Map<String, Object> payload = new HashMap<>();
-									if (potentialSub.getSubscription().getNotification().getShowChanges()) {
-										payload.put(JsonLdConsts.GRAPH,
-												List.of(compareMaps(request.getPreviousEntity(), entityList.get(0))));
-									} else
-										payload.put(JsonLdConsts.GRAPH, entityList);
-									return sendNotification(potentialSub, payload, message.getRequestType());
-								}));
-					}
-				}
-				default -> {
-				}
+			}
+			default -> {
+			}
 			}
 		}
 		if (unis.isEmpty()) {
@@ -650,6 +668,9 @@ public class SubscriptionService {
 		}
 
 		for (EntityInfo entityInfo : sub.getEntities()) {
+			if (entityInfo.getType().equals(ALL_TYPES_SUB)) {
+				return true;
+			}
 			if (entityInfo.getId() != null && entityInfo.getType() != null && sub.getAttributeNames() != null) {
 				if (checkEntityForIdTypeAttrs(entityInfo.getId(), entityInfo.getType(), sub.getAttributeNames(),
 						entity)) {
@@ -1016,7 +1037,7 @@ public class SubscriptionService {
 
 	}
 
-	public void addSyncService(SubscriptionSyncService subscriptionSyncService) {
+	public void addSyncService(SyncService subscriptionSyncService) {
 		this.subscriptionSyncService = subscriptionSyncService;
 
 	}

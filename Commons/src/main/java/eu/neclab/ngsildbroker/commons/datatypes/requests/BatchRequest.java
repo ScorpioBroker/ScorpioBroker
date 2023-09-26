@@ -13,6 +13,10 @@ import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 
 public class BatchRequest extends BaseRequest {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -3640664052782539124L;
 	private String tenant;
 	private List<Map<String, Object>> requestPayload;
 	private List<Context> contexts;
@@ -79,7 +83,9 @@ public class BatchRequest extends BaseRequest {
 		ListIterator<String> it3 = entityIds.listIterator();
 		while (it.hasNext()) {
 			Map<String, Object> tmp = it.next();
+			@SuppressWarnings("unused")
 			Context tmp2 = it2.next();
+			@SuppressWarnings("unused")
 			String tmp3 = it3.next();
 			if (tmp.get(NGSIConstants.JSON_LD_ID).equals(entityId)) {
 				it.remove();
