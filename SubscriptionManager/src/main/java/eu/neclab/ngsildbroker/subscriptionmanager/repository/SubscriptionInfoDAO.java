@@ -1,10 +1,5 @@
 package eu.neclab.ngsildbroker.subscriptionmanager.repository;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import com.google.common.collect.Lists;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -21,6 +16,12 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 @ApplicationScoped
 public class SubscriptionInfoDAO {
@@ -51,14 +52,12 @@ public class SubscriptionInfoDAO {
 	public Uni<RowSet<Row>> deleteSubscription(DeleteSubscriptionRequest request) {
 		return clientManager.getClient(request.getTenant(), false).onItem()
 				.transformToUni(client -> client.preparedQuery("DELETE FROM subscriptions WHERE subscription_id=$1")
-						.execute(Tuple.of(request.getId())
-								).onItem().transformToUni(rows -> {
-									if (rows.rowCount() == 0) {
-										return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
-									}
-									return Uni.createFrom().item(rows);
-								})
-						);
+						.execute(Tuple.of(request.getId())).onItem().transformToUni(rows -> {
+							if (rows.rowCount() == 0) {
+								return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
+							}
+							return Uni.createFrom().item(rows);
+						}));
 	}
 
 	public Uni<RowSet<Row>> getAllSubscriptions(String tenant, int limit, int offset) {
@@ -104,7 +103,6 @@ public class SubscriptionInfoDAO {
 				.transformToUni(client -> client.preparedQuery(sql).execute(Tuple.of(date, id)).onFailure().retry()
 						.atMost(3).onItem().transformToUni(t -> Uni.createFrom().voidItem()));
 	}
-
 
 	public Uni<List<Tuple3<String, Map<String, Object>, Map<String, Object>>>> loadSubscriptions() {
 		return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {

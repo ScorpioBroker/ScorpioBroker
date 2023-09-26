@@ -146,18 +146,18 @@ public final class HttpUtils {
 			}
 		}
 		switch (appGroup) {
-		case 5:
-			return 2; // application/ld+json
-		case 2:
-		case 3:
-		case 4:
-			return 1; // application/json
-		case 6:
-			return 3;// application/n-quads
-		case 7:
-			return 4;// application/geo+json
-		default:
-			return -1;// error
+			case 5:
+				return 2; // application/ld+json
+			case 2:
+			case 3:
+			case 4:
+				return 1; // application/json
+			case 6:
+				return 3;// application/n-quads
+			case 7:
+				return 4;// application/geo+json
+			default:
+				return -1;// error
 		}
 	}
 
@@ -219,7 +219,7 @@ public final class HttpUtils {
 			Map<String, Object> entryMap = (Map<String, Object>) result;
 			resultMap.put(NGSIConstants.QUERY_PARAMETER_ID, entryMap.remove(NGSIConstants.QUERY_PARAMETER_ID));
 			resultMap.put(NGSIConstants.TYPE, NGSIConstants.FEATURE);
-			if(geometry == null) {
+			if (geometry == null) {
 				geometry = NGSIConstants.NGSI_LD_LOCATION_SHORT;
 			}
 			Object geometryEntry = entryMap.get(geometry);
@@ -296,8 +296,7 @@ public final class HttpUtils {
 	}
 
 	public static RestResponse<Object> handleControllerExceptions(Throwable e) {
-		if (e instanceof ResponseException) {
-			ResponseException responseException = (ResponseException) e;
+		if (e instanceof ResponseException responseException) {
 			logger.debug("Exception :: ", responseException);
 			return RestResponseBuilderImpl.create(responseException.getErrorCode())
 					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
@@ -527,112 +526,114 @@ public final class HttpUtils {
 		Uni<Tuple3<String, String, List<Tuple2<String, String>>>> uni;
 		switch (acceptHeader) {
 
-		case 1:
-			uni = ldService.compact(entity, contextHeader, context, opts, -1, optionSet, langQuery).onItem()
-					.transformToUni(compacted -> {
-						List<Tuple2<String, String>> headers = Lists.newArrayList();
-						Object bodyContext = compacted.remove(NGSIConstants.JSON_LD_CONTEXT);
-						Object finalCompacted;
-						if (contextHeader.isEmpty()) {
-							contextHeader.add(((List<Object>) bodyContext).get(0));
-						}
-						if (compacted.containsKey(JsonLdConsts.GRAPH)) {
-							finalCompacted = compacted.get(JsonLdConsts.GRAPH);
-						} else {
-							finalCompacted = compacted;
-						}
-						if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)) {
-							makeConcise(finalCompacted);
-						}
-						if (forceArray && !(finalCompacted instanceof List)) {
-							finalCompacted = List.of(finalCompacted);
-						}
-
-						for (Object entry : contextHeader) {
-							headers.add(Tuple2.of(NGSIConstants.LINK_HEADER, getLinkHeader(entry)));
-						}
-
-						try {
-							return Uni.createFrom().item(Tuple3.of(JsonUtils.toPrettyString(finalCompacted),
-									AppConstants.NGB_APPLICATION_JSON, headers));
-						} catch (IOException e) {
-							return Uni.createFrom().failure(e);
-						}
-					});
-			break;
-		case 2:
-			uni = ldService.compact(entity, contextHeader, context, opts, -1, optionSet, langQuery).onItem()
-					.transformToUni(compacted -> {
-						Object finalCompacted;
-						if (compacted.containsKey(JsonLdConsts.GRAPH)) {
-							finalCompacted = compacted.get(JsonLdConsts.GRAPH);
-							Object bodyContext = compacted.get(NGSIConstants.JSON_LD_CONTEXT);
-							if (finalCompacted instanceof List) {
-								List<Map<String, Object>> tmpList = (List<Map<String, Object>>) finalCompacted;
-								for (Map<String, Object> entry : tmpList) {
-									entry.put(NGSIConstants.JSON_LD_CONTEXT, bodyContext);
-								}
-							} else if (finalCompacted instanceof Map) {
-								((Map<String, Object>) finalCompacted).put(NGSIConstants.JSON_LD_CONTEXT, bodyContext);
+			case 1:
+				uni = ldService.compact(entity, contextHeader, context, opts, -1, optionSet, langQuery).onItem()
+						.transformToUni(compacted -> {
+							List<Tuple2<String, String>> headers = Lists.newArrayList();
+							Object bodyContext = compacted.remove(NGSIConstants.JSON_LD_CONTEXT);
+							Object finalCompacted;
+							if (contextHeader.isEmpty()) {
+								contextHeader.add(((List<Object>) bodyContext).get(0));
 							}
-						} else {
-							finalCompacted = compacted;
-						}
-						if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)) {
-							makeConcise(finalCompacted);
-						}
-						if (forceArray && !(finalCompacted instanceof List)) {
-							finalCompacted = List.of(finalCompacted);
-						}
-
-						try {
-							return Uni.createFrom().item(Tuple3.of(JsonUtils.toPrettyString(finalCompacted),
-									AppConstants.NGB_APPLICATION_JSONLD, null));
-						} catch (IOException e) {
-							return Uni.createFrom().failure(e);
-						}
-					});
-			break;
-		case 3:
-			uni = ldService.toRDF(entity).onItem().transform(rdf -> {
-				return Tuple3.of(RDFDatasetUtils.toNQuads((RDFDataset) rdf), AppConstants.NGB_APPLICATION_NQUADS, null);
-			});
-			break;
-		case 4:// geo+json
-			uni = ldService.compact(entity, contextHeader, context, opts, -1, optionSet, langQuery).onItem()
-					.transformToUni(compacted -> {
-						Object finalCompacted = compacted;
-						if (compacted.containsKey(JsonLdConsts.GRAPH)) {
-							finalCompacted = compacted.get(JsonLdConsts.GRAPH);
-							Object bodyContext = compacted.get(NGSIConstants.JSON_LD_CONTEXT);
-							if (finalCompacted instanceof List) {
-								List<Map<String, Object>> tmpList = (List<Map<String, Object>>) finalCompacted;
-								for (Map<String, Object> entry : tmpList) {
-									entry.put(NGSIConstants.JSON_LD_CONTEXT, bodyContext);
-								}
-							} else if (finalCompacted instanceof Map) {
-								((Map<String, Object>) finalCompacted).put(NGSIConstants.JSON_LD_CONTEXT, bodyContext);
+							if (compacted.containsKey(JsonLdConsts.GRAPH)) {
+								finalCompacted = compacted.get(JsonLdConsts.GRAPH);
+							} else {
+								finalCompacted = compacted;
 							}
-						}
-						if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)) {
-							makeConcise(finalCompacted);
-						}
-						if (forceArray && !(finalCompacted instanceof List)) {
-							finalCompacted = List.of(finalCompacted);
-						}
-						try {
-							return Uni.createFrom()
-									.item(Tuple3.of(
-											JsonUtils.toPrettyString(
-													generateGeoJson(finalCompacted, geometryProperty, contextHeader)),
-											AppConstants.NGB_APPLICATION_GEO_JSON, null));
-						} catch (IOException e) {
-							return Uni.createFrom().failure(e);
-						}
-					});
-			break;
-		default:
-			return Uni.createFrom().nullItem();
+							if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)) {
+								makeConcise(finalCompacted);
+							}
+							if (forceArray && !(finalCompacted instanceof List)) {
+								finalCompacted = List.of(finalCompacted);
+							}
+
+							for (Object entry : contextHeader) {
+								headers.add(Tuple2.of(NGSIConstants.LINK_HEADER, getLinkHeader(entry)));
+							}
+
+							try {
+								return Uni.createFrom().item(Tuple3.of(JsonUtils.toPrettyString(finalCompacted),
+										AppConstants.NGB_APPLICATION_JSON, headers));
+							} catch (IOException e) {
+								return Uni.createFrom().failure(e);
+							}
+						});
+				break;
+			case 2:
+				uni = ldService.compact(entity, contextHeader, context, opts, -1, optionSet, langQuery).onItem()
+						.transformToUni(compacted -> {
+							Object finalCompacted;
+							if (compacted.containsKey(JsonLdConsts.GRAPH)) {
+								finalCompacted = compacted.get(JsonLdConsts.GRAPH);
+								Object bodyContext = compacted.get(NGSIConstants.JSON_LD_CONTEXT);
+								if (finalCompacted instanceof List) {
+									List<Map<String, Object>> tmpList = (List<Map<String, Object>>) finalCompacted;
+									for (Map<String, Object> entry : tmpList) {
+										entry.put(NGSIConstants.JSON_LD_CONTEXT, bodyContext);
+									}
+								} else if (finalCompacted instanceof Map) {
+									((Map<String, Object>) finalCompacted).put(NGSIConstants.JSON_LD_CONTEXT,
+											bodyContext);
+								}
+							} else {
+								finalCompacted = compacted;
+							}
+							if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)) {
+								makeConcise(finalCompacted);
+							}
+							if (forceArray && !(finalCompacted instanceof List)) {
+								finalCompacted = List.of(finalCompacted);
+							}
+
+							try {
+								return Uni.createFrom().item(Tuple3.of(JsonUtils.toPrettyString(finalCompacted),
+										AppConstants.NGB_APPLICATION_JSONLD, null));
+							} catch (IOException e) {
+								return Uni.createFrom().failure(e);
+							}
+						});
+				break;
+			case 3:
+				uni = ldService.toRDF(entity).onItem().transform(rdf -> {
+					return Tuple3.of(RDFDatasetUtils.toNQuads((RDFDataset) rdf), AppConstants.NGB_APPLICATION_NQUADS,
+							null);
+				});
+				break;
+			case 4:// geo+json
+				uni = ldService.compact(entity, contextHeader, context, opts, -1, optionSet, langQuery).onItem()
+						.transformToUni(compacted -> {
+							Object finalCompacted = compacted;
+							if (compacted.containsKey(JsonLdConsts.GRAPH)) {
+								finalCompacted = compacted.get(JsonLdConsts.GRAPH);
+								Object bodyContext = compacted.get(NGSIConstants.JSON_LD_CONTEXT);
+								if (finalCompacted instanceof List) {
+									List<Map<String, Object>> tmpList = (List<Map<String, Object>>) finalCompacted;
+									for (Map<String, Object> entry : tmpList) {
+										entry.put(NGSIConstants.JSON_LD_CONTEXT, bodyContext);
+									}
+								} else if (finalCompacted instanceof Map) {
+									((Map<String, Object>) finalCompacted).put(NGSIConstants.JSON_LD_CONTEXT,
+											bodyContext);
+								}
+							}
+							if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)) {
+								makeConcise(finalCompacted);
+							}
+							if (forceArray && !(finalCompacted instanceof List)) {
+								finalCompacted = List.of(finalCompacted);
+							}
+							try {
+								return Uni.createFrom().item(Tuple3.of(
+										JsonUtils.toPrettyString(
+												generateGeoJson(finalCompacted, geometryProperty, contextHeader)),
+										AppConstants.NGB_APPLICATION_GEO_JSON, null));
+							} catch (IOException e) {
+								return Uni.createFrom().failure(e);
+							}
+						});
+				break;
+			default:
+				return Uni.createFrom().nullItem();
 		}
 		return uni.onItem().transform(tuple -> {
 			String replyBody = tuple.getItem1();
@@ -762,7 +763,7 @@ public final class HttpUtils {
 				return Uni.createFrom().failure(
 						new ResponseException(ErrorType.BadRequestData, "@context entry in body is not allowed"));
 			}
-			return ldService.parse(atContextHeader);
+			return ldService.parse(payloadAtContext);
 
 		}
 	}
@@ -859,10 +860,10 @@ public final class HttpUtils {
 		// TODO Cases remaining for upsert(determine created or updated)
 		// and noLongerMatching due to update or delete attr
 		return switch (triggerReason) {
-		case AppConstants.CREATE_REQUEST -> "newlyMatching";
-		case AppConstants.UPDATE_REQUEST, AppConstants.APPEND_REQUEST -> "updated";
-		case AppConstants.DELETE_REQUEST -> "noLongerMatching";
-		default -> null;
+			case AppConstants.CREATE_REQUEST -> "newlyMatching";
+			case AppConstants.UPDATE_REQUEST, AppConstants.APPEND_REQUEST -> "updated";
+			case AppConstants.DELETE_REQUEST -> "noLongerMatching";
+			default -> null;
 		};
 	}
 
