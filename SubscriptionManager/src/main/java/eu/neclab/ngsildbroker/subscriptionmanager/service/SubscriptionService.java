@@ -313,7 +313,7 @@ public class SubscriptionService {
 						return ldService.parsePure(tup.getItem2()).onItem().transformToUni(ctx -> {
 							SubscriptionRequest updatedRequest;
 							try {
-								updatedRequest = new SubscriptionRequest(tenant, tup.getItem1(), ctx);
+								updatedRequest = new SubscriptionRequest(tenant, subscriptionId, tup.getItem1(), ctx, true);
 							} catch (Exception e) {
 								return Uni.createFrom().failure(e);
 							}

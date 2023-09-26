@@ -1,9 +1,8 @@
 {
 	"info": {
-		"_postman_id": "bb4e030f-3041-4c24-b1bf-8c0284b7f22f",
+		"_postman_id": "1daa8b70-10f6-4c36-abb4-7153471872f0",
 		"name": "API Test",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "26387112"
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
 		{
@@ -15395,6 +15394,107 @@
 																	"    console.log(\"expected: \" + JSON.stringify(expected));\r",
 																	"    console.log(\"received: \" + JSON.stringify(jsonData));\r",
 																	"    pm.expect(jsonData).to.eql(expected);\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default"
+															}
+														],
+														"url": {
+															"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions/{{subId}}",
+															"host": [
+																"{{subscription-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"subscriptions",
+																"{{subId}}"
+															],
+															"query": [
+																{
+																	"key": "",
+																	"value": null,
+																	"disabled": true
+																}
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Update Subscription with no @context Copy 2",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"var subId = payloadBody.id;\r",
+																	"\r",
+																	"pm.collectionVariables.set(\"updated\", payloadBody);\r",
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "PATCH",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n    \"entities\": [\r\n        {\r\n            \"type\": \"Test4\"\r\n        }\r\n    ]\r\n}"
+														},
+														"url": {
+															"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions/{{subId}}",
+															"host": [
+																"{{subscription-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"subscriptions",
+																"{{subId}}"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Retrieve sub and validate update Copy",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var expected = pm.collectionVariables.get(\"updated\");\r",
+																	"pm.test(\"Status code is 200\", function () {\r",
+																	"    pm.response.to.have.status(200);\r",
+																	"});\r",
+																	"pm.test(\"Validate content\", function () {\r",
+																	"    var jsonData = pm.response.json();\r",
+																	"   \r",
+																	"   \r",
+																	"    pm.expect(jsonData[\"entities\"][0][\"type\"]).to.eql(\"Test4\");\r",
 																	"});"
 																],
 																"type": "text/javascript"

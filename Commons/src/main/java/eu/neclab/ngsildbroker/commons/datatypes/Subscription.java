@@ -106,11 +106,16 @@ public class Subscription implements Serializable {
 		this.csfQuery = subscription.csfQuery;
 	}
 
-	@SuppressWarnings("unchecked")
 	public static Subscription expandSubscription(Map<String, Object> body, Context context, boolean update)
 			throws ResponseException {
+		return expandSubscription(body, null, context, update);
+	}
+	
+	@SuppressWarnings("unchecked")
+	public static Subscription expandSubscription(Map<String, Object> body, String id, Context context, boolean update)
+			throws ResponseException {
 		Subscription subscription = new Subscription();
-
+		subscription.setId(id);
 		for (Entry<String, Object> mapEntry : body.entrySet()) {
 			String key = mapEntry.getKey();
 			Object mapValue = mapEntry.getValue();

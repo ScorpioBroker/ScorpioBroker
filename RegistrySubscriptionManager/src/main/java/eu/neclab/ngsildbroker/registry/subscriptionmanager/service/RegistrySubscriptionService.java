@@ -1121,7 +1121,13 @@ public class RegistrySubscriptionService {
 			return Uni.createFrom().voidItem();
 		}
 		try {
-			message.setSubscription(Subscription.expandSubscription(message.getPayload(), message.getContext(), false));
+			if (message.getRequestType() == AppConstants.UPDATE_SUBSCRIPTION_REQUEST) {
+				message.setSubscription(Subscription.expandSubscription(message.getPayload(), message.getId(),
+						message.getContext(), true));
+			} else {
+				message.setSubscription(Subscription.expandSubscription(message.getPayload(), message.getId(),
+						message.getContext(), false));
+			}
 		} catch (ResponseException e) {
 			logger.error("Failed to load internal subscription", e);
 			return Uni.createFrom().voidItem();

@@ -2,6 +2,7 @@ package eu.neclab.ngsildbroker.commons.datatypes.requests.subscription;
 
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.github.jsonldjava.core.Context;
 
@@ -28,10 +29,15 @@ public class SubscriptionRequest extends BaseRequest {
 
 	public SubscriptionRequest(String tenant, Map<String, Object> subscription, Context context)
 			throws ResponseException {
-		super(tenant, (String) subscription.get(NGSIConstants.JSON_LD_ID), subscription,
-				AppConstants.CREATE_SUBSCRIPTION_REQUEST);
+		this(tenant, (String) subscription.get(NGSIConstants.JSON_LD_ID), subscription, context, false);
+	}
+
+	@JsonCreator
+	public SubscriptionRequest(String tenant, String id, Map<String, Object> subscription, Context context,
+			boolean update) throws ResponseException {
+		super(tenant, id, subscription, AppConstants.CREATE_SUBSCRIPTION_REQUEST);
 		this.context = context;
-		this.subscription = Subscription.expandSubscription(subscription, context, false);
+		this.subscription = Subscription.expandSubscription(subscription, context, update);
 
 	}
 
