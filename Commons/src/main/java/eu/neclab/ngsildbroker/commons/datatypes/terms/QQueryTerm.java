@@ -1062,18 +1062,8 @@ public class QQueryTerm implements Serializable {
 				sql.append("') AS mostInnerValue WHERE (mostInnerValue->'");
 				sql.append(NGSIConstants.JSON_LD_ID);
 				sql.append("')");
-				dollarCount = applyOperator(sql, dollarCount, tuple, true);
-//				for (int i=0;i<tuple.size();i++){
-//					if(i==tuple.size()-1){
-//						tuple.getDelegate().
-// 						//tmp.addValue(expandedOpt);
-// 					}else {
-//						//tmp.addValue(tuple.getValue(i));
-//					}
-//				}
-//			 // tuple = tmp;
-
-				sql.append(") WHEN ");
+     			dollarCount = applyOperator(sql, dollarCount, tuple, true);
+    			sql.append(") WHEN ");
 
 				sql.append(currentSqlAttrib);
 				sql.append(" #>>'{");
