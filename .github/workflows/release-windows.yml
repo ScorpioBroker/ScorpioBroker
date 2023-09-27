@@ -127,7 +127,7 @@ jobs:
           asset_path: ./EntityManager/target/entity-manager-${{steps.get-build-id.outputs.id}}-runner.exe
           asset_name: entity-manager-windows-kafka-${{steps.get-id.outputs.id}}-windows-kafka.exe
           asset_content_type: application/octet-stream
-            build-windows-sqs:
+  build-windows-sqs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v2     
