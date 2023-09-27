@@ -5684,7 +5684,7 @@
 																			"\r",
 																			"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
 																			"    var jsonData = pm.response.json();\r",
-																			"    pm.expect(jsonData.length).to.eql(1);\r",
+																			"    pm.expect(jsonData.length).to.eql(2);\r",
 																			"    pm.expect(jsonData).to.deep.include(pm.collectionVariables.get(\"createdTBF\"));\r",
 																			"    pm.expect(jsonData).to.deep.include(pm.collectionVariables.get(\"createdTBNF\"));\r",
 																			"});"
@@ -5739,7 +5739,7 @@
 																			"\r",
 																			"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
 																			"    var jsonData = pm.response.json();\r",
-																			"    pm.expect(jsonData.length).to.eql(1);\r",
+																			"    pm.expect(jsonData.length).to.eql(2);\r",
 																			"    pm.expect(jsonData).to.deep.include(pm.collectionVariables.get(\"createdTBF\"));\r",
 																			"    pm.expect(jsonData).to.deep.include(pm.collectionVariables.get(\"createdTBNF\"));\r",
 																			"});"
