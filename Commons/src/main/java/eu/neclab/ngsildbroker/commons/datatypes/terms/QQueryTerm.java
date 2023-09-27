@@ -616,8 +616,14 @@ public class QQueryTerm implements Serializable {
 			result.append(dollarCount);
 			dollarCount++;
 			tuple.addString(attribName);
-			result.append(") AS toplevel WHERE ");
-			dollarCount = commonWherePart(attribPath, subAttribPath, "toplevel", dollarCount, tuple, result, this);
+			result.append(") AS toplevel ");
+			if ((operator != null && !operator.isEmpty()) || attribPath.length > 1
+					|| (subAttribPath != null && subAttribPath.length > 0)) {
+				result.append("WHERE ");
+				dollarCount = commonWherePart(attribPath, subAttribPath, "toplevel", dollarCount, tuple, result, this);
+			} else {
+				result.append(')');
+			}
 			// result.append(")");
 		}
 		return dollarCount;
@@ -1062,8 +1068,8 @@ public class QQueryTerm implements Serializable {
 				sql.append("') AS mostInnerValue WHERE (mostInnerValue->'");
 				sql.append(NGSIConstants.JSON_LD_ID);
 				sql.append("')");
-     			dollarCount = applyOperator(sql, dollarCount, tuple, true);
-    			sql.append(") WHEN ");
+				dollarCount = applyOperator(sql, dollarCount, tuple, true);
+				sql.append(") WHEN ");
 
 				sql.append(currentSqlAttrib);
 				sql.append(" #>>'{");
@@ -1079,6 +1085,8 @@ public class QQueryTerm implements Serializable {
 
 				sql.append(" ELSE FALSE END ");
 
+			} else {
+				sql.setLength(sql.length() - " WHERE ".length());
 			}
 		} else {
 			sql.append(" CASE WHEN ");
@@ -1091,12 +1099,12 @@ public class QQueryTerm implements Serializable {
 			sql.append(currentSqlAttrib);
 			sql.append(" ->'");
 			sql.append(NGSIConstants.NGSI_LD_HAS_VALUE);
-			sql.append("') AS mostInnerValue WHERE ");
+			sql.append("') AS mostInnerValue");
 			String currentSqlAttrib2 = "mostInnerValue";
 			prefix = "mostInnerValue";
 			currentChar = 'a';
 			for (int i = 0; i < subAttribPath.length; i++) {
-				sql.append("EXISTS(SELECT TRUE FROM JSONB_ARRAY_ELEMENTS(");
+				sql.append(" WHERE EXISTS(SELECT TRUE FROM JSONB_ARRAY_ELEMENTS(");
 				sql.append(currentSqlAttrib2);
 				sql.append(" -> $");
 				sql.append(dollarCount);
