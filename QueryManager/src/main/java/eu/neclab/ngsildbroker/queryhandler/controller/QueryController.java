@@ -1,16 +1,21 @@
 package eu.neclab.ngsildbroker.queryhandler.controller;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.util.List;
 
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DefaultValue;
+import jakarta.ws.rs.Encoded;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.UriInfo;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -74,14 +79,12 @@ public class QueryController {
 	@Path("/entities/{entityId}")
 	@GET
 	public Uni<RestResponse<Object>> getEntity(HttpServerRequest request, @QueryParam(value = "attrs") String attrs,
-											   @QueryParam(value = "options") String options, @QueryParam(value = "lang") String lang,
-											   @QueryParam(value = "geometryProperty") String geometryProperty,
-											   @QueryParam(value = "localOnly") boolean localOnly, @PathParam("entityId") String entityId,
-											   @QueryParam(value = "doNotCompact") boolean doNotCompact,
-											   @QueryParam("containedBy")@DefaultValue("") String containedBy,
-											   @QueryParam("join")String join,
-											   @QueryParam("idsOnly")boolean idsOnly,
-											   @QueryParam("joinLevel")@DefaultValue("1")int joinLevel) {
+			@QueryParam(value = "options") String options, @QueryParam(value = "lang") String lang,
+			@QueryParam(value = "geometryProperty") String geometryProperty,
+			@QueryParam(value = "localOnly") boolean localOnly, @PathParam("entityId") String entityId,
+			@QueryParam(value = "doNotCompact") boolean doNotCompact,
+			@QueryParam("containedBy") @DefaultValue("") String containedBy, @QueryParam("join") String join,
+			@QueryParam("idsOnly") boolean idsOnly, @QueryParam("joinLevel") @DefaultValue("1") int joinLevel) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		if (acceptHeader == -1) {
 			return HttpUtils.getInvalidHeader();
@@ -100,10 +103,8 @@ public class QueryController {
 			} catch (Exception e) {
 				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 			}
-			return queryService
-					.retrieveEntity(context, HttpUtils.getTenant(request), entityId, attrs, langQuery,
-							localOnly,containedBy,join,idsOnly,joinLevel)
-					.onItem().transformToUni(entity -> {
+			return queryService.retrieveEntity(context, HttpUtils.getTenant(request), entityId, attrs, langQuery,
+					localOnly, containedBy, join, idsOnly, joinLevel).onItem().transformToUni(entity -> {
 						if (doNotCompact) {
 							return Uni.createFrom().item(RestResponse.ok((Object) entity));
 						}
@@ -124,20 +125,31 @@ public class QueryController {
 	 */
 	@Path("/entities")
 	@GET
-	@Consumes()
 	public Uni<RestResponse<Object>> query(HttpServerRequest request, @QueryParam("id") String id,
 			@QueryParam("type") String typeQuery, @QueryParam("idPattern") String idPattern,
-			@QueryParam("attrs") String attrs, @QueryParam("q") String q, @QueryParam("csf") String csf,
+			@QueryParam("attrs") String attrs, @QueryParam("q") String qInput, @QueryParam("csf") String csf,
 			@QueryParam("geometry") String geometry, @QueryParam("georel") String georel,
 			@QueryParam("coordinates") String coordinates, @QueryParam("geoproperty") String geoproperty,
 			@QueryParam("geometryProperty") String geometryProperty, @QueryParam("lang") String lang,
 			@QueryParam("scopeQ") String scopeQ, @QueryParam("localOnly") boolean localOnly,
 			@QueryParam("options") String options, @QueryParam("limit") Integer limit, @QueryParam("offset") int offset,
-			@QueryParam("count") boolean count, @QueryParam("containedBy")@DefaultValue("") String containedBy,
-			@QueryParam("join")String join, @QueryParam("idsOnly")boolean idsOnly,
-			@QueryParam("joinLevel")@DefaultValue("1")int joinLevel,
-			@QueryParam("doNotCompact") boolean doNotCompact, @QueryParam("entityMap") String entityMapToken) {
+			@QueryParam("count") boolean count, @QueryParam("containedBy") @DefaultValue("") String containedBy,
+			@QueryParam("join") String join, @QueryParam("idsOnly") boolean idsOnly,
+			@QueryParam("joinLevel") @DefaultValue("1") int joinLevel, @QueryParam("doNotCompact") boolean doNotCompact,
+			@QueryParam("entityMap") String entityMapToken, @Context UriInfo uriInfo) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
+		String q;
+		if (qInput != null) {
+			try {
+				q = URLDecoder.decode(request.absoluteURI().split("q=")[1].split("&")[0], "UTF-8");
+			} catch (UnsupportedEncodingException e) {
+				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
+						new ResponseException(ErrorType.BadRequestData, "failed to decode q query")));
+			}
+		} else {
+			q = null;
+		}
+
 		if (acceptHeader == -1) {
 			return HttpUtils.getInvalidHeader();
 		}
@@ -217,10 +229,9 @@ public class QueryController {
 				tokenProvided = false;
 			}
 			if (idsOnly) {
-				return queryService
-						.queryForEntityIds(HttpUtils.getTenant(request), ids, typeQueryTerm, idPattern, attrsQuery,
-								qQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, context, request.headers(), true,join,containedBy,joinLevel)
-						.onItem().transform(list -> {
+				return queryService.queryForEntityIds(HttpUtils.getTenant(request), ids, typeQueryTerm, idPattern,
+						attrsQuery, qQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, context, request.headers(),
+						true, join, containedBy, joinLevel).onItem().transform(list -> {
 							String body;
 							Object result = "[]";
 							try {
@@ -243,9 +254,11 @@ public class QueryController {
 						});
 			}
 
-			return queryService.query(HttpUtils.getTenant(request), token, tokenProvided, ids, typeQueryTerm, idPattern,
-					attrsQuery, qQueryTerm, csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset,
-					count, localOnly, context, request.headers()).onItem().transformToUni(queryResult -> {
+			return queryService
+					.query(HttpUtils.getTenant(request), token, tokenProvided, ids, typeQueryTerm, idPattern,
+							attrsQuery, qQueryTerm, csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit,
+							offset, count, localOnly, context, request.headers())
+					.onItem().transformToUni(queryResult -> {
 						if (doNotCompact) {
 							return Uni.createFrom().item(RestResponse.ok((Object) queryResult.getData()));
 						}

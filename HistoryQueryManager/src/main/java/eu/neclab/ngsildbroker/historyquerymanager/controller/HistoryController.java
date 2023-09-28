@@ -29,6 +29,9 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
+
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.util.List;
 
 @Singleton
@@ -59,7 +62,7 @@ public class HistoryController {
 	@Blocking
 	public Uni<RestResponse<Object>> queryTemporalEntities(HttpServerRequest request, @QueryParam("id") String ids,
 			@QueryParam("type") String typeQuery, @QueryParam("idPattern") String idPattern,
-			@QueryParam("attrs") String attrs, @QueryParam("q") String q, @QueryParam("csf") String csf,
+			@QueryParam("attrs") String attrs, @QueryParam("q") String qInput, @QueryParam("csf") String csf,
 			@QueryParam("geometry") String geometry, @QueryParam("georel") String georel,
 			@QueryParam("coordinates") String coordinates, @QueryParam("geoproperty") String geoproperty,
 			@QueryParam("timeproperty") String timeProperty, @QueryParam("timerel") String timerel,
@@ -71,6 +74,17 @@ public class HistoryController {
 			@QueryParam(value = "options") String options, @QueryParam(value = "count") boolean count,
 			@QueryParam(value = "localOnly") boolean localOnly) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
+		String q;
+		if (qInput != null) {
+			try {
+				q = URLDecoder.decode(request.absoluteURI().split("q=")[1].split("&")[0], "UTF-8");
+			} catch (UnsupportedEncodingException e) {
+				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
+						new ResponseException(ErrorType.BadRequestData, "failed to decode q query")));
+			}
+		} else {
+			q = null;
+		}
 		if (acceptHeader == -1) {
 			return HttpUtils.getInvalidHeader();
 		}
