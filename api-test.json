@@ -12595,8 +12595,8 @@
 																	"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
 																	"    pm.expect(jsonData.length).to.eql(1);\r",
-																	"    pm.expect(jsonData[0]).to.eql(pm.collectionVariables.get(\"createdTBF\"));\r",
-																	"    pm.expect(jsonData[0]).to.not.eql(pm.collectionVariables.get(\"createdTBNF\"));\r",
+																	"    pm.expect(jsonData[0]).to.eql(pm.collectionVariables.get(\"createdTBNF\"));\r",
+																	"    pm.expect(jsonData[0]).to.not.eql(pm.collectionVariables.get(\"createdTBF\"));\r",
 																	"});"
 																],
 																"type": "text/javascript"
