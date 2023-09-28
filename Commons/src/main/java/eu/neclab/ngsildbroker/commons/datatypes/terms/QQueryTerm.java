@@ -32,7 +32,7 @@ public class QQueryTerm implements Serializable {
 	private static final String RANGE = ".+\\.\\..+";
 	private static final String LIST = ".+(,.+)+";
 	private static final String URI = "\\w+:(\\/?\\/?)[^\\s^;]+";
-	private static final String DATETIME = "\\d\\d\\d\\d-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(,\\d\\d\\d\\d\\d\\d)?Z";
+	private static final String DATETIME = "\\d\\d\\d\\d-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d([,.]\\d{1,6})?Z";
 	private static final String DATE = "\\d\\d\\d\\d-\\d\\d-\\d\\d";
 	private static final String TIME = "\\d\\d:\\d\\d:\\d\\d(,\\d\\d\\d\\d\\d\\d)?Z";
 	private static final List<String> TIME_PROPS = Arrays.asList(NGSIConstants.NGSI_LD_OBSERVED_AT,
@@ -629,165 +629,6 @@ public class QQueryTerm implements Serializable {
 		return dollarCount;
 	}
 
-	private int getAttribQueryV2(StringBuilder result, int dollarCount, Tuple tuple) {
-
-		ArrayList<String> attribPath = getAttribPathArray(this.attribute);
-		StringBuilder attributeFilterProperty = new StringBuilder("");
-
-		String reservedDbColumn = null;
-		if (attribPath.size() == 1) {
-			// if not mapped, returns null
-			reservedDbColumn = DBConstants.NGSILD_TO_SQL_RESERVED_PROPERTIES_MAPPING.get(attribPath.get(0));
-		}
-
-		// do not use createdAt/modifiedAt db columns if value (operant) is not a
-		// date/time value
-		if (reservedDbColumn != null
-				&& (reservedDbColumn.equals(DBConstants.DBCOLUMN_CREATED_AT)
-						|| reservedDbColumn.equals(DBConstants.DBCOLUMN_MODIFIED_AT))
-				&& !(operant.matches(DATE) || operant.matches(TIME) || operant.matches(DATETIME))) {
-			reservedDbColumn = null;
-		}
-		if (reservedDbColumn != null) {
-			attributeFilterProperty.append(reservedDbColumn);
-			dollarCount = applyOperator(attributeFilterProperty, dollarCount, tuple, false);
-		} else {
-			/*
-			 * EXISTS (SELECT FROM
-			 * jsonb_array_elements(data#>'{https://uri.etsi.org/ngsi-ld/default-context/
-			 * friend}') as x WHERE x#> '{https://uri.etsi.org/ngsi-ld/hasObject,0,@id}' =
-			 * '"urn:person:Victoria"' OR x#>
-			 * '{https://uri.etsi.org/ngsi-ld/hasValue,0,@id}' = '"urn:person:Victoria"')
-			 */
-
-			int iElem = 0;
-			String currentSet = "ENTITY";
-			char charcount = 'a';
-			String lastAttrib = null;
-			if (!operator.isEmpty()) {
-				result.append(" (EXISTS (SELECT FROM jsonb_array_elements(" + currentSet + "#>'{" + attribPath.get(0)
-						+ "}') as a))");
-				return dollarCount;
-			}
-			for (String subPath : attribPath) {
-				attributeFilterProperty.append("EXISTS (SELECT FROM jsonb_array_elements(" + currentSet + "#>'{");
-				attributeFilterProperty.append(subPath);
-				if (attribute.contains("[") && attribute.contains(".") && iElem == 1) {
-					attributeFilterProperty.append(",0," + NGSIConstants.NGSI_LD_HAS_VALUE);
-				} else if (attribute.contains("[") && !attribute.contains(".") && iElem == 0) {
-					attributeFilterProperty.append(",0," + NGSIConstants.NGSI_LD_HAS_VALUE);
-				}
-				attributeFilterProperty.append("}') as ");
-				attributeFilterProperty.append(charcount);
-				currentSet = "" + charcount;
-				attributeFilterProperty.append(" WHERE ");
-				charcount++;
-				iElem++;
-				lastAttrib = subPath;
-			}
-
-			// x#> '{https://uri.etsi.org/ngsi-ld/hasObject,0,@id}'
-			charcount--;
-			if (!TIME_PROPS.contains(lastAttrib) && (operator.equals(NGSIConstants.QUERY_EQUAL)
-					|| operator.equals(NGSIConstants.QUERY_UNEQUAL) || operator.equals(NGSIConstants.QUERY_PATTERNOP)
-					|| operator.equals(NGSIConstants.QUERY_NOTPATTERNOP))) {
-				attributeFilterProperty.append("(EXISTS (SELECT FROM jsonb_array_elements(");
-				attributeFilterProperty.append(charcount);
-				attributeFilterProperty.append("#> '{https://uri.etsi.org/ngsi-ld/hasObject}') as ");
-				attributeFilterProperty.append(charcount);
-				attributeFilterProperty.append("a WHERE ");
-				attributeFilterProperty.append(charcount);
-				attributeFilterProperty.append("a#>");
-				if (operator.equals(NGSIConstants.QUERY_PATTERNOP) || operator.equals(NGSIConstants.QUERY_NOTPATTERNOP)
-						|| operant.matches(DATE) || operant.matches(TIME) || operant.matches(DATETIME)) {
-					attributeFilterProperty.append(">");
-				}
-				attributeFilterProperty.append("'{@id}' ");
-				dollarCount = applyOperator(attributeFilterProperty, dollarCount, tuple, false);
-				attributeFilterProperty.append(")) OR ");
-			}
-			attributeFilterProperty.append("(EXISTS (SELECT FROM jsonb_array_elements(");
-			attributeFilterProperty.append(charcount);
-			attributeFilterProperty.append("#>");
-			attributeFilterProperty.append(" '{");
-			attributeFilterProperty.append("https://uri.etsi.org/ngsi-ld/hasValue}') as ");
-			attributeFilterProperty.append(charcount);
-			attributeFilterProperty.append("b WHERE (");
-			attributeFilterProperty.append(charcount);
-			attributeFilterProperty.append("b#>");
-			if (operator.equals(NGSIConstants.QUERY_PATTERNOP) || operator.equals(NGSIConstants.QUERY_NOTPATTERNOP)
-					|| operant.matches(DATE) || operant.matches(TIME) || operant.matches(DATETIME)) {
-				attributeFilterProperty.append(">");
-			}
-			attributeFilterProperty.append("'{@value}')");
-			if (operant.matches(DATETIME)) {
-				attributeFilterProperty.append("::timestamp ");
-			} else if (operant.matches(DATE)) {
-				attributeFilterProperty.append("::date ");
-			} else if (operant.matches(TIME)) {
-				attributeFilterProperty.append("::time ");
-			}
-			dollarCount = applyOperator(attributeFilterProperty, dollarCount, tuple, false);
-			attributeFilterProperty.append(")) OR ");
-			/**
-			 * attributeFilterProperty.append('('); if(operant.matches(CHECKTYPE)) {
-			 * attributeFilterProperty.append(operant.replaceAll("\"","\'")); } else {
-			 * attributeFilterProperty.append("'" + operant + "'"); }
-			 * attributeFilterProperty.append(" in (select
-			 * jsonb_array_elements("+charcount+"->'"+NGSIConstants.NGSI_LD_HAS_VALUE+"')->>'"+NGSIConstants.JSON_LD_VALUE+"'))");
-			 * attributeFilterProperty.append(" OR ");
-			 */
-			if (TIME_PROPS.contains(lastAttrib)) {
-				attributeFilterProperty.append('(');
-				attributeFilterProperty.append((char) (charcount - 1));
-				attributeFilterProperty.append("#>>");
-				attributeFilterProperty.append(" '{");
-				attributeFilterProperty.append(lastAttrib);
-				attributeFilterProperty.append(",0,@value}')");
-
-			} else if (lastAttrib.equals(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
-				attributeFilterProperty.append('(');
-				attributeFilterProperty.append(charcount);
-				attributeFilterProperty.append("#>");
-				if (operator.equals(NGSIConstants.QUERY_PATTERNOP) || operator.equals(NGSIConstants.QUERY_NOTPATTERNOP)
-						|| operant.matches(DATE) || operant.matches(TIME) || operant.matches(DATETIME)) {
-					attributeFilterProperty.append(">");
-				}
-				attributeFilterProperty.append(" '{");
-				attributeFilterProperty.append("@id}')");
-			} else {
-				attributeFilterProperty.append('(');
-				attributeFilterProperty.append(charcount);
-				attributeFilterProperty.append("#>");
-				if (operator.equals(NGSIConstants.QUERY_PATTERNOP) || operator.equals(NGSIConstants.QUERY_NOTPATTERNOP)
-						|| operant.matches(DATE) || operant.matches(TIME) || operant.matches(DATETIME)) {
-					attributeFilterProperty.append(">");
-				}
-				attributeFilterProperty.append(" '{");
-				attributeFilterProperty.append("@value}')");
-
-			}
-
-			if (operant.matches(DATETIME)) {
-				attributeFilterProperty.append("::timestamp ");
-			} else if (operant.matches(DATE)) {
-				attributeFilterProperty.append("::date ");
-			} else if (operant.matches(TIME)) {
-				attributeFilterProperty.append("::time ");
-			}
-			dollarCount = applyOperator(attributeFilterProperty, dollarCount, tuple, false);
-			for (int i = 0; i < attribPath.size(); i++) {
-				attributeFilterProperty.append(')');
-			}
-		}
-		if (operator.equals(NGSIConstants.QUERY_UNEQUAL)) {
-			result.append("NOT ");
-		}
-		result.append("(" + attributeFilterProperty.toString() + ")");
-		return dollarCount;
-
-	}
-
 	public int toSql(StringBuilder result, int dollarCount, Tuple tuple) {
 		if (firstChild != null) {
 			result.append("(");
@@ -859,6 +700,9 @@ public class QQueryTerm implements Serializable {
 		case NGSIConstants.QUERY_UNEQUAL:
 		case NGSIConstants.QUERY_EQUAL:
 			if (finalOperant.matches(LIST)) {
+				if (operator.equals(NGSIConstants.QUERY_UNEQUAL)) {
+					attributeFilterProperty.append(" not");
+				}
 				attributeFilterProperty.append(" in (");
 				for (String listItem : finalOperant.split(",")) {
 					attributeFilterProperty.append("$");
@@ -873,6 +717,9 @@ public class QQueryTerm implements Serializable {
 				attributeFilterProperty.setCharAt(attributeFilterProperty.length() - 1, ')');
 			} else if (finalOperant.matches(RANGE)) {
 				String[] myRange = finalOperant.split("\\.\\.");
+				if (operator.equals(NGSIConstants.QUERY_UNEQUAL)) {
+					attributeFilterProperty.append(" not");
+				}
 				attributeFilterProperty.append(" between $");
 				attributeFilterProperty.append(dollarCount);
 				addItemToTupel(tuple, myRange[0], attributeFilterProperty);
@@ -885,7 +732,11 @@ public class QQueryTerm implements Serializable {
 				dollarCount += 2;
 
 			} else {
-				attributeFilterProperty.append(" = $");
+				if (operator.equals(NGSIConstants.QUERY_UNEQUAL)) {
+					attributeFilterProperty.append(" != $");
+				} else {
+					attributeFilterProperty.append(" = $");
+				}
 				attributeFilterProperty.append(dollarCount);
 				dollarCount++;
 				addItemToTupel(tuple, finalOperant, attributeFilterProperty);
@@ -1071,6 +922,18 @@ public class QQueryTerm implements Serializable {
 				dollarCount = applyOperator(sql, dollarCount, tuple, true);
 				sql.append(") WHEN ");
 
+				sql.append(currentSqlAttrib);
+				sql.append(" #>>'{");
+				sql.append(NGSIConstants.JSON_LD_TYPE);
+				sql.append("}' = '");
+				sql.append(NGSIConstants.NGSI_LD_DATE_TIME);
+				sql.append("' THEN (");
+				sql.append(currentSqlAttrib);
+				sql.append(" ->'");
+				sql.append(NGSIConstants.JSON_LD_VALUE);
+				sql.append("')");
+				dollarCount = applyOperator(sql, dollarCount, tuple, false);
+				sql.append(" WHEN ");
 				sql.append(currentSqlAttrib);
 				sql.append(" #>>'{");
 				sql.append(NGSIConstants.JSON_LD_TYPE);

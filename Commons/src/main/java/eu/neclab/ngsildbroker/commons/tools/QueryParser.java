@@ -117,6 +117,8 @@ public class QueryParser {
 			} else if (b == ';') {
 				QQueryTerm next = new QQueryTerm(context);
 				current.setOperant(operant);
+				String expandedOpt = context.expandIri(operant.replaceAll("\"", ""), false, true, null, null);
+				current.setExpandedOpt(expandedOpt);
 				current.setNext(next);
 				current.setNextAnd(true);
 				current = next;
@@ -127,6 +129,8 @@ public class QueryParser {
 			} else if (b == '|') {
 				QQueryTerm next = new QQueryTerm(context);
 				current.setOperant(operant);
+				String expandedOpt = context.expandIri(operant.replaceAll("\"", ""), false, true, null, null);
+				current.setExpandedOpt(expandedOpt);
 				current.setNext(next);
 				current.setNextAnd(false);
 				current = next;
@@ -136,6 +140,8 @@ public class QueryParser {
 
 			} else if (b == ')') {
 				current.setOperant(operant);
+				String expandedOpt = context.expandIri(operant.replaceAll("\"", ""), false, true, null, null);
+				current.setExpandedOpt(expandedOpt);
 				current = current.getParent();
 				readingAttrib = true;
 
@@ -168,10 +174,10 @@ public class QueryParser {
 		}
 		if (!operant.equals("")) {
 			current.setOperant(operant);
+			String expandedOpt = context.expandIri(operant.replaceAll("\"", ""), false, true, null, null);
+			current.setExpandedOpt(expandedOpt);
 		}
 
-		String expandedOpt = context.expandIri(operant.replaceAll("\"",""),false, true, null, null);
-		root.setExpandedOpt(expandedOpt);
 		return root;
 	}
 
@@ -468,7 +474,7 @@ public class QueryParser {
 	}
 
 	public static Map<String, Object> parseInput(String input) {
-		if(input==null || input.isEmpty()){
+		if (input == null || input.isEmpty()) {
 			return new HashMap<>();
 		}
 		Stack<Map<String, Object>> stack = new Stack<>();

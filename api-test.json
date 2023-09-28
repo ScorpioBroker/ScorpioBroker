@@ -5520,6 +5520,811 @@
 													]
 												},
 												{
+													"name": "Property equal AND OR and observedAt",
+													"item": [
+														{
+															"name": "Create Simple Entity to be found",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																			"console.log(payloadBody.id);\r",
+																			"var entityId = payloadBody.id;\r",
+																			"pm.collectionVariables.set(\"createdTBF\", payloadBody);\r",
+																			"pm.collectionVariables.set(\"entityIdTBF\", entityId);\r",
+																			"pm.collectionVariables.set(\"entityTypeTBF\", payloadBody.type);\r",
+																			"pm.test(\"Status code is 201\", function () {\r",
+																			"    pm.response.to.have.status(201);\r",
+																			"});\r",
+																			"pm.test(\"Check location header\", function () {\r",
+																			"    pm.response.to.have.header(\"Location\");\r",
+																			"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+																			"});\r",
+																			"\r",
+																			"\r",
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																},
+																{
+																	"listen": "prerequest",
+																	"script": {
+																		"exec": [
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "POST",
+																"header": [
+																	{
+																		"key": "Content-Type",
+																		"value": "application/ld+json",
+																		"type": "default"
+																	},
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default",
+																		"disabled": true
+																	}
+																],
+																"body": {
+																	"mode": "raw",
+																	"raw": "{\r\n  \"id\": \"urn:ngsi-ld:Building:building-a85e3da145c1\",\r\n  \"type\": \"Building\",\r\n  \"address\": {\r\n    \"type\": \"Property\",\r\n    \"value\": {\r\n      \"addressLocality\": \"London\",\r\n      \"postalCode\": \"EC4N 8AF\",\r\n      \"streetAddress\": \"25 Walbrook\"\r\n    }\r\n  },\r\n  \"category\": {\r\n    \"type\": \"Property\",\r\n    \"value\": [\r\n      \"office\"\r\n    ]\r\n  },\r\n  \"containedInPlace\": {\r\n    \"type\": \"Property\",\r\n    \"value\": {\r\n      \"coordinates\": [\r\n        [\r\n          [\r\n            100,\r\n            0\r\n          ],\r\n          [\r\n            101,\r\n            0\r\n          ],\r\n          [\r\n            101,\r\n            1\r\n          ],\r\n          [\r\n            100,\r\n            1\r\n          ],\r\n          [\r\n            100,\r\n            0\r\n          ]\r\n        ]\r\n      ],\r\n      \"type\": \"Polygon\"\r\n    }\r\n  },\r\n  \"createdAt\": {\r\n    \"type\": \"Property\",\r\n    \"value\": \"2016-08-08T10:18:16Z\"\r\n  },\r\n  \"dataProvider\": {\r\n    \"type\": \"Property\",\r\n    \"value\": \"OperatorA\"\r\n  },\r\n  \"description\": {\r\n    \"type\": \"Property\",\r\n    \"value\": \"Office block\"\r\n  },\r\n  \"floorsAboveGround\": {\r\n    \"type\": \"Property\",\r\n    \"value\": 7\r\n  },\r\n  \"floorsBelowGround\": {\r\n    \"type\": \"Property\",\r\n    \"value\": 0\r\n  },\r\n  \"location\": {\r\n    \"type\": \"GeoProperty\",\r\n    \"value\": {\r\n      \"type\": \"Polygon\",\r\n      \"coordinates\": [\r\n        [\r\n          [\r\n            100,\r\n            0\r\n          ],\r\n          [\r\n            101,\r\n            0\r\n          ],\r\n          [\r\n            101,\r\n            1\r\n          ],\r\n          [\r\n            100,\r\n            1\r\n          ],\r\n          [\r\n            100,\r\n            0\r\n          ]\r\n        ]\r\n      ]\r\n    }\r\n  },\r\n  \"mapUrl\": {\r\n    \"type\": \"Property\",\r\n    \"value\": \"http://www.example.com\"\r\n  },\r\n  \"modifiedAt\": {\r\n    \"type\": \"Property\",\r\n    \"value\": \"2016-08-08T10:18:16Z\"\r\n  },\r\n  \"occupier\": {\r\n    \"type\": \"Relationship\",\r\n    \"object\": [\r\n      \"urn:ngsi-ld:Person:9830f692-7677-11e6-838b-4f9fb3dc5a4f\"\r\n    ]\r\n  },\r\n  \"openingHours\": {\r\n    \"type\": \"Property\",\r\n    \"value\": [\r\n      \"Mo-Fr 10:00-19:00\",\r\n      \"Sa 10:00-22:00\",\r\n      \"Su 10:00-21:00\"\r\n    ]\r\n  },\r\n  \"owner\": {\r\n    \"type\": \"Relationship\",\r\n    \"object\": [\r\n      \"urn:ngsi-ld::cdfd9cb8-ae2b-47cb-a43a-b9767ffd5c84\",\r\n      \"urn:ngsi-ld::1be9cd61-ef59-421f-a326-4b6c84411ad4\"\r\n    ]\r\n  },\r\n  \"source\": {\r\n    \"type\": \"Property\",\r\n    \"value\": \"http://www.example.com\"\r\n  },\r\n  \"@context\": [\r\n    \"https://raw.githubusercontent.com/smart-data-models/data-models/master/context.jsonld\"\r\n  ]\r\n}",
+																	"options": {
+																		"raw": {
+																			"language": "json"
+																		}
+																	}
+																},
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Create Simple Entity to be not found",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																			"console.log(payloadBody.id);\r",
+																			"var entityId = payloadBody.id;\r",
+																			"pm.collectionVariables.set(\"createdTBNF\", payloadBody);\r",
+																			"pm.collectionVariables.set(\"entityIdTBNF\", entityId);\r",
+																			"pm.test(\"Status code is 201\", function () {\r",
+																			"    pm.response.to.have.status(201);\r",
+																			"});\r",
+																			"pm.test(\"Check location header\", function () {\r",
+																			"    pm.response.to.have.header(\"Location\");\r",
+																			"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+																			"});\r",
+																			"\r",
+																			"\r",
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																},
+																{
+																	"listen": "prerequest",
+																	"script": {
+																		"exec": [
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "POST",
+																"header": [
+																	{
+																		"key": "Content-Type",
+																		"value": "application/ld+json",
+																		"type": "default"
+																	},
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default",
+																		"disabled": true
+																	}
+																],
+																"body": {
+																	"mode": "raw",
+																	"raw": "{\r\n  \"id\": \"urn:ngsi-ld:Building:building-a85e3da145c12\",\r\n  \"type\": \"Building\",\r\n  \"address\": {\r\n    \"type\": \"Property\",\r\n    \"value\": {\r\n      \"addressLocality\": \"Schoenau\",\r\n      \"postalCode\": \"69250\",\r\n      \"streetAddress\": \"Rathausstr. 1\"\r\n    }\r\n  },\r\n  \"category\": {\r\n    \"type\": \"Property\",\r\n    \"value\": [\r\n      \"office\"\r\n    ]\r\n  },\r\n  \"containedInPlace\": {\r\n    \"type\": \"Property\",\r\n    \"value\": {\r\n      \"coordinates\": [\r\n        [\r\n          [\r\n            100,\r\n            0\r\n          ],\r\n          [\r\n            101,\r\n            0\r\n          ],\r\n          [\r\n            101,\r\n            1\r\n          ],\r\n          [\r\n            100,\r\n            1\r\n          ],\r\n          [\r\n            100,\r\n            0\r\n          ]\r\n        ]\r\n      ],\r\n      \"type\": \"Polygon\"\r\n    }\r\n  },\r\n  \"createdAt\": {\r\n    \"type\": \"Property\",\r\n    \"value\": \"2016-08-08T10:18:16Z\"\r\n  },\r\n  \"dataProvider\": {\r\n    \"type\": \"Property\",\r\n    \"value\": \"OperatorA\"\r\n  },\r\n  \"description\": {\r\n    \"type\": \"Property\",\r\n    \"value\": \"Office block\"\r\n  },\r\n  \"floorsAboveGround\": {\r\n    \"type\": \"Property\",\r\n    \"value\": 7\r\n  },\r\n  \"floorsBelowGround\": {\r\n    \"type\": \"Property\",\r\n    \"value\": 0\r\n  },\r\n  \"location\": {\r\n    \"type\": \"GeoProperty\",\r\n    \"value\": {\r\n      \"type\": \"Polygon\",\r\n      \"coordinates\": [\r\n        [\r\n          [\r\n            100,\r\n            0\r\n          ],\r\n          [\r\n            101,\r\n            0\r\n          ],\r\n          [\r\n            101,\r\n            1\r\n          ],\r\n          [\r\n            100,\r\n            1\r\n          ],\r\n          [\r\n            100,\r\n            0\r\n          ]\r\n        ]\r\n      ]\r\n    }\r\n  },\r\n  \"mapUrl\": {\r\n    \"type\": \"Property\",\r\n    \"value\": \"http://www.example.com\"\r\n  },\r\n  \"modifiedAt\": {\r\n    \"type\": \"Property\",\r\n    \"value\": \"2016-08-08T10:18:16Z\"\r\n  },\r\n  \"occupier\": {\r\n    \"type\": \"Relationship\",\r\n    \"object\": [\r\n      \"urn:ngsi-ld:Person:9830f692-7677-11e6-838b-4f9fb3dc5a4f\"\r\n    ]\r\n  },\r\n  \"openingHours\": {\r\n    \"type\": \"Property\",\r\n    \"value\": [\r\n      \"Mo-Fr 10:00-19:00\",\r\n      \"Sa 10:00-22:00\",\r\n      \"Su 10:00-21:00\"\r\n    ]\r\n  },\r\n  \"owner\": {\r\n    \"type\": \"Relationship\",\r\n    \"object\": [\r\n      \"urn:ngsi-ld::cdfd9cb8-ae2b-47cb-a43a-b9767ffd5c84\",\r\n      \"urn:ngsi-ld::1be9cd61-ef59-421f-a326-4b6c84411ad4\"\r\n    ]\r\n  },\r\n  \"source\": {\r\n    \"type\": \"Property\",\r\n    \"value\": \"http://www.example.com\"\r\n  },\r\n  \"@context\": [\r\n    \"https://raw.githubusercontent.com/smart-data-models/data-models/master/context.jsonld\"\r\n  ]\r\n}",
+																	"options": {
+																		"raw": {
+																			"language": "json"
+																		}
+																	}
+																},
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Create Simple Entity to be not found Copy",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																			"console.log(payloadBody.id);\r",
+																			"var entityId = payloadBody.id;\r",
+																			"pm.collectionVariables.set(\"createdTBNF\", payloadBody);\r",
+																			"pm.collectionVariables.set(\"entityIdTBNF\", entityId);\r",
+																			"pm.test(\"Status code is 201\", function () {\r",
+																			"    pm.response.to.have.status(201);\r",
+																			"});\r",
+																			"pm.test(\"Check location header\", function () {\r",
+																			"    pm.response.to.have.header(\"Location\");\r",
+																			"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+																			"});\r",
+																			"\r",
+																			"\r",
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																},
+																{
+																	"listen": "prerequest",
+																	"script": {
+																		"exec": [
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "POST",
+																"header": [
+																	{
+																		"key": "Content-Type",
+																		"value": "application/ld+json",
+																		"type": "default"
+																	},
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default",
+																		"disabled": true
+																	}
+																],
+																"body": {
+																	"mode": "raw",
+																	"raw": "{\r\n  \"id\": \"urn:ngsi-ld:Building:room-1\",\r\n  \"type\": \"Room\",\r\n  \"category\": {\r\n    \"type\": \"Property\",\r\n    \"value\": \"classroom\",\r\n    \"observedAt\": \"2022-03-14T12:51:02.000Z\"\r\n  },\r\n  \"isPartOf\": {\r\n    \"type\": \"Property\",\r\n    \"value\": \"urn:ngsi-ld:Building:building-a85e3da145c1\"\r\n  },\r\n  \"@context\": [\r\n    \"https://raw.githubusercontent.com/smart-data-models/data-models/master/context.jsonld\"\r\n  ]\r\n}",
+																	"options": {
+																		"raw": {
+																			"language": "json"
+																		}
+																	}
+																},
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Create Simple Entity to be not found Copy 2",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																			"console.log(payloadBody.id);\r",
+																			"var entityId = payloadBody.id;\r",
+																			"pm.collectionVariables.set(\"createdTBNF\", payloadBody);\r",
+																			"pm.collectionVariables.set(\"entityIdTBNF\", entityId);\r",
+																			"pm.test(\"Status code is 201\", function () {\r",
+																			"    pm.response.to.have.status(201);\r",
+																			"});\r",
+																			"pm.test(\"Check location header\", function () {\r",
+																			"    pm.response.to.have.header(\"Location\");\r",
+																			"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+																			"});\r",
+																			"\r",
+																			"\r",
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																},
+																{
+																	"listen": "prerequest",
+																	"script": {
+																		"exec": [
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "POST",
+																"header": [
+																	{
+																		"key": "Content-Type",
+																		"value": "application/ld+json",
+																		"type": "default"
+																	},
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default",
+																		"disabled": true
+																	}
+																],
+																"body": {
+																	"mode": "raw",
+																	"raw": "{\r\n  \"id\": \"urn:ngsi-ld:Building:room-2\",\r\n  \"type\": \"Room\",\r\n  \"category\": {\r\n    \"type\": \"Property\",\r\n    \"value\": \"officeroom\",\r\n    \"observedAt\": \"2022-04-14T12:51:02.000Z\"\r\n  },\r\n  \"isPartOf\": {\r\n    \"type\": \"Property\",\r\n    \"value\": \"urn:ngsi-ld:Building:building-a85e3da145c1\"\r\n  },\r\n  \"@context\": [\r\n    \"https://raw.githubusercontent.com/smart-data-models/data-models/master/context.jsonld\"\r\n  ]\r\n}",
+																	"options": {
+																		"raw": {
+																			"language": "json"
+																		}
+																	}
+																},
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Query for classroom",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 200\", function () {\r",
+																			"    pm.response.to.have.status(200);\r",
+																			"});\r",
+																			"\r",
+																			"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
+																			"    var jsonData = pm.response.json();\r",
+																			"    pm.expect(jsonData.length).to.eql(1);\r",
+																			"    pm.expect(jsonData[0][\"id\"]).to.eql(\"urn:ngsi-ld:Building:room-1\");\r",
+																			"\r",
+																			"});"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "GET",
+																"header": [
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default"
+																	},
+																	{
+																		"key": "Link",
+																		"value": "<https://raw.githubusercontent.com/smart-data-models/data-models/master/context.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
+																		"type": "default"
+																	}
+																],
+																"url": {
+																	"raw": "{{query-manager}}/ngsi-ld/v1/entities?type=Room&q=isPartOf%3D%3D%22urn%3Angsi-ld%3ABuilding%3Abuilding-a85e3da145c1%22%3Bcategory%3D%3D%22classroom%22",
+																	"host": [
+																		"{{query-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities"
+																	],
+																	"query": [
+																		{
+																			"key": "type",
+																			"value": "Room"
+																		},
+																		{
+																			"key": "q",
+																			"value": "isPartOf%3D%3D%22urn%3Angsi-ld%3ABuilding%3Abuilding-a85e3da145c1%22%3Bcategory%3D%3D%22classroom%22"
+																		}
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Query for classroom only escape semicolon",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 200\", function () {\r",
+																			"    pm.response.to.have.status(200);\r",
+																			"});\r",
+																			"\r",
+																			"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
+																			"    var jsonData = pm.response.json();\r",
+																			"    pm.expect(jsonData.length).to.eql(1);\r",
+																			"    pm.expect(jsonData[0][\"id\"]).to.eql(\"urn:ngsi-ld:Building:room-1\");\r",
+																			"\r",
+																			"});"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "GET",
+																"header": [
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default"
+																	},
+																	{
+																		"key": "Link",
+																		"value": "<https://raw.githubusercontent.com/smart-data-models/data-models/master/context.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
+																		"type": "default"
+																	}
+																],
+																"url": {
+																	"raw": "{{query-manager}}/ngsi-ld/v1/entities?type=Room&q=isPartOf==\"urn:ngsi-ld:Building:building-a85e3da145c1\"%3Bcategory==\"classroom\"",
+																	"host": [
+																		"{{query-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities"
+																	],
+																	"query": [
+																		{
+																			"key": "type",
+																			"value": "Room"
+																		},
+																		{
+																			"key": "q",
+																			"value": "isPartOf==\"urn:ngsi-ld:Building:building-a85e3da145c1\"%3Bcategory==\"classroom\""
+																		}
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Query for address locality not london",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 200\", function () {\r",
+																			"    pm.response.to.have.status(200);\r",
+																			"});\r",
+																			"\r",
+																			"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
+																			"    var jsonData = pm.response.json();\r",
+																			"    pm.expect(jsonData.length).to.eql(1);\r",
+																			"    pm.expect(jsonData[0][\"id\"]).to.eql(\"urn:ngsi-ld:Building:building-a85e3da145c12\");\r",
+																			"});"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "GET",
+																"header": [
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default"
+																	},
+																	{
+																		"key": "Link",
+																		"value": "<https://raw.githubusercontent.com/smart-data-models/data-models/master/context.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
+																		"type": "default"
+																	}
+																],
+																"url": {
+																	"raw": "{{query-manager}}/ngsi-ld/v1/entities?type=Building&q=address[addressLocality]!=\"London\"",
+																	"host": [
+																		"{{query-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities"
+																	],
+																	"query": [
+																		{
+																			"key": "type",
+																			"value": "Building"
+																		},
+																		{
+																			"key": "q",
+																			"value": "address[addressLocality]!=\"London\""
+																		}
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Query for not classroom only escape semicolon",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 200\", function () {\r",
+																			"    pm.response.to.have.status(200);\r",
+																			"});\r",
+																			"\r",
+																			"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
+																			"    var jsonData = pm.response.json();\r",
+																			"    pm.expect(jsonData.length).to.eql(1);\r",
+																			"    pm.expect(jsonData[0][\"id\"]).to.eql(\"urn:ngsi-ld:Building:room-2\");\r",
+																			"\r",
+																			"});"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "GET",
+																"header": [
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default"
+																	},
+																	{
+																		"key": "Link",
+																		"value": "<https://raw.githubusercontent.com/smart-data-models/data-models/master/context.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
+																		"type": "default"
+																	}
+																],
+																"url": {
+																	"raw": "{{query-manager}}/ngsi-ld/v1/entities?type=Room&q=isPartOf==\"urn:ngsi-ld:Building:building-a85e3da145c1\"%3Bcategory!=\"classroom\"",
+																	"host": [
+																		"{{query-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities"
+																	],
+																	"query": [
+																		{
+																			"key": "type",
+																			"value": "Room"
+																		},
+																		{
+																			"key": "q",
+																			"value": "isPartOf==\"urn:ngsi-ld:Building:building-a85e3da145c1\"%3Bcategory!=\"classroom\""
+																		}
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Query for observedAt",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 200\", function () {\r",
+																			"    pm.response.to.have.status(200);\r",
+																			"});\r",
+																			"\r",
+																			"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
+																			"    var jsonData = pm.response.json();\r",
+																			"    pm.expect(jsonData.length).to.eql(1);\r",
+																			"    pm.expect(jsonData[0][\"id\"]).to.eql(\"urn:ngsi-ld:Building:room-2\");\r",
+																			"\r",
+																			"});"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "GET",
+																"header": [
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default"
+																	},
+																	{
+																		"key": "Link",
+																		"value": "<https://raw.githubusercontent.com/smart-data-models/data-models/master/context.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
+																		"type": "default"
+																	}
+																],
+																"url": {
+																	"raw": "{{query-manager}}/ngsi-ld/v1/entities?type=Room&q=category.observedAt>=2022-03-14T13:51:02.000Z",
+																	"host": [
+																		"{{query-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities"
+																	],
+																	"query": [
+																		{
+																			"key": "type",
+																			"value": "Room"
+																		},
+																		{
+																			"key": "q",
+																			"value": "category.observedAt>=2022-03-14T13:51:02.000Z"
+																		},
+																		{
+																			"key": "options",
+																			"value": "sysAttrs",
+																			"disabled": true
+																		}
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Query for observedAt Copy",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 200\", function () {\r",
+																			"    pm.response.to.have.status(200);\r",
+																			"});\r",
+																			"\r",
+																			"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
+																			"    var jsonData = pm.response.json();\r",
+																			"    pm.expect(jsonData.length).to.eql(2);\r",
+																			"    pm.expect(jsonData[0][\"id\"]).to.eql(\"urn:ngsi-ld:Building:room-1\");\r",
+																			"    pm.expect(jsonData[1][\"id\"]).to.eql(\"urn:ngsi-ld:Building:room-2\");\r",
+																			"\r",
+																			"});"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "GET",
+																"header": [
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default"
+																	},
+																	{
+																		"key": "Link",
+																		"value": "<https://raw.githubusercontent.com/smart-data-models/data-models/master/context.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
+																		"type": "default"
+																	}
+																],
+																"url": {
+																	"raw": "{{query-manager}}/ngsi-ld/v1/entities?type=Room&q=category.observedAt>2022-03-12T13:51:02.000Z",
+																	"host": [
+																		"{{query-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities"
+																	],
+																	"query": [
+																		{
+																			"key": "type",
+																			"value": "Room"
+																		},
+																		{
+																			"key": "options",
+																			"value": "sysAttrs",
+																			"disabled": true
+																		},
+																		{
+																			"key": "q",
+																			"value": "category.observedAt>2022-03-12T13:51:02.000Z"
+																		}
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Delete Entity TBF",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 204\", function () {\r",
+																			"    pm.response.to.have.status(204);\r",
+																			"});"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "DELETE",
+																"header": [],
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities/urn:ngsi-ld:Building:building-a85e3da145c1",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities",
+																		"urn:ngsi-ld:Building:building-a85e3da145c1"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Delete Entity TBNF",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 204\", function () {\r",
+																			"    pm.response.to.have.status(204);\r",
+																			"});\r",
+																			"pm.collectionVariables.clear();"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "DELETE",
+																"header": [],
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities/urn:ngsi-ld:Building:building-a85e3da145c12",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities",
+																		"urn:ngsi-ld:Building:building-a85e3da145c12"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Delete Entity TBF Copy",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 204\", function () {\r",
+																			"    pm.response.to.have.status(204);\r",
+																			"});"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "DELETE",
+																"header": [],
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities/urn:ngsi-ld:Building:room-1",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities",
+																		"urn:ngsi-ld:Building:room-1"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Delete Entity TBF Copy 2",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 204\", function () {\r",
+																			"    pm.response.to.have.status(204);\r",
+																			"});"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "DELETE",
+																"header": [],
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities/urn:ngsi-ld:Building:room-2",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities",
+																		"urn:ngsi-ld:Building:room-2"
+																	]
+																}
+															},
+															"response": []
+														}
+													]
+												},
+												{
 													"name": "Property exists",
 													"item": [
 														{
