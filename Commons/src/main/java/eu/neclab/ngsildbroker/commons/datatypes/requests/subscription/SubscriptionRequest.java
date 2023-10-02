@@ -32,7 +32,7 @@ public class SubscriptionRequest extends BaseRequest {
 		this(tenant, (String) subscription.get(NGSIConstants.JSON_LD_ID), subscription, context, false);
 	}
 
-	@JsonCreator
+	
 	public SubscriptionRequest(String tenant, String id, Map<String, Object> subscription, Context context,
 			boolean update) throws ResponseException {
 		super(tenant, id, subscription, AppConstants.CREATE_SUBSCRIPTION_REQUEST);

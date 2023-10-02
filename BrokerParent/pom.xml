@@ -195,8 +195,24 @@
 			<artifactId>quarkus-smallrye-reactive-messaging</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>io.smallrye.reactive</groupId>
-			<artifactId>smallrye-reactive-messaging-in-memory</artifactId>
+			<groupId>org.apache.camel.quarkus</groupId>
+			<artifactId>camel-quarkus-smallrye-reactive-messaging</artifactId>
+			<version>3.2.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.camel.quarkus</groupId>
+			<artifactId>camel-quarkus-aws2-sqs</artifactId>
+			<version>3.2.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.camel.quarkus</groupId>
+			<artifactId>camel-quarkus-log</artifactId>
+			<version>3.2.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.camel.quarkus</groupId>
+			<artifactId>camel-quarkus-aws2-kinesis</artifactId>
+			<version>3.2.0</version>
 		</dependency>
 	</dependencies>
 	<profiles>

@@ -90,7 +90,7 @@ public class MicroServiceUtils {
 				break; // everything has been encoded
 			}
 		}
-		result.set(0, "#" + id + String.format("%011d", i) + result.get(0).substring(23));
+		result.set(0, "#" + id + String.format("%011d", i) + result.get(0).substring(32));
 		result.set(result.size() -  1, "%" + result.get(result.size() - 1).substring(1));
 		return result;
 	}

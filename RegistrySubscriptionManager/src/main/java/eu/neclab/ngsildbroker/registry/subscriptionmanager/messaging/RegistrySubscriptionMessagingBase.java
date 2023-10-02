@@ -65,7 +65,8 @@ public abstract class RegistrySubscriptionMessagingBase {
 			try {
 				message = objectMapper.readValue(byteMessage, SubscriptionRequest.class);
 			} catch (IOException e) {
-				logger.error("failed to read sync message", e);
+				logger.error(byteMessage);
+				logger.error("failed to read internal subscription", e);
 				return;
 			}
 			baseHandleSubscription(message).runSubscriptionOn(executor).subscribe()

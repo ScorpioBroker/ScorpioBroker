@@ -1121,7 +1121,7 @@ public class RegistrySubscriptionService {
 	}
 
 	public Uni<Void> handleInternalSubscription(SubscriptionRequest message) {
-		if (message.getRequestType() == AppConstants.DELETE_SUBSCRIPTION_REQUEST) {
+		if (message.getRequestType() == AppConstants.DELETE_SUBSCRIPTION_REQUEST || message.getPayload() == null) {
 			tenant2subscriptionId2Subscription.remove(message.getTenant(), message.getId());
 			return Uni.createFrom().voidItem();
 		}
@@ -1153,6 +1153,8 @@ public class RegistrySubscriptionService {
 		} catch (URISyntaxException e) {
 			// left empty intentionally this will never throw because it's a constant string
 			// we control
+		} catch (Exception  e1){
+			e1.printStackTrace();
 		}
 		if (sendNotification) {
 			return regDAO.getInitialNotificationData(message).onItem().transformToUni(rows -> {

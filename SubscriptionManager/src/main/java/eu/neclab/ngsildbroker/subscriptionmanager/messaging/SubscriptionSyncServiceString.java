@@ -108,7 +108,8 @@ public class SubscriptionSyncServiceString implements SyncService {
 			try {
 				message = objectMapper.readValue(byteMessage, SyncMessage.class);
 			} catch (IOException e) {
-				logger.error("failed to read sync message", e);
+				logger.error(byteMessage);
+				logger.error("failed to read sub sync", e);
 				return;
 			}
 			String key = message.getSyncId();

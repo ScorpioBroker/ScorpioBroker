@@ -317,7 +317,7 @@ public class SubscriptionService {
 						return ldService.parsePure(tup.getItem2()).onItem().transformToUni(ctx -> {
 							SubscriptionRequest updatedRequest;
 							try {
-								updatedRequest = new SubscriptionRequest(tenant, subscriptionId, tup.getItem1(), ctx, true);
+								updatedRequest = new SubscriptionRequest(tenant, subscriptionId, tup.getItem1(), ctx, false);
 							} catch (Exception e) {
 								return Uni.createFrom().failure(e);
 							}
@@ -337,7 +337,7 @@ public class SubscriptionService {
 											updatedRequest);
 									tenant2subscriptionId2IntervalSubscription.remove(tenant, updatedRequest.getId());
 								}
-								MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize,
+								MicroServiceUtils.serializeAndSplitObjectAndEmit(updatedRequest, messageSize,
 										internalSubEmitter, objectMapper);
 								return new NGSILDOperationResult(AppConstants.UPDATE_SUBSCRIPTION_REQUEST,
 										request.getId());

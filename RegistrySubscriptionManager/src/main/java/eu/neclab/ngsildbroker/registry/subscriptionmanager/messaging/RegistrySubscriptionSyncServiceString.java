@@ -79,7 +79,8 @@ public class RegistrySubscriptionSyncServiceString implements SyncService {
 			try {
 				message = objectMapper.readValue(byteMessage, SyncMessage.class);
 			} catch (IOException e) {
-				logger.error("failed to read sync message", e);
+				logger.error(byteMessage);
+				logger.error("failed to read reg sync message", e);
 				return;
 			}
 			String key = message.getSyncId();

@@ -43,9 +43,10 @@ public class SubscriptionInfoDAO {
 			String contextId) {
 		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
 			return client.preparedQuery(
-					"UPDATE subscriptions SET subscription=subscription || $2, context=$3 WHERE subscription_id=$1 RETURNING subscription")
+					"UPDATE subscriptions SET subscription=subscription || $2, context=$3 WHERE subscription_id=$1 RETURNING subscriptions.subscription")
 					.execute(Tuple.of(request.getId(), new JsonObject(request.getPayload()), contextId)).onItem()
-					.transform(i -> Tuple2.of(request.getPayload(), request.getContext().serialize().get("@context")));
+					.transform(i -> Tuple2.of(i.iterator().next().getJsonObject("subscription").getMap(),
+							request.getContext().serialize().get("@context")));
 		});
 	}
 

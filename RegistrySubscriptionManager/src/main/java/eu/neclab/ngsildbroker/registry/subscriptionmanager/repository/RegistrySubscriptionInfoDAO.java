@@ -74,7 +74,7 @@ public class RegistrySubscriptionInfoDAO {
 							return client.preparedQuery(
 									"UPDATE registry_subscriptions SET subscription=subscription || $2, context=$3 WHERE subscription_id=$1 RETURNING subscription")
 									.execute(Tuple.of(request.getId(), new JsonObject(request.getPayload()), contextId))
-									.onItem().transform(i -> Tuple2.of(request.getPayload(),
+									.onItem().transform(i -> Tuple2.of(i.iterator().next().getJsonObject("subscription").getMap(),
 											request.getContext().serialize().get("@context")));
 						}));
 	}
