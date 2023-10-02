@@ -150,7 +150,7 @@ public class QQueryTerm implements Serializable {
 			} else {
 				myProperties = properties;
 			}
-			if(operant == null || operant.isEmpty()) {
+			if ((operant == null || operant.isEmpty()) && myProperties != null && !myProperties.isEmpty()) {
 				return true;
 			}
 			for (BaseProperty myProperty : myProperties) {
