@@ -2,6 +2,10 @@ RELEASE NOTES SCORPIO 4.1.6
 
 Addressing serialization issues with subscriptions.
 Fixing message splitting in different message buses.
+ - to give some more information here... each message bus has their own max message size, which sometimes can't be changed. 
+   Scorpio will split up messages to fit the size. We are using the default sizes for each message bus. If you want to override this
+   set the env var SCORPIO.MESSAGING.MAXSIZE to the byte number your message bus has been to configured to
+
 
 RELEASE NOTES SCORPIO 4.1.5
 
