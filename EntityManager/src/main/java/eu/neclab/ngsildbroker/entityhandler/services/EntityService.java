@@ -772,10 +772,18 @@ public class EntityService {
 								break;
 							case AppConstants.MERGE_PATCH_REQUEST:
 								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
-										regHost.cSourceId(), regEntry.mergeBatch(), false, regEntry.regMode(),
+										regHost.cSourceId(), regEntry.mergeEntity(), regEntry.mergeBatch(),
+										regEntry.regMode(), regEntry.canDoZip(), regEntry.canDoIdQuery());
+								break;
+							case AppConstants.REPLACE_ENTITY_REQUEST:
+								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
+										regHost.cSourceId(), regEntry.replaceEntity(), false, regEntry.regMode(),
 										regEntry.canDoZip(), regEntry.canDoIdQuery());
 								break;
-							// case AppConstants.REPLACE_ENTITY_REQUEST:
+							case AppConstants.REPLACE_ATTRIBUTE_REQUEST:
+								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
+										regHost.cSourceId(), regEntry.replaceAttrs(), false, regEntry.regMode(),
+										regEntry.canDoZip(), regEntry.canDoIdQuery());
 							case AppConstants.PARTIAL_UPDATE_REQUEST:
 								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
 										regHost.cSourceId(), regEntry.updateAttrs(), false, regEntry.regMode(),
