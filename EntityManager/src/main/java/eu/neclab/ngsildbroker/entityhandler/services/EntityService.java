@@ -293,7 +293,7 @@ public class EntityService {
 			}
 
 		}
-		if (!localEntity.isEmpty()) {
+		if (localEntity != null && !localEntity.isEmpty()) {
 			request.setPayload(localEntity);
 			unis.add(partialUpdateLocalEntity(request, context).onFailure().recoverWithItem(e -> {
 				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.PARTIAL_UPDATE_REQUEST,
@@ -318,7 +318,7 @@ public class EntityService {
 		String tenantId = HttpUtils.getTenant(request);
 		return entityDAO.getEndpoint(entityId, tenantId).onItem().transformToUni(endPoint -> {
 			if (endPoint != null && !endPoint.equals("")) {
-				WebClient webClient = WebClient.create(Vertx.vertx());
+				WebClient webClient = WebClient.create(vertx);
 				return webClient.patchAbs(endPoint + "/ngsi-ld/v1/entities/" + entityId + "/attrs/" + attrId)
 						.putHeader(NGSIConstants.TENANT_HEADER, tenantId)
 						.putHeader(AppConstants.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
@@ -663,11 +663,16 @@ public class EntityService {
 
 	private Uni<NGSILDOperationResult> partialUpdateLocalEntity(UpdateEntityRequest request, Context context) {
 		return entityDAO.partialUpdateAttribute(request).onItem().transform(v -> {
-			request.setPreviousEntity(v.iterator().next().getJsonObject(0).getMap());
-			MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
 			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.PARTIAL_UPDATE_REQUEST,
 					request.getId());
-			localResult.addSuccess(new CRUDSuccess(null, null, null, request.getPayload(), context));
+			if (v.size() == 0) {
+				localResult.addFailure(
+						new ResponseException(ErrorType.NotFound, "Entity " + request.getId() + " was not found"));
+			} else {
+				request.setPreviousEntity(v.iterator().next().getJsonObject(0).getMap());
+				MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
+				localResult.addSuccess(new CRUDSuccess(null, null, null, request.getPayload(), context));
+			}
 			return localResult;
 		});
 	}
@@ -761,10 +766,19 @@ public class EntityService {
 										regEntry.regMode(), regEntry.canDoZip(), regEntry.canDoIdQuery());
 								break;
 							case AppConstants.UPDATE_REQUEST:
-							case AppConstants.MERGE_PATCH_REQUEST:
-							case AppConstants.REPLACE_ENTITY_REQUEST:
 								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
-										regHost.cSourceId(), regEntry.appendAttrs(), false, regEntry.regMode(),
+										regHost.cSourceId(), regEntry.updateAttrs(), regEntry.updateBatch(),
+										regEntry.regMode(), regEntry.canDoZip(), regEntry.canDoIdQuery());
+								break;
+							case AppConstants.MERGE_PATCH_REQUEST:
+								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
+										regHost.cSourceId(), regEntry.mergeBatch(), false, regEntry.regMode(),
+										regEntry.canDoZip(), regEntry.canDoIdQuery());
+								break;
+							// case AppConstants.REPLACE_ENTITY_REQUEST:
+							case AppConstants.PARTIAL_UPDATE_REQUEST:
+								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
+										regHost.cSourceId(), regEntry.updateAttrs(), false, regEntry.regMode(),
 										regEntry.canDoZip(), regEntry.canDoIdQuery());
 								break;
 							case AppConstants.APPEND_REQUEST:

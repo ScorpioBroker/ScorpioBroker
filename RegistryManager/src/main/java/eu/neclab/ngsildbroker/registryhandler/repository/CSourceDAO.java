@@ -26,9 +26,13 @@ import jakarta.inject.Singleton;
 import java.util.List;
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @Singleton
 public class CSourceDAO {
 
+	private final static Logger logger = LoggerFactory.getLogger(CSourceDAO.class);
 	@Inject
 	ClientManager clientManager;
 
@@ -160,7 +164,7 @@ public class CSourceDAO {
 			AttrsQueryTerm attrsQuery, CSFQueryTerm csf, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, int limit,
 			int offset, boolean count) {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
-			StringBuilder sql = new StringBuilder("with a as (select cs_id from csourceinformation WHERE ");
+			StringBuilder sql = new StringBuilder("with a as (select distinct cs_id from csourceinformation WHERE ");
 			boolean sqlAdded = false;
 			int dollar = 1;
 			Tuple tuple = Tuple.tuple();
@@ -250,7 +254,9 @@ public class CSourceDAO {
 				// }
 				// dollar++;
 			}
-
+			String sqlString = sql.toString();
+			logger.debug("SQL: " + sqlString);
+			logger.debug("Tuple: " + tuple.deepToString());
 			return client.preparedQuery(sql.toString()).execute(tuple).onFailure().retry().atMost(3);
 		});
 
