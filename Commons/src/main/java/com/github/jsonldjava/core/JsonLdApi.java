@@ -678,7 +678,7 @@ public class JsonLdApi {
 	 */
 
 	public Uni<NGSIObject> expand(Context activeCtx, String activeProperty, NGSIObject ngsiElement, int payloadType,
-			boolean atContextAllowed, WebClient webClient) {
+			boolean atContextAllowed, WebClient webClient,String atContextUrl) {
 		final boolean frameExpansion = this.opts.getFrameExpansion();
 		// 1)
 		if (ngsiElement.getElement() == null) {
@@ -698,7 +698,7 @@ public class JsonLdApi {
 				unis.add(expand(activeCtx, activeProperty,
 						new NGSIObject(item, ngsiElement)
 								.setFromHasValue(ngsiElement.isHasAtValue() || ngsiElement.isFromHasValue()),
-						payloadType, atContextAllowed, webClient));
+						payloadType, atContextAllowed, webClient,atContextUrl));
 			}
 
 			return Uni.combine().all().unis(unis).combinedWith(list -> list).onItem().transformToUni(list -> {
@@ -771,7 +771,7 @@ public class JsonLdApi {
 					return Uni.createFrom().failure(
 							new ResponseException(ErrorType.BadRequestData, "@context entry in body is not allowed"));
 				}
-				ctxUni = activeCtx.parse(bodyContext, true, webClient);
+				ctxUni = activeCtx.parse(bodyContext, true, webClient,atContextUrl);
 			} else {
 				ctxUni = Uni.createFrom().item(activeCtx);
 			}
@@ -1474,8 +1474,8 @@ public class JsonLdApi {
 	 * @throws ResponseException
 	 */
 	public Uni<Object> expand(Context activeCtx, Object element, int payloadType, boolean atContextAllowed,
-			WebClient webClient) {
-		return expand(activeCtx, null, new NGSIObject(element, null), payloadType, atContextAllowed, webClient).onItem()
+			WebClient webClient, String atContextUrl) {
+		return expand(activeCtx, null, new NGSIObject(element, null), payloadType, atContextAllowed, webClient,atContextUrl).onItem()
 				.transform(ngsiElem -> ngsiElem.getElement());
 	}
 

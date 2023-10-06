@@ -431,7 +431,7 @@ public class RDFDataset extends LinkedHashMap<String, Object> {
 	 * @param contextLike The context to parse
 	 * @throws JsonLdError If the context can't be parsed
 	 */
-	public Uni<Void> parseContext(Object contextLike, WebClient webClient) {
+	public Uni<Void> parseContext(Object contextLike, WebClient webClient,String atContextUrl) {
 		Context context;
 		if (api != null) {
 			context = new Context(api.opts);
@@ -439,7 +439,7 @@ public class RDFDataset extends LinkedHashMap<String, Object> {
 			context = new Context();
 		}
 		// Context will do our recursive parsing and initial IRI resolution
-		return context.parse(contextLike, false, webClient).onItem().transformToUni(ctx -> {
+		return context.parse(contextLike, false, webClient,atContextUrl).onItem().transformToUni(ctx -> {
 			// And then leak to us the potential 'prefixes'
 			final Map<String, String> prefixes = context.getPrefixes(true);
 

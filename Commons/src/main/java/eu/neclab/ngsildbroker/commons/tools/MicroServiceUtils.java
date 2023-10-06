@@ -40,7 +40,8 @@ public class MicroServiceUtils {
 
 	@ConfigProperty(name = "mysettings.gateway.port")
 	int port;
-
+	@ConfigProperty(name = "atcontext.url")
+	String contextServerUrl;
 	public static void serializeAndSplitObjectAndEmit(Object obj, int messageSize, MutinyEmitter<String> emitter,
 			ObjectMapper objectMapper) {
 		String data;
@@ -240,5 +241,13 @@ public class MicroServiceUtils {
 //		tmp.setSubscription(new Subscription(originalPayload.getSubscription()));
 //		return new SyncMessage(originalSync.getSyncId(), tmp);
 //	}
+public URI getContextServerURL() {
+	logger.trace("getContextServerURL :: started");
+	try {
+		return new URI(contextServerUrl);
+	} catch (URISyntaxException e) {
+		throw new RuntimeException(e);
+	}
 
+}
 }

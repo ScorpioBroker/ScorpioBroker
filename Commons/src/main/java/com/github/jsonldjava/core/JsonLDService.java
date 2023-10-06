@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
@@ -29,16 +30,17 @@ public class JsonLDService {
 
 	@Inject
 	ClientManager clientManager;
-
+	@Inject
+	MicroServiceUtils microServiceUtils;
 	@Inject
 	Vertx vertx;
 
 	WebClient webClient;
-
+	String atContextUrl;
 	@PostConstruct
 	void setup() {
 		WebClientOptions options = new WebClientOptions();
-		
+		atContextUrl = microServiceUtils.getContextServerURL().toString();
 		this.webClient = WebClient.create(vertx, options );
 		this.coreContext = clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem()
 				.transformToUni(client -> {
@@ -49,7 +51,7 @@ public class JsonLDService {
 							});
 				}).onItem().transformToUni(coreContextMap -> {
 					return new Context(new JsonLdOptions(JsonLdOptions.JSON_LD_1_1))
-							.parse(coreContextMap.get("@context"), false, webClient).onItem().transform(coreContext -> {
+							.parse(coreContextMap.get("@context"), false, webClient,atContextUrl).onItem().transform(coreContext -> {
 								// this.coreContext = coreContext;
 								coreContext.getTermDefinition("features").remove("@container");
 								coreContext.getInverse();
@@ -59,7 +61,7 @@ public class JsonLDService {
 					// used term and we don't need the geo json definition
 
 				}).await().indefinitely();
-		JsonLdProcessor.init(coreContextUrl, coreContext);
+		JsonLdProcessor.init(coreContextUrl, coreContext,atContextUrl);
 
 	}
 
@@ -107,10 +109,10 @@ public class JsonLDService {
 	}
 
 	public Uni<Context> parse(Object headerContext) {
-		return getCoreContextClone().parse(headerContext, true, webClient);
+		return getCoreContextClone().parse(headerContext, true, webClient,atContextUrl);
 	}
 	public Uni<Context> parsePure(Object headerContext) {
-		return new Context().parse(headerContext, false, webClient);
+		return new Context().parse(headerContext, false, webClient,atContextUrl);
 	}
 
 	public Uni<Object> toRDF(Object entity) {
