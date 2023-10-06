@@ -1,26 +1,21 @@
 package com.github.jsonldjava.core;
 
 import static com.github.jsonldjava.utils.Obj.newMap;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import com.github.jsonldjava.core.JsonLdError.Error;
 import com.github.jsonldjava.impl.NQuadRDFParser;
 import com.github.jsonldjava.impl.NQuadTripleCallback;
 import com.google.common.collect.Lists;
-
 import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.ext.web.client.WebClient;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
+
 
 /**
  * This class implements the <a href=
