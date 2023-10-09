@@ -938,7 +938,8 @@ public class JsonLdApi {
 							// expandedValue = activeCtx.expandIri((String) value, true, false, null, null);
 
 							expandedValue = value;
-							if (((String) expandedValue).indexOf(':') == -1) {
+
+							if (((String) expandedValue).indexOf(':') == -1 && !ngsiElement.isFromHasValue()) {
 								throw new ResponseException(ErrorType.BadRequestData, "IDs need to be URIs");
 							}
 
@@ -976,13 +977,15 @@ public class JsonLdApi {
 						if (value instanceof List) {
 							expandedValue = new ArrayList<String>();
 							for (final Object v : (List) value) {
-								if (!(v instanceof String)) {
-									throw new JsonLdError(Error.INVALID_TYPE_VALUE,
-											"@type value must be a string or array of strings");
+								if (!ngsiElement.isFromHasValue()) {
+									if (!(v instanceof String)) {
+										throw new JsonLdError(Error.INVALID_TYPE_VALUE,
+												"@type value must be a string or array of strings");
+									}
+									String type = activeCtx.expandIri((String) v, true, true, null, null);
+									((List<String>) expandedValue).add(type);
+									ngsiElement.addType(type);
 								}
-								String type = activeCtx.expandIri((String) v, true, true, null, null);
-								((List<String>) expandedValue).add(type);
-								ngsiElement.addType(type);
 							}
 						} else if (value instanceof String) {
 							expandedValue = activeCtx.expandIri((String) value, true, true, null, null);
@@ -1179,9 +1182,9 @@ public class JsonLdApi {
 					case AppConstants.TEMP_ENTITY_RETRIEVED_PAYLOAD:
 						if (NGSIConstants.NGSI_LD_HAS_VALUE.equals(expandedProperty)) {
 							ngsiElement.setHasAtValue(true);
-						}else if (NGSIConstants.NGSI_LD_HAS_VOCAB.equals(expandedProperty)) {
+						} else if (NGSIConstants.NGSI_LD_HAS_VOCAB.equals(expandedProperty)) {
 							ngsiElement.setHasVocab(true);
-						}else if (NGSIConstants.NGSI_LD_HAS_OBJECT.equals(expandedProperty)) {
+						} else if (NGSIConstants.NGSI_LD_HAS_OBJECT.equals(expandedProperty)) {
 							ngsiElement.setHasAtObject(true);
 						} else if (NGSIConstants.NGSI_LD_DATE_TIME.equals(expandedProperty)) {
 							ngsiElement.setDateTime(true);
