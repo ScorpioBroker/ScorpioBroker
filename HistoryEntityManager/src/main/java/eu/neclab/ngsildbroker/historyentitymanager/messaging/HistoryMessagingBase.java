@@ -123,6 +123,7 @@ public abstract class HistoryMessagingBase {
 	}
 
 	public Uni<Void> baseHandleEntity(BaseRequest message) {
+		
 		if (!autoRecording) {
 			return Uni.createFrom().voidItem();
 		}
@@ -154,8 +155,7 @@ public abstract class HistoryMessagingBase {
 		return historyService.handleRegistryChange(message);
 	}
 
-	@Scheduled(every = "5s")
-	@RunOnVirtualThread
+	
 	Uni<Void> checkBuffer() {
 		if (!autoRecording) {
 			return Uni.createFrom().voidItem();
