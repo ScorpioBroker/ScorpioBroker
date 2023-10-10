@@ -1,0 +1,1 @@
+update subscriptions set subscription=subscription-'https://uri.etsi.org/ngsi-ld/lastFailure '
