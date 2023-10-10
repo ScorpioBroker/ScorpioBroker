@@ -36,7 +36,7 @@ public class ContextDao {
 	MicroServiceUtils microServiceUtils;
 	@PostConstruct
 	void setup() {
-		atContextUrl = microServiceUtils.getContextServerURL().toString();
+		atContextUrl = microServiceUtils.getGatewayURL().toString()+"/ngsi-ld/v1/jsonldContexts/";
 	}
 	String atContextUrl;
 	public Uni<RestResponse<Object>> getById(String id, Boolean details) {
@@ -145,7 +145,7 @@ public class ContextDao {
 			return client.preparedQuery(sql).execute(Tuple.of(id, new JsonObject(payload))).onItemOrFailure()
 					.transform((rows, failure) -> {
 						if (failure != null) {
-							if (failure instanceof PgException && ((PgException) failure).getCode().equals("23505")) {
+							if (failure instanceof PgException && ((PgException) failure).getSqlState().equals("23505")) {
 								return RestResponse.ok(id);
 							} else {
 								return RestResponse.status(RestResponse.Status.INTERNAL_SERVER_ERROR,
