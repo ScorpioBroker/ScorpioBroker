@@ -836,13 +836,15 @@ public class EntityService {
 			} else {
 				toStore = MicroServiceUtils.deepCopyMap(originalEntity);
 			}
-			toStore.put(NGSIConstants.JSON_LD_ID, entityId);
-			toStore.put(NGSIConstants.JSON_LD_TYPE, originalTypes);
-			if (originalScopes != null) {
-				toStore.put(NGSIConstants.NGSI_LD_SCOPE, originalScopes);
-			}
-			EntityTools.addSysAttrs(toStore, request.getSendTimestamp());
+		}else{
+		    toStore = new HashMap<>();
 		}
+		toStore.put(NGSIConstants.JSON_LD_ID, entityId);
+		toStore.put(NGSIConstants.JSON_LD_TYPE, originalTypes);
+		if (originalScopes != null) {
+			toStore.put(NGSIConstants.NGSI_LD_SCOPE, originalScopes);
+		}
+		EntityTools.addSysAttrs(toStore, request.getSendTimestamp());
 		return Tuple2.of(toStore, cId2RemoteHostEntity.values());
 	}
 
