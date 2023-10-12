@@ -825,24 +825,33 @@ public class EntityService {
 				}
 			}
 		}
-		Iterator<String> it2 = toBeRemoved.iterator();
-		while (it2.hasNext()) {
-			originalEntity.remove(it2.next());
+		if(originalEntity.isEmpty()){
+			Map<String, Object> toStore = new HashMap<>();
+			toStore.put(NGSIConstants.JSON_LD_ID, entityId);
+			toStore.put(NGSIConstants.JSON_LD_TYPE, originalTypes);
+			if (originalScopes != null) {
+				toStore.put(NGSIConstants.NGSI_LD_SCOPE, originalScopes);
+			}
+			EntityTools.addSysAttrs(toStore, request.getSendTimestamp());
+			return Tuple2.of(toStore, cId2RemoteHostEntity.values());
 		}
-		Map<String, Object> toStore = new HashMap<>();
+        for (String s : toBeRemoved) {
+            originalEntity.remove(s);
+        }
+		Map<String, Object> toStore = null;
 		if (!originalEntity.isEmpty()) {
 			if (cId2RemoteHostEntity.isEmpty()) {
 				toStore = originalEntity;
 			} else {
 				toStore = MicroServiceUtils.deepCopyMap(originalEntity);
 			}
+			toStore.put(NGSIConstants.JSON_LD_ID, entityId);
+			toStore.put(NGSIConstants.JSON_LD_TYPE, originalTypes);
+			if (originalScopes != null) {
+				toStore.put(NGSIConstants.NGSI_LD_SCOPE, originalScopes);
+			}
+			EntityTools.addSysAttrs(toStore, request.getSendTimestamp());
 		}
-		toStore.put(NGSIConstants.JSON_LD_ID, entityId);
-		toStore.put(NGSIConstants.JSON_LD_TYPE, originalTypes);
-		if (originalScopes != null) {
-			toStore.put(NGSIConstants.NGSI_LD_SCOPE, originalScopes);
-		}
-		EntityTools.addSysAttrs(toStore, request.getSendTimestamp());
 		return Tuple2.of(toStore, cId2RemoteHostEntity.values());
 	}
 
