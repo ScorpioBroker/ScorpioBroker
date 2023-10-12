@@ -829,15 +829,13 @@ public class EntityService {
 		while (it2.hasNext()) {
 			originalEntity.remove(it2.next());
 		}
-		Map<String, Object> toStore = null;
-		if (originalEntity.size() > 0) {
+		Map<String, Object> toStore = new HashMap<>();
+		if (!originalEntity.isEmpty()) {
 			if (cId2RemoteHostEntity.isEmpty()) {
 				toStore = originalEntity;
 			} else {
 				toStore = MicroServiceUtils.deepCopyMap(originalEntity);
 			}
-		}else{
-		    toStore = new HashMap<>();
 		}
 		toStore.put(NGSIConstants.JSON_LD_ID, entityId);
 		toStore.put(NGSIConstants.JSON_LD_TYPE, originalTypes);

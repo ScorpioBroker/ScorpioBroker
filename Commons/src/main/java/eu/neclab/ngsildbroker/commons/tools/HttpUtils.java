@@ -813,6 +813,7 @@ public final class HttpUtils {
 		List<ResponseException> fails = operationResult.getFailures();
 		List<CRUDSuccess> successes = operationResult.getSuccesses();
 		RestResponse<Object> response;
+        successes.removeIf(crudSuccess -> crudSuccess.getAttribs().isEmpty());
 		if (fails.isEmpty()) {
 			if (!operationResult.isWasUpdated()) {
 				try {
