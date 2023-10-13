@@ -8,22 +8,32 @@ Start commands to copy
 Looking for the easiest way to start Scorpio? This is it.
 ::
 
-	curl https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/development/docker-compose-aaio.yml
-	sudo docker-compose -f docker-compose-aaio.yml up
+	curl https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/development-quarkus/compose-files/docker-compose-java-aaio.yml
+	sudo docker-compose -f docker-compose-java-aaio.yml up
 
 
 Introduction
 ############
-The easiest way to start Scorpio is to use docker-compose. We provide 2 main docker-compose files which rely on dockerhub. 
-docker-compose-aaio.yml and docker-compose-dist.yml. You can use this files directly as they are to start Scorpio
-When you want to run Scorpio in the distributed variant exchange the yml file in the command above.
+The easiest way to start Scorpio is to use docker-compose. We provide multiple versions of Scorpio Broker docker-compose files which rely on dockerhub available here - `compose-files <https://github.com/ScorpioBroker/ScorpioBroker/tree/development-quarkus/compose-files/>`__. 
+Two main versions of docker-compose-java-aaio.yml and docker-compose-java-aaio-kafka.yml. You can use this files directly as they are to start Scorpio
 
-docker-compose-aaio.yml
+When you want to run Scorpio in the distributed variant exchange the yml file in the command above, like as
+::
+
+	sudo docker-compose -f docker-compose-java-dist-kafka.yml up
+
+
+docker-compose-java-aaio.yml
 #######################
 
-AAIO here stands for almost all in one. In this variant the core components of Scorpio and the Spring Cloud components are started within one container. Additional containers are only Kafka and Postgres. For testing and small to medium size deployments this is most likely what you want to use.
+AAIO here stands for almost all in one. In this variant the core components of Scorpio are started within one container. Additional container is only Postgres. For testing and small to medium size deployments this is most likely what you want to use.
 
-docker-compose-dist.yml
+docker-compose-java-aaio-kafka.yml
+#######################
+
+In this variant the core components of Scorpio are started within one container. Additional containers are Kafka and Postgres.
+
+docker-compose-java-dist-kafka.yml
 #######################
 
 In this variant each Scorpio component is started in a different container. This makes it highly flexible and allows you to replace individual components or to start new instances of some core components. 
@@ -32,22 +42,21 @@ Configure docker image via environment variables
 ################################################
 
 There are multiple ways to enter environment variables into docker. We will not got through all of them but only through the docker-compose files. However the scorpio relevant parts apply to all these variants. 
-Configuration of Scorpio is done via the Spring Cloud configuration system. For a complete overview of the used parameters and the default values have a look at the application.yml for the AllInOneRunner here, https://github.com/ScorpioBroker/ScorpioBroker/blob/development/AllInOneRunner/src/main/resources/application-aaio.yml.
-To provide a new setting you can provide those via an environment entry in the docker-compose file. The variable we want to set is called spring_args.
+For a complete overview of the used parameters and the default values have a look at the application.properties for the AllInOneRunner here, https://github.com/ScorpioBroker/ScorpioBroker/blob/development-quarkus/AllInOneRunner/src/main/resources/application.properties.
+To provide a new setting you can provide those via an environment entry in the docker-compose file. The variable we want to set should be capitalized for all the config values if you want to configure via env.
 Since we only want to set this option for the Scorpio container we make it a sub part of the Scorpio Container entry like this 
 ::
 
 	scorpio:
-	  image: scorpiobroker/scorpio:scorpio-aaio_1.0.0
+	  image: scorpiobroker/all-in-one-runner:java-kafka-latest
 	  ports:
 	    - "9090:9090"
+	  environment:
+	    DBHOST: postgres
+	    BUSHOST: kafka
 	  depends_on:
 	    - kafka
 	    - postgres
-	  environment:
-	    spring_args: --maxLimit=1000
-
-With this we would set the maximum limit for a query reply to 1000 instead of the default 500.
 
 Be quit! docker
 ###############
@@ -62,7 +71,7 @@ in the docker-compose file to respective container config. E.g. to make Kafka qu
 ::
 
 	kafka:
-	  image: wurstmeister/kafka
+	  image: bitnami/kafka
 	  hostname: kafka
 	  ports:
 	    - "9092"
@@ -72,6 +81,7 @@ in the docker-compose file to respective container config. E.g. to make Kafka qu
 	    KAFKA_ADVERTISED_PORT: 9092
 	    KAFKA_LOG_RETENTION_MS: 10000
 	    KAFKA_LOG_RETENTION_CHECK_INTERVAL_MS: 5000
+	    ALLOW_PLAINTEXT_LISTENER: "yes"
 	  volumes:
 	    - /var/run/docker.sock:/var/run/docker.sock
 	  depends_on:
@@ -83,7 +93,7 @@ in the docker-compose file to respective container config. E.g. to make Kafka qu
 Configuration Parameters
 ************************
 
-Scorpio uses the Spring Cloud/Boot configuration system. This is done via the application.yml files in the corresponding folders.
+Configuration parameters are set via the application.properties files in the corresponding folders.
 The AllInOneRunner has a complete set of all available configuration options in them.
 
 Those can be overwriten via the command line or in the docker case as described above.
@@ -112,7 +122,7 @@ Those can be overwriten via the command line or in the docker case as described 
 | reader.datasource | If you change the postgres setup here you set   | ngb                                                                            | 
 | .password         | the password                                    |                                                                                | 
 +-------------------+-------------------------------------------------+--------------------------------------------------------------------------------+
-| reader.datasource | JDBC URL to postgres                            | jdbc:postgresql://postgres:5432/ngb?ApplicationName=ngb_storagemanager_reader  | 
+| reader.datasource | JDBC URL to postgres                            | jdbc:postgresql://postgres:5432/ngb?ApplicationName=aio-runner                 | 
 | .url              |                                                 |                                                                                | 
 +-------------------+-------------------------------------------------+--------------------------------------------------------------------------------+
 | reader.datasource | username for the postgres db                    | ngb                                                                            | 
@@ -121,19 +131,19 @@ Those can be overwriten via the command line or in the docker case as described 
 | writer.datasource | If you change the postgres setup here you set   | ngb                                                                            | 
 | .password         | the password                                    |                                                                                | 
 +-------------------+-------------------------------------------------+--------------------------------------------------------------------------------+
-| writer.datasource | JDBC URL to postgres                            | jdbc:postgresql://postgres:5432/ngb?ApplicationName=ngb_storagemanager_writer  | 
+| writer.datasource | JDBC URL to postgres                            | jdbc:postgresql://postgres:5432/ngb?ApplicationName=aio-runner                 |
 | .url              |                                                 |                                                                                | 
 +-------------------+-------------------------------------------------+--------------------------------------------------------------------------------+
 | writer.datasource | username for the postgres db                    | ngb                                                                            | 
 | .username         |                                                 |                                                                                | 
 +-------------------+-------------------------------------------------+--------------------------------------------------------------------------------+
-| spring.datasource | Same as above but used by flyway for database   | ngb                                                                            | 
+| quarkus.datasource| Same as above but used by flyway for database   | ngb                                                                           | 
 | .password         | migration                                       |                                                                                | 
 +-------------------+-------------------------------------------------+--------------------------------------------------------------------------------+
-| spring.datasource | Same as above but used by flyway for database   | jdbc:postgresql://postgres:5432/ngb?ApplicationName=ngb_storagemanager_writer  | 
+| quarkus.datasource| Same as above but used by flyway for database   | jdbc:postgresql://postgres:5432/ngb                                           | 
 | .url              | migration                                       |                                                                                | 
 +-------------------+-------------------------------------------------+--------------------------------------------------------------------------------+
-| spring.datasource | Same as above but used by flyway for database   | ngb                                                                            | 
+| quarkus.datasource| Same as above but used by flyway for database   | ngb                                                                           | 
 | .username         | migration                                       |                                                                                | 
 +-------------------+-------------------------------------------------+--------------------------------------------------------------------------------+
 
@@ -142,7 +152,7 @@ Those can be overwriten via the command line or in the docker case as described 
 Building Scorpio from source
 ****************************
 
-Scorpio is developed in Java using SpringCloud as microservice framework
+Scorpio is developed in Java using Spring Boot and Quarkus as microservice framework
 and Apache Maven as build tool. Some of the tests require a running
 Apache Kafka messagebus (further instruction are in the Setup chapter).
 If you want to skip those tests you can run
@@ -172,8 +182,7 @@ microservice.
 docker-aaio
 ~~~~~~~~~~~
 This will trigger the Maven to build one docker container, containing
-the AllInOneRunner and the spring cloud components (eureka, configserver
-and gateway)
+the AllInOneRunner components
 
 Maven arguments
 ~~~~~~~~~~~~~~~
@@ -341,13 +350,13 @@ docker-compose files. I.e.
 
 .. code:: console
 
-    sudo docker-composer -f docker-compose-aaio.yml up
+    sudo docker-compose -f docker-compose-java-aaio.yml up
 
 to stop the container properly execute
 
 .. code:: console
 
-    sudo docker-composer -f docker-compose-aaio.yml down
+    sudo docker-compose -f docker-compose-java-aaio.yml down
 
 General remark for the Kafka docker image and docker-compose
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -359,7 +368,7 @@ docker-compose files to match your docker host IP. You can use
 mode.
 
 For further details please refer to
-https://hub.docker.com/r/wurstmeister/kafka
+https://hub.docker.com/r/bitnami/kafka
 
 Running docker build outside of Maven
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

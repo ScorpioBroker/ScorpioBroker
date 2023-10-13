@@ -99,11 +99,11 @@ Payload:
 2. Query Operation
 ===================
 
-To retrieve entity with aggregation support, you can send an HTTP GET to - **http://<IP Address>:<port>/ngsi-ld/v1/entities?aggrMethods={aggrMethods}&aggrPeriodDuration={aggrPeriodDuration}&options=aggregatedValues** and will return back the Entities with given aggregated methods and aggregated time period.
+To retrieve entity with aggregation support, you can send an HTTP GET to - **http://<IP Address>:<port>/ngsi-ld/v1/entities?aggrMethods={aggrMethods}** and will return back the Entities with given aggregated methods.
 
-**EXAMPLE:** Give back the maximum and average speed of Entities of type Vehicle whose "brandName" attribute is "Mercedes" between the 1st of August at noon and the 1st of August at 01 PM, aggregated by periods of 4 minutes
+**EXAMPLE:** Give back all aggr methods (max, min, avg, sum, sumsq, stddev, totalCount, distinctCount) for Entities of type Vehicle
 
-	GET - **http://localhost:9090/ngsi-ld/v1/temporal/entities/?type=Vehicle&q=brandName=Mercedes&attrs=speed&timerel=between&timeAt=2020-08-01T12:00:00Z&endTimeAt=2020-08-01T13:00:00Z&aggrMethods=max,avg&aggrPeriodDuration=PT4M&options=aggregatedValues**
+	GET - **http://localhost:9090/ngsi-ld/v1/temporal/entities?type=Vehicle&aggrMethods=max%2Cmin%2Cavg%2Csum%2Csumsq%2Cstddev%2CtotalCount%2CdistinctCount&timeproperty=observedAt'**
 
 Response:
 
@@ -113,36 +113,93 @@ Response:
      {
          "id": "urn:ngsi-ld:Vehicle:B9211",
          "type": "Vehicle",
-         "brandName": [
-             {
-                 "type": "Property",
-                 "value": "Mercedes"
-             }
-         ],
-         "speed": {
+         "brandName": {
              "type": "Property",
-             "max": [
+             "distinctCount": [
                  [
-                     120,
-                     "2020-08-01T12:00:00Z",
-                     "2020-08-01T12:04:00Z"
-                 ],
-                 [
-                     115,
-                     "2020-08-01T12:04:00Z",
-                     "2020-08-01T12:08:00Z"
+                     1,
+                     "2020-08-01T11:00:00.000000Z",
+                     "2020-08-01T11:00:00.000000Z"
                  ]
              ],
+             "max": [
+                 [
+                     "Mercedes",
+                     "2020-08-01T11:00:00.000000Z",
+                     "2020-08-01T11:00:00.000000Z"
+                 ]
+             ],
+             "min": [
+                 [
+                     "Mercedes",
+                     "2020-08-01T11:00:00.000000Z",
+                     "2020-08-01T11:00:00.000000Z"
+                 ]
+             ],
+             "totalCount": [
+                 [
+                     1,
+                     "2020-08-01T11:00:00.000000Z",
+                     "2020-08-01T11:00:00.000000Z"
+                 ]
+             ]
+         },
+         "speed": {
+             "type": "Property",
              "avg": [
                  [
-                     100,
-                     "2020-08-01T12:00:00Z",
-                     "2020-08-01T12:04:00Z"
-                 ],
+                     94.44444444444444,
+                     "2020-08-01T12:00:00.000000Z",
+                     "2020-08-01T12:08:00.000000Z"
+                 ]
+             ],
+             "distinctCount": [
                  [
-                     90,
-                     "2020-08-01T12:04:00Z",
-                     "2020-08-01T12:08:00Z"
+                     7,
+                     "2020-08-01T12:00:00.000000Z",
+                     "2020-08-01T12:08:00.000000Z"
+                 ]
+             ],
+             "max": [
+                 [
+                     95,
+                     "2020-08-01T12:00:00.000000Z",
+                     "2020-08-01T12:08:00.000000Z"
+                 ]
+             ],
+             "min": [
+                 [
+                     100,
+                     "2020-08-01T12:00:00.000000Z",
+                     "2020-08-01T12:08:00.000000Z"
+                 ]
+             ],
+             "stddev": [
+                 [
+                     19.436506316151,
+                     "2020-08-01T12:00:00.000000Z",
+                     "2020-08-01T12:08:00.000000Z"
+                 ]
+             ],
+             "sum": [
+                 [
+                     850,
+                     "2020-08-01T12:00:00.000000Z",
+                     "2020-08-01T12:08:00.000000Z"
+                 ]
+             ],
+             "sumsq": [
+                 [
+                     83300.0,
+                     "2020-08-01T12:00:00.000000Z",
+                     "2020-08-01T12:08:00.000000Z"
+                 ]
+             ],
+             "totalCount": [
+                 [
+                     9,
+                     "2020-08-01T12:00:00.000000Z",
+                     "2020-08-01T12:08:00.000000Z"
                  ]
              ]
          },
