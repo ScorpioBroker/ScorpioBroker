@@ -204,7 +204,7 @@ public class EntityOperationsQueryController {
 						unis.add(queryService.query(HttpUtils.getTenant(request), token, tokenProvided,
 								id == null ? null : new String[] { id }, typeQueryTerm, idPattern, attrsQuery,
 								qQueryTerm, csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset,
-								count, localOnly, context, request.headers()));
+								count, localOnly, context, request.headers(), false));
 					}
 					return Uni.combine().all().unis(unis).combinedWith(list -> {
 						Iterator<?> it = list.iterator();
@@ -247,7 +247,7 @@ public class EntityOperationsQueryController {
 					}
 					return queryService.query(tenant, token, tokenProvided, null, null, null, attrsQuery, qQueryTerm,
 							csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset, count,
-							localOnly, context, request.headers()).onItem().transformToUni(queryResult -> {
+							localOnly, context, request.headers(), false).onItem().transformToUni(queryResult -> {
 								return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty,
 										acceptHeader, count, actualLimit, langQuery, context, ldService);
 							}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e));

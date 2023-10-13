@@ -237,7 +237,7 @@ public class QueryController {
 			if (idsOnly) {
 				return queryService.queryForEntityIds(HttpUtils.getTenant(request), ids, typeQueryTerm, idPattern,
 						attrsQuery, qQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, context, request.headers(),
-						true, join, containedBy, joinLevel).onItem().transform(list -> {
+						true, join, containedBy, joinLevel, doNotCompact).onItem().transform(list -> {
 							String body;
 							Object result = "[]";
 							try {
@@ -263,7 +263,7 @@ public class QueryController {
 			return queryService
 					.query(HttpUtils.getTenant(request), token, tokenProvided, ids, typeQueryTerm, idPattern,
 							attrsQuery, qQueryTerm, csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit,
-							offset, count, localOnly, context, request.headers())
+							offset, count, localOnly, context, request.headers(), doNotCompact)
 					.onItem().transformToUni(queryResult -> {
 						if (doNotCompact) {
 							return Uni.createFrom().item(RestResponse.ok((Object) queryResult.getData()));
