@@ -141,7 +141,13 @@ public class QueryController {
 		String q;
 		if (qInput != null) {
 			try {
-				q = URLDecoder.decode(request.absoluteURI().split("q=")[1].split("&")[0], "UTF-8");
+				String uri = request.absoluteURI().substring(request.absoluteURI().indexOf("q=") + 2);
+				;
+				int index = uri.indexOf('&');
+				if (index != -1) {
+					uri = uri.substring(0, index);
+				}
+				q = URLDecoder.decode(uri, "UTF-8");
 			} catch (UnsupportedEncodingException e) {
 				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
 						new ResponseException(ErrorType.BadRequestData, "failed to decode q query")));
