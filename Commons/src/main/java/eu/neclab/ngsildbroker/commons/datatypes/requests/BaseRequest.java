@@ -12,14 +12,16 @@ public class BaseRequest implements Serializable {
 	private static final long serialVersionUID = -8749175274463827625L;
 	private String tenant;
 	protected Map<String, Object> payload = new HashMap<>();
+	protected Object bestCompleteResult;
 	private int requestType;
 	private long sendTimestamp = System.currentTimeMillis();
 
 	private String id;
-	protected Map<String, Object> previousEntity;
+	protected Object previousEntity;
 	protected String attribName;
 	protected String datasetId;
 	protected boolean deleteAll;
+	protected boolean distributed;
 
 	public BaseRequest() {
 
@@ -73,11 +75,11 @@ public class BaseRequest implements Serializable {
 		this.id = id;
 	}
 
-	public void setPreviousEntity(Map<String, Object> previousEntity) {
+	public void setPreviousEntity(Object previousEntity) {
 		this.previousEntity = previousEntity;
 	}
 
-	public Map<String, Object> getPreviousEntity() {
+	public Object getPreviousEntity() {
 		return previousEntity;
 	}
 
@@ -107,6 +109,22 @@ public class BaseRequest implements Serializable {
 
 	public void setDatasetId(String datasetId) {
 		this.datasetId = datasetId;
+	}
+
+	public boolean isDistributed() {
+		return distributed;
+	}
+
+	public void setDistributed(boolean distributed) {
+		this.distributed = distributed;
+	}
+
+	public Object getBestCompleteResult() {
+		return bestCompleteResult;
+	}
+
+	public void setBestCompleteResult(Object bestCompleteResult) {
+		this.bestCompleteResult = bestCompleteResult;
 	}
 
 }

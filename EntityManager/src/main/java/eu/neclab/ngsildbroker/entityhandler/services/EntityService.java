@@ -97,6 +97,7 @@ public class EntityService {
 	WebClient webClient;
 
 	private Table<String, String, List<RegistrationEntry>> tenant2CId2RegEntries = HashBasedTable.create();
+	private Table<String, String, List<RegistrationEntry>> tenant2CId2QueryRegEntries = HashBasedTable.create();
 
 	@Inject
 	JsonLDService jsonLdService;
@@ -294,6 +295,12 @@ public class EntityService {
 
 		}
 		if (localEntity != null && !localEntity.isEmpty()) {
+			if (!unis.isEmpty() && isDifferentRemoteQueryAvailable(request, remoteEntitiesAndHosts)) {
+				request.setDistributed(true);
+			} else {
+				request.setDistributed(false);
+			}
+			request.setBestCompleteResult(request.getPayload());
 			request.setPayload(localEntity);
 			unis.add(partialUpdateLocalEntity(request, context).onFailure().recoverWithItem(e -> {
 				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.PARTIAL_UPDATE_REQUEST,
@@ -507,6 +514,12 @@ public class EntityService {
 
 		}
 		if (!localEntity.isEmpty()) {
+			if (!unis.isEmpty() && isDifferentRemoteQueryAvailable(request, remoteEntitiesAndHosts)) {
+				request.setDistributed(true);
+			} else {
+				request.setDistributed(false);
+			}
+			request.setBestCompleteResult(request.getPayload());
 			request.setPayload(localEntity);
 			unis.add(appendLocal(request, noOverwrite, context).onFailure().recoverWithItem(e -> {
 				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST,
@@ -555,6 +568,12 @@ public class EntityService {
 
 		}
 		if (!localEntity.isEmpty()) {
+			if (!unis.isEmpty() && isDifferentRemoteQueryAvailable(request, remoteEntitiesAndHosts)) {
+				request.setDistributed(true);
+			} else {
+				request.setDistributed(false);
+			}
+			request.setBestCompleteResult(request.getPayload());
 			request.setPayload(localEntity);
 			unis.add(updateLocalEntity(request, context).onFailure().recoverWithItem(e -> {
 				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.UPDATE_REQUEST,
@@ -586,10 +605,11 @@ public class EntityService {
 	}
 
 	private Uni<NGSILDOperationResult> updateLocalEntity(UpdateEntityRequest request, Context context) {
-		return entityDAO.updateEntity(request).onItem().transform(notAppended -> {
-			request.setPreviousEntity(notAppended);
+		return entityDAO.updateEntity(request).onItem().transform(previousAndNewEntity -> {
+			request.setPreviousEntity(previousAndNewEntity.getItem1());
+			request.setBestCompleteResult(previousAndNewEntity.getItem2());
 			MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
-			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, request.getId());
+			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.UPDATE_REQUEST, request.getId());
 			localResult.addSuccess(new CRUDSuccess(null, null, null, request.getPayload(), context));
 			return localResult;
 		});
@@ -633,6 +653,12 @@ public class EntityService {
 			}
 		}
 		if (localEntity != null && !localEntity.isEmpty()) {
+			if (!unis.isEmpty() && isDifferentRemoteQueryAvailable(request, remoteEntitiesAndHosts)) {
+				request.setDistributed(true);
+			} else {
+				request.setDistributed(false);
+			}
+			request.setBestCompleteResult(request.getPayload());
 			request.setPayload(localEntity);
 			unis.add(createLocalEntity(request, context).onFailure().recoverWithItem(e -> {
 				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST,
@@ -652,6 +678,12 @@ public class EntityService {
 		});
 	}
 
+	private boolean isDifferentRemoteQueryAvailable(BaseRequest request,
+			Collection<Tuple2<RemoteHost, Map<String, Object>>> remoteEntitiesAndHosts) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
 	private Uni<NGSILDOperationResult> createLocalEntity(CreateEntityRequest request, Context context) {
 		return entityDAO.createEntity(request).onItem().transform(v -> {
 			MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
@@ -665,14 +697,10 @@ public class EntityService {
 		return entityDAO.partialUpdateAttribute(request).onItem().transform(v -> {
 			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.PARTIAL_UPDATE_REQUEST,
 					request.getId());
-			if (v.size() == 0) {
-				localResult.addFailure(
-						new ResponseException(ErrorType.NotFound, "Entity " + request.getId() + " was not found"));
-			} else {
-				request.setPreviousEntity(v.iterator().next().getJsonObject(0).getMap());
-				MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
-				localResult.addSuccess(new CRUDSuccess(null, null, null, request.getPayload(), context));
-			}
+			request.setPreviousEntity(v.getItem1());
+			request.setBestCompleteResult(v.getItem2());
+			MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
+			localResult.addSuccess(new CRUDSuccess(null, null, null, request.getPayload(), context));
 			return localResult;
 		});
 	}
@@ -865,9 +893,11 @@ public class EntityService {
 	}
 
 	private Uni<NGSILDOperationResult> appendLocal(AppendEntityRequest request, boolean noOverwrite, Context context) {
-		return entityDAO.appendToEntity2(request, noOverwrite).onItem().transform(notAppended -> {
+		return entityDAO.appendToEntity2(request, noOverwrite).onItem().transform(resultAndNotAppended -> {
 			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.APPEND_REQUEST, request.getId());
 			Set<Attrib> failedToAdd = Sets.newHashSet();
+			Set<String> notAppended = resultAndNotAppended.getItem2();
+			request.setBestCompleteResult(resultAndNotAppended.getItem1());
 			Map<String, Object> payload = request.getPayload();
 			for (String entry : notAppended) {
 				payload.remove(entry);
@@ -1425,6 +1455,12 @@ public class EntityService {
 
 		}
 		if (localEntity != null && !localEntity.isEmpty()) {
+			if (!unis.isEmpty() && isDifferentRemoteQueryAvailable(request, remoteEntitiesAndHosts)) {
+				request.setDistributed(true);
+			} else {
+				request.setDistributed(false);
+			}
+			request.setBestCompleteResult(request.getPayload());
 			request.setPayload(localEntity);
 			unis.add(localMergePatch(request, context).onFailure().recoverWithItem(e -> {
 				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST,
@@ -1446,7 +1482,8 @@ public class EntityService {
 
 	private Uni<NGSILDOperationResult> localMergePatch(MergePatchRequest request, Context context) {
 		return entityDAO.mergePatch(request).onItem().transform(v -> {
-			request.setPreviousEntity(v);
+			request.setPreviousEntity(v.getItem1());
+			request.setBestCompleteResult(v.getItem2());
 			MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
 			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.MERGE_PATCH_REQUEST,
 					request.getId());
@@ -1486,6 +1523,12 @@ public class EntityService {
 
 		}
 		if (localEntity != null && !localEntity.isEmpty()) {
+			if (!unis.isEmpty() && isDifferentRemoteQueryAvailable(request, remoteEntitiesAndHosts)) {
+				request.setDistributed(true);
+			} else {
+				request.setDistributed(false);
+			}
+			request.setBestCompleteResult(request.getPayload());
 			request.setPayload(localEntity);
 			unis.add(replaceLocalEntity(request, context).onFailure().recoverWithItem(e -> {
 				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST,
@@ -1507,7 +1550,8 @@ public class EntityService {
 
 	private Uni<NGSILDOperationResult> replaceLocalEntity(ReplaceEntityRequest request, Context context) {
 		return entityDAO.replaceEntity(request).onItem().transform(v -> {
-			request.setPreviousEntity(v);
+			request.setPreviousEntity(v.getItem1());
+			request.setBestCompleteResult(v.getItem2());
 			MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
 			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.REPLACE_ENTITY_REQUEST,
 					request.getId());
@@ -1557,6 +1601,12 @@ public class EntityService {
 			}
 		}
 		if (localEntity != null && !localEntity.isEmpty()) {
+			if (!unis.isEmpty() && isDifferentRemoteQueryAvailable(request, remoteEntitiesAndHosts)) {
+				request.setDistributed(true);
+			} else {
+				request.setDistributed(false);
+			}
+			request.setBestCompleteResult(request.getPayload());
 			request.setPayload(localEntity);
 			unis.add(replaceLocalAttrib(request, context).onFailure().recoverWithItem(e -> {
 				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST,
@@ -1578,7 +1628,8 @@ public class EntityService {
 
 	private Uni<NGSILDOperationResult> replaceLocalAttrib(ReplaceAttribRequest request, Context context) {
 		return entityDAO.replaceAttrib(request).onItem().transform(v -> {
-			request.setPreviousEntity(v);
+			request.setPreviousEntity(v.getItem1());
+			request.setBestCompleteResult(v.getItem2());
 			MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
 			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.REPLACE_ENTITY_REQUEST,
 					request.getId());

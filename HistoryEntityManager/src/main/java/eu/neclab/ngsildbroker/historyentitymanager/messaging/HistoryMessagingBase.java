@@ -19,6 +19,8 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BatchRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.UpsertEntityRequest;
 import eu.neclab.ngsildbroker.commons.serialization.messaging.CollectMessageListener;
 import eu.neclab.ngsildbroker.commons.serialization.messaging.MessageCollector;
 import eu.neclab.ngsildbroker.historyentitymanager.service.HistoryEntityService;
@@ -123,12 +125,12 @@ public abstract class HistoryMessagingBase {
 	}
 
 	public Uni<Void> baseHandleEntity(BaseRequest message) {
-		
+
 		if (!autoRecording) {
 			return Uni.createFrom().voidItem();
 		}
 		String tenant = message.getTenant();
-		ConcurrentLinkedQueue<BaseRequest> buffer = tenant2Buffer.get(message.getTenant());
+		ConcurrentLinkedQueue<BaseRequest> buffer = tenant2Buffer.get(tenant);
 		if (buffer == null) {
 			buffer = new ConcurrentLinkedQueue<>();
 			tenant2Buffer.put(message.getTenant(), buffer);
@@ -147,7 +149,24 @@ public abstract class HistoryMessagingBase {
 		if (message.getRequestType() != AppConstants.DELETE_REQUEST && message.getRequestPayload().isEmpty()) {
 			return Uni.createFrom().voidItem();
 		}
-		return historyService.handleInternalBatchRequest(message);
+		String tenant = message.getTenant();
+		ConcurrentLinkedQueue<BaseRequest> buffer = tenant2Buffer.get(tenant);
+		if (buffer == null) {
+			buffer = new ConcurrentLinkedQueue<>();
+			tenant2Buffer.put(message.getTenant(), buffer);
+		}
+
+		tenant2LastReceived.put(tenant, System.currentTimeMillis());
+		if (message.getRequestType() == AppConstants.DELETE_REQUEST) {
+			for (String entry : message.getEntityIds()) {
+				buffer.add(new DeleteEntityRequest(tenant, entry));
+			}
+		} else {
+			for (Map<String, Object> entry : message.getRequestPayload()) {
+				buffer.add(new UpsertEntityRequest(tenant, entry));
+			}
+		}
+		return Uni.createFrom().voidItem();
 	}
 
 	public Uni<Void> baseHandleCsource(BaseRequest message) {
@@ -155,7 +174,6 @@ public abstract class HistoryMessagingBase {
 		return historyService.handleRegistryChange(message);
 	}
 
-	
 	Uni<Void> checkBuffer() {
 		if (!autoRecording) {
 			return Uni.createFrom().voidItem();

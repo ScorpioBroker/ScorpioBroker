@@ -11,7 +11,9 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Vertx;
 
 import java.io.IOException;
+import java.util.ArrayList;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,14 +28,31 @@ public abstract class SubscriptionMessagingBase {
 	@Inject
 	SubscriptionService subscriptionService;
 
+	@ConfigProperty(name = "scorpio.subscriptions.collectinterval", defaultValue = "-1")
+	int collectInterval;
+
+	@ConfigProperty(name = "scorpio.subscriptions.collectmaxtime", defaultValue = "1000")
+	int collectMaxTime;
+
+	long lastMessage = System.currentTimeMillis();
+	long lastSent = System.currentTimeMillis();
+
+	ArrayList<BaseRequest> requestStore = new ArrayList<>();
+
 	public Uni<Void> baseHandleEntity(BaseRequest message) {
-		logger.debug("Subscription sub manager got called for entity: " + message.getId());
-		return subscriptionService.checkSubscriptions(message).onFailure().recoverWithUni(t -> {
-			logger.debug("Exception Occurred in checkSubscriptions: " + t);
-			t.printStackTrace();
-			logger.debug(t.getStackTrace().toString());
+		if (collectInterval == -1) {
+			logger.debug("Subscription sub manager got called for entity: " + message.getId());
+			return subscriptionService.checkSubscriptions(message).onFailure().recoverWithUni(t -> {
+				logger.debug("Exception Occurred in checkSubscriptions: " + t);
+				t.printStackTrace();
+				logger.debug(t.getStackTrace().toString());
+				return Uni.createFrom().voidItem();
+			});
+		} else {
+			requestStore.add(message);
+			lastMessage = System.currentTimeMillis();
 			return Uni.createFrom().voidItem();
-		});
+		}
 	}
 
 	public Uni<Void> baseHandleBatchEntities(BatchRequest message) {
@@ -128,6 +147,11 @@ public abstract class SubscriptionMessagingBase {
 
 	void purge() {
 		collector.purge(30000);
+	}
+
+	Uni<Void> emptyQueue() {
+
+		return Uni.createFrom().voidItem();
 	}
 
 }
