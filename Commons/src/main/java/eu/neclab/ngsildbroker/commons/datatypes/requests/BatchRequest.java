@@ -19,7 +19,6 @@ public class BatchRequest extends BaseRequest {
 	private static final long serialVersionUID = -3640664052782539124L;
 	private String tenant;
 	private List<Map<String, Object>> requestPayload;
-	private List<Map<String, Object>> bestCompleteRequestResult;
 
 	private List<Context> contexts;
 	private List<String> entityIds;
@@ -30,6 +29,8 @@ public class BatchRequest extends BaseRequest {
 			int requestType) {
 		this.tenant = tenant;
 		this.requestPayload = requestPayload;
+		payload.put(JsonLdConsts.GRAPH, requestPayload);
+		bestCompleteResult = requestPayload;
 		this.contexts = contexts;
 		this.requestType = requestType;
 		if (requestPayload != null) {
@@ -100,19 +101,13 @@ public class BatchRequest extends BaseRequest {
 				break;
 			}
 		}
+		payload.put(JsonLdConsts.GRAPH, requestPayload);
+		bestCompleteResult = requestPayload;
 
 	}
 
 	public long getSendTimestamp() {
 		return sendTimestamp;
-	}
-
-	public List<Map<String, Object>> getBestCompleteRequestResult() {
-		return bestCompleteRequestResult;
-	}
-
-	public void setBestCompleteRequestResult(List<Map<String, Object>> bestCompleteRequestResult) {
-		this.bestCompleteRequestResult = bestCompleteRequestResult;
 	}
 
 }

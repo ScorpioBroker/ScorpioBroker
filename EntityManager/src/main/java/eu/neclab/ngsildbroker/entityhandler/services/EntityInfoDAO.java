@@ -128,7 +128,7 @@ public class EntityInfoDAO {
 		});
 	}
 
-	public Uni<Map<String, Object>> deleteAttribute(DeleteAttributeRequest request) {
+	public Uni<Tuple2<Map<String, Object>, Map<String, Object>>> deleteAttribute(DeleteAttributeRequest request) {
 		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
 			String sql = """
 					WITH old_entity AS (
@@ -150,13 +150,15 @@ public class EntityInfoDAO {
 						+ NGSIConstants.NGSI_LD_DATA_SET_ID + "')";
 				tuple = Tuple.of(request.getAttribName(), request.getId());
 			}
-			sql += " RETURNING (SELECT ENTITY FROM old_entity) AS old_entity;";
+			sql += " RETURNING (SELECT ENTITY FROM old_entity) AS old_entity, ENTITY AS new_entity;";
 			return client.preparedQuery(sql).execute(tuple).onFailure().retry().atMost(3).onItem()
 					.transformToUni(rows -> {
 						if (rows.size() == 0) {
 							return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
 						}
-						return Uni.createFrom().item(rows.iterator().next().getJsonObject(0).getMap());
+						Row first = rows.iterator().next();
+						return Uni.createFrom()
+								.item(Tuple2.of(first.getJsonObject(0).getMap(), first.getJsonObject(1).getMap()));
 					});
 		});
 	}
