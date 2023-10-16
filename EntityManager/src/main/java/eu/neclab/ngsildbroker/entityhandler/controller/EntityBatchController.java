@@ -134,7 +134,7 @@ public class EntityBatchController {
 				String entityId = tuple.getItem1();
 				Object obj2 = tuple.getItem2();
 				if (obj2 instanceof Exception) {
-					NGSILDOperationResult failureResults = new NGSILDOperationResult(AppConstants.CREATE_REQUEST,
+					NGSILDOperationResult failureResults = new NGSILDOperationResult(AppConstants.UPSERT_REQUEST,
 							entityId);
 					if (obj2 instanceof ResponseException) {
 						failureResults.addFailure((ResponseException) obj2);

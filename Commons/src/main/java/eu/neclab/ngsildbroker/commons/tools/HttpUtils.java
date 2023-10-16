@@ -700,7 +700,8 @@ public final class HttpUtils {
 	public static RestResponse<Object> generateBatchResult(List<NGSILDOperationResult> t) {
 		boolean isHavingError = false;
 		boolean isHavingSuccess = false;
-		boolean wasUpdated = false;
+		boolean wasUpdated = true;
+		List<String> createdIds = new ArrayList<>();
 		List<Map<String, Object>> result = new ArrayList<>();
 		for (NGSILDOperationResult r : t) {
 			if (!r.getFailures().isEmpty()) {
@@ -708,10 +709,13 @@ public final class HttpUtils {
 				isHavingError = true;
 			}
 			if (!r.getSuccesses().isEmpty()) {
+				if(!r.isWasUpdated()){
+					createdIds.add(r.getEntityId());
+				}
 				result.add(r.getJson());
 				isHavingSuccess = true;
 			}
-			wasUpdated = wasUpdated || r.isWasUpdated();
+			wasUpdated = wasUpdated && r.isWasUpdated();
 		}
 		if (isHavingError && !isHavingSuccess) {
 			String type = (String) result.get(0).get("type");
@@ -729,19 +733,19 @@ public final class HttpUtils {
 					|| type.equalsIgnoreCase("Append"))
 				return RestResponse.status(RestResponse.Status.NO_CONTENT);
 			else
-				return RestResponse.status(RestResponse.Status.CREATED, generateBatchCreateSuccess(result));
+				return RestResponse.status(RestResponse.Status.CREATED, createdIds);
 		}
 		return new RestResponseBuilderImpl<>().status(207).type(AppConstants.NGB_APPLICATION_JSON).entity(result)
 				.build();
 	}
 
-	private static List<String> generateBatchCreateSuccess(List<Map<String, Object>> resultInfo) {
-		List<String> result = new ArrayList<>(resultInfo.size());
-		resultInfo.forEach(entry -> {
-			result.add((String) entry.get(NGSIConstants.ID));
-		});
-		return result;
-	}
+//	private static List<String> generateBatchCreateSuccess(List<Map<String, Object>> resultInfo) {
+//		List<String> result = new ArrayList<>(resultInfo.size());
+//		resultInfo.forEach(entry -> {
+//			result.add((String) entry.get(NGSIConstants.ID));
+//		});
+//		return result;
+//	}
 
 	public static Uni<Context> getContextFromPayload(Map<String, Object> originalPayload, List<Object> atContextHeader,
 			boolean atContextAllowed, JsonLDService ldService) {
