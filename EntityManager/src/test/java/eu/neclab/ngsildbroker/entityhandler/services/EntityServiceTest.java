@@ -401,13 +401,13 @@ public class EntityServiceTest {
 		when(batchEmitter.send(any(String.class))).thenReturn(emitterResponse);
 
 		Uni<Map<String, Object>> createEntityRes = Uni.createFrom().item(entityBatchDaoRes);
-		when(entityDAO.batchUpsertEntity(any())).thenReturn(createEntityRes);
+		when(entityDAO.batchUpsertEntity(any(),anyBoolean())).thenReturn(createEntityRes);
 
 		List<NGSILDOperationResult> operationResultList = entityService
-				.upsertBatch(tenant, expandedEntities, contextList, true).await().indefinitely();
+				.upsertBatch(tenant, expandedEntities, contextList, true, anyBoolean()).await().indefinitely();
 
 		assertEquals(1, operationResultList.size());
-		verify(entityDAO, times(1)).batchUpsertEntity(any());
+		verify(entityDAO, times(1)).batchUpsertEntity(any(),anyBoolean());
 		verify(batchEmitter, times(1)).send(any(String.class));
 	}
 
@@ -437,13 +437,13 @@ public class EntityServiceTest {
 		when(batchEmitter.send(any(String.class))).thenReturn(emitterResponse);
 
 		Uni<Map<String, Object>> createEntityRes = Uni.createFrom().item(entityBatchDaoRes);
-		when(entityDAO.batchUpsertEntity(any())).thenReturn(createEntityRes);
+		when(entityDAO.batchUpsertEntity(any(),anyBoolean())).thenReturn(createEntityRes);
 
 		List<NGSILDOperationResult> operationResultList = entityService
-				.upsertBatch(tenant, expandedEntities, contextList, true).await().indefinitely();
+				.upsertBatch(tenant, expandedEntities, contextList, true,anyBoolean()).await().indefinitely();
 
 		assertEquals(2, operationResultList.size());
-		verify(entityDAO, times(1)).batchUpsertEntity(any());
+		verify(entityDAO, times(1)).batchUpsertEntity(any(),anyBoolean());
 		verify(batchEmitter, times(1)).send(any(String.class));
 	}
 

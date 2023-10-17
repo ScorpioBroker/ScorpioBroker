@@ -1,6 +1,8 @@
 package eu.neclab.ngsildbroker.entityhandler.controller;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -118,7 +120,15 @@ public class EntityBatchController {
 	public Uni<RestResponse<Object>> upsertMultiple(HttpServerRequest request,
 			List<Map<String, Object>> compactedEntities, @QueryParam(value = "options") String options,
 			@QueryParam("localOnly") boolean localOnly) {
-		List<Uni<Tuple2<String, Object>>> unis = Lists.newArrayList();
+		boolean doReplace;
+		List<String> optionsList = new ArrayList<>();
+		if(options != null && !options.isEmpty()){
+			optionsList = Arrays.asList(options.split(","));
+			doReplace = !optionsList.contains("update");
+		} else {
+            doReplace = true;
+        }
+        List<Uni<Tuple2<String, Object>>> unis = Lists.newArrayList();
 		for (Map<String, Object> compactedEntity : compactedEntities) {
 			noConcise(compactedEntity);
 			unis.add(HttpUtils.expandBody(request, compactedEntity, AppConstants.CREATE_REQUEST, ldService).onItem()
@@ -155,7 +165,7 @@ public class EntityBatchController {
 			List<NGSILDOperationResult> fails = tuple.getItem1();
 			List<Map<String, Object>> expandedEntities = tuple.getItem2();
 			List<Context> contexts = tuple.getItem3();
-			return entityService.upsertBatch(HttpUtils.getTenant(request), expandedEntities, contexts, localOnly)
+			return entityService.upsertBatch(HttpUtils.getTenant(request), expandedEntities, contexts, localOnly,doReplace)
 					.onItem().transform(opResults -> {
 						opResults.addAll(fails);
 						return HttpUtils.generateBatchResult(opResults);
