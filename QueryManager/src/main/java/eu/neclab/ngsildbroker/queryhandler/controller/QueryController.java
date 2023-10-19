@@ -139,6 +139,13 @@ public class QueryController {
 			@QueryParam("entityMap") String entityMapToken, @Context UriInfo uriInfo) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		String q;
+		if(id!=null) {
+			try {
+				HttpUtils.validateUri(id);
+			} catch (Exception e) {
+				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+			}
+		}
 		if (qInput != null) {
 			try {
 				q = URLDecoder.decode(request.absoluteURI().split("q=")[1].split("&")[0], "UTF-8");

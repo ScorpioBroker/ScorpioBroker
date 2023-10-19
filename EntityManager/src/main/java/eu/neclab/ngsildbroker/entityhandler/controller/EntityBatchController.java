@@ -30,6 +30,7 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple3;
 import io.vertx.core.http.HttpServerRequest;
+import org.jboss.resteasy.reactive.common.jaxrs.RestResponseImpl;
 
 @Singleton
 @Path("/ngsi-ld/v1/entityOperations")
@@ -63,6 +64,9 @@ public class EntityBatchController {
 	public Uni<RestResponse<Object>> createMultiple(HttpServerRequest request,
 			List<Map<String, Object>> compactedEntities, @QueryParam("localOnly") boolean localOnly) {
 		List<Uni<Tuple2<String, Object>>> unis = Lists.newArrayList();
+		if(compactedEntities==null || compactedEntities.isEmpty()){
+			return  Uni.createFrom().item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData)));
+		}
 		for (Map<String, Object> compactedEntity : compactedEntities) {
 			noConcise(compactedEntity);
 			unis.add(HttpUtils.expandBody(request, compactedEntity, AppConstants.CREATE_REQUEST, ldService).onItem()
@@ -227,6 +231,9 @@ public class EntityBatchController {
 	@Path("/delete")
 	public Uni<RestResponse<Object>> deleteMultiple(HttpServerRequest request, List<String> entityIds,
 			@QueryParam("localOnly") boolean localOnly) {
+		if(entityIds==null || entityIds.isEmpty()){
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData)));
+		}
 		return entityService.deleteBatch(HttpUtils.getTenant(request), entityIds, localOnly).onItem()
 				.transform(opResults -> {
 					return HttpUtils.generateBatchResult(opResults);
