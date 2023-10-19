@@ -13,16 +13,16 @@ BEGIN
 		updated := FALSE;
 		BEGIN
 			IF newentity ? '@type' THEN
-				SELECT (INSERT INTO ENTITY(ID,E_TYPES, ENTITY) VALUES (newentity->>'@id',  ARRAY(SELECT jsonb_array_elements_text(newentity->'@type')), newentity) RETURNING ENTITY.ENTITY) INTO updated_entity; 
+				INSERT INTO ENTITY(ID,E_TYPES, ENTITY) VALUES (newentity->>'@id',  ARRAY(SELECT jsonb_array_elements_text(newentity->'@type')), newentity) RETURNING ENTITY.ENTITY INTO updated_entity;
 			ELSE
 				SELECT ENTITY FROM ENTITY WHERE ID=newentity->>'@id' INTO prev_entity;
-				SELECT (UPDATE ENTITY SET ENTITY = ENTITY.ENTITY || newentity WHERE id = newentity->>'@id' RETURNING ENTITY.ENTITY) INTO updated_entity;
+				UPDATE ENTITY SET ENTITY = ENTITY.ENTITY || newentity WHERE id = newentity->>'@id' RETURNING ENTITY.ENTITY INTO updated_entity;
 				updated := TRUE;
 			END IF;
 			resultObj['success'] = resultObj['success'] || jsonb_build_object("id", (newentity->>'@id'), "updated", updated, "old", prev_entity, "new", updated_entity);
 		EXCEPTION WHEN unique_violation THEN
 			SELECT ENTITY FROM ENTITY WHERE ID=newentity->>'@id' INTO prev_entity;
-			SELECT (UPDATE ENTITY SET E_TYPES = ARRAY(SELECT DISTINCT UNNEST(e_types || ARRAY(SELECT jsonb_array_elements_text(newentity->'@type')))), ENTITY = ENTITY.entity || newentity WHERE ID=newentity->>'@id' RETURNING ENTITY.entity) INTO updated_entity;
+			UPDATE ENTITY SET E_TYPES = ARRAY(SELECT DISTINCT UNNEST(e_types || ARRAY(SELECT jsonb_array_elements_text(newentity->'@type')))), ENTITY = ENTITY.entity || newentity WHERE ID=newentity->>'@id' RETURNING ENTITY.entity INTO updated_entity;
 			updated := TRUE;
 			resultObj['success'] = resultObj['success'] || jsonb_build_object("id", (newentity->>'@id'), "updated", updated, "old", prev_entity, "new", updated_entity);
 		WHEN OTHERS THEN
@@ -43,7 +43,7 @@ BEGIN
 	resultObj := '{"success": [], "failure": []}'::jsonb;
 	FOR entityId IN SELECT jsonb_array_elements_text FROM jsonb_array_elements_text(ENTITY_IDS) LOOP
 		BEGIN
-			SELECT (DELETE FROM ENTITY WHERE ID = entityId RETURNING ENTITY.ENTITY) INTO prev_entity;
+			DELETE FROM ENTITY WHERE ID = entityId RETURNING ENTITY.ENTITY INTO prev_entity;
 			if NOT FOUND THEN
 			    resultObj['failure'] = resultObj['failure'] || jsonb_object_agg(entityId, 'Not Found');
             else
@@ -71,9 +71,9 @@ BEGIN
 		BEGIN
 			SELECT ENTITY FROM ENTITY WHERE ID=newentity->>'@id' INTO prev_entity;
 			IF newentity ? '@type' THEN
-				SELECT (UPDATE ENTITY SET E_TYPES = ARRAY(SELECT jsonb_array_elements_text(newentity->'@type')), ENTITY = ENTITY.ENTITY || newentity WHERE id = newentity->>'@id' RETURNING ENTITY.ENTITY) INTO updated_entity;
+				UPDATE ENTITY SET E_TYPES = ARRAY(SELECT jsonb_array_elements_text(newentity->'@type')), ENTITY = ENTITY.ENTITY || newentity WHERE id = newentity->>'@id' RETURNING ENTITY.ENTITY INTO updated_entity;
 			ELSE
-				SELECT (UPDATE ENTITY SET ENTITY = ENTITY.ENTITY || newentity WHERE id = newentity->>'@id' RETURNING ENTITY.ENTITY) INTO updated_entity;
+				UPDATE ENTITY SET ENTITY = ENTITY.ENTITY || newentity WHERE id = newentity->>'@id' RETURNING ENTITY.ENTITY INTO updated_entity;
 			END IF;
 			if NOT FOUND THEN resultObj['failure'] = resultObj['failure'] || jsonb_object_agg(newentity->>'@id', 'Not Found');
 			else resultObj['success'] = resultObj['success'] || jsonb_build_object("id", newentity->'@id', "old", prev_entity, "new", updated_entity)::jsonb;
