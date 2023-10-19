@@ -904,8 +904,10 @@ public class EntityService {
 
 	public Uni<Void> handleRegistryChange(BaseRequest req) {
 		tenant2CId2RegEntries.remove(req.getTenant(), req.getId());
+		tenant2CId2QueryRegEntries.remove(req.getTenant(), req.getId());
 		if (req.getRequestType() != AppConstants.DELETE_REQUEST) {
 			List<RegistrationEntry> newRegs = Lists.newArrayList();
+			List<RegistrationEntry> newQueryRegs = Lists.newArrayList();
 			for (RegistrationEntry regEntry : RegistrationEntry.fromRegPayload(req.getPayload())) {
 				if (regEntry.createEntity() || regEntry.appendAttrs() || regEntry.createBatch()
 						|| regEntry.deleteAttrs() || regEntry.deleteBatch() || regEntry.deleteEntity()
@@ -914,8 +916,12 @@ public class EntityService {
 						|| regEntry.updateEntity() || regEntry.upsertBatch()) {
 					newRegs.add(regEntry);
 				}
+				if (regEntry.queryBatch() || regEntry.queryEntity() || regEntry.retrieveEntity()) {
+					newQueryRegs.add(regEntry);
+				}
 			}
 			tenant2CId2RegEntries.put(req.getTenant(), req.getId(), newRegs);
+			tenant2CId2QueryRegEntries.put(req.getTenant(), req.getId(), newQueryRegs);
 		}
 		return Uni.createFrom().voidItem();
 	}
