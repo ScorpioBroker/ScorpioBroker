@@ -475,18 +475,53 @@ public class SubscriptionService {
 			}
 			case AppConstants.UPSERT_REQUEST, AppConstants.CREATE_REQUEST, AppConstants.APPEND_REQUEST -> {
 				if (message.isDistributed()) {
+
 					unis.add(localEntityService.getAllByIds(message.getTenant(), message.getId(), true).onItem()
 							.transformToUni(entityList -> {
 								Map<String, Object> payload = new HashMap<>();
-								payload.put(JsonLdConsts.GRAPH, entityList);
+								if (message.getPreviousEntity() instanceof Map m1) {
+									if (potentialSub.getSubscription().getNotification().getShowChanges()) {
+										payload.put(JsonLdConsts.GRAPH, List.of(compareMaps(m1, entityList.get(0))));
+									} else {
+										payload.put(JsonLdConsts.GRAPH, entityList);
+									}
+								} else if (message.getPreviousEntity() instanceof List l1) {
+									if (potentialSub.getSubscription().getNotification().getShowChanges()) {
+										List<Map<String, Object>> tmp = Lists.newArrayList();
+										for (int i = 0; i < entityList.size(); i++) {
+											tmp.add(compareMaps((Map<String, Object>) l1.get(i), entityList.get(i)));
+										}
+										payload.put(JsonLdConsts.GRAPH, tmp);
+									} else {
+										payload.put(JsonLdConsts.GRAPH, entityList);
+									}
+								} else {
+									return Uni.createFrom().voidItem();
+								}
 								return sendNotification(potentialSub, payload, message.getRequestType());
 							}));
 				} else {
 					Map<String, Object> payload = new HashMap<>();
 					if (message.getBestCompleteResult() instanceof Map m1) {
-						payload.put(JsonLdConsts.GRAPH, List.of(m1));
+						if (potentialSub.getSubscription().getNotification().getShowChanges()) {
+							payload.put(JsonLdConsts.GRAPH,
+									List.of(compareMaps((Map<String, Object>) message.getPreviousEntity(), m1)));
+						} else {
+							payload.put(JsonLdConsts.GRAPH, List.of(m1));
+						}
 					} else if (message.getBestCompleteResult() instanceof List l1) {
-						payload.put(JsonLdConsts.GRAPH, l1);
+						// is list
+						List<Map<String, Object>> prev = (List<Map<String, Object>>) message.getPreviousEntity();
+						if (potentialSub.getSubscription().getNotification().getShowChanges()) {
+							List<Map<String, Object>> tmp = Lists.newArrayList();
+							for (int i = 0; i < l1.size(); i++) {
+								tmp.add(compareMaps(prev.get(i), (Map<String, Object>) l1.get(i)));
+							}
+							payload.put(JsonLdConsts.GRAPH, tmp);
+						} else {
+							payload.put(JsonLdConsts.GRAPH, l1);
+						}
+
 					}
 					unis.add(sendNotification(potentialSub, payload, message.getRequestType()));
 				}
@@ -499,9 +534,23 @@ public class SubscriptionService {
 							SerializationTools.notifiedAt_formatter.format(LocalDateTime
 									.ofInstant(Instant.ofEpochMilli(System.currentTimeMillis()), ZoneId.of("Z"))));
 					if (potentialSub.getSubscription().getNotification().getShowChanges()) {
-						payload.putAll(message.getPayload());
-					} else
-						payload.put(JsonLdConsts.ID, message.getId());
+						if (message.getPreviousEntity() instanceof List l1) {
+							payload.put(JsonLdConsts.GRAPH, l1);
+						} else if (message.getPreviousEntity() instanceof Map m1) {
+							payload.putAll(m1);
+						}
+					} else {
+						if (message.getPreviousEntity() instanceof List l1) {
+							List<String> tmp = Lists.newArrayList();
+							for (int i = 0; i < l1.size(); i++) {
+								tmp.add((String) ((Map<String, Object>) l1.get(i)).get(NGSIConstants.JSON_LD_ID));
+							}
+							payload.put(JsonLdConsts.GRAPH, tmp);
+						} else if (message.getPreviousEntity() instanceof Map m1) {
+							payload.put(JsonLdConsts.ID, m1.get(NGSIConstants.JSON_LD_ID));
+						}
+
+					}
 					unis.add(sendNotification(potentialSub, payload, message.getRequestType()));
 				}
 			}
@@ -513,7 +562,8 @@ public class SubscriptionService {
 								Map<String, Object> payload = new HashMap<>();
 								if (potentialSub.getSubscription().getNotification().getShowChanges()) {
 									payload.put(JsonLdConsts.GRAPH,
-											List.of(compareMaps(message.getPreviousEntity(), entityList.get(0))));
+											List.of(compareMaps((Map<String, Object>) message.getPreviousEntity(),
+													entityList.get(0))));
 								} else
 									payload.put(JsonLdConsts.GRAPH, entityList);
 								return sendNotification(potentialSub, payload, message.getRequestType());
