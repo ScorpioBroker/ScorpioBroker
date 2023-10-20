@@ -19,12 +19,12 @@ BEGIN
 				UPDATE ENTITY SET ENTITY = ENTITY.ENTITY || newentity WHERE id = newentity->>'@id' RETURNING ENTITY.ENTITY INTO updated_entity;
 				updated := TRUE;
 			END IF;
-			resultObj['success'] = resultObj['success'] || jsonb_build_object("id", (newentity->>'@id'), "updated", updated, "old", prev_entity, "new", updated_entity);
+			resultObj['success'] = resultObj['success'] || jsonb_build_object('id', (newentity->>'@id'), 'updated', updated, 'old', prev_entity, 'new', updated_entity);
 		EXCEPTION WHEN unique_violation THEN
 			SELECT ENTITY FROM ENTITY WHERE ID=newentity->>'@id' INTO prev_entity;
 			UPDATE ENTITY SET E_TYPES = ARRAY(SELECT DISTINCT UNNEST(e_types || ARRAY(SELECT jsonb_array_elements_text(newentity->'@type')))), ENTITY = ENTITY.entity || newentity WHERE ID=newentity->>'@id' RETURNING ENTITY.entity INTO updated_entity;
 			updated := TRUE;
-			resultObj['success'] = resultObj['success'] || jsonb_build_object("id", (newentity->>'@id'), "updated", updated, "old", prev_entity, "new", updated_entity);
+			resultObj['success'] = resultObj['success'] || jsonb_build_object('id', (newentity->>'@id'), 'updated', updated, 'old', prev_entity, 'new', updated_entity);
 		WHEN OTHERS THEN
 			resultObj['failure'] = resultObj['failure'] || jsonb_object_agg(newentity->>'@id', SQLSTATE);
 		END;
@@ -47,7 +47,7 @@ BEGIN
 			if NOT FOUND THEN
 			    resultObj['failure'] = resultObj['failure'] || jsonb_object_agg(entityId, 'Not Found');
             else
-				resultObj['success'] = resultObj['success'] || jsonb_build_object("id", entityId, "old", prev_entity);
+				resultObj['success'] = resultObj['success'] || jsonb_build_object('id', entityId, 'old', prev_entity);
 			End IF;
 		EXCEPTION WHEN OTHERS THEN
 			resultObj['failure'] = resultObj['failure'] || jsonb_object_agg(entityId, SQLSTATE);
@@ -76,7 +76,7 @@ BEGIN
 				UPDATE ENTITY SET ENTITY = ENTITY.ENTITY || newentity WHERE id = newentity->>'@id' RETURNING ENTITY.ENTITY INTO updated_entity;
 			END IF;
 			if NOT FOUND THEN resultObj['failure'] = resultObj['failure'] || jsonb_object_agg(newentity->>'@id', 'Not Found');
-			else resultObj['success'] = resultObj['success'] || jsonb_build_object("id", newentity->'@id', "old", prev_entity, "new", updated_entity)::jsonb;
+			else resultObj['success'] = resultObj['success'] || jsonb_build_object('id', newentity->'@id', 'old', prev_entity, 'new', updated_entity)::jsonb;
 			END IF;
 		EXCEPTION WHEN OTHERS THEN
 			resultObj['failure'] = resultObj['failure'] || jsonb_object_agg(newentity->>'@id', SQLSTATE);

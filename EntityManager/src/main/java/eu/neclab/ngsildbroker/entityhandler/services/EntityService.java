@@ -1284,17 +1284,25 @@ public class EntityService {
 		BatchRequest request = new BatchRequest(tenant, localEntities, contexts, AppConstants.UPSERT_REQUEST);
 		Uni<List<NGSILDOperationResult>> local = entityDAO.batchUpsertEntity(request).onItem().transform(dbResult -> {
 			List<NGSILDOperationResult> result = Lists.newArrayList();
-			List<Map<String, Boolean>> successes = (List<Map<String, Boolean>>) dbResult.get("success");
+			List<Map<String, Object>> successes = (List<Map<String, Object>>) dbResult.get("success");
 			List<Map<String, String>> fails = (List<Map<String, String>>) dbResult.get("failure");
 
-			for (Map<String, Boolean> entityResult : successes) {
-				Entry<String, Boolean> keyValue = entityResult.entrySet().iterator().next();
-				String entityId = keyValue.getKey();
+			List<Map<String, Object>> olds = Lists.newArrayList();
+			List<Map<String, Object>> news = Lists.newArrayList();
+			for (Map<String, Object> entityResult : successes) {
+				String entityId = (String) entityResult.get("id");
+				boolean updated = (boolean) entityResult.get("updated");
+				Map<String, Object> old = (Map<String, Object>) entityResult.get("old");
+				Map<String, Object> newEntity = (Map<String, Object>) entityResult.get("new");
+				olds.add(old);
+				news.add(newEntity);
 				NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.UPSERT_REQUEST, entityId);
-				opResult.setWasUpdated(keyValue.getValue());
+				opResult.setWasUpdated(updated);
 				opResult.addSuccess(new CRUDSuccess(null, null, null, Sets.newHashSet()));
 				result.add(opResult);
 			}
+			request.setBestCompleteResult(news);
+			request.setPreviousEntity(olds);
 			for (Map<String, String> fail : fails) {
 				fail.entrySet().forEach(entry -> {
 					String entityId = entry.getKey();

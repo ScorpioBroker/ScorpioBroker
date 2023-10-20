@@ -135,10 +135,11 @@ public class SubscriptionService {
 		}
 		for (Map.Entry<String, Object> entry : newMap.entrySet()) {
 			String key = entry.getKey();
-			if (key.equals(JsonLdConsts.TYPE)) {
+			if (key.equals(NGSIConstants.JSON_LD_ID) || key.equals(JsonLdConsts.TYPE)) {
 				resultMap.put(key, newMap.get(key));
 				continue;
 			}
+			
 			Object newValue = entry.getValue();
 			Object oldValue = oldMap.get(key);
 
@@ -150,6 +151,9 @@ public class SubscriptionService {
 		}
 		for (Map.Entry<String, Object> entry : oldMap.entrySet()) {
 			String key = entry.getKey();
+			if (key.equals(NGSIConstants.JSON_LD_ID) || key.equals(NGSIConstants.JSON_LD_TYPE)) {
+				continue;
+			}
 			if (!resultMap.containsKey(key)) {
 				addProperty(resultMap, key, oldMap.get(key),
 						List.of(Map.of(NGSIConstants.NGSI_LD_HAS_VALUE,
@@ -172,6 +176,7 @@ public class SubscriptionService {
 		List<Object> valueList = List.of(propertyMap);
 
 		propertyMap.put(JsonLdConsts.TYPE, ((List<Map<String, Object>>) newValue).get(0).get(JsonLdConsts.TYPE));
+
 		if (((List<Map<String, Object>>) newValue).get(0).containsKey(NGSIConstants.NGSI_LD_HAS_VALUE)) {
 			propertyMap.put(NGSIConstants.VALUE,
 					((List<Map<String, Object>>) newValue).get(0).get(NGSIConstants.NGSI_LD_HAS_VALUE));
@@ -419,6 +424,7 @@ public class SubscriptionService {
 			if (potentialSub.getSendTimestamp() != -1 && potentialSub.getSendTimestamp() > message.getSendTimestamp()) {
 				continue;
 			}
+			// message.setDistributed(true);
 			switch (message.getRequestType()) {
 			case AppConstants.UPDATE_REQUEST, AppConstants.PARTIAL_UPDATE_REQUEST, AppConstants.MERGE_PATCH_REQUEST,
 					AppConstants.REPLACE_ENTITY_REQUEST, AppConstants.REPLACE_ATTRIBUTE_REQUEST -> {
@@ -498,7 +504,7 @@ public class SubscriptionService {
 										payload.put(JsonLdConsts.GRAPH, entityList);
 									}
 								} else {
-									return Uni.createFrom().voidItem();
+									payload.put(JsonLdConsts.GRAPH, entityList);
 								}
 								return sendNotification(potentialSub, payload, message.getRequestType());
 							}));
