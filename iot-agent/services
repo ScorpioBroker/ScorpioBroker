@@ -7,9 +7,9 @@
 
 set -e
 
-SCORPIO="http://scorpio:9090/scorpio/v1/info/"
+SCORPIO="http://scorpio:9090/q/info/"
 IOT_AGENT="http://iot-agent:4041/version"
-CONTEXT="https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld"
+CONTEXT="https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld"
 
 if (( $# != 1 )); then
 	echo "Illegal number of parameters"

@@ -59,7 +59,7 @@ services:
       - kafka
       - postgres
     healthcheck:
-      test: curl --fail -s http://scorpio:${SCORPIO_PORT}/scorpio/v1/info/ || exit 1
+      test: curl --fail -s http://scorpio:${SCORPIO_PORT}/q/info/ || exit 1
 
   postgres:
     image: postgis/postgis
@@ -76,7 +76,7 @@ services:
 
   # IoT-Agent is configured for the UltraLight Protocol
   iot-agent:
-    image: fiware/iotagent-ul:${ULTRALIGHT_VERSION}
+    image: telefonicaiot/iotagent-ul:${ULTRALIGHT_VERSION}
     hostname: iot-agent
     container_name: fiware-iot-agent
     depends_on:
@@ -103,9 +103,8 @@ services:
       - IOTA_HTTP_PORT=${IOTA_SOUTH_PORT} # The port used for device traffic over HTTP
       - IOTA_PROVIDER_URL=http://iot-agent:${IOTA_NORTH_PORT}
       - IOTA_DEFAULT_RESOURCE=/iot/d
-
       - IOTA_CB_NGSI_VERSION=ld # use NGSI-LD when sending updates for active attributes
-      - IOTA_JSON_LD_CONTEXT=https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.3.jsonld
+      - IOTA_JSON_LD_CONTEXT=https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld
       - IOTA_FALLBACK_TENANT=openiot
     healthcheck:
       interval: 5s
