@@ -376,9 +376,9 @@ public class EntityInfoDAO {
 			}
 
 			sql += "WHERE ID = $" + dollar;
-			if (noOverwrite) {
-				sql += " RETURNING ENTITY";
-			}
+			// if (noOverwrite) {
+			sql += " RETURNING ENTITY";
+			// }
 			tuple.addString(request.getId());
 			return client.preparedQuery(sql).execute(tuple).onItem().transformToUni(rows -> {
 				if (rows.size() == 0) {
@@ -412,26 +412,32 @@ public class EntityInfoDAO {
 		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
 			Map<String, Object> payload = request.getPayload();
 			payload.remove(NGSIConstants.NGSI_LD_CREATED_AT);
-			if (payload.get(JsonLdConsts.TYPE) == null)
+			if (payload.get(JsonLdConsts.TYPE) == null) {
 				payload.remove(JsonLdConsts.TYPE);
-			return client.preparedQuery("SELECT * FROM MERGE_JSON($1,$2)")
-					.execute(Tuple.of(request.getId(), new JsonObject(request.getPayload()))).onFailure()
-					.recoverWithUni(e -> {
-						if (e instanceof PgException) {
-							if (((PgException) e).getCode().equals(AppConstants.SQL_NOT_FOUND)) {
-								return Uni.createFrom().failure(
-										new ResponseException(ErrorType.NotFound, request.getId() + " not found"));
-							}
-						}
-						return Uni.createFrom().failure(e);
-					}).onItem().transformToUni(rows -> {
-						if (rows.size() == 0)
-							return Uni.createFrom()
-									.failure(new ResponseException(ErrorType.NotFound, request.getId() + " not found"));
-						Row first = rows.iterator().next();
+			}
+			String sql = "SELECT * FROM MERGE_JSON($1,$2);";
+			Tuple tuple = Tuple.of(request.getId(), new JsonObject(request.getPayload()));
+			return client.preparedQuery(sql).execute(tuple).onFailure().recoverWithUni(e -> {
+				if (e instanceof PgException) {
+					if (((PgException) e).getCode().equals(AppConstants.SQL_NOT_FOUND)) {
 						return Uni.createFrom()
-								.item(Tuple2.of(first.getJsonObject(0).getMap(), first.getJsonObject(1).getMap()));
-					});
+								.failure(new ResponseException(ErrorType.NotFound, request.getId() + " not found"));
+					}
+				}
+				return Uni.createFrom().failure(e);
+			}).onItem().transformToUni(rows -> {
+				if (rows.size() == 0)
+					return Uni.createFrom()
+							.failure(new ResponseException(ErrorType.NotFound, request.getId() + " not found"));
+				Row first = rows.iterator().next();
+				JsonArray jsonArray = first.getJsonArray(0);
+				if (jsonArray.getJsonObject(0) == null) {
+					return Uni.createFrom()
+							.failure(new ResponseException(ErrorType.NotFound, request.getId() + " not found"));
+				}
+				return Uni.createFrom()
+						.item(Tuple2.of(jsonArray.getJsonObject(0).getMap(), jsonArray.getJsonObject(1).getMap()));
+			});
 		});
 	}
 

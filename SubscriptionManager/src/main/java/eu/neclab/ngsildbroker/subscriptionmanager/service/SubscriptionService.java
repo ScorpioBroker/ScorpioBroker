@@ -130,7 +130,9 @@ public class SubscriptionService {
 
 	private static Map<String, Object> compareMaps(Map<String, Object> oldMap, Map<String, Object> newMap) {
 		Map<String, Object> resultMap = new HashMap<>();
-
+		if (oldMap == null || oldMap.isEmpty()) {
+			return newMap;
+		}
 		for (Map.Entry<String, Object> entry : newMap.entrySet()) {
 			String key = entry.getKey();
 			if (key.equals(JsonLdConsts.TYPE)) {

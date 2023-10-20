@@ -1,14 +1,14 @@
 DROP FUNCTION merge_json(text,jsonb);
 
 CREATE OR REPLACE FUNCTION MERGE_JSON(a text, b JSONB)
-RETURNS RECORD AS $$
+RETURNS JSONB AS $$
 DECLARE
   merged_json JSONB;
   key TEXT;
   value JSONB;
   value2 JSONB;
   previous_entity JSONB;
-  ret RECORD;
+  ret JSONB;
 BEGIN
   merged_json := (Select entity from entity where id =a);
   previous_entity := (Select entity from entity where id =a);
@@ -50,7 +50,8 @@ merged_json := jsonb_strip_nulls(replace(merged_json::text,'[]','null')::jsonb);
 merged_json := jsonb_strip_nulls(replace(merged_json::text,'{}','null')::jsonb);
 end loop;
 update entity set entity = merged_json, e_types = ARRAY(SELECT jsonb_array_elements_text(merged_json->'@type')) where id = a;
-SELECT previous_entity, merged_json into ret;
+ret := jsonb_build_array(previous_entity, merged_json);
+
   RETURN ret;
 END;
 $$ LANGUAGE plpgsql;
