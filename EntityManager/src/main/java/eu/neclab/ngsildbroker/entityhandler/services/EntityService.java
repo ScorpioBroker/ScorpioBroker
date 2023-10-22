@@ -123,6 +123,10 @@ public class EntityService {
 			tenant2CId2RegEntries = t;
 			return null;
 		}).await().indefinitely();
+		entityDAO.getAllQueryRegistries().onItem().transform(t -> {
+			tenant2CId2QueryRegEntries = t;
+			return null;
+		}).await().indefinitely();
 	}
 
 	// This is needed so that @postconstruct runs on the startup thread and not on a

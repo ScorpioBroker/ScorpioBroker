@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "1daa8b70-10f6-4c36-abb4-7153471872f0",
+		"_postman_id": "b23683de-6be0-4929-abfa-ac72cb949fd5",
 		"name": "API Test",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
@@ -50175,7 +50175,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:ContextSourceRegistration:cccc\",\r\n\t\"type\": \"ContextSourceRegistration\",\r\n\t\"information\": [{\r\n\t\t\t\"entities\": [{\r\n                \"id\": \"urn:test:testentity12345\",\r\n\t\t\t\t\"type\": \"Test2\"\r\n\t\t\t}],\r\n            \"propertyNames\": [\"brandName\",\"speed\"],\r\n            \"relationshipNames\": [\"isParked\"]\r\n\t\t}\r\n\t],\r\n\t\"endpoint\": \"http://localhost:9080\",\r\n    \"mode\": \"exclusive\",\r\n    \"operations\": [\"retrieveEntity\", \"createEntity\", \"queryEntity\"]\r\n}",
+															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:ContextSourceRegistration:cccc\",\r\n\t\"type\": \"ContextSourceRegistration\",\r\n\t\"information\": [{\r\n\t\t\t\"entities\": [{\r\n                \"id\": \"urn:test:testentity12345789\",\r\n\t\t\t\t\"type\": \"Test2\"\r\n\t\t\t}],\r\n            \"propertyNames\": [\"brandName\",\"speed\"],\r\n            \"relationshipNames\": [\"isParked\"]\r\n\t\t}\r\n\t],\r\n\t\"endpoint\": \"http://localhost:9080\",\r\n    \"mode\": \"exclusive\",\r\n    \"operations\": [\"retrieveEntity\", \"createEntity\", \"queryEntity\"]\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -50250,7 +50250,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"urn:test:testentity12345\",\r\n    \"type\": \"Test2\",\r\n    \"brandName\": {\"type\": \"Property\", \"value\": \"teststring\"}\r\n}",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity12345789\",\r\n    \"type\": \"Test2\",\r\n    \"brandName\": {\"type\": \"Property\", \"value\": \"teststring\"}\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -50330,7 +50330,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"urn:test:testentity12345\",\r\n    \"type\": \"Test2\",\r\n    \"brandName\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"notBrandName\": {\"type\": \"Property\", \"value\": \"teststring\"}\r\n}",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity12345789\",\r\n    \"type\": \"Test2\",\r\n    \"brandName\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"notBrandName\": {\"type\": \"Property\", \"value\": \"teststring\"}\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -50410,7 +50410,7 @@
 															}
 														},
 														"url": {
-															"raw": "{{entity-manager}}/ngsi-ld/v1/entities/urn:test:testentity12345",
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities/urn:test:testentity12345789",
 															"host": [
 																"{{entity-manager}}"
 															],
@@ -50418,7 +50418,7 @@
 																"ngsi-ld",
 																"v1",
 																"entities",
-																"urn:test:testentity12345"
+																"urn:test:testentity12345789"
 															]
 														}
 													},
@@ -50442,13 +50442,11 @@
 																	"pm.test(\"Check location type and title\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
 																	"    var fails = jsonData[\"failure\"];\r",
-																	"    var regFail = fails[0];\r",
-																	"    var localFail = fails[1];\r",
-																	"    pm.expect(regFail[\"type\"]).to.equal(\"https://uri.etsi.org/ngsi-ld/errors/UnprocessableContextSourceRegistration\");\r",
-																	"    pm.expect(regFail[\"title\"]).to.equal(\"UnprocessableContextSourceRegistration\");\r",
-																	"    pm.expect(localFail[\"errorCode\"]).to.equal(409);\r",
-																	"    pm.expect(localFail[\"type\"]).to.equal(\"https://uri.etsi.org/ngsi-ld/errors/AlreadyExists\");\r",
-																	"    pm.expect(localFail[\"title\"]).to.equal(\"Already exists.\");\r",
+																	"    var localFail = JSON.parse('{\"type\": \"https://uri.etsi.org/ngsi-ld/errors/AlreadyExists\",\"title\": \"Already exists.\",\"detail\": {\"message\": \"urn:test:testentity12345789 already exists\"},\"errorCode\": 409}');\r",
+																	"    var regFail = JSON.parse('{\"type\": \"https://uri.etsi.org/ngsi-ld/errors/UnprocessableContextSourceRegistration\",\"title\": \"UnprocessableContextSourceRegistration\",\"detail\": {\"message\": \"Connection refused: no further information: localhost/127.0.0.1:9080\",\"attributes\": [{\"attributeName\": \"brandName\"}],\"endpoint\": \"http://localhost:9080\",\"cSourceId\": \"urn:ngsi-ld:ContextSourceRegistration:cccc\"},\"errorCode\": 422}');\r",
+																	"    \r",
+																	"    pm.expect(fails).to.deep.include(regFail);\r",
+																	"    pm.expect(fails).to.deep.include(localFail);\r",
 																	"});\r",
 																	"\r",
 																	"\r",
@@ -50484,7 +50482,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"urn:test:testentity12345\",\r\n    \"type\": \"Test2\",\r\n    \"brandName\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"notBrandName\": {\"type\": \"Property\", \"value\": \"teststring\"}\r\n}",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity12345789\",\r\n    \"type\": \"Test2\",\r\n    \"brandName\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"notBrandName\": {\"type\": \"Property\", \"value\": \"teststring\"}\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -50556,7 +50554,7 @@
 															}
 														},
 														"url": {
-															"raw": "{{entity-manager}}/ngsi-ld/v1/entities/urn:test:testentity12345",
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities/urn:test:testentity12345789",
 															"host": [
 																"{{entity-manager}}"
 															],
@@ -50564,7 +50562,7 @@
 																"ngsi-ld",
 																"v1",
 																"entities",
-																"urn:test:testentity12345"
+																"urn:test:testentity12345789"
 															]
 														}
 													},
@@ -50894,7 +50892,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:ContextSourceRegistration:cccc\",\r\n\t\"type\": \"ContextSourceRegistration\",\r\n\t\"information\": [{\r\n\t\t\t\"entities\": [{\r\n                \"id\": \"urn:test:testentity12345\",\r\n\t\t\t\t\"type\": \"Test2\"\r\n\t\t\t}],\r\n            \"propertyNames\": [\"brandName\",\"speed\"],\r\n            \"relationshipNames\": [\"isParked\"]\r\n\t\t}\r\n\t],\r\n\t\"endpoint\": \"http://localhost:9080\",\r\n    \"mode\": \"redirect\",\r\n    \"operations\": [\"retrieveEntity\", \"createEntity\", \"queryEntity\"]\r\n}",
+															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:ContextSourceRegistration:cccc\",\r\n\t\"type\": \"ContextSourceRegistration\",\r\n\t\"information\": [{\r\n\t\t\t\"entities\": [{\r\n                \"id\": \"urn:test:testentity12345789\",\r\n\t\t\t\t\"type\": \"Test2\"\r\n\t\t\t}],\r\n            \"propertyNames\": [\"brandName\",\"speed\"],\r\n            \"relationshipNames\": [\"isParked\"]\r\n\t\t}\r\n\t],\r\n\t\"endpoint\": \"http://localhost:9080\",\r\n    \"mode\": \"redirect\",\r\n    \"operations\": [\"retrieveEntity\", \"createEntity\", \"queryEntity\"]\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -50969,7 +50967,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"urn:test:testentity12345\",\r\n    \"type\": \"Test2\",\r\n    \"brandName\": {\"type\": \"Property\", \"value\": \"teststring\"}\r\n}",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity12345789\",\r\n    \"type\": \"Test2\",\r\n    \"brandName\": {\"type\": \"Property\", \"value\": \"teststring\"}\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -51049,7 +51047,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"urn:test:testentity12345\",\r\n    \"type\": \"Test2\",\r\n    \"brandName\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"notBrandName\": {\"type\": \"Property\", \"value\": \"teststring\"}\r\n}",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity12345789\",\r\n    \"type\": \"Test2\",\r\n    \"brandName\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"notBrandName\": {\"type\": \"Property\", \"value\": \"teststring\"}\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -51088,13 +51086,11 @@
 																	"pm.test(\"Check location type and title\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
 																	"    var fails = jsonData[\"failure\"];\r",
-																	"    var regFail = fails[0];\r",
-																	"    var localFail = fails[1];\r",
-																	"    pm.expect(regFail[\"type\"]).to.equal(\"https://uri.etsi.org/ngsi-ld/errors/UnprocessableContextSourceRegistration\");\r",
-																	"    pm.expect(regFail[\"title\"]).to.equal(\"UnprocessableContextSourceRegistration\");\r",
-																	"    pm.expect(localFail[\"errorCode\"]).to.equal(409);\r",
-																	"    pm.expect(localFail[\"type\"]).to.equal(\"https://uri.etsi.org/ngsi-ld/errors/AlreadyExists\");\r",
-																	"    pm.expect(localFail[\"title\"]).to.equal(\"Already exists.\");\r",
+																	"    var localFail = JSON.parse('{\"type\": \"https://uri.etsi.org/ngsi-ld/errors/AlreadyExists\",\"title\": \"Already exists.\",\"detail\": {\"message\": \"urn:test:testentity12345789 already exists\"},\"errorCode\": 409}');\r",
+																	"    var regFail = JSON.parse('{\"type\": \"https://uri.etsi.org/ngsi-ld/errors/UnprocessableContextSourceRegistration\",\"title\": \"UnprocessableContextSourceRegistration\",\"detail\": {\"message\": \"Connection refused: no further information: localhost/127.0.0.1:9080\",\"attributes\": [{\"attributeName\": \"brandName\"}],\"endpoint\": \"http://localhost:9080\",\"cSourceId\": \"urn:ngsi-ld:ContextSourceRegistration:cccc\"},\"errorCode\": 422}');\r",
+																	"    \r",
+																	"    pm.expect(fails).to.deep.include(regFail);\r",
+																	"    pm.expect(fails).to.deep.include(localFail);\r",
 																	"});\r",
 																	"\r",
 																	"\r",
@@ -51130,7 +51126,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"urn:test:testentity12345\",\r\n    \"type\": \"Test2\",\r\n    \"brandName\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"notBrandName\": {\"type\": \"Property\", \"value\": \"teststring\"}\r\n}",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity12345789\",\r\n    \"type\": \"Test2\",\r\n    \"brandName\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"notBrandName\": {\"type\": \"Property\", \"value\": \"teststring\"}\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -51881,6 +51877,18 @@
 		},
 		{
 			"key": "entityIdTBNF",
+			"value": ""
+		},
+		{
+			"key": "created",
+			"value": ""
+		},
+		{
+			"key": "cSourceId",
+			"value": ""
+		},
+		{
+			"key": "entityId",
 			"value": ""
 		}
 	]
