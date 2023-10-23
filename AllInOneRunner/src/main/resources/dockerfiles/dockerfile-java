@@ -3,4 +3,4 @@ WORKDIR /usr/src/scorpio
 COPY target/quarkus-app ./
 ENV DBHOST=postgres
 ENV BUSHOST=kafka
-CMD java -jar quarkus-run.jar
+CMD java $MY_JAVA_SETTINGS -jar quarkus-run.jar 

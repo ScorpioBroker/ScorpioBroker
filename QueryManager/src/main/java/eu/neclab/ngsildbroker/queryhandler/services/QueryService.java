@@ -86,6 +86,9 @@ public class QueryService {
 	@ConfigProperty(name = "scorpio.entitymap.cleanup.ttl", defaultValue = "30 sec")
 	String entityMapTTL;
 
+	@ConfigProperty(name = "scorpio.fed.timeout", defaultValue = "2000")
+	long timeout;
+
 	@PostConstruct
 	void setup() {
 		webClient = WebClient.create(vertx);
@@ -103,7 +106,8 @@ public class QueryService {
 	public Uni<QueryResult> query(String tenant, String qToken, boolean tokenProvided, String[] id,
 			TypeQueryTerm typeQuery, String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery, CSFQueryTerm csf,
 			GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, int limit, int offSet,
-			boolean count, boolean localOnly, Context context, io.vertx.core.MultiMap headersFromReq, boolean doNotCompact) {
+			boolean count, boolean localOnly, Context context, io.vertx.core.MultiMap headersFromReq,
+			boolean doNotCompact) {
 		if (localOnly) {
 			return localQueryLevel1(tenant, id, typeQuery, idPattern, attrsQuery, qQuery, geoQuery, scopeQuery,
 					langQuery, limit, offSet, count);
@@ -1263,8 +1267,8 @@ public class QueryService {
 					unis.add(webClient
 							.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT
 									+ remoteHost.queryString() + entityMapString)
-							.putHeaders(remoteHost.headers()).putHeader("Link", linkHead).send().onItem()
-							.transform(response -> {
+							.putHeaders(remoteHost.headers()).putHeader("Link", linkHead).timeout(timeout).send()
+							.onItem().transform(response -> {
 								List<String> result;
 								if (response != null && response.statusCode() == 200) {
 									result = response.bodyAsJsonArray().getList();
@@ -1281,8 +1285,8 @@ public class QueryService {
 					unis.add(webClient
 							.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT
 									+ remoteHost.queryString() + "&limit=1000")
-							.putHeaders(remoteHost.headers()).putHeader("Link", linkHead).send().onItem()
-							.transform(response -> {
+							.putHeaders(remoteHost.headers()).putHeader("Link", linkHead).timeout(timeout).send()
+							.onItem().transform(response -> {
 								List<String> result = Lists.newArrayList();
 								if (response != null && response.statusCode() == 200) {
 									List tmpList = response.bodyAsJsonArray().getList();
