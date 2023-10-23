@@ -189,6 +189,15 @@ jobs:
       - name: Stopping Scorpio
         if: always()
         run: docker-compose -f ./compose-files/docker-compose-java-aaio-kafka-test.yml down
+      - name: docker-login
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+      - name: docker tag and push
+        run: |
+          docker tag scorpiobroker/all-in-one-runner:java-kafka-latest scorpiobroker/all-in-one-runner:java-kafka-hotfix
+          docker push scorpiobroker/all-in-one-runner:java-kafka-hotfix
       - name: print log
         if: always()
         run: |
@@ -246,6 +255,15 @@ jobs:
       - name: Stopping Scorpio 
         if: always()
         run: docker-compose -f ./compose-files/docker-compose-java-aaio-test.yml down 
+      - name: docker-login
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+      - name: docker tag and push
+        run: |
+          docker tag scorpiobroker/all-in-one-runner:java-latest scorpiobroker/all-in-one-runner:java-hotfix
+          docker push scorpiobroker/all-in-one-runner:java-hotfix
       - name: print log
         if: always()
         run: |
