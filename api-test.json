@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "b23683de-6be0-4929-abfa-ac72cb949fd5",
+		"_postman_id": "db5869ae-aa94-4249-9c02-5b95dd7bfc4c",
 		"name": "API Test",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
@@ -24367,7 +24367,7 @@
 																	"                }\r",
 																	"            });\r",
 																	"        });\r",
-																	"    }, 15000);\r",
+																	"    }, 18000);\r",
 																	""
 																],
 																"type": "text/javascript"
@@ -24594,7 +24594,7 @@
 																	"                }\r",
 																	"            });\r",
 																	"        });\r",
-																	"    }, 15000);\r",
+																	"    }, 18000);\r",
 																	""
 																],
 																"type": "text/javascript"
