@@ -28,8 +28,7 @@ public class HistoryController {
 
 	@Inject
 	HistoryEntityService historyService;
-	@ConfigProperty(name = "atcontext.url")
-	String atContextServerUrl;
+
 	@ConfigProperty(name = "scorpio.history.defaultLimit", defaultValue = "50")
 	int defaultLimit;
 	@ConfigProperty(name = "scorpio.history.maxLimit", defaultValue = "1000")
