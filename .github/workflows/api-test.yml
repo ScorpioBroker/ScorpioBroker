@@ -9,7 +9,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: 'microsoft' # See 'Supported distributions' for available options
-          java-version: '22'
+          java-version: '21'
       - name: Build testserver
         run: |
           cd testserver
@@ -64,7 +64,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: 'microsoft' # See 'Supported distributions' for available options
-          java-version: '22'
+          java-version: '21'
       - name: Install zip
         uses: montudor/action-zip@v1
       - name: Configure AWS Credentials
@@ -95,7 +95,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: 'microsoft' # See 'Supported distributions' for available options
-          java-version: '22'
+          java-version: '21'
       - name: Build testserver
         run: |
           cd testserver
@@ -150,7 +150,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: 'microsoft' # See 'Supported distributions' for available options
-          java-version: '22'
+          java-version: '21'
       - name: Build testserver
         run: |
           cd testserver
@@ -225,7 +225,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: 'microsoft' # See 'Supported distributions' for available options
-          java-version: '22'
+          java-version: '21'
       - name: Build testserver
         run: |
           cd testserver

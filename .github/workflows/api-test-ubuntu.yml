@@ -16,7 +16,7 @@ jobs:
       - name: Setup GraalVM
         uses: graalvm/setup-graalvm@v1
         with:
-          #java-version: '17' # for a specific JDK 17; or '17' for the latest JDK 17
+          java-version: '21' # for a specific JDK 17; or '17' for the latest JDK 17
           distribution: 'mandrel'
           version: 'mandrel-latest'
       - name: Build testserver
@@ -87,7 +87,7 @@ jobs:
       - name: Setup GraalVM
         uses: graalvm/setup-graalvm@v1
         with:
-          #java-version: '17' # for a specific JDK 17; or '17' for the latest JDK 17
+          java-version: '21' # for a specific JDK 17; or '17' for the latest JDK 17
           distribution: 'mandrel'
           version: 'mandrel-latest'
       - name: Build testserver
@@ -147,7 +147,7 @@ jobs:
       - name: Setup GraalVM
         uses: graalvm/setup-graalvm@v1
         with:
-          #java-version: '17' # for a specific JDK 17; or '17' for the latest JDK 17
+          java-version: '21' # for a specific JDK 17; or '17' for the latest JDK 17
           distribution: 'mandrel'
           version: 'mandrel-latest'
       - name: Build testserver
@@ -207,7 +207,7 @@ jobs:
       - name: Setup GraalVM
         uses: graalvm/setup-graalvm@v1
         with:
-          #java-version: '17' # for a specific JDK 17; or '17' for the latest JDK 17
+          java-version: '21' # for a specific JDK 17; or '17' for the latest JDK 17
           distribution: 'mandrel'
           version: 'mandrel-latest'
       - name: docker-login
