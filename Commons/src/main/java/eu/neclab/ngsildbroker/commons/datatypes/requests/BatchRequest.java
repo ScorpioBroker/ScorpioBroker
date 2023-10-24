@@ -19,6 +19,7 @@ public class BatchRequest extends BaseRequest {
 	private static final long serialVersionUID = -3640664052782539124L;
 	private String tenant;
 	private List<Map<String, Object>> requestPayload;
+
 	private List<Context> contexts;
 	private List<String> entityIds;
 	private int requestType;
@@ -28,6 +29,8 @@ public class BatchRequest extends BaseRequest {
 			int requestType) {
 		this.tenant = tenant;
 		this.requestPayload = requestPayload;
+		payload.put(JsonLdConsts.GRAPH, requestPayload);
+		bestCompleteResult = requestPayload;
 		this.contexts = contexts;
 		this.requestType = requestType;
 		if (requestPayload != null) {
@@ -46,7 +49,10 @@ public class BatchRequest extends BaseRequest {
 	public List<String> getEntityIds() {
 		return entityIds;
 	}
-	public String getId(){return String.join(",",entityIds);}
+
+	public String getId() {
+		return String.join(",", entityIds);
+	}
 
 	public void setEntityIds(List<String> entityIds) {
 		this.entityIds = entityIds;
@@ -64,14 +70,15 @@ public class BatchRequest extends BaseRequest {
 		return requestPayload;
 	}
 
-	public Map<String,Object> getPayload(){
-		if(requestPayload == null || requestPayload.isEmpty()){
+	public Map<String, Object> getPayload() {
+		if (requestPayload == null || requestPayload.isEmpty()) {
 			return null;
 		}
-		Map<String,Object> payload = new HashMap<>();
-		payload.put(JsonLdConsts.GRAPH,requestPayload);
+		Map<String, Object> payload = new HashMap<>();
+		payload.put(JsonLdConsts.GRAPH, requestPayload);
 		return payload;
 	}
+
 	public List<Context> getContexts() {
 		return contexts;
 	}
@@ -94,6 +101,8 @@ public class BatchRequest extends BaseRequest {
 				break;
 			}
 		}
+		payload.put(JsonLdConsts.GRAPH, requestPayload);
+		bestCompleteResult = requestPayload;
 
 	}
 

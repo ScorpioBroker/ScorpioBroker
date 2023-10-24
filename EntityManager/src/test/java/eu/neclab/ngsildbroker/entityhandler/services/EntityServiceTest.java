@@ -43,6 +43,7 @@ import eu.neclab.ngsildbroker.entityhandler.controller.CustomProfile;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.ext.web.client.WebClient;
@@ -144,7 +145,7 @@ public class EntityServiceTest {
 
 		UpdateEntityRequest request = new UpdateEntityRequest(tenant, entityId, resolved, null);
 
-		Uni<Map<String, Object>> updateEntityRes = Uni.createFrom().nothing();
+		Uni<Tuple2<Map<String, Object>, Map<String, Object>>> updateEntityRes = Uni.createFrom().nothing();
 		when(entityDAO.updateEntity(any())).thenReturn(updateEntityRes);
 
 		Uni<Void> emitterResponse = Uni.createFrom().nullItem();
@@ -163,7 +164,8 @@ public class EntityServiceTest {
 	@Order(3)
 	public void appendEntryTest() {
 
-		Uni<Set<String>> appendEntityRes = Uni.createFrom().item(new HashSet<>(0));
+		Uni<Tuple2<Map<String, Object>, Set<String>>> appendEntityRes = Uni.createFrom()
+				.item(Tuple2.of(new HashMap<>(0), new HashSet<>(0)));
 		when(entityDAO.appendToEntity2(any(), anyBoolean())).thenReturn(appendEntityRes);
 
 		Uni<Void> emitterResponse = Uni.createFrom().nullItem();
@@ -183,7 +185,7 @@ public class EntityServiceTest {
 	@Order(4)
 	public void partialUpdateAttributeTest() {
 
-		Uni<RowSet<Row>> partialUpdateAttributeRes = Uni.createFrom().nullItem();
+		Uni<Tuple2<Map<String, Object>, Map<String, Object>>> partialUpdateAttributeRes = Uni.createFrom().nullItem();
 		when(entityDAO.partialUpdateAttribute(any())).thenReturn(partialUpdateAttributeRes);
 
 		NGSILDOperationResult operationResult = entityService
@@ -199,7 +201,8 @@ public class EntityServiceTest {
 	public void deleteAttributeTest() throws Exception {
 		try {
 
-			Uni<Map<String, Object>> deleteAttributeRes = Uni.createFrom().item(new HashMap<>());
+			Uni<Tuple2<Map<String, Object>, Map<String, Object>>> deleteAttributeRes = Uni.createFrom()
+					.item(Tuple2.of(new HashMap<>(), new HashMap<>()));
 			when(entityDAO.deleteAttribute(any())).thenReturn(deleteAttributeRes);
 
 			Uni<Void> emitterResponse = Uni.createFrom().nullItem();
@@ -401,13 +404,13 @@ public class EntityServiceTest {
 		when(batchEmitter.send(any(String.class))).thenReturn(emitterResponse);
 
 		Uni<Map<String, Object>> createEntityRes = Uni.createFrom().item(entityBatchDaoRes);
-		when(entityDAO.batchUpsertEntity(any())).thenReturn(createEntityRes);
+		when(entityDAO.batchUpsertEntity(any(), anyBoolean())).thenReturn(createEntityRes);
 
 		List<NGSILDOperationResult> operationResultList = entityService
-				.upsertBatch(tenant, expandedEntities, contextList, true).await().indefinitely();
+				.upsertBatch(tenant, expandedEntities, contextList, true, anyBoolean()).await().indefinitely();
 
 		assertEquals(1, operationResultList.size());
-		verify(entityDAO, times(1)).batchUpsertEntity(any());
+		verify(entityDAO, times(1)).batchUpsertEntity(any(), anyBoolean());
 		verify(batchEmitter, times(1)).send(any(String.class));
 	}
 
@@ -437,13 +440,13 @@ public class EntityServiceTest {
 		when(batchEmitter.send(any(String.class))).thenReturn(emitterResponse);
 
 		Uni<Map<String, Object>> createEntityRes = Uni.createFrom().item(entityBatchDaoRes);
-		when(entityDAO.batchUpsertEntity(any())).thenReturn(createEntityRes);
+		when(entityDAO.batchUpsertEntity(any(), anyBoolean())).thenReturn(createEntityRes);
 
 		List<NGSILDOperationResult> operationResultList = entityService
-				.upsertBatch(tenant, expandedEntities, contextList, true).await().indefinitely();
+				.upsertBatch(tenant, expandedEntities, contextList, true, anyBoolean()).await().indefinitely();
 
 		assertEquals(2, operationResultList.size());
-		verify(entityDAO, times(1)).batchUpsertEntity(any());
+		verify(entityDAO, times(1)).batchUpsertEntity(any(), anyBoolean());
 		verify(batchEmitter, times(1)).send(any(String.class));
 	}
 

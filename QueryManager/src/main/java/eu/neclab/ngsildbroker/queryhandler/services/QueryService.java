@@ -86,6 +86,9 @@ public class QueryService {
 	@ConfigProperty(name = "scorpio.entitymap.cleanup.ttl", defaultValue = "30 sec")
 	String entityMapTTL;
 
+	@ConfigProperty(name = "scorpio.fed.timeout", defaultValue = "2000")
+	long timeout;
+
 	@PostConstruct
 	void setup() {
 		webClient = WebClient.create(vertx);
@@ -101,22 +104,24 @@ public class QueryService {
 	}
 
 	public Uni<QueryResult> query(String tenant, String qToken, boolean tokenProvided, String[] id,
-								  TypeQueryTerm typeQuery, String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery, CSFQueryTerm csf,
-								  GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, int limit, int offSet,
-								  boolean count, boolean localOnly, Context context, io.vertx.core.MultiMap headersFromReq) {
+			TypeQueryTerm typeQuery, String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery, CSFQueryTerm csf,
+			GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, int limit, int offSet,
+			boolean count, boolean localOnly, Context context, io.vertx.core.MultiMap headersFromReq,
+			boolean doNotCompact) {
 		if (localOnly) {
 			return localQueryLevel1(tenant, id, typeQuery, idPattern, attrsQuery, qQuery, geoQuery, scopeQuery,
 					langQuery, limit, offSet, count);
 		}
 		if (!tokenProvided) {
 			return getAndStoreEntityIdList(tenant, id, idPattern, qToken, typeQuery, attrsQuery, geoQuery, qQuery,
-					scopeQuery, langQuery, limit, offSet, context,headersFromReq).onItem().transformToUni(t -> {
+					scopeQuery, langQuery, limit, offSet, context, headersFromReq, doNotCompact).onItem()
+					.transformToUni(t -> {
 						Map<String, Map<String, Object>> localResults = t.getItem1();
 						EntityMap entityMap = t.getItem2();
 						List<EntityMapEntry> resultEntityMap = entityMap.getSubMap(offSet, limit + offSet);
 						Long resultCount = (long) entityMap.size();
 						return handleEntityMap(resultCount, resultEntityMap, attrsQuery, localResults, count, limit,
-								offSet, qToken,headersFromReq);
+								offSet, qToken, headersFromReq);
 					});
 		} else {
 			return queryDAO.getEntityMap(tenant, qToken, limit, offSet, count).onItem().transformToUni(t -> {
@@ -131,8 +136,8 @@ public class QueryService {
 	}
 
 	private Uni<QueryResult> handleEntityMap(Long resultCount, List<EntityMapEntry> resultEntityMap,
-											 AttrsQueryTerm attrsQuery, Map<String, Map<String, Object>> localResults, boolean count, int limit,
-											 int offSet, String qToken, io.vertx.core.MultiMap headersFromReq) {
+			AttrsQueryTerm attrsQuery, Map<String, Map<String, Object>> localResults, boolean count, int limit,
+			int offSet, String qToken, io.vertx.core.MultiMap headersFromReq) {
 		Map<QueryRemoteHost, List<String>> remoteHost2EntityIds = Maps.newHashMap();
 		// has to be linked. We want to keep order here
 		Map<String, Map<String, Map<String, Map<String, Object>>>> entityId2AttrName2DatasetId2AttrValue = Maps
@@ -158,22 +163,23 @@ public class QueryService {
 			} else {
 				List<Object> contextLinks;
 				String linkHead;
-				if(!remoteHost.headers().contains("Link")){
+				if (!remoteHost.headers().contains("Link")) {
 					linkHead = headersFromReq.get("Link");
-					contextLinks= parseLinkHeaderNoUni(headersFromReq.getAll("Link"),NGSIConstants.HEADER_REL_LDCONTEXT);
-				}else{
+					contextLinks = parseLinkHeaderNoUni(headersFromReq.getAll("Link"),
+							NGSIConstants.HEADER_REL_LDCONTEXT);
+				} else {
 					linkHead = remoteHost.headers().get("Link");
-					contextLinks= parseLinkHeaderNoUni(remoteHost.headers().getAll("Link"),NGSIConstants.HEADER_REL_LDCONTEXT);
+					contextLinks = parseLinkHeaderNoUni(remoteHost.headers().getAll("Link"),
+							NGSIConstants.HEADER_REL_LDCONTEXT);
 				}
 				unis.add(webClient
-						.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT
-								+ remoteHost.queryString() + "&options=sysAttrs")
-						.putHeaders(remoteHost.headers()).putHeader("Link",linkHead).send().onItem().transformToUni(response -> {
+						.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + remoteHost.queryString()
+								+ "&options=sysAttrs")
+						.putHeaders(remoteHost.headers()).putHeader("Link", linkHead).send().onItem()
+						.transformToUni(response -> {
 							if (response != null && response.statusCode() == 200) {
-								return ldService.expand(contextLinks,
-												response.bodyAsJsonArray().getList(),
-												opts,AppConstants.QUERY_PAYLOAD,false)
-										.onItem().transform(expanded -> {
+								return ldService.expand(contextLinks, response.bodyAsJsonArray().getList(), opts,
+										AppConstants.QUERY_PAYLOAD, false).onItem().transform(expanded -> {
 											Map<String, Map<String, Object>> result = Maps.newHashMap();
 											expanded.forEach(obj -> {
 												Map<String, Object> entity = (Map<String, Object>) obj;
@@ -951,10 +957,10 @@ public class QueryService {
 		return unis;
 	}
 
-	public Uni<Map<String, Object>> retrieveEntity(Context context, String tenant, String entityId,
-												   String attrs, LanguageQueryTerm lang, boolean localOnly, String containedBy, String join,
-												   boolean idsOnly, int joinLevel) {
-		Map<String,Object> attrsMap = QueryParser.parseInput(attrs);
+	public Uni<Map<String, Object>> retrieveEntity(Context context, String tenant, String entityId, String attrs,
+			LanguageQueryTerm lang, boolean localOnly, String containedBy, String join, boolean idsOnly,
+			int joinLevel) {
+		Map<String, Object> attrsMap = QueryParser.parseInput(attrs);
 		AttrsQueryTerm attrsQuery;
 		try {
 			attrsQuery = QueryParser.parseAttrs(attrs, context);
@@ -962,17 +968,15 @@ public class QueryService {
 			throw new RuntimeException(e);
 		}
 		Uni<Map<String, Object>> local;
-		if(idsOnly){
-			//TODO
-			local = idsOnly(getEntityFlat(tenant, entityId, attrsMap, containedBy,  joinLevel, null, context));
-		}
-		else if (join==null) {
+		if (idsOnly) {
+			// TODO
+			local = idsOnly(getEntityFlat(tenant, entityId, attrsMap, containedBy, joinLevel, null, context));
+		} else if (join == null) {
 			local = queryDAO.getEntity(entityId, tenant, attrsQuery);
-		}
-		else if (join.equals(NGSIConstants.FLAT)) {
-			local = getEntityFlat(tenant, entityId, attrsMap, containedBy,  joinLevel, null,context);
+		} else if (join.equals(NGSIConstants.FLAT)) {
+			local = getEntityFlat(tenant, entityId, attrsMap, containedBy, joinLevel, null, context);
 		} else if (join.equals(NGSIConstants.INLINE)) {
-			local = getEntityInline(tenant, entityId, attrsMap, containedBy,  joinLevel,context);
+			local = getEntityInline(tenant, entityId, attrsMap, containedBy, joinLevel, context);
 		} else {
 			return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData));
 		}
@@ -1000,28 +1004,27 @@ public class QueryService {
 			} else {
 				queryString = remoteHost.queryString() + "&options=sysAttrs";
 			}
-			unis.add(
-					webClient
-							.getAbs(remoteHost.host()  + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + entityId
-									+ queryString)
-							.putHeaders(remoteHost.headers()).send().onItem().transformToUni(response -> {
-								if (response == null || response.statusCode() != 200) {
-									return Uni.createFrom().item(new HashMap<String, Object>());
-								}
-								Map<String, Object> result = response.bodyAsJsonObject().getMap();
-								return ldService.expand(HttpUtils.getContextFromHeader(remoteHost.headers()), result,
-										opts, -1, false).onItem().transform(expanded -> {
-											Map<String, Object> myResult = (Map<String, Object>) expanded.get(0);
-											myResult.put(EntityTools.REG_MODE_KEY, remoteHost.regMode());
-											return myResult;
-										}).onFailure().recoverWithItem(e -> {
-											logger.warn("Failed to expand body from remote source", e);
-											return new HashMap<String, Object>();
-										});
-							}).onFailure().recoverWithItem(e -> {
-								logger.warn("Failed to retrieve infos from host " + remoteHost, e);
-								return new HashMap<String, Object>();
-							}));
+			unis.add(webClient
+					.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + entityId + queryString)
+					.putHeaders(remoteHost.headers()).send().onItem().transformToUni(response -> {
+						if (response == null || response.statusCode() != 200) {
+							return Uni.createFrom().item(new HashMap<String, Object>());
+						}
+						Map<String, Object> result = response.bodyAsJsonObject().getMap();
+						return ldService
+								.expand(HttpUtils.getContextFromHeader(remoteHost.headers()), result, opts, -1, false)
+								.onItem().transform(expanded -> {
+									Map<String, Object> myResult = (Map<String, Object>) expanded.get(0);
+									myResult.put(EntityTools.REG_MODE_KEY, remoteHost.regMode());
+									return myResult;
+								}).onFailure().recoverWithItem(e -> {
+									logger.warn("Failed to expand body from remote source", e);
+									return new HashMap<String, Object>();
+								});
+					}).onFailure().recoverWithItem(e -> {
+						logger.warn("Failed to retrieve infos from host " + remoteHost, e);
+						return new HashMap<String, Object>();
+					}));
 		}
 
 		return Uni.combine().all().unis(unis).combinedWith(list -> {
@@ -1214,10 +1217,13 @@ public class QueryService {
 	}
 
 	public Uni<List<String>> queryForEntityIds(String tenant, String[] ids, TypeQueryTerm typeQueryTerm,
-											   String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQueryTerm, GeoQueryTerm geoQueryTerm,
-											   ScopeQueryTerm scopeQueryTerm, LanguageQueryTerm queryTerm, Context context, io.vertx.core.MultiMap headersFromReq,boolean idsOnly, String join, String containedBy, int joinLevel) {
+			String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQueryTerm, GeoQueryTerm geoQueryTerm,
+			ScopeQueryTerm scopeQueryTerm, LanguageQueryTerm queryTerm, Context context,
+			io.vertx.core.MultiMap headersFromReq, boolean idsOnly, String join, String containedBy, int joinLevel,
+			boolean doNotCompact) {
 		return getAndStoreEntityIdList(tenant, ids, idPattern, idPattern, typeQueryTerm, attrsQuery, geoQueryTerm,
-				qQueryTerm, scopeQueryTerm, queryTerm, 0, 0, context, headersFromReq).onItem().transform(t -> {
+				qQueryTerm, scopeQueryTerm, queryTerm, 0, 0, context, headersFromReq, doNotCompact).onItem()
+				.transform(t -> {
 					// List<Map<String, Object>> localResults = t.getItem1();
 
 					List<String> result = Lists.newArrayList();
@@ -1231,12 +1237,12 @@ public class QueryService {
 	}
 
 	private Uni<Tuple2<Map<String, Map<String, Object>>, EntityMap>> getAndStoreEntityIdList(String tenant, String[] id,
-																							 String idPattern, String qToken, TypeQueryTerm typeQuery, AttrsQueryTerm attrsQuery, GeoQueryTerm geoQuery,
-																							 QQueryTerm qQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, int limit, int offset,
-																							 Context context,io.vertx.core.MultiMap headersFromReq) {
-		Uni<Tuple2<Map<String, Map<String, Object>>, List<String>>> localIds = queryDAO.queryForEntityIds(tenant, id,typeQuery,
-				                                  idPattern, attrsQuery, qQuery, geoQuery, scopeQuery, context, limit, offset);
-			List<QueryRemoteHost> remoteHost2Query = getRemoteQueries(tenant, id, typeQuery, idPattern, attrsQuery, qQuery,
+			String idPattern, String qToken, TypeQueryTerm typeQuery, AttrsQueryTerm attrsQuery, GeoQueryTerm geoQuery,
+			QQueryTerm qQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, int limit, int offset,
+			Context context, io.vertx.core.MultiMap headersFromReq, boolean doNotCompact) {
+		Uni<Tuple2<Map<String, Map<String, Object>>, List<String>>> localIds = queryDAO.queryForEntityIds(tenant, id,
+				typeQuery, idPattern, attrsQuery, qQuery, geoQuery, scopeQuery, context, limit, offset);
+		List<QueryRemoteHost> remoteHost2Query = getRemoteQueries(tenant, id, typeQuery, idPattern, attrsQuery, qQuery,
 				geoQuery, scopeQuery, langQuery, context);
 		Uni<Map<QueryRemoteHost, List<String>>> remoteIds;
 		if (remoteHost2Query.isEmpty()) {
@@ -1244,11 +1250,10 @@ public class QueryService {
 		} else {
 			List<Uni<Tuple2<QueryRemoteHost, List<String>>>> unis = Lists.newArrayList();
 			for (QueryRemoteHost remoteHost : remoteHost2Query) {
-				String linkHead="";
-				if(!remoteHost.headers().contains("Link") && headersFromReq.contains("Link")){
+				String linkHead = "";
+				if (!remoteHost.headers().contains("Link") && headersFromReq.contains("Link")) {
 					linkHead = headersFromReq.get("Link");
-				}
-				else{
+				} else {
 					linkHead = remoteHost.headers().get("Link");
 				}
 				if (remoteHost.canDoIdQuery()) {
@@ -1260,10 +1265,10 @@ public class QueryService {
 						entityMapString = "&entityMap=true";
 					}
 					unis.add(webClient
-							.getAbs(remoteHost.host()  + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT
+							.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT
 									+ remoteHost.queryString() + entityMapString)
-									.putHeaders(remoteHost.headers()).putHeader("Link",linkHead)
-							.send().onItem().transform(response -> {
+							.putHeaders(remoteHost.headers()).putHeader("Link", linkHead).timeout(timeout).send()
+							.onItem().transform(response -> {
 								List<String> result;
 								if (response != null && response.statusCode() == 200) {
 									result = response.bodyAsJsonArray().getList();
@@ -1278,10 +1283,10 @@ public class QueryService {
 							}));
 				} else {
 					unis.add(webClient
-							.getAbs(remoteHost.host()  + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT
-									+ remoteHost.queryString() + "&limit=1000").putHeaders(remoteHost.headers())
-							.putHeader("Link",linkHead).send().onItem()
-							.transform(response -> {
+							.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT
+									+ remoteHost.queryString() + "&limit=1000")
+							.putHeaders(remoteHost.headers()).putHeader("Link", linkHead).timeout(timeout).send()
+							.onItem().transform(response -> {
 								List<String> result = Lists.newArrayList();
 								if (response != null && response.statusCode() == 200) {
 									List tmpList = response.bodyAsJsonArray().getList();
@@ -1328,9 +1333,11 @@ public class QueryService {
 		}).onItem().transform(tuple -> {
 			EntityMap entityMap = tuple.getItem1();
 			Map<String, Map<String, Object>> localResults = tuple.getItem2();
-			queryDAO.storeEntityMap(tenant, qToken, entityMap).subscribe().with(t -> {
-				logger.debug("Stored entity map " + qToken);
-			});
+			if (!doNotCompact) {
+				queryDAO.storeEntityMap(tenant, qToken, entityMap).subscribe().with(t -> {
+					logger.debug("Stored entity map " + qToken);
+				});
+			}
 			// vertx.executeBlockingAndForget(queryDAO.storeEntityMap(tenant, qToken,
 			// entityMap));
 			// return queryDAO.storeEntityMap(tenant, qToken,
@@ -1346,15 +1353,14 @@ public class QueryService {
 		return queryDAO.runEntityMapCleanup(entityMapTTL);
 	}
 
-	public Uni<Map<String, Object>> getEntityFlat(String tenant, String entityId,
-												  Map<String,Object> attrsMap, String containedBy,
-												  int joinLevel, List<Map<String, Object>> relResult, Context context) {
+	public Uni<Map<String, Object>> getEntityFlat(String tenant, String entityId, Map<String, Object> attrsMap,
+			String containedBy, int joinLevel, List<Map<String, Object>> relResult, Context context) {
 		if (relResult == null) {
 			relResult = new ArrayList<>();
 		}
 		List<Map<String, Object>> finalRelResult = relResult;
 		AttrsQueryTerm attrsQuery = null;
-		if(attrsMap != null && !attrsMap.isEmpty()){
+		if (attrsMap != null && !attrsMap.isEmpty()) {
 			try {
 				attrsQuery = QueryParser.parseAttrs(String.join(",", attrsMap.keySet()), context);
 			} catch (ResponseException e) {
@@ -1362,45 +1368,45 @@ public class QueryService {
 			}
 		}
 		AtomicInteger joinLvl = new AtomicInteger(joinLevel);
-		return queryDAO.getEntity(entityId, tenant, attrsQuery)
-				.onItem().transformToUni(ent -> {
-					if (containedBy.contains((String) ent.get(JsonLdConsts.ID)) || joinLvl.get() == 0) {
-						return Uni.createFrom().item(Map.of(JsonLdConsts.GRAPH, finalRelResult));
+		return queryDAO.getEntity(entityId, tenant, attrsQuery).onItem().transformToUni(ent -> {
+			if (containedBy.contains((String) ent.get(JsonLdConsts.ID)) || joinLvl.get() == 0) {
+				return Uni.createFrom().item(Map.of(JsonLdConsts.GRAPH, finalRelResult));
+			}
+			joinLvl.set(joinLvl.decrementAndGet());
+			finalRelResult.add(ent);
+			List<Uni<Map<String, Object>>> unisOfMaps = new ArrayList<>();
+			for (String key : ent.keySet()) {
+				if (ent.get(key) instanceof List<?> attrib && attrib.get(0) instanceof Map<?, ?>
+						&& ((Map<String, Object>) attrib.get(0)).containsKey(NGSIConstants.NGSI_LD_OBJECT_TYPE)
+						&& (!containedBy.contains((String) ent.get(JsonLdConsts.ID)))) {
+					Map<String, Object> finalAttrs = new HashMap<>();
+					if (attrsMap != null && !attrsMap.isEmpty()) {
+						String toRemove = attrsMap.keySet().iterator().next();
+						finalAttrs = (Map<String, Object>) attrsMap.getOrDefault(toRemove, new HashMap<>());
+						attrsMap.remove(toRemove);
 					}
-					joinLvl.set(joinLvl.decrementAndGet());
-					finalRelResult.add(ent);
-					List<Uni<Map<String, Object>>> unisOfMaps = new ArrayList<>();
-					for (String key : ent.keySet()) {
-						if (ent.get(key) instanceof List<?> attrib
-								&& attrib.get(0) instanceof Map<?, ?>
-								&& ((Map<String, Object>) attrib.get(0)).containsKey(NGSIConstants.NGSI_LD_OBJECT_TYPE)
-								&& (!containedBy.contains((String) ent.get(JsonLdConsts.ID)))) {
-							Map<String,Object> finalAttrs=new HashMap<>();
-                           if(attrsMap!=null && !attrsMap.isEmpty()){
-							   String toRemove = attrsMap.keySet().iterator().next();
-							   finalAttrs = (Map<String, Object>) attrsMap.getOrDefault(toRemove,new HashMap<>());
-							   attrsMap.remove(toRemove);
-						   }
-							unisOfMaps.add(getEntityFlat(tenant, (String) ((Map<String, List<Map<String, Object>>>) attrib.get(0)).get(NGSIConstants.NGSI_LD_HAS_OBJECT).get(0).get(JsonLdConsts.ID),
-                                    finalAttrs, containedBy + ent.get(JsonLdConsts.ID), joinLvl.get(), finalRelResult, context));
+					unisOfMaps.add(getEntityFlat(tenant,
+							(String) ((Map<String, List<Map<String, Object>>>) attrib.get(0))
+									.get(NGSIConstants.NGSI_LD_HAS_OBJECT).get(0).get(JsonLdConsts.ID),
+							finalAttrs, containedBy + ent.get(JsonLdConsts.ID), joinLvl.get(), finalRelResult,
+							context));
 
-						}
-					}
-					if (!unisOfMaps.isEmpty()) {
-						return Uni.combine().all().unis(unisOfMaps).collectFailures().combinedWith(x -> x).onItemOrFailure()
-								.transformToUni((list, fail) -> {
-									return Uni.createFrom().item(Map.of(JsonLdConsts.GRAPH, finalRelResult));
-								});
-					}
-					return Uni.createFrom().item(Map.of(JsonLdConsts.GRAPH, finalRelResult));
-				});
+				}
+			}
+			if (!unisOfMaps.isEmpty()) {
+				return Uni.combine().all().unis(unisOfMaps).collectFailures().combinedWith(x -> x).onItemOrFailure()
+						.transformToUni((list, fail) -> {
+							return Uni.createFrom().item(Map.of(JsonLdConsts.GRAPH, finalRelResult));
+						});
+			}
+			return Uni.createFrom().item(Map.of(JsonLdConsts.GRAPH, finalRelResult));
+		});
 	}
 
-	public Uni<Map<String, Object>> getEntityInline(String tenant, String entityId,
-													Map<String,Object> attrsMap, String containedBy,
-													int joinLevel, Context context) {
+	public Uni<Map<String, Object>> getEntityInline(String tenant, String entityId, Map<String, Object> attrsMap,
+			String containedBy, int joinLevel, Context context) {
 		AttrsQueryTerm attrsQuery = null;
-		if(attrsMap != null && !attrsMap.isEmpty()){
+		if (attrsMap != null && !attrsMap.isEmpty()) {
 			try {
 				attrsQuery = QueryParser.parseAttrs(String.join(",", attrsMap.keySet()), context);
 			} catch (ResponseException e) {
@@ -1408,52 +1414,54 @@ public class QueryService {
 			}
 		}
 		AtomicInteger joinLvl = new AtomicInteger(joinLevel);
-		return queryDAO.getEntity(entityId, tenant, attrsQuery)
-				.onItem().transformToUni(ent -> {
-					if (containedBy.contains((String) ent.get(JsonLdConsts.ID)) || joinLvl.get() == 0) {
-						return Uni.createFrom().failure(new Throwable());
+		return queryDAO.getEntity(entityId, tenant, attrsQuery).onItem().transformToUni(ent -> {
+			if (containedBy.contains((String) ent.get(JsonLdConsts.ID)) || joinLvl.get() == 0) {
+				return Uni.createFrom().failure(new Throwable());
+			}
+			joinLvl.set(joinLvl.decrementAndGet());
+			List<Uni<Map<String, Object>>> unisOfMaps = new ArrayList<>();
+			for (String key : ent.keySet()) {
+				if (ent.get(key) instanceof List<?> attrib && attrib.get(0) instanceof Map<?, ?>
+						&& ((Map<String, Object>) attrib.get(0)).containsKey(NGSIConstants.NGSI_LD_OBJECT_TYPE)
+						&& (!containedBy.contains((String) ent.get(JsonLdConsts.ID)))) {
+					Map<String, Object> finalAttrsMap = new HashMap<>();
+					if (attrsMap != null && !attrsMap.isEmpty()) {
+						String toRemove = attrsMap.keySet().iterator().next();
+						finalAttrsMap = (Map<String, Object>) attrsMap.getOrDefault(toRemove, new HashMap<>());
+						attrsMap.remove(toRemove);
 					}
-					joinLvl.set(joinLvl.decrementAndGet());
-					List<Uni<Map<String, Object>>> unisOfMaps = new ArrayList<>();
-					for (String key : ent.keySet()) {
-						if (ent.get(key) instanceof List<?> attrib
-								&& attrib.get(0) instanceof Map<?, ?>
-								&& ((Map<String, Object>) attrib.get(0)).containsKey(NGSIConstants.NGSI_LD_OBJECT_TYPE)
-								&& (!containedBy.contains((String) ent.get(JsonLdConsts.ID)))) {
-							Map<String,Object> finalAttrsMap=new HashMap<>();
-							if(attrsMap!=null && !attrsMap.isEmpty()){
-								String toRemove = attrsMap.keySet().iterator().next();
-								finalAttrsMap = (Map<String, Object>) attrsMap.getOrDefault(toRemove,new HashMap<>());
-								attrsMap.remove(toRemove);
-							}
-							unisOfMaps.add(getEntityInline(tenant, (String) ((Map<String, List<Map<String, Object>>>) attrib.get(0)).get(NGSIConstants.NGSI_LD_HAS_OBJECT).get(0).get(JsonLdConsts.ID),
-									finalAttrsMap, containedBy + ent.get(JsonLdConsts.ID), joinLvl.get(), context).onItem().transform(map->{
-								((List<Map<String,Object>>)ent.get(key)).get(0).put("entity",map);
+					unisOfMaps.add(getEntityInline(tenant,
+							(String) ((Map<String, List<Map<String, Object>>>) attrib.get(0))
+									.get(NGSIConstants.NGSI_LD_HAS_OBJECT).get(0).get(JsonLdConsts.ID),
+							finalAttrsMap, containedBy + ent.get(JsonLdConsts.ID), joinLvl.get(), context).onItem()
+							.transform(map -> {
+								((List<Map<String, Object>>) ent.get(key)).get(0).put("entity", map);
 								return ent;
 							}));
 
-						}
-					}
-					if (!unisOfMaps.isEmpty()) {
-						return Uni.combine().all().unis(unisOfMaps).collectFailures().combinedWith(x -> x).onItemOrFailure()
-								.transformToUni((list, fail) -> {
-									return Uni.createFrom().item(ent);
-								});
-					}
-					return Uni.createFrom().item(ent);
-				});
-	}
-	public Uni<Map<String,Object>> idsOnly(Uni<Map<String,Object>> uniMap){
-		return uniMap.onItem().transform(map->{
-			Map<String,Object> result = new HashMap<>();
-			List<Map<String,Object>> list = new ArrayList<>();
-			result.put(JsonLdConsts.GRAPH,list);
-			List<Map<String,Object>> mapList = (List<Map<String, Object>>) map.get(JsonLdConsts.GRAPH);
-			for (Map<String,Object> item:mapList) {
-				list.add(Map.of(JsonLdConsts.ID,item.get(JsonLdConsts.ID)));
+				}
 			}
-            return result;
-        });
+			if (!unisOfMaps.isEmpty()) {
+				return Uni.combine().all().unis(unisOfMaps).collectFailures().combinedWith(x -> x).onItemOrFailure()
+						.transformToUni((list, fail) -> {
+							return Uni.createFrom().item(ent);
+						});
+			}
+			return Uni.createFrom().item(ent);
+		});
+	}
+
+	public Uni<Map<String, Object>> idsOnly(Uni<Map<String, Object>> uniMap) {
+		return uniMap.onItem().transform(map -> {
+			Map<String, Object> result = new HashMap<>();
+			List<Map<String, Object>> list = new ArrayList<>();
+			result.put(JsonLdConsts.GRAPH, list);
+			List<Map<String, Object>> mapList = (List<Map<String, Object>>) map.get(JsonLdConsts.GRAPH);
+			for (Map<String, Object> item : mapList) {
+				list.add(Map.of(JsonLdConsts.ID, item.get(JsonLdConsts.ID)));
+			}
+			return result;
+		});
 	}
 
 }

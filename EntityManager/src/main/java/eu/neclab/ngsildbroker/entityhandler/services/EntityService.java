@@ -30,6 +30,8 @@ import com.google.common.collect.Table;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.QueryInfos;
+import eu.neclab.ngsildbroker.commons.datatypes.QueryRemoteHost;
 import eu.neclab.ngsildbroker.commons.datatypes.RegistrationEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.RemoteHost;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.AppendEntityRequest;
@@ -47,6 +49,12 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.UpsertEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.results.Attrib;
 import eu.neclab.ngsildbroker.commons.datatypes.results.CRUDSuccess;
 import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
@@ -97,6 +105,7 @@ public class EntityService {
 	WebClient webClient;
 
 	private Table<String, String, List<RegistrationEntry>> tenant2CId2RegEntries = HashBasedTable.create();
+	private Table<String, String, List<RegistrationEntry>> tenant2CId2QueryRegEntries = HashBasedTable.create();
 
 	@Inject
 	JsonLDService jsonLdService;
@@ -112,6 +121,10 @@ public class EntityService {
 		webClient = WebClient.create(vertx);
 		entityDAO.getAllRegistries().onItem().transform(t -> {
 			tenant2CId2RegEntries = t;
+			return null;
+		}).await().indefinitely();
+		entityDAO.getAllQueryRegistries().onItem().transform(t -> {
+			tenant2CId2QueryRegEntries = t;
 			return null;
 		}).await().indefinitely();
 	}
@@ -269,10 +282,10 @@ public class EntityService {
 				request);
 		Map<String, Object> localEntity = splitted.getItem1();
 		Collection<Tuple2<RemoteHost, Map<String, Object>>> remoteEntitiesAndHosts = splitted.getItem2();
-		if (remoteEntitiesAndHosts.isEmpty()) {
-			request.setPayload(localEntity);
-			return partialUpdateLocalEntity(request, context);
-		}
+//		if (remoteEntitiesAndHosts.isEmpty()) {
+//			request.setPayload(localEntity);
+//			return partialUpdateLocalEntity(request, context);
+//		}
 		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(remoteEntitiesAndHosts.size());
 		for (Tuple2<RemoteHost, Map<String, Object>> remoteEntityAndHost : remoteEntitiesAndHosts) {
 			Map<String, Object> expanded = remoteEntityAndHost.getItem2();
@@ -294,6 +307,12 @@ public class EntityService {
 
 		}
 		if (localEntity != null && !localEntity.isEmpty()) {
+			if (!unis.isEmpty() && isDifferentRemoteQueryAvailable(request, remoteEntitiesAndHosts)) {
+				request.setDistributed(true);
+			} else {
+				request.setDistributed(false);
+			}
+			request.setBestCompleteResult(request.getPayload());
 			request.setPayload(localEntity);
 			unis.add(partialUpdateLocalEntity(request, context).onFailure().recoverWithItem(e -> {
 				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.PARTIAL_UPDATE_REQUEST,
@@ -335,9 +354,9 @@ public class EntityService {
 			String datasetId, boolean deleteAll, Context context) {
 		DeleteAttributeRequest request = new DeleteAttributeRequest(tenant, entityId, attribName, datasetId, deleteAll);
 		Set<RemoteHost> remoteHosts = getRemoteHostsForDeleteAttrib(request);
-		if (remoteHosts.isEmpty()) {
-			return localDeleteAttrib(request, context);
-		}
+//		if (remoteHosts.isEmpty()) {
+//			return localDeleteAttrib(request, context);
+//		}
 		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(remoteHosts.size());
 		for (RemoteHost remoteHost : remoteHosts) {
 			unis.add(webClient
@@ -350,15 +369,27 @@ public class EntityService {
 
 					}));
 		}
-
+		if (!unis.isEmpty() && isDifferentRemoteQueryAvailable(request, remoteHosts)) {
+			request.setDistributed(true);
+		} else {
+			request.setDistributed(false);
+		}
 		unis.add(localDeleteAttrib(request, context));
 		return Uni.combine().all().unis(unis).combinedWith(list -> getResult(list));
 
 	}
 
+	private boolean isDifferentRemoteQueryAvailable(BaseRequest request, Set<RemoteHost> remoteHosts) {
+		if (!remoteHosts.isEmpty()) {
+			return true;
+		}
+		return isRemoteQueryPossible(request.getPayload(), request.getTenant(), request.getId());
+	}
+
 	private Uni<NGSILDOperationResult> localDeleteAttrib(DeleteAttributeRequest request, Context context) {
 		return entityDAO.deleteAttribute(request).onItem().transform(resultEntity -> {
-			request.setPreviousEntity(resultEntity);
+			request.setPreviousEntity(resultEntity.getItem1());
+			request.setBestCompleteResult(resultEntity.getItem2());
 
 			MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
 			NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.DELETE_ATTRIBUTE_REQUEST,
@@ -397,9 +428,9 @@ public class EntityService {
 		DeleteEntityRequest request = new DeleteEntityRequest(tenant, entityId);
 		Set<RemoteHost> remoteHosts = getRemoteHostsForDelete(request);
 
-		if (remoteHosts.isEmpty()) {
-			return localDeleteEntity(request, context);
-		}
+//		if (remoteHosts.isEmpty()) {
+//			return localDeleteEntity(request, context);
+//		}
 		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(remoteHosts.size());
 		for (RemoteHost remoteHost : remoteHosts) {
 			if (remoteHost.canDoSingleOp()) {
@@ -423,6 +454,11 @@ public class EntityService {
 						}));
 			}
 		}
+		if (!unis.isEmpty() && isDifferentRemoteQueryAvailable(request, remoteHosts)) {
+			request.setDistributed(true);
+		} else {
+			request.setDistributed(false);
+		}
 
 		unis.add(localDeleteEntity(request, context));
 		return Uni.combine().all().unis(unis).combinedWith(list -> getResult(list));
@@ -438,6 +474,7 @@ public class EntityService {
 	private Uni<NGSILDOperationResult> localDeleteEntity(DeleteEntityRequest request, Context context) {
 		return entityDAO.deleteEntity(request).onItem().transform(deleted -> {
 			request.setPayload(deleted);
+			request.setPreviousEntity(deleted);
 			MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
 			NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.DELETE_REQUEST, request.getId());
 			result.addSuccess(new CRUDSuccess(null, null, null, deleted, context));
@@ -471,10 +508,10 @@ public class EntityService {
 				request);
 		Map<String, Object> localEntity = localAndRemote.getItem1();
 		Collection<Tuple2<RemoteHost, Map<String, Object>>> remoteEntitiesAndHosts = localAndRemote.getItem2();
-		if (remoteEntitiesAndHosts.isEmpty()) {
-			request.setPayload(localEntity);
-			return appendLocal(request, noOverwrite, context);
-		}
+//		if (remoteEntitiesAndHosts.isEmpty()) {
+//			request.setPayload(localEntity);
+//			return appendLocal(request, noOverwrite, context);
+//		}
 		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(remoteEntitiesAndHosts.size());
 		for (Tuple2<RemoteHost, Map<String, Object>> remoteEntityAndHost : remoteEntitiesAndHosts) {
 			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
@@ -507,6 +544,12 @@ public class EntityService {
 
 		}
 		if (!localEntity.isEmpty()) {
+			if (!unis.isEmpty() && isDifferentRemoteQueryAvailable(request, remoteEntitiesAndHosts)) {
+				request.setDistributed(true);
+			} else {
+				request.setDistributed(false);
+			}
+			request.setBestCompleteResult(request.getPayload());
 			request.setPayload(localEntity);
 			unis.add(appendLocal(request, noOverwrite, context).onFailure().recoverWithItem(e -> {
 				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST,
@@ -533,10 +576,10 @@ public class EntityService {
 				request);
 		Map<String, Object> localEntity = localAndRemote.getItem1();
 		Collection<Tuple2<RemoteHost, Map<String, Object>>> remoteEntitiesAndHosts = localAndRemote.getItem2();
-		if (remoteEntitiesAndHosts.isEmpty()) {
-			request.setPayload(localEntity);
-			return updateLocalEntity(request, context);
-		}
+//		if (remoteEntitiesAndHosts.isEmpty()) {
+//			request.setPayload(localEntity);
+//			return updateLocalEntity(request, context);
+//		}
 		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(remoteEntitiesAndHosts.size());
 		for (Tuple2<RemoteHost, Map<String, Object>> remoteEntityAndHost : remoteEntitiesAndHosts) {
 			Map<String, Object> expanded = remoteEntityAndHost.getItem2();
@@ -555,6 +598,12 @@ public class EntityService {
 
 		}
 		if (!localEntity.isEmpty()) {
+			if (!unis.isEmpty() && isDifferentRemoteQueryAvailable(request, remoteEntitiesAndHosts)) {
+				request.setDistributed(true);
+			} else {
+				request.setDistributed(false);
+			}
+			request.setBestCompleteResult(request.getPayload());
 			request.setPayload(localEntity);
 			unis.add(updateLocalEntity(request, context).onFailure().recoverWithItem(e -> {
 				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.UPDATE_REQUEST,
@@ -586,10 +635,11 @@ public class EntityService {
 	}
 
 	private Uni<NGSILDOperationResult> updateLocalEntity(UpdateEntityRequest request, Context context) {
-		return entityDAO.updateEntity(request).onItem().transform(notAppended -> {
-			request.setPreviousEntity(notAppended);
+		return entityDAO.updateEntity(request).onItem().transform(previousAndNewEntity -> {
+			request.setPreviousEntity(previousAndNewEntity.getItem1());
+			request.setBestCompleteResult(previousAndNewEntity.getItem2());
 			MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
-			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, request.getId());
+			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.UPDATE_REQUEST, request.getId());
 			localResult.addSuccess(new CRUDSuccess(null, null, null, request.getPayload(), context));
 			return localResult;
 		});
@@ -602,10 +652,10 @@ public class EntityService {
 				request);
 		Map<String, Object> localEntity = localAndRemote.getItem1();
 		Collection<Tuple2<RemoteHost, Map<String, Object>>> remoteEntitiesAndHosts = localAndRemote.getItem2();
-		if (remoteEntitiesAndHosts.isEmpty()) {
-			request.setPayload(localEntity);
-			return createLocalEntity(request, context);
-		}
+//		if (remoteEntitiesAndHosts.isEmpty()) {
+//			request.setPayload(localEntity);
+//			return createLocalEntity(request, context);
+//		}
 		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(remoteEntitiesAndHosts.size());
 		for (Tuple2<RemoteHost, Map<String, Object>> remoteEntityAndHost : remoteEntitiesAndHosts) {
 			Map<String, Object> expanded = remoteEntityAndHost.getItem2();
@@ -633,8 +683,14 @@ public class EntityService {
 			}
 		}
 		if (localEntity != null && !localEntity.isEmpty()) {
+			if (!unis.isEmpty() && isDifferentRemoteQueryAvailable(request, remoteEntitiesAndHosts)) {
+				request.setDistributed(true);
+			} else {
+				request.setDistributed(false);
+			}
+			request.setBestCompleteResult(request.getPayload());
 			request.setPayload(localEntity);
-			unis.add(createLocalEntity(request, context).onFailure().recoverWithItem(e -> {
+			unis.add(0, createLocalEntity(request, context).onFailure().recoverWithItem(e -> {
 				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST,
 						request.getId());
 				if (e instanceof ResponseException) {
@@ -652,6 +708,14 @@ public class EntityService {
 		});
 	}
 
+	private boolean isDifferentRemoteQueryAvailable(BaseRequest request,
+			Collection<Tuple2<RemoteHost, Map<String, Object>>> remoteEntitiesAndHosts) {
+		if (!remoteEntitiesAndHosts.isEmpty()) {
+			return true;
+		}
+		return isRemoteQueryPossible(request.getPayload(), request.getTenant(), request.getId());
+	}
+
 	private Uni<NGSILDOperationResult> createLocalEntity(CreateEntityRequest request, Context context) {
 		return entityDAO.createEntity(request).onItem().transform(v -> {
 			MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
@@ -665,14 +729,10 @@ public class EntityService {
 		return entityDAO.partialUpdateAttribute(request).onItem().transform(v -> {
 			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.PARTIAL_UPDATE_REQUEST,
 					request.getId());
-			if (v.size() == 0) {
-				localResult.addFailure(
-						new ResponseException(ErrorType.NotFound, "Entity " + request.getId() + " was not found"));
-			} else {
-				request.setPreviousEntity(v.iterator().next().getJsonObject(0).getMap());
-				MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
-				localResult.addSuccess(new CRUDSuccess(null, null, null, request.getPayload(), context));
-			}
+			request.setPreviousEntity(v.getItem1());
+			request.setBestCompleteResult(v.getItem2());
+			MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
+			localResult.addSuccess(new CRUDSuccess(null, null, null, request.getPayload(), context));
 			return localResult;
 		});
 	}
@@ -848,8 +908,10 @@ public class EntityService {
 
 	public Uni<Void> handleRegistryChange(BaseRequest req) {
 		tenant2CId2RegEntries.remove(req.getTenant(), req.getId());
+		tenant2CId2QueryRegEntries.remove(req.getTenant(), req.getId());
 		if (req.getRequestType() != AppConstants.DELETE_REQUEST) {
 			List<RegistrationEntry> newRegs = Lists.newArrayList();
+			List<RegistrationEntry> newQueryRegs = Lists.newArrayList();
 			for (RegistrationEntry regEntry : RegistrationEntry.fromRegPayload(req.getPayload())) {
 				if (regEntry.createEntity() || regEntry.appendAttrs() || regEntry.createBatch()
 						|| regEntry.deleteAttrs() || regEntry.deleteBatch() || regEntry.deleteEntity()
@@ -858,16 +920,22 @@ public class EntityService {
 						|| regEntry.updateEntity() || regEntry.upsertBatch()) {
 					newRegs.add(regEntry);
 				}
+				if (regEntry.queryBatch() || regEntry.queryEntity() || regEntry.retrieveEntity()) {
+					newQueryRegs.add(regEntry);
+				}
 			}
 			tenant2CId2RegEntries.put(req.getTenant(), req.getId(), newRegs);
+			tenant2CId2QueryRegEntries.put(req.getTenant(), req.getId(), newQueryRegs);
 		}
 		return Uni.createFrom().voidItem();
 	}
 
 	private Uni<NGSILDOperationResult> appendLocal(AppendEntityRequest request, boolean noOverwrite, Context context) {
-		return entityDAO.appendToEntity2(request, noOverwrite).onItem().transform(notAppended -> {
+		return entityDAO.appendToEntity2(request, noOverwrite).onItem().transform(resultAndNotAppended -> {
 			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.APPEND_REQUEST, request.getId());
 			Set<Attrib> failedToAdd = Sets.newHashSet();
+			Set<String> notAppended = resultAndNotAppended.getItem2();
+			request.setBestCompleteResult(resultAndNotAppended.getItem1());
 			Map<String, Object> payload = request.getPayload();
 			for (String entry : notAppended) {
 				payload.remove(entry);
@@ -928,94 +996,98 @@ public class EntityService {
 			}
 		}
 
-		BatchRequest request = new BatchRequest(tenant, localEntities, contexts, AppConstants.CREATE_REQUEST);
-		Uni<List<NGSILDOperationResult>> local = entityDAO.batchCreateEntity(request).onItem().transform(dbResult -> {
-			List<NGSILDOperationResult> result = Lists.newArrayList();
-			List<String> successes = (List<String>) dbResult.get("success");
-			List<Map<String, String>> fails = (List<Map<String, String>>) dbResult.get("failure");
-
-			for (String entityId : successes) {
-				NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, entityId);
-				opResult.addSuccess(new CRUDSuccess(null, null, null, Sets.newHashSet()));
-				result.add(opResult);
-			}
-			for (Map<String, String> fail : fails) {
-				fail.entrySet().forEach(entry -> {
-					String entityId = entry.getKey();
-					String sqlstate = entry.getValue();
-					request.removeFromPayloadAndContext(entityId);
-					NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, entityId);
-					if (sqlstate.equals(AppConstants.SQL_ALREADY_EXISTS)) {
-						opResult.addFailure(new ResponseException(ErrorType.AlreadyExists, entityId));
-					} else {
-						opResult.addFailure(new ResponseException(ErrorType.InvalidRequest, sqlstate));
-					}
-					result.add(opResult);
-				});
-
-			}
-
-			if (!request.getRequestPayload().isEmpty()) {
-				logger.debug("Create batch request sending to kafka " + request.getEntityIds());
-				MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, batchEmitter, objectMapper);
-			}
-			return result;
-		});
-		if (localOnly) {
-			return local;
-		}
 		List<Uni<List<NGSILDOperationResult>>> unis = new ArrayList<>();
+		if (!localOnly) {
+			for (Entry<RemoteHost, List<Tuple2<Context, Map<String, Object>>>> entry : remoteHost2Batch.entrySet()) {
+				RemoteHost remoteHost = entry.getKey();
+				List<Tuple2<Context, Map<String, Object>>> tuples = entry.getValue();
+				List<Uni<Map<String, Object>>> compactedUnis = Lists.newArrayList();
+				for (Tuple2<Context, Map<String, Object>> tuple : tuples) {
+					Map<String, Object> expanded = tuple.getItem2();
+					Context context = tuple.getItem1();
+					compactedUnis.add(jsonLdService.compact(expanded, null, context, AppConstants.opts, -1));
+				}
 
-		for (Entry<RemoteHost, List<Tuple2<Context, Map<String, Object>>>> entry : remoteHost2Batch.entrySet()) {
-			RemoteHost remoteHost = entry.getKey();
-			List<Tuple2<Context, Map<String, Object>>> tuples = entry.getValue();
-			List<Uni<Map<String, Object>>> compactedUnis = Lists.newArrayList();
-			for (Tuple2<Context, Map<String, Object>> tuple : tuples) {
-				Map<String, Object> expanded = tuple.getItem2();
-				Context context = tuple.getItem1();
-				compactedUnis.add(jsonLdService.compact(expanded, null, context, AppConstants.opts, -1));
-			}
-
-			if (remoteHost.canDoBatchOp()) {
-				unis.add(Uni.combine().all().unis(compactedUnis).combinedWith(list -> {
-					List<Map<String, Object>> toSend = Lists.newArrayList();
-					for (Object obj : list) {
-						toSend.add((Map<String, Object>) obj);
-					}
-					return toSend;
-				}).onItem().transformToUni(toSend -> {
-					return webClient.postAbs(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_CREATE)
-							.putHeaders(remoteHost.headers()).sendJson(new JsonArray(toSend)).onItemOrFailure()
-							.transform((response, failure) -> {
-								return handleBatchResponse(response, failure, remoteHost, toSend,
-										ArrayUtils.toArray(201));
-							});
-				}));
-			} else {
-				List<Uni<NGSILDOperationResult>> singleUnis = new ArrayList<>();
-				for (Uni<Map<String, Object>> compactedUni : compactedUnis) {
-					singleUnis.add(compactedUni.onItem().transformToUni(entity -> {
-						return webClient.postAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT)
-								.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(entity))
-								.onItemOrFailure().transform((response, failure) -> {
-									return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(201),
-											remoteHost, AppConstants.CREATE_REQUEST,
-											(String) entity.get(NGSIConstants.JSON_LD_ID),
-											HttpUtils.getAttribsFromCompactedPayload(entity));
+				if (remoteHost.canDoBatchOp()) {
+					unis.add(Uni.combine().all().unis(compactedUnis).combinedWith(list -> {
+						List<Map<String, Object>> toSend = Lists.newArrayList();
+						for (Object obj : list) {
+							toSend.add((Map<String, Object>) obj);
+						}
+						return toSend;
+					}).onItem().transformToUni(toSend -> {
+						return webClient.postAbs(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_CREATE)
+								.putHeaders(remoteHost.headers()).sendJson(new JsonArray(toSend)).onItemOrFailure()
+								.transform((response, failure) -> {
+									return handleBatchResponse(response, failure, remoteHost, toSend,
+											ArrayUtils.toArray(201));
 								});
 					}));
+				} else {
+					List<Uni<NGSILDOperationResult>> singleUnis = new ArrayList<>();
+					for (Uni<Map<String, Object>> compactedUni : compactedUnis) {
+						singleUnis.add(compactedUni.onItem().transformToUni(entity -> {
+							return webClient.postAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT)
+									.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(entity))
+									.onItemOrFailure().transform((response, failure) -> {
+										return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(201),
+												remoteHost, AppConstants.CREATE_REQUEST,
+												(String) entity.get(NGSIConstants.JSON_LD_ID),
+												HttpUtils.getAttribsFromCompactedPayload(entity));
+									});
+						}));
+					}
+					unis.add(Uni.combine().all().unis(singleUnis).combinedWith(list -> {
+						List<NGSILDOperationResult> result = Lists.newArrayList();
+						list.forEach(obj -> result.add((NGSILDOperationResult) obj));
+						return result;
+					}));
 				}
-				unis.add(Uni.combine().all().unis(singleUnis).combinedWith(list -> {
-					List<NGSILDOperationResult> result = Lists.newArrayList();
-					list.forEach(obj -> result.add((NGSILDOperationResult) obj));
-					return result;
-				}));
 			}
+
 		}
-		if (unis.isEmpty()) {
-			return local;
+		BatchRequest request = new BatchRequest(tenant, localEntities, contexts, AppConstants.CREATE_REQUEST);
+		if (!localEntities.isEmpty()) {
+			if (!unis.isEmpty() && isDifferentRemoteQueryAvailable(request, remoteHost2Batch)) {
+				request.setDistributed(true);
+			} else {
+				request.setDistributed(false);
+			}
+			unis.add(0, entityDAO.batchCreateEntity(request).onItem().transform(dbResult -> {
+				List<NGSILDOperationResult> result = Lists.newArrayList();
+				List<String> successes = (List<String>) dbResult.get("success");
+				List<Map<String, String>> fails = (List<Map<String, String>>) dbResult.get("failure");
+
+				for (String entityId : successes) {
+					NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, entityId);
+					opResult.addSuccess(new CRUDSuccess(null, null, null, Sets.newHashSet()));
+					result.add(opResult);
+				}
+				for (Map<String, String> fail : fails) {
+					fail.entrySet().forEach(entry -> {
+						String entityId = entry.getKey();
+						String sqlstate = entry.getValue();
+						request.removeFromPayloadAndContext(entityId);
+						NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST,
+								entityId);
+						if (sqlstate.equals(AppConstants.SQL_ALREADY_EXISTS)) {
+							opResult.addFailure(new ResponseException(ErrorType.AlreadyExists, entityId));
+						} else {
+							opResult.addFailure(new ResponseException(ErrorType.InvalidRequest, sqlstate));
+						}
+						result.add(opResult);
+					});
+
+				}
+
+				if (!request.getRequestPayload().isEmpty()) {
+					logger.debug("Create batch request sending to kafka " + request.getEntityIds());
+					MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, batchEmitter, objectMapper);
+				}
+				return result;
+			}));
 		}
-		unis.add(0, local);
+
 		return Uni.combine().all().unis(unis).combinedWith(resultLists -> {
 			List<NGSILDOperationResult> result = Lists.newArrayList();
 			resultLists.forEach(resultList -> {
@@ -1055,95 +1127,113 @@ public class EntityService {
 			}
 		}
 
-		BatchRequest request = new BatchRequest(tenant, localEntities, contexts, AppConstants.APPEND_REQUEST);
-		Uni<List<NGSILDOperationResult>> local = entityDAO.batchAppendEntity(request).onItem().transform(dbResult -> {
-			List<NGSILDOperationResult> result = Lists.newArrayList();
-			List<String> successes = (List<String>) dbResult.get("success");
-			List<Map<String, String>> fails = (List<Map<String, String>>) dbResult.get("failure");
-
-			for (String entityId : successes) {
-				NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.APPEND_REQUEST, entityId);
-				opResult.addSuccess(new CRUDSuccess(null, null, null, Sets.newHashSet()));
-				result.add(opResult);
-			}
-			for (Map<String, String> fail : fails) {
-				fail.entrySet().forEach(entry -> {
-					String entityId = entry.getKey();
-					String sqlstate = entry.getValue();
-					request.removeFromPayloadAndContext(entityId);
-					NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.APPEND_REQUEST, entityId);
-					if (sqlstate.equals(AppConstants.SQL_NOT_FOUND)) {
-						opResult.addFailure(new ResponseException(ErrorType.NotFound, entityId));
-					} else {
-						opResult.addFailure(new ResponseException(ErrorType.InvalidRequest, sqlstate));
-					}
-					result.add(opResult);
-				});
-
-			}
-			if (!request.getRequestPayload().isEmpty()) {
-				logger.debug("Append batch request sending to kafka " + request.getEntityIds());
-				MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, batchEmitter, objectMapper);
-			}
-			return result;
-		});
-		if (localOnly) {
-			return local;
-		}
 		List<Uni<List<NGSILDOperationResult>>> unis = new ArrayList<>();
-
-		for (Entry<RemoteHost, List<Tuple2<Context, Map<String, Object>>>> entry : remoteHost2Batch.entrySet()) {
-			RemoteHost remoteHost = entry.getKey();
-			List<Tuple2<Context, Map<String, Object>>> tuples = entry.getValue();
-			List<Uni<Map<String, Object>>> compactedUnis = Lists.newArrayList();
-			for (Tuple2<Context, Map<String, Object>> tuple : tuples) {
-				Map<String, Object> expanded = tuple.getItem2();
-				Context context = tuple.getItem1();
-				compactedUnis.add(jsonLdService.compact(expanded, null, context, AppConstants.opts, -1));
-			}
-			if (remoteHost.canDoBatchOp()) {
-				unis.add(Uni.combine().all().unis(compactedUnis).combinedWith(list -> {
-					List<Map<String, Object>> toSend = Lists.newArrayList();
-					for (Object obj : list) {
-						toSend.add((Map<String, Object>) obj);
-					}
-					return toSend;
-				}).onItem().transformToUni(toSend -> {
-					return webClient.postAbs(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_UPDATE)
-							.putHeaders(remoteHost.headers()).sendJson(new JsonArray(toSend)).onItemOrFailure()
-							.transform((response, failure) -> {
-								return handleBatchResponse(response, failure, remoteHost, toSend,
-										ArrayUtils.toArray(204));
-							});
-				}));
-			} else {
-				List<Uni<NGSILDOperationResult>> singleUnis = new ArrayList<>();
-				for (Uni<Map<String, Object>> compactedUni : compactedUnis) {
-					singleUnis.add(compactedUni.onItem().transformToUni(entity -> {
-						return webClient
-								.postAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/"
-										+ entity.get(NGSIConstants.JSON_LD_ID) + "/"
-										+ NGSIConstants.QUERY_PARAMETER_ATTRS)
-								.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(entity))
-								.onItemOrFailure().transform((response, failure) -> {
-									return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(201),
-											remoteHost, AppConstants.APPEND_REQUEST,
-											(String) entity.get(NGSIConstants.JSON_LD_ID),
-											HttpUtils.getAttribsFromCompactedPayload(entity));
+		if (!localOnly) {
+			for (Entry<RemoteHost, List<Tuple2<Context, Map<String, Object>>>> entry : remoteHost2Batch.entrySet()) {
+				RemoteHost remoteHost = entry.getKey();
+				List<Tuple2<Context, Map<String, Object>>> tuples = entry.getValue();
+				List<Uni<Map<String, Object>>> compactedUnis = Lists.newArrayList();
+				for (Tuple2<Context, Map<String, Object>> tuple : tuples) {
+					Map<String, Object> expanded = tuple.getItem2();
+					Context context = tuple.getItem1();
+					compactedUnis.add(jsonLdService.compact(expanded, null, context, AppConstants.opts, -1));
+				}
+				if (remoteHost.canDoBatchOp()) {
+					unis.add(Uni.combine().all().unis(compactedUnis).combinedWith(list -> {
+						List<Map<String, Object>> toSend = Lists.newArrayList();
+						for (Object obj : list) {
+							toSend.add((Map<String, Object>) obj);
+						}
+						return toSend;
+					}).onItem().transformToUni(toSend -> {
+						return webClient.postAbs(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_UPDATE)
+								.putHeaders(remoteHost.headers()).sendJson(new JsonArray(toSend)).onItemOrFailure()
+								.transform((response, failure) -> {
+									return handleBatchResponse(response, failure, remoteHost, toSend,
+											ArrayUtils.toArray(204));
 								});
 					}));
+				} else {
+					List<Uni<NGSILDOperationResult>> singleUnis = new ArrayList<>();
+					for (Uni<Map<String, Object>> compactedUni : compactedUnis) {
+						singleUnis.add(compactedUni.onItem().transformToUni(entity -> {
+							return webClient
+									.postAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/"
+											+ entity.get(NGSIConstants.JSON_LD_ID) + "/"
+											+ NGSIConstants.QUERY_PARAMETER_ATTRS)
+									.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(entity))
+									.onItemOrFailure().transform((response, failure) -> {
+										return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(201),
+												remoteHost, AppConstants.APPEND_REQUEST,
+												(String) entity.get(NGSIConstants.JSON_LD_ID),
+												HttpUtils.getAttribsFromCompactedPayload(entity));
+									});
+						}));
+					}
+					unis.add(Uni.combine().all().unis(singleUnis).combinedWith(list -> {
+						List<NGSILDOperationResult> result = Lists.newArrayList();
+						list.forEach(obj -> result.add((NGSILDOperationResult) obj));
+						return result;
+					}));
 				}
-				unis.add(Uni.combine().all().unis(singleUnis).combinedWith(list -> {
-					List<NGSILDOperationResult> result = Lists.newArrayList();
-					list.forEach(obj -> result.add((NGSILDOperationResult) obj));
-					return result;
-				}));
 			}
 		}
-		if (unis.isEmpty()) {
-			return local;
+		if (!localEntities.isEmpty()) {
+			BatchRequest request = new BatchRequest(tenant, localEntities, contexts, AppConstants.APPEND_REQUEST);
+			if (!unis.isEmpty() && isDifferentRemoteQueryAvailable(request, remoteHost2Batch)) {
+				request.setDistributed(true);
+			} else {
+				request.setDistributed(false);
+			}
+			Uni<List<NGSILDOperationResult>> local = entityDAO.batchAppendEntity(request).onItem()
+					.transform(dbResult -> {
+						List<NGSILDOperationResult> result = Lists.newArrayList();
+						List<Map<String, Object>> successes = (List<Map<String, Object>>) dbResult.get("success");
+						List<Map<String, String>> fails = (List<Map<String, String>>) dbResult.get("failure");
+						List<Map<String, Object>> newEntities = Lists.newArrayList();
+						List<Map<String, Object>> oldEntities = Lists.newArrayList();
+						for (Map<String, Object> success : successes) {
+							String entityId = (String) success.get("id");
+							NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.APPEND_REQUEST,
+									entityId);
+							opResult.addSuccess(new CRUDSuccess(null, null, null, Sets.newHashSet()));
+							result.add(opResult);
+							Map<String, Object> old = (Map<String, Object>) success.get("old");
+							Map<String, Object> newEntity = (Map<String, Object>) success.get("new");
+							newEntities.add(newEntity);
+							oldEntities.add(old);
+						}
+						for (Map<String, String> fail : fails) {
+							fail.entrySet().forEach(entry -> {
+								String entityId = entry.getKey();
+								String sqlstate = entry.getValue();
+								request.removeFromPayloadAndContext(entityId);
+								NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.APPEND_REQUEST,
+										entityId);
+								if (sqlstate.equals(AppConstants.SQL_NOT_FOUND)) {
+									opResult.addFailure(new ResponseException(ErrorType.NotFound, entityId));
+								} else {
+									opResult.addFailure(new ResponseException(ErrorType.InvalidRequest, sqlstate));
+								}
+								result.add(opResult);
+							});
+
+						}
+						request.setBestCompleteResult(newEntities);
+						request.setPreviousEntity(oldEntities);
+						if (!request.getRequestPayload().isEmpty()) {
+							logger.debug("Append batch request sending to kafka " + request.getEntityIds());
+							MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, batchEmitter,
+									objectMapper);
+						}
+						return result;
+					});
+
+			unis.add(0, local);
 		}
-		unis.add(0, local);
+		if (unis.isEmpty()) {
+			return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
+		}
 		return Uni.combine().all().unis(unis).combinedWith(resultLists -> {
 			List<NGSILDOperationResult> result = Lists.newArrayList();
 			resultLists.forEach(resultList -> {
@@ -1153,8 +1243,21 @@ public class EntityService {
 		});
 	}
 
+	private boolean isDifferentRemoteQueryAvailable(BatchRequest request,
+			Map<RemoteHost, List<Tuple2<Context, Map<String, Object>>>> remoteHost2Batch) {
+		if (!remoteHost2Batch.isEmpty()) {
+			return true;
+		}
+		for (Map<String, Object> entry : (List<Map<String, Object>>) request.getBestCompleteResult()) {
+			if (isRemoteQueryPossible(entry, request.getTenant(), (String) entry.get(NGSIConstants.JSON_LD_ID))) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public Uni<List<NGSILDOperationResult>> upsertBatch(String tenant, List<Map<String, Object>> expandedEntities,
-			List<Context> contexts, boolean localOnly) {
+			List<Context> contexts, boolean localOnly, boolean doReplace) {
 		Iterator<Map<String, Object>> itEntities = expandedEntities.iterator();
 		Iterator<Context> itContext = contexts.iterator();
 		Map<RemoteHost, List<Tuple2<Context, Map<String, Object>>>> remoteHost2Batch = Maps.newHashMap();
@@ -1183,19 +1286,27 @@ public class EntityService {
 		}
 
 		BatchRequest request = new BatchRequest(tenant, localEntities, contexts, AppConstants.UPSERT_REQUEST);
-		Uni<List<NGSILDOperationResult>> local = entityDAO.batchUpsertEntity(request).onItem().transform(dbResult -> {
+		Uni<List<NGSILDOperationResult>> local = entityDAO.batchUpsertEntity(request, doReplace).onItem().transform(dbResult -> {
 			List<NGSILDOperationResult> result = Lists.newArrayList();
-			List<Map<String, Boolean>> successes = (List<Map<String, Boolean>>) dbResult.get("success");
+			List<Map<String, Object>> successes = (List<Map<String, Object>>) dbResult.get("success");
 			List<Map<String, String>> fails = (List<Map<String, String>>) dbResult.get("failure");
 
-			for (Map<String, Boolean> entityResult : successes) {
-				Entry<String, Boolean> keyValue = entityResult.entrySet().iterator().next();
-				String entityId = keyValue.getKey();
+			List<Map<String, Object>> olds = Lists.newArrayList();
+			List<Map<String, Object>> news = Lists.newArrayList();
+			for (Map<String, Object> entityResult : successes) {
+				String entityId = (String) entityResult.get("id");
+				boolean updated = (boolean) entityResult.get("updated");
+				Map<String, Object> old = (Map<String, Object>) entityResult.get("old");
+				Map<String, Object> newEntity = (Map<String, Object>) entityResult.get("new");
+				olds.add(old);
+				news.add(newEntity);
 				NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.UPSERT_REQUEST, entityId);
-				opResult.setWasUpdated(keyValue.getValue());
+				opResult.setWasUpdated(updated);
 				opResult.addSuccess(new CRUDSuccess(null, null, null, Sets.newHashSet()));
 				result.add(opResult);
 			}
+			request.setBestCompleteResult(news);
+			request.setPreviousEntity(olds);
 			for (Map<String, String> fail : fails) {
 				fail.entrySet().forEach(entry -> {
 					String entityId = entry.getKey();
@@ -1306,45 +1417,7 @@ public class EntityService {
 				}
 			}
 		}
-		Uni<List<NGSILDOperationResult>> local = entityDAO.batchDeleteEntity(tenant, entityIds).onItem()
-				.transform(dbResult -> {
-					List<NGSILDOperationResult> result = Lists.newArrayList();
-					List<String> successes = (List<String>) dbResult.get("success");
-					List<Map<String, String>> fails = (List<Map<String, String>>) dbResult.get("failure");
-
-					for (String entityId : successes) {
-						NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.DELETE_REQUEST,
-								entityId);
-						opResult.addSuccess(new CRUDSuccess(null, null, null, Sets.newHashSet()));
-						result.add(opResult);
-					}
-					for (Map<String, String> fail : fails) {
-						fail.entrySet().forEach(entry -> {
-							String entityId = entry.getKey();
-							String sqlstate = entry.getValue();
-							NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.DELETE_REQUEST,
-									entityId);
-							opResult.addFailure(new ResponseException(ErrorType.InvalidRequest, sqlstate));
-							result.add(opResult);
-						});
-
-					}
-					BatchRequest request = new BatchRequest(tenant, null, null, AppConstants.DELETE_REQUEST);
-					request.setEntityIds(successes);
-					if (!request.getEntityIds().isEmpty()) {
-						logger.debug("Delete batch request sending to kafka " + request.getEntityIds());
-						MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, batchEmitter,
-								objectMapper);
-					}
-					return result;
-				});
-
-		if (host2Ids.isEmpty()) {
-			return local;
-		}
-
 		List<Uni<List<NGSILDOperationResult>>> unis = new ArrayList<>(host2Ids.keySet().size());
-		unis.add(local);
 		for (Entry<RemoteHost, List<String>> entry : host2Ids.entrySet()) {
 			RemoteHost remoteHost = entry.getKey();
 			List<String> toSend = entry.getValue();
@@ -1374,6 +1447,46 @@ public class EntityService {
 				}));
 			}
 		}
+
+		Uni<List<NGSILDOperationResult>> local = entityDAO.batchDeleteEntity(tenant, entityIds).onItem()
+				.transform(dbResult -> {
+					List<NGSILDOperationResult> result = Lists.newArrayList();
+					List<Map<String, Object>> successes = (List<Map<String, Object>>) dbResult.get("success");
+					List<Map<String, String>> fails = (List<Map<String, String>>) dbResult.get("failure");
+					List<String> successEntityIds = Lists.newArrayList();
+					List<Map<String, Object>> deleted = Lists.newArrayList();
+					for (Map<String, Object> entry : successes) {
+						String entityId = (String) entry.get("id");
+						successEntityIds.add(entityId);
+						deleted.add((Map<String, Object>) entry.get("old"));
+						NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.DELETE_REQUEST,
+								entityId);
+						opResult.addSuccess(new CRUDSuccess(null, null, null, Sets.newHashSet()));
+						result.add(opResult);
+					}
+					for (Map<String, String> fail : fails) {
+						fail.entrySet().forEach(entry -> {
+							String entityId = entry.getKey();
+							String sqlstate = entry.getValue();
+							NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.DELETE_REQUEST,
+									entityId);
+							opResult.addFailure(new ResponseException(ErrorType.InvalidRequest, sqlstate));
+							result.add(opResult);
+						});
+
+					}
+					BatchRequest request = new BatchRequest(tenant, null, null, AppConstants.DELETE_REQUEST);
+					request.setEntityIds(successEntityIds);
+					request.setPreviousEntity(deleted);
+					if (!request.getEntityIds().isEmpty()) {
+						logger.debug("Delete batch request sending to kafka " + request.getEntityIds());
+						MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, batchEmitter,
+								objectMapper);
+					}
+					return result;
+				});
+
+		unis.add(0, local);
 		return Uni.combine().all().unis(unis).combinedWith(resultLists -> {
 			List<NGSILDOperationResult> result = Lists.newArrayList();
 			resultLists.forEach(resultList -> {
@@ -1391,10 +1504,10 @@ public class EntityService {
 				request);
 		Map<String, Object> localEntity = localAndRemote.getItem1();
 		Collection<Tuple2<RemoteHost, Map<String, Object>>> remoteEntitiesAndHosts = localAndRemote.getItem2();
-		if (remoteEntitiesAndHosts.isEmpty()) {
-			request.setPayload(localEntity);
-			return localMergePatch(request, context);
-		}
+//		if (remoteEntitiesAndHosts.isEmpty()) {
+//			request.setPayload(localEntity);
+//			return localMergePatch(request, context);
+//		}
 		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(remoteEntitiesAndHosts.size());
 		for (Tuple2<RemoteHost, Map<String, Object>> remoteEntityAndHost : remoteEntitiesAndHosts) {
 			Map<String, Object> expanded = remoteEntityAndHost.getItem2();
@@ -1425,6 +1538,12 @@ public class EntityService {
 
 		}
 		if (localEntity != null && !localEntity.isEmpty()) {
+			if (!unis.isEmpty() && isDifferentRemoteQueryAvailable(request, remoteEntitiesAndHosts)) {
+				request.setDistributed(true);
+			} else {
+				request.setDistributed(false);
+			}
+			request.setBestCompleteResult(request.getPayload());
 			request.setPayload(localEntity);
 			unis.add(localMergePatch(request, context).onFailure().recoverWithItem(e -> {
 				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST,
@@ -1446,7 +1565,8 @@ public class EntityService {
 
 	private Uni<NGSILDOperationResult> localMergePatch(MergePatchRequest request, Context context) {
 		return entityDAO.mergePatch(request).onItem().transform(v -> {
-			request.setPreviousEntity(v);
+			request.setPreviousEntity(v.getItem1());
+			request.setBestCompleteResult(v.getItem2());
 			MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
 			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.MERGE_PATCH_REQUEST,
 					request.getId());
@@ -1463,10 +1583,10 @@ public class EntityService {
 				request);
 		Map<String, Object> localEntity = localAndRemote.getItem1();
 		Collection<Tuple2<RemoteHost, Map<String, Object>>> remoteEntitiesAndHosts = localAndRemote.getItem2();
-		if (remoteEntitiesAndHosts.isEmpty()) {
-			request.setPayload(localEntity);
-			return replaceLocalEntity(request, context);
-		}
+//		if (remoteEntitiesAndHosts.isEmpty()) {
+//			request.setPayload(localEntity);
+//			return replaceLocalEntity(request, context);
+//		}
 		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(remoteEntitiesAndHosts.size());
 		for (Tuple2<RemoteHost, Map<String, Object>> remoteEntityAndHost : remoteEntitiesAndHosts) {
 			Map<String, Object> expanded = remoteEntityAndHost.getItem2();
@@ -1486,6 +1606,12 @@ public class EntityService {
 
 		}
 		if (localEntity != null && !localEntity.isEmpty()) {
+			if (!unis.isEmpty() && isDifferentRemoteQueryAvailable(request, remoteEntitiesAndHosts)) {
+				request.setDistributed(true);
+			} else {
+				request.setDistributed(false);
+			}
+			request.setBestCompleteResult(request.getPayload());
 			request.setPayload(localEntity);
 			unis.add(replaceLocalEntity(request, context).onFailure().recoverWithItem(e -> {
 				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST,
@@ -1507,7 +1633,8 @@ public class EntityService {
 
 	private Uni<NGSILDOperationResult> replaceLocalEntity(ReplaceEntityRequest request, Context context) {
 		return entityDAO.replaceEntity(request).onItem().transform(v -> {
-			request.setPreviousEntity(v);
+			request.setPreviousEntity(v.getItem1());
+			request.setBestCompleteResult(v.getItem2());
 			MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
 			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.REPLACE_ENTITY_REQUEST,
 					request.getId());
@@ -1534,10 +1661,10 @@ public class EntityService {
 		Collection<Tuple2<RemoteHost, Map<String, Object>>> remoteEntitiesAndHosts = localAndRemote.getItem2();
 		localEntity.remove(NGSIConstants.JSON_LD_TYPE);
 		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(remoteEntitiesAndHosts.size());
-		if (remoteEntitiesAndHosts.isEmpty()) {
-			request.setPayload(localEntity);
-			return replaceLocalAttrib(request, context);
-		}
+//		if (remoteEntitiesAndHosts.isEmpty()) {
+//			request.setPayload(localEntity);
+//			return replaceLocalAttrib(request, context);
+//		}
 		for (Tuple2<RemoteHost, Map<String, Object>> remoteEntityAndHost : remoteEntitiesAndHosts) {
 			Map<String, Object> expanded = remoteEntityAndHost.getItem2();
 			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
@@ -1557,6 +1684,12 @@ public class EntityService {
 			}
 		}
 		if (localEntity != null && !localEntity.isEmpty()) {
+			if (!unis.isEmpty() && isDifferentRemoteQueryAvailable(request, remoteEntitiesAndHosts)) {
+				request.setDistributed(true);
+			} else {
+				request.setDistributed(false);
+			}
+			request.setBestCompleteResult(request.getPayload());
 			request.setPayload(localEntity);
 			unis.add(replaceLocalAttrib(request, context).onFailure().recoverWithItem(e -> {
 				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST,
@@ -1578,7 +1711,8 @@ public class EntityService {
 
 	private Uni<NGSILDOperationResult> replaceLocalAttrib(ReplaceAttribRequest request, Context context) {
 		return entityDAO.replaceAttrib(request).onItem().transform(v -> {
-			request.setPreviousEntity(v);
+			request.setPreviousEntity(v.getItem1());
+			request.setBestCompleteResult(v.getItem2());
 			MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
 			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.REPLACE_ENTITY_REQUEST,
 					request.getId());
@@ -1586,4 +1720,35 @@ public class EntityService {
 			return localResult;
 		});
 	}
+
+	private boolean isRemoteQueryPossible(Map<String, Object> payload, String tenant, String id) {
+
+		Iterator<List<RegistrationEntry>> it = tenant2CId2QueryRegEntries.row(tenant).values().iterator();
+		// ids, types, attrs, geo, scope
+
+		List<String> types = null;
+		if (payload.containsKey(NGSIConstants.JSON_LD_TYPE)) {
+			types = (List<String>) payload.get(NGSIConstants.JSON_LD_TYPE);
+		}
+
+		while (it.hasNext()) {
+			Iterator<RegistrationEntry> tenantRegs = it.next().iterator();
+			while (tenantRegs.hasNext()) {
+
+				RegistrationEntry regEntry = tenantRegs.next();
+				if (regEntry.expiresAt() > 0 && regEntry.expiresAt() <= System.currentTimeMillis()) {
+					it.remove();
+					continue;
+				}
+				if ((((regEntry.eId() != null && regEntry.eId().equals(id))
+						|| (regEntry.eIdp() != null && regEntry.eIdp().matches(id))
+						|| (regEntry.eIdp() == null && regEntry.eId() == null)))
+						&& (types == null || types.contains(regEntry.type()))) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
 }
