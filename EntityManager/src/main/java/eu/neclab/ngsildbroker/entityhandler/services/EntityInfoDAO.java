@@ -85,7 +85,6 @@ public class EntityInfoDAO {
 
 	public Uni<Map<String, Object>> batchDeleteEntity(String tenant, List<String> entityIds) {
 		return clientManager.getClient(tenant, true).onItem().transformToUni(client -> {
-			System.out.println(Tuple.of(new JsonArray(entityIds)).deepToString());
 			return client.preparedQuery("SELECT * FROM NGSILD_DELETEBATCH($1)")
 					.execute(Tuple.of(new JsonArray(entityIds))).onItem().transform(rows -> {
 						return rows.iterator().next().getJsonObject(0).getMap();
@@ -509,7 +508,7 @@ public class EntityInfoDAO {
 					});
 		});
 	}
-	
+
 	public Uni<Table<String, String, List<RegistrationEntry>>> getAllQueryRegistries() {
 		return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
 			return client.preparedQuery("SELECT tenant_id FROM tenant").execute().onItem()

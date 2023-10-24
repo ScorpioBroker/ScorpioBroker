@@ -157,6 +157,9 @@ public abstract class EntityTools {
 				case NGSIConstants.NGSI_LD_LANGPROPERTY:
 					prop = generateFakeProperty(key, tmp);
 					break;
+				case NGSIConstants.NGSI_LD_VocabularyProperty:
+					prop = generateFakeProperty(key, tmp);
+					break;
 				case NGSIConstants.NGSI_LD_PROPERTY:
 				default:
 					prop = SerializationTools.parseProperty((List<Map<String, Object>>) value, key);
