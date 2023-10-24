@@ -27,7 +27,7 @@ BEGIN
 		EXCEPTION WHEN unique_violation THEN
 			SELECT ENTITY FROM ENTITY WHERE ID=newentity->>'@id' INTO prev_entity;
 			IF DO_REPLACE THEN
-				UPDATE ENTITY SET E_TYPES = ARRAY(SELECT DISTINCT UNNEST(ARRAY(SELECT jsonb_array_elements_text(newentity->'@type')))), ENTITY = newentity WHERE ID=newentity->>'@id' RETURNING ENTITY.entity INTO updated_entity
+				UPDATE ENTITY SET E_TYPES = ARRAY(SELECT DISTINCT UNNEST(ARRAY(SELECT jsonb_array_elements_text(newentity->'@type')))), ENTITY = newentity WHERE ID=newentity->>'@id' RETURNING ENTITY.entity INTO updated_entity;
 			ELSE 
 				UPDATE ENTITY SET E_TYPES = ARRAY(SELECT DISTINCT UNNEST(e_types || ARRAY(SELECT jsonb_array_elements_text(newentity->'@type')))), ENTITY = ENTITY.entity || newentity WHERE ID=newentity->>'@id' RETURNING ENTITY.entity INTO updated_entity;
 			END IF;
