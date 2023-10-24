@@ -1,5 +1,7 @@
 package eu.neclab.ngsildbroker.historyentitymanager.messaging;
 
+import java.util.Map;
+
 import org.eclipse.microprofile.reactive.messaging.Acknowledgment;
 import org.eclipse.microprofile.reactive.messaging.Acknowledgment.Strategy;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
@@ -10,6 +12,7 @@ import io.quarkus.arc.profile.IfBuildProfile;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.smallrye.mutiny.Uni;
+import jakarta.annotation.PreDestroy;
 import jakarta.inject.Singleton;
 
 @Singleton
@@ -60,6 +63,11 @@ public class HistoryMessagingString extends HistoryMessagingBase {
 	@Scheduled(every = "${scorpio.sync.announcement-time}", delayed = "${scorpio.startupdelay}")
 	void syncTask() {
 		MicroServiceUtils.serializeAndSplitObjectAndEmit(announcement, Integer.MAX_VALUE, syncEmitter, objectMapper);
+	}
+	
+	@PreDestroy
+	void shutdown() {
+		MicroServiceUtils.serializeAndSplitObjectAndEmit(Map.of("instanceId", myInstanceId, "upOrDown", false), Integer.MAX_VALUE, syncEmitter, objectMapper);
 	}
 
 }

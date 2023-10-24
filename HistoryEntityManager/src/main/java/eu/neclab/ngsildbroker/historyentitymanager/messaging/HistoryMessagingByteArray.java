@@ -12,6 +12,7 @@ import io.quarkus.arc.profile.IfBuildProfile;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.smallrye.mutiny.Uni;
+import jakarta.annotation.PreDestroy;
 import jakarta.inject.Singleton;
 
 @Singleton
@@ -67,7 +68,10 @@ public class HistoryMessagingByteArray extends HistoryMessagingBase {
 		MicroServiceUtils.serializeAndSplitObjectAndEmit(announcement, Integer.MAX_VALUE, syncEmitter, objectMapper);
 	}
 
-	
+	@PreDestroy
+	void shutdown() {
+		MicroServiceUtils.serializeAndSplitObjectAndEmit(Map.of("instanceId", myInstanceId, "upOrDown", false), Integer.MAX_VALUE, syncEmitter, objectMapper);
+	}
 
 	
 

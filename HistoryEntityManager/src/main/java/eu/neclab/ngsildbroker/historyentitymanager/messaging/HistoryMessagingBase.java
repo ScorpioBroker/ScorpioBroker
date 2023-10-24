@@ -167,7 +167,7 @@ public abstract class HistoryMessagingBase {
 	}
 
 	public Uni<Void> baseHandleBatch(BatchRequest message) {
-		if (!autoRecording) {
+		if (!autoRecording || (instancesNr > 1 && message.hashCode() % instancesNr != myInstancePos)) {
 			return Uni.createFrom().voidItem();
 		}
 		logger.debug("history manager batch handling got called: with ids: " + message.getEntityIds());
