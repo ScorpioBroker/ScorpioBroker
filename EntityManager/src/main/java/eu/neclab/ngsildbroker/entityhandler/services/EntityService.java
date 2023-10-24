@@ -1257,7 +1257,7 @@ public class EntityService {
 	}
 
 	public Uni<List<NGSILDOperationResult>> upsertBatch(String tenant, List<Map<String, Object>> expandedEntities,
-			List<Context> contexts, boolean localOnly) {
+			List<Context> contexts, boolean localOnly, boolean doReplace) {
 		Iterator<Map<String, Object>> itEntities = expandedEntities.iterator();
 		Iterator<Context> itContext = contexts.iterator();
 		Map<RemoteHost, List<Tuple2<Context, Map<String, Object>>>> remoteHost2Batch = Maps.newHashMap();
@@ -1286,7 +1286,7 @@ public class EntityService {
 		}
 
 		BatchRequest request = new BatchRequest(tenant, localEntities, contexts, AppConstants.UPSERT_REQUEST);
-		Uni<List<NGSILDOperationResult>> local = entityDAO.batchUpsertEntity(request).onItem().transform(dbResult -> {
+		Uni<List<NGSILDOperationResult>> local = entityDAO.batchUpsertEntity(request, doReplace).onItem().transform(dbResult -> {
 			List<NGSILDOperationResult> result = Lists.newArrayList();
 			List<Map<String, Object>> successes = (List<Map<String, Object>>) dbResult.get("success");
 			List<Map<String, String>> fails = (List<Map<String, String>>) dbResult.get("failure");

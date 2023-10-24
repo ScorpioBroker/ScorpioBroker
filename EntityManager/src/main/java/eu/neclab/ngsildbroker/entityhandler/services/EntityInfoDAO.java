@@ -65,10 +65,11 @@ public class EntityInfoDAO {
 		});
 	}
 
-	public Uni<Map<String, Object>> batchUpsertEntity(BatchRequest request) {
+	public Uni<Map<String, Object>> batchUpsertEntity(BatchRequest request, boolean doReplace) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
 			return client.preparedQuery("SELECT * FROM NGSILD_UPSERTBATCH($1)")
-					.execute(Tuple.of(new JsonArray(request.getRequestPayload()))).onItem().transform(rows -> {
+					.execute(Tuple.of(new JsonArray(request.getRequestPayload()), doReplace)).onItem()
+					.transform(rows -> {
 						return rows.iterator().next().getJsonObject(0).getMap();
 					});
 		});
