@@ -352,7 +352,15 @@ public class JsonLdApi {
 						}
 					} else if (isRelationship) {
 						if (expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_OBJECT)) {
-							return compact(activeCtx, activeProperty, expandedValue, compactArrays, endPoint, null,
+							List<String> ids = new ArrayList<>();
+							if(expandedValue instanceof List<?> lsIdsMap){
+								lsIdsMap.forEach(idMap->{
+									if(idMap instanceof Map<?,?> map) {
+										ids.add((String) map.get(JsonLdConsts.ID));
+									}
+								});
+							}
+							return compact(activeCtx, activeProperty, ids/*expandedValue*/, compactArrays, endPoint, null,
 									null);
 						} else {
 							continue;
