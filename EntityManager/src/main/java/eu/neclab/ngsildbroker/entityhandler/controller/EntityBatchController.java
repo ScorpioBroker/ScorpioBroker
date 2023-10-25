@@ -121,7 +121,7 @@ public class EntityBatchController {
 		List<Uni<Tuple2<String, Object>>> unis = Lists.newArrayList();
 		for (Map<String, Object> compactedEntity : compactedEntities) {
 			noConcise(compactedEntity);
-			unis.add(HttpUtils.expandBody(request, compactedEntity, AppConstants.CREATE_REQUEST, ldService).onItem()
+			unis.add(HttpUtils.expandBody(request, compactedEntity, AppConstants.UPSERT_REQUEST, ldService).onItem()
 					.transform(i -> Tuple2.of((String) compactedEntity.get("id"), (Object) i)).onFailure()
 					.recoverWithItem(e -> Tuple2.of((String) compactedEntity.get("id"), (Object) e)));
 		}
