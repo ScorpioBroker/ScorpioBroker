@@ -83,7 +83,7 @@ jobs:
           mvn clean package -DskipTests -Dsqs -Psqs -Ddocker -Ddocker-tag=java-sqs-finaltest -Dos=java -Dquarkus.profile=sqs
       - name: docker tag
         run: |
-          docker tag scorpiobroker/all-in-one-runner:java-sqs-finaltest ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:java-sqs-finaltest
+          docker push scorpiobroker/all-in-one-runner:java-sqs-finaltest
  #     - name: docker push
  #       run: |
  #         docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:java-sqs-finaltest
