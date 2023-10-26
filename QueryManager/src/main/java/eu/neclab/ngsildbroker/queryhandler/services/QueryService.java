@@ -226,7 +226,7 @@ public class QueryService {
 					.entrySet()) {
 				String entityId = entry.getKey();
 				Map<String, Map<String, Map<String, Object>>> attribMap = entry.getValue();
-				if (entityId2Types.get(entityId) == null) {
+				if (attribMap.isEmpty()) {
 					logger.info("failed to merge entity id: " + entityId);
 					logger.info("" + entityId2Types.containsKey(entityId));
 					if (attribMap != null) {
@@ -234,6 +234,7 @@ public class QueryService {
 					} else {
 						logger.info("null attribmap");
 					}
+					continue;
 				}
 
 				Map<String, Object> entity = new HashMap<>(attribMap.size() + 5);

@@ -198,7 +198,7 @@ public class SubscriptionSyncServiceString implements SyncService {
 
 	public Uni<Void> sync(SubscriptionRequest request) {
 		logger.info("send sub");
-		logger.info(request.getPayload().toString());
+		logger.info(request.getSubscription().getId());
 		MicroServiceUtils.serializeAndSplitObjectAndEmit(new SyncMessage(SYNC_ID, request), messageSize, syncEmitter,
 				objectMapper);
 		return Uni.createFrom().voidItem();
