@@ -84,6 +84,7 @@ public class SubscriptionSyncServiceString implements SyncService {
 		INSTANCE_ID = new AliveAnnouncement(SYNC_ID);
 		subService.addSyncService(this);
 		this.executor = vertx.getDelegate().nettyEventLoopGroup();
+		syncTask().await().indefinitely();
 	}
 
 	@Scheduled(every = "${scorpio.sync.announcement-time}", delayed = "${scorpio.startupdelay}")
