@@ -174,6 +174,8 @@ public class SubscriptionSyncServiceString implements SyncService {
 	@Incoming(AppConstants.SUB_ALIVE_RETRIEVE_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
 	Uni<Void> listenForAlive(String byteMessage) {
+		logger.info("receving alive");
+		logger.info(byteMessage);
 		collector.collect(byteMessage, collectListenerAlive);
 		return Uni.createFrom().voidItem();
 	}
