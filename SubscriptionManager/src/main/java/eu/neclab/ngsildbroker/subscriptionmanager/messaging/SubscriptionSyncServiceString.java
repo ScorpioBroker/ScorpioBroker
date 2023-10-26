@@ -162,6 +162,11 @@ public class SubscriptionSyncServiceString implements SyncService {
 				return;
 			}
 			currentInstances.add(message.getId());
+			if (!currentInstances.equals(lastInstances)) {
+				recalculateSubscriptions();
+			}
+			lastInstances.clear();
+			lastInstances.addAll(currentInstances);
 		}
 	};
 
@@ -196,11 +201,13 @@ public class SubscriptionSyncServiceString implements SyncService {
 		int stepRange = (int) Math.ceil(((double) sortedSubs.size()) / ((double) sortedInstances.size()));
 		int start = myPos * stepRange;
 		int end = start + stepRange - 1;
+		
 		if(end > sortedSubs.size() - 1) {
 			end = sortedSubs.size() - 1;
 		}
-		List<String> mySubs = sortedSubs.subList(start, end);
 		logger.info("step:" + stepRange + " mypos: " + myPos + " start:" + start + " end:" + end);
+		List<String> mySubs = sortedSubs.subList(start, end);
+		
 		logger.info(
 				"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
 		logger.info(INSTANCE_ID.getId());
