@@ -200,8 +200,8 @@ jobs:
           password: ${{ secrets.DOCKER_TOKEN }}
       - name: docker tag and push
         run: |
-          docker tag scorpiobroker/all-in-one-runner:java-kafka-latest scorpiobroker/all-in-one-runner:java-kafka-test459
-          docker push scorpiobroker/all-in-one-runner:java-kafka-test459
+          docker tag scorpiobroker/all-in-one-runner:java-kafka-latest scorpiobroker/all-in-one-runner:java-kafka-mytest459
+          docker push scorpiobroker/all-in-one-runner:java-kafka-mytest459
       - name: print log
         if: always()
         run: |
@@ -267,8 +267,8 @@ jobs:
           password: ${{ secrets.DOCKER_TOKEN }}
       - name: docker tag and push
         run: |
-          docker tag scorpiobroker/all-in-one-runner:java-latest scorpiobroker/all-in-one-runner:java-test459
-          docker push scorpiobroker/all-in-one-runner:java-test459
+          docker tag scorpiobroker/all-in-one-runner:java-latest scorpiobroker/all-in-one-runner:java-mytest459
+          docker push scorpiobroker/all-in-one-runner:java-mytest459
       - name: print log
         if: always()
         run: |
