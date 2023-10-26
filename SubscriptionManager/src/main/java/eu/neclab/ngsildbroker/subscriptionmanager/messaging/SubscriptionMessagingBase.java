@@ -103,7 +103,7 @@ public abstract class SubscriptionMessagingBase {
 		@Override
 		public void collected(String byteMessage) {
 			logger.info("receiving entities");
-			logger.info(byteMessage);
+//			logger.info(byteMessage);
 			BatchRequest message;
 			try {
 				message = objectMapper.readValue(byteMessage, BatchRequest.class);
