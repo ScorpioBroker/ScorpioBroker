@@ -86,7 +86,7 @@ public class QueryService {
 	@ConfigProperty(name = "scorpio.entitymap.cleanup.ttl", defaultValue = "30 sec")
 	String entityMapTTL;
 
-	@ConfigProperty(name = "scorpio.fed.timeout", defaultValue = "2000")
+	@ConfigProperty(name = "scorpio.fed.timeout", defaultValue = "20000")
 	long timeout;
 
 	@PostConstruct
