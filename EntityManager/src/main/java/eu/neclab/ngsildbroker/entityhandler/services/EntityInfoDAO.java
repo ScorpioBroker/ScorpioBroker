@@ -367,12 +367,24 @@ public class EntityInfoDAO {
 				sql += " RETURNING ENTITY";
 			}
 			tuple.addString(request.getId());
-			return client.preparedQuery(sql).execute(tuple).onItem().transform(rows -> {
+			return client.preparedQuery(sql).execute(tuple).onItem().transformToUni(rows -> {
+				if(rows.size()==0){
+					return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
+				}
 				if (noOverwrite) {
 					// TODO return the not added stuff from noOverwrite
-					return new HashSet<>(0);
+					Set<String> result = new HashSet<>();
+					Map<String,Object> entityMap =	rows.iterator().next().getJsonObject(0).getMap();
+					payload.remove(NGSIConstants.NGSI_LD_CREATED_AT);
+					payload.remove(NGSIConstants.NGSI_LD_MODIFIED_AT);
+					payload.forEach((key,value)->{
+						if(entityMap.containsKey(key) && !entityMap.get(key).equals(value)){
+							result.add(key);
+						}
+					});
+					return Uni.createFrom().item(result);
 				} else {
-					return new HashSet<>(0);
+					return Uni.createFrom().item(new HashSet<>(0));
 				}
 			});
 		});

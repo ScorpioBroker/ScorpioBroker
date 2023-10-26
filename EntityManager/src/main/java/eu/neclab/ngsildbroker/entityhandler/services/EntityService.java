@@ -880,7 +880,7 @@ public class EntityService {
 			Map<String, Object> payload = request.getPayload();
 			for (String entry : notAppended) {
 				payload.remove(entry);
-				failedToAdd.add(new Attrib(entry, null));
+				failedToAdd.add(new Attrib(context.compactIri(entry), null));
 			}
 			localResult.addSuccess(new CRUDSuccess(null, null, null, request.getPayload(), context));
 			if (!failedToAdd.isEmpty())
