@@ -85,6 +85,7 @@ public class SubscriptionSyncServiceString implements SyncService {
 		subService.addSyncService(this);
 		this.executor = vertx.getDelegate().nettyEventLoopGroup();
 		MicroServiceUtils.serializeAndSplitObjectAndEmit(INSTANCE_ID, messageSize, aliveEmitter, objectMapper);
+		logger.info("post construct done");
 	}
 
 	@Scheduled(every = "${scorpio.sync.announcement-time}", delayed = "${scorpio.startupdelay}")
