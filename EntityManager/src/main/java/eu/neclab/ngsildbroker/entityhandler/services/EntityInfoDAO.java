@@ -363,10 +363,8 @@ public class EntityInfoDAO {
 			}
 
 			sql += "WHERE ID = $" + dollar;
-			if (noOverwrite) {
-				sql += " RETURNING ENTITY";
-			}
-			tuple.addString(request.getId());
+			sql += " RETURNING ENTITY";
+		    tuple.addString(request.getId());
 			return client.preparedQuery(sql).execute(tuple).onItem().transformToUni(rows -> {
 				if(rows.size()==0){
 					return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
