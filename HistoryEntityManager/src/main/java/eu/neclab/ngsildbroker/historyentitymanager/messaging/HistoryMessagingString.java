@@ -51,7 +51,7 @@ public class HistoryMessagingString extends HistoryMessagingBase {
 	@Incoming(AppConstants.HIST_SYNC_RETRIEVE_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
 	public Uni<Void> handleAnnouncement(String byteMessage) {
-		return handleAnnouncement(byteMessage);
+		return super.handleAnnouncement(byteMessage);
 	}
 
 	@Scheduled(every = "${scorpio.sync.check-time}", delayed = "${scorpio.startupdelay}")
