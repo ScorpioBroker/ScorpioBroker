@@ -20,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
@@ -186,11 +187,6 @@ public class SubscriptionSyncServiceString implements SyncService {
 		return Uni.createFrom().voidItem();
 	}
 
-	public static void main(String[] args) {
-		double bla = (7f / 3f);
-		bla = Math.ceil(bla);
-		System.out.println(bla + "");
-	}
 
 	private void recalculateSubscriptions() {
 		HashSet<String> temp = Sets.newHashSet(currentInstances);
@@ -202,8 +198,8 @@ public class SubscriptionSyncServiceString implements SyncService {
 		int start = myPos * stepRange;
 		int end = start + stepRange;
 		
-		if(end > sortedSubs.size()) {
-			end = sortedSubs.size();
+		if(end > sortedSubs.size() + 1) {
+			end = sortedSubs.size() + 1;
 		}
 		logger.info("step:" + stepRange + " mypos: " + myPos + " start:" + start + " end:" + end);
 		List<String> mySubs = sortedSubs.subList(start, end);
