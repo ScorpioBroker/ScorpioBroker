@@ -229,8 +229,11 @@ public class QueryService {
 				if (entityId2Types.get(entityId) == null) {
 					logger.info("failed to merge entity id: " + entityId);
 					logger.info("" + entityId2Types.containsKey(entityId));
-					logger.info(attribMap.toString());
-					continue;
+					if (attribMap != null) {
+						logger.info(attribMap.toString());
+					} else {
+						logger.info("null attribmap");
+					}
 				}
 
 				Map<String, Object> entity = new HashMap<>(attribMap.size() + 5);
