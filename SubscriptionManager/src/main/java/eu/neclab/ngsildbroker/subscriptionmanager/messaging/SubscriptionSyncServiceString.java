@@ -84,7 +84,7 @@ public class SubscriptionSyncServiceString implements SyncService {
 		INSTANCE_ID = new AliveAnnouncement(SYNC_ID);
 		subService.addSyncService(this);
 		this.executor = vertx.getDelegate().nettyEventLoopGroup();
-		syncTask().await().indefinitely();
+		MicroServiceUtils.serializeAndSplitObjectAndEmit(INSTANCE_ID, messageSize, aliveEmitter, objectMapper);
 	}
 
 	@Scheduled(every = "${scorpio.sync.announcement-time}", delayed = "${scorpio.startupdelay}")
@@ -193,6 +193,7 @@ public class SubscriptionSyncServiceString implements SyncService {
 			end = (myPos + 1) * stepRange;
 		}
 		List<String> mySubs = sortedSubs.subList(start, end);
+		logger.info("step:" + stepRange + " mypos: " + myPos + " start:" + start + " end:" + end);
 		logger.info(
 				"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
 		logger.info(INSTANCE_ID.getId());
