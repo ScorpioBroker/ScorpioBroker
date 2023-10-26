@@ -132,15 +132,15 @@ public class SubscriptionSyncServiceString implements SyncService {
 			switch (sub.getRequestType()) {
 			case AppConstants.DELETE_REQUEST:
 				subService.syncDeleteSubscription(sub).runSubscriptionOn(executor).subscribe()
-						.with(v -> logger.debug("done handling delete"));
+						.with(v -> logger.info("done handling delete"));
 				break;
 			case AppConstants.UPDATE_REQUEST:
 				subService.syncUpdateSubscription(sub).runSubscriptionOn(executor).subscribe()
-						.with(v -> logger.debug("done handling update"));
+						.with(v -> logger.info("done handling update"));
 				break;
 			case AppConstants.CREATE_REQUEST:
 				subService.syncCreateSubscription(sub).runSubscriptionOn(executor).subscribe()
-						.with(v -> logger.debug("done handling create"));
+						.with(v -> logger.info("done handling create"));
 				break;
 			default:
 				return;
