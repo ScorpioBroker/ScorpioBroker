@@ -85,12 +85,14 @@ public class SubscriptionSyncServiceString implements SyncService {
 
 	@Scheduled(every = "${scorpio.sync.announcement-time}", delayed = "${scorpio.startupdelay}")
 	Uni<Void> syncTask() {
+		logger.info("sendingsync");
 		MicroServiceUtils.serializeAndSplitObjectAndEmit(INSTANCE_ID, messageSize, aliveEmitter, objectMapper);
 		return Uni.createFrom().voidItem();
 	}
 
 	@Scheduled(every = "${scorpio.sync.check-time}", delayed = "${scorpio.startupdelay}")
 	Uni<Void> checkTask() {
+		logger.info("checking");
 		if (!currentInstances.equals(lastInstances)) {
 			recalculateSubscriptions();
 		}
@@ -104,6 +106,8 @@ public class SubscriptionSyncServiceString implements SyncService {
 
 		@Override
 		public void collected(String byteMessage) {
+			logger.info("subscription sync receive");
+			logger.info(byteMessage);
 			SyncMessage message;
 			try {
 				message = objectMapper.readValue(byteMessage, SyncMessage.class);
@@ -183,14 +187,18 @@ public class SubscriptionSyncServiceString implements SyncService {
 			end = (myPos + 1) * stepRange;
 		}
 		List<String> mySubs = sortedSubs.subList(start, end);
-		logger.info("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+		logger.info(
+				"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
 		logger.info(INSTANCE_ID.getId());
 		logger.info(mySubs.toString());
-		logger.info("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+		logger.info(
+				"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
 		subService.activateSubs(mySubs);
 	}
 
 	public Uni<Void> sync(SubscriptionRequest request) {
+		logger.info("send sub");
+		logger.info(request.getPayload().toString());
 		MicroServiceUtils.serializeAndSplitObjectAndEmit(new SyncMessage(SYNC_ID, request), messageSize, syncEmitter,
 				objectMapper);
 		return Uni.createFrom().voidItem();
