@@ -181,19 +181,23 @@ public class SubscriptionSyncServiceString implements SyncService {
 		return Uni.createFrom().voidItem();
 	}
 
+	public static void main(String[] args) {
+		double bla = (7f / 3f);
+		bla = Math.ceil(bla);
+		System.out.println(bla + "");
+	}
+
 	private void recalculateSubscriptions() {
 		HashSet<String> temp = Sets.newHashSet(currentInstances);
 		temp.add(INSTANCE_ID.getId());
 		List<String> sortedInstances = temp.stream().sorted().collect(Collectors.toList());
 		int myPos = sortedInstances.indexOf(INSTANCE_ID.getId());
 		List<String> sortedSubs = subService.getAllSubscriptionIds();
-		int stepRange = sortedSubs.size() / sortedInstances.size();
+		int stepRange = (int) Math.ceil(((double) sortedSubs.size()) / ((double) sortedInstances.size()));
 		int start = myPos * stepRange;
-		int end;
-		if (myPos == sortedInstances.size() - 1) {
-			end = sortedSubs.size();
-		} else {
-			end = (myPos + 1) * stepRange;
+		int end = start + stepRange - 1;
+		if(end > sortedSubs.size() - 1) {
+			end = sortedSubs.size() - 1;
 		}
 		List<String> mySubs = sortedSubs.subList(start, end);
 		logger.info("step:" + stepRange + " mypos: " + myPos + " start:" + start + " end:" + end);
