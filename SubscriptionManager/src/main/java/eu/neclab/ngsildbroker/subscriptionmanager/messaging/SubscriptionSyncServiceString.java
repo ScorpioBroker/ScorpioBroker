@@ -183,8 +183,10 @@ public class SubscriptionSyncServiceString implements SyncService {
 			end = (myPos + 1) * stepRange;
 		}
 		List<String> mySubs = sortedSubs.subList(start, end);
-		System.out.println(INSTANCE_ID.getId());
-		System.out.println(mySubs);
+		logger.info("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+		logger.info(INSTANCE_ID.getId());
+		logger.info(mySubs.toString());
+		logger.info("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
 		subService.activateSubs(mySubs);
 	}
 
