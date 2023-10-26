@@ -97,6 +97,8 @@ public class SubscriptionSyncServiceString implements SyncService {
 	@Scheduled(every = "${scorpio.sync.check-time}", delayed = "${scorpio.startupdelay}")
 	Uni<Void> checkTask() {
 		logger.info("checking");
+		logger.info(currentInstances.toString());
+		logger.info(lastInstances.toString());
 		if (!currentInstances.equals(lastInstances)) {
 			recalculateSubscriptions();
 		}
