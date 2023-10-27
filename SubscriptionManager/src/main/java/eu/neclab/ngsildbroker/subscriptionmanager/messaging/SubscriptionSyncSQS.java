@@ -68,7 +68,7 @@ public class SubscriptionSyncSQS implements SyncService {
 		pgSubscriber = PgSubscriber.subscriber(vertx, new PgConnectOptions().setHost(host)
 				.setPort(Integer.parseInt(port)).setDatabase(dbName).setUser(username).setPassword(password));
 		subService.addSyncService(this);
-		pgSubscriber.channel("subscription-channel").handler(notice -> {
+		pgSubscriber.channel("subscriptionchannel").handler(notice -> {
 			logger.info("notice received: " + notice);
 			String[] noticeSplitted = notice.split(seperator);
 			int requestType = Integer.parseInt(noticeSplitted[2]);
@@ -86,7 +86,7 @@ public class SubscriptionSyncSQS implements SyncService {
 	public Uni<Void> sync(SubscriptionRequest request) {
 		logger.info("sending notify: ");
 		return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
-			return client.preparedQuery("NOTIFY \"subscription-channel\" $1")
+			return client.preparedQuery("NOTIFY subscriptionchannel, $1")
 					.execute(Tuple.of(request.getId() + seperator + request.getTenant() + seperator
 							+ request.getRequestType() + seperator + SYNC_ID))
 					.onItem().transformToUni(r -> Uni.createFrom().voidItem());
