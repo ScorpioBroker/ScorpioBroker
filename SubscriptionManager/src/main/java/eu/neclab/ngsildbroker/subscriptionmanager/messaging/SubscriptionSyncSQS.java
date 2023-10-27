@@ -1,5 +1,7 @@
 package eu.neclab.ngsildbroker.subscriptionmanager.messaging;
 
+import java.util.UUID;
+
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +24,8 @@ import jakarta.inject.Singleton;
 @IfBuildProfile("sqs")
 @Singleton
 public class SubscriptionSyncSQS implements SyncService {
+
+	private final String SYNC_ID = UUID.randomUUID().toString();
 
 	PgSubscriber pgSubscriber;
 
@@ -61,7 +65,12 @@ public class SubscriptionSyncSQS implements SyncService {
 			logger.info("notice received: " + notice);
 			String[] noticeSplitted = notice.split(seperator);
 			int requestType = Integer.parseInt(noticeSplitted[2]);
-			subService.reloadSubscription(noticeSplitted[1], noticeSplitted[0]);
+			String syncId = noticeSplitted[3];
+			if (syncId.equals(SYNC_ID)) {
+				logger.info("Discarding own announcement");
+			} else {
+				subService.reloadSubscription(noticeSplitted[1], noticeSplitted[0]);
+			}
 		});
 		pgSubscriber.connect().await().indefinitely();
 	}
@@ -71,8 +80,8 @@ public class SubscriptionSyncSQS implements SyncService {
 		logger.info("sending notify: ");
 		return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
 			return client.preparedQuery("NOTIFY \"subscription-channel\" $1")
-					.execute(Tuple.of(
-							request.getId() + seperator + request.getTenant() + seperator + request.getRequestType()))
+					.execute(Tuple.of(request.getId() + seperator + request.getTenant() + seperator
+							+ request.getRequestType() + seperator + SYNC_ID))
 					.onItem().transformToUni(r -> Uni.createFrom().voidItem());
 		});
 
