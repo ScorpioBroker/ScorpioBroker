@@ -7,6 +7,10 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import jakarta.annotation.PostConstruct;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Acknowledgment;
 import org.eclipse.microprofile.reactive.messaging.Acknowledgment.Strategy;
@@ -16,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
@@ -28,17 +33,15 @@ import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
 import io.netty.channel.EventLoopGroup;
 import io.quarkus.arc.profile.IfBuildProfile;
+import io.quarkus.arc.profile.UnlessBuildProfile;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.smallrye.reactive.messaging.annotations.Broadcast;
 import io.vertx.mutiny.core.Vertx;
-import jakarta.annotation.PostConstruct;
-import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
 
 @Singleton
-@IfBuildProfile(anyOf = { "sqs", "kafka" })
+@IfBuildProfile(anyOf = { "kafka" })
 public class SubscriptionSyncServiceString implements SyncService {
 
 	public static final String SYNC_ID = UUID.randomUUID().toString();
@@ -83,6 +86,7 @@ public class SubscriptionSyncServiceString implements SyncService {
 		subService.addSyncService(this);
 		this.executor = vertx.getDelegate().nettyEventLoopGroup();
 		MicroServiceUtils.serializeAndSplitObjectAndEmit(INSTANCE_ID, messageSize, aliveEmitter, objectMapper);
+
 	}
 
 	@Scheduled(every = "${scorpio.sync.announcement-time}", delayed = "${scorpio.startupdelay}")
@@ -154,11 +158,11 @@ public class SubscriptionSyncServiceString implements SyncService {
 				return;
 			}
 			currentInstances.add(message.getId());
-			if (!currentInstances.equals(lastInstances)) {
-				recalculateSubscriptions();
-			}
-			lastInstances.clear();
-			lastInstances.addAll(currentInstances);
+//			if (!currentInstances.equals(lastInstances)) {
+//				recalculateSubscriptions();
+//			}
+//			lastInstances.clear();
+//			lastInstances.addAll(currentInstances);
 		}
 	};
 

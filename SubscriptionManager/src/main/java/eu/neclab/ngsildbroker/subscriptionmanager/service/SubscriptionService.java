@@ -139,7 +139,7 @@ public class SubscriptionService {
 				resultMap.put(key, newMap.get(key));
 				continue;
 			}
-			
+
 			Object newValue = entry.getValue();
 			Object oldValue = oldMap.get(key);
 
@@ -1152,6 +1152,30 @@ public class SubscriptionService {
 	public void addSyncService(SyncService subscriptionSyncService) {
 		this.subscriptionSyncService = subscriptionSyncService;
 
+	}
+
+	public void reloadSubscription(String tenant, String id) {
+		subDAO.loadSubscription(tenant, id).onItem().transformToUni(t -> {
+			return ldService.parsePure(t.getItem2().get(NGSIConstants.JSON_LD_CONTEXT)).onItem().transformToUni(ctx -> {
+				SubscriptionRequest request;
+				try {
+					request = new SubscriptionRequest(tenant, t.getItem1(), ctx);
+				} catch (ResponseException e) {
+					logger.error("Failed to reload subscription " + id);
+					return Uni.createFrom().voidItem();
+				}
+				request.setSendTimestamp(-1);
+				if (isIntervalSub(request)) {
+					this.tenant2subscriptionId2IntervalSubscription.put(request.getTenant(), request.getId(), request);
+				} else {
+					this.tenant2subscriptionId2Subscription.put(request.getTenant(), request.getId(), request);
+				}
+				subscriptionId2RequestGlobal.put(request.getId(), request);
+				return Uni.createFrom().voidItem();
+			});
+		}).subscribe().with(i -> {
+			logger.info("Reloaded subscription: " + id);
+		});
 	}
 
 }
