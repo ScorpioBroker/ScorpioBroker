@@ -86,10 +86,10 @@ public class SubscriptionSyncSQS implements SyncService {
 	public Uni<Void> sync(SubscriptionRequest request) {
 		logger.info("sending notify: ");
 		return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
-			return client.query("NOTIFY subscriptionchannel, 'request.getId() + seperator + request.getTenant() + seperator\r\n"
-					+ "							+ request.getRequestType() + seperator + SYNC_ID';")
-					.execute()
-					.onItem().transformToUni(r -> Uni.createFrom().voidItem());
+			return client
+					.query("NOTIFY subscriptionchannel, '" + request.getId() + seperator + request.getTenant()
+							+ seperator + request.getRequestType() + seperator + SYNC_ID + "'")
+					.execute().onItem().transformToUni(r -> Uni.createFrom().voidItem());
 		});
 
 	}
