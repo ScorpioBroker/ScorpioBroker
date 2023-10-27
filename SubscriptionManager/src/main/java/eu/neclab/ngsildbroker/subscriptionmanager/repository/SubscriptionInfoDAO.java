@@ -149,7 +149,7 @@ public class SubscriptionInfoDAO {
 
 	public Uni<Tuple2<Map<String, Object>, Map<String, Object>>> loadSubscription(String tenant, String id) {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
-			return client.preparedQuery("SELECT subscription, context FROM subscriptions WHERE id=$1")
+			return client.preparedQuery("SELECT subscription, context FROM subscriptions WHERE subscription_id=$1")
 					.execute(Tuple.of(id)).onItem().transformToUni(rows -> {
 						if (rows.size() == 0) {
 							Tuple2<Map<String, Object>, Map<String, Object>> r = Tuple2.of(null, null);

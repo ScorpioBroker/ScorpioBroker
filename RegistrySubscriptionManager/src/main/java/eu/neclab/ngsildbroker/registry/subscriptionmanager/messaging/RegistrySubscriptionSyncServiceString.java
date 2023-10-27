@@ -39,7 +39,7 @@ import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.vertx.mutiny.core.Vertx;
 
 @Singleton
-@IfBuildProfile(anyOf = { "sqs", "kafka" })
+@IfBuildProfile(anyOf = { "kafka" })
 public class RegistrySubscriptionSyncServiceString implements SyncService {
 
 	public static final String SYNC_ID = UUID.randomUUID().toString();
