@@ -127,22 +127,28 @@ public class SubscriptionSyncServiceString implements SyncService {
 			String key = message.getSyncId();
 			SubscriptionRequest sub = message.getRequest();
 			if (key.equals(SYNC_ID)) {
+				logger.info("equal key returning");
 				return;
 			}
+			logger.info("req type " + sub.getRequestType());
 			switch (sub.getRequestType()) {
 			case AppConstants.DELETE_REQUEST:
+				logger.info("delete");
 				subService.syncDeleteSubscription(sub).runSubscriptionOn(executor).subscribe()
 						.with(v -> logger.info("done handling delete"));
 				break;
 			case AppConstants.UPDATE_REQUEST:
+				logger.info("update");
 				subService.syncUpdateSubscription(sub).runSubscriptionOn(executor).subscribe()
 						.with(v -> logger.info("done handling update"));
 				break;
 			case AppConstants.CREATE_REQUEST:
+				logger.info("create");
 				subService.syncCreateSubscription(sub).runSubscriptionOn(executor).subscribe()
 						.with(v -> logger.info("done handling create"));
 				break;
 			default:
+				logger.info("default");
 				return;
 			}
 
