@@ -7,10 +7,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import jakarta.annotation.PostConstruct;
-import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
-
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Acknowledgment;
 import org.eclipse.microprofile.reactive.messaging.Acknowledgment.Strategy;
@@ -20,7 +16,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
@@ -33,12 +28,14 @@ import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
 import io.netty.channel.EventLoopGroup;
 import io.quarkus.arc.profile.IfBuildProfile;
-import io.quarkus.arc.profile.UnlessBuildProfile;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.smallrye.reactive.messaging.annotations.Broadcast;
 import io.vertx.mutiny.core.Vertx;
+import jakarta.annotation.PostConstruct;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 @Singleton
 @IfBuildProfile(anyOf = { "sqs", "kafka" })
@@ -86,21 +83,16 @@ public class SubscriptionSyncServiceString implements SyncService {
 		subService.addSyncService(this);
 		this.executor = vertx.getDelegate().nettyEventLoopGroup();
 		MicroServiceUtils.serializeAndSplitObjectAndEmit(INSTANCE_ID, messageSize, aliveEmitter, objectMapper);
-		logger.info("post construct done");
 	}
 
 	@Scheduled(every = "${scorpio.sync.announcement-time}", delayed = "${scorpio.startupdelay}")
 	Uni<Void> syncTask() {
-		logger.info("sendingsync");
 		MicroServiceUtils.serializeAndSplitObjectAndEmit(INSTANCE_ID, messageSize, aliveEmitter, objectMapper);
 		return Uni.createFrom().voidItem();
 	}
 
 	@Scheduled(every = "${scorpio.sync.check-time}", delayed = "${scorpio.startupdelay}")
 	Uni<Void> checkTask() {
-		logger.info("checking");
-		logger.info(currentInstances.toString());
-		logger.info(lastInstances.toString());
 		if (!currentInstances.equals(lastInstances)) {
 			recalculateSubscriptions();
 		}
@@ -114,8 +106,6 @@ public class SubscriptionSyncServiceString implements SyncService {
 
 		@Override
 		public void collected(String byteMessage) {
-			logger.info("subscription sync receive");
-			logger.info(byteMessage);
 			SyncMessage message;
 			try {
 				message = objectMapper.readValue(byteMessage, SyncMessage.class);
@@ -127,28 +117,23 @@ public class SubscriptionSyncServiceString implements SyncService {
 			String key = message.getSyncId();
 			SubscriptionRequest sub = message.getRequest();
 			if (key.equals(SYNC_ID)) {
-				logger.info("equal key returning");
 				return;
 			}
-			logger.info("req type " + sub.getRequestType());
 			switch (sub.getRequestType()) {
 			case AppConstants.DELETE_SUBSCRIPTION_REQUEST:
-				logger.info("delete");
 				subService.syncDeleteSubscription(sub).runSubscriptionOn(executor).subscribe()
-						.with(v -> logger.info("done handling delete"));
+						.with(v -> logger.debug("done handling delete"));
 				break;
 			case AppConstants.UPDATE_SUBSCRIPTION_REQUEST:
-				logger.info("update");
 				subService.syncUpdateSubscription(sub).runSubscriptionOn(executor).subscribe()
-						.with(v -> logger.info("done handling update"));
+						.with(v -> logger.debug("done handling update"));
 				break;
 			case AppConstants.CREATE_SUBSCRIPTION_REQUEST:
-				logger.info("create");
 				subService.syncCreateSubscription(sub).runSubscriptionOn(executor).subscribe()
-						.with(v -> logger.info("done handling create"));
+						.with(v -> logger.debug("done handling create"));
 				break;
 			default:
-				logger.info("default");
+				logger.debug("default");
 				return;
 			}
 
@@ -169,11 +154,11 @@ public class SubscriptionSyncServiceString implements SyncService {
 				return;
 			}
 			currentInstances.add(message.getId());
-//			if (!currentInstances.equals(lastInstances)) {
-//				recalculateSubscriptions();
-//			}
-//			lastInstances.clear();
-//			lastInstances.addAll(currentInstances);
+			if (!currentInstances.equals(lastInstances)) {
+				recalculateSubscriptions();
+			}
+			lastInstances.clear();
+			lastInstances.addAll(currentInstances);
 		}
 	};
 
@@ -187,8 +172,8 @@ public class SubscriptionSyncServiceString implements SyncService {
 	@Incoming(AppConstants.SUB_ALIVE_RETRIEVE_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
 	Uni<Void> listenForAlive(String byteMessage) {
-		logger.info("receving alive");
-		logger.info(byteMessage);
+		logger.debug("receving alive");
+		logger.debug(byteMessage);
 		collector.collect(byteMessage, collectListenerAlive);
 		return Uni.createFrom().voidItem();
 	}
@@ -206,23 +191,16 @@ public class SubscriptionSyncServiceString implements SyncService {
 		if (end > sortedSubs.size()) {
 			end = sortedSubs.size();
 		}
-		logger.info("step:" + stepRange + " mypos: " + myPos + " start:" + start + " end:" + end + " sorrted size:"
+		logger.debug("step:" + stepRange + " mypos: " + myPos + " start:" + start + " end:" + end + " sorrted size:"
 				+ sortedSubs.size());
 		List<String> mySubs = sortedSubs.subList(start, end);
-
-		logger.info(
-				"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
-		logger.info(INSTANCE_ID.getId());
-		logger.info(mySubs.toString());
-		logger.info(
-				"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
 		subService.activateSubs(mySubs);
 	}
 
 	public Uni<Void> sync(SubscriptionRequest request) {
-		logger.info("send sub");
-		logger.info(request.getRequestType() + "");
-		logger.info(request.getId());
+		logger.debug("send sub");
+		logger.debug(request.getRequestType() + "");
+		logger.debug(request.getId());
 		MicroServiceUtils.serializeAndSplitObjectAndEmit(new SyncMessage(SYNC_ID, request), messageSize, syncEmitter,
 				objectMapper);
 		return Uni.createFrom().voidItem();
