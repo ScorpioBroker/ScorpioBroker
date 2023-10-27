@@ -1,16 +1,20 @@
 package eu.neclab.ngsildbroker.subscriptionmanager.messaging;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
+import eu.neclab.ngsildbroker.commons.storage.ClientManager;
 import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
 import io.quarkus.arc.profile.IfBuildProfile;
 import io.smallrye.mutiny.Uni;
+import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.pgclient.PgPool;
 import io.vertx.mutiny.pgclient.pubsub.PgSubscriber;
 import io.vertx.mutiny.sqlclient.Tuple;
+import io.vertx.pgclient.PgConnectOptions;
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
@@ -19,14 +23,23 @@ import jakarta.inject.Singleton;
 @Singleton
 public class SubscriptionSyncSQS implements SyncService {
 
-	@Inject
 	PgSubscriber pgSubscriber;
 
 	@Inject
-	PgPool pgPool;
+	ClientManager clientManager;
+
+	@Inject
+	Vertx vertx;
 
 	@Inject
 	SubscriptionService subService;
+
+	@ConfigProperty(name = "quarkus.datasource.reactive.url")
+	String reactiveDefaultUrl;
+	@ConfigProperty(name = "quarkus.datasource.username")
+	String username;
+	@ConfigProperty(name = "quarkus.datasource.password")
+	String password;
 
 	Logger logger = LoggerFactory.getLogger(SubscriptionSyncSQS.class);
 
@@ -34,12 +47,21 @@ public class SubscriptionSyncSQS implements SyncService {
 
 	@PostConstruct
 	void setup() {
+		String tmp = reactiveDefaultUrl.substring("postgresql://".length());
+		String[] splitted = tmp.split(":");
+		String host = splitted[0];
+		String[] tmp1 = splitted[1].split("/");
+		String port = tmp1[0];
+		String dbName = tmp1[1].split("?")[0];
+
+		pgSubscriber = PgSubscriber.subscriber(vertx, new PgConnectOptions().setHost(host)
+				.setPort(Integer.parseInt(port)).setDatabase(dbName).setUser(username).setPassword(password));
 		subService.addSyncService(this);
 		pgSubscriber.channel("subscription-channel").handler(notice -> {
 			logger.info("notice received: " + notice);
-			String[] splitted = notice.split(seperator);
-			int requestType = Integer.parseInt(splitted[2]);
-			subService.reloadSubscription(splitted[1], splitted[0]);
+			String[] noticeSplitted = notice.split(seperator);
+			int requestType = Integer.parseInt(noticeSplitted[2]);
+			subService.reloadSubscription(noticeSplitted[1], noticeSplitted[0]);
 		});
 		pgSubscriber.connect().await().indefinitely();
 	}
@@ -47,10 +69,12 @@ public class SubscriptionSyncSQS implements SyncService {
 	@Override
 	public Uni<Void> sync(SubscriptionRequest request) {
 		logger.info("sending notify: ");
-		return pgPool.preparedQuery("NOTIFY \"subscription-channel\" $1")
-				.execute(Tuple
-						.of(request.getId() + seperator + request.getTenant() + seperator + request.getRequestType()))
-				.onItem().transformToUni(r -> Uni.createFrom().voidItem());
+		return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
+			return client.preparedQuery("NOTIFY \"subscription-channel\" $1")
+					.execute(Tuple.of(
+							request.getId() + seperator + request.getTenant() + seperator + request.getRequestType()))
+					.onItem().transformToUni(r -> Uni.createFrom().voidItem());
+		});
 
 	}
 
