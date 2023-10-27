@@ -63,7 +63,7 @@ public class SubscriptionSyncSQS implements SyncService {
 		String host = splitted[0];
 		String[] tmp1 = splitted[1].split("/");
 		String port = tmp1[0];
-		String dbName = tmp1[1].split("?")[0];
+		String dbName = tmp1[1].split("\\?")[0];
 
 		pgSubscriber = PgSubscriber.subscriber(vertx, new PgConnectOptions().setHost(host)
 				.setPort(Integer.parseInt(port)).setDatabase(dbName).setUser(username).setPassword(password));
