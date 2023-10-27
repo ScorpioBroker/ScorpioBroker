@@ -287,8 +287,10 @@ public class SubscriptionService {
 				subscriptionId2RequestGlobal.put(request.getId(), request);
 				Uni<Void> syncService;
 				if (subscriptionSyncService != null) {
+					logger.info("sync service");
 					syncService = subscriptionSyncService.sync(request);
 				} else {
+					logger.info("No sync service");
 					syncService = Uni.createFrom().voidItem();
 				}
 				return syncService.onItem().transform(v2 -> {
