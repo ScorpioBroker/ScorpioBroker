@@ -37,6 +37,8 @@ public abstract class SubscriptionMessagingBase {
 	long lastMessage = System.currentTimeMillis();
 	long lastSent = System.currentTimeMillis();
 
+	int count = 0;
+
 	ArrayList<BaseRequest> requestStore = new ArrayList<>();
 
 	public Uni<Void> baseHandleEntity(BaseRequest message) {
@@ -102,7 +104,8 @@ public abstract class SubscriptionMessagingBase {
 
 		@Override
 		public void collected(String byteMessage) {
-			logger.info("receiving entities");
+			count++;
+			logger.info("receiving entities: " + count);
 //			logger.info(byteMessage);
 			BatchRequest message;
 			try {
