@@ -60,6 +60,7 @@ The Scorpio Broker implements the NGSI-LD API through which context producers an
 	replaceOperation.rst
 	followRelationship.rst
 	vocabularyProperty.rst
+	explicitContext.rst
 	
 
 .. toctree::
