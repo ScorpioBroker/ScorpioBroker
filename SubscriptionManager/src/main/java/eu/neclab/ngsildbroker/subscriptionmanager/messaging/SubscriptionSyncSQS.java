@@ -11,6 +11,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.Subscripti
 import eu.neclab.ngsildbroker.commons.storage.ClientManager;
 import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
 import io.quarkus.arc.profile.IfBuildProfile;
+import io.quarkus.runtime.StartupEvent;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.pgclient.PgPool;
@@ -18,6 +19,7 @@ import io.vertx.mutiny.pgclient.pubsub.PgSubscriber;
 import io.vertx.mutiny.sqlclient.Tuple;
 import io.vertx.pgclient.PgConnectOptions;
 import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
@@ -48,6 +50,11 @@ public class SubscriptionSyncSQS implements SyncService {
 	Logger logger = LoggerFactory.getLogger(SubscriptionSyncSQS.class);
 
 	private String seperator = "<&>";
+
+	// This is needed so that @postconstruct runs on the startup thread and not on a
+	// worker thread later on
+	void startup(@Observes StartupEvent event) {
+	}
 
 	@PostConstruct
 	void setup() {
