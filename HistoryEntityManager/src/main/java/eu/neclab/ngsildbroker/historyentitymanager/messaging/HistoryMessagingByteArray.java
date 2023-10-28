@@ -51,28 +51,4 @@ public class HistoryMessagingByteArray extends HistoryMessagingBase {
 		return super.checkBuffer();
 	}
 
-	@Incoming(AppConstants.HIST_SYNC_RETRIEVE_CHANNEL)
-	@Acknowledgment(Strategy.PRE_PROCESSING)
-	public Uni<Void> handleAnnouncement(byte[] byteMessage) {
-		return super.handleAnnouncement(new String(byteMessage));
-	}
-	
-	@Scheduled(every = "${scorpio.sync.check-time}", delayed = "${scorpio.startupdelay}")
-	@RunOnVirtualThread
-	void checkInstances() {
-		super.checkInstances();
-	}
-	
-	@Scheduled(every = "${scorpio.sync.announcement-time}", delayed = "${scorpio.startupdelay}")
-	void syncTask() {
-		MicroServiceUtils.serializeAndSplitObjectAndEmit(announcement, Integer.MAX_VALUE, syncEmitter, objectMapper);
-	}
-
-	@PreDestroy
-	void shutdown() {
-		MicroServiceUtils.serializeAndSplitObjectAndEmit(Map.of("instanceId", myInstanceId, "upOrDown", false), Integer.MAX_VALUE, syncEmitter, objectMapper);
-	}
-
-	
-
 }

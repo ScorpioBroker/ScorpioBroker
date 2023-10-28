@@ -1,6 +1,5 @@
 package eu.neclab.ngsildbroker.registry.subscriptionmanager.service;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
@@ -24,11 +23,9 @@ import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLDService;
-import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -1153,7 +1150,7 @@ public class RegistrySubscriptionService {
 		} catch (URISyntaxException e) {
 			// left empty intentionally this will never throw because it's a constant string
 			// we control
-		} catch (Exception  e1){
+		} catch (Exception e1) {
 			e1.printStackTrace();
 		}
 		if (sendNotification) {
@@ -1325,6 +1322,51 @@ public class RegistrySubscriptionService {
 	public void addSyncService(SyncService registrySubscriptionSyncService) {
 		this.subscriptionSyncService = registrySubscriptionSyncService;
 
+	}
+
+	public void reloadSubscription(String tenant, String id, boolean internal) {
+		if (internal) {
+			regDAO.loadSubscription(tenant, id).onItem().transformToUni(t -> {
+				return ldService.parsePure(t.getItem2().get(NGSIConstants.JSON_LD_CONTEXT)).onItem()
+						.transformToUni(ctx -> {
+							SubscriptionRequest request;
+							try {
+								request = new SubscriptionRequest(tenant, t.getItem1(), ctx);
+							} catch (ResponseException e) {
+								logger.error("Failed to reload subscription " + id);
+								return Uni.createFrom().voidItem();
+							}
+
+							return handleInternalSubscription(request);
+						});
+			}).subscribe().with(i -> {
+				logger.info("Reloaded subscription: " + id);
+			});
+		} else {
+			regDAO.loadRegSubscription(tenant, id).onItem().transformToUni(t -> {
+				return ldService.parsePure(t.getItem2().get(NGSIConstants.JSON_LD_CONTEXT)).onItem()
+						.transformToUni(ctx -> {
+							SubscriptionRequest request;
+							try {
+								request = new SubscriptionRequest(tenant, t.getItem1(), ctx);
+							} catch (ResponseException e) {
+								logger.error("Failed to reload subscription " + id);
+								return Uni.createFrom().voidItem();
+							}
+							request.setSendTimestamp(-1);
+							if (isIntervalSub(request)) {
+								this.tenant2subscriptionId2IntervalSubscription.put(request.getTenant(),
+										request.getId(), request);
+							} else {
+								this.tenant2subscriptionId2Subscription.put(request.getTenant(), request.getId(),
+										request);
+							}
+							return Uni.createFrom().voidItem();
+						});
+			}).subscribe().with(i -> {
+				logger.info("Reloaded subscription: " + id);
+			});
+		}
 	}
 
 }

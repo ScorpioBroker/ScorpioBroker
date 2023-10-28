@@ -1,4 +1,4 @@
-package eu.neclab.ngsildbroker.subscriptionmanager.messaging;
+package eu.neclab.ngsildbroker.registry.subscriptionmanager.messaging;
 
 import java.util.UUID;
 
@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.storage.ClientManager;
-import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
+import eu.neclab.ngsildbroker.registry.subscriptionmanager.service.RegistrySubscriptionService;
 import io.quarkus.arc.profile.IfBuildProfile;
 import io.quarkus.runtime.StartupEvent;
 import io.smallrye.mutiny.Uni;
@@ -25,7 +25,7 @@ import jakarta.inject.Singleton;
 
 @IfBuildProfile("sqs")
 @Singleton
-public class SubscriptionSyncSQS implements SyncService {
+public class RegistrySubscriptionSyncSQS implements SyncService {
 
 	private final String SYNC_ID = UUID.randomUUID().toString();
 
@@ -38,7 +38,7 @@ public class SubscriptionSyncSQS implements SyncService {
 	Vertx vertx;
 
 	@Inject
-	SubscriptionService subService;
+	RegistrySubscriptionService subService;
 
 	@ConfigProperty(name = "quarkus.datasource.reactive.url")
 	String reactiveDefaultUrl;
@@ -47,7 +47,7 @@ public class SubscriptionSyncSQS implements SyncService {
 	@ConfigProperty(name = "quarkus.datasource.password")
 	String password;
 
-	Logger logger = LoggerFactory.getLogger(SubscriptionSyncSQS.class);
+	Logger logger = LoggerFactory.getLogger(RegistrySubscriptionSyncSQS.class);
 
 	private String seperator = "<&>";
 
@@ -68,15 +68,16 @@ public class SubscriptionSyncSQS implements SyncService {
 		pgSubscriber = PgSubscriber.subscriber(vertx, new PgConnectOptions().setHost(host)
 				.setPort(Integer.parseInt(port)).setDatabase(dbName).setUser(username).setPassword(password));
 		subService.addSyncService(this);
-		pgSubscriber.channel("subscriptionchannel").handler(notice -> {
+		pgSubscriber.channel("regsubscriptionchannel").handler(notice -> {
 			logger.debug("notice received: " + notice);
 			String[] noticeSplitted = notice.split(seperator);
 			int requestType = Integer.parseInt(noticeSplitted[2]);
 			String syncId = noticeSplitted[3];
+			boolean internal = noticeSplitted[3].equals("1");
 			if (syncId.equals(SYNC_ID)) {
 				logger.debug("Discarding own announcement");
 			} else {
-				subService.reloadSubscription(noticeSplitted[1], noticeSplitted[0]);
+				subService.reloadSubscription(noticeSplitted[1], noticeSplitted[0], internal);
 			}
 		});
 		pgSubscriber.connect().await().indefinitely();
@@ -86,9 +87,14 @@ public class SubscriptionSyncSQS implements SyncService {
 	public Uni<Void> sync(SubscriptionRequest request) {
 		logger.debug("sending notify: ");
 		return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
+			String internal = "0";
+			if (request.getSubscription().getNotification().getEndPoint().getUri().toString()
+					.equals("internal:kafka")) {
+				internal = "1";
+			}
 			return client
-					.query("NOTIFY subscriptionchannel, '" + request.getId() + seperator + request.getTenant()
-							+ seperator + request.getRequestType() + seperator + SYNC_ID + "'")
+					.query("NOTIFY regsubscriptionchannel, '" + request.getId() + seperator + request.getTenant()
+							+ seperator + request.getRequestType() + seperator + SYNC_ID + seperator + internal + "'")
 					.execute().onItem().transformToUni(r -> Uni.createFrom().voidItem());
 		});
 
