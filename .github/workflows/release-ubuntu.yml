@@ -12,7 +12,7 @@ jobs:
         with:
           java-version: '17' # for a specific JDK 17; or '17' for the latest JDK 17
           distribution: 'mandrel'
-          version: 'mandrel-latest'
+          version: 'mandrel-23.0.1.2-Final'
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -237,7 +237,7 @@ jobs:
         with:
           java-version: '17' # for a specific JDK 17; or '17' for the latest JDK 17
           distribution: 'mandrel'
-          version: 'mandrel-latest'
+          version: 'mandrel-23.0.1.2-Final'
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -440,7 +440,7 @@ jobs:
         with:
           java-version: '17' # for a specific JDK 17; or '17' for the latest JDK 17
           distribution: 'mandrel'
-          version: 'mandrel-latest'
+          version: 'mandrel-23.0.1.2-Final'
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -665,7 +665,7 @@ jobs:
         with:
           java-version: '17' # for a specific JDK 17; or '17' for the latest JDK 17
           distribution: 'mandrel'
-          version: 'mandrel-latest'
+          version: 'mandrel-23.0.1.2-Final'
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -890,7 +890,7 @@ jobs:
         with:
           java-version: '17' # for a specific JDK 17; or '17' for the latest JDK 17
           distribution: 'mandrel'
-          version: 'mandrel-latest'
+          version: 'mandrel-23.0.1.2-Final'
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
