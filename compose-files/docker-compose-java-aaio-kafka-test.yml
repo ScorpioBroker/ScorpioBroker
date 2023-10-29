@@ -10,7 +10,7 @@ services:
     ports:
       - "2181"
     logging:
-      driver: None
+      driver: none
   kafka:
     image: bitnami/kafka:3.5.1-debian-11-r6
     ports:
@@ -27,7 +27,7 @@ services:
     depends_on:
       - zookeeper
     logging:
-      driver: None
+      driver: none
   postgres:
     image: postgis/postgis
     ports:
