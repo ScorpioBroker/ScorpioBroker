@@ -2,7 +2,6 @@ package eu.neclab.ngsildbroker.commons.datatypes.requests.subscription;
 
 import java.util.Map;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.github.jsonldjava.core.Context;
 

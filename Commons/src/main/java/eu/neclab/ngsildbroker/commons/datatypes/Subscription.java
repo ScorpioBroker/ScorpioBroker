@@ -44,6 +44,7 @@ public class Subscription implements Serializable {
 	 *
 	 */
 	private static final long serialVersionUID = -327073906884724592L;
+	@JsonIgnore
 	static final JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 	private String description;
 	private Long expiresAt = Long.MAX_VALUE;

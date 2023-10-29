@@ -32,14 +32,14 @@ import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
 import io.netty.channel.EventLoopGroup;
 import io.quarkus.arc.profile.IfBuildProfile;
-import io.quarkus.arc.profile.UnlessBuildProfile;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
+import io.smallrye.reactive.messaging.annotations.Broadcast;
 import io.vertx.mutiny.core.Vertx;
 
 @Singleton
-@IfBuildProfile(anyOf = { "sqs", "kafka" })
+@IfBuildProfile(anyOf = { "kafka" })
 public class SubscriptionSyncServiceString implements SyncService {
 
 	public static final String SYNC_ID = UUID.randomUUID().toString();
@@ -56,10 +56,12 @@ public class SubscriptionSyncServiceString implements SyncService {
 
 	@Inject
 	@Channel(AppConstants.SUB_ALIVE_CHANNEL)
+	@Broadcast
 	MutinyEmitter<String> aliveEmitter;
 
 	@Inject
 	@Channel(AppConstants.SUB_SYNC_CHANNEL)
+	@Broadcast
 	MutinyEmitter<String> syncEmitter;
 
 	@Inject
@@ -81,6 +83,8 @@ public class SubscriptionSyncServiceString implements SyncService {
 		INSTANCE_ID = new AliveAnnouncement(SYNC_ID);
 		subService.addSyncService(this);
 		this.executor = vertx.getDelegate().nettyEventLoopGroup();
+		MicroServiceUtils.serializeAndSplitObjectAndEmit(INSTANCE_ID, messageSize, aliveEmitter, objectMapper);
+
 	}
 
 	@Scheduled(every = "${scorpio.sync.announcement-time}", delayed = "${scorpio.startupdelay}")
@@ -118,19 +122,20 @@ public class SubscriptionSyncServiceString implements SyncService {
 				return;
 			}
 			switch (sub.getRequestType()) {
-			case AppConstants.DELETE_REQUEST:
+			case AppConstants.DELETE_SUBSCRIPTION_REQUEST:
 				subService.syncDeleteSubscription(sub).runSubscriptionOn(executor).subscribe()
 						.with(v -> logger.debug("done handling delete"));
 				break;
-			case AppConstants.UPDATE_REQUEST:
+			case AppConstants.UPDATE_SUBSCRIPTION_REQUEST:
 				subService.syncUpdateSubscription(sub).runSubscriptionOn(executor).subscribe()
 						.with(v -> logger.debug("done handling update"));
 				break;
-			case AppConstants.CREATE_REQUEST:
+			case AppConstants.CREATE_SUBSCRIPTION_REQUEST:
 				subService.syncCreateSubscription(sub).runSubscriptionOn(executor).subscribe()
 						.with(v -> logger.debug("done handling create"));
 				break;
 			default:
+				logger.debug("default");
 				return;
 			}
 
@@ -151,6 +156,11 @@ public class SubscriptionSyncServiceString implements SyncService {
 				return;
 			}
 			currentInstances.add(message.getId());
+//			if (!currentInstances.equals(lastInstances)) {
+//				recalculateSubscriptions();
+//			}
+//			lastInstances.clear();
+//			lastInstances.addAll(currentInstances);
 		}
 	};
 
@@ -164,6 +174,8 @@ public class SubscriptionSyncServiceString implements SyncService {
 	@Incoming(AppConstants.SUB_ALIVE_RETRIEVE_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
 	Uni<Void> listenForAlive(String byteMessage) {
+		logger.debug("receving alive");
+		logger.debug(byteMessage);
 		collector.collect(byteMessage, collectListenerAlive);
 		return Uni.createFrom().voidItem();
 	}
@@ -174,19 +186,23 @@ public class SubscriptionSyncServiceString implements SyncService {
 		List<String> sortedInstances = temp.stream().sorted().collect(Collectors.toList());
 		int myPos = sortedInstances.indexOf(INSTANCE_ID.getId());
 		List<String> sortedSubs = subService.getAllSubscriptionIds();
-		int stepRange = sortedSubs.size() / sortedInstances.size();
+		int stepRange = (int) Math.ceil(((double) sortedSubs.size()) / ((double) sortedInstances.size()));
 		int start = myPos * stepRange;
-		int end;
-		if (myPos == sortedInstances.size() - 1) {
+		int end = start + stepRange;
+
+		if (end > sortedSubs.size()) {
 			end = sortedSubs.size();
-		} else {
-			end = (myPos + 1) * stepRange;
 		}
+		logger.debug("step:" + stepRange + " mypos: " + myPos + " start:" + start + " end:" + end + " sorrted size:"
+				+ sortedSubs.size());
 		List<String> mySubs = sortedSubs.subList(start, end);
 		subService.activateSubs(mySubs);
 	}
 
 	public Uni<Void> sync(SubscriptionRequest request) {
+		logger.debug("send sub");
+		logger.debug(request.getRequestType() + "");
+		logger.debug(request.getId());
 		MicroServiceUtils.serializeAndSplitObjectAndEmit(new SyncMessage(SYNC_ID, request), messageSize, syncEmitter,
 				objectMapper);
 		return Uni.createFrom().voidItem();

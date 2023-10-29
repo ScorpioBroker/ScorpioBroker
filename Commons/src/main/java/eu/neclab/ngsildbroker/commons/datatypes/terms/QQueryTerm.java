@@ -12,7 +12,6 @@ import java.util.Set;
 import com.github.jsonldjava.core.Context;
 import com.google.common.collect.Sets;
 
-import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.BaseEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.BaseProperty;

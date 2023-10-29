@@ -7,7 +7,7 @@
 	<parent>
 		<groupId>eu.neclab.ngsildbroker</groupId>
 		<artifactId>broker-parent</artifactId>
-		<version>4.1.8-SNAPSHOT</version>
+		<version>4.1.9-SNAPSHOT</version>
 		<relativePath>../BrokerParent</relativePath>
 	</parent>
 	<profiles>
@@ -27,6 +27,7 @@
 							<excludes>
 								<exclude>eu/neclab/ngsildbroker/historyentitymanager/messaging/HistoryMessagingInMemory.java</exclude>
 								<exclude>eu/neclab/ngsildbroker/historyentitymanager/messaging/HistoryMessagingByteArray.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/historyentitymanager/messaging/HistorySyncByteArray.java</exclude>
 							</excludes>
 						</configuration>
 					</plugin>
@@ -49,6 +50,9 @@
 							<excludes>
 								<exclude>eu/neclab/ngsildbroker/historyentitymanager/messaging/HistoryMessagingKafka.java</exclude>
 								<exclude>eu/neclab/ngsildbroker/historyentitymanager/messaging/HistoryMessagingByteArray.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/historyentitymanager/messaging/HistorySyncByteArray.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/historyentitymanager/messaging/HistorySyncString.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/historyentitymanager/messaging/HistorySync.java</exclude>
 							</excludes>
 						</configuration>
 					</plugin>
@@ -71,6 +75,9 @@
 							<excludes>
 								<exclude>eu/neclab/ngsildbroker/historyentitymanager/messaging/HistoryMessagingByteArray.java</exclude>
 								<exclude>eu/neclab/ngsildbroker/historyentitymanager/messaging/HistoryMessagingInMemory.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/historyentitymanager/messaging/HistorySyncByteArray.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/historyentitymanager/messaging/HistorySyncString.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/historyentitymanager/messaging/HistorySync.java</exclude>
 							</excludes>
 						</configuration>
 					</plugin>
@@ -93,6 +100,7 @@
 							<excludes>
 								<exclude>eu/neclab/ngsildbroker/historyentitymanager/messaging/HistoryMessagingString.java</exclude>
 								<exclude>eu/neclab/ngsildbroker/historyentitymanager/messaging/HistoryMessagingInMemory.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/historyentitymanager/messaging/HistorySyncString.java</exclude>
 							</excludes>
 						</configuration>
 					</plugin>
@@ -115,6 +123,7 @@
 							<excludes>
 								<exclude>eu/neclab/ngsildbroker/historyentitymanager/messaging/HistoryMessagingString.java</exclude>
 								<exclude>eu/neclab/ngsildbroker/historyentitymanager/messaging/HistoryMessagingInMemory.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/historyentitymanager/messaging/HistorySyncString.java</exclude>
 							</excludes>
 						</configuration>
 					</plugin>

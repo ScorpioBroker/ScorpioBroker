@@ -1,27 +1,19 @@
 package eu.neclab.ngsildbroker.historyentitymanager.messaging;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -33,12 +25,8 @@ import eu.neclab.ngsildbroker.commons.serialization.messaging.CollectMessageList
 import eu.neclab.ngsildbroker.commons.serialization.messaging.MessageCollector;
 import eu.neclab.ngsildbroker.historyentitymanager.service.HistoryEntityService;
 import io.netty.channel.EventLoopGroup;
-import io.quarkus.arc.profile.UnlessBuildProfile;
-import io.quarkus.scheduler.Scheduled;
-import io.smallrye.common.annotation.RunOnVirtualThread;
 //import eu.neclab.ngsildbroker.historyentitymanager.service.HistoryEntityService;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.vertx.mutiny.core.Vertx;
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
@@ -67,16 +55,7 @@ public abstract class HistoryMessagingBase {
 	@Inject
 	ObjectMapper objectMapper;
 
-	@Inject
-	@Channel(AppConstants.HIST_SYNC_CHANNEL)
-	MutinyEmitter<String> syncEmitter;
-
 	private EventLoopGroup executor;
-
-	Map<String, Long> instanceId2LastAnnouncement = Maps.newHashMap();
-
-	protected String myInstanceId = UUID.randomUUID().toString();
-	protected Map<String, Object> announcement = Map.of("instanceId", myInstanceId, "upOrDown", true);
 
 	@PostConstruct
 	public void setup() {
@@ -130,9 +109,6 @@ public abstract class HistoryMessagingBase {
 					.with(v -> logger.debug("done handling registry"));
 		}
 	};
-
-	@ConfigProperty(name = "scorpio.history.syncchecktime", defaultValue = "5000")
-	private long syncCheckTime;
 
 	public Uni<Void> handleCsourceRaw(String byteMessage) {
 		collector.collect(byteMessage, collectListenerRegistry);
@@ -253,36 +229,24 @@ public abstract class HistoryMessagingBase {
 		collector.purge(30000);
 	}
 
-	Uni<Void> handleAnnouncement(String byteMessage) {
-		Map<String, Object> announcement;
-		try {
-			announcement = objectMapper.readValue(byteMessage, Map.class);
-		} catch (JsonProcessingException e) {
-			return Uni.createFrom().voidItem();
-		}
-		boolean upOrDown = (boolean) announcement.get("upOrDown");
-		String instanceId = (String) announcement.get("instanceId");
-		if (upOrDown) {
-			instanceId2LastAnnouncement.put(instanceId, System.currentTimeMillis());
-		} else {
-			instanceId2LastAnnouncement.remove(instanceId);
-		}
-		instancesNr = instanceId2LastAnnouncement.size();
-		ArrayList<String> l1 = Lists.newArrayList(instanceId2LastAnnouncement.keySet());
-		Collections.sort(l1);
-		myInstancePos = l1.indexOf(myInstanceId) + 1;
-		return Uni.createFrom().voidItem();
+	public int getInstancesNr() {
+		return instancesNr;
 	}
 
-	void checkInstances() {
-		instanceId2LastAnnouncement.put(myInstanceId, System.currentTimeMillis());
-		Iterator<Entry<String, Long>> it = instanceId2LastAnnouncement.entrySet().iterator();
-		while (it.hasNext()) {
-			Entry<String, Long> next = it.next();
-			if (next.getValue() < System.currentTimeMillis() - syncCheckTime) {
-				it.remove();
-			}
-		}
+	public void setInstancesNr(int instancesNr) {
+		this.instancesNr = instancesNr;
 	}
+
+	public int getMyInstancePos() {
+		return myInstancePos;
+	}
+
+	public void setMyInstancePos(int myInstancePos) {
+		this.myInstancePos = myInstancePos;
+	}
+	
+	
+
+	
 
 }

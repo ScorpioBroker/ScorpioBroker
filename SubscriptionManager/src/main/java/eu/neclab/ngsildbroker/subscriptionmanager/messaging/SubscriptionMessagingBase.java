@@ -37,6 +37,7 @@ public abstract class SubscriptionMessagingBase {
 	long lastMessage = System.currentTimeMillis();
 	long lastSent = System.currentTimeMillis();
 
+
 	ArrayList<BaseRequest> requestStore = new ArrayList<>();
 
 	public Uni<Void> baseHandleEntity(BaseRequest message) {
@@ -102,6 +103,7 @@ public abstract class SubscriptionMessagingBase {
 
 		@Override
 		public void collected(String byteMessage) {
+//			logger.info(byteMessage);
 			BatchRequest message;
 			try {
 				message = objectMapper.readValue(byteMessage, BatchRequest.class);
