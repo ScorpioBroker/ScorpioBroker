@@ -150,8 +150,10 @@ public class QueryService {
 					tmp = Lists.newArrayList();
 					remoteHost2EntityIds.put(remoteHost, tmp);
 				}
+				logger.info("adding entityid: " + entry.getEntityId() + " for remote host " + remoteHost.host());
 				tmp.add(entry.getEntityId());
 			}
+
 			entityId2AttrName2DatasetId2AttrValue.put(entry.getEntityId(), new HashMap<>(0));
 		}
 		List<Uni<Map<String, Map<String, Object>>>> unis = Lists.newArrayList();
@@ -189,7 +191,23 @@ public class QueryService {
 											return result;
 										});
 							}
-							return Uni.createFrom().item(Maps.newHashMap());
+							logger.info("failed to query remote host: " + remoteHost.host()
+									+ NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + remoteHost.queryString()
+									+ "&options=sysAttrs");
+							if (response != null) {
+								logger.info("response code: " + response.statusCode());
+								logger.info("response : " + response.bodyAsString());
+							} else {
+								logger.info("null response");
+							}
+
+							return Uni.createFrom().item(new HashMap<String, Map<String, Object>>(0));
+						}).onFailure().recoverWithUni(e -> {
+							logger.info("failed to query remote host: " + remoteHost.host()
+									+ NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + remoteHost.queryString()
+									+ "&options=sysAttrs");
+							logger.info("failed to query with error " + e.getMessage());
+							return Uni.createFrom().item(new HashMap<String, Map<String, Object>>(0));
 						}));
 			}
 		}
@@ -293,7 +311,7 @@ public class QueryService {
 			Map<String, Long> entityId2YoungestModified, Map<String, Long> entityId2OldestCreatedAt,
 			Map<String, Map<String, Integer>> entityId2AttrDatasetId2CurrentRegMode) {
 		int regMode = 1;
-
+		logger.info("first level merge for entityId: " + entityId);
 		Map<String, Map<String, Map<String, Object>>> result = entityId2AttrName2DatasetId2AttrValue.get(entityId);
 		if (result == null) {
 			result = Maps.newHashMap();
@@ -379,9 +397,10 @@ public class QueryService {
 					continue;
 				}
 
-//			if (!regEntry.matches(id, idPattern, typeQuery, idPattern, attrsQuery, qQuery, geoQuery, scopeQuery)) {
-//				continue;
-//			}
+				if (regEntry.matches(id, idPattern, typeQuery, attrsQuery, qQuery, geoQuery, scopeQuery) == null) {
+					continue;
+				}
+
 				RemoteHost regHost = regEntry.host();
 				QueryRemoteHost hostToQuery = QueryRemoteHost.fromRemoteHost(regHost, null, regEntry.canDoIdQuery(),
 						regEntry.canDoZip(), null);
@@ -1287,6 +1306,10 @@ public class QueryService {
 									logger.warn("Failed to query remote host" + remoteHost.toString());
 									result = Lists.newArrayList();
 								}
+								logger.info("retrieved entity list: " + result.toString());
+								logger.info("from remote host: " + remoteHost.host()
+										+ NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + remoteHost.queryString()
+										+ entityMapString);
 								return Tuple2.of(remoteHost, result);
 							}).onFailure().recoverWithItem(e -> {
 								logger.warn("Failed to query remote host" + remoteHost.toString());
@@ -1307,6 +1330,10 @@ public class QueryService {
 								} else {
 									logger.warn("Failed to query remote host" + remoteHost.toString());
 								}
+								logger.info("retrieved entity list: " + result.toString());
+								logger.info("from remote host: " + remoteHost.host()
+										+ NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + remoteHost.queryString()
+										+ "&limit=1000");
 								return Tuple2.of(remoteHost, result);
 							}).onFailure().recoverWithItem(e -> {
 								logger.warn("Failed to query remote host" + remoteHost.toString());
