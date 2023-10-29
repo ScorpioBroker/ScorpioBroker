@@ -19,13 +19,15 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
+import io.smallrye.reactive.messaging.annotations.Broadcast;
 import jakarta.annotation.PreDestroy;
 import jakarta.inject.Inject;
 
-public class HistorySync {
+public abstract class HistorySync {
 
 	@Inject
 	@Channel(AppConstants.HIST_SYNC_CHANNEL)
+	@Broadcast
 	MutinyEmitter<String> syncEmitter;
 
 	@Inject
