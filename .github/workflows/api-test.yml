@@ -89,9 +89,9 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_TOKEN }}
-      - name: docker tag and push
-        run: |
-          docker push scorpiobroker/all-in-one-runner:java-sqs-finaltest
+#      - name: docker tag and push
+#        run: |
+#          docker push scorpiobroker/all-in-one-runner:java-sqs-finaltest
   build-java-rabbitmq:
     runs-on: ubuntu-latest
     steps:
@@ -265,6 +265,6 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_TOKEN }}
-      - name: docker tag and push
-        run: |
-          docker push scorpiobroker/all-in-one-runner:java-${{steps.get-id.outputs.id}}
+#      - name: docker tag and push
+#        run: |
+#          docker push scorpiobroker/all-in-one-runner:java-${{steps.get-id.outputs.id}}
