@@ -9,6 +9,8 @@ services:
     image: zookeeper
     ports:
       - "2181"
+    logging:
+      driver: None
   kafka:
     image: bitnami/kafka:3.5.1-debian-11-r6
     ports:
@@ -24,6 +26,8 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       - zookeeper
+    logging:
+      driver: None
   postgres:
     image: postgis/postgis
     ports:
@@ -39,6 +43,7 @@ services:
     environment:
       DBHOST: postgres
       BUSHOST: kafka
+      SCORPIO_STARTUPDELAY: 15s
     depends_on:
       - postgres
       - kafka
