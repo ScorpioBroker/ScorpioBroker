@@ -84,9 +84,14 @@ jobs:
       - name: docker tag
         run: |
           docker tag scorpiobroker/all-in-one-runner:java-sqs-finaltest ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:java-sqs-finaltest
- #     - name: docker push
- #       run: |
- #         docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:java-sqs-finaltest
+      - name: docker-login
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+      - name: docker tag and push
+        run: |
+          docker push scorpiobroker/all-in-one-runner:java-sqs-finaltest
   build-java-rabbitmq:
     runs-on: ubuntu-latest
     steps:
