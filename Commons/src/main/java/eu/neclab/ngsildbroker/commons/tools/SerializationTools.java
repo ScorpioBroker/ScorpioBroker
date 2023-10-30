@@ -224,7 +224,7 @@ public class SerializationTools {
 			ArrayList<Property> properties = new ArrayList<Property>();
 			ArrayList<Relationship> relationships = new ArrayList<Relationship>();
 			Long createdAt = null, observedAt = null, modifiedAt = null;
-			URI relObj = null;
+			List<String> relObj = null;
 			String dataSetId = null;
 			String name = null;
 			for (Entry<String, Object> entry : next.entrySet()) {
@@ -232,15 +232,15 @@ public class SerializationTools {
 				Object value = entry.getValue();
 
 				if (propKey.equals(NGSIConstants.NGSI_LD_HAS_OBJECT)) {
-					if (((List<Object>) value).size() != 1) {
-						throw new JsonParseException("Relationships have to have exactly one object");
+//					if (((List<Object>) value).size() != 1) {
+//						throw new JsonParseException("Relationships have to have exactly one object");
+//					}
+					relObj = Lists.newArrayList();
+					List<Map<String, Object>> tmp = ((List<Map<String, Object>>) value);
+					for (Map<String, Object> relEntry : tmp) {
+						relObj.add((String) relEntry.get(NGSIConstants.JSON_LD_ID));
 					}
-					try {
-						relObj = new URI(
-								(String) ((List<Map<String, Object>>) value).get(0).get(NGSIConstants.JSON_LD_ID));
-					} catch (URISyntaxException e) {
-						throw new JsonParseException("Relationships have to be a URI");
-					}
+
 				} else if (propKey.equals(NGSIConstants.NGSI_LD_OBSERVED_AT)) {
 
 					try {
@@ -285,7 +285,7 @@ public class SerializationTools {
 
 			}
 			if (relObj == null) {
-				throw new JsonParseException("Relationships have to have exactly one object");
+				throw new JsonParseException("Relationships have to have an object");
 			}
 			RelationshipEntry object = new RelationshipEntry(dataSetId, relObj);
 			object.setProperties(properties);

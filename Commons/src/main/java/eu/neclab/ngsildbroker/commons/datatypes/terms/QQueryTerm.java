@@ -394,11 +394,11 @@ public class QQueryTerm implements Serializable {
 		Object value = null;
 		if (myEntry instanceof PropertyEntry) {
 			value = ((PropertyEntry) myEntry).getValue();
-			if (value instanceof List) {
-				value = ((List) value).get(0);
-			}
+//			if (value instanceof List) {
+//				value = ((List) value).get(0);
+//			}
 		} else if (myEntry instanceof RelationshipEntry) {
-			value = ((RelationshipEntry) myEntry).getObject().toString();
+			value = ((RelationshipEntry) myEntry).getObject();
 		}
 		return value;
 	}
