@@ -344,11 +344,13 @@ public class QQueryTerm implements Serializable {
 				case "~=":
 					if (obj.toString().matches(operant)) {
 						found = true;
+						r = 0;
 					}
 					break;
 				case "!~=":
 					if (!obj.toString().matches(operant)) {
 						found = true;
+						r = -1;
 					}
 					break;
 				}
