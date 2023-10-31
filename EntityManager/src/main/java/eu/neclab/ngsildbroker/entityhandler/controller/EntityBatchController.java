@@ -1,6 +1,7 @@
 package eu.neclab.ngsildbroker.entityhandler.controller;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -86,12 +87,10 @@ public class EntityBatchController {
 							entityId);
 					if (obj2 instanceof ResponseException) {
 						failureResults.addFailure((ResponseException) obj2);
-					}
-					else if(obj2 instanceof IOException){
-						failureResults.addFailure(
-								new ResponseException(ErrorType.LdContextNotAvailable, ((Exception) obj2).getMessage()));
-					}
-					else {
+					} else if (obj2 instanceof IOException) {
+						failureResults.addFailure(new ResponseException(ErrorType.LdContextNotAvailable,
+								((Exception) obj2).getMessage()));
+					} else {
 						failureResults.addFailure(
 								new ResponseException(ErrorType.InvalidRequest, ((Exception) obj2).getMessage()));
 					}
@@ -122,6 +121,13 @@ public class EntityBatchController {
 	public Uni<RestResponse<Object>> upsertMultiple(HttpServerRequest request,
 			List<Map<String, Object>> compactedEntities, @QueryParam(value = "options") String options,
 			@QueryParam("localOnly") boolean localOnly) {
+		boolean doReplace;
+		if (options != null && !options.isEmpty()) {
+			List<String> optionsList = Arrays.asList(options.split(","));
+			doReplace = !optionsList.contains("update");
+		} else {
+			doReplace = true;
+		}
 		List<Uni<Tuple2<String, Object>>> unis = Lists.newArrayList();
 		for (Map<String, Object> compactedEntity : compactedEntities) {
 			noConcise(compactedEntity);
@@ -138,7 +144,7 @@ public class EntityBatchController {
 				String entityId = tuple.getItem1();
 				Object obj2 = tuple.getItem2();
 				if (obj2 instanceof Exception) {
-					NGSILDOperationResult failureResults = new NGSILDOperationResult(AppConstants.CREATE_REQUEST,
+					NGSILDOperationResult failureResults = new NGSILDOperationResult(AppConstants.UPSERT_REQUEST,
 							entityId);
 					if (obj2 instanceof ResponseException) {
 						failureResults.addFailure((ResponseException) obj2);
@@ -159,7 +165,7 @@ public class EntityBatchController {
 			List<NGSILDOperationResult> fails = tuple.getItem1();
 			List<Map<String, Object>> expandedEntities = tuple.getItem2();
 			List<Context> contexts = tuple.getItem3();
-			return entityService.upsertBatch(HttpUtils.getTenant(request), expandedEntities, contexts, localOnly)
+			return entityService.upsertBatch(HttpUtils.getTenant(request), expandedEntities, contexts, localOnly, doReplace)
 					.onItem().transform(opResults -> {
 						opResults.addAll(fails);
 						return HttpUtils.generateBatchResult(opResults);

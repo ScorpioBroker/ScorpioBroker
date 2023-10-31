@@ -19,12 +19,12 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BatchRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.UpsertEntityRequest;
 import eu.neclab.ngsildbroker.commons.serialization.messaging.CollectMessageListener;
 import eu.neclab.ngsildbroker.commons.serialization.messaging.MessageCollector;
 import eu.neclab.ngsildbroker.historyentitymanager.service.HistoryEntityService;
 import io.netty.channel.EventLoopGroup;
-import io.quarkus.scheduler.Scheduled;
-import io.smallrye.common.annotation.RunOnVirtualThread;
 //import eu.neclab.ngsildbroker.historyentitymanager.service.HistoryEntityService;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Vertx;
@@ -45,6 +45,9 @@ public abstract class HistoryMessagingBase {
 	@ConfigProperty(name = "scorpio.history.autorecordingbuffersize", defaultValue = "50000")
 	int maxSize;
 	private MessageCollector collector = new MessageCollector(this.getClass().getName());
+
+	int instancesNr = 1;
+	int myInstancePos = 1;
 
 	@Inject
 	Vertx vertx;
@@ -123,12 +126,12 @@ public abstract class HistoryMessagingBase {
 	}
 
 	public Uni<Void> baseHandleEntity(BaseRequest message) {
-		
-		if (!autoRecording) {
+
+		if (!autoRecording || (instancesNr > 1 && message.hashCode() % instancesNr != myInstancePos)) {
 			return Uni.createFrom().voidItem();
 		}
 		String tenant = message.getTenant();
-		ConcurrentLinkedQueue<BaseRequest> buffer = tenant2Buffer.get(message.getTenant());
+		ConcurrentLinkedQueue<BaseRequest> buffer = tenant2Buffer.get(tenant);
 		if (buffer == null) {
 			buffer = new ConcurrentLinkedQueue<>();
 			tenant2Buffer.put(message.getTenant(), buffer);
@@ -140,14 +143,31 @@ public abstract class HistoryMessagingBase {
 	}
 
 	public Uni<Void> baseHandleBatch(BatchRequest message) {
-		if (!autoRecording) {
+		if (!autoRecording || (instancesNr > 1 && message.hashCode() % instancesNr != myInstancePos)) {
 			return Uni.createFrom().voidItem();
 		}
 		logger.debug("history manager batch handling got called: with ids: " + message.getEntityIds());
 		if (message.getRequestType() != AppConstants.DELETE_REQUEST && message.getRequestPayload().isEmpty()) {
 			return Uni.createFrom().voidItem();
 		}
-		return historyService.handleInternalBatchRequest(message);
+		String tenant = message.getTenant();
+		ConcurrentLinkedQueue<BaseRequest> buffer = tenant2Buffer.get(tenant);
+		if (buffer == null) {
+			buffer = new ConcurrentLinkedQueue<>();
+			tenant2Buffer.put(message.getTenant(), buffer);
+		}
+
+		tenant2LastReceived.put(tenant, System.currentTimeMillis());
+		if (message.getRequestType() == AppConstants.DELETE_REQUEST) {
+			for (String entry : message.getEntityIds()) {
+				buffer.add(new DeleteEntityRequest(tenant, entry));
+			}
+		} else {
+			for (Map<String, Object> entry : message.getRequestPayload()) {
+				buffer.add(new UpsertEntityRequest(tenant, entry));
+			}
+		}
+		return Uni.createFrom().voidItem();
 	}
 
 	public Uni<Void> baseHandleCsource(BaseRequest message) {
@@ -155,7 +175,6 @@ public abstract class HistoryMessagingBase {
 		return historyService.handleRegistryChange(message);
 	}
 
-	
 	Uni<Void> checkBuffer() {
 		if (!autoRecording) {
 			return Uni.createFrom().voidItem();
@@ -209,5 +228,25 @@ public abstract class HistoryMessagingBase {
 	void purge() {
 		collector.purge(30000);
 	}
+
+	public int getInstancesNr() {
+		return instancesNr;
+	}
+
+	public void setInstancesNr(int instancesNr) {
+		this.instancesNr = instancesNr;
+	}
+
+	public int getMyInstancePos() {
+		return myInstancePos;
+	}
+
+	public void setMyInstancePos(int myInstancePos) {
+		this.myInstancePos = myInstancePos;
+	}
+	
+	
+
+	
 
 }

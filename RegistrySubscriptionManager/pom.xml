@@ -6,7 +6,7 @@
 	<parent>
 		<groupId>eu.neclab.ngsildbroker</groupId>
 		<artifactId>broker-parent</artifactId>
-		<version>4.1.8-SNAPSHOT</version>
+		<version>4.1.9-SNAPSHOT</version>
 		<relativePath>../BrokerParent</relativePath>
 	</parent>
 	<profiles>
@@ -27,6 +27,7 @@
 								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionMessagingInMemory.java</exclude>
 								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionMessagingByteArray.java</exclude>
 								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionSyncServiceByteArray.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionSyncSQS.java</exclude>
 							</excludes>
 						</configuration>
 					</plugin>
@@ -51,6 +52,7 @@
 								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionMessagingByteArray.java</exclude>
 								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionSyncServiceByteArray.java</exclude>
 								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionSyncServiceString.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionSyncSQS.java</exclude>
 							</excludes>
 						</configuration>
 					</plugin>
@@ -74,6 +76,7 @@
 								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionMessagingByteArray.java</exclude>
 								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionMessagingInMemory.java</exclude>
 								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionSyncServiceByteArray.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionSyncServiceString.java</exclude>
 							</excludes>
 						</configuration>
 					</plugin>
@@ -97,6 +100,7 @@
 								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionMessagingString.java</exclude>
 								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionMessagingInMemory.java</exclude>
 								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionSyncServiceString.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionSyncSQS.java</exclude>
 							</excludes>
 						</configuration>
 					</plugin>
@@ -120,6 +124,7 @@
 								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionMessagingString.java</exclude>
 								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionMessagingInMemory.java</exclude>
 								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionSyncServiceString.java</exclude>
+								<exclude>eu/neclab/ngsildbroker/registry/subscriptionmanager/messaging/RegistrySubscriptionSyncSQS.java</exclude>
 							</excludes>
 						</configuration>
 					</plugin>

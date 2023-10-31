@@ -12,7 +12,6 @@ import java.util.Set;
 import com.github.jsonldjava.core.Context;
 import com.google.common.collect.Sets;
 
-import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.BaseEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.BaseProperty;
@@ -203,12 +202,12 @@ public class QQueryTerm implements Serializable {
 						switch (operator) {
 						case "==":
 
-							if (compare(range[0], value) >= 0 && compare(range[1], value) <= 0) {
+							if (compare(range[0], value, operator) >= 0 && compare(range[1], value, operator) <= 0) {
 								return true;
 							}
 							break;
 						case "!=":
-							if (compare(range[0], value) <= 0 && compare(range[1], value) >= 0) {
+							if (compare(range[0], value, operator) <= 0 && compare(range[1], value, operator) >= 0) {
 								return true;
 							}
 							break;
@@ -262,22 +261,22 @@ public class QQueryTerm implements Serializable {
 							break;
 						case ">=":
 
-							if (compare(operant, value) >= 0) {
+							if (compare(operant, value, operator) >= 0) {
 								return true;
 							}
 							break;
 						case "<=":
-							if (compare(operant, value) <= 0) {
+							if (compare(operant, value, operator) <= 0) {
 								return true;
 							}
 							break;
 						case ">":
-							if (compare(operant, value) > 0) {
+							if (compare(operant, value, operator) > 0) {
 								return true;
 							}
 							break;
 						case "<":
-							if (compare(operant, value) < 0) {
+							if (compare(operant, value, operator) < 0) {
 								return true;
 							}
 							break;
@@ -305,15 +304,72 @@ public class QQueryTerm implements Serializable {
 
 	}
 
-	private int compare(String operant, Object value) {
-		try {
-			if (value instanceof Integer || value instanceof Long || value instanceof Double) {
-				return Double.compare(Double.parseDouble(value.toString()), Double.parseDouble(operant));
-			} else {
-				return value.toString().compareTo(operant);
+	private int compare(String operant, Object value, String operator) {
+		if (value instanceof List l1) {
+			int r = -1;
+			for (Object obj : l1) {
+				r = compare(operant, obj, operator);
+				boolean found = false;
+				switch (operator) {
+				case "==":
+					if (r == 0) {
+						found = true;
+					}
+					break;
+				case "!=":
+					if (r != 0) {
+						found = true;
+					}
+					break;
+				case ">=":
+					if (r >= 0) {
+						found = true;
+					}
+					break;
+				case "<=":
+					if (r <= 0) {
+						found = true;
+					}
+					break;
+				case ">":
+					if (r > 0) {
+						found = true;
+					}
+					break;
+				case "<":
+					if (r < 0) {
+						found = true;
+					}
+					break;
+				case "~=":
+					if (obj.toString().matches(operant)) {
+						found = true;
+						r = 0;
+					}
+					break;
+				case "!~=":
+					if (!obj.toString().matches(operant)) {
+						found = true;
+						r = -1;
+					}
+					break;
+				}
+				if (found) {
+					return r;
+				}
 			}
-		} catch (NumberFormatException e) {
-			return -1;
+			return r;
+
+		} else {
+			try {
+				if (value instanceof Integer || value instanceof Long || value instanceof Double) {
+					return Double.compare(Double.parseDouble(value.toString()), Double.parseDouble(operant));
+				} else {
+					return value.toString().compareTo(operant);
+				}
+			} catch (NumberFormatException e) {
+				return -1;
+			}
 		}
 
 	}
@@ -395,11 +451,11 @@ public class QQueryTerm implements Serializable {
 		Object value = null;
 		if (myEntry instanceof PropertyEntry) {
 			value = ((PropertyEntry) myEntry).getValue();
-			if (value instanceof List) {
-				value = ((List) value).get(0);
-			}
+//			if (value instanceof List) {
+//				value = ((List) value).get(0);
+//			}
 		} else if (myEntry instanceof RelationshipEntry) {
-			value = ((RelationshipEntry) myEntry).getObject().toString();
+			value = ((RelationshipEntry) myEntry).getObject();
 		}
 		return value;
 	}

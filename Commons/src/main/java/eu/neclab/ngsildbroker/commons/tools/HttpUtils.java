@@ -6,7 +6,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -64,9 +63,9 @@ import io.vertx.mutiny.ext.web.client.HttpResponse;
 
 /**
  * A utility class to handle HTTP Requests and Responses.
- * 
+ *
  * @author the scorpio team
- * 
+ *
  */
 
 public final class HttpUtils {
@@ -348,7 +347,7 @@ public final class HttpUtils {
 
 	@SuppressWarnings("unchecked")
 	public static Uni<MultiMap> getAdditionalHeaders(Map<String, Object> registration, List<Object> context,
-			List<String> accept, JsonLDService ldService) {
+													 List<String> accept, JsonLDService ldService) {
 		MultiMap result = HeadersMultiMap.headers();
 
 		// Context myContext = JsonLdProcessor.getCoreContextClone().parse(context,
@@ -447,7 +446,7 @@ public final class HttpUtils {
 	}
 
 	public static MultiMap getHeadersForRemoteCallFromRegUpdate(List<Map<String, Object>> headerFromReg,
-			String tenant) {
+																String tenant) {
 		MultiMap result = HeadersMultiMap.headers();
 		if (headerFromReg != null) {
 			headerFromReg.forEach(t -> {
@@ -471,17 +470,17 @@ public final class HttpUtils {
 	}
 
 	public static Uni<RestResponse<Object>> generateEntityResult(List<Object> contextHeader, Context context,
-			int acceptHeader, Object entity, String geometryProperty, String options, LanguageQueryTerm langQuery,
-			JsonLDService ldService) {
+																 int acceptHeader, Object entity, String geometryProperty, String options, LanguageQueryTerm langQuery,
+																 JsonLDService ldService) {
 		return generateCompactedResult(contextHeader, context, acceptHeader, entity, geometryProperty, options,
 				langQuery, false, ldService).onItem().transform(resultBodyAndHeaders -> {
-					ResponseBuilder<Object> resp = RestResponseBuilderImpl.ok();
-					List<Tuple2<String, String>> headers = resultBodyAndHeaders.getItem2();
-					for (Tuple2<String, String> entry : headers) {
-						resp = resp.header(entry.getItem1(), entry.getItem2());
-					}
-					return resp.entity(resultBodyAndHeaders.getItem1()).build();
-				});
+			ResponseBuilder<Object> resp = RestResponseBuilderImpl.ok();
+			List<Tuple2<String, String>> headers = resultBodyAndHeaders.getItem2();
+			for (Tuple2<String, String> entry : headers) {
+				resp = resp.header(entry.getItem1(), entry.getItem2());
+			}
+			return resp.entity(resultBodyAndHeaders.getItem1()).build();
+		});
 	}
 
 	public static void makeConcise(Object compacted) {
@@ -515,8 +514,8 @@ public final class HttpUtils {
 	}
 
 	public static Uni<Tuple2<Object, List<Tuple2<String, String>>>> generateCompactedResult(List<Object> contextHeader,
-			Context context, int acceptHeader, Object entity, String geometryProperty, String options,
-			LanguageQueryTerm langQuery, boolean forceArray, JsonLDService ldService) {
+																							Context context, int acceptHeader, Object entity, String geometryProperty, String options,
+																							LanguageQueryTerm langQuery, boolean forceArray, JsonLDService ldService) {
 
 		Set<String> optionSet = null;
 		if (options != null) {
@@ -700,7 +699,8 @@ public final class HttpUtils {
 	public static RestResponse<Object> generateBatchResult(List<NGSILDOperationResult> t) {
 		boolean isHavingError = false;
 		boolean isHavingSuccess = false;
-		boolean wasUpdated = false;
+		boolean wasUpdated = true;
+		List<String> createdIds = new ArrayList<>();
 		List<Map<String, Object>> result = new ArrayList<>();
 		for (NGSILDOperationResult r : t) {
 			if (!r.getFailures().isEmpty()) {
@@ -708,10 +708,13 @@ public final class HttpUtils {
 				isHavingError = true;
 			}
 			if (!r.getSuccesses().isEmpty()) {
+				if(!r.isWasUpdated()){
+					createdIds.add(r.getEntityId());
+				}
 				result.add(r.getJson());
 				isHavingSuccess = true;
 			}
-			wasUpdated = wasUpdated || r.isWasUpdated();
+			wasUpdated = wasUpdated && r.isWasUpdated();
 		}
 		if (isHavingError && !isHavingSuccess) {
 			String type = (String) result.get(0).get("type");
@@ -729,22 +732,22 @@ public final class HttpUtils {
 					|| type.equalsIgnoreCase("Append"))
 				return RestResponse.status(RestResponse.Status.NO_CONTENT);
 			else
-				return RestResponse.status(RestResponse.Status.CREATED, generateBatchCreateSuccess(result));
+				return RestResponse.status(RestResponse.Status.CREATED, createdIds);
 		}
 		return new RestResponseBuilderImpl<>().status(207).type(AppConstants.NGB_APPLICATION_JSON).entity(result)
 				.build();
 	}
 
-	private static List<String> generateBatchCreateSuccess(List<Map<String, Object>> resultInfo) {
-		List<String> result = new ArrayList<>(resultInfo.size());
-		resultInfo.forEach(entry -> {
-			result.add((String) entry.get(NGSIConstants.ID));
-		});
-		return result;
-	}
+//	private static List<String> generateBatchCreateSuccess(List<Map<String, Object>> resultInfo) {
+//		List<String> result = new ArrayList<>(resultInfo.size());
+//		resultInfo.forEach(entry -> {
+//			result.add((String) entry.get(NGSIConstants.ID));
+//		});
+//		return result;
+//	}
 
 	public static Uni<Context> getContextFromPayload(Map<String, Object> originalPayload, List<Object> atContextHeader,
-			boolean atContextAllowed, JsonLDService ldService) {
+													 boolean atContextAllowed, JsonLDService ldService) {
 
 		Object payloadAtContext = originalPayload.get(NGSIConstants.JSON_LD_CONTEXT);
 		if (payloadAtContext == null) {
@@ -774,7 +777,7 @@ public final class HttpUtils {
 	}
 
 	public static Uni<Tuple2<Context, Map<String, Object>>> expandBody(HttpServerRequest request, String payload,
-			int payloadType, JsonLDService ldService) {
+																	   int payloadType, JsonLDService ldService) {
 
 		if (payload == null || payload.isEmpty()) {
 			return Uni.createFrom()
@@ -789,7 +792,7 @@ public final class HttpUtils {
 	}
 
 	public static Uni<Tuple2<Context, Map<String, Object>>> expandBody(HttpServerRequest request,
-			Map<String, Object> originalPayload, int payloadType, JsonLDService ldService) {
+																	   Map<String, Object> originalPayload, int payloadType, JsonLDService ldService) {
 		boolean atContextAllowed;
 		List<Object> atContext = getAtContext(request);
 		try {
@@ -869,8 +872,8 @@ public final class HttpUtils {
 	}
 
 	public static Uni<RestResponse<Object>> generateQueryResult(HttpServerRequest request, QueryResult queryResult,
-			String options, String geometryProperty, int acceptHeader, boolean count, int limit, LanguageQueryTerm lang,
-			Context context, JsonLDService ldService) {
+																String options, String geometryProperty, int acceptHeader, boolean count, int limit, LanguageQueryTerm lang,
+																Context context, JsonLDService ldService) {
 		ResponseBuilder<Object> builder;
 		if (count == true) {
 			builder = RestResponseBuilderImpl.ok().header(NGSIConstants.COUNT_HEADER_RESULT, queryResult.getCount());
@@ -883,37 +886,37 @@ public final class HttpUtils {
 		List<Object> atContext = request == null ? Lists.newArrayList() : getAtContext(request);
 		return generateCompactedResult(atContext, context, acceptHeader, queryResult.getData(), geometryProperty,
 				options, lang, true, ldService).onItem().transform(resultAndHeaders -> {
-					String nextLink;
-					String prevLink;
-					if (request != null) {
-						MultiMap urlParams = request.params();
-						nextLink = HttpUtils.generateNextLink(urlParams, queryResult);
-						prevLink = HttpUtils.generatePrevLink(urlParams, queryResult);
-					} else {
-						prevLink = null;
-						nextLink = null;
-					}
-					ResponseBuilder<Object> myBuilder = builder.header(NGSIConstants.ENTITY_MAP_TOKEN_HEADER,
-							queryResult.getqToken());
+			String nextLink;
+			String prevLink;
+			if (request != null) {
+				MultiMap urlParams = request.params();
+				nextLink = HttpUtils.generateNextLink(urlParams, queryResult);
+				prevLink = HttpUtils.generatePrevLink(urlParams, queryResult);
+			} else {
+				prevLink = null;
+				nextLink = null;
+			}
+			ResponseBuilder<Object> myBuilder = builder.header(NGSIConstants.ENTITY_MAP_TOKEN_HEADER,
+					queryResult.getqToken());
 
-					if (nextLink != null) {
-						myBuilder = myBuilder.header(HttpHeaders.LINK, nextLink);
-					}
-					if (prevLink != null) {
-						myBuilder = myBuilder.header(HttpHeaders.LINK, prevLink);
-					}
-					List<Tuple2<String, String>> headers = resultAndHeaders.getItem2();
-					for (Tuple2<String, String> entry : headers) {
-						myBuilder = myBuilder.header(entry.getItem1(), entry.getItem2());
-					}
+			if (nextLink != null) {
+				myBuilder = myBuilder.header(HttpHeaders.LINK, nextLink);
+			}
+			if (prevLink != null) {
+				myBuilder = myBuilder.header(HttpHeaders.LINK, prevLink);
+			}
+			List<Tuple2<String, String>> headers = resultAndHeaders.getItem2();
+			for (Tuple2<String, String> entry : headers) {
+				myBuilder = myBuilder.header(entry.getItem1(), entry.getItem2());
+			}
 
-					return myBuilder.entity(resultAndHeaders.getItem1()).build();
-				});
+			return myBuilder.entity(resultAndHeaders.getItem1()).build();
+		});
 
 	}
 
 	public static NGSILDOperationResult handleWebResponse(HttpResponse<Buffer> response, Throwable failure,
-			Integer[] integers, RemoteHost remoteHost, int operationType, String entityId, Set<Attrib> attrs) {
+														  Integer[] integers, RemoteHost remoteHost, int operationType, String entityId, Set<Attrib> attrs) {
 
 		NGSILDOperationResult result = new NGSILDOperationResult(operationType, entityId);
 		if (failure != null) {

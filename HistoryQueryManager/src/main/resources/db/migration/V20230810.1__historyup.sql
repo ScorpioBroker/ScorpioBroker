@@ -29,7 +29,7 @@ AS $function$
                 NEW.geovalue = NULL;
             END IF;
 			IF NEW.location is NULL THEN
-				SELECT first_value(teai.location) INTO NEW.location FROM temporalentityattrinstance teai WHERE COALESCE(teai.modifiedat, teai.observedat) <= COALESCE(NEW.modifiedat, NEW.observedat) ORDER BY COALESCE(teai.modifiedat, teai.observedat);
+				SELECT teai.location INTO NEW.location FROM temporalentityattrinstance teai WHERE COALESCE(teai.modifiedat, teai.observedat) <= COALESCE(NEW.modifiedat, NEW.observedat) ORDER BY COALESCE(teai.modifiedat, teai.observedat) LIMIT 1;
 			END IF;
         END IF;
 

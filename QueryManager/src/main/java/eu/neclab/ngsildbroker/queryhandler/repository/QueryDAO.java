@@ -317,7 +317,7 @@ public class QueryDAO {
 							Map<String, String> tmp = Maps.newHashMap();
 							tmp.put(NGSIConstants.JSON_LD_ID, row.getString(0));
 							resultEntry.put(NGSIConstants.NGSI_LD_TYPE_NAME, Lists.newArrayList(tmp));
-							resultEntry.put(NGSIConstants.NGSI_LD_ATTRIBUTE_NAMES, row.getJsonArray(1).getList());
+							resultEntry.put(NGSIConstants.NGSI_LD_ATTRIBUTE_NAMES, row.getJsonArray(1).getList().stream().distinct().toList());
 							result.add(resultEntry);
 						});
 						return result;
@@ -799,8 +799,8 @@ public class QueryDAO {
 			query.append(" as ENTITY FROM b left join ENTITY on b.ID = ENTITY.ID) SELECT ");
 			query.append("a.ID, c.ENTITY FROM a left outer join c on a.ID = c.ID");
 			String queryString = query.toString();
-			logger.debug("SQL REQUEST: " + queryString);
-			logger.debug("SQL TUPLE: " + tuple.deepToString());
+			logger.info("SQL REQUEST: " + queryString);
+			logger.info("SQL TUPLE: " + tuple.deepToString());
 			return client.preparedQuery(queryString).execute(tuple).onItem().transform(rows -> {
 				List<String> entityIds = Lists.newArrayList();
 				Map<String, Map<String, Object>> entities = Maps.newHashMap();

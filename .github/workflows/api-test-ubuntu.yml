@@ -18,7 +18,7 @@ jobs:
         with:
           java-version: '17' # for a specific JDK 17; or '17' for the latest JDK 17
           distribution: 'mandrel'
-          version: 'mandrel-latest'
+          version: 'mandrel-23.0.1.2-Final'
       - name: Build testserver
         run: |
           cd testserver
@@ -89,7 +89,7 @@ jobs:
         with:
           java-version: '17' # for a specific JDK 17; or '17' for the latest JDK 17
           distribution: 'mandrel'
-          version: 'mandrel-latest'
+          version: 'mandrel-23.0.1.2-Final'
       - name: Build testserver
         run: |
           cd testserver
@@ -149,7 +149,7 @@ jobs:
         with:
           java-version: '17' # for a specific JDK 17; or '17' for the latest JDK 17
           distribution: 'mandrel'
-          version: 'mandrel-latest'
+          version: 'mandrel-23.0.1.2-Final'
       - name: Build testserver
         run: |
           cd testserver
@@ -209,7 +209,7 @@ jobs:
         with:
           java-version: '17' # for a specific JDK 17; or '17' for the latest JDK 17
           distribution: 'mandrel'
-          version: 'mandrel-latest'
+          version: 'mandrel-23.0.1.2-Final'
       - name: docker-login
         uses: docker/login-action@v2
         with:

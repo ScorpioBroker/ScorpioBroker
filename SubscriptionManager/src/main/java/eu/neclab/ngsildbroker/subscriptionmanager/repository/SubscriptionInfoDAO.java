@@ -147,4 +147,42 @@ public class SubscriptionInfoDAO {
 
 	}
 
+	public Uni<Tuple2<Map<String, Object>, Map<String, Object>>> loadSubscription(String tenant, String id) {
+		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
+			return client.preparedQuery("SELECT subscription, context FROM subscriptions WHERE subscription_id=$1")
+					.execute(Tuple.of(id)).onItem().transformToUni(rows -> {
+						if (rows.size() == 0) {
+							Tuple2<Map<String, Object>, Map<String, Object>> r = Tuple2.of(null, null);
+							return Uni.createFrom().item(r);
+						}
+						Row first = rows.iterator().next();
+						Map<String, Object> subscription = first.getJsonObject(0).getMap();
+						String contextId = first.getString(1);
+						return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem()
+								.transformToUni(defaultClient -> {
+									return defaultClient.preparedQuery("SELECT body FROM contexts WHERE id=$1")
+											.execute(Tuple.of(contextId)).onItem().transformToUni(rows1 -> {
+												if (rows1.size() == 0) {
+													return defaultClient
+															.preparedQuery("SELECT body FROM contexts WHERE id=$1")
+															.execute(Tuple.of(AppConstants.INTERNAL_NULL_KEY)).onItem()
+															.transform(rows2 -> {
+																Row defaultContextRow = rows2.iterator().next();
+																return Tuple2.of(subscription,
+																		defaultContextRow.getJsonObject(0).getMap());
+															});
+												} else {
+													Row contextRow = rows1.iterator().next();
+													return Uni.createFrom().item(Tuple2.of(subscription,
+															contextRow.getJsonObject(0).getMap()));
+												}
+
+											});
+
+								});
+
+					});
+		});
+	}
+
 }

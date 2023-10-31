@@ -40,6 +40,8 @@ public class MicroServiceUtils {
 
 	@ConfigProperty(name = "mysettings.gateway.port")
 	int port;
+	@ConfigProperty(name = "atcontext.url")
+	String contextServerUrl;
 
 	public static void serializeAndSplitObjectAndEmit(Object obj, int messageSize, MutinyEmitter<String> emitter,
 			ObjectMapper objectMapper) {
@@ -91,9 +93,10 @@ public class MicroServiceUtils {
 			}
 		}
 		result.set(0, "#" + id + String.format("%011d", i) + result.get(0).substring(32));
-		result.set(result.size() -  1, "%" + result.get(result.size() - 1).substring(1));
+		result.set(result.size() - 1, "%" + result.get(result.size() - 1).substring(1));
 		return result;
 	}
+
 	public URI getGatewayURL() {
 		logger.trace("getGatewayURL() :: started");
 		String url = null;
@@ -118,22 +121,29 @@ public class MicroServiceUtils {
 	public static BaseRequest deepCopyRequestMessage(BaseRequest originalPayload) {
 		BaseRequest result;
 		switch (originalPayload.getRequestType()) {
-			case AppConstants.DELETE_ATTRIBUTE_REQUEST:
-				result = new DeleteAttributeRequest();
-				result.setPreviousEntity(originalPayload.getPreviousEntity());
-				result.setAttribName(originalPayload.getAttribName());
-				result.setDatasetId(originalPayload.getDatasetId());
-				result.setDeleteAll(originalPayload.isDeleteAll());
-				break;
-			default:
-				result = new BaseRequest();
+		case AppConstants.DELETE_ATTRIBUTE_REQUEST:
+			result = new DeleteAttributeRequest();
+			result.setPreviousEntity(originalPayload.getPreviousEntity());
+			result.setAttribName(originalPayload.getAttribName());
+			result.setDatasetId(originalPayload.getDatasetId());
+			result.setDeleteAll(originalPayload.isDeleteAll());
+			break;
+		default:
+			result = new BaseRequest();
 
 		}
 		result.setId(originalPayload.getId());
 		result.setPayload(deepCopyMap(originalPayload.getPayload()));
 		result.setTenant(originalPayload.getTenant());
 		result.setRequestType(originalPayload.getRequestType());
-		result.setPreviousEntity(deepCopyMap(originalPayload.getPreviousEntity()));
+		Object previous = originalPayload.getPreviousEntity();
+		if (previous instanceof Map m1) {
+			result.setPreviousEntity(deepCopyMap(m1));
+		}
+		if (previous instanceof List l1) {
+			result.setPreviousEntity(deppCopyList(l1));
+		}
+
 		return result;
 	}
 
@@ -240,5 +250,13 @@ public class MicroServiceUtils {
 //		tmp.setSubscription(new Subscription(originalPayload.getSubscription()));
 //		return new SyncMessage(originalSync.getSyncId(), tmp);
 //	}
+	public URI getContextServerURL() {
+		logger.trace("getContextServerURL :: started");
+		try {
+			return new URI(contextServerUrl);
+		} catch (URISyntaxException e) {
+			throw new RuntimeException(e);
+		}
 
+	}
 }

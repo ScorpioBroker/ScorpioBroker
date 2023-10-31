@@ -32,14 +32,13 @@ import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.registry.subscriptionmanager.service.RegistrySubscriptionService;
 import io.netty.channel.EventLoopGroup;
 import io.quarkus.arc.profile.IfBuildProfile;
-import io.quarkus.arc.profile.UnlessBuildProfile;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.vertx.mutiny.core.Vertx;
 
 @Singleton
-@IfBuildProfile(anyOf = { "sqs", "kafka" })
+@IfBuildProfile(anyOf = { "kafka" })
 public class RegistrySubscriptionSyncServiceString implements SyncService {
 
 	public static final String SYNC_ID = UUID.randomUUID().toString();

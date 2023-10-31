@@ -2,6 +2,7 @@ package eu.neclab.ngsildbroker.commons.tools;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -97,14 +98,11 @@ public class QueryParser {
 		QQueryTerm root = new QQueryTerm(context);
 		QQueryTerm current = root;
 		boolean readingAttrib = true;
+		boolean readingOperant = false;
 		String attribName = "";
-		String operator = "";
+		StringBuilder operator = new StringBuilder();
 		String operant = "";
-		try {
-			input = URLDecoder.decode(input, "utf-8");
-		} catch (UnsupportedEncodingException e) {
-			throw new ResponseException(ErrorType.InternalError, e.getMessage());
-		}
+		input = URLDecoder.decode(input, StandardCharsets.UTF_8);
 		OfInt it = input.chars().iterator();
 		while (it.hasNext()) {
 			char b = (char) it.next().intValue();
@@ -113,29 +111,45 @@ public class QueryParser {
 				current.setFirstChild(child);
 				current = child;
 				readingAttrib = true;
+				readingOperant = false;
 
 			} else if (b == ';') {
 				QQueryTerm next = new QQueryTerm(context);
 				current.setOperant(operant);
-				String expandedOpt = context.expandIri(operant.replaceAll("\"", ""), false, true, null, null);
-				current.setExpandedOpt(expandedOpt);
+				if (!operant.isEmpty()) {
+					String expandedOpt = context.expandIri(operant.replaceAll("\"", ""), false, true, null, null);
+					current.setExpandedOpt(expandedOpt);
+				}
 				current.setNext(next);
 				current.setNextAnd(true);
+				if (!attribName.isEmpty()) {
+					current.setAttribute(attribName);
+					root.addAttrib(attribName);
+					attribName = "";
+				}
 				current = next;
 				readingAttrib = true;
+				readingOperant = false;
 
 				operant = "";
 
 			} else if (b == '|') {
 				QQueryTerm next = new QQueryTerm(context);
 				current.setOperant(operant);
-				String expandedOpt = context.expandIri(operant.replaceAll("\"", ""), false, true, null, null);
-				current.setExpandedOpt(expandedOpt);
+				if (!operant.isEmpty()) {
+					String expandedOpt = context.expandIri(operant.replaceAll("\"", ""), false, true, null, null);
+					current.setExpandedOpt(expandedOpt);
+				}
 				current.setNext(next);
 				current.setNextAnd(false);
+				if (!attribName.isEmpty()) {
+					current.setAttribute(attribName);
+					root.addAttrib(attribName);
+					attribName = "";
+				}
 				current = next;
 				readingAttrib = true;
-
+				readingOperant = false;
 				operant = "";
 
 			} else if (b == ')') {
@@ -144,13 +158,13 @@ public class QueryParser {
 				current.setExpandedOpt(expandedOpt);
 				current = current.getParent();
 				readingAttrib = true;
-
+				readingOperant = false;
 				operant = "";
 
-			} else if (b == '!' || b == '=' || b == '<' || b == '>' || b == '~') {
-				operator += (char) b;
+			} else if ((b == '!' || b == '=' || b == '<' || b == '>' || b == '~') && !readingOperant) {
+				operator.append(b);
 				readingAttrib = false;
-				if (!attribName.equals("")) {
+				if (!attribName.isEmpty()) {
 					current.setAttribute(attribName);
 					root.addAttrib(attribName);
 					attribName = "";
@@ -159,11 +173,11 @@ public class QueryParser {
 				if (readingAttrib) {
 					attribName += (char) b;
 				} else {
-					if (!operator.equals("")) {
-						current.setOperator(operator);
-						operator = "";
+					if (!operator.toString().isEmpty()) {
+						current.setOperator(operator.toString());
+						operator = new StringBuilder();
 					}
-
+					readingOperant = true;
 					operant += (char) b;
 				}
 			}
@@ -172,7 +186,7 @@ public class QueryParser {
 		if (readingAttrib) {
 			current.setAttribute(attribName);
 		}
-		if (!operant.equals("")) {
+		if (!operant.isEmpty()) {
 			current.setOperant(operant);
 			String expandedOpt = context.expandIri(operant.replaceAll("\"", ""), false, true, null, null);
 			current.setExpandedOpt(expandedOpt);

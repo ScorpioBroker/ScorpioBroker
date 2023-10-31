@@ -16,7 +16,6 @@ import com.google.common.collect.Sets;
 import java.util.Set;
 import java.util.UUID;
 
-import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.BaseProperty;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoProperty;
@@ -155,6 +154,9 @@ public abstract class EntityTools {
 					prop = generateFakeProperty(typeString, ((List<Map<String, Object>>) value).get(0));
 					break;
 				case NGSIConstants.NGSI_LD_LANGPROPERTY:
+					prop = generateFakeProperty(key, tmp);
+					break;
+				case NGSIConstants.NGSI_LD_VocabularyProperty:
 					prop = generateFakeProperty(key, tmp);
 					break;
 				case NGSIConstants.NGSI_LD_PROPERTY:

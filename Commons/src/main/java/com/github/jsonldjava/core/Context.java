@@ -2,7 +2,6 @@ package com.github.jsonldjava.core;
 
 import static com.github.jsonldjava.core.JsonLdUtils.compareShortestLeast;
 import static com.github.jsonldjava.utils.Obj.newMap;
-
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -14,15 +13,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.jsonldjava.core.JsonLdError.Error;
 import com.github.jsonldjava.utils.JsonLdUrl;
 import com.github.jsonldjava.utils.Obj;
 import com.google.common.collect.Lists;
-
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.vertx.mutiny.ext.web.client.WebClient;
@@ -36,9 +31,6 @@ import io.vertx.mutiny.ext.web.client.WebClient;
  */
 @SuppressWarnings("unchecked")
 public class Context extends LinkedHashMap<String, Object> {
-
-	@JsonIgnore
-	MicroServiceUtils microServiceUtils = new MicroServiceUtils();
 	private static final long serialVersionUID = 2894534897574805571L;
 
 	private JsonLdOptions options;
@@ -153,8 +145,8 @@ public class Context extends LinkedHashMap<String, Object> {
 	 */
 
 	public Uni<Context> parse(Object localContext, List<String> remoteContexts, boolean checkToRemoveNGSILDContext,
-			WebClient webClient) {
-		return parse(localContext, remoteContexts, false, checkToRemoveNGSILDContext, true, webClient);
+			WebClient webClient, String atContextUrl) {
+		return parse(localContext, remoteContexts, false, checkToRemoveNGSILDContext, true, webClient, atContextUrl);
 	}
 
 	/**
@@ -175,7 +167,7 @@ public class Context extends LinkedHashMap<String, Object> {
 	// GK: Note that parsing may also depend on some options: `override protected
 	// and `propagate`
 	private Uni<Context> parse(Object localContext, List<String> remoteContextsInput, boolean parsingARemoteContext,
-			boolean checkToRemoveNGSILDContext, boolean root, WebClient webClient) {
+			boolean checkToRemoveNGSILDContext, boolean root, WebClient webClient, String atContextUrl) {
 		List<String> remoteContexts;
 		if (remoteContextsInput == null) {
 			remoteContexts = new ArrayList<String>();
@@ -232,10 +224,10 @@ public class Context extends LinkedHashMap<String, Object> {
 
 				// 3.2.3: Dereference context
 				String finalUrl = uri;
-				if (uri != null && !(uri.contains(microServiceUtils.getGatewayURL().toString())
+				if (uri != null && !(uri.contains(atContextUrl)
 						|| uri.contains("localhost") || uri.contains(NGSIConstants.IMPLICITLYCREATED))) {
 					String encodedUrl = URLEncoder.encode(uri, StandardCharsets.UTF_8);
-					finalUrl = "http://localhost:9090/" + NGSIConstants.JSONLD_CONTEXTS + "createcache/" + encodedUrl;
+					finalUrl = atContextUrl + "createcache/" + encodedUrl;
 				}
 				rds.add(this.options.getDocumentLoader().loadDocument(finalUrl, webClient).onItem()
 						.transform(rd -> Tuple2.of(rd, context)));
@@ -358,7 +350,7 @@ public class Context extends LinkedHashMap<String, Object> {
 					}
 					final Object tempContext = ((Map<String, Object>) remoteContext).get(JsonLdConsts.CONTEXT);
 					resultUni = resultUni.onItem().transformToUni(resultTmp -> resultTmp.parse(tempContext,
-							remoteContexts, true, checkToRemoveNGSILDContext, false, webClient));
+							remoteContexts, true, checkToRemoveNGSILDContext, false, webClient,atContextUrl));
 				}
 				return resultUni;
 			});
@@ -381,8 +373,8 @@ public class Context extends LinkedHashMap<String, Object> {
 		}
 	}
 
-	public Uni<Context> parse(Object localContext, boolean checkToRemoveNGSILDContext, WebClient webClient) {
-		return this.parse(localContext, new ArrayList<String>(), checkToRemoveNGSILDContext, webClient);
+	public Uni<Context> parse(Object localContext, boolean checkToRemoveNGSILDContext, WebClient webClient, String atContextUrl) {
+		return this.parse(localContext, new ArrayList<String>(), checkToRemoveNGSILDContext, webClient,atContextUrl);
 	}
 
 	/**
