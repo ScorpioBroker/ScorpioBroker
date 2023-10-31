@@ -102,8 +102,8 @@ public class QueryParser {
 		String attribName = "";
 		StringBuilder operator = new StringBuilder();
 		String operant = "";
-        input = URLDecoder.decode(input, StandardCharsets.UTF_8);
-        OfInt it = input.chars().iterator();
+		input = URLDecoder.decode(input, StandardCharsets.UTF_8);
+		OfInt it = input.chars().iterator();
 		while (it.hasNext()) {
 			char b = (char) it.next().intValue();
 			if (b == '(') {
@@ -116,10 +116,17 @@ public class QueryParser {
 			} else if (b == ';') {
 				QQueryTerm next = new QQueryTerm(context);
 				current.setOperant(operant);
-				String expandedOpt = context.expandIri(operant.replaceAll("\"", ""), false, true, null, null);
-				current.setExpandedOpt(expandedOpt);
+				if (!operant.isEmpty()) {
+					String expandedOpt = context.expandIri(operant.replaceAll("\"", ""), false, true, null, null);
+					current.setExpandedOpt(expandedOpt);
+				}
 				current.setNext(next);
 				current.setNextAnd(true);
+				if (!attribName.isEmpty()) {
+					current.setAttribute(attribName);
+					root.addAttrib(attribName);
+					attribName = "";
+				}
 				current = next;
 				readingAttrib = true;
 				readingOperant = false;
@@ -129,10 +136,17 @@ public class QueryParser {
 			} else if (b == '|') {
 				QQueryTerm next = new QQueryTerm(context);
 				current.setOperant(operant);
-				String expandedOpt = context.expandIri(operant.replaceAll("\"", ""), false, true, null, null);
-				current.setExpandedOpt(expandedOpt);
+				if (!operant.isEmpty()) {
+					String expandedOpt = context.expandIri(operant.replaceAll("\"", ""), false, true, null, null);
+					current.setExpandedOpt(expandedOpt);
+				}
 				current.setNext(next);
 				current.setNextAnd(false);
+				if (!attribName.isEmpty()) {
+					current.setAttribute(attribName);
+					root.addAttrib(attribName);
+					attribName = "";
+				}
 				current = next;
 				readingAttrib = true;
 				readingOperant = false;

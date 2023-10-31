@@ -150,7 +150,7 @@ public class QueryService {
 					tmp = Lists.newArrayList();
 					remoteHost2EntityIds.put(remoteHost, tmp);
 				}
-				logger.info("adding entityid: " + entry.getEntityId() + " for remote host " + remoteHost.host());
+				logger.debug("adding entityid: " + entry.getEntityId() + " for remote host " + remoteHost.host());
 				tmp.add(entry.getEntityId());
 			}
 
@@ -174,9 +174,13 @@ public class QueryService {
 					contextLinks = parseLinkHeaderNoUni(remoteHost.headers().getAll("Link"),
 							NGSIConstants.HEADER_REL_LDCONTEXT);
 				}
+				String idList = String.join(",", entry.getValue());
+				logger.debug("calling: " + remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "?id=" + idList
+						+ "&options=sysAttrs&limit=1000");
+
 				unis.add(webClient
-						.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + remoteHost.queryString()
-								+ "&options=sysAttrs")
+						.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "?id=" + idList
+								+ "&options=sysAttrs&limit=1000")
 						.putHeaders(remoteHost.headers()).putHeader("Link", linkHead).send().onItem()
 						.transformToUni(response -> {
 							if (response != null && response.statusCode() == 200) {
@@ -191,22 +195,25 @@ public class QueryService {
 											return result;
 										});
 							}
-							logger.info("failed to query remote host: " + remoteHost.host()
-									+ NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + remoteHost.queryString()
-									+ "&options=sysAttrs");
+							logger.warn("failed to query remote host.");
+							logger.warn("Attempting split");
+							// request to long split it up
+							if (response != null && response.statusCode() == 414) {
+								int baseLength = (remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "?id="
+										+ "&options=sysAttrs&limit=1000").length();
+								return handle414(baseLength, remoteHost, linkHead, String.join(",", entry.getValue()),
+										contextLinks);
+							}
 							if (response != null) {
-								logger.info("response code: " + response.statusCode());
-								logger.info("response : " + response.bodyAsString());
+								logger.debug("response code: " + response.statusCode());
+								logger.debug("response : " + response.bodyAsString());
 							} else {
-								logger.info("null response");
+								logger.debug("null response");
 							}
 
 							return Uni.createFrom().item(new HashMap<String, Map<String, Object>>(0));
 						}).onFailure().recoverWithUni(e -> {
-							logger.info("failed to query remote host: " + remoteHost.host()
-									+ NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + remoteHost.queryString()
-									+ "&options=sysAttrs");
-							logger.info("failed to query with error " + e.getMessage());
+							logger.debug("failed to query with error " + e.getMessage());
 							return Uni.createFrom().item(new HashMap<String, Map<String, Object>>(0));
 						}));
 			}
@@ -245,12 +252,12 @@ public class QueryService {
 				String entityId = entry.getKey();
 				Map<String, Map<String, Map<String, Object>>> attribMap = entry.getValue();
 				if (attribMap.isEmpty()) {
-					logger.info("failed to merge entity id: " + entityId);
-					logger.info("" + entityId2Types.containsKey(entityId));
+					logger.warn("failed to merge entity id: " + entityId);
+					logger.warn("" + entityId2Types.containsKey(entityId));
 					if (attribMap != null) {
-						logger.info(attribMap.toString());
+						logger.warn(attribMap.toString());
 					} else {
-						logger.info("null attribmap");
+						logger.warn("null attribmap");
 					}
 					continue;
 				}
@@ -305,13 +312,107 @@ public class QueryService {
 
 	}
 
+	private Uni<Map<String, Map<String, Object>>> handle414(int baseLength, QueryRemoteHost remoteHost, String linkHead,
+			String idsString, List<Object> contextLinks) {
+		int maxLengthForIds = 2000 - baseLength;
+		if (maxLengthForIds <= idsString.indexOf(",")) {
+			logger.warn("failed to split up query");
+			return Uni.createFrom().item(new HashMap<String, Map<String, Object>>());
+		}
+		int index;
+		List<Uni<Map<String, Map<String, Object>>>> backUpUnis = Lists.newArrayList();
+
+		while (!idsString.isEmpty()) {
+
+			index = idsString.lastIndexOf(",", maxLengthForIds);
+			String toUseIds = idsString.substring(0, index);
+
+			backUpUnis.add(webClient
+					.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "?id=" + toUseIds
+							+ "&options=sysAttrs&limit=1000")
+					.putHeaders(remoteHost.headers()).putHeader("Link", linkHead).send().onItem()
+					.transformToUni(response -> {
+						if (response != null && response.statusCode() == 200) {
+							return ldService.expand(contextLinks, response.bodyAsJsonArray().getList(), opts,
+									AppConstants.QUERY_PAYLOAD, false).onItem().transform(expanded -> {
+										Map<String, Map<String, Object>> result = Maps.newHashMap();
+										expanded.forEach(obj -> {
+											Map<String, Object> entity = (Map<String, Object>) obj;
+											entity.put(EntityTools.REG_MODE_KEY, remoteHost.regMode());
+											result.put((String) entity.get(NGSIConstants.JSON_LD_ID), entity);
+										});
+										return result;
+									});
+						}
+						logger.warn("failed to query remote host: " + remoteHost.host()
+								+ NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "?id=" + toUseIds
+								+ "&options=sysAttrs&limit=1000");
+						if (response != null) {
+							logger.debug("response code: " + response.statusCode());
+							logger.debug("response : " + response.bodyAsString());
+						} else {
+							logger.debug("null response");
+						}
+
+						return Uni.createFrom().item(new HashMap<String, Map<String, Object>>(0));
+					}).onFailure().recoverWithUni(e -> {
+						logger.warn("failed to query with error " + e.getMessage());
+						return Uni.createFrom().item(new HashMap<String, Map<String, Object>>(0));
+					}));
+
+			idsString = idsString.substring(index + 1);
+			if (idsString.length() <= maxLengthForIds) {
+				backUpUnis.add(webClient
+						.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "?id=" + idsString
+								+ "&options=sysAttrs&limit=1000")
+						.putHeaders(remoteHost.headers()).putHeader("Link", linkHead).send().onItem()
+						.transformToUni(response -> {
+							if (response != null && response.statusCode() == 200) {
+								return ldService.expand(contextLinks, response.bodyAsJsonArray().getList(), opts,
+										AppConstants.QUERY_PAYLOAD, false).onItem().transform(expanded -> {
+											Map<String, Map<String, Object>> result = Maps.newHashMap();
+											expanded.forEach(obj -> {
+												Map<String, Object> entity = (Map<String, Object>) obj;
+												entity.put(EntityTools.REG_MODE_KEY, remoteHost.regMode());
+												result.put((String) entity.get(NGSIConstants.JSON_LD_ID), entity);
+											});
+											return result;
+										});
+							}
+							logger.warn("Failed to query entity list from remote host" + remoteHost.toString());
+							if (response != null) {
+								logger.debug("response code: " + response.statusCode());
+								logger.debug("response : " + response.bodyAsString());
+							} else {
+								logger.debug("null response");
+							}
+
+							return Uni.createFrom().item(new HashMap<String, Map<String, Object>>(0));
+						}).onFailure().recoverWithUni(e -> {
+							logger.warn("failed to query with error " + e.getMessage());
+							return Uni.createFrom().item(new HashMap<String, Map<String, Object>>(0));
+						}));
+				idsString = "";
+			}
+		}
+		return Uni.combine().all().unis(backUpUnis).combinedWith(l1 -> {
+			Map<String, Map<String, Object>> result = Maps.newHashMap();
+			for (Object obj1 : l1) {
+				Map<String, Map<String, Object>> m1 = (Map<String, Map<String, Object>>) obj1;
+				result.putAll(m1);
+			}
+			return result;
+		});
+
+	}
+
 	private void mergeEntity(String entityId, Map<String, Object> entity,
 			Map<String, Map<String, Map<String, Map<String, Object>>>> entityId2AttrName2DatasetId2AttrValue,
 			Map<String, Set<String>> entityId2Types, Map<String, Set<String>> entityId2Scopes,
 			Map<String, Long> entityId2YoungestModified, Map<String, Long> entityId2OldestCreatedAt,
 			Map<String, Map<String, Integer>> entityId2AttrDatasetId2CurrentRegMode) {
 		int regMode = 1;
-		logger.info("first level merge for entityId: " + entityId);
+		logger.debug("first level merge for entityId: " + entityId);
 		Map<String, Map<String, Map<String, Object>>> result = entityId2AttrName2DatasetId2AttrValue.get(entityId);
 		if (result == null) {
 			result = Maps.newHashMap();
@@ -1280,11 +1381,13 @@ public class QueryService {
 		} else {
 			List<Uni<Tuple2<QueryRemoteHost, List<String>>>> unis = Lists.newArrayList();
 			for (QueryRemoteHost remoteHost : remoteHost2Query) {
-				String linkHead = "";
+				String linkHead;
 				if (!remoteHost.headers().contains("Link") && headersFromReq.contains("Link")) {
 					linkHead = headersFromReq.get("Link");
-				} else {
+				} else if (remoteHost.headers().contains("Link")) {
 					linkHead = remoteHost.headers().get("Link");
+				} else {
+					linkHead = "";
 				}
 				if (remoteHost.canDoIdQuery()) {
 					String entityMapString;
@@ -1298,21 +1401,31 @@ public class QueryService {
 							.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT
 									+ remoteHost.queryString() + entityMapString)
 							.putHeaders(remoteHost.headers()).putHeader("Link", linkHead).timeout(timeout).send()
-							.onItem().transform(response -> {
+							.onItem().transformToUni(response -> {
 								List<String> result;
 								if (response != null && response.statusCode() == 200) {
 									result = response.bodyAsJsonArray().getList();
 								} else {
-									logger.warn("Failed to query remote host" + remoteHost.toString());
+									logger.warn("Failed to query entity list from remote host" + remoteHost.toString());
+									logger.warn("Attempting split");
+									// request to long split it up
+									if (response != null && response.statusCode() == 414) {
+										int baseLength = (remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT
+												+ entityMapString).length();
+										return handle414IdQuery(baseLength, remoteHost, linkHead, true);
+									}
+									if (response != null) {
+										logger.warn("status code: " + response.statusCode());
+									}
 									result = Lists.newArrayList();
 								}
-								logger.info("retrieved entity list: " + result.toString());
-								logger.info("from remote host: " + remoteHost.host()
+								logger.debug("retrieved entity list: " + result.toString());
+								logger.debug("from remote host: " + remoteHost.host()
 										+ NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + remoteHost.queryString()
 										+ entityMapString);
-								return Tuple2.of(remoteHost, result);
+								return Uni.createFrom().item(Tuple2.of(remoteHost, result));
 							}).onFailure().recoverWithItem(e -> {
-								logger.warn("Failed to query remote host" + remoteHost.toString());
+								logger.warn("Failed to query entity list from remote host" + remoteHost.toString());
 								return null;
 							}));
 				} else {
@@ -1320,21 +1433,33 @@ public class QueryService {
 							.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT
 									+ remoteHost.queryString() + "&limit=1000")
 							.putHeaders(remoteHost.headers()).putHeader("Link", linkHead).timeout(timeout).send()
-							.onItem().transform(response -> {
+							.onItem().transformToUni(response -> {
 								List<String> result = Lists.newArrayList();
 								if (response != null && response.statusCode() == 200) {
 									List tmpList = response.bodyAsJsonArray().getList();
 									for (Object obj : tmpList) {
 										result.add((String) ((Map<String, Object>) obj).get(NGSIConstants.ID));
 									}
+									logger.debug("retrieved entity list: " + result.toString());
+									logger.debug("from remote host: " + remoteHost.host()
+											+ NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + remoteHost.queryString()
+											+ "&limit=1000");
+									return Uni.createFrom().item(Tuple2.of(remoteHost, result));
 								} else {
-									logger.warn("Failed to query remote host" + remoteHost.toString());
+									logger.warn("Failed to query entity list from remote host" + remoteHost.toString());
+									logger.warn("Attempting split");
+									// request to long split it up
+									if (response != null && response.statusCode() == 414) {
+										int baseLength = (remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT
+												+ "&limit=1000").length();
+										return handle414IdQuery(baseLength, remoteHost, linkHead, false);
+									}
+									if (response != null) {
+										logger.warn("status code: " + response.statusCode());
+									}
+									return Uni.createFrom().item(Tuple2.of(remoteHost, result));
 								}
-								logger.info("retrieved entity list: " + result.toString());
-								logger.info("from remote host: " + remoteHost.host()
-										+ NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + remoteHost.queryString()
-										+ "&limit=1000");
-								return Tuple2.of(remoteHost, result);
+
 							}).onFailure().recoverWithItem(e -> {
 								logger.warn("Failed to query remote host" + remoteHost.toString());
 								return null;
@@ -1382,6 +1507,93 @@ public class QueryService {
 			// entityMap).onItem().transform(v -> {
 			return Tuple2.of(localResults, entityMap);
 			// });
+		});
+
+	}
+
+	private Uni<Tuple2<QueryRemoteHost, List<String>>> handle414IdQuery(int baseLength, QueryRemoteHost remoteHost,
+			String linkHead, boolean entityMap) {
+		int start = remoteHost.queryString().indexOf("id=");
+		if (start == -1) {
+			logger.warn("failed to split up query");
+			return Uni.createFrom().item(Tuple2.of(remoteHost, Lists.newArrayList()));
+		}
+		int end = remoteHost.queryString().indexOf("&", start);
+		String idsString;
+		if (end == -1) {
+			idsString = remoteHost.queryString().substring(start + 3);
+		} else {
+			idsString = remoteHost.queryString().substring(start + 3, end);
+		}
+		// assuming 2000kb for this ... since ... internet explorer set this as a
+		// minimum
+		int maxLengthForIds = 2000 - (baseLength + (remoteHost.queryString().length() - (idsString.length() + 4)));
+		if (maxLengthForIds <= idsString.indexOf(",")) {
+			logger.warn("failed to split up query");
+			return Uni.createFrom().item(Tuple2.of(remoteHost, Lists.newArrayList()));
+		}
+		int index;
+		List<Uni<Tuple2<QueryRemoteHost, List<String>>>> backUpUnis = Lists.newArrayList();
+		String baseQueryString;
+		if (end == -1) {
+			baseQueryString = remoteHost.queryString().substring(0, start + 1);
+		} else {
+			baseQueryString = remoteHost.queryString().substring(0, start + 1)
+					+ remoteHost.queryString().substring(end);
+		}
+		if (baseQueryString.isEmpty()) {
+			baseQueryString = "?";
+		} else {
+			baseQueryString += "&";
+		}
+		while (!idsString.isEmpty()) {
+
+			index = idsString.lastIndexOf(",", maxLengthForIds);
+			String toUseIds = idsString.substring(0, index);
+			backUpUnis.add(webClient
+					.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + baseQueryString + "id="
+							+ toUseIds + "&limit=1000")
+					.putHeaders(remoteHost.headers()).putHeader("Link", linkHead).timeout(timeout).send().onItem()
+					.transformToUni(backupResponse -> {
+						List<String> backupResult = Lists.newArrayList();
+						if (backupResponse != null && backupResponse.statusCode() == 200) {
+							List tmpList = backupResponse.bodyAsJsonArray().getList();
+							for (Object obj : tmpList) {
+								backupResult.add((String) ((Map<String, Object>) obj).get(NGSIConstants.ID));
+							}
+							logger.debug("retrieved entity list: " + backupResult.toString());
+						}
+						return Uni.createFrom().item(Tuple2.of(remoteHost, backupResult));
+					}).onFailure().recoverWithItem(e1 -> null));
+			idsString = idsString.substring(index + 1);
+			if (idsString.length() <= maxLengthForIds) {
+				backUpUnis.add(webClient
+						.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + baseQueryString + "id="
+								+ idsString + "&limit=1000")
+						.putHeaders(remoteHost.headers()).putHeader("Link", linkHead).timeout(timeout).send().onItem()
+						.transformToUni(backupResponse -> {
+							List<String> backupResult = Lists.newArrayList();
+							if (backupResponse != null && backupResponse.statusCode() == 200) {
+								List tmpList = backupResponse.bodyAsJsonArray().getList();
+								for (Object obj : tmpList) {
+									backupResult.add((String) ((Map<String, Object>) obj).get(NGSIConstants.ID));
+								}
+								logger.debug("retrieved entity list: " + backupResult.toString());
+							}
+							return Uni.createFrom().item(Tuple2.of(remoteHost, backupResult));
+						}).onFailure().recoverWithItem(e1 -> null));
+				idsString = "";
+			}
+		}
+		return Uni.combine().all().unis(backUpUnis).combinedWith(l1 -> {
+			List<String> allIds = Lists.newArrayList();
+			QueryRemoteHost qrh = null;
+			for (Object obj1 : l1) {
+				Tuple2<QueryRemoteHost, List<String>> t1 = (Tuple2<QueryRemoteHost, List<String>>) obj1;
+				qrh = t1.getItem1();
+				allIds.addAll(t1.getItem2());
+			}
+			return Tuple2.of(qrh, allIds);
 		});
 
 	}
