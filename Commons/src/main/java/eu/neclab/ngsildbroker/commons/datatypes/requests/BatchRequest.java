@@ -23,6 +23,7 @@ public class BatchRequest extends BaseRequest {
 	private List<String> entityIds;
 	private int requestType;
 	private long sendTimestamp = System.currentTimeMillis();
+	private boolean noOverwrite;
 
 	public BatchRequest(String tenant, List<Map<String, Object>> requestPayload, List<Context> contexts,
 			int requestType) {
@@ -101,4 +102,11 @@ public class BatchRequest extends BaseRequest {
 		return sendTimestamp;
 	}
 
+	public boolean isNoOverwrite() {
+		return noOverwrite;
+	}
+
+	public void setNoOverwrite(boolean noOverwrite) {
+		this.noOverwrite = noOverwrite;
+	}
 }

@@ -1035,7 +1035,7 @@ public class EntityService {
 	}
 
 	public Uni<List<NGSILDOperationResult>> appendBatch(String tenant, List<Map<String, Object>> expandedEntities,
-			List<Context> contexts, boolean localOnly) {
+			List<Context> contexts, boolean localOnly,boolean noOverWrite) {
 		Iterator<Map<String, Object>> itEntities = expandedEntities.iterator();
 		Iterator<Context> itContext = contexts.iterator();
 		Map<RemoteHost, List<Tuple2<Context, Map<String, Object>>>> remoteHost2Batch = Maps.newHashMap();
@@ -1047,6 +1047,7 @@ public class EntityService {
 			Map<String, Object> local = split.getItem1();
 			Context context = itContext.next();
 			if (local != null) {
+				local.remove(NGSIConstants.NGSI_LD_CREATED_AT);
 				localEntities.add(local);
 			} else {
 				itContext.remove();
@@ -1065,6 +1066,7 @@ public class EntityService {
 		}
 
 		BatchRequest request = new BatchRequest(tenant, localEntities, contexts, AppConstants.APPEND_REQUEST);
+		request.setNoOverwrite(noOverWrite);
 		Uni<List<NGSILDOperationResult>> local = entityDAO.batchAppendEntity(request).onItem().transform(dbResult -> {
 			List<NGSILDOperationResult> result = Lists.newArrayList();
 			List<String> successes = (List<String>) dbResult.get("success");

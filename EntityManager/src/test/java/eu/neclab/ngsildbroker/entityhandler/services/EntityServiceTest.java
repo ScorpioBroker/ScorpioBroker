@@ -334,7 +334,7 @@ public class EntityServiceTest {
 		when(entityDAO.batchAppendEntity(any())).thenReturn(createEntityRes);
 
 		List<NGSILDOperationResult> operationResultList = entityService
-				.appendBatch(tenant, expandedEntities, contextList, true).await().indefinitely();
+				.appendBatch(tenant, expandedEntities, contextList, true,false).await().indefinitely();
 
 		assertEquals(1, operationResultList.size());
 		verify(entityDAO, times(1)).batchAppendEntity(any());
@@ -370,7 +370,7 @@ public class EntityServiceTest {
 		when(entityDAO.batchAppendEntity(any())).thenReturn(createEntityRes);
 
 		List<NGSILDOperationResult> operationResultList = entityService
-				.appendBatch(tenant, expandedEntities, contextList, true).await().indefinitely();
+				.appendBatch(tenant, expandedEntities, contextList, true,false).await().indefinitely();
 
 		assertEquals(2, operationResultList.size());
 		verify(entityDAO, times(1)).batchAppendEntity(any());

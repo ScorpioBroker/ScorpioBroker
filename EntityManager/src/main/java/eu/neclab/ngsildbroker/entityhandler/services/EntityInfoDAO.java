@@ -76,8 +76,8 @@ public class EntityInfoDAO {
 
 	public Uni<Map<String, Object>> batchAppendEntity(BatchRequest request) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
-			return client.preparedQuery("SELECT * FROM NGSILD_APPENDBATCH($1)")
-					.execute(Tuple.of(new JsonArray(request.getRequestPayload()))).onItem().transform(rows -> {
+			return client.preparedQuery("SELECT * FROM NGSILD_APPENDBATCH($1, $2)")
+					.execute(Tuple.of(new JsonArray(request.getRequestPayload()), request.isNoOverwrite())).onItem().transform(rows -> {
 						return rows.iterator().next().getJsonObject(0).getMap();
 					});
 		});

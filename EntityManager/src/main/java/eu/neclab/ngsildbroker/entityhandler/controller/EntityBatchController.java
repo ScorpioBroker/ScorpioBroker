@@ -182,6 +182,7 @@ public class EntityBatchController {
 	public Uni<RestResponse<Object>> appendMultiple(HttpServerRequest request,
 			List<Map<String, Object>> compactedEntities, @QueryParam(value = "options") String options,
 			@QueryParam("localOnly") boolean localOnly) {
+		boolean isNoOverwrite = options != null && options.contains("noOverwrite");
 		List<Uni<Tuple2<String, Object>>> unis = Lists.newArrayList();
 		for (Map<String, Object> compactedEntity : compactedEntities) {
 			noConcise(compactedEntity);
@@ -219,7 +220,7 @@ public class EntityBatchController {
 			List<NGSILDOperationResult> fails = tuple.getItem1();
 			List<Map<String, Object>> expandedEntities = tuple.getItem2();
 			List<Context> contexts = tuple.getItem3();
-			return entityService.appendBatch(HttpUtils.getTenant(request), expandedEntities, contexts, localOnly)
+			return entityService.appendBatch(HttpUtils.getTenant(request), expandedEntities, contexts, localOnly,isNoOverwrite)
 					.onItem().transform(opResults -> {
 						opResults.addAll(fails);
 						return HttpUtils.generateBatchResult(opResults);

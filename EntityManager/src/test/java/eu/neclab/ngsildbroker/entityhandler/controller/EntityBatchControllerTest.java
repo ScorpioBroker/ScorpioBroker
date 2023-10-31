@@ -183,7 +183,7 @@ public class EntityBatchControllerTest {
 		opResult.setWasUpdated(true);
 		NGSILDOperationResultList.add(opResult);
 
-		Mockito.when(entityService.appendBatch(any(), any(), any(), anyBoolean()))
+		Mockito.when(entityService.appendBatch(any(), any(), any(), anyBoolean(),anyBoolean()))
 				.thenReturn(Uni.createFrom().item(NGSILDOperationResultList));
 
 		try {
