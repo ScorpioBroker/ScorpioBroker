@@ -85,6 +85,13 @@ public class RegistryController {
 			return Uni.createFrom()
 					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.InvalidRequest)));
 		}
+		if(ids!=null) {
+			try {
+				HttpUtils.validateUri(ids);
+			} catch (Exception e) {
+				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+			}
+		}
 
 		List<Object> headerContext = HttpUtils.getAtContext(request);
 		return ldService.parse(headerContext).onItem().transformToUni(context -> {
