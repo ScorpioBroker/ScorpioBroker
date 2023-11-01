@@ -781,7 +781,7 @@ public final class HttpUtils {
 
 		if (payload == null || payload.isEmpty()) {
 			return Uni.createFrom()
-					.failure(new ResponseException(ErrorType.InvalidRequest, "You have to provide a valid payload"));
+					.failure(new ResponseException(ErrorType.BadRequestData, "You have to provide a valid payload"));
 		}
 		return JsonUtils.fromString(payload).onItem().transformToUni(json -> {
 			Map<String, Object> originalPayload;
