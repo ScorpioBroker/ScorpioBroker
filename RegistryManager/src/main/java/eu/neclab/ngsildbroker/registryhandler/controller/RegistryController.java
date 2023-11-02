@@ -83,7 +83,7 @@ public class RegistryController {
 		}
 		if (ids == null && type == null && attrs == null && geometry == null && q == null) {
 			return Uni.createFrom()
-					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.InvalidRequest)));
+					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData)));
 		}
 		if(ids!=null) {
 			try {
