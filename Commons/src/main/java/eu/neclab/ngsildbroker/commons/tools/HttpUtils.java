@@ -6,6 +6,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -784,8 +785,12 @@ public final class HttpUtils {
 					.failure(new ResponseException(ErrorType.BadRequestData, "You have to provide a valid payload"));
 		}
 		return JsonUtils.fromString(payload).onItem().transformToUni(json -> {
-			Map<String, Object> originalPayload;
-			originalPayload = (Map<String, Object>) json;
+			Map<String, Object> originalPayload= new HashMap<>();
+			if(json instanceof Map) {
+				originalPayload = (Map<String, Object>) json;
+			}else {
+				return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData));
+			}
 			return expandBody(request, originalPayload, payloadType, ldService);
 
 		});
@@ -795,6 +800,10 @@ public final class HttpUtils {
 																	   Map<String, Object> originalPayload, int payloadType, JsonLDService ldService) {
 		boolean atContextAllowed;
 		List<Object> atContext = getAtContext(request);
+		if(originalPayload.toString().contains(NGSIConstants.VALUE+"=null")){
+			return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData));
+		}
+
 		try {
 			atContextAllowed = HttpUtils.doPreflightCheck(request, atContext);
 		} catch (ResponseException e) {
@@ -804,6 +813,7 @@ public final class HttpUtils {
 				.transformToUni(context -> {
 					return ldService.expand(context, originalPayload, opts, payloadType, atContextAllowed).onItem()
 							.transform(list -> {
+
 								Map<String, Object> resolved = (Map<String, Object>) list.get(0);
 								return Tuple2.of(context, resolved);
 							});
