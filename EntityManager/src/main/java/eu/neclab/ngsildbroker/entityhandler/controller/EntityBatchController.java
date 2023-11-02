@@ -107,6 +107,9 @@ public class EntityBatchController {
 			List<NGSILDOperationResult> fails = tuple.getItem1();
 			List<Map<String, Object>> expandedEntities = tuple.getItem2();
 			List<Context> contexts = tuple.getItem3();
+			if(expandedEntities.isEmpty()){
+				return Uni.createFrom().item(fails).onItem().transform(HttpUtils::generateBatchResult);
+			}
 			return entityService.createBatch(HttpUtils.getTenant(request), expandedEntities, contexts, localOnly)
 					.onItem().transform(opResults -> {
 						opResults.addAll(fails);
