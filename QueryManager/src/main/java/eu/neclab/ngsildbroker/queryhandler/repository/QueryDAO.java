@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import jakarta.inject.Inject;
@@ -76,6 +77,20 @@ public class QueryDAO {
 			return client.preparedQuery(query.toString()).execute(tuple).onItem().transformToUni(t -> {
 				if (t.rowCount() == 0) {
 					return Uni.createFrom().item(new HashMap<String, Object>());
+				}
+				Map<String,Object> map =t.iterator().next().getJsonObject(0).getMap();
+				map.values().removeIf(Objects::isNull);
+				if(attrsQuery!=null){
+					boolean found=false;
+					for(String key : attrsQuery.getAttrs()){
+						found= map.containsKey(key);
+						if(found){
+							break;
+						}
+					}
+					if(!found) {
+						return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
+					}
 				}
 				return Uni.createFrom().item(t.iterator().next().getJsonObject(0).getMap());
 			});
