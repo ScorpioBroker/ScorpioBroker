@@ -191,7 +191,9 @@ public class QueryParser {
 			String expandedOpt = context.expandIri(operant.replaceAll("\"", ""), false, true, null, null);
 			current.setExpandedOpt(expandedOpt);
 		}
-
+		if(root.getOperator().isEmpty()){
+			throw new ResponseException(ErrorType.BadRequestData);
+		}
 		return root;
 	}
 

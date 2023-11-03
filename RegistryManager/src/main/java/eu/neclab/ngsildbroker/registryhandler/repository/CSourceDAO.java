@@ -171,9 +171,9 @@ public class CSourceDAO {
 			if (ids != null) {
 				sql.append("(e_id =any($");
 				sql.append(dollar);
-				sql.append(") or e_id is null) and (e_id_p is null or any($");
+				sql.append(") or e_id is null) and (e_id_p is null or e_id_p like any($");
 				sql.append(dollar);
-				sql.append(") like e_id_p)");
+				sql.append("))");
 				tuple.addArrayOfString(ids.toArray(new String[0]));
 				dollar++;
 				sqlAdded = true;
