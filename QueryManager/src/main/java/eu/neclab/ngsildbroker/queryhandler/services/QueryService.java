@@ -251,16 +251,16 @@ public class QueryService {
 					.entrySet()) {
 				String entityId = entry.getKey();
 				Map<String, Map<String, Map<String, Object>>> attribMap = entry.getValue();
-				if (attribMap.isEmpty()) {
-					logger.warn("failed to merge entity id: " + entityId);
-					logger.warn("" + entityId2Types.containsKey(entityId));
-					if (attribMap != null) {
-						logger.warn(attribMap.toString());
-					} else {
-						logger.warn("null attribmap");
-					}
-					continue;
-				}
+//				if (attribMap.isEmpty()) {
+//					logger.warn("failed to merge entity id: " + entityId);
+//					logger.warn("" + entityId2Types.containsKey(entityId));
+//					if (attribMap != null) {
+//						logger.warn(attribMap.toString());
+//					} else {
+//						logger.warn("null attribmap");
+//					}
+//					continue;
+//				}
 
 				Map<String, Object> entity = new HashMap<>(attribMap.size() + 5);
 				entity.put(NGSIConstants.JSON_LD_ID, entityId);
