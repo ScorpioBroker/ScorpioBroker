@@ -15,7 +15,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.smallrye.reactive.messaging.MutinyEmitter;
-
+import jakarta.annotation.PostConstruct;
 import jakarta.inject.Singleton;
 import java.net.InetAddress;
 import java.net.URI;
@@ -40,8 +40,21 @@ public class MicroServiceUtils {
 
 	@ConfigProperty(name = "mysettings.gateway.port")
 	int port;
-	@ConfigProperty(name = "atcontext.url")
+	@ConfigProperty(name = "atcontext.url", defaultValue = "http://localhost:9090/ngsi-ld/v1/jsonldContexts/")
 	String contextServerUrl;
+
+	@PostConstruct
+	void setup() {
+		if (contextServerUrl.endsWith("ngsi-ld/v1/jsonldContexts")) {
+			contextServerUrl = contextServerUrl + "/";
+		} else if (!contextServerUrl.endsWith("ngsi-ld/v1/jsonldContexts/")) {
+			if (contextServerUrl.endsWith("/")) {
+				contextServerUrl = contextServerUrl + "/ngsi-ld/v1/jsonldContexts/";
+			} else {
+				contextServerUrl = contextServerUrl + "ngsi-ld/v1/jsonldContexts/";
+			}
+		}
+	}
 
 	public static void serializeAndSplitObjectAndEmit(Object obj, int messageSize, MutinyEmitter<String> emitter,
 			ObjectMapper objectMapper) {

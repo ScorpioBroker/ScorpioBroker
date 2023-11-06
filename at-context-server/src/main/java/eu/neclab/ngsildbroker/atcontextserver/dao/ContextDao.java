@@ -33,14 +33,11 @@ public class ContextDao {
 
 	@Inject
 	MicroServiceUtils microServiceUtils;
-
 	@PostConstruct
 	void setup() {
-		atContextUrl = microServiceUtils.getContextServerURL().toString();
+		atContextUrl = microServiceUtils.getGatewayURL().toString()+"/ngsi-ld/v1/jsonldContexts/";
 	}
-
 	String atContextUrl;
-
 	public Uni<RestResponse<Object>> getById(String id, Boolean details) {
 		String sql;
 		if (details) {
@@ -73,8 +70,9 @@ public class ContextDao {
 					.onItem().transformToUni(rows -> {
 						if (rows.size() > 0) {
 							return Uni.createFrom()
-									.item(RestResponseBuilderImpl.create(201).entity(new JsonObject(
-											"{\"url\":\"" + atContextUrl + rows.iterator().next().getString(0) + "\"}"))
+									.item(RestResponseBuilderImpl.create(201)
+											.entity(new JsonObject("{\"url\":\"" + atContextUrl
+													+ rows.iterator().next().getString(0) + "\"}"))
 											.build());
 						} else
 							return Uni.createFrom().failure(new Throwable("Server Error"));
@@ -113,12 +111,12 @@ public class ContextDao {
 
 					if (details) {
 						map.put(i.getColumnName(1), ((JsonObject) map.get(i.getColumnName(1))).getMap());
-						map.put("url",
-								atContextUrl + URLEncoder.encode(map.get("id").toString(), StandardCharsets.UTF_8));
+						map.put("url", atContextUrl
+								+ URLEncoder.encode(map.get("id").toString(), StandardCharsets.UTF_8));
 						contexts.add(map);
 					} else {
-						contexts.add(
-								atContextUrl + URLEncoder.encode(map.get("id").toString(), StandardCharsets.UTF_8));
+						contexts.add(atContextUrl
+								+ URLEncoder.encode(map.get("id").toString(), StandardCharsets.UTF_8));
 					}
 
 				});
@@ -146,8 +144,7 @@ public class ContextDao {
 			return client.preparedQuery(sql).execute(Tuple.of(id, new JsonObject(payload))).onItemOrFailure()
 					.transform((rows, failure) -> {
 						if (failure != null) {
-							if (failure instanceof PgException
-									&& ((PgException) failure).getSqlState().equals("23505")) {
+							if (failure instanceof PgException && ((PgException) failure).getSqlState().equals("23505")) {
 								return RestResponse.ok(id);
 							} else {
 								return RestResponse.status(RestResponse.Status.INTERNAL_SERVER_ERROR,
