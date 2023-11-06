@@ -258,7 +258,7 @@ public class QueryDAO {
 							Map<String, Object> tmp2 = Maps.newHashMap();
 							tmp2.put(NGSIConstants.JSON_LD_ID, attrib);
 							tmp.put(NGSIConstants.NGSI_LD_ATTRIBUTE_NAME, Lists.newArrayList(tmp2));
-							tmp.put(NGSIConstants.NGSI_LD_TYPE_NAMES, types);
+							tmp.put(NGSIConstants.NGSI_LD_TYPE_NAMES, types.stream().distinct().toList());
 							result.add(tmp);
 						});
 						return result;
@@ -333,7 +333,8 @@ public class QueryDAO {
 					"with a as (select x as id, entity -> x as data from entity, jsonb_object_keys(entity.entity) as x where e_types && $1::text[] and x not in ('"
 							+ NGSIConstants.JSON_LD_ID + "', '" + NGSIConstants.JSON_LD_TYPE + "', '"
 							+ NGSIConstants.NGSI_LD_CREATED_AT + "', '" + NGSIConstants.NGSI_LD_MODIFIED_AT
-							+ "')), b as (SELECT count(entity.id) as mycount FROM entity) select b.mycount, a.id, jsonb_agg(distinct jsonb_build_object('"
+							+ "')), b as (SELECT count(entity.id) as mycount FROM entity where e_types && $1::text[]) "
+							+"select b.mycount, a.id, jsonb_agg(distinct jsonb_build_object('"
 							+ NGSIConstants.JSON_LD_ID + "', x#>'{" + NGSIConstants.JSON_LD_TYPE
 							+ ",0}')) from b, a, jsonb_array_elements(a.data) as x group by a.id, b.mycount;"
 
@@ -357,7 +358,7 @@ public class QueryDAO {
 				}
 				result.put(NGSIConstants.NGSI_LD_ATTRIBUTE_DETAILS, attrDetails);
 				Map<String, Long> countMap = Maps.newHashMap();
-				countMap.put(NGSIConstants.VALUE, count);
+				countMap.put(NGSIConstants.JSON_LD_VALUE, count);
 				result.put(NGSIConstants.NGSI_LD_ENTITY_COUNT, countMap);
 				result.put(NGSIConstants.JSON_LD_ID, type);
 				result.put(NGSIConstants.JSON_LD_TYPE, Lists.newArrayList(NGSIConstants.NGSI_LD_ENTITY_TYPE_INFO));
@@ -798,8 +799,8 @@ public class QueryDAO {
 			query.append(" as ENTITY FROM b left join ENTITY on b.ID = ENTITY.ID) SELECT ");
 			query.append("a.ID, c.ENTITY FROM a left outer join c on a.ID = c.ID");
 			String queryString = query.toString();
-			logger.info("SQL REQUEST: " + queryString);
-			logger.info("SQL TUPLE: " + tuple.deepToString());
+			logger.debug("SQL REQUEST: " + queryString);
+			logger.debug("SQL TUPLE: " + tuple.deepToString());
 			return client.preparedQuery(queryString).execute(tuple).onItem().transform(rows -> {
 				List<String> entityIds = Lists.newArrayList();
 				Map<String, Map<String, Object>> entities = Maps.newHashMap();
