@@ -7,6 +7,7 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.PrimitiveIterator.OfInt;
 import java.util.Set;
@@ -209,6 +210,16 @@ public class QueryParser {
 			throw new ResponseException(ErrorType.BadRequestData, "geometry needs to be provided");
 		}
 		String[] temp = georel.split(";");
+		if(!List.of(NGSIConstants.GEO_REL_NEAR,
+				NGSIConstants.GEO_REL_WITHIN,
+				NGSIConstants.GEO_REL_CONTAINS,
+				NGSIConstants.GEO_REL_DISJOINT,
+				NGSIConstants.GEO_REL_INTERSECTS,
+				NGSIConstants.GEO_REL_EQUALS,
+				NGSIConstants.GEO_REL_OVERLAPS)
+				.contains(temp[0])){
+			throw new ResponseException(ErrorType.BadRequestData, "georel is invalid");
+		}
 		GeoQueryTerm result = new GeoQueryTerm(context);
 		result.setGeorel(temp[0]);
 		if (temp[0].equals(NGSIConstants.GEO_REL_NEAR)) {
