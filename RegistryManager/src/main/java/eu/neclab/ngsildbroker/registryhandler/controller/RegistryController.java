@@ -68,7 +68,7 @@ public class RegistryController {
 			@QueryParam(value = "limit") Integer limit, @QueryParam(value = "offset") int offset,
 			@QueryParam(value = "options") String options, @QueryParam(value = "count") boolean count) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
-		if (acceptHeader == -1) {
+		if (acceptHeader != 1 && acceptHeader != 2) {
 			return HttpUtils.getInvalidHeader();
 		}
 		int actualLimit;
@@ -142,7 +142,7 @@ public class RegistryController {
 			@PathParam("registrationId") String registrationId) {
 		logger.debug("get CSource() ::" + registrationId);
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
-		if (acceptHeader == -1) {
+		if (acceptHeader != 1 && acceptHeader != 2) {
 			return HttpUtils.getInvalidHeader();
 		}
 
