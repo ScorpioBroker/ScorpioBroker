@@ -13,6 +13,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.github.jsonldjava.core.JsonLdError.Error;
 import com.github.jsonldjava.utils.JsonLdUrl;
 import com.github.jsonldjava.utils.Obj;
@@ -32,6 +36,8 @@ import io.vertx.mutiny.ext.web.client.WebClient;
 @SuppressWarnings("unchecked")
 public class Context extends LinkedHashMap<String, Object> {
 	private static final long serialVersionUID = 2894534897574805571L;
+
+	private static Logger logger = LoggerFactory.getLogger(Context.class);
 
 	private JsonLdOptions options;
 	private Map<String, Object> termDefinitions;
@@ -224,11 +230,14 @@ public class Context extends LinkedHashMap<String, Object> {
 
 				// 3.2.3: Dereference context
 				String finalUrl = uri;
-				if (uri != null && !(uri.contains(atContextUrl)
-						|| uri.contains("localhost") || uri.contains(NGSIConstants.IMPLICITLYCREATED))) {
+				if (uri != null && !(uri.contains(atContextUrl) || uri.contains("localhost")
+						|| uri.contains(NGSIConstants.IMPLICITLYCREATED))) {
 					String encodedUrl = URLEncoder.encode(uri, StandardCharsets.UTF_8);
 					finalUrl = atContextUrl + "createcache/" + encodedUrl;
+					logger.debug("replacing original uri " + uri);
+					logger.debug("call uri is " + finalUrl);
 				}
+				logger.debug("calling document loader from context parsing for uri " + finalUrl);
 				rds.add(this.options.getDocumentLoader().loadDocument(finalUrl, webClient).onItem()
 						.transform(rd -> Tuple2.of(rd, context)));
 				// 3.2.5
@@ -350,7 +359,7 @@ public class Context extends LinkedHashMap<String, Object> {
 					}
 					final Object tempContext = ((Map<String, Object>) remoteContext).get(JsonLdConsts.CONTEXT);
 					resultUni = resultUni.onItem().transformToUni(resultTmp -> resultTmp.parse(tempContext,
-							remoteContexts, true, checkToRemoveNGSILDContext, false, webClient,atContextUrl));
+							remoteContexts, true, checkToRemoveNGSILDContext, false, webClient, atContextUrl));
 				}
 				return resultUni;
 			});
@@ -373,8 +382,9 @@ public class Context extends LinkedHashMap<String, Object> {
 		}
 	}
 
-	public Uni<Context> parse(Object localContext, boolean checkToRemoveNGSILDContext, WebClient webClient, String atContextUrl) {
-		return this.parse(localContext, new ArrayList<String>(), checkToRemoveNGSILDContext, webClient,atContextUrl);
+	public Uni<Context> parse(Object localContext, boolean checkToRemoveNGSILDContext, WebClient webClient,
+			String atContextUrl) {
+		return this.parse(localContext, new ArrayList<String>(), checkToRemoveNGSILDContext, webClient, atContextUrl);
 	}
 
 	/**
@@ -1226,7 +1236,7 @@ public class Context extends LinkedHashMap<String, Object> {
 		}
 		// 3)
 		rval.put(JsonLdConsts.VALUE, value);
-	  // 4)
+		// 4)
 		if (td != null && td.containsKey(JsonLdConsts.TYPE)) {
 			rval.put(JsonLdConsts.TYPE, td.get(JsonLdConsts.TYPE));
 		}

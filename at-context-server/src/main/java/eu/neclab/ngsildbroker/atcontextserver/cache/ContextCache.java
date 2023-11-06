@@ -16,6 +16,8 @@ import io.vertx.mutiny.ext.web.client.WebClient;
 
 import jakarta.ws.rs.core.Response;
 import org.jboss.resteasy.reactive.RestResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -34,6 +36,8 @@ public class ContextCache {
 	Cache cache;
 	JsonLdOptions jsonLdOptions = new JsonLdOptions();
 
+	private static Logger logger = LoggerFactory.getLogger(ContextCache.class);
+
 	@Inject
 	Vertx vertx;
 
@@ -46,6 +50,7 @@ public class ContextCache {
 
 	@CacheResult(cacheName = "context")
 	public Uni<Map<String, Object>> load(String uri) {
+		logger.debug("loading uri " + uri);
 		return jsonLdOptions.getDocumentLoader().loadDocument(uri, webClient).onItem().transformToUni(rd -> {
 			if (rd.getDocument() instanceof Map<?, ?> map && map.containsKey(NGSIConstants.JSON_LD_CONTEXT)) {
 				Map<String, Object> finalContext = new HashMap<>();
@@ -63,14 +68,15 @@ public class ContextCache {
 	}
 
 	public Uni<RestResponse<Object>> createOrGetCache(String uri, Boolean details, Boolean loadNewCache) {
+		logger.debug("Create or cache uri " + uri);
 		Set<Object> cacheSet = cache.as(CaffeineCache.class).keySet();
 		if (!loadNewCache && !cacheSet.contains(uri))
 			return Uni.createFrom().item(RestResponse.notFound());
 		if (details)
 			return load(uri).onItem().transform(RestResponse::ok);
 		else
-			return load(uri).onItemOrFailure().transform((map,fail) -> {
-				if (fail!=null || map == null || map.isEmpty())
+			return load(uri).onItemOrFailure().transform((map, fail) -> {
+				if (fail != null || map == null || map.isEmpty())
 					return RestResponse.status(Response.Status.SERVICE_UNAVAILABLE);
 				else
 					return RestResponse.ok(map.get(NGSIConstants.BODY));
@@ -97,6 +103,7 @@ public class ContextCache {
 
 	@CacheInvalidate(cacheName = "context")
 	public Uni<RestResponse<Object>> reload(@CacheKey String uri) {
+		logger.debug("reloading cache for uri " + uri);
 		return load(uri).onItem().transform(res -> RestResponse.ok());
 	}
 

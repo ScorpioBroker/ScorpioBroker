@@ -7,6 +7,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.github.jsonldjava.core.JsonLdError.Error;
 import com.github.jsonldjava.impl.NQuadRDFParser;
 import com.github.jsonldjava.impl.NQuadTripleCallback;
@@ -15,7 +19,6 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.ext.web.client.WebClient;
-
 
 /**
  * This class implements the <a href=
@@ -34,7 +37,9 @@ public class JsonLdProcessor {
 	private static String coreContextUrl;
 	private static String atContextUrl;
 
-	static void init(String coreContextUrl, Context coreContext,String atContextUrl) {
+	private static Logger logger = LoggerFactory.getLogger(JsonLdProcessor.class);
+
+	static void init(String coreContextUrl, Context coreContext, String atContextUrl) {
 		JsonLdProcessor.coreContext = coreContext;
 		JsonLdProcessor.coreContextUrl = coreContextUrl;
 		JsonLdProcessor.atContextUrl = atContextUrl;
@@ -133,7 +138,7 @@ public class JsonLdProcessor {
 			activeCtx = coreContext.clone();
 		}
 		if (context != null) {
-			ctxUni = activeCtx.parse(context, true, webClient,atContextUrl);
+			ctxUni = activeCtx.parse(context, true, webClient, atContextUrl);
 		} else {
 			ctxUni = Uni.createFrom().item(activeCtx);
 		}
@@ -212,6 +217,7 @@ public class JsonLdProcessor {
 		// 2) TODO: better verification of DOMString IRI
 		Uni<Object> inputUni;
 		if (input instanceof String && ((String) input).contains(":")) {
+			logger.debug("calling document loader from expand");
 			inputUni = opts.getDocumentLoader().loadDocument((String) input, webClient).onItem().transformToUni(tmp -> {
 				Object realInput;
 				try {
@@ -238,7 +244,7 @@ public class JsonLdProcessor {
 
 		Uni<Context> activeCtx;
 		if (contextLinks != null && !contextLinks.isEmpty()) {
-			activeCtx = coreContext.clone().parse(contextLinks, true, webClient,atContextUrl);
+			activeCtx = coreContext.clone().parse(contextLinks, true, webClient, atContextUrl);
 		} else {
 			activeCtx = Uni.createFrom().item(coreContext.clone());
 		}
@@ -251,7 +257,7 @@ public class JsonLdProcessor {
 				if (exCtx instanceof Map && ((Map<String, Object>) exCtx).containsKey(JsonLdConsts.CONTEXT)) {
 					exCtx = ((Map<String, Object>) exCtx).get(JsonLdConsts.CONTEXT);
 				}
-				return ctx.parse(exCtx, true, webClient,atContextUrl).onItem()
+				return ctx.parse(exCtx, true, webClient, atContextUrl).onItem()
 						.transformToUni(ctx2 -> expand(ctx2, myInput, opts, payloadType, atContextAllowed, webClient));
 			} else {
 				return expand(ctx, myInput, opts, payloadType, atContextAllowed, webClient);
@@ -268,8 +274,8 @@ public class JsonLdProcessor {
 		// is set to a jsonld compatable format
 
 		// 6)
-		return new JsonLdApi(opts).expand(activeCtx, input, payloadType, atContextAllowed, webClient,atContextUrl).onItem()
-				.transform(expanded -> {
+		return new JsonLdApi(opts).expand(activeCtx, input, payloadType, atContextAllowed, webClient, atContextUrl)
+				.onItem().transform(expanded -> {
 					// final step of Expansion Algorithm
 					if (expanded instanceof Map && ((Map) expanded).containsKey(JsonLdConsts.GRAPH)
 							&& ((Map) expanded).size() == 1) {
@@ -363,7 +369,7 @@ public class JsonLdProcessor {
 			// 8)
 			if (context != null && !flattened.isEmpty()) {
 				Context activeCtx = new Context(opts);
-				return activeCtx.parse(context, false, webClient,atContextUrl).onItem().transform(ctx -> {
+				return activeCtx.parse(context, false, webClient, atContextUrl).onItem().transform(ctx -> {
 					// TODO: only instantiate one jsonldapi
 					Object compacted = new JsonLdApi(opts).compact(activeCtx, null, flattened, opts.getCompactArrays(),
 							-1, null, null);
@@ -440,9 +446,8 @@ public class JsonLdProcessor {
 						// to a new empty
 						// context, otherwise.
 						final JsonLdApi api = new JsonLdApi(expandedInput, opts);
-						return api.context
-								.parse(((Map<String, Object>) myFrame).get(JsonLdConsts.CONTEXT), false, webClient,atContextUrl)
-								.onItem().transform(activeCtx -> {
+						return api.context.parse(((Map<String, Object>) myFrame).get(JsonLdConsts.CONTEXT), false,
+								webClient, atContextUrl).onItem().transform(activeCtx -> {
 									final List<Object> framed = api.frame(expandedInput, expandedFrame);
 									if (opts.getPruneBlankNodeIdentifiers()) {
 										JsonLdUtils.pruneBlankNodes(framed);
@@ -643,8 +648,8 @@ public class JsonLdProcessor {
 
 						for (final Map<String, Object> e : _input) {
 							if (e.containsKey(JsonLdConsts.CONTEXT)) {
-								uni = uni.onItem().transformToUni(
-										v -> dataset.parseContext(e.get(JsonLdConsts.CONTEXT), webClient,atContextUrl));
+								uni = uni.onItem().transformToUni(v -> dataset.parseContext(e.get(JsonLdConsts.CONTEXT),
+										webClient, atContextUrl));
 							}
 						}
 					}

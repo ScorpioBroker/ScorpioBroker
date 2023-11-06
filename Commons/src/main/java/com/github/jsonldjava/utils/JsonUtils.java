@@ -21,6 +21,9 @@ import java.util.Map.Entry;
 import org.apache.commons.io.ByteOrderMark;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.BOMInputStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -49,6 +52,8 @@ public class JsonUtils {
 	 * An HTTP Accept header that prefers JSONLD.
 	 */
 	public static final String ACCEPT_HEADER = "application/ld+json, application/json;q=0.9, application/javascript;q=0.5, text/javascript;q=0.5, text/plain;q=0.2, */*;q=0.1";
+	
+	private static final Logger logger = LoggerFactory.getLogger(JsonUtils.class);
 
 	/**
 	 * The user agent used by the default {@link CloseableHttpClient}.
@@ -346,6 +351,11 @@ public class JsonUtils {
 					final int status = result.statusCode();
 					if (status != 200 && status != 203) {
 						String finalUrl = URLDecoder.decode(url.getPath().split("createcache/")[1],StandardCharsets.UTF_8);
+						logger.debug("Failed to retrieve context:");
+						logger.debug("cache uri - " + url.toExternalForm());
+						logger.debug("request uri - " + finalUrl);
+						logger.debug("response code: " + status);
+						logger.debug("response body: " + result.bodyAsString());
 						return Uni.createFrom()
 								.failure(new IOException("Can't retrieve " + finalUrl + ", status code: " + status));
 					}
