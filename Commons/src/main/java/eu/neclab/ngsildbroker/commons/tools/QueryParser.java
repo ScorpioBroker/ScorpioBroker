@@ -246,6 +246,10 @@ public class QueryParser {
 		for (String attr : attrs.split(",")) {
 			result.addAttr(attr);
 		}
+		if(result.getCompactedAttrs().contains(NGSIConstants.ID)
+				|| result.getCompactedAttrs().contains(NGSIConstants.TYPE)){
+				throw new ResponseException(ErrorType.BadRequestData);
+		}
 		return result;
 	}
 

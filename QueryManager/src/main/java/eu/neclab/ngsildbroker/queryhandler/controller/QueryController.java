@@ -176,7 +176,7 @@ public class QueryController {
 		}
 		if (id == null && typeQuery == null && attrs == null && geometry == null && q == null) {
 			return Uni.createFrom()
-					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.InvalidRequest)));
+					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData)));
 		}
 		if (actualLimit == 0 && !count) {
 			return Uni.createFrom()
