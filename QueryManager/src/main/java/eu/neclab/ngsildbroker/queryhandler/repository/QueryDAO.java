@@ -834,6 +834,9 @@ public class QueryDAO {
 		}).onFailure().recoverWithUni(e -> {
 			if (e instanceof PgException pge) {
 				logger.debug(pge.getPosition());
+				if (((PgException) e).getSqlState().equals(AppConstants.INVALID_REGULAR_EXPRESSION)) {
+					return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData));
+				}
 			}
 			return Uni.createFrom().failure(e);
 		});
