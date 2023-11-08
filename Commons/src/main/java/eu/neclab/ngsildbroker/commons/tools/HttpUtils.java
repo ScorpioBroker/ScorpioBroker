@@ -18,6 +18,7 @@ import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import eu.neclab.ngsildbroker.commons.exceptions.LdContextException;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.http.HttpStatus;
 import org.jboss.resteasy.reactive.RestResponse;
@@ -302,8 +303,8 @@ public final class HttpUtils {
 					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
 					.entity(responseException.getJson()).build();
 		}
-		if (e instanceof IOException ioException) {
-			logger.debug("Exception :: ", ioException);
+		if (e instanceof LdContextException ldContextException) {
+			logger.debug("Exception :: ", ldContextException);
 			return RestResponseBuilderImpl.create(ErrorType.LdContextNotAvailable.getCode())
 					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
 					.entity(new ResponseException(ErrorType.LdContextNotAvailable).getJson()).build();
