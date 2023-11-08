@@ -1,8 +1,9 @@
 {
 	"info": {
-		"_postman_id": "db5869ae-aa94-4249-9c02-5b95dd7bfc4c",
+		"_postman_id": "e244c936-6002-4bbb-b6e6-76986f8688c9",
 		"name": "API Test",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "26387112"
 	},
 	"item": [
 		{
@@ -51869,6 +51870,321 @@
 													"response": []
 												}
 											]
+										}
+									]
+								}
+							]
+						},
+						{
+							"name": "query test",
+							"item": [
+								{
+									"name": "limit/offset /page",
+									"item": [
+										{
+											"name": "Invalid limit",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"\r",
+															"pm.test(\"Status code is 404\", function () {\r",
+															"    pm.response.to.have.status(400);\r",
+															"});\r",
+															""
+														],
+														"type": "text/javascript"
+													}
+												}
+											],
+											"request": {
+												"method": "GET",
+												"header": [
+													{
+														"key": "Accept",
+														"value": "application/json",
+														"type": "default"
+													}
+												],
+												"url": {
+													"raw": "{{query-manager}}/ngsi-ld/v1/csourceSubscriptions?limit=-5&page=2",
+													"host": [
+														"{{query-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"csourceSubscriptions"
+													],
+													"query": [
+														{
+															"key": "limit",
+															"value": "-5"
+														},
+														{
+															"key": "page",
+															"value": "2"
+														}
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Invalid Page",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"\r",
+															"pm.test(\"Status code is 404\", function () {\r",
+															"    pm.response.to.have.status(400);\r",
+															"});\r",
+															""
+														],
+														"type": "text/javascript"
+													}
+												}
+											],
+											"request": {
+												"method": "GET",
+												"header": [
+													{
+														"key": "Accept",
+														"value": "application/json",
+														"type": "default"
+													}
+												],
+												"url": {
+													"raw": "{{query-manager}}/ngsi-ld/v1/csourceSubscriptions?limit=2&page=-3",
+													"host": [
+														"{{query-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"csourceSubscriptions"
+													],
+													"query": [
+														{
+															"key": "limit",
+															"value": "2"
+														},
+														{
+															"key": "page",
+															"value": "-3"
+														}
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Invalid Limit And Page",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"\r",
+															"pm.test(\"Status code is 404\", function () {\r",
+															"    pm.response.to.have.status(400);\r",
+															"});\r",
+															""
+														],
+														"type": "text/javascript"
+													}
+												}
+											],
+											"request": {
+												"method": "GET",
+												"header": [
+													{
+														"key": "Accept",
+														"value": "application/json",
+														"type": "default"
+													}
+												],
+												"url": {
+													"raw": "{{query-manager}}/ngsi-ld/v1/csourceSubscriptions?limit=0&page=0",
+													"host": [
+														"{{query-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"csourceSubscriptions"
+													],
+													"query": [
+														{
+															"key": "limit",
+															"value": "0"
+														},
+														{
+															"key": "page",
+															"value": "0"
+														}
+													]
+												}
+											},
+											"response": []
+										}
+									]
+								},
+								{
+									"name": "incorrect id pattern",
+									"item": [
+										{
+											"name": "incorrect id pattern1",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 400\", function () {\r",
+															"    pm.response.to.have.status(400);\r",
+															"});\r",
+															" "
+														],
+														"type": "text/javascript"
+													}
+												}
+											],
+											"request": {
+												"method": "GET",
+												"header": [
+													{
+														"key": "Accept",
+														"value": "application/json",
+														"type": "default"
+													}
+												],
+												"url": {
+													"raw": "{{query-manager}}/ngsi-ld/v1/entities/?type=TestType&idPattern=invalid_entity_id_pattern**",
+													"host": [
+														"{{query-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"entities",
+														""
+													],
+													"query": [
+														{
+															"key": "type",
+															"value": "TestType"
+														},
+														{
+															"key": "idPattern",
+															"value": "invalid_entity_id_pattern**"
+														}
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "incorrect id pattern2",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 400\", function () {\r",
+															"    pm.response.to.have.status(400);\r",
+															"});\r",
+															" "
+														],
+														"type": "text/javascript"
+													}
+												}
+											],
+											"request": {
+												"method": "GET",
+												"header": [
+													{
+														"key": "Accept",
+														"value": "application/json",
+														"type": "default"
+													}
+												],
+												"url": {
+													"raw": "{{query-manager}}/ngsi-ld/v1/entities/?type=TestType&idPattern=**abc",
+													"host": [
+														"{{query-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"entities",
+														""
+													],
+													"query": [
+														{
+															"key": "type",
+															"value": "TestType"
+														},
+														{
+															"key": "idPattern",
+															"value": "**abc"
+														}
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "incorrect id pattern3",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 400\", function () {\r",
+															"    pm.response.to.have.status(400);\r",
+															"});\r",
+															" "
+														],
+														"type": "text/javascript"
+													}
+												}
+											],
+											"request": {
+												"method": "GET",
+												"header": [
+													{
+														"key": "Accept",
+														"value": "application/json",
+														"type": "default"
+													}
+												],
+												"url": {
+													"raw": "{{query-manager}}/ngsi-ld/v1/entities/?type=TestType&idPattern=ab**c",
+													"host": [
+														"{{query-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"entities",
+														""
+													],
+													"query": [
+														{
+															"key": "type",
+															"value": "TestType"
+														},
+														{
+															"key": "idPattern",
+															"value": "ab**c"
+														}
+													]
+												}
+											},
+											"response": []
 										}
 									]
 								}
