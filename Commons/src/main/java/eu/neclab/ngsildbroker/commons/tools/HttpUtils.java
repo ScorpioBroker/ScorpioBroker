@@ -6,6 +6,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -700,36 +701,51 @@ public final class HttpUtils {
 		boolean isHavingError = false;
 		boolean isHavingSuccess = false;
 		boolean wasUpdated = true;
+		boolean allConflict = true;
+		String opType = (String) t.get(0).getJson().get("type");
 		List<String> createdIds = new ArrayList<>();
-		List<Map<String, Object>> result = new ArrayList<>();
+		List<String> successes = new ArrayList<>();
+		List<Map<String, Object>> errors = new ArrayList<>();
+		Map<String, Object>result = new HashMap<>();
+		result.put("success",successes);
+		result.put("errors",errors);
 		for (NGSILDOperationResult r : t) {
 			if (!r.getFailures().isEmpty()) {
-				result.add(r.getJson());
+				Map<String,Object> error = r.getJson();
+				Map<String,Object> failure = ((List<Map<String, Object>>)error.get("failure")).get(0);
+				error.put("ProblemDetails",failure);
+				error.remove("failure");
+				errors.add(error);
+				allConflict = allConflict && failure.get("errorCode").equals(409);
 				isHavingError = true;
 			}
 			if (!r.getSuccesses().isEmpty()) {
 				if(!r.isWasUpdated()){
 					createdIds.add(r.getEntityId());
 				}
-				result.add(r.getJson());
+				successes.add(r.getEntityId());
 				isHavingSuccess = true;
 			}
 			wasUpdated = wasUpdated && r.isWasUpdated();
 		}
 		if (isHavingError && !isHavingSuccess) {
-			String type = (String) result.get(0).get("type");
-			if (type.equalsIgnoreCase("Delete") || type.equalsIgnoreCase("Append"))
+			result.remove("success");
+			if (opType.equalsIgnoreCase("Delete") || opType.equalsIgnoreCase("Append")) {
 				return RestResponse.status(RestResponse.Status.NOT_FOUND, result);
-			else if (result.get(0).get("failure").toString().contains("503")) {
+			}
+			else if (errors.toString().contains("503")) {
 				return RestResponse.status(RestResponse.Status.SERVICE_UNAVAILABLE, result);
-			} else {
+			}
+			else if (allConflict) {
+				return RestResponse.status(RestResponse.Status.CONFLICT, result);
+			}
+			else {
 				return RestResponse.status(RestResponse.Status.BAD_REQUEST, result);
 			}
 		}
 		if (!isHavingError && isHavingSuccess) {
-			String type = (String) result.get(0).get("type");
-			if ((type.equalsIgnoreCase("Upsert") && wasUpdated) || type.equalsIgnoreCase("Delete")
-					|| type.equalsIgnoreCase("Append"))
+			if ((opType.equalsIgnoreCase("Upsert") && wasUpdated) || opType.equalsIgnoreCase("Delete")
+					|| opType.equalsIgnoreCase("Append"))
 				return RestResponse.status(RestResponse.Status.NO_CONTENT);
 			else
 				return RestResponse.status(RestResponse.Status.CREATED, createdIds);
@@ -737,14 +753,6 @@ public final class HttpUtils {
 		return new RestResponseBuilderImpl<>().status(207).type(AppConstants.NGB_APPLICATION_JSON).entity(result)
 				.build();
 	}
-
-//	private static List<String> generateBatchCreateSuccess(List<Map<String, Object>> resultInfo) {
-//		List<String> result = new ArrayList<>(resultInfo.size());
-//		resultInfo.forEach(entry -> {
-//			result.add((String) entry.get(NGSIConstants.ID));
-//		});
-//		return result;
-//	}
 
 	public static Uni<Context> getContextFromPayload(Map<String, Object> originalPayload, List<Object> atContextHeader,
 													 boolean atContextAllowed, JsonLDService ldService) {
