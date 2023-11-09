@@ -1473,7 +1473,7 @@ public class EntityService {
 							String sqlstate = entry.getValue();
 							NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.DELETE_REQUEST,
 									entityId);
-							opResult.addFailure(new ResponseException(ErrorType.InvalidRequest, sqlstate));
+							opResult.addFailure(new ResponseException(ErrorType.NotFound, sqlstate));
 							result.add(opResult);
 						});
 
