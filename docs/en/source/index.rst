@@ -47,20 +47,22 @@ The Scorpio Broker implements the NGSI-LD API through which context producers an
     security.rst
     HelloWorld.rst
     multivalue.rst
-	Batch_operation_support.rst
-	multiTenant.rst
-	aggregation-support.rst
-	concise-representation.rst
-	context-hosting.rst
-	multiTyping.rst
-	implicit-q.rst
-	federation.rst
-	mergepatch.rst
-	previousValue.rst
-	replaceOperation.rst
-	followRelationship.rst
-	vocabularyProperty.rst
-	explicitContext.rst
+    Batch_operation_support.rst
+    multiTenant.rst
+    aggregation-support.rst
+    concise-representation.rst
+    context-hosting.rst
+    multiTyping.rst
+    implicit-q.rst
+    federation.rst
+    mergepatch.rst
+    previousValue.rst
+    replaceOperation.rst
+    followRelationship.rst
+    vocabularyProperty.rst
+    explicitContext.rst
+    scorpioIoTIntegration.rst
+    lorawan-IoTIntegration.rst
 	
 
 .. toctree::
