@@ -77,6 +77,10 @@ public class QueryDAO {
 				if (t.rowCount() == 0) {
 					return Uni.createFrom().item(new HashMap<String, Object>());
 				}
+				Map<String,Object> result = t.iterator().next().getJsonObject(0).getMap();
+				if(attrsQuery!=null&& !attrsQuery.getAttrs().isEmpty() && result.size()<=4){
+					return Uni.createFrom().failure(new ResponseException(ErrorType.CombinationNotFound));
+				}
 				return Uni.createFrom().item(t.iterator().next().getJsonObject(0).getMap());
 			});
 		});

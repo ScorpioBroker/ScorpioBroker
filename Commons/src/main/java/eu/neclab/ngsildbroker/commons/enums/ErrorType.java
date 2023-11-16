@@ -15,6 +15,7 @@ public enum ErrorType {
 	TooComplexQuery(403, "https://uri.etsi.org/ngsi-ld/errors/TooComplexQuery", "Too complex query"),
 	TooManyResults(403, "https://uri.etsi.org/ngsi-ld/errors/TooManyResults ", "Too many results"),
 	NotFound(404, "https://uri.etsi.org/ngsi-ld/errors/ResourceNotFound", "Resource not found."),
+	CombinationNotFound(404, "https://uri.etsi.org/ngsi-ld/errors/ResourceNotFound", "Combination Entity/Attributes Not Found"),
 	TenantNotFound(404, "https://uri.etsi.org/ngsi-ld/errors/TenantNotFound", "Tenant not found."),
 	LdContextNotAvailable(503, "https://uri.etsi.org/ngsi-ld/errors/LdContextNotAvailable",
 			"LD context not available."),
