@@ -19,6 +19,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import eu.neclab.ngsildbroker.commons.exceptions.LdContextException;
+import io.vertx.core.json.DecodeException;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.http.HttpStatus;
 import org.jboss.resteasy.reactive.RestResponse;
@@ -317,7 +318,7 @@ public final class HttpUtils {
 							.getJson())
 					.build();
 		}
-		if (e instanceof JsonProcessingException || e instanceof JsonLdError) {
+		if (e instanceof JsonProcessingException || e instanceof JsonLdError || e instanceof DecodeException) {
 			logger.debug("Exception :: ", e);
 			return RestResponseBuilderImpl.create(HttpStatus.SC_BAD_REQUEST)
 					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
