@@ -3,6 +3,7 @@ package eu.neclab.ngsildbroker.queryhandler.controller;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import jakarta.inject.Inject;
@@ -145,19 +146,14 @@ public class QueryController {
 			}
 		}
 		if (qInput != null) {
-			try {
-				String uri = URLDecoder.decode(request.absoluteURI(), "UTF-8");
-				uri = uri.substring(request.absoluteURI().indexOf("q=") + 2);
-				int index = uri.indexOf('&');
-				if (index != -1) {
-					uri = uri.substring(0, index);
-				}
-				q = uri;
-			} catch (UnsupportedEncodingException e) {
-				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
-						new ResponseException(ErrorType.BadRequestData, "failed to decode q query")));
-			}
-		} else {
+            String uri = URLDecoder.decode(request.absoluteURI(), StandardCharsets.UTF_8);
+            uri = uri.substring(request.absoluteURI().indexOf("q=") + 2);
+            int index = uri.indexOf('&');
+            if (index != -1) {
+                uri = uri.substring(0, index);
+            }
+            q = uri;
+        } else {
 			q = null;
 		}
 

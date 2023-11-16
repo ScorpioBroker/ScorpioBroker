@@ -537,11 +537,7 @@ public final class HttpUtils {
 							if (contextHeader.isEmpty()) {
 								contextHeader.add(((List<Object>) bodyContext).get(0));
 							}
-							if (compacted.containsKey(JsonLdConsts.GRAPH)) {
-								finalCompacted = compacted.get(JsonLdConsts.GRAPH);
-							} else {
-								finalCompacted = compacted;
-							}
+                            finalCompacted = compacted.getOrDefault(JsonLdConsts.GRAPH, compacted);
 							if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)) {
 								makeConcise(finalCompacted);
 							}
@@ -896,7 +892,7 @@ public final class HttpUtils {
 																String options, String geometryProperty, int acceptHeader, boolean count, int limit, LanguageQueryTerm lang,
 																Context context, JsonLDService ldService) {
 		ResponseBuilder<Object> builder;
-		if (count == true) {
+		if (count) {
 			builder = RestResponseBuilderImpl.ok().header(NGSIConstants.COUNT_HEADER_RESULT, queryResult.getCount());
 		} else {
 			builder = RestResponseBuilderImpl.ok();
