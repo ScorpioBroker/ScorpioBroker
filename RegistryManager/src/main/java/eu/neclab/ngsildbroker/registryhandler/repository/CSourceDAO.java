@@ -198,6 +198,7 @@ public class CSourceDAO {
 				dollar++;
 				tuple.addArrayOfString(typeQuery.getAllTypes().toArray(new String[0]));
 				sql.append("))");
+				sqlAdded =true;
 			}
 			if (attrsQuery != null) {
 				if (sqlAdded) {
