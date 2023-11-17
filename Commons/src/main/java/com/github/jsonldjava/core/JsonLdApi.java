@@ -335,6 +335,7 @@ public class JsonLdApi {
 					if (!found) {
 						expandedValue = defaultLang;
 						if (expandedValue == null) {
+							result.put("lang",tmp.get(0).get(JsonLdConsts.LANGUAGE));
 							expandedValue = List.of(Map.of(JsonLdConsts.VALUE, tmp.get(0).get(JsonLdConsts.VALUE)));
 						}
 					}
