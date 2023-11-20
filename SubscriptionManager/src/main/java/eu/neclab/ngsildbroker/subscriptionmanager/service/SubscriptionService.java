@@ -413,7 +413,10 @@ public class SubscriptionService {
 			if (rows.size() == 0) {
 				return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound, "subscription not found"));
 			}
-			return Uni.createFrom().item(rows.iterator().next().getJsonObject(0).getMap());
+		 	String status = subscriptionId2RequestGlobal.get(subscriptionId).getSubscription().getStatus();
+			Map<String,Object> rowData = rows.iterator().next().getJsonObject(0).getMap();
+			rowData.put("status",status);
+			return Uni.createFrom().item(rowData);
 		});
 	}
 

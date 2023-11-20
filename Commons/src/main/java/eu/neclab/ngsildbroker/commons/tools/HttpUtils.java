@@ -806,8 +806,8 @@ public final class HttpUtils {
 																	   Map<String, Object> originalPayload, int payloadType, JsonLDService ldService) {
 		boolean atContextAllowed;
 		List<Object> atContext = getAtContext(request);
-		if(originalPayload.toString().contains(NGSIConstants.VALUE+"=null")
-				|| originalPayload.toString().contains(NGSIConstants.TYPE+"=null")){
+		if( originalPayload!=null && (originalPayload.toString().contains(NGSIConstants.VALUE+"=null")
+				|| originalPayload.toString().contains(NGSIConstants.TYPE+"=null"))){
 			return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData));
 		}
 
