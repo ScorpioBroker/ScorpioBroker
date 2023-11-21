@@ -233,29 +233,24 @@ public class CSourceService {
 				.query(tenant, ids, typeQuery, idPattern, attrsQuery, csf, geoQuery, scopeQuery, limit, offset, count)
 				.onItem().transform(rows -> {
 					QueryResult result = new QueryResult();
-//					if (limit == 0 && count) {
-//						result.setCount(rows.iterator().next().getLong(0));
-//					} else {
+					long countLong = rows.iterator().next().getLong(1);
+					if (count) {
+						result.setCount(countLong);
+					}
 					RowIterator<Row> it = rows.iterator();
-					Row next = null;
-					List<Map<String, Object>> resultData = new ArrayList<Map<String, Object>>(rows.size());
+					Row next;
+					List<Map<String, Object>> resultData = new ArrayList<>(rows.size());
 					while (it.hasNext()) {
 						next = it.next();
 						resultData.add(next.getJsonObject(0).getMap());
 					}
-					Long resultCount = -1l;// next.getLong(0);
-					result.setCount(resultCount);
-					long leftAfter = resultCount - (offset + limit);
-					if (leftAfter < 0) {
-						leftAfter = 0;
-					}
-					long leftBefore = offset;
-					result.setResultsLeftAfter(leftAfter);
-					result.setResultsLeftBefore(leftBefore);
+					long leftAfter = countLong - (offset + limit);
+					leftAfter = (leftAfter < 0) ? 0 : leftAfter;
+                    result.setResultsLeftAfter(leftAfter);
+					result.setResultsLeftBefore((long) offset);
 					result.setLimit(limit);
 					result.setOffset(offset);
 					result.setData(resultData);
-//					}
 					return result;
 				});
 
