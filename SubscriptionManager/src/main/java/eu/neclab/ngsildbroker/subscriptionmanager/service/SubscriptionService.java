@@ -347,6 +347,7 @@ public class SubscriptionService {
 								} else {
 									tenant2subscriptionId2Subscription.put(tenant, updatedRequest.getId(),
 											updatedRequest);
+ 									subscriptionId2RequestGlobal.put(updatedRequest.getId(),updatedRequest);
 									tenant2subscriptionId2IntervalSubscription.remove(tenant, updatedRequest.getId());
 								}
 								MicroServiceUtils.serializeAndSplitObjectAndEmit(updatedRequest, messageSize,
