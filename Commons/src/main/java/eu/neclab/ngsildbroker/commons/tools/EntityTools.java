@@ -443,10 +443,10 @@ public abstract class EntityTools {
 	}
 
 	public static void noConcise(Object object) {
-		noConcise(object, null, null);
+		noConcise(object, null, null,0);
 	}
 
-	private static void noConcise(Object object, Map<String, Object> parentMap, String keyOfObject) {
+	private static void noConcise(Object object, Map<String, Object> parentMap, String keyOfObject, int level) {
 		// Object is Map
 		if (object instanceof Map<?, ?> map) {
 			// Map have object but not type
@@ -479,7 +479,7 @@ public abstract class EntityTools {
 			else if (map.containsKey(NGSIConstants.LANGUAGE_MAP)) {
 				((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.LANGUAGE_PROPERTY);
 			}
-			else if(parentMap != null && parentMap.containsKey(NGSIConstants.ID) && parentMap.containsKey(NGSIConstants.TYPE)){
+			else if(parentMap != null && !map.containsKey(NGSIConstants.TYPE) && level==1){
 				Map<String, Object> newMap = new HashMap<>();
 				newMap.put(NGSIConstants.VALUE, map);
 				newMap.put(NGSIConstants.TYPE, NGSIConstants.PROPERTY);
@@ -499,14 +499,14 @@ public abstract class EntityTools {
 							&& !key.equals(NGSIConstants.QUERY_PARAMETER_UNIT_CODE)
 							&& !key.equals(NGSIConstants.LANGUAGE_MAP) && !key.equals(NGSIConstants.VOCAB)
 							&& !key.equals(NGSIConstants.OBJECT_TYPE)) {
-						noConcise(map.get(key), (Map<String, Object>) map, key.toString());
+						noConcise(map.get(key), (Map<String, Object>) map, key.toString(),level+1);
 					}
 				}
 			}
 		}
 		// Object is List
 		else if (object instanceof List<?> list) {
-			if(parentMap != null && parentMap.containsKey(NGSIConstants.ID)&&parentMap.containsKey(NGSIConstants.TYPE)){
+			if(parentMap != null && level==1){
 				Map<String, Object> newMap = new HashMap<>();
 				newMap.put(NGSIConstants.VALUE, list);
 				newMap.put(NGSIConstants.TYPE, NGSIConstants.PROPERTY);
@@ -514,7 +514,7 @@ public abstract class EntityTools {
 			}
 			else {
 				for (Object o : list) {
-					noConcise(o, null, null);
+					noConcise(o, null, null,level);
 				}
 			}
 		}
