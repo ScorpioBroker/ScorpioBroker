@@ -388,7 +388,14 @@ public class SubscriptionService {
 			List<Map<String, Object>> resultData = new ArrayList<>(rows.size());
 			while (it.hasNext()) {
 				next = it.next();
-				resultData.add(next.getJsonObject(0).getMap());
+				Map<String, Object> subscriptionData = next.getJsonObject(0).getMap();
+				String subscriptionId = (String) subscriptionData.get(NGSIConstants.JSON_LD_ID);
+				SubscriptionRequest subscriptionRequest = subscriptionId2RequestGlobal.get(subscriptionId);
+				if (subscriptionRequest != null) {
+				subscriptionData.put("status", subscriptionRequest.getSubscription().getStatus());
+				}
+				resultData.add(subscriptionData);
+				//resultData.add(next.getJsonObject(0).getMap());
 			}
 			result.setData(resultData);
 			if (next == null) {
