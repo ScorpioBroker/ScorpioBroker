@@ -50108,6 +50108,67 @@
 													"response": []
 												}
 											]
+										},
+										{
+											"name": "Add attribute if entity id not found",
+											"item": [
+												{
+													"name": "Add attribute if entity is not found",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var expected = {\r",
+																	"    \"type\": \"https://uri.etsi.org/ngsi-ld/errors/ResourceNotFound\",\r",
+																	"    \"title\": \"Resource not found.\",\r",
+																	"    \"errorCode\": 404\r",
+																	"};\r",
+																	"pm.test(\"Status code is 404\", function () {\r",
+																	"    pm.response.to.have.status(404);\r",
+																	"});\r",
+																	"pm.test(\"Validate content\", function () {\r",
+																	"    var jsonData = pm.response.json();\r",
+																	"    delete jsonData['detail'];\r",
+																	"    console.log(\"expected: \" + JSON.stringify(expected));\r",
+																	"    console.log(\"received: \" + JSON.stringify(jsonData));\r",
+																	"    pm.expect(jsonData).to.eql(expected);\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "PATCH",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/ld+json",
+																"type": "default"
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n    \"intproperty-new\": {\"type\": \"Property\", \"value\": 123},\r\n     \"@context\": \"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\"\r\n}"
+														},
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities/urn:notfound/attrs",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities",
+																"urn:notfound",
+																"attrs"
+															]
+														}
+													},
+													"response": []
+												}
+											]
 										}
 									]
 								}
