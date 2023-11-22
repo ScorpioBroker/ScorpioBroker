@@ -35,9 +35,11 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.UUID;
 
 public class SubscriptionTools {
@@ -200,13 +202,14 @@ public class SubscriptionTools {
 
 	public static Uni<Map<String, Object>> generateNotification(SubscriptionRequest potentialSub, Object entity,
 			JsonLDService ldService) {
-
+			Set<String> options = new HashSet<>();
+			options.add(potentialSub.getSubscription().getNotification().getFormat().toString());
 //		Object data = HttpUtils.generateCompactedResult(Lists.newArrayList(), potentialSub.getContext(),
 //				HttpUtils.parseAcceptHeader(
 //						List.of(potentialSub.getSubscription().getNotification().getEndPoint().getAccept())),
 //				entity, null, null, null, true).getItem1();
 		return getContextForNotification(ldService, potentialSub).onItem().transformToUni(context -> {
-			return ldService.compact(entity, null, context, HttpUtils.opts, -1).onItem().transform(compacted -> {
+			return ldService.compact(entity, null, context, HttpUtils.opts, -1,options,null).onItem().transform(compacted -> {
 				Map<String, Object> notification = Maps.newLinkedHashMap();
 				notification.put(NGSIConstants.QUERY_PARAMETER_ID,
 						"notification:" + UUID.randomUUID().getLeastSignificantBits());
