@@ -343,6 +343,7 @@ public class SubscriptionService {
 								if (isIntervalSub(updatedRequest)) {
 									tenant2subscriptionId2IntervalSubscription.put(tenant, updatedRequest.getId(),
 											updatedRequest);
+									subscriptionId2RequestGlobal.put(updatedRequest.getId(),updatedRequest);
 									tenant2subscriptionId2Subscription.remove(tenant, updatedRequest.getId());
 								} else {
 									tenant2subscriptionId2Subscription.put(tenant, updatedRequest.getId(),
