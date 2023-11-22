@@ -861,9 +861,11 @@ public class QQueryTerm implements Serializable {
 	private void addItemToTupel(Tuple tuple, String listItem, StringBuilder sql) {
 		try {
 			double tmp = Double.parseDouble(listItem);
+			sql.insert(sql.length()-2,"TO_JSONB(");
+			sql.append(")");
 			tuple.addDouble(tmp);
 		} catch (NumberFormatException e) {
-			if (listItem.toLowerCase().equals("true") || listItem.toLowerCase().equals("false")) {
+			if (listItem.equalsIgnoreCase("true") || listItem.equalsIgnoreCase("false")) {
 				tuple.addBoolean(Boolean.parseBoolean(listItem));
 			} else {
 				if (!listItem.matches(DATETIME)) {
