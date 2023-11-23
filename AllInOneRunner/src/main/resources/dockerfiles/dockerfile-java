@@ -1,4 +1,4 @@
-FROM openjdk:22-slim
+FROM openjdk:22-slim-bookworm
 WORKDIR /usr/src/scorpio
 COPY target/quarkus-app ./
 ENV DBHOST=postgres
