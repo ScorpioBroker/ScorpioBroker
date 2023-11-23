@@ -112,7 +112,7 @@ public class RegistryController {
 			} catch (Exception e) {
 				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 			}
-			if(qQueryTerm.getOperator().isEmpty()){
+			if(qQueryTerm!=null && qQueryTerm.getOperator().isEmpty()){
 				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData)));
 			}
 			return csourceService
