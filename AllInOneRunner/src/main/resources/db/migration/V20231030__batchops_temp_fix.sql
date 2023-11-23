@@ -70,3 +70,6 @@ BEGIN
 END;
 $ENTITYOAR$
 LANGUAGE PLPGSQL;
+
+
+ALTER TABLE temporalentityattrinstance ADD COLUMN static boolean
