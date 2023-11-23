@@ -15,6 +15,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
@@ -227,12 +228,16 @@ public class CSourceService {
 	}
 
 	public Uni<QueryResult> queryRegistrations(String tenant, Set<String> ids, TypeQueryTerm typeQuery,
-			String idPattern, AttrsQueryTerm attrsQuery, CSFQueryTerm csf, GeoQueryTerm geoQuery,
-			ScopeQueryTerm scopeQuery, int limit, int offset, boolean count) {
+											   String idPattern, AttrsQueryTerm attrsQuery, CSFQueryTerm csf, GeoQueryTerm geoQuery,
+											   ScopeQueryTerm scopeQuery, QQueryTerm qQueryTerm, int limit, int offset, boolean count) {
 		return cSourceInfoDAO
-				.query(tenant, ids, typeQuery, idPattern, attrsQuery, csf, geoQuery, scopeQuery, limit, offset, count)
+				.query(tenant, ids, typeQuery, idPattern, attrsQuery, csf, geoQuery, scopeQuery,qQueryTerm, limit, offset, count)
 				.onItem().transform(rows -> {
 					QueryResult result = new QueryResult();
+					if(rows.size()==0){
+						result.setData(new ArrayList<>());
+						return result;
+					}
 					long countLong = rows.iterator().next().getLong(1);
 					if (count) {
 						result.setCount(countLong);

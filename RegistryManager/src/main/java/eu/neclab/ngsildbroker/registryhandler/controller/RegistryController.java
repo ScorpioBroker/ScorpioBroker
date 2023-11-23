@@ -112,11 +112,13 @@ public class RegistryController {
 			} catch (Exception e) {
 				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 			}
-
+			if(qQueryTerm.getOperator().isEmpty()){
+				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData)));
+			}
 			return csourceService
 					.queryRegistrations(HttpUtils.getTenant(request),
 							ids == null ? null : Sets.newHashSet(ids.split(",")), typeQueryTerm, idPattern, attrsQuery,
-							csfQueryTerm, geoQueryTerm, scopeQueryTerm, actualLimit, offset, count)
+							csfQueryTerm, geoQueryTerm, scopeQueryTerm,qQueryTerm, actualLimit, offset, count)
 					.onItem().transformToUni(queryResult -> {
 						return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty,
 								acceptHeader, count, actualLimit, null, context, ldService);

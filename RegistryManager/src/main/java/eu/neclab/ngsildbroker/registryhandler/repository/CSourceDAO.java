@@ -8,6 +8,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteCSourceRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -159,10 +160,10 @@ public class CSourceDAO {
     }
 
     public Uni<RowSet<Row>> query(String tenant, Set<String> ids, TypeQueryTerm typeQuery, String idPattern,
-                                  AttrsQueryTerm attrsQuery, CSFQueryTerm csf, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, int limit,
+                                  AttrsQueryTerm attrsQuery, CSFQueryTerm csf, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, QQueryTerm qQueryTerm, int limit,
                                   int offset, boolean count) {
         return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
-            StringBuilder sql = new StringBuilder("with a as (select distinct cs_id from csourceinformation WHERE ");
+            StringBuilder sql = new StringBuilder("with a as (select distinct cs_id from csourceinformation, csource WHERE ");
             boolean sqlAdded = false;
             int dollar = 1;
             Tuple tuple = Tuple.tuple();
@@ -185,6 +186,15 @@ public class CSourceDAO {
                 sql.append(" ~ e_id)");
                 tuple.addString(idPattern);
                 dollar++;
+                sqlAdded = true;
+            }
+            if (qQueryTerm != null) {
+                if (sqlAdded) {
+                    sql.append(" AND ");
+                }
+                StringBuilder tempSql = new StringBuilder();
+                dollar = qQueryTerm.toSql(tempSql, dollar, tuple);
+                sql.append(tempSql.toString().toLowerCase().replace("entity","csource.reg"));
                 sqlAdded = true;
             }
             if (typeQuery != null) {
