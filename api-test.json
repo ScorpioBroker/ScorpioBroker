@@ -1,8 +1,10 @@
 {
 	"info": {
-		"_postman_id": "e29952c7-9c84-4720-9f3b-8e1b71041cd2",
+		"_postman_id": "eca439f2-d6bf-4f42-8571-1919c3da87d0",
 		"name": "API Test",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "23549240",
+		"_collection_link": "https://lively-flare-564396.postman.co/workspace/Scorpio~19b8073e-6570-45c0-bafd-07d48ddfc38c/collection/23549240-eca439f2-d6bf-4f42-8571-1919c3da87d0?action=share&source=collection_link&creator=23549240"
 	},
 	"item": [
 		{
@@ -15985,6 +15987,7 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
+																	"    delete jsonData['status'];\r",
 																	"     delete jsonData['timesSent'];\r",
 																	"     delete jsonData['timesFailed'];\r",
 																	"    console.log(\"expected: \" + JSON.stringify(expected));\r",
@@ -16130,6 +16133,7 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
+																	"    delete jsonData['status'];\r",
 																	"     delete jsonData['timesSent'];\r",
 																	"     delete jsonData['timesFailed'];\r",
 																	"    console.log(\"expected: \" + JSON.stringify(expected));\r",
@@ -16316,6 +16320,7 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
+																	"    delete jsonData['status'];\r",
 																	"     delete jsonData['timesSent'];\r",
 																	"     delete jsonData['timesFailed'];\r",
 																	"    console.log(\"expected: \" + JSON.stringify(expected));\r",
@@ -16476,6 +16481,7 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
+																	"    delete jsonData['status'];\r",
 																	"     delete jsonData['timesSent'];\r",
 																	"     delete jsonData['timesFailed'];\r",
 																	"    console.log(\"expected: \" + JSON.stringify(expected));\r",
@@ -16579,6 +16585,7 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
+																	"    delete jsonData['status'];\r",
 																	"   delete jsonData['timesSent'];\r",
 																	"   delete jsonData['timesFailed'];\r",
 																	"    console.log(\"expected: \" + JSON.stringify(expected));\r",
@@ -16825,6 +16832,7 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
+																	"    delete jsonData['status'];\r",
 																	"    delete jsonData['timesSent'];\r",
 																	"     delete jsonData['timesFailed'];\r",
 																	"    console.log(\"expected: \" + JSON.stringify(expected));\r",
@@ -16934,6 +16942,7 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
+																	"    delete jsonData['status'];\r",
 																	"     delete jsonData['timesSent'];\r",
 																	"     delete jsonData['timesFailed'];\r",
 																	"    console.log(\"expected: \" + JSON.stringify(expected));\r",
@@ -17108,6 +17117,7 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
+																	"    delete jsonData['status'];\r",
 																	"    delete jsonData['timesFailed'];\r",
 																	"    delete jsonData['timesSent'];\r",
 																	"    console.log(\"expected: \" + JSON.stringify(expected));\r",
@@ -17244,6 +17254,7 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
+																	"    delete jsonData['status'];\r",
 																	"    delete jsonData['timesFailed'];\r",
 																	"    delete jsonData['timesSent'];\r",
 																	"    console.log(\"expected: \" + JSON.stringify(expected));\r",
@@ -52610,44 +52621,6 @@
 					]
 				}
 			]
-		}
-	],
-	"variable": [
-		{
-			"key": "createdTBF",
-			"value": ""
-		},
-		{
-			"key": "entityIdTBF",
-			"value": ""
-		},
-		{
-			"key": "entityTypeTBF",
-			"value": ""
-		},
-		{
-			"key": "createdTBNF",
-			"value": ""
-		},
-		{
-			"key": "entityIdTBNF",
-			"value": ""
-		},
-		{
-			"key": "created",
-			"value": ""
-		},
-		{
-			"key": "cSourceId",
-			"value": ""
-		},
-		{
-			"key": "entityId",
-			"value": ""
-		},
-		{
-			"key": "updated",
-			"value": ""
 		}
 	]
 }
