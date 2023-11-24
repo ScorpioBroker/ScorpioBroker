@@ -127,7 +127,7 @@ public class QueryController {
 	public Uni<RestResponse<Object>> query(HttpServerRequest request, @QueryParam("id") String id,
 			@QueryParam("type") String typeQuery, @QueryParam("idPattern") String idPattern,
 			@QueryParam("attrs") String attrs, @QueryParam("q") String qInput, @QueryParam("csf") String csf,
-			@QueryParam("geometry") String geometry, @QueryParam("georel") String georel,
+			@QueryParam("geometry") String geometry, @QueryParam("georel") String georelInput,
 			@QueryParam("coordinates") String coordinates, @QueryParam("geoproperty") String geoproperty,
 			@QueryParam("geometryProperty") String geometryProperty, @QueryParam("lang") String lang,
 			@QueryParam("scopeQ") String scopeQ, @QueryParam("localOnly") boolean localOnly,
@@ -135,9 +135,10 @@ public class QueryController {
 			@QueryParam("count") boolean count, @QueryParam("containedBy") @DefaultValue("") String containedBy,
 			@QueryParam("join") String join, @QueryParam("idsOnly") boolean idsOnly,
 			@QueryParam("joinLevel") @DefaultValue("1") int joinLevel, @QueryParam("doNotCompact") boolean doNotCompact,
-			@QueryParam("entityMap") String entityMapToken, @Context UriInfo uriInfo) {
+			@QueryParam("entityMap") String entityMapToken, @QueryParam("maxDistance") String maxDistance, @QueryParam("minDistance") String minDistance, @Context UriInfo uriInfo) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		String q;
+		String georel;
 		if (qInput != null) {
             String uri = URLDecoder.decode(request.absoluteURI(), StandardCharsets.UTF_8);
             uri = uri.substring(uri.indexOf("q=") + 2);
@@ -149,7 +150,13 @@ public class QueryController {
         } else {
 			q = null;
 		}
-
+		if(maxDistance != null) {
+			georel = georelInput + ";maxDistance="+maxDistance;
+		}else if(minDistance != null) {
+			georel = georelInput + ";minDistance="+minDistance;
+		}else {
+			georel = georelInput;
+		}
 		if (acceptHeader == -1) {
 			return HttpUtils.getInvalidHeader();
 		}
