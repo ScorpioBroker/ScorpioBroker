@@ -55,7 +55,7 @@ public class RegistrySubscriptionController {
 
 	@GET
 	public Uni<RestResponse<Object>> getAllSubscriptions(HttpServerRequest request, @QueryParam("limit") Integer limit,
-			@QueryParam("offset") int offset, @QueryParam("options") String options,@QueryParam("page") int page) {
+			@QueryParam("offset") int offset, @QueryParam("options") String options) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		if (acceptHeader == -1) {
 			return HttpUtils.getInvalidHeader();
@@ -71,7 +71,7 @@ public class RegistrySubscriptionController {
 					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.TooManyResults)));
 		}
 
-		if (offset < 0 || limitTBU < 1 || page < 1) {
+		if (offset < 0 || limitTBU < 1) {
 			return Uni.createFrom().item(HttpUtils
 					.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData, "invalid offset/limit/page")));
 		}
