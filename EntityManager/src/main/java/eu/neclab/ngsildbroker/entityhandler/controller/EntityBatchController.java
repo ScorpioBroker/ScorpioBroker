@@ -5,6 +5,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import io.vertx.core.json.DecodeException;
 import io.vertx.core.json.JsonArray;
 import jakarta.inject.Inject;
@@ -187,7 +189,7 @@ public class EntityBatchController {
 	public Uni<RestResponse<Object>> appendMultiple(HttpServerRequest request,
 			List<Map<String, Object>> compactedEntities, @QueryParam(value = "options") String options,
 			@QueryParam("localOnly") boolean localOnly) {
-		boolean isNoOverwrite = options != null && options.contains("noOverwrite");
+		boolean isNoOverwrite = options != null && options.contains(NGSIConstants.NO_OVERWRITE_OPTION);
 		List<Uni<Tuple2<String, Object>>> unis = Lists.newArrayList();
 		for (Map<String, Object> compactedEntity : compactedEntities) {
 			noConcise(compactedEntity);

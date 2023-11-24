@@ -204,10 +204,6 @@ public class SubscriptionTools {
 			JsonLDService ldService) {
 			Set<String> options = new HashSet<>();
 			options.add(potentialSub.getSubscription().getNotification().getFormat().toString());
-//		Object data = HttpUtils.generateCompactedResult(Lists.newArrayList(), potentialSub.getContext(),
-//				HttpUtils.parseAcceptHeader(
-//						List.of(potentialSub.getSubscription().getNotification().getEndPoint().getAccept())),
-//				entity, null, null, null, true).getItem1();
 		return getContextForNotification(ldService, potentialSub).onItem().transformToUni(context -> {
 			return ldService.compact(entity, null, context, HttpUtils.opts, -1,options,null).onItem().transform(compacted -> {
 				Map<String, Object> notification = Maps.newLinkedHashMap();
