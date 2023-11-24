@@ -50176,6 +50176,61 @@
 														}
 													},
 													"response": []
+												},
+												{
+													"name": "Update attribute value if entity id is not found",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var expected = {\r",
+																	"    \"type\": \"https://uri.etsi.org/ngsi-ld/errors/ResourceNotFound\",\r",
+																	"    \"title\": \"Resource not found.\",\r",
+																	"    \"errorCode\": 404\r",
+																	"};\r",
+																	"pm.test(\"Status code is 404\", function () {\r",
+																	"    pm.response.to.have.status(404);\r",
+																	"});\r",
+																	"pm.test(\"Validate content\", function () {\r",
+																	"    var jsonData = pm.response.json();\r",
+																	"    delete jsonData['detail'];\r",
+																	"    console.log(\"expected: \" + JSON.stringify(expected));\r",
+																	"    console.log(\"received: \" + JSON.stringify(jsonData));\r",
+																	"    pm.expect(jsonData).to.eql(expected);\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "PATCH",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 12367}\r\n   \r\n}"
+														},
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities/urn:notfound",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities",
+																"urn:notfound"
+															]
+														}
+													},
+													"response": []
 												}
 											]
 										},
@@ -52675,6 +52730,16 @@
 					]
 				}
 			]
+		}
+	],
+	"variable": [
+		{
+			"key": "created",
+			"value": ""
+		},
+		{
+			"key": "entityId",
+			"value": ""
 		}
 	]
 }
