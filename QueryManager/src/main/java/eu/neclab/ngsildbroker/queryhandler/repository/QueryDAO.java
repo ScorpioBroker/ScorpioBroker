@@ -307,9 +307,7 @@ public class QueryDAO {
 						result.put(NGSIConstants.NGSI_LD_ATTRIBUTE_NAME, Lists.newArrayList(tmp));
 						result.put(NGSIConstants.NGSI_LD_TYPE_NAMES, types);
 						result.put(NGSIConstants.NGSI_LD_ATTRIBUTE_TYPES, attribTypes);
-						tmp = Maps.newHashMap();
-						tmp.put(NGSIConstants.JSON_LD_VALUE, count);
-						result.put(NGSIConstants.NGSI_LD_ATTRIBUTE_COUNT, Lists.newArrayList(tmp));
+						result.put(NGSIConstants.NGSI_LD_ATTRIBUTE_COUNT_SHORT, Lists.newArrayList(count));
 						return Uni.createFrom().item(result);
 					});
 		});
