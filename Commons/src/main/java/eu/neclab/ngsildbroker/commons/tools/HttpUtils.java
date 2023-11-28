@@ -882,7 +882,7 @@ public final class HttpUtils {
 																String options, String geometryProperty, int acceptHeader, boolean count, int limit, LanguageQueryTerm lang,
 																Context context, JsonLDService ldService) {
 		ResponseBuilder<Object> builder;
-		if (count == true) {
+		if (count) {
 			builder = RestResponseBuilderImpl.ok().header(NGSIConstants.COUNT_HEADER_RESULT, queryResult.getCount());
 		} else {
 			builder = RestResponseBuilderImpl.ok();

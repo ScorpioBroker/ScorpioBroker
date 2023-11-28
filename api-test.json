@@ -1,10 +1,10 @@
 {
 	"info": {
-		"_postman_id": "c29208d5-77aa-4331-9ecf-757db090b31b",
+		"_postman_id": "5ac79d00-f7bb-4570-a5cf-b4f7eb6ce578",
 		"name": "API Test",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "23549240",
-		"_collection_link": "https://lively-flare-564396.postman.co/workspace/Scorpio~19b8073e-6570-45c0-bafd-07d48ddfc38c/collection/23549240-c29208d5-77aa-4331-9ecf-757db090b31b?action=share&source=collection_link&creator=23549240"
+		"_collection_link": "https://lively-flare-564396.postman.co/workspace/Scorpio~19b8073e-6570-45c0-bafd-07d48ddfc38c/collection/23549240-5ac79d00-f7bb-4570-a5cf-b4f7eb6ce578?action=share&source=collection_link&creator=23549240"
 	},
 	"item": [
 		{
@@ -9176,7 +9176,208 @@
 															"response": []
 														},
 														{
-															"name": "Query for entity tbf",
+															"name": "Query for entity tbf georel encoded",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 200\", function () {\r",
+																			"    pm.response.to.have.status(200);\r",
+																			"});\r",
+																			"\r",
+																			"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
+																			"    var jsonData = pm.response.json();\r",
+																			"    pm.expect(jsonData.length).to.eql(1);\r",
+																			"    pm.expect(jsonData[0]).to.eql(pm.collectionVariables.get(\"createdTBF\"));\r",
+																			"    pm.expect(jsonData[0]).to.not.eql(pm.collectionVariables.get(\"createdTBNF\"));\r",
+																			"});"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "GET",
+																"header": [
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default"
+																	}
+																],
+																"url": {
+																	"raw": "{{query-manager}}/ngsi-ld/v1/entities?type={{entityTypeTBF}}&geoproperty=location&georel=near%3BmaxDistance==1500&geometry=Point&coordinates=[80,80]",
+																	"host": [
+																		"{{query-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities"
+																	],
+																	"query": [
+																		{
+																			"key": "type",
+																			"value": "{{entityTypeTBF}}"
+																		},
+																		{
+																			"key": "geoproperty",
+																			"value": "location"
+																		},
+																		{
+																			"key": "georel",
+																			"value": "near%3BmaxDistance==1500"
+																		},
+																		{
+																			"key": "geometry",
+																			"value": "Point"
+																		},
+																		{
+																			"key": "coordinates",
+																			"value": "[80,80]"
+																		}
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Query for entity nothing encoded",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 200\", function () {\r",
+																			"    pm.response.to.have.status(200);\r",
+																			"});\r",
+																			"\r",
+																			"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
+																			"    var jsonData = pm.response.json();\r",
+																			"    pm.expect(jsonData.length).to.eql(1);\r",
+																			"    pm.expect(jsonData[0]).to.eql(pm.collectionVariables.get(\"createdTBF\"));\r",
+																			"    pm.expect(jsonData[0]).to.not.eql(pm.collectionVariables.get(\"createdTBNF\"));\r",
+																			"});"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "GET",
+																"header": [
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default"
+																	}
+																],
+																"url": {
+																	"raw": "{{query-manager}}/ngsi-ld/v1/entities?type={{entityTypeTBF}}&geoproperty=location&georel=near;maxDistance==1500&geometry=Point&coordinates=[80,80]",
+																	"host": [
+																		"{{query-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities"
+																	],
+																	"query": [
+																		{
+																			"key": "type",
+																			"value": "{{entityTypeTBF}}"
+																		},
+																		{
+																			"key": "geoproperty",
+																			"value": "location"
+																		},
+																		{
+																			"key": "georel",
+																			"value": "near;maxDistance==1500"
+																		},
+																		{
+																			"key": "geometry",
+																			"value": "Point"
+																		},
+																		{
+																			"key": "coordinates",
+																			"value": "[80,80]"
+																		}
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Query for entity coordinates encoded",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 200\", function () {\r",
+																			"    pm.response.to.have.status(200);\r",
+																			"});\r",
+																			"\r",
+																			"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
+																			"    var jsonData = pm.response.json();\r",
+																			"    pm.expect(jsonData.length).to.eql(1);\r",
+																			"    pm.expect(jsonData[0]).to.eql(pm.collectionVariables.get(\"createdTBF\"));\r",
+																			"    pm.expect(jsonData[0]).to.not.eql(pm.collectionVariables.get(\"createdTBNF\"));\r",
+																			"});"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "GET",
+																"header": [
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default"
+																	}
+																],
+																"url": {
+																	"raw": "{{query-manager}}/ngsi-ld/v1/entities?type={{entityTypeTBF}}&geoproperty=location&georel=near;maxDistance==1500&geometry=Point&coordinates=%5B80%2C80%5D",
+																	"host": [
+																		"{{query-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities"
+																	],
+																	"query": [
+																		{
+																			"key": "type",
+																			"value": "{{entityTypeTBF}}"
+																		},
+																		{
+																			"key": "geoproperty",
+																			"value": "location"
+																		},
+																		{
+																			"key": "georel",
+																			"value": "near;maxDistance==1500"
+																		},
+																		{
+																			"key": "geometry",
+																			"value": "Point"
+																		},
+																		{
+																			"key": "coordinates",
+																			"value": "%5B80%2C80%5D"
+																		}
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Query for entity all encoded",
 															"event": [
 																{
 																	"listen": "test",
@@ -51924,6 +52125,40 @@
 					]
 				}
 			]
+		}
+	],
+	"variable": [
+		{
+			"key": "createdTBF",
+			"value": ""
+		},
+		{
+			"key": "entityIdTBF",
+			"value": ""
+		},
+		{
+			"key": "entityTypeTBF",
+			"value": ""
+		},
+		{
+			"key": "createdTBNF",
+			"value": ""
+		},
+		{
+			"key": "entityIdTBNF",
+			"value": ""
+		},
+		{
+			"key": "created",
+			"value": ""
+		},
+		{
+			"key": "cSourceId",
+			"value": ""
+		},
+		{
+			"key": "entityId",
+			"value": ""
 		}
 	]
 }

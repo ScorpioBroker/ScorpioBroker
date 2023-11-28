@@ -3,6 +3,7 @@ package eu.neclab.ngsildbroker.queryhandler.controller;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import jakarta.inject.Inject;
@@ -126,7 +127,7 @@ public class QueryController {
 	public Uni<RestResponse<Object>> query(HttpServerRequest request, @QueryParam("id") String id,
 			@QueryParam("type") String typeQuery, @QueryParam("idPattern") String idPattern,
 			@QueryParam("attrs") String attrs, @QueryParam("q") String qInput, @QueryParam("csf") String csf,
-			@QueryParam("geometry") String geometry, @QueryParam("georel") String georel,
+			@QueryParam("geometry") String geometry, @QueryParam("georel") String georelInput,
 			@QueryParam("coordinates") String coordinates, @QueryParam("geoproperty") String geoproperty,
 			@QueryParam("geometryProperty") String geometryProperty, @QueryParam("lang") String lang,
 			@QueryParam("scopeQ") String scopeQ, @QueryParam("localOnly") boolean localOnly,
@@ -134,26 +135,28 @@ public class QueryController {
 			@QueryParam("count") boolean count, @QueryParam("containedBy") @DefaultValue("") String containedBy,
 			@QueryParam("join") String join, @QueryParam("idsOnly") boolean idsOnly,
 			@QueryParam("joinLevel") @DefaultValue("1") int joinLevel, @QueryParam("doNotCompact") boolean doNotCompact,
-			@QueryParam("entityMap") String entityMapToken, @Context UriInfo uriInfo) {
+			@QueryParam("entityMap") String entityMapToken, @QueryParam("maxDistance") String maxDistance, @QueryParam("minDistance") String minDistance, @Context UriInfo uriInfo) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		String q;
+		String georel;
 		if (qInput != null) {
-			try {
-				String uri = URLDecoder.decode(request.absoluteURI(), "UTF-8");
-				uri = uri.substring(request.absoluteURI().indexOf("q=") + 2);
-				int index = uri.indexOf('&');
-				if (index != -1) {
-					uri = uri.substring(0, index);
-				}
-				q = uri;
-			} catch (UnsupportedEncodingException e) {
-				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
-						new ResponseException(ErrorType.BadRequestData, "failed to decode q query")));
-			}
-		} else {
+            String uri = URLDecoder.decode(request.absoluteURI(), StandardCharsets.UTF_8);
+            uri = uri.substring(uri.indexOf("q=") + 2);
+            int index = uri.indexOf('&');
+            if (index != -1) {
+                uri = uri.substring(0, index);
+            }
+            q = uri;
+        } else {
 			q = null;
 		}
-
+		if(maxDistance != null) {
+			georel = georelInput + ";maxDistance="+maxDistance;
+		}else if(minDistance != null) {
+			georel = georelInput + ";minDistance="+minDistance;
+		}else {
+			georel = georelInput;
+		}
 		if (acceptHeader == -1) {
 			return HttpUtils.getInvalidHeader();
 		}
