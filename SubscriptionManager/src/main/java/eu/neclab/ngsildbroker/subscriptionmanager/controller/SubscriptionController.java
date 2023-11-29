@@ -56,7 +56,7 @@ public class SubscriptionController {
 
 	@GET
 	public Uni<RestResponse<Object>> getAllSubscriptions(HttpServerRequest request, @QueryParam("limit") Integer limit,
-			@QueryParam("limit") int offset, @QueryParam("options") String options) {
+			@QueryParam("offset") int offset, @QueryParam("options") String options) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		if (acceptHeader != 1 && acceptHeader != 2) {
 			return HttpUtils.getInvalidHeader();
