@@ -393,7 +393,7 @@ public class SubscriptionService {
 				String subscriptionId = (String) subscriptionData.get(NGSIConstants.JSON_LD_ID);
 				SubscriptionRequest subscriptionRequest = subscriptionId2RequestGlobal.get(subscriptionId);
 				if (subscriptionRequest != null) {
-				subscriptionData.put("status", subscriptionRequest.getSubscription().getStatus());
+				subscriptionData.put(NGSIConstants.STATUS, subscriptionRequest.getSubscription().getStatus());
 				}
 				resultData.add(subscriptionData);
 				//resultData.add(next.getJsonObject(0).getMap());
@@ -423,7 +423,7 @@ public class SubscriptionService {
 				return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound, "subscription not found"));
 			}
 		  	Map<String,Object> rowData = rows.iterator().next().getJsonObject(0).getMap();
-			rowData.put("status",subscriptionId2RequestGlobal.get(subscriptionId).getSubscription().getStatus());
+			rowData.put(NGSIConstants.STATUS,subscriptionId2RequestGlobal.get(subscriptionId).getSubscription().getStatus());
 			return Uni.createFrom().item(rowData);
 		});
 	}
