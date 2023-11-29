@@ -66,17 +66,22 @@ public class AttrsQueryTerm implements Serializable {
 		query.append(NGSIConstants.NGSI_LD_MODIFIED_AT);
 		query.append("', ENTITY -> '");
 		query.append(NGSIConstants.NGSI_LD_MODIFIED_AT);
-		query.append("'");
+		query.append("')");
 		
 		for (String attrs : getAttrs()) {
-			query.append(",$");
+			query.append(" || ");
+			query.append("CASE WHEN ENTITY ? ");
+			query.append("$");
+			query.append(dollar);
+			query.append(" THEN JSONB_BUILD_OBJECT($");
 			query.append(dollar);
 			query.append(", ENTITY->$");
 			query.append(dollar);
+			query.append(" ) ELSE '{}'::jsonb END");
 			tuple.addString(attrs);
 			dollar++;
 		}
-		query.append(") || ");
+		query.append(" || ");
 		query.append("CASE WHEN ENTITY-> '");
 		query.append(NGSIConstants.NGSI_LD_SCOPE);
 		query.append("' IS NOT NULL THEN JSONB_BUILD_OBJECT('");

@@ -78,19 +78,9 @@ public class QueryDAO {
 				if (t.rowCount() == 0) {
 					return Uni.createFrom().item(new HashMap<String, Object>());
 				}
-				Map<String,Object> map =t.iterator().next().getJsonObject(0).getMap();
-				map.values().removeIf(Objects::isNull);
-				if(attrsQuery!=null){
-					boolean found=false;
-					for(String key : attrsQuery.getAttrs()){
-						found= map.containsKey(key);
-						if(found){
-							break;
-						}
-					}
-					if(!found) {
-						return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
-					}
+				Map<String,Object> result = t.iterator().next().getJsonObject(0).getMap();
+				if(attrsQuery!=null&& !attrsQuery.getAttrs().isEmpty() && result.size()<=4){
+					return Uni.createFrom().failure(new ResponseException(ErrorType.CombinationNotFound));
 				}
 				return Uni.createFrom().item(t.iterator().next().getJsonObject(0).getMap());
 			});
@@ -832,7 +822,7 @@ public class QueryDAO {
 		}).onFailure().recoverWithUni(e -> {
 			if (e instanceof PgException pge) {
 				logger.debug(pge.getPosition());
-				if (((PgException) e).getSqlState().equals(AppConstants.INVALID_REGULAR_EXPRESSION)) {
+				if (pge.getSqlState().equals(AppConstants.INVALID_REGULAR_EXPRESSION)) {
 					return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData));
 				}
 			}
