@@ -986,7 +986,7 @@ public class JsonLdApi {
 						if (value instanceof List) {
 							expandedValue = new ArrayList<String>();
 							for (final Object v : (List) value) {
-								if (!ngsiElement.isFromHasValue()) {
+//								if (!ngsiElement.isFromHasValue()) {
 									if (!(v instanceof String)) {
 										throw new JsonLdError(Error.INVALID_TYPE_VALUE,
 												"@type value must be a string or array of strings");
@@ -994,7 +994,7 @@ public class JsonLdApi {
 									String type = activeCtx.expandIri((String) v, true, true, null, null);
 									((List<String>) expandedValue).add(type);
 									ngsiElement.addType(type);
-								}
+//								}
 							}
 						} else if (value instanceof String) {
 							expandedValue = activeCtx.expandIri((String) value, true, true, null, null);
