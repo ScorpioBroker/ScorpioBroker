@@ -355,11 +355,13 @@ public class QueryDAO {
 					Map<String, Object> attribDetail = Maps.newHashMap();
 					Map<String, String> tmp = Maps.newHashMap();
 					tmp.put(NGSIConstants.JSON_LD_ID, row.getString(1));
+					attribDetail.put(NGSIConstants.JSON_LD_ID,row.getString(1));
+					attribDetail.put(NGSIConstants.TYPE,NGSIConstants.ATTRIBUTE);
 					attribDetail.put(NGSIConstants.NGSI_LD_ATTRIBUTE_NAME, Lists.newArrayList(tmp));
 					attribDetail.put(NGSIConstants.NGSI_LD_ATTRIBUTE_TYPES, row.getJsonArray(2).getList());
 					attrDetails.add(attribDetail);
 				}
-				result.put(NGSIConstants.NGSI_LD_ATTRIBUTE_DETAILS, attrDetails);
+				result.put(NGSIConstants.ATTRIBUTE_DETAILS, attrDetails);
 				Map<String, Long> countMap = Maps.newHashMap();
 				countMap.put(NGSIConstants.JSON_LD_VALUE, count);
 				result.put(NGSIConstants.NGSI_LD_ENTITY_COUNT, countMap);

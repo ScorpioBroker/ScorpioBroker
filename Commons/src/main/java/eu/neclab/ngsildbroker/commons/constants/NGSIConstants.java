@@ -454,5 +454,8 @@ public interface NGSIConstants {
 	public final static String KEY = "key";
 	public static final String OBJECT_TYPE = "objectType";
 	public final static String STATUS = "status";
+
+	public final static String ATTRIBUTE = "Attribute";
+	public final static String ATTRIBUTE_DETAILS = "attributeDetails";
 	public static final String NGSI_LD_JSONLD_CONTEXT = "https://uri.etsi.org/ngsi-ld/default-context/jsonldContext";
 }
