@@ -373,10 +373,17 @@ public class Subscription implements Serializable {
 						}
 
 						for (Map<String, Object> headerEntry : receiverInfos) {
-							headerEntry.forEach((t, u) -> {
-								receiverInfo.put(t, u.toString());
-							});
-
+							if(headerEntry.containsKey(NGSIConstants.KEY)){
+								receiverInfo.put(headerEntry.get(NGSIConstants.KEY).toString(), headerEntry.get(NGSIConstants.VALUE).toString());
+							}
+							else if(headerEntry.containsKey(NGSIConstants.NGSI_LD_HAS_KEY)){
+								receiverInfo.put(headerEntry.get(NGSIConstants.NGSI_LD_HAS_KEY).toString(), headerEntry.get(NGSIConstants.NGSI_LD_HAS_VALUE).toString());
+							}
+							else {
+								headerEntry.forEach((t, u) -> {
+									receiverInfo.put(t, u.toString());
+								});
+							}
 						}
 						endPoint.setReceiverInfo(receiverInfo);
 					}

@@ -451,6 +451,7 @@ public interface NGSIConstants {
 	public static final Set<String> ENTITY_BASE_PROPS = Sets.newHashSet(JSON_LD_ID, JSON_LD_TYPE, NGSI_LD_CREATED_AT,
 			NGSI_LD_MODIFIED_AT, NGSI_LD_SCOPE);
 	public final static String NGSI_LD_HAS_KEY = "https://uri.etsi.org/ngsi-ld/hasKey";
+	public final static String KEY = "key";
 	public static final String OBJECT_TYPE = "objectType";
 	public final static String STATUS = "status";
 	public static final String NGSI_LD_JSONLD_CONTEXT = "https://uri.etsi.org/ngsi-ld/default-context/jsonldContext";
