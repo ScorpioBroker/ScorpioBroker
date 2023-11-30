@@ -1,8 +1,10 @@
 {
 	"info": {
-		"_postman_id": "0e183aa8-8e00-4274-b8f1-afc7b05f77b8",
+		"_postman_id": "7afe36c9-8612-45a2-a14c-500ded377e2b",
 		"name": "API Test",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "23549240",
+		"_collection_link": "https://lively-flare-564396.postman.co/workspace/Scorpio~19b8073e-6570-45c0-bafd-07d48ddfc38c/collection/23549240-7afe36c9-8612-45a2-a14c-500ded377e2b?action=share&source=collection_link&creator=23549240"
 	},
 	"item": [
 		{
@@ -52260,7 +52262,7 @@
 							"name": "query test",
 							"item": [
 								{
-									"name": "limit/offset /page",
+									"name": "csource subscriptions limit/offset test",
 									"item": [
 										{
 											"name": "Invalid limit",
@@ -52270,7 +52272,7 @@
 													"script": {
 														"exec": [
 															"\r",
-															"pm.test(\"Status code is 404\", function () {\r",
+															"pm.test(\"Status code is 400\", function () {\r",
 															"    pm.response.to.have.status(400);\r",
 															"});\r",
 															""
@@ -52289,7 +52291,7 @@
 													}
 												],
 												"url": {
-													"raw": "{{query-manager}}/ngsi-ld/v1/csourceSubscriptions?limit=-5&page=2",
+													"raw": "{{query-manager}}/ngsi-ld/v1/csourceSubscriptions?limit=-5&offset=2",
 													"host": [
 														"{{query-manager}}"
 													],
@@ -52304,7 +52306,7 @@
 															"value": "-5"
 														},
 														{
-															"key": "page",
+															"key": "offset",
 															"value": "2"
 														}
 													]
@@ -52313,14 +52315,14 @@
 											"response": []
 										},
 										{
-											"name": "Invalid Page",
+											"name": "Invalid Offset",
 											"event": [
 												{
 													"listen": "test",
 													"script": {
 														"exec": [
 															"\r",
-															"pm.test(\"Status code is 404\", function () {\r",
+															"pm.test(\"Status code is 400\", function () {\r",
 															"    pm.response.to.have.status(400);\r",
 															"});\r",
 															""
@@ -52339,7 +52341,7 @@
 													}
 												],
 												"url": {
-													"raw": "{{query-manager}}/ngsi-ld/v1/csourceSubscriptions?limit=2&page=-3",
+													"raw": "{{query-manager}}/ngsi-ld/v1/csourceSubscriptions?limit=2&offset=-3",
 													"host": [
 														"{{query-manager}}"
 													],
@@ -52354,7 +52356,7 @@
 															"value": "2"
 														},
 														{
-															"key": "page",
+															"key": "offset",
 															"value": "-3"
 														}
 													]
@@ -52363,14 +52365,14 @@
 											"response": []
 										},
 										{
-											"name": "Invalid Limit And Page",
+											"name": "Invalid Limit And Offset",
 											"event": [
 												{
 													"listen": "test",
 													"script": {
 														"exec": [
 															"\r",
-															"pm.test(\"Status code is 404\", function () {\r",
+															"pm.test(\"Status code is 400\", function () {\r",
 															"    pm.response.to.have.status(400);\r",
 															"});\r",
 															""
@@ -52389,7 +52391,7 @@
 													}
 												],
 												"url": {
-													"raw": "{{query-manager}}/ngsi-ld/v1/csourceSubscriptions?limit=0&page=0",
+													"raw": "{{query-manager}}/ngsi-ld/v1/csourceSubscriptions?limit=0&offset=0",
 													"host": [
 														"{{query-manager}}"
 													],
@@ -52404,7 +52406,7 @@
 															"value": "0"
 														},
 														{
-															"key": "page",
+															"key": "offset",
 															"value": "0"
 														}
 													]

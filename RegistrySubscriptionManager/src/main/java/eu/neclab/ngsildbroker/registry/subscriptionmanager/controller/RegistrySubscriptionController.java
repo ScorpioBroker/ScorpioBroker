@@ -73,7 +73,7 @@ public class RegistrySubscriptionController {
 
 		if (offset < 0 || limitTBU < 1) {
 			return Uni.createFrom().item(HttpUtils
-					.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData, "invalid offset/limit/page")));
+					.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData, "invalid offset/limit")));
 		}
 		return ldService.parse(HttpUtils.getAtContext(request)).onItem().transformToUni(ctx -> {
 			return subService.getAllSubscriptions(HttpUtils.getTenant(request), limitTBU, offset).onItem()
