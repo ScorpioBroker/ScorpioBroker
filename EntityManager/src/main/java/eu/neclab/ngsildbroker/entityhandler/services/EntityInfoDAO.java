@@ -274,7 +274,7 @@ public class EntityInfoDAO {
 			tuple.addJsonObject(new JsonObject(payload));
 			sql += " UPDATE ENTITY SET ";
 			if (types != null) {
-				sql += "e_types = ARRAY(SELECT DISTINCT UNNEST(e_types || $2)), ENTITY = (jsonb_set(ENTITY, '{@type}', array_to_json(e_types)::jsonb) || (select * from json_data)-'https://uri.etsi.org/ngsi-ld/createdAt')";
+				sql += "e_types = ARRAY(SELECT DISTINCT UNNEST(e_types || $2)), ENTITY = (jsonb_set(ENTITY, '{@type}', array_to_json(Array(SELECT DISTINCT UNNEST(e_types || $2))) ::jsonb) || ((select * from json_data)-'https://uri.etsi.org/ngsi-ld/createdAt')::jsonb)";
 				dollar = 3;
 				tuple.addArrayOfString(((List<String>) types).toArray(new String[0]));
 			} else {
@@ -291,7 +291,11 @@ public class EntityInfoDAO {
 			tuple.addString(request.getId());
 			sql += " RETURNING (SELECT ENTITY FROM old_entity) AS old_entity, ENTITY as new_entity;";
 			return client.preparedQuery(sql).execute(tuple).onFailure()
-					.recoverWithUni(e -> Uni.createFrom().failure(new ResponseException(ErrorType.NotFound))).onItem()
+					.recoverWithUni(e ->
+							{
+								return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
+						}
+					).onItem()
 					.transformToUni(rows -> {
 						if (rows.rowCount() == 0) {
 							return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
@@ -359,9 +363,9 @@ public class EntityInfoDAO {
 			if (types != null) {
 				sql += "e_types = ARRAY(SELECT DISTINCT UNNEST(e_types || $1)), ";
 				if (noOverwrite) {
-					sql += "ENTITY = (($2::jsonb - 'https://uri.etsi.org/ngsi-ld/createdAt') || jsonb_set(ENTITY, '{@type}', array_to_json(e_types)::jsonb))";
+					sql += "ENTITY = (($2::jsonb - 'https://uri.etsi.org/ngsi-ld/createdAt') || jsonb_set(ENTITY, '{@type}', array_to_json(Array(SELECT DISTINCT UNNEST(e_types || $1))) ::jsonb))";
 				} else {
-					sql += "ENTITY = (jsonb_set(ENTITY, '{@type}', array_to_json(e_types)::jsonb) || ($2::jsonb - 'https://uri.etsi.org/ngsi-ld/createdAt'))";
+					sql += "ENTITY = (jsonb_set(ENTITY, '{@type}', array_to_json(Array(SELECT DISTINCT UNNEST(e_types || $1))) ::jsonb) || ($2::jsonb - 'https://uri.etsi.org/ngsi-ld/createdAt'))";
 				}
 
 				dollar = 3;
