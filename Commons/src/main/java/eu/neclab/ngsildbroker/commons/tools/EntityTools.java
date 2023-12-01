@@ -159,6 +159,9 @@ public abstract class EntityTools {
 				case NGSIConstants.NGSI_LD_VocabularyProperty:
 					prop = generateFakeProperty(key, tmp);
 					break;
+				case NGSIConstants.NGSI_LD_ListProperty:
+					prop = generateFakeProperty(key, tmp);
+					break;
 				case NGSIConstants.NGSI_LD_PROPERTY:
 				default:
 					prop = SerializationTools.parseProperty((List<Map<String, Object>>) value, key);
@@ -457,6 +460,9 @@ public abstract class EntityTools {
 			else if (map.containsKey(NGSIConstants.VOCAB)) {
 				((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.VOCABULARYPROPERTY);
 			}
+			if (map.containsKey(NGSIConstants.LIST)) {
+					((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.LISTPROPERTY);
+			}
 			// Map have value but not type
 			else if (map.containsKey(NGSIConstants.VALUE) && !map.containsKey(NGSIConstants.TYPE)) {
 				// for GeoProperty
@@ -497,7 +503,9 @@ public abstract class EntityTools {
 							&& !key.equals(NGSIConstants.QUERY_PARAMETER_DATA_SET_ID) && !key.equals(NGSIConstants.OBJECT)
 							&& !key.equals(NGSIConstants.VALUE) && !key.equals(NGSIConstants.SCOPE)
 							&& !key.equals(NGSIConstants.QUERY_PARAMETER_UNIT_CODE)
-							&& !key.equals(NGSIConstants.LANGUAGE_MAP) && !key.equals(NGSIConstants.VOCAB)
+							&& !key.equals(NGSIConstants.LANGUAGE_MAP)
+							&& !key.equals(NGSIConstants.VOCAB)
+							&& !key.equals(NGSIConstants.LIST)
 							&& !key.equals(NGSIConstants.OBJECT_TYPE)) {
 						noConcise(map.get(key), (Map<String, Object>) map, key.toString(),level+1);
 					}

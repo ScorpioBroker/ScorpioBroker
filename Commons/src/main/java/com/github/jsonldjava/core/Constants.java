@@ -1,7 +1,6 @@
 package com.github.jsonldjava.core;
 
 import com.google.common.collect.HashMultimap;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 
@@ -78,6 +77,7 @@ public class Constants {
 		allowedScalars.put(AppConstants.ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_OBJECT_TYPE);
 		allowedScalars.put(AppConstants.ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_VALUE);
 		allowedScalars.put(AppConstants.ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_VOCAB);
+		allowedScalars.put(AppConstants.ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_LIST);
 		allowedScalars.put(AppConstants.ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_COORDINATES);
 		allowedScalars.put(AppConstants.ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_UNIT_CODE);
 		allowedScalars.put(AppConstants.ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_DATA_SET_ID);
@@ -86,6 +86,7 @@ public class Constants {
 		allowedScalars.put(AppConstants.ENTITY_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_OBJECT_TYPE);
 		allowedScalars.put(AppConstants.ENTITY_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_VALUE);
 		allowedScalars.put(AppConstants.ENTITY_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_VOCAB);
+		allowedScalars.put(AppConstants.ENTITY_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_LIST);
 		allowedScalars.put(AppConstants.ENTITY_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_COORDINATES);
 		allowedScalars.put(AppConstants.ENTITY_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_UNIT_CODE);
 		allowedScalars.put(AppConstants.ENTITY_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_DATA_SET_ID);
@@ -94,6 +95,7 @@ public class Constants {
 		allowedScalars.put(AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_OBJECT_TYPE);
 		allowedScalars.put(AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_VALUE);
 		allowedScalars.put(AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_VOCAB);
+		allowedScalars.put(AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_LIST);
 		allowedScalars.put(AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_COORDINATES);
 		allowedScalars.put(AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_UNIT_CODE);
 		allowedScalars.put(AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_DATA_SET_ID);
@@ -101,6 +103,7 @@ public class Constants {
 		allowedScalars.put(AppConstants.ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_HAS_OBJECT);
 		allowedScalars.put(AppConstants.ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_HAS_VALUE);
 		allowedScalars.put(AppConstants.ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_HAS_VOCAB);
+		allowedScalars.put(AppConstants.ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_HAS_LIST);
 		allowedScalars.put(AppConstants.ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_COORDINATES);
 		allowedScalars.put(AppConstants.ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_UNIT_CODE);
 		allowedScalars.put(AppConstants.ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_DATA_SET_ID);
@@ -115,6 +118,7 @@ public class Constants {
 		allowedScalars.put(AppConstants.TEMP_ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_OBJECT);
 		allowedScalars.put(AppConstants.TEMP_ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_VALUE);
 		allowedScalars.put(AppConstants.TEMP_ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_VOCAB);
+		allowedScalars.put(AppConstants.TEMP_ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_LIST);
 		allowedScalars.put(AppConstants.TEMP_ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_COORDINATES);
 		allowedScalars.put(AppConstants.TEMP_ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_UNIT_CODE);
 		allowedScalars.put(AppConstants.TEMP_ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_DATA_SET_ID);
@@ -122,6 +126,7 @@ public class Constants {
 		allowedScalars.put(AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_OBJECT);
 		allowedScalars.put(AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_VALUE);
 		allowedScalars.put(AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_VOCAB);
+		allowedScalars.put(AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_LIST);
 		allowedScalars.put(AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_COORDINATES);
 		allowedScalars.put(AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_UNIT_CODE);
 		allowedScalars.put(AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_DATA_SET_ID);
@@ -129,6 +134,7 @@ public class Constants {
 		allowedScalars.put(AppConstants.TEMP_ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_HAS_OBJECT);
 		allowedScalars.put(AppConstants.TEMP_ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_HAS_VALUE);
 		allowedScalars.put(AppConstants.TEMP_ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_HAS_VOCAB);
+		allowedScalars.put(AppConstants.TEMP_ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_HAS_LIST);
 		allowedScalars.put(AppConstants.TEMP_ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_COORDINATES);
 		allowedScalars.put(AppConstants.TEMP_ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_UNIT_CODE);
 		allowedScalars.put(AppConstants.TEMP_ENTITY_RETRIEVED_PAYLOAD, NGSIConstants.NGSI_LD_DATA_SET_ID);
@@ -142,6 +148,7 @@ public class Constants {
 		allowedScalars.put(AppConstants.MERGE_PATCH_PAYLOAD, NGSIConstants.NGSI_LD_OBJECT_TYPE);
 		allowedScalars.put(AppConstants.MERGE_PATCH_PAYLOAD, NGSIConstants.NGSI_LD_HAS_VALUE);
 		allowedScalars.put(AppConstants.MERGE_PATCH_PAYLOAD, NGSIConstants.NGSI_LD_HAS_VOCAB);
+		allowedScalars.put(AppConstants.MERGE_PATCH_PAYLOAD, NGSIConstants.NGSI_LD_HAS_LIST);
 		allowedScalars.put(AppConstants.MERGE_PATCH_PAYLOAD, NGSIConstants.NGSI_LD_COORDINATES);
 		allowedScalars.put(AppConstants.MERGE_PATCH_PAYLOAD, NGSIConstants.NGSI_LD_UNIT_CODE);
 		allowedScalars.put(AppConstants.MERGE_PATCH_PAYLOAD, NGSIConstants.NGSI_LD_DATA_SET_ID);

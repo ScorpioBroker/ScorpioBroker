@@ -193,6 +193,10 @@ public class SubscriptionService {
 			propertyMap.put(NGSIConstants.VOCAB,
 					((List<Map<String, Object>>) newValue).get(0).get(NGSIConstants.NGSI_LD_HAS_VOCAB));
 		}
+		if (((List<Map<String, Object>>) newValue).get(0).containsKey(NGSIConstants.NGSI_LD_HAS_LIST)) {
+					propertyMap.put(NGSIConstants.LIST,
+						((List<Map<String, Object>>) newValue).get(0).get(NGSIConstants.NGSI_LD_HAS_LIST));
+		}
 
 		if (oldValue != null) {
 			if (((List<Map<String, Object>>) oldValue).get(0).containsKey(NGSIConstants.NGSI_LD_HAS_VALUE)) {

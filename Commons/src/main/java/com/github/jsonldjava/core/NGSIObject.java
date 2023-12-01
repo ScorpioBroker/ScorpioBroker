@@ -40,10 +40,34 @@ class NGSIObject {
 	private boolean isNotifierInfo = false;
 	private boolean isReceiverInfo = false;
 	private boolean hasAtContext = false;
+
+	public boolean isListProperty() {
+		return isListProperty;
+	}
+
+	public void setProperty(boolean property) {
+		isProperty = property;
+	}
+
+	public void setListProperty(boolean listProperty) {
+		isListProperty = listProperty;
+	}
+
+	public void setHasList(boolean hasList) {
+		this.hasList = hasList;
+	}
+
+	public boolean isHasList() {
+		return hasList;
+	}
+
 	private boolean atContextRequired = false;
 
 	private boolean isVocabProperty = false;
 	private boolean hasVocab = false;
+
+	private boolean isListProperty = false;
+	private boolean hasList = false;
 
 	private HashSet<String> datasetIds = new HashSet<String>();
 	private String id;
@@ -180,6 +204,8 @@ class NGSIObject {
 			this.isLanguageProperty = true;
 		} else if (NGSIConstants.NGSI_LD_VocabularyProperty.equals(type)) {
 			this.isVocabProperty = true;
+		} else if(NGSIConstants.NGSI_LD_ListProperty.equals(type)){
+			this.isLanguageProperty=true;
 		}
 
 		return this;
@@ -624,11 +650,11 @@ class NGSIObject {
 			validateArray();
 		} else {
 			if (isLdKeyWord && parent == null && !isProperty && !isRelationship && !isGeoProperty && !isDateTime
-					&& !isLanguageProperty && !isVocabProperty) {
+					&& !isLanguageProperty && !isVocabProperty && !isListProperty) {
 				return;
 			}
 			if (!isProperty && !isRelationship && !isGeoProperty && !isDateTime && !isLanguageProperty
-					&& !isVocabProperty) {
+					&& !isVocabProperty && !isListProperty) {
 				throw new ResponseException(ErrorType.BadRequestData,
 						"The key " + activeProperty + " is an invalid entry.");
 			}
@@ -638,6 +664,10 @@ class NGSIObject {
 			if (isVocabProperty && !hasVocab) {
 				throw new ResponseException(ErrorType.BadRequestData,
 						"You can't have vocabulary property without a vocab");
+			}
+			if (isListProperty && !hasList) {
+				throw new ResponseException(ErrorType.BadRequestData,
+						"You can't have ListProperty property without a valueList");
 			}
 			if ((isRelationship && !hasObject)) {
 				throw new ResponseException(ErrorType.BadRequestData, "You can't have relationships without an object");
@@ -848,7 +878,8 @@ class NGSIObject {
 		this.isLdKeyWord = this.isLdKeyWord || ngsiV.isLdKeyWord;
 		this.isScalar = this.isScalar || ngsiV.isScalar;
 		this.isVocabProperty = this.isVocabProperty || ngsiV.isVocabProperty;
-		if ((ngsiV.isRelationship || ngsiV.isProperty || ngsiV.isLanguageProperty || ngsiV.isVocabProperty)) {
+		this.isListProperty  = this.isListProperty  || ngsiV.isListProperty;
+		if ((ngsiV.isRelationship || ngsiV.isProperty || ngsiV.isLanguageProperty || ngsiV.isVocabProperty || ngsiV.isListProperty)) {
 			if (ngsiV.datasetIds.isEmpty()) {
 				this.datasetIds.add(NGSIConstants.DEFAULT_DATA_SET_ID);
 			} else {

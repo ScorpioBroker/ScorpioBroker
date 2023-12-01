@@ -151,6 +151,10 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_SHOWCHANGES = "https://uri.etsi.org/ngsi-ld/showChanges";
 	public final static String NGSI_LD_HAS_VOCAB = "https://uri.etsi.org/ngsi-ld/hasVocab";
 	public final static String NGSI_LD_VocabularyProperty = "https://uri.etsi.org/ngsi-ld/VocabularyProperty";
+
+	public final static String NGSI_LD_HAS_LIST = "https://uri.etsi.org/ngsi-ld/hasValueList";
+	public final static String NGSI_LD_ListProperty = "https://uri.etsi.org/ngsi-ld/ListProperty";
+	public final static String LISTPROPERTY = "ListProperty";
 	public final static String VOCABULARYPROPERTY = "VocabularyProperty";
 
 	// IMPORTANT! DO NOT MESS UP THIS ORDER!!! ONLY APPEND ON THE END NEW STUFF
@@ -164,14 +168,14 @@ public interface NGSIConstants {
 			NGSI_LD_DESCRIPTION, NGSI_LD_GEO_REL, NGSI_LD_TIME_STAMP, NGSI_LD_TIMESTAMP_START, NGSI_LD_TIMESTAMP_END,
 			NGSI_LD_SUBSCRIPTION_ID, NGSI_LD_NOTIFIED_AT, NGSI_LD_DATA, NGSI_LD_INTERNAL, NGSI_LD_LAST_NOTIFICATION,
 			NGSI_LD_LAST_FAILURE, NGSI_LD_LAST_SUCCESS, NGSI_LD_TIMES_SENT, NGSI_LD_UNIT_CODE, NGSI_LD_DATA_SET_ID,
-			NGSI_LD_MANAGEMENTINTERVAL, NGSI_LD_HAS_VOCAB };
+			NGSI_LD_MANAGEMENTINTERVAL, NGSI_LD_HAS_VOCAB ,NGSI_LD_HAS_LIST};
 
 	public final static String[] NGSI_LD_SUBSCRIPTON_PAYLOAD_KEYS = { JSON_LD_ID, JSON_LD_TYPE, JSON_LD_CONTEXT,
 			NGSI_LD_ENTITIES, NGSI_LD_ID_PATTERN, NGSI_LD_GEO_QUERY, NGSI_LD_NOTIFICATION, NGSI_LD_ATTRIBUTES,
 			NGSI_LD_ENDPOINT, NGSI_LD_ACCEPT, NGSI_LD_URI, NGSI_LD_FORMAT, NGSI_LD_QUERY, NGSI_LD_WATCHED_ATTRIBUTES,
 			NGSI_LD_TIMES_SENT, NGSI_LD_THROTTLING, NGSI_LD_TIME_INTERVAL, NGSI_LD_EXPIRES, NGSI_LD_STATUS,
 			NGSI_LD_DESCRIPTION, NGSI_LD_IS_ACTIVE, NGSI_LD_TIMESTAMP_END, NGSI_LD_TIMESTAMP_START,
-			NGSI_LD_SUBSCRIPTION_NAME, NGSI_LD_HAS_VOCAB };
+			NGSI_LD_SUBSCRIPTION_NAME, NGSI_LD_HAS_VOCAB, NGSI_LD_HAS_LIST };
 
 	public final static String GEO_JSON_COORDINATES = "coordinates";
 	public final static String GEO_JSON_TYPE = "type";
@@ -273,7 +277,7 @@ public interface NGSIConstants {
 	public static final Integer[] VALID_QOS = { 0, 1, 2 };
 	public static final String COUNT_HEADER_RESULT = "NGSILD-Results-Count";
 	public static final Set<String> NGSI_LD_ATTR_TYPES = Sets.newHashSet(NGSI_LD_PROPERTY, NGSI_LD_RELATIONSHIP,
-			NGSI_LD_GEOPROPERTY, NGSI_LD_LANGPROPERTY, NGSI_LD_VocabularyProperty);
+			NGSI_LD_GEOPROPERTY, NGSI_LD_LANGPROPERTY, NGSI_LD_VocabularyProperty,NGSI_LD_ListProperty);
 
 	public final static String NOTIFICATION = "Notification";
 
@@ -281,6 +285,7 @@ public interface NGSIConstants {
 	public static final String QUERY_TYPE = "Query";
 	public static final String ISACTIVE_FALSE = "paused";
 	public static final String ISACTIVE_TRUE = "active";
+	public final static String LIST = "list";
 
 	public static final Set<String> CORE_CONTEXT_URLS = Sets.newHashSet(
 			"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld",
