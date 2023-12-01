@@ -1,10 +1,9 @@
 {
 	"info": {
-		"_postman_id": "7afe36c9-8612-45a2-a14c-500ded377e2b",
+		"_postman_id": "f9604898-7d70-4627-8c5e-a9c5e6df47be",
 		"name": "API Test",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "23549240",
-		"_collection_link": "https://lively-flare-564396.postman.co/workspace/Scorpio~19b8073e-6570-45c0-bafd-07d48ddfc38c/collection/23549240-7afe36c9-8612-45a2-a14c-500ded377e2b?action=share&source=collection_link&creator=23549240"
+		"_exporter_id": "26387112"
 	},
 	"item": [
 		{
@@ -26804,7 +26803,162 @@
 						},
 						{
 							"name": "/csourceSubscriptions",
-							"item": []
+							"item": [
+								{
+									"name": "csourceSubscription  No Context",
+									"item": [
+										{
+											"name": "Create Simple Entity No Context",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+															"console.log(payloadBody.id);\r",
+															"var cSourceId = payloadBody.id;\r",
+															"pm.collectionVariables.set(\"created\", payloadBody);\r",
+															"pm.collectionVariables.set(\"cSourceId\", cSourceId);\r",
+															"pm.test(\"Status code is 201\", function () {\r",
+															"    pm.response.to.have.status(201);\r",
+															"});\r",
+															"pm.test(\"Check location header\", function () {\r",
+															"    pm.response.to.have.header(\"Location\");\r",
+															"    pm.expect(pm.response.headers.get(\"Location\")).to.include(cSourceId);\r",
+															"});\r",
+															"\r",
+															"\r",
+															""
+														],
+														"type": "text/javascript"
+													}
+												},
+												{
+													"listen": "prerequest",
+													"script": {
+														"exec": [
+															""
+														],
+														"type": "text/javascript"
+													}
+												}
+											],
+											"request": {
+												"method": "POST",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json",
+														"type": "default"
+													},
+													{
+														"key": "Accept",
+														"value": "application/json",
+														"type": "default",
+														"disabled": true
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\r\n    \"id\": \"urn:ngsi-ld:Subscription:031\",\r\n    \"type\": \"Subscription\",\r\n    \"entities\": [\r\n        {\r\n            \"type\": \"Building\"\r\n        }\r\n    ],\r\n    \"notification\": {\r\n        \"format\": \"keyValues\",\r\n        \"endpoint\": {\r\n            \"uri\": \"http://localhost:8080\",\r\n            \"accept\": \"application/json\"\r\n        }\r\n    }\r\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{registry-manager}}/ngsi-ld/v1/csourceSubscriptions",
+													"host": [
+														"{{registry-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"csourceSubscriptions"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Get Created Entity and Validate content",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"var expected = pm.collectionVariables.get(\"created\");\r",
+															"pm.test(\"Status code is 200\", function () {\r",
+															"    pm.response.to.have.status(200);\r",
+															"});\r",
+															""
+														],
+														"type": "text/javascript"
+													}
+												}
+											],
+											"request": {
+												"method": "GET",
+												"header": [
+													{
+														"key": "Accept",
+														"value": "application/json",
+														"type": "default"
+													}
+												],
+												"url": {
+													"raw": "{{registry-manager}}/ngsi-ld/v1/csourceSubscriptions/urn:ngsi-ld:Subscription:031",
+													"host": [
+														"{{registry-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"csourceSubscriptions",
+														"urn:ngsi-ld:Subscription:031"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Delete Entity",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 204\", function () {\r",
+															"    pm.response.to.have.status(204);\r",
+															"});\r",
+															"pm.collectionVariables.clear();"
+														],
+														"type": "text/javascript"
+													}
+												}
+											],
+											"request": {
+												"method": "DELETE",
+												"header": [],
+												"url": {
+													"raw": "{{registry-manager}}/ngsi-ld/v1/csourceSubscriptions/urn:ngsi-ld:Subscription:031",
+													"host": [
+														"{{registry-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"csourceSubscriptions",
+														"urn:ngsi-ld:Subscription:031"
+													]
+												}
+											},
+											"response": []
+										}
+									]
+								}
+							]
 						},
 						{
 							"name": "/temporal/entities",
@@ -52413,6 +52567,40 @@
 												}
 											},
 											"response": []
+										},
+										{
+											"name": "csource subscription not found",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 204\", function () {\r",
+															"    pm.response.to.have.status(204);\r",
+															"});\r",
+															"pm.collectionVariables.clear();"
+														],
+														"type": "text/javascript"
+													}
+												}
+											],
+											"request": {
+												"method": "GET",
+												"header": [],
+												"url": {
+													"raw": "{{registry-manager}}/ngsi-ld/v1/csourceSubscriptions/urn:ngsi-ld:notfound",
+													"host": [
+														"{{registry-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"csourceSubscriptions",
+														"urn:ngsi-ld:notfound"
+													]
+												}
+											},
+											"response": []
 										}
 									]
 								},
@@ -52696,6 +52884,69 @@
 											"response": []
 										}
 									]
+								},
+								{
+									"name": "type not present",
+									"item": [
+										{
+											"name": "type not present",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"var expected = {\r",
+															"    \"type\": \"https://uri.etsi.org/ngsi-ld/errors/ResourceNotFound\",\r",
+															"    \"title\": \"Resource not found.\",\r",
+															"    \"errorCode\": 404\r",
+															"};\r",
+															"pm.test(\"Status code is 400\", function () {\r",
+															"    pm.response.to.have.status(404);\r",
+															"});\r",
+															"pm.test(\"Validate content\", function () {\r",
+															"    var jsonData = pm.response.json();\r",
+															"    delete jsonData['detail'];\r",
+															"    console.log(\"expected: \" + JSON.stringify(expected));\r",
+															"    console.log(\"received: \" + JSON.stringify(jsonData));\r",
+															"    pm.expect(jsonData).to.eql(expected);\r",
+															"});"
+														],
+														"type": "text/javascript"
+													}
+												}
+											],
+											"request": {
+												"method": "GET",
+												"header": [
+													{
+														"key": "Accept",
+														"value": "application/json",
+														"type": "default"
+													}
+												],
+												"url": {
+													"raw": "{{query-manager}}/ngsi-ld/v1/types/notType",
+													"host": [
+														"{{query-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"types",
+														"notType"
+													],
+													"query": [
+														{
+															"key": "",
+															"value": null,
+															"disabled": true
+														}
+													]
+												}
+											},
+											"response": []
+										}
+									]
 								}
 							]
 						},
@@ -52933,16 +53184,6 @@
 					]
 				}
 			]
-		}
-	],
-	"variable": [
-		{
-			"key": "created",
-			"value": ""
-		},
-		{
-			"key": "entityId",
-			"value": ""
 		}
 	]
 }
