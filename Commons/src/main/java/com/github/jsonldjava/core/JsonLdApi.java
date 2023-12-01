@@ -221,6 +221,7 @@ public class JsonLdApi {
 			boolean isProperty = false;
 			boolean isRelationship = false;
 			boolean isLanguageProperty = false;
+			boolean isVocabProperty = false;
 			for (String expandedProperty : keys) {
 
 				Object expandedValue = elem.get(expandedProperty);
@@ -259,18 +260,21 @@ public class JsonLdApi {
 					}
 					if ((keyValue || concise || langQuery != null) && JsonLdConsts.TYPE.equals(expandedProperty)) {
 						switch (((List<String>) expandedValue).get(0)) {
-						case NGSIConstants.NGSI_LD_PROPERTY:
-							isProperty = true;
+							case NGSIConstants.NGSI_LD_PROPERTY:
+								isProperty = true;
 
-						case NGSIConstants.NGSI_LD_GEOPROPERTY:
-							isGeoProperty = true;
-							break;
-						case NGSIConstants.NGSI_LD_LANGPROPERTY:
-							isLanguageProperty = true;
-							break;
-						case NGSIConstants.NGSI_LD_RELATIONSHIP:
-							isRelationship = true;
-							break;
+							case NGSIConstants.NGSI_LD_GEOPROPERTY:
+								isGeoProperty = true;
+								break;
+							case NGSIConstants.NGSI_LD_LANGPROPERTY:
+								isLanguageProperty = true;
+								break;
+							case NGSIConstants.NGSI_LD_RELATIONSHIP:
+								isRelationship = true;
+								break;
+							case NGSIConstants.NGSI_LD_VocabularyProperty:
+								isVocabProperty = true;
+								break;
 						}
 						if (keyValue || concise) {
 							continue;
@@ -351,7 +355,12 @@ public class JsonLdApi {
 						} else {
 							continue;
 						}
-					} else if (isRelationship) {
+					}
+					else if(isVocabProperty && expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_VOCAB)){
+						return compact(activeCtx, NGSIConstants.VOCAB, expandedValue, compactArrays, endPoint, null,
+								null);
+					}
+					else if (isRelationship) {
 						if (expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_OBJECT)) {
 							List<String> ids = new ArrayList<>();
 							if(expandedValue instanceof List<?> lsIdsMap){
@@ -366,14 +375,15 @@ public class JsonLdApi {
 						} else {
 							continue;
 						}
-					} else if (isLanguageProperty) {
-						if (expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP)) {
-							return compact(activeCtx, activeProperty, expandedValue, compactArrays, endPoint, null,
-									null);
-						} else {
-							continue;
-						}
 					}
+//					else if (isLanguageProperty) {
+//						if (expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP)) {
+////							return compact(activeCtx, activeProperty, expandedValue, compactArrays, endPoint, null,
+////									null);
+//						} else {
+//							continue;
+//						}
+//					}
 				} else if (concise) {
 					if (expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_VALUE)
 							|| expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP)
