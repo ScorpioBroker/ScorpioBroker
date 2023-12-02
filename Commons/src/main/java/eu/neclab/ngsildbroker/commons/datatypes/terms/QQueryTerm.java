@@ -1001,6 +1001,21 @@ public class QQueryTerm implements Serializable {
 				sql.append(currentSqlAttrib);
 				sql.append(" #>>'{");
 				sql.append(NGSIConstants.JSON_LD_TYPE);
+				sql.append(",0}' = '");
+				sql.append(NGSIConstants.NGSI_LD_LISTRELATIONSHIP);
+				sql.append("' THEN EXISTS (SELECT TRUE FROM JSONB_ARRAY_ELEMENTS(");
+				sql.append(currentSqlAttrib);
+				sql.append(" ->'");
+				sql.append(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST);
+				sql.append("') AS mostInnerValue WHERE (mostInnerValue->'");
+				sql.append(NGSIConstants.JSON_LD_ID);
+				sql.append("')");
+				dollarCount = applyOperator(sql, dollarCount, tuple, false);
+				sql.append(") WHEN ");
+
+				sql.append(currentSqlAttrib);
+				sql.append(" #>>'{");
+				sql.append(NGSIConstants.JSON_LD_TYPE);
 				sql.append("}' = '");
 				sql.append(NGSIConstants.NGSI_LD_DATE_TIME);
 				sql.append("' THEN (");

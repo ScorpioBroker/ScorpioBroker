@@ -43,6 +43,7 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_SUBSCRIPTION_NAME = "https://uri.etsi.org/ngsi-ld/subscriptionName";
 	public final static String CSOURCEREGISTRATION_NAME = "registrationName";
 	public final static String OBJECT = "object";
+	public final static String OBJECT_LIST = "objectList";
 	public final static String JSON_LD_ID = "@id";
 	public final static String JSON_LD_TYPE = "@type";
 	public final static String JSON_LD_VALUE = "@value";
@@ -51,10 +52,13 @@ public interface NGSIConstants {
 	public final static String JSON_LD_LANGUAGE = "@language";
 	public final static String NGSI_LD_DEFAULT_PREFIX = "https://uri.etsi.org/ngsi-ld/default-context/";
 	public final static String NGSI_LD_RELATIONSHIP = "https://uri.etsi.org/ngsi-ld/Relationship";
+
+	public final static String NGSI_LD_LISTRELATIONSHIP = "https://uri.etsi.org/ngsi-ld/ListRelationship";
+	public final static String NGSI_LD_HAS_OBJECT_LIST = "https://uri.etsi.org/ngsi-ld/hasObjectList";
+	public final static String NGSI_LD_HAS_OBJECT = "https://uri.etsi.org/ngsi-ld/hasObject";
 	public final static String NGSI_LD_PROPERTY = "https://uri.etsi.org/ngsi-ld/Property";
 	public final static String NGSI_LD_HAS_VALUE = "https://uri.etsi.org/ngsi-ld/hasValue";
-	public final static String NGSI_LD_HAS_OBJECT = "https://uri.etsi.org/ngsi-ld/hasObject";
-	public final static String NGSI_LD_OBJECT_TYPE = "https://uri.etsi.org/ngsi-ld/default-context/objectType";
+ 	public final static String NGSI_LD_OBJECT_TYPE = "https://uri.etsi.org/ngsi-ld/default-context/objectType";
 	public final static String NGSI_LD_COORDINATES = "https://purl.org/geojson/vocab#coordinates"; // "https://uri.etsi.org/ngsi-ld/coordinates";
 	public final static String NGSI_LD_GEOPROPERTY = "https://uri.etsi.org/ngsi-ld/GeoProperty";
 	public final static String NGSI_LD_LANGPROPERTY = "https://uri.etsi.org/ngsi-ld/LanguageProperty";
@@ -387,6 +391,7 @@ public interface NGSIConstants {
 			NGSIConstants.GEO_TYPE_POLYGON, NGSIConstants.GEO_TYPE_LINESTRING, NGSIConstants.GEO_TYPE_MULTI_POLYGON);
 	public final static String TYPE = "type";
 	public final static String RELATIONSHIP = "Relationship";
+	public final static String LISTRELATIONSHIP = "ListRelationship";
 	public final static String PROPERTY = "Property";
 	public final static String VOCAB = "vocab";
 	public final static String INSTANCE_ID = "instanceId";

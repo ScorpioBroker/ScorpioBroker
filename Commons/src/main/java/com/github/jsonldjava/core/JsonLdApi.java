@@ -220,8 +220,10 @@ public class JsonLdApi {
 			boolean isGeoProperty = false;
 			boolean isProperty = false;
 			boolean isRelationship = false;
+			boolean isListRelationship=false;
 			boolean isLanguageProperty = false;
 			boolean isVocabProperty = false;
+			boolean isListProperty = false;
 			for (String expandedProperty : keys) {
 
 				Object expandedValue = elem.get(expandedProperty);
@@ -272,8 +274,14 @@ public class JsonLdApi {
 							case NGSIConstants.NGSI_LD_RELATIONSHIP:
 								isRelationship = true;
 								break;
+							case NGSIConstants.NGSI_LD_LISTRELATIONSHIP:
+								isListRelationship = true;
+								break;
 							case NGSIConstants.NGSI_LD_VocabularyProperty:
 								isVocabProperty = true;
+								break;
+							case NGSIConstants.NGSI_LD_ListProperty:
+								isListProperty = true;
 								break;
 						}
 						if (keyValue || concise) {
@@ -360,6 +368,10 @@ public class JsonLdApi {
 						return compact(activeCtx, NGSIConstants.VOCAB, expandedValue, compactArrays, endPoint, null,
 								null);
 					}
+					else if(isListProperty && expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_LIST)){
+						return compact(activeCtx, NGSIConstants.LIST, expandedValue, compactArrays, endPoint, null,
+								null);
+					}
 					else if (isRelationship) {
 						if (expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_OBJECT)) {
 							List<String> ids = new ArrayList<>();
@@ -376,6 +388,7 @@ public class JsonLdApi {
 							continue;
 						}
 					}
+
 //					else if (isLanguageProperty) {
 //						if (expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP)) {
 ////							return compact(activeCtx, activeProperty, expandedValue, compactArrays, endPoint, null,
@@ -388,6 +401,7 @@ public class JsonLdApi {
 					if (expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_VALUE)
 							|| expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP)
 							|| expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_OBJECT)
+							|| expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST)
 							|| expandedProperty.equals(NGSIConstants.NGSI_LD_OBSERVED_AT)
 							|| expandedProperty.equals(NGSIConstants.NGSI_LD_MODIFIED_AT)
 							|| expandedProperty.equals(NGSIConstants.NGSI_LD_CREATED_AT)
@@ -1205,7 +1219,10 @@ public class JsonLdApi {
 							ngsiElement.setHasVocab(true);
 						} else if (NGSIConstants.NGSI_LD_HAS_OBJECT.equals(expandedProperty)) {
 							ngsiElement.setHasAtObject(true);
-						} else if (NGSIConstants.NGSI_LD_DATE_TIME.equals(expandedProperty)) {
+						}else if (NGSIConstants.NGSI_LD_HAS_OBJECT_LIST.equals(expandedProperty)) {
+							ngsiElement.setHasListObject(true);
+						}
+						else if (NGSIConstants.NGSI_LD_DATE_TIME.equals(expandedProperty)) {
 							ngsiElement.setDateTime(true);
 						}
 						break;

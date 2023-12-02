@@ -150,6 +150,9 @@ public abstract class EntityTools {
 				case NGSIConstants.NGSI_LD_RELATIONSHIP:
 					prop = SerializationTools.parseRelationship((List<Map<String, Object>>) value, key);
 					break;
+				case NGSIConstants.NGSI_LD_LISTRELATIONSHIP:
+					prop = SerializationTools.parseRelationship((List<Map<String, Object>>) value, key);
+					break;
 				case NGSIConstants.NGSI_LD_DATE_TIME:
 					prop = generateFakeProperty(typeString, ((List<Map<String, Object>>) value).get(0));
 					break;
@@ -456,6 +459,9 @@ public abstract class EntityTools {
 			if (map.containsKey(NGSIConstants.OBJECT)) {
 				((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.RELATIONSHIP);
 			}
+			if (map.containsKey(NGSIConstants.OBJECT_LIST)) {
+				((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.LISTRELATIONSHIP);
+			}
 			// Map have vocab but not type
 			else if (map.containsKey(NGSIConstants.VOCAB)) {
 				((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.VOCABULARYPROPERTY);
@@ -500,7 +506,9 @@ public abstract class EntityTools {
 							&& !key.equals(NGSIConstants.QUERY_PARAMETER_COORDINATES)
 							&& !key.equals(NGSIConstants.QUERY_PARAMETER_OBSERVED_AT)
 							&& !key.equals(NGSIConstants.INSTANCE_ID)
-							&& !key.equals(NGSIConstants.QUERY_PARAMETER_DATA_SET_ID) && !key.equals(NGSIConstants.OBJECT)
+							&& !key.equals(NGSIConstants.QUERY_PARAMETER_DATA_SET_ID)
+							&& !key.equals(NGSIConstants.OBJECT)
+							&& !key.equals(NGSIConstants.OBJECT_LIST)
 							&& !key.equals(NGSIConstants.VALUE) && !key.equals(NGSIConstants.SCOPE)
 							&& !key.equals(NGSIConstants.QUERY_PARAMETER_UNIT_CODE)
 							&& !key.equals(NGSIConstants.LANGUAGE_MAP)

@@ -23,6 +23,8 @@ class NGSIObject {
 	private boolean isLanguageProperty = false;
 	private boolean isGeoProperty = false;
 	private boolean isRelationship = false;
+	private boolean isListRelationship = false;
+	private boolean hasListObject = false;
 	private boolean isDateTime = false;
 	private boolean hasValue = false;
 	private boolean hasAtId = false;
@@ -113,8 +115,24 @@ class NGSIObject {
 		return isProperty;
 	}
 
+	public void setListRelationship(boolean listRelationship) {
+		isListRelationship = listRelationship;
+	}
+
+	public void setHasListObject(boolean hasListObject) {
+		this.hasListObject = hasListObject;
+	}
+
 	public boolean isGeoProperty() {
 		return isGeoProperty;
+	}
+
+	public boolean isListRelationship() {
+		return isListRelationship;
+	}
+
+	public boolean isHasListObject() {
+		return hasListObject;
 	}
 
 	public boolean isScalar() {
@@ -196,6 +214,8 @@ class NGSIObject {
 			this.isProperty = true;
 		} else if (NGSIConstants.NGSI_LD_RELATIONSHIP.equals(type)) {
 			this.isRelationship = true;
+		}else if (NGSIConstants.NGSI_LD_LISTRELATIONSHIP.equals(type)) {
+				this.isListRelationship = true;
 		} else if (NGSIConstants.NGSI_LD_GEOPROPERTY.equals(type)) {
 			this.isGeoProperty = true;
 		} else if (NGSIConstants.NGSI_LD_DATE_TIME.equals(type)) {
@@ -650,11 +670,11 @@ class NGSIObject {
 			validateArray();
 		} else {
 			if (isLdKeyWord && parent == null && !isProperty && !isRelationship && !isGeoProperty && !isDateTime
-					&& !isLanguageProperty && !isVocabProperty && !isListProperty) {
+					&& !isLanguageProperty && !isVocabProperty && !isListProperty && !isListRelationship) {
 				return;
 			}
 			if (!isProperty && !isRelationship && !isGeoProperty && !isDateTime && !isLanguageProperty
-					&& !isVocabProperty && !isListProperty) {
+					&& !isVocabProperty && !isListProperty && !isListRelationship) {
 				throw new ResponseException(ErrorType.BadRequestData,
 						"The key " + activeProperty + " is an invalid entry.");
 			}
@@ -677,6 +697,14 @@ class NGSIObject {
 			}
 			if (isProperty && hasObject) {
 				throw new ResponseException(ErrorType.BadRequestData, "You can't have properties with an object");
+			}if ((isListRelationship && !hasListObject)) {
+				throw new ResponseException(ErrorType.BadRequestData, "You can't have list relationships without an object");
+			}
+			if ((isListRelationship && hasValue)) {
+				throw new ResponseException(ErrorType.BadRequestData, "You can't have list relationships with a value");
+			}
+			if (isListProperty && hasListObject) {
+				throw new ResponseException(ErrorType.BadRequestData, "You can't have list properties with an object");
 			}
 			if (isGeoProperty) {
 				if (hasObject) {
@@ -869,17 +897,19 @@ class NGSIObject {
 		this.isLanguageProperty = this.isLanguageProperty || ngsiV.isLanguageProperty;
 		this.isGeoProperty = this.isGeoProperty || ngsiV.isGeoProperty;
 		this.isRelationship = this.isRelationship || ngsiV.isRelationship;
+		this.isListRelationship = this.isListRelationship || ngsiV.isListRelationship;
 		this.isDateTime = this.isDateTime || ngsiV.isDateTime;
 		this.hasValue = this.hasValue || ngsiV.hasValue;
 		this.hasAtId = this.hasAtId || ngsiV.hasAtId;
 		this.hasObject = this.hasObject || ngsiV.hasObject;
+		this.hasListObject = this.hasListObject || ngsiV.hasListObject;
 		this.hasAtType = this.hasAtType || ngsiV.hasAtType;
 		this.isArray = this.isArray || ngsiV.isArray;
 		this.isLdKeyWord = this.isLdKeyWord || ngsiV.isLdKeyWord;
 		this.isScalar = this.isScalar || ngsiV.isScalar;
 		this.isVocabProperty = this.isVocabProperty || ngsiV.isVocabProperty;
 		this.isListProperty  = this.isListProperty  || ngsiV.isListProperty;
-		if ((ngsiV.isRelationship || ngsiV.isProperty || ngsiV.isLanguageProperty || ngsiV.isVocabProperty || ngsiV.isListProperty)) {
+		if ((ngsiV.isRelationship || ngsiV.isListRelationship || ngsiV.isProperty || ngsiV.isLanguageProperty || ngsiV.isVocabProperty || ngsiV.isListProperty)) {
 			if (ngsiV.datasetIds.isEmpty()) {
 				this.datasetIds.add(NGSIConstants.DEFAULT_DATA_SET_ID);
 			} else {

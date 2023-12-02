@@ -189,6 +189,10 @@ public class SubscriptionService {
 			propertyMap.put(NGSIConstants.OBJECT,
 					((List<Map<String, Object>>) newValue).get(0).get(NGSIConstants.NGSI_LD_HAS_OBJECT));
 		}
+		if (((List<Map<String, Object>>) newValue).get(0).containsKey(NGSIConstants.NGSI_LD_HAS_LISTOBJECT)) {
+			propertyMap.put(NGSIConstants.OBJECT,
+					((List<Map<String, Object>>) newValue).get(0).get(NGSIConstants.NGSI_LD_HAS_LISTOBJECT));
+		}
 		if (((List<Map<String, Object>>) newValue).get(0).containsKey(NGSIConstants.NGSI_LD_HAS_VOCAB)) {
 			propertyMap.put(NGSIConstants.VOCAB,
 					((List<Map<String, Object>>) newValue).get(0).get(NGSIConstants.NGSI_LD_HAS_VOCAB));
