@@ -754,6 +754,11 @@ public class SubscriptionService {
 		case AppConstants.DELETE_ATTRIBUTE_REQUEST:
 			return notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_UPDATED)
 					|| notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_DELETED);
+		case AppConstants.UPSERT_REQUEST:
+			return notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_CREATED)
+					|| notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_UPDATED)
+					|| notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_UPDATED)
+					|| notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_CREATED);
 		default:
 			return false;
 		}
