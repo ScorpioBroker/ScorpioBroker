@@ -2,10 +2,12 @@
 
 [![FIWARE Core](https://nexus.lab.fiware.org/static/badges/chapters/core.svg)](https://www.fiware.org/developers/catalogue/)
 [![License: BSD-3-Clause](https://img.shields.io/badge/license-BSD%203%20Clause-blue.svg)](https://spdx.org/licenses/BSD-3-Clause.html)
-[![Docker](https://img.shields.io/docker/pulls/scorpiobroker/scorpio.svg)](https://hub.docker.com/r/scorpiobroker/scorpio/)
 [![fiware](https://nexus.lab.fiware.org/repository/raw/public/badges/stackoverflow/fiware.svg)](https://stackoverflow.com/questions/tagged/fiware)
 ![NGSI-LD badge](https://img.shields.io/badge/NGSI-LD-red.svg) 
-<br>
+<br/>
+[![Quay badge](https://img.shields.io/badge/quay.io-fiware%2Fscorpio-grey?logo=red%20hat&labelColor=EE0000)](https://quay.io/repository/fiware/scorpio)
+[![Docker badge](https://img.shields.io/badge/docker-scorpiobroker%2Fall--in--one--runner-blue?logo=docker)](https://hub.docker.com/r/scorpiobroker/all-in-one-runner)
+<br/>
 [![Documentation badge](https://img.shields.io/readthedocs/scorpio.svg)](https://scorpio.readthedocs.io/en/latest/?badge=latest) 
 ![Status](https://nexus.lab.fiware.org/static/badges/statuses/full.svg) 
 ![NGSI-LD Test Suite Java](https://github.com/scorpiobroker/scorpiobroker/actions/workflows/api-test.yml/badge.svg) 
@@ -49,8 +51,8 @@ Scorpio is a FIWARE Generic Enabler. Therefore, it can be integrated as part of 
 You can find more info at the [FIWARE developers](https://developers.fiware.org/) website and the [FIWARE](https://fiware.org/) website.
 The complete list of FIWARE GEs and Incubated FIWARE GEs can be found in the [FIWARE Catalogue](https://catalogue.fiware.org/).
 
-| :books: [Documentation](https://scorpio.rtfd.io/) | :mortar_board: [Academy](https://fiware-academy.readthedocs.io/en/latest/core/scorpio) | :whale: [Docker Hub](https://hub.docker.com/r/scorpiobroker/scorpio/) | :dart: [Roadmap](./docs/roadmap.md) |
-| ------------------------------------------------- | --------------------------------------------------------------------- | --------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| :books: [Documentation](https://scorpio.rtfd.io/) | :mortar_board: [Academy](https://fiware-academy.readthedocs.io/en/latest/core/scorpio) | <img style="height:1em" src="https://quay.io/static/img/quay_favicon.png"/> [quay.io](https://quay.io/repository/fiware/scorpio) | :whale: [Docker Hub](https://hub.docker.com/r/scorpiobroker) | :dart: [Roadmap](./docs/roadmap.md) |
+| ------------------------------------------------- | --------------------------------------------------------------------- | --------------------------------------------------------------------- | --------------------------------------------------------------------- | --- |
 
 ## Content
 
