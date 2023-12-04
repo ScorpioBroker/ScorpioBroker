@@ -1,10 +1,8 @@
 {
 	"info": {
-		"_postman_id": "5ac79d00-f7bb-4570-a5cf-b4f7eb6ce578",
+		"_postman_id": "5477fe37-9c53-4766-8693-af216b1e8939",
 		"name": "API Test",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "23549240",
-		"_collection_link": "https://lively-flare-564396.postman.co/workspace/Scorpio~19b8073e-6570-45c0-bafd-07d48ddfc38c/collection/23549240-5ac79d00-f7bb-4570-a5cf-b4f7eb6ce578?action=share&source=collection_link&creator=23549240"
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
 		{
@@ -20283,7 +20281,7 @@
 																			"            console.log(\"Retrieving notifications from testserver\")\r",
 																			"            console.log(notificationServer + \"/\" + subId)\r",
 																			"            console.log(value);\r",
-																			"            pm.expect(value.length).to.eql(2);\r",
+																			"            pm.expect(value.length).to.eql(1);\r",
 																			"            });\r",
 																			"        });\r",
 																			"        //pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
@@ -20627,7 +20625,7 @@
 																			"            console.log(\"Retrieving notifications from testserver\")\r",
 																			"            console.log(notificationServer + \"/\" + subId)\r",
 																			"            console.log(value);\r",
-																			"            pm.expect(value.length).to.eql(2);\r",
+																			"            pm.expect(value.length).to.eql(1);\r",
 																			"            });\r",
 																			"        });\r",
 																			"        //pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
@@ -20971,7 +20969,7 @@
 																			"            console.log(\"Retrieving notifications from testserver\")\r",
 																			"            console.log(notificationServer + \"/\" + subId)\r",
 																			"            console.log(value);\r",
-																			"            pm.expect(value.length).to.eql(2);\r",
+																			"            pm.expect(value.length).to.eql(1);\r",
 																			"            });\r",
 																			"        });\r",
 																			"        //pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
@@ -21315,7 +21313,7 @@
 																			"            console.log(\"Retrieving notifications from testserver\")\r",
 																			"            console.log(notificationServer + \"/\" + subId)\r",
 																			"            console.log(value);\r",
-																			"            pm.expect(value.length).to.eql(2);\r",
+																			"            pm.expect(value.length).to.eql(1);\r",
 																			"            });\r",
 																			"        });\r",
 																			"        //pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
@@ -21659,7 +21657,7 @@
 																			"            console.log(\"Retrieving notifications from testserver\")\r",
 																			"            console.log(notificationServer + \"/\" + subId)\r",
 																			"            console.log(value);\r",
-																			"            pm.expect(value.length).to.eql(2);\r",
+																			"            pm.expect(value.length).to.eql(1);\r",
 																			"            });\r",
 																			"        });\r",
 																			"        //pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
@@ -23637,7 +23635,7 @@
 																		"exec": [
 																			"var payloadBody = JSON.parse(pm.request.body.raw);\r",
 																			"console.log(payloadBody.id);\r",
-																			"var entityId = payloadBody.id;\r",
+																			"\r",
 																			"pm.collectionVariables.set(\"entityId\", entityId);\r",
 																			"var subId = pm.collectionVariables.get(\"subId\");\r",
 																			"\r",
@@ -24014,7 +24012,7 @@
 																			"            console.log(\"Retrieving notifications from testserver\")\r",
 																			"            console.log(notificationServer + \"/\" + subId)\r",
 																			"            console.log(value);\r",
-																			"            pm.expect(value.length).to.eql(2);\r",
+																			"            pm.expect(value.length).to.eql(1);\r",
 																			"            });\r",
 																			"        });\r",
 																			"        //pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
@@ -24360,7 +24358,7 @@
 																	"            console.log(\"Retrieving notifications from testserver\")\r",
 																	"            console.log(notificationServer + \"/\" + subId)\r",
 																	"            console.log(value);\r",
-																	"            pm.expect(value.length).to.eql(2);\r",
+																	"            pm.expect(value.length).to.eql(1);\r",
 																	"            });\r",
 																	"        });\r",
 																	"        //pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
@@ -44744,7 +44742,7 @@
 																			"            console.log(\"Retrieving notifications from testserver\")\r",
 																			"            console.log(notificationServer + \"/\" + subId)\r",
 																			"            console.log(value);\r",
-																			"            pm.expect(value.length).to.eql(2);\r",
+																			"            pm.expect(value.length).to.eql(1);\r",
 																			"            });\r",
 																			"        });\r",
 																			"        //pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
@@ -45121,7 +45119,7 @@
 																			"            console.log(\"Retrieving notifications from testserver\")\r",
 																			"            console.log(notificationServer + \"/\" + subId)\r",
 																			"            console.log(value);\r",
-																			"            pm.expect(value.length).to.eql(2);\r",
+																			"            pm.expect(value.length).to.eql(1);\r",
 																			"            });\r",
 																			"        });\r",
 																			"        //pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
@@ -45503,7 +45501,7 @@
 																			"            console.log(\"Retrieving notifications from testserver\")\r",
 																			"            console.log(notificationServer + \"/\" + subId)\r",
 																			"            console.log(value);\r",
-																			"            pm.expect(value.length).to.eql(2);\r",
+																			"            pm.expect(value.length).to.eql(1);\r",
 																			"            });\r",
 																			"        });\r",
 																			"        //pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
@@ -45882,7 +45880,7 @@
 																	"            console.log(\"Retrieving notifications from testserver\")\r",
 																	"            console.log(notificationServer + \"/\" + subId)\r",
 																	"            console.log(value);\r",
-																	"            pm.expect(value.length).to.eql(2);\r",
+																	"            pm.expect(value.length).to.eql(1);\r",
 																	"            });\r",
 																	"        });\r",
 																	"        //pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
@@ -52125,40 +52123,6 @@
 					]
 				}
 			]
-		}
-	],
-	"variable": [
-		{
-			"key": "createdTBF",
-			"value": ""
-		},
-		{
-			"key": "entityIdTBF",
-			"value": ""
-		},
-		{
-			"key": "entityTypeTBF",
-			"value": ""
-		},
-		{
-			"key": "createdTBNF",
-			"value": ""
-		},
-		{
-			"key": "entityIdTBNF",
-			"value": ""
-		},
-		{
-			"key": "created",
-			"value": ""
-		},
-		{
-			"key": "cSourceId",
-			"value": ""
-		},
-		{
-			"key": "entityId",
-			"value": ""
 		}
 	]
 }

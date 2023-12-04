@@ -736,6 +736,9 @@ public class SubscriptionService {
 	}
 
 	private boolean notificationTriggerCheck(Subscription subscription, int triggerReason) {
+		if(subscription.getTimeInterval() > 0) {
+			return true;
+		}
 		Set<String> notificationTriggers = subscription.getNotificationTrigger();
 		switch (triggerReason) {
 		case AppConstants.CREATE_REQUEST:
@@ -745,6 +748,7 @@ public class SubscriptionService {
 		case AppConstants.UPDATE_REQUEST:
 		case AppConstants.MERGE_PATCH_REQUEST:
 		case AppConstants.REPLACE_ENTITY_REQUEST:
+		case AppConstants.REPLACE_ATTRIBUTE_REQUEST:
 		case AppConstants.PARTIAL_UPDATE_REQUEST:
 			return notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_UPDATED)
 					|| notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_UPDATED)
