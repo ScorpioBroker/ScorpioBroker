@@ -452,4 +452,16 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_HAS_KEY = "https://uri.etsi.org/ngsi-ld/hasKey";
 	public static final String OBJECT_TYPE = "objectType";
 	public static final String NGSI_LD_JSONLD_CONTEXT = "https://uri.etsi.org/ngsi-ld/default-context/jsonldContext";
+	public static final String NGSI_LD_NOTIFICATION_TRIGGER = "https://uri.etsi.org/ngsi-ld/notificationTrigger";
+
+	public static final String NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_CREATED = "entityCreated";
+	public static final String NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_UPDATED = "entityUpdated";
+	public static final String NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_DELETED = "entityDeleted";
+	public static final String NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_CREATED = "attributeCreated";
+	public static final String NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_UPDATED = "attributeUpdated";
+	public static final String NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_DELETED = "attributeDeleted";
+	public static final Set<String> NGSI_LD_NOTIFICATION_TRIGGER_VALID_VALUES = Sets.newHashSet(
+			NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_CREATED, NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_UPDATED,
+			NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_DELETED, NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_CREATED,
+			NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_UPDATED, NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_DELETED);
 }

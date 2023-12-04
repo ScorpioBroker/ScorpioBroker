@@ -591,6 +591,9 @@ public class SubscriptionService {
 	}
 
 	private Uni<Void> sendNotification(SubscriptionRequest potentialSub, Map<String, Object> reg, int triggerReason) {
+		if (!notificationTriggerCheck(potentialSub.getSubscription(), triggerReason)) {
+			return Uni.createFrom().voidItem();
+		}
 		List<Map<String, Object>> entityToBeSent = new ArrayList<>();
 		if (triggerReason == AppConstants.DELETE_REQUEST) {
 			entityToBeSent.add(reg);
@@ -730,6 +733,31 @@ public class SubscriptionService {
 					});
 		}
 		return Uni.createFrom().voidItem();
+	}
+
+	private boolean notificationTriggerCheck(Subscription subscription, int triggerReason) {
+		Set<String> notificationTriggers = subscription.getNotificationTrigger();
+		switch (triggerReason) {
+		case AppConstants.CREATE_REQUEST:
+			return notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_CREATED)
+					|| notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_CREATED);
+		case AppConstants.APPEND_REQUEST:
+		case AppConstants.UPDATE_REQUEST:
+		case AppConstants.MERGE_PATCH_REQUEST:
+		case AppConstants.REPLACE_ENTITY_REQUEST:
+		case AppConstants.PARTIAL_UPDATE_REQUEST:
+			return notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_UPDATED)
+					|| notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_UPDATED)
+					|| notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_CREATED);
+		case AppConstants.DELETE_REQUEST:
+			return notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_DELETED);
+		case AppConstants.DELETE_ATTRIBUTE_REQUEST:
+			return notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_UPDATED)
+					|| notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_DELETED);
+		default:
+			return false;
+		}
+
 	}
 
 	private Uni<MqttClient> getMqttClient(NotificationParam notificationParam) {
