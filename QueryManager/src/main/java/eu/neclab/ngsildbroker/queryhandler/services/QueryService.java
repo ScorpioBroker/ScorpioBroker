@@ -1608,6 +1608,10 @@ public class QueryService {
 		}
 		AtomicInteger joinLvl = new AtomicInteger(joinLevel);
 		return queryDAO.getEntity(entityId, tenant, attrsQuery).onItem().transformToUni(ent -> {
+			if (ent.isEmpty()) {
+				return Uni.createFrom().failure(
+						new ResponseException(ErrorType.NotFound, "Entity with ID " + entityId + " was not found"));
+			}
 			if (containedBy.contains((String) ent.get(JsonLdConsts.ID)) || joinLvl.get() == 0) {
 				return Uni.createFrom().item(Map.of(JsonLdConsts.GRAPH, finalRelResult));
 			}
@@ -1654,6 +1658,10 @@ public class QueryService {
 		}
 		AtomicInteger joinLvl = new AtomicInteger(joinLevel);
 		return queryDAO.getEntity(entityId, tenant, attrsQuery).onItem().transformToUni(ent -> {
+			if (ent.isEmpty()) {
+				return Uni.createFrom().failure(
+						new ResponseException(ErrorType.NotFound, "Entity with ID " + entityId + " was not found"));
+			}
 			if (containedBy.contains((String) ent.get(JsonLdConsts.ID)) || joinLvl.get() == 0) {
 				return Uni.createFrom().failure(new Throwable());
 			}

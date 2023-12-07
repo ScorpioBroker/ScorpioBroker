@@ -98,7 +98,7 @@ public class HistoryDAO {
 					List<Map<String, List<Map<String, Object>>>> tmp = (List<Map<String, List<Map<String, Object>>>>) location;
 					geoLocation = new JsonObject(tmp.get(0).get(NGSIConstants.NGSI_LD_HAS_VALUE).get(0));
 					insertSql = "INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
-							+ " (temporalentity_id, attributeid, data, location) VALUES ($1, $2, $3::jsonb, ST_SetSRID(ST_GeomFromGeoJSON(getGeoJson($4)))";
+							+ " (temporalentity_id, attributeid, data, location) VALUES ($1, $2, $3::jsonb, ST_SetSRID(ST_GeomFromGeoJSON(getGeoJson($4)), 4326))";
 				} else {
 					insertSql = "INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
 							+ " (temporalentity_id, attributeid, data) VALUES ($1, $2, $3::jsonb)";
@@ -118,7 +118,9 @@ public class HistoryDAO {
 					}
 				}
 				logger.debug(insertSql);
-
+				for(Tuple entry: batch) {
+					logger.debug(entry.deepToString());
+				}
 				return client.preparedQuery(insertSql).executeBatch(batch).onItem()
 						.transform(rows1 -> !rows.iterator().next().getBoolean(0));
 
