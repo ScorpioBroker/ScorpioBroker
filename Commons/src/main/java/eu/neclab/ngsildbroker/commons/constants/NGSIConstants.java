@@ -154,12 +154,12 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_GEOREL = "https://uri.etsi.org/ngsi-ld/georel";
 	public static final String NGSI_LD_SHOWCHANGES = "https://uri.etsi.org/ngsi-ld/showChanges";
 	public final static String NGSI_LD_HAS_VOCAB = "https://uri.etsi.org/ngsi-ld/hasVocab";
-	public final static String NGSI_LD_VocabularyProperty = "https://uri.etsi.org/ngsi-ld/VocabularyProperty";
+	public final static String NGSI_LD_VocabProperty = "https://uri.etsi.org/ngsi-ld/VocabProperty";
 
 	public final static String NGSI_LD_HAS_LIST = "https://uri.etsi.org/ngsi-ld/hasValueList";
 	public final static String NGSI_LD_ListProperty = "https://uri.etsi.org/ngsi-ld/ListProperty";
 	public final static String LISTPROPERTY = "ListProperty";
-	public final static String VOCABULARYPROPERTY = "VocabularyProperty";
+	public final static String VOCABPROPERTY = "VocabProperty";
 
 	// IMPORTANT! DO NOT MESS UP THIS ORDER!!! ONLY APPEND ON THE END NEW STUFF
 	public final static String[] NGSI_LD_PAYLOAD_KEYS = { JSON_LD_ID, JSON_LD_TYPE, JSON_LD_CONTEXT,
@@ -281,7 +281,7 @@ public interface NGSIConstants {
 	public static final Integer[] VALID_QOS = { 0, 1, 2 };
 	public static final String COUNT_HEADER_RESULT = "NGSILD-Results-Count";
 	public static final Set<String> NGSI_LD_ATTR_TYPES = Sets.newHashSet(NGSI_LD_PROPERTY, NGSI_LD_RELATIONSHIP,
-			NGSI_LD_GEOPROPERTY, NGSI_LD_LANGPROPERTY, NGSI_LD_VocabularyProperty,NGSI_LD_ListProperty);
+			NGSI_LD_GEOPROPERTY, NGSI_LD_LANGPROPERTY, NGSI_LD_VocabProperty,NGSI_LD_ListProperty);
 
 	public final static String NOTIFICATION = "Notification";
 

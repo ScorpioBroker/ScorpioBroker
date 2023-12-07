@@ -222,7 +222,7 @@ class NGSIObject {
 			this.isDateTime = true;
 		} else if (NGSIConstants.NGSI_LD_LANGPROPERTY.equals(type)) {
 			this.isLanguageProperty = true;
-		} else if (NGSIConstants.NGSI_LD_VocabularyProperty.equals(type)) {
+		} else if (NGSIConstants.NGSI_LD_VocabProperty.equals(type)) {
 			this.isVocabProperty = true;
 		} else if(NGSIConstants.NGSI_LD_ListProperty.equals(type)){
 			this.isLanguageProperty=true;

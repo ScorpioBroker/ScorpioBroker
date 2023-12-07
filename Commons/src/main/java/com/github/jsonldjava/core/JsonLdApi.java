@@ -277,7 +277,7 @@ public class JsonLdApi {
 							case NGSIConstants.NGSI_LD_LISTRELATIONSHIP:
 								isListRelationship = true;
 								break;
-							case NGSIConstants.NGSI_LD_VocabularyProperty:
+							case NGSIConstants.NGSI_LD_VocabProperty:
 								isVocabProperty = true;
 								break;
 							case NGSIConstants.NGSI_LD_ListProperty:

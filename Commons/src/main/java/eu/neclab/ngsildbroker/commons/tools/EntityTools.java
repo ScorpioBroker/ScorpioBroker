@@ -159,7 +159,7 @@ public abstract class EntityTools {
 				case NGSIConstants.NGSI_LD_LANGPROPERTY:
 					prop = generateFakeProperty(key, tmp);
 					break;
-				case NGSIConstants.NGSI_LD_VocabularyProperty:
+				case NGSIConstants.NGSI_LD_VocabProperty:
 					prop = generateFakeProperty(key, tmp);
 					break;
 				case NGSIConstants.NGSI_LD_ListProperty:
@@ -464,7 +464,7 @@ public abstract class EntityTools {
 			}
 			// Map have vocab but not type
 			else if (map.containsKey(NGSIConstants.VOCAB)) {
-				((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.VOCABULARYPROPERTY);
+				((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.VOCABPROPERTY);
 			}
 			if (map.containsKey(NGSIConstants.LIST)) {
 					((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.LISTPROPERTY);
