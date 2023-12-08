@@ -74,8 +74,15 @@ public class RegistrySubscriptionInfoDAO {
 							return client.preparedQuery(
 									"UPDATE registry_subscriptions SET subscription=subscription || $2, context=$3 WHERE subscription_id=$1 RETURNING subscription")
 									.execute(Tuple.of(request.getId(), new JsonObject(request.getPayload()), contextId))
-									.onItem().transform(i -> Tuple2.of(i.iterator().next().getJsonObject("subscription").getMap(),
-											request.getContext().serialize().get("@context")));
+									.onItem().transformToUni(rows ->{
+										if(rows.size()==0){
+											return Uni.createFrom()
+													.failure(new ResponseException(ErrorType.NotFound, request.getId() + " not found"));
+										}else {
+											return Uni.createFrom().item(Tuple2.of(rows.iterator().next().getJsonObject("subscription").getMap(),
+													request.getContext().serialize().get("@context")));
+										}
+									});
 						}));
 	}
 

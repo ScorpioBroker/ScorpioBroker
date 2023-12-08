@@ -17,7 +17,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
-
+import eu.neclab.ngsildbroker.commons.exceptions.LdContextException;
+import io.vertx.core.json.DecodeException;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.http.HttpStatus;
 import org.jboss.resteasy.reactive.RestResponse;
@@ -25,7 +26,6 @@ import org.jboss.resteasy.reactive.RestResponse.ResponseBuilder;
 import org.jboss.resteasy.reactive.server.jaxrs.RestResponseBuilderImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.jsonldjava.core.Context;
@@ -40,7 +40,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.net.HttpHeaders;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.RemoteHost;
@@ -302,8 +301,8 @@ public final class HttpUtils {
 					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
 					.entity(responseException.getJson()).build();
 		}
-		if (e instanceof IOException ioException) {
-			logger.debug("Exception :: ", ioException);
+		if (e instanceof LdContextException ldContextException) {
+			logger.debug("Exception :: ", ldContextException);
 			return RestResponseBuilderImpl.create(ErrorType.LdContextNotAvailable.getCode())
 					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
 					.entity(new ResponseException(ErrorType.LdContextNotAvailable).getJson()).build();
@@ -316,7 +315,7 @@ public final class HttpUtils {
 							.getJson())
 					.build();
 		}
-		if (e instanceof JsonProcessingException || e instanceof JsonLdError) {
+		if (e instanceof JsonProcessingException || e instanceof JsonLdError || e instanceof DecodeException) {
 			logger.debug("Exception :: ", e);
 			return RestResponseBuilderImpl.create(HttpStatus.SC_BAD_REQUEST)
 					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
@@ -535,11 +534,7 @@ public final class HttpUtils {
 							if (contextHeader.isEmpty()) {
 								contextHeader.add(((List<Object>) bodyContext).get(0));
 							}
-							if (compacted.containsKey(JsonLdConsts.GRAPH)) {
-								finalCompacted = compacted.get(JsonLdConsts.GRAPH);
-							} else {
-								finalCompacted = compacted;
-							}
+                            finalCompacted = compacted.getOrDefault(JsonLdConsts.GRAPH, compacted);
 							if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)) {
 								makeConcise(finalCompacted);
 							}
@@ -650,6 +645,7 @@ public final class HttpUtils {
 				result = replyBody;
 			}
 			headers.add(Tuple2.of(HttpHeaders.CONTENT_TYPE, contentType));
+
 			return Tuple2.of(result, headers);
 		});
 	}
@@ -789,11 +785,15 @@ public final class HttpUtils {
 
 		if (payload == null || payload.isEmpty()) {
 			return Uni.createFrom()
-					.failure(new ResponseException(ErrorType.InvalidRequest, "You have to provide a valid payload"));
+					.failure(new ResponseException(ErrorType.BadRequestData, "You have to provide a valid payload"));
 		}
 		return JsonUtils.fromString(payload).onItem().transformToUni(json -> {
-			Map<String, Object> originalPayload;
-			originalPayload = (Map<String, Object>) json;
+			Map<String, Object> originalPayload= new HashMap<>();
+			if(json instanceof Map) {
+				originalPayload = (Map<String, Object>) json;
+			}else {
+				return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData));
+			}
 			return expandBody(request, originalPayload, payloadType, ldService);
 
 		});
@@ -803,6 +803,14 @@ public final class HttpUtils {
 																	   Map<String, Object> originalPayload, int payloadType, JsonLDService ldService) {
 		boolean atContextAllowed;
 		List<Object> atContext = getAtContext(request);
+		if(originalPayload==null){
+			return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData,"body can not be empty"));
+		}
+		if(originalPayload.toString().contains(NGSIConstants.VALUE + "=null")
+				|| originalPayload.toString().contains(NGSIConstants.TYPE + "=null")){
+			return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData));
+		}
+
 		try {
 			atContextAllowed = HttpUtils.doPreflightCheck(request, atContext);
 		} catch (ResponseException e) {
@@ -812,6 +820,7 @@ public final class HttpUtils {
 				.transformToUni(context -> {
 					return ldService.expand(context, originalPayload, opts, payloadType, atContextAllowed).onItem()
 							.transform(list -> {
+
 								Map<String, Object> resolved = (Map<String, Object>) list.get(0);
 								return Tuple2.of(context, resolved);
 							});
@@ -824,6 +833,7 @@ public final class HttpUtils {
 		List<ResponseException> fails = operationResult.getFailures();
 		List<CRUDSuccess> successes = operationResult.getSuccesses();
 		RestResponse<Object> response;
+        successes.removeIf(crudSuccess -> crudSuccess.getAttribs().isEmpty());
 		if (fails.isEmpty()) {
 			if (!operationResult.isWasUpdated()) {
 				try {

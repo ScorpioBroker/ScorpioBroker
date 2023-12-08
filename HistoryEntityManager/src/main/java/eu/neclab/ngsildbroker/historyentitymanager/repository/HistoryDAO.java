@@ -271,7 +271,7 @@ public class HistoryDAO {
 
 	public Uni<Void> deleteHistoryEntity(DeleteHistoryEntityRequest request) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
-			String sql = "DELETE FROM " + DBConstants.DBTABLE_TEMPORALENTITY + " WHERE id = $1";
+			String sql = "DELETE FROM " + DBConstants.DBTABLE_TEMPORALENTITY + " WHERE id = $1 RETURNING "+DBConstants.DBTABLE_TEMPORALENTITY ;
 			return client.preparedQuery(sql).execute(Tuple.of(request.getId())).onFailure().recoverWithUni(e -> {
 				if (e instanceof PgException) {
 					if (((PgException) e).getCode().equals(AppConstants.SQL_NOT_FOUND)) {
@@ -280,7 +280,13 @@ public class HistoryDAO {
 					}
 				}
 				return Uni.createFrom().failure(e);
-			}).onItem().transformToUni(rows -> Uni.createFrom().voidItem());
+			}).onItem().transformToUni(rows -> {
+				if(rows.size()==0){
+					return Uni.createFrom().failure(
+							new ResponseException(ErrorType.NotFound, request.getId() + " does not exist"));
+				}
+				return  Uni.createFrom().voidItem();
+			});
 		});
 	}
 

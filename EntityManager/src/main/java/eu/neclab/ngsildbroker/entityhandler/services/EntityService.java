@@ -877,12 +877,21 @@ public class EntityService {
 				}
 			}
 		}
-		Iterator<String> it2 = toBeRemoved.iterator();
-		while (it2.hasNext()) {
-			originalEntity.remove(it2.next());
+		if(originalEntity.isEmpty()){
+			Map<String, Object> toStore = new HashMap<>();
+			toStore.put(NGSIConstants.JSON_LD_ID, entityId);
+			toStore.put(NGSIConstants.JSON_LD_TYPE, originalTypes);
+			if (originalScopes != null) {
+				toStore.put(NGSIConstants.NGSI_LD_SCOPE, originalScopes);
+			}
+			EntityTools.addSysAttrs(toStore, request.getSendTimestamp());
+			return Tuple2.of(toStore, cId2RemoteHostEntity.values());
 		}
+        for (String s : toBeRemoved) {
+            originalEntity.remove(s);
+        }
 		Map<String, Object> toStore = null;
-		if (originalEntity.size() > 0) {
+		if (!originalEntity.isEmpty()) {
 			if (cId2RemoteHostEntity.isEmpty()) {
 				toStore = originalEntity;
 			} else {
@@ -931,7 +940,7 @@ public class EntityService {
 			Map<String, Object> payload = request.getPayload();
 			for (String entry : notAppended) {
 				payload.remove(entry);
-				failedToAdd.add(new Attrib(entry, null));
+				failedToAdd.add(new Attrib(context.compactIri(entry), null));
 			}
 			localResult.addSuccess(new CRUDSuccess(null, null, null, request.getPayload(), context));
 			if (!failedToAdd.isEmpty())
@@ -1090,7 +1099,7 @@ public class EntityService {
 	}
 
 	public Uni<List<NGSILDOperationResult>> appendBatch(String tenant, List<Map<String, Object>> expandedEntities,
-			List<Context> contexts, boolean localOnly) {
+			List<Context> contexts, boolean localOnly,boolean noOverWrite) {
 		Iterator<Map<String, Object>> itEntities = expandedEntities.iterator();
 		Iterator<Context> itContext = contexts.iterator();
 		Map<RemoteHost, List<Tuple2<Context, Map<String, Object>>>> remoteHost2Batch = Maps.newHashMap();
@@ -1102,6 +1111,7 @@ public class EntityService {
 			Map<String, Object> local = split.getItem1();
 			Context context = itContext.next();
 			if (local != null) {
+				local.remove(NGSIConstants.NGSI_LD_CREATED_AT);
 				localEntities.add(local);
 			} else {
 				itContext.remove();
@@ -1172,6 +1182,7 @@ public class EntityService {
 		}
 		if (!localEntities.isEmpty()) {
 			BatchRequest request = new BatchRequest(tenant, localEntities, contexts, AppConstants.APPEND_REQUEST);
+			request.setNoOverwrite(noOverWrite);
 			if (!unis.isEmpty() && isDifferentRemoteQueryAvailable(request, remoteHost2Batch)) {
 				request.setDistributed(true);
 			} else {

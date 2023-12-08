@@ -336,6 +336,7 @@ public interface NGSIConstants {
 	public static final String ERROR_UNEXPECTED_RESULT_NULL_TITLE = "The resource returned no body check detail for the resources return code";
 	public static final String ERROR_UNEXPECTED_RESULT_NOT_EXPECTED_BODY_TITLE = "The resource gave an unexpected result body";
 	public static final String NGSI_LD_ATTRIBUTE_NAME_SHORT = "attributeName";
+	public static final String NGSI_LD_ATTRIBUTE_COUNT_SHORT = "attributeCount";
 	public static final String NGSI_LD_REASON_SHORT = "reason";
 	public static final String NGSI_LD_NOT_UPDATED_SHORT = "notUpdated";
 	public static final String ERROR_CODE = "errorCode";
@@ -450,7 +451,12 @@ public interface NGSIConstants {
 	public static final Set<String> ENTITY_BASE_PROPS = Sets.newHashSet(JSON_LD_ID, JSON_LD_TYPE, NGSI_LD_CREATED_AT,
 			NGSI_LD_MODIFIED_AT, NGSI_LD_SCOPE);
 	public final static String NGSI_LD_HAS_KEY = "https://uri.etsi.org/ngsi-ld/hasKey";
+	public final static String KEY = "key";
 	public static final String OBJECT_TYPE = "objectType";
+	public final static String STATUS = "status";
+
+	public final static String ATTRIBUTE = "Attribute";
+	public final static String ATTRIBUTE_DETAILS = "attributeDetails";
 	public static final String NGSI_LD_JSONLD_CONTEXT = "https://uri.etsi.org/ngsi-ld/default-context/jsonldContext";
 	public static final String NGSI_LD_NOTIFICATION_TRIGGER = "https://uri.etsi.org/ngsi-ld/notificationTrigger";
 
