@@ -8,7 +8,12 @@ Scorpio Broker is a reference implementation of NGSI-LD APIs. Scorpio Broker pro
 
 .. figure:: figures/architecture.png
 
-The basic architecture of the Scorpio Broker consists of five layers, the first layer consists of the Scorpio Broker clients which act as the producers and consumers. The second layer act as an interface between the Scorpio Broker and the external world this layer comprises the NGSI-LD Compliant Interfaces, Service API Gateway, and Service Discovery & Registration. The third layer contains all the micro-services and is responsible for the majority of tasks like entity CRUD operations etc. The fourth layer acts as the interface which connects different micro-services from the storage. The fifth layer is a Resources layer which acts as the storage for Scorpio Broker.
+The basic architecture of the Scorpio Broker consists of five layers:
+- The first layer consists of the Scorpio Broker clients which act as the producers and consumers.
+- The second layer act as an interface between the Scorpio Broker and the external world this layer comprises the NGSI-LD Compliant Interfaces, Service API Gateway, and Service Discovery & Registration.
+- The third layer contains all the micro-services and is responsible for the majority of tasks like entity CRUD operations etc.
+- The fourth layer acts as the interface which connects different micro-services from the storage.
+- The fifth layer is a Resources layer which acts as the storage for Scorpio Broker.
 
 ******************
 System Setup Guide
@@ -29,7 +34,7 @@ JDK Setup
 
 - Start the JDK installation and hit the “Change destination folder” checkbox, then click 'Install.'
 
-**Note:-** Recommended version is JDK-11. Scorpio Broker is developed and tested with this version only.
+**Note:-** Recommended version is JDK-17. Scorpio Broker is developed and tested with this version.
 
 .. figure:: figures/jdk-1.png
 
@@ -46,7 +51,7 @@ To set the JAVA_HOME variable:
 
  *C:\Program Files\Java\jdk1.version*
 
-2. - In Windows 7 right-click **My Computer** and select **Properties** > **Advanced**.
+2. - In Windows 7/10 right-click **My Computer** and select **Properties** > **Advanced**.
 
   OR
 
@@ -71,7 +76,7 @@ To set the JAVA_HOME variable:
 .. figure:: figures/jdk-3.png
 
 
-- To confirm the Java installation, just open cmd and type “java –version.” You should be able to see the version of Java you just installed.
+- To confirm the Java installation, just open cmd and type “java –version”. You should be able to see the version of Java you just installed.
 
 .. figure:: figures/jdk-4.png
 
@@ -117,7 +122,7 @@ BigSQL currently installs pgAdmin version 3 which is deprecated. It's best to ch
 
 Step 3)
 
- 1. You will be prompted to the desired Postgre version and operating system. Select the Postgres 10, as Scorpio has been tested and developed with this version.
+ 1. You will be prompted to the desired Postgres version and operating system. Select the Postgres 10, as Scorpio has been tested and developed with this version.
 
  2. Click the Download Button, Download will begin
 
@@ -173,7 +178,7 @@ Step 12) Once install is complete you will see the Stack Builder prompt
 
  2.Click Finish
 
-Step 13) To launch Postgre go to Start Menu and search pgAdmin 4
+Step 13) To launch Postgres go to Start Menu and search pgAdmin 4
 
 Step 14) You will see pgAdmin homepage
 
@@ -203,11 +208,11 @@ To create a Java environment in your machine install the JDK, for this open the 
 
 1. sudo apt-get update
 
-2. sudo apt-get install openjdk-8-jdk
+2. sudo apt-get install openjdk-17-jdk
 
-To check that JDK is properly installed in your machine, run the command **java -version** in your terminal if it returns the version of the JDK as 11 then it's working fine.
+To check that JDK is properly installed in your machine, run the command **java -version** in your terminal if it returns the version of the JDK as 17 then it's working fine.
 
-.. figure:: figures/javaTerminal
+.. figure:: figures/javaTerminal.png
 
 Setting Up Kafka
 ****************
