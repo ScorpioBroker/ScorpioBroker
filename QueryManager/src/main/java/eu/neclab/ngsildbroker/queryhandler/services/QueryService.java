@@ -1,5 +1,7 @@
 package eu.neclab.ngsildbroker.queryhandler.services;
 
+import java.net.URLEncoder;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -151,7 +153,7 @@ public class QueryService {
 					remoteHost2EntityIds.put(remoteHost, tmp);
 				}
 				logger.debug("adding entityid: " + entry.getEntityId() + " for remote host " + remoteHost.host());
-				tmp.add(entry.getEntityId());
+				tmp.add(URLEncoder.encode(entry.getEntityId(), Charset.forName("utf-8")));
 			}
 
 			entityId2AttrName2DatasetId2AttrValue.put(entry.getEntityId(), new HashMap<>(0));
@@ -174,6 +176,7 @@ public class QueryService {
 					contextLinks = parseLinkHeaderNoUni(remoteHost.headers().getAll("Link"),
 							NGSIConstants.HEADER_REL_LDCONTEXT);
 				}
+
 				String idList = String.join(",", entry.getValue());
 				logger.debug("calling: " + remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "?id=" + idList
 						+ "&options=sysAttrs&limit=1000");
