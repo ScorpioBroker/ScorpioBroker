@@ -26,6 +26,7 @@ public class NotificationParam implements Serializable {
 	private long lastSuccessfulNotification;
 	private long lastFailedNotification;
 	private Boolean showChanges = false;
+	private Boolean sysAttrs = false;
 
 	// duplicate
 	public NotificationParam(NotificationParam notification) {
@@ -118,10 +119,10 @@ public class NotificationParam implements Serializable {
 
 	@Override
 	public String toString() {
-		return "NotificationParam [attributeNames=" + attributeNames + ", endPoint=" + endPoint + ", format=" + format +",showChanges=" + showChanges
+		return "NotificationParam [attributeNames=" + attributeNames + ", endPoint=" + endPoint + ", format=" + format
 				+ ", timesSent=" + timesSent + ", lastNotification=" + lastNotification
 				+ ", lastSuccessfulNotification=" + lastSuccessfulNotification + ", lastFailedNotification="
-				+ lastFailedNotification + "]";
+				+ lastFailedNotification + ", showChanges=" + showChanges + ", sysAttrs=" + sysAttrs + "]";
 	}
 
 	public Boolean getShowChanges() {
@@ -131,4 +132,13 @@ public class NotificationParam implements Serializable {
 	public void setShowChanges(Boolean showChanges) {
 		this.showChanges = showChanges;
 	}
+
+	public Boolean getSysAttrs() {
+		return sysAttrs;
+	}
+
+	public void setSysAttrs(Boolean sysAttrs) {
+		this.sysAttrs = sysAttrs;
+	}
+
 }

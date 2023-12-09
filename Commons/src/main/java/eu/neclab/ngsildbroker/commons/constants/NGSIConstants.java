@@ -151,6 +151,7 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_SHOWCHANGES = "https://uri.etsi.org/ngsi-ld/showChanges";
 	public final static String NGSI_LD_HAS_VOCAB = "https://uri.etsi.org/ngsi-ld/hasVocab";
 	public final static String NGSI_LD_VocabularyProperty = "https://uri.etsi.org/ngsi-ld/VocabularyProperty";
+	public final static String NGSI_LD_SYS_ATTRS = "https://uri.etsi.org/ngsi-ld/sysAttrs";
 	public final static String VOCABULARYPROPERTY = "VocabularyProperty";
 
 	// IMPORTANT! DO NOT MESS UP THIS ORDER!!! ONLY APPEND ON THE END NEW STUFF

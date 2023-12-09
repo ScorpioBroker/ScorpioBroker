@@ -299,7 +299,7 @@ public class Subscription implements Serializable {
 			}
 		}
 		if (subscription.getNotificationTrigger().isEmpty()) {
-			//adding default Triggers
+			// adding default Triggers
 			Set<String> notificationTriggers = subscription.getNotificationTrigger();
 			notificationTriggers.add(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_CREATED);
 			notificationTriggers.add(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_UPDATED);
@@ -420,6 +420,10 @@ public class Subscription implements Serializable {
 				if (formatString.equalsIgnoreCase("concise")) {
 					format = Format.concise;
 				}
+				break;
+			case NGSIConstants.NGSI_LD_SYS_ATTRS:
+				notifyParam.setSysAttrs(
+						((List<Map<String, Boolean>>) entry.getValue()).get(0).get(NGSIConstants.JSON_LD_VALUE));
 				break;
 			case NGSIConstants.NGSI_LD_SHOWCHANGES:
 				notifyParam.setShowChanges(
