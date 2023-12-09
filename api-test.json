@@ -1,8 +1,9 @@
 {
 	"info": {
-		"_postman_id": "5477fe37-9c53-4766-8693-af216b1e8939",
+		"_postman_id": "f9604898-7d70-4627-8c5e-a9c5e6df47be",
 		"name": "API Test",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "26387112"
 	},
 	"item": [
 		{
@@ -16231,6 +16232,7 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
+																	"    delete jsonData['status'];\r",
 																	"     delete jsonData['timesSent'];\r",
 																	"     delete jsonData['timesFailed'];\r",
 																	"    console.log(\"expected: \" + JSON.stringify(expected));\r",
@@ -16376,6 +16378,7 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
+																	"    delete jsonData['status'];\r",
 																	"     delete jsonData['timesSent'];\r",
 																	"     delete jsonData['timesFailed'];\r",
 																	"    console.log(\"expected: \" + JSON.stringify(expected));\r",
@@ -16562,6 +16565,7 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
+																	"    delete jsonData['status'];\r",
 																	"     delete jsonData['timesSent'];\r",
 																	"     delete jsonData['timesFailed'];\r",
 																	"    console.log(\"expected: \" + JSON.stringify(expected));\r",
@@ -16722,6 +16726,7 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
+																	"    delete jsonData['status'];\r",
 																	"     delete jsonData['timesSent'];\r",
 																	"     delete jsonData['timesFailed'];\r",
 																	"    console.log(\"expected: \" + JSON.stringify(expected));\r",
@@ -16825,6 +16830,7 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
+																	"    delete jsonData['status'];\r",
 																	"   delete jsonData['timesSent'];\r",
 																	"   delete jsonData['timesFailed'];\r",
 																	"    console.log(\"expected: \" + JSON.stringify(expected));\r",
@@ -17071,6 +17077,7 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
+																	"    delete jsonData['status'];\r",
 																	"    delete jsonData['timesSent'];\r",
 																	"     delete jsonData['timesFailed'];\r",
 																	"    console.log(\"expected: \" + JSON.stringify(expected));\r",
@@ -17180,6 +17187,7 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
+																	"    delete jsonData['status'];\r",
 																	"     delete jsonData['timesSent'];\r",
 																	"     delete jsonData['timesFailed'];\r",
 																	"    console.log(\"expected: \" + JSON.stringify(expected));\r",
@@ -17354,6 +17362,7 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
+																	"    delete jsonData['status'];\r",
 																	"    delete jsonData['timesFailed'];\r",
 																	"    delete jsonData['timesSent'];\r",
 																	"    console.log(\"expected: \" + JSON.stringify(expected));\r",
@@ -17490,6 +17499,7 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
+																	"    delete jsonData['status'];\r",
 																	"    delete jsonData['timesFailed'];\r",
 																	"    delete jsonData['timesSent'];\r",
 																	"    console.log(\"expected: \" + JSON.stringify(expected));\r",
@@ -26838,7 +26848,162 @@
 						},
 						{
 							"name": "/csourceSubscriptions",
-							"item": []
+							"item": [
+								{
+									"name": "csourceSubscription  No Context",
+									"item": [
+										{
+											"name": "Create Simple Entity No Context",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+															"console.log(payloadBody.id);\r",
+															"var cSourceId = payloadBody.id;\r",
+															"pm.collectionVariables.set(\"created\", payloadBody);\r",
+															"pm.collectionVariables.set(\"cSourceId\", cSourceId);\r",
+															"pm.test(\"Status code is 201\", function () {\r",
+															"    pm.response.to.have.status(201);\r",
+															"});\r",
+															"pm.test(\"Check location header\", function () {\r",
+															"    pm.response.to.have.header(\"Location\");\r",
+															"    pm.expect(pm.response.headers.get(\"Location\")).to.include(cSourceId);\r",
+															"});\r",
+															"\r",
+															"\r",
+															""
+														],
+														"type": "text/javascript"
+													}
+												},
+												{
+													"listen": "prerequest",
+													"script": {
+														"exec": [
+															""
+														],
+														"type": "text/javascript"
+													}
+												}
+											],
+											"request": {
+												"method": "POST",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json",
+														"type": "default"
+													},
+													{
+														"key": "Accept",
+														"value": "application/json",
+														"type": "default",
+														"disabled": true
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\r\n    \"id\": \"urn:ngsi-ld:Subscription:031\",\r\n    \"type\": \"Subscription\",\r\n    \"entities\": [\r\n        {\r\n            \"type\": \"Building\"\r\n        }\r\n    ],\r\n    \"notification\": {\r\n        \"format\": \"keyValues\",\r\n        \"endpoint\": {\r\n            \"uri\": \"http://localhost:8080\",\r\n            \"accept\": \"application/json\"\r\n        }\r\n    }\r\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{registry-manager}}/ngsi-ld/v1/csourceSubscriptions",
+													"host": [
+														"{{registry-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"csourceSubscriptions"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Get Created Entity and Validate content",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"var expected = pm.collectionVariables.get(\"created\");\r",
+															"pm.test(\"Status code is 200\", function () {\r",
+															"    pm.response.to.have.status(200);\r",
+															"});\r",
+															""
+														],
+														"type": "text/javascript"
+													}
+												}
+											],
+											"request": {
+												"method": "GET",
+												"header": [
+													{
+														"key": "Accept",
+														"value": "application/json",
+														"type": "default"
+													}
+												],
+												"url": {
+													"raw": "{{registry-manager}}/ngsi-ld/v1/csourceSubscriptions/urn:ngsi-ld:Subscription:031",
+													"host": [
+														"{{registry-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"csourceSubscriptions",
+														"urn:ngsi-ld:Subscription:031"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Delete Entity",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 204\", function () {\r",
+															"    pm.response.to.have.status(204);\r",
+															"});\r",
+															"pm.collectionVariables.clear();"
+														],
+														"type": "text/javascript"
+													}
+												}
+											],
+											"request": {
+												"method": "DELETE",
+												"header": [],
+												"url": {
+													"raw": "{{registry-manager}}/ngsi-ld/v1/csourceSubscriptions/urn:ngsi-ld:Subscription:031",
+													"host": [
+														"{{registry-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"csourceSubscriptions",
+														"urn:ngsi-ld:Subscription:031"
+													]
+												}
+											},
+											"response": []
+										}
+									]
+								}
+							]
 						},
 						{
 							"name": "/temporal/entities",
@@ -50354,6 +50519,178 @@
 													"response": []
 												}
 											]
+										},
+										{
+											"name": "Add attribute if entity id not found",
+											"item": [
+												{
+													"name": "Add attribute if entity is not found",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var expected = {\r",
+																	"    \"type\": \"https://uri.etsi.org/ngsi-ld/errors/ResourceNotFound\",\r",
+																	"    \"title\": \"Resource not found.\",\r",
+																	"    \"errorCode\": 404\r",
+																	"};\r",
+																	"pm.test(\"Status code is 404\", function () {\r",
+																	"    pm.response.to.have.status(404);\r",
+																	"});\r",
+																	"pm.test(\"Validate content\", function () {\r",
+																	"    var jsonData = pm.response.json();\r",
+																	"    delete jsonData['detail'];\r",
+																	"    console.log(\"expected: \" + JSON.stringify(expected));\r",
+																	"    console.log(\"received: \" + JSON.stringify(jsonData));\r",
+																	"    pm.expect(jsonData).to.eql(expected);\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "PATCH",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/ld+json",
+																"type": "default"
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n    \"intproperty-new\": {\"type\": \"Property\", \"value\": 123},\r\n     \"@context\": \"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\"\r\n}"
+														},
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities/urn:notfound/attrs",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities",
+																"urn:notfound",
+																"attrs"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Update attribute value if entity id is not found",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var expected = {\r",
+																	"    \"type\": \"https://uri.etsi.org/ngsi-ld/errors/ResourceNotFound\",\r",
+																	"    \"title\": \"Resource not found.\",\r",
+																	"    \"errorCode\": 404\r",
+																	"};\r",
+																	"pm.test(\"Status code is 404\", function () {\r",
+																	"    pm.response.to.have.status(404);\r",
+																	"});\r",
+																	"pm.test(\"Validate content\", function () {\r",
+																	"    var jsonData = pm.response.json();\r",
+																	"    delete jsonData['detail'];\r",
+																	"    console.log(\"expected: \" + JSON.stringify(expected));\r",
+																	"    console.log(\"received: \" + JSON.stringify(jsonData));\r",
+																	"    pm.expect(jsonData).to.eql(expected);\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "PATCH",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 12367}\r\n   \r\n}"
+														},
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities/urn:notfound",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities",
+																"urn:notfound"
+															]
+														}
+													},
+													"response": []
+												}
+											]
+										},
+										{
+											"name": "id not present",
+											"item": [
+												{
+													"name": "Delete entity id not present",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var expected = {\r",
+																	"    \"type\": \"https://uri.etsi.org/ngsi-ld/errors/ResourceNotFound\",\r",
+																	"    \"title\": \"Resource not found.\",\r",
+																	"    \"errorCode\": 404\r",
+																	"};\r",
+																	"pm.test(\"Status code is 404\", function () {\r",
+																	"    pm.response.to.have.status(404);\r",
+																	"});\r",
+																	"pm.test(\"Validate content\", function () {\r",
+																	"    var jsonData = pm.response.json();\r",
+																	"    delete jsonData['detail'];\r",
+																	"    console.log(\"expected: \" + JSON.stringify(expected));\r",
+																	"    console.log(\"received: \" + JSON.stringify(jsonData));\r",
+																	"    pm.expect(jsonData).to.eql(expected);\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "DELETE",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "ld+json",
+																"type": "default"
+															}
+														],
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities/urn:notpresent",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities",
+																"urn:notpresent"
+															]
+														}
+													},
+													"response": []
+												}
+											]
 										}
 									]
 								}
@@ -52119,20 +52456,779 @@
 									]
 								}
 							]
+						},
+						{
+							"name": "query test",
+							"item": [
+								{
+									"name": "csource subscriptions limit/offset test",
+									"item": [
+										{
+											"name": "Invalid limit",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"\r",
+															"pm.test(\"Status code is 400\", function () {\r",
+															"    pm.response.to.have.status(400);\r",
+															"});\r",
+															""
+														],
+														"type": "text/javascript"
+													}
+												}
+											],
+											"request": {
+												"method": "GET",
+												"header": [
+													{
+														"key": "Accept",
+														"value": "application/json",
+														"type": "default"
+													}
+												],
+												"url": {
+													"raw": "{{query-manager}}/ngsi-ld/v1/csourceSubscriptions?limit=-5&offset=2",
+													"host": [
+														"{{query-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"csourceSubscriptions"
+													],
+													"query": [
+														{
+															"key": "limit",
+															"value": "-5"
+														},
+														{
+															"key": "offset",
+															"value": "2"
+														}
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Invalid Offset",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"\r",
+															"pm.test(\"Status code is 400\", function () {\r",
+															"    pm.response.to.have.status(400);\r",
+															"});\r",
+															""
+														],
+														"type": "text/javascript"
+													}
+												}
+											],
+											"request": {
+												"method": "GET",
+												"header": [
+													{
+														"key": "Accept",
+														"value": "application/json",
+														"type": "default"
+													}
+												],
+												"url": {
+													"raw": "{{query-manager}}/ngsi-ld/v1/csourceSubscriptions?limit=2&offset=-3",
+													"host": [
+														"{{query-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"csourceSubscriptions"
+													],
+													"query": [
+														{
+															"key": "limit",
+															"value": "2"
+														},
+														{
+															"key": "offset",
+															"value": "-3"
+														}
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Invalid Limit And Offset",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"\r",
+															"pm.test(\"Status code is 400\", function () {\r",
+															"    pm.response.to.have.status(400);\r",
+															"});\r",
+															""
+														],
+														"type": "text/javascript"
+													}
+												}
+											],
+											"request": {
+												"method": "GET",
+												"header": [
+													{
+														"key": "Accept",
+														"value": "application/json",
+														"type": "default"
+													}
+												],
+												"url": {
+													"raw": "{{query-manager}}/ngsi-ld/v1/csourceSubscriptions?limit=0&offset=0",
+													"host": [
+														"{{query-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"csourceSubscriptions"
+													],
+													"query": [
+														{
+															"key": "limit",
+															"value": "0"
+														},
+														{
+															"key": "offset",
+															"value": "0"
+														}
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "csource subscription not found",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 204\", function () {\r",
+															"    pm.response.to.have.status(404);\r",
+															"});\r",
+															"pm.collectionVariables.clear();"
+														],
+														"type": "text/javascript"
+													}
+												}
+											],
+											"request": {
+												"method": "GET",
+												"header": [],
+												"url": {
+													"raw": "{{registry-manager}}/ngsi-ld/v1/csourceSubscriptions/urn:ngsi-ld:notfound",
+													"host": [
+														"{{registry-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"csourceSubscriptions",
+														"urn:ngsi-ld:notfound"
+													]
+												}
+											},
+											"response": []
+										}
+									]
+								},
+								{
+									"name": "incorrect id pattern",
+									"item": [
+										{
+											"name": "incorrect id pattern1",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 400\", function () {\r",
+															"    pm.response.to.have.status(400);\r",
+															"});\r",
+															" "
+														],
+														"type": "text/javascript"
+													}
+												}
+											],
+											"request": {
+												"method": "GET",
+												"header": [
+													{
+														"key": "Accept",
+														"value": "application/json",
+														"type": "default"
+													}
+												],
+												"url": {
+													"raw": "{{query-manager}}/ngsi-ld/v1/entities/?type=TestType&idPattern=invalid_entity_id_pattern**",
+													"host": [
+														"{{query-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"entities",
+														""
+													],
+													"query": [
+														{
+															"key": "type",
+															"value": "TestType"
+														},
+														{
+															"key": "idPattern",
+															"value": "invalid_entity_id_pattern**"
+														}
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "incorrect id pattern2",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 400\", function () {\r",
+															"    pm.response.to.have.status(400);\r",
+															"});\r",
+															" "
+														],
+														"type": "text/javascript"
+													}
+												}
+											],
+											"request": {
+												"method": "GET",
+												"header": [
+													{
+														"key": "Accept",
+														"value": "application/json",
+														"type": "default"
+													}
+												],
+												"url": {
+													"raw": "{{query-manager}}/ngsi-ld/v1/entities/?type=TestType&idPattern=**abc",
+													"host": [
+														"{{query-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"entities",
+														""
+													],
+													"query": [
+														{
+															"key": "type",
+															"value": "TestType"
+														},
+														{
+															"key": "idPattern",
+															"value": "**abc"
+														}
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "incorrect id pattern3",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 400\", function () {\r",
+															"    pm.response.to.have.status(400);\r",
+															"});\r",
+															" "
+														],
+														"type": "text/javascript"
+													}
+												}
+											],
+											"request": {
+												"method": "GET",
+												"header": [
+													{
+														"key": "Accept",
+														"value": "application/json",
+														"type": "default"
+													}
+												],
+												"url": {
+													"raw": "{{query-manager}}/ngsi-ld/v1/entities/?type=TestType&idPattern=ab**c",
+													"host": [
+														"{{query-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"entities",
+														""
+													],
+													"query": [
+														{
+															"key": "type",
+															"value": "TestType"
+														},
+														{
+															"key": "idPattern",
+															"value": "ab**c"
+														}
+													]
+												}
+											},
+											"response": []
+										}
+									]
+								},
+								{
+									"name": "id not present",
+									"item": [
+										{
+											"name": "Retrieve entity not present",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"var expected = {\r",
+															"    \"type\": \"https://uri.etsi.org/ngsi-ld/errors/ResourceNotFound\",\r",
+															"    \"title\": \"Resource not found.\",\r",
+															"    \"errorCode\": 404\r",
+															"};\r",
+															"pm.test(\"Status code is 404\", function () {\r",
+															"    pm.response.to.have.status(404);\r",
+															"});\r",
+															"pm.test(\"Validate content\", function () {\r",
+															"    var jsonData = pm.response.json();\r",
+															"    delete jsonData['detail'];\r",
+															"    console.log(\"expected: \" + JSON.stringify(expected));\r",
+															"    console.log(\"received: \" + JSON.stringify(jsonData));\r",
+															"    pm.expect(jsonData).to.eql(expected);\r",
+															"});"
+														],
+														"type": "text/javascript"
+													}
+												}
+											],
+											"request": {
+												"method": "GET",
+												"header": [
+													{
+														"key": "Accept",
+														"value": "application/json",
+														"type": "default"
+													}
+												],
+												"url": {
+													"raw": "{{query-manager}}/ngsi-ld/v1/entities/urn:idnotfound",
+													"host": [
+														"{{query-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"entities",
+														"urn:idnotfound"
+													],
+													"query": [
+														{
+															"key": "",
+															"value": null,
+															"disabled": true
+														}
+													]
+												}
+											},
+											"response": []
+										}
+									]
+								},
+								{
+									"name": "id is not URI",
+									"item": [
+										{
+											"name": "Entity id is not URI",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"var expected = {\r",
+															"    \"type\": \"https://uri.etsi.org/ngsi-ld/errors/BadRequestData\",\r",
+															"    \"title\": \"Bad Request Data.\",\r",
+															"    \"errorCode\": 400\r",
+															"};\r",
+															"pm.test(\"Status code is 400\", function () {\r",
+															"    pm.response.to.have.status(400);\r",
+															"});\r",
+															"pm.test(\"Validate content\", function () {\r",
+															"    var jsonData = pm.response.json();\r",
+															"    delete jsonData['detail'];\r",
+															"    console.log(\"expected: \" + JSON.stringify(expected));\r",
+															"    console.log(\"received: \" + JSON.stringify(jsonData));\r",
+															"    pm.expect(jsonData).to.eql(expected);\r",
+															"});"
+														],
+														"type": "text/javascript"
+													}
+												}
+											],
+											"request": {
+												"method": "GET",
+												"header": [
+													{
+														"key": "Accept",
+														"value": "application/json",
+														"type": "default"
+													}
+												],
+												"url": {
+													"raw": "{{query-manager}}/ngsi-ld/v1/entities/Idformatincorrect",
+													"host": [
+														"{{query-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"entities",
+														"Idformatincorrect"
+													],
+													"query": [
+														{
+															"key": "",
+															"value": null,
+															"disabled": true
+														}
+													]
+												}
+											},
+											"response": []
+										}
+									]
+								},
+								{
+									"name": "type not present",
+									"item": [
+										{
+											"name": "type not present",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"var expected = {\r",
+															"    \"type\": \"https://uri.etsi.org/ngsi-ld/errors/ResourceNotFound\",\r",
+															"    \"title\": \"Resource not found.\",\r",
+															"    \"errorCode\": 404\r",
+															"};\r",
+															"pm.test(\"Status code is 400\", function () {\r",
+															"    pm.response.to.have.status(404);\r",
+															"});\r",
+															"pm.test(\"Validate content\", function () {\r",
+															"    var jsonData = pm.response.json();\r",
+															"    delete jsonData['detail'];\r",
+															"    console.log(\"expected: \" + JSON.stringify(expected));\r",
+															"    console.log(\"received: \" + JSON.stringify(jsonData));\r",
+															"    pm.expect(jsonData).to.eql(expected);\r",
+															"});"
+														],
+														"type": "text/javascript"
+													}
+												}
+											],
+											"request": {
+												"method": "GET",
+												"header": [
+													{
+														"key": "Accept",
+														"value": "application/json",
+														"type": "default"
+													}
+												],
+												"url": {
+													"raw": "{{query-manager}}/ngsi-ld/v1/types/notType",
+													"host": [
+														"{{query-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"types",
+														"notType"
+													],
+													"query": [
+														{
+															"key": "",
+															"value": null,
+															"disabled": true
+														}
+													]
+												}
+											},
+											"response": []
+										}
+									]
+								}
+							]
+						},
+						{
+							"name": "subscription",
+							"item": [
+								{
+									"name": "id not present",
+									"item": [
+										{
+											"name": "Retrieve sub not present",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"var expected = {\r",
+															"    \"type\": \"https://uri.etsi.org/ngsi-ld/errors/ResourceNotFound\",\r",
+															"    \"title\": \"Resource not found.\",\r",
+															"    \"errorCode\": 404\r",
+															"};\r",
+															"pm.test(\"Status code is 404\", function () {\r",
+															"    pm.response.to.have.status(404);\r",
+															"});\r",
+															"pm.test(\"Validate content\", function () {\r",
+															"    var jsonData = pm.response.json();\r",
+															"    delete jsonData['detail'];\r",
+															"    console.log(\"expected: \" + JSON.stringify(expected));\r",
+															"    console.log(\"received: \" + JSON.stringify(jsonData));\r",
+															"    pm.expect(jsonData).to.eql(expected);\r",
+															"});"
+														],
+														"type": "text/javascript"
+													}
+												}
+											],
+											"request": {
+												"method": "GET",
+												"header": [
+													{
+														"key": "Accept",
+														"value": "application/json",
+														"type": "default"
+													}
+												],
+												"url": {
+													"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions/urn:notfound",
+													"host": [
+														"{{subscription-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"subscriptions",
+														"urn:notfound"
+													],
+													"query": [
+														{
+															"key": "",
+															"value": null,
+															"disabled": true
+														}
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Update Subscription not present",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"var expected = {\r",
+															"    \"type\": \"https://uri.etsi.org/ngsi-ld/errors/ResourceNotFound\",\r",
+															"    \"title\": \"Resource not found.\",\r",
+															"    \"errorCode\": 404\r",
+															"};\r",
+															"pm.test(\"Status code is 404\", function () {\r",
+															"    pm.response.to.have.status(404);\r",
+															"});\r",
+															"pm.test(\"Validate content\", function () {\r",
+															"    var jsonData = pm.response.json();\r",
+															"    delete jsonData['detail'];\r",
+															"    console.log(\"expected: \" + JSON.stringify(expected));\r",
+															"    console.log(\"received: \" + JSON.stringify(jsonData));\r",
+															"    pm.expect(jsonData).to.eql(expected);\r",
+															"});"
+														],
+														"type": "text/javascript"
+													}
+												}
+											],
+											"request": {
+												"method": "PATCH",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json",
+														"type": "default"
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\r\n    \"id\": \"urn:ngsi-ld:Subscription:storeSubscription4\",\r\n    \"type\": \"Subscription\",\r\n    \"entities\": [\r\n        {\r\n            \"type\": \"Test3\"\r\n        }\r\n    ],\r\n    \"q\": \"speed>100\",\r\n    \"notification\": {\r\n        \"format\": \"normalized\",\r\n        \"endpoint\": {\r\n            \"uri\": \"http://localhost:8080\",\r\n            \"accept\": \"application/json\"\r\n        }\r\n    }\r\n}"
+												},
+												"url": {
+													"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions/urn:notfound",
+													"host": [
+														"{{subscription-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"subscriptions",
+														"urn:notfound"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Delete subscription not present",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"var expected = {\r",
+															"    \"type\": \"https://uri.etsi.org/ngsi-ld/errors/ResourceNotFound\",\r",
+															"    \"title\": \"Resource not found.\",\r",
+															"    \"errorCode\": 404\r",
+															"};\r",
+															"pm.test(\"Status code is 404\", function () {\r",
+															"    pm.response.to.have.status(404);\r",
+															"});\r",
+															"pm.test(\"Validate content\", function () {\r",
+															"    var jsonData = pm.response.json();\r",
+															"    delete jsonData['detail'];\r",
+															"    console.log(\"expected: \" + JSON.stringify(expected));\r",
+															"    console.log(\"received: \" + JSON.stringify(jsonData));\r",
+															"    pm.expect(jsonData).to.eql(expected);\r",
+															"});"
+														],
+														"type": "text/javascript"
+													}
+												}
+											],
+											"request": {
+												"method": "DELETE",
+												"header": [],
+												"url": {
+													"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions/urn:notpresent",
+													"host": [
+														"{{subscription-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"subscriptions",
+														"urn:notpresent"
+													]
+												}
+											},
+											"response": []
+										}
+									]
+								},
+								{
+									"name": "id is not URI",
+									"item": [
+										{
+											"name": "Subscription id is not URI",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"var expected = {\r",
+															"    \"type\": \"https://uri.etsi.org/ngsi-ld/errors/BadRequestData\",\r",
+															"    \"title\": \"Bad Request Data.\",\r",
+															"    \"errorCode\": 400\r",
+															"};\r",
+															"pm.test(\"Status code is 400\", function () {\r",
+															"    pm.response.to.have.status(400);\r",
+															"});\r",
+															"pm.test(\"Validate content\", function () {\r",
+															"    var jsonData = pm.response.json();\r",
+															"    delete jsonData['detail'];\r",
+															"    console.log(\"expected: \" + JSON.stringify(expected));\r",
+															"    console.log(\"received: \" + JSON.stringify(jsonData));\r",
+															"    pm.expect(jsonData).to.eql(expected);\r",
+															"});"
+														],
+														"type": "text/javascript"
+													}
+												}
+											],
+											"request": {
+												"method": "GET",
+												"header": [
+													{
+														"key": "Accept",
+														"value": "application/json",
+														"type": "default"
+													}
+												],
+												"url": {
+													"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions/Idformatincorrect",
+													"host": [
+														"{{subscription-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"subscriptions",
+														"Idformatincorrect"
+													],
+													"query": [
+														{
+															"key": "",
+															"value": null,
+															"disabled": true
+														}
+													]
+												}
+											},
+											"response": []
+										}
+									]
+								}
+							]
 						}
 					]
 				}
 			]
-		}
-	],
-	"variable": [
-		{
-			"key": "subId",
-			"value": ""
-		},
-		{
-			"key": "entityId",
-			"value": ""
 		}
 	]
 }

@@ -83,7 +83,7 @@ public class HistoryController {
 		} else {
 			q = null;
 		}
-		if (acceptHeader == -1) {
+		if (acceptHeader != 1 && acceptHeader != 2) {
 			return HttpUtils.getInvalidHeader();
 		}
 		String[] idList;
@@ -160,7 +160,7 @@ public class HistoryController {
 			@QueryParam("timeAt") String timeAt, @QueryParam("endTimeAt") String endTimeAt) {
 
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
-		if (acceptHeader == -1) {
+		if (acceptHeader != 1 && acceptHeader != 2) {
 			return HttpUtils.getInvalidHeader();
 		}
 		int lastNTBU;

@@ -1,9 +1,11 @@
 package eu.neclab.ngsildbroker.queryhandler.controller;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import io.vertx.core.json.JsonObject;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import jakarta.ws.rs.POST;
@@ -58,7 +60,7 @@ public class EntityOperationsQueryController {
 
 	@Path("/query")
 	@POST
-	public Uni<RestResponse<Object>> postQuery(HttpServerRequest request, Map<String, Object> body,
+	public Uni<RestResponse<Object>> postQuery(HttpServerRequest request, String bodyStr,
 			@QueryParam(value = "limit") Integer limit, @QueryParam(value = "offset") int offset,
 			@QueryParam(value = "options") String options, @QueryParam(value = "count") boolean count,
 			@QueryParam(value = "localOnly") boolean localOnly,
@@ -66,6 +68,7 @@ public class EntityOperationsQueryController {
 			@QueryParam("entityMap") String entityMapToken) {
 
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
+		Map<String,Object> body;
 		if (acceptHeader == -1) {
 			return HttpUtils.getInvalidHeader();
 		}
@@ -79,7 +82,11 @@ public class EntityOperationsQueryController {
 			return Uni.createFrom()
 					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.TooManyResults)));
 		}
-
+		try {
+		 	body = new JsonObject(bodyStr).getMap();
+		} catch (Exception e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+		}
 		// we are not expanding the complete payload here because there is some
 		// weirdness in postquery payload. expanding item by item through the parsers is
 		// fine
@@ -134,7 +141,7 @@ public class EntityOperationsQueryController {
 				Object scopeQ = body.get(NGSIConstants.QUERY_PARAMETER_SCOPE_QUERY);
 				Object csf = body.get(NGSIConstants.QUERY_PARAMETER_CSF);
 				if (attrs != null) {
-					attrsQuery = QueryParser.parseAttrs((String) attrs, context);
+					attrsQuery = QueryParser.parseAttrs(String.join(",",(ArrayList<String>)attrs), context);
 				}
 				if (q != null) {
 					qQueryTerm = QueryParser.parseQuery((String) q, context);

@@ -44,7 +44,7 @@ JDK Setup
 
 - Start the JDK installation and hit the “Change destination folder” checkbox, then click 'Install.'
 
-**Note:-** Recommended version is JDK-11. Scorpio Broker is developed and tested with this version only.
+**Note:-** Recommended version is JDK-17. Scorpio Broker is developed and tested with this version only.
 
 .. figure:: figures/jdk-1.png
 
@@ -216,11 +216,11 @@ To create a Java environment in your machine install the JDK, for this open the 
 
 1. sudo apt-get update
 
-2. sudo apt-get install openjdk-8-jdk
+2. sudo apt-get install openjdk-17-jdk
 
-To check that JDK is properly installed in your machine, run the command **java -version** in your terminal if it returns the version of the JDK as 11 then it's working fine.
+To check that JDK is properly installed in your machine, run the command **java -version** in your terminal if it returns the version of the JDK as 17 then it's working fine.
 
-.. figure:: figures/javaTerminal
+.. figure:: figures/javaTerminal.png
 
 Eclipse installation
 ********************

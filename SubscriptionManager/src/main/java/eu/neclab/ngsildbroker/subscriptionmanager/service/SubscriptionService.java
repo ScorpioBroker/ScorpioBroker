@@ -343,10 +343,12 @@ public class SubscriptionService {
 								if (isIntervalSub(updatedRequest)) {
 									tenant2subscriptionId2IntervalSubscription.put(tenant, updatedRequest.getId(),
 											updatedRequest);
+									subscriptionId2RequestGlobal.put(updatedRequest.getId(),updatedRequest);
 									tenant2subscriptionId2Subscription.remove(tenant, updatedRequest.getId());
 								} else {
 									tenant2subscriptionId2Subscription.put(tenant, updatedRequest.getId(),
 											updatedRequest);
+ 									subscriptionId2RequestGlobal.put(updatedRequest.getId(),updatedRequest);
 									tenant2subscriptionId2IntervalSubscription.remove(tenant, updatedRequest.getId());
 								}
 								MicroServiceUtils.serializeAndSplitObjectAndEmit(updatedRequest, messageSize,
@@ -387,7 +389,14 @@ public class SubscriptionService {
 			List<Map<String, Object>> resultData = new ArrayList<>(rows.size());
 			while (it.hasNext()) {
 				next = it.next();
-				resultData.add(next.getJsonObject(0).getMap());
+				Map<String, Object> subscriptionData = next.getJsonObject(0).getMap();
+				String subscriptionId = (String) subscriptionData.get(NGSIConstants.JSON_LD_ID);
+				SubscriptionRequest subscriptionRequest = subscriptionId2RequestGlobal.get(subscriptionId);
+				if (subscriptionRequest != null) {
+				subscriptionData.put(NGSIConstants.STATUS, subscriptionRequest.getSubscription().getStatus());
+				}
+				resultData.add(subscriptionData);
+				//resultData.add(next.getJsonObject(0).getMap());
 			}
 			result.setData(resultData);
 			if (next == null) {
@@ -413,7 +422,9 @@ public class SubscriptionService {
 			if (rows.size() == 0) {
 				return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound, "subscription not found"));
 			}
-			return Uni.createFrom().item(rows.iterator().next().getJsonObject(0).getMap());
+		  	Map<String,Object> rowData = rows.iterator().next().getJsonObject(0).getMap();
+			rowData.put(NGSIConstants.STATUS,subscriptionId2RequestGlobal.get(subscriptionId).getSubscription().getStatus());
+			return Uni.createFrom().item(rowData);
 		});
 	}
 

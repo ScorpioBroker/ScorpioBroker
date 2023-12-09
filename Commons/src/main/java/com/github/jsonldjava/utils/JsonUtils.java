@@ -18,6 +18,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import eu.neclab.ngsildbroker.commons.exceptions.LdContextException;
 import org.apache.commons.io.ByteOrderMark;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.BOMInputStream;
@@ -357,7 +359,7 @@ public class JsonUtils {
 						logger.debug("response code: " + status);
 						logger.debug("response body: " + result.bodyAsString());
 						return Uni.createFrom()
-								.failure(new IOException("Can't retrieve " + finalUrl + ", status code: " + status));
+								.failure(new LdContextException("Can't retrieve " + finalUrl + ", status code: " + status));
 					}
 					URL alternateLink;
 					try {

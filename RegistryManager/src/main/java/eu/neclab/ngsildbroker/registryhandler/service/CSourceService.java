@@ -15,6 +15,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
@@ -227,35 +228,34 @@ public class CSourceService {
 	}
 
 	public Uni<QueryResult> queryRegistrations(String tenant, Set<String> ids, TypeQueryTerm typeQuery,
-			String idPattern, AttrsQueryTerm attrsQuery, CSFQueryTerm csf, GeoQueryTerm geoQuery,
-			ScopeQueryTerm scopeQuery, int limit, int offset, boolean count) {
+											   String idPattern, AttrsQueryTerm attrsQuery, CSFQueryTerm csf, GeoQueryTerm geoQuery,
+											   ScopeQueryTerm scopeQuery, QQueryTerm qQueryTerm, int limit, int offset, boolean count) {
 		return cSourceInfoDAO
-				.query(tenant, ids, typeQuery, idPattern, attrsQuery, csf, geoQuery, scopeQuery, limit, offset, count)
+				.query(tenant, ids, typeQuery, idPattern, attrsQuery, csf, geoQuery, scopeQuery,qQueryTerm, limit, offset, count)
 				.onItem().transform(rows -> {
 					QueryResult result = new QueryResult();
-//					if (limit == 0 && count) {
-//						result.setCount(rows.iterator().next().getLong(0));
-//					} else {
+					if(rows.size()==0){
+						result.setData(new ArrayList<>());
+						return result;
+					}
+					long countLong = rows.iterator().next().getLong(1);
+					if (count) {
+						result.setCount(countLong);
+					}
 					RowIterator<Row> it = rows.iterator();
-					Row next = null;
-					List<Map<String, Object>> resultData = new ArrayList<Map<String, Object>>(rows.size());
+					Row next;
+					List<Map<String, Object>> resultData = new ArrayList<>(rows.size());
 					while (it.hasNext()) {
 						next = it.next();
 						resultData.add(next.getJsonObject(0).getMap());
 					}
-					Long resultCount = -1l;// next.getLong(0);
-					result.setCount(resultCount);
-					long leftAfter = resultCount - (offset + limit);
-					if (leftAfter < 0) {
-						leftAfter = 0;
-					}
-					long leftBefore = offset;
-					result.setResultsLeftAfter(leftAfter);
-					result.setResultsLeftBefore(leftBefore);
+					long leftAfter = countLong - (offset + limit);
+					leftAfter = (leftAfter < 0) ? 0 : leftAfter;
+                    result.setResultsLeftAfter(leftAfter);
+					result.setResultsLeftBefore((long) offset);
 					result.setLimit(limit);
 					result.setOffset(offset);
 					result.setData(resultData);
-//					}
 					return result;
 				});
 

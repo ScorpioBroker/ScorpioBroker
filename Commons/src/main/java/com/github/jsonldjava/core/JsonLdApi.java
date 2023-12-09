@@ -17,6 +17,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 
@@ -276,7 +277,7 @@ public class JsonLdApi {
 								isVocabProperty = true;
 								break;
 						}
-						if (keyValue || concise) {
+						if (!alias.equals(NGSIConstants.TYPE) && (keyValue || concise) ) {
 							continue;
 						}
 
@@ -487,7 +488,7 @@ public class JsonLdApi {
 					// throw new JsonLdError(Error.NOT_IMPLEMENTED, "no array: " + expandedValue);
 				}
 				// 7.5)
-				if (((List<Object>) expandedValue).size() == 0) {
+				if (((List<Object>) expandedValue).isEmpty()) {
 					// 7.5.1)
 					final String itemActiveProperty = activeCtx.compactIri(expandedProperty, expandedValue, true,
 							insideReverse);

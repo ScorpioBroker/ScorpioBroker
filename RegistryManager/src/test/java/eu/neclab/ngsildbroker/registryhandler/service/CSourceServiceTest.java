@@ -374,16 +374,16 @@ public class CSourceServiceTest {
 
 		Uni<RowSet<Row>> uniRowsetMock = Uni.createFrom().item(rowSetMock);
 
-		when(cSourceInfoDAO.query(any(), any(), any(), any(), any(), any(), any(), any(), anyInt(), anyInt(),
+		when(cSourceInfoDAO.query(any(), any(), any(), any(), any(), any(), any(),any(), any(), anyInt(), anyInt(),
 				anyBoolean())).thenReturn(uniRowsetMock);
 
 		Uni<QueryResult> resultUni = CSourceService.queryRegistrations(tenant, new HashSet<>(), null, "", null, null,
-				null, null, 0, 0, true);
+				null, null, null, 0, 0, true);
 
 		QueryResult result = resultUni.await().indefinitely();
 
 		assertEquals(-1L, result.getCount());
-		verify(cSourceInfoDAO, times(1)).query(any(), any(), any(), any(), any(), any(), any(), any(), anyInt(),
+		verify(cSourceInfoDAO, times(1)).query(any(), any(),any(), any(), any(), any(), any(), any(), any(), anyInt(),
 				anyInt(), anyBoolean());
 
 	}
@@ -405,16 +405,16 @@ public class CSourceServiceTest {
 
 		Uni<RowSet<Row>> uniRowsetMock = Uni.createFrom().item(rowSetMock);
 
-		when(cSourceInfoDAO.query(any(), any(), any(), any(), any(), any(), any(), any(), anyInt(), anyInt(),
+		when(cSourceInfoDAO.query(any(), any(), any(), any(),any(), any(), any(), any(), any(), anyInt(), anyInt(),
 				anyBoolean())).thenReturn(uniRowsetMock);
 
 		Uni<QueryResult> resultUni = CSourceService.queryRegistrations(tenant, new HashSet<>(), null, "", null, null,
-				null, null, 1, 0, false);
+				null, null, null,1, 0, false);
 
 		QueryResult result = resultUni.await().indefinitely();
 
 		assertEquals(-1L, result.getCount());
-		verify(cSourceInfoDAO, times(1)).query(any(), any(), any(), any(), any(), any(), any(), any(), anyInt(),
+		verify(cSourceInfoDAO, times(1)).query(any(), any(),any(), any(), any(), any(), any(), any(), any(), anyInt(),
 				anyInt(), anyBoolean());
 
 	}
