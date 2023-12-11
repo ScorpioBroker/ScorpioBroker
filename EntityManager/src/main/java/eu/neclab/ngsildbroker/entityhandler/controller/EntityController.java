@@ -4,6 +4,8 @@ import static eu.neclab.ngsildbroker.commons.tools.EntityTools.noConcise;
 
 import java.util.Map;
 
+import io.vertx.core.json.DecodeException;
+import io.vertx.core.json.JsonObject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.slf4j.Logger;
@@ -56,7 +58,13 @@ public class EntityController {// implements EntityHandlerInterface {
 	 */
 	@Path("/entities")
 	@POST
-	public Uni<RestResponse<Object>> createEntity(HttpServerRequest req, Map<String, Object> body) {
+	public Uni<RestResponse<Object>> createEntity(HttpServerRequest req, String bodyStr) {
+		Map<String,Object> body;
+		try {
+			body = new JsonObject(bodyStr).getMap();
+		}catch (DecodeException e){
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+		}
 		noConcise(body);
 		return HttpUtils.expandBody(req, body, AppConstants.ENTITY_CREATE_PAYLOAD, ldService).onItem()
 				.transformToUni(tuple -> {
@@ -81,9 +89,11 @@ public class EntityController {// implements EntityHandlerInterface {
 	@PATCH
 	@Path("/entities/{entityId}/attrs")
 	public Uni<RestResponse<Object>> updateEntity(HttpServerRequest req, @PathParam("entityId") String entityId,
-			Map<String, Object> body) {
+			String bodyStr) {
+		Map<String,Object> body;
 		try {
 			HttpUtils.validateUri(entityId);
+			body = new JsonObject(bodyStr).getMap();
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 		}
@@ -108,9 +118,11 @@ public class EntityController {// implements EntityHandlerInterface {
 	@POST
 	@Path("/entities/{entityId}/attrs")
 	public Uni<RestResponse<Object>> appendEntity(HttpServerRequest req, @PathParam("entityId") String entityId,
-			Map<String, Object> body, @QueryParam("options") String options) {
+			String bodyStr, @QueryParam("options") String options) {
+		Map<String,Object> body;
 		try {
 			HttpUtils.validateUri(entityId);
+			body = new JsonObject(bodyStr).getMap();
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 		}
@@ -136,9 +148,11 @@ public class EntityController {// implements EntityHandlerInterface {
 	@PATCH
 	@Path("/entities/{entityId}/attrs/{attrId}")
 	public Uni<RestResponse<Object>> partialUpdateAttribute(HttpServerRequest req,
-			@PathParam("entityId") String entityId, @PathParam("attrId") String attrib, Map<String, Object> body) {
+			@PathParam("entityId") String entityId, @PathParam("attrId") String attrib, String bodyStr) {
+		Map<String,Object> body;
 		try {
 			HttpUtils.validateUri(entityId);
+			body = new JsonObject(bodyStr).getMap();
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 		}
@@ -221,8 +235,14 @@ public class EntityController {// implements EntityHandlerInterface {
 	@PATCH
 	@Path("/entities/{entityId}")
 	public Uni<RestResponse<Object>> mergePatch(HttpServerRequest request, @PathParam("entityId") String entityId,
-			Map<String, Object> body) {
-
+			String bodyStr) {
+		Map<String,Object> body;
+		try {
+			HttpUtils.validateUri(entityId);
+			body = new JsonObject(bodyStr).getMap();
+		} catch (Exception e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+		}
 		if (!entityId.equals(body.get(NGSIConstants.ID)) && body.get(NGSIConstants.ID) != null) {
 			return 	Uni.createFrom().item(HttpUtils.handleControllerExceptions(
 					new ResponseException(ErrorType.BadRequestData, "Id can not be updated")));
@@ -240,10 +260,12 @@ public class EntityController {// implements EntityHandlerInterface {
 	@Path("/entities/{entityId}")
 	@PUT
 	public Uni<RestResponse<Object>> replaceEntity(@PathParam("entityId") String entityId, HttpServerRequest request,
-			Map<String, Object> body) {
+			String bodyStr) {
 		logger.debug("replacing entity");
+		Map<String,Object> body;
 		try {
 			HttpUtils.validateUri(entityId);
+			body = new JsonObject(bodyStr).getMap();
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 		}
@@ -268,10 +290,12 @@ public class EntityController {// implements EntityHandlerInterface {
 	@Path("/entities/{entityId}/attrs/{attrId}")
 	@PUT
 	public Uni<RestResponse<Object>> replaceAttribute(@PathParam("attrId") String attrId,
-			@PathParam("entityId") String entityId, HttpServerRequest request, Map<String, Object> body) {
+			@PathParam("entityId") String entityId, HttpServerRequest request, String bodyStr) {
 		logger.debug("replacing Attrs");
+		Map<String,Object> body;
 		try {
 			HttpUtils.validateUri(entityId);
+			body = new JsonObject(bodyStr).getMap();
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 		}

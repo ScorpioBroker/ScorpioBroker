@@ -399,6 +399,12 @@ class NGSIObject {
 							"The key " + activeProperty + " is an invalid entry.");
 				}
 			}
+			case NGSIConstants.NGSI_LD_SYS_ATTRS -> {
+				if (!(this.element instanceof Map<?, ?> map && map.get(JsonLdConsts.VALUE) instanceof Boolean)) {
+					throw new ResponseException(ErrorType.BadRequestData,
+							"The key " + activeProperty + " is an invalid entry.");
+				}
+			}
 			case NGSIConstants.NGSI_LD_JSONLD_CONTEXT -> {
 				if (!(this.element instanceof Map<?, ?> map && map.get(JsonLdConsts.VALUE) instanceof String)) {
 					throw new ResponseException(ErrorType.BadRequestData,

@@ -65,6 +65,7 @@ public class Subscription implements Serializable {
 	private String csfQueryString;
 	private GeoQueryTerm ldGeoQuery;
 	private TemporalQueryTerm ldTempQuery;
+	private Set<String> notificationTrigger = Sets.newHashSet();
 
 	@JsonIgnore
 	private QQueryTerm ldQuery;
@@ -111,7 +112,7 @@ public class Subscription implements Serializable {
 			throws ResponseException {
 		return expandSubscription(body, null, context, update);
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	public static Subscription expandSubscription(Map<String, Object> body, String id, Context context, boolean update)
 			throws ResponseException {
@@ -130,6 +131,21 @@ public class Subscription implements Serializable {
 					subscription.setType((String) mapValue);
 				} else if (mapValue instanceof List) {
 					subscription.setType(((List<String>) mapValue).get(0));
+				}
+				break;
+			case NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER:
+				if (mapValue instanceof List) {
+					List<Map<String, String>> triggers = (List<Map<String, String>>) mapValue;
+					Set<String> notificationTriggers = subscription.getNotificationTrigger();
+					for (Map<String, String> trigger : triggers) {
+						String triggerValue = trigger.get(NGSIConstants.JSON_LD_VALUE);
+						if (!NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_VALID_VALUES.contains(triggerValue)) {
+							throw new ResponseException(ErrorType.BadRequestData,
+									"Invalid value for notificationTrigger. Valid values are " + String.join(",",
+											NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_VALID_VALUES));
+						}
+						notificationTriggers.add(triggerValue);
+					}
 				}
 				break;
 			case NGSIConstants.NGSI_LD_ENTITIES:
@@ -282,6 +298,13 @@ public class Subscription implements Serializable {
 				break;
 			}
 		}
+		if (subscription.getNotificationTrigger().isEmpty()) {
+			// adding default Triggers
+			Set<String> notificationTriggers = subscription.getNotificationTrigger();
+			notificationTriggers.add(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_CREATED);
+			notificationTriggers.add(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_UPDATED);
+
+		}
 		validateSub(subscription, update);
 		return subscription;
 	}
@@ -373,10 +396,17 @@ public class Subscription implements Serializable {
 						}
 
 						for (Map<String, Object> headerEntry : receiverInfos) {
-							headerEntry.forEach((t, u) -> {
-								receiverInfo.put(t, u.toString());
-							});
-
+							if(headerEntry.containsKey(NGSIConstants.KEY)){
+								receiverInfo.put(headerEntry.get(NGSIConstants.KEY).toString(), headerEntry.get(NGSIConstants.VALUE).toString());
+							}
+							else if(headerEntry.containsKey(NGSIConstants.NGSI_LD_HAS_KEY)){
+								receiverInfo.put(headerEntry.get(NGSIConstants.NGSI_LD_HAS_KEY).toString(), headerEntry.get(NGSIConstants.NGSI_LD_HAS_VALUE).toString());
+							}
+							else {
+								headerEntry.forEach((t, u) -> {
+									receiverInfo.put(t, u.toString());
+								});
+							}
 						}
 						endPoint.setReceiverInfo(receiverInfo);
 					}
@@ -397,6 +427,10 @@ public class Subscription implements Serializable {
 				if (formatString.equalsIgnoreCase("concise")) {
 					format = Format.concise;
 				}
+				break;
+			case NGSIConstants.NGSI_LD_SYS_ATTRS:
+				notifyParam.setSysAttrs(
+						((List<Map<String, Boolean>>) entry.getValue()).get(0).get(NGSIConstants.JSON_LD_VALUE));
 				break;
 			case NGSIConstants.NGSI_LD_SHOWCHANGES:
 				notifyParam.setShowChanges(
@@ -790,6 +824,14 @@ public class Subscription implements Serializable {
 
 	public ScopeQueryTerm getScopeQuery() {
 		return scopeQuery;
+	}
+
+	public Set<String> getNotificationTrigger() {
+		return notificationTrigger;
+	}
+
+	public void setNotificationTrigger(Set<String> notificationTrigger) {
+		this.notificationTrigger = notificationTrigger;
 	}
 
 	@Override

@@ -139,6 +139,13 @@ public class QueryController {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		String q;
 		String georel;
+		if(id!=null) {
+			try {
+				HttpUtils.validateUri(id);
+			} catch (Exception e) {
+				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+			}
+		}
 		if (qInput != null) {
             String uri = URLDecoder.decode(request.absoluteURI(), StandardCharsets.UTF_8);
             uri = uri.substring(uri.indexOf("q=") + 2);
@@ -172,7 +179,7 @@ public class QueryController {
 		}
 		if (id == null && typeQuery == null && attrs == null && geometry == null && q == null) {
 			return Uni.createFrom()
-					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.InvalidRequest)));
+					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData)));
 		}
 		if (actualLimit == 0 && !count) {
 			return Uni.createFrom()
@@ -317,7 +324,7 @@ public class QueryController {
 					.getType(HttpUtils.getTenant(request), context.expandIri(type, false, true, null, null), localOnly)
 					.onItem().transformToUni(map -> {
 						if (map.isEmpty()) {
-							return Uni.createFrom().item(RestResponse.notFound());
+							return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
 						} else {
 							return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, map, null, null,
 									null, ldService);
@@ -368,7 +375,8 @@ public class QueryController {
 			return queryService.getAttrib(HttpUtils.getTenant(request),
 					context.expandIri(attribute, false, true, null, null), localOnly).onItem().transformToUni(map -> {
 						if (map.isEmpty()) {
-							return Uni.createFrom().item(RestResponse.notFound());
+							return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound) {
+							});
 						} else {
 							return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, map, null, null,
 									null, ldService);

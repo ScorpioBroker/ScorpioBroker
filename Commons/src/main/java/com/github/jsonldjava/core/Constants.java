@@ -58,6 +58,7 @@ public class Constants {
 		allowedScalars.put(AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_IS_ACTIVE);
 		allowedScalars.put(AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_EXPIRES);
 		allowedScalars.put(AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_SCOPE_Q);
+		allowedScalars.put(AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER);
 
 		allowedScalars.put(AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_SUBSCRIPTION_NAME);
 		allowedScalars.put(AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_DESCRIPTION);
@@ -72,6 +73,7 @@ public class Constants {
 		allowedScalars.put(AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_IS_ACTIVE);
 		allowedScalars.put(AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_EXPIRES);
 		allowedScalars.put(AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_SCOPE_Q);
+		allowedScalars.put(AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD, NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER);
 
 		allowedScalars.put(AppConstants.ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_OBJECT);
 		allowedScalars.put(AppConstants.ENTITY_CREATE_PAYLOAD, NGSIConstants.NGSI_LD_HAS_OBJECT_LIST);

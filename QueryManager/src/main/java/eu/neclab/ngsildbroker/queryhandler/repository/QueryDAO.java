@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import jakarta.inject.Inject;
@@ -296,9 +297,7 @@ public class QueryDAO {
 						result.put(NGSIConstants.NGSI_LD_ATTRIBUTE_NAME, Lists.newArrayList(tmp));
 						result.put(NGSIConstants.NGSI_LD_TYPE_NAMES, types);
 						result.put(NGSIConstants.NGSI_LD_ATTRIBUTE_TYPES, attribTypes);
-						tmp = Maps.newHashMap();
-						tmp.put(NGSIConstants.JSON_LD_VALUE, count);
-						result.put(NGSIConstants.NGSI_LD_ATTRIBUTE_COUNT, Lists.newArrayList(tmp));
+						result.put(NGSIConstants.NGSI_LD_ATTRIBUTE_COUNT_SHORT, Lists.newArrayList(count));
 						return Uni.createFrom().item(result);
 					});
 		});
@@ -356,11 +355,13 @@ public class QueryDAO {
 					Map<String, Object> attribDetail = Maps.newHashMap();
 					Map<String, String> tmp = Maps.newHashMap();
 					tmp.put(NGSIConstants.JSON_LD_ID, row.getString(1));
+					attribDetail.put(NGSIConstants.JSON_LD_ID,row.getString(1));
+					attribDetail.put(NGSIConstants.TYPE,NGSIConstants.ATTRIBUTE);
 					attribDetail.put(NGSIConstants.NGSI_LD_ATTRIBUTE_NAME, Lists.newArrayList(tmp));
 					attribDetail.put(NGSIConstants.NGSI_LD_ATTRIBUTE_TYPES, row.getJsonArray(2).getList());
 					attrDetails.add(attribDetail);
 				}
-				result.put(NGSIConstants.NGSI_LD_ATTRIBUTE_DETAILS, attrDetails);
+				result.put(NGSIConstants.ATTRIBUTE_DETAILS, attrDetails);
 				Map<String, Long> countMap = Maps.newHashMap();
 				countMap.put(NGSIConstants.JSON_LD_VALUE, count);
 				result.put(NGSIConstants.NGSI_LD_ENTITY_COUNT, countMap);
@@ -823,6 +824,9 @@ public class QueryDAO {
 		}).onFailure().recoverWithUni(e -> {
 			if (e instanceof PgException pge) {
 				logger.debug(pge.getPosition());
+				if (pge.getSqlState().equals(AppConstants.INVALID_REGULAR_EXPRESSION)) {
+					return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData));
+				}
 			}
 			return Uni.createFrom().failure(e);
 		});

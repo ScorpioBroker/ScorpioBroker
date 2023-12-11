@@ -4,9 +4,9 @@ Introduction
 
 This walkthrough adopts a practical approach that we hope will help our readers to get familiar with NGSI-LD in general and the Scorpio Broker in particular - and have some fun in the process :).
 
-The walkthrough is based on the NGSI-LD Specification, that can be found in here [https://www.etsi.org/deliver/etsi_gs/CIM/001_099/009/01.02.02_60/gs_CIM009v010202p.pdf]. --> will become gs_CIM009v010301p.pdf soon ...
+The walkthrough is based on the NGSI-LD Specification, that can be found in here [https://www.etsi.org/deliver/etsi_gs/CIM/001_099/009/01.07.01_60/gs_cim009v010701p.pdf]. --> will become gs_CIM009v010801p.pdf soon ...
 You should also have a look at the NGSI-LD implementation notes. --> once they are available
-To get familiar with NGSI-LD, you may also have a look at the NGSI-LD Primer [https://www.etsi.org/deliver/etsi_gr/CIM/001_099/008/01.01.01_60/gr_CIM008v010101p.pdf] that is targeted at developers.
+To get familiar with NGSI-LD, you may also have a look at the NGSI-LD Primer [https://www.etsi.org/deliver/etsi_gs/CIM/001_099/009/01.06.01_60/gs_cim009v010601p.pdf] that is targeted at developers.
 
 The main section is about context management. It describes the basic context broker functionality for context management (information about entities, such as the temperature of a car). Context source management (information not about the entities themselves, but about the sources  that can provide the information in a distributed system setup) is also described as part of this document.
 
@@ -19,14 +19,14 @@ Starting the Scorpio Broker for the tutorials
 In order to start the broker we recommend to use docker-compose. Get the docker-compose file from the github repo of Scorpio.
 ::
 
-	curl https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/development/docker-compose-aaio.yml 
+	curl https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/development-quarkus/compose-files/docker-compose-java-aaio.yml
 
 and start the container with 
 ::
 
-	sudo docker-compose -f docker-compose-aaio.yml up
+	sudo docker-compose -f docker-compose-java-aaio.yml up
 
-You can also start the broker without docker. For further instructions please refer to the readme https://github.com/ScorpioBroker/ScorpioBroker/blob/development/README.md 
+You can also start the broker without docker. For further instructions please refer to the readme https://github.com/ScorpioBroker/ScorpioBroker/blob/development-quarkus/README.md
 
 
 Issuing commands to the broker
@@ -37,21 +37,27 @@ To issue requests to the broker, you can use the curl command line tool. curl is
 The basic patterns for all the curl examples in this document are the following:
 
 For POST:
-curl localhost:9090/ngsi-ld/v1/<ngsi-ld-resource-path> -s -S [headers]' -d @- <<EOF
+curl localhost:9090/ngsi-ld/v1/<ngsi-ld-resource-path> -s -S [headers]' -X POST -d @- <<EOF
 [payload]
 EOF
+
 For PUT:
 curl localhost:9090/ngsi-ld/v1/<ngsi-ld-resource-path> -s -S [headers] -X PUT -d @- <<EOF
 [payload]
 EOF
+
 For PATCH:
 curl localhost:9090/ngsi-ld/v1/<ngsi-ld-resource-path> -s -S [headers] -X PATCH -d @- <<EOF
 [payload]
 EOF
+
 For GET:
 curl localhost:9090/ngsi-ld/v1/<ngsi-ld-resource-path> -s -S [headers]
+
 For DELETE:
 curl localhost:9090/ngsi-ld/v1/<ngsi-ld-resource-path> -s -S [headers] -X DELETE
+
+
 Regarding [headers] you have to include the following ones:
 
 Accept header to specify the payload format in which you want to receive the response. You should explicitly specify JSON or JSON-LD.
@@ -103,17 +109,17 @@ NGSI-LD builds upon JSON-LD. Coming from JSON-LD there is the concecpt of a mand
 		"@context": [{
 			"myshortname": "urn:mylongname"
 		},
-		"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld"
+		"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld"
 		]
 	}
 
-NGSI-LD has a core context made available at https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld. Even though it is highly recommended to always provide a full entry of all used @context entries, Scorpio and other NGSI-LD brokers will inject the core context on any entry where it is missing.
+NGSI-LD has latest core context made available at https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld. Even though it is highly recommended to always provide a full entry of all used @context entries, Scorpio and other NGSI-LD brokers will inject the core context on any entry where it is missing.
 
 application/json and application/ld+json
 ########################################
 
 You can provide and receive data in two different ways. The main difference between application/json and application/ld+json is where you provide or receive the mandatory @context entry. If you set the accept header or the content-type header to application/ld+json the @context entry is embedded in the JSON document as a root level entry. If it is set to application/json the @context has to be provided in a link in the header entry Link like this.
-<https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"
+<https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"
 
 Context Management
 ##################
@@ -146,7 +152,7 @@ First, we are going to create house2:smartrooms:room1. Let's assume that at enti
 		"type": "Relationship",
 		"object": "smartcity:houses:house2"
 	  },
-	  "@context": [{"Room": "urn:mytypes:room", "temperature": "myuniqueuri:temperature", "isPartOf": "myuniqueuri:isPartOf"},"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld"]
+	  "@context": [{"Room": "urn:mytypes:room", "temperature": "myuniqueuri:temperature", "isPartOf": "myuniqueuri:isPartOf"},"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld"]
 	}
 	EOF
 
@@ -177,7 +183,7 @@ Next, let's create house2:smartrooms:room2 in a similar way.
 		"type": "Relationship",
 		"object": "smartcity:houses:house2"
 	  },
-	  "@context": [{"Room": "urn:mytypes:room", "temperature": "myuniqueuri:temperature", "isPartOf": "myuniqueuri:isPartOf"},"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld"]
+	  "@context": [{"Room": "urn:mytypes:room", "temperature": "myuniqueuri:temperature", "isPartOf": "myuniqueuri:isPartOf"},"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld"]
 	}
 	EOF
 
@@ -212,7 +218,7 @@ Now to complete this setup we are creating an Entity describing our house with t
 				"coordinates": [-8.50000005, 41.2]
 			}
 		},
-		"@context": [{"House": "urn:mytypes:house", "hasRoom": "myuniqueuri:hasRoom"},"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld"]
+		"@context": [{"House": "urn:mytypes:house", "hasRoom": "myuniqueuri:hasRoom"},"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld"]
 	}
 	EOF
 
@@ -267,7 +273,7 @@ Since we didn't provide our own @context in this request, only the parts of the 
 				"coordinates": [-8.50000005, 41.2]
 			}
 		}
-		"@context": ["https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld"]
+		"@context": ["https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld"]
 	}
 
 As you can see entrance was compacted properly since it is was prefixed from the default context specified in the core context.
@@ -284,7 +290,7 @@ Our context looks like this.
 			"Room": "urn:mytypes:room",
 			"temperature": "myuniqueuri:temperature",
 			"isPartOf": "myuniqueuri:isPartOf"
-		}, "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld"]
+		}, "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld"]
 	}
 
 We repeat this call providing our @context via the 'Link' like this 
@@ -373,7 +379,7 @@ For this example we first add a new Room which belongs to another house.
 		"type": "Relationship",
 		"object": "smartcity:houses:house99"
 	  },
-	  "@context": [{"Room": "urn:mytypes:room", "temperature": "myuniqueuri:temperature", "isPartOf": "myuniqueuri:isPartOf"},"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld"]
+	  "@context": [{"Room": "urn:mytypes:room", "temperature": "myuniqueuri:temperature", "isPartOf": "myuniqueuri:isPartOf"},"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld"]
 	}
 	EOF
 
@@ -449,7 +455,7 @@ Since we are only interested in our smartcity:houses:house2, we are using the 'q
 (URL encoding "smartcity:houses:house2" becomes %22smartcity%3Ahouses%3Ahouse2%22)
 ::
 
-	curl localhost:9090/ngsi-ld/v1/entities/?type=Room\&q=isPartOf==%22smartcity%3Ahouses%3Ahouse2%22 -s -S -H 'Accept: application/json' -H 'Link: <https://pastebin.com/raw/Mgxv2ykn>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"'
+	curl localhost:9090/ngsi-ld/v1/entities/?type=Room&q=isPartOf==%22smartcity%3Ahouses%3Ahouse2%22 -s -S -H 'Accept: application/json' -H 'Link: <https://pastebin.com/raw/Mgxv2ykn>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"'
 
 The results now looks like this.
 ::
@@ -495,7 +501,7 @@ The results now looks like this.
 Now an alternative way to get the same result would be using the idPattern parameter, which allows you to use regular expressions. This is possible in this case since we structured our IDs for the rooms.
 ::
 
-	curl localhost:9090/ngsi-ld/v1/entities/?type=Room\&idPattern=house2%3Asmartrooms%3Aroom.%2A -s -S -H 'Accept: application/json' -H 'Link: <https://pastebin.com/raw/Mgxv2ykn>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"'
+	curl localhost:9090/ngsi-ld/v1/entities/?type=Room&idPattern=house2%3Asmartrooms%3Aroom.%2A -s -S -H 'Accept: application/json' -H 'Link: <https://pastebin.com/raw/Mgxv2ykn>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"'
 	(house2%3Asmartrooms%3Aroom.%2A == house2:smartrooms:room.*)
 
 Limit the attributes
@@ -504,7 +510,7 @@ Limit the attributes
 Additionally we now want to limit the result to only give us the temperature. This is done by using the attrs parameter. Attrs takes a comma seperated list. In our case since it's only one entry it looks like this.
 ::
 
-	curl localhost:9090/ngsi-ld/v1/entities/?type=Room&q=isPartOf==%22smartcity%3Ahouses%3Ahouse2%22\&attrs=temperature -s -S -H 'Accept: application/json' -H 'Link: <https://pastebin.com/raw/Mgxv2ykn>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"'
+	curl localhost:9090/ngsi-ld/v1/entities/?type=Room&q=isPartOf==%22smartcity%3Ahouses%3Ahouse2%22&attrs=temperature -s -S -H 'Accept: application/json' -H 'Link: <https://pastebin.com/raw/Mgxv2ykn>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"'
 
 ::
 
@@ -544,7 +550,7 @@ KeyValues results
 Now assuming we want to limit the payload of the request even more since we are really only interested in the value of temperature and don't care about any meta information. This can be done using the keyValues option. KeyValues will return a condenced version of the Entity providing only top level attribute and their respective value or object.
 ::
 
-	curl localhost:9090/ngsi-ld/v1/entities/?type=Room\&q=isPartOf==%22smartcity%3Ahouses%3Ahouse2%22\&attrs=temperature\&options=keyValues -s -S -H 'Accept: application/json' -H 'Link: <https://pastebin.com/raw/Mgxv2ykn>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"'
+	curl localhost:9090/ngsi-ld/v1/entities/?type=Room&q=isPartOf==%22smartcity%3Ahouses%3Ahouse2%22&attrs=temperature&options=keyValues -s -S -H 'Accept: application/json' -H 'Link: <https://pastebin.com/raw/Mgxv2ykn>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"'
 
 Response:
 ::
@@ -605,7 +611,7 @@ Now this is a bit much payload to update one value and there is a risk that you 
 Partial update attribute
 ########################
 
-To take care of a single attribute update NGSI-LD provides a partial update. This is done by a POST on /entities/<entityId>/attrs/<attributeName>
+To take care of a single attribute update NGSI-LD provides a partial update. This is done by a PATCH on /entities/<entityId>/attrs/<attributeName>
 In order to update the temperature we do a POST like this 
 ::
 
@@ -624,7 +630,7 @@ In order to update the temperature we do a POST like this
 Append attribute
 ################
 
-In order to append a new attribute to an entity you execute an HTTP PATCH command on /entities/<entityId>/attrs/ with the new attribute as payload.
+In order to append a new attribute to an entity you execute an HTTP POST command on /entities/<entityId>/attrs/ with the new attribute as payload.
 Append in NGSI-LD by default will overwrite an existing entry. If this is not desired you can add the option parameter with noOverwrite to the URL like this /entities/<entityId>/attrs?options=noOverwrite. Now if we want to add an additional entry for the humidity in room1 we do an HTTP PATCH like this. 
 ::
 
@@ -777,6 +783,7 @@ Assuming that there is a temperature change in all of our rooms we will get 3 in
 	}
 	
 ::
+
 	{
 		"id": "ngsildbroker:notification:-7761059438747425848",
 		"type": "Notification",

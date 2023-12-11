@@ -160,7 +160,7 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_ListProperty = "https://uri.etsi.org/ngsi-ld/ListProperty";
 	public final static String LISTPROPERTY = "ListProperty";
 	public final static String VOCABPROPERTY = "VocabProperty";
-
+	public final static String NGSI_LD_SYS_ATTRS = "https://uri.etsi.org/ngsi-ld/sysAttrs";
 	// IMPORTANT! DO NOT MESS UP THIS ORDER!!! ONLY APPEND ON THE END NEW STUFF
 	public final static String[] NGSI_LD_PAYLOAD_KEYS = { JSON_LD_ID, JSON_LD_TYPE, JSON_LD_CONTEXT,
 			NGSI_LD_DEFAULT_PREFIX, NGSI_LD_HAS_VALUE, NGSI_LD_HAS_OBJECT, JSON_LD_VALUE, NGSI_LD_LOCATION,
@@ -345,6 +345,7 @@ public interface NGSIConstants {
 	public static final String ERROR_UNEXPECTED_RESULT_NULL_TITLE = "The resource returned no body check detail for the resources return code";
 	public static final String ERROR_UNEXPECTED_RESULT_NOT_EXPECTED_BODY_TITLE = "The resource gave an unexpected result body";
 	public static final String NGSI_LD_ATTRIBUTE_NAME_SHORT = "attributeName";
+	public static final String NGSI_LD_ATTRIBUTE_COUNT_SHORT = "attributeCount";
 	public static final String NGSI_LD_REASON_SHORT = "reason";
 	public static final String NGSI_LD_NOT_UPDATED_SHORT = "notUpdated";
 	public static final String ERROR_CODE = "errorCode";
@@ -460,6 +461,23 @@ public interface NGSIConstants {
 	public static final Set<String> ENTITY_BASE_PROPS = Sets.newHashSet(JSON_LD_ID, JSON_LD_TYPE, NGSI_LD_CREATED_AT,
 			NGSI_LD_MODIFIED_AT, NGSI_LD_SCOPE);
 	public final static String NGSI_LD_HAS_KEY = "https://uri.etsi.org/ngsi-ld/hasKey";
+	public final static String KEY = "key";
 	public static final String OBJECT_TYPE = "objectType";
+	public final static String STATUS = "status";
+
+	public final static String ATTRIBUTE = "Attribute";
+	public final static String ATTRIBUTE_DETAILS = "attributeDetails";
 	public static final String NGSI_LD_JSONLD_CONTEXT = "https://uri.etsi.org/ngsi-ld/default-context/jsonldContext";
+	public static final String NGSI_LD_NOTIFICATION_TRIGGER = "https://uri.etsi.org/ngsi-ld/notificationTrigger";
+
+	public static final String NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_CREATED = "entityCreated";
+	public static final String NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_UPDATED = "entityUpdated";
+	public static final String NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_DELETED = "entityDeleted";
+	public static final String NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_CREATED = "attributeCreated";
+	public static final String NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_UPDATED = "attributeUpdated";
+	public static final String NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_DELETED = "attributeDeleted";
+	public static final Set<String> NGSI_LD_NOTIFICATION_TRIGGER_VALID_VALUES = Sets.newHashSet(
+			NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_CREATED, NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_UPDATED,
+			NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_DELETED, NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_CREATED,
+			NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_UPDATED, NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_DELETED);
 }

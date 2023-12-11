@@ -6,22 +6,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import io.vertx.core.json.DecodeException;
+import io.vertx.core.json.JsonArray;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
-
 import static eu.neclab.ngsildbroker.commons.tools.EntityTools.noConcise;
-
 import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.RestResponse;
-
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLDService;
 import com.google.common.collect.Lists;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -64,6 +63,9 @@ public class EntityBatchController {
 	public Uni<RestResponse<Object>> createMultiple(HttpServerRequest request,
 			List<Map<String, Object>> compactedEntities, @QueryParam("localOnly") boolean localOnly) {
 		List<Uni<Tuple2<String, Object>>> unis = Lists.newArrayList();
+		if(compactedEntities==null || compactedEntities.isEmpty()){
+			return  Uni.createFrom().item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData)));
+		}
 		for (Map<String, Object> compactedEntity : compactedEntities) {
 			noConcise(compactedEntity);
 			unis.add(HttpUtils.expandBody(request, compactedEntity, AppConstants.CREATE_REQUEST, ldService).onItem()
@@ -103,6 +105,9 @@ public class EntityBatchController {
 			List<NGSILDOperationResult> fails = tuple.getItem1();
 			List<Map<String, Object>> expandedEntities = tuple.getItem2();
 			List<Context> contexts = tuple.getItem3();
+			if(expandedEntities.isEmpty()){
+				return Uni.createFrom().item(fails).onItem().transform(HttpUtils::generateBatchResult);
+			}
 			return entityService.createBatch(HttpUtils.getTenant(request), expandedEntities, contexts, localOnly)
 					.onItem().transform(opResults -> {
 						opResults.addAll(fails);
@@ -184,6 +189,7 @@ public class EntityBatchController {
 	public Uni<RestResponse<Object>> appendMultiple(HttpServerRequest request,
 			List<Map<String, Object>> compactedEntities, @QueryParam(value = "options") String options,
 			@QueryParam("localOnly") boolean localOnly) {
+		boolean isNoOverwrite = options != null && options.contains(NGSIConstants.NO_OVERWRITE_OPTION);
 		List<Uni<Tuple2<String, Object>>> unis = Lists.newArrayList();
 		for (Map<String, Object> compactedEntity : compactedEntities) {
 			noConcise(compactedEntity);
@@ -221,7 +227,7 @@ public class EntityBatchController {
 			List<NGSILDOperationResult> fails = tuple.getItem1();
 			List<Map<String, Object>> expandedEntities = tuple.getItem2();
 			List<Context> contexts = tuple.getItem3();
-			return entityService.appendBatch(HttpUtils.getTenant(request), expandedEntities, contexts, localOnly)
+			return entityService.appendBatch(HttpUtils.getTenant(request), expandedEntities, contexts, localOnly,isNoOverwrite)
 					.onItem().transform(opResults -> {
 						opResults.addAll(fails);
 						return HttpUtils.generateBatchResult(opResults);
@@ -231,8 +237,14 @@ public class EntityBatchController {
 
 	@POST
 	@Path("/delete")
-	public Uni<RestResponse<Object>> deleteMultiple(HttpServerRequest request, List<String> entityIds,
+	public Uni<RestResponse<Object>> deleteMultiple(HttpServerRequest request, String entityIdsStr,
 			@QueryParam("localOnly") boolean localOnly) {
+		List<String> entityIds;
+		try {
+		  	entityIds = new JsonArray(entityIdsStr).getList();
+		}catch (DecodeException e){
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+		}
 		return entityService.deleteBatch(HttpUtils.getTenant(request), entityIds, localOnly).onItem()
 				.transform(opResults -> {
 					return HttpUtils.generateBatchResult(opResults);

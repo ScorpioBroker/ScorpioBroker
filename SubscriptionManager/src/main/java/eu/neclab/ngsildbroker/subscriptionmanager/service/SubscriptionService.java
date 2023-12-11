@@ -351,10 +351,12 @@ public class SubscriptionService {
 								if (isIntervalSub(updatedRequest)) {
 									tenant2subscriptionId2IntervalSubscription.put(tenant, updatedRequest.getId(),
 											updatedRequest);
+									subscriptionId2RequestGlobal.put(updatedRequest.getId(),updatedRequest);
 									tenant2subscriptionId2Subscription.remove(tenant, updatedRequest.getId());
 								} else {
 									tenant2subscriptionId2Subscription.put(tenant, updatedRequest.getId(),
 											updatedRequest);
+ 									subscriptionId2RequestGlobal.put(updatedRequest.getId(),updatedRequest);
 									tenant2subscriptionId2IntervalSubscription.remove(tenant, updatedRequest.getId());
 								}
 								MicroServiceUtils.serializeAndSplitObjectAndEmit(updatedRequest, messageSize,
@@ -395,7 +397,14 @@ public class SubscriptionService {
 			List<Map<String, Object>> resultData = new ArrayList<>(rows.size());
 			while (it.hasNext()) {
 				next = it.next();
-				resultData.add(next.getJsonObject(0).getMap());
+				Map<String, Object> subscriptionData = next.getJsonObject(0).getMap();
+				String subscriptionId = (String) subscriptionData.get(NGSIConstants.JSON_LD_ID);
+				SubscriptionRequest subscriptionRequest = subscriptionId2RequestGlobal.get(subscriptionId);
+				if (subscriptionRequest != null) {
+				subscriptionData.put(NGSIConstants.STATUS, subscriptionRequest.getSubscription().getStatus());
+				}
+				resultData.add(subscriptionData);
+				//resultData.add(next.getJsonObject(0).getMap());
 			}
 			result.setData(resultData);
 			if (next == null) {
@@ -421,7 +430,9 @@ public class SubscriptionService {
 			if (rows.size() == 0) {
 				return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound, "subscription not found"));
 			}
-			return Uni.createFrom().item(rows.iterator().next().getJsonObject(0).getMap());
+		  	Map<String,Object> rowData = rows.iterator().next().getJsonObject(0).getMap();
+			rowData.put(NGSIConstants.STATUS,subscriptionId2RequestGlobal.get(subscriptionId).getSubscription().getStatus());
+			return Uni.createFrom().item(rowData);
 		});
 	}
 
@@ -599,6 +610,9 @@ public class SubscriptionService {
 	}
 
 	private Uni<Void> sendNotification(SubscriptionRequest potentialSub, Map<String, Object> reg, int triggerReason) {
+		if (!notificationTriggerCheck(potentialSub.getSubscription(), triggerReason)) {
+			return Uni.createFrom().voidItem();
+		}
 		List<Map<String, Object>> entityToBeSent = new ArrayList<>();
 		if (triggerReason == AppConstants.DELETE_REQUEST) {
 			entityToBeSent.add(reg);
@@ -738,6 +752,40 @@ public class SubscriptionService {
 					});
 		}
 		return Uni.createFrom().voidItem();
+	}
+
+	private boolean notificationTriggerCheck(Subscription subscription, int triggerReason) {
+		if(subscription.getTimeInterval() > 0) {
+			return true;
+		}
+		Set<String> notificationTriggers = subscription.getNotificationTrigger();
+		switch (triggerReason) {
+		case AppConstants.CREATE_REQUEST:
+			return notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_CREATED)
+					|| notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_CREATED);
+		case AppConstants.APPEND_REQUEST:
+		case AppConstants.UPDATE_REQUEST:
+		case AppConstants.MERGE_PATCH_REQUEST:
+		case AppConstants.REPLACE_ENTITY_REQUEST:
+		case AppConstants.REPLACE_ATTRIBUTE_REQUEST:
+		case AppConstants.PARTIAL_UPDATE_REQUEST:
+			return notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_UPDATED)
+					|| notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_UPDATED)
+					|| notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_CREATED);
+		case AppConstants.DELETE_REQUEST:
+			return notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_DELETED);
+		case AppConstants.DELETE_ATTRIBUTE_REQUEST:
+			return notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_UPDATED)
+					|| notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_DELETED);
+		case AppConstants.UPSERT_REQUEST:
+			return notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_CREATED)
+					|| notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_UPDATED)
+					|| notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_UPDATED)
+					|| notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_CREATED);
+		default:
+			return false;
+		}
+
 	}
 
 	private Uni<MqttClient> getMqttClient(NotificationParam notificationParam) {

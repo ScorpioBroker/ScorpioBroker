@@ -294,7 +294,9 @@ public class RegistrySubscriptionService {
 			if (rows.size() == 0) {
 				return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound, "subscription not found"));
 			}
-			return Uni.createFrom().item(rows.iterator().next().getJsonObject(0).getMap());
+			Map<String,Object> result = rows.iterator().next().getJsonObject(0).getMap();
+			result.put("status",tenant2subscriptionId2Subscription.get(tenant,subscriptionId).getSubscription().getStatus());
+			return Uni.createFrom().item(result);
 		});
 	}
 

@@ -211,11 +211,24 @@ public class HistoryQueryService {
 		Uni<Map<String, Object>> local = historyDAO.retrieveEntity(tenant, entityId, attrsQuery, aggrQuery, tempQuery,
 				lang, lastN);
 		if (localOnly) {
-			return local;
+			return local.onItem().transformToUni(localItem -> {
+					if (localItem.isEmpty()) {
+						return Uni.createFrom()
+								.failure(new ResponseException(ErrorType.NotFound, entityId + " was not found"));
+					}
+					return Uni.createFrom().item(localItem);
+				});
+
 		} else {
 			Map<RemoteHost, Set<String>> remoteHosts = getRemoteHostsForRetrieve(tenant, entityId, attrsQuery);
 			if (remoteHosts.isEmpty()) {
-				return local;
+				return local.onItem().transformToUni(item -> {
+					if (item.isEmpty()) {
+						return Uni.createFrom()
+								.failure(new ResponseException(ErrorType.NotFound, entityId + " was not found"));
+					}
+					return Uni.createFrom().item(item);
+				});
 			}
 			List<Uni<Map<String, Object>>> remoteCalls = new ArrayList<>(remoteHosts.size());
 			for (Entry<RemoteHost, Set<String>> entry : remoteHosts.entrySet()) {

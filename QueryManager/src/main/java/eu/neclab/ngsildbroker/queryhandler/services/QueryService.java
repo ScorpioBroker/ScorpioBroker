@@ -1,5 +1,7 @@
 package eu.neclab.ngsildbroker.queryhandler.services;
 
+import java.net.URLEncoder;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -151,7 +153,7 @@ public class QueryService {
 					remoteHost2EntityIds.put(remoteHost, tmp);
 				}
 				logger.debug("adding entityid: " + entry.getEntityId() + " for remote host " + remoteHost.host());
-				tmp.add(entry.getEntityId());
+				tmp.add(URLEncoder.encode(entry.getEntityId(), Charset.forName("utf-8")));
 			}
 
 			entityId2AttrName2DatasetId2AttrValue.put(entry.getEntityId(), new HashMap<>(0));
@@ -174,6 +176,7 @@ public class QueryService {
 					contextLinks = parseLinkHeaderNoUni(remoteHost.headers().getAll("Link"),
 							NGSIConstants.HEADER_REL_LDCONTEXT);
 				}
+
 				String idList = String.join(",", entry.getValue());
 				logger.debug("calling: " + remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "?id=" + idList
 						+ "&options=sysAttrs&limit=1000");
@@ -251,17 +254,6 @@ public class QueryService {
 					.entrySet()) {
 				String entityId = entry.getKey();
 				Map<String, Map<String, Map<String, Object>>> attribMap = entry.getValue();
-				if (attribMap.isEmpty()) {
-					logger.warn("failed to merge entity id: " + entityId);
-					logger.warn("" + entityId2Types.containsKey(entityId));
-					if (attribMap != null) {
-						logger.warn(attribMap.toString());
-					} else {
-						logger.warn("null attribmap");
-					}
-					continue;
-				}
-
 				Map<String, Object> entity = new HashMap<>(attribMap.size() + 5);
 				entity.put(NGSIConstants.JSON_LD_ID, entityId);
 				entity.put(NGSIConstants.JSON_LD_TYPE, Lists.newArrayList(entityId2Types.get(entityId)));
@@ -1624,6 +1616,10 @@ public class QueryService {
 		AtomicInteger joinLvl = new AtomicInteger(joinLevel);
 		return retrieveEntity(context, tenant, entityId, attrsQuery, lang, localOnly)
 				.onItem().transformToUni(ent -> {
+                    if (ent.isEmpty()) {
+                        return Uni.createFrom().failure(
+                                new ResponseException(ErrorType.NotFound, "Entity with ID " + entityId + " was not found"));
+                    }
 			if (containedBy.contains((String) ent.get(JsonLdConsts.ID)) || joinLvl.get() == 0) {
 				return Uni.createFrom().item(Map.of(JsonLdConsts.GRAPH, finalRelResult));
 			}
@@ -1676,7 +1672,11 @@ public Uni<Map<String, Object>> getEntityInline(Context context, String tenant, 
 		}
 		AtomicInteger joinLvl = new AtomicInteger(joinLevel);
 		return retrieveEntity(context,tenant,entityId,attrsQuery,lang,localOnly).onItem().transformToUni(ent -> {
-			if (containedBy.contains((String) ent.get(JsonLdConsts.ID)) || joinLvl.get() == 0) {
+            if (ent.isEmpty()) {
+                return Uni.createFrom().failure(
+                        new ResponseException(ErrorType.NotFound, "Entity with ID " + entityId + " was not found"));
+            }
+            if (containedBy.contains((String) ent.get(JsonLdConsts.ID)) || joinLvl.get() == 0) {
 				return Uni.createFrom().failure(new Throwable());
 			}
 			joinLvl.set(joinLvl.decrementAndGet());
