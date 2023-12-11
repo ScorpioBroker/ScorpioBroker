@@ -1636,15 +1636,17 @@ public class QueryService {
 						finalAttrs = (Map<String, Object>) attrsMap.getOrDefault(toRemove, new HashMap<>());
 						attrsMap.remove(toRemove);
 					}
-//					unisOfMaps.add(getEntityFlat(tenant,
-//							(String) ((Map<String, List<Map<String, Object>>>) attrib.get(0))
-//									.get(NGSIConstants.NGSI_LD_HAS_OBJECT).get(0).get(JsonLdConsts.ID),
-//							finalAttrs, containedBy + ent.get(JsonLdConsts.ID), joinLvl.get(), finalRelResult,
-//							context));
-					unisOfMaps.add(getEntityFlat(context,tenant,(String) ((Map<String, List<Map<String, Object>>>) attrib.get(0))
-							.get(NGSIConstants.NGSI_LD_HAS_OBJECT).get(0).get(JsonLdConsts.ID),finalAttrs,lang,localOnly,
-							containedBy + ent.get(JsonLdConsts.ID),joinLvl.get(),finalRelResult));
-
+					if(((Map<String, Object>)attrib.get(0)).containsKey(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST)){
+						for(Map<String,Object> idsMap: ((Map<String, List<Map<String, List<Map<String,Object>>>>>)attrib.get(0)).get(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST).get(0).get(JsonLdConsts.LIST)){
+							unisOfMaps.add(getEntityFlat(context,tenant, (String) idsMap.get(JsonLdConsts.VALUE),finalAttrs,lang,localOnly,
+									containedBy + ent.get(JsonLdConsts.ID),joinLvl.get(),finalRelResult));
+						}
+					}
+					else {
+						unisOfMaps.add(getEntityFlat(context, tenant, (String) ((Map<String, List<Map<String, Object>>>) attrib.get(0))
+										.get(NGSIConstants.NGSI_LD_HAS_OBJECT).get(0).get(JsonLdConsts.ID), finalAttrs, lang, localOnly,
+								containedBy + ent.get(JsonLdConsts.ID), joinLvl.get(), finalRelResult));
+					}
 				}
 			}
 			if (!unisOfMaps.isEmpty()) {
@@ -1657,8 +1659,6 @@ public class QueryService {
 		});
 	}
 
-//	public Uni<Map<String, Object>> getEntityInline(String tenant, String entityId, Map<String, Object> attrsMap,
-//			String containedBy, int joinLevel, Context context) {
 public Uni<Map<String, Object>> getEntityInline(Context context, String tenant, String entityId, Map<String, Object> attrsMap,
 												LanguageQueryTerm lang, boolean localOnly, String containedBy,
 												int joinLevel) {
@@ -1691,22 +1691,28 @@ public Uni<Map<String, Object>> getEntityInline(Context context, String tenant, 
 						finalAttrsMap = (Map<String, Object>) attrsMap.getOrDefault(toRemove, new HashMap<>());
 						attrsMap.remove(toRemove);
 					}
-//					unisOfMaps.add(getEntityInline(tenant,
-//							(String) ((Map<String, List<Map<String, Object>>>) attrib.get(0))
-//									.get(NGSIConstants.NGSI_LD_HAS_OBJECT).get(0).get(JsonLdConsts.ID),
-//							finalAttrsMap, containedBy + ent.get(JsonLdConsts.ID), joinLvl.get(), context).onItem()
-//							.transform(map -> {
-//								((List<Map<String, Object>>) ent.get(key)).get(0).put("entity", map);
-//								return ent;
-//							}));
-					unisOfMaps.add(getEntityInline(context,tenant,(String) ((Map<String, List<Map<String, Object>>>) attrib.get(0))
-									.get(NGSIConstants.NGSI_LD_HAS_OBJECT).get(0).get(JsonLdConsts.ID),finalAttrsMap,lang,localOnly,
-							containedBy + ent.get(JsonLdConsts.ID),joinLvl.get()).onItem()
-							.transform(map -> {
-								((List<Map<String, Object>>) ent.get(key)).get(0).put("entity", map);
-								return ent;
-							}));
+					if(((Map<String, Object>)attrib.get(0)).containsKey(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST)){
+						List<Object> flatResult = new ArrayList<>();
+						for(Map<String,Object> idsMap: ((Map<String, List<Map<String, List<Map<String,Object>>>>>)attrib.get(0)).get(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST).get(0).get(JsonLdConsts.LIST)){
+							unisOfMaps.add(getEntityInline(context, tenant, (String) idsMap.get(JsonLdConsts.VALUE), finalAttrsMap, lang, localOnly,
+									containedBy + ent.get(JsonLdConsts.ID), joinLvl.get()).onItem()
+									.transform(map -> {
+										flatResult.add(map);
+										((List<Map<String, Object>>) ent.get(key)).get(0).put("entity", flatResult);
+										return ent;
+									}));
+						}
 
+					}
+					else {
+						unisOfMaps.add(getEntityInline(context, tenant, (String) ((Map<String, List<Map<String, Object>>>) attrib.get(0))
+										.get(NGSIConstants.NGSI_LD_HAS_OBJECT).get(0).get(JsonLdConsts.ID), finalAttrsMap, lang, localOnly,
+								containedBy + ent.get(JsonLdConsts.ID), joinLvl.get()).onItem()
+								.transform(map -> {
+									((List<Map<String, Object>>) ent.get(key)).get(0).put("entity", map);
+									return ent;
+								}));
+					}
 				}
 			}
 			if (!unisOfMaps.isEmpty()) {
