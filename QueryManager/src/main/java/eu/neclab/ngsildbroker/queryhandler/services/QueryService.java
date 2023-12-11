@@ -1643,9 +1643,11 @@ public class QueryService {
 						}
 					}
 					else {
-						unisOfMaps.add(getEntityFlat(context, tenant, (String) ((Map<String, List<Map<String, Object>>>) attrib.get(0))
-										.get(NGSIConstants.NGSI_LD_HAS_OBJECT).get(0).get(JsonLdConsts.ID), finalAttrs, lang, localOnly,
-								containedBy + ent.get(JsonLdConsts.ID), joinLvl.get(), finalRelResult));
+						for (Map<String, Object> idMap : ((Map<String, List<Map<String, Object>>>) attrib.get(0))
+								.get(NGSIConstants.NGSI_LD_HAS_OBJECT)) {
+							unisOfMaps.add(getEntityFlat(context, tenant, (String) idMap.get(JsonLdConsts.ID), finalAttrs, lang, localOnly,
+									containedBy + ent.get(JsonLdConsts.ID), joinLvl.get(), finalRelResult));
+						}
 					}
 				}
 			}
@@ -1691,9 +1693,9 @@ public Uni<Map<String, Object>> getEntityInline(Context context, String tenant, 
 						finalAttrsMap = (Map<String, Object>) attrsMap.getOrDefault(toRemove, new HashMap<>());
 						attrsMap.remove(toRemove);
 					}
-					if(((Map<String, Object>)attrib.get(0)).containsKey(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST)){
-						List<Object> flatResult = new ArrayList<>();
-						for(Map<String,Object> idsMap: ((Map<String, List<Map<String, List<Map<String,Object>>>>>)attrib.get(0)).get(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST).get(0).get(JsonLdConsts.LIST)){
+                    List<Object> flatResult = new ArrayList<>();
+                    if(((Map<String, Object>)attrib.get(0)).containsKey(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST)){
+                        for(Map<String,Object> idsMap: ((Map<String, List<Map<String, List<Map<String,Object>>>>>)attrib.get(0)).get(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST).get(0).get(JsonLdConsts.LIST)){
 							unisOfMaps.add(getEntityInline(context, tenant, (String) idsMap.get(JsonLdConsts.VALUE), finalAttrsMap, lang, localOnly,
 									containedBy + ent.get(JsonLdConsts.ID), joinLvl.get()).onItem()
 									.transform(map -> {
@@ -1705,13 +1707,17 @@ public Uni<Map<String, Object>> getEntityInline(Context context, String tenant, 
 
 					}
 					else {
-						unisOfMaps.add(getEntityInline(context, tenant, (String) ((Map<String, List<Map<String, Object>>>) attrib.get(0))
-										.get(NGSIConstants.NGSI_LD_HAS_OBJECT).get(0).get(JsonLdConsts.ID), finalAttrsMap, lang, localOnly,
-								containedBy + ent.get(JsonLdConsts.ID), joinLvl.get()).onItem()
-								.transform(map -> {
-									((List<Map<String, Object>>) ent.get(key)).get(0).put("entity", map);
-									return ent;
-								}));
+                        for(Map<String,Object> idMap:((Map<String, List<Map<String, Object>>>) attrib.get(0))
+								.get(NGSIConstants.NGSI_LD_HAS_OBJECT)){
+							unisOfMaps.add(getEntityInline(context, tenant, (String) idMap.get(JsonLdConsts.ID), finalAttrsMap, lang, localOnly,
+									containedBy + ent.get(JsonLdConsts.ID), joinLvl.get()).onItem()
+									.transform(map -> {
+										flatResult.add(map);
+										((List<Map<String, Object>>) ent.get(key)).get(0).put("entity", flatResult);
+										return ent;
+									}));
+						}
+
 					}
 				}
 			}
