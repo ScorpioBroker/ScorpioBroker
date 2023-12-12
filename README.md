@@ -191,7 +191,7 @@ You can find a set of example calls, as a Postman collection, in the Examples fo
 ## Acknowledgements
 
 ### EU Acknowledgetment
-This activity has received funding from the European Union’s Horizon 2020 research and innovation programme under Grant Agreement No. 731993 (Autopilot), No. 814918 (Fed4IoT) and No. 767498 (MIDIH, Open Call (MoLe). 
+This activity has received funding from the European Union’s Horizon 2020 research and innovation programme under Grant Agreement No. 2020-EU-IA-0274 (SALTED), No. INEA/CEF/ICT/A2019/2063604 (ODALA), No. 731993 (Autopilot), No. 814918 (Fed4IoT) and No. 767498 (MIDIH, Open Call (MoLe). 
 <img src="https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/master/img/flag_yellow_low.jpg" width="160">
 - [ODALA project](https://odalaproject.eu/)
 - [SALTED project](https://salted-project.eu/)
