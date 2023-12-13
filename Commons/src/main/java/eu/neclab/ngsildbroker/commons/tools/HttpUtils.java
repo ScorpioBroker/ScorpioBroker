@@ -727,16 +727,20 @@ public final class HttpUtils {
 		if (isHavingError && !isHavingSuccess) {
 			result.remove("success");
 			if (opType.equalsIgnoreCase("Delete") || opType.equalsIgnoreCase("Append")) {
-				return RestResponse.status(RestResponse.Status.NOT_FOUND, result);
+				return new RestResponseBuilderImpl<>().status(404).type(AppConstants.NGB_APPLICATION_JSON).entity(result)
+						.build();
 			}
 			else if (errors.toString().contains("503")) {
-				return RestResponse.status(RestResponse.Status.SERVICE_UNAVAILABLE, result);
+				return new RestResponseBuilderImpl<>().status(503).type(AppConstants.NGB_APPLICATION_JSON).entity(result)
+						.build();
 			}
 			else if (allConflict) {
-				return RestResponse.status(RestResponse.Status.CONFLICT, result);
+				return new RestResponseBuilderImpl<>().status(409).type(AppConstants.NGB_APPLICATION_JSON).entity(result)
+						.build();
 			}
 			else {
-				return RestResponse.status(RestResponse.Status.BAD_REQUEST, result);
+				return new RestResponseBuilderImpl<>().status(400).type(AppConstants.NGB_APPLICATION_JSON).entity(result)
+						.build();
 			}
 		}
 		if (!isHavingError && isHavingSuccess) {
@@ -744,7 +748,8 @@ public final class HttpUtils {
 					|| opType.equalsIgnoreCase("Append"))
 				return RestResponse.status(RestResponse.Status.NO_CONTENT);
 			else
-				return RestResponse.status(RestResponse.Status.CREATED, createdIds);
+				return new RestResponseBuilderImpl<>().status(201).type(AppConstants.NGB_APPLICATION_JSON).entity(createdIds)
+						.build();
 		}
 		return new RestResponseBuilderImpl<>().status(207).type(AppConstants.NGB_APPLICATION_JSON).entity(result)
 				.build();
