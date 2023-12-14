@@ -1,11 +1,10 @@
 package eu.neclab.ngsildbroker.queryhandler.controller;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.List;
-
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import jakarta.ws.rs.DefaultValue;
@@ -15,20 +14,17 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.UriInfo;
-
 import org.apache.commons.lang3.RandomStringUtils;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.jaxrs.RestResponseBuilderImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.github.jsonldjava.core.JsonLDService;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.base.Objects;
 import com.google.common.net.HttpHeaders;
-
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
@@ -83,7 +79,8 @@ public class QueryController {
 			@QueryParam(value = "localOnly") boolean localOnly, @PathParam("entityId") String entityId,
 			@QueryParam(value = "doNotCompact") boolean doNotCompact,
 			@QueryParam("containedBy") @DefaultValue("") String containedBy, @QueryParam("join") String join,
-			@QueryParam("idsOnly") boolean idsOnly, @QueryParam("joinLevel") @DefaultValue("1") int joinLevel) {
+			@QueryParam("idsOnly") boolean idsOnly, @QueryParam("joinLevel") @DefaultValue("1") int joinLevel,
+			@QueryParam("pick") String pick,@QueryParam("omit") String omit) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		if (acceptHeader == -1) {
 			return HttpUtils.getInvalidHeader();
@@ -95,6 +92,11 @@ public class QueryController {
 		return HttpUtils.getContext(headerContext, ldService).onItem().transformToUni(context -> {
 //			AttrsQueryTerm attrsQuery;
 			LanguageQueryTerm langQuery;
+			String finalPick = attrs ==null ? null : attrs.replaceAll("[\"\\n\\s]", "");
+			List<String> omitList = omit == null ? null : Arrays.asList(omit.replaceAll("[\"\\n\\s]", "").split(","));
+			if(pick != null && !pick.isEmpty()){
+				finalPick = pick.replaceAll("[\"\\n\\s]", "");
+			}
 			try {
 				HttpUtils.validateUri(entityId);
 //				attrsQuery = QueryParser.parseAttrs(attrs, context);
@@ -102,13 +104,13 @@ public class QueryController {
 			} catch (Exception e) {
 				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 			}
-			return queryService.retrieveEntity(context, HttpUtils.getTenant(request), entityId, attrs, langQuery,
+			return queryService.retrieveEntity(context, HttpUtils.getTenant(request), entityId, finalPick, langQuery,
 					localOnly, containedBy, join, idsOnly, joinLevel).onItem().transformToUni(entity -> {
 						if (doNotCompact) {
 							return Uni.createFrom().item(RestResponse.ok((Object) entity));
 						}
 						return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, entity,
-								geometryProperty, options, langQuery, ldService);
+								geometryProperty, options, langQuery, ldService,omitList);
 					});
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
@@ -135,7 +137,9 @@ public class QueryController {
 			@QueryParam("count") boolean count, @QueryParam("containedBy") @DefaultValue("") String containedBy,
 			@QueryParam("join") String join, @QueryParam("idsOnly") boolean idsOnly,
 			@QueryParam("joinLevel") @DefaultValue("1") int joinLevel, @QueryParam("doNotCompact") boolean doNotCompact,
-			@QueryParam("entityMap") String entityMapToken, @QueryParam("maxDistance") String maxDistance, @QueryParam("minDistance") String minDistance, @Context UriInfo uriInfo) {
+			@QueryParam("entityMap") String entityMapToken, @QueryParam("maxDistance") String maxDistance,
+			@QueryParam("minDistance") String minDistance, @Context UriInfo uriInfo,
+			@QueryParam("pick") String pick,@QueryParam("omit") String omit) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		String q;
 		String georel;
@@ -196,9 +200,14 @@ public class QueryController {
 			GeoQueryTerm geoQueryTerm;
 			ScopeQueryTerm scopeQueryTerm;
 			LanguageQueryTerm langQuery;
+			List<String> omitList = omit == null ? null : Arrays.asList(omit.replaceAll("[\"\\n\\s]", "").split(","));
 			try {
-
-				attrsQuery = QueryParser.parseAttrs(attrs, context);
+				if(pick != null && !pick.isEmpty()){
+					attrsQuery = QueryParser.parseAttrs(pick.replaceAll("[\"\\n\\s]", ""), context);
+				}
+				else {
+					attrsQuery = QueryParser.parseAttrs(attrs == null ? null : attrs.replaceAll("[\"\\n\\s]", ""), context);
+				}
 				typeQueryTerm = QueryParser.parseTypeQuery(typeQuery, context);
 				qQueryTerm = QueryParser.parseQuery(q, context);
 				csfQueryTerm = QueryParser.parseCSFQuery(csf, context);
@@ -277,7 +286,7 @@ public class QueryController {
 							return Uni.createFrom().item(RestResponse.ok((Object) queryResult.getData()));
 						}
 						return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty,
-								acceptHeader, count, actualLimit, langQuery, context, ldService);
+								acceptHeader, count, actualLimit, langQuery, context, ldService,omitList);
 					});
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
@@ -298,12 +307,12 @@ public class QueryController {
 				return queryService.getTypesWithDetail(HttpUtils.getTenant(request), localOnly).onItem()
 						.transformToUni(types -> {
 							return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, types, null,
-									null, null, ldService);
+									null, null, ldService,null);
 						});
 			} else {
 				return queryService.getTypes(HttpUtils.getTenant(request), localOnly).onItem().transformToUni(types -> {
 					return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, types, null, null, null,
-							ldService);
+							ldService,null);
 				});
 			}
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
@@ -327,7 +336,7 @@ public class QueryController {
 							return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
 						} else {
 							return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, map, null, null,
-									null, ldService);
+									null, ldService,null);
 						}
 					});
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
@@ -348,13 +357,13 @@ public class QueryController {
 			if (!details) {
 				return queryService.getAttribs(HttpUtils.getTenant(request), localOnly).onItem().transformToUni(map -> {
 					return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, map, null, null, null,
-							ldService);
+							ldService,null);
 				});
 			} else {
 				return queryService.getAttribsWithDetails(HttpUtils.getTenant(request), localOnly).onItem()
 						.transformToUni(list -> {
 							return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, list, null,
-									null, null, ldService);
+									null, null, ldService,null);
 						});
 			}
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
@@ -379,7 +388,7 @@ public class QueryController {
 							});
 						} else {
 							return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, map, null, null,
-									null, ldService);
+									null, ldService,null);
 						}
 					});
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);

@@ -142,7 +142,7 @@ public class HistoryController {
 							lastNTBU, actualLimit, offset, count, localOnly, context, request)
 					.onItem().transformToUni(queryResult -> {
 						return HttpUtils.generateQueryResult(request, queryResult, options, geoproperty, acceptHeader,
-								count, actualLimit, languageQueryTerm, context, ldService);
+								count, actualLimit, languageQueryTerm, context, ldService,null);
 					});
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
@@ -188,7 +188,7 @@ public class HistoryController {
 			return historyQueryService.retrieveEntity(HttpUtils.getTenant(request), entityId, attrsQuery, aggrQuery,
 					tempQuery, lang, lastNTBU, localOnly, context).onItem().transformToUni(entity -> {
 						return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, entity,
-								geometryProperty, optionsString, null, ldService);
+								geometryProperty, optionsString, null, ldService,null);
 					});
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 

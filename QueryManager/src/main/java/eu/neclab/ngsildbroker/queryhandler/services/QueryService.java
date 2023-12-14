@@ -1092,7 +1092,6 @@ public class QueryService {
 		}
 		Uni<Map<String, Object>> local;
 		if (idsOnly) {
-			// TODO
 			local = idsOnly(getEntityFlat(tenant, entityId, attrsMap, containedBy, joinLevel, null, context));
 		} else if (join == null) {
 			local = queryDAO.getEntity(entityId, tenant, attrsQuery);

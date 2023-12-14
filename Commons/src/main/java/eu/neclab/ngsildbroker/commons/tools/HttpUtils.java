@@ -471,7 +471,7 @@ public final class HttpUtils {
 
 	public static Uni<RestResponse<Object>> generateEntityResult(List<Object> contextHeader, Context context,
 																 int acceptHeader, Object entity, String geometryProperty, String options, LanguageQueryTerm langQuery,
-																 JsonLDService ldService) {
+																 JsonLDService ldService,List<String> omitList) {
 		return generateCompactedResult(contextHeader, context, acceptHeader, entity, geometryProperty, options,
 				langQuery, false, ldService).onItem().transform(resultBodyAndHeaders -> {
 			ResponseBuilder<Object> resp = RestResponseBuilderImpl.ok();
@@ -479,7 +479,25 @@ public final class HttpUtils {
 			for (Tuple2<String, String> entry : headers) {
 				resp = resp.header(entry.getItem1(), entry.getItem2());
 			}
-			return resp.entity(resultBodyAndHeaders.getItem1()).build();
+			if(omitList!=null){
+				try{
+					JsonObject jsonObject = new JsonObject(resultBodyAndHeaders.getItem1().toString());
+					for (String key : omitList) {
+						jsonObject.remove(key);
+					}
+					return resp.entity(jsonObject).build();
+				}
+				catch (DecodeException decodeException){
+					JsonArray jsonArray = new JsonArray(resultBodyAndHeaders.getItem1().toString());
+					for (Object resultMap : jsonArray) {
+						for (String key : omitList) {
+							((JsonObject)resultMap).remove(key);
+						}
+					}
+					return resp.entity(jsonArray).build();
+				}
+			}
+			else return resp.entity(resultBodyAndHeaders.getItem1()).build();
 		});
 	}
 
@@ -890,7 +908,7 @@ public final class HttpUtils {
 
 	public static Uni<RestResponse<Object>> generateQueryResult(HttpServerRequest request, QueryResult queryResult,
 																String options, String geometryProperty, int acceptHeader, boolean count, int limit, LanguageQueryTerm lang,
-																Context context, JsonLDService ldService) {
+																Context context, JsonLDService ldService,List<String> omitList) {
 		ResponseBuilder<Object> builder;
 		if (count) {
 			builder = RestResponseBuilderImpl.ok().header(NGSIConstants.COUNT_HEADER_RESULT, queryResult.getCount());
@@ -927,6 +945,24 @@ public final class HttpUtils {
 				myBuilder = myBuilder.header(entry.getItem1(), entry.getItem2());
 			}
 
+			if(omitList!=null){
+				try{
+					JsonObject jsonObject = new JsonObject(resultAndHeaders.getItem1().toString());
+					for (String key : omitList) {
+						jsonObject.remove(key);
+					}
+					return myBuilder.entity(jsonObject).build();
+				}
+				catch (DecodeException decodeException){
+					JsonArray jsonArray = new JsonArray(resultAndHeaders.getItem1().toString());
+					for (Object resultMap : jsonArray) {
+						for (String key : omitList) {
+							((JsonObject)resultMap).remove(key);
+						}
+					}
+					return myBuilder.entity(jsonArray).build();
+				}
+			}
 			return myBuilder.entity(resultAndHeaders.getItem1()).build();
 		});
 
