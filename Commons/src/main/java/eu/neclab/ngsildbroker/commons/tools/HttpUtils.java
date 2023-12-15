@@ -479,9 +479,6 @@ public final class HttpUtils {
 			for (Tuple2<String, String> entry : headers) {
 				resp = resp.header(entry.getItem1(), entry.getItem2());
 			}
-			if(resultBodyAndHeaders.getItem1().toString().replaceAll("[\\n\\s]","").length()==2){
-				return resp.build();
-			}
 			if(omitList!=null){
 				try{
 					JsonObject jsonObject = new JsonObject(resultBodyAndHeaders.getItem1().toString());
@@ -946,9 +943,6 @@ public final class HttpUtils {
 			List<Tuple2<String, String>> headers = resultAndHeaders.getItem2();
 			for (Tuple2<String, String> entry : headers) {
 				myBuilder = myBuilder.header(entry.getItem1(), entry.getItem2());
-			}
-			if(resultAndHeaders.getItem1().toString().replaceAll("[\\n\\s]","").length()==2){
-				return myBuilder.build();
 			}
 			if(omitList!=null){
 				try{
