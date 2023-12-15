@@ -459,15 +459,15 @@ public abstract class EntityTools {
 			if (map.containsKey(NGSIConstants.OBJECT)) {
 				((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.RELATIONSHIP);
 			}
-			if (map.containsKey(NGSIConstants.OBJECT_LIST)) {
+			else if (map.containsKey(NGSIConstants.OBJECT_LIST)) {
 				((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.LISTRELATIONSHIP);
+			}
+			else if (map.containsKey(NGSIConstants.VALUE_LIST)) {
+				((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.LISTPROPERTY);
 			}
 			// Map have vocab but not type
 			else if (map.containsKey(NGSIConstants.VOCAB)) {
 				((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.VOCABPROPERTY);
-			}
-			if (map.containsKey(NGSIConstants.LIST)) {
-					((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.LISTPROPERTY);
 			}
 			// Map have value but not type
 			else if (map.containsKey(NGSIConstants.VALUE) && !map.containsKey(NGSIConstants.TYPE)) {

@@ -44,6 +44,7 @@ public interface NGSIConstants {
 	public final static String CSOURCEREGISTRATION_NAME = "registrationName";
 	public final static String OBJECT = "object";
 	public final static String OBJECT_LIST = "objectList";
+	public final static String VALUE_LIST = "valueList";
 	public final static String JSON_LD_ID = "@id";
 	public final static String JSON_LD_TYPE = "@type";
 	public final static String JSON_LD_VALUE = "@value";
