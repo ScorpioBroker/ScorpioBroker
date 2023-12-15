@@ -402,6 +402,9 @@ public interface NGSIConstants {
 	public static final String SCOPE = "scope";
 	public static final String PREVIOUS_VALUE = "previousValue";
 	public static final String PREVIOUS_VOCAB = "previousVocab";
+
+	public static final String PREVIOUS_VALUE_LIST = "previousValueList";
+	public static final String PREVIOUS_OJBECT_LIST = "previousObjectList";
 	public static final String PREVIOUS_LANGUAGE_MAP = "previousLanguageMap";
 	public static final String PREVIOUS_OBJECT = "previousObject";
 	public static final String NGSI_LD_REG_MODE = "https://uri.etsi.org/ngsi-ld/mode";
