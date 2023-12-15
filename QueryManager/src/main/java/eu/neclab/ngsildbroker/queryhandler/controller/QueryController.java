@@ -181,7 +181,7 @@ public class QueryController {
 			return Uni.createFrom()
 					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.TooManyResults)));
 		}
-		if (id == null && typeQuery == null && attrs == null && geometry == null && q == null) {
+		if (id == null && typeQuery == null && attrs == null && geometry == null && q == null && pick == null) {
 			return Uni.createFrom()
 					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData)));
 		}
