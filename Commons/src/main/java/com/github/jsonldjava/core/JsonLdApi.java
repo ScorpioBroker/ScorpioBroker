@@ -389,6 +389,37 @@ public class JsonLdApi {
 							continue;
 						}
 					}
+					else if (isListRelationship) {
+//						expanded value for ListRelationship
+//						"https://uri.etsi.org/ngsi-ld/hasObjectList": [
+//						{
+//							"@list": [
+//							{
+//								"@value": "urn:ngsi-ld:Person:Alice"
+//							},
+//							{
+//								"@value": "urn:ngsi-ld:Person:Bob"
+//							}
+//         				 ]
+//						}
+//					]
+						if (expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST)) {
+							List<String> ids = new ArrayList<>();
+							if(expandedValue instanceof List<?> lsIdsMap){
+								lsIdsMap.forEach(listMap->{
+									if(listMap instanceof Map<?,?> map) {
+										((List<Map<String,String>>)map.get(JsonLdConsts.LIST)).forEach(valueMap ->{
+											ids.add(valueMap.get(JsonLdConsts.VALUE));
+										});
+									}
+								});
+							}
+							return compact(activeCtx, activeProperty, ids/*expandedValue*/, compactArrays, endPoint, null,
+									null);
+						} else {
+							continue;
+						}
+					}
 
 //					else if (isLanguageProperty) {
 //						if (expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP)) {
