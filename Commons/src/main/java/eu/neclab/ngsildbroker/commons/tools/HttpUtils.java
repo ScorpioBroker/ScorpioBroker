@@ -6,6 +6,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -471,7 +472,7 @@ public final class HttpUtils {
 
 	public static Uni<RestResponse<Object>> generateEntityResult(List<Object> contextHeader, Context context,
 																 int acceptHeader, Object entity, String geometryProperty, String options, LanguageQueryTerm langQuery,
-																 JsonLDService ldService,List<String> omitList) {
+																 JsonLDService ldService,List<String> omitList,String pick) {
 		return generateCompactedResult(contextHeader, context, acceptHeader, entity, geometryProperty, options,
 				langQuery, false, ldService).onItem().transform(resultBodyAndHeaders -> {
 			ResponseBuilder<Object> resp = RestResponseBuilderImpl.ok();
@@ -479,28 +480,58 @@ public final class HttpUtils {
 			for (Tuple2<String, String> entry : headers) {
 				resp = resp.header(entry.getItem1(), entry.getItem2());
 			}
-			if(omitList!=null){
-				try{
-					JsonObject jsonObject = new JsonObject(resultBodyAndHeaders.getItem1().toString());
-					for (String key : omitList) {
-						jsonObject.remove(key);
-					}
-					return resp.entity(jsonObject).build();
-				}
-				catch (DecodeException decodeException){
-					JsonArray jsonArray = new JsonArray(resultBodyAndHeaders.getItem1().toString());
-					for (Object resultMap : jsonArray) {
-						for (String key : omitList) {
-							((JsonObject)resultMap).remove(key);
-						}
-					}
-					return resp.entity(jsonArray).build();
-				}
-			}
-			else return resp.entity(resultBodyAndHeaders.getItem1()).build();
+			return resp.entity(processPickOmit(resultBodyAndHeaders.getItem1(),pick,omitList)).build();
 		});
 	}
-
+	public static Object processPickOmit(Object object,String pick, List<String> omitList){
+		List<String> pickList = (pick == null) ? new ArrayList<>() : Arrays.asList(pick.split(","));
+		try {
+			JsonObject jsonObject = new JsonObject(object.toString());
+			if (omitList != null && !omitList.isEmpty()) {
+				for (String key : omitList) {
+					jsonObject.remove(key);
+				}
+			}
+			if (!pickList.isEmpty()) {
+				JsonObject finalJsonObject = new JsonObject();
+				for (String key : pickList) {
+					Object value = jsonObject.getValue(key);
+					if (value != null) {
+						finalJsonObject.put(key, value);
+					}
+				}
+				return finalJsonObject;
+			}
+			else return jsonObject;
+		} catch (DecodeException decodeException) {
+			JsonArray jsonArray = new JsonArray(object.toString());
+			for (Object jsonObject : jsonArray) {
+				if (jsonObject instanceof JsonObject) {
+					if (omitList != null && !omitList.isEmpty()) {
+						for (String key : omitList) {
+							((JsonObject) jsonObject).remove(key);
+						}
+					}
+				}
+			}
+			if (!pickList.isEmpty()) {
+				JsonArray finalJsonArray = new JsonArray();
+				for (Object jsonObject : jsonArray) {
+					if (jsonObject instanceof JsonObject) {
+						JsonObject finalJsonObject = new JsonObject();
+						for (String key : pickList) {
+							Object value = ((JsonObject) jsonObject).getValue(key);
+							if (value != null) {
+								finalJsonObject.put(key, value);
+							}
+						}
+						finalJsonArray.add(finalJsonObject);
+					}
+				}
+				return finalJsonArray;
+			} else return jsonArray;
+		}
+	}
 	public static void makeConcise(Object compacted) {
 		makeConcise(compacted, null, null);
 	}
@@ -908,7 +939,7 @@ public final class HttpUtils {
 
 	public static Uni<RestResponse<Object>> generateQueryResult(HttpServerRequest request, QueryResult queryResult,
 																String options, String geometryProperty, int acceptHeader, boolean count, int limit, LanguageQueryTerm lang,
-																Context context, JsonLDService ldService,List<String> omitList) {
+																Context context, JsonLDService ldService,List<String> omitList,String pick) {
 		ResponseBuilder<Object> builder;
 		if (count) {
 			builder = RestResponseBuilderImpl.ok().header(NGSIConstants.COUNT_HEADER_RESULT, queryResult.getCount());
@@ -944,25 +975,7 @@ public final class HttpUtils {
 			for (Tuple2<String, String> entry : headers) {
 				myBuilder = myBuilder.header(entry.getItem1(), entry.getItem2());
 			}
-			if(omitList!=null){
-				try{
-					JsonObject jsonObject = new JsonObject(resultAndHeaders.getItem1().toString());
-					for (String key : omitList) {
-						jsonObject.remove(key);
-					}
-					return myBuilder.entity(jsonObject).build();
-				}
-				catch (DecodeException decodeException){
-					JsonArray jsonArray = new JsonArray(resultAndHeaders.getItem1().toString());
-					for (Object resultMap : jsonArray) {
-						for (String key : omitList) {
-							((JsonObject)resultMap).remove(key);
-						}
-					}
-					return myBuilder.entity(jsonArray).build();
-				}
-			}
-			return myBuilder.entity(resultAndHeaders.getItem1()).build();
+			return myBuilder.entity(processPickOmit(resultAndHeaders.getItem1(),pick,omitList)).build();
 		});
 
 	}

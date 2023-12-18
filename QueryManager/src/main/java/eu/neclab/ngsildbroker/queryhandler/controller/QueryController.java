@@ -3,6 +3,7 @@ package eu.neclab.ngsildbroker.queryhandler.controller;
 import java.io.IOException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import jakarta.inject.Inject;
@@ -85,21 +86,36 @@ public class QueryController {
 		if (acceptHeader == -1) {
 			return HttpUtils.getInvalidHeader();
 		}
-
+		if (omit!= null && pick != null) {
+			return Uni.createFrom()
+					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData)));
+		}
 		List<Object> headerContext;
 		headerContext = HttpUtils.getAtContext(request);
 		logger.debug("retrieve called: " + request.path());
 		return HttpUtils.getContext(headerContext, ldService).onItem().transformToUni(context -> {
 //			AttrsQueryTerm attrsQuery;
 			LanguageQueryTerm langQuery;
-			String finalPick = attrs ==null ? null : attrs.replaceAll("[\"\\n\\s]", "");
-			List<String> omitList = omit == null ? null : Arrays.asList(omit.replaceAll("[\"\\n\\s]", "").split(","));
+			String finalPick;
+			List<String> omitList = omit == null ? new ArrayList<>() : Arrays.asList(omit.replaceAll("[\"\\n\\s]", "").split(","));
 			if(pick != null && !pick.isEmpty()){
-				finalPick = pick.replaceAll("[\"\\n\\s]", "");
-			}
-			try {
+				List<String> pickList = new ArrayList<>(Arrays.asList(pick.replaceAll("[\"\\n\\s]", "").split(",")));
+				if (pickList.contains(NGSIConstants.ID)) {
+					pickList.remove(NGSIConstants.ID);
+				}else{
+					omitList.add(NGSIConstants.ID);
+				}
+				if (pickList.contains(NGSIConstants.TYPE)) {
+					pickList.remove(NGSIConstants.TYPE);
+				}else{
+					omitList.add(NGSIConstants.TYPE);
+				}
+				finalPick = String.join(",",pickList);
+			} else {
+                finalPick = attrs == null ? "" : attrs.replaceAll("[\"\\n\\s]", "");
+            }
+            try {
 				HttpUtils.validateUri(entityId);
-//				attrsQuery = QueryParser.parseAttrs(attrs, context);
 				langQuery = QueryParser.parseLangQuery(lang);
 			} catch (Exception e) {
 				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
@@ -110,7 +126,7 @@ public class QueryController {
 							return Uni.createFrom().item(RestResponse.ok((Object) entity));
 						}
 						return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, entity,
-								geometryProperty, options, langQuery, ldService,omitList);
+								geometryProperty, options, langQuery, ldService,omitList, pick);
 					});
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
@@ -185,6 +201,10 @@ public class QueryController {
 			return Uni.createFrom()
 					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData)));
 		}
+		if (omit!= null && pick != null) {
+			return Uni.createFrom()
+					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData)));
+		}
 		if (actualLimit == 0 && !count) {
 			return Uni.createFrom()
 					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadLimitQuery)));
@@ -200,10 +220,21 @@ public class QueryController {
 			GeoQueryTerm geoQueryTerm;
 			ScopeQueryTerm scopeQueryTerm;
 			LanguageQueryTerm langQuery;
-			List<String> omitList = omit == null ? null : Arrays.asList(omit.replaceAll("[\"\\n\\s]", "").split(","));
+			List<String> omitList = (omit == null) ? new ArrayList<>() : Arrays.asList(omit.replaceAll("[\"\\n\\s]", "").split(","));
 			try {
 				if(pick != null && !pick.isEmpty()){
-					attrsQuery = QueryParser.parseAttrs(pick.replaceAll("[\"\\n\\s]", ""), context);
+					List<String> pickList = new ArrayList<>(Arrays.asList(pick.replaceAll("[\"\\n\\s]", "").split(",")));
+					if (pickList.contains(NGSIConstants.ID)) {
+						pickList.remove(NGSIConstants.ID);
+					}else{
+						omitList.add(NGSIConstants.ID);
+					}
+					if (pickList.contains(NGSIConstants.TYPE)) {
+						pickList.remove(NGSIConstants.TYPE);
+					}else{
+						omitList.add(NGSIConstants.TYPE);
+					}
+					attrsQuery = QueryParser.parseAttrs(String.join(",",pickList), context);
 				}
 				else {
 					attrsQuery = QueryParser.parseAttrs(attrs == null ? null : attrs.replaceAll("[\"\\n\\s]", ""), context);
@@ -286,7 +317,7 @@ public class QueryController {
 							return Uni.createFrom().item(RestResponse.ok((Object) queryResult.getData()));
 						}
 						return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty,
-								acceptHeader, count, actualLimit, langQuery, context, ldService,omitList);
+								acceptHeader, count, actualLimit, langQuery, context, ldService,omitList,pick);
 					});
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
@@ -307,12 +338,12 @@ public class QueryController {
 				return queryService.getTypesWithDetail(HttpUtils.getTenant(request), localOnly).onItem()
 						.transformToUni(types -> {
 							return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, types, null,
-									null, null, ldService,null);
+									null, null, ldService,null,null);
 						});
 			} else {
 				return queryService.getTypes(HttpUtils.getTenant(request), localOnly).onItem().transformToUni(types -> {
 					return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, types, null, null, null,
-							ldService,null);
+							ldService,null,null);
 				});
 			}
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
@@ -336,7 +367,7 @@ public class QueryController {
 							return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
 						} else {
 							return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, map, null, null,
-									null, ldService,null);
+									null, ldService,null,null);
 						}
 					});
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
@@ -357,13 +388,13 @@ public class QueryController {
 			if (!details) {
 				return queryService.getAttribs(HttpUtils.getTenant(request), localOnly).onItem().transformToUni(map -> {
 					return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, map, null, null, null,
-							ldService,null);
+							ldService,null,null);
 				});
 			} else {
 				return queryService.getAttribsWithDetails(HttpUtils.getTenant(request), localOnly).onItem()
 						.transformToUni(list -> {
 							return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, list, null,
-									null, null, ldService,null);
+									null, null, ldService,null,null);
 						});
 			}
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
@@ -388,7 +419,7 @@ public class QueryController {
 							});
 						} else {
 							return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, map, null, null,
-									null, ldService,null);
+									null, ldService,null,null);
 						}
 					});
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);

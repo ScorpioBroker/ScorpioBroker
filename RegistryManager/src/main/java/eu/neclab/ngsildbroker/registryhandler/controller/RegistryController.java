@@ -121,7 +121,7 @@ public class RegistryController {
 							csfQueryTerm, geoQueryTerm, scopeQueryTerm,qQueryTerm, actualLimit, offset, count)
 					.onItem().transformToUni(queryResult -> {
 						return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty,
-								acceptHeader, count, actualLimit, null, context, ldService,null);
+								acceptHeader, count, actualLimit, null, context, ldService,null,null);
 					});
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
@@ -158,7 +158,7 @@ public class RegistryController {
 			return csourceService.retrieveRegistration(HttpUtils.getTenant(request), registrationId).onItem()
 					.transformToUni(entity -> {
 						return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, entity, null, null,
-								null, ldService,null);
+								null, ldService,null,null);
 					});
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}

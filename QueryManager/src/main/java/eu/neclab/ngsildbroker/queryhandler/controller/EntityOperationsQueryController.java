@@ -221,7 +221,7 @@ public class EntityOperationsQueryController {
 						}
 						return first;
 					}).onItem().transformToUni(first -> HttpUtils.generateQueryResult(request, first, options,
-							geometryProperty, acceptHeader, count, actualLimit, langQuery, context, ldService,null));
+							geometryProperty, acceptHeader, count, actualLimit, langQuery, context, ldService,null,null));
 				} else {
 					String token;
 					boolean tokenProvided;
@@ -255,7 +255,7 @@ public class EntityOperationsQueryController {
 							csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset, count,
 							localOnly, context, request.headers(), false).onItem().transformToUni(queryResult -> {
 								return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty,
-										acceptHeader, count, actualLimit, langQuery, context, ldService,null);
+										acceptHeader, count, actualLimit, langQuery, context, ldService,null,null);
 							}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e));
 				}
 			} catch (Exception e) {
