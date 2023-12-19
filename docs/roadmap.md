@@ -29,9 +29,10 @@ The following list of features are planned to be addressed in the medium term, t
 2. Zip support 
 3. Signed Attribute Support
 4. Filter on Attribute instances with specific datasetIds (NGSI-LD v1.8.1)
-5. Timescale support
+5. JsonProperty Support (NGSI-LD v1.8.1)
+6. Timescale support
     - Initial investigation done
-6. Enhancements for temporal queries
+7. Enhancements for temporal queries
     - Pagination for temporal attributes
 
 ### Long term
