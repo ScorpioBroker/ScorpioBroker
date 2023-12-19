@@ -327,10 +327,14 @@ public class HistoryDAO {
 				return Uni.createFrom().failure(e);
 			}).onItem().transformToUni(rows -> {
 				List<Tuple> batch = Lists.newArrayList();
+				Object createdAt = payload.remove(NGSIConstants.NGSI_LD_CREATED_AT);
 				for (Entry<String, Object> entry : payload.entrySet()) {
 					@SuppressWarnings("unchecked")
 					List<Map<String, Object>> entries = (List<Map<String, Object>>) entry.getValue();
 					for (Map<String, Object> attribEntry : entries) {
+						if(createdAt != null){
+							attribEntry.put(NGSIConstants.NGSI_LD_CREATED_AT,createdAt);
+						}
 						attribEntry.put(NGSIConstants.NGSI_LD_INSTANCE_ID, List
 								.of(Map.of(NGSIConstants.JSON_LD_ID, "instanceid:" + UUID.randomUUID().toString())));
 						batch.add(Tuple.of(request.getId(), entry.getKey(), new JsonObject(attribEntry)));

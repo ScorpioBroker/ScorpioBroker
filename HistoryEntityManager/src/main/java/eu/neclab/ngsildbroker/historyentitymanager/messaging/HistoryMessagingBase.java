@@ -192,7 +192,8 @@ public abstract class HistoryMessagingBase {
 					if (request.getRequestType() == AppConstants.DELETE_ATTRIBUTE_REQUEST
 							|| request.getRequestType() == AppConstants.REPLACE_ATTRIBUTE_REQUEST
 							|| request.getRequestType() == AppConstants.REPLACE_ENTITY_REQUEST
-							|| request.getRequestType() == AppConstants.MERGE_PATCH_REQUEST) {
+							|| request.getRequestType() == AppConstants.MERGE_PATCH_REQUEST
+							|| request.getRequestType() == AppConstants.PARTIAL_UPDATE_REQUEST) {
 						notBatch.add(request);
 						continue;
 					}
