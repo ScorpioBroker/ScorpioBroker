@@ -165,6 +165,9 @@ public abstract class EntityTools {
 				case NGSIConstants.NGSI_LD_ListProperty:
 					prop = generateFakeProperty(key, tmp);
 					break;
+					case NGSIConstants.NGSI_LD_LOCALONLY:
+					prop = generateFakeProperty(key, tmp);
+					break;
 				case NGSIConstants.NGSI_LD_PROPERTY:
 				default:
 					prop = SerializationTools.parseProperty((List<Map<String, Object>>) value, key);
@@ -514,6 +517,7 @@ public abstract class EntityTools {
 							&& !key.equals(NGSIConstants.LANGUAGE_MAP)
 							&& !key.equals(NGSIConstants.VOCAB)
 							&& !key.equals(NGSIConstants.LIST)
+							&& !key.equals(NGSIConstants.LOCALONLY)
 							&& !key.equals(NGSIConstants.OBJECT_TYPE)) {
 						noConcise(map.get(key), (Map<String, Object>) map, key.toString(),level+1);
 					}

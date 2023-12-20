@@ -458,8 +458,11 @@ public class SubscriptionService {
 			case AppConstants.UPDATE_REQUEST, AppConstants.PARTIAL_UPDATE_REQUEST, AppConstants.MERGE_PATCH_REQUEST,
 					AppConstants.REPLACE_ENTITY_REQUEST, AppConstants.REPLACE_ATTRIBUTE_REQUEST -> {
 				if (message.isDistributed()) {
-					unis.add(localEntityService.getAllByIds(message.getTenant(), message.getId(), true).onItem()
+					unis.add(localEntityService.getAllByIds(message.getTenant(), message.getId(), true,potentialSub.getSubscription().isLocalOnly()).onItem()
 							.transformToUni(entityList -> {
+								if(entityList.isEmpty()){
+									return Uni.createFrom().voidItem();
+								}
 								Map<String, Object> payload = new HashMap<>();
 								if (message.getPreviousEntity() instanceof Map m1) {
 									if (potentialSub.getSubscription().getNotification().getShowChanges()) {
@@ -513,8 +516,11 @@ public class SubscriptionService {
 			case AppConstants.UPSERT_REQUEST, AppConstants.CREATE_REQUEST, AppConstants.APPEND_REQUEST -> {
 				if (message.isDistributed()) {
 
-					unis.add(localEntityService.getAllByIds(message.getTenant(), message.getId(), true).onItem()
+					unis.add(localEntityService.getAllByIds(message.getTenant(), message.getId(), true,potentialSub.getSubscription().isLocalOnly()).onItem()
 							.transformToUni(entityList -> {
+								if(entityList.isEmpty()){
+									return Uni.createFrom().voidItem();
+								}
 								Map<String, Object> payload = new HashMap<>();
 								if (message.getPreviousEntity() instanceof Map m1) {
 									if (potentialSub.getSubscription().getNotification().getShowChanges()) {
@@ -594,8 +600,11 @@ public class SubscriptionService {
 			case AppConstants.DELETE_ATTRIBUTE_REQUEST -> {
 
 				if (shouldFire(Sets.newHashSet(message.getAttribName()), potentialSub)) {
-					unis.add(localEntityService.getAllByIds(message.getTenant(), message.getId(), true).onItem()
+					unis.add(localEntityService.getAllByIds(message.getTenant(), message.getId(), true,potentialSub.getSubscription().isLocalOnly()).onItem()
 							.transformToUni(entityList -> {
+								if(entityList.isEmpty()){
+									return Uni.createFrom().voidItem();
+								}
 								Map<String, Object> payload = new HashMap<>();
 								if (potentialSub.getSubscription().getNotification().getShowChanges()) {
 									payload.put(JsonLdConsts.GRAPH,
