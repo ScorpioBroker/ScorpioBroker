@@ -491,7 +491,7 @@ public final class HttpUtils {
 					jsonObject.remove(key);
 				}
 			}
-			if (!pickList.isEmpty()) {
+			if (pickList!= null && !pickList.isEmpty()) {
 				JsonObject finalJsonObject = new JsonObject();
 				for (String key : pickList) {
 					Object value = jsonObject.getValue(key);
@@ -513,7 +513,7 @@ public final class HttpUtils {
 					}
 				}
 			}
-			if (!pickList.isEmpty()) {
+			if (pickList!= null && !pickList.isEmpty()) {
 				JsonArray finalJsonArray = new JsonArray();
 				for (Object jsonObject : jsonArray) {
 					if (jsonObject instanceof JsonObject) {
