@@ -472,7 +472,7 @@ public final class HttpUtils {
 
 	public static Uni<RestResponse<Object>> generateEntityResult(List<Object> contextHeader, Context context,
 																 int acceptHeader, Object entity, String geometryProperty, String options, LanguageQueryTerm langQuery,
-																 JsonLDService ldService,List<String> omitList,String pick) {
+																 JsonLDService ldService,List<String> omitList,List<String> pickList) {
 		return generateCompactedResult(contextHeader, context, acceptHeader, entity, geometryProperty, options,
 				langQuery, false, ldService).onItem().transform(resultBodyAndHeaders -> {
 			ResponseBuilder<Object> resp = RestResponseBuilderImpl.ok();
@@ -480,11 +480,10 @@ public final class HttpUtils {
 			for (Tuple2<String, String> entry : headers) {
 				resp = resp.header(entry.getItem1(), entry.getItem2());
 			}
-			return resp.entity(processPickOmit(resultBodyAndHeaders.getItem1(),pick,omitList)).build();
+			return resp.entity(processPickOmit(resultBodyAndHeaders.getItem1(),pickList,omitList)).build();
 		});
 	}
-	public static Object processPickOmit(Object object,String pick, List<String> omitList){
-		List<String> pickList = (pick == null) ? new ArrayList<>() : Arrays.asList(pick.split(","));
+	public static Object processPickOmit(Object object,List<String> pickList, List<String> omitList){
 		try {
 			JsonObject jsonObject = new JsonObject(object.toString());
 			if (omitList != null && !omitList.isEmpty()) {
@@ -939,7 +938,7 @@ public final class HttpUtils {
 
 	public static Uni<RestResponse<Object>> generateQueryResult(HttpServerRequest request, QueryResult queryResult,
 																String options, String geometryProperty, int acceptHeader, boolean count, int limit, LanguageQueryTerm lang,
-																Context context, JsonLDService ldService,List<String> omitList,String pick) {
+																Context context, JsonLDService ldService,List<String> omitList,List<String> pickList) {
 		ResponseBuilder<Object> builder;
 		if (count) {
 			builder = RestResponseBuilderImpl.ok().header(NGSIConstants.COUNT_HEADER_RESULT, queryResult.getCount());
@@ -975,7 +974,7 @@ public final class HttpUtils {
 			for (Tuple2<String, String> entry : headers) {
 				myBuilder = myBuilder.header(entry.getItem1(), entry.getItem2());
 			}
-			return myBuilder.entity(processPickOmit(resultAndHeaders.getItem1(),pick,omitList)).build();
+			return myBuilder.entity(processPickOmit(resultAndHeaders.getItem1(),pickList,omitList)).build();
 		});
 
 	}

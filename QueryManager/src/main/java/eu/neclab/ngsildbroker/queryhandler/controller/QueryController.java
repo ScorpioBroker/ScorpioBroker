@@ -94,23 +94,23 @@ public class QueryController {
 		headerContext = HttpUtils.getAtContext(request);
 		logger.debug("retrieve called: " + request.path());
 		return HttpUtils.getContext(headerContext, ldService).onItem().transformToUni(context -> {
-//			AttrsQueryTerm attrsQuery;
 			LanguageQueryTerm langQuery;
 			String finalPick;
+			List<String> pickListOriginal =  pick == null ? new ArrayList<>() : new ArrayList<>(Arrays.asList(pick.replaceAll("[\"\\n\\s]", "").split(",")));
 			List<String> omitList = omit == null ? new ArrayList<>() : Arrays.asList(omit.replaceAll("[\"\\n\\s]", "").split(","));
-			if(pick != null && !pick.isEmpty()){
-				List<String> pickList = new ArrayList<>(Arrays.asList(pick.replaceAll("[\"\\n\\s]", "").split(",")));
-				if (pickList.contains(NGSIConstants.ID)) {
-					pickList.remove(NGSIConstants.ID);
+			if(!pickListOriginal.isEmpty()){
+                List<String> pickListCopy = new ArrayList<>(pickListOriginal);
+				if (pickListCopy.contains(NGSIConstants.ID)) {
+					pickListCopy.remove(NGSIConstants.ID);
 				}else{
 					omitList.add(NGSIConstants.ID);
 				}
-				if (pickList.contains(NGSIConstants.TYPE)) {
-					pickList.remove(NGSIConstants.TYPE);
+				if (pickListCopy.contains(NGSIConstants.TYPE)) {
+					pickListCopy.remove(NGSIConstants.TYPE);
 				}else{
 					omitList.add(NGSIConstants.TYPE);
 				}
-				finalPick = String.join(",",pickList);
+				finalPick = String.join(",",pickListCopy);
 			} else {
                 finalPick = attrs == null ? "" : attrs.replaceAll("[\"\\n\\s]", "");
             }
@@ -126,7 +126,7 @@ public class QueryController {
 							return Uni.createFrom().item(RestResponse.ok((Object) entity));
 						}
 						return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, entity,
-								geometryProperty, options, langQuery, ldService,omitList, pick);
+								geometryProperty, options, langQuery, ldService,omitList,pickListOriginal);
 					});
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
@@ -220,21 +220,22 @@ public class QueryController {
 			GeoQueryTerm geoQueryTerm;
 			ScopeQueryTerm scopeQueryTerm;
 			LanguageQueryTerm langQuery;
+			List<String> pickListOriginal =  pick == null ? new ArrayList<>() : new ArrayList<>(Arrays.asList(pick.replaceAll("[\"\\n\\s]", "").split(",")));
 			List<String> omitList = (omit == null) ? new ArrayList<>() : Arrays.asList(omit.replaceAll("[\"\\n\\s]", "").split(","));
 			try {
-				if(pick != null && !pick.isEmpty()){
-					List<String> pickList = new ArrayList<>(Arrays.asList(pick.replaceAll("[\"\\n\\s]", "").split(",")));
-					if (pickList.contains(NGSIConstants.ID)) {
-						pickList.remove(NGSIConstants.ID);
+				if(!pickListOriginal.isEmpty()){
+					List<String> pickListCopy = new ArrayList<>(pickListOriginal);
+					if (pickListCopy.contains(NGSIConstants.ID)) {
+						pickListCopy.remove(NGSIConstants.ID);
 					}else{
 						omitList.add(NGSIConstants.ID);
 					}
-					if (pickList.contains(NGSIConstants.TYPE)) {
-						pickList.remove(NGSIConstants.TYPE);
+					if (pickListCopy.contains(NGSIConstants.TYPE)) {
+						pickListCopy.remove(NGSIConstants.TYPE);
 					}else{
 						omitList.add(NGSIConstants.TYPE);
 					}
-					attrsQuery = QueryParser.parseAttrs(String.join(",",pickList), context);
+					attrsQuery = QueryParser.parseAttrs(String.join(",",pickListCopy), context);
 				}
 				else {
 					attrsQuery = QueryParser.parseAttrs(attrs == null ? null : attrs.replaceAll("[\"\\n\\s]", ""), context);
@@ -317,7 +318,7 @@ public class QueryController {
 							return Uni.createFrom().item(RestResponse.ok((Object) queryResult.getData()));
 						}
 						return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty,
-								acceptHeader, count, actualLimit, langQuery, context, ldService,omitList,pick);
+								acceptHeader, count, actualLimit, langQuery, context, ldService,omitList,pickListOriginal);
 					});
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
