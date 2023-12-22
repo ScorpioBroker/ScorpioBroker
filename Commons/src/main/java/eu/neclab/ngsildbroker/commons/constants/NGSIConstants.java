@@ -163,6 +163,8 @@ public interface NGSIConstants {
 	public final static String VOCABPROPERTY = "VocabProperty";
 	public final static String NGSI_LD_SYS_ATTRS = "https://uri.etsi.org/ngsi-ld/sysAttrs";
 	public final static String NGSI_LD_LOCALONLY = "https://uri.etsi.org/ngsi-ld/localOnly";
+
+	public final static String NGSI_LD_STAR ="https://uri.etsi.org/ngsi-ld/default-context/*";
 	public final static String LOCALONLY = "LocalOnly";
 	// IMPORTANT! DO NOT MESS UP THIS ORDER!!! ONLY APPEND ON THE END NEW STUFF
 	public final static String[] NGSI_LD_PAYLOAD_KEYS = { JSON_LD_ID, JSON_LD_TYPE, JSON_LD_CONTEXT,
