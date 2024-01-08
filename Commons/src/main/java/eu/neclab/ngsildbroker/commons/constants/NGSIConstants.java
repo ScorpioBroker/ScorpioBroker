@@ -161,6 +161,7 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_ListProperty = "https://uri.etsi.org/ngsi-ld/ListProperty";
 	public final static String LISTPROPERTY = "ListProperty";
 	public final static String VOCABPROPERTY = "VocabProperty";
+	public final static String PROVIDED_BY = "providedBy";
 	public final static String NGSI_LD_SYS_ATTRS = "https://uri.etsi.org/ngsi-ld/sysAttrs";
 	public final static String NGSI_LD_LOCALONLY = "https://uri.etsi.org/ngsi-ld/localOnly";
 
