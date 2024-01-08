@@ -457,43 +457,44 @@ public class HistoryEntityService {
 
 	public Uni<Void> handleInternalRequest(BaseRequest request) {
 		switch (request.getRequestType()) {
-		case AppConstants.CREATE_REQUEST:
-			return historyDAO.createHistoryEntity(new CreateHistoryEntityRequest(request)).onItem()
-					.transformToUni(b -> {
-						return Uni.createFrom().voidItem();
-					}).onFailure().recoverWithUni(e -> {
-						logger.debug("Failed to record create", e);
-						return Uni.createFrom().voidItem();
-					});
-		case AppConstants.APPEND_REQUEST:
-		case AppConstants.UPDATE_REQUEST:
-		case AppConstants.REPLACE_ENTITY_REQUEST:
-		case AppConstants.REPLACE_ATTRIBUTE_REQUEST:
-			return historyDAO.appendToHistoryEntity(new AppendHistoryEntityRequest(request)).onItem()
-					.transformToUni(resultTable -> {
-						return Uni.createFrom().voidItem();
-					}).onFailure().recoverWithUni(e -> {
-						logger.debug("Failed to record update", e);
-						return Uni.createFrom().voidItem();
-					});
-		case AppConstants.DELETE_REQUEST:
-			return historyDAO.setEntityDeleted(request).onFailure().recoverWithUni(e -> {
-				logger.debug("Failed to record delete", e);
+			case AppConstants.CREATE_REQUEST:
+				return historyDAO.createHistoryEntity(new CreateHistoryEntityRequest(request)).onItem()
+						.transformToUni(b -> {
+							return Uni.createFrom().voidItem();
+						}).onFailure().recoverWithUni(e -> {
+							logger.debug("Failed to record create", e);
+							return Uni.createFrom().voidItem();
+						});
+			case AppConstants.APPEND_REQUEST:
+			case AppConstants.UPDATE_REQUEST:
+			case AppConstants.REPLACE_ENTITY_REQUEST:
+			case AppConstants.REPLACE_ATTRIBUTE_REQUEST:
+			case AppConstants.PARTIAL_UPDATE_REQUEST:
+				return historyDAO.appendToHistoryEntity(new AppendHistoryEntityRequest(request)).onItem()
+						.transformToUni(resultTable -> {
+							return Uni.createFrom().voidItem();
+						}).onFailure().recoverWithUni(e -> {
+							logger.debug("Failed to record update", e);
+							return Uni.createFrom().voidItem();
+						});
+			case AppConstants.DELETE_REQUEST:
+				return historyDAO.setEntityDeleted(request).onFailure().recoverWithUni(e -> {
+					logger.debug("Failed to record delete", e);
+					return Uni.createFrom().voidItem();
+				});
+			case AppConstants.DELETE_ATTRIBUTE_REQUEST:
+				return historyDAO.setAttributeDeleted(request).onFailure().recoverWithUni(e -> {
+					logger.debug("Failed to record delete attrs", e);
+					return Uni.createFrom().voidItem();
+				});
+			case AppConstants.MERGE_PATCH_REQUEST:
+				return historyDAO.setMergePatch(request).onFailure().recoverWithUni(e -> {
+					logger.debug("Failed to record merge patch", e);
+					return Uni.createFrom().voidItem();
+				});
+			default:
 				return Uni.createFrom().voidItem();
-			});
-		case AppConstants.DELETE_ATTRIBUTE_REQUEST:
-			return historyDAO.setAttributeDeleted(request).onFailure().recoverWithUni(e -> {
-				logger.debug("Failed to record delete attrs", e);
-				return Uni.createFrom().voidItem();
-			});
-		case AppConstants.MERGE_PATCH_REQUEST:
-			return historyDAO.setMergePatch(request).onFailure().recoverWithUni(e -> {
-				logger.debug("Failed to record merge patch", e);
-				return Uni.createFrom().voidItem();
-			});
-		default:
-			return Uni.createFrom().voidItem();
-		}
+			}
 	}
 
 	public Uni<Void> handleInternalBatchRequest(BatchRequest request) {
