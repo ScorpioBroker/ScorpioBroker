@@ -221,8 +221,11 @@ public class JsonLdApi {
 			boolean isGeoProperty = false;
 			boolean isProperty = false;
 			boolean isRelationship = false;
+			boolean isListRelationship=false;
 			boolean isLanguageProperty = false;
 			boolean isVocabProperty = false;
+			boolean isListProperty = false;
+			boolean isLocalOnly = false;
 			for (String expandedProperty : keys) {
 
 				Object expandedValue = elem.get(expandedProperty);
@@ -273,8 +276,17 @@ public class JsonLdApi {
 							case NGSIConstants.NGSI_LD_RELATIONSHIP:
 								isRelationship = true;
 								break;
-							case NGSIConstants.NGSI_LD_VocabularyProperty:
+							case NGSIConstants.NGSI_LD_LISTRELATIONSHIP:
+								isListRelationship = true;
+								break;
+							case NGSIConstants.NGSI_LD_VocabProperty:
 								isVocabProperty = true;
+								break;
+							case NGSIConstants.NGSI_LD_ListProperty:
+								isListProperty = true;
+								break;
+							case NGSIConstants.NGSI_LD_LOCALONLY:
+								isLocalOnly = true;
 								break;
 						}
 						if (!alias.equals(NGSIConstants.TYPE) && (keyValue || concise) ) {
@@ -361,6 +373,10 @@ public class JsonLdApi {
 						return compact(activeCtx, NGSIConstants.VOCAB, expandedValue, compactArrays, endPoint, null,
 								null);
 					}
+					else if(isListProperty && expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_LIST)){
+						return compact(activeCtx, NGSIConstants.LIST, expandedValue, compactArrays, endPoint, null,
+								null);
+					}
 					else if (isRelationship) {
 						if (expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_OBJECT)) {
 							List<String> ids = new ArrayList<>();
@@ -377,6 +393,38 @@ public class JsonLdApi {
 							continue;
 						}
 					}
+					else if (isListRelationship) {
+//						expanded value for ListRelationship
+//						"https://uri.etsi.org/ngsi-ld/hasObjectList": [
+//						{
+//							"@list": [
+//							{
+//								"@value": "urn:ngsi-ld:Person:Alice"
+//							},
+//							{
+//								"@value": "urn:ngsi-ld:Person:Bob"
+//							}
+//         				 ]
+//						}
+//					]
+						if (expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST)) {
+							List<String> ids = new ArrayList<>();
+							if(expandedValue instanceof List<?> lsIdsMap){
+								lsIdsMap.forEach(listMap->{
+									if(listMap instanceof Map<?,?> map) {
+										((List<Map<String,String>>)map.get(JsonLdConsts.LIST)).forEach(valueMap ->{
+											ids.add(valueMap.get(JsonLdConsts.VALUE));
+										});
+									}
+								});
+							}
+							return compact(activeCtx, activeProperty, ids/*expandedValue*/, compactArrays, endPoint, null,
+									null);
+						} else {
+							continue;
+						}
+					}
+
 //					else if (isLanguageProperty) {
 //						if (expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP)) {
 ////							return compact(activeCtx, activeProperty, expandedValue, compactArrays, endPoint, null,
@@ -389,6 +437,7 @@ public class JsonLdApi {
 					if (expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_VALUE)
 							|| expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP)
 							|| expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_OBJECT)
+							|| expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST)
 							|| expandedProperty.equals(NGSIConstants.NGSI_LD_OBSERVED_AT)
 							|| expandedProperty.equals(NGSIConstants.NGSI_LD_MODIFIED_AT)
 							|| expandedProperty.equals(NGSIConstants.NGSI_LD_CREATED_AT)
@@ -1206,7 +1255,10 @@ public class JsonLdApi {
 							ngsiElement.setHasVocab(true);
 						} else if (NGSIConstants.NGSI_LD_HAS_OBJECT.equals(expandedProperty)) {
 							ngsiElement.setHasAtObject(true);
-						} else if (NGSIConstants.NGSI_LD_DATE_TIME.equals(expandedProperty)) {
+						}else if (NGSIConstants.NGSI_LD_HAS_OBJECT_LIST.equals(expandedProperty)) {
+							ngsiElement.setHasListObject(true);
+						}
+						else if (NGSIConstants.NGSI_LD_DATE_TIME.equals(expandedProperty)) {
 							ngsiElement.setDateTime(true);
 						}
 						break;

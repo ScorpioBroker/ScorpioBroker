@@ -150,13 +150,22 @@ public abstract class EntityTools {
 				case NGSIConstants.NGSI_LD_RELATIONSHIP:
 					prop = SerializationTools.parseRelationship((List<Map<String, Object>>) value, key);
 					break;
+				case NGSIConstants.NGSI_LD_LISTRELATIONSHIP:
+					prop = SerializationTools.parseRelationship((List<Map<String, Object>>) value, key);
+					break;
 				case NGSIConstants.NGSI_LD_DATE_TIME:
 					prop = generateFakeProperty(typeString, ((List<Map<String, Object>>) value).get(0));
 					break;
 				case NGSIConstants.NGSI_LD_LANGPROPERTY:
 					prop = generateFakeProperty(key, tmp);
 					break;
-				case NGSIConstants.NGSI_LD_VocabularyProperty:
+				case NGSIConstants.NGSI_LD_VocabProperty:
+					prop = generateFakeProperty(key, tmp);
+					break;
+				case NGSIConstants.NGSI_LD_ListProperty:
+					prop = generateFakeProperty(key, tmp);
+					break;
+					case NGSIConstants.NGSI_LD_LOCALONLY:
 					prop = generateFakeProperty(key, tmp);
 					break;
 				case NGSIConstants.NGSI_LD_PROPERTY:
@@ -453,9 +462,15 @@ public abstract class EntityTools {
 			if (map.containsKey(NGSIConstants.OBJECT)) {
 				((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.RELATIONSHIP);
 			}
+			else if (map.containsKey(NGSIConstants.OBJECT_LIST)) {
+				((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.LISTRELATIONSHIP);
+			}
+			else if (map.containsKey(NGSIConstants.VALUE_LIST)) {
+				((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.LISTPROPERTY);
+			}
 			// Map have vocab but not type
 			else if (map.containsKey(NGSIConstants.VOCAB)) {
-				((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.VOCABULARYPROPERTY);
+				((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.VOCABPROPERTY);
 			}
 			// Map have value but not type
 			else if (map.containsKey(NGSIConstants.VALUE) && !map.containsKey(NGSIConstants.TYPE)) {
@@ -494,10 +509,15 @@ public abstract class EntityTools {
 							&& !key.equals(NGSIConstants.QUERY_PARAMETER_COORDINATES)
 							&& !key.equals(NGSIConstants.QUERY_PARAMETER_OBSERVED_AT)
 							&& !key.equals(NGSIConstants.INSTANCE_ID)
-							&& !key.equals(NGSIConstants.QUERY_PARAMETER_DATA_SET_ID) && !key.equals(NGSIConstants.OBJECT)
+							&& !key.equals(NGSIConstants.QUERY_PARAMETER_DATA_SET_ID)
+							&& !key.equals(NGSIConstants.OBJECT)
+							&& !key.equals(NGSIConstants.OBJECT_LIST)
 							&& !key.equals(NGSIConstants.VALUE) && !key.equals(NGSIConstants.SCOPE)
 							&& !key.equals(NGSIConstants.QUERY_PARAMETER_UNIT_CODE)
-							&& !key.equals(NGSIConstants.LANGUAGE_MAP) && !key.equals(NGSIConstants.VOCAB)
+							&& !key.equals(NGSIConstants.LANGUAGE_MAP)
+							&& !key.equals(NGSIConstants.VOCAB)
+							&& !key.equals(NGSIConstants.LIST)
+							&& !key.equals(NGSIConstants.LOCALONLY)
 							&& !key.equals(NGSIConstants.OBJECT_TYPE)) {
 						noConcise(map.get(key), (Map<String, Object>) map, key.toString(),level+1);
 					}

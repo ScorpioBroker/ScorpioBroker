@@ -181,7 +181,10 @@ This addresses
 
 RELEASE NOTES SCORPIO 4.0.0
 
+FRAMEWORK CHANGE
 
+As announced with Relaease 3.0.0, we have moved frameworks, from Spring Boot to Quarkus. After maintaining both versions for a while, from Release 4.0 onwards, we only support the Quarkus framework
+and not Spring Boot anymore. 
 
 With this release we are moving to NGSI-LD version 1.6.1. This means there are a few changes in the core context.
 As a general warning. There might be query issues with previous created entities with scopes and scope queries. We will soon provide a script to update your current entities up to spec as well as a script/tutorial how to backup your database for Scorpio.
