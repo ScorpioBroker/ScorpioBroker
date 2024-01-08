@@ -532,7 +532,9 @@ public class QueryParser {
 				keyBuilder.append(c);
 			}
 		}
-
+		if(resultMap.isEmpty()){
+			return Map.of(input,new HashMap<>());
+		}
 		return resultMap;
 	}
 

@@ -15740,6 +15740,1347 @@
 													]
 												}
 											]
+										},
+										{
+											"name": "Pick and Omit",
+											"item": [
+												{
+													"name": "get by id with pick",
+													"item": [
+														{
+															"name": "Create Simple Entity",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																			"console.log(payloadBody.id);\r",
+																			"var entityId = payloadBody.id;\r",
+																			"pm.collectionVariables.set(\"createdTBF\", payloadBody);\r",
+																			"pm.collectionVariables.set(\"entityIdTBF\", entityId);\r",
+																			"pm.collectionVariables.set(\"entityTypeTBF\", payloadBody.type);\r",
+																			"pm.test(\"Status code is 201\", function () {\r",
+																			"    pm.response.to.have.status(201);\r",
+																			"});\r",
+																			"pm.test(\"Check location header\", function () {\r",
+																			"    pm.response.to.have.header(\"Location\");\r",
+																			"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+																			"});\r",
+																			"\r",
+																			"\r",
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																},
+																{
+																	"listen": "prerequest",
+																	"script": {
+																		"exec": [
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "POST",
+																"header": [
+																	{
+																		"key": "Content-Type",
+																		"value": "application/json",
+																		"type": "default"
+																	},
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default",
+																		"disabled": true
+																	}
+																],
+																"body": {
+																	"mode": "raw",
+																	"raw": "{\r\n    \"id\": \"urn:test:testentity11\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
+																	"options": {
+																		"raw": {
+																			"language": "json"
+																		}
+																	}
+																},
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Retrieving stringproperty using pick",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 200\", function () {\r",
+																			"    pm.response.to.have.status(200);\r",
+																			"});\r",
+																			"\r",
+																			"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
+																			"    var entity = pm.response.json();\r",
+																			"    var keys = Object.keys(entity);\r",
+																			"    pm.expect(keys.length).to.eql(1);\r",
+																			"    pm.expect(keys).to.contain(\"stringproperty\");\r",
+																			"    \r",
+																			"});"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "GET",
+																"header": [
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default"
+																	}
+																],
+																"url": {
+																	"raw": "{{query-manager}}/ngsi-ld/v1/entities/urn:test:testentity11?pick=stringproperty",
+																	"host": [
+																		"{{query-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities",
+																		"urn:test:testentity11"
+																	],
+																	"query": [
+																		{
+																			"key": "pick",
+																			"value": "stringproperty"
+																		}
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Delete Entity TBF",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 204\", function () {\r",
+																			"    pm.response.to.have.status(204);\r",
+																			"});"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "DELETE",
+																"header": [],
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities/{{entityIdTBF}}",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities",
+																		"{{entityIdTBF}}"
+																	]
+																}
+															},
+															"response": []
+														}
+													]
+												},
+												{
+													"name": "get by type with pick",
+													"item": [
+														{
+															"name": "Create Simple Entity",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																			"console.log(payloadBody.id);\r",
+																			"var entityId = payloadBody.id;\r",
+																			"pm.collectionVariables.set(\"createdTBF\", payloadBody);\r",
+																			"pm.collectionVariables.set(\"entityIdTBF\", entityId);\r",
+																			"pm.collectionVariables.set(\"entityTypeTBF\", payloadBody.type);\r",
+																			"pm.test(\"Status code is 201\", function () {\r",
+																			"    pm.response.to.have.status(201);\r",
+																			"});\r",
+																			"pm.test(\"Check location header\", function () {\r",
+																			"    pm.response.to.have.header(\"Location\");\r",
+																			"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+																			"});\r",
+																			"\r",
+																			"\r",
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																},
+																{
+																	"listen": "prerequest",
+																	"script": {
+																		"exec": [
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "POST",
+																"header": [
+																	{
+																		"key": "Content-Type",
+																		"value": "application/json",
+																		"type": "default"
+																	},
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default",
+																		"disabled": true
+																	}
+																],
+																"body": {
+																	"mode": "raw",
+																	"raw": "{\r\n    \"id\": \"urn:test:testentity12\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
+																	"options": {
+																		"raw": {
+																			"language": "json"
+																		}
+																	}
+																},
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Retrieving stringproperty using pick",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 200\", function () {\r",
+																			"    pm.response.to.have.status(200);\r",
+																			"});\r",
+																			"\r",
+																			"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
+																			"    var entity = pm.response.json();\r",
+																			"    var keys = Object.keys(entity[0]);\r",
+																			"    pm.expect(keys.length).to.eql(1);\r",
+																			"    pm.expect(keys).to.contain(\"stringproperty\");\r",
+																			"    \r",
+																			"});"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "GET",
+																"header": [
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default"
+																	}
+																],
+																"url": {
+																	"raw": "{{query-manager}}/ngsi-ld/v1/entities?type=TestType&pick=stringproperty",
+																	"host": [
+																		"{{query-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities"
+																	],
+																	"query": [
+																		{
+																			"key": "type",
+																			"value": "TestType"
+																		},
+																		{
+																			"key": "pick",
+																			"value": "stringproperty"
+																		}
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Delete Entity TBF",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 204\", function () {\r",
+																			"    pm.response.to.have.status(204);\r",
+																			"});"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "DELETE",
+																"header": [],
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities/{{entityIdTBF}}",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities",
+																		"{{entityIdTBF}}"
+																	]
+																}
+															},
+															"response": []
+														}
+													]
+												},
+												{
+													"name": "get by id with pick equal id,type",
+													"item": [
+														{
+															"name": "Create Simple Entity",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																			"console.log(payloadBody.id);\r",
+																			"var entityId = payloadBody.id;\r",
+																			"pm.collectionVariables.set(\"createdTBF\", payloadBody);\r",
+																			"pm.collectionVariables.set(\"entityIdTBF\", entityId);\r",
+																			"pm.collectionVariables.set(\"entityTypeTBF\", payloadBody.type);\r",
+																			"pm.test(\"Status code is 201\", function () {\r",
+																			"    pm.response.to.have.status(201);\r",
+																			"});\r",
+																			"pm.test(\"Check location header\", function () {\r",
+																			"    pm.response.to.have.header(\"Location\");\r",
+																			"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+																			"});\r",
+																			"\r",
+																			"\r",
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																},
+																{
+																	"listen": "prerequest",
+																	"script": {
+																		"exec": [
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "POST",
+																"header": [
+																	{
+																		"key": "Content-Type",
+																		"value": "application/json",
+																		"type": "default"
+																	},
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default",
+																		"disabled": true
+																	}
+																],
+																"body": {
+																	"mode": "raw",
+																	"raw": "{\r\n    \"id\": \"urn:test:testentity13\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
+																	"options": {
+																		"raw": {
+																			"language": "json"
+																		}
+																	}
+																},
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Retrieving id,type using pick",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 200\", function () {\r",
+																			"    pm.response.to.have.status(200);\r",
+																			"});\r",
+																			"\r",
+																			"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
+																			"    var entity = pm.response.json();\r",
+																			"    var keys = Object.keys(entity);\r",
+																			"    pm.expect(keys.length).to.eql(2);\r",
+																			"    pm.expect(keys).to.contain(\"id\");\r",
+																			"    pm.expect(keys).to.contain(\"type\");\r",
+																			"    \r",
+																			"});"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "GET",
+																"header": [
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default"
+																	}
+																],
+																"url": {
+																	"raw": "{{query-manager}}/ngsi-ld/v1/entities/urn:test:testentity13?pick=id,type",
+																	"host": [
+																		"{{query-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities",
+																		"urn:test:testentity13"
+																	],
+																	"query": [
+																		{
+																			"key": "pick",
+																			"value": "id,type"
+																		}
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Delete Entity TBF",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 204\", function () {\r",
+																			"    pm.response.to.have.status(204);\r",
+																			"});"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "DELETE",
+																"header": [],
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities/{{entityIdTBF}}",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities",
+																		"{{entityIdTBF}}"
+																	]
+																}
+															},
+															"response": []
+														}
+													]
+												},
+												{
+													"name": "get by type with pick equal id,type",
+													"item": [
+														{
+															"name": "Create Simple Entity",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																			"console.log(payloadBody.id);\r",
+																			"var entityId = payloadBody.id;\r",
+																			"pm.collectionVariables.set(\"createdTBF\", payloadBody);\r",
+																			"pm.collectionVariables.set(\"entityIdTBF\", entityId);\r",
+																			"pm.collectionVariables.set(\"entityTypeTBF\", payloadBody.type);\r",
+																			"pm.test(\"Status code is 201\", function () {\r",
+																			"    pm.response.to.have.status(201);\r",
+																			"});\r",
+																			"pm.test(\"Check location header\", function () {\r",
+																			"    pm.response.to.have.header(\"Location\");\r",
+																			"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+																			"});\r",
+																			"\r",
+																			"\r",
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																},
+																{
+																	"listen": "prerequest",
+																	"script": {
+																		"exec": [
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "POST",
+																"header": [
+																	{
+																		"key": "Content-Type",
+																		"value": "application/json",
+																		"type": "default"
+																	},
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default",
+																		"disabled": true
+																	}
+																],
+																"body": {
+																	"mode": "raw",
+																	"raw": "{\r\n    \"id\": \"urn:test:testentity14\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
+																	"options": {
+																		"raw": {
+																			"language": "json"
+																		}
+																	}
+																},
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Retrieving id,type using pick",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 200\", function () {\r",
+																			"    pm.response.to.have.status(200);\r",
+																			"});\r",
+																			"\r",
+																			"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
+																			"    var entity = pm.response.json();\r",
+																			"    var keys = Object.keys(entity[0]);\r",
+																			"    pm.expect(keys.length).to.eql(2);\r",
+																			"    pm.expect(keys).to.contain(\"id\");\r",
+																			"    pm.expect(keys).to.contain(\"type\");\r",
+																			"    \r",
+																			"});"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "GET",
+																"header": [
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default"
+																	}
+																],
+																"url": {
+																	"raw": "{{query-manager}}/ngsi-ld/v1/entities?type=TestType&pick=id,type",
+																	"host": [
+																		"{{query-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities"
+																	],
+																	"query": [
+																		{
+																			"key": "type",
+																			"value": "TestType"
+																		},
+																		{
+																			"key": "pick",
+																			"value": "id,type"
+																		}
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Delete Entity TBF",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 204\", function () {\r",
+																			"    pm.response.to.have.status(204);\r",
+																			"});"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "DELETE",
+																"header": [],
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities/{{entityIdTBF}}",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities",
+																		"{{entityIdTBF}}"
+																	]
+																}
+															},
+															"response": []
+														}
+													]
+												},
+												{
+													"name": "get by id with omit",
+													"item": [
+														{
+															"name": "Create Simple Entity",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																			"console.log(payloadBody.id);\r",
+																			"var entityId = payloadBody.id;\r",
+																			"pm.collectionVariables.set(\"createdTBF\", payloadBody);\r",
+																			"pm.collectionVariables.set(\"entityIdTBF\", entityId);\r",
+																			"pm.collectionVariables.set(\"entityTypeTBF\", payloadBody.type);\r",
+																			"pm.test(\"Status code is 201\", function () {\r",
+																			"    pm.response.to.have.status(201);\r",
+																			"});\r",
+																			"pm.test(\"Check location header\", function () {\r",
+																			"    pm.response.to.have.header(\"Location\");\r",
+																			"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+																			"});\r",
+																			"\r",
+																			"\r",
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																},
+																{
+																	"listen": "prerequest",
+																	"script": {
+																		"exec": [
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "POST",
+																"header": [
+																	{
+																		"key": "Content-Type",
+																		"value": "application/json",
+																		"type": "default"
+																	},
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default",
+																		"disabled": true
+																	}
+																],
+																"body": {
+																	"mode": "raw",
+																	"raw": "{\r\n    \"id\": \"urn:test:testentity15\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
+																	"options": {
+																		"raw": {
+																			"language": "json"
+																		}
+																	}
+																},
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Retrieving stringproperty using omit",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 200\", function () {\r",
+																			"    pm.response.to.have.status(200);\r",
+																			"});\r",
+																			"\r",
+																			"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
+																			"    var entity = pm.response.json();\r",
+																			"    var keys = Object.keys(entity);\r",
+																			"    pm.expect(keys.length).to.eql(6);\r",
+																			" });"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "GET",
+																"header": [
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default"
+																	}
+																],
+																"url": {
+																	"raw": "{{query-manager}}/ngsi-ld/v1/entities/urn:test:testentity15?omit=stringproperty",
+																	"host": [
+																		"{{query-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities",
+																		"urn:test:testentity15"
+																	],
+																	"query": [
+																		{
+																			"key": "omit",
+																			"value": "stringproperty"
+																		}
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Delete Entity",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 204\", function () {\r",
+																			"    pm.response.to.have.status(204);\r",
+																			"});"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "DELETE",
+																"header": [],
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities/{{entityIdTBF}}",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities",
+																		"{{entityIdTBF}}"
+																	]
+																}
+															},
+															"response": []
+														}
+													]
+												},
+												{
+													"name": "get by type with omit",
+													"item": [
+														{
+															"name": "Create Simple Entity",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																			"console.log(payloadBody.id);\r",
+																			"var entityId = payloadBody.id;\r",
+																			"pm.collectionVariables.set(\"createdTBF\", payloadBody);\r",
+																			"pm.collectionVariables.set(\"entityIdTBF\", entityId);\r",
+																			"pm.collectionVariables.set(\"entityTypeTBF\", payloadBody.type);\r",
+																			"pm.test(\"Status code is 201\", function () {\r",
+																			"    pm.response.to.have.status(201);\r",
+																			"});\r",
+																			"pm.test(\"Check location header\", function () {\r",
+																			"    pm.response.to.have.header(\"Location\");\r",
+																			"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+																			"});\r",
+																			"\r",
+																			"\r",
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																},
+																{
+																	"listen": "prerequest",
+																	"script": {
+																		"exec": [
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "POST",
+																"header": [
+																	{
+																		"key": "Content-Type",
+																		"value": "application/json",
+																		"type": "default"
+																	},
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default",
+																		"disabled": true
+																	}
+																],
+																"body": {
+																	"mode": "raw",
+																	"raw": "{\r\n    \"id\": \"urn:test:testentity16\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
+																	"options": {
+																		"raw": {
+																			"language": "json"
+																		}
+																	}
+																},
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Retrieving stringproperty using omit",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 200\", function () {\r",
+																			"    pm.response.to.have.status(200);\r",
+																			"});\r",
+																			"\r",
+																			"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
+																			"    var entity = pm.response.json();\r",
+																			"    var keys = Object.keys(entity[0]);\r",
+																			"    pm.expect(keys.length).to.eql(6);\r",
+																			"    pm.expect(keys).to.not.contains(\"stringproperty\");\r",
+																			"    \r",
+																			"});"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "GET",
+																"header": [
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default"
+																	}
+																],
+																"url": {
+																	"raw": "{{query-manager}}/ngsi-ld/v1/entities?type=TestType&omit=stringproperty",
+																	"host": [
+																		"{{query-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities"
+																	],
+																	"query": [
+																		{
+																			"key": "type",
+																			"value": "TestType"
+																		},
+																		{
+																			"key": "omit",
+																			"value": "stringproperty"
+																		}
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Delete Entity",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 204\", function () {\r",
+																			"    pm.response.to.have.status(204);\r",
+																			"});"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "DELETE",
+																"header": [],
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities/{{entityIdTBF}}",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities",
+																		"{{entityIdTBF}}"
+																	]
+																}
+															},
+															"response": []
+														}
+													]
+												},
+												{
+													"name": "get by id with omit equal id,type",
+													"item": [
+														{
+															"name": "Create Simple Entity",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																			"console.log(payloadBody.id);\r",
+																			"var entityId = payloadBody.id;\r",
+																			"pm.collectionVariables.set(\"createdTBF\", payloadBody);\r",
+																			"pm.collectionVariables.set(\"entityIdTBF\", entityId);\r",
+																			"pm.collectionVariables.set(\"entityTypeTBF\", payloadBody.type);\r",
+																			"pm.test(\"Status code is 201\", function () {\r",
+																			"    pm.response.to.have.status(201);\r",
+																			"});\r",
+																			"pm.test(\"Check location header\", function () {\r",
+																			"    pm.response.to.have.header(\"Location\");\r",
+																			"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+																			"});\r",
+																			"\r",
+																			"\r",
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																},
+																{
+																	"listen": "prerequest",
+																	"script": {
+																		"exec": [
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "POST",
+																"header": [
+																	{
+																		"key": "Content-Type",
+																		"value": "application/json",
+																		"type": "default"
+																	},
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default",
+																		"disabled": true
+																	}
+																],
+																"body": {
+																	"mode": "raw",
+																	"raw": "{\r\n    \"id\": \"urn:test:testentity17\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
+																	"options": {
+																		"raw": {
+																			"language": "json"
+																		}
+																	}
+																},
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Retrieving id,type using omit",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 200\", function () {\r",
+																			"    pm.response.to.have.status(200);\r",
+																			"});\r",
+																			"\r",
+																			"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
+																			"    var entity = pm.response.json();\r",
+																			"    var keys = Object.keys(entity);\r",
+																			"    pm.expect(keys.length).to.eql(5);\r",
+																			"});"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "GET",
+																"header": [
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default"
+																	}
+																],
+																"url": {
+																	"raw": "{{query-manager}}/ngsi-ld/v1/entities/urn:test:testentity17?omit=id,type",
+																	"host": [
+																		"{{query-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities",
+																		"urn:test:testentity17"
+																	],
+																	"query": [
+																		{
+																			"key": "omit",
+																			"value": "id,type"
+																		}
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Delete Entity",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 204\", function () {\r",
+																			"    pm.response.to.have.status(204);\r",
+																			"});"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "DELETE",
+																"header": [],
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities/{{entityIdTBF}}",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities",
+																		"{{entityIdTBF}}"
+																	]
+																}
+															},
+															"response": []
+														}
+													]
+												},
+												{
+													"name": "get by type with omit equal id,type",
+													"item": [
+														{
+															"name": "Create Simple Entity",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																			"console.log(payloadBody.id);\r",
+																			"var entityId = payloadBody.id;\r",
+																			"pm.collectionVariables.set(\"createdTBF\", payloadBody);\r",
+																			"pm.collectionVariables.set(\"entityIdTBF\", entityId);\r",
+																			"pm.collectionVariables.set(\"entityTypeTBF\", payloadBody.type);\r",
+																			"pm.test(\"Status code is 201\", function () {\r",
+																			"    pm.response.to.have.status(201);\r",
+																			"});\r",
+																			"pm.test(\"Check location header\", function () {\r",
+																			"    pm.response.to.have.header(\"Location\");\r",
+																			"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+																			"});\r",
+																			"\r",
+																			"\r",
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																},
+																{
+																	"listen": "prerequest",
+																	"script": {
+																		"exec": [
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "POST",
+																"header": [
+																	{
+																		"key": "Content-Type",
+																		"value": "application/json",
+																		"type": "default"
+																	},
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default",
+																		"disabled": true
+																	}
+																],
+																"body": {
+																	"mode": "raw",
+																	"raw": "{\r\n    \"id\": \"urn:test:testentity18\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
+																	"options": {
+																		"raw": {
+																			"language": "json"
+																		}
+																	}
+																},
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities"
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Retrieving id,type using omit",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 200\", function () {\r",
+																			"    pm.response.to.have.status(200);\r",
+																			"});\r",
+																			"\r",
+																			"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
+																			"    var entity = pm.response.json();\r",
+																			"    var keys = Object.keys(entity[0]);\r",
+																			"    pm.expect(keys.length).to.eql(5); \r",
+																			"});"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "GET",
+																"header": [
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default"
+																	}
+																],
+																"url": {
+																	"raw": "{{query-manager}}/ngsi-ld/v1/entities?type=TestType&omit=id,type",
+																	"host": [
+																		"{{query-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities"
+																	],
+																	"query": [
+																		{
+																			"key": "type",
+																			"value": "TestType"
+																		},
+																		{
+																			"key": "omit",
+																			"value": "id,type"
+																		}
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Delete Entity",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"pm.test(\"Status code is 204\", function () {\r",
+																			"    pm.response.to.have.status(204);\r",
+																			"});"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "DELETE",
+																"header": [],
+																"url": {
+																	"raw": "{{entity-manager}}/ngsi-ld/v1/entities/{{entityIdTBF}}",
+																	"host": [
+																		"{{entity-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities",
+																		"{{entityIdTBF}}"
+																	]
+																}
+															},
+															"response": []
+														}
+													]
+												}
+											]
 										}
 									]
 								},
@@ -53726,6 +55067,72 @@
 											"response": []
 										}
 									]
+								},
+								{
+									"name": "pick and omit both present",
+									"item": [
+										{
+											"name": "pick and omit error check",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"var expected = {\r",
+															"    \"type\": \"https://uri.etsi.org/ngsi-ld/errors/BadRequestData\",\r",
+															"    \"title\": \"Bad Request Data.\",\r",
+															"    \"errorCode\": 400\r",
+															"}\r",
+															"pm.test(\"Status code is 404\", function () {\r",
+															"    pm.response.to.have.status(400);\r",
+															"});\r",
+															"pm.test(\"Validate content\", function () {\r",
+															"    var jsonData = pm.response.json();\r",
+															"    delete jsonData['detail'];\r",
+															"    console.log(\"expected: \" + JSON.stringify(expected));\r",
+															"    console.log(\"received: \" + JSON.stringify(jsonData));\r",
+															"    pm.expect(jsonData).to.eql(expected);\r",
+															"});"
+														],
+														"type": "text/javascript"
+													}
+												}
+											],
+											"request": {
+												"method": "GET",
+												"header": [
+													{
+														"key": "Accept",
+														"value": "application/json",
+														"type": "default"
+													}
+												],
+												"url": {
+													"raw": "{{query-manager}}/ngsi-ld/v1/entities/urn:idany?pick=something&omit=something",
+													"host": [
+														"{{query-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"entities",
+														"urn:idany"
+													],
+													"query": [
+														{
+															"key": "pick",
+															"value": "something"
+														},
+														{
+															"key": "omit",
+															"value": "something"
+														}
+													]
+												}
+											},
+											"response": []
+										}
+									]
 								}
 							]
 						},
@@ -53963,6 +55370,20 @@
 					]
 				}
 			]
+		}
+	],
+	"variable": [
+		{
+			"key": "createdTBF",
+			"value": ""
+		},
+		{
+			"key": "entityIdTBF",
+			"value": ""
+		},
+		{
+			"key": "entityTypeTBF",
+			"value": ""
 		}
 	]
 }

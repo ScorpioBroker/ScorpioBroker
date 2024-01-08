@@ -79,7 +79,7 @@ public class SubscriptionController {
 			return subService.getAllSubscriptions(HttpUtils.getTenant(request), actualLimit, offset).onItem()
 					.transformToUni(subscriptions -> {
 						return HttpUtils.generateQueryResult(request, subscriptions, options, null, acceptHeader, false,
-								actualLimit, null, ctx, ldService);
+								actualLimit, null, ctx, ldService,null,null);
 					});
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
@@ -103,7 +103,7 @@ public class SubscriptionController {
 			return subService.getSubscription(HttpUtils.getTenant(request), subscriptionId).onItem()
 					.transformToUni(subscription -> {
 						return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, subscription, null,
-								options, null, ldService);
+								options, null, ldService,null,null);
 					});
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
