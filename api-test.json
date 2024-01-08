@@ -1,8 +1,9 @@
 {
 	"info": {
-		"_postman_id": "18fff383-e773-49da-a178-fe1fbd9f05dd",
+		"_postman_id": "9fb1941e-c99a-40f7-ae1a-01f897400763",
 		"name": "API Test",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "26387112"
 	},
 	"item": [
 		{
@@ -73,7 +74,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabularyProperty\", \"vocab\": \"x\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"street\": {\r\n        \"type\": \"LanguageProperty\",\r\n        \"languageMap\": {\r\n            \"fr\": \"Grand Place\",\r\n            \"nl\": \"Grote Markt\"\r\n        }\r\n    }\r\n\r\n}",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n    \"listproperty\": {\"type\": \"ListProperty\", \"valueList\": [100,200,300]},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"passenger\": {\r\n       \"type\": \"ListRelationship\",\r\n       \"objectType\": \"Person\",\r\n       \"objectList\": [\r\n           \"urn:ngsi-ld:Person:Alice\",\r\n           \"urn:ngsi-ld:Person:Bob\"\r\n       ]\r\n   },\r\n    \"street\": {\r\n        \"type\": \"LanguageProperty\",\r\n        \"languageMap\": {\r\n            \"fr\": \"Grand Place\",\r\n            \"nl\": \"Grote Markt\"\r\n        }\r\n    }\r\n\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -233,7 +234,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabularyProperty\", \"vocab\": \"x\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n     \"listproperty\": {\"type\": \"ListProperty\", \"valueList\": [100,200,300]},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"passenger\": {\r\n       \"type\": \"ListRelationship\",\r\n       \"objectType\": \"Person\",\r\n       \"objectList\": [\r\n           \"urn:ngsi-ld:Person:Alice\",\r\n           \"urn:ngsi-ld:Person:Bob\"\r\n       ]\r\n   },\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -398,7 +399,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabularyProperty\", \"vocab\": \"x\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n    \"listproperty\": {\"type\": \"ListProperty\", \"valueList\": [100,200,300]},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"passenger\": {\r\n       \"type\": \"ListRelationship\",\r\n       \"objectType\": \"Person\",\r\n       \"objectList\": [\r\n           \"urn:ngsi-ld:Person:Alice\",\r\n           \"urn:ngsi-ld:Person:Bob\"\r\n       ]\r\n   }\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -660,7 +661,7 @@
 																	"        \"object\": \"urn:testref1\"\r",
 																	"    },\r",
 																	"    \"vocabproperty\": {\r",
-																	"        \"type\": \"VocabularyProperty\",\r",
+																	"        \"type\": \"VocabProperty\",\r",
 																	"        \"vocab\": \"x\"\r",
 																	"    }\r",
 																	"};\r",
@@ -799,7 +800,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabularyProperty\", \"vocab\": \"x\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n     \"listproperty\": {\"type\": \"ListProperty\", \"valueList\": [100,200,300]},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n     \"passenger\": {\r\n       \"type\": \"ListRelationship\",\r\n       \"objectType\": \"Person\",\r\n       \"objectList\": [\r\n           \"urn:ngsi-ld:Person:Alice\",\r\n           \"urn:ngsi-ld:Person:Bob\"\r\n       ]\r\n   }\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -855,7 +856,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststringupdated\"},\r\n    \"vocabproperty\": {\"type\": \"VocabularyProperty\", \"vocab\": \"y\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123456},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456789},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values updated\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1:updated\"}\r\n}",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststringupdated\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"y\"},\r\n    \"listproperty\": {\"type\": \"ListProperty\", \"valueList\": [10,20,30]},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123456},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456789},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values updated\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1:updated\"}, \"passenger\": {\r\n       \"type\": \"ListRelationship\",\r\n       \"objectType\": \"Person\",\r\n       \"objectList\": [\r\n           \"urn:ngsi-ld:Person:AliceNew\",\r\n           \"urn:ngsi-ld:Person:BobNew\"\r\n       ]\r\n   }\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -1020,7 +1021,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabularyProperty\", \"vocab\": \"x\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -1620,7 +1621,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\"type\": \"VocabularyProperty\", \"vocab\": \"y\"}",
+															"raw": "{\"type\": \"VocabProperty\", \"vocab\": \"y\"}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -1788,7 +1789,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabularyProperty\", \"vocab\": \"x\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -1844,7 +1845,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststringupdated\"},\r\n    \"vocabproperty\": {\"type\": \"VocabularyProperty\", \"vocab\": \"y\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123456},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456789},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values updated\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1:updated\"},\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststringupdated\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"y\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123456},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456789},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values updated\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1:updated\"},\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -4017,7 +4018,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabularyProperty\", \"vocab\": \"x\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -15941,7 +15942,7 @@
 												],
 												"body": {
 													"mode": "raw",
-													"raw": "{\r\n    \"id\": \"urn:test:testentity123\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n     \"vocabproperty\": {\"type\": \"VocabularyProperty\", \"vocab\": \"x\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"street\": {\r\n        \"type\": \"LanguageProperty\",\r\n        \"languageMap\": {\r\n            \"fr\": \"Grand Place\",\r\n            \"nl\": \"Grote Markt\"\r\n        }\r\n    }\r\n\r\n}",
+													"raw": "{\r\n    \"id\": \"urn:test:testentity123\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n     \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"street\": {\r\n        \"type\": \"LanguageProperty\",\r\n        \"languageMap\": {\r\n            \"fr\": \"Grand Place\",\r\n            \"nl\": \"Grote Markt\"\r\n        }\r\n    }\r\n\r\n}",
 													"options": {
 														"raw": {
 															"language": "json"
@@ -21933,7 +21934,7 @@
 																],
 																"body": {
 																	"mode": "raw",
-																	"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabularyProperty\", \"vocab\": \"x\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
+																	"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
 																	"options": {
 																		"raw": {
 																			"language": "json"
@@ -22155,7 +22156,7 @@
 																],
 																"body": {
 																	"mode": "raw",
-																	"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabularyProperty\", \"vocab\": \"x\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
+																	"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
 																	"options": {
 																		"raw": {
 																			"language": "json"
@@ -25284,7 +25285,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"urn:test:testentityb1\",\r\n    \"type\": \"TestType1\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n     \"vocabproperty\": {\"type\": \"VocabularyProperty\", \"vocab\": \"x\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"street\": {\r\n        \"type\": \"LanguageProperty\",\r\n        \"languageMap\": {\r\n            \"fr\": \"Grand Place\",\r\n            \"nl\": \"Grote Markt\"\r\n        }\r\n    }\r\n\r\n}",
+															"raw": "{\r\n    \"id\": \"urn:test:testentityb1\",\r\n    \"type\": \"TestType1\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n     \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"street\": {\r\n        \"type\": \"LanguageProperty\",\r\n        \"languageMap\": {\r\n            \"fr\": \"Grand Place\",\r\n            \"nl\": \"Grote Markt\"\r\n        }\r\n    }\r\n\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -25385,7 +25386,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"urn:test:testentityb2\",\r\n    \"type\": \"TestType2\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n     \"vocabproperty\": {\"type\": \"VocabularyProperty\", \"vocab\": \"x\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"street\": {\r\n        \"type\": \"LanguageProperty\",\r\n        \"languageMap\": {\r\n            \"fr\": \"Grand Place\",\r\n            \"nl\": \"Grote Markt\"\r\n        }\r\n    }\r\n\r\n}",
+															"raw": "{\r\n    \"id\": \"urn:test:testentityb2\",\r\n    \"type\": \"TestType2\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n     \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"street\": {\r\n        \"type\": \"LanguageProperty\",\r\n        \"languageMap\": {\r\n            \"fr\": \"Grand Place\",\r\n            \"nl\": \"Grote Markt\"\r\n        }\r\n    }\r\n\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -53462,6 +53463,20 @@
 					]
 				}
 			]
+		}
+	],
+	"variable": [
+		{
+			"key": "created",
+			"value": ""
+		},
+		{
+			"key": "entityId",
+			"value": ""
+		},
+		{
+			"key": "updated",
+			"value": ""
 		}
 	]
 }
