@@ -43,6 +43,17 @@ class NGSIObject {
 	private boolean isReceiverInfo = false;
 	private boolean hasAtContext = false;
 
+
+
+	private boolean isLocalOnly =false;
+	public boolean isLocalOnly() {
+		return isLocalOnly;
+	}
+
+	public void setLocalOnly(boolean isLocalOnly) {
+		this.isLocalOnly = isLocalOnly;
+	}
+
 	public boolean isListProperty() {
 		return isListProperty;
 	}
@@ -226,6 +237,8 @@ class NGSIObject {
 			this.isVocabProperty = true;
 		} else if(NGSIConstants.NGSI_LD_ListProperty.equals(type)){
 			this.isLanguageProperty=true;
+		}else if(NGSIConstants.NGSI_LD_LOCALONLY.equals(type)){
+			this.isLocalOnly=true;
 		}
 
 		return this;
@@ -676,15 +689,17 @@ class NGSIObject {
 			validateArray();
 		} else {
 			if (isLdKeyWord && parent == null && !isProperty && !isRelationship && !isGeoProperty && !isDateTime
-					&& !isLanguageProperty && !isVocabProperty && !isListProperty && !isListRelationship) {
+					&& !isLanguageProperty && !isVocabProperty && !isListProperty && !isListRelationship && !isLocalOnly) {
 				return;
 			}
 			if (!isProperty && !isRelationship && !isGeoProperty && !isDateTime && !isLanguageProperty
-					&& !isVocabProperty && !isListProperty && !isListRelationship) {
+					&& !isVocabProperty && !isListProperty && !isListRelationship  && !isLocalOnly) {
 				throw new ResponseException(ErrorType.BadRequestData,
 						"The key " + activeProperty + " is an invalid entry.");
 			}
 			if (isProperty && !hasValue) {
+				throw new ResponseException(ErrorType.BadRequestData, "You can't have properties without a value");
+			}if (isLocalOnly && !hasValue) {
 				throw new ResponseException(ErrorType.BadRequestData, "You can't have properties without a value");
 			}
 			if (isVocabProperty && !hasVocab) {
@@ -915,7 +930,9 @@ class NGSIObject {
 		this.isScalar = this.isScalar || ngsiV.isScalar;
 		this.isVocabProperty = this.isVocabProperty || ngsiV.isVocabProperty;
 		this.isListProperty  = this.isListProperty  || ngsiV.isListProperty;
-		if ((ngsiV.isRelationship || ngsiV.isListRelationship || ngsiV.isProperty || ngsiV.isLanguageProperty || ngsiV.isVocabProperty || ngsiV.isListProperty)) {
+		this.isLocalOnly = this.isLocalOnly || ngsiV.isLocalOnly;
+		if ((ngsiV.isRelationship || ngsiV.isListRelationship || ngsiV.isProperty || ngsiV.isLanguageProperty
+				|| ngsiV.isVocabProperty || ngsiV.isListProperty || ngsiV.isLocalOnly)) {
 			if (ngsiV.datasetIds.isEmpty()) {
 				this.datasetIds.add(NGSIConstants.DEFAULT_DATA_SET_ID);
 			} else {

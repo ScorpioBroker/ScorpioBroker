@@ -225,6 +225,7 @@ public class JsonLdApi {
 			boolean isLanguageProperty = false;
 			boolean isVocabProperty = false;
 			boolean isListProperty = false;
+			boolean isLocalOnly = false;
 			for (String expandedProperty : keys) {
 
 				Object expandedValue = elem.get(expandedProperty);
@@ -283,6 +284,9 @@ public class JsonLdApi {
 								break;
 							case NGSIConstants.NGSI_LD_ListProperty:
 								isListProperty = true;
+								break;
+							case NGSIConstants.NGSI_LD_LOCALONLY:
+								isLocalOnly = true;
 								break;
 						}
 						if (!alias.equals(NGSIConstants.TYPE) && (keyValue || concise) ) {

@@ -74,6 +74,16 @@ public class Subscription implements Serializable {
 	@JsonIgnore
 	private ScopeQueryTerm scopeQuery;
 
+	private boolean localOnly =false;
+
+	public boolean isLocalOnly() {
+		return localOnly;
+	}
+
+	public void setLocalOnly(boolean localOnly) {
+		this.localOnly = localOnly;
+	}
+
 	public Subscription() {
 	}
 
@@ -123,6 +133,12 @@ public class Subscription implements Serializable {
 			Object mapValue = mapEntry.getValue();
 
 			switch (key) {
+				case NGSIConstants.NGSI_LD_LOCALONLY:
+					if(!(mapValue instanceof List<?> list && ((Map<String,Object>)(list.get(0))).get(NGSIConstants.JSON_LD_VALUE) instanceof Boolean)){
+						throw new ResponseException(ErrorType.BadRequestData, "localOnly should be boolean");
+					}
+					subscription.setLocalOnly(((List<Map<String,Boolean>>)mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE));
+					break;
 			case NGSIConstants.JSON_LD_ID:
 				subscription.setId((String) mapValue);
 				break;
@@ -167,6 +183,9 @@ public class Subscription implements Serializable {
 						case NGSIConstants.JSON_LD_TYPE:
 							hasType = true;
 							entityInfo.setType(((List<String>) entitiesEntry.getValue()).get(0));
+							if(entityInfo.getType().equals(NGSIConstants.NGSI_LD_STAR)){
+								subscription.setLocalOnly(true);
+							}
 							break;
 						case NGSIConstants.NGSI_LD_ID_PATTERN:
 							entityInfo.setIdPattern((String) ((List<Map<String, Object>>) entitiesEntry.getValue())
