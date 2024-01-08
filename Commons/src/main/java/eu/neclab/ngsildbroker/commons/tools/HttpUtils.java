@@ -815,7 +815,17 @@ public final class HttpUtils {
 				|| originalPayload.toString().contains(NGSIConstants.TYPE + "=null")){
 			return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData));
 		}
-
+		if(originalPayload.containsKey(NGSIConstants.SCOPE) && !(originalPayload.get(NGSIConstants.SCOPE) instanceof String
+				|| originalPayload.get(NGSIConstants.SCOPE) instanceof List)){
+			return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData,"scope is invalid"));
+		}
+		try{
+			if(originalPayload.get(NGSIConstants.SCOPE) instanceof List) {
+				String scope = ((List<String>) originalPayload.get(NGSIConstants.SCOPE)).get(0);
+			}
+		}catch(Exception e){
+			return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData,"scope is invalid"));
+		}
 		try {
 			atContextAllowed = HttpUtils.doPreflightCheck(request, atContext);
 		} catch (ResponseException e) {
