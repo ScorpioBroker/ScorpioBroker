@@ -523,6 +523,9 @@ public abstract class EntityTools {
 					}
 				}
 			}
+			if(map.containsKey(NGSIConstants.PROVIDED_BY)){
+				noConcise(map.get(NGSIConstants.PROVIDED_BY), (Map<String, Object>) map, NGSIConstants.PROVIDED_BY,level+1);
+			}
 		}
 		// Object is List
 		else if (object instanceof List<?> list) {
