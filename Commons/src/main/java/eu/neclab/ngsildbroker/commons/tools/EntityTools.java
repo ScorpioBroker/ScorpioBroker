@@ -165,7 +165,7 @@ public abstract class EntityTools {
 				case NGSIConstants.NGSI_LD_ListProperty:
 					prop = generateFakeProperty(key, tmp);
 					break;
-					case NGSIConstants.NGSI_LD_LOCALONLY:
+				case NGSIConstants.NGSI_LD_LOCALONLY:
 					prop = generateFakeProperty(key, tmp);
 					break;
 				case NGSIConstants.NGSI_LD_PROPERTY:
@@ -452,7 +452,7 @@ public abstract class EntityTools {
 	}
 
 	public static void noConcise(Object object) {
-		noConcise(object, null, null,0);
+		noConcise(object, null, null, 0);
 	}
 
 	private static void noConcise(Object object, Map<String, Object> parentMap, String keyOfObject, int level) {
@@ -461,11 +461,9 @@ public abstract class EntityTools {
 			// Map have object but not type
 			if (map.containsKey(NGSIConstants.OBJECT)) {
 				((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.RELATIONSHIP);
-			}
-			else if (map.containsKey(NGSIConstants.OBJECT_LIST)) {
+			} else if (map.containsKey(NGSIConstants.OBJECT_LIST)) {
 				((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.LISTRELATIONSHIP);
-			}
-			else if (map.containsKey(NGSIConstants.VALUE_LIST)) {
+			} else if (map.containsKey(NGSIConstants.VALUE_LIST)) {
 				((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.LISTPROPERTY);
 			}
 			// Map have vocab but not type
@@ -478,8 +476,7 @@ public abstract class EntityTools {
 				if (map.get(NGSIConstants.VALUE) instanceof Map<?, ?> nestedMap
 						&& (NGSIConstants.GEO_KEYWORDS.contains(nestedMap.get(NGSIConstants.TYPE)))) {
 					((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.NGSI_LD_GEOPROPERTY_SHORT);
-				}
-				else
+				} else
 					((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.PROPERTY);
 			}
 			// for GeoProperty
@@ -490,17 +487,14 @@ public abstract class EntityTools {
 				newMap.put(NGSIConstants.TYPE, NGSIConstants.NGSI_LD_GEOPROPERTY_SHORT);
 				newMap.put(NGSIConstants.VALUE, map);
 				parentMap.put(keyOfObject, newMap);
-			}
-			else if (map.containsKey(NGSIConstants.LANGUAGE_MAP)) {
+			} else if (map.containsKey(NGSIConstants.LANGUAGE_MAP)) {
 				((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.LANGUAGE_PROPERTY);
-			}
-			else if(parentMap != null && !map.containsKey(NGSIConstants.TYPE) && level==1){
+			} else if (parentMap != null && !map.containsKey(NGSIConstants.TYPE) && level == 1) {
 				Map<String, Object> newMap = new HashMap<>();
 				newMap.put(NGSIConstants.VALUE, map);
 				newMap.put(NGSIConstants.TYPE, NGSIConstants.PROPERTY);
 				parentMap.put(keyOfObject, newMap);
-			}
-			else {
+			} else {
 				// Iterate through every element of Map
 				Object[] mapKeys = map.keySet().toArray();
 				for (Object key : mapKeys) {
@@ -510,34 +504,47 @@ public abstract class EntityTools {
 							&& !key.equals(NGSIConstants.QUERY_PARAMETER_OBSERVED_AT)
 							&& !key.equals(NGSIConstants.INSTANCE_ID)
 							&& !key.equals(NGSIConstants.QUERY_PARAMETER_DATA_SET_ID)
-							&& !key.equals(NGSIConstants.OBJECT)
-							&& !key.equals(NGSIConstants.OBJECT_LIST)
+							&& !key.equals(NGSIConstants.OBJECT) && !key.equals(NGSIConstants.OBJECT_LIST)
 							&& !key.equals(NGSIConstants.VALUE) && !key.equals(NGSIConstants.SCOPE)
 							&& !key.equals(NGSIConstants.QUERY_PARAMETER_UNIT_CODE)
-							&& !key.equals(NGSIConstants.LANGUAGE_MAP)
-							&& !key.equals(NGSIConstants.VOCAB)
-							&& !key.equals(NGSIConstants.LIST)
-							&& !key.equals(NGSIConstants.LOCALONLY)
+							&& !key.equals(NGSIConstants.LANGUAGE_MAP) && !key.equals(NGSIConstants.VOCAB)
+							&& !key.equals(NGSIConstants.LIST) && !key.equals(NGSIConstants.LOCALONLY)
 							&& !key.equals(NGSIConstants.OBJECT_TYPE)) {
-						noConcise(map.get(key), (Map<String, Object>) map, key.toString(),level+1);
+						noConcise(map.get(key), (Map<String, Object>) map, key.toString(), level + 1);
 					}
 				}
 			}
-			if(map.containsKey(NGSIConstants.PROVIDED_BY)){
-				noConcise(map.get(NGSIConstants.PROVIDED_BY), (Map<String, Object>) map, NGSIConstants.PROVIDED_BY,level+1);
+			if (map.containsKey(NGSIConstants.PROVIDED_BY)) {
+				noConcise(map.get(NGSIConstants.PROVIDED_BY), (Map<String, Object>) map, NGSIConstants.PROVIDED_BY,
+						level + 1);
 			}
 		}
 		// Object is List
 		else if (object instanceof List<?> list) {
-			if(parentMap != null && level==1){
-				Map<String, Object> newMap = new HashMap<>();
-				newMap.put(NGSIConstants.VALUE, list);
-				newMap.put(NGSIConstants.TYPE, NGSIConstants.PROPERTY);
-				parentMap.put(keyOfObject, newMap);
+			boolean doNothing = false;
+			if (list.size() > 0 && list.get(0) instanceof Map<?, ?> map) {
+				Object type = map.get(NGSIConstants.TYPE);
+				if (type != null && type instanceof String potentialType) {
+					if (NGSIConstants.NGSI_LD_PROPERTY_SHORT.equals(potentialType)
+							|| NGSIConstants.NGSI_LD_RELATIONSHIP_SHORT.equals(potentialType)
+							|| NGSIConstants.NGSI_LD_GEOPROPERTY_SHORT.equals(potentialType)
+							|| NGSIConstants.NGSI_LD_LANGPROPERTY_SHORT.equals(potentialType)
+							|| NGSIConstants.NGSI_LD_LISTRELATIONSHIP_SHORT.equals(potentialType)
+							|| NGSIConstants.NGSI_LD_LISTPROPERTY_SHORT.equals(potentialType)) {
+						doNothing = true;
+					}
+				}
 			}
-			else {
-				for (Object o : list) {
-					noConcise(o, null, null,level);
+			if (!doNothing) {
+				if (parentMap != null && level == 1) {
+					Map<String, Object> newMap = new HashMap<>();
+					newMap.put(NGSIConstants.VALUE, list);
+					newMap.put(NGSIConstants.TYPE, NGSIConstants.PROPERTY);
+					parentMap.put(keyOfObject, newMap);
+				} else {
+					for (Object o : list) {
+						noConcise(o, null, null, level);
+					}
 				}
 			}
 		}

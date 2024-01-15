@@ -63,8 +63,12 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_COORDINATES = "https://purl.org/geojson/vocab#coordinates"; // "https://uri.etsi.org/ngsi-ld/coordinates";
 	public final static String NGSI_LD_GEOPROPERTY = "https://uri.etsi.org/ngsi-ld/GeoProperty";
 	public final static String NGSI_LD_LANGPROPERTY = "https://uri.etsi.org/ngsi-ld/LanguageProperty";
-
 	public final static String NGSI_LD_GEOPROPERTY_SHORT = "GeoProperty";
+	public final static String NGSI_LD_PROPERTY_SHORT = "Property";
+	public final static String NGSI_LD_RELATIONSHIP_SHORT = "Relationship";
+	public final static String NGSI_LD_LANGPROPERTY_SHORT = "LanguageProperty";
+	public final static String NGSI_LD_LISTRELATIONSHIP_SHORT = "ListRelationship";
+	public final static String NGSI_LD_LISTPROPERTY_SHORT = "ListProperty";
 	public final static String NGSI_LD_LOCATION = "https://uri.etsi.org/ngsi-ld/location";
 	public final static String NGSI_LD_LOCATION_SHORT = "location";
 	public final static String NGSI_LD_CREATED_AT = "https://uri.etsi.org/ngsi-ld/createdAt";
