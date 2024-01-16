@@ -312,7 +312,7 @@ public class QueryController {
 			return queryService
 					.query(HttpUtils.getTenant(request), token, tokenProvided, ids, typeQueryTerm, idPattern,
 							attrsQuery, qQueryTerm, csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit,
-							offset, count, localOnly, context, request.headers(), doNotCompact)
+							offset, count, localOnly, context, request.headers(), join, joinLevel, doNotCompact)
 					.onItem().transformToUni(queryResult -> {
 						if (doNotCompact) {
 							return Uni.createFrom().item(RestResponse.ok((Object) queryResult.getData()));

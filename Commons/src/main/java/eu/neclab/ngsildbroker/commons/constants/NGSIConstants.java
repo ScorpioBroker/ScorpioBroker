@@ -57,6 +57,7 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_LISTRELATIONSHIP = "https://uri.etsi.org/ngsi-ld/ListRelationship";
 	public final static String NGSI_LD_HAS_OBJECT_LIST = "https://uri.etsi.org/ngsi-ld/hasObjectList";
 	public final static String NGSI_LD_HAS_OBJECT = "https://uri.etsi.org/ngsi-ld/hasObject";
+	public final static String NGSI_LD_HAS_OBJECT_TYPE = "https://uri.etsi.org/ngsi-ld/hasObjectType";
 	public final static String NGSI_LD_PROPERTY = "https://uri.etsi.org/ngsi-ld/Property";
 	public final static String NGSI_LD_HAS_VALUE = "https://uri.etsi.org/ngsi-ld/hasValue";
  	public final static String NGSI_LD_OBJECT_TYPE = "https://uri.etsi.org/ngsi-ld/hasObjectType";
@@ -136,6 +137,7 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_ATTRIBUTE_NAMES = "https://uri.etsi.org/ngsi-ld/attributeNames";
 	public final static String NGSI_LD_ATTRIBUTE_NAME = "https://uri.etsi.org/ngsi-ld/attributeName";
 	public final static String NGSI_LD_ENTITY_TYPE_INFO = "https://uri.etsi.org/ngsi-ld/EntityTypeInfo";
+	public final static String NGSI_LD_ENTITY = "https://uri.etsi.org/ngsi-ld/entity";
 	public final static String NGSI_LD_ENTITY_COUNT = "https://uri.etsi.org/ngsi-ld/entityCount";
 	public final static String NGSI_LD_ATTRIBUTE_DETAILS = "https://uri.etsi.org/ngsi-ld/attributeDetails";
 	public final static String NGSI_LD_TENANT = "https://uri.etsi.org/ngsi-ld/tenant";

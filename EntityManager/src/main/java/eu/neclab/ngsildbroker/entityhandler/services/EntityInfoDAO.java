@@ -78,7 +78,8 @@ public class EntityInfoDAO {
 	public Uni<Map<String, Object>> batchAppendEntity(BatchRequest request) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
 			return client.preparedQuery("SELECT * FROM NGSILD_APPENDBATCH($1, $2)")
-					.execute(Tuple.of(new JsonArray(request.getRequestPayload()), request.isNoOverwrite())).onItem().transform(rows -> {
+					.execute(Tuple.of(new JsonArray(request.getRequestPayload()), request.isNoOverwrite())).onItem()
+					.transform(rows -> {
 						return rows.iterator().next().getJsonObject(0).getMap();
 					});
 		});
@@ -176,6 +177,7 @@ public class EntityInfoDAO {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
 			String[] types = ((List<String>) request.getPayload().get(NGSIConstants.JSON_LD_TYPE))
 					.toArray(new String[0]);
+			//List<Map<String,Object>> linkedEntities = getLinkedEntities(request.getPayload());
 			return client.preparedQuery("INSERT INTO ENTITY(ID,E_TYPES, ENTITY) VALUES ($1, $2, $3)")
 					.execute(Tuple.of(request.getId(), types, new JsonObject(request.getPayload()))).onFailure()
 					.recoverWithUni(e -> {
@@ -188,6 +190,44 @@ public class EntityInfoDAO {
 						return Uni.createFrom().failure(e);
 					}).onItem().transformToUni(v -> Uni.createFrom().voidItem());
 		});
+	}
+
+	private List<Map<String, Object>> getLinkedEntities(Map<String, Object> payload) {
+		List<Map<String, Object>> linkedEntities = Lists.newArrayList();
+		for (Entry<String, Object> entry : payload.entrySet()) {
+			if (entry.getValue() instanceof List<?> list) {
+				for (Object listEntry : list) {
+					if (listEntry instanceof Map<?, ?> map && map.containsKey(NGSIConstants.JSON_LD_TYPE)
+							&& map.get(NGSIConstants.JSON_LD_TYPE) instanceof List<?> typeList
+							&& typeList.contains(NGSIConstants.NGSI_LD_RELATIONSHIP)) {
+						List<String> objectTypes = null;
+						if (map.containsKey(NGSIConstants.NGSI_LD_HAS_OBJECT_TYPE)) {
+							objectTypes = Lists.newArrayList();
+							List<Map<String, String>> objectTypesList = (List<Map<String, String>>) map
+									.get(NGSIConstants.NGSI_LD_HAS_OBJECT_TYPE);
+							for (Map<String, String> objectType : objectTypesList) {
+								objectTypes.add(objectType.get(NGSIConstants.JSON_LD_ID));
+							}
+						}
+						List<Map<String, String>> hasObjects = (List<Map<String, String>>) map
+								.get(NGSIConstants.NGSI_LD_HAS_OBJECT);
+						for (Map<String, String> relObject : hasObjects) {
+							if (objectTypes == null) {
+								linkedEntities.add(Map.of(AppConstants.LINKED_ENTITIES_ID,
+										relObject.get(NGSIConstants.JSON_LD_ID)));
+							} else {
+								linkedEntities.add(
+										Map.of(AppConstants.LINKED_ENTITIES_ID, relObject.get(NGSIConstants.JSON_LD_ID),
+												AppConstants.LINKED_ENTITIES_OBJECT_TYPES, objectTypes));
+							}
+						}
+
+					}
+				}
+			}
+		}
+
+		return linkedEntities;
 	}
 
 	public Uni<String> getEndpoint(String entityId, String tenantId) {
@@ -290,20 +330,16 @@ public class EntityInfoDAO {
 			sql += "WHERE ID = $" + dollar;
 			tuple.addString(request.getId());
 			sql += " RETURNING (SELECT ENTITY FROM old_entity) AS old_entity, ENTITY as new_entity;";
-			return client.preparedQuery(sql).execute(tuple).onFailure()
-					.recoverWithUni(e ->
-							{
-								return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
-						}
-					).onItem()
-					.transformToUni(rows -> {
-						if (rows.rowCount() == 0) {
-							return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
-						}
-						Row first = rows.iterator().next();
-						return Uni.createFrom()
-								.item(Tuple2.of(first.getJsonObject(0).getMap(), first.getJsonObject(1).getMap()));
-					});
+			return client.preparedQuery(sql).execute(tuple).onFailure().recoverWithUni(e -> {
+				return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
+			}).onItem().transformToUni(rows -> {
+				if (rows.rowCount() == 0) {
+					return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
+				}
+				Row first = rows.iterator().next();
+				return Uni.createFrom()
+						.item(Tuple2.of(first.getJsonObject(0).getMap(), first.getJsonObject(1).getMap()));
+			});
 		});
 
 	}

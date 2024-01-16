@@ -78,8 +78,8 @@ public class QueryDAO {
 				if (t.rowCount() == 0) {
 					return Uni.createFrom().item(new HashMap<String, Object>());
 				}
-				Map<String,Object> result = t.iterator().next().getJsonObject(0).getMap();
-				if(attrsQuery!=null&& !attrsQuery.getAttrs().isEmpty() && result.size()<=4){
+				Map<String, Object> result = t.iterator().next().getJsonObject(0).getMap();
+				if (attrsQuery != null && !attrsQuery.getAttrs().isEmpty() && result.size() <= 4) {
 					return Uni.createFrom().failure(new ResponseException(ErrorType.CombinationNotFound));
 				}
 				return Uni.createFrom().item(t.iterator().next().getJsonObject(0).getMap());
@@ -106,27 +106,28 @@ public class QueryDAO {
 
 	public Uni<RowSet<Row>> queryLocalOnly(String tenantId, String[] ids, TypeQueryTerm typeQuery, String idPattern,
 			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery,
-			LanguageQueryTerm langQuery, int limit, int offSet, boolean count) {
+			LanguageQueryTerm langQuery, int limit, int offSet, boolean count, String join, int joinLevel) {
 		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
 			StringBuilder query = new StringBuilder();
 			int dollar = 1;
 			Tuple tuple = Tuple.tuple();
 			if (count && limit == 0) {
 				query.append("SELECT COUNT(ENTITY)");
-			} else if (count) {
+			} else {
+				if (join != null && joinLevel > 0) {
+					query.append("WITH D0 AS (");
+				}
 				query.append("SELECT ");
+				if (join != null && joinLevel > 0) {
+					query.append("ID, true AS PARENT, ");
+				}
 				if (attrsQuery != null) {
 					dollar = attrsQuery.toSqlConstructEntity(query, tuple, dollar);
 				} else {
 					query.append("ENTITY");
 				}
-				query.append(", COUNT(*)");
-			} else {
-				query.append("SELECT ");
-				if (attrsQuery != null) {
-					dollar = attrsQuery.toSqlConstructEntity(query, tuple, dollar);
-				} else {
-					query.append("ENTITY");
+				if (count) {
+					query.append(", COUNT(*) as count");
 				}
 			}
 			query.append(" FROM ENTITY WHERE ");
@@ -187,12 +188,61 @@ public class QueryDAO {
 				query.append(" AND ");
 				scopeQuery.toSql(query);
 			}
-			query.append("GROUP BY ENTITY");
+			query.append("GROUP BY ");
+			if (join != null && joinLevel > 0) {
+				query.append("ID, ");
+			}
+			query.append("ENTITY");
 			if (limit != 0) {
 				query.append(" LIMIT ");
 				query.append(limit);
 				query.append(" OFFSET ");
 				query.append(offSet);
+			}
+			if (join != null && joinLevel > 0) {
+
+				query.append("), ");
+				for (int counter = 0; counter < joinLevel; counter++) {
+					query.append('B');
+					query.append(counter + 1);
+					query.append(" AS (SELECT ");
+					query.append('D');
+					query.append(counter);
+					query.append(".ID AS ID, X.VALUE AS VALUE FROM D");
+					query.append(counter);
+					query.append(", JSONB_EACH(D");
+					query.append(counter);
+					query.append(".ENTITY) AS X WHERE JSONB_TYPEOF(X.VALUE) = 'array'), ");
+					query.append('C');
+					query.append(counter + 1);
+					query.append(" AS (SELECT distinct Z ->> '@id' as link FROM B");
+					query.append(counter + 1);
+					query.append(", JSONB_ARRAY_ELEMENTS(B");
+					query.append(counter + 1);
+					query.append(
+							".VALUE) AS Y, JSONB_ARRAY_ELEMENTS(Y #> '{https://uri.etsi.org/ngsi-ld/hasObject}') AS Z WHERE Y #>> '{@type,0}' = 'https://uri.etsi.org/ngsi-ld/Relationship'), ");
+					query.append('D');
+					query.append(counter + 1);
+					query.append(" as (SELECT E.ID as id, false as parent, E.ENTITY as entity");
+					if(count) {
+						query.append(", -1 as count");
+					}
+					query.append(" from C");
+					query.append(counter + 1);
+					query.append(" join ENTITY as E on C");
+					query.append(counter + 1);
+					query.append(".link = E.ID), ");
+				}
+				query.setLength(query.length() - 2);
+				query.append(" SELECT * FROM (");
+				for (int i = 0; i <= joinLevel; i++) {
+					query.append("SELECT * FROM D");
+					query.append(i);
+					query.append(" UNION ALL ");
+				}
+				query.setLength(query.length() - " UNION ALL ".length());
+				query.append(") as xyz group by id, entity, parent");
+
 			}
 			query.append(';');
 			String queryString = query.toString();
@@ -320,7 +370,8 @@ public class QueryDAO {
 							Map<String, String> tmp = Maps.newHashMap();
 							tmp.put(NGSIConstants.JSON_LD_ID, row.getString(0));
 							resultEntry.put(NGSIConstants.NGSI_LD_TYPE_NAME, Lists.newArrayList(tmp));
-							resultEntry.put(NGSIConstants.NGSI_LD_ATTRIBUTE_NAMES, row.getJsonArray(1).getList().stream().distinct().toList());
+							resultEntry.put(NGSIConstants.NGSI_LD_ATTRIBUTE_NAMES,
+									row.getJsonArray(1).getList().stream().distinct().toList());
 							result.add(resultEntry);
 						});
 						return result;
@@ -337,7 +388,7 @@ public class QueryDAO {
 							+ NGSIConstants.JSON_LD_ID + "', '" + NGSIConstants.JSON_LD_TYPE + "', '"
 							+ NGSIConstants.NGSI_LD_CREATED_AT + "', '" + NGSIConstants.NGSI_LD_MODIFIED_AT
 							+ "')), b as (SELECT count(entity.id) as mycount FROM entity where e_types && $1::text[]) "
-							+"select b.mycount, a.id, jsonb_agg(distinct jsonb_build_object('"
+							+ "select b.mycount, a.id, jsonb_agg(distinct jsonb_build_object('"
 							+ NGSIConstants.JSON_LD_ID + "', x#>'{" + NGSIConstants.JSON_LD_TYPE
 							+ ",0}')) from b, a, jsonb_array_elements(a.data) as x group by a.id, b.mycount;"
 
@@ -355,8 +406,8 @@ public class QueryDAO {
 					Map<String, Object> attribDetail = Maps.newHashMap();
 					Map<String, String> tmp = Maps.newHashMap();
 					tmp.put(NGSIConstants.JSON_LD_ID, row.getString(1));
-					attribDetail.put(NGSIConstants.JSON_LD_ID,row.getString(1));
-					attribDetail.put(NGSIConstants.TYPE,NGSIConstants.ATTRIBUTE);
+					attribDetail.put(NGSIConstants.JSON_LD_ID, row.getString(1));
+					attribDetail.put(NGSIConstants.TYPE, NGSIConstants.ATTRIBUTE);
 					attribDetail.put(NGSIConstants.NGSI_LD_ATTRIBUTE_NAME, Lists.newArrayList(tmp));
 					attribDetail.put(NGSIConstants.NGSI_LD_ATTRIBUTE_TYPES, row.getJsonArray(2).getList());
 					attrDetails.add(attribDetail);
@@ -721,7 +772,7 @@ public class QueryDAO {
 
 	public Uni<Tuple2<Map<String, Map<String, Object>>, List<String>>> queryForEntityIds(String tenant, String[] ids,
 			TypeQueryTerm typeQuery, String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery,
-			GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, Context context, int limit, int offset) {
+			GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, Context context, int limit, int offset, String join, int joinLevel) {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
 			StringBuilder query = new StringBuilder();
 			int dollar = 1;
