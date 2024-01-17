@@ -92,7 +92,9 @@ public class ClientManager {
 		Uni<PgPool> result = tenant2Client.get(tenant);
 		if (result == null) {
 			result = getTenant(tenant, create);
-			tenant2Client.put(tenant, result);
+			return result.onItem().transformToUni(pgClient->{
+                return tenant2Client.put(tenant, Uni.createFrom().item(pgClient));
+			});
 		}
 		return result;
 	}
