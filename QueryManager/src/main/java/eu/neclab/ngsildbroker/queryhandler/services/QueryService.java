@@ -1458,7 +1458,7 @@ public class QueryService {
 			String idPattern, String qToken, TypeQueryTerm typeQuery, AttrsQueryTerm attrsQuery, GeoQueryTerm geoQuery,
 			QQueryTerm qQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, int limit, int offset,
 			Context context, io.vertx.core.MultiMap headersFromReq, String join, int joinLevel, boolean doNotCompact) {
-		Uni<Tuple2<Map<String, Map<String, Object>>, List<String>>> localIds = queryDAO.queryForEntityIds(tenant, id,
+		Uni<Tuple3<Map<String, Map<String, Object>>, Map<String, Map<String, Object>>, List<String>>> localIds = queryDAO.queryForEntityIds(tenant, id,
 				typeQuery, idPattern, attrsQuery, qQuery, geoQuery, scopeQuery, context, limit, offset, join,
 				joinLevel);
 		List<QueryRemoteHost> remoteHost2Query = getRemoteQueries(tenant, id, typeQuery, idPattern, attrsQuery, qQuery,
@@ -1569,9 +1569,9 @@ public class QueryService {
 
 		return Uni.combine().all().unis(localIds, remoteIds).asTuple().onItem().transform(t -> {
 			EntityMap result = new EntityMap();
-			Tuple2<Map<String, Map<String, Object>>, List<String>> local = t.getItem1();
+			Tuple3<Map<String, Map<String, Object>>, Map<String, Map<String, Object>>, List<String>> local = t.getItem1();
 			Map<QueryRemoteHost, List<String>> remote = t.getItem2();
-			for (String entry : local.getItem2()) {
+			for (String entry : local.getItem3()) {
 				result.getEntry(entry).getRemoteHosts()
 						.add(new QueryRemoteHost(null, null, null, null, false, false, -1, null, false, false, null));
 			}

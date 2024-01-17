@@ -224,7 +224,7 @@ public class QueryDAO {
 					query.append('D');
 					query.append(counter + 1);
 					query.append(" as (SELECT E.ID as id, false as parent, E.ENTITY as entity");
-					if(count) {
+					if (count) {
 						query.append(", -1 as count");
 					}
 					query.append(" from C");
@@ -770,15 +770,16 @@ public class QueryDAO {
 
 	}
 
-	public Uni<Tuple2<Map<String, Map<String, Object>>, List<String>>> queryForEntityIds(String tenant, String[] ids,
-			TypeQueryTerm typeQuery, String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery,
-			GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, Context context, int limit, int offset, String join, int joinLevel) {
+	public Uni<Tuple3<Map<String, Map<String, Object>>, Map<String, Map<String, Object>>, List<String>>> queryForEntityIds(
+			String tenant, String[] ids, TypeQueryTerm typeQuery, String idPattern, AttrsQueryTerm attrsQuery,
+			QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, Context context, int limit, int offset,
+			String join, int joinLevel) {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
 			StringBuilder query = new StringBuilder();
 			int dollar = 1;
 			Tuple tuple = Tuple.tuple();
-
-			query.append("WITH a as (SELECT ID");
+			boolean doJoin = (join != null && joinLevel > 0);
+			query.append("WITH x as (SELECT ID, true as parent");
 
 			query.append(" FROM ENTITY WHERE ");
 			boolean sqlAdded = false;
@@ -838,7 +839,7 @@ public class QueryDAO {
 				query.append(" AND ");
 				scopeQuery.toSql(query);
 			}
-			query.append(" ORDER BY createdAt), b as (SELECT a.ID FROM a limit $");
+			query.append(" ORDER BY createdAt), y as (SELECT x.ID FROM x limit $");
 			query.append(dollar);
 			tuple.addInteger(limit);
 			dollar++;
@@ -846,31 +847,90 @@ public class QueryDAO {
 			query.append(dollar);
 			tuple.addInteger(offset);
 			dollar++;
-			query.append("), c as (SELECT ENTITY.ID, ");
+			query.append("), D0 as (SELECT ENTITY.ID, ");
 			if (attrsQuery != null) {
 				dollar = attrsQuery.toSqlConstructEntity(query, tuple, dollar);
 			} else {
 				query.append("ENTITY.ENTITY");
 			}
-			query.append(" as ENTITY FROM b left join ENTITY on b.ID = ENTITY.ID) SELECT ");
-			query.append("a.ID, c.ENTITY FROM a left outer join c on a.ID = c.ID");
+			query.append(" as ENTITY, true as parent FROM y left join ENTITY on y.ID = ENTITY.ID)");
+			if (doJoin) {
+
+				query.append(", ");
+				for (int counter = 0; counter < joinLevel; counter++) {
+					query.append('B');
+					query.append(counter + 1);
+					query.append(" AS (SELECT ");
+					query.append('D');
+					query.append(counter);
+					query.append(".ID AS ID, X.VALUE AS VALUE FROM D");
+					query.append(counter);
+					query.append(", JSONB_EACH(D");
+					query.append(counter);
+					query.append(".ENTITY) AS X WHERE JSONB_TYPEOF(X.VALUE) = 'array'), ");
+					query.append('C');
+					query.append(counter + 1);
+					query.append(" AS (SELECT distinct Z ->> '@id' as idlink, array_agg(objType->>'@id') as objTypes FROM B");
+					query.append(counter + 1);
+					query.append(", JSONB_ARRAY_ELEMENTS(B");
+					query.append(counter + 1);
+					query.append(
+							".VALUE) AS Y, JSONB_ARRAY_ELEMENTS(Y #> '{https://uri.etsi.org/ngsi-ld/hasObject}') AS Z"
+							+ ", JSONB_ARRAY_ELEMENTS(Y #> '{https://uri.etsi.org/ngsi-ld/hasObjectType}') AS objType"
+							+ " WHERE Y #>> '{@type,0}' = 'https://uri.etsi.org/ngsi-ld/Relationship'");
+					query.append(" AND y ? 'https://uri.etsi.org/ngsi-ld/hasObjectType' group by idlink), ");
+					query.append('D');
+					query.append(counter + 1);
+					query.append(" as (SELECT E.ID as id, false as parent, E.ENTITY as entity");
+					query.append(" from C");
+					query.append(counter + 1);
+					query.append(" join ENTITY as E on C");
+					query.append(counter + 1);
+					query.append(".idlink = E.ID where C");
+					query.append(counter + 1);
+					query.append(".objTypes && E.e_types), ");
+				}
+				query.setLength(query.length() - 2);
+			}
+
+			if (doJoin) {
+				query.append(" SELECT * FROM ((");
+			}
+			query.append(" SELECT x.ID, x.parent, D0.ENTITY FROM x left outer join D0 on x.ID = D0.ID");
+			if (doJoin) {
+				query.append(")");
+
+				for (int i = 1; i <= joinLevel; i++) {
+					query.append(" UNION ALL ");
+					query.append("SELECT * FROM D");
+					query.append(i);
+				}
+				query.append(") as xyz group by id, entity, parent");
+			}
+
 			String queryString = query.toString();
 			logger.debug("SQL REQUEST: " + queryString);
 			logger.debug("SQL TUPLE: " + tuple.deepToString());
 			return client.preparedQuery(queryString).execute(tuple).onItem().transform(rows -> {
 				List<String> entityIds = Lists.newArrayList();
 				Map<String, Map<String, Object>> entities = Maps.newHashMap();
-				;
+				Map<String, Map<String, Object>> linkedEntities = Maps.newHashMap();
 				rows.forEach(row -> {
-					String id = row.getString(0);
-					JsonObject entity = row.getJsonObject(1);
-					entityIds.add(id);
-					if (entity != null) {
-						entities.put(id, entity.getMap());
+					String id = row.getString("id");
+					JsonObject entity = row.getJsonObject("entity");
+					boolean parent = row.getBoolean("parent");
+					if (parent) {
+						entityIds.add(id);
 					}
-
+					if (entity != null) {
+						if (parent) {
+							entities.put(id, entity.getMap());
+						} else {
+							linkedEntities.put(id, entity.getMap());
+						}
+					}
 				});
-				return Tuple2.of(entities, entityIds);
+				return Tuple3.of(entities, linkedEntities, entityIds);
 			});
 		}).onFailure().recoverWithUni(e -> {
 			if (e instanceof PgException pge) {
