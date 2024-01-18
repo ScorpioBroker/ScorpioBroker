@@ -70,8 +70,11 @@ public class HistoryController {
 			@QueryParam("aggrPeriodDuration") String aggrPeriodDuration, @QueryParam(value = "limit") Integer limit,
 			@QueryParam(value = "offset") int offset, @QueryParam(value = "entityMap") String qToken,
 			@QueryParam(value = "options") String options, @QueryParam(value = "count") boolean count,
-			@QueryParam(value = "localOnly") boolean localOnly) {
+			@QueryParam(value = "localOnly") boolean localOnly,@QueryParam("format") String format) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
+		if(format!=null && !format.isEmpty()){
+			options+=","+format;
+		}
 		String q;
 		if (qInput != null) {
 			try {
@@ -113,6 +116,7 @@ public class HistoryController {
 			lastNTBU = lastN;
 		}
 		List<Object> ctx = HttpUtils.getAtContext(request);
+		String finalOptions = options;
 		return HttpUtils.getContext(ctx, ldService).onItem().transformToUni(context -> {
 			TypeQueryTerm typeQueryTerm;
 			AttrsQueryTerm attrsQueryTerm;
@@ -141,7 +145,7 @@ public class HistoryController {
 							csfQueryTerm, geoQueryTerm, scopeQueryTerm, temporalQueryTerm, aggrTerm, languageQueryTerm,
 							lastNTBU, actualLimit, offset, count, localOnly, context, request)
 					.onItem().transformToUni(queryResult -> {
-						return HttpUtils.generateQueryResult(request, queryResult, options, geoproperty, acceptHeader,
+						return HttpUtils.generateQueryResult(request, queryResult, finalOptions, geoproperty, acceptHeader,
 								count, actualLimit, languageQueryTerm, context, ldService,null,null);
 					});
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
@@ -157,9 +161,12 @@ public class HistoryController {
 			@QueryParam("localOnly") boolean localOnly, @QueryParam(value = "options") String optionsString,
 			@QueryParam(value = "geometryProperty") String geometryProperty,
 			@QueryParam("timeproperty") String timeProperty, @QueryParam("timerel") String timeRel,
-			@QueryParam("timeAt") String timeAt, @QueryParam("endTimeAt") String endTimeAt) {
+			@QueryParam("timeAt") String timeAt, @QueryParam("endTimeAt") String endTimeAt,@QueryParam("format") String format) {
 
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
+		if(format!=null && !format.isEmpty()){
+			optionsString+=","+format;
+		}
 		if (acceptHeader != 1 && acceptHeader != 2) {
 			return HttpUtils.getInvalidHeader();
 		}
@@ -172,6 +179,7 @@ public class HistoryController {
 
 		List<Object> headerContext;
 		headerContext = HttpUtils.getAtContext(request);
+		String finalOptionsString = optionsString;
 		return ldService.parse(headerContext).onItem().transformToUni(context -> {
 			AttrsQueryTerm attrsQuery;
 			AggrTerm aggrQuery;
@@ -188,7 +196,7 @@ public class HistoryController {
 			return historyQueryService.retrieveEntity(HttpUtils.getTenant(request), entityId, attrsQuery, aggrQuery,
 					tempQuery, lang, lastNTBU, localOnly, context).onItem().transformToUni(entity -> {
 						return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, entity,
-								geometryProperty, optionsString, null, ldService,null,null);
+								geometryProperty, finalOptionsString, null, ldService,null,null);
 					});
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
