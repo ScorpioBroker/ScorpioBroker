@@ -60,23 +60,31 @@ public class ResponseException extends Exception {
 		this.attribs = attribs;
 		json.put(NGSIConstants.ERROR_TYPE, type);
 		json.put(NGSIConstants.ERROR_TITLE, title);
-		Map<String, Object> temp = Maps.newLinkedHashMap();
-		temp.put(NGSIConstants.ERROR_DETAIL_MESSAGE, detail);
-		json.put(NGSIConstants.ERROR_DETAIL, temp);
-		json.put(NGSIConstants.ERROR_CODE, errorCode);
+		json.put(NGSIConstants.ERROR_DETAIL, detail);
+		if(detail instanceof String str && str.contains("urn:")){
+			json.put(NGSIConstants.INSTANCE_ID, str.substring(0,str.indexOf(" ")));
+		}
+		json.put(NGSIConstants.STATUS, errorCode);
 
-		if (attribs != null) {
-			List<Map<String, String>> tmp = Lists.newArrayList();
+		if (attribs != null && !attribs.isEmpty()) {
+			List<String> attribNames = Lists.newArrayList();
+			List<String> datasetIds = Lists.newArrayList();
 			for (Attrib attrib : attribs) {
-				tmp.add(attrib.getJson());
+				attribNames.add(attrib.getAttribName());
+				if(attrib.getDatasetId() != null) {
+					datasetIds.add(attrib.getDatasetId());
+				}
 			}
-			temp.put(NGSIConstants.NGSI_LD_ATTRIBUTES_SHORT, tmp);
+			json.put(NGSIConstants.NGSI_LD_ATTRIBUTES_SHORT, attribNames);
+			if(!datasetIds.isEmpty()) {
+				json.put(NGSIConstants.INSTANCE_ID, datasetIds);
+			}
 		}
 		if (endpoint != null) {
-			temp.put(NGSIConstants.ERROR_DETAIL_ENDPOINT, endpoint);
+			json.put(NGSIConstants.ERROR_DETAIL_ENDPOINT, endpoint);
 		}
 		if (cSourceId != null) {
-			temp.put(NGSIConstants.ERROR_DETAIL_CSOURCE_ID, cSourceId);
+			json.put(NGSIConstants.ERROR_DETAIL_CSOURCE_ID, cSourceId);
 		}
 
 	}
