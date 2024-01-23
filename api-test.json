@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "7bf2a3fc-40ee-4474-a533-4439eeca033a",
+		"_postman_id": "c09abe2c-f6cb-488b-9783-232e491203fd",
 		"name": "API Test",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "27293663"
@@ -52664,6 +52664,8 @@
 																	"var expected = {\r",
 																	"    \"type\": \"https://uri.etsi.org/ngsi-ld/errors/ResourceNotFound\",\r",
 																	"    \"title\": \"Resource not found.\",\r",
+																	"    \"detail\": \"urn:notfound not found\",\r",
+																	"    \"instanceId\": \"urn:notfound\",\r",
 																	"    \"status\": 404\r",
 																	"};\r",
 																	"pm.test(\"Status code is 404\", function () {\r",
@@ -52671,7 +52673,6 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
-																	"    delete jsonData['detail'];\r",
 																	"    console.log(\"expected: \" + JSON.stringify(expected));\r",
 																	"    console.log(\"received: \" + JSON.stringify(jsonData));\r",
 																	"    pm.expect(jsonData).to.eql(expected);\r",
@@ -54892,6 +54893,8 @@
 															"var expected = {\r",
 															"    \"type\": \"https://uri.etsi.org/ngsi-ld/errors/ResourceNotFound\",\r",
 															"    \"title\": \"Resource not found.\",\r",
+															"    \"detail\": \"urn:idnotfound was not found\",\r",
+															"    \"instanceId\": \"urn:idnotfound\",\r",
 															"    \"status\": 404\r",
 															"};\r",
 															"pm.test(\"Status code is 404\", function () {\r",
@@ -54899,7 +54902,6 @@
 															"});\r",
 															"pm.test(\"Validate content\", function () {\r",
 															"    var jsonData = pm.response.json();\r",
-															"    delete jsonData['detail'];\r",
 															"    console.log(\"expected: \" + JSON.stringify(expected));\r",
 															"    console.log(\"received: \" + JSON.stringify(jsonData));\r",
 															"    pm.expect(jsonData).to.eql(expected);\r",
@@ -55210,6 +55212,8 @@
 															"var expected = {\r",
 															"    \"type\": \"https://uri.etsi.org/ngsi-ld/errors/ResourceNotFound\",\r",
 															"    \"title\": \"Resource not found.\",\r",
+															"    \"detail\": \"urn:notfound not found\",\r",
+															"    \"instanceId\": \"urn:notfound\",\r",
 															"    \"status\": 404\r",
 															"};\r",
 															"pm.test(\"Status code is 404\", function () {\r",
@@ -55217,7 +55221,6 @@
 															"});\r",
 															"pm.test(\"Validate content\", function () {\r",
 															"    var jsonData = pm.response.json();\r",
-															"    delete jsonData['detail'];\r",
 															"    console.log(\"expected: \" + JSON.stringify(expected));\r",
 															"    console.log(\"received: \" + JSON.stringify(jsonData));\r",
 															"    pm.expect(jsonData).to.eql(expected);\r",
@@ -55370,20 +55373,6 @@
 					]
 				}
 			]
-		}
-	],
-	"variable": [
-		{
-			"key": "createdTBF",
-			"value": ""
-		},
-		{
-			"key": "entityIdTBF",
-			"value": ""
-		},
-		{
-			"key": "entityTypeTBF",
-			"value": ""
 		}
 	]
 }
