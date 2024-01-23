@@ -62,7 +62,8 @@ public class ResponseException extends Exception {
 		json.put(NGSIConstants.ERROR_TITLE, title);
 		json.put(NGSIConstants.ERROR_DETAIL, detail);
 		if(detail instanceof String str && str.contains("urn:")){
-			json.put(NGSIConstants.INSTANCE_ID, str.substring(0,str.indexOf(" ")));
+			int lastIndex = str.indexOf(" ")>0 ? str.indexOf(" ") : str.length() - 1 ;
+			json.put(NGSIConstants.INSTANCE_ID, str.substring(0,lastIndex));
 		}
 		json.put(NGSIConstants.STATUS, errorCode);
 
