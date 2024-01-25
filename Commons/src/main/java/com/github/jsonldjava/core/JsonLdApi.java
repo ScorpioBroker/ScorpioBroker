@@ -226,6 +226,7 @@ public class JsonLdApi {
 			boolean isVocabProperty = false;
 			boolean isListProperty = false;
 			boolean isLocalOnly = false;
+			boolean isJsonProperty = false;
 			for (String expandedProperty : keys) {
 
 				Object expandedValue = elem.get(expandedProperty);
@@ -272,6 +273,9 @@ public class JsonLdApi {
 								break;
 							case NGSIConstants.NGSI_LD_LANGPROPERTY:
 								isLanguageProperty = true;
+								break;
+							case NGSIConstants.NGSI_LD_JSON_PROPERTY:
+								isJsonProperty = true;
 								break;
 							case NGSIConstants.NGSI_LD_RELATIONSHIP:
 								isRelationship = true;
@@ -1253,6 +1257,8 @@ public class JsonLdApi {
 							ngsiElement.setHasAtValue(true);
 						} else if (NGSIConstants.NGSI_LD_HAS_VOCAB.equals(expandedProperty)) {
 							ngsiElement.setHasVocab(true);
+						}else if (NGSIConstants.NGSI_LD_HAS_JSON.equals(expandedProperty)) {
+								ngsiElement.setHasJson(true);
 						} else if (NGSIConstants.NGSI_LD_HAS_OBJECT.equals(expandedProperty)) {
 							ngsiElement.setHasAtObject(true);
 						}else if (NGSIConstants.NGSI_LD_HAS_OBJECT_LIST.equals(expandedProperty)) {

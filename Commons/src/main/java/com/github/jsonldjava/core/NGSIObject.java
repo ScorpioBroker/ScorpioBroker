@@ -46,6 +46,26 @@ class NGSIObject {
 
 
 	private boolean isLocalOnly =false;
+
+	private boolean isJsonProperty = false;
+	private boolean hasJson=false;
+
+	public boolean isJsonProperty() {
+		return isJsonProperty;
+	}
+
+	public void setJsonProperty(boolean jsonProperty) {
+		isJsonProperty = jsonProperty;
+	}
+
+	public boolean isHasJson() {
+		return hasJson;
+	}
+
+	public void setHasJson(boolean hasJson) {
+		this.hasJson = hasJson;
+	}
+
 	public boolean isLocalOnly() {
 		return isLocalOnly;
 	}
@@ -236,9 +256,11 @@ class NGSIObject {
 		} else if (NGSIConstants.NGSI_LD_VocabProperty.equals(type)) {
 			this.isVocabProperty = true;
 		} else if(NGSIConstants.NGSI_LD_ListProperty.equals(type)){
-			this.isLanguageProperty=true;
+			this.isListProperty=true;
 		}else if(NGSIConstants.NGSI_LD_LOCALONLY.equals(type)){
 			this.isLocalOnly=true;
+		}else if(NGSIConstants.NGSI_LD_JSON_PROPERTY.equals(type)){
+			this.isJsonProperty=true;
 		}
 
 		return this;
@@ -689,11 +711,12 @@ class NGSIObject {
 			validateArray();
 		} else {
 			if (isLdKeyWord && parent == null && !isProperty && !isRelationship && !isGeoProperty && !isDateTime
-					&& !isLanguageProperty && !isVocabProperty && !isListProperty && !isListRelationship && !isLocalOnly) {
+					&& !isLanguageProperty && !isVocabProperty && !isListProperty && !isListRelationship
+					&& !isLocalOnly && !isJsonProperty) {
 				return;
 			}
 			if (!isProperty && !isRelationship && !isGeoProperty && !isDateTime && !isLanguageProperty
-					&& !isVocabProperty && !isListProperty && !isListRelationship  && !isLocalOnly) {
+					&& !isVocabProperty && !isListProperty && !isListRelationship  && !isLocalOnly && !isJsonProperty) {
 				throw new ResponseException(ErrorType.BadRequestData,
 						"The key " + activeProperty + " is an invalid entry.");
 			}
@@ -705,6 +728,9 @@ class NGSIObject {
 			if (isVocabProperty && !hasVocab) {
 				throw new ResponseException(ErrorType.BadRequestData,
 						"You can't have vocabulary property without a vocab");
+			}if (isJsonProperty && !hasJson) {
+				throw new ResponseException(ErrorType.BadRequestData,
+						"You can't have json property without a json");
 			}
 			if (isListProperty && !hasList) {
 				throw new ResponseException(ErrorType.BadRequestData,
@@ -931,8 +957,9 @@ class NGSIObject {
 		this.isVocabProperty = this.isVocabProperty || ngsiV.isVocabProperty;
 		this.isListProperty  = this.isListProperty  || ngsiV.isListProperty;
 		this.isLocalOnly = this.isLocalOnly || ngsiV.isLocalOnly;
+		this.isJsonProperty = this.isJsonProperty || ngsiV.isJsonProperty;
 		if ((ngsiV.isRelationship || ngsiV.isListRelationship || ngsiV.isProperty || ngsiV.isLanguageProperty
-				|| ngsiV.isVocabProperty || ngsiV.isListProperty || ngsiV.isLocalOnly)) {
+				|| ngsiV.isVocabProperty || ngsiV.isListProperty || ngsiV.isLocalOnly || ngsiV.isJsonProperty)) {
 			if (ngsiV.datasetIds.isEmpty()) {
 				this.datasetIds.add(NGSIConstants.DEFAULT_DATA_SET_ID);
 			} else {
