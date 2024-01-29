@@ -290,7 +290,7 @@ public interface NGSIConstants {
 	public static final Integer[] VALID_QOS = { 0, 1, 2 };
 	public static final String COUNT_HEADER_RESULT = "NGSILD-Results-Count";
 	public static final Set<String> NGSI_LD_ATTR_TYPES = Sets.newHashSet(NGSI_LD_PROPERTY, NGSI_LD_RELATIONSHIP,
-			NGSI_LD_GEOPROPERTY, NGSI_LD_LANGPROPERTY, NGSI_LD_VocabProperty,NGSI_LD_ListProperty,NGSI_LD_LOCALONLY);
+			NGSI_LD_GEOPROPERTY, NGSI_LD_LANGPROPERTY, NGSI_LD_VocabProperty,NGSI_LD_ListProperty,NGSI_LD_LOCALONLY,NGSI_LD_JSON_PROPERTY);
 
 	public final static String NOTIFICATION = "Notification";
 
