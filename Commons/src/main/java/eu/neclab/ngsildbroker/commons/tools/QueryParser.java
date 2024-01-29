@@ -253,13 +253,13 @@ public class QueryParser {
 		return result;
 	}
 
-	public static ScopeQueryTerm parseScopeQuery(String queryString) {
+	public static ScopeQueryTerm parseScopeQuery(String queryString) throws ResponseException {
 		if (queryString == null) {
 			return null;
 		}
 		ScopeQueryTerm result = new ScopeQueryTerm();
 		ScopeQueryTerm current = result;
-		String scopeLevel = "";
+		StringBuilder scopeLevel = new StringBuilder();
 		ArrayList<String> scopeLevels = new ArrayList<String>();
 		OfInt it = queryString.chars().iterator();
 		while (it.hasNext()) {
@@ -270,9 +270,9 @@ public class QueryParser {
 				current = child;
 			} else if (b == ';') {
 				ScopeQueryTerm next = new ScopeQueryTerm();
-				if (!scopeLevel.equals("")) {
-					scopeLevels.add(scopeLevel);
-					scopeLevel = "";
+				if (!scopeLevel.isEmpty()) {
+					scopeLevels.add(scopeLevel.toString());
+					scopeLevel = new StringBuilder();
 				}
 				current.setScopeLevels(scopeLevels.toArray(new String[0]));
 				current.setNext(next);
@@ -281,9 +281,9 @@ public class QueryParser {
 				scopeLevels.clear();
 			} else if (b == '|') {
 				ScopeQueryTerm next = new ScopeQueryTerm();
-				if (!scopeLevel.equals("")) {
-					scopeLevels.add(scopeLevel);
-					scopeLevel = "";
+				if (!scopeLevel.isEmpty()) {
+					scopeLevels.add(scopeLevel.toString());
+					scopeLevel = new StringBuilder();
 				}
 				current.setScopeLevels(scopeLevels.toArray(new String[0]));
 				current.setNext(next);
@@ -291,29 +291,32 @@ public class QueryParser {
 				current = next;
 				scopeLevels.clear();
 			} else if (b == ')') {
-				if (!scopeLevel.equals("")) {
-					scopeLevels.add(scopeLevel);
-					scopeLevel = "";
+				if (!scopeLevel.isEmpty()) {
+					scopeLevels.add(scopeLevel.toString());
+					scopeLevel = new StringBuilder();
 				}
 				current.setScopeLevels(scopeLevels.toArray(new String[0]));
 				current = current.getParent();
 				scopeLevels.clear();
 
 			} else if (b == '/') {
-				if (!scopeLevel.equals("")) {
-					scopeLevels.add(scopeLevel);
-					scopeLevel = "";
+				if (!scopeLevel.isEmpty()) {
+					scopeLevels.add(scopeLevel.toString());
+					scopeLevel = new StringBuilder();
 				}
 			} else {
-				scopeLevel += (char) b;
+				scopeLevel.append((char) b);
 			}
 
 		}
 		if (!scopeLevel.isEmpty()) {
-			scopeLevels.add(scopeLevel);
+			scopeLevels.add(scopeLevel.toString());
 		}
 		if (!scopeLevels.isEmpty() && current != null) {
 			current.setScopeLevels(scopeLevels.toArray(new String[0]));
+		}
+		if(current != null && current.getScopeLevels()==null){
+			throw new ResponseException(ErrorType.BadRequestData,"Bad scope query");
 		}
 		return result;
 	}
