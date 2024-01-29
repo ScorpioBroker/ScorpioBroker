@@ -1077,7 +1077,11 @@ public class QQueryTerm implements Serializable {
 			if (!current.getOperator().isEmpty()) {
 				sql.append(" WHERE ");
 				sql.append(currentSqlAttrib2);
-				sql.append("->'");
+				if(current.getOperator().equals(NGSIConstants.QUERY_PATTERNOP)){
+					sql.append("->>'");
+				}else {
+					sql.append("->'");
+				}
 				sql.append(NGSIConstants.JSON_LD_VALUE);
 				sql.append("'");
 				dollarCount = applyOperator(sql, dollarCount, tuple, false);
@@ -1106,7 +1110,11 @@ public class QQueryTerm implements Serializable {
 					tuple.addString(subAttribPath[0]);
 					sql.append(" AND ");
 				}
-				sql.append("LANGPROP -> '");
+				if(current.getOperator().equals(NGSIConstants.QUERY_PATTERNOP)){
+					sql.append("LANGPROP ->> '");
+				}else {
+					sql.append("LANGPROP -> '");
+				}
 				sql.append(NGSIConstants.JSON_LD_VALUE);
 				sql.append("'");
 				dollarCount = current.applyOperator(sql, dollarCount, tuple, false);

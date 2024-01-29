@@ -81,8 +81,12 @@ public class QueryController {
 			@QueryParam(value = "doNotCompact") boolean doNotCompact,
 			@QueryParam("containedBy") @DefaultValue("") String containedBy, @QueryParam("join") String join,
 			@QueryParam("idsOnly") boolean idsOnly, @QueryParam("joinLevel") @DefaultValue("1") int joinLevel,
-			@QueryParam("pick") String pick,@QueryParam("omit") String omit) {
+			@QueryParam("pick") String pick,@QueryParam("omit") String omit,
+			@QueryParam("format") String format) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
+		if(format!=null && !format.isEmpty()){
+			options+=","+format;
+		}
 		if (acceptHeader == -1) {
 			return HttpUtils.getInvalidHeader();
 		}
@@ -93,6 +97,7 @@ public class QueryController {
 		List<Object> headerContext;
 		headerContext = HttpUtils.getAtContext(request);
 		logger.debug("retrieve called: " + request.path());
+		String finalOptions = options;
 		return HttpUtils.getContext(headerContext, ldService).onItem().transformToUni(context -> {
 			LanguageQueryTerm langQuery;
 			String finalPick;
@@ -126,7 +131,7 @@ public class QueryController {
 							return Uni.createFrom().item(RestResponse.ok((Object) entity));
 						}
 						return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, entity,
-								geometryProperty, options, langQuery, ldService,omitList,pickListOriginal);
+								geometryProperty, finalOptions, langQuery, ldService,omitList,pickListOriginal);
 					});
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
@@ -155,10 +160,13 @@ public class QueryController {
 			@QueryParam("joinLevel") @DefaultValue("1") int joinLevel, @QueryParam("doNotCompact") boolean doNotCompact,
 			@QueryParam("entityMap") String entityMapToken, @QueryParam("maxDistance") String maxDistance,
 			@QueryParam("minDistance") String minDistance, @Context UriInfo uriInfo,
-			@QueryParam("pick") String pick,@QueryParam("omit") String omit) {
+			@QueryParam("pick") String pick,@QueryParam("omit") String omit,@QueryParam("format") String format) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		String q;
 		String georel;
+		if(format!=null && !format.isEmpty()){
+			options+=","+format;
+		}
 		if(id!=null) {
 			try {
 				HttpUtils.validateUri(id);
@@ -173,7 +181,7 @@ public class QueryController {
             if (index != -1) {
                 uri = uri.substring(0, index);
             }
-            q = uri;
+            q = uri.replaceAll("\"","");
         } else {
 			q = null;
 		}
@@ -212,6 +220,7 @@ public class QueryController {
 		logger.debug("Query called: " + request.path());
 		List<Object> headerContext;
 		headerContext = HttpUtils.getAtContext(request);
+		String finalOptions = options;
 		return HttpUtils.getContext(headerContext, ldService).onItem().transformToUni(context -> {
 			AttrsQueryTerm attrsQuery;
 			TypeQueryTerm typeQueryTerm;
@@ -258,7 +267,7 @@ public class QueryController {
 			String token;
 			boolean tokenProvided;
 			String md5 = String.valueOf(Objects.hashCode(typeQuery, attrs, q, csf, geometry, georel, coordinates,
-					geoproperty, geometryProperty, lang, scopeQ, localOnly, options));
+					geoproperty, geometryProperty, lang, scopeQ, localOnly, finalOptions));
 			String headerToken = request.headers().get(NGSIConstants.ENTITY_MAP_TOKEN_HEADER);
 			if (headerToken != null && entityMapToken != null) {
 				if (!headerToken.equals(entityMapToken)) {
@@ -317,7 +326,7 @@ public class QueryController {
 						if (doNotCompact) {
 							return Uni.createFrom().item(RestResponse.ok((Object) queryResult.getData()));
 						}
-						return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty,
+						return HttpUtils.generateQueryResult(request, queryResult, finalOptions, geometryProperty,
 								acceptHeader, count, actualLimit, langQuery, context, ldService,omitList,pickListOriginal);
 					});
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);

@@ -760,7 +760,7 @@ public final class HttpUtils {
 				error.put("ProblemDetails",failure);
 				error.remove("failure");
 				errors.add(error);
-				allConflict = allConflict && failure.get("errorCode").equals(409);
+				allConflict = allConflict && failure.get(NGSIConstants.STATUS).equals(409);
 				isHavingError = true;
 			}
 			if (!r.getSuccesses().isEmpty()) {
