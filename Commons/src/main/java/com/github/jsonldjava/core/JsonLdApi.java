@@ -445,7 +445,8 @@ public class JsonLdApi {
 							|| expandedProperty.equals(NGSIConstants.NGSI_LD_OBSERVED_AT)
 							|| expandedProperty.equals(NGSIConstants.NGSI_LD_MODIFIED_AT)
 							|| expandedProperty.equals(NGSIConstants.NGSI_LD_CREATED_AT)
-							|| expandedProperty.equals(NGSIConstants.NGSI_LD_SCOPE)) {
+							|| expandedProperty.equals(NGSIConstants.NGSI_LD_SCOPE)
+							|| expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_JSON)) {
 
 					} else if (expandedValue instanceof List && ((List) expandedValue).get(0) instanceof Map
 							&& ((List<Map>) expandedValue).get(0).containsKey(NGSIConstants.JSON_LD_TYPE)) {
