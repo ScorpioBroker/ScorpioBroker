@@ -494,6 +494,9 @@ public abstract class EntityTools {
 			else if (map.containsKey(NGSIConstants.LANGUAGE_MAP)) {
 				((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.LANGUAGE_PROPERTY);
 			}
+			else if (map.containsKey(NGSIConstants.JSON)) {
+				((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.JSONPROPERTY);
+			}
 			else if(parentMap != null && !map.containsKey(NGSIConstants.TYPE) && level==1){
 				Map<String, Object> newMap = new HashMap<>();
 				newMap.put(NGSIConstants.VALUE, map);
@@ -515,6 +518,7 @@ public abstract class EntityTools {
 							&& !key.equals(NGSIConstants.VALUE) && !key.equals(NGSIConstants.SCOPE)
 							&& !key.equals(NGSIConstants.QUERY_PARAMETER_UNIT_CODE)
 							&& !key.equals(NGSIConstants.LANGUAGE_MAP)
+							&& !key.equals(NGSIConstants.JSON)
 							&& !key.equals(NGSIConstants.VOCAB)
 							&& !key.equals(NGSIConstants.LIST)
 							&& !key.equals(NGSIConstants.LOCALONLY)
