@@ -300,9 +300,6 @@ public class SubscriptionTools {
 		}
 		result.set(NGSIConstants.ACCEPT, accept);
 		result.set(NGSIConstants.CONTENT_TYPE, accept);
-		if(result.get(NGSIConstants.TENANT_HEADER).equals(AppConstants.INTERNAL_NULL_KEY)){
-			result.remove(NGSIConstants.TENANT_HEADER);
-		}
 		return new MultiMap(result);
 	}
 

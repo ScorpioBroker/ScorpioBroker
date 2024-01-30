@@ -1,9 +1,9 @@
 {
 	"info": {
-		"_postman_id": "921af36b-e68c-4314-9d5d-a454ccfbf5f6",
+		"_postman_id": "6280aa39-f9e5-45e8-a060-373997f98efc",
 		"name": "API Test",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "26387112"
+		"_exporter_id": "27293663"
 	},
 	"item": [
 		{
@@ -17573,6 +17573,7 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
+																	"    delete jsonData['jsonldContext'];\r",
 																	"    delete jsonData['status'];\r",
 																	"     delete jsonData['timesSent'];\r",
 																	"     delete jsonData['timesFailed'];\r",
@@ -17719,6 +17720,7 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
+																	"    delete jsonData['jsonldContext'];\r",
 																	"    delete jsonData['status'];\r",
 																	"     delete jsonData['timesSent'];\r",
 																	"     delete jsonData['timesFailed'];\r",
@@ -17906,6 +17908,7 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
+																	"    delete jsonData['jsonldContext'];\r",
 																	"    delete jsonData['status'];\r",
 																	"     delete jsonData['timesSent'];\r",
 																	"     delete jsonData['timesFailed'];\r",
@@ -18062,6 +18065,7 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
+																	"    delete jsonData['jsonldContext'];\r",
 																	"    delete jsonData['status'];\r",
 																	"     delete jsonData['timesSent'];\r",
 																	"     delete jsonData['timesFailed'];\r",
@@ -18212,6 +18216,7 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
+																	"    delete jsonData['jsonldContext'];\r",
 																	"    delete jsonData['status'];\r",
 																	"     delete jsonData['timesSent'];\r",
 																	"     delete jsonData['timesFailed'];\r",
@@ -18316,6 +18321,7 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
+																	"    delete jsonData['jsonldContext'];\r",
 																	"    delete jsonData['status'];\r",
 																	"   delete jsonData['timesSent'];\r",
 																	"   delete jsonData['timesFailed'];\r",
@@ -18563,6 +18569,7 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
+																	"    delete jsonData['jsonldContext'];\r",
 																	"    delete jsonData['status'];\r",
 																	"    delete jsonData['timesSent'];\r",
 																	"     delete jsonData['timesFailed'];\r",
@@ -18673,6 +18680,7 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
+																	"    delete jsonData['jsonldContext'];\r",
 																	"    delete jsonData['status'];\r",
 																	"     delete jsonData['timesSent'];\r",
 																	"     delete jsonData['timesFailed'];\r",
@@ -18848,6 +18856,7 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
+																	"    delete jsonData['jsonldContext'];\r",
 																	"    delete jsonData['status'];\r",
 																	"    delete jsonData['timesFailed'];\r",
 																	"    delete jsonData['timesSent'];\r",
@@ -18985,6 +18994,7 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
+																	"    delete jsonData['jsonldContext'];\r",
 																	"    delete jsonData['status'];\r",
 																	"    delete jsonData['timesFailed'];\r",
 																	"    delete jsonData['timesSent'];\r",
@@ -43049,6 +43059,7 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
+																	"    delete jsonData['jsonldContext'];\r",
 																	"    delete jsonData['isActive'];\r",
 																	"    delete jsonData['status'];\r",
 																	"    delete jsonData['timesSent'];\r",
@@ -43212,6 +43223,7 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
+																	"    delete jsonData['jsonldContext'];\r",
 																	"    delete jsonData['isActive'];\r",
 																	"    delete jsonData['status'];\r",
 																	"    delete jsonData['timesSent'];\r",
@@ -43404,6 +43416,7 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
+																	"    delete jsonData['jsonldContext'];\r",
 																	"    delete jsonData['isActive'];\r",
 																	"    delete jsonData['status'];\r",
 																	"    delete jsonData['timesSent'];\r",
@@ -43582,6 +43595,7 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
+																	"    delete jsonData['jsonldContext'];\r",
 																	"    delete jsonData['isActive'];\r",
 																	"    delete jsonData['status'];\r",
 																	"    delete jsonData['timesSent'];\r",
@@ -43697,6 +43711,7 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
+																	"    delete jsonData['jsonldContext'];\r",
 																	"    delete jsonData['isActive'];\r",
 																	"    delete jsonData['status'];\r",
 																	"    delete jsonData['timesSent'];\r",
@@ -43860,6 +43875,7 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
+																	"    delete jsonData['jsonldContext'];\r",
 																	"    delete jsonData['isActive'];\r",
 																	"    delete jsonData['status'];\r",
 																	"    delete jsonData['timesSent'];\r",
@@ -43981,6 +43997,7 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
+																	"    delete jsonData['jsonldContext'];\r",
 																	"    delete jsonData['isActive'];\r",
 																	"    delete jsonData['status'];\r",
 																	"    delete jsonData['timesSent'];\r",
@@ -44173,6 +44190,7 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
+																	"    delete jsonData['jsonldContext'];\r",
 																	"    delete jsonData['isActive'];\r",
 																	"    delete jsonData['status'];\r",
 																	"    delete jsonData['timesSent'];\r",
@@ -44321,6 +44339,7 @@
 																	"});\r",
 																	"pm.test(\"Validate content\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
+																	"    delete jsonData['jsonldContext'];\r",
 																	"    delete jsonData['isActive'];\r",
 																	"    delete jsonData['status'];\r",
 																	"    delete jsonData['timesSent'];\r",
@@ -55370,20 +55389,6 @@
 					]
 				}
 			]
-		}
-	],
-	"variable": [
-		{
-			"key": "createdTBF",
-			"value": ""
-		},
-		{
-			"key": "entityIdTBF",
-			"value": ""
-		},
-		{
-			"key": "entityTypeTBF",
-			"value": ""
 		}
 	]
 }
