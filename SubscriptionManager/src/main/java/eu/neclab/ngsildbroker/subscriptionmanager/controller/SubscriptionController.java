@@ -66,7 +66,9 @@ public class SubscriptionController {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData)));
 		}
 		HeadersMultiMap otherHead = new HeadersMultiMap();
-		otherHead.add(NGSIConstants.TENANT_HEADER,request.headers().get(NGSIConstants.TENANT_HEADER));
+		if(request.headers().contains(NGSIConstants.TENANT_HEADER)){
+			otherHead.add(NGSIConstants.TENANT_HEADER,request.headers().get(NGSIConstants.TENANT_HEADER));
+		}
 		otherHead.add(NGSIConstants.LINK_HEADER,"<%s>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"".formatted(map.get(NGSIConstants.JSONLD_CONTEXT)));
 		return HttpUtils.expandBody(request, map, AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, ldService).onItem()
 				.transformToUni(tuple -> {
