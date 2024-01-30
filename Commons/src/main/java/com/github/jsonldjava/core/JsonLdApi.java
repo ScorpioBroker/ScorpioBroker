@@ -376,7 +376,8 @@ public class JsonLdApi {
 					else if(expandedValue instanceof List<?> ls && ls.get(0) instanceof Map<?,?> map
 							&& map.containsKey(NGSIConstants.JSON_LD_TYPE)
 							&& (map.get(NGSIConstants.JSON_LD_TYPE).toString().contains(NGSIConstants.NGSI_LD_VocabProperty)
-							|| map.get(NGSIConstants.JSON_LD_TYPE).toString().contains(NGSIConstants.NGSI_LD_LANGPROPERTY))){
+							|| map.get(NGSIConstants.JSON_LD_TYPE).toString().contains(NGSIConstants.NGSI_LD_LANGPROPERTY)
+							|| map.get(NGSIConstants.JSON_LD_TYPE).toString().contains(NGSIConstants.NGSI_LD_JSON_PROPERTY))){
 							map.remove(NGSIConstants.JSON_LD_TYPE);
 					}
 					else if(isListProperty && expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_LIST)){
