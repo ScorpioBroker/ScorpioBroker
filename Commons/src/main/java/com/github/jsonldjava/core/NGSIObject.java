@@ -732,10 +732,6 @@ class NGSIObject {
 				throw new ResponseException(ErrorType.BadRequestData,
 						"You can't have json property without a json");
 			}
-			if (isListProperty && !hasList) {
-				throw new ResponseException(ErrorType.BadRequestData,
-						"You can't have ListProperty property without a valueList");
-			}
 			if ((isRelationship && !hasObject)) {
 				throw new ResponseException(ErrorType.BadRequestData, "You can't have relationships without an object");
 			}

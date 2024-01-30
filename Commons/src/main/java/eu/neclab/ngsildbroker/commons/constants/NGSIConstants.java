@@ -67,6 +67,8 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_JSON_PROPERTY="https://uri.etsi.org/ngsi-ld/JsonProperty";
 	public static final String JSON = "json";
 	public final static String JSONPROPERTY="JsonProperty";
+	public static final String PREVIOUS_JSON = "previousJson";
+
 
 	public final static String NGSI_LD_GEOPROPERTY_SHORT = "GeoProperty";
 	public final static String NGSI_LD_LOCATION = "https://uri.etsi.org/ngsi-ld/location";

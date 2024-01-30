@@ -201,6 +201,10 @@ public class SubscriptionService {
 					propertyMap.put(NGSIConstants.VALUE_LIST,
 						((List<Map<String, Object>>) newValue).get(0).get(NGSIConstants.NGSI_LD_HAS_LIST));
 		}
+		if (((List<Map<String, Object>>) newValue).get(0).containsKey(NGSIConstants.NGSI_LD_HAS_JSON)) {
+			propertyMap.put(NGSIConstants.JSON,
+					((List<Map<String, Object>>) newValue).get(0).get(NGSIConstants.NGSI_LD_HAS_JSON));
+		}
 
 		if (oldValue != null) {
 			if (((List<Map<String, Object>>) oldValue).get(0).containsKey(NGSIConstants.NGSI_LD_HAS_VALUE)) {
@@ -226,6 +230,10 @@ public class SubscriptionService {
 			if (((List<Map<String, Object>>) oldValue).get(0).containsKey(NGSIConstants.NGSI_LD_HAS_LIST)) {
 				propertyMap.put(NGSIConstants.PREVIOUS_VALUE_LIST,
 						((List<Map<String, Object>>) oldValue).get(0).get(NGSIConstants.NGSI_LD_HAS_LIST));
+			}
+			if (((List<Map<String, Object>>) oldValue).get(0).containsKey(NGSIConstants.NGSI_LD_HAS_JSON)) {
+				propertyMap.put(NGSIConstants.PREVIOUS_JSON,
+						((List<Map<String, Object>>) oldValue).get(0).get(NGSIConstants.NGSI_LD_HAS_JSON));
 			}
 		}
 
