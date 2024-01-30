@@ -230,7 +230,9 @@ public class SerializationTools {
 			for (Entry<String, Object> entry : next.entrySet()) {
 				String propKey = entry.getKey();
 				Object value = entry.getValue();
-
+				if (propKey.equals(NGSIConstants.NGSI_LD_OBJECT_TYPE)) {
+					continue;
+				}
 				if (propKey.equals(NGSIConstants.NGSI_LD_HAS_OBJECT)) {
 //					if (((List<Object>) value).size() != 1) {
 //						throw new JsonParseException("Relationships have to have exactly one object");
