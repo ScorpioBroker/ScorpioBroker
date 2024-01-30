@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import io.vertx.core.http.impl.headers.HeadersMultiMap;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.event.Observes;
@@ -257,6 +258,8 @@ public class SubscriptionService {
 					try {
 						request = new SubscriptionRequest(tuple.getItem1().getItem1(), tuple.getItem1().getItem2(),
 								tuple.getItem2());
+						request.getSubscription().addOtherHead(NGSIConstants.LINK_HEADER,"<%s>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"".formatted(request.getSubscription().getJsonldContext()));
+						request.getSubscription().addOtherHead(NGSIConstants.TENANT_HEADER,request.getTenant());
 						request.setSendTimestamp(-1);
 						if (isIntervalSub(request)) {
 							this.tenant2subscriptionId2IntervalSubscription.put(request.getTenant(), request.getId(),
@@ -279,8 +282,8 @@ public class SubscriptionService {
 		return request.getSubscription().getTimeInterval() > 0;
 	}
 
-	public Uni<NGSILDOperationResult> createSubscription(String tenant, Map<String, Object> subscription,
-			Context contextLink) {
+	public Uni<NGSILDOperationResult> createSubscription(HeadersMultiMap linkHead, String tenant, Map<String, Object> subscription,
+														 Context contextLink) {
 		SubscriptionRequest request;
 		if (!subscription.containsKey(NGSIConstants.JSON_LD_ID)) {
 			String id = "urn:" + UUID.randomUUID();
@@ -288,6 +291,7 @@ public class SubscriptionService {
 		}
 		try {
 			request = new SubscriptionRequest(tenant, subscription, contextLink);
+			request.getSubscription().setOtherHead(linkHead);
 		} catch (ResponseException e) {
 			return Uni.createFrom().failure(e);
 		}
@@ -706,7 +710,7 @@ public class SubscriptionService {
 						case "http", "https" -> {
 							try {
 								toSend = webClient.postAbs(notificationParam.getEndPoint().getUri().toString())
-										.putHeaders(SubscriptionTools.getHeaders(notificationParam))
+										.putHeaders(SubscriptionTools.getHeaders(notificationParam,potentialSub.getSubscription().getOtherHead()))
 										.sendBuffer(Buffer.buffer(JsonUtils.toPrettyString(notification))).onFailure()
 										.retry().atMost(3).onItem().transformToUni(result -> {
 											int statusCode = result.statusCode();
@@ -1065,7 +1069,7 @@ public class SubscriptionService {
 							temp.append(AppConstants.SUBSCRIPTIONS_URL);
 							return webClient.post(temp.toString())
 									.putHeaders(SubscriptionTools
-											.getHeaders(remoteRequest.getSubscription().getNotification()))
+											.getHeaders(remoteRequest.getSubscription().getNotification(),remoteRequest.getSubscription().getOtherHead()))
 									.sendJsonObject(new JsonObject(compacted)).onFailure().retry().atMost(3).onItem()
 									.transformToUni(response -> {
 										if (response.statusCode() >= 200 && response.statusCode() < 300) {

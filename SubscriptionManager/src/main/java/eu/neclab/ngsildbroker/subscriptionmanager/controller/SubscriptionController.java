@@ -1,14 +1,18 @@
 package eu.neclab.ngsildbroker.subscriptionmanager.controller;
 
 import com.github.jsonldjava.core.JsonLDService;
+import com.github.jsonldjava.core.JsonLdConsts;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.impl.headers.HeadersMultiMap;
 import jakarta.inject.Inject;
+import jakarta.json.Json;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.PATCH;
@@ -46,10 +50,28 @@ public class SubscriptionController {
 
 	@POST
 	public Uni<RestResponse<Object>> subscribe(HttpServerRequest request, Map<String, Object> map) {
+		try{
+			if(!map.containsKey(NGSIConstants.JSONLD_CONTEXT)){
+				String contextLink;
+				if (request.getHeader(NGSIConstants.LINK_HEADER) != null) {
+					contextLink = request.getHeader(NGSIConstants.LINK_HEADER).split(";")[0].replace("<","").replace(">","");
+				} else if (map.containsKey(JsonLdConsts.CONTEXT)) {
+					contextLink = ((List<String>) map.get(JsonLdConsts.CONTEXT)).get(0);
+				} else {
+					contextLink=coreContext;
+				}
+				map.put(NGSIConstants.JSONLD_CONTEXT,contextLink);
+			}
+		}catch(Exception e){
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData)));
+		}
+		HeadersMultiMap otherHead = new HeadersMultiMap();
+		otherHead.add(NGSIConstants.TENANT_HEADER,request.headers().get(NGSIConstants.TENANT_HEADER));
+		otherHead.add(NGSIConstants.LINK_HEADER,"<%s>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"".formatted(map.get(NGSIConstants.JSONLD_CONTEXT)));
 		return HttpUtils.expandBody(request, map, AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, ldService).onItem()
 				.transformToUni(tuple -> {
 					return subService
-							.createSubscription(HttpUtils.getTenant(request), tuple.getItem2(), tuple.getItem1())
+							.createSubscription(otherHead,HttpUtils.getTenant(request), tuple.getItem2(), tuple.getItem1())
 							.onItem().transform(t -> HttpUtils.generateSubscriptionResult(t, tuple.getItem1()));
 				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}

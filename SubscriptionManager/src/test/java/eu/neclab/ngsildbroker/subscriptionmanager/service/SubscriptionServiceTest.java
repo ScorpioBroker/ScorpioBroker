@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletionException;
 
+import io.vertx.core.http.impl.headers.HeadersMultiMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.Test;
@@ -73,6 +74,7 @@ public class SubscriptionServiceTest {
 	String jsonLdObject;
 	Map<String, Object> resolved = null;
 	String tenant = "test";
+	HeadersMultiMap link = new HeadersMultiMap();
 
 	@BeforeEach
 	public void setUp() throws Exception {
@@ -98,7 +100,7 @@ public class SubscriptionServiceTest {
 		Uni<Void> uniEmiiterResponse = Uni.createFrom().nullItem();
 		when(internalSubEmitter.send(any(SubscriptionRequest.class))).thenReturn(uniEmiiterResponse);
 
-		Uni<NGSILDOperationResult> uniResult = subscriptionService.createSubscription(tenant, resolved, context);
+		Uni<NGSILDOperationResult> uniResult = subscriptionService.createSubscription(link,tenant, resolved, context);
 		NGSILDOperationResult result = uniResult.await().indefinitely();
 
 		assertEquals(subscriptionId, result.getEntityId());
@@ -114,7 +116,7 @@ public class SubscriptionServiceTest {
 		PgException sqlException = new PgException("duplicate key value violates unique constraint", "", "23505", "");
 		when(subDAO.createSubscription(any(), any())).thenReturn(Uni.createFrom().failure(sqlException));
 
-		Uni<NGSILDOperationResult> uniResult = subscriptionService.createSubscription(tenant, resolved, context);
+		Uni<NGSILDOperationResult> uniResult = subscriptionService.createSubscription(link,tenant, resolved, context);
 
 		Throwable throwable = assertThrows(CompletionException.class, () -> uniResult.await().indefinitely());
 		ResponseException responseException = (ResponseException) throwable.getCause();

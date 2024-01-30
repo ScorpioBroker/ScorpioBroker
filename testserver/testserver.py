@@ -35,6 +35,8 @@ class S(BaseHTTPRequestHandler):
         
         notification = json.loads(post_data)
         print(json.dumps(notification))
+        print(self.headers)
+        print('-----------------------')
         subId = notification["subscriptionId"]
         if subId in self.receivedNotifications:
           notifications = self.receivedNotifications[subId]
