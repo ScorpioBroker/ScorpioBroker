@@ -1028,7 +1028,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n     \"testjsonpropery\": {\r\n        \"type\": \"JsonProperty\",\r\n        \"json\": {\r\n            \"id\": \"85a6cc52-0589-45f9\",\r\n            \"value\": \"Overstay 60 minutes\"\r\n        }\r\n    }\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -1704,41 +1704,7 @@
 													"response": []
 												},
 												{
-													"name": "Delete Entity",
-													"event": [
-														{
-															"listen": "test",
-															"script": {
-																"exec": [
-																	"pm.test(\"Status code is 204\", function () {\r",
-																	"    pm.response.to.have.status(204);\r",
-																	"});\r",
-																	"pm.collectionVariables.clear();"
-																],
-																"type": "text/javascript"
-															}
-														}
-													],
-													"request": {
-														"method": "DELETE",
-														"header": [],
-														"url": {
-															"raw": "{{entity-manager}}/ngsi-ld/v1/entities/{{entityId}}",
-															"host": [
-																"{{entity-manager}}"
-															],
-															"path": [
-																"ngsi-ld",
-																"v1",
-																"entities",
-																"{{entityId}}"
-															]
-														}
-													},
-													"response": []
-												},
-												{
-													"name": "Update json test field of the entity Copy",
+													"name": "Update json test field of the entity",
 													"event": [
 														{
 															"listen": "test",
@@ -1796,7 +1762,7 @@
 													"response": []
 												},
 												{
-													"name": "Get Updated Entity and Validate Json Entry Copy",
+													"name": "Get Updated Entity and Validate Json Entry",
 													"event": [
 														{
 															"listen": "test",
@@ -1835,6 +1801,40 @@
 															"raw": "{{query-manager}}/ngsi-ld/v1/entities/{{entityId}}",
 															"host": [
 																"{{query-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities",
+																"{{entityId}}"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Delete Entity",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});\r",
+																	"pm.collectionVariables.clear();"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "DELETE",
+														"header": [],
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities/{{entityId}}",
+															"host": [
+																"{{entity-manager}}"
 															],
 															"path": [
 																"ngsi-ld",
@@ -4074,7 +4074,7 @@
 											"item": []
 										},
 										{
-											"name": "Append Json Property no context Copy",
+											"name": "Append Json Property no context",
 											"item": [
 												{
 													"name": "Create Simple Entity No Context",
@@ -55713,6 +55713,24 @@
 					]
 				}
 			]
+		}
+	],
+	"variable": [
+		{
+			"key": "created",
+			"value": ""
+		},
+		{
+			"key": "entityId",
+			"value": ""
+		},
+		{
+			"key": "updated",
+			"value": ""
+		},
+		{
+			"key": "updatedAttrib",
+			"value": ""
 		}
 	]
 }
