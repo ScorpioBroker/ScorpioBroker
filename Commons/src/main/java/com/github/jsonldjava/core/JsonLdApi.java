@@ -369,9 +369,11 @@ public class JsonLdApi {
 							continue;
 						}
 					}
-					else if(isVocabProperty && expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_VOCAB)){
-						return compact(activeCtx, NGSIConstants.VOCAB, expandedValue, compactArrays, endPoint, null,
-								null);
+					else if(expandedValue instanceof List<?> ls && ls.get(0) instanceof Map<?,?> map
+							&& map.containsKey(NGSIConstants.JSON_LD_TYPE)
+							&& (map.get(NGSIConstants.JSON_LD_TYPE).toString().contains(NGSIConstants.NGSI_LD_VocabProperty)
+							|| map.get(NGSIConstants.JSON_LD_TYPE).toString().contains(NGSIConstants.NGSI_LD_LANGPROPERTY))){
+							map.remove(NGSIConstants.JSON_LD_TYPE);
 					}
 					else if(isListProperty && expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_LIST)){
 						return compact(activeCtx, NGSIConstants.LIST, expandedValue, compactArrays, endPoint, null,
@@ -424,15 +426,6 @@ public class JsonLdApi {
 							continue;
 						}
 					}
-
-//					else if (isLanguageProperty) {
-//						if (expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP)) {
-////							return compact(activeCtx, activeProperty, expandedValue, compactArrays, endPoint, null,
-////									null);
-//						} else {
-//							continue;
-//						}
-//					}
 				} else if (concise) {
 					if (expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_VALUE)
 							|| expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP)

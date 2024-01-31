@@ -79,15 +79,16 @@ public class SubscriptionTools {
 					break;
 				case NGSIConstants.GEO_TYPE_LINESTRING:
 					LineStringBuilder lineStringBuilder = shapeFactory.lineString();
-					tmp = (List<List<Number>>) geoQuery.getCoordinatesAsList().get(0);
-					for (List<Number> point : tmp) {
+					List<Object> lineList = geoQuery.getCoordinatesAsList();
+					for (Object pointObj : lineList) {
+						List<Number> point = (List<Number>) pointObj; 
 						lineStringBuilder.pointXY(point.get(0).doubleValue(), point.get(1).doubleValue());
 					}
 					queryShape = lineStringBuilder.build();
 					break;
 				case NGSIConstants.GEO_TYPE_POLYGON:
 					PolygonBuilder polygonBuilder = shapeFactory.polygon();
-					tmp = ((List<List<List<Number>>>) geoQuery.getCoordinatesAsList().get(0)).get(0);
+					tmp = ((List<List<Number>>) geoQuery.getCoordinatesAsList().get(0));
 					for (List<Number> point : tmp) {
 						polygonBuilder.pointXY(point.get(0).doubleValue(), point.get(1).doubleValue());
 					}

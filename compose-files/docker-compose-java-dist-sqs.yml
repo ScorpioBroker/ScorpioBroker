@@ -1,0 +1,112 @@
+version: '3'
+
+services:
+  postgres:
+    image: postgis/postgis
+    ports:
+      - "5432"
+    environment:
+      POSTGRES_USER: ngb
+      POSTGRES_PASSWORD: ngb
+      POSTGRES_DB: ngb
+  emgr:
+    image: scorpiobroker/entity-manager:java-sqs-latest
+    environment:
+      DBHOST: postgres
+      AWS_ACCESS_KEY_ID: <AWS KEY>
+      AWS_REGION: <AWS REGION>
+      AWS_SECRET_ACCESS_KEY: <AWS_SECRET_ACCESS_KEY>
+      SCORPIO_TOPICS_REGISTRY: <topic def>
+      SCORPIO_TOPICS_ENTITY: <topic def>
+      SCORPIO_TOPICS_ENTITYBATCH: <topic def>
+    ports:
+      - "1025:1025"
+    depends_on:
+      - postgres
+  histemgr:
+    image: scorpiobroker/history-entity-manager:java-sqs-latest
+    environment:
+      DBHOST: postgres
+      AWS_ACCESS_KEY_ID: <AWS KEY>
+      AWS_REGION: <AWS REGION>
+      AWS_SECRET_ACCESS_KEY: <AWS_SECRET_ACCESS_KEY>
+      SCORPIO_TOPICS_REGISTRY: <topic def>
+      SCORPIO_TOPICS_ENTITY: <topic def>
+      SCORPIO_TOPICS_ENTITYBATCH: <topic def>
+    ports:
+      - "1040:1040"
+    depends_on:
+      - postgres
+  histqmgr:
+    image: scorpiobroker/history-query-manager:java-sqs-latest
+    environment:
+      DBHOST: postgres
+      SCORPIO_TOPICS_REGISTRY: <topic def>
+      AWS_ACCESS_KEY_ID: <AWS KEY>
+      AWS_REGION: <AWS REGION>
+      AWS_SECRET_ACCESS_KEY: <AWS_SECRET_ACCESS_KEY>
+    ports:
+      - "1041:1041"
+    depends_on:
+      - postgres
+  at-context-server:
+    image: scorpiobroker/at-context-server:java-sqs-latest
+    environment:
+      DBHOST: postgres
+    ports:
+      - "1042:1042"
+    depends_on:
+      - postgres
+  qrymgr:
+    image: scorpiobroker/query-manager:java-sqs-latest
+    environment:
+      DBHOST: postgres
+      AWS_ACCESS_KEY_ID: <AWS KEY>
+      AWS_REGION: <AWS REGION>
+      AWS_SECRET_ACCESS_KEY: <AWS_SECRET_ACCESS_KEY>
+      SCORPIO_TOPICS_REGISTRY: <topic def>      
+    ports:
+      - "1026:1026"
+    depends_on:
+      - postgres
+  regmgr:
+    image: scorpiobroker/registry-manager:java-sqs-latest
+    environment:
+      DBHOST: postgres
+      SCORPIO_TOPICS_REGISTRY: <topic def>
+      AWS_ACCESS_KEY_ID: <AWS KEY>
+      AWS_REGION: <AWS REGION>
+      AWS_SECRET_ACCESS_KEY: <AWS_SECRET_ACCESS_KEY>
+    ports:
+      - "1030:1030"
+    depends_on:
+      - postgres
+  regsbsmgr:
+    image: scorpiobroker/registry-subscription-manager:java-sqs-latest
+    environment:
+      DBHOST: postgres
+      SCORPIO_TOPICS_REGISTRY: <topic def>
+      SCORPIO_TOPICS_INTERNALREGSUB: <topic def>
+      SCORPIO_TOPICS_INTERNALNOTIFICATION: <topic def>
+      AWS_ACCESS_KEY_ID: <AWS KEY>
+      AWS_REGION: <AWS REGION>
+      AWS_SECRET_ACCESS_KEY: <AWS_SECRET_ACCESS_KEY>
+    ports:
+      - "2025:2025"
+    depends_on:
+      - postgres
+  sbsmgr:
+    image: scorpiobroker/subscription-manager:java-sqs-latest
+    environment:
+      DBHOST: postgres
+      SCORPIO_TOPICS_ENTITY: <topic def>
+      SCORPIO_TOPICS_ENTITYBATCH: <topic def>
+      SCORPIO_TOPICS_INTERNALREGSUB: <topic def>
+      SCORPIO_TOPICS_INTERNALNOTIFICATION: <topic def>
+      AWS_ACCESS_KEY_ID: <AWS KEY>
+      AWS_REGION: <AWS REGION>
+      AWS_SECRET_ACCESS_KEY: <AWS_SECRET_ACCESS_KEY>
+    ports:
+      - "2026:2026"
+    depends_on:
+      - postgres
