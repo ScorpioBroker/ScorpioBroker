@@ -223,7 +223,7 @@ public class QueryParser {
 		GeoQueryTerm result = new GeoQueryTerm(context);
 		result.setGeorel(temp[0]);
 		if (temp[0].equals(NGSIConstants.GEO_REL_NEAR)) {
-			if (temp.length < 2) {
+			if (temp.length < 2 || !temp[1].contains("==")) {
 				throw new ResponseException(ErrorType.BadRequestData, "Georelation is not valid");
 			}
 			String[] maxMin = temp[1].split("==");
