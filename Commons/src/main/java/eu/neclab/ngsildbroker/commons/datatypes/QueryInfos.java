@@ -1,5 +1,7 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -126,7 +128,7 @@ public class QueryInfos {
 		if (!attrs.isEmpty()) {
 			result.append("attrs=");
 			for (String attr : attrs) {
-				result.append(context.compactIri(attr));
+				result.append(URLEncoder.encode(context.compactIri(attr), StandardCharsets.UTF_8));
 				result.append(',');
 			}
 			result.setCharAt(result.length() - 1, '&');
