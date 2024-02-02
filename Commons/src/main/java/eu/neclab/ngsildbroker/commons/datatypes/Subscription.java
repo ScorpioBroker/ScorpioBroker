@@ -166,9 +166,9 @@ public class Subscription implements Serializable {
 				break;
 			case NGSIConstants.NGSI_LD_ENTITIES:
 				List<EntityInfo> entities = new ArrayList<EntityInfo>();
-				List<Map<String, Object>> list = (List<Map<String, Object>>) mapValue;
+				List<Map<String, Object>> list1 = (List<Map<String, Object>>) mapValue;
 				boolean hasType;
-				for (Map<String, Object> entry : list) {
+				for (Map<String, Object> entry : list1) {
 					EntityInfo entityInfo = new EntityInfo();
 					hasType = false;
 					for (Entry<String, Object> entitiesEntry : entry.entrySet()) {
