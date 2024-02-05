@@ -1,3 +1,11 @@
+RELEASE NOTES SCORPIO 4.1.13
+
+The release contains various fixes.
+
+Addresses configuration issues with the distributed setup. 
+Make system generated temporal props (createdAt, modifiedAt) to include nanoseconds 
+
+
 RELEASE NOTES SCORPIO 4.1.12
 
 The release contains various fixes  
