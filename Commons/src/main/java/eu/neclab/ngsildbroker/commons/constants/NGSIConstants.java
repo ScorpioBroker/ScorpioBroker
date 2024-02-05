@@ -284,6 +284,7 @@ public interface NGSIConstants {
 	public static final Integer DEFAULT_MQTT_QOS = 0;
 	public static final String DEFAULT_MQTT_VERSION = "mqtt5.0";
 	public static final String CONTENT_TYPE = "contentType";
+	public static final String ACCEPT = "accept";
 	public static final String ACCEPTED_LINK = "link";
 	public static final String METADATA = "metadata";
 	public static final String BODY = "body";

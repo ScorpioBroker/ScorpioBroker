@@ -31,6 +31,7 @@ import eu.neclab.ngsildbroker.commons.enums.Format;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.QueryParser;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
+import io.vertx.core.http.impl.headers.HeadersMultiMap;
 
 /**
  * @author hebgen
@@ -55,6 +56,7 @@ public class Subscription implements Serializable {
 	private Integer throttling = 0;
 	private Integer timeInterval = 0;
 	private String type;
+	private String jsonldContext;
 	private List<URI> requestorList;
 	private Boolean isActive = true;
 	private Set<String> attributeNames;
@@ -66,7 +68,8 @@ public class Subscription implements Serializable {
 	private GeoQueryTerm ldGeoQuery;
 	private TemporalQueryTerm ldTempQuery;
 	private Set<String> notificationTrigger = Sets.newHashSet();
-
+	@JsonIgnore
+	private HeadersMultiMap otherHead = new HeadersMultiMap();
 	@JsonIgnore
 	private QQueryTerm ldQuery;
 	@JsonIgnore
@@ -118,6 +121,14 @@ public class Subscription implements Serializable {
 		this.csfQuery = subscription.csfQuery;
 	}
 
+	public String getJsonldContext() {
+		return jsonldContext;
+	}
+
+	public void setJsonldContext(String jsonldContext) {
+		this.jsonldContext = jsonldContext;
+	}
+
 	public static Subscription expandSubscription(Map<String, Object> body, Context context, boolean update)
 			throws ResponseException {
 		return expandSubscription(body, null, context, update);
@@ -133,6 +144,9 @@ public class Subscription implements Serializable {
 			Object mapValue = mapEntry.getValue();
 
 			switch (key) {
+				case NGSIConstants.NGSI_LD_JSONLD_CONTEXT:
+					subscription.setJsonldContext(((List<Map<String,String>>)mapValue).get(0).get(JsonLdConsts.VALUE));
+					break;
 				case NGSIConstants.NGSI_LD_LOCALONLY:
 					if(!(mapValue instanceof List<?> list && ((Map<String,Object>)(list.get(0))).get(NGSIConstants.JSON_LD_VALUE) instanceof Boolean)){
 						throw new ResponseException(ErrorType.BadRequestData, "localOnly should be boolean");
@@ -853,6 +867,16 @@ public class Subscription implements Serializable {
 		this.notificationTrigger = notificationTrigger;
 	}
 
+	public HeadersMultiMap getOtherHead() {
+		return otherHead;
+	}
+
+	public void setOtherHead(HeadersMultiMap otherHead) {
+		this.otherHead = otherHead;
+	}
+	public void addOtherHead(String key, String value) {
+		this.otherHead.add(key,value);
+	}
 	@Override
 	public String toString() {
 		return "Subscription [description=" + description + ", expiresAt=" + expiresAt + ", id=" + id

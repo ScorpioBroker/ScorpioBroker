@@ -406,7 +406,7 @@ public class RegistrySubscriptionService {
 										.compact(notification, null, potentialSub.getContext(), HttpUtils.opts, -1)
 										.onItem().transformToUni(noti -> {
 											return webClient.post(notificationParam.getEndPoint().getUri().toString())
-													.putHeaders(SubscriptionTools.getHeaders(notificationParam))
+													.putHeaders(SubscriptionTools.getHeaders(notificationParam,potentialSub.getSubscription().getOtherHead()))
 													.sendJsonObject(new JsonObject(noti)).onFailure().retry().atMost(3)
 													.onItem().transformToUni(result -> {
 														int statusCode = result.statusCode();

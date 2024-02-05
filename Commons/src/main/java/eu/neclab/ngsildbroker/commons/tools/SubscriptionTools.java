@@ -30,10 +30,10 @@ import org.locationtech.spatial4j.shape.ShapeFactory.PolygonBuilder;
 import org.locationtech.spatial4j.shape.jts.JtsShapeFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -232,7 +232,8 @@ public class SubscriptionTools {
 							break;
 						case 2:
 							// ld+
-							// data.forEach(entry -> entry.remove(NGSIConstants.JSON_LD_CONTEXT));
+							 data.forEach(entry -> entry.put(NGSIConstants.JSON_LD_CONTEXT,
+									 Collections.singletonList(potentialSub.getSubscription().getJsonldContext())));
 							break;
 						case 3:
 							break;
@@ -279,7 +280,7 @@ public class SubscriptionTools {
 				});
 	}
 
-	public static MultiMap getHeaders(NotificationParam notificationParam) {
+	public static MultiMap getHeaders(NotificationParam notificationParam, HeadersMultiMap otherHead) {
 		HeadersMultiMap result = new HeadersMultiMap();
 
 		ArrayListMultimap<String, String> receiverInfo = notificationParam.getEndPoint().getReceiverInfo();
@@ -292,7 +293,14 @@ public class SubscriptionTools {
 		if (accept == null) {
 			accept = AppConstants.NGB_APPLICATION_JSON;
 		}
-		result.set("accept", accept);
+		if (accept.equals(AppConstants.NGB_APPLICATION_JSON)) {
+			result.addAll(otherHead);
+		}else{
+			result.addAll(otherHead);
+			result.remove(NGSIConstants.LINK_HEADER);
+		}
+		result.set(NGSIConstants.ACCEPT, accept);
+		result.set(NGSIConstants.CONTENT_TYPE, accept);
 		return new MultiMap(result);
 	}
 
