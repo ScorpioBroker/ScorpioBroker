@@ -5,7 +5,10 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import jakarta.ws.rs.DefaultValue;
@@ -82,7 +85,7 @@ public class QueryController {
 			@QueryParam("containedBy") @DefaultValue("") String containedBy, @QueryParam("join") String join,
 			@QueryParam("idsOnly") boolean idsOnly, @QueryParam("joinLevel") @DefaultValue("1") int joinLevel,
 			@QueryParam("pick") String pick,@QueryParam("omit") String omit,
-			@QueryParam("format") String format) {
+			@QueryParam("format") String format,@QueryParam("jsonKeys") String jsonKeysQP) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		if(format!=null && !format.isEmpty()){
 			options+=","+format;
@@ -98,11 +101,15 @@ public class QueryController {
 		headerContext = HttpUtils.getAtContext(request);
 		logger.debug("retrieve called: " + request.path());
 		String finalOptions = options;
+		Set<String> jsonKeys = new HashSet<>();
 		return HttpUtils.getContext(headerContext, ldService).onItem().transformToUni(context -> {
 			LanguageQueryTerm langQuery;
 			String finalPick;
 			List<String> pickListOriginal =  pick == null ? new ArrayList<>() : new ArrayList<>(Arrays.asList(pick.replaceAll("[\"\\n\\s]", "").split(",")));
 			List<String> omitList = omit == null ? new ArrayList<>() : Arrays.asList(omit.replaceAll("[\"\\n\\s]", "").split(","));
+			if(jsonKeysQP!=null){
+				jsonKeys.addAll(Arrays.asList(jsonKeysQP.split(",")));
+			}
 			if(!pickListOriginal.isEmpty()){
                 List<String> pickListCopy = new ArrayList<>(pickListOriginal);
 				if (pickListCopy.contains(NGSIConstants.ID)) {
@@ -119,6 +126,9 @@ public class QueryController {
 			} else {
                 finalPick = attrs == null ? "" : attrs.replaceAll("[\"\\n\\s]", "");
             }
+			if(!jsonKeys.isEmpty()){
+				finalPick = String.join(",",jsonKeys);
+			}
             try {
 				HttpUtils.validateUri(entityId);
 				langQuery = QueryParser.parseLangQuery(lang);
@@ -160,7 +170,8 @@ public class QueryController {
 			@QueryParam("joinLevel") @DefaultValue("1") int joinLevel, @QueryParam("doNotCompact") boolean doNotCompact,
 			@QueryParam("entityMap") String entityMapToken, @QueryParam("maxDistance") String maxDistance,
 			@QueryParam("minDistance") String minDistance, @Context UriInfo uriInfo,
-			@QueryParam("pick") String pick,@QueryParam("omit") String omit,@QueryParam("format") String format) {
+			@QueryParam("pick") String pick,@QueryParam("omit") String omit,@QueryParam("format") String format,
+			@QueryParam("jsonKeys") String jsonKeysQP) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		String q;
 		String georel;
@@ -221,6 +232,10 @@ public class QueryController {
 		List<Object> headerContext;
 		headerContext = HttpUtils.getAtContext(request);
 		String finalOptions = options;
+		Set<String> jsonKeys = new HashSet<>();
+		if(jsonKeysQP!=null){
+			jsonKeys.addAll(Arrays.asList(jsonKeysQP.split(",")));
+		}
 		return HttpUtils.getContext(headerContext, ldService).onItem().transformToUni(context -> {
 			AttrsQueryTerm attrsQuery;
 			TypeQueryTerm typeQueryTerm;
@@ -249,12 +264,16 @@ public class QueryController {
 				else {
 					attrsQuery = QueryParser.parseAttrs(attrs == null ? null : attrs.replaceAll("[\"\\n\\s]", ""), context);
 				}
+				if(!jsonKeys.isEmpty()){
+					attrsQuery=QueryParser.parseAttrs(String.join(",",jsonKeys),context);
+				}
 				typeQueryTerm = QueryParser.parseTypeQuery(typeQuery, context);
 				qQueryTerm = QueryParser.parseQuery(q, context);
 				csfQueryTerm = QueryParser.parseCSFQuery(csf, context);
 				geoQueryTerm = QueryParser.parseGeoQuery(georel, coordinates, geometry, geoproperty, context);
 				scopeQueryTerm = QueryParser.parseScopeQuery(scopeQ);
 				langQuery = QueryParser.parseLangQuery(lang);
+
 			} catch (Exception e) {
 				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 			}

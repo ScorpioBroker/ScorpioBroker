@@ -1119,6 +1119,32 @@ public class QQueryTerm implements Serializable {
 				sql.append("'");
 				dollarCount = current.applyOperator(sql, dollarCount, tuple, false);
 			}
+
+			sql.append(") WHEN ");
+			sql.append(currentSqlAttrib);
+			sql.append(" #>>'{");
+			sql.append(NGSIConstants.JSON_LD_TYPE);
+			sql.append(",0}' = '");
+			sql.append(NGSIConstants.NGSI_LD_JSON_PROPERTY);
+			sql.append("' THEN EXISTS (SELECT TRUE FROM JSONB_ARRAY_ELEMENTS(");
+			sql.append(currentSqlAttrib);
+			sql.append(" ->'");
+			sql.append(NGSIConstants.NGSI_LD_HAS_JSON);
+			sql.append("') AS ");
+			sql.append(currentSqlAttrib2);
+			sql.append(" WHERE ");
+			sql.append(currentSqlAttrib2);
+			sql.append(" -> '");
+			sql.append(NGSIConstants.JSON_LD_VALUE);
+			sql.append("' ->> $");
+			sql.append(dollarCount);
+			dollarCount++;
+			tuple.addString(subAttribPath[0]);
+			sql.append("=");
+			sql.append(" $");
+			sql.append(dollarCount);
+			dollarCount++;
+			tuple.addString(current.operant);
 			sql.append(")  ELSE FALSE END ");
 		}
 		sql.append(") ");

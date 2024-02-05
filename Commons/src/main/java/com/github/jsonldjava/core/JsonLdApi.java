@@ -226,6 +226,7 @@ public class JsonLdApi {
 			boolean isVocabProperty = false;
 			boolean isListProperty = false;
 			boolean isLocalOnly = false;
+			boolean isJsonProperty = false;
 			for (String expandedProperty : keys) {
 
 				Object expandedValue = elem.get(expandedProperty);
@@ -272,6 +273,9 @@ public class JsonLdApi {
 								break;
 							case NGSIConstants.NGSI_LD_LANGPROPERTY:
 								isLanguageProperty = true;
+								break;
+							case NGSIConstants.NGSI_LD_JSON_PROPERTY:
+								isJsonProperty = true;
 								break;
 							case NGSIConstants.NGSI_LD_RELATIONSHIP:
 								isRelationship = true;
@@ -372,7 +376,8 @@ public class JsonLdApi {
 					else if(expandedValue instanceof List<?> ls && ls.get(0) instanceof Map<?,?> map
 							&& map.containsKey(NGSIConstants.JSON_LD_TYPE)
 							&& (map.get(NGSIConstants.JSON_LD_TYPE).toString().contains(NGSIConstants.NGSI_LD_VocabProperty)
-							|| map.get(NGSIConstants.JSON_LD_TYPE).toString().contains(NGSIConstants.NGSI_LD_LANGPROPERTY))){
+							|| map.get(NGSIConstants.JSON_LD_TYPE).toString().contains(NGSIConstants.NGSI_LD_LANGPROPERTY)
+							|| map.get(NGSIConstants.JSON_LD_TYPE).toString().contains(NGSIConstants.NGSI_LD_JSON_PROPERTY))){
 							map.remove(NGSIConstants.JSON_LD_TYPE);
 					}
 					else if(isListProperty && expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_LIST)){
@@ -434,7 +439,8 @@ public class JsonLdApi {
 							|| expandedProperty.equals(NGSIConstants.NGSI_LD_OBSERVED_AT)
 							|| expandedProperty.equals(NGSIConstants.NGSI_LD_MODIFIED_AT)
 							|| expandedProperty.equals(NGSIConstants.NGSI_LD_CREATED_AT)
-							|| expandedProperty.equals(NGSIConstants.NGSI_LD_SCOPE)) {
+							|| expandedProperty.equals(NGSIConstants.NGSI_LD_SCOPE)
+							|| expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_JSON)) {
 
 					} else if (expandedValue instanceof List && ((List) expandedValue).get(0) instanceof Map
 							&& ((List<Map>) expandedValue).get(0).containsKey(NGSIConstants.JSON_LD_TYPE)) {
@@ -1246,6 +1252,8 @@ public class JsonLdApi {
 							ngsiElement.setHasAtValue(true);
 						} else if (NGSIConstants.NGSI_LD_HAS_VOCAB.equals(expandedProperty)) {
 							ngsiElement.setHasVocab(true);
+						}else if (NGSIConstants.NGSI_LD_HAS_JSON.equals(expandedProperty)) {
+								ngsiElement.setHasJson(true);
 						} else if (NGSIConstants.NGSI_LD_HAS_OBJECT.equals(expandedProperty)) {
 							ngsiElement.setHasAtObject(true);
 						}else if (NGSIConstants.NGSI_LD_HAS_OBJECT_LIST.equals(expandedProperty)) {
