@@ -35,7 +35,7 @@ BEGIN
 			updated := TRUE;
 			resultObj['success'] = resultObj['success'] || jsonb_build_object('id', (newentity->>'@id'), 'updated', updated, 'old', prev_entity, 'new', updated_entity);
 		WHEN OTHERS THEN
-			resultObj['failure'] = resultObj['failure'] || jsonb_object_agg(newentity->>'@id', SQLSTATE);
+			resultObj['failure'] = resultObj['failure'] || jsonb_build_object(newentity->>'@id', SQLSTATE);
 		END;
 	END LOOP;
 	RETURN resultObj;
@@ -54,12 +54,12 @@ BEGIN
 		BEGIN
 			DELETE FROM ENTITY WHERE ID = entityId RETURNING ENTITY.ENTITY INTO prev_entity;
 			if NOT FOUND THEN
-			    resultObj['failure'] = resultObj['failure'] || jsonb_object_agg(entityId, 'Not Found');
+			    resultObj['failure'] = resultObj['failure'] || jsonb_build_object(entityId, 'Not Found');
             else
 				resultObj['success'] = resultObj['success'] || jsonb_build_object('id', entityId, 'old', prev_entity);
 			End IF;
 		EXCEPTION WHEN OTHERS THEN
-			resultObj['failure'] = resultObj['failure'] || jsonb_object_agg(entityId, SQLSTATE);
+			resultObj['failure'] = resultObj['failure'] || jsonb_build_object(entityId, SQLSTATE);
 		END;
 	END LOOP;
 	RETURN resultObj;
@@ -84,11 +84,11 @@ BEGIN
 			ELSE
 				UPDATE ENTITY SET ENTITY = ENTITY.ENTITY || newentity WHERE id = newentity->>'@id' RETURNING ENTITY.ENTITY INTO updated_entity;
 			END IF;
-			if NOT FOUND THEN resultObj['failure'] = resultObj['failure'] || jsonb_object_agg(newentity->>'@id', 'Not Found');
+			if NOT FOUND THEN resultObj['failure'] = resultObj['failure'] || jsonb_build_object(newentity->>'@id', 'Not Found');
 			else resultObj['success'] = resultObj['success'] || jsonb_build_object('id', newentity->'@id', 'old', prev_entity, 'new', updated_entity)::jsonb;
 			END IF;
 		EXCEPTION WHEN OTHERS THEN
-			resultObj['failure'] = resultObj['failure'] || jsonb_object_agg(newentity->>'@id', SQLSTATE);
+			resultObj['failure'] = resultObj['failure'] || jsonb_build_object(newentity->>'@id', SQLSTATE);
 		END;
 	END LOOP;
 	RETURN resultObj;
