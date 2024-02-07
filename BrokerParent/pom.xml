@@ -3,7 +3,7 @@
 	<groupId>eu.neclab.ngsildbroker</groupId>
 	<artifactId>broker-parent</artifactId>
 	<name>BrokerParent</name>
-	<version>4.1.13-SNAPSHOT</version>
+	<version>4.1.15-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<properties>
 		<compiler-plugin.version>3.11.0</compiler-plugin.version>
