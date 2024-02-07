@@ -1,11 +1,10 @@
-RELEASE NOTES SCORPIO 4.1.14
+RELEASE NOTES SCORPIO 4.1.15
 
 addresses an issue in the registry subscription manager as stand alone microservice not logging onto the DB properly
 
 RELEASE NOTES SCORPIO 4.1.14
 
 enables by default repairing of migration for all microservices
-
 
 RELEASE NOTES SCORPIO 4.1.13
 
