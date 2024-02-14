@@ -172,8 +172,8 @@ public class HistoryDAO {
 													.get(JsonLdConsts.LIST);
 											for (Map<String, List<Map<String, Object>>> subMax : subMaxes) {
 												List<Map<String, Object>> realValues = subMax.get(JsonLdConsts.LIST);
-												String potentialValue = (String) realValues.get(0)
-														.get(JsonLdConsts.VALUE);
+												String potentialValue =  realValues.get(0)
+														.get(JsonLdConsts.VALUE).toString();
 												if (NumberUtils.isCreatable(potentialValue)) {
 													realValues.get(0).put(JsonLdConsts.VALUE,
 															NumberUtils.createNumber(potentialValue));
@@ -189,8 +189,8 @@ public class HistoryDAO {
 													.get(JsonLdConsts.LIST);
 											for (Map<String, List<Map<String, Object>>> subMin : subMins) {
 												List<Map<String, Object>> realValues = subMin.get(JsonLdConsts.LIST);
-												String potentialValue = (String) realValues.get(0)
-														.get(JsonLdConsts.VALUE);
+												String potentialValue = realValues.get(0)
+														.get(JsonLdConsts.VALUE).toString();
 												if (NumberUtils.isCreatable(potentialValue)) {
 													realValues.get(0).put(JsonLdConsts.VALUE,
 															NumberUtils.createNumber(potentialValue));
@@ -497,9 +497,9 @@ public class HistoryDAO {
 				sql.append("WHEN JSONB_TYPEOF(data #> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
 						+ NGSIConstants.JSON_LD_VALUE + "}') = 'boolean' THEN (data #>> '{"
 						+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE + "}')::numeric ");
-				sql.append("WHEN JSONB_TYPEOF(data #> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
-						+ NGSIConstants.JSON_LD_VALUE + "}') = 'string' THEN (data #>> '{"
-						+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE + "}')::numeric ");
+//				sql.append("WHEN JSONB_TYPEOF(data #> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
+//						+ NGSIConstants.JSON_LD_VALUE + "}') = 'string' THEN (data #>> '{"
+//						+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE + "}')::numeric ");
 				sql.append("WHEN JSONB_TYPEOF(data #> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
 						+ NGSIConstants.JSON_LD_VALUE + "}') = 'array' THEN (JSONB_ARRAY_LENGTH(data #> ('{"
 						+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE + "}')))::numeric ");
@@ -516,9 +516,9 @@ public class HistoryDAO {
 				sql.append("WHEN JSONB_TYPEOF(data #> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
 						+ NGSIConstants.JSON_LD_VALUE + "}') = 'boolean' THEN (data #>> '{"
 						+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE + "}') ::numeric ");
-				sql.append("WHEN JSONB_TYPEOF(data #> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
-						+ NGSIConstants.JSON_LD_VALUE + "}') = 'string' THEN (data #>> '{"
-						+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE + "}') ::numeric ");
+//				sql.append("WHEN JSONB_TYPEOF(data #> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
+//						+ NGSIConstants.JSON_LD_VALUE + "}') = 'string' THEN (data #>> '{"
+//						+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE + "}') ::numeric ");
 				sql.append("WHEN JSONB_TYPEOF(data #> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
 						+ NGSIConstants.JSON_LD_VALUE + "}') = 'array' THEN (JSONB_ARRAY_LENGTH(data #> ('{"
 						+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE + "}')))::numeric ");
