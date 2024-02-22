@@ -3,7 +3,7 @@ package eu.neclab.ngsildbroker.commons.datatypes.requests;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import java.util.Map;
 
-public class MergePatchRequest extends EntityRequest {
+public class MergePatchRequest extends EntityRequest   {
 
 	/**
 	 * 

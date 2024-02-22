@@ -251,4 +251,64 @@ public class EntityBatchController {
 				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
+
+
+//					if (obj2 instanceof ResponseException) {
+//						failureResults.addFailure((ResponseException) obj2);
+//					} else {
+//						failureResults.addFailure(
+//								new ResponseException(ErrorType.InvalidRequest, ((Exception) obj2).getMessage()));
+//					}
+//					fails.add(failureResults);
+	@POST
+	@Path("/merge")
+	public Uni<RestResponse<Object>> mergeMultiple(HttpServerRequest request,
+													List<Map<String, Object>> compactedEntities, @QueryParam(value = "options") String options,
+													@QueryParam("localOnly") boolean localOnly) {
+		boolean isNoOverwrite = options != null && options.contains(NGSIConstants.NO_OVERWRITE_OPTION);
+		List<Uni<Tuple2<String, Object>>> unis = Lists.newArrayList();
+		for (Map<String, Object> compactedEntity : compactedEntities) {
+			noConcise(compactedEntity);
+			unis.add(HttpUtils.expandBody(request, compactedEntity, AppConstants.MERGE_PATCH_REQUEST, ldService).onItem()
+					.transform(i -> Tuple2.of((String) compactedEntity.get("id"), (Object) i)).onFailure()
+					.recoverWithItem(e -> Tuple2.of((String) compactedEntity.get("id"), (Object) e)));
+		}
+		return Uni.combine().all().unis(unis).collectFailures().combinedWith(list -> {
+			List<NGSILDOperationResult> fails = Lists.newArrayList();
+			List<Map<String, Object>> expandedEntities = Lists.newArrayList();
+			List<Context> contexts = Lists.newArrayList();
+			for (Object obj : list) {
+				Tuple2<String, Object> tuple = (Tuple2<String, Object>) obj;
+				String entityId = tuple.getItem1();
+				Object obj2 = tuple.getItem2();
+				if (obj2 instanceof Exception) {
+					NGSILDOperationResult failureResults = new NGSILDOperationResult(AppConstants.APPEND_REQUEST,
+							entityId);
+					if (obj2 instanceof ResponseException) {
+						failureResults.addFailure((ResponseException) obj2);
+					} else {
+						failureResults.addFailure(
+								new ResponseException(ErrorType.InvalidRequest, ((Exception) obj2).getMessage()));
+					}
+					fails.add(failureResults);
+				} else {
+					Tuple2<Context, Map<String, Object>> tuple2 = (Tuple2<Context, Map<String, Object>>) obj2;
+					expandedEntities.add(tuple2.getItem2());
+					contexts.add(tuple2.getItem1());
+				}
+			}
+			return Tuple3.of(fails, expandedEntities, contexts);
+
+		}).onItem().transformToUni(tuple -> {
+			List<NGSILDOperationResult> fails = tuple.getItem1();
+			List<Map<String, Object>> expandedEntities = tuple.getItem2();
+			List<Context> contexts = tuple.getItem3();
+			return entityService.mergeBatch(HttpUtils.getTenant(request), expandedEntities, contexts, localOnly,isNoOverwrite)
+					.onItem().transform(opResults -> {
+						opResults.addAll(fails);
+						return HttpUtils.generateBatchResult(opResults);
+					});
+		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+	}
+
 }
