@@ -515,6 +515,7 @@ public class QueryService {
 						}
 					}
 				}
+				queryInfos.setqQueryTerm(qQuery);
 				if (!queryInfos.isFullTypesFound()) {
 					if (regEntry.type() != null) {
 						queryInfos.getTypes().add(regEntry.type());
