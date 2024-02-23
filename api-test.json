@@ -1,9 +1,9 @@
 {
 	"info": {
-		"_postman_id": "6280aa39-f9e5-45e8-a060-373997f98efc",
+		"_postman_id": "77605a5f-0401-435a-a403-12c2d6ff525f",
 		"name": "API Test",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "27293663"
+		"_exporter_id": "26387112"
 	},
 	"item": [
 		{
@@ -33812,6 +33812,243 @@
 											]
 										}
 									]
+								},
+								{
+									"name": "Merge Batch entity",
+									"item": [
+										{
+											"name": "no @context",
+											"item": [
+												{
+													"name": "Create batch entity with no @context",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"console.log(payloadBody[0].id);\r",
+																	"console.log(payloadBody[1].id);\r",
+																	"var entityId1 = payloadBody[0].id;\r",
+																	"var entityId2 = payloadBody[1].id;\r",
+																	"pm.collectionVariables.set(\"created\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"entityId\", entityId1);\r",
+																	"pm.collectionVariables.set(\"entityId\", entityId2);\r",
+																	"\r",
+																	"pm.test(\"Successful POST request\", function () {\r",
+																	"    pm.expect(pm.response.code).to.be.oneOf([201, 207]);\r",
+																	"});\r",
+																	"\r",
+																	"pm.test(\"Response validations\", function () {\r",
+																	"     pm.expect(entityId1).to.equal(\"urn:test:testbatchentity1005\");\r",
+																	"     pm.expect(entityId2).to.equal(\"urn:test:testbatchentity1006\");\r",
+																	"});\r",
+																	"\r",
+																	"pm.test(\"Content-Type is present\", function () {\r",
+																	"    pm.response.to.have.header(\"Content-Type\");\r",
+																	"});\r",
+																	"\r",
+																	"pm.test(\"Status code name has string\", function () {\r",
+																	"    pm.response.to.have.status(\"Created\");\r",
+																	"});\r",
+																	"\r",
+																	"  \r",
+																	"   \r",
+																	" \r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "[\r\n  {\r\n    \"id\": \"urn:test:testbatchentity1010\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n  },\r\n  {\r\n    \"id\": \"urn:test:testbatchentity1011\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n  }\r\n]"
+														},
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entityOperations/create",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entityOperations",
+																"create"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "update batch entity with no @context",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"console.log(payloadBody[0].id);\r",
+																	"console.log(payloadBody[1].id);\r",
+																	"var entityId1 = payloadBody[0].id;\r",
+																	"var entityId2 = payloadBody[1].id;\r",
+																	"pm.collectionVariables.set(\"created\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"entityId\", entityId1);\r",
+																	"pm.collectionVariables.set(\"entityId\", entityId2);\r",
+																	"\r",
+																	"pm.test(\"Successful POST request\", function () {\r",
+																	"    pm.expect(pm.response.code).to.be.oneOf([204, 207]);\r",
+																	"});\r",
+																	"\r",
+																	"\r",
+																	"\r",
+																	"  \r",
+																	"   \r",
+																	" \r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "[\r\n  {\r\n    \"id\": \"urn:test:testbatchentity1010\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"StringDATA\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 586},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 482.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref3\"}\r\n  },\r\n  {\r\n    \"id\": \"urn:test:testbatchentity1011\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"urn:ngsi-ld:null\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 896},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 300.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref8\"}\r\n  }\r\n]"
+														},
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entityOperations/merge",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entityOperations",
+																"merge"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "get batch entity with no @context Copy",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"  var expected = pm.collectionVariables.get(\"created\");\r",
+																	"pm.test(\"Status code is 200\", function () {\r",
+																	"    pm.response.to.have.status(200);\r",
+																	"});\r",
+																	" pm.test(\"Content-Type is present\", function () {\r",
+																	"    pm.response.to.have.header(\"Content-Type\");\r",
+																	"});\r",
+																	"\r",
+																	" \r",
+																	"\r",
+																	"\r",
+																	"\r",
+																	"\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n    \"type\": \"Query\",\r\n    \"entities\": [\r\n        {\r\n            \"id\": \"urn:test:testbatchentity1010\",\r\n            \"type\": \"TestType\"\r\n        },\r\n        {\r\n            \"id\": \"urn:test:testbatchentity1011\",\r\n            \"type\": \"TestType\"\r\n        }\r\n    ]\r\n}"
+														},
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entityOperations/query",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entityOperations",
+																"query"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "delete batch entity with no @context Copy",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});\r",
+																	"pm.collectionVariables.clear();"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "[\r\n    \"urn:test:testbatchentity1010\",\r\n    \"urn:test:testbatchentity1011\"\r\n]"
+														},
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entityOperations/delete",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entityOperations",
+																"delete"
+															]
+														}
+													},
+													"response": []
+												}
+											]
+										}
+									]
 								}
 							]
 						},
@@ -56782,20 +57019,6 @@
 					]
 				}
 			]
-		}
-	],
-	"variable": [
-		{
-			"key": "createdTBF",
-			"value": ""
-		},
-		{
-			"key": "entityIdTBF",
-			"value": ""
-		},
-		{
-			"key": "entityTypeTBF",
-			"value": ""
 		}
 	]
 }
