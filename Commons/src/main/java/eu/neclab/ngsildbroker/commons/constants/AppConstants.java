@@ -160,6 +160,8 @@ public class AppConstants {
 	public static final String HIST_SYNC_RETRIEVE_CHANNEL = "histsyncretrieve";
 	public static final String HIST_SYNC_CHANNEL = "histsync";
 	public static final String INVALID_REGULAR_EXPRESSION = "2201B";
+	public static final String INVALID_GEO_QUERY = "XX000";
+	
 
 	public static JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 

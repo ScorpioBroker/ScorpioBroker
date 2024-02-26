@@ -78,8 +78,8 @@ public class QueryDAO {
 				if (t.rowCount() == 0) {
 					return Uni.createFrom().item(new HashMap<String, Object>());
 				}
-				Map<String,Object> result = t.iterator().next().getJsonObject(0).getMap();
-				if(attrsQuery!=null&& !attrsQuery.getAttrs().isEmpty() && result.size()<=4){
+				Map<String, Object> result = t.iterator().next().getJsonObject(0).getMap();
+				if (attrsQuery != null && !attrsQuery.getAttrs().isEmpty() && result.size() <= 4) {
 					return Uni.createFrom().failure(new ResponseException(ErrorType.CombinationNotFound));
 				}
 				return Uni.createFrom().item(t.iterator().next().getJsonObject(0).getMap());
@@ -320,7 +320,8 @@ public class QueryDAO {
 							Map<String, String> tmp = Maps.newHashMap();
 							tmp.put(NGSIConstants.JSON_LD_ID, row.getString(0));
 							resultEntry.put(NGSIConstants.NGSI_LD_TYPE_NAME, Lists.newArrayList(tmp));
-							resultEntry.put(NGSIConstants.NGSI_LD_ATTRIBUTE_NAMES, row.getJsonArray(1).getList().stream().distinct().toList());
+							resultEntry.put(NGSIConstants.NGSI_LD_ATTRIBUTE_NAMES,
+									row.getJsonArray(1).getList().stream().distinct().toList());
 							result.add(resultEntry);
 						});
 						return result;
@@ -337,7 +338,7 @@ public class QueryDAO {
 							+ NGSIConstants.JSON_LD_ID + "', '" + NGSIConstants.JSON_LD_TYPE + "', '"
 							+ NGSIConstants.NGSI_LD_CREATED_AT + "', '" + NGSIConstants.NGSI_LD_MODIFIED_AT
 							+ "')), b as (SELECT count(entity.id) as mycount FROM entity where e_types && $1::text[]) "
-							+"select b.mycount, a.id, jsonb_agg(distinct jsonb_build_object('"
+							+ "select b.mycount, a.id, jsonb_agg(distinct jsonb_build_object('"
 							+ NGSIConstants.JSON_LD_ID + "', x#>'{" + NGSIConstants.JSON_LD_TYPE
 							+ ",0}')) from b, a, jsonb_array_elements(a.data) as x group by a.id, b.mycount;"
 
@@ -355,8 +356,8 @@ public class QueryDAO {
 					Map<String, Object> attribDetail = Maps.newHashMap();
 					Map<String, String> tmp = Maps.newHashMap();
 					tmp.put(NGSIConstants.JSON_LD_ID, row.getString(1));
-					attribDetail.put(NGSIConstants.JSON_LD_ID,row.getString(1));
-					attribDetail.put(NGSIConstants.TYPE,NGSIConstants.ATTRIBUTE);
+					attribDetail.put(NGSIConstants.JSON_LD_ID, row.getString(1));
+					attribDetail.put(NGSIConstants.TYPE, NGSIConstants.ATTRIBUTE);
 					attribDetail.put(NGSIConstants.NGSI_LD_ATTRIBUTE_NAME, Lists.newArrayList(tmp));
 					attribDetail.put(NGSIConstants.NGSI_LD_ATTRIBUTE_TYPES, row.getJsonArray(2).getList());
 					attrDetails.add(attribDetail);
@@ -825,7 +826,12 @@ public class QueryDAO {
 			if (e instanceof PgException pge) {
 				logger.debug(pge.getPosition());
 				if (pge.getSqlState().equals(AppConstants.INVALID_REGULAR_EXPRESSION)) {
-					return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData));
+					return Uni.createFrom()
+							.failure(new ResponseException(ErrorType.BadRequestData, "Invalid regular expression"));
+				}
+				if (pge.getSqlState().equals(AppConstants.INVALID_GEO_QUERY)) {
+					return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData,
+							"Invalid geo query. " + pge.getErrorMessage()));
 				}
 			}
 			return Uni.createFrom().failure(e);
