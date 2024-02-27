@@ -1850,18 +1850,12 @@ public class EntityService {
 						List<NGSILDOperationResult> result = Lists.newArrayList();
 						List<Map<String, Object>> successes = (List<Map<String, Object>>) dbResult.get("success");
 						List<Map<String, String>> fails = (List<Map<String, String>>) dbResult.get("failure");
-						List<Map<String, Object>> newEntities = Lists.newArrayList();
-						List<Map<String, Object>> oldEntities = Lists.newArrayList();
 						for (Map<String, Object> success : successes) {
 							String entityId = (String) success.get("id");
 							NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.MERGE_PATCH_REQUEST,
 									entityId);
 							opResult.addSuccess(new CRUDSuccess(null, null, null, Sets.newHashSet()));
 							result.add(opResult);
-							Map<String, Object> old = (Map<String, Object>) success.get("old");
-							Map<String, Object> newEntity = (Map<String, Object>) success.get("new");
-							newEntities.add(newEntity);
-							oldEntities.add(old);
 						}
 						for (Map<String, String> fail : fails) {
 							fail.entrySet().forEach(entry -> {
@@ -1879,8 +1873,6 @@ public class EntityService {
 							});
 
 						}
-						request.setBestCompleteResult(newEntities);
-						request.setPreviousEntity(oldEntities);
 						if (!request.getRequestPayload().isEmpty()) {
 							logger.debug("Append batch request sending to kafka " + request.getEntityIds());
 							MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, batchEmitter,
