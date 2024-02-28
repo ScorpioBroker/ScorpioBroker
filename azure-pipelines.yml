@@ -1,0 +1,43 @@
+# Maven
+# Build your Java project and run tests with Apache Maven.
+# Add steps that analyze code, save build artifacts, deploy, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/java
+
+trigger:
+- quarkus-release/4.1.15
+
+steps:
+- task: Maven@3
+  inputs:
+    mavenPomFile: 'pom.xml'
+    mavenOptions: '-Xmx3072m'
+    javaHomeOption: 'JDKVersion'
+    jdkVersionOption: '1.17'
+    jdkArchitectureOption: 'x64'
+    publishJUnitResults: true
+    testResultsFiles: '**/surefire-reports/TEST-*.xml'
+    goals: 'docker:build'
+    # options: '-B -Dmaven.test.skip=true'
+
+  # - task: Docker@2
+  #   displayName: Push an image to container registry
+  #   inputs:
+  #     # command: buildAndPush
+  #     # scorpiobroker/all-in-one-runner:<tag>
+  #     command: push
+  #     repository: $(imageRepository)
+  #     dockerfile: $(dockerfilePath)
+  #     containerRegistry: $(dockerRegistryServiceConnection)
+  #     tags: |
+  #       $(tag)
+
+  #   - task: CopyFiles@2
+  #   inputs:
+  #     Contents: 'target/sts-security-token-utils*.jar'
+  #     TargetFolder: '$(Build.ArtifactStagingDirectory)'
+  #     CleanTargetFolder: true
+
+  # - task: PublishPipelineArtifact@1
+  #   inputs:
+  #     targetPath: '$(Build.ArtifactStagingDirectory)/target'
+  #     artifact: 'sts-security-token-utils'
