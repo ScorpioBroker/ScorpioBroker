@@ -1845,7 +1845,7 @@ public class EntityService {
 			} else {
 				request.setDistributed(false);
 			}
-			Uni<List<NGSILDOperationResult>> local = entityDAO.batchMergeEntity(request).onItem()
+			Uni<List<NGSILDOperationResult>> local = entityDAO.mergeBatchEntity(request).onItem()
 					.transform(dbResult -> {
 						List<NGSILDOperationResult> result = Lists.newArrayList();
 						List<Map<String, Object>> successes = (List<Map<String, Object>>) dbResult.get("success");

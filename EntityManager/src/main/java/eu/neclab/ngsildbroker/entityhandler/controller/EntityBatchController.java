@@ -250,16 +250,6 @@ public class EntityBatchController {
 					return HttpUtils.generateBatchResult(opResults);
 				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
-
-
-
-//					if (obj2 instanceof ResponseException) {
-//						failureResults.addFailure((ResponseException) obj2);
-//					} else {
-//						failureResults.addFailure(
-//								new ResponseException(ErrorType.InvalidRequest, ((Exception) obj2).getMessage()));
-//					}
-//					fails.add(failureResults);
 	@POST
 	@Path("/merge")
 	public Uni<RestResponse<Object>> mergeMultiple(HttpServerRequest request,

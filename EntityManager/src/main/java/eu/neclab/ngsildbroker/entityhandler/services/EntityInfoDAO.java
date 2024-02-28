@@ -554,7 +554,7 @@ public class EntityInfoDAO {
 
 	}
 
-	public Uni<Map<String, Object>> batchMergeEntity(BatchRequest request) {
+	public Uni<Map<String, Object>> mergeBatchEntity(BatchRequest request) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
 			return client.preparedQuery("SELECT * FROM MERGE_JSON_BATCH($1)")
 					.execute(Tuple.of(new JsonArray(request.getRequestPayload()))).onItem().transform(rows -> {
