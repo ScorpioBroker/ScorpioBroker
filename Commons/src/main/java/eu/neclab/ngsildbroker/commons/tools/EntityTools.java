@@ -533,7 +533,14 @@ public abstract class EntityTools {
 		}
 		// Object is List
 		else if (object instanceof List<?> list) {
-			if(parentMap != null && level==1){
+			boolean putType = true;
+			for (Object obj:list){
+				if (obj instanceof Map<?,?> map && map.containsKey(NGSIConstants.TYPE)){
+					putType = false;
+					break;
+				}
+			}
+			if(putType && parentMap != null && level==1){
 				Map<String, Object> newMap = new HashMap<>();
 				newMap.put(NGSIConstants.VALUE, list);
 				newMap.put(NGSIConstants.TYPE, NGSIConstants.PROPERTY);
