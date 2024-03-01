@@ -1,30 +1,30 @@
 trigger:
 - quarkus-release/4.1.15
 
-variables:
-  - name: acrRepo
-    value: iot
-  - name: acrName
-    value: iotsharedacr
-  - name: ProjectName
-    value: scorpiobroker
-  - template: variables.yml
+# variables:
+#   - name: acrRepo
+#     value: iot
+#   - name: acrName
+#     value: iotsharedacr
+#   - name: ProjectName
+#     value: scorpiobroker
+#   - template: variables.yml
 
-pool:
-  name: $(SelfHostedPoolName)
+# pool:
+#   name: $(SelfHostedPoolName)
 
-resources:
-  pipelines:
-    - pipeline: ci-pipeline
-      project: Fiware
-      source: scorpiobroker-ci-pipeline
-      branch: main
-  repositories:
-  - repository: kubernetes-platform
-    type: git
-    name: FT Operations/kubernetes-platform
-    ref: refs/tags/v3.2.1
-    endpoint: KMDDK-organization-GIT
+# resources:
+#   pipelines:
+#     - pipeline: ci-pipeline
+#       project: Fiware
+#       source: scorpiobroker-ci-pipeline
+#       branch: main
+#   repositories:
+#   - repository: kubernetes-platform
+#     type: git
+#     name: FT Operations/kubernetes-platform
+#     ref: refs/tags/v3.2.1
+#     endpoint: KMDDK-organization-GIT
 
 
     
@@ -54,6 +54,7 @@ steps:
     testResultsFiles: '**/surefire-reports/TEST-*.xml'
     goals: 'clean package'
     options: '-B -Dmaven.test.skip=true'
+- script: bash pwd; find ./ -name *.jar
 
 # - task: Maven@3
 #   inputs:
