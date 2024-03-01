@@ -43,14 +43,15 @@ steps:
   #     tags: |
   #       $(tag)
 
-- task: CopyFiles@2
-  inputs:
-  # /home/vsts/work/1/s/AllInOneRunner/target/all-in-one-runner-4.1.15-SNAPSHOT.jar
-    Contents: 'target/all-in-one-runner-*.jar'
-    TargetFolder: '$(Build.ArtifactStagingDirectory)'
-    CleanTargetFolder: true
+# - task: CopyFiles@2
+#   inputs:
+#   # /home/vsts/work/1/s/AllInOneRunner/target/all-in-one-runner-4.1.15-SNAPSHOT.jar
+#     Contents: 'target/all-in-one-runner-*.jar'
+#     TargetFolder: '$(Build.ArtifactStagingDirectory)'
+#     CleanTargetFolder: true
 
 - task: PublishPipelineArtifact@1
   inputs:
-    targetPath: '$(Build.ArtifactStagingDirectory)/target'
+    # targetPath: '$(Build.ArtifactStagingDirectory)/target'
+    targetPath: 'target/all-in-one-runner-*.jar'
     artifact: 'scorpiobroker'
