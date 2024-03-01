@@ -53,5 +53,5 @@ steps:
 - task: PublishPipelineArtifact@1
   inputs:
     # targetPath: '$(Build.ArtifactStagingDirectory)/target'
-    targetPath: 'target/all-in-one-runner-*.jar'
+    targetPath: 'AllInOneRunner/target/all-in-one-runner-*.jar'
     artifact: 'scorpiobroker'
