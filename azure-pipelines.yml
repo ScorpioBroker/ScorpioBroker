@@ -1,10 +1,46 @@
-# Maven
-# Build your Java project and run tests with Apache Maven.
-# Add steps that analyze code, save build artifacts, deploy, and more:
-# https://docs.microsoft.com/azure/devops/pipelines/languages/java
-
 trigger:
 - quarkus-release/4.1.15
+
+variables:
+  - name: acrRepo
+    value: iot
+  - name: acrName
+    value: iotsharedacr
+  - name: ProjectName
+    value: scorpiobroker
+  - template: variables.yml
+
+pool:
+  name: $(SelfHostedPoolName)
+
+resources:
+  pipelines:
+    - pipeline: ci-pipeline
+      project: Fiware
+      source: scorpiobroker-ci-pipeline
+      branch: main
+  repositories:
+  - repository: kubernetes-platform
+    type: git
+    name: FT Operations/kubernetes-platform
+    ref: refs/tags/v3.2.1
+    endpoint: KMDDK-organization-GIT
+
+
+    
+# stages:
+#   - template: stages/ci-cd/cd-steps-template.yml@kubernetes-platform
+#     parameters:
+#       AzureConnectionName: ${{ variables['AzureSubscription.ServiceConnection'] }}
+#       BackendResourceGroupName: $(TerraformBackendResourceGroupName)
+#       BackendStorageAccountName: $(TerraformBackendStorageAccountName)
+#       DeploymentEnvironmentName: $(DeploymentEnvironmentPrefix)-$(ProjectName)
+#       ProjectName: $(ProjectName)
+#       Namespace: $(ProductName)
+#       AcrRepository: $(acrRepo)
+#       AcrName: $(acrName)
+#       EnvironmentName: $(EnvironmentName)
+#       ForceACRasImageRepo: false
 
 steps:
 - task: Maven@3
@@ -59,3 +95,5 @@ steps:
 # publish to deocker registry
   # container_registry_resource_group_name_shared_acr = "iot-shared-ACR-rg"
   # container_registry_name_shared_acr                = "iotsharedacr"
+
+
