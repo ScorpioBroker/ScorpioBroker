@@ -55,3 +55,7 @@ steps:
     # targetPath: '$(Build.ArtifactStagingDirectory)/target'
     targetPath: 'AllInOneRunner/target/all-in-one-runner-*.jar'
     artifact: 'scorpiobroker'
+
+# publish to deocker registry
+  # container_registry_resource_group_name_shared_acr = "iot-shared-ACR-rg"
+  # container_registry_name_shared_acr                = "iotsharedacr"
