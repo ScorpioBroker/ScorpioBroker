@@ -1,7 +1,9 @@
 trigger:
 - quarkus-release/4.1.15
 
-# variables:
+variables:
+    - name: releaseVersion
+      value: 4.1.15
 #   - name: acrRepo
 #     value: iot
 #   - name: acrName
@@ -63,7 +65,7 @@ steps:
     dockerfile: AllInOneRunner/src/main/resources/dockerfiles/dockerfile-java
     repository: scorpiobroker/all-in-one-runner
     tags: |
-      java-4.1.15
+      java-${releaseVersion}-custom
 
 - script: docker images ls
 
