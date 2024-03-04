@@ -3,9 +3,10 @@ trigger:
 
 variables:
   tag: java-4.1.15-custom-$(Build.BuildId)
+  SelfHostedPoolName: ctoofficelab-dev-ubuntu-20.04
 
-# pool:
-#   name: $(SelfHostedPoolName)
+pool:
+  name: $(SelfHostedPoolName)
 
 # resources:
 #   pipelines:
