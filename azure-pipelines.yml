@@ -55,14 +55,20 @@ steps:
     goals: 'clean package'
     options: '-Dos=java -B -Dmaven.test.skip=true -P docker'
 
-- script: bash pwd; find ./ -name *.jar
+- task: Docker@2
+  displayName: Login to ACR
+  inputs:
+    command: login
+    containerRegistry: iotsharedacr
+- task: Docker@2
+  displayName: Push docker image
+  inputs:
+    repository: scorpiobroker
+    command: push
+    containerRegistry: iotsharedacr
 
-# - task: Docker@2
-#   displayName: Build docker image
-#   inputs:
-#     repository: $(imageName)
-#     command: build
 #     Dockerfile: app/Dockerfile
+    # tags
 
 # - task: Maven@3
 #   inputs:
