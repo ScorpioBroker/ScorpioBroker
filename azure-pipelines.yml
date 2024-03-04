@@ -53,7 +53,7 @@ steps:
     publishJUnitResults: true
     testResultsFiles: '**/surefire-reports/TEST-*.xml'
     goals: 'clean package'
-    options: '-B -Dmaven.test.skip=true'
+    options: '-B -Dmaven.test.skip=true -P docker'
 
 - script: bash pwd; find ./ -name *.jar
 
@@ -64,17 +64,17 @@ steps:
 #     command: build
 #     Dockerfile: app/Dockerfile
 
-- task: Maven@3
-  inputs:
-    mavenPomFile: 'AllInOneRunner/pom.xml'
-    mavenOptions: '-Xmx3072m'
-    javaHomeOption: 'JDKVersion'
-    jdkVersionOption: '1.17'
-    jdkArchitectureOption: 'x64'
-    publishJUnitResults: false
-    # testResultsFiles: '**/surefire-reports/TEST-*.xml'
-    goals: 'docker:build -P docker'
-    options: '-B -Dmaven.test.skip=true'
+# - task: Maven@3
+#   inputs:
+#     mavenPomFile: 'AllInOneRunner/pom.xml'
+#     mavenOptions: '-Xmx3072m'
+#     javaHomeOption: 'JDKVersion'
+#     jdkVersionOption: '1.17'
+#     jdkArchitectureOption: 'x64'
+#     publishJUnitResults: false
+#     # testResultsFiles: '**/surefire-reports/TEST-*.xml'
+#     goals: 'docker:build -P docker'
+#     options: '-B -Dmaven.test.skip=true'
 
   # - task: Docker@2
   #   displayName: Push an image to container registry
