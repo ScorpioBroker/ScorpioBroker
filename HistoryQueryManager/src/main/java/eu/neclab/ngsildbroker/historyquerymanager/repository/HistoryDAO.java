@@ -79,6 +79,53 @@ public class HistoryDAO {
 				if (json == null) {
 					return new HashMap<>(0);
 				}
+				if (aggrQuery != null && (aggrQuery.getAggrFunctions().contains(NGSIConstants.AGGR_METH_MAX)
+						|| aggrQuery.getAggrFunctions().contains(NGSIConstants.AGGR_METH_MIN))) {
+					for (Entry<String, Object> entry : json.getMap().entrySet()) {
+						if (NGSIConstants.ENTITY_BASE_PROPS.contains(entry.getKey())) {
+							continue;
+						}
+						List<Map<String, List<Map<String, List>>>> tmp = (List<Map<String, List<Map<String, List>>>>) entry
+								.getValue();
+						for (Map<String, List<Map<String, List>>> listEntry : tmp) {
+
+							List<Map<String, List>> maxes = listEntry.get(NGSIConstants.NGSI_LD_MAX);
+							if (maxes != null) {
+								for (Map<String, List> max : maxes) {
+									List<Map<String, List<Map<String, Object>>>> subMaxes = max
+											.get(JsonLdConsts.LIST);
+									for (Map<String, List<Map<String, Object>>> subMax : subMaxes) {
+										List<Map<String, Object>> realValues = subMax.get(JsonLdConsts.LIST);
+										String potentialValue =  realValues.get(0)
+												.get(JsonLdConsts.VALUE).toString();
+										if (NumberUtils.isCreatable(potentialValue)) {
+											realValues.get(0).put(JsonLdConsts.VALUE,
+													NumberUtils.createNumber(potentialValue));
+										}
+
+									}
+								}
+							}
+							List<Map<String, List>> mins = listEntry.get(NGSIConstants.NGSI_LD_MIN);
+							if (mins != null) {
+								for (Map<String, List> min : mins) {
+									List<Map<String, List<Map<String, Object>>>> subMins = min
+											.get(JsonLdConsts.LIST);
+									for (Map<String, List<Map<String, Object>>> subMin : subMins) {
+										List<Map<String, Object>> realValues = subMin.get(JsonLdConsts.LIST);
+										String potentialValue = realValues.get(0)
+												.get(JsonLdConsts.VALUE).toString();
+										if (NumberUtils.isCreatable(potentialValue)) {
+											realValues.get(0).put(JsonLdConsts.VALUE,
+													NumberUtils.createNumber(potentialValue));
+										}
+
+									}
+								}
+							}
+						}
+					}
+				}
 				return json.getMap();
 
 			});
@@ -493,16 +540,16 @@ public class HistoryDAO {
 				sql.append("MIN(CASE ");
 				sql.append("WHEN JSONB_TYPEOF(data #> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
 						+ NGSIConstants.JSON_LD_VALUE + "}') = 'number' THEN (data #>> '{"
-						+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE + "}')::numeric ");
+						+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE + "}') ");
 				sql.append("WHEN JSONB_TYPEOF(data #> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
 						+ NGSIConstants.JSON_LD_VALUE + "}') = 'boolean' THEN (data #>> '{"
-						+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE + "}')::numeric ");
-//				sql.append("WHEN JSONB_TYPEOF(data #> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
-//						+ NGSIConstants.JSON_LD_VALUE + "}') = 'string' THEN (data #>> '{"
-//						+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE + "}')::numeric ");
+						+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE + "}') ");
+				sql.append("WHEN JSONB_TYPEOF(data #> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
+						+ NGSIConstants.JSON_LD_VALUE + "}') = 'string' THEN (data #>> '{"
+						+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE + "}') ");
 				sql.append("WHEN JSONB_TYPEOF(data #> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
 						+ NGSIConstants.JSON_LD_VALUE + "}') = 'array' THEN (JSONB_ARRAY_LENGTH(data #> ('{"
-						+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE + "}')))::numeric ");
+						+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE + "}')))::text ");
 				sql.append("ELSE NULL END)) ");
 				dollarplus = generateTimestampForAttr(sql, dollarCount, tempQuery, aggrQuery);
 				sql.append(")) as MINDATA");
@@ -512,16 +559,16 @@ public class HistoryDAO {
 				sql.append("(MAX(CASE ");
 				sql.append("WHEN JSONB_TYPEOF(data #> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
 						+ NGSIConstants.JSON_LD_VALUE + "}') = 'number' THEN (data #>> '{"
-						+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE + "}') ::numeric ");
+						+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE + "}') ");
 				sql.append("WHEN JSONB_TYPEOF(data #> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
 						+ NGSIConstants.JSON_LD_VALUE + "}') = 'boolean' THEN (data #>> '{"
-						+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE + "}') ::numeric ");
-//				sql.append("WHEN JSONB_TYPEOF(data #> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
-//						+ NGSIConstants.JSON_LD_VALUE + "}') = 'string' THEN (data #>> '{"
-//						+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE + "}') ::numeric ");
+						+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE + "}') ");
+				sql.append("WHEN JSONB_TYPEOF(data #> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
+						+ NGSIConstants.JSON_LD_VALUE + "}') = 'string' THEN (data #>> '{"
+						+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE + "}') ");
 				sql.append("WHEN JSONB_TYPEOF(data #> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
 						+ NGSIConstants.JSON_LD_VALUE + "}') = 'array' THEN (JSONB_ARRAY_LENGTH(data #> ('{"
-						+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE + "}')))::numeric ");
+						+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE + "}')))::text ");
 				sql.append("ELSE NULL END))) ");
 				dollarplus = generateTimestampForAttr(sql, dollarCount, tempQuery, aggrQuery);
 				sql.append(")) as MAXDATA");
