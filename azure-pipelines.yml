@@ -60,13 +60,12 @@ steps:
   inputs:    
     command: build
     buildContext: AllInOneRunner
-    # /home/vsts/work/1/s/src/main/resources/dockerfiles/dockerfile-java
     dockerfile: AllInOneRunner/src/main/resources/dockerfiles/dockerfile-java
-    repository: scorpiobroker
+    repository: scorpiobroker/all-in-one-runner
     tags: |
-      test
+      java-4.1.15
 
-- script: bash docker images ls
+- script: docker images ls
 
 # - task: Docker@2
 #   displayName: Push docker image
