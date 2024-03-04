@@ -64,7 +64,7 @@ steps:
     dockerfile: AllInOneRunner/src/main/resources/dockerfiles/dockerfile-java
     repository: scorpiobroker
     tags: |
-      - test
+      test
 
 - script: bash docker images ls
 
