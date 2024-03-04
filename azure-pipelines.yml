@@ -4,8 +4,8 @@ trigger:
 variables:
   tag: java-4.1.15-custom-$(Build.BuildId)
 
-pool:
-  name: $(SelfHostedPoolName)
+# pool:
+#   name: $(SelfHostedPoolName)
 
 # resources:
 #   pipelines:
