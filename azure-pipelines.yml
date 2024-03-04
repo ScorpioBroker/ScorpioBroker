@@ -59,13 +59,17 @@ steps:
   displayName: Login to ACR
   inputs:
     command: login
-    containerRegistry: iotsharedacr
-- task: Docker@2
-  displayName: Push docker image
-  inputs:
-    repository: scorpiobroker
-    command: push
-    containerRegistry: iotsharedacr
+    containerRegistry: ctoofficelabacr
+
+- script bash docker images ls
+
+# - task: Docker@2
+#   displayName: Push docker image
+#   inputs:
+#     command: push
+#     containerRegistry: ctoofficelabacr
+#     repository: scorpiobroker
+
 
 #     Dockerfile: app/Dockerfile
     # tags
