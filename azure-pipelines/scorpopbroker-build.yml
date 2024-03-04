@@ -48,7 +48,7 @@ steps:
     dockerfile: AllInOneRunner/src/main/resources/dockerfiles/dockerfile-java    
     repository: scorpiobroker/all-in-one-runner
     tags: |
-      ${tag}
+      $(tag)
 
 - script: docker images ls
 
@@ -59,7 +59,7 @@ steps:
     containerRegistry: ctoofficelabacr
     repository: scorpiobroker/all-in-one-runner
     tags: |
-      ${tag}
+      $(tag)
 
 
 
