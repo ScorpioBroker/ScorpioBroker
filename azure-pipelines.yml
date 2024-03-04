@@ -57,11 +57,11 @@ steps:
 
 - task: Docker@2
   displayName: Build docker image for AllInOneRunner only
-  buildContext: AllInOneRunner
-  inputs:
+  inputs:    
     command: build
-    repository: scorpiobroker
+    buildContext: AllInOneRunner
     dockerfile: src/main/resources/dockerfiles/dockerfile-java
+    repository: scorpiobroker
     tags: |
       - test
 
