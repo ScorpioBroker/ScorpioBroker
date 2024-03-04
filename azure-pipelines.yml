@@ -53,7 +53,7 @@ steps:
     publishJUnitResults: true
     testResultsFiles: '**/surefire-reports/TEST-*.xml'
     goals: 'clean package'
-    options: '-B -Dmaven.test.skip=true -P docker'
+    options: '-Dos=java -B -Dmaven.test.skip=true -P docker'
 
 - script: bash pwd; find ./ -name *.jar
 
