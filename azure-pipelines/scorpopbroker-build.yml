@@ -50,7 +50,7 @@ steps:
     tags: |
       $(tag)
 
-- script: docker images ls
+- script: docker images
 
 - task: Docker@2
   displayName: Push docker image
