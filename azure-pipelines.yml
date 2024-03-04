@@ -25,7 +25,7 @@ steps:
   displayName: Login to ACR docker registry
   inputs:    
     command: login
-    containerRegistry: ctoofficelabacr
+    containerRegistry: ctoofficelabacrServiceConnection
 
 - task: Maven@3
   inputs:
