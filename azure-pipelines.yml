@@ -60,7 +60,8 @@ steps:
   inputs:    
     command: build
     buildContext: AllInOneRunner
-    dockerfile: src/main/resources/dockerfiles/dockerfile-java
+    # /home/vsts/work/1/s/src/main/resources/dockerfiles/dockerfile-java
+    dockerfile: AllInOneRunner/src/main/resources/dockerfiles/dockerfile-java
     repository: scorpiobroker
     tags: |
       - test
