@@ -39,7 +39,7 @@ steps:
     jdkArchitectureOption: 'x64'
     publishJUnitResults: true
     testResultsFiles: '**/surefire-reports/TEST-*.xml'
-    goals: 'clean isntall'
+    goals: 'clean validate'
     oprtions: '-Dkafka -Pkafka -Dquarkus.profile=kafka -DskipTests -Dmaven.test.skip=true'
     # options: '-Dos=java -Dquarkus.profile=kafka -Dkafka -Pkafka -Dmaven.test.skip=true'
 
