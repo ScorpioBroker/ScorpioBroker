@@ -11,14 +11,11 @@ pool:
 
 steps:
 
-- task: Docker@2
-  displayName: Login to ACR docker registry
-  inputs:    
-    command: login
-    containerRegistry: iotsharedacr-registry-ServiceConnection
-
-
-- script: /usr/bin/mvn -version
+# - task: Docker@2
+#   displayName: Login to ACR docker registry
+#   inputs:    
+#     command: login
+#     containerRegistry: iotsharedacr-registry-ServiceConnection
 
 - task: Maven@3
   inputs:
@@ -33,44 +30,6 @@ steps:
     options: '-DskipTests -Dmaven.test.skip=true -Dkafka -Pkafka -Ddocker -Ddocker-tag=$(tag) -Dos=java -Dquarkus.profile=kafka -B'
     # options: '-Dos=java -Dquarkus.profile=kafka -Dkafka -Pkafka -Dmaven.test.skip=true'
 
-# - task: Maven@3
-#   inputs:
-#     mavenPomFile: 'pom.xml'
-#     mavenOptions: '-Xmx3072m'
-#     javaHomeOption: 'JDKVersion'
-#     jdkVersionOption: '1.17'
-#     jdkArchitectureOption: 'x64'
-#     publishJUnitResults: true
-#     testResultsFiles: '**/surefire-reports/TEST-*.xml'
-#     goals: 'clean validate package'
-#     options: '-Dkafka -Pkafka -Dquarkus.profile=kafka -DskipTests -Dmaven.test.skip=true'
-#     # options: '-Dos=java -Dquarkus.profile=kafka -Dkafka -Pkafka -Dmaven.test.skip=true'
-
-# - task: Maven@3
-#   inputs:
-#     mavenPomFile: 'pom.xml'
-#     mavenOptions: '-Xmx3072m'
-#     javaHomeOption: 'JDKVersion'
-#     jdkVersionOption: '1.17'
-#     jdkArchitectureOption: 'x64'
-#     publishJUnitResults: true
-#     testResultsFiles: '**/surefire-reports/TEST-*.xml'
-#     goals: 'package'
-#     options: '-Dkafka -Pkafka -Dquarkus.profile=kafka -DskipTests -Dmaven.test.skip=true'
-
-
-# - task: Maven@3
-#   inputs:
-#     mavenPomFile: 'pom.xml'
-#     mavenOptions: '-Xmx3072m'
-#     javaHomeOption: 'JDKVersion'
-#     jdkVersionOption: '1.17'
-#     jdkArchitectureOption: 'x64'
-#     publishJUnitResults: true
-#     testResultsFiles: '**/surefire-reports/TEST-*.xml'
-#     goals: 'package'
-#     options: '-Dkafka -Pkafka -Ddocker -Ddocker-tag=$(tag) -Dos=java -Dquarkus.profile=kafka -DskipTests -Dmaven.test.skip=true'
-
 # - task: Docker@2
 #   displayName: Build and push docker image for AllInOneRunner
 #   inputs:    
@@ -82,6 +41,12 @@ steps:
 #       $(javaKafkaTag)
 
 - script: docker images
+
+- task: Docker@2
+  displayName: Login to ACR docker registry
+  inputs:    
+    command: login
+    containerRegistry: iotsharedacr-registry-ServiceConnection
 
 - script: docker tag scorpiobroker/all-in-one-runner:$(javaKafkaTag) iotsharedacr.azurecr.io/scorpiobroker/all-in-one-runner:$(javaKafkaTag)
 - script: docker tag scorpiobroker/all-in-one-runner:$(javaKafkaTag) iotsharedacr.azurecr.io/scorpiobroker/all-in-one-runner:java-kafka-latest
