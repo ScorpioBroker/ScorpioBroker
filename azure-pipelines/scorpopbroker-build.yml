@@ -44,9 +44,17 @@ steps:
       java-kafka-4.1.15
       java-kafka-latest
 
+- task: Docker@2
+  displayName: Login to ACR docker registry
+  inputs:    
+    command: logout
+    containerRegistry: iotsharedacr-registry-ServiceConnection
+
 - script: |
     docker images
     docker rmi $(docker images | grep 'scorpiobroker/all-in-one-runner' | awk '{print $3}')
+    docker rmi $(docker images | grep 'scorpiobroker/all-in-one-runner' | awk '{print $3}')
+    docker rmi $(docker images | grep 'scorpiobroker/all-in-one-runner' | awk '{print $3}')    
     docker images
   displayName: Cleanup local docker images
 
