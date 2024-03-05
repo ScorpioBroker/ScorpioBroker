@@ -41,12 +41,14 @@ steps:
     repository: scorpiobroker/all-in-one-runner
     tags: |
       $(javaKafkaTag)
+      java-kafka-4.1.15
+      java-kafka-latest
 
 - script: |
-  docker tag scorpiobroker/all-in-one-runner:$(javaKafkaTag) iotsharedacr.azurecr.io/scorpiobroker/all-in-one-runner:$(javaKafkaTag)
-  docker tag scorpiobroker/all-in-one-runner:$(javaKafkaTag) iotsharedacr.azurecr.io/scorpiobroker/all-in-one-runner:java-kafka-4.1.15
-  docker tag scorpiobroker/all-in-one-runner:$(javaKafkaTag) iotsharedacr.azurecr.io/scorpiobroker/all-in-one-runner:java-kafka-latest
-  docker images
+    docker tag scorpiobroker/all-in-one-runner:$(javaKafkaTag) iotsharedacr.azurecr.io/scorpiobroker/all-in-one-runner:$(javaKafkaTag)
+    docker tag scorpiobroker/all-in-one-runner:$(javaKafkaTag) iotsharedacr.azurecr.io/scorpiobroker/all-in-one-runner:java-kafka-4.1.15
+    docker tag scorpiobroker/all-in-one-runner:$(javaKafkaTag) iotsharedacr.azurecr.io/scorpiobroker/all-in-one-runner:java-kafka-latest
+    docker images
 
 - task: Docker@2
   displayName: Login to ACR docker registry
@@ -55,7 +57,7 @@ steps:
     containerRegistry: iotsharedacr-registry-ServiceConnection
 
 - script: |
-  docker push iotsharedacr.azurecr.io/scorpiobroker/all-in-one-runner:$(javaKafkaTag)
-  docker push iotsharedacr.azurecr.io/scorpiobroker/all-in-one-runner:java-kafka-4.1.15
-  docker push iotsharedacr.azurecr.io/scorpiobroker/all-in-one-runner:java-kafka-latest
+    docker push iotsharedacr.azurecr.io/scorpiobroker/all-in-one-runner:$(javaKafkaTag)
+    docker push iotsharedacr.azurecr.io/scorpiobroker/all-in-one-runner:java-kafka-4.1.15
+    docker push iotsharedacr.azurecr.io/scorpiobroker/all-in-one-runner:java-kafka-latest
 
