@@ -52,18 +52,9 @@ steps:
 
 - script: |
     docker images
-    docker rmi -f --no-prune $(docker images -a -q 'scorpiobroker/all-in-one-runner')
+    # docker rmi -f --no-prune $(docker images -a -q 'scorpiobroker/all-in-one-runner')
+    docker rmi -f --no-prune $(docker images -a | grep 'scorpiobroker/all-in-one-runner' | awk '{print $3}')
     docker images
   displayName: Cleanup local docker images
 
-# - script: |
-#     docker tag scorpiobroker/all-in-one-runner:$(javaKafkaTag) iotsharedacr.azurecr.io/scorpiobroker/all-in-one-runner:java-kafka-4.1.15-$(Build.BuildId)
-#     docker tag scorpiobroker/all-in-one-runner:$(javaKafkaTag) iotsharedacr.azurecr.io/scorpiobroker/all-in-one-runner:java-kafka-4.1.15
-#     docker tag scorpiobroker/all-in-one-runner:$(javaKafkaTag) iotsharedacr.azurecr.io/scorpiobroker/all-in-one-runner:java-kafka-latest
-#     docker images
-
-# - script: |
-#     docker push iotsharedacr.azurecr.io/scorpiobroker/all-in-one-runner:java-kafka-4.1.15-$(Build.BuildId)
-#     docker push iotsharedacr.azurecr.io/scorpiobroker/all-in-one-runner:java-kafka-4.1.15
-#     docker push iotsharedacr.azurecr.io/scorpiobroker/all-in-one-runner:java-kafka-latest
 
