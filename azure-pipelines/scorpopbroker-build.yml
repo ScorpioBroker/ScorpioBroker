@@ -47,11 +47,11 @@ steps:
     buildContext: AllInOneRunner
     dockerfile: AllInOneRunner/src/main/resources/dockerfiles/dockerfile-java
     # Azure docker repo prefix is added automatically from iotsharedacr-registry-ServiceConnection
-    repository: scorpiobroker/all-in-one-runner
+    repository: scorpiobroker/all-in-one-runner-java-kafka
     tags: |
-      java-kafka-4.1.15-$(Build.BuildId)
-      java-kafka-4.1.15
-      java-kafka-latest
+      4.1.15-$(Build.BuildId)
+      4.1.15
+      latest
 
 - task: Docker@2
   displayName: Login to ACR docker registry
@@ -61,8 +61,8 @@ steps:
 
 - script: |
     docker images
-    docker rmi -f --no-prune $(docker images -a | grep 'scorpiobroker/all-in-one-runner' | awk '{print $3}')
-    docker rmi --no-prune $(docker images -f "dangling=true" -q)
+    docker rmi -f $(docker images -a | grep 'scorpiobroker/all-in-one-runner' | awk '{print $3}')
+    docker rmi $(docker images -f "dangling=true" -q)
     docker images
   displayName: Cleanup local docker images
 
