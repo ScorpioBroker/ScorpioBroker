@@ -5,18 +5,6 @@ variables:
   javaKafkaTag: java-kafka-4.1.15-$(Build.BuildId)
   SelfHostedPoolName: iot-shared-ubuntu-20.04
 
-resources:
-  pipelines:
-  # - pipeline: scorpiobroker-ci
-  #   source: scorpiobroker-ci-pipeline
-  #   trigger: true
-  - pipeline: scorpiobroker-cd
-    source: scorpiobroker-cd-pipeline
-    trigger: none
-    branches:
-      include:
-        - master 
-
 pool:
   name: $(SelfHostedPoolName)
 
@@ -36,12 +24,6 @@ steps:
     # Not using maven maven docker plugin as it is not maintained anymore - building docker image in separate task
     # options: '-DskipTests -Dmaven.test.skip=true -Dkafka -Pkafka -Ddocker -Ddocker-tag=$(tag) -Dos=java -Dquarkus.profile=kafka -B'
 
-# - task: Docker@2
-#   displayName: Login to ACR docker registry
-#   inputs:    
-#     command: login
-#     containerRegistry: iotsharedacr-registry-ServiceConnection
-
 - task: Docker@2
   displayName: Build and push docker image for AllInOneRunner
   inputs:
@@ -56,11 +38,11 @@ steps:
       4.1.15
       latest
 
-- task: Docker@2
-  displayName: Login to ACR docker registry
-  inputs:    
-    command: logout
-    containerRegistry: iotsharedacr-registry-ServiceConnection
+# - task: Docker@2
+#   displayName: Logout from ACR docker registry
+#   inputs:    
+#     command: logout
+#     containerRegistry: iotsharedacr-registry-ServiceConnection
 
 - script: |
     docker images
