@@ -58,15 +58,15 @@ public class SubscriptionSyncSQS implements SyncService {
 
 	@PostConstruct
 	void setup() {
-		String tmp = reactiveDefaultUrl.substring("postgresql://".length());
-		String[] splitted = tmp.split(":");
-		String host = splitted[0];
-		String[] tmp1 = splitted[1].split("/");
-		String port = tmp1[0];
-		String dbName = tmp1[1].split("\\?")[0];
+		// String tmp = reactiveDefaultUrl.substring("postgresql://".length());
+		// String[] splitted = tmp.split(":");
+		// String host = splitted[0];
+		// String[] tmp1 = splitted[1].split("/");
+		// String port = tmp1[0];
+		// String dbName = tmp1[1].split("\\?")[0];
+		logger.info("Configureing with default datasource url: {}", reactiveDefaultUrl);
 
-		pgSubscriber = PgSubscriber.subscriber(vertx, new PgConnectOptions().setHost(host)
-				.setPort(Integer.parseInt(port)).setDatabase(dbName).setUser(username).setPassword(password));
+		pgSubscriber = PgSubscriber.subscriber(vertx, PgConnectOptions.fromUri(reactiveDefaultUrl).setUser(username).setPassword(password));
 		subService.addSyncService(this);
 		pgSubscriber.channel("subscriptionchannel").handler(notice -> {
 			logger.debug("notice received: " + notice);

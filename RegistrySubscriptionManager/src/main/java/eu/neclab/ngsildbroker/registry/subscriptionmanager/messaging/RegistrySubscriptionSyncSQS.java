@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.storage.ClientManager;
+import eu.neclab.ngsildbroker.commons.tools.DBUtil;
 import eu.neclab.ngsildbroker.registry.subscriptionmanager.service.RegistrySubscriptionService;
 import io.quarkus.arc.profile.IfBuildProfile;
 import io.quarkus.runtime.StartupEvent;
@@ -58,15 +59,15 @@ public class RegistrySubscriptionSyncSQS implements SyncService {
 
 	@PostConstruct
 	void setup() {
-		String tmp = reactiveDefaultUrl.substring("postgresql://".length());
-		String[] splitted = tmp.split(":");
-		String host = splitted[0];
-		String[] tmp1 = splitted[1].split("/");
-		String port = tmp1[0];
-		String dbName = tmp1[1].split("\\?")[0];
+		// String tmp = reactiveDefaultUrl.substring("postgresql://".length());
+		// String[] splitted = tmp.split(":");
+		// String host = splitted[0];
+		// String[] tmp1 = splitted[1].split("/");
+		// String port = tmp1[0];
+		// String dbName = tmp1[1].split("\\?")[0];
+		logger.info("Configureing with default datasource url: {}", reactiveDefaultUrl);
 
-		pgSubscriber = PgSubscriber.subscriber(vertx, new PgConnectOptions().setHost(host)
-				.setPort(Integer.parseInt(port)).setDatabase(dbName).setUser(username).setPassword(password));
+		pgSubscriber = PgSubscriber.subscriber(vertx, PgConnectOptions.fromUri(reactiveDefaultUrl).setUser(username).setPassword(password));
 		subService.addSyncService(this);
 		pgSubscriber.channel("regsubscriptionchannel").handler(notice -> {
 			logger.debug("notice received: " + notice);
