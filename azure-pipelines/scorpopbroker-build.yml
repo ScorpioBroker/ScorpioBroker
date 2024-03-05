@@ -27,7 +27,7 @@ steps:
   displayName: Login to ACR docker registry
   inputs:    
     command: login
-    containerRegistry: iot-shared-ServiceConnection
+    containerRegistry: iotsharedacr-ServiceConnection
 
 - task: Maven@3
   inputs:
