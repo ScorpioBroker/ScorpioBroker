@@ -56,7 +56,7 @@ steps:
   displayName: Push docker image
   inputs:
     command: push
-    containerRegistry: iotsharedacr
+    containerRegistry: iotsharedacr-ServiceConnection
     repository: iotsharedacr.azurecr.io/scorpiobroker/all-in-one-runner
     tags: |
       $(tag)
