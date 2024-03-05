@@ -46,7 +46,7 @@ steps:
 
 - script: |
     docker images
-    docker rmi $(docker images | grep 'scorpiobroker/all-in-one-runner')
+    docker rmi $(docker images | grep 'scorpiobroker/all-in-one-runner' | awk '{print $3}')
     docker images
   displayName: Cleanup local docker images
 
