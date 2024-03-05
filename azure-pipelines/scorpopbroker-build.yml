@@ -2,7 +2,7 @@ trigger:
 - quarkus-release/4.1.15
 
 variables:
-  tag: java-4.1.15-custom-$(Build.BuildId)
+  tag: java-4.1.15-$(Build.BuildId)
   SelfHostedPoolName: iot-shared-ubuntu-20.04
 
 pool:
@@ -29,7 +29,7 @@ steps:
     options: '-Dos=java -B -Dmaven.test.skip=true'    
 
 - task: Docker@2
-  displayName: Build docker image for AllInOneRunner only
+  displayName: Build and push docker image for AllInOneRunner
   inputs:    
     command: buildAndPush
     buildContext: AllInOneRunner
@@ -37,14 +37,3 @@ steps:
     repository: scorpiobroker/all-in-one-runner
     tags: |
       $(tag)
-
-
-
-# - task: Docker@2
-#   displayName: Push docker image
-#   inputs:
-#     command: push
-#     containerRegistry: iotsharedacr-registry-ServiceConnection
-#     repository: scorpiobroker/all-in-one-runner
-#     tags: |
-#       $(tag)
