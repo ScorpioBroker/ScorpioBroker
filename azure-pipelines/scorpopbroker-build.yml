@@ -5,15 +5,6 @@ variables:
   javaKafkaTag: java-kafka-4.1.15-$(Build.BuildId)
   SelfHostedPoolName: iot-shared-ubuntu-20.04
 
-resources:
-  pipelines:
-  - pipeline: scorpiobroker-ci
-    source: scorpiobroker-ci-pipeline
-    trigger: true
-  - pipeline: scorpiobroker-cd
-    source: scorpiobroker-cd-pipeline
-    trigger: true
-
 pool:
   name: $(SelfHostedPoolName)
 
@@ -33,12 +24,6 @@ steps:
     # Not using maven maven docker plugin as it is not maintained anymore - building docker image in separate task
     # options: '-DskipTests -Dmaven.test.skip=true -Dkafka -Pkafka -Ddocker -Ddocker-tag=$(tag) -Dos=java -Dquarkus.profile=kafka -B'
 
-# - task: Docker@2
-#   displayName: Login to ACR docker registry
-#   inputs:    
-#     command: login
-#     containerRegistry: iotsharedacr-registry-ServiceConnection
-
 - task: Docker@2
   displayName: Build and push docker image for AllInOneRunner
   inputs:
@@ -47,22 +32,22 @@ steps:
     buildContext: AllInOneRunner
     dockerfile: AllInOneRunner/src/main/resources/dockerfiles/dockerfile-java
     # Azure docker repo prefix is added automatically from iotsharedacr-registry-ServiceConnection
-    repository: scorpiobroker/all-in-one-runner
+    repository: scorpiobroker/all-in-one-runner-java-kafka
     tags: |
-      java-kafka-4.1.15-$(Build.BuildId)
-      java-kafka-4.1.15
-      java-kafka-latest
+      4.1.15-$(Build.BuildId)
+      4.1.15
+      latest
 
-- task: Docker@2
-  displayName: Login to ACR docker registry
-  inputs:    
-    command: logout
-    containerRegistry: iotsharedacr-registry-ServiceConnection
+# - task: Docker@2
+#   displayName: Logout from ACR docker registry
+#   inputs:    
+#     command: logout
+#     containerRegistry: iotsharedacr-registry-ServiceConnection
 
 - script: |
     docker images
-    docker rmi -f --no-prune $(docker images -a | grep 'scorpiobroker/all-in-one-runner' | awk '{print $3}')
-    docker rmi --no-prune $(docker images -f "dangling=true" -q)
+    docker rmi -f $(docker images -a | grep 'scorpiobroker/all-in-one-runner' | awk '{print $3}')
+    docker rmi $(docker images -f "dangling=true" -q)
     docker images
   displayName: Cleanup local docker images
 
