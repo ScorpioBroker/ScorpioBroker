@@ -3,24 +3,10 @@ trigger:
 
 variables:
   tag: java-4.1.15-custom-$(Build.BuildId)
-  # SelfHostedPoolName: ctoofficelab-dev-ubuntu-20.04
   SelfHostedPoolName: iot-shared-ubuntu-20.04
 
 pool:
   name: $(SelfHostedPoolName)
-
-# resources:
-#   pipelines:
-#     - pipeline: ci-pipeline
-#       project: Fiware
-#       source: scorpiobroker-ci-pipeline
-#       branch: main
-#   repositories:
-#   - repository: kubernetes-platform
-#     type: git
-#     name: FT Operations/kubernetes-platform
-#     ref: refs/tags/v3.2.1
-#     endpoint: KMDDK-organization-GIT
 
 steps:
 - task: Docker@2
@@ -50,22 +36,11 @@ steps:
     tags: |
       $(tag)
 
-- script: docker images
-
 - task: Docker@2
   displayName: Push docker image
   inputs:
     command: push
     containerRegistry: iotsharedacr-registry-ServiceConnection
-    repository: iotsharedacr.azurecr.io/scorpiobroker/all-in-one-runner
+    repository: scorpiobroker/all-in-one-runner
     tags: |
       $(tag)
-
-
-
-
-# publish to deocker registry
-  # container_registry_resource_group_name_shared_acr = "iot-shared-ACR-rg"
-  # container_registry_name_shared_acr                = "iotsharedacr"
-
-
