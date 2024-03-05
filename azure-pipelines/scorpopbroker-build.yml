@@ -17,6 +17,9 @@ steps:
     command: login
     containerRegistry: iotsharedacr-registry-ServiceConnection
 
+
+- script: /usr/bin/mvn -version
+
 # - task: Maven@3
 #   inputs:
 #     mavenPomFile: 'pom.xml'
@@ -53,11 +56,10 @@ steps:
 #     tags: |
 #       $(javaKafkaTag)
 
+- script: docker images
 
 - script: docker tag scorpiobroker/all-in-one-runner:$(javaKafkaTag) iotsharedacr.azurecr.io/scorpiobroker/all-in-one-runner:$(javaKafkaTag)
 - script: docker tag scorpiobroker/all-in-one-runner:$(javaKafkaTag) iotsharedacr.azurecr.io/scorpiobroker/all-in-one-runner:java-kafka-latest
-
-- script: docker images
 
 - script: docker push iotsharedacr.azurecr.io/scorpiobroker/all-in-one-runner:$(javaKafkaTag)
 - script: docker push iotsharedacr.azurecr.io/scorpiobroker/all-in-one-runner:java-kafka-latest
