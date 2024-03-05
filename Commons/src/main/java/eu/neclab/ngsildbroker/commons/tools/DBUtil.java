@@ -33,7 +33,7 @@ public class DBUtil {
 			sb.append(newDbName);
 			String query = uri.getQuery();
 			if (query!=null && !query.isBlank()) {
-				sb.append("&").append(query);
+				sb.append("?").append(query);
 			}
 			return sb.toString();
 		} catch (Exception e) {
