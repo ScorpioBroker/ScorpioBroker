@@ -23,10 +23,8 @@ public class DBUtil {
 
 	public static String databaseURLFromPostgresJdbcUrl(String url, String newDbName) {
 		try {
-			String cleanURI = url.startsWith(JDBC_URI_PFX)?url.substring(JDBC_URI_PFX.length()):url;
-
-			URI uri = URI.create(cleanURI);
-			StringBuilder sb = new StringBuilder(JDBC_URI_PFX);
+			URI uri = URI.create(url.replaceFirst("^"+JDBC_URI_PFX, ""));
+			StringBuilder sb = new StringBuilder();
 			sb.append(uri.getScheme());
 			sb.append(uri.getHost());
 			sb.append(":");
@@ -35,7 +33,7 @@ public class DBUtil {
 			sb.append(newDbName);
 			String query = uri.getQuery();
 			if (query!=null && !query.isBlank()) {
-				sb.append("%").append(query);
+				sb.append("&").append(query);
 			}
 			return sb.toString();
 		} catch (Exception e) {

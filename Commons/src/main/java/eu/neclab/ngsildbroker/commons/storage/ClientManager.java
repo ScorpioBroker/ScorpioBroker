@@ -75,13 +75,15 @@ public class ClientManager {
 	@ConfigProperty(name = "pool.initialSize")
 	int initialSize;
 
-	private String reactiveBaseUrl;
+	// private String reactiveBaseUrl;
 	protected ConcurrentMap<String, Uni<PgPool>> tenant2Client = Maps.newConcurrentMap();
 
 	@PostConstruct
 	void loadTenantClients() throws URISyntaxException {
-		URI uri = new URI(reactiveDefaultUrl);
-		reactiveBaseUrl = uri.getScheme() + "://" + uri.getHost() + ":" + uri.getPort() + "/";
+		// URI uri = new URI(reactiveDefaultUrl);
+		// reactiveBaseUrl = uri.getScheme() + "://" + uri.getHost() + ":" + uri.getPort() + "/";
+		// reactiveBaseUrl = DBUtil.databaseURLFromPostgresJdbcUrl(reactiveDefaultUrl, "").replaceFirst("^jdbc:","");
+		logger.info("Using reactive jdbc base url: {}", reactiveDefaultUrl);
 		tenant2Client.put(AppConstants.INTERNAL_NULL_KEY, Uni.createFrom().item(pgClient));
 	}
 
@@ -110,7 +112,7 @@ public class ClientManager {
 			options.setConnectionTimeout((int) connectionTime.getSeconds());
 			options.setConnectionTimeoutUnit(TimeUnit.SECONDS);
 
-			PgPool pool = PgPool.pool(vertx, PgConnectOptions.fromUri(reactiveBaseUrl + finalDataBase).setUser(username)
+			PgPool pool = PgPool.pool(vertx, PgConnectOptions.fromUri(DBUtil.databaseURLFromPostgresJdbcUrl(reactiveDefaultUrl, finalDataBase)).setUser(username)
 					.setPassword(password).setCachePreparedStatements(true), options);
 			Uni<PgPool> result = Uni.createFrom().item(pool);
 			tenant2Client.put(tenant, result);
@@ -130,7 +132,7 @@ public class ClientManager {
 		return findDataBaseNameByTenantId(tenantidvalue, createDB).onItem()
 				.transform(Unchecked.function(tenantDatabaseName -> {
 					// TODO this needs to be from the config not hardcoded!!!
-					String tenantJdbcURL = DBUtil.databaseURLFromPostgresJdbcUrl(jdbcBaseUrl, tenantDatabaseName);
+					String tenantJdbcURL = "jdbc:" + DBUtil.databaseURLFromPostgresJdbcUrl(jdbcBaseUrl, tenantDatabaseName);
 					logger.info("Generated tenant jdbc url: tenant id: {}, base url: {}, tenant url: {}", tenantidvalue, jdbcBaseUrl, tenantJdbcURL);
 
 					AgroalDataSourceConfigurationSupplier configuration = new AgroalDataSourceConfigurationSupplier()
