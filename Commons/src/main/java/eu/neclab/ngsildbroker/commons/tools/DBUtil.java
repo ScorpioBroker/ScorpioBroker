@@ -19,12 +19,25 @@ public class DBUtil {
 
 	public static GeoJSONReader geoReader = new GeoJSONReader(JtsSpatialContext.GEO, new SpatialContextFactory());
 
+	private static final String JDBC_URI_PFX = "jdbc:";
+
 	public static String databaseURLFromPostgresJdbcUrl(String url, String newDbName) {
 		try {
-			String cleanURI = url.substring(5);
+			String cleanURI = url.startsWith(JDBC_URI_PFX)?url.substring(JDBC_URI_PFX.length()):url;
 
 			URI uri = URI.create(cleanURI);
-			return "jdbc:" + uri.getScheme() + "://" + uri.getHost() + ":" + uri.getPort() + "/" + newDbName;
+			StringBuilder sb = new StringBuilder(JDBC_URI_PFX);
+			sb.append(uri.getScheme());
+			sb.append(uri.getHost());
+			sb.append(":");
+			sb.append(uri.getPort());
+			sb.append("/");
+			sb.append(newDbName);
+			String query = uri.getQuery();
+			if (query!=null && !query.isBlank()) {
+				sb.append("%").append(query);
+			}
+			return sb.toString();
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
@@ -33,7 +46,7 @@ public class DBUtil {
 
 	public static RegistrationEntry getRegistrationEntry(Row row, String tenant, Logger logger) {
 //		cs_id bigint,
-//		c_id text,  
+//		c_id text,
 //		e_id text,
 //		e_id_p text,
 //		e_type text,
@@ -90,7 +103,7 @@ public class DBUtil {
 		if (geoString != null) {
 			try {
 				geoJson = geoReader.read(geoString);
-				
+
 			} catch (InvalidShapeException | IOException | ParseException e) {
 				logger.error("Failed to load registrations for the entity mananger", e);
 			}
