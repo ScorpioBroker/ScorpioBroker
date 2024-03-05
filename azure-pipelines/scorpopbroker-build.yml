@@ -7,12 +7,15 @@ variables:
 
 resources:
   pipelines:
-  - pipeline: scorpiobroker-ci
-    source: scorpiobroker-ci-pipeline
-    trigger: true
+  # - pipeline: scorpiobroker-ci
+  #   source: scorpiobroker-ci-pipeline
+  #   trigger: true
   - pipeline: scorpiobroker-cd
     source: scorpiobroker-cd-pipeline
-    trigger: true
+    trigger: none
+    branches:
+      include:
+        - master 
 
 pool:
   name: $(SelfHostedPoolName)
