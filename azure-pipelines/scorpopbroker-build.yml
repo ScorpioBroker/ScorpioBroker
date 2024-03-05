@@ -44,7 +44,11 @@ steps:
       java-kafka-4.1.15
       java-kafka-latest
 
-- script: docker images
+- script: |
+    docker images
+    docker rmi $(docker images | grep 'scorpiobroker/all-in-one-runner')
+    docker images
+  displayName: Cleanup local docker images
 
 # - script: |
 #     docker tag scorpiobroker/all-in-one-runner:$(javaKafkaTag) iotsharedacr.azurecr.io/scorpiobroker/all-in-one-runner:java-kafka-4.1.15-$(Build.BuildId)
