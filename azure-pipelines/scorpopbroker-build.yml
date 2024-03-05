@@ -9,6 +9,7 @@ pool:
   name: $(SelfHostedPoolName)
 
 steps:
+
 - task: Docker@2
   displayName: Login to ACR docker registry
   inputs:    
@@ -30,17 +31,20 @@ steps:
 - task: Docker@2
   displayName: Build docker image for AllInOneRunner only
   inputs:    
-    command: build
+    command: buildAndPush
     buildContext: AllInOneRunner
     dockerfile: AllInOneRunner/src/main/resources/dockerfiles/dockerfile-java
-    tags: |
-      $(tag)
-
-- task: Docker@2
-  displayName: Push docker image
-  inputs:
-    command: push
-    containerRegistry: iotsharedacr-registry-ServiceConnection
     repository: scorpiobroker/all-in-one-runner
     tags: |
       $(tag)
+
+
+
+# - task: Docker@2
+#   displayName: Push docker image
+#   inputs:
+#     command: push
+#     containerRegistry: iotsharedacr-registry-ServiceConnection
+#     repository: scorpiobroker/all-in-one-runner
+#     tags: |
+#       $(tag)
