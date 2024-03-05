@@ -800,7 +800,22 @@ public class QueryDAO {
 			if (attrsQuery != null) {
 				dollar = attrsQuery.toSqlConstructEntity(query, tuple, dollar);
 			} else {
-				query.append("ENTITY.ENTITY");
+				if(qQuery!=null && qQuery.getAttribute().contains(NGSIConstants.QUERY_PARAMETER_DATA_SET_ID)){
+					query.append("""
+                            (jsonb_strip_nulls(jsonb_build_object(
+                            '@id', entity -> '@id',
+                            '@type', entity ->'@type',
+                            '@context', entity ->'@context',
+                            'https://uri.etsi.org/ngsi-ld/scope', entity ->'https://uri.etsi.org/ngsi-ld/scope',
+                            'https://uri.etsi.org/ngsi-ld/createdAt', entity ->'https://uri.etsi.org/ngsi-ld/createdAt',
+                            'https://uri.etsi.org/ngsi-ld/modifiedAt', entity ->'https://uri.etsi.org/ngsi-ld/modifiedAt',
+                            '%s',
+                            entity ->'%s'
+                            )))""".formatted(qQuery.getAllAttibs().iterator().next().split("\\.datasetId")[0],
+							qQuery.getAllAttibs().iterator().next().split("\\.datasetId")[0]));
+				} else {
+					query.append("ENTITY.ENTITY");
+				}
 			}
 			query.append(" as ENTITY FROM b left join ENTITY on b.ID = ENTITY.ID) SELECT ");
 			query.append("a.ID, c.ENTITY FROM a left outer join c on a.ID = c.ID");

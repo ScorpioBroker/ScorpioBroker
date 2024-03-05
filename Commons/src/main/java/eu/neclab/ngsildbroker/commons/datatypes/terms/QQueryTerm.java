@@ -939,6 +939,22 @@ public class QQueryTerm implements Serializable {
 			if (!current.getOperator().isEmpty()) {
 				sql.append(" CASE WHEN ");
 				sql.append(currentSqlAttrib);
+				sql.append(" #>'{");
+				sql.append(NGSIConstants.JSON_LD_ID);
+				sql.append("}' ");
+				dollarCount = applyOperator(sql, dollarCount, tuple, false);
+				sql.append(" THEN true");
+//				sql.append(currentSqlAttrib);
+//				sql.append(" ->'");
+//				sql.append(NGSIConstants.NGSI_LD_HAS_VALUE);
+//				sql.append("') AS mostInnerValue WHERE (mostInnerValue->'");
+//				sql.append(NGSIConstants.JSON_LD_VALUE);
+//				sql.append("')");
+//				dollarCount = applyOperator(sql, dollarCount, tuple, false);
+//				sql.append(" WHEN ");
+
+				sql.append(" WHEN ");
+				sql.append(currentSqlAttrib);
 				sql.append(" #>>'{");
 				sql.append(NGSIConstants.JSON_LD_TYPE);
 				sql.append(",0}' = '");
