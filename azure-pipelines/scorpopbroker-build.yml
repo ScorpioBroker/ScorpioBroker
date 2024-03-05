@@ -3,7 +3,7 @@ trigger:
 
 variables:
   # tag: java-4.1.15-$(Build.BuildId)
-  tag: java-kafka-4.1.15-$(Build.BuildId)
+  javaKafkaTag: java-kafka-4.1.15-$(Build.BuildId)
   SelfHostedPoolName: iot-shared-ubuntu-20.04
 
 pool:
@@ -26,8 +26,8 @@ steps:
     jdkArchitectureOption: 'x64'
     publishJUnitResults: true
     testResultsFiles: '**/surefire-reports/TEST-*.xml'
-    goals: 'clean verify package'
-    oprtions: '-B -DskipTests -Dkafka -Pkafka -Ddocker -Ddocker-tag=scorpiobroker/all-in-one-runner:$(tag) -Dos=java -Dquarkus.profile=kafka'
+    goals: 'clean package'
+    oprtions: '-B -DskipTests -Dkafka -Pkafka -Ddocker -Ddocker-tag=$(javaKafkaTag) -Dos=java -Dquarkus.profile=kafka'
     # options: '-Dos=java -B -Dmaven.test.skip=true'
 
 # - task: Docker@2
@@ -38,15 +38,14 @@ steps:
 #     dockerfile: AllInOneRunner/src/main/resources/dockerfiles/dockerfile-java
 #     repository: scorpiobroker/all-in-one-runner
 #     tags: |
-#       $(tag)
+#       $(javaKafkaTag)
 
-      
-- task: Docker@2
-  displayName: Push docker image for AllInOneRunner (kafka)
-  inputs:    
-    command: buildAndPush
-    buildContext: AllInOneRunner
-    # dockerfile: AllInOneRunner/src/main/resources/dockerfiles/dockerfile-java
-    repository: scorpiobroker/all-in-one-runner
-    tags: |
-      $(tag)
+
+- script: docker tag scorpiobroker/all-in-one-runner:$(javaKafkaTag) iotsharedacr.azurecr.io/scorpiobroker/all-in-one-runner:$(javaKafkaTag)
+- script: docker tag scorpiobroker/all-in-one-runner:$(javaKafkaTag) iotsharedacr.azurecr.io/scorpiobroker/all-in-one-runner:java-kafka-latest
+
+- script: docker images
+
+- script: docker push iotsharedacr.azurecr.io/scorpiobroker/all-in-one-runner:$(javaKafkaTag)
+- script: docker push iotsharedacr.azurecr.io/scorpiobroker/all-in-one-runner:java-kafka-latest
+
