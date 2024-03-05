@@ -5,6 +5,15 @@ variables:
   javaKafkaTag: java-kafka-4.1.15-$(Build.BuildId)
   SelfHostedPoolName: iot-shared-ubuntu-20.04
 
+resources:
+  pipelines:
+  - pipeline: scorpiobroker-ci
+    source: scorpiobroker-ci-pipeline
+    trigger: true
+  - pipeline: scorpiobroker-cd
+    source: scorpiobroker-cd-pipeline
+    trigger: true
+
 pool:
   name: $(SelfHostedPoolName)
 
