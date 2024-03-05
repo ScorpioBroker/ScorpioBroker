@@ -52,7 +52,7 @@ steps:
 
 - script: |
     docker images
-    docker rmi $(docker images -a -q 'scorpiobroker/all-in-one-runner')
+    docker rmi -f --no-prune $(docker images -a -q 'scorpiobroker/all-in-one-runner')
     docker images
   displayName: Cleanup local docker images
 
