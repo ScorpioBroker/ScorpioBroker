@@ -27,7 +27,7 @@ steps:
     publishJUnitResults: true
     testResultsFiles: '**/surefire-reports/TEST-*.xml'
     goals: 'clean package'
-    oprtions: '-B -DskipTests -Dkafka -Pkafka -Ddocker -Ddocker-tag=$(javaKafkaTag) -Dos=java -Dquarkus.profile=kafka'
+    oprtions: '-DskipTests -Dmaven.test.skip=true -Dkafka -Pkafka -Ddocker -Ddocker-tag=scorpiobroker/all-in-one-runner:$(tag) -Dos=java -Dquarkus.profile=kafka -B'
     # options: '-Dos=java -B -Dmaven.test.skip=true'
 
 # - task: Docker@2
