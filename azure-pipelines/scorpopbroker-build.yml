@@ -53,7 +53,7 @@ steps:
 - script: |
     docker images
     docker rmi -f --no-prune $(docker images -a | grep 'scorpiobroker/all-in-one-runner' | awk '{print $3}')
-    docker rmi $(docker images -f "dangling=true" -q)
+    docker rmi --no-prune $(docker images -f "dangling=true" -q)
     docker images
   displayName: Cleanup local docker images
 
