@@ -131,6 +131,8 @@ public class ClientManager {
 				.transform(Unchecked.function(tenantDatabaseName -> {
 					// TODO this needs to be from the config not hardcoded!!!
 					String tenantJdbcURL = DBUtil.databaseURLFromPostgresJdbcUrl(jdbcBaseUrl, tenantDatabaseName);
+					logger.info("Generated tenant jdbc url: tenant id: {}, base url: {}, tenant url: {}", tenantidvalue, jdbcBaseUrl, tenantJdbcURL);
+
 					AgroalDataSourceConfigurationSupplier configuration = new AgroalDataSourceConfigurationSupplier()
 							.dataSourceImplementation(DataSourceImplementation.AGROAL).metricsEnabled(false)
 							.connectionPoolConfiguration(
