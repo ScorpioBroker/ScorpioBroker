@@ -26,7 +26,7 @@ steps:
 #   displayName: Login to ACR docker registry
 #   inputs:    
 #     command: login
-#     containerRegistry: ctoofficelabacr
+#     containerRegistry: iotsharedacr
 
 - task: Maven@3
   inputs:
@@ -55,8 +55,8 @@ steps:
   displayName: Push docker image
   inputs:
     command: push
-    containerRegistry: ctoofficelabacr
-    repository: ctoofficelabacr.azurecr.io/scorpiobroker/all-in-one-runner
+    containerRegistry: iotsharedacr
+    repository: iotsharedacr.azurecr.io/scorpiobroker/all-in-one-runner
     tags: |
       $(tag)
 
