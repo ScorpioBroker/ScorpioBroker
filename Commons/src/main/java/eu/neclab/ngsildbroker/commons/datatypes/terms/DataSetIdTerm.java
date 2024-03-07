@@ -36,17 +36,17 @@ public class DataSetIdTerm implements Serializable {
 		this.ids = ids;
 	}
 
-	public int toSql(StringBuilder query, Tuple tuple, int dollar) {
+	public int toSql(StringBuilder query, Tuple tuple, int dollar,String tableToUse) {
 		query.append("""
                  x AS (
                     WITH RECURSIVE i AS (
                         SELECT
-                            c.id,
-                            c.entity,
+                            __tableToUse.id,
+                            __tableToUse.entity,
                             key,
                             to_jsonb(value) AS val
                         FROM
-                            c,
+                            __tableToUse,
                             jsonb_each(entity)
                         WHERE
                             jsonb_typeof(value) = 'array'
@@ -97,12 +97,12 @@ public class DataSetIdTerm implements Serializable {
                         v.id,
                         json(jsonb_strip_nulls(
 				                    jsonb_build_object(
-				                        '@id', c.entity -> '@id',
-				                        '@type', c.entity -> '@type',
-				                        '@context', c.entity -> '@context',
-				                        'https://uri.etsi.org/ngsi-ld/scope', c.entity -> 'https://uri.etsi.org/ngsi-ld/scope',
-				                        'https://uri.etsi.org/ngsi-ld/createdAt', c.entity -> 'https://uri.etsi.org/ngsi-ld/createdAt',
-				                        'https://uri.etsi.org/ngsi-ld/modifiedAt', c.entity -> 'https://uri.etsi.org/ngsi-ld/modifiedAt'
+				                        '@id', __tableToUse.entity -> '@id',
+				                        '@type', __tableToUse.entity -> '@type',
+				                        '@context', __tableToUse.entity -> '@context',
+				                        'https://uri.etsi.org/ngsi-ld/scope', __tableToUse.entity -> 'https://uri.etsi.org/ngsi-ld/scope',
+				                        'https://uri.etsi.org/ngsi-ld/createdAt', __tableToUse.entity -> 'https://uri.etsi.org/ngsi-ld/createdAt',
+				                        'https://uri.etsi.org/ngsi-ld/modifiedAt', __tableToUse.entity -> 'https://uri.etsi.org/ngsi-ld/modifiedAt'
 				                    )
 				                ) || v.entity
 				            )
@@ -110,14 +110,11 @@ public class DataSetIdTerm implements Serializable {
                     FROM
                         v
                     LEFT JOIN
-                        c ON c.id = v.id
+                        __tableToUse ON __tableToUse.id = v.id
                 )
-                """.formatted(dollar));
+                """.formatted(dollar).replace("__tableToUse",tableToUse));
 				tuple.addJsonArray(new JsonArray(ids));
 		dollar++;
-//		query.append(dollar);
-//		dollar++;
-//		tuple.addArrayOfString(attrs.toArray(new String[0]));
 		return dollar;
 	}
 

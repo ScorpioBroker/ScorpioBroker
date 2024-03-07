@@ -112,23 +112,17 @@ public class QueryDAO {
 			StringBuilder query = new StringBuilder();
 			int dollar = 1;
 			Tuple tuple = Tuple.tuple();
-			if (count && limit == 0) {
+			query.append("with a as(");
+			if (count && limit == 0 && dataSetIdTerm == null) {
 				query.append("SELECT COUNT(ENTITY)");
-			} else if (count) {
-				query.append("SELECT ");
-				if (attrsQuery != null) {
-					dollar = attrsQuery.toSqlConstructEntity(query, tuple, dollar);
-				} else {
-					query.append("ENTITY");
-				}
-				query.append(", COUNT(*)");
 			} else {
 				query.append("SELECT ");
 				if (attrsQuery != null) {
 					dollar = attrsQuery.toSqlConstructEntity(query, tuple, dollar);
 				} else {
-					query.append("ENTITY");
+					query.append(" ENTITY ");
 				}
+				query.append(" as entity, id");
 			}
 			query.append(" FROM ENTITY WHERE ");
 			boolean sqlAdded = false;
@@ -188,12 +182,28 @@ public class QueryDAO {
 				query.append(" AND ");
 				scopeQuery.toSql(query);
 			}
-			query.append("GROUP BY ENTITY");
+			if (!(count && limit == 0 && dataSetIdTerm==null)) {
+				query.append(" GROUP BY ENTITY,id");
+			}
 			if (limit != 0) {
 				query.append(" LIMIT ");
 				query.append(limit);
 				query.append(" OFFSET ");
 				query.append(offSet);
+			}
+			query.append(")");
+			if(dataSetIdTerm!=null){
+				query.append(",");
+				dollar = dataSetIdTerm.toSql(query,tuple,dollar,"a");
+				if(count && limit==0){
+					query.append("select count(x.entity) from x");
+				}else {
+					query.append("select x.entity, (select count(x.entity) from x),x.id from x");
+				}
+			}
+			else{
+				query.append("select a.entity,(select count(*) from a) from a");
+
 			}
 			query.append(';');
 			String queryString = query.toString();
@@ -801,27 +811,27 @@ public class QueryDAO {
 			if (attrsQuery != null) {
 				dollar = attrsQuery.toSqlConstructEntity(query, tuple, dollar);
 			} else {
-				if(qQuery!=null && qQuery.getAttribute().contains(NGSIConstants.QUERY_PARAMETER_DATA_SET_ID)){
-					query.append("""
-                            (jsonb_strip_nulls(jsonb_build_object(
-                            '@id', entity -> '@id',
-                            '@type', entity ->'@type',
-                            '@context', entity ->'@context',
-                            'https://uri.etsi.org/ngsi-ld/scope', entity ->'https://uri.etsi.org/ngsi-ld/scope',
-                            'https://uri.etsi.org/ngsi-ld/createdAt', entity ->'https://uri.etsi.org/ngsi-ld/createdAt',
-                            'https://uri.etsi.org/ngsi-ld/modifiedAt', entity ->'https://uri.etsi.org/ngsi-ld/modifiedAt',
-                            '%s',
-                            entity ->'%s'
-                            )))""".formatted(qQuery.getAllAttibs().iterator().next().split("\\.datasetId")[0],
-							qQuery.getAllAttibs().iterator().next().split("\\.datasetId")[0]));
-				} else {
+//				if(qQuery!=null && qQuery.getAttribute().contains(NGSIConstants.QUERY_PARAMETER_DATA_SET_ID)){
+//					query.append("""
+//                            (jsonb_strip_nulls(jsonb_build_object(
+//                            '@id', entity -> '@id',
+//                            '@type', entity ->'@type',
+//                            '@context', entity ->'@context',
+//                            'https://uri.etsi.org/ngsi-ld/scope', entity ->'https://uri.etsi.org/ngsi-ld/scope',
+//                            'https://uri.etsi.org/ngsi-ld/createdAt', entity ->'https://uri.etsi.org/ngsi-ld/createdAt',
+//                            'https://uri.etsi.org/ngsi-ld/modifiedAt', entity ->'https://uri.etsi.org/ngsi-ld/modifiedAt',
+//                            '%s',
+//                            entity ->'%s'
+//                            )))""".formatted(qQuery.getAllAttibs().iterator().next().split("\\.datasetId")[0],
+//							qQuery.getAllAttibs().iterator().next().split("\\.datasetId")[0]));
+//				} else {
 					query.append("ENTITY.ENTITY");
-				}
+//				}
 			}
 			query.append(" as ENTITY FROM b left join ENTITY on b.ID = ENTITY.ID)  ");
 			if(dataSetIdTerm!=null){
 				query.append(", ");
-				dollar = dataSetIdTerm.toSql(query,tuple,dollar);
+				dollar = dataSetIdTerm.toSql(query,tuple,dollar,"c");
 				query.append("SELECT a.ID, x.ENTITY FROM a left outer join x on a.ID = x.ID");
 			}
 			else{
