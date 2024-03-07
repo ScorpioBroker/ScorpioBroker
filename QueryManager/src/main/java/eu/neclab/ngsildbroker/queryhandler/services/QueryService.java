@@ -2,6 +2,7 @@ package eu.neclab.ngsildbroker.queryhandler.services;
 
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -12,6 +13,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.github.jsonldjava.core.JsonLdConsts;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.DataSetIdTerm;
 import eu.neclab.ngsildbroker.commons.tools.QueryParser;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -106,17 +108,17 @@ public class QueryService {
 	}
 
 	public Uni<QueryResult> query(String tenant, String qToken, boolean tokenProvided, String[] id,
-			TypeQueryTerm typeQuery, String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery, CSFQueryTerm csf,
-			GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, int limit, int offSet,
-			boolean count, boolean localOnly, Context context, io.vertx.core.MultiMap headersFromReq,
-			boolean doNotCompact) {
+								  TypeQueryTerm typeQuery, String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery, CSFQueryTerm csf,
+								  GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, int limit, int offSet,
+								  boolean count, boolean localOnly, Context context, io.vertx.core.MultiMap headersFromReq,
+								  boolean doNotCompact, DataSetIdTerm dataSetIdTerm) {
 		if (localOnly) {
 			return localQueryLevel1(tenant, id, typeQuery, idPattern, attrsQuery, qQuery, geoQuery, scopeQuery,
-					langQuery, limit, offSet, count);
+					langQuery, limit, offSet, count,dataSetIdTerm);
 		}
 		if (!tokenProvided) {
 			return getAndStoreEntityIdList(tenant, id, idPattern, qToken, typeQuery, attrsQuery, geoQuery, qQuery,
-					scopeQuery, langQuery, limit, offSet, context, headersFromReq, doNotCompact).onItem()
+					scopeQuery, langQuery, limit, offSet, context, headersFromReq, doNotCompact,dataSetIdTerm).onItem()
 					.transformToUni(t -> {
 						Map<String, Map<String, Object>> localResults = t.getItem1();
 						EntityMap entityMap = t.getItem2();
@@ -147,13 +149,9 @@ public class QueryService {
 		for (EntityMapEntry entry : resultEntityMap) {
 			List<QueryRemoteHost> remoteHosts = entry.getRemoteHosts();
 			for (QueryRemoteHost remoteHost : remoteHosts) {
-				List<String> tmp = remoteHost2EntityIds.get(remoteHost);
-				if (tmp == null) {
-					tmp = Lists.newArrayList();
-					remoteHost2EntityIds.put(remoteHost, tmp);
-				}
-				logger.debug("adding entityid: " + entry.getEntityId() + " for remote host " + remoteHost.host());
-				tmp.add(URLEncoder.encode(entry.getEntityId(), Charset.forName("utf-8")));
+                List<String> tmp = remoteHost2EntityIds.computeIfAbsent(remoteHost, k -> Lists.newArrayList());
+                logger.debug("adding entityid: " + entry.getEntityId() + " for remote host " + remoteHost.host());
+				tmp.add(URLEncoder.encode(entry.getEntityId(), StandardCharsets.UTF_8));
 			}
 
 			entityId2AttrName2DatasetId2AttrValue.put(entry.getEntityId(), new HashMap<>(0));
@@ -405,31 +403,15 @@ public class QueryService {
 			Map<String, Map<String, Integer>> entityId2AttrDatasetId2CurrentRegMode) {
 		int regMode = 1;
 		logger.debug("first level merge for entityId: " + entityId);
-		Map<String, Map<String, Map<String, Object>>> result = entityId2AttrName2DatasetId2AttrValue.get(entityId);
-		if (result == null) {
-			result = Maps.newHashMap();
-			entityId2AttrName2DatasetId2AttrValue.put(entityId, result);
-		}
+        Map<String, Map<String, Map<String, Object>>> result = entityId2AttrName2DatasetId2AttrValue.computeIfAbsent(entityId, k -> Maps.newHashMap());
 
-		Map<String, Integer> attsDataset2CurrentRegMode = entityId2AttrDatasetId2CurrentRegMode.get(entityId);
-		if (attsDataset2CurrentRegMode == null) {
-			attsDataset2CurrentRegMode = Maps.newHashMap();
-			entityId2AttrDatasetId2CurrentRegMode.put(entityId, attsDataset2CurrentRegMode);
-		}
-		if (entity.containsKey(EntityTools.REG_MODE_KEY)) {
+        Map<String, Integer> attsDataset2CurrentRegMode = entityId2AttrDatasetId2CurrentRegMode.computeIfAbsent(entityId, k -> Maps.newHashMap());
+        if (entity.containsKey(EntityTools.REG_MODE_KEY)) {
 			regMode = (Integer) entity.remove(EntityTools.REG_MODE_KEY);
 		}
-		Set<String> types = entityId2Types.get(entityId);
-		if (types == null) {
-			types = Sets.newHashSet();
-			entityId2Types.put(entityId, types);
-		}
-		Set<String> scopes = entityId2Scopes.get(entityId);
-		if (scopes == null) {
-			scopes = Sets.newHashSet();
-			entityId2Scopes.put(entityId, scopes);
-		}
-		long youngestModifiedAt = Long.MIN_VALUE;
+        Set<String> types = entityId2Types.computeIfAbsent(entityId, k -> Sets.newHashSet());
+        Set<String> scopes = entityId2Scopes.computeIfAbsent(entityId, k -> Sets.newHashSet());
+        long youngestModifiedAt = Long.MIN_VALUE;
 		long oldestCreatedAt = Long.MAX_VALUE;
 		if (entityId2YoungestModified.containsKey(entityId)) {
 			youngestModifiedAt = entityId2YoungestModified.get(entityId);
@@ -553,9 +535,9 @@ public class QueryService {
 
 	private Uni<QueryResult> localQueryLevel1(String tenant, String[] id, TypeQueryTerm typeQuery, String idPattern,
 			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery,
-			LanguageQueryTerm langQuery, int limit, int offSet, boolean count) {
+			LanguageQueryTerm langQuery, int limit, int offSet, boolean count,DataSetIdTerm dataSetIdTerm) {
 		return queryDAO.queryLocalOnly(tenant, id, typeQuery, idPattern, attrsQuery, qQuery, geoQuery, scopeQuery,
-				langQuery, limit, offSet, count).onItem().transform(rows -> {
+				langQuery, limit, offSet, count, dataSetIdTerm).onItem().transform(rows -> {
 					QueryResult result = new QueryResult();
 					if (limit == 0 && count) {
 						result.setCount(rows.iterator().next().getLong(0));
@@ -1346,9 +1328,9 @@ public class QueryService {
 			String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQueryTerm, GeoQueryTerm geoQueryTerm,
 			ScopeQueryTerm scopeQueryTerm, LanguageQueryTerm queryTerm, Context context,
 			io.vertx.core.MultiMap headersFromReq, boolean idsOnly, String join, String containedBy, int joinLevel,
-			boolean doNotCompact) {
+			boolean doNotCompact,DataSetIdTerm dataSetIdTerm) {
 		return getAndStoreEntityIdList(tenant, ids, idPattern, idPattern, typeQueryTerm, attrsQuery, geoQueryTerm,
-				qQueryTerm, scopeQueryTerm, queryTerm, 0, 0, context, headersFromReq, doNotCompact).onItem()
+				qQueryTerm, scopeQueryTerm, queryTerm, 0, 0, context, headersFromReq, doNotCompact,dataSetIdTerm).onItem()
 				.transform(t -> {
 					// List<Map<String, Object>> localResults = t.getItem1();
 
@@ -1365,9 +1347,9 @@ public class QueryService {
 	private Uni<Tuple2<Map<String, Map<String, Object>>, EntityMap>> getAndStoreEntityIdList(String tenant, String[] id,
 			String idPattern, String qToken, TypeQueryTerm typeQuery, AttrsQueryTerm attrsQuery, GeoQueryTerm geoQuery,
 			QQueryTerm qQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, int limit, int offset,
-			Context context, io.vertx.core.MultiMap headersFromReq, boolean doNotCompact) {
+			Context context, io.vertx.core.MultiMap headersFromReq, boolean doNotCompact,DataSetIdTerm dataSetIdTerm) {
 		Uni<Tuple2<Map<String, Map<String, Object>>, List<String>>> localIds = queryDAO.queryForEntityIds(tenant, id,
-				typeQuery, idPattern, attrsQuery, qQuery, geoQuery, scopeQuery, context, limit, offset);
+				typeQuery, idPattern, attrsQuery, qQuery, geoQuery, scopeQuery, context, limit, offset,dataSetIdTerm);
 		List<QueryRemoteHost> remoteHost2Query = getRemoteQueries(tenant, id, typeQuery, idPattern, attrsQuery, qQuery,
 				geoQuery, scopeQuery, langQuery, context);
 		Uni<Map<QueryRemoteHost, List<String>>> remoteIds;

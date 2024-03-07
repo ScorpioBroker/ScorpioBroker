@@ -861,7 +861,7 @@ public class QQueryTerm implements Serializable {
 	private void addItemToTupel(Tuple tuple, String listItem, StringBuilder sql) {
 		try {
 			double tmp = Double.parseDouble(listItem);
-			sql.insert(sql.length()-2,"TO_JSONB(");
+			sql.insert(sql.lastIndexOf("$"),"TO_JSONB(");
 			sql.append(")");
 			tuple.addDouble(tmp);
 		} catch (NumberFormatException e) {
@@ -937,11 +937,11 @@ public class QQueryTerm implements Serializable {
 		if (subAttribPath == null) {
 
 			if (!current.getOperator().isEmpty()) {
-				sql.append(" CASE WHEN ");
+				sql.append(" CASE WHEN (");
 				sql.append(currentSqlAttrib);
 				sql.append(" #>'{");
 				sql.append(NGSIConstants.JSON_LD_ID);
-				sql.append("}' ");
+				sql.append("}') ");
 				dollarCount = applyOperator(sql, dollarCount, tuple, false);
 				sql.append(" THEN true");
 //				sql.append(currentSqlAttrib);

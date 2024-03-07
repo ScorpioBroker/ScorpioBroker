@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import eu.neclab.ngsildbroker.commons.datatypes.terms.DataSetIdTerm;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
@@ -106,7 +107,7 @@ public class QueryDAO {
 
 	public Uni<RowSet<Row>> queryLocalOnly(String tenantId, String[] ids, TypeQueryTerm typeQuery, String idPattern,
 			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery,
-			LanguageQueryTerm langQuery, int limit, int offSet, boolean count) {
+			LanguageQueryTerm langQuery, int limit, int offSet, boolean count, DataSetIdTerm dataSetIdTerm) {
 		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
 			StringBuilder query = new StringBuilder();
 			int dollar = 1;
@@ -721,8 +722,8 @@ public class QueryDAO {
 	}
 
 	public Uni<Tuple2<Map<String, Map<String, Object>>, List<String>>> queryForEntityIds(String tenant, String[] ids,
-			TypeQueryTerm typeQuery, String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery,
-			GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, Context context, int limit, int offset) {
+																						 TypeQueryTerm typeQuery, String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery,
+																						 GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, Context context, int limit, int offset, DataSetIdTerm dataSetIdTerm) {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
 			StringBuilder query = new StringBuilder();
 			int dollar = 1;
@@ -817,8 +818,15 @@ public class QueryDAO {
 					query.append("ENTITY.ENTITY");
 				}
 			}
-			query.append(" as ENTITY FROM b left join ENTITY on b.ID = ENTITY.ID) SELECT ");
-			query.append("a.ID, c.ENTITY FROM a left outer join c on a.ID = c.ID");
+			query.append(" as ENTITY FROM b left join ENTITY on b.ID = ENTITY.ID)  ");
+			if(dataSetIdTerm!=null){
+				query.append(", ");
+				dollar = dataSetIdTerm.toSql(query,tuple,dollar);
+				query.append("SELECT a.ID, x.ENTITY FROM a left outer join x on a.ID = x.ID");
+			}
+			else{
+				query.append("SELECT a.ID, c.ENTITY FROM a left outer join c on a.ID = c.ID");
+			}
 			String queryString = query.toString();
 			logger.debug("SQL REQUEST: " + queryString);
 			logger.debug("SQL TUPLE: " + tuple.deepToString());
