@@ -278,7 +278,11 @@ public class QueryService {
 				for (Entry<String, Map<String, Map<String, Object>>> attribEntry : attribMap.entrySet()) {
 					entity.put(attribEntry.getKey(), Lists.newArrayList(attribEntry.getValue().values()));
 				}
-				if(queryTerm != null && queryTerm.calculate(EntityTools.getBaseProperties(entity))){
+				if(queryTerm != null){
+					if(queryTerm.calculate(EntityTools.getBaseProperties(entity))){
+						resultData.add(entity);
+					}
+				}else{
 					resultData.add(entity);
 				}
 			}

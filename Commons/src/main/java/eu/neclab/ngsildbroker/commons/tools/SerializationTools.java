@@ -233,70 +233,75 @@ public class SerializationTools {
 				if (propKey.equals(NGSIConstants.NGSI_LD_OBJECT_TYPE)) {
 					continue;
 				}
-				if (propKey.equals(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST)) {
+                switch (propKey) {
+                    case NGSIConstants.NGSI_LD_HAS_OBJECT_LIST -> {
 //					if (((List<Object>) value).size() != 1) {
 //						throw new JsonParseException("Relationships have to have exactly one object");
 //					}
-					relObj = Lists.newArrayList();
-					List<Map<String, Object>> tmp = (((List<Map<String, List<Map<String, Object>>>>) value).get(0).get("@list"));
-					for (Map<String, Object> relEntry : tmp) {
-						relObj.add((String) relEntry.get(NGSIConstants.JSON_LD_VALUE));
-					}
+                        relObj = Lists.newArrayList();
+                        List<Map<String, Object>> tmp = (((List<Map<String, List<Map<String, Object>>>>) value).get(0).get("@list"));
+                        for (Map<String, Object> relEntry : tmp) {
+                            relObj.add((String) relEntry.get(NGSIConstants.JSON_LD_VALUE));
+                        }
 
-				}
-				else if (propKey.equals(NGSIConstants.NGSI_LD_HAS_OBJECT)) {
+                    }
+                    case NGSIConstants.NGSI_LD_HAS_OBJECT -> {
 //					if (((List<Object>) value).size() != 1) {
 //						throw new JsonParseException("Relationships have to have exactly one object");
 //					}
-					relObj = Lists.newArrayList();
-					List<Map<String, Object>> tmp = ((List<Map<String, Object>>) value);
-					for (Map<String, Object> relEntry : tmp) {
-						relObj.add((String) relEntry.get(NGSIConstants.JSON_LD_ID));
-					}
+                        relObj = Lists.newArrayList();
+                        List<Map<String, Object>> tmp = ((List<Map<String, Object>>) value);
+                        for (Map<String, Object> relEntry : tmp) {
+                            relObj.add((String) relEntry.get(NGSIConstants.JSON_LD_ID));
+                        }
 
-				} else if (propKey.equals(NGSIConstants.NGSI_LD_OBSERVED_AT)) {
+                    }
+                    case NGSIConstants.NGSI_LD_OBSERVED_AT -> {
 
-					try {
-						observedAt = getTimestamp((List<Map<String, Object>>) value);
-					} catch (Exception e) {
-						throw new JsonParseException(e);
-					}
-				} else if (propKey.equals(NGSIConstants.NGSI_LD_CREATED_AT)) {
-					try {
-						createdAt = getTimestamp((List<Map<String, Object>>) value);
-					} catch (Exception e) {
-						throw new JsonParseException(e);
-					}
-				} else if (propKey.equals(NGSIConstants.NGSI_LD_MODIFIED_AT)) {
-					try {
-						modifiedAt = getTimestamp((List<Map<String, Object>>) value);
-					} catch (Exception e) {
-						throw new JsonParseException(e);
-					}
-
-				} else if (propKey.equals(NGSIConstants.JSON_LD_TYPE)) {
-					continue;
-				} else if (propKey.equals(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
-					dataSetId = getDataSetId((List<Map<String, Object>>) value);
-				} else if (propKey.equals(NGSIConstants.NGSI_LD_NAME)) {
-					name = getValue((List<Map<String, Object>>) value);
-				} else {
-					List<Map<String, Object>> subLevelArray = (List<Map<String, Object>>) value;
-					Map<String, Object> objValue = subLevelArray.get(0);
-					if (objValue.containsKey(NGSIConstants.JSON_LD_TYPE)) {
-						String valueType = ((List<String>) objValue.get(NGSIConstants.JSON_LD_TYPE)).get(0);
-						if (valueType.equals(NGSIConstants.NGSI_LD_PROPERTY)) {
-							properties.add(parseProperty(subLevelArray, propKey));
-						} else if (valueType.equals(NGSIConstants.NGSI_LD_RELATIONSHIP)) {
-							relationships.add(parseRelationship(subLevelArray, propKey));
-						}else if (valueType.equals(NGSIConstants.NGSI_LD_LISTRELATIONSHIP)) {
-							relationships.add(parseRelationship(subLevelArray, propKey));
-						}
-					} else {
-						throw new JsonParseException(
-								"cannot determine type of sub attribute. please provide a valid type");
-					}
-				}
+                        try {
+                            observedAt = getTimestamp((List<Map<String, Object>>) value);
+                        } catch (Exception e) {
+                            throw new JsonParseException(e);
+                        }
+                    }
+                    case NGSIConstants.NGSI_LD_CREATED_AT -> {
+                        try {
+                            createdAt = getTimestamp((List<Map<String, Object>>) value);
+                        } catch (Exception e) {
+                            throw new JsonParseException(e);
+                        }
+                    }
+                    case NGSIConstants.NGSI_LD_MODIFIED_AT -> {
+                        try {
+                            modifiedAt = getTimestamp((List<Map<String, Object>>) value);
+                        } catch (Exception e) {
+                            throw new JsonParseException(e);
+                        }
+                    }
+                    case NGSIConstants.JSON_LD_TYPE -> {
+                        continue;
+                    }
+                    case NGSIConstants.NGSI_LD_DATA_SET_ID ->
+                            dataSetId = getDataSetId((List<Map<String, Object>>) value);
+                    case NGSIConstants.NGSI_LD_NAME -> name = getValue((List<Map<String, Object>>) value);
+                    default -> {
+                        List<Map<String, Object>> subLevelArray = (List<Map<String, Object>>) value;
+                        Map<String, Object> objValue = subLevelArray.get(0);
+                        if (objValue.containsKey(NGSIConstants.JSON_LD_TYPE)) {
+                            String valueType = ((List<String>) objValue.get(NGSIConstants.JSON_LD_TYPE)).get(0);
+                            if (valueType.equals(NGSIConstants.NGSI_LD_PROPERTY)) {
+                                properties.add(parseProperty(subLevelArray, propKey));
+                            } else if (valueType.equals(NGSIConstants.NGSI_LD_RELATIONSHIP)) {
+                                relationships.add(parseRelationship(subLevelArray, propKey));
+                            } else if (valueType.equals(NGSIConstants.NGSI_LD_LISTRELATIONSHIP)) {
+                                relationships.add(parseRelationship(subLevelArray, propKey));
+                            }
+                        } else {
+                            throw new JsonParseException(
+                                    "cannot determine type of sub attribute. please provide a valid type");
+                        }
+                    }
+                }
 
 			}
 			if (relObj == null) {
@@ -410,15 +415,18 @@ public class SerializationTools {
 		String geometry = ((List<String>) propValue.get(NGSIConstants.JSON_LD_TYPE)).get(0);
 		List<Map<String, Object>> coordinates = (List<Map<String, Object>>) propValue
 				.get(NGSIConstants.NGSI_LD_COORDINATES);
-		switch (geometry) {
-		case NGSIConstants.NGSI_LD_POINT:
-			return new Point(getSingeLePosition(coordinates));
-		case NGSIConstants.NGSI_LD_POLYGON:
-			return new Polygon(getAreaPositions(coordinates));
-		case NGSIConstants.NGSI_LD_LINESTRING:
-			return new LineString(getLinearPositions(coordinates));
-		default:
+		if(coordinates == null){
 			return null;
+		}
+		switch (geometry) {
+			case NGSIConstants.NGSI_LD_POINT:
+				return new Point(getSingeLePosition(coordinates));
+			case NGSIConstants.NGSI_LD_POLYGON:
+				return new Polygon(getAreaPositions(coordinates));
+			case NGSIConstants.NGSI_LD_LINESTRING:
+				return new LineString(getLinearPositions(coordinates));
+			default:
+				return null;
 		}
 
 	}
