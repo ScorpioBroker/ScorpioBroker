@@ -1,9 +1,9 @@
 {
 	"info": {
-		"_postman_id": "6280aa39-f9e5-45e8-a060-373997f98efc",
+		"_postman_id": "67598ecc-f4db-4022-ae97-81413ca0e00b",
 		"name": "API Test",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "27293663"
+		"_exporter_id": "26387112"
 	},
 	"item": [
 		{
@@ -16651,6 +16651,635 @@
 															"response": []
 														}
 													]
+												}
+											]
+										},
+										{
+											"name": "Query for datasetId",
+											"item": [
+												{
+													"name": "Create Simple Entity one",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"console.log(payloadBody.id);\r",
+																	"var entityId = payloadBody.id;\r",
+																	"pm.collectionVariables.set(\"createdTBF\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"entityIdTBF\", entityId);\r",
+																	"pm.collectionVariables.set(\"entityTypeTBF\", payloadBody.type);\r",
+																	"pm.test(\"Status code is 201\", function () {\r",
+																	"    pm.response.to.have.status(201);\r",
+																	"});\r",
+																	"pm.test(\"Check location header\", function () {\r",
+																	"    pm.response.to.have.header(\"Location\");\r",
+																	"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+																	"});\r",
+																	"\r",
+																	"\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n    \"id\": \"urn:ngsi-ld:WeatherForecast:001\",\r\n    \"type\": \"WeatherForecast\",\r\n    \"description\": {\r\n        \"type\": \"Property\",\r\n        \"value\": \"Rain\",\r\n        \"datasetId\": \"urn:99999\"\r\n    },\r\n    \"humidity\": [\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 98,\r\n            \"unitCode\": \"PCT\",\r\n            \"datasetId\": \"urn:12345\"\r\n        },\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 98,\r\n            \"unitCode\": \"PCT\",\r\n            \"datasetId\": \"urn:98765\"\r\n        }\r\n    ],\r\n    \"temperature\": [\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 30,\r\n            \"unitCode\": \"CEL\",\r\n            \"datasetId\": \"urn:12345\"\r\n        },\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 86,\r\n            \"unitCode\": \"FAH\",\r\n            \"datasetId\": \"urn:98765\"\r\n        }\r\n    ],\r\n    \"windSpeed\": [\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 5,\r\n            \"unitCode\": \"KMH\",\r\n            \"datasetId\": \"urn:12345\"\r\n        },\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 3,\r\n            \"unitCode\": \"MPH\",\r\n            \"datasetId\": \"urn:98765\"\r\n        }\r\n    ]\r\n}\r\n",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Create Simple Entity to be not found",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"console.log(payloadBody.id);\r",
+																	"var entityId = payloadBody.id;\r",
+																	"pm.collectionVariables.set(\"createdTBNF\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"entityIdTBNF\", entityId);\r",
+																	"pm.test(\"Status code is 201\", function () {\r",
+																	"    pm.response.to.have.status(201);\r",
+																	"});\r",
+																	"pm.test(\"Check location header\", function () {\r",
+																	"    pm.response.to.have.header(\"Location\");\r",
+																	"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+																	"});\r",
+																	"\r",
+																	"\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n    \"id\": \"urn:ngsi-ld:WeatherForecast:002\",\r\n    \"type\": \"WeatherForecast\",\r\n    \"description\": {\r\n        \"type\": \"Property\",\r\n        \"value\": \"Rain\",\r\n        \"datasetId\": \"urn:99999\"\r\n    },\r\n    \"humidity\": [\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 300,\r\n            \"unitCode\": \"PCT\",\r\n            \"datasetId\": \"urn:12345\"\r\n        },\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 400,\r\n            \"unitCode\": \"PCT\",\r\n            \"datasetId\": \"urn:98765\"\r\n        }\r\n    ],\r\n    \"temperature\": [\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 49,\r\n            \"unitCode\": \"CEL\",\r\n            \"datasetId\": \"urn:12345\"\r\n        },\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 88,\r\n            \"unitCode\": \"FAH\",\r\n            \"datasetId\": \"urn:98765\"\r\n        }\r\n    ],\r\n    \"windSpeed\": [\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 6,\r\n            \"unitCode\": \"KMH\",\r\n            \"datasetId\": \"urn:12345\"\r\n        },\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 4,\r\n            \"unitCode\": \"MPH\",\r\n            \"datasetId\": \"urn:98765\"\r\n        }\r\n    ]\r\n}\r\n",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Query for entity type tbf",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 200\", function () {\r",
+																	"    pm.response.to.have.status(200);\r",
+																	"});\r",
+																	"\r",
+																	"pm.test(\"Response is an array\", function () {\r",
+																	"    pm.expect(pm.response.json()).to.be.an('array');\r",
+																	"});\r",
+																	"\r",
+																	"var expectedEntity = {\r",
+																	"    \"id\": \"urn:ngsi-ld:WeatherForecast:001\",\r",
+																	"    \"type\": \"WeatherForecast\",\r",
+																	"    \"description\": {\r",
+																	"        \"type\": \"Property\",\r",
+																	"        \"datasetId\": \"urn:99999\",\r",
+																	"        \"value\": \"Rain\"\r",
+																	"    },\r",
+																	"    \"humidity\": [\r",
+																	"        {\r",
+																	"            \"type\": \"Property\",\r",
+																	"            \"datasetId\": \"urn:98765\",\r",
+																	"            \"value\": 98,\r",
+																	"            \"unitCode\": \"PCT\"\r",
+																	"        },\r",
+																	"        {\r",
+																	"            \"type\": \"Property\",\r",
+																	"            \"datasetId\": \"urn:12345\",\r",
+																	"            \"value\": 98,\r",
+																	"            \"unitCode\": \"PCT\"\r",
+																	"        }\r",
+																	"    ],\r",
+																	"    \"temperature\": [\r",
+																	"        {\r",
+																	"            \"type\": \"Property\",\r",
+																	"            \"datasetId\": \"urn:98765\",\r",
+																	"            \"value\": 86,\r",
+																	"            \"unitCode\": \"FAH\"\r",
+																	"        },\r",
+																	"        {\r",
+																	"            \"type\": \"Property\",\r",
+																	"            \"datasetId\": \"urn:12345\",\r",
+																	"            \"value\": 30,\r",
+																	"            \"unitCode\": \"CEL\"\r",
+																	"        }\r",
+																	"    ],\r",
+																	"    \"windSpeed\": [\r",
+																	"        {\r",
+																	"            \"type\": \"Property\",\r",
+																	"            \"datasetId\": \"urn:98765\",\r",
+																	"            \"value\": 3,\r",
+																	"            \"unitCode\": \"MPH\"\r",
+																	"        },\r",
+																	"        {\r",
+																	"            \"type\": \"Property\",\r",
+																	"            \"datasetId\": \"urn:12345\",\r",
+																	"            \"value\": 5,\r",
+																	"            \"unitCode\": \"KMH\"\r",
+																	"        }\r",
+																	"    ]\r",
+																	"};\r",
+																	"\r",
+																	"pm.test(\"Validate that result contains expected entity\", function () {\r",
+																	"    var jsonData = pm.response.json();\r",
+																	"    pm.expect(jsonData.length).to.eql(2);\r",
+																	"    pm.expect(jsonData[0]).to.eql(expectedEntity);\r",
+																	"});\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default"
+															}
+														],
+														"url": {
+															"raw": "{{query-manager}}/ngsi-ld/v1/entities?type={{entityTypeTBF}}&datesetId=”urn:12345”",
+															"host": [
+																"{{query-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities"
+															],
+															"query": [
+																{
+																	"key": "type",
+																	"value": "{{entityTypeTBF}}"
+																},
+																{
+																	"key": "datesetId",
+																	"value": "”urn:12345”"
+																},
+																{
+																	"key": "",
+																	"value": "",
+																	"disabled": true
+																}
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Delete Entity TBF",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "DELETE",
+														"header": [],
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities/{{entityIdTBF}}",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities",
+																"{{entityIdTBF}}"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Delete Entity TBNF",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});\r",
+																	"pm.collectionVariables.clear();"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "DELETE",
+														"header": [],
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities/{{entityIdTBNF}}",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities",
+																"{{entityIdTBNF}}"
+															]
+														}
+													},
+													"response": []
+												}
+											]
+										},
+										{
+											"name": "Query for datasetId Q",
+											"item": [
+												{
+													"name": "Create Simple Entity one",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"console.log(payloadBody.id);\r",
+																	"var entityId = payloadBody.id;\r",
+																	"pm.collectionVariables.set(\"createdTBF\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"entityIdTBF\", entityId);\r",
+																	"pm.collectionVariables.set(\"entityTypeTBF\", payloadBody.type);\r",
+																	"pm.test(\"Status code is 201\", function () {\r",
+																	"    pm.response.to.have.status(201);\r",
+																	"});\r",
+																	"pm.test(\"Check location header\", function () {\r",
+																	"    pm.response.to.have.header(\"Location\");\r",
+																	"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+																	"});\r",
+																	"\r",
+																	"\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n    \"id\": \"urn:ngsi-ld:WeatherForecast:003\",\r\n    \"type\": \"WeatherForecast\",\r\n    \"description\": {\r\n        \"type\": \"Property\",\r\n        \"value\": \"Rain\",\r\n        \"datasetId\": \"urn:99999\"\r\n    },\r\n    \"humidity\": [\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 98,\r\n            \"unitCode\": \"PCT\",\r\n            \"datasetId\": \"urn:12345\"\r\n        },\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 98,\r\n            \"unitCode\": \"PCT\",\r\n            \"datasetId\": \"urn:98765\"\r\n        }\r\n    ],\r\n    \"temperature\": [\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 30,\r\n            \"unitCode\": \"CEL\",\r\n            \"datasetId\": \"urn:12345\"\r\n        },\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 86,\r\n            \"unitCode\": \"FAH\",\r\n            \"datasetId\": \"urn:98765\"\r\n        }\r\n    ],\r\n    \"windSpeed\": [\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 5,\r\n            \"unitCode\": \"KMH\",\r\n            \"datasetId\": \"urn:12345\"\r\n        },\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 3,\r\n            \"unitCode\": \"MPH\",\r\n            \"datasetId\": \"urn:98765\"\r\n        }\r\n    ]\r\n}\r\n",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Create Simple Entity to be not found",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"console.log(payloadBody.id);\r",
+																	"var entityId = payloadBody.id;\r",
+																	"pm.collectionVariables.set(\"createdTBNF\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"entityIdTBNF\", entityId);\r",
+																	"pm.test(\"Status code is 201\", function () {\r",
+																	"    pm.response.to.have.status(201);\r",
+																	"});\r",
+																	"pm.test(\"Check location header\", function () {\r",
+																	"    pm.response.to.have.header(\"Location\");\r",
+																	"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+																	"});\r",
+																	"\r",
+																	"\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n    \"id\": \"urn:ngsi-ld:WeatherForecast:004\",\r\n    \"type\": \"WeatherForecast\",\r\n    \"description\": {\r\n        \"type\": \"Property\",\r\n        \"value\": \"Rain\",\r\n        \"datasetId\": \"urn:99999\"\r\n    },\r\n    \"humidity\": [\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 300,\r\n            \"unitCode\": \"PCT\",\r\n            \"datasetId\": \"urn:12345\"\r\n        },\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 400,\r\n            \"unitCode\": \"PCT\",\r\n            \"datasetId\": \"urn:98765\"\r\n        }\r\n    ],\r\n    \"temperature\": [\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 49,\r\n            \"unitCode\": \"CEL\",\r\n            \"datasetId\": \"urn:12345\"\r\n        },\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 88,\r\n            \"unitCode\": \"FAH\",\r\n            \"datasetId\": \"urn:98765\"\r\n        }\r\n    ],\r\n    \"windSpeed\": [\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 6,\r\n            \"unitCode\": \"KMH\",\r\n            \"datasetId\": \"urn:12345\"\r\n        },\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 4,\r\n            \"unitCode\": \"MPH\",\r\n            \"datasetId\": \"urn:98765\"\r\n        }\r\n    ]\r\n}\r\n",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Query for entity type tbf",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 200\", function () {\r",
+																	"    pm.response.to.have.status(200);\r",
+																	"});\r",
+																	"pm.test(\"Response is an array\", function () {\r",
+																	"    pm.expect(pm.response.json()).to.be.an('array');\r",
+																	"});\r",
+																	"\r",
+																	"pm.test(\"Each item in the response has the correct properties\", function () {\r",
+																	"    var jsonData = pm.response.json();\r",
+																	"\r",
+																	"    pm.expect(jsonData.length).to.eql(2);\r",
+																	"\r",
+																	"    jsonData.forEach(function (item) {\r",
+																	"        pm.expect(item).to.have.property('id').that.is.a('string');\r",
+																	"        pm.expect(item).to.have.property('type').that.is.a('string').and.equals('WeatherForecast');\r",
+																	"        pm.expect(item).to.have.property('description').that.is.an('object').and.has.property('value').that.is.a('string').and.equals('Rain');\r",
+																	"        pm.expect(item).to.have.property('humidity').that.is.an('array');\r",
+																	"        pm.expect(item).to.have.property('temperature').that.is.an('array');\r",
+																	"        pm.expect(item).to.have.property('windSpeed').that.is.an('array');\r",
+																	"    });\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default"
+															}
+														],
+														"url": {
+															"raw": "{{query-manager}}/ngsi-ld/v1/entities?type={{entityTypeTBF}}&q=temperature.datasetId==\"urn:12345\"",
+															"host": [
+																"{{query-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities"
+															],
+															"query": [
+																{
+																	"key": "type",
+																	"value": "{{entityTypeTBF}}"
+																},
+																{
+																	"key": "",
+																	"value": "",
+																	"disabled": true
+																},
+																{
+																	"key": "q",
+																	"value": "temperature.datasetId==\"urn:12345\""
+																}
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Delete Entity TBF",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "DELETE",
+														"header": [],
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities/{{entityIdTBF}}",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities",
+																"{{entityIdTBF}}"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Delete Entity TBNF",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});\r",
+																	"pm.collectionVariables.clear();"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "DELETE",
+														"header": [],
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities/{{entityIdTBNF}}",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities",
+																"{{entityIdTBNF}}"
+															]
+														}
+													},
+													"response": []
 												}
 											]
 										},
@@ -56782,20 +57411,6 @@
 					]
 				}
 			]
-		}
-	],
-	"variable": [
-		{
-			"key": "createdTBF",
-			"value": ""
-		},
-		{
-			"key": "entityIdTBF",
-			"value": ""
-		},
-		{
-			"key": "entityTypeTBF",
-			"value": ""
 		}
 	]
 }
