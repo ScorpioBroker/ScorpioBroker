@@ -1,9 +1,10 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
 
-import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
 import org.locationtech.spatial4j.shape.Shape;
 import com.github.jsonldjava.core.Context;
 
@@ -24,15 +25,6 @@ public class QueryInfos {
 	Shape geo;
 	String idPattern;
 	private String geoRel;
-	QQueryTerm qQueryTerm;
-
-	public QQueryTerm getqQueryTerm() {
-		return qQueryTerm;
-	}
-
-	public void setqQueryTerm(QQueryTerm qQueryTerm) {
-		this.qQueryTerm = qQueryTerm;
-	}
 
 	public Set<String> getIds() {
 		return ids;
@@ -117,13 +109,7 @@ public class QueryInfos {
 	public String toQueryString(Context context, TypeQueryTerm typeQuery, GeoQueryTerm geoQuery,
 			LanguageQueryTerm langQuery, boolean ignoredId) {
 		StringBuilder result = new StringBuilder("?");
-		if(qQueryTerm!=null){
-			result.append("q=")
-					.append(qQueryTerm.getAttribute())
-					.append(qQueryTerm.getOperator())
-					.append(qQueryTerm.getOperant())
-					.append('&');
-		}
+
 		if (!ids.isEmpty() && !ignoredId) {
 			result.append("id=");
 			result.append(String.join(",", ids));
@@ -142,7 +128,7 @@ public class QueryInfos {
 		if (!attrs.isEmpty()) {
 			result.append("attrs=");
 			for (String attr : attrs) {
-				result.append(context.compactIri(attr));
+				result.append(URLEncoder.encode(context.compactIri(attr), StandardCharsets.UTF_8));
 				result.append(',');
 			}
 			result.setCharAt(result.length() - 1, '&');

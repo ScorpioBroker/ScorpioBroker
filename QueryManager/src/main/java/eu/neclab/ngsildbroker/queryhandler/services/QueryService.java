@@ -123,7 +123,7 @@ public class QueryService {
 						List<EntityMapEntry> resultEntityMap = entityMap.getSubMap(offSet, limit + offSet);
 						Long resultCount = (long) entityMap.size();
 						return handleEntityMap(resultCount, resultEntityMap, attrsQuery, localResults, count, limit,
-								offSet, qToken, headersFromReq);
+								offSet, qToken, headersFromReq,qQuery);
 					});
 		} else {
 			return queryDAO.getEntityMap(tenant, qToken, limit, offSet, count).onItem().transformToUni(t -> {
@@ -131,7 +131,7 @@ public class QueryService {
 				EntityMap entityMap = t.getItem2();
 				Map<String, Map<String, Object>> localResults = t.getItem3();
 				return handleEntityMap(resultCount, entityMap.getEntityList(), attrsQuery, localResults, count, limit,
-						offSet, qToken, headersFromReq);
+						offSet, qToken, headersFromReq,qQuery);
 
 			});
 		}
@@ -139,7 +139,7 @@ public class QueryService {
 
 	private Uni<QueryResult> handleEntityMap(Long resultCount, List<EntityMapEntry> resultEntityMap,
 			AttrsQueryTerm attrsQuery, Map<String, Map<String, Object>> localResults, boolean count, int limit,
-			int offSet, String qToken, io.vertx.core.MultiMap headersFromReq) {
+			int offSet, String qToken, io.vertx.core.MultiMap headersFromReq, QQueryTerm queryTerm) {
 		Map<QueryRemoteHost, List<String>> remoteHost2EntityIds = Maps.newHashMap();
 		// has to be linked. We want to keep order here
 		Map<String, Map<String, Map<String, Map<String, Object>>>> entityId2AttrName2DatasetId2AttrValue = Maps
@@ -278,7 +278,9 @@ public class QueryService {
 				for (Entry<String, Map<String, Map<String, Object>>> attribEntry : attribMap.entrySet()) {
 					entity.put(attribEntry.getKey(), Lists.newArrayList(attribEntry.getValue().values()));
 				}
-				resultData.add(entity);
+				if(queryTerm.calculate(EntityTools.getBaseProperties(entity))){
+					resultData.add(entity);
+				}
 			}
 			result.setData(resultData);
 			result.setLimit(limit);
@@ -515,7 +517,6 @@ public class QueryService {
 						}
 					}
 				}
-				queryInfos.setqQueryTerm(qQuery);
 				if (!queryInfos.isFullTypesFound()) {
 					if (regEntry.type() != null) {
 						queryInfos.getTypes().add(regEntry.type());

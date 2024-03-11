@@ -233,7 +233,18 @@ public class SerializationTools {
 				if (propKey.equals(NGSIConstants.NGSI_LD_OBJECT_TYPE)) {
 					continue;
 				}
-				if (propKey.equals(NGSIConstants.NGSI_LD_HAS_OBJECT)) {
+				if (propKey.equals(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST)) {
+//					if (((List<Object>) value).size() != 1) {
+//						throw new JsonParseException("Relationships have to have exactly one object");
+//					}
+					relObj = Lists.newArrayList();
+					List<Map<String, Object>> tmp = (((List<Map<String, List<Map<String, Object>>>>) value).get(0).get("@list"));
+					for (Map<String, Object> relEntry : tmp) {
+						relObj.add((String) relEntry.get(NGSIConstants.JSON_LD_VALUE));
+					}
+
+				}
+				else if (propKey.equals(NGSIConstants.NGSI_LD_HAS_OBJECT)) {
 //					if (((List<Object>) value).size() != 1) {
 //						throw new JsonParseException("Relationships have to have exactly one object");
 //					}
@@ -277,6 +288,8 @@ public class SerializationTools {
 						if (valueType.equals(NGSIConstants.NGSI_LD_PROPERTY)) {
 							properties.add(parseProperty(subLevelArray, propKey));
 						} else if (valueType.equals(NGSIConstants.NGSI_LD_RELATIONSHIP)) {
+							relationships.add(parseRelationship(subLevelArray, propKey));
+						}else if (valueType.equals(NGSIConstants.NGSI_LD_LISTRELATIONSHIP)) {
 							relationships.add(parseRelationship(subLevelArray, propKey));
 						}
 					} else {
