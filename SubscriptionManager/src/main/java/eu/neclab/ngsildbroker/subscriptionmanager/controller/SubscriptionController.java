@@ -56,7 +56,12 @@ public class SubscriptionController {
 				if (request.getHeader(NGSIConstants.LINK_HEADER) != null) {
 					contextLink = request.getHeader(NGSIConstants.LINK_HEADER).split(";")[0].replace("<","").replace(">","");
 				} else if (map.containsKey(JsonLdConsts.CONTEXT)) {
-					contextLink = ((List<String>) map.get(JsonLdConsts.CONTEXT)).get(0);
+					if (map.get(JsonLdConsts.CONTEXT) instanceof List<?>) {
+						contextLink = ((List<String>) map.get(JsonLdConsts.CONTEXT)).get(0);
+					}
+					else{
+						contextLink =  map.get(JsonLdConsts.CONTEXT).toString();
+					}
 				} else {
 					contextLink=coreContext;
 				}

@@ -1,6 +1,8 @@
 package eu.neclab.ngsildbroker.commons.datatypes.terms;
 
 import java.io.Serializable;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -583,7 +585,7 @@ public class TypeQueryTerm implements Serializable {
 			firstChild.toRequestString(result, context);
 			result.append(')');
 		} else {
-			result.append(context.compactIri(type));
+			result.append(URLEncoder.encode(context.compactIri(type), StandardCharsets.UTF_8));
 			if (hasNext()) {
 				if (isNextAnd()) {
 					result.append(';');
