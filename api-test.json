@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "67598ecc-f4db-4022-ae97-81413ca0e00b",
+		"_postman_id": "f9dfe42f-f16f-4fea-a1db-ccccd0372219",
 		"name": "API Test",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "26387112"
@@ -16822,56 +16822,27 @@
 																	"});\r",
 																	"\r",
 																	"var expectedEntity = {\r",
-																	"    \"id\": \"urn:ngsi-ld:WeatherForecast:001\",\r",
-																	"    \"type\": \"WeatherForecast\",\r",
-																	"    \"description\": {\r",
-																	"        \"type\": \"Property\",\r",
-																	"        \"datasetId\": \"urn:99999\",\r",
-																	"        \"value\": \"Rain\"\r",
-																	"    },\r",
-																	"    \"humidity\": [\r",
-																	"        {\r",
-																	"            \"type\": \"Property\",\r",
-																	"            \"datasetId\": \"urn:98765\",\r",
-																	"            \"value\": 98,\r",
-																	"            \"unitCode\": \"PCT\"\r",
-																	"        },\r",
-																	"        {\r",
+																	"        \"id\": \"urn:ngsi-ld:WeatherForecast:001\",\r",
+																	"        \"type\": \"WeatherForecast\",\r",
+																	"        \"humidity\": {\r",
 																	"            \"type\": \"Property\",\r",
 																	"            \"datasetId\": \"urn:12345\",\r",
 																	"            \"value\": 98,\r",
 																	"            \"unitCode\": \"PCT\"\r",
-																	"        }\r",
-																	"    ],\r",
-																	"    \"temperature\": [\r",
-																	"        {\r",
-																	"            \"type\": \"Property\",\r",
-																	"            \"datasetId\": \"urn:98765\",\r",
-																	"            \"value\": 86,\r",
-																	"            \"unitCode\": \"FAH\"\r",
 																	"        },\r",
-																	"        {\r",
+																	"        \"temperature\": {\r",
 																	"            \"type\": \"Property\",\r",
 																	"            \"datasetId\": \"urn:12345\",\r",
 																	"            \"value\": 30,\r",
 																	"            \"unitCode\": \"CEL\"\r",
-																	"        }\r",
-																	"    ],\r",
-																	"    \"windSpeed\": [\r",
-																	"        {\r",
-																	"            \"type\": \"Property\",\r",
-																	"            \"datasetId\": \"urn:98765\",\r",
-																	"            \"value\": 3,\r",
-																	"            \"unitCode\": \"MPH\"\r",
 																	"        },\r",
-																	"        {\r",
+																	"        \"windSpeed\": {\r",
 																	"            \"type\": \"Property\",\r",
 																	"            \"datasetId\": \"urn:12345\",\r",
 																	"            \"value\": 5,\r",
 																	"            \"unitCode\": \"KMH\"\r",
 																	"        }\r",
-																	"    ]\r",
-																	"};\r",
+																	"    };\r",
 																	"\r",
 																	"pm.test(\"Validate that result contains expected entity\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
@@ -16894,7 +16865,7 @@
 															}
 														],
 														"url": {
-															"raw": "{{query-manager}}/ngsi-ld/v1/entities?type={{entityTypeTBF}}&datesetId=”urn:12345”",
+															"raw": "{{query-manager}}/ngsi-ld/v1/entities?type={{entityTypeTBF}}&datasetId=\"urn:12345\"",
 															"host": [
 																"{{query-manager}}"
 															],
@@ -16909,13 +16880,13 @@
 																	"value": "{{entityTypeTBF}}"
 																},
 																{
-																	"key": "datesetId",
-																	"value": "”urn:12345”"
-																},
-																{
 																	"key": "",
 																	"value": "",
 																	"disabled": true
+																},
+																{
+																	"key": "datasetId",
+																	"value": "\"urn:12345\""
 																}
 															]
 														}
@@ -57411,6 +57382,28 @@
 					]
 				}
 			]
+		}
+	],
+	"variable": [
+		{
+			"key": "createdTBF",
+			"value": ""
+		},
+		{
+			"key": "entityIdTBF",
+			"value": ""
+		},
+		{
+			"key": "entityTypeTBF",
+			"value": ""
+		},
+		{
+			"key": "createdTBNF",
+			"value": ""
+		},
+		{
+			"key": "entityIdTBNF",
+			"value": ""
 		}
 	]
 }
