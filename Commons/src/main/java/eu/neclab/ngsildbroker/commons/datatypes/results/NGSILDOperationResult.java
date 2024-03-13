@@ -92,6 +92,8 @@ public class NGSILDOperationResult {
 				return "Upsert";
 			case AppConstants.REPLACE_ENTITY_REQUEST:
 				return "Replace Entity";
+			case AppConstants.MERGE_PATCH_PAYLOAD:
+				return "Merge";
 			default:
 				return "Unknown Operation";
 		}

@@ -369,6 +369,8 @@ public interface NGSIConstants {
 	public static final String ENDPOINT_BATCH_UPSERT = "/ngsi-ld/v1/entityOperations/upsert";
 	public static final String ENDPOINT_BATCH_DELETE = "/ngsi-ld/v1/entityOperations/delete";
 	public static final String ENDPOINT_BATCH_UPDATE = "/ngsi-ld/v1/entityOperations/update";
+
+	public static final String ENDPOINT_BATCH_MERGE = "/ngsi-ld/v1/entityOperations/merge";
 	public static final String NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT = "/ngsi-ld/v1/temporal/entities";
 	public static final String ENDPOINT_TEMPORAL_BATCH_DELETE = "/ngsi-ld/v1/temporal/entityOperations/delete";
 	public static final String ENDPOINT_TEMPORAL_CREATE_DELETE = "/ngsi-ld/v1/temporal/entityOperations/create";
