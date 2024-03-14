@@ -203,16 +203,21 @@ public final class HttpUtils {
 
 	@SuppressWarnings("unchecked")
 	private static Object generateGeoJson(Object result, String geometry, Object context)
-			throws JsonParseException, IOException {
+			throws JsonParseException, IOException, ResponseException {
 		Map<String, Object> resultMap = Maps.newLinkedHashMap();
 		if (result instanceof List) {
 			resultMap.put(NGSIConstants.TYPE, NGSIConstants.FEATURE_COLLECTION);
 			ArrayList<Object> value = new ArrayList<Object>();
-			for (Object entry : (List<Object>) result) {
-				Object valueEntry = generateGeoJson(entry, geometry, context);
-				((Map<String, Object>) valueEntry).remove(NGSIConstants.JSON_LD_CONTEXT);
-				value.add(valueEntry);
+			try {
+				for (Object entry : (List<Object>) result) {
+					Object valueEntry = generateGeoJson(entry, geometry, context);
+					((Map<String, Object>) valueEntry).remove(NGSIConstants.JSON_LD_CONTEXT);
+					value.add(valueEntry);
+				}
+			}catch (Exception e){
+				logger.debug("exception in generateGeoJson ",e);
 			}
+
 			resultMap.put(NGSIConstants.FEATURES, value);
 			resultMap.put(NGSIConstants.JSON_LD_CONTEXT, context);
 		} else {
@@ -225,6 +230,8 @@ public final class HttpUtils {
 			Object geometryEntry = entryMap.get(geometry);
 			if (geometryEntry != null) {
 				resultMap.put(NGSIConstants.GEOMETRY, ((Map<String, Object>) geometryEntry).get(NGSIConstants.VALUE));
+			}else {
+				throw new ResponseException(ErrorType.NotAcceptable);
 			}
 			entryMap.remove(NGSIConstants.JSON_LD_CONTEXT);
 			resultMap.put(NGSIConstants.PROPERTIES, entryMap);
@@ -670,7 +677,7 @@ public final class HttpUtils {
 										JsonUtils.toPrettyString(
 												generateGeoJson(finalCompacted, geometryProperty, contextHeader)),
 										AppConstants.NGB_APPLICATION_GEO_JSON, null));
-							} catch (IOException e) {
+							} catch (Exception e) {
 								return Uni.createFrom().failure(e);
 							}
 						});
