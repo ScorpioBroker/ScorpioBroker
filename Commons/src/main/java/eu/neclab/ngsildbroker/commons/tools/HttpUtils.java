@@ -792,7 +792,7 @@ public final class HttpUtils {
 			}
 		}
 		if (!isHavingError && isHavingSuccess) {
-			if ((opType.equalsIgnoreCase("Upsert") && wasUpdated) || opType.equalsIgnoreCase("Delete")
+			if ((opType.equalsIgnoreCase("Upsert") && wasUpdated)  || opType.equalsIgnoreCase("Merge")  || opType.equalsIgnoreCase("Delete")
 					|| opType.equalsIgnoreCase("Append"))
 				return RestResponse.status(RestResponse.Status.NO_CONTENT);
 			else

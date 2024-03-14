@@ -265,14 +265,18 @@ public class QueryService {
 						entity.put(NGSIConstants.NGSI_LD_SCOPE, scopes);
 					}
 				}
-				entity.put(NGSIConstants.NGSI_LD_CREATED_AT,
-						List.of(Map.of(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME,
-								NGSIConstants.JSON_LD_VALUE,
-								SerializationTools.toDateTimeString(entityId2OldestCreatedAt.get(entityId)))));
-				entity.put(NGSIConstants.NGSI_LD_MODIFIED_AT,
-						List.of(Map.of(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME,
-								NGSIConstants.JSON_LD_VALUE,
-								SerializationTools.toDateTimeString(entityId2YoungestModified.get(entityId)))));
+				if(entityId2OldestCreatedAt.get(entityId)!=null) {
+					entity.put(NGSIConstants.NGSI_LD_CREATED_AT,
+							List.of(Map.of(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME,
+									NGSIConstants.JSON_LD_VALUE,
+									SerializationTools.toDateTimeString(entityId2OldestCreatedAt.get(entityId)))));
+				}
+				if(entityId2YoungestModified.get(entityId)!=null) {
+					entity.put(NGSIConstants.NGSI_LD_MODIFIED_AT,
+							List.of(Map.of(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME,
+									NGSIConstants.JSON_LD_VALUE,
+									SerializationTools.toDateTimeString(entityId2YoungestModified.get(entityId)))));
+				}
 				for (Entry<String, Map<String, Map<String, Object>>> attribEntry : attribMap.entrySet()) {
 					entity.put(attribEntry.getKey(), Lists.newArrayList(attribEntry.getValue().values()));
 				}
