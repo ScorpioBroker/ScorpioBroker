@@ -5,6 +5,7 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -14,6 +15,7 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.regex.Pattern;
 
+import eu.neclab.ngsildbroker.commons.datatypes.terms.DataSetIdTerm;
 import org.apache.commons.lang3.StringUtils;
 
 import com.github.jsonldjava.core.Context;
@@ -539,6 +541,17 @@ public class QueryParser {
 			return Map.of(input,new HashMap<>());
 		}
 		return resultMap;
+	}
+
+	public static DataSetIdTerm parseDataSetId(String ids) throws ResponseException {
+		if (ids == null || ids.isEmpty()) {
+			return null;
+		}
+		ids = ids.replace("\"","");
+		List<String> idsList = Arrays.asList(ids.split(","));
+		DataSetIdTerm result = new  DataSetIdTerm();
+		result.setIds(idsList);
+		return result;
 	}
 
 }
