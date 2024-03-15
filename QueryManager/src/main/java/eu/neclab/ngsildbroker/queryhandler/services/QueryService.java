@@ -109,7 +109,7 @@ public class QueryService {
 			TypeQueryTerm typeQuery, String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery, CSFQueryTerm csf,
 			GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, int limit, int offSet,
 			boolean count, boolean localOnly, Context context, io.vertx.core.MultiMap headersFromReq,
-			boolean doNotCompact) {
+			boolean doNotCompact,Set<String> jsonKeys) {
 		if (localOnly) {
 			return localQueryLevel1(tenant, id, typeQuery, idPattern, attrsQuery, qQuery, geoQuery, scopeQuery,
 					langQuery, limit, offSet, count);
@@ -123,7 +123,7 @@ public class QueryService {
 						List<EntityMapEntry> resultEntityMap = entityMap.getSubMap(offSet, limit + offSet);
 						Long resultCount = (long) entityMap.size();
 						return handleEntityMap(resultCount, resultEntityMap, attrsQuery, localResults, count, limit,
-								offSet, qToken, headersFromReq,qQuery);
+								offSet, qToken, headersFromReq,qQuery,jsonKeys);
 					});
 		} else {
 			return queryDAO.getEntityMap(tenant, qToken, limit, offSet, count).onItem().transformToUni(t -> {
@@ -131,7 +131,7 @@ public class QueryService {
 				EntityMap entityMap = t.getItem2();
 				Map<String, Map<String, Object>> localResults = t.getItem3();
 				return handleEntityMap(resultCount, entityMap.getEntityList(), attrsQuery, localResults, count, limit,
-						offSet, qToken, headersFromReq,qQuery);
+						offSet, qToken, headersFromReq,qQuery,jsonKeys);
 
 			});
 		}
@@ -139,7 +139,7 @@ public class QueryService {
 
 	private Uni<QueryResult> handleEntityMap(Long resultCount, List<EntityMapEntry> resultEntityMap,
 			AttrsQueryTerm attrsQuery, Map<String, Map<String, Object>> localResults, boolean count, int limit,
-			int offSet, String qToken, io.vertx.core.MultiMap headersFromReq, QQueryTerm queryTerm) {
+			int offSet, String qToken, io.vertx.core.MultiMap headersFromReq, QQueryTerm queryTerm,Set<String> jsonKeys) {
 		Map<QueryRemoteHost, List<String>> remoteHost2EntityIds = Maps.newHashMap();
 		// has to be linked. We want to keep order here
 		Map<String, Map<String, Map<String, Map<String, Object>>>> entityId2AttrName2DatasetId2AttrValue = Maps
@@ -278,13 +278,21 @@ public class QueryService {
 				for (Entry<String, Map<String, Map<String, Object>>> attribEntry : attribMap.entrySet()) {
 					entity.put(attribEntry.getKey(), Lists.newArrayList(attribEntry.getValue().values()));
 				}
-				if(queryTerm != null){
-					if(queryTerm.calculate(EntityTools.getBaseProperties(entity))){
-						resultData.add(entity);
+				if (queryTerm != null) {
+					try {
+						if (queryTerm.calculate(EntityTools.getBaseProperties(entity)) || queryTerm.calculate(entity,jsonKeys)) {
+							resultData.add(entity);
+						}
+					} catch (Exception e) {
+						// Handling any exceptions occurred during calculation
+						if (queryTerm.calculate(entity,jsonKeys)) {
+							resultData.add(entity);
+						}
 					}
-				}else{
+				} else {
 					resultData.add(entity);
 				}
+
 			}
 			result.setData(resultData);
 			result.setLimit(limit);
