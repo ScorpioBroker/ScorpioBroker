@@ -106,7 +106,10 @@ public class QQueryTerm implements Serializable {
         if (entity == null || index >= path.length) {
             if (entity instanceof List<?> list && list.get(0) instanceof Map<?, ?> map) {
                 if (map.containsKey(NGSIConstants.NGSI_LD_HAS_VALUE)) {
-                    return getElemByPath(map, new String[]{NGSIConstants.NGSI_LD_HAS_VALUE}, 0);
+                    return getElemByPath(map, new String[]{NGSIConstants.JSON_LD_VALUE}, 0);
+                }
+                if (map.containsKey(NGSIConstants.NGSI_LD_HAS_OBJECT)) {
+                    return getElemByPath(map, new String[]{NGSIConstants.JSON_LD_ID}, 0);
                 }
                 if (map.containsKey(NGSIConstants.JSON_LD_VALUE)) {
                     return getElemByPath(map.get(NGSIConstants.JSON_LD_VALUE),path,index+1);
@@ -131,7 +134,14 @@ public class QQueryTerm implements Serializable {
             Object value;
             if (map.containsKey(NGSIConstants.NGSI_LD_HAS_VALUE)) {
                 value = map.get(NGSIConstants.NGSI_LD_HAS_VALUE);
-            } else if (map.containsKey(NGSIConstants.JSON_LD_VALUE)) {
+            }else if (map.containsKey(NGSIConstants.JSON_LD_LANGUAGE)) {
+                if(path[index].contains(map.get(NGSIConstants.JSON_LD_LANGUAGE).toString())){
+                    value = map.get(NGSIConstants.JSON_LD_VALUE);
+                    index++;
+                }
+                else value=null;
+            }
+            else if (map.containsKey(NGSIConstants.JSON_LD_VALUE)) {
                 return getElemByPath(map.get(NGSIConstants.JSON_LD_VALUE),path,index);
             } else if (map.containsKey(NGSIConstants.JSON_LD_LIST)) {
                 value = map.get(NGSIConstants.JSON_LD_LIST);
@@ -149,7 +159,8 @@ public class QQueryTerm implements Serializable {
                 value = map.get(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP);
             } else if (map.containsKey(NGSIConstants.NGSI_LD_HAS_KEY)) {
                 value = map.get(NGSIConstants.NGSI_LD_HAS_KEY);
-            } else {
+            }
+            else {
                 value = map.get(path[index]);
                 return getElemByPath(value, path, index + 1);
             }
