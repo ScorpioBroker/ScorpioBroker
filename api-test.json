@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "77605a5f-0401-435a-a403-12c2d6ff525f",
+		"_postman_id": "be60bdb4-4ca0-43f9-8596-36afbedcfbbd",
 		"name": "API Test",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "26387112"
@@ -57261,6 +57261,310 @@
 											"response": []
 										}
 									]
+								}
+							]
+						},
+						{
+							"name": "Geo Json Error",
+							"item": [
+								{
+									"name": "Create Simple Entity to be found",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+													"console.log(payloadBody.id);\r",
+													"var entityId = payloadBody.id;\r",
+													"pm.collectionVariables.set(\"createdTBF\", payloadBody);\r",
+													"pm.collectionVariables.set(\"entityIdTBF\", entityId);\r",
+													"pm.collectionVariables.set(\"entityTypeTBF\", payloadBody.type);\r",
+													"pm.test(\"Status code is 201\", function () {\r",
+													"    pm.response.to.have.status(201);\r",
+													"});\r",
+													"pm.test(\"Check location header\", function () {\r",
+													"    pm.response.to.have.header(\"Location\");\r",
+													"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+													"});\r",
+													"\r",
+													"\r",
+													""
+												],
+												"type": "text/javascript"
+											}
+										},
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													""
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json",
+												"type": "default"
+											},
+											{
+												"key": "Accept",
+												"value": "application/json",
+												"type": "default",
+												"disabled": true
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n   \t\"id\": \"urn:ngsi-ld:test100\",\r\n   \t\"type\": \"TestType\",\r\n    \"location\": {\r\n        \"type\": \"GeoProperty\",\r\n        \"value\": { \r\n        \t\"type\": \"Point\", \r\n        \t\"coordinates\": [80, 80.0005] \r\n        }\r\n    },\r\n   \t\"name\": {\r\n       \t\"type\": \"Property\",\r\n       \t\"value\": \"MERCEDES\"\r\n   \t},\r\n    \"speed\": {\r\n       \t\"type\": \"Property\",\r\n       \t\"value\": 60\r\n   \t},\r\n    \"owner\": {\"type\": \"Relationship\", \"object\": \"urn:testref\"}\r\n\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+											"host": [
+												"{{entity-manager}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Create Simple Entity No Context",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+													"console.log(payloadBody.id);\r",
+													"var entityId = payloadBody.id;\r",
+													"pm.collectionVariables.set(\"created\", payloadBody);\r",
+													"pm.collectionVariables.set(\"entityId\", entityId);\r",
+													"pm.test(\"Status code is 201\", function () {\r",
+													"    pm.response.to.have.status(201);\r",
+													"});\r",
+													"pm.test(\"Check location header\", function () {\r",
+													"    pm.response.to.have.header(\"Location\");\r",
+													"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+													"});\r",
+													"\r",
+													"\r",
+													""
+												],
+												"type": "text/javascript"
+											}
+										},
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													""
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json",
+												"type": "default"
+											},
+											{
+												"key": "Accept",
+												"value": "application/json",
+												"type": "default",
+												"disabled": true
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"id\": \"urn:test:testentity101\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n    \"listproperty\": {\"type\": \"ListProperty\", \"valueList\": [100,200,300]},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"passenger\": {\r\n       \"type\": \"ListRelationship\",\r\n       \"objectType\": \"Person\",\r\n       \"objectList\": [\r\n           \"urn:ngsi-ld:Person:Alice\",\r\n           \"urn:ngsi-ld:Person:Bob\"\r\n       ]\r\n   },\r\n    \"street\": {\r\n        \"type\": \"LanguageProperty\",\r\n        \"languageMap\": {\r\n            \"fr\": \"Grand Place\",\r\n            \"nl\": \"Grote Markt\"\r\n        }\r\n    },\r\n    \"testjsonproperty\": {\r\n         \"type\": \"JsonProperty\",\r\n         \"json\": {\r\n             \"id\": \"85a6cc52-0589-45f9\",\r\n            \"value\": \"Overstay 60 minutes\"\r\n      }\r\n  }\r\n\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+											"host": [
+												"{{entity-manager}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Get Created Entity and Validate content",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var expected = pm.collectionVariables.get(\"created\");\r",
+													"pm.test(\"Status code is 200\", function () {\r",
+													"    pm.response.to.have.status(200);\r",
+													"});\r",
+													""
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Accept",
+												"value": "application/json",
+												"type": "default"
+											}
+										],
+										"url": {
+											"raw": "{{query-manager}}/ngsi-ld/v1/entities/urn:ngsi-ld:test100",
+											"host": [
+												"{{query-manager}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"urn:ngsi-ld:test100"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "validate geo json header",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var expected = pm.collectionVariables.get(\"created\");\r",
+													"pm.test(\"Status code is 406\", function () {\r",
+													"    pm.response.to.have.status(406);\r",
+													"});\r",
+													""
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Accept",
+												"value": "application/geo+json",
+												"type": "default"
+											}
+										],
+										"url": {
+											"raw": "{{query-manager}}/ngsi-ld/v1/entities/urn:test:testentity101",
+											"host": [
+												"{{query-manager}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"urn:test:testentity101"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Delete first Entity",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"pm.test(\"Status code is 204\", function () {\r",
+													"    pm.response.to.have.status(204);\r",
+													"});\r",
+													"pm.collectionVariables.clear();"
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{entity-manager}}/ngsi-ld/v1/entities/urn:ngsi-ld:test100",
+											"host": [
+												"{{entity-manager}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"urn:ngsi-ld:test100"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Delete Second Entity",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"pm.test(\"Status code is 204\", function () {\r",
+													"    pm.response.to.have.status(204);\r",
+													"});\r",
+													"pm.collectionVariables.clear();"
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{entity-manager}}/ngsi-ld/v1/entities/urn:test:testentity101",
+											"host": [
+												"{{entity-manager}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												"urn:test:testentity101"
+											]
+										}
+									},
+									"response": []
 								}
 							]
 						}
