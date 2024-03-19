@@ -203,7 +203,7 @@ public final class HttpUtils {
 
 	@SuppressWarnings("unchecked")
 	private static Object generateGeoJson(Object result, String geometry, Object context)
-			throws JsonParseException, IOException, ResponseException {
+			throws ResponseException {
 		Map<String, Object> resultMap = Maps.newLinkedHashMap();
 		if (result instanceof List) {
 			resultMap.put(NGSIConstants.TYPE, NGSIConstants.FEATURE_COLLECTION);
@@ -214,8 +214,8 @@ public final class HttpUtils {
 					((Map<String, Object>) valueEntry).remove(NGSIConstants.JSON_LD_CONTEXT);
 					value.add(valueEntry);
 				}
-			}catch (Exception e){
-				logger.debug("exception in generateGeoJson ",e);
+			}catch (ResponseException e){
+				logger.debug("exception in generateGeoJson method from HttpUtils ",e);
 			}
 
 			resultMap.put(NGSIConstants.FEATURES, value);
@@ -231,7 +231,7 @@ public final class HttpUtils {
 			if (geometryEntry != null) {
 				resultMap.put(NGSIConstants.GEOMETRY, ((Map<String, Object>) geometryEntry).get(NGSIConstants.VALUE));
 			}else {
-				throw new ResponseException(ErrorType.NotAcceptable);
+				throw new ResponseException(ErrorType.NotAcceptable,"Geo json not support for this request");
 			}
 			entryMap.remove(NGSIConstants.JSON_LD_CONTEXT);
 			resultMap.put(NGSIConstants.PROPERTIES, entryMap);
