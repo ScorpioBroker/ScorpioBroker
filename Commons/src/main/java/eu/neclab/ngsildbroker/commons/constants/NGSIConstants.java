@@ -348,6 +348,10 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_SCOPE_Q = "https://uri.etsi.org/ngsi-ld/scopeQ";
 
 	public static final String ERROR_TYPE = "type";
+	public static final String LAST_USAGE = "lastUsage";
+	public static final String NUMBER_OF_HITS = "numberOfHits";
+	public static final String LOCAL_ID = "localId";
+	public static final String EXPIRES_AT = "expiresAt";
 	public static final String ERROR_TITLE = "title";
 	public static final String ERROR_DETAIL_MESSAGE = "message";
 	public static final String ERROR_DETAIL_ENDPOINT = "endpoint";

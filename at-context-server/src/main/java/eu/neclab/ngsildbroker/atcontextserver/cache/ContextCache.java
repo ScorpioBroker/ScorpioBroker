@@ -76,7 +76,7 @@ public class ContextCache {
                 finalContext.put(NGSIConstants.KIND, NGSIConstants.CACHED);
                 finalContext.put(NGSIConstants.CREATEDAT, new Timestamp(System.currentTimeMillis()));
                 finalContext.put(NGSIConstants.URL, atContextUrl + URLEncoder.encode(uri, StandardCharsets.UTF_8));
-                finalContext.put("localId", uri);
+                finalContext.put(NGSIConstants.LOCAL_ID, uri);
                 return Uni.createFrom().item(finalContext);
             } else
                 return Uni.createFrom().item(new HashMap<>());
@@ -92,13 +92,14 @@ public class ContextCache {
         }
         long hit = id2numberOfHit.getOrDefault(uri,0L) + 1;
         id2numberOfHit.put(uri,hit);
+        Object lastUsage = id2LastUsage.get(uri);
         id2LastUsage.put(uri,new Timestamp(System.currentTimeMillis()));
         if (details) {
             return load(uri).onItem().transform(map -> {
                 Instant expiresAt = scheduler.getScheduledJob("cacheDuration").getNextFireTime();
-                map.put("lastUsage",id2LastUsage.get(uri));
-                map.put("expiresAt", expiresAt.toString());
-                map.put("numberOfHits",hit);
+                map.put(NGSIConstants.LAST_USAGE,lastUsage);
+                map.put(NGSIConstants.EXPIRES_AT, expiresAt.toString());
+                map.put(NGSIConstants.NUMBER_OF_HITS,hit);
                 return RestResponse.ok(map);
             });
         } else {
@@ -123,10 +124,10 @@ public class ContextCache {
                 if (details) {
                     list.add(cachedItem);
                     Instant expiresAt = scheduler.getScheduledJob("cacheDuration").getNextFireTime();
-                    cachedItem.put("expiresAt", expiresAt.toString());
+                    cachedItem.put(NGSIConstants.EXPIRES_AT, expiresAt.toString());
                     long hit = id2numberOfHit.getOrDefault(key.toString(),0L);
-                    cachedItem.put("numberOfHits",hit);
-                    cachedItem.put("lastUsage",id2LastUsage.get(key.toString()));
+                    cachedItem.put(NGSIConstants.NUMBER_OF_HITS,hit);
+                    cachedItem.put(NGSIConstants.LAST_USAGE,id2LastUsage.get(key.toString()));
                 } else
                     list.add(cachedItem.get(NGSIConstants.URL));
             } catch (Exception ignored) {
@@ -151,5 +152,6 @@ public class ContextCache {
     @Scheduled(every = "${atcontext.cache.duration}", identity = "cacheDuration")
     public void invalidateAll() {
         id2numberOfHit.clear();
+        id2LastUsage.clear();
     }
 }
