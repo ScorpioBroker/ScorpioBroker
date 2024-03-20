@@ -1,7 +1,7 @@
 ALTER TABLE public.contexts add column lastUsage timestamp without time zone, add column numberOfHits bigint default 0;
 
 DELETE FROM public.contexts WHERE id = ')$%^&';
-INSERT INTO public.contexts (id, body, kind,lastusage,numberofhits) values(')$%^&', '{
+INSERT INTO public.contexts (id, body, kind) values(')$%^&', '{
                                                                   "@context": {
                                                                       "ngsi-ld": "https://uri.etsi.org/ngsi-ld/",
                                                                       "geojson": "https://purl.org/geojson/vocab#",
@@ -362,4 +362,4 @@ INSERT INTO public.contexts (id, body, kind,lastusage,numberofhits) values(')$%^
                                                                       "@vocab": "https://uri.etsi.org/ngsi-ld/default-context/"
                                                                   }
                                                               }
-'::jsonb, 'Hosted',now(),1);
+'::jsonb, 'Hosted');
