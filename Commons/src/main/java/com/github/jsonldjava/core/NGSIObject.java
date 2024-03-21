@@ -330,7 +330,7 @@ class NGSIObject {
 							.get(NGSIConstants.JSON_LD_VALUE);
 				}
 				if (entities == null || ((List<Object>) entities).isEmpty()) {
-					if (localOnly != null && !localOnly) {
+					if (localOnly == null || !localOnly) {
 						throw new ResponseException(ErrorType.BadRequestData, "A subscription needs an entities entry");
 					}
 				} else {
