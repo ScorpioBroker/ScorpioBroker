@@ -324,9 +324,22 @@ class NGSIObject {
 				}
 				validateNotificationEntry(((List<Map<String, Object>>) notification).get(0));
 				Object entities = ((Map<String, Object>) element).get(NGSIConstants.NGSI_LD_ENTITIES);
-				if (entities == null || ((List<Object>) entities).isEmpty()) {
-					throw new ResponseException(ErrorType.BadRequestData, "A subscription needs an entities entry");
+				Boolean localOnly = null;
+				if(((Map<?, ?>) element).containsKey(NGSIConstants.NGSI_LD_LOCALONLY)){
+				localOnly	 = ((Map<String, List<Map<String,Boolean>>>) element).get(NGSIConstants.NGSI_LD_LOCALONLY).get(0)
+							.get(NGSIConstants.JSON_LD_VALUE);
 				}
+				if (entities == null || ((List<Object>) entities).isEmpty()) {
+					if (localOnly != null && !localOnly) {
+						throw new ResponseException(ErrorType.BadRequestData, "A subscription needs an entities entry");
+					}
+				} else {
+					String type = ((List<Map<String, List<String>>>) entities).get(0).get(NGSIConstants.JSON_LD_TYPE).get(0);
+					if (type.equals(NGSIConstants.NGSI_LD_STAR) && (localOnly != null && !localOnly)) {
+						throw new ResponseException(ErrorType.BadRequestData, "local Only cannot be false for all type subscription");
+					}
+				}
+
 			} else {
 				validateSubscription(expandedProperty, activeProperty, api, payloadType);
 			}
