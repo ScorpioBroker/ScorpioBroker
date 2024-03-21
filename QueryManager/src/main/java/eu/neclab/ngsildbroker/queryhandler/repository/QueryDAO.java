@@ -130,6 +130,10 @@ public class QueryDAO {
 				}
 			}
 			query.append(" FROM ENTITY WHERE ");
+			if(typeQuery == null && attrsQuery == null && geoQuery == null && qQuery == null
+					&& ids == null && idPattern == null && scopeQuery == null){
+				query.append("TRUE ");
+			}
 			boolean sqlAdded = false;
 			if (typeQuery != null) {
 				dollar = typeQuery.toSql(query, tuple, dollar);
@@ -187,7 +191,7 @@ public class QueryDAO {
 				query.append(" AND ");
 				scopeQuery.toSql(query);
 			}
-			query.append("GROUP BY ENTITY");
+			query.append(" GROUP BY ENTITY");
 			if (limit != 0) {
 				query.append(" LIMIT ");
 				query.append(limit);

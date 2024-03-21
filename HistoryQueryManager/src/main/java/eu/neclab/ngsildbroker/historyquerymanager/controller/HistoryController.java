@@ -105,7 +105,7 @@ public class HistoryController {
 			return Uni.createFrom()
 					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.TooManyResults)));
 		}
-		if (typeQuery == null && attrs == null && geometry == null && q == null) {
+		if (!localOnly && typeQuery == null && attrs == null && geometry == null && q == null) {
 			return Uni.createFrom()
 					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.InvalidRequest)));
 		}
