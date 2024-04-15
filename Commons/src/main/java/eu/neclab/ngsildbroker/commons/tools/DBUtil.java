@@ -17,14 +17,21 @@ import io.vertx.mutiny.sqlclient.Row;
 
 public class DBUtil {
 
-	public static GeoJSONReader geoReader = new GeoJSONReader(JtsSpatialContext.GEO, new SpatialContextFactory());
+	private static final String JDBC_URI_PFX = "jdbc:";
 
+	public static GeoJSONReader geoReader = new GeoJSONReader(JtsSpatialContext.GEO, new SpatialContextFactory());
 	public static String databaseURLFromPostgresJdbcUrl(String url, String newDbName) {
 		try {
-			String cleanURI = url.substring(5);
-
-			URI uri = URI.create(cleanURI);
-			return "jdbc:" + uri.getScheme() + "://" + uri.getHost() + ":" + uri.getPort() + "/" + newDbName;
+			URI baseUri = URI.create(url.replaceFirst("^"+JDBC_URI_PFX, ""));
+			String newUrl = baseUri.getScheme() + "://" + baseUri.getHost();
+			if (baseUri.getPort()!=-1) {
+				newUrl += ":" + baseUri.getPort();
+			}
+			newUrl += "/" + newDbName;
+			if (baseUri.getRawQuery()!=null) {
+				return newUrl + "?" + baseUri.getRawQuery();
+			}
+			return newUrl;
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
@@ -33,7 +40,7 @@ public class DBUtil {
 
 	public static RegistrationEntry getRegistrationEntry(Row row, String tenant, Logger logger) {
 //		cs_id bigint,
-//		c_id text,  
+//		c_id text,
 //		e_id text,
 //		e_id_p text,
 //		e_type text,
@@ -90,7 +97,7 @@ public class DBUtil {
 		if (geoString != null) {
 			try {
 				geoJson = geoReader.read(geoString);
-				
+
 			} catch (InvalidShapeException | IOException | ParseException e) {
 				logger.error("Failed to load registrations for the entity mananger", e);
 			}

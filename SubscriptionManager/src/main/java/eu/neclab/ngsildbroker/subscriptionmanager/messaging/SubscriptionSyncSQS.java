@@ -14,9 +14,7 @@ import io.quarkus.arc.profile.IfBuildProfile;
 import io.quarkus.runtime.StartupEvent;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Vertx;
-import io.vertx.mutiny.pgclient.PgPool;
 import io.vertx.mutiny.pgclient.pubsub.PgSubscriber;
-import io.vertx.mutiny.sqlclient.Tuple;
 import io.vertx.pgclient.PgConnectOptions;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.event.Observes;
@@ -58,15 +56,9 @@ public class SubscriptionSyncSQS implements SyncService {
 
 	@PostConstruct
 	void setup() {
-		String tmp = reactiveDefaultUrl.substring("postgresql://".length());
-		String[] splitted = tmp.split(":");
-		String host = splitted[0];
-		String[] tmp1 = splitted[1].split("/");
-		String port = tmp1[0];
-		String dbName = tmp1[1].split("\\?")[0];
+		logger.info("Configuring subscriber with default reactive jdbc url: {}", reactiveDefaultUrl);
 
-		pgSubscriber = PgSubscriber.subscriber(vertx, new PgConnectOptions().setHost(host)
-				.setPort(Integer.parseInt(port)).setDatabase(dbName).setUser(username).setPassword(password));
+		pgSubscriber = PgSubscriber.subscriber(vertx, PgConnectOptions.fromUri(reactiveDefaultUrl).setUser(username).setPassword(password));
 		subService.addSyncService(this);
 		pgSubscriber.channel("subscriptionchannel").handler(notice -> {
 			logger.debug("notice received: " + notice);

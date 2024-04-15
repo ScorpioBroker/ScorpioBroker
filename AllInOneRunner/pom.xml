@@ -12,42 +12,42 @@
 		<dependency>
 			<groupId>eu.neclab.ngsildbroker</groupId>
 			<artifactId>at-context-server</artifactId>
-			<version>${parent.version}</version>
+			<version>${project.parent.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>eu.neclab.ngsildbroker</groupId>
 			<artifactId>entity-manager</artifactId>
-			<version>${parent.version}</version>
+			<version>${project.parent.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>eu.neclab.ngsildbroker</groupId>
 			<artifactId>history-entity-manager</artifactId>
-			<version>${parent.version}</version>
+			<version>${project.parent.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>eu.neclab.ngsildbroker</groupId>
 			<artifactId>history-query-manager</artifactId>
-			<version>${parent.version}</version>
+			<version>${project.parent.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>eu.neclab.ngsildbroker</groupId>
 			<artifactId>query-manager</artifactId>
-			<version>${parent.version}</version>
+			<version>${project.parent.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>eu.neclab.ngsildbroker</groupId>
 			<artifactId>registry-manager</artifactId>
-			<version>${parent.version}</version>
+			<version>${project.parent.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>eu.neclab.ngsildbroker</groupId>
 			<artifactId>registry-subscription-manager</artifactId>
-			<version>${parent.version}</version>
+			<version>${project.parent.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>eu.neclab.ngsildbroker</groupId>
 			<artifactId>subscription-manager</artifactId>
-			<version>${parent.version}</version>
+			<version>${project.parent.version}</version>
 		</dependency>
 	</dependencies>
 	<profiles>
