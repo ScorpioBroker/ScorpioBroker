@@ -38,13 +38,6 @@ public class RegistrySubscriptionSyncSQS implements SyncService {
 	@Inject
 	RegistrySubscriptionService subService;
 
-	@ConfigProperty(name = "quarkus.datasource.reactive.url")
-	String reactiveDefaultUrl;
-	@ConfigProperty(name = "quarkus.datasource.username")
-	String username;
-	@ConfigProperty(name = "quarkus.datasource.password")
-	String password;
-
 	Logger logger = LoggerFactory.getLogger(RegistrySubscriptionSyncSQS.class);
 
 	private String seperator = "<&>";
@@ -56,9 +49,8 @@ public class RegistrySubscriptionSyncSQS implements SyncService {
 
 	@PostConstruct
 	void setup() {
-		logger.info("Configuring subscriber with default reactive jdbc url: {}", reactiveDefaultUrl);
-
-		pgSubscriber = PgSubscriber.subscriber(vertx, PgConnectOptions.fromUri(reactiveDefaultUrl).setUser(username).setPassword(password));
+		logger.info("Configuring subscriber with default reactive datasource oprions from ClientManager.");
+		pgSubscriber = PgSubscriber.subscriber(vertx, clientManager.getDefaultPgConnectionOptions());
 		subService.addSyncService(this);
 		pgSubscriber.channel("regsubscriptionchannel").handler(notice -> {
 			logger.debug("notice received: " + notice);

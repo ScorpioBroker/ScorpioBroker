@@ -20,7 +20,6 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.DBUtil;
-import eu.neclab.ngsildbroker.commons.utils.QuarkusConfigDump;
 import io.agroal.api.AgroalDataSource;
 import io.agroal.api.configuration.AgroalDataSourceConfiguration.DataSourceImplementation;
 import io.agroal.api.configuration.supplier.AgroalDataSourceConfigurationSupplier;
@@ -41,9 +40,6 @@ import io.vertx.sqlclient.PoolOptions;
 public class ClientManager {
 
 	Logger logger = LoggerFactory.getLogger(ClientManager.class);
-
-	@Inject
-	QuarkusConfigDump quarkusConfigDump;
 
 	// @Inject
 	// Create local/custom pgPool from quarkus.datasource properties, so all pgPools are created in the same way
@@ -110,19 +106,15 @@ public class ClientManager {
 		logger.info("Base jdbc url: {}", new URI(jdbcBaseUrl));
 		logger.info("Default reactive jdbc url: {}, sslmode: {}", new URI(reactiveDsDefaultUrl), reactiveDsPostgresqlSslMode);
 
-		try {
-			// Migration of the database defined in quarkus.datasource.jdbc.url is done automatically, no need to do it here.
-			logger.info("Creating custom default reactive datasource connection pool: {}", reactiveDsDefaultUrl);
-			pgClient = createPgPool("scorpio_default_pool", reactiveDsDefaultUrl, true);
-			tenant2Client.put(AppConstants.INTERNAL_NULL_KEY, Uni.createFrom().item(pgClient));
-			logger.debug("Created custom default reactive datasource connection pool: {}", reactiveDsDefaultUrl);
-			if (createTenantDatasourceAtStart) {
-				// All tenant databases are migrated as part of the client pool creation.
-				createAllTenantConnections(pgClient);
-			}
-		} catch (Exception e) {
-			logger.error("Error connecting to database: {}", reactiveDsDefaultUrl, e);
-			throw e;
+		// Migration of the database defined in quarkus.datasource.jdbc.url is done automatically, no need to do it here.
+		logger.info("Creating custom default reactive datasource connection pool: {}", reactiveDsDefaultUrl);
+		pgClient = createPgPool("scorpio_default_pool", reactiveDsDefaultUrl);
+		testPgPoolSync(pgClient, "scorpio_default_pool");
+		tenant2Client.put(AppConstants.INTERNAL_NULL_KEY, Uni.createFrom().item(pgClient));
+		logger.debug("Created custom default reactive datasource connection pool: {}", reactiveDsDefaultUrl);
+		if (createTenantDatasourceAtStart) {
+			// All tenant databases are migrated as part of the client pool creation.
+			createAllTenantConnections(pgClient);
 		}
 	}
 
@@ -137,7 +129,7 @@ public class ClientManager {
 			logger.debug("Tenant client cache miss for tenant {}; asynchronously creating connection pool", tenant);
 			return findDataBaseNameByTenantId(tenant, create).onItem().transformToUni(dbName -> {
 			try {
-				return Uni.createFrom().item(migrateDbAndCreatePgPool(tenant, dbName, false))
+				return Uni.createFrom().item(migrateDbAndCreatePgPool(tenant, dbName))
 					.invoke(p -> {
 						tenant2Client.put(tenant, Uni.createFrom().item(p));
 						logger.debug("Cached new tenant '{}' client pool.", tenant);
@@ -159,7 +151,7 @@ public class ClientManager {
 			{
 				String tenant = r.getString("tenant_id");
 				try {
-					PgPool tenantPool = migrateDbAndCreatePgPool(tenant, r.getString("database_name"), true);
+					PgPool tenantPool = migrateDbAndCreatePgPool(tenant, r.getString("database_name"));
 					tenant2Client.put(tenant, Uni.createFrom().item(tenantPool));
 				} catch (SQLException e) {
 					logger.error("Error creating ractive datasource pool for tenant '{}': ", tenant, e);
@@ -169,27 +161,19 @@ public class ClientManager {
 		);
 	}
 
-	private PgPool createPgPool(String poolName, String databaseUrl, boolean test) {
+	private PgPool createPgPool(String poolName, String databaseUrl) {
 		logger.debug("Creating reactive datasource pool '{}'; database: {}, sslmode: {}", poolName, databaseUrl, reactiveDsPostgresqlSslMode);
-		PgConnectOptions connectOptions = PgConnectOptions.fromUri(databaseUrl)
-			.setUser(username)
-			.setPassword(password)
-			.setCachePreparedStatements(reactiveDsCachePreparedStatements)
-			.setSslMode(SslMode.valueOf(reactiveDsPostgresqlSslMode.toUpperCase()))
-			.setTrustAll(reactiveDsPostgresqlSslTrustAll);
-		PoolOptions poolOptions = new PoolOptions()
-			.setName(poolName)
-			.setShared(reactiveDsShared)
-			.setMaxSize(reactiveMaxSize)
-			.setIdleTimeout((int) idleTime.getSeconds())
-			.setIdleTimeoutUnit(TimeUnit.SECONDS)
-			.setConnectionTimeout((int) connectionTime.getSeconds())
-			.setConnectionTimeoutUnit(TimeUnit.SECONDS);
-		PgPool pool = PgPool.pool(vertx, connectOptions, poolOptions);
-		if (test) {
-			testPgPoolSync(pool, poolName);
-		}
-		return pool;
+		return PgPool.pool(vertx,
+				getPgConnectOptions(databaseUrl),
+				new PoolOptions()
+				.setName(poolName)
+				.setShared(reactiveDsShared)
+				.setMaxSize(reactiveMaxSize)
+				.setIdleTimeout((int) idleTime.getSeconds())
+				.setIdleTimeoutUnit(TimeUnit.SECONDS)
+				.setConnectionTimeout((int) connectionTime.getSeconds())
+				.setConnectionTimeoutUnit(TimeUnit.SECONDS)
+			);
 	}
 
 	private boolean testPgPoolSync(PgPool pool, String poolName) {
@@ -198,12 +182,12 @@ public class ClientManager {
 		return testResult;
 	}
 
-	private PgPool migrateDbAndCreatePgPool(String tenant, String dbName, boolean testDbConnection) throws SQLException {
+	private PgPool migrateDbAndCreatePgPool(String tenant, String dbName) throws SQLException {
 		String dbUrl = DBUtil.databaseURLFromPostgresJdbcUrl(reactiveDsDefaultUrl, dbName);
 		try {
 			logger.info("Creating reactive database client pool for tenant '{}': {}", tenant, dbUrl);
 			flywayMigrate(tenant, dbName);
-			PgPool pool = createPgPool(getClientPoolName(tenant), dbUrl, testDbConnection);
+			PgPool pool = createPgPool(getClientPoolName(tenant), dbUrl);
 			logger.debug("Created reactive database client pool for tenant '{}': {} ({})", tenant, dbUrl, pool);
 			return pool;
 		} catch (SQLException e) {
@@ -295,5 +279,18 @@ public class ClientManager {
 				throw e;
 			}
 		}
+	}
+
+    public PgConnectOptions getDefaultPgConnectionOptions() {
+        return getPgConnectOptions(reactiveDsDefaultUrl);
+    }
+
+	private PgConnectOptions getPgConnectOptions(String databaseUrl) {
+			return PgConnectOptions.fromUri(databaseUrl)
+			.setUser(username)
+			.setPassword(password)
+			.setCachePreparedStatements(reactiveDsCachePreparedStatements)
+			.setSslMode(SslMode.valueOf(reactiveDsPostgresqlSslMode.toUpperCase()))
+			.setTrustAll(reactiveDsPostgresqlSslTrustAll);
 	}
 }
