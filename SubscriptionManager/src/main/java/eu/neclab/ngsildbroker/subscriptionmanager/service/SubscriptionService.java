@@ -869,6 +869,11 @@ public class SubscriptionService {
 		if (!sub.getIsActive() || sub.getExpiresAt() < System.currentTimeMillis()) {
 			return false;
 		}
+
+		if(sub.isLocalOnly() && sub.getEntities()==null){
+			return  true;
+		}
+
 		if (!SubscriptionTools.evaluateGeoQuery(sub.getLdGeoQuery(),
 				(List<Map<String, Object>>) entity.get(NGSIConstants.NGSI_LD_LOCATION))) {
 			return false;

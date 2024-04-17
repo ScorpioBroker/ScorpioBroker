@@ -125,6 +125,10 @@ public class QueryDAO {
 				query.append(" as entity, id");
 			}
 			query.append(" FROM ENTITY WHERE ");
+			if(typeQuery == null && attrsQuery == null && geoQuery == null && qQuery == null
+					&& ids == null && idPattern == null && scopeQuery == null){
+				query.append("TRUE ");
+			}
 			boolean sqlAdded = false;
 			if (typeQuery != null) {
 				dollar = typeQuery.toSql(query, tuple, dollar);
