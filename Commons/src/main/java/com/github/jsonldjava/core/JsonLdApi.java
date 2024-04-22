@@ -1005,7 +1005,7 @@ public class JsonLdApi {
 							// compacted version and should not be expanded
 							// expandedValue = activeCtx.expandIri((String) value, true, false, null, null);
 
-							expandedValue = value;
+							expandedValue = activeCtx.expandIri((String) value, false, true, null, null);
 
 							if (((String) expandedValue).indexOf(':') == -1 && !ngsiElement.isFromHasValue()) {
 								throw new ResponseException(ErrorType.BadRequestData, "IDs need to be URIs");
