@@ -651,7 +651,7 @@ public class Context extends LinkedHashMap<String, Object> {
 			}
 		}
 		// 4)
-		final int colIndex = value.indexOf(":");
+		final int colIndex = value.lastIndexOf(":");
 		if (colIndex >= 0) {
 			// 4.1)
 			final String prefix = value.substring(0, colIndex);
