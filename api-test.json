@@ -1,9 +1,9 @@
 {
 	"info": {
-		"_postman_id": "be60bdb4-4ca0-43f9-8596-36afbedcfbbd",
+		"_postman_id": "f9dfe42f-f16f-4fea-a1db-ccccd0372219",
 		"name": "API Test",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "26387112"
+		"_exporter_id": "27293663"
 	},
 	"item": [
 		{
@@ -16655,6 +16655,606 @@
 											]
 										},
 										{
+											"name": "Query for datasetId",
+											"item": [
+												{
+													"name": "Create Simple Entity one",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"console.log(payloadBody.id);\r",
+																	"var entityId = payloadBody.id;\r",
+																	"pm.collectionVariables.set(\"createdTBF\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"entityIdTBF\", entityId);\r",
+																	"pm.collectionVariables.set(\"entityTypeTBF\", payloadBody.type);\r",
+																	"pm.test(\"Status code is 201\", function () {\r",
+																	"    pm.response.to.have.status(201);\r",
+																	"});\r",
+																	"pm.test(\"Check location header\", function () {\r",
+																	"    pm.response.to.have.header(\"Location\");\r",
+																	"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+																	"});\r",
+																	"\r",
+																	"\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n    \"id\": \"urn:ngsi-ld:WeatherForecast:001\",\r\n    \"type\": \"WeatherForecast\",\r\n    \"description\": {\r\n        \"type\": \"Property\",\r\n        \"value\": \"Rain\",\r\n        \"datasetId\": \"urn:99999\"\r\n    },\r\n    \"humidity\": [\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 98,\r\n            \"unitCode\": \"PCT\",\r\n            \"datasetId\": \"urn:12345\"\r\n        },\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 98,\r\n            \"unitCode\": \"PCT\",\r\n            \"datasetId\": \"urn:98765\"\r\n        }\r\n    ],\r\n    \"temperature\": [\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 30,\r\n            \"unitCode\": \"CEL\",\r\n            \"datasetId\": \"urn:12345\"\r\n        },\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 86,\r\n            \"unitCode\": \"FAH\",\r\n            \"datasetId\": \"urn:98765\"\r\n        }\r\n    ],\r\n    \"windSpeed\": [\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 5,\r\n            \"unitCode\": \"KMH\",\r\n            \"datasetId\": \"urn:12345\"\r\n        },\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 3,\r\n            \"unitCode\": \"MPH\",\r\n            \"datasetId\": \"urn:98765\"\r\n        }\r\n    ]\r\n}\r\n",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Create Simple Entity to be not found",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"console.log(payloadBody.id);\r",
+																	"var entityId = payloadBody.id;\r",
+																	"pm.collectionVariables.set(\"createdTBNF\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"entityIdTBNF\", entityId);\r",
+																	"pm.test(\"Status code is 201\", function () {\r",
+																	"    pm.response.to.have.status(201);\r",
+																	"});\r",
+																	"pm.test(\"Check location header\", function () {\r",
+																	"    pm.response.to.have.header(\"Location\");\r",
+																	"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+																	"});\r",
+																	"\r",
+																	"\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n    \"id\": \"urn:ngsi-ld:WeatherForecast:002\",\r\n    \"type\": \"WeatherForecast\",\r\n    \"description\": {\r\n        \"type\": \"Property\",\r\n        \"value\": \"Rain\",\r\n        \"datasetId\": \"urn:99999\"\r\n    },\r\n    \"humidity\": [\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 300,\r\n            \"unitCode\": \"PCT\",\r\n            \"datasetId\": \"urn:12345\"\r\n        },\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 400,\r\n            \"unitCode\": \"PCT\",\r\n            \"datasetId\": \"urn:98765\"\r\n        }\r\n    ],\r\n    \"temperature\": [\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 49,\r\n            \"unitCode\": \"CEL\",\r\n            \"datasetId\": \"urn:12345\"\r\n        },\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 88,\r\n            \"unitCode\": \"FAH\",\r\n            \"datasetId\": \"urn:98765\"\r\n        }\r\n    ],\r\n    \"windSpeed\": [\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 6,\r\n            \"unitCode\": \"KMH\",\r\n            \"datasetId\": \"urn:12345\"\r\n        },\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 4,\r\n            \"unitCode\": \"MPH\",\r\n            \"datasetId\": \"urn:98765\"\r\n        }\r\n    ]\r\n}\r\n",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Query for entity type tbf",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 200\", function () {\r",
+																	"    pm.response.to.have.status(200);\r",
+																	"});\r",
+																	"\r",
+																	"pm.test(\"Response is an array\", function () {\r",
+																	"    pm.expect(pm.response.json()).to.be.an('array');\r",
+																	"});\r",
+																	"\r",
+																	"var expectedEntity = {\r",
+																	"        \"id\": \"urn:ngsi-ld:WeatherForecast:001\",\r",
+																	"        \"type\": \"WeatherForecast\",\r",
+																	"        \"humidity\": {\r",
+																	"            \"type\": \"Property\",\r",
+																	"            \"datasetId\": \"urn:12345\",\r",
+																	"            \"value\": 98,\r",
+																	"            \"unitCode\": \"PCT\"\r",
+																	"        },\r",
+																	"        \"temperature\": {\r",
+																	"            \"type\": \"Property\",\r",
+																	"            \"datasetId\": \"urn:12345\",\r",
+																	"            \"value\": 30,\r",
+																	"            \"unitCode\": \"CEL\"\r",
+																	"        },\r",
+																	"        \"windSpeed\": {\r",
+																	"            \"type\": \"Property\",\r",
+																	"            \"datasetId\": \"urn:12345\",\r",
+																	"            \"value\": 5,\r",
+																	"            \"unitCode\": \"KMH\"\r",
+																	"        }\r",
+																	"    };\r",
+																	"\r",
+																	"pm.test(\"Validate that result contains expected entity\", function () {\r",
+																	"    var jsonData = pm.response.json();\r",
+																	"    pm.expect(jsonData.length).to.eql(2);\r",
+																	"    pm.expect(jsonData[0]).to.eql(expectedEntity);\r",
+																	"});\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default"
+															}
+														],
+														"url": {
+															"raw": "{{query-manager}}/ngsi-ld/v1/entities?type={{entityTypeTBF}}&datasetId=\"urn:12345\"",
+															"host": [
+																"{{query-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities"
+															],
+															"query": [
+																{
+																	"key": "type",
+																	"value": "{{entityTypeTBF}}"
+																},
+																{
+																	"key": "",
+																	"value": "",
+																	"disabled": true
+																},
+																{
+																	"key": "datasetId",
+																	"value": "\"urn:12345\""
+																}
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Delete Entity TBF",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "DELETE",
+														"header": [],
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities/{{entityIdTBF}}",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities",
+																"{{entityIdTBF}}"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Delete Entity TBNF",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});\r",
+																	"pm.collectionVariables.clear();"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "DELETE",
+														"header": [],
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities/{{entityIdTBNF}}",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities",
+																"{{entityIdTBNF}}"
+															]
+														}
+													},
+													"response": []
+												}
+											]
+										},
+										{
+											"name": "Query for datasetId Q",
+											"item": [
+												{
+													"name": "Create Simple Entity one",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"console.log(payloadBody.id);\r",
+																	"var entityId = payloadBody.id;\r",
+																	"pm.collectionVariables.set(\"createdTBF\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"entityIdTBF\", entityId);\r",
+																	"pm.collectionVariables.set(\"entityTypeTBF\", payloadBody.type);\r",
+																	"pm.test(\"Status code is 201\", function () {\r",
+																	"    pm.response.to.have.status(201);\r",
+																	"});\r",
+																	"pm.test(\"Check location header\", function () {\r",
+																	"    pm.response.to.have.header(\"Location\");\r",
+																	"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+																	"});\r",
+																	"\r",
+																	"\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n    \"id\": \"urn:ngsi-ld:WeatherForecast:003\",\r\n    \"type\": \"WeatherForecast\",\r\n    \"description\": {\r\n        \"type\": \"Property\",\r\n        \"value\": \"Rain\",\r\n        \"datasetId\": \"urn:99999\"\r\n    },\r\n    \"humidity\": [\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 98,\r\n            \"unitCode\": \"PCT\",\r\n            \"datasetId\": \"urn:12345\"\r\n        },\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 98,\r\n            \"unitCode\": \"PCT\",\r\n            \"datasetId\": \"urn:98765\"\r\n        }\r\n    ],\r\n    \"temperature\": [\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 30,\r\n            \"unitCode\": \"CEL\",\r\n            \"datasetId\": \"urn:12345\"\r\n        },\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 86,\r\n            \"unitCode\": \"FAH\",\r\n            \"datasetId\": \"urn:98765\"\r\n        }\r\n    ],\r\n    \"windSpeed\": [\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 5,\r\n            \"unitCode\": \"KMH\",\r\n            \"datasetId\": \"urn:12345\"\r\n        },\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 3,\r\n            \"unitCode\": \"MPH\",\r\n            \"datasetId\": \"urn:98765\"\r\n        }\r\n    ]\r\n}\r\n",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Create Simple Entity to be not found",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"console.log(payloadBody.id);\r",
+																	"var entityId = payloadBody.id;\r",
+																	"pm.collectionVariables.set(\"createdTBNF\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"entityIdTBNF\", entityId);\r",
+																	"pm.test(\"Status code is 201\", function () {\r",
+																	"    pm.response.to.have.status(201);\r",
+																	"});\r",
+																	"pm.test(\"Check location header\", function () {\r",
+																	"    pm.response.to.have.header(\"Location\");\r",
+																	"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+																	"});\r",
+																	"\r",
+																	"\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n    \"id\": \"urn:ngsi-ld:WeatherForecast:004\",\r\n    \"type\": \"WeatherForecast\",\r\n    \"description\": {\r\n        \"type\": \"Property\",\r\n        \"value\": \"Rain\",\r\n        \"datasetId\": \"urn:99999\"\r\n    },\r\n    \"humidity\": [\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 300,\r\n            \"unitCode\": \"PCT\",\r\n            \"datasetId\": \"urn:12345\"\r\n        },\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 400,\r\n            \"unitCode\": \"PCT\",\r\n            \"datasetId\": \"urn:98765\"\r\n        }\r\n    ],\r\n    \"temperature\": [\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 49,\r\n            \"unitCode\": \"CEL\",\r\n            \"datasetId\": \"urn:12345\"\r\n        },\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 88,\r\n            \"unitCode\": \"FAH\",\r\n            \"datasetId\": \"urn:98765\"\r\n        }\r\n    ],\r\n    \"windSpeed\": [\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 6,\r\n            \"unitCode\": \"KMH\",\r\n            \"datasetId\": \"urn:12345\"\r\n        },\r\n        {\r\n            \"type\": \"Property\",\r\n            \"value\": 4,\r\n            \"unitCode\": \"MPH\",\r\n            \"datasetId\": \"urn:98765\"\r\n        }\r\n    ]\r\n}\r\n",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Query for entity type tbf",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 200\", function () {\r",
+																	"    pm.response.to.have.status(200);\r",
+																	"});\r",
+																	"pm.test(\"Response is an array\", function () {\r",
+																	"    pm.expect(pm.response.json()).to.be.an('array');\r",
+																	"});\r",
+																	"\r",
+																	"pm.test(\"Each item in the response has the correct properties\", function () {\r",
+																	"    var jsonData = pm.response.json();\r",
+																	"\r",
+																	"    pm.expect(jsonData.length).to.eql(2);\r",
+																	"\r",
+																	"    jsonData.forEach(function (item) {\r",
+																	"        pm.expect(item).to.have.property('id').that.is.a('string');\r",
+																	"        pm.expect(item).to.have.property('type').that.is.a('string').and.equals('WeatherForecast');\r",
+																	"        pm.expect(item).to.have.property('description').that.is.an('object').and.has.property('value').that.is.a('string').and.equals('Rain');\r",
+																	"        pm.expect(item).to.have.property('humidity').that.is.an('array');\r",
+																	"        pm.expect(item).to.have.property('temperature').that.is.an('array');\r",
+																	"        pm.expect(item).to.have.property('windSpeed').that.is.an('array');\r",
+																	"    });\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default"
+															}
+														],
+														"url": {
+															"raw": "{{query-manager}}/ngsi-ld/v1/entities?type={{entityTypeTBF}}&q=temperature.datasetId==\"urn:12345\"",
+															"host": [
+																"{{query-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities"
+															],
+															"query": [
+																{
+																	"key": "type",
+																	"value": "{{entityTypeTBF}}"
+																},
+																{
+																	"key": "",
+																	"value": "",
+																	"disabled": true
+																},
+																{
+																	"key": "q",
+																	"value": "temperature.datasetId==\"urn:12345\""
+																}
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Delete Entity TBF",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "DELETE",
+														"header": [],
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities/{{entityIdTBF}}",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities",
+																"{{entityIdTBF}}"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Delete Entity TBNF",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});\r",
+																	"pm.collectionVariables.clear();"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "DELETE",
+														"header": [],
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities/{{entityIdTBNF}}",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities",
+																"{{entityIdTBNF}}"
+															]
+														}
+													},
+													"response": []
+												}
+											]
+										},
+										{
 											"name": "Pick and Omit",
 											"item": [
 												{
@@ -18950,6 +19550,447 @@
 														"body": {
 															"mode": "raw",
 															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:storeSubscription4\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"Test2\"\r\n   \t\t}\r\n\t],\r\n    \"localOnly\":true,\r\n    \"q\": \"speed>90\",\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"http://localhost:8080\",\r\n          \t\"accept\": \"application/json\",\r\n           \"receiverInfo\": [{\"blub\": \"bla\"}]\r\n       \t}\r\n    }\r\n}"
+														},
+														"url": {
+															"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions",
+															"host": [
+																"{{subscription-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"subscriptions"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Retrieve sub and validate",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var expected = pm.collectionVariables.get(\"created\");\r",
+																	"pm.test(\"Status code is 200\", function () {\r",
+																	"    pm.response.to.have.status(200);\r",
+																	"});\r",
+																	"pm.test(\"Validate content\", function () {\r",
+																	"    var jsonData = pm.response.json();\r",
+																	"    delete jsonData['jsonldContext'];\r",
+																	"    delete jsonData['status'];\r",
+																	"     delete jsonData['timesSent'];\r",
+																	"     delete jsonData['timesFailed'];\r",
+																	"    console.log(\"expected: \" + JSON.stringify(expected));\r",
+																	"    console.log(\"received: \" + JSON.stringify(jsonData));\r",
+																	"    pm.expect(jsonData).to.eql(expected);\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default"
+															}
+														],
+														"url": {
+															"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions/{{subId}}",
+															"host": [
+																"{{subscription-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"subscriptions",
+																"{{subId}}"
+															],
+															"query": [
+																{
+																	"key": "",
+																	"value": null,
+																	"disabled": true
+																}
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Delete subscription",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "DELETE",
+														"header": [],
+														"url": {
+															"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions/{{subId}}",
+															"host": [
+																"{{subscription-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"subscriptions",
+																"{{subId}}"
+															]
+														}
+													},
+													"response": []
+												}
+											]
+										},
+										{
+											"name": "no @context with type star",
+											"item": [
+												{
+													"name": "Create Subscription with no @context",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"var subId = payloadBody.id;\r",
+																	"pm.collectionVariables.set(\"subId\", subId);\r",
+																	"pm.collectionVariables.set(\"created\", payloadBody);\r",
+																	"pm.test(\"Status code is 201\", function () {\r",
+																	"    pm.response.to.have.status(201);\r",
+																	"});\r",
+																	"\r",
+																	"pm.test(\"Check location header\", function () {\r",
+																	"    pm.response.to.have.header(\"Location\");\r",
+																	"    pm.expect(pm.response.headers.get(\"Location\")).to.include(subId);\r",
+																	"});"
+																],
+																"type": "text/javascript",
+																"packages": {}
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:storeSubscription40\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"*\"\r\n   \t\t}\r\n\t],\r\n    \"q\": \"speed>90\",\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"http://localhost:8080\",\r\n          \t\"accept\": \"application/json\",\r\n           \"receiverInfo\": [{\"blub\": \"bla\"}]\r\n       \t}\r\n    }\r\n}"
+														},
+														"url": {
+															"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions",
+															"host": [
+																"{{subscription-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"subscriptions"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Retrieve sub and validate",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var expected = pm.collectionVariables.get(\"created\");\r",
+																	"pm.test(\"Status code is 200\", function () {\r",
+																	"    pm.response.to.have.status(200);\r",
+																	"});\r",
+																	"pm.test(\"Validate content\", function () {\r",
+																	"    var jsonData = pm.response.json();\r",
+																	"    delete jsonData['jsonldContext'];\r",
+																	"    delete jsonData['status'];\r",
+																	"     delete jsonData['timesSent'];\r",
+																	"     delete jsonData['timesFailed'];\r",
+																	"    console.log(\"expected: \" + JSON.stringify(expected));\r",
+																	"    console.log(\"received: \" + JSON.stringify(jsonData));\r",
+																	"    pm.expect(jsonData).to.eql(expected);\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default"
+															}
+														],
+														"url": {
+															"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions/{{subId}}",
+															"host": [
+																"{{subscription-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"subscriptions",
+																"{{subId}}"
+															],
+															"query": [
+																{
+																	"key": "",
+																	"value": null,
+																	"disabled": true
+																}
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Delete subscription",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "DELETE",
+														"header": [],
+														"url": {
+															"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions/{{subId}}",
+															"host": [
+																"{{subscription-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"subscriptions",
+																"{{subId}}"
+															]
+														}
+													},
+													"response": []
+												}
+											]
+										},
+										{
+											"name": "no @context with type star with localOnly",
+											"item": [
+												{
+													"name": "Create Subscription with no @context",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"var subId = payloadBody.id;\r",
+																	"pm.collectionVariables.set(\"subId\", subId);\r",
+																	"pm.collectionVariables.set(\"created\", payloadBody);\r",
+																	"pm.test(\"Status code is 201\", function () {\r",
+																	"    pm.response.to.have.status(201);\r",
+																	"});\r",
+																	"\r",
+																	"pm.test(\"Check location header\", function () {\r",
+																	"    pm.response.to.have.header(\"Location\");\r",
+																	"    pm.expect(pm.response.headers.get(\"Location\")).to.include(subId);\r",
+																	"});"
+																],
+																"type": "text/javascript",
+																"packages": {}
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:storeSubscription41\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"*\"\r\n   \t\t}\r\n\t],\r\n    \"localOnly\":true,\r\n    \"q\": \"speed>90\",\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"http://localhost:8080\",\r\n          \t\"accept\": \"application/json\",\r\n           \"receiverInfo\": [{\"blub\": \"bla\"}]\r\n       \t}\r\n    }\r\n}"
+														},
+														"url": {
+															"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions",
+															"host": [
+																"{{subscription-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"subscriptions"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Retrieve sub and validate",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var expected = pm.collectionVariables.get(\"created\");\r",
+																	"pm.test(\"Status code is 200\", function () {\r",
+																	"    pm.response.to.have.status(200);\r",
+																	"});\r",
+																	"pm.test(\"Validate content\", function () {\r",
+																	"    var jsonData = pm.response.json();\r",
+																	"    delete jsonData['jsonldContext'];\r",
+																	"    delete jsonData['status'];\r",
+																	"     delete jsonData['timesSent'];\r",
+																	"     delete jsonData['timesFailed'];\r",
+																	"    console.log(\"expected: \" + JSON.stringify(expected));\r",
+																	"    console.log(\"received: \" + JSON.stringify(jsonData));\r",
+																	"    pm.expect(jsonData).to.eql(expected);\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default"
+															}
+														],
+														"url": {
+															"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions/{{subId}}",
+															"host": [
+																"{{subscription-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"subscriptions",
+																"{{subId}}"
+															],
+															"query": [
+																{
+																	"key": "",
+																	"value": null,
+																	"disabled": true
+																}
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Delete subscription",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "DELETE",
+														"header": [],
+														"url": {
+															"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions/{{subId}}",
+															"host": [
+																"{{subscription-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"subscriptions",
+																"{{subId}}"
+															]
+														}
+													},
+													"response": []
+												}
+											]
+										},
+										{
+											"name": "no @context with localOnly",
+											"item": [
+												{
+													"name": "Create Subscription with no @context",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"var subId = payloadBody.id;\r",
+																	"pm.collectionVariables.set(\"subId\", subId);\r",
+																	"pm.collectionVariables.set(\"created\", payloadBody);\r",
+																	"pm.test(\"Status code is 201\", function () {\r",
+																	"    pm.response.to.have.status(201);\r",
+																	"});\r",
+																	"\r",
+																	"pm.test(\"Check location header\", function () {\r",
+																	"    pm.response.to.have.header(\"Location\");\r",
+																	"    pm.expect(pm.response.headers.get(\"Location\")).to.include(subId);\r",
+																	"});"
+																],
+																"type": "text/javascript",
+																"packages": {}
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:storeSubscription42\",\r\n   \t\"type\": \"Subscription\",\r\n    \"localOnly\":true,\r\n    \"q\": \"speed>90\",\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"http://localhost:8080\",\r\n          \t\"accept\": \"application/json\",\r\n           \"receiverInfo\": [{\"blub\": \"bla\"}]\r\n       \t}\r\n    }\r\n}"
 														},
 														"url": {
 															"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions",
@@ -57261,6 +58302,102 @@
 											"response": []
 										}
 									]
+								},
+								{
+									"name": "localOnly false and type star",
+									"item": [
+										{
+											"name": "Create Subscription with localOnly false and type star",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 201\", function () {\r",
+															"    pm.response.to.have.status(400);\r",
+															"});"
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "POST",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json",
+														"type": "default"
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:storeSubscription43\",\r\n   \t\"type\": \"Subscription\",\r\n    \"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"*\"\r\n   \t\t}\r\n\t],\r\n    \"localOnly\":false,\r\n    \"q\": \"speed>90\",\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"http://localhost:8080\",\r\n          \t\"accept\": \"application/json\",\r\n           \"receiverInfo\": [{\"blub\": \"bla\"}]\r\n       \t}\r\n    }\r\n}"
+												},
+												"url": {
+													"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions",
+													"host": [
+														"{{subscription-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"subscriptions"
+													]
+												}
+											},
+											"response": []
+										}
+									]
+								},
+								{
+									"name": "localOnly false entities not present",
+									"item": [
+										{
+											"name": "Create Subscription with localOnly false and type star",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 201\", function () {\r",
+															"    pm.response.to.have.status(400);\r",
+															"});"
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "POST",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json",
+														"type": "default"
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:storeSubscription43\",\r\n   \t\"type\": \"Subscription\",\r\n    \"localOnly\":false,\r\n    \"q\": \"speed>90\",\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"http://localhost:8080\",\r\n          \t\"accept\": \"application/json\",\r\n           \"receiverInfo\": [{\"blub\": \"bla\"}]\r\n       \t}\r\n    }\r\n}"
+												},
+												"url": {
+													"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions",
+													"host": [
+														"{{subscription-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"subscriptions"
+													]
+												}
+											},
+											"response": []
+										}
+									]
 								}
 							]
 						},
@@ -57571,6 +58708,28 @@
 					]
 				}
 			]
+		}
+	],
+	"variable": [
+		{
+			"key": "createdTBF",
+			"value": ""
+		},
+		{
+			"key": "entityIdTBF",
+			"value": ""
+		},
+		{
+			"key": "entityTypeTBF",
+			"value": ""
+		},
+		{
+			"key": "createdTBNF",
+			"value": ""
+		},
+		{
+			"key": "entityIdTBNF",
+			"value": ""
 		}
 	]
 }
