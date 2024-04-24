@@ -177,7 +177,9 @@ public class SubscriptionService {
 		List<Object> valueList = List.of(propertyMap);
 
 		propertyMap.put(JsonLdConsts.TYPE, ((List<Map<String, Object>>) newValue).get(0).get(JsonLdConsts.TYPE));
-
+		if(key.equals(NGSIConstants.NGSI_LD_MODIFIED_AT)) {
+			propertyMap.put(JsonLdConsts.VALUE, ((List<Map<String, Object>>) newValue).get(0).get(JsonLdConsts.VALUE));
+		}
 		if (((List<Map<String, Object>>) newValue).get(0).containsKey(NGSIConstants.NGSI_LD_HAS_VALUE)) {
 			propertyMap.put(NGSIConstants.VALUE,
 					((List<Map<String, Object>>) newValue).get(0).get(NGSIConstants.NGSI_LD_HAS_VALUE));
@@ -205,6 +207,22 @@ public class SubscriptionService {
 		if (((List<Map<String, Object>>) newValue).get(0).containsKey(NGSIConstants.NGSI_LD_HAS_JSON)) {
 			propertyMap.put(NGSIConstants.JSON,
 					((List<Map<String, Object>>) newValue).get(0).get(NGSIConstants.NGSI_LD_HAS_JSON));
+		}
+		if (((List<Map<String, Object>>) newValue).get(0).containsKey(NGSIConstants.NGSI_LD_UNIT_CODE)) {
+			propertyMap.put(NGSIConstants.QUERY_PARAMETER_UNIT_CODE,
+					((List<Map<String, Object>>) newValue).get(0).get(NGSIConstants.NGSI_LD_UNIT_CODE));
+		}
+		if (((List<Map<String, Object>>) newValue).get(0).containsKey(NGSIConstants.NGSI_LD_CREATED_AT)) {
+			propertyMap.put(NGSIConstants.CREATEDAT,
+					((List<Map<String, Object>>) newValue).get(0).get(NGSIConstants.NGSI_LD_CREATED_AT));
+		}
+		if (((List<Map<String, Object>>) newValue).get(0).containsKey(NGSIConstants.NGSI_LD_MODIFIED_AT)) {
+			propertyMap.put(NGSIConstants.QUERY_PARAMETER_MODIFIED_AT,
+					((List<Map<String, Object>>) newValue).get(0).get(NGSIConstants.NGSI_LD_MODIFIED_AT));
+		}
+		if (((List<Map<String, Object>>) newValue).get(0).containsKey(NGSIConstants.NGSI_LD_PROVIDED_BY)) {
+			propertyMap.put(NGSIConstants.PROVIDED_BY,
+					((List<Map<String, Object>>) newValue).get(0).get(NGSIConstants.NGSI_LD_PROVIDED_BY));
 		}
 
 		if (oldValue != null) {
@@ -851,6 +869,11 @@ public class SubscriptionService {
 		if (!sub.getIsActive() || sub.getExpiresAt() < System.currentTimeMillis()) {
 			return false;
 		}
+
+		if(sub.isLocalOnly() && sub.getEntities()==null){
+			return  true;
+		}
+
 		if (!SubscriptionTools.evaluateGeoQuery(sub.getLdGeoQuery(),
 				(List<Map<String, Object>>) entity.get(NGSIConstants.NGSI_LD_LOCATION))) {
 			return false;

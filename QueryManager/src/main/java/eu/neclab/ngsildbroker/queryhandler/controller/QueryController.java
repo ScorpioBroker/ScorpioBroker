@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import eu.neclab.ngsildbroker.commons.datatypes.terms.DataSetIdTerm;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import jakarta.ws.rs.DefaultValue;
@@ -171,7 +172,7 @@ public class QueryController {
 			@QueryParam("entityMap") String entityMapToken, @QueryParam("maxDistance") String maxDistance,
 			@QueryParam("minDistance") String minDistance, @Context UriInfo uriInfo,
 			@QueryParam("pick") String pick,@QueryParam("omit") String omit,@QueryParam("format") String format,
-			@QueryParam("jsonKeys") String jsonKeysQP) {
+			@QueryParam("jsonKeys") String jsonKeysQP,@QueryParam("datasetId") String datasetId) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		String q;
 		String georel;
@@ -216,7 +217,7 @@ public class QueryController {
 			return Uni.createFrom()
 					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.TooManyResults)));
 		}
-		if (id == null && typeQuery == null && attrs == null && geometry == null && q == null && pick == null) {
+		if (!localOnly && id == null && typeQuery == null && attrs == null && geometry == null && q == null && pick == null) {
 			return Uni.createFrom()
 					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData)));
 		}
@@ -244,6 +245,7 @@ public class QueryController {
 			GeoQueryTerm geoQueryTerm;
 			ScopeQueryTerm scopeQueryTerm;
 			LanguageQueryTerm langQuery;
+			DataSetIdTerm dataSetIdTerm;
 			List<String> pickListOriginal =  pick == null ? new ArrayList<>() : new ArrayList<>(Arrays.asList(pick.replaceAll("[\"\\n\\s]", "").split(",")));
 			List<String> omitList = (omit == null) ? new ArrayList<>() : Arrays.asList(omit.replaceAll("[\"\\n\\s]", "").split(","));
 			try {
@@ -267,6 +269,7 @@ public class QueryController {
 				if(!jsonKeys.isEmpty()){
 					attrsQuery=QueryParser.parseAttrs(String.join(",",jsonKeys),context);
 				}
+				dataSetIdTerm = QueryParser.parseDataSetId(datasetId);
 				typeQueryTerm = QueryParser.parseTypeQuery(typeQuery, context);
 				qQueryTerm = QueryParser.parseQuery(q, context);
 				csfQueryTerm = QueryParser.parseCSFQuery(csf, context);
@@ -314,7 +317,7 @@ public class QueryController {
 			if (idsOnly) {
 				return queryService.queryForEntityIds(HttpUtils.getTenant(request), ids, typeQueryTerm, idPattern,
 						attrsQuery, qQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, context, request.headers(),
-						true, join, containedBy, joinLevel, doNotCompact).onItem().transform(list -> {
+						true, join, containedBy, joinLevel, doNotCompact,dataSetIdTerm).onItem().transform(list -> {
 							String body;
 							Object result = "[]";
 							try {
@@ -340,7 +343,7 @@ public class QueryController {
 			return queryService
 					.query(HttpUtils.getTenant(request), token, tokenProvided, ids, typeQueryTerm, idPattern,
 							attrsQuery, qQueryTerm, csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit,
-							offset, count, localOnly, context, request.headers(), doNotCompact,jsonKeys)
+							offset, count, localOnly, context, request.headers(), doNotCompact,jsonKeys,dataSetIdTerm)
 					.onItem().transformToUni(queryResult -> {
 						if (doNotCompact) {
 							return Uni.createFrom().item(RestResponse.ok((Object) queryResult.getData()));

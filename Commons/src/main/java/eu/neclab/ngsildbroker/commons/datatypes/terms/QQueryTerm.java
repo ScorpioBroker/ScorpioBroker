@@ -102,17 +102,17 @@ public class QQueryTerm implements Serializable {
         return result;
     }
 
-    private Object getElemByPath(Object entity, String[] path, int index) {
+    private Object getElemByPath(Object entity, String[] path, int index, String operant) {
         if (entity == null || index >= path.length) {
             if (entity instanceof List<?> list && list.get(0) instanceof Map<?, ?> map) {
                 if (map.containsKey(NGSIConstants.NGSI_LD_HAS_VALUE)) {
-                    return getElemByPath(map, new String[]{NGSIConstants.JSON_LD_VALUE}, 0);
+                    return getElemByPath(map, new String[]{NGSIConstants.JSON_LD_VALUE}, 0, operant);
                 }
                 if (map.containsKey(NGSIConstants.NGSI_LD_HAS_OBJECT)) {
-                    return getElemByPath(map, new String[]{NGSIConstants.JSON_LD_ID}, 0);
+                    return getElemByPath(map, new String[]{NGSIConstants.JSON_LD_ID}, 0, operant);
                 }
                 if (map.containsKey(NGSIConstants.JSON_LD_VALUE)) {
-                    return getElemByPath(map.get(NGSIConstants.JSON_LD_VALUE),path,index+1);
+                    return getElemByPath(map.get(NGSIConstants.JSON_LD_VALUE),path,index+1, operant);
                 }
                 if (map.containsKey(NGSIConstants.JSON_LD_ID)) {
                     return map.get(NGSIConstants.JSON_LD_ID);
@@ -123,8 +123,11 @@ public class QQueryTerm implements Serializable {
         if (entity instanceof List<?> list) {
             Object result = null;
             for (Object item : list) {
-                Object tmpRes = getElemByPath(item, path, index);
-                if (tmpRes != null) {
+                Object tmpRes = getElemByPath(item, path, index,operant);
+                if (tmpRes != null && tmpRes.toString().replace("\"", "").equals(operant.replace("\"", ""))) {
+                    return tmpRes;
+                }
+                else if(tmpRes != null) {
                     result = tmpRes;
                 }
             }
@@ -132,7 +135,10 @@ public class QQueryTerm implements Serializable {
         } else if (entity instanceof Map) {
             Map<String, Object> map = (Map<String, Object>) entity;
             Object value;
-            if (map.containsKey(NGSIConstants.NGSI_LD_HAS_VALUE)) {
+            if(map.containsKey(path[index])){
+                value = map.get(path[index++]);
+            }
+            else if (map.containsKey(NGSIConstants.NGSI_LD_HAS_VALUE)) {
                 value = map.get(NGSIConstants.NGSI_LD_HAS_VALUE);
             }else if (map.containsKey(NGSIConstants.JSON_LD_LANGUAGE)) {
                 if(path[index].contains(map.get(NGSIConstants.JSON_LD_LANGUAGE).toString())){
@@ -142,7 +148,7 @@ public class QQueryTerm implements Serializable {
                 else value=null;
             }
             else if (map.containsKey(NGSIConstants.JSON_LD_VALUE)) {
-                return getElemByPath(map.get(NGSIConstants.JSON_LD_VALUE),path,index);
+                return getElemByPath(map.get(NGSIConstants.JSON_LD_VALUE),path,index, operant);
             } else if (map.containsKey(NGSIConstants.JSON_LD_LIST)) {
                 value = map.get(NGSIConstants.JSON_LD_LIST);
             } else if (map.containsKey(NGSIConstants.NGSI_LD_HAS_LIST)) {
@@ -162,9 +168,9 @@ public class QQueryTerm implements Serializable {
             }
             else {
                 value = map.get(path[index]);
-                return getElemByPath(value, path, index + 1);
+                return getElemByPath(value, path, index + 1, operant);
             }
-            return getElemByPath(value, path, index);
+            return getElemByPath(value, path, index, operant);
         } else {
             return entity; // If obj is neither List nor Map
         }
@@ -193,7 +199,7 @@ public class QQueryTerm implements Serializable {
                 expandedAttrib.add(expandAttributeName(attrs));
             }
         }
-        Object value = getElemByPath(entity, expandedAttrib.toArray(new String[0]), 0);
+        Object value = getElemByPath(entity, expandedAttrib.toArray(new String[0]), 0,operant);
         if (value == null) {
             return false;
         }
@@ -1070,22 +1076,22 @@ public class QQueryTerm implements Serializable {
         return dollarCount;
     }
 
-    private void addItemToTupel(Tuple tuple, String listItem, StringBuilder sql) {
-        try {
-            double tmp = Double.parseDouble(listItem);
-            sql.insert(sql.length() - 2, "TO_JSONB(");
-            sql.append(")");
-            tuple.addDouble(tmp);
-        } catch (NumberFormatException e) {
-            if (listItem.equalsIgnoreCase("true") || listItem.equalsIgnoreCase("false")) {
-                tuple.addBoolean(Boolean.parseBoolean(listItem));
-            } else {
-                if (!listItem.matches(DATETIME)) {
-                    if (listItem.charAt(0) != '"' || listItem.charAt(listItem.length() - 1) != '"') {
-                        listItem = '"' + listItem + '"';
-                    }
-                    sql.append("::text");
-                }
+	private void addItemToTupel(Tuple tuple, String listItem, StringBuilder sql) {
+		try {
+			double tmp = Double.parseDouble(listItem);
+			sql.insert(sql.lastIndexOf("$"),"TO_JSONB(");
+			sql.append(")");
+			tuple.addDouble(tmp);
+		} catch (NumberFormatException e) {
+			if (listItem.equalsIgnoreCase("true") || listItem.equalsIgnoreCase("false")) {
+				tuple.addBoolean(Boolean.parseBoolean(listItem));
+			} else {
+				if (!listItem.matches(DATETIME)) {
+					if (listItem.charAt(0) != '"' || listItem.charAt(listItem.length() - 1) != '"') {
+						listItem = '"' + listItem + '"';
+					}
+					sql.append("::text");
+				}
 
                 tuple.addString(listItem);
             }
@@ -1148,22 +1154,30 @@ public class QQueryTerm implements Serializable {
 
         if (subAttribPath == null) {
 
-            if (!current.getOperator().isEmpty()) {
-                sql.append(" CASE WHEN ");
-                sql.append(currentSqlAttrib);
-                sql.append(" #>>'{");
-                sql.append(NGSIConstants.JSON_LD_TYPE);
-                sql.append(",0}' = '");
-                sql.append(NGSIConstants.NGSI_LD_PROPERTY);
-                sql.append("' THEN EXISTS (SELECT TRUE FROM JSONB_ARRAY_ELEMENTS(");
-                sql.append(currentSqlAttrib);
-                sql.append(" ->'");
-                sql.append(NGSIConstants.NGSI_LD_HAS_VALUE);
-                sql.append("') AS mostInnerValue WHERE (mostInnerValue->'");
-                sql.append(NGSIConstants.JSON_LD_VALUE);
-                sql.append("')");
-                dollarCount = applyOperator(sql, dollarCount, tuple, false);
-                sql.append(") WHEN ");
+			if (!current.getOperator().isEmpty()) {
+				sql.append(" CASE WHEN (");
+				sql.append(currentSqlAttrib);
+				sql.append(" #>'{");
+				sql.append(NGSIConstants.JSON_LD_ID);
+				sql.append("}') ");
+				dollarCount = applyOperator(sql, dollarCount, tuple, false);
+				sql.append(" THEN true");
+
+				sql.append(" WHEN ");
+				sql.append(currentSqlAttrib);
+				sql.append(" #>>'{");
+				sql.append(NGSIConstants.JSON_LD_TYPE);
+				sql.append(",0}' = '");
+				sql.append(NGSIConstants.NGSI_LD_PROPERTY);
+				sql.append("' THEN EXISTS (SELECT TRUE FROM JSONB_ARRAY_ELEMENTS(");
+				sql.append(currentSqlAttrib);
+				sql.append(" ->'");
+				sql.append(NGSIConstants.NGSI_LD_HAS_VALUE);
+				sql.append("') AS mostInnerValue WHERE (mostInnerValue->'");
+				sql.append(NGSIConstants.JSON_LD_VALUE);
+				sql.append("')");
+				dollarCount = applyOperator(sql, dollarCount, tuple, false);
+				sql.append(") WHEN ");
 
                 sql.append(currentSqlAttrib);
                 sql.append(" #>>'{");

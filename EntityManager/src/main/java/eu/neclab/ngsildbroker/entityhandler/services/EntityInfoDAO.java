@@ -38,6 +38,7 @@ import org.slf4j.LoggerFactory;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -552,5 +553,16 @@ public class EntityInfoDAO {
 		});
 
 	}
+
+	public Uni<Map<String, Object>> mergeBatchEntity(BatchRequest request) {
+		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
+			return client.preparedQuery("SELECT * FROM MERGE_JSON_BATCH($1)")
+					.execute(Tuple.of(new JsonArray(request.getRequestPayload()))).onItem().transform(rows -> {
+						return rows.iterator().next().getJsonObject(0).getMap();
+					});
+		});
+	}
+
+
 
 }

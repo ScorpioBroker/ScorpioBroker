@@ -168,6 +168,7 @@ public interface NGSIConstants {
 	public final static String LISTPROPERTY = "ListProperty";
 	public final static String VOCABPROPERTY = "VocabProperty";
 	public final static String PROVIDED_BY = "providedBy";
+	public final static String NGSI_LD_PROVIDED_BY = "https://uri.etsi.org/ngsi-ld/default-context/providedBy";
 	public final static String NGSI_LD_SYS_ATTRS = "https://uri.etsi.org/ngsi-ld/sysAttrs";
 	public final static String NGSI_LD_LOCALONLY = "https://uri.etsi.org/ngsi-ld/localOnly";
 
@@ -368,6 +369,8 @@ public interface NGSIConstants {
 	public static final String ENDPOINT_BATCH_UPSERT = "/ngsi-ld/v1/entityOperations/upsert";
 	public static final String ENDPOINT_BATCH_DELETE = "/ngsi-ld/v1/entityOperations/delete";
 	public static final String ENDPOINT_BATCH_UPDATE = "/ngsi-ld/v1/entityOperations/update";
+
+	public static final String ENDPOINT_BATCH_MERGE = "/ngsi-ld/v1/entityOperations/merge";
 	public static final String NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT = "/ngsi-ld/v1/temporal/entities";
 	public static final String ENDPOINT_TEMPORAL_BATCH_DELETE = "/ngsi-ld/v1/temporal/entityOperations/delete";
 	public static final String ENDPOINT_TEMPORAL_CREATE_DELETE = "/ngsi-ld/v1/temporal/entityOperations/create";
@@ -396,7 +399,7 @@ public interface NGSIConstants {
 	public static final String CACHED = "cached";
 	public static final String IMPLICITLYCREATED = "implicitlycreated";
 	public static final String HOSTED = "hosted";
-	public static final String CREATEDAT = "createdat";
+	public static final String CREATEDAT = "createdAt";
 	public static final String URL = "url";
 	public static final String JSONLD_CONTEXTS = "ngsi-ld/v1/jsonldContexts/";
 	public static final String JSONLD_CONTEXT = "jsonldContext";

@@ -1754,4 +1754,145 @@ public class EntityService {
 		return false;
 	}
 
+
+	public Uni<List<NGSILDOperationResult>> mergeBatch(String tenant, List<Map<String, Object>> expandedEntities,
+														List<Context> contexts, boolean localOnly,boolean noOverWrite) {
+		Iterator<Map<String, Object>> itEntities = expandedEntities.iterator();
+		Iterator<Context> itContext = contexts.iterator();
+		Map<RemoteHost, List<Tuple2<Context, Map<String, Object>>>> remoteHost2Batch = Maps.newHashMap();
+		List<Map<String, Object>> localEntities = Lists.newArrayList();
+		while (itEntities.hasNext() && itContext.hasNext()) {
+			Map<String, Object> entity = itEntities.next();
+			Tuple2<Map<String, Object>, Collection<Tuple2<RemoteHost, Map<String, Object>>>> split = splitEntity(
+					new AppendEntityRequest(tenant, (String) entity.get(NGSIConstants.JSON_LD_ID), entity));
+			Map<String, Object> local = split.getItem1();
+			Context context = itContext.next();
+			if (local != null) {
+				local.remove(NGSIConstants.NGSI_LD_CREATED_AT);
+				localEntities.add(local);
+			} else {
+				itContext.remove();
+			}
+			Collection<Tuple2<RemoteHost, Map<String, Object>>> remotes = split.getItem2();
+			for (Tuple2<RemoteHost, Map<String, Object>> remote : remotes) {
+				List<Tuple2<Context, Map<String, Object>>> entities2Context;
+				if (remoteHost2Batch.containsKey(remote.getItem1())) {
+					entities2Context = remoteHost2Batch.get(remote.getItem1());
+				} else {
+					entities2Context = Lists.newArrayList();
+					remoteHost2Batch.put(remote.getItem1(), entities2Context);
+				}
+				entities2Context.add(Tuple2.of(context, remote.getItem2()));
+			}
+		}
+
+		List<Uni<List<NGSILDOperationResult>>> unis = new ArrayList<>();
+				if (!localOnly) {
+			for (Entry<RemoteHost, List<Tuple2<Context, Map<String, Object>>>> entry : remoteHost2Batch.entrySet()) {
+				RemoteHost remoteHost = entry.getKey();
+				List<Tuple2<Context, Map<String, Object>>> tuples = entry.getValue();
+				List<Uni<Map<String, Object>>> compactedUnis = Lists.newArrayList();
+				for (Tuple2<Context, Map<String, Object>> tuple : tuples) {
+					Map<String, Object> expanded = tuple.getItem2();
+					Context context = tuple.getItem1();
+					compactedUnis.add(jsonLdService.compact(expanded, null, context, AppConstants.opts, -1));
+				}
+				if (remoteHost.canDoBatchOp()) {
+					unis.add(Uni.combine().all().unis(compactedUnis).combinedWith(list -> {
+						List<Map<String, Object>> toSend = Lists.newArrayList();
+						for (Object obj : list) {
+							toSend.add((Map<String, Object>) obj);
+						}
+						return toSend;
+					}).onItem().transformToUni(toSend -> {
+						return webClient.postAbs(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_MERGE)
+								.putHeaders(remoteHost.headers()).sendJson(new JsonArray(toSend)).onItemOrFailure()
+								.transform((response, failure) -> {
+									return handleBatchResponse(response, failure, remoteHost, toSend,
+											ArrayUtils.toArray(204));
+								});
+					}));
+				} else {
+					List<Uni<NGSILDOperationResult>> singleUnis = new ArrayList<>();
+					for (Uni<Map<String, Object>> compactedUni : compactedUnis) {
+						singleUnis.add(compactedUni.onItem().transformToUni(entity -> {
+							return webClient
+									.postAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/"
+											+ entity.get(NGSIConstants.JSON_LD_ID) + "/"
+											+ NGSIConstants.QUERY_PARAMETER_ATTRS)
+									.putHeaders(remoteHost.headers()).sendJsonObject(new JsonObject(entity))
+									.onItemOrFailure().transform((response, failure) -> {
+										return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(201),
+												remoteHost, AppConstants.MERGE_PATCH_REQUEST,
+												(String) entity.get(NGSIConstants.JSON_LD_ID),
+												HttpUtils.getAttribsFromCompactedPayload(entity));
+									});
+						}));
+					}
+					unis.add(Uni.combine().all().unis(singleUnis).combinedWith(list -> {
+						List<NGSILDOperationResult> result = Lists.newArrayList();
+						list.forEach(obj -> result.add((NGSILDOperationResult) obj));
+						return result;
+					}));
+				}
+			}
+		}
+		if (!localEntities.isEmpty()) {
+			BatchRequest request = new BatchRequest(tenant, localEntities, contexts, AppConstants.MERGE_PATCH_REQUEST);
+			request.setNoOverwrite(noOverWrite);
+			if (!unis.isEmpty() && isDifferentRemoteQueryAvailable(request, remoteHost2Batch)) {
+				request.setDistributed(true);
+			} else {
+				request.setDistributed(false);
+			}
+			Uni<List<NGSILDOperationResult>> local = entityDAO.mergeBatchEntity(request).onItem()
+					.transform(dbResult -> {
+						List<NGSILDOperationResult> result = Lists.newArrayList();
+						List<Map<String, Object>> successes = (List<Map<String, Object>>) dbResult.get("success");
+						List<Map<String, String>> fails = (List<Map<String, String>>) dbResult.get("failure");
+						for (Map<String, Object> success : successes) {
+							String entityId = (String) success.get("id");
+							NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.MERGE_PATCH_REQUEST,
+									entityId);
+							opResult.addSuccess(new CRUDSuccess(null, null, null, Sets.newHashSet()));
+							result.add(opResult);
+						}
+						for (Map<String, String> fail : fails) {
+							fail.entrySet().forEach(entry -> {
+								String entityId = entry.getKey();
+								String sqlstate = entry.getValue();
+								request.removeFromPayloadAndContext(entityId);
+								NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.MERGE_PATCH_REQUEST,
+										entityId);
+								if (sqlstate.equals(AppConstants.SQL_NOT_FOUND)) {
+									opResult.addFailure(new ResponseException(ErrorType.NotFound, entityId));
+								} else {
+									opResult.addFailure(new ResponseException(ErrorType.InvalidRequest, sqlstate));
+								}
+								result.add(opResult);
+							});
+
+						}
+						if (!request.getRequestPayload().isEmpty()) {
+							logger.debug("Append batch request sending to kafka " + request.getEntityIds());
+							MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, batchEmitter,
+									objectMapper);
+						}
+						return result;
+					});
+
+			unis.add(0, local);
+		}
+		if (unis.isEmpty()) {
+			return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
+		}
+		return Uni.combine().all().unis(unis).combinedWith(resultLists -> {
+			List<NGSILDOperationResult> result = Lists.newArrayList();
+			resultLists.forEach(resultList -> {
+				result.addAll((List<NGSILDOperationResult>) resultList);
+			});
+			return result;
+		});
+	}
+
 }

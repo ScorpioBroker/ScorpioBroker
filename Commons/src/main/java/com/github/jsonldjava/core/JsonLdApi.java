@@ -1005,11 +1005,10 @@ public class JsonLdApi {
 							// compacted version and should not be expanded
 							// expandedValue = activeCtx.expandIri((String) value, true, false, null, null);
 
-							expandedValue = value;
-
-							if (((String) expandedValue).indexOf(':') == -1 && !ngsiElement.isFromHasValue()) {
+							if (!((String) value).contains(":") && !ngsiElement.isFromHasValue()) {
 								throw new ResponseException(ErrorType.BadRequestData, "IDs need to be URIs");
 							}
+							expandedValue = activeCtx.expandIri((String) value, true, false, null, null);
 
 							// NGSICOMMENT: LD at the moment has no scenario where ids are arrays if this
 							// changes this needs to be updated
