@@ -67,6 +67,12 @@
 					<name>sqs</name>
 				</property>
 			</activation>
+			<dependencies>
+				<dependency>
+					<groupId>eu.neclab.ngsildbroker</groupId>
+					<artifactId>sns-fanout-messaging</artifactId>
+				</dependency>
+			</dependencies>
 			<build>
 				<plugins>
 					<plugin>
