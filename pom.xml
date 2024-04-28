@@ -1,28 +1,27 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
-	<modelVersion>4.0.0</modelVersion>
-	<artifactId>ScorpioBroker</artifactId>
-	<packaging>pom</packaging>
-	<parent>
-		<artifactId>broker-parent</artifactId>
-		<groupId>eu.neclab.ngsildbroker</groupId>
-		<version>4.1.15-SNAPSHOT</version>
-		<relativePath>./BrokerParent</relativePath>
-	</parent>
-	<modules>
-		<module>BrokerParent</module>
-		<module>Commons</module>
-		<module>at-context-server</module>
-		<module>EntityManager</module>
-		<module>QueryManager</module>
-		<module>SubscriptionManager</module>
-		<module>RegistryManager</module>
-		<module>RegistrySubscriptionManager</module>
-		<module>HistoryEntityManager</module>
-		<module>HistoryQueryManager</module>
-		<module>AllInOneRunner</module>
-	</modules>
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>ScorpioBroker</artifactId>
+  <packaging>pom</packaging>
+  <parent>
+    <artifactId>broker-parent</artifactId>
+    <groupId>eu.neclab.ngsildbroker</groupId>
+    <version>4.1.15-SNAPSHOT</version>
+    <relativePath>./BrokerParent</relativePath>
+  </parent>
+  <modules>
+    <module>BrokerParent</module>
+    <module>Commons</module>
+    <module>at-context-server</module>
+    <module>EntityManager</module>
+    <module>QueryManager</module>
+    <module>SubscriptionManager</module>
+    <module>RegistryManager</module>
+    <module>RegistrySubscriptionManager</module>
+    <module>HistoryEntityManager</module>
+    <module>HistoryQueryManager</module>
+    <module>AllInOneRunner</module>
+    <module>SnsFanoutMessaging</module>
+  </modules>
 </project>
