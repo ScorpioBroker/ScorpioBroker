@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "f9dfe42f-f16f-4fea-a1db-ccccd0372219",
+		"_postman_id": "741657fb-683a-4132-baba-ac3c2c66f81b",
 		"name": "API Test",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "27293663"
@@ -32064,18 +32064,19 @@
 																	"pm.test(\"Validate content\", function () {\r",
 																	"   responseBody = pm.response.json()[0];\r",
 																	"   console.log(responseBody);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"sumsq\"][0][0]).to.eql(14681.0);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"distinctCount\"][0][0]).to.eql(2);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"min\"][0][0]).to.eql(80);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"avg\"][0][0]).to.eql(85.5);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"max\"][0][0]).to.eql(91);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"sum\"][0][0]).to.eql(171);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"stddev\"][0][0]).to.eql(7.7781745930520225);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"totalCount\"][0][0]).to.eql(2);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"sumsq\"][0][0]).to.eql(14681.0);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"distinctCount\"][0][0]).to.eql(2);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"min\"][0][0]).to.eql(80);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"avg\"][0][0]).to.eql(85.5);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"max\"][0][0]).to.eql(91);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"sum\"][0][0]).to.eql(171);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"stddev\"][0][0]).to.eql(7.7781745930520225);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"totalCount\"][0][0]).to.eql(2);\r",
 																	"\r",
 																	"});"
 																],
-																"type": "text/javascript"
+																"type": "text/javascript",
+																"packages": {}
 															}
 														}
 													],
@@ -32134,26 +32135,27 @@
 																	"pm.test(\"Validate content\", function () {\r",
 																	"   responseBody = pm.response.json()[0];\r",
 																	"   console.log(responseBody);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"sumsq\"][0][0]).to.eql(14681.0);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"distinctCount\"][0][0]).to.eql(2);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"min\"][0][0]).to.eql(80);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"avg\"][0][0]).to.eql(85.5);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"max\"][0][0]).to.eql(91);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"sum\"][0][0]).to.eql(171);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"stddev\"][0][0]).to.eql(7.7781745930520225);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"totalCount\"][0][0]).to.eql(2);\r",
-																	"   pm.expect(responseBody[\"speed2\"][\"sumsq\"][0][0]).to.eql(14681.0);\r",
-																	"   pm.expect(responseBody[\"speed2\"][\"distinctCount\"][0][0]).to.eql(2);\r",
-																	"   pm.expect(responseBody[\"speed2\"][\"min\"][0][0]).to.eql(80);\r",
-																	"   pm.expect(responseBody[\"speed2\"][\"avg\"][0][0]).to.eql(85.5);\r",
-																	"   pm.expect(responseBody[\"speed2\"][\"max\"][0][0]).to.eql(91);\r",
-																	"   pm.expect(responseBody[\"speed2\"][\"sum\"][0][0]).to.eql(171);\r",
-																	"   pm.expect(responseBody[\"speed2\"][\"stddev\"][0][0]).to.eql(7.7781745930520225);\r",
-																	"   pm.expect(responseBody[\"speed2\"][\"totalCount\"][0][0]).to.eql(2);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"sumsq\"][0][0]).to.eql(14681.0);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"distinctCount\"][0][0]).to.eql(2);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"min\"][0][0]).to.eql(80);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"avg\"][0][0]).to.eql(85.5);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"max\"][0][0]).to.eql(91);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"sum\"][0][0]).to.eql(171);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"stddev\"][0][0]).to.eql(7.7781745930520225);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"totalCount\"][0][0]).to.eql(2);\r",
+																	"   pm.expect(responseBody[\"speed2\"][0][\"sumsq\"][0][0]).to.eql(14681.0);\r",
+																	"   pm.expect(responseBody[\"speed2\"][0][\"distinctCount\"][0][0]).to.eql(2);\r",
+																	"   pm.expect(responseBody[\"speed2\"][0][\"min\"][0][0]).to.eql(80);\r",
+																	"   pm.expect(responseBody[\"speed2\"][0][\"avg\"][0][0]).to.eql(85.5);\r",
+																	"   pm.expect(responseBody[\"speed2\"][0][\"max\"][0][0]).to.eql(91);\r",
+																	"   pm.expect(responseBody[\"speed2\"][0][\"sum\"][0][0]).to.eql(171);\r",
+																	"   pm.expect(responseBody[\"speed2\"][0][\"stddev\"][0][0]).to.eql(7.7781745930520225);\r",
+																	"   pm.expect(responseBody[\"speed2\"][0][\"totalCount\"][0][0]).to.eql(2);\r",
 																	"\r",
 																	"});"
 																],
-																"type": "text/javascript"
+																"type": "text/javascript",
+																"packages": {}
 															}
 														}
 													],
@@ -32212,26 +32214,27 @@
 																	"pm.test(\"Validate content\", function () {\r",
 																	"   responseBody = pm.response.json()[0];\r",
 																	"   console.log(responseBody);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"sumsq\"][0][0]).to.eql(6400.0);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"distinctCount\"][0][0]).to.eql(1);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"min\"][0][0]).to.eql(80);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"avg\"][0][0]).to.eql(80);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"max\"][0][0]).to.eql(80);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"sum\"][0][0]).to.eql(80);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"sumsq\"][0][0]).to.eql(6400.0);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"distinctCount\"][0][0]).to.eql(1);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"min\"][0][0]).to.eql(80);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"avg\"][0][0]).to.eql(80);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"max\"][0][0]).to.eql(80);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"sum\"][0][0]).to.eql(80);\r",
 																	"   //pm.expect(responseBody[\"speed\"][\"stddev\"][0][0]).to.eql(7.7781745930520225);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"totalCount\"][0][0]).to.eql(1);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"sumsq\"][1][0]).to.eql(8281.0);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"distinctCount\"][1][0]).to.eql(1);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"min\"][1][0]).to.eql(91);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"avg\"][1][0]).to.eql(91);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"max\"][1][0]).to.eql(91);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"sum\"][1][0]).to.eql(91);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"totalCount\"][0][0]).to.eql(1);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"sumsq\"][1][0]).to.eql(8281.0);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"distinctCount\"][1][0]).to.eql(1);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"min\"][1][0]).to.eql(91);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"avg\"][1][0]).to.eql(91);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"max\"][1][0]).to.eql(91);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"sum\"][1][0]).to.eql(91);\r",
 																	"   //pm.expect(responseBody[\"speed\"][\"stddev\"][0][0]).to.eql(7.7781745930520225);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"totalCount\"][1][0]).to.eql(1);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"totalCount\"][1][0]).to.eql(1);\r",
 																	"\r",
 																	"});"
 																],
-																"type": "text/javascript"
+																"type": "text/javascript",
+																"packages": {}
 															}
 														}
 													],
@@ -32291,19 +32294,20 @@
 																	"   responseBody = pm.response.json()[0];\r",
 																	"   console.log(responseBody);\r",
 																	"   \r",
-																	"   pm.expect(responseBody[\"speed\"][\"sumsq\"][0][0]).to.eql(8281.0);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"distinctCount\"][0][0]).to.eql(1);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"min\"][0][0]).to.eql(91);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"avg\"][0][0]).to.eql(91);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"max\"][0][0]).to.eql(91);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"sum\"][0][0]).to.eql(91);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"sumsq\"][0][0]).to.eql(8281.0);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"distinctCount\"][0][0]).to.eql(1);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"min\"][0][0]).to.eql(91);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"avg\"][0][0]).to.eql(91);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"max\"][0][0]).to.eql(91);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"sum\"][0][0]).to.eql(91);\r",
 																	"   //No STDDEV for one entry\r",
 																	"   //pm.expect(responseBody[\"speed\"][\"stddev\"][0][0]).to.eql(7.7781745930520225);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"totalCount\"][0][0]).to.eql(1);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"totalCount\"][0][0]).to.eql(1);\r",
 																	"\r",
 																	"});"
 																],
-																"type": "text/javascript"
+																"type": "text/javascript",
+																"packages": {}
 															}
 														}
 													],
@@ -32371,18 +32375,19 @@
 																	"   responseBody = pm.response.json()[0];\r",
 																	"   console.log(responseBody);\r",
 																	"   \r",
-																	"   pm.expect(responseBody[\"speed\"][\"sumsq\"][0][0]).to.eql(6400.0);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"distinctCount\"][0][0]).to.eql(1);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"min\"][0][0]).to.eql(80);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"avg\"][0][0]).to.eql(80);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"max\"][0][0]).to.eql(80);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"sum\"][0][0]).to.eql(80);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"sumsq\"][0][0]).to.eql(6400.0);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"distinctCount\"][0][0]).to.eql(1);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"min\"][0][0]).to.eql(80);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"avg\"][0][0]).to.eql(80);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"max\"][0][0]).to.eql(80);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"sum\"][0][0]).to.eql(80);\r",
 																	"   //pm.expect(responseBody[\"speed\"][\"stddev\"][0][0]).to.eql(7.7781745930520225);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"totalCount\"][0][0]).to.eql(1);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"totalCount\"][0][0]).to.eql(1);\r",
 																	"\r",
 																	"});"
 																],
-																"type": "text/javascript"
+																"type": "text/javascript",
+																"packages": {}
 															}
 														}
 													],
@@ -32450,18 +32455,19 @@
 																	"   responseBody = pm.response.json()[0];\r",
 																	"   console.log(responseBody);\r",
 																	"   \r",
-																	"   pm.expect(responseBody[\"speed\"][\"sumsq\"][0][0]).to.eql(6400.0);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"distinctCount\"][0][0]).to.eql(1);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"min\"][0][0]).to.eql(80);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"avg\"][0][0]).to.eql(80);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"max\"][0][0]).to.eql(80);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"sum\"][0][0]).to.eql(80);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"sumsq\"][0][0]).to.eql(6400.0);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"distinctCount\"][0][0]).to.eql(1);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"min\"][0][0]).to.eql(80);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"avg\"][0][0]).to.eql(80);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"max\"][0][0]).to.eql(80);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"sum\"][0][0]).to.eql(80);\r",
 																	"   //pm.expect(responseBody[\"speed\"][\"stddev\"][0][0]).to.eql(7.7781745930520225);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"totalCount\"][0][0]).to.eql(1);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"totalCount\"][0][0]).to.eql(1);\r",
 																	"\r",
 																	"});"
 																],
-																"type": "text/javascript"
+																"type": "text/javascript",
+																"packages": {}
 															}
 														}
 													],
@@ -32537,14 +32543,15 @@
 																	"pm.test(\"Validate content\", function () {\r",
 																	"   responseBody = pm.response.json()[0];\r",
 																	"   console.log(responseBody);\r",
-																	"   pm.expect(responseBody[\"brandName\"][\"value\"]).to.eql(\"Mercedes\");\r",
+																	"   pm.expect(responseBody[\"brandName\"][0][\"value\"]).to.eql(\"Mercedes\");\r",
 																	"   pm.expect(responseBody[\"speed\"][0][\"value\"]).to.eql(91);\r",
 																	"   pm.expect(responseBody[\"speed\"][1][\"value\"]).to.eql(80);\r",
 																	"   pm.expect(responseBody[\"speed2\"][0][\"value\"]).to.eql(91);\r",
 																	"   pm.expect(responseBody[\"speed2\"][1][\"value\"]).to.eql(80);\r",
 																	"});"
 																],
-																"type": "text/javascript"
+																"type": "text/javascript",
+																"packages": {}
 															}
 														}
 													],
@@ -32605,14 +32612,15 @@
 																	"pm.test(\"Validate content\", function () {\r",
 																	"   responseBody = pm.response.json()[0];\r",
 																	"   console.log(responseBody);\r",
-																	"    pm.expect(responseBody[\"brandName\"][\"value\"]).to.eql(\"Mercedes\");\r",
-																	"   pm.expect(responseBody[\"speed\"][\"value\"]).to.eql(91);\r",
+																	"    pm.expect(responseBody[\"brandName\"][0][\"value\"]).to.eql(\"Mercedes\");\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"value\"]).to.eql(91);\r",
 																	"   pm.expect(responseBody).to.not.have.property(\"speed2\");\r",
 																	"   \r",
 																	"\r",
 																	"});"
 																],
-																"type": "text/javascript"
+																"type": "text/javascript",
+																"packages": {}
 															}
 														}
 													],
@@ -32681,7 +32689,7 @@
 																	"pm.test(\"Validate content\", function () {\r",
 																	"   responseBody = pm.response.json()[0];\r",
 																	"   console.log(responseBody);\r",
-																	"    pm.expect(responseBody[\"brandName\"][\"value\"]).to.eql(\"Mercedes\");\r",
+																	"    pm.expect(responseBody[\"brandName\"][0][\"value\"]).to.eql(\"Mercedes\");\r",
 																	"   pm.expect(responseBody[\"speed\"][0][\"value\"]).to.eql(91);\r",
 																	"   pm.expect(responseBody[\"speed\"][1][\"value\"]).to.eql(80);\r",
 																	"   pm.expect(responseBody[\"speed2\"][0][\"value\"]).to.eql(91);\r",
@@ -32690,7 +32698,8 @@
 																	"\r",
 																	"});"
 																],
-																"type": "text/javascript"
+																"type": "text/javascript",
+																"packages": {}
 															}
 														}
 													],
@@ -32763,14 +32772,15 @@
 																	"pm.test(\"Validate content\", function () {\r",
 																	"   responseBody = pm.response.json()[0];\r",
 																	"   console.log(responseBody);\r",
-																	"   pm.expect(responseBody[\"speed\"][\"value\"]).to.eql(80);\r",
+																	"   pm.expect(responseBody[\"speed\"][0][\"value\"]).to.eql(80);\r",
 																	"   pm.expect(responseBody).to.not.have.property(\"speed2\");\r",
 																	"   pm.expect(responseBody).to.not.have.property(\"Mercedes\");\r",
 																	"   \r",
 																	"\r",
 																	"});"
 																],
-																"type": "text/javascript"
+																"type": "text/javascript",
+																"packages": {}
 															}
 														}
 													],
@@ -32839,7 +32849,7 @@
 																	"pm.test(\"Validate content\", function () {\r",
 																	"   responseBody = pm.response.json()[0];\r",
 																	"   console.log(responseBody);\r",
-																	"    pm.expect(responseBody[\"brandName\"][\"value\"]).to.eql(\"Mercedes\");\r",
+																	"    pm.expect(responseBody[\"brandName\"][0][\"value\"]).to.eql(\"Mercedes\");\r",
 																	"   pm.expect(responseBody[\"speed\"][0][\"value\"]).to.eql(91);\r",
 																	"   pm.expect(responseBody[\"speed\"][1][\"value\"]).to.eql(80);\r",
 																	"   pm.expect(responseBody).to.not.have.property(\"speed2\");\r",
@@ -32847,7 +32857,8 @@
 																	"\r",
 																	"});"
 																],
-																"type": "text/javascript"
+																"type": "text/javascript",
+																"packages": {}
 															}
 														}
 													],
@@ -58714,23 +58725,15 @@
 	],
 	"variable": [
 		{
-			"key": "createdTBF",
+			"key": "created",
 			"value": ""
 		},
 		{
-			"key": "entityIdTBF",
+			"key": "entityId",
 			"value": ""
 		},
 		{
-			"key": "entityTypeTBF",
-			"value": ""
-		},
-		{
-			"key": "createdTBNF",
-			"value": ""
-		},
-		{
-			"key": "entityIdTBNF",
+			"key": "@context",
 			"value": ""
 		}
 	],

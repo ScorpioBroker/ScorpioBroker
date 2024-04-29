@@ -476,10 +476,14 @@ public final class HttpUtils {
 		}
 		return result;
 	}
-
 	public static Uni<RestResponse<Object>> generateEntityResult(List<Object> contextHeader, Context context,
 																 int acceptHeader, Object entity, String geometryProperty, String options, LanguageQueryTerm langQuery,
 																 JsonLDService ldService,List<String> omitList,List<String> pickList) {
+		return generateEntityResult(contextHeader, context,acceptHeader, entity, geometryProperty, options, langQuery, ldService,omitList, pickList, false);
+	}
+	public static Uni<RestResponse<Object>> generateEntityResult(List<Object> contextHeader, Context context,
+																 int acceptHeader, Object entity, String geometryProperty, String options, LanguageQueryTerm langQuery,
+																 JsonLDService ldService,List<String> omitList,List<String> pickList,boolean forceList) {
 		return generateCompactedResult(contextHeader, context, acceptHeader, entity, geometryProperty, options,
 				langQuery, false, ldService).onItem().transform(resultBodyAndHeaders -> {
 			ResponseBuilder<Object> resp = RestResponseBuilderImpl.ok();
@@ -487,7 +491,11 @@ public final class HttpUtils {
 			for (Tuple2<String, String> entry : headers) {
 				resp = resp.header(entry.getItem1(), entry.getItem2());
 			}
-			return resp.entity(processPickOmit(resultBodyAndHeaders.getItem1(),pickList,omitList)).build();
+			Object result = processPickOmit(resultBodyAndHeaders.getItem1(),pickList,omitList);
+			if (forceList){
+				forceList(result);
+			}
+			return resp.entity(result).build();
 		});
 	}
 	public static Object processPickOmit(Object object,List<String> pickList, List<String> omitList){
@@ -957,10 +965,14 @@ public final class HttpUtils {
 			default -> null;
 		};
 	}
-
 	public static Uni<RestResponse<Object>> generateQueryResult(HttpServerRequest request, QueryResult queryResult,
 																String options, String geometryProperty, int acceptHeader, boolean count, int limit, LanguageQueryTerm lang,
 																Context context, JsonLDService ldService,List<String> omitList,List<String> pickList) {
+		return generateQueryResult(request,queryResult, options, geometryProperty, acceptHeader, count, limit, lang, context, ldService, omitList, pickList,false);
+	}
+	public static Uni<RestResponse<Object>> generateQueryResult(HttpServerRequest request, QueryResult queryResult,
+																String options, String geometryProperty, int acceptHeader, boolean count, int limit, LanguageQueryTerm lang,
+																Context context, JsonLDService ldService,List<String> omitList,List<String> pickList,boolean forceList) {
 		ResponseBuilder<Object> builder;
 		if (count) {
 			builder = RestResponseBuilderImpl.ok().header(NGSIConstants.COUNT_HEADER_RESULT, queryResult.getCount());
@@ -996,11 +1008,35 @@ public final class HttpUtils {
 			for (Tuple2<String, String> entry : headers) {
 				myBuilder = myBuilder.header(entry.getItem1(), entry.getItem2());
 			}
-			return myBuilder.entity(processPickOmit(resultAndHeaders.getItem1(),pickList,omitList)).build();
+			Object result = processPickOmit(resultAndHeaders.getItem1(),pickList,omitList);
+			if(forceList){
+				forceList(result);
+			}
+			return myBuilder.entity(result).build();
 		});
 
 	}
+	public static void forceList(Object object){
+		if(object instanceof JsonArray jsonArray){
+			jsonArray.forEach(item -> {
+				if (item instanceof JsonObject jsonObject){
+					makeList(jsonObject);
+				}
+			});
+		}
+		else if (object instanceof JsonObject jsonObject) {
+			makeList(jsonObject);
+		}
+	}
+	public static void makeList(JsonObject jsonObject){
 
+		for(String key: jsonObject.fieldNames()){
+			if(!key.equals(NGSIConstants.JSON_LD_CONTEXT) && !key.equals(NGSIConstants.ID) && !key.equals(NGSIConstants.TYPE) && !key.equals(NGSIConstants.CREATEDAT) && !key.equals(NGSIConstants.QUERY_PARAMETER_MODIFIED_AT) && !key.equals(NGSIConstants.SCOPE) && !((jsonObject.getValue(key) instanceof List) || (jsonObject.getValue(key) instanceof JsonArray))){
+				Object tmp = jsonObject.getValue(key);
+				jsonObject.put(key, JsonArray.of(tmp));
+			}
+		}
+	}
 	public static NGSILDOperationResult handleWebResponse(HttpResponse<Buffer> response, Throwable failure,
 														  Integer[] integers, RemoteHost remoteHost, int operationType, String entityId, Set<Attrib> attrs) {
 
