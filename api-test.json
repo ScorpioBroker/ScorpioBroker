@@ -18607,11 +18607,8 @@
 													"listen": "test",
 													"script": {
 														"exec": [
-															" \r",
-															" \r",
-															"  \r",
-															"console.log(pm.response.json().url);\r",
-															"var urlOne = pm.response.json().url;\r",
+															"console.log(pm.response.toJSON().header.find(headerItem => headerItem.key === \"Location\").value);\r",
+															"var urlOne = pm.response.toJSON().header.find(headerItem => headerItem.key === \"Location\").value;\r",
 															"pm.collectionVariables.set(\"urlOne\", urlOne);\r",
 															"pm.test(\"Status code is 201\", function () {\r",
 															"    pm.response.to.have.status(201);\r",
@@ -18622,7 +18619,8 @@
 															"\r",
 															""
 														],
-														"type": "text/javascript"
+														"type": "text/javascript",
+														"packages": {}
 													}
 												},
 												{
@@ -18631,7 +18629,8 @@
 														"exec": [
 															""
 														],
-														"type": "text/javascript"
+														"type": "text/javascript",
+														"packages": {}
 													}
 												}
 											],
@@ -18680,8 +18679,8 @@
 													"listen": "test",
 													"script": {
 														"exec": [
-															" console.log(pm.response.json().url);\r",
-															"var urlTwo = pm.response.json().url;\r",
+															"console.log(pm.response.toJSON().header.find(headerItem => headerItem.key === \"Location\").value);\r",
+															"var urlTwo = pm.response.toJSON().header.find(headerItem => headerItem.key === \"Location\").value;\r",
 															"pm.collectionVariables.set(\"urlTwo\", urlTwo);\r",
 															"pm.test(\"Status code is 201\", function () {\r",
 															"    pm.response.to.have.status(201);\r",
@@ -18692,7 +18691,8 @@
 															"\r",
 															""
 														],
-														"type": "text/javascript"
+														"type": "text/javascript",
+														"packages": {}
 													}
 												},
 												{
@@ -18701,7 +18701,8 @@
 														"exec": [
 															""
 														],
-														"type": "text/javascript"
+														"type": "text/javascript",
+														"packages": {}
 													}
 												}
 											],
@@ -28895,11 +28896,8 @@
 															"listen": "test",
 															"script": {
 																"exec": [
-																	" \r",
-																	" \r",
-																	"  \r",
-																	"console.log(pm.response.json().url);\r",
-																	"var urlOne = pm.response.json().url;\r",
+																	"console.log(pm.response.toJSON().header.find(headerItem => headerItem.key === \"Location\").value);\r",
+																	"var urlOne = pm.response.toJSON().header.find(headerItem => headerItem.key === \"Location\").value;\r",
 																	"pm.collectionVariables.set(\"urlOne\", urlOne);\r",
 																	"pm.test(\"Status code is 201\", function () {\r",
 																	"    pm.response.to.have.status(201);\r",
@@ -28910,7 +28908,8 @@
 																	"\r",
 																	""
 																],
-																"type": "text/javascript"
+																"type": "text/javascript",
+																"packages": {}
 															}
 														},
 														{
@@ -28919,7 +28918,8 @@
 																"exec": [
 																	""
 																],
-																"type": "text/javascript"
+																"type": "text/javascript",
+																"packages": {}
 															}
 														}
 													],
@@ -28968,8 +28968,8 @@
 															"listen": "test",
 															"script": {
 																"exec": [
-																	" console.log(pm.response.json().url);\r",
-																	"var urlTwo = pm.response.json().url;\r",
+																	" console.log(pm.response.toJSON().header.find(headerItem => headerItem.key === \"Location\").value);\r",
+																	"var urlTwo = pm.response.toJSON().header.find(headerItem => headerItem.key === \"Location\").value;\r",
 																	"pm.collectionVariables.set(\"urlTwo\", urlTwo);\r",
 																	"pm.test(\"Status code is 201\", function () {\r",
 																	"    pm.response.to.have.status(201);\r",
@@ -28980,7 +28980,8 @@
 																	"\r",
 																	""
 																],
-																"type": "text/javascript"
+																"type": "text/javascript",
+																"packages": {}
 															}
 														},
 														{
@@ -28989,7 +28990,8 @@
 																"exec": [
 																	""
 																],
-																"type": "text/javascript"
+																"type": "text/javascript",
+																"packages": {}
 															}
 														}
 													],
@@ -58729,6 +58731,28 @@
 		},
 		{
 			"key": "entityIdTBNF",
+			"value": ""
+		}
+	],
+	"variable": [
+		{
+			"key": "created",
+			"value": ""
+		},
+		{
+			"key": "entityId",
+			"value": ""
+		},
+		{
+			"key": "@context",
+			"value": ""
+		},
+		{
+			"key": "subId",
+			"value": ""
+		},
+		{
+			"key": "urlOne",
 			"value": ""
 		}
 	]

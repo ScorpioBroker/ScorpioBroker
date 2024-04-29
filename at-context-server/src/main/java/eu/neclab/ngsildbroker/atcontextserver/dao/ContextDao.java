@@ -1,13 +1,17 @@
 package eu.neclab.ngsildbroker.atcontextserver.dao;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -39,23 +43,27 @@ public class ContextDao {
 	}
 	String atContextUrl;
 	public Uni<RestResponse<Object>> getById(String id, Boolean details) {
-		String sql;
-		if (details) {
-			sql = "SELECT * FROM public.contexts WHERE id=$1";
-		} else {
-			sql = "SELECT body FROM public.contexts WHERE id=$1";
-		}
+		String sql = """
+                with a as(select * from contexts WHERE id=$1)
+                update contexts set lastusage = now(), numberofhits = numberofhits+1 WHERE id=$1 returning (select to_jsonb(a) from a)""";
 		return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
 			return client.preparedQuery(sql).execute(Tuple.of(id)).onItem().transformToUni(rows -> {
 				if (rows.size() > 0) {
 					Row row = rows.iterator().next();
-					Map<String, Object> map = row.toJson().getMap();
+					Map<String,Object> rawData = row.getJsonObject(0).getMap();
+					Map<String, Object> result = new HashMap<>();
 					if (details) {
-						map.put(row.getColumnName(1), ((JsonObject) map.get(row.getColumnName(1))).getMap());
-						map.put("url", atContextUrl + map.get("id"));
-						return Uni.createFrom().item(RestResponse.ok(map));
+						result.put(NGSIConstants.LOCAL_ID, rawData.get(NGSIConstants.ID));
+						result.put(NGSIConstants.KIND, rawData.get(NGSIConstants.KIND));
+						result.put(NGSIConstants.NUMBER_OF_HITS, rawData.get(NGSIConstants.NUMBER_OF_HITS.toLowerCase()));
+						result.put(NGSIConstants.LAST_USAGE, rawData.get(NGSIConstants.LAST_USAGE.toLowerCase()));
+						result.put(NGSIConstants.URL, atContextUrl
+								+ URLEncoder.encode(rawData.get(NGSIConstants.ID).toString(), StandardCharsets.UTF_8));
+						result.put(NGSIConstants.BODY,rawData.get(NGSIConstants.BODY));
+						result.put(NGSIConstants.CREATEDAT,rawData.get(NGSIConstants.CREATEDAT.toLowerCase()));
+						return Uni.createFrom().item(RestResponse.ok(result));
 					} else
-						return Uni.createFrom().item(RestResponse.ok(row.getJson("body")));
+						return Uni.createFrom().item(RestResponse.ok(rawData.get(NGSIConstants.BODY)));
 
 				} else
 					return Uni.createFrom().item(RestResponse.notFound());
@@ -64,17 +72,21 @@ public class ContextDao {
 	}
 
 	public Uni<RestResponse<Object>> hostContext(Map<String, Object> payload) {
-		String sql = "INSERT INTO public.contexts (id, body, kind) values($1, $2, 'hosted') returning id";
+		String sql = "INSERT INTO public.contexts (id, body, kind) values($1, $2, 'Hosted') returning id";
 		return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
 			return client.preparedQuery(sql).execute(Tuple.of("urn:" + UUID.randomUUID(), new JsonObject(payload)))
 					.onItem().transformToUni(rows -> {
 						if (rows.size() > 0) {
-							return Uni.createFrom()
-									.item(RestResponseBuilderImpl.create(201)
-											.entity(new JsonObject("{\"url\":\"" + atContextUrl
-													+ rows.iterator().next().getString(0) + "\"}"))
-											.build());
-						} else
+                            try {
+                                return Uni.createFrom()
+                                        .item(RestResponseBuilderImpl.create(201)
+                                                .location(new URI(atContextUrl
+                                                        + rows.iterator().next().getString(0)))
+                                                .build());
+                            } catch (URISyntaxException e) {
+                                throw new RuntimeException(e);
+                            }
+                        } else
 							return Uni.createFrom().failure(new Throwable("Server Error"));
 					});
 		});
@@ -95,28 +107,29 @@ public class ContextDao {
 
 	public Uni<List<Object>> getAllContexts(String kind, Boolean details) {
 		StringBuilder sql = new StringBuilder();
-		if (details) {
-			sql.append("Select * from public.contexts ");
-		} else {
-			sql.append("Select id from public.contexts ");
-		}
+		sql.append("Select * from public.contexts ");
 		if (kind != null) {
 			sql.append("where kind='%s'".formatted(kind.toLowerCase()));
 		}
 		List<Object> contexts = new ArrayList<>();
 		return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
 			return client.preparedQuery(sql.toString()).execute().onItem().transform(rows -> {
-				rows.forEach(i -> {
-					Map<String, Object> map = i.toJson().getMap();
+				rows.forEach(row -> {
+					Map<String, Object> result = new HashMap<>();
 
 					if (details) {
-						map.put(i.getColumnName(1), ((JsonObject) map.get(i.getColumnName(1))).getMap());
-						map.put("url", atContextUrl
-								+ URLEncoder.encode(map.get("id").toString(), StandardCharsets.UTF_8));
-						contexts.add(map);
+						result.put(NGSIConstants.LOCAL_ID, row.getValue(NGSIConstants.ID));
+						result.put(NGSIConstants.NUMBER_OF_HITS, row.getValue(NGSIConstants.NUMBER_OF_HITS.toLowerCase()));
+						result.put(NGSIConstants.LAST_USAGE, row.getValue(NGSIConstants.LAST_USAGE.toLowerCase()));
+						result.put(NGSIConstants.KIND, row.getValue(NGSIConstants.KIND));
+						result.put(NGSIConstants.BODY,((JsonObject)row.getJson(NGSIConstants.BODY)).getMap());
+						result.put(NGSIConstants.CREATEDAT,row.getLocalDateTime(NGSIConstants.CREATEDAT.toLowerCase()));
+						result.put(NGSIConstants.URL, atContextUrl
+								+ URLEncoder.encode(row.getValue(NGSIConstants.ID).toString(), StandardCharsets.UTF_8));
+						contexts.add(result);
 					} else {
 						contexts.add(atContextUrl
-								+ URLEncoder.encode(map.get("id").toString(), StandardCharsets.UTF_8));
+								+ URLEncoder.encode(row.getValue( NGSIConstants.ID).toString(), StandardCharsets.UTF_8));
 					}
 
 				});
@@ -139,12 +152,12 @@ public class ContextDao {
 			sb.append(Integer.toHexString((b & 0xFF) | 0x100), 1, 3);
 		}
 		String id = "urn:" + sb;
-		String sql = "INSERT INTO public.contexts (id, body, kind) values($1, $2, 'implicitlycreated') returning id";
+		String sql = "INSERT INTO public.contexts (id, body, kind) values($1, $2, 'ImplicitlyCreated') returning id";
 		return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
 			return client.preparedQuery(sql).execute(Tuple.of(id, new JsonObject(payload))).onItemOrFailure()
 					.transform((rows, failure) -> {
 						if (failure != null) {
-							if (failure instanceof PgException && ((PgException) failure).getSqlState().equals("23505")) {
+							if (failure instanceof PgException && ((PgException) failure).getSqlState().equals("23505")) {//already exists
 								return RestResponse.ok(id);
 							} else {
 								return RestResponse.status(RestResponse.Status.INTERNAL_SERVER_ERROR,

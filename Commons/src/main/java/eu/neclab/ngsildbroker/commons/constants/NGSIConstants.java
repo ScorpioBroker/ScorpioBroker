@@ -348,6 +348,10 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_SCOPE_Q = "https://uri.etsi.org/ngsi-ld/scopeQ";
 
 	public static final String ERROR_TYPE = "type";
+	public static final String LAST_USAGE = "lastUsage";
+	public static final String NUMBER_OF_HITS = "numberOfHits";
+	public static final String LOCAL_ID = "localId";
+	public static final String EXPIRES_AT = "expiresAt";
 	public static final String ERROR_TITLE = "title";
 	public static final String ERROR_DETAIL_MESSAGE = "message";
 	public static final String ERROR_DETAIL_ENDPOINT = "endpoint";
@@ -396,11 +400,11 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_HAS_LANGUAGE_MAP = "https://uri.etsi.org/ngsi-ld/hasLanguageMap";
 	public static final String ID = "id";
 	public static final String KIND = "kind";
-	public static final String CACHED = "cached";
-	public static final String IMPLICITLYCREATED = "implicitlycreated";
-	public static final String HOSTED = "hosted";
+	public static final String CACHED = "Cached";
+	public static final String IMPLICITLYCREATED = "ImplicitlyCreated";
+	public static final String HOSTED = "Hosted";
 	public static final String CREATEDAT = "createdAt";
-	public static final String URL = "url";
+	public static final String URL = "URL";
 	public static final String JSONLD_CONTEXTS = "ngsi-ld/v1/jsonldContexts/";
 	public static final String JSONLD_CONTEXT = "jsonldContext";
 	public static final String NGSI_LD_ATTRIBUTES_ENDPOINT = "/ngsi-ld/v1/attributes";
