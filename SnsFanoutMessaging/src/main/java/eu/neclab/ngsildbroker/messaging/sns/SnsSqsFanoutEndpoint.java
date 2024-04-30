@@ -129,4 +129,14 @@ public class SnsSqsFanoutEndpoint extends DefaultEndpoint {
         this.sns2Endpoint.setCamelContext(camelContext);
         this.sqs2Endpoint.setCamelContext(camelContext);
     }
+
+    public Sns2Endpoint getSns2Endpoint() {
+        return sns2Endpoint;
+    }
+
+
+    public Sqs2Endpoint getSqs2Endpoint() {
+        return sqs2Endpoint;
+    }
+
 }

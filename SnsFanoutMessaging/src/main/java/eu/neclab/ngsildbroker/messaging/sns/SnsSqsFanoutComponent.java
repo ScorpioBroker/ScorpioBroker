@@ -1,7 +1,6 @@
 package eu.neclab.ngsildbroker.messaging.sns;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.spi.CDI;
 import org.apache.camel.CamelContext;
 import org.apache.camel.component.aws2.sns.Sns2Component;
 import org.apache.camel.component.aws2.sns.Sns2Endpoint;
@@ -25,12 +24,16 @@ public class SnsSqsFanoutComponent extends DefaultComponent {
     }
 
     public SnsSqsFanoutComponent(CamelContext context) {
+        this(context, new Sns2Component(context), new Sqs2Component((context)));
+    }
+
+    public SnsSqsFanoutComponent(CamelContext context, Sns2Component snsComponent, Sqs2Component sqsComponent) {
         super(context);
-        this.snsComponent = new Sns2Component(context);
+        this.snsComponent = snsComponent;
         this.snsComponent.getConfiguration().setAutoCreateTopic(true);
         this.snsComponent.getConfiguration().setUseDefaultCredentialsProvider(true);
 
-        this.sqsComponent = new Sqs2Component(context);
+        this.sqsComponent = sqsComponent;
         this.sqsComponent.getConfiguration().setAutoCreateQueue(true);
         this.sqsComponent.getConfiguration().setUseDefaultCredentialsProvider(true);
     }
