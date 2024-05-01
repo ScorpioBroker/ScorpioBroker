@@ -68,7 +68,7 @@ public class EntityOperationsQueryController {
 			@QueryParam("entityMap") String entityMapToken) {
 
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
-		Map<String,Object> body;
+		Map<String, Object> body;
 		if (acceptHeader == -1) {
 			return HttpUtils.getInvalidHeader();
 		}
@@ -83,7 +83,7 @@ public class EntityOperationsQueryController {
 					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.TooManyResults)));
 		}
 		try {
-		 	body = new JsonObject(bodyStr).getMap();
+			body = new JsonObject(bodyStr).getMap();
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 		}
@@ -131,6 +131,10 @@ public class EntityOperationsQueryController {
 				Object attrs = body.get(NGSIConstants.QUERY_PARAMETER_ATTRS);
 				Object q = body.get(NGSIConstants.QUERY_PARAMETER_QUERY);
 				Object geoQ = body.get(NGSIConstants.NGSI_LD_GEO_QUERY_SHORT);
+				Object joinObj = body.get(NGSIConstants.QUERY_PARAMETER_JOIN);
+				Object joinLevelObj = body.get(NGSIConstants.QUERY_PARAMETER_JOINLEVEL);
+				String join = joinObj == null ? null : (String) joinObj;
+				int joinLevel = joinLevelObj == null ? 0 : (int) joinLevelObj;
 				if (entities == null && attrs == null && q == null && geoQ == null) {
 					return Uni.createFrom()
 							.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData,
@@ -141,7 +145,7 @@ public class EntityOperationsQueryController {
 				Object scopeQ = body.get(NGSIConstants.QUERY_PARAMETER_SCOPE_QUERY);
 				Object csf = body.get(NGSIConstants.QUERY_PARAMETER_CSF);
 				if (attrs != null) {
-					attrsQuery = QueryParser.parseAttrs(String.join(",",(ArrayList<String>)attrs), context);
+					attrsQuery = QueryParser.parseAttrs(String.join(",", (ArrayList<String>) attrs), context);
 				}
 				if (q != null) {
 					qQueryTerm = QueryParser.parseQuery((String) q, context);
@@ -210,7 +214,7 @@ public class EntityOperationsQueryController {
 						unis.add(queryService.query(HttpUtils.getTenant(request), token, tokenProvided,
 								id == null ? null : new String[] { id }, typeQueryTerm, idPattern, attrsQuery,
 								qQueryTerm, csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset,
-								count, localOnly, context, request.headers(), false,null,null));
+								count, localOnly, context, request.headers(), false, null, null, join, joinLevel));
 					}
 					return Uni.combine().all().unis(unis).combinedWith(list -> {
 						Iterator<?> it = list.iterator();
@@ -220,8 +224,10 @@ public class EntityOperationsQueryController {
 							first.getData().addAll(((QueryResult) it.next()).getData());
 						}
 						return first;
-					}).onItem().transformToUni(first -> HttpUtils.generateQueryResult(request, first, options,
-							geometryProperty, acceptHeader, count, actualLimit, langQuery, context, ldService,null,null));
+					}).onItem()
+							.transformToUni(first -> HttpUtils.generateQueryResult(request, first, options,
+									geometryProperty, acceptHeader, count, actualLimit, langQuery, context, ldService,
+									null, null));
 				} else {
 					String token;
 					boolean tokenProvided;
@@ -251,11 +257,13 @@ public class EntityOperationsQueryController {
 						token = RandomStringUtils.randomAlphabetic(6) + md5;
 						tokenProvided = false;
 					}
-					return queryService.query(tenant, token, tokenProvided, null, null, null, attrsQuery, qQueryTerm,
-							csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset, count,
-							localOnly, context, request.headers(), false,null,null).onItem().transformToUni(queryResult -> {
+					return queryService
+							.query(tenant, token, tokenProvided, null, null, null, attrsQuery, qQueryTerm, csfQueryTerm,
+									geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset, count, localOnly,
+									context, request.headers(), false, null, null, join, joinLevel)
+							.onItem().transformToUni(queryResult -> {
 								return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty,
-										acceptHeader, count, actualLimit, langQuery, context, ldService,null,null);
+										acceptHeader, count, actualLimit, langQuery, context, ldService, null, null);
 							}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e));
 				}
 			} catch (Exception e) {

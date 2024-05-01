@@ -168,7 +168,7 @@ public class QueryController {
 			@QueryParam("options") String options, @QueryParam("limit") Integer limit, @QueryParam("offset") int offset,
 			@QueryParam("count") boolean count, @QueryParam("containedBy") @DefaultValue("") String containedBy,
 			@QueryParam("join") String join, @QueryParam("idsOnly") boolean idsOnly,
-			@QueryParam("joinLevel") @DefaultValue("1") int joinLevel, @QueryParam("doNotCompact") boolean doNotCompact,
+			@QueryParam("joinLevel") @DefaultValue("0") int joinLevel, @QueryParam("doNotCompact") boolean doNotCompact,
 			@QueryParam("entityMap") String entityMapToken, @QueryParam("maxDistance") String maxDistance,
 			@QueryParam("minDistance") String minDistance, @Context UriInfo uriInfo,
 			@QueryParam("pick") String pick,@QueryParam("omit") String omit,@QueryParam("format") String format,
@@ -343,7 +343,7 @@ public class QueryController {
 			return queryService
 					.query(HttpUtils.getTenant(request), token, tokenProvided, ids, typeQueryTerm, idPattern,
 							attrsQuery, qQueryTerm, csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit,
-							offset, count, localOnly, context, request.headers(), doNotCompact,jsonKeys,dataSetIdTerm)
+							offset, count, localOnly, context, request.headers(), doNotCompact,jsonKeys,dataSetIdTerm, join, joinLevel)
 					.onItem().transformToUni(queryResult -> {
 						if (doNotCompact) {
 							return Uni.createFrom().item(RestResponse.ok((Object) queryResult.getData()));
