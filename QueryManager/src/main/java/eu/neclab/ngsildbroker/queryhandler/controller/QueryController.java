@@ -193,7 +193,8 @@ public class QueryController {
             if (index != -1) {
                 uri = uri.substring(0, index);
             }
-            q = uri.replaceAll("\"","");
+			q=uri;
+//            q = uri.replaceAll("\"","");
         } else {
 			q = null;
 		}

@@ -184,7 +184,13 @@ public class QQueryTerm implements Serializable {
 
         boolean finalReturnValue = false;
 //        if (!attribute.matches(URI) && attribute.contains(".")) {
-        String[] splittedAttrib = attribute.split("[\\[\\].]");
+        String[] splitByDot = splitByDotOutsideQuotes(attribute);
+//        String[] splittedAttrib = attribute.split("[\\[\\]]");
+        List<String> splittedAttrib = new ArrayList<>();
+        for(String item:splitByDot){
+            String[] tmp = item.split("[\\[\\]]");
+            splittedAttrib.addAll(Arrays.asList(tmp));
+        }
         List<String> doNotExpandAttrs = new ArrayList<>();
         if(jsonKeys != null && !jsonKeys.isEmpty()){
             for (String jsonkey : jsonKeys) {
@@ -207,7 +213,7 @@ public class QQueryTerm implements Serializable {
             return true;
         }
 
-        operant = operant != null ? operant.replace("\"", "") : null;
+        operant = operant.replace("\"", "");
         for (String item : expandedAttrib) {
             if (TIME_PROPS.contains(item)) {
                 try {
@@ -867,7 +873,35 @@ public class QQueryTerm implements Serializable {
     public boolean equals(Object obj) {
         return equals(obj, false);
     }
+    public static String[] splitByDotOutsideQuotes(String input) {
+        List<String> parts = new ArrayList<>();
+        StringBuilder currentPart = new StringBuilder();
+        boolean insideQuotes = false;
 
+        for (int i = 0; i < input.length(); i++) {
+            char ch = input.charAt(i);
+
+            if (ch == '\"') {
+                // Toggle the insideQuotes flag when encountering a quote character
+                insideQuotes = !insideQuotes;
+                currentPart.append(ch);
+            } else if (ch == '.' && !insideQuotes) {
+                // Split at dots outside of quotes
+                parts.add(currentPart.toString());
+                currentPart.setLength(0); // Clear the current part
+            } else {
+                // Add other characters to the current part
+                currentPart.append(ch);
+            }
+        }
+
+        // Add the last part to the list if it exists
+        if (!currentPart.isEmpty()) {
+            parts.add(currentPart.toString());
+        }
+        parts.replaceAll(s -> s.replace("\"", ""));
+        return parts.toArray(new String[0]);
+    }
     private int getAttribQuery(StringBuilder result, int dollarCount, Tuple tuple) {
         result.append("ENTITY ? $");
         result.append(dollarCount);
@@ -876,8 +910,12 @@ public class QQueryTerm implements Serializable {
         if (splitted.length > 1) {
             splitted[1] = splitted[1].substring(0, splitted[1].length() - 1);
         }
-        String[] subAttribPath = splitted.length == 1 ? null : splitted[1].split("\\.");
-        String[] attribPath = splitted[0].split("\\.");
+
+//        String[] subAttribPath = splitted.length == 1 ? null : splitted[1].split("\\.");
+//        String[] attribPath = splitted[0].split("\\.");
+        String[] subAttribPath = splitted.length == 1 ? null : splitByDotOutsideQuotes(splitted[1]);
+        String[] attribPath = splitByDotOutsideQuotes(splitted[0]);
+        operant = operant.replaceAll("\"","");
         String attribName = linkHeaders.expandIri(attribPath[0], false, true, null, null);
         if (attribName.equals("@id")) {
             result.append(" AND entity ->> $");
