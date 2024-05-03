@@ -17,6 +17,11 @@
       <version>3.2.0</version>
     </dependency>
     <dependency>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>iam-policy-builder</artifactId>
+      <version>2.25.44</version>
+    </dependency>
+    <dependency>
       <groupId>org.apache.camel.quarkus</groupId>
       <artifactId>camel-quarkus-aws2-sns</artifactId>
       <version>3.2.0</version>
