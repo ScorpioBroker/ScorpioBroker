@@ -6,11 +6,14 @@ import org.apache.camel.component.aws2.sqs.Sqs2Endpoint;
 import org.apache.camel.spi.UriEndpoint;
 import org.apache.camel.support.DefaultComponent;
 import org.apache.camel.support.DefaultEndpoint;
+import software.amazon.awssdk.policybuilder.iam.*;
 import software.amazon.awssdk.services.sns.model.SubscribeRequest;
 import software.amazon.awssdk.services.sqs.model.GetQueueAttributesRequest;
 import software.amazon.awssdk.services.sqs.model.GetQueueUrlRequest;
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName;
+import software.amazon.awssdk.services.sqs.model.SetQueueAttributesRequest;
 
+import java.util.List;
 import java.util.Map;
 
 @UriEndpoint(
@@ -45,21 +48,39 @@ public class SnsSqsFanoutEndpoint extends DefaultEndpoint {
     }
 
     private void subscribeToTopic() {
-        String queueArn = getQueueArn();
+        String queueUrl = getQueueUrl();
+        String queueArn = getQueueArn(queueUrl);
+        String topicArn = sns2Endpoint.getConfiguration().getTopicArn();
+
+        sqs2Endpoint.getClient().setQueueAttributes(SetQueueAttributesRequest.builder()
+                .queueUrl(queueUrl)
+                .attributes(Map.of(
+                        QueueAttributeName.POLICY,
+                        IamPolicy.builder().addStatement(IamStatement.builder()
+                                        .effect(IamEffect.ALLOW)
+                                        .addPrincipal(IamPrincipal.create(IamPrincipalType.SERVICE, "sns.amazonaws.com"))
+                                        .actions(List.of(IamAction.create("sqs:SendMessage")))
+                                        .resourceIds(List.of(queueArn))
+                                        .conditions(List.of(
+                                                IamCondition.builder()
+                                                        .operator(IamConditionOperator.ARN_EQUALS)
+                                                        .key("aws:SourceArn")
+                                                        .value(topicArn)
+                                                        .build()
+                                        ))
+                                        .build())
+                                .build().toJson()
+                )).build());
 
         sns2Endpoint.getSNSClient().subscribe(SubscribeRequest.builder()
                 .protocol("sqs")
                 .endpoint(queueArn)
-                .topicArn(sns2Endpoint.getConfiguration().getTopicArn())
+                .topicArn(topicArn)
+                .attributes(Map.of("RawMessageDelivery", "true"))
                 .build());
     }
 
-    private String getQueueArn() {
-        String queueUrl = sqs2Endpoint.getClient().getQueueUrl(GetQueueUrlRequest.builder()
-                        .queueName(sqs2Endpoint.getConfiguration().getQueueName())
-                        .build())
-                .queueUrl();
-
+    private String getQueueArn(String queueUrl) {
         return sqs2Endpoint.getClient().getQueueAttributes(GetQueueAttributesRequest.builder()
                         .queueUrl(queueUrl)
                         .attributeNames(QueueAttributeName.QUEUE_ARN)
@@ -67,6 +88,13 @@ public class SnsSqsFanoutEndpoint extends DefaultEndpoint {
                 )
                 .attributes()
                 .get(QueueAttributeName.QUEUE_ARN);
+    }
+
+    private String getQueueUrl() {
+        return sqs2Endpoint.getClient().getQueueUrl(GetQueueUrlRequest.builder()
+                        .queueName(sqs2Endpoint.getConfiguration().getQueueName())
+                        .build())
+                .queueUrl();
     }
 
     @Override

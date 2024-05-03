@@ -12,6 +12,7 @@ import org.apache.camel.support.DefaultComponent;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import software.amazon.awssdk.services.sns.SnsClient;
@@ -54,6 +55,7 @@ class SnsSqsFanoutEndpointTest {
 
     private String uri = "mock-uri";
     private String queueArn = "queue-arn";
+    private String queueUrl = "queue-url";
     private String topicArn = "queue-arn";
     private AutoCloseable mockContext;
 
@@ -110,7 +112,16 @@ class SnsSqsFanoutEndpointTest {
                 .protocol("sqs")
                 .topicArn(topicArn)
                 .endpoint(queueArn)
+                .attributes(Map.of("RawMessageDelivery", "true"))
                 .build()));
+        verify(sqsClient, times(1)).setQueueAttributes(
+                ArgumentMatchers.<SetQueueAttributesRequest>assertArg(request -> {
+                    assertEquals(queueUrl, request.queueUrl());
+                    assertEquals(
+                            Map.of(QueueAttributeName.POLICY, "{\"Version\":\"2012-10-17\",\"Statement\":{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"sns.amazonaws.com\"},\"Action\":\"sqs:SendMessage\",\"Resource\":\"queue-arn\",\"Condition\":{\"ArnEquals\":{\"aws:SourceArn\":\"queue-arn\"}}}}"),
+                            request.attributes()
+                    );
+                }));
     }
 
     @Test
