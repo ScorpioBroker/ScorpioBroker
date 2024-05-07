@@ -1,7 +1,7 @@
 name: Release Ubuntu version
 on: 
   push:
-    branches: "quarkus-release/**"
+    branches: "DEACTIVE/**"
 jobs:
   build-ubuntu-kafka:
     runs-on: ubuntu-latest

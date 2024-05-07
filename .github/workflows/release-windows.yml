@@ -1,7 +1,7 @@
 name: Release windows version
 on: 
   push:
-    branches: "quarkus-release/**"
+    branches: "DEACTIVATE/**"
 jobs:
   build-windows-kafka:
     runs-on: windows-latest
