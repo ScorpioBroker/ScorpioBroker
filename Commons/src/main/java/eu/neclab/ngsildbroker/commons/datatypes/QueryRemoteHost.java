@@ -12,7 +12,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.MultiMap;
 
 public record QueryRemoteHost(String host, String tenant, MultiMap headers, String cSourceId, boolean canDoSingleOp,
-		boolean canDoBatchOp, int regMode, String queryString, boolean canDoIdQuery, boolean canDoZip,
+		boolean canDoBatchOp, int regMode, String queryString, boolean canDoEntityMap, boolean canDoZip,
 		String remoteToken) {
 
 	public JsonObject toJson() {
@@ -34,7 +34,7 @@ public record QueryRemoteHost(String host, String tenant, MultiMap headers, Stri
 		result.put("b", canDoBatchOp);
 		result.put("r", regMode);
 		result.put("q", queryString);
-		result.put("i", canDoIdQuery);
+		result.put("i", canDoEntityMap);
 		result.put("z", canDoZip);
 		result.put("o", remoteToken); // o because r and t are taken and i can't think of something sensible
 		return result;
@@ -124,7 +124,7 @@ public record QueryRemoteHost(String host, String tenant, MultiMap headers, Stri
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(cSourceId, canDoBatchOp, canDoIdQuery, canDoSingleOp, canDoZip, host, queryString, regMode,
+		return Objects.hash(cSourceId, canDoBatchOp, canDoEntityMap, canDoSingleOp, canDoZip, host, queryString, regMode,
 				remoteToken, tenant);
 	}
 
@@ -138,7 +138,7 @@ public record QueryRemoteHost(String host, String tenant, MultiMap headers, Stri
 			return false;
 		QueryRemoteHost other = (QueryRemoteHost) obj;
 		return Objects.equals(cSourceId, other.cSourceId) && canDoBatchOp == other.canDoBatchOp
-				&& canDoIdQuery == other.canDoIdQuery && canDoSingleOp == other.canDoSingleOp
+				&& canDoEntityMap == other.canDoEntityMap && canDoSingleOp == other.canDoSingleOp
 				&& canDoZip == other.canDoZip && Objects.equals(host, other.host)
 				&& Objects.equals(queryString, other.queryString) && regMode == other.regMode
 				&& Objects.equals(remoteToken, other.remoteToken) && Objects.equals(tenant, other.tenant);

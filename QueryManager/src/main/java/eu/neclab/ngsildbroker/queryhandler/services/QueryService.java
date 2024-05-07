@@ -111,7 +111,8 @@ public class QueryService {
 			TypeQueryTerm typeQuery, String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery, CSFQueryTerm csf,
 			GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, int limit, int offSet,
 			boolean count, boolean localOnly, Context context, io.vertx.core.MultiMap headersFromReq,
-			boolean doNotCompact, Set<String> jsonKeys, DataSetIdTerm dataSetIdTerm, String join, int joinLevel) {
+			boolean doNotCompact, Set<String> jsonKeys, DataSetIdTerm dataSetIdTerm, String join, int joinLevel,
+			boolean entityDist) {
 		if (localOnly) {
 			return localQueryLevel1(tenant, id, typeQuery, idPattern, attrsQuery, qQuery, geoQuery, scopeQuery,
 					langQuery, limit, offSet, count, dataSetIdTerm, join, joinLevel);
@@ -119,13 +120,13 @@ public class QueryService {
 		if (!tokenProvided) {
 			return getAndStoreEntityIdList(tenant, id, idPattern, qToken, typeQuery, attrsQuery, geoQuery, qQuery,
 					scopeQuery, langQuery, limit, offSet, context, headersFromReq, doNotCompact, dataSetIdTerm, join,
-					joinLevel).onItem().transformToUni(t -> {
+					joinLevel, entityDist).onItem().transformToUni(t -> {
 						Map<String, Map<String, Object>> localResults = t.getItem1();
 						EntityMap entityMap = t.getItem2();
 						List<EntityMapEntry> resultEntityMap = entityMap.getSubMap(offSet, limit + offSet);
 						Long resultCount = (long) entityMap.size();
 						return handleEntityMap(resultCount, resultEntityMap, attrsQuery, localResults, count, limit,
-								offSet, qToken, headersFromReq, qQuery, jsonKeys);
+								offSet, qToken, headersFromReq, qQuery, jsonKeys, entityMap.isDist());
 					});
 		} else {
 			return queryDAO.getEntityMap(tenant, qToken, limit, offSet, count).onItem().transformToUni(t -> {
@@ -133,7 +134,7 @@ public class QueryService {
 				EntityMap entityMap = t.getItem2();
 				Map<String, Map<String, Object>> localResults = t.getItem3();
 				return handleEntityMap(resultCount, entityMap.getEntityList(), attrsQuery, localResults, count, limit,
-						offSet, qToken, headersFromReq, qQuery, jsonKeys);
+						offSet, qToken, headersFromReq, qQuery, jsonKeys, entityMap.isDist());
 
 			});
 		}
@@ -142,7 +143,7 @@ public class QueryService {
 	private Uni<QueryResult> handleEntityMap(Long resultCount, List<EntityMapEntry> resultEntityMap,
 			AttrsQueryTerm attrsQuery, Map<String, Map<String, Object>> localResults, boolean count, int limit,
 			int offSet, String qToken, io.vertx.core.MultiMap headersFromReq, QQueryTerm queryTerm,
-			Set<String> jsonKeys) {
+			Set<String> jsonKeys, boolean isDist) {
 		Map<QueryRemoteHost, List<String>> remoteHost2EntityIds = Maps.newHashMap();
 		// has to be linked. We want to keep order here
 		Map<String, Map<String, Map<String, Map<String, Object>>>> entityId2AttrName2DatasetId2AttrValue = Maps
@@ -564,14 +565,15 @@ public class QueryService {
 			String queryString = entry.getValue().toQueryString(context, typeQuery, geoQuery, langQuery, false);
 			result.add(new QueryRemoteHost(tmpHost.host(), tmpHost.tenant(), tmpHost.headers(), tmpHost.cSourceId(),
 					tmpHost.canDoSingleOp(), tmpHost.canDoBatchOp(), tmpHost.regMode(), queryString,
-					tmpHost.canDoIdQuery(), tmpHost.canDoZip(), tmpHost.remoteToken()));
+					tmpHost.canDoEntityMap(), tmpHost.canDoZip(), tmpHost.remoteToken()));
 		}
 		return result;
 	}
 
 	private Uni<QueryResult> localQueryLevel1(String tenant, String[] id, TypeQueryTerm typeQuery, String idPattern,
 			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery,
-			LanguageQueryTerm langQuery, int limit, int offSet, boolean count, DataSetIdTerm dataSetIdTerm, String join, int joinLevel) {
+			LanguageQueryTerm langQuery, int limit, int offSet, boolean count, DataSetIdTerm dataSetIdTerm, String join,
+			int joinLevel) {
 		return queryDAO.queryLocalOnly(tenant, id, typeQuery, idPattern, attrsQuery, qQuery, geoQuery, scopeQuery,
 				langQuery, limit, offSet, count, dataSetIdTerm, join, joinLevel).onItem().transform(rows -> {
 					QueryResult result = new QueryResult();
@@ -1367,10 +1369,10 @@ public class QueryService {
 			String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQueryTerm, GeoQueryTerm geoQueryTerm,
 			ScopeQueryTerm scopeQueryTerm, LanguageQueryTerm queryTerm, Context context,
 			io.vertx.core.MultiMap headersFromReq, boolean idsOnly, String join, String containedBy, int joinLevel,
-			boolean doNotCompact, DataSetIdTerm dataSetIdTerm) {
+			boolean doNotCompact, DataSetIdTerm dataSetIdTerm, boolean entityDist) {
 		return getAndStoreEntityIdList(tenant, ids, idPattern, idPattern, typeQueryTerm, attrsQuery, geoQueryTerm,
 				qQueryTerm, scopeQueryTerm, queryTerm, 0, 0, context, headersFromReq, doNotCompact, dataSetIdTerm, join,
-				joinLevel).onItem().transform(t -> {
+				joinLevel, entityDist).onItem().transform(t -> {
 					// List<Map<String, Object>> localResults = t.getItem1();
 
 					List<String> result = Lists.newArrayList();
@@ -1387,15 +1389,22 @@ public class QueryService {
 			String idPattern, String qToken, TypeQueryTerm typeQuery, AttrsQueryTerm attrsQuery, GeoQueryTerm geoQuery,
 			QQueryTerm qQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, int limit, int offset,
 			Context context, io.vertx.core.MultiMap headersFromReq, boolean doNotCompact, DataSetIdTerm dataSetIdTerm,
-			String join, int joinLevel) {
-		Uni<Tuple2<Map<String, Map<String, Object>>, List<String>>> localIds = queryDAO.queryForEntityIds(tenant, id,
-				typeQuery, idPattern, attrsQuery, qQuery, geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm);
+			String join, int joinLevel, boolean entityDist) {
+		Uni<Map<String, Tuple2<Map<String, Object>, Boolean>>> localIds;
 		List<QueryRemoteHost> remoteHost2Query = getRemoteQueries(tenant, id, typeQuery, idPattern, attrsQuery, qQuery,
 				geoQuery, scopeQuery, langQuery, context);
 		Uni<Map<QueryRemoteHost, List<String>>> remoteIds;
-		if (remoteHost2Query.isEmpty()) {
+		boolean isDist;
+		if (remoteHost2Query.isEmpty() || !entityDist) {
+			localIds = queryDAO.queryForEntityIds(tenant, id, typeQuery, idPattern, attrsQuery, qQuery, geoQuery,
+					scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel, !tenant2CId2RegEntries.isEmpty());
+			isDist = true;
 			remoteIds = Uni.createFrom().item(Maps.newHashMap());
 		} else {
+			// broad request to cover all distributed entity cases
+			localIds = queryDAO.queryForEntityIds(tenant, id, typeQuery, idPattern, attrsQuery, limit, offset, join,
+					joinLevel);
+			isDist = false;
 			List<Uni<Tuple2<QueryRemoteHost, List<String>>>> unis = Lists.newArrayList();
 			for (QueryRemoteHost remoteHost : remoteHost2Query) {
 				String linkHead;
@@ -1406,7 +1415,8 @@ public class QueryService {
 				} else {
 					linkHead = "";
 				}
-				if (remoteHost.canDoIdQuery()) {
+				if (remoteHost.canDoEntityMap()) {
+					// TODO Adapt all of this to new entityMap specs
 					String entityMapString;
 					if (remoteHost.canDoZip()) {
 						entityMapString = "&entityMap=true";
@@ -1497,7 +1507,7 @@ public class QueryService {
 		}
 
 		return Uni.combine().all().unis(localIds, remoteIds).asTuple().onItem().transform(t -> {
-			EntityMap result = new EntityMap();
+			EntityMap result = new EntityMap(isDist);
 			Tuple2<Map<String, Map<String, Object>>, List<String>> local = t.getItem1();
 			Map<QueryRemoteHost, List<String>> remote = t.getItem2();
 			for (String entry : local.getItem2()) {

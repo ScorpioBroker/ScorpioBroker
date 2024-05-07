@@ -102,6 +102,7 @@ public class QueryParser {
 		QQueryTerm current = root;
 		boolean readingAttrib = true;
 		boolean readingOperant = false;
+		boolean readingLinkedQ = false;
 		String attribName = "";
 		StringBuilder operator = new StringBuilder();
 		String operant = "";
@@ -155,7 +156,7 @@ public class QueryParser {
 				readingOperant = false;
 				operant = "";
 
-			} else if (b == ')') {
+			} else if (b == ')' || b == '}') {
 				current.setOperant(operant);
 				String expandedOpt = context.expandIri(operant.replaceAll("\"", ""), false, true, null, null);
 				current.setExpandedOpt(expandedOpt);
@@ -172,16 +173,30 @@ public class QueryParser {
 					root.addAttrib(attribName);
 					attribName = "";
 				}
+			} else if (b == '{') {
+				current.setLinkedQ(true);
+				current.setLinkedAttrName(attribName);
+				readingLinkedQ = true;
+				attribName = "";
+
 			} else {
-				if (readingAttrib) {
-					attribName += (char) b;
-				} else {
-					if (!operator.toString().isEmpty()) {
-						current.setOperator(operator.toString());
-						operator = new StringBuilder();
+				if (readingLinkedQ) {
+					if (b == ':' || b == ',') {
+						current.addLinkedEntityType(attribName);
+						attribName = "";
 					}
-					readingOperant = true;
-					operant += (char) b;
+
+				} else {
+					if (readingAttrib) {
+						attribName += (char) b;
+					} else {
+						if (!operator.toString().isEmpty()) {
+							current.setOperator(operator.toString());
+							operator = new StringBuilder();
+						}
+						readingOperant = true;
+						operant += (char) b;
+					}
 				}
 			}
 
@@ -212,14 +227,9 @@ public class QueryParser {
 			throw new ResponseException(ErrorType.BadRequestData, "geometry needs to be provided");
 		}
 		String[] temp = georel.split(";");
-		if(!List.of(NGSIConstants.GEO_REL_NEAR,
-				NGSIConstants.GEO_REL_WITHIN,
-				NGSIConstants.GEO_REL_CONTAINS,
-				NGSIConstants.GEO_REL_DISJOINT,
-				NGSIConstants.GEO_REL_INTERSECTS,
-				NGSIConstants.GEO_REL_EQUALS,
-				NGSIConstants.GEO_REL_OVERLAPS)
-				.contains(temp[0])){
+		if (!List.of(NGSIConstants.GEO_REL_NEAR, NGSIConstants.GEO_REL_WITHIN, NGSIConstants.GEO_REL_CONTAINS,
+				NGSIConstants.GEO_REL_DISJOINT, NGSIConstants.GEO_REL_INTERSECTS, NGSIConstants.GEO_REL_EQUALS,
+				NGSIConstants.GEO_REL_OVERLAPS).contains(temp[0])) {
 			throw new ResponseException(ErrorType.BadRequestData, "georel is invalid");
 		}
 		GeoQueryTerm result = new GeoQueryTerm(context);
@@ -248,9 +258,9 @@ public class QueryParser {
 		for (String attr : attrs.split(",")) {
 			result.addAttr(attr);
 		}
-		if(result.getCompactedAttrs().contains(NGSIConstants.ID)
-				|| result.getCompactedAttrs().contains(NGSIConstants.TYPE)){
-				throw new ResponseException(ErrorType.BadRequestData);
+		if (result.getCompactedAttrs().contains(NGSIConstants.ID)
+				|| result.getCompactedAttrs().contains(NGSIConstants.TYPE)) {
+			throw new ResponseException(ErrorType.BadRequestData);
 		}
 		return result;
 	}
@@ -317,8 +327,8 @@ public class QueryParser {
 		if (!scopeLevels.isEmpty() && current != null) {
 			current.setScopeLevels(scopeLevels.toArray(new String[0]));
 		}
-		if(current != null && current.getScopeLevels()==null){
-			throw new ResponseException(ErrorType.BadRequestData,"Bad scope query");
+		if (current != null && current.getScopeLevels() == null) {
+			throw new ResponseException(ErrorType.BadRequestData, "Bad scope query");
 		}
 		return result;
 	}
@@ -537,8 +547,8 @@ public class QueryParser {
 				keyBuilder.append(c);
 			}
 		}
-		if(resultMap.isEmpty()){
-			return Map.of(input,new HashMap<>());
+		if (resultMap.isEmpty()) {
+			return Map.of(input, new HashMap<>());
 		}
 		return resultMap;
 	}
@@ -547,9 +557,9 @@ public class QueryParser {
 		if (ids == null || ids.isEmpty()) {
 			return null;
 		}
-		ids = ids.replace("\"","");
+		ids = ids.replace("\"", "");
 		List<String> idsList = Arrays.asList(ids.split(","));
-		DataSetIdTerm result = new  DataSetIdTerm();
+		DataSetIdTerm result = new DataSetIdTerm();
 		result.setIds(idsList);
 		return result;
 	}

@@ -161,7 +161,7 @@ public class QueryDAO {
 					if (sqlAdded) {
 						query.append(" AND ");
 					}
-					dollar = qQuery.toSql(query, dollar, tuple);
+					dollar = qQuery.toSql(query, dollar, tuple, false, true);
 					sqlAdded = true;
 				}
 				if (ids != null) {
@@ -249,7 +249,7 @@ public class QueryDAO {
 				}
 				query.setLength(query.length() - " UNION ALL ".length());
 				query.append(") as xyz group by id, entity, parent");
-				entitySelect = "xyz";	
+				entitySelect = "xyz";
 			}
 
 			if (dataSetIdTerm != null) {
@@ -789,15 +789,15 @@ public class QueryDAO {
 
 	}
 
-	public Uni<Tuple2<Map<String, Map<String, Object>>, List<String>>> queryForEntityIds(String tenant, String[] ids,
+	public Uni<Map<String, Tuple2<Map<String, Object>, Boolean>>> queryForEntityIds(String tenant, String[] ids,
 			TypeQueryTerm typeQuery, String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery,
 			GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, Context context, int limit, int offset,
-			DataSetIdTerm dataSetIdTerm) {
+			DataSetIdTerm dataSetIdTerm, String join, int joinLevel, boolean isDist) {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
 			StringBuilder query = new StringBuilder();
 			int dollar = 1;
 			Tuple tuple = Tuple.tuple();
-
+			boolean doJoin = (join != null && joinLevel > 0);
 			query.append("WITH a as (SELECT ID");
 
 			query.append(" FROM ENTITY WHERE ");
@@ -825,7 +825,7 @@ public class QueryDAO {
 				if (sqlAdded) {
 					query.append(" AND ");
 				}
-				dollar = qQuery.toSql(query, dollar, tuple);
+				dollar = qQuery.toSql(query, dollar, tuple, isDist, false);
 				sqlAdded = true;
 			}
 			if (ids != null) {
@@ -872,31 +872,89 @@ public class QueryDAO {
 			} else {
 				query.append("ENTITY.ENTITY");
 			}
-			query.append(" as ENTITY FROM b left join ENTITY on b.ID = ENTITY.ID)  ");
+			query.append(" as ENTITY, TRUE as PARENT FROM b left join ENTITY on b.ID = ENTITY.ID)  ");
+			String currentEntitySet = "c";
 			if (dataSetIdTerm != null) {
 				query.append(", ");
-				dollar = dataSetIdTerm.toSql(query, tuple, dollar, "c");
-				query.append("SELECT a.ID, x.ENTITY FROM a left outer join x on a.ID = x.ID");
-			} else {
-				query.append("SELECT a.ID, c.ENTITY FROM a left outer join c on a.ID = c.ID");
+				dollar = dataSetIdTerm.toSql(query, tuple, dollar, currentEntitySet);
+				currentEntitySet = "x";
 			}
+			if (doJoin) {
+				int counter;
+				query.append(", D0 as (SELECT * FROM ");
+				query.append(currentEntitySet);
+				query.append(")");
+				for (counter = 0; counter < joinLevel; counter++) {
+					query.append('B');
+					query.append(counter + 1);
+					query.append(" AS (SELECT ");
+					query.append('D');
+					query.append(counter);
+					query.append(".ID AS ID, X.VALUE AS VALUE FROM D");
+					query.append(counter);
+					query.append(", JSONB_EACH(D");
+					query.append(counter);
+					query.append(".ENTITY) AS X WHERE JSONB_TYPEOF(X.VALUE) = 'array'), ");
+					query.append('C');
+					query.append(counter + 1);
+					query.append(" AS (SELECT distinct Z ->> '@id' as link FROM B");
+					query.append(counter + 1);
+					query.append(", JSONB_ARRAY_ELEMENTS(B");
+					query.append(counter + 1);
+					query.append(
+							".VALUE) AS Y, JSONB_ARRAY_ELEMENTS(Y #> '{https://uri.etsi.org/ngsi-ld/hasObject}') AS Z WHERE Y #>> '{@type,0}' = 'https://uri.etsi.org/ngsi-ld/Relationship') AND Y ? 'https://uri.etsi.org/ngsi-ld/hasObjectType', ");
+					query.append('D');
+					query.append(counter + 1);
+					query.append(" as (SELECT E.ID as id, E.ENTITY as entity, false as parent");
+
+					query.append(" from C");
+					query.append(counter + 1);
+					query.append(" join ENTITY as E on C");
+					query.append(counter + 1);
+					query.append(".link = E.ID), ");
+				}
+				query.setLength(query.length() - 2);
+				query.append(" SELECT * FROM (");
+				for (int i = 0; i <= joinLevel; i++) {
+					query.append("SELECT * FROM D");
+					query.append(i);
+					query.append(" UNION ALL ");
+				}
+				query.setLength(query.length() - " UNION ALL ".length());
+				query.append(") as xyz group by id, entity, parent");
+				currentEntitySet = "xyz";
+			}
+
+			query.append(" SELECT a.ID, ");
+			query.append(currentEntitySet);
+			query.append(".ENTITY, ");
+			query.append(currentEntitySet);
+			query.append(".parent FROM a left outer join ");
+			query.append(currentEntitySet);
+			query.append(" on a.ID = ");
+			query.append(currentEntitySet);
+			query.append(".ID");
+
 			String queryString = query.toString();
 			logger.debug("SQL REQUEST: " + queryString);
 			logger.debug("SQL TUPLE: " + tuple.deepToString());
 			return client.preparedQuery(queryString).execute(tuple).onItem().transform(rows -> {
-				List<String> entityIds = Lists.newArrayList();
-				Map<String, Map<String, Object>> entities = Maps.newHashMap();
-				;
+				Map<String, Tuple2<Map<String, Object>, Boolean>> result = Maps.newHashMap();
 				rows.forEach(row -> {
 					String id = row.getString(0);
 					JsonObject entity = row.getJsonObject(1);
-					entityIds.add(id);
+					Boolean parent = row.getBoolean(2);
+					Map<String, Object> entityMap = null;
 					if (entity != null) {
-						entities.put(id, entity.getMap());
+						entityMap = entity.getMap();
 					}
+					if (parent == null) {
+						parent = true;
+					}
+					result.put(id, Tuple2.of(entityMap, parent));
 
 				});
-				return Tuple2.of(entities, entityIds);
+				return result;
 			});
 		}).onFailure().recoverWithUni(e -> {
 			if (e instanceof PgException pge) {
@@ -986,13 +1044,13 @@ public class QueryDAO {
 			int limit, int offSet, boolean count) {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
 			return client.preparedQuery(
-					"WITH a AS (UPDATE entitymap_management SET last_access=now() WHERE q_token=$1), b as (SELECT entity_id, remote_hosts FROM entitymap WHERE q_token = $1 order by order_field LIMIT $2 OFFSET $3) select b.entity_id, b.remote_hosts, entity FROM b left join ENTITY ON b.entity_id = ENTITY.id")
+					"WITH a AS (UPDATE entitymap_management SET last_access=now() WHERE q_token=$1), b as (SELECT entity_id, remote_hosts, local FROM entitymap WHERE q_token = $1 order by order_field LIMIT $2 OFFSET $3) select b.entity_id, b.remote_hosts, entity, b.local FROM b left join ENTITY ON b.entity_id = ENTITY.id")
 					.execute(Tuple.of(qToken, limit, offSet)).onItem().transformToUni(rows -> {
 						if (rows.rowCount() == 0) {
 							return Uni.createFrom().failure(new ResponseException(ErrorType.InvalidRequest,
 									"Token is invalid. Please rerequest without a token to retrieve a new token"));
 						}
-						EntityMap entityIdList = new EntityMap();
+						EntityMap entityIdList = new EntityMap(rows.iterator().next().getBoolean(3));
 						Map<String, Map<String, Object>> localEntities = Maps.newHashMap();
 						rows.forEach(row -> {
 							String entityId = row.getString(0);
@@ -1029,6 +1087,111 @@ public class QueryDAO {
 				});
 				return Uni.combine().all().unis(cleanUpUnis).discardItems();
 			});
+		});
+	}
+
+	public Uni<Map<String, Tuple2<Map<String, Object>, Boolean>>> queryForEntityIds(String tenant, String[] ids,
+			TypeQueryTerm typeQuery, String idPattern, AttrsQueryTerm attrsQuery, int limit, int offset, String join,
+			int joinLevel) {
+		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
+			StringBuilder query = new StringBuilder();
+			int dollar = 1;
+			Tuple tuple = Tuple.tuple();
+
+			query.append("WITH a as (SELECT ID");
+
+			query.append(" FROM ENTITY WHERE ");
+			boolean sqlAdded = false;
+			if (typeQuery != null) {
+				dollar = typeQuery.toBroadSql(query, tuple, dollar);
+				sqlAdded = true;
+			}
+			if (attrsQuery != null) {
+				if (sqlAdded) {
+					query.append(" AND ");
+				}
+				dollar = attrsQuery.toSql(query, tuple, dollar);
+				sqlAdded = true;
+			}
+
+			if (ids != null) {
+				if (sqlAdded) {
+					query.append(" AND ");
+				}
+				query.append("id IN (");
+				for (String id : ids) {
+					query.append('$');
+					query.append(dollar);
+					query.append(',');
+					tuple.addString(id);
+					dollar++;
+				}
+
+				query.setCharAt(query.length() - 1, ')');
+				sqlAdded = true;
+			}
+			if (idPattern != null) {
+				if (sqlAdded) {
+					query.append(" AND ");
+				}
+				query.append("id ~ $");
+				query.append(dollar);
+				tuple.addString(idPattern);
+				dollar++;
+				sqlAdded = true;
+			}
+
+			query.append(" ORDER BY createdAt), b as (SELECT a.ID FROM a limit $");
+			query.append(dollar);
+			tuple.addInteger(limit);
+			dollar++;
+			query.append(" offset $");
+			query.append(dollar);
+			tuple.addInteger(offset);
+			dollar++;
+			query.append("), c as (SELECT ENTITY.ID, ");
+			if (attrsQuery != null) {
+				dollar = attrsQuery.toSqlConstructEntity(query, tuple, dollar);
+			} else {
+				query.append("ENTITY.ENTITY");
+			}
+			query.append(" as ENTITY FROM b left join ENTITY on b.ID = ENTITY.ID)  ");
+			query.append("SELECT a.ID, c.ENTITY FROM a left outer join c on a.ID = c.ID");
+
+			String queryString = query.toString();
+			logger.debug("SQL REQUEST: " + queryString);
+			logger.debug("SQL TUPLE: " + tuple.deepToString());
+			return client.preparedQuery(queryString).execute(tuple).onItem().transform(rows -> {
+				Map<String, Tuple2<Map<String, Object>, Boolean>> result = Maps.newHashMap();
+				rows.forEach(row -> {
+					String id = row.getString(0);
+					JsonObject entity = row.getJsonObject(1);
+					Boolean parent = row.getBoolean(2);
+					Map<String, Object> entityMap = null;
+					if (entity != null) {
+						entityMap = entity.getMap();
+					}
+					if (parent == null) {
+						parent = true;
+					}
+					result.put(id, Tuple2.of(entityMap, parent));
+
+				});
+				return result;
+			});
+		}).onFailure().recoverWithUni(e -> {
+			if (e instanceof PgException pge) {
+				logger.debug(pge.getPosition());
+				if (pge.getSqlState().equals(AppConstants.INVALID_REGULAR_EXPRESSION)) {
+					return Uni.createFrom()
+							.failure(new ResponseException(ErrorType.BadRequestData, "Invalid regular expression"));
+				}
+				if (pge.getSqlState().equals(AppConstants.INVALID_GEO_QUERY)) {
+					return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData,
+							"Invalid geo query. " + pge.getErrorMessage()));
+				}
+			}
+			return Uni.createFrom().failure(e);
 		});
 	}
 

@@ -135,6 +135,7 @@ public class EntityOperationsQueryController {
 				Object joinLevelObj = body.get(NGSIConstants.QUERY_PARAMETER_JOINLEVEL);
 				String join = joinObj == null ? null : (String) joinObj;
 				int joinLevel = joinLevelObj == null ? 0 : (int) joinLevelObj;
+				boolean entityDist = (boolean) body.getOrDefault(NGSIConstants.QUERY_PARAMETER_ENTITY_DIST, false);
 				if (entities == null && attrs == null && q == null && geoQ == null) {
 					return Uni.createFrom()
 							.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData,
@@ -214,7 +215,8 @@ public class EntityOperationsQueryController {
 						unis.add(queryService.query(HttpUtils.getTenant(request), token, tokenProvided,
 								id == null ? null : new String[] { id }, typeQueryTerm, idPattern, attrsQuery,
 								qQueryTerm, csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset,
-								count, localOnly, context, request.headers(), false, null, null, join, joinLevel));
+								count, localOnly, context, request.headers(), false, null, null, join, joinLevel,
+								entityDist));
 					}
 					return Uni.combine().all().unis(unis).combinedWith(list -> {
 						Iterator<?> it = list.iterator();
@@ -260,7 +262,7 @@ public class EntityOperationsQueryController {
 					return queryService
 							.query(tenant, token, tokenProvided, null, null, null, attrsQuery, qQueryTerm, csfQueryTerm,
 									geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset, count, localOnly,
-									context, request.headers(), false, null, null, join, joinLevel)
+									context, request.headers(), false, null, null, join, joinLevel, entityDist)
 							.onItem().transformToUni(queryResult -> {
 								return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty,
 										acceptHeader, count, actualLimit, langQuery, context, ldService, null, null);

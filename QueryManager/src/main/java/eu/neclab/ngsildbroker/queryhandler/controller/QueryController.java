@@ -85,16 +85,16 @@ public class QueryController {
 			@QueryParam(value = "doNotCompact") boolean doNotCompact,
 			@QueryParam("containedBy") @DefaultValue("") String containedBy, @QueryParam("join") String join,
 			@QueryParam("idsOnly") boolean idsOnly, @QueryParam("joinLevel") @DefaultValue("1") int joinLevel,
-			@QueryParam("pick") String pick,@QueryParam("omit") String omit,
-			@QueryParam("format") String format,@QueryParam("jsonKeys") String jsonKeysQP) {
+			@QueryParam("pick") String pick, @QueryParam("omit") String omit, @QueryParam("format") String format,
+			@QueryParam("jsonKeys") String jsonKeysQP) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
-		if(format!=null && !format.isEmpty()){
-			options+=","+format;
+		if (format != null && !format.isEmpty()) {
+			options += "," + format;
 		}
 		if (acceptHeader == -1) {
 			return HttpUtils.getInvalidHeader();
 		}
-		if (omit!= null && pick != null) {
+		if (omit != null && pick != null) {
 			return Uni.createFrom()
 					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData)));
 		}
@@ -106,31 +106,33 @@ public class QueryController {
 		return HttpUtils.getContext(headerContext, ldService).onItem().transformToUni(context -> {
 			LanguageQueryTerm langQuery;
 			String finalPick;
-			List<String> pickListOriginal =  pick == null ? new ArrayList<>() : new ArrayList<>(Arrays.asList(pick.replaceAll("[\"\\n\\s]", "").split(",")));
-			List<String> omitList = omit == null ? new ArrayList<>() : Arrays.asList(omit.replaceAll("[\"\\n\\s]", "").split(","));
-			if(jsonKeysQP!=null){
+			List<String> pickListOriginal = pick == null ? new ArrayList<>()
+					: new ArrayList<>(Arrays.asList(pick.replaceAll("[\"\\n\\s]", "").split(",")));
+			List<String> omitList = omit == null ? new ArrayList<>()
+					: Arrays.asList(omit.replaceAll("[\"\\n\\s]", "").split(","));
+			if (jsonKeysQP != null) {
 				jsonKeys.addAll(Arrays.asList(jsonKeysQP.split(",")));
 			}
-			if(!pickListOriginal.isEmpty()){
-                List<String> pickListCopy = new ArrayList<>(pickListOriginal);
+			if (!pickListOriginal.isEmpty()) {
+				List<String> pickListCopy = new ArrayList<>(pickListOriginal);
 				if (pickListCopy.contains(NGSIConstants.ID)) {
 					pickListCopy.remove(NGSIConstants.ID);
-				}else{
+				} else {
 					omitList.add(NGSIConstants.ID);
 				}
 				if (pickListCopy.contains(NGSIConstants.TYPE)) {
 					pickListCopy.remove(NGSIConstants.TYPE);
-				}else{
+				} else {
 					omitList.add(NGSIConstants.TYPE);
 				}
-				finalPick = String.join(",",pickListCopy);
+				finalPick = String.join(",", pickListCopy);
 			} else {
-                finalPick = attrs == null ? "" : attrs.replaceAll("[\"\\n\\s]", "");
-            }
-			if(!jsonKeys.isEmpty()){
-				finalPick = String.join(",",jsonKeys);
+				finalPick = attrs == null ? "" : attrs.replaceAll("[\"\\n\\s]", "");
 			}
-            try {
+			if (!jsonKeys.isEmpty()) {
+				finalPick = String.join(",", jsonKeys);
+			}
+			try {
 				HttpUtils.validateUri(entityId);
 				langQuery = QueryParser.parseLangQuery(lang);
 			} catch (Exception e) {
@@ -142,7 +144,7 @@ public class QueryController {
 							return Uni.createFrom().item(RestResponse.ok((Object) entity));
 						}
 						return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, entity,
-								geometryProperty, finalOptions, langQuery, ldService,omitList,pickListOriginal);
+								geometryProperty, finalOptions, langQuery, ldService, omitList, pickListOriginal);
 					});
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
@@ -170,16 +172,17 @@ public class QueryController {
 			@QueryParam("join") String join, @QueryParam("idsOnly") boolean idsOnly,
 			@QueryParam("joinLevel") @DefaultValue("0") int joinLevel, @QueryParam("doNotCompact") boolean doNotCompact,
 			@QueryParam("entityMap") String entityMapToken, @QueryParam("maxDistance") String maxDistance,
-			@QueryParam("minDistance") String minDistance, @Context UriInfo uriInfo,
-			@QueryParam("pick") String pick,@QueryParam("omit") String omit,@QueryParam("format") String format,
-			@QueryParam("jsonKeys") String jsonKeysQP,@QueryParam("datasetId") String datasetId) {
+			@QueryParam("minDistance") String minDistance, @Context UriInfo uriInfo, @QueryParam("pick") String pick,
+			@QueryParam("omit") String omit, @QueryParam("format") String format,
+			@QueryParam("jsonKeys") String jsonKeysQP, @QueryParam("datasetId") String datasetId,
+			@QueryParam("entityDist") @DefaultValue("false") boolean entityDist) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		String q;
 		String georel;
-		if(format!=null && !format.isEmpty()){
-			options+=","+format;
+		if (format != null && !format.isEmpty()) {
+			options += "," + format;
 		}
-		if(id!=null) {
+		if (id != null) {
 			try {
 				HttpUtils.validateUri(id);
 			} catch (Exception e) {
@@ -187,21 +190,21 @@ public class QueryController {
 			}
 		}
 		if (qInput != null) {
-            String uri = URLDecoder.decode(request.absoluteURI(), StandardCharsets.UTF_8);
-            uri = uri.substring(uri.indexOf("q=") + 2);
-            int index = uri.indexOf('&');
-            if (index != -1) {
-                uri = uri.substring(0, index);
-            }
-            q = uri.replaceAll("\"","");
-        } else {
+			String uri = URLDecoder.decode(request.absoluteURI(), StandardCharsets.UTF_8);
+			uri = uri.substring(uri.indexOf("q=") + 2);
+			int index = uri.indexOf('&');
+			if (index != -1) {
+				uri = uri.substring(0, index);
+			}
+			q = uri.replaceAll("\"", "");
+		} else {
 			q = null;
 		}
-		if(maxDistance != null) {
-			georel = georelInput + ";maxDistance="+maxDistance;
-		}else if(minDistance != null) {
-			georel = georelInput + ";minDistance="+minDistance;
-		}else {
+		if (maxDistance != null) {
+			georel = georelInput + ";maxDistance=" + maxDistance;
+		} else if (minDistance != null) {
+			georel = georelInput + ";minDistance=" + minDistance;
+		} else {
 			georel = georelInput;
 		}
 		if (acceptHeader == -1) {
@@ -217,11 +220,12 @@ public class QueryController {
 			return Uni.createFrom()
 					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.TooManyResults)));
 		}
-		if (!localOnly && id == null && typeQuery == null && attrs == null && geometry == null && q == null && pick == null) {
+		if (!localOnly && id == null && typeQuery == null && attrs == null && geometry == null && q == null
+				&& pick == null) {
 			return Uni.createFrom()
 					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData)));
 		}
-		if (omit!= null && pick != null) {
+		if (omit != null && pick != null) {
 			return Uni.createFrom()
 					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData)));
 		}
@@ -234,7 +238,7 @@ public class QueryController {
 		headerContext = HttpUtils.getAtContext(request);
 		String finalOptions = options;
 		Set<String> jsonKeys = new HashSet<>();
-		if(jsonKeysQP!=null){
+		if (jsonKeysQP != null) {
 			jsonKeys.addAll(Arrays.asList(jsonKeysQP.split(",")));
 		}
 		return HttpUtils.getContext(headerContext, ldService).onItem().transformToUni(context -> {
@@ -246,28 +250,30 @@ public class QueryController {
 			ScopeQueryTerm scopeQueryTerm;
 			LanguageQueryTerm langQuery;
 			DataSetIdTerm dataSetIdTerm;
-			List<String> pickListOriginal =  pick == null ? new ArrayList<>() : new ArrayList<>(Arrays.asList(pick.replaceAll("[\"\\n\\s]", "").split(",")));
-			List<String> omitList = (omit == null) ? new ArrayList<>() : Arrays.asList(omit.replaceAll("[\"\\n\\s]", "").split(","));
+			List<String> pickListOriginal = pick == null ? new ArrayList<>()
+					: new ArrayList<>(Arrays.asList(pick.replaceAll("[\"\\n\\s]", "").split(",")));
+			List<String> omitList = (omit == null) ? new ArrayList<>()
+					: Arrays.asList(omit.replaceAll("[\"\\n\\s]", "").split(","));
 			try {
-				if(!pickListOriginal.isEmpty()){
+				if (!pickListOriginal.isEmpty()) {
 					List<String> pickListCopy = new ArrayList<>(pickListOriginal);
 					if (pickListCopy.contains(NGSIConstants.ID)) {
 						pickListCopy.remove(NGSIConstants.ID);
-					}else{
+					} else {
 						omitList.add(NGSIConstants.ID);
 					}
 					if (pickListCopy.contains(NGSIConstants.TYPE)) {
 						pickListCopy.remove(NGSIConstants.TYPE);
-					}else{
+					} else {
 						omitList.add(NGSIConstants.TYPE);
 					}
-					attrsQuery = QueryParser.parseAttrs(String.join(",",pickListCopy), context);
+					attrsQuery = QueryParser.parseAttrs(String.join(",", pickListCopy), context);
+				} else {
+					attrsQuery = QueryParser.parseAttrs(attrs == null ? null : attrs.replaceAll("[\"\\n\\s]", ""),
+							context);
 				}
-				else {
-					attrsQuery = QueryParser.parseAttrs(attrs == null ? null : attrs.replaceAll("[\"\\n\\s]", ""), context);
-				}
-				if(!jsonKeys.isEmpty()){
-					attrsQuery=QueryParser.parseAttrs(String.join(",",jsonKeys),context);
+				if (!jsonKeys.isEmpty()) {
+					attrsQuery = QueryParser.parseAttrs(String.join(",", jsonKeys), context);
 				}
 				dataSetIdTerm = QueryParser.parseDataSetId(datasetId);
 				typeQueryTerm = QueryParser.parseTypeQuery(typeQuery, context);
@@ -315,9 +321,11 @@ public class QueryController {
 				tokenProvided = false;
 			}
 			if (idsOnly) {
-				return queryService.queryForEntityIds(HttpUtils.getTenant(request), ids, typeQueryTerm, idPattern,
-						attrsQuery, qQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, context, request.headers(),
-						true, join, containedBy, joinLevel, doNotCompact,dataSetIdTerm).onItem().transform(list -> {
+				return queryService
+						.queryForEntityIds(HttpUtils.getTenant(request), ids, typeQueryTerm, idPattern, attrsQuery,
+								qQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, context, request.headers(), true,
+								join, containedBy, joinLevel, doNotCompact, dataSetIdTerm, entityDist)
+						.onItem().transform(list -> {
 							String body;
 							Object result = "[]";
 							try {
@@ -340,16 +348,16 @@ public class QueryController {
 						});
 			}
 
-			return queryService
-					.query(HttpUtils.getTenant(request), token, tokenProvided, ids, typeQueryTerm, idPattern,
-							attrsQuery, qQueryTerm, csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit,
-							offset, count, localOnly, context, request.headers(), doNotCompact,jsonKeys,dataSetIdTerm, join, joinLevel)
-					.onItem().transformToUni(queryResult -> {
+			return queryService.query(HttpUtils.getTenant(request), token, tokenProvided, ids, typeQueryTerm, idPattern,
+					attrsQuery, qQueryTerm, csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset,
+					count, localOnly, context, request.headers(), doNotCompact, jsonKeys, dataSetIdTerm, join,
+					joinLevel, entityDist).onItem().transformToUni(queryResult -> {
 						if (doNotCompact) {
 							return Uni.createFrom().item(RestResponse.ok((Object) queryResult.getData()));
 						}
 						return HttpUtils.generateQueryResult(request, queryResult, finalOptions, geometryProperty,
-								acceptHeader, count, actualLimit, langQuery, context, ldService,omitList,pickListOriginal);
+								acceptHeader, count, actualLimit, langQuery, context, ldService, omitList,
+								pickListOriginal);
 					});
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
@@ -370,12 +378,12 @@ public class QueryController {
 				return queryService.getTypesWithDetail(HttpUtils.getTenant(request), localOnly).onItem()
 						.transformToUni(types -> {
 							return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, types, null,
-									null, null, ldService,null,null);
+									null, null, ldService, null, null);
 						});
 			} else {
 				return queryService.getTypes(HttpUtils.getTenant(request), localOnly).onItem().transformToUni(types -> {
 					return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, types, null, null, null,
-							ldService,null,null);
+							ldService, null, null);
 				});
 			}
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
@@ -399,7 +407,7 @@ public class QueryController {
 							return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
 						} else {
 							return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, map, null, null,
-									null, ldService,null,null);
+									null, ldService, null, null);
 						}
 					});
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
@@ -420,13 +428,13 @@ public class QueryController {
 			if (!details) {
 				return queryService.getAttribs(HttpUtils.getTenant(request), localOnly).onItem().transformToUni(map -> {
 					return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, map, null, null, null,
-							ldService,null,null);
+							ldService, null, null);
 				});
 			} else {
 				return queryService.getAttribsWithDetails(HttpUtils.getTenant(request), localOnly).onItem()
 						.transformToUni(list -> {
 							return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, list, null,
-									null, null, ldService,null,null);
+									null, null, ldService, null, null);
 						});
 			}
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
@@ -451,7 +459,7 @@ public class QueryController {
 							});
 						} else {
 							return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, map, null, null,
-									null, ldService,null,null);
+									null, ldService, null, null);
 						}
 					});
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);

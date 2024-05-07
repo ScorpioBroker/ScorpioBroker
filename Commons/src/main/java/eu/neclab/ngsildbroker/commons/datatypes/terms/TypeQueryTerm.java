@@ -446,6 +446,18 @@ public class TypeQueryTerm implements Serializable {
 //		return equals(obj, false);
 //	}
 
+	public int toBroadSql(StringBuilder result, Tuple tuple, int dollar) {
+		result.append("e_types && ARRAY[");
+		for(String type: allTypes) {
+			result.append('$');
+			result.append(dollar);
+			dollar++;
+			result.append(',');
+			tuple.addString(type);
+		}
+		result.setCharAt(result.length(), ']');
+		return dollar;
+	}
 	public int toSql(StringBuilder result, Tuple tuple, int dollar) {
 		if (type == null || type.isEmpty()) {
 			TypeQueryTerm current = this;

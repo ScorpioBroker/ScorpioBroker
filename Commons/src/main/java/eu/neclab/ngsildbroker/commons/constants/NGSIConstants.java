@@ -505,4 +505,5 @@ public interface NGSIConstants {
 			NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_UPDATED, NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_DELETED);
 	public static final String QUERY_PARAMETER_JOIN = "join";
 	public static final String QUERY_PARAMETER_JOINLEVEL = "joinLevel";
+	public static final String QUERY_PARAMETER_ENTITY_DIST = "entityDist";
 }
