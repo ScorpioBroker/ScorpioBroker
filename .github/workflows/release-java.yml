@@ -46,6 +46,7 @@ jobs:
           docker tag scorpiobroker/subscription-manager:java-sqs-${{steps.get-id.outputs.id}} scorpiobroker/subscription-manager:java-sqs-latest
           docker tag scorpiobroker/query-manager:java-sqs-${{steps.get-id.outputs.id}} scorpiobroker/query-manager:java-sqs-latest
           docker tag scorpiobroker/entity-manager:java-sqs-${{steps.get-id.outputs.id}} scorpiobroker/entity-manager:java-sqs-latest
+          docker tag scorpiobroker/sns-fanout-messaging:java-sqs-${{steps.get-id.outputs.id}} scorpiobroker/sns-fanout-messaging:java-sqs-latest
           docker tag scorpiobroker/all-in-one-runner:java-sqs-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:java-sqs-latest
           docker tag scorpiobroker/at-context-server:java-sqs-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/at-context-server:java-sqs-latest
           docker tag scorpiobroker/history-entity-manager:java-sqs-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-entity-manager:java-sqs-latest
@@ -64,6 +65,7 @@ jobs:
           docker tag scorpiobroker/subscription-manager:java-sqs-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/subscription-manager:java-sqs-${{steps.get-id.outputs.id}}
           docker tag scorpiobroker/query-manager:java-sqs-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/query-manager:java-sqs-${{steps.get-id.outputs.id}}
           docker tag scorpiobroker/entity-manager:java-sqs-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/entity-manager:java-sqs-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/sns-fanout-messaging:java-sqs-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/sns-fanout-messaging:java-sqs-${{steps.get-id.outputs.id}}
           docker tag scorpiobroker/all-in-one-runner:java-sqs-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:java-sqs-${{steps.get-id.outputs.id}}
       - name: docker-login
         uses: docker/login-action@v2
@@ -80,4 +82,5 @@ jobs:
           docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/subscription-manager:java-sqs-${{steps.get-id.outputs.id}}
           docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/query-manager:java-sqs-${{steps.get-id.outputs.id}}
           docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/entity-manager:java-sqs-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/sns-fanout-messaging:java-sqs-${{steps.get-id.outputs.id}}
           docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:java-sqs-${{steps.get-id.outputs.id}}
