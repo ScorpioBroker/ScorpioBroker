@@ -789,7 +789,7 @@ public class QueryDAO {
 
 	}
 
-	public Uni<Map<String, Tuple2<Map<String, Object>, Boolean>>> queryForEntityIds(String tenant, String[] ids,
+	public Uni<Map<String, Tuple2<Map<String, Object>, String>>> queryForEntityIds(String tenant, String[] ids,
 			TypeQueryTerm typeQuery, String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery,
 			GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, Context context, int limit, int offset,
 			DataSetIdTerm dataSetIdTerm, String join, int joinLevel, boolean isDist) {
@@ -872,7 +872,7 @@ public class QueryDAO {
 			} else {
 				query.append("ENTITY.ENTITY");
 			}
-			query.append(" as ENTITY, TRUE as PARENT FROM b left join ENTITY on b.ID = ENTITY.ID)  ");
+			query.append(" as ENTITY, NULL as PARENT FROM b left join ENTITY on b.ID = ENTITY.ID)  ");
 			String currentEntitySet = "c";
 			if (dataSetIdTerm != null) {
 				query.append(", ");
@@ -905,7 +905,9 @@ public class QueryDAO {
 							".VALUE) AS Y, JSONB_ARRAY_ELEMENTS(Y #> '{https://uri.etsi.org/ngsi-ld/hasObject}') AS Z WHERE Y #>> '{@type,0}' = 'https://uri.etsi.org/ngsi-ld/Relationship') AND Y ? 'https://uri.etsi.org/ngsi-ld/hasObjectType', ");
 					query.append('D');
 					query.append(counter + 1);
-					query.append(" as (SELECT E.ID as id, E.ENTITY as entity, false as parent");
+					query.append(" as (SELECT E.ID as id, E.ENTITY as entity, C");
+					query.append(counter + 1);
+					query.append(".link as parent");
 
 					query.append(" from C");
 					query.append(counter + 1);
@@ -939,18 +941,16 @@ public class QueryDAO {
 			logger.debug("SQL REQUEST: " + queryString);
 			logger.debug("SQL TUPLE: " + tuple.deepToString());
 			return client.preparedQuery(queryString).execute(tuple).onItem().transform(rows -> {
-				Map<String, Tuple2<Map<String, Object>, Boolean>> result = Maps.newHashMap();
+				Map<String, Tuple2<Map<String, Object>, String>> result = Maps.newHashMap();
 				rows.forEach(row -> {
 					String id = row.getString(0);
 					JsonObject entity = row.getJsonObject(1);
-					Boolean parent = row.getBoolean(2);
+					String parent = row.getString(2);
 					Map<String, Object> entityMap = null;
 					if (entity != null) {
 						entityMap = entity.getMap();
 					}
-					if (parent == null) {
-						parent = true;
-					}
+
 					result.put(id, Tuple2.of(entityMap, parent));
 
 				});
@@ -1044,13 +1044,14 @@ public class QueryDAO {
 			int limit, int offSet, boolean count) {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
 			return client.preparedQuery(
-					"WITH a AS (UPDATE entitymap_management SET last_access=now() WHERE q_token=$1), b as (SELECT entity_id, remote_hosts, local FROM entitymap WHERE q_token = $1 order by order_field LIMIT $2 OFFSET $3) select b.entity_id, b.remote_hosts, entity, b.local FROM b left join ENTITY ON b.entity_id = ENTITY.id")
+					"WITH a AS (UPDATE entitymap_management SET last_access=now() WHERE q_token=$1), b as (SELECT entity_id, remote_hosts, local FROM entitymap WHERE q_token = $1 order by order_field LIMIT $2 OFFSET $3) select b.entity_id, b.remote_hosts, entity, b.isDist, b.regEmpty FROM b left join ENTITY ON b.entity_id = ENTITY.id")
 					.execute(Tuple.of(qToken, limit, offSet)).onItem().transformToUni(rows -> {
 						if (rows.rowCount() == 0) {
 							return Uni.createFrom().failure(new ResponseException(ErrorType.InvalidRequest,
 									"Token is invalid. Please rerequest without a token to retrieve a new token"));
 						}
-						EntityMap entityIdList = new EntityMap(rows.iterator().next().getBoolean(3));
+						Row first = rows.iterator().next();
+						EntityMap entityIdList = new EntityMap(first.getBoolean(3), first.getBoolean(4));
 						Map<String, Map<String, Object>> localEntities = Maps.newHashMap();
 						rows.forEach(row -> {
 							String entityId = row.getString(0);

@@ -1385,19 +1385,68 @@ public class QueryService {
 				});
 	}
 
-	private Uni<Tuple2<Map<String, Map<String, Object>>, EntityMap>> getAndStoreEntityIdList(String tenant, String[] id,
-			String idPattern, String qToken, TypeQueryTerm typeQuery, AttrsQueryTerm attrsQuery, GeoQueryTerm geoQuery,
-			QQueryTerm qQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, int limit, int offset,
-			Context context, io.vertx.core.MultiMap headersFromReq, boolean doNotCompact, DataSetIdTerm dataSetIdTerm,
-			String join, int joinLevel, boolean entityDist) {
+	private Uni<Tuple3<Map<String, Map<String, Object>>, Map<String, Map<String, Object>>, EntityMap>> getAndStoreEntityIdList(
+			String tenant, String[] id, String idPattern, String qToken, TypeQueryTerm typeQuery,
+			AttrsQueryTerm attrsQuery, GeoQueryTerm geoQuery, QQueryTerm qQuery, ScopeQueryTerm scopeQuery,
+			LanguageQueryTerm langQuery, int limit, int offset, Context context, io.vertx.core.MultiMap headersFromReq,
+			boolean doNotCompact, DataSetIdTerm dataSetIdTerm, String join, int joinLevel, boolean entityDist) {
 		Uni<Map<String, Tuple2<Map<String, Object>, Boolean>>> localIds;
-		List<QueryRemoteHost> remoteHost2Query = getRemoteQueries(tenant, id, typeQuery, idPattern, attrsQuery, qQuery,
-				geoQuery, scopeQuery, langQuery, context);
+		
 		Uni<Map<QueryRemoteHost, List<String>>> remoteIds;
 		boolean isDist;
+		// we got no registry entries
+		if (tenant2CId2RegEntries.isEmpty()) {
+			return queryDAO
+					.queryForEntityIds(tenant, id, typeQuery, idPattern, attrsQuery, qQuery, geoQuery, scopeQuery,
+							context, limit, offset, dataSetIdTerm, join, joinLevel, false)
+					.onItem().transform(queryResult -> {
+						EntityMap resultEntityMap = new EntityMap(false, true);
+						Map<String, Map<String, Object>> entityIdToEntity = Maps.newHashMap();
+						Map<String, Map<String, Object>> entityIdToLinkedEntity = Maps.newHashMap();
+						queryResult.entrySet().forEach(entry -> {
+							Tuple2<Map<String, Object>, String> t = entry.getValue();
+							if (t.getItem2() == null) {
+								entityIdToEntity.put(entry.getKey(), t.getItem1());
+							} else {
+								entityIdToLinkedEntity.put(entry.getKey(), t.getItem1());
+							}
+							resultEntityMap.getEntry(entry.getKey()).addRemoteHost(new QueryRemoteHost(null, null, null,
+									null, false, false, -1, null, false, false, null));
+						});
+						return Tuple3.of(entityIdToEntity, entityIdToLinkedEntity, resultEntityMap);
+					});
+		//We got registry entries but the query assumes that only full entities are present in the broker
+		}else if(!entityDist) {
+			List<QueryRemoteHost> remoteHost2Query = getRemoteQueries(tenant, id, typeQuery, idPattern, attrsQuery, qQuery,
+					geoQuery, scopeQuery, langQuery, context);
+			
+			return queryDAO
+					.queryForEntityIds(tenant, id, typeQuery, idPattern, attrsQuery, qQuery, geoQuery, scopeQuery,
+							context, limit, offset, dataSetIdTerm, join, joinLevel, true)
+					.onItem().transform(queryResult -> {
+						EntityMap resultEntityMap = new EntityMap(false, true);
+						Map<String, Map<String, Object>> entityIdToEntity = Maps.newHashMap();
+						Map<String, Map<String, Object>> entityIdToLinkedEntity = Maps.newHashMap();
+						queryResult.entrySet().forEach(entry -> {
+							Tuple2<Map<String, Object>, String> t = entry.getValue();
+							if (t.getItem2() == null) {
+								entityIdToEntity.put(entry.getKey(), t.getItem1());
+							} else {
+								entityIdToLinkedEntity.put(entry.getKey(), t.getItem1());
+							}
+							resultEntityMap.getEntry(entry.getKey()).addRemoteHost(new QueryRemoteHost(null, null, null,
+									null, false, false, -1, null, false, false, null), null);
+						});
+						return Tuple3.of(entityIdToEntity, entityIdToLinkedEntity, resultEntityMap);
+					});
+		//Can't assume anything! We got reg entries and the entities can be fully distributed
+		}else {
+			
+		}
 		if (remoteHost2Query.isEmpty() || !entityDist) {
 			localIds = queryDAO.queryForEntityIds(tenant, id, typeQuery, idPattern, attrsQuery, qQuery, geoQuery,
-					scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel, !tenant2CId2RegEntries.isEmpty());
+					scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel,
+					!tenant2CId2RegEntries.isEmpty());
 			isDist = true;
 			remoteIds = Uni.createFrom().item(Maps.newHashMap());
 		} else {

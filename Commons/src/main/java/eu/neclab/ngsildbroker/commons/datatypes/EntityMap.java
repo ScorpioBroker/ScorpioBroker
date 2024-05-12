@@ -14,8 +14,11 @@ public class EntityMap {
 
 	private boolean isDist;
 
-	public EntityMap(boolean isDist) {
+	private boolean regEmpty;
+
+	public EntityMap(boolean isDist, boolean regEmpty) {
 		this.isDist = isDist;
+		this.regEmpty = regEmpty;
 	}
 
 	public EntityMapEntry getEntry(String entityId) {
@@ -70,6 +73,10 @@ public class EntityMap {
 
 	public boolean isDist() {
 		return isDist;
+	}
+
+	public boolean isRegEmpty() {
+		return regEmpty;
 	}
 
 }

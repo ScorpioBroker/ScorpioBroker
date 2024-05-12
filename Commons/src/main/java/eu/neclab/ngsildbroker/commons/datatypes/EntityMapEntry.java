@@ -20,6 +20,10 @@ public class EntityMapEntry {
 	public void setEntityId(String entityId) {
 		this.entityId = entityId;
 	}
+	
+	public void addRemoteHost(QueryRemoteHost host) {
+		remoteHosts.add(host);
+	}
 
 	public List<QueryRemoteHost> getRemoteHosts() {
 		return remoteHosts;
