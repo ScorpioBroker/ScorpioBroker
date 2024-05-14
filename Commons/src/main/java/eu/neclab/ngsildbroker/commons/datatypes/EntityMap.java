@@ -16,7 +16,10 @@ public class EntityMap {
 
 	private boolean regEmpty;
 
-	public EntityMap(boolean isDist, boolean regEmpty) {
+	private String id;
+
+	public EntityMap(String id, boolean isDist, boolean regEmpty) {
+		this.id = id;
 		this.isDist = isDist;
 		this.regEmpty = regEmpty;
 	}
@@ -77,6 +80,10 @@ public class EntityMap {
 
 	public boolean isRegEmpty() {
 		return regEmpty;
+	}
+
+	public String getId() {
+		return id;
 	}
 
 }

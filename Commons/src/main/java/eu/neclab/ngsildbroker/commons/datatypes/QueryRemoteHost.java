@@ -144,4 +144,8 @@ public record QueryRemoteHost(String host, String tenant, MultiMap headers, Stri
 				&& Objects.equals(remoteToken, other.remoteToken) && Objects.equals(tenant, other.tenant);
 	}
 
+	public QueryRemoteHost updatedDuplicate(String queryString) {
+		return new QueryRemoteHost(host, tenant, headers, cSourceId, canDoSingleOp, canDoBatchOp, regMode, queryString, canDoEntityMap, canDoZip, remoteToken);
+	}
+
 }

@@ -169,12 +169,12 @@ public class QueryController {
 			@QueryParam("scopeQ") String scopeQ, @QueryParam("localOnly") boolean localOnly,
 			@QueryParam("options") String options, @QueryParam("limit") Integer limit, @QueryParam("offset") int offset,
 			@QueryParam("count") boolean count, @QueryParam("containedBy") @DefaultValue("") String containedBy,
-			@QueryParam("join") String join, @QueryParam("idsOnly") boolean idsOnly,
-			@QueryParam("joinLevel") @DefaultValue("0") int joinLevel, @QueryParam("doNotCompact") boolean doNotCompact,
-			@QueryParam("entityMap") String entityMapToken, @QueryParam("maxDistance") String maxDistance,
-			@QueryParam("minDistance") String minDistance, @Context UriInfo uriInfo, @QueryParam("pick") String pick,
-			@QueryParam("omit") String omit, @QueryParam("format") String format,
-			@QueryParam("jsonKeys") String jsonKeysQP, @QueryParam("datasetId") String datasetId,
+			@QueryParam("join") String join, @QueryParam("joinLevel") @DefaultValue("0") int joinLevel,
+			@QueryParam("doNotCompact") boolean doNotCompact, @QueryParam("entityMap") String entityMapToken,
+			@QueryParam("maxDistance") String maxDistance, @QueryParam("minDistance") String minDistance,
+			@Context UriInfo uriInfo, @QueryParam("pick") String pick, @QueryParam("omit") String omit,
+			@QueryParam("format") String format, @QueryParam("jsonKeys") String jsonKeysQP,
+			@QueryParam("datasetId") String datasetId,
 			@QueryParam("entityDist") @DefaultValue("false") boolean entityDist) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		String q;
@@ -320,33 +320,6 @@ public class QueryController {
 				token = RandomStringUtils.randomAlphabetic(6) + md5;
 				tokenProvided = false;
 			}
-			if (idsOnly) {
-				return queryService
-						.queryForEntityIds(HttpUtils.getTenant(request), ids, typeQueryTerm, idPattern, attrsQuery,
-								qQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, context, request.headers(), true,
-								join, containedBy, joinLevel, doNotCompact, dataSetIdTerm, entityDist)
-						.onItem().transform(list -> {
-							String body;
-							Object result = "[]";
-							try {
-								body = JsonUtils.toPrettyString(list);
-//							if (zipEntityMap) {
-//								result = HttpUtils.zipResult(body);
-//							} else {
-								result = body.getBytes();
-//							}
-							} catch (JsonGenerationException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							} catch (IOException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							}
-
-							return RestResponseBuilderImpl.ok(result)
-									.header(NGSIConstants.ENTITY_MAP_TOKEN_HEADER, token).build();
-						});
-			}
 
 			return queryService.query(HttpUtils.getTenant(request), token, tokenProvided, ids, typeQueryTerm, idPattern,
 					attrsQuery, qQueryTerm, csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset,
@@ -463,6 +436,137 @@ public class QueryController {
 						}
 					});
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+
+	}
+
+	@Path("/entityMap")
+	@GET
+	public Uni<RestResponse<Object>> queryEntityMap(HttpServerRequest request, @QueryParam("id") String id,
+			@QueryParam("type") String typeQuery, @QueryParam("idPattern") String idPattern,
+			@QueryParam("attrs") String attrs, @QueryParam("q") String qInput, @QueryParam("csf") String csf,
+			@QueryParam("geometry") String geometry, @QueryParam("georel") String georelInput,
+			@QueryParam("coordinates") String coordinates, @QueryParam("geoproperty") String geoproperty,
+			@QueryParam("geometryProperty") String geometryProperty, @QueryParam("lang") String lang,
+			@QueryParam("scopeQ") String scopeQ, @QueryParam("maxDistance") String maxDistance,
+			@QueryParam("minDistance") String minDistance, @Context UriInfo uriInfo, @QueryParam("pick") String pick,
+			@QueryParam("omit") String omit, @QueryParam("jsonKeys") String jsonKeysQP,
+			@QueryParam("datasetId") String datasetId) {
+		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
+		String q;
+		String georel;
+
+		if (id != null) {
+			try {
+				HttpUtils.validateUri(id);
+			} catch (Exception e) {
+				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+			}
+		}
+		if (qInput != null) {
+			String uri = URLDecoder.decode(request.absoluteURI(), StandardCharsets.UTF_8);
+			uri = uri.substring(uri.indexOf("q=") + 2);
+			int index = uri.indexOf('&');
+			if (index != -1) {
+				uri = uri.substring(0, index);
+			}
+			q = uri.replaceAll("\"", "");
+		} else {
+			q = null;
+		}
+		if (maxDistance != null) {
+			georel = georelInput + ";maxDistance=" + maxDistance;
+		} else if (minDistance != null) {
+			georel = georelInput + ";minDistance=" + minDistance;
+		} else {
+			georel = georelInput;
+		}
+		if (acceptHeader == -1) {
+			return HttpUtils.getInvalidHeader();
+		}
+
+//		if (!localOnly && id == null && typeQuery == null && attrs == null && geometry == null && q == null
+//				&& pick == null) {
+//			return Uni.createFrom()
+//					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData)));
+//		}
+		if (omit != null && pick != null) {
+			return Uni.createFrom()
+					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData)));
+		}
+
+		logger.debug("Query called: " + request.path());
+		List<Object> headerContext;
+		headerContext = HttpUtils.getAtContext(request);
+
+		Set<String> jsonKeys = new HashSet<>();
+		if (jsonKeysQP != null) {
+			jsonKeys.addAll(Arrays.asList(jsonKeysQP.split(",")));
+		}
+		return HttpUtils.getContext(headerContext, ldService).onItem().transformToUni(context -> {
+			AttrsQueryTerm attrsQuery;
+			TypeQueryTerm typeQueryTerm;
+			QQueryTerm qQueryTerm;
+			CSFQueryTerm csfQueryTerm;
+			GeoQueryTerm geoQueryTerm;
+			ScopeQueryTerm scopeQueryTerm;
+			LanguageQueryTerm langQuery;
+			DataSetIdTerm dataSetIdTerm;
+			List<String> pickListOriginal = pick == null ? new ArrayList<>()
+					: new ArrayList<>(Arrays.asList(pick.replaceAll("[\"\\n\\s]", "").split(",")));
+			List<String> omitList = (omit == null) ? new ArrayList<>()
+					: Arrays.asList(omit.replaceAll("[\"\\n\\s]", "").split(","));
+			try {
+				if (!pickListOriginal.isEmpty()) {
+					List<String> pickListCopy = new ArrayList<>(pickListOriginal);
+					if (pickListCopy.contains(NGSIConstants.ID)) {
+						pickListCopy.remove(NGSIConstants.ID);
+					} else {
+						omitList.add(NGSIConstants.ID);
+					}
+					if (pickListCopy.contains(NGSIConstants.TYPE)) {
+						pickListCopy.remove(NGSIConstants.TYPE);
+					} else {
+						omitList.add(NGSIConstants.TYPE);
+					}
+					attrsQuery = QueryParser.parseAttrs(String.join(",", pickListCopy), context);
+				} else {
+					attrsQuery = QueryParser.parseAttrs(attrs == null ? null : attrs.replaceAll("[\"\\n\\s]", ""),
+							context);
+				}
+				if (!jsonKeys.isEmpty()) {
+					attrsQuery = QueryParser.parseAttrs(String.join(",", jsonKeys), context);
+				}
+				dataSetIdTerm = QueryParser.parseDataSetId(datasetId);
+				typeQueryTerm = QueryParser.parseTypeQuery(typeQuery, context);
+				qQueryTerm = QueryParser.parseQuery(q, context);
+				csfQueryTerm = QueryParser.parseCSFQuery(csf, context);
+				geoQueryTerm = QueryParser.parseGeoQuery(georel, coordinates, geometry, geoproperty, context);
+				scopeQueryTerm = QueryParser.parseScopeQuery(scopeQ);
+				langQuery = QueryParser.parseLangQuery(lang);
+
+			} catch (Exception e) {
+				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+			}
+			String[] ids;
+			if (id != null) {
+				ids = id.split(",");
+			} else {
+				ids = null;
+			}
+			return queryService.getAndStoreEntityIdList(HttpUtils.getTenant(request), ids, idPattern, q, typeQueryTerm,
+					attrsQuery, geoQueryTerm, qQueryTerm, scopeQueryTerm, langQuery, 1, 0, context, request.headers(),
+					false, dataSetIdTerm, null, 0, true).onItem().transformToUni(t -> {
+						return HttpUtils.generateEntityMapResult(t.getItem3());
+					}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+		});
+	}
+
+	@Path("/entityMap/{entityMapId}")
+	@GET
+	public Uni<RestResponse<Object>> getEntityMap(HttpServerRequest request,
+			@PathParam("entityMapId") String entityMapId) {
+		return queryService.getEntityMap(HttpUtils.getTenant(request), entityMapId).onItem()
+				.transformToUni(entityMap -> HttpUtils.generateEntityMapResult(entityMap));
 
 	}
 

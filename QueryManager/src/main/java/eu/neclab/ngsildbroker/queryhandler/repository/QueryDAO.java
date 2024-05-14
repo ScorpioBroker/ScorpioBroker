@@ -1041,30 +1041,37 @@ public class QueryDAO {
 	}
 
 	public Uni<Tuple3<Long, EntityMap, Map<String, Map<String, Object>>>> getEntityMap(String tenant, String qToken,
-			int limit, int offSet, boolean count) {
+			int limit, int offSet) {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
-			return client.preparedQuery(
-					"WITH a AS (UPDATE entitymap_management SET last_access=now() WHERE q_token=$1), b as (SELECT entity_id, remote_hosts, local FROM entitymap WHERE q_token = $1 order by order_field LIMIT $2 OFFSET $3) select b.entity_id, b.remote_hosts, entity, b.isDist, b.regEmpty FROM b left join ENTITY ON b.entity_id = ENTITY.id")
-					.execute(Tuple.of(qToken, limit, offSet)).onItem().transformToUni(rows -> {
-						if (rows.rowCount() == 0) {
-							return Uni.createFrom().failure(new ResponseException(ErrorType.InvalidRequest,
-									"Token is invalid. Please rerequest without a token to retrieve a new token"));
-						}
-						Row first = rows.iterator().next();
-						EntityMap entityIdList = new EntityMap(first.getBoolean(3), first.getBoolean(4));
-						Map<String, Map<String, Object>> localEntities = Maps.newHashMap();
-						rows.forEach(row -> {
-							String entityId = row.getString(0);
-							entityIdList.getEntry(entityId).getRemoteHosts()
-									.addAll(QueryRemoteHost.getRemoteHostsFromJson(row.getJsonArray(1).getList()));
-							JsonObject localEntity = row.getJsonObject(2);
-							if (localEntity != null) {
-								localEntities.put(entityId, localEntity.getMap());
-							}
+			Tuple tuple;
+			String sql;
+			if (limit == -1) {
+				sql = "WITH a AS (UPDATE entitymap_management SET last_access=now() WHERE q_token=$1), b as (SELECT entity_id, remote_hosts, local FROM entitymap WHERE q_token = $1 order by order_field) select b.entity_id, b.remote_hosts, entity, b.isDist, b.regEmpty FROM b left join ENTITY ON b.entity_id = ENTITY.id";
+				tuple = Tuple.of(qToken);
+			} else {
+				sql = "WITH a AS (UPDATE entitymap_management SET last_access=now() WHERE q_token=$1), b as (SELECT entity_id, remote_hosts, local FROM entitymap WHERE q_token = $1 order by order_field LIMIT $2 OFFSET $3) select b.entity_id, b.remote_hosts, entity, b.isDist, b.regEmpty FROM b left join ENTITY ON b.entity_id = ENTITY.id";
+				tuple = Tuple.of(qToken, limit, offSet);
+			}
+			return client.preparedQuery(sql).execute(tuple).onItem().transformToUni(rows -> {
+				if (rows.rowCount() == 0) {
+					return Uni.createFrom().failure(new ResponseException(ErrorType.InvalidRequest,
+							"Token is invalid. Please rerequest without a token to retrieve a new token"));
+				}
+				Row first = rows.iterator().next();
+				EntityMap entityIdList = new EntityMap(qToken, first.getBoolean(3), first.getBoolean(4));
+				Map<String, Map<String, Object>> localEntities = Maps.newHashMap();
+				rows.forEach(row -> {
+					String entityId = row.getString(0);
+					entityIdList.getEntry(entityId).getRemoteHosts()
+							.addAll(QueryRemoteHost.getRemoteHostsFromJson(row.getJsonArray(1).getList()));
+					JsonObject localEntity = row.getJsonObject(2);
+					if (localEntity != null) {
+						localEntities.put(entityId, localEntity.getMap());
+					}
 
-						});
-						return Uni.createFrom().item(Tuple3.of(0l, entityIdList, localEntities));
-					});
+				});
+				return Uni.createFrom().item(Tuple3.of(0l, entityIdList, localEntities));
+			});
 		});
 
 	}
