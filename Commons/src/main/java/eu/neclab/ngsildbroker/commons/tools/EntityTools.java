@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -11,7 +12,9 @@ import java.util.Map.Entry;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLDService;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.common.collect.Table;
 
 import java.util.Set;
 import java.util.UUID;
@@ -23,9 +26,21 @@ import eu.neclab.ngsildbroker.commons.datatypes.LDGeoQuery;
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
 import eu.neclab.ngsildbroker.commons.datatypes.Property;
 import eu.neclab.ngsildbroker.commons.datatypes.PropertyEntry;
+import eu.neclab.ngsildbroker.commons.datatypes.QueryInfos;
+import eu.neclab.ngsildbroker.commons.datatypes.QueryRemoteHost;
+import eu.neclab.ngsildbroker.commons.datatypes.RegistrationEntry;
+import eu.neclab.ngsildbroker.commons.datatypes.RemoteHost;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.tuples.Tuple2;
+import io.vertx.mutiny.ext.web.client.WebClient;
 
 public abstract class EntityTools {
 
@@ -165,7 +180,7 @@ public abstract class EntityTools {
 				case NGSIConstants.NGSI_LD_ListProperty:
 					prop = generateFakeProperty(key, tmp);
 					break;
-					case NGSIConstants.NGSI_LD_LOCALONLY:
+				case NGSIConstants.NGSI_LD_LOCALONLY:
 					prop = generateFakeProperty(key, tmp);
 					break;
 				case NGSIConstants.NGSI_LD_PROPERTY:
@@ -452,7 +467,7 @@ public abstract class EntityTools {
 	}
 
 	public static void noConcise(Object object) {
-		noConcise(object, null, null,0);
+		noConcise(object, null, null, 0);
 	}
 
 	private static void noConcise(Object object, Map<String, Object> parentMap, String keyOfObject, int level) {
@@ -461,11 +476,9 @@ public abstract class EntityTools {
 			// Map have object but not type
 			if (map.containsKey(NGSIConstants.OBJECT)) {
 				((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.RELATIONSHIP);
-			}
-			else if (map.containsKey(NGSIConstants.OBJECT_LIST)) {
+			} else if (map.containsKey(NGSIConstants.OBJECT_LIST)) {
 				((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.LISTRELATIONSHIP);
-			}
-			else if (map.containsKey(NGSIConstants.VALUE_LIST)) {
+			} else if (map.containsKey(NGSIConstants.VALUE_LIST)) {
 				((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.LISTPROPERTY);
 			}
 			// Map have vocab but not type
@@ -478,8 +491,7 @@ public abstract class EntityTools {
 				if (map.get(NGSIConstants.VALUE) instanceof Map<?, ?> nestedMap
 						&& (NGSIConstants.GEO_KEYWORDS.contains(nestedMap.get(NGSIConstants.TYPE)))) {
 					((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.NGSI_LD_GEOPROPERTY_SHORT);
-				}
-				else
+				} else
 					((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.PROPERTY);
 			}
 			// for GeoProperty
@@ -490,20 +502,16 @@ public abstract class EntityTools {
 				newMap.put(NGSIConstants.TYPE, NGSIConstants.NGSI_LD_GEOPROPERTY_SHORT);
 				newMap.put(NGSIConstants.VALUE, map);
 				parentMap.put(keyOfObject, newMap);
-			}
-			else if (map.containsKey(NGSIConstants.LANGUAGE_MAP)) {
+			} else if (map.containsKey(NGSIConstants.LANGUAGE_MAP)) {
 				((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.LANGUAGE_PROPERTY);
-			}
-			else if (map.containsKey(NGSIConstants.JSON)) {
+			} else if (map.containsKey(NGSIConstants.JSON)) {
 				((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.JSONPROPERTY);
-			}
-			else if(parentMap != null && !map.containsKey(NGSIConstants.TYPE) && level==1){
+			} else if (parentMap != null && !map.containsKey(NGSIConstants.TYPE) && level == 1) {
 				Map<String, Object> newMap = new HashMap<>();
 				newMap.put(NGSIConstants.VALUE, map);
 				newMap.put(NGSIConstants.TYPE, NGSIConstants.PROPERTY);
 				parentMap.put(keyOfObject, newMap);
-			}
-			else {
+			} else {
 				// Iterate through every element of Map
 				Object[] mapKeys = map.keySet().toArray();
 				for (Object key : mapKeys) {
@@ -513,42 +521,38 @@ public abstract class EntityTools {
 							&& !key.equals(NGSIConstants.QUERY_PARAMETER_OBSERVED_AT)
 							&& !key.equals(NGSIConstants.INSTANCE_ID)
 							&& !key.equals(NGSIConstants.QUERY_PARAMETER_DATA_SET_ID)
-							&& !key.equals(NGSIConstants.OBJECT)
-							&& !key.equals(NGSIConstants.OBJECT_LIST)
+							&& !key.equals(NGSIConstants.OBJECT) && !key.equals(NGSIConstants.OBJECT_LIST)
 							&& !key.equals(NGSIConstants.VALUE) && !key.equals(NGSIConstants.SCOPE)
 							&& !key.equals(NGSIConstants.QUERY_PARAMETER_UNIT_CODE)
-							&& !key.equals(NGSIConstants.LANGUAGE_MAP)
-							&& !key.equals(NGSIConstants.JSON)
-							&& !key.equals(NGSIConstants.VOCAB)
-							&& !key.equals(NGSIConstants.LIST)
-							&& !key.equals(NGSIConstants.LOCALONLY)
-							&& !key.equals(NGSIConstants.OBJECT_TYPE)) {
-						noConcise(map.get(key), (Map<String, Object>) map, key.toString(),level+1);
+							&& !key.equals(NGSIConstants.LANGUAGE_MAP) && !key.equals(NGSIConstants.JSON)
+							&& !key.equals(NGSIConstants.VOCAB) && !key.equals(NGSIConstants.LIST)
+							&& !key.equals(NGSIConstants.LOCALONLY) && !key.equals(NGSIConstants.OBJECT_TYPE)) {
+						noConcise(map.get(key), (Map<String, Object>) map, key.toString(), level + 1);
 					}
 				}
 			}
-			if(map.containsKey(NGSIConstants.PROVIDED_BY)){
-				noConcise(map.get(NGSIConstants.PROVIDED_BY), (Map<String, Object>) map, NGSIConstants.PROVIDED_BY,level+1);
+			if (map.containsKey(NGSIConstants.PROVIDED_BY)) {
+				noConcise(map.get(NGSIConstants.PROVIDED_BY), (Map<String, Object>) map, NGSIConstants.PROVIDED_BY,
+						level + 1);
 			}
 		}
 		// Object is List
 		else if (object instanceof List<?> list) {
 			boolean putType = true;
-			for (Object obj:list){
-				if (obj instanceof Map<?,?> map && map.containsKey(NGSIConstants.TYPE)){
+			for (Object obj : list) {
+				if (obj instanceof Map<?, ?> map && map.containsKey(NGSIConstants.TYPE)) {
 					putType = false;
 					break;
 				}
 			}
-			if(putType && parentMap != null && level==1){
+			if (putType && parentMap != null && level == 1) {
 				Map<String, Object> newMap = new HashMap<>();
 				newMap.put(NGSIConstants.VALUE, list);
 				newMap.put(NGSIConstants.TYPE, NGSIConstants.PROPERTY);
 				parentMap.put(keyOfObject, newMap);
-			}
-			else {
+			} else {
 				for (Object o : list) {
-					noConcise(o, null, null,level);
+					noConcise(o, null, null, level);
 				}
 			}
 		}
@@ -565,6 +569,111 @@ public abstract class EntityTools {
 			}
 
 		}
+	}
+
+	public static Uni<List<Map<String, Object>>> getRemoteEntities(QueryRemoteHost remoteHost, WebClient webClient) {
+		return webClient.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + remoteHost.queryString())
+				.send().onItem().transformToUni(response -> {
+					List<Map<String, Object>> result = Lists.newArrayList();
+					result.addAll(response.bodyAsJsonArray().getList());
+					if (response.headers().contains("Next")) {
+						QueryRemoteHost updatedHost = remoteHost.updatedDuplicate(response.headers().get("Next"));
+						return getRemoteEntities(updatedHost, webClient).onItem().transform(nextResult -> {
+							result.addAll(nextResult);
+							return result;
+						});
+					}
+					return Uni.createFrom().item(result);
+				}).onFailure().recoverWithItem(e -> Lists.newArrayList());
+
+	}
+
+	public static List<QueryRemoteHost> getRemoteQueries(String tenant, String[] id, TypeQueryTerm typeQuery,
+			String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery, GeoQueryTerm geoQuery,
+			ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery,
+			Table<String, String, List<RegistrationEntry>> tenant2CId2RegEntries, Context context) {
+		return getRemoteQueries(id, typeQuery, idPattern, attrsQuery, qQuery, geoQuery, scopeQuery, langQuery,
+				tenant2CId2RegEntries.row(tenant).values().iterator(), context);
+	}
+
+	public static List<QueryRemoteHost> getRemoteQueries(String[] id, TypeQueryTerm typeQuery, String idPattern,
+			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery,
+			LanguageQueryTerm langQuery, Iterator<List<RegistrationEntry>> it, Context context) {
+
+		// ids, types, attrs, geo, scope
+		Map<QueryRemoteHost, QueryInfos> remoteHost2QueryInfo = Maps.newHashMap();
+		while (it.hasNext()) {
+			Iterator<RegistrationEntry> tenantRegs = it.next().iterator();
+			while (tenantRegs.hasNext()) {
+
+				RegistrationEntry regEntry = tenantRegs.next();
+				if (regEntry.expiresAt() > 0 && regEntry.expiresAt() <= System.currentTimeMillis()) {
+					it.remove();
+					continue;
+				}
+				if (!regEntry.queryBatch() && !regEntry.queryEntity()) {
+					continue;
+				}
+
+				if (regEntry.matches(id, idPattern, typeQuery, attrsQuery, qQuery, geoQuery, scopeQuery) == null) {
+					continue;
+				}
+
+				RemoteHost regHost = regEntry.host();
+				QueryRemoteHost hostToQuery = QueryRemoteHost.fromRemoteHost(regHost, null, regEntry.canDoIdQuery(),
+						regEntry.canDoZip(), null);
+				QueryInfos queryInfos = remoteHost2QueryInfo.get(hostToQuery);
+				if (queryInfos == null) {
+					queryInfos = new QueryInfos();
+					remoteHost2QueryInfo.put(hostToQuery, queryInfos);
+				}
+
+				if (!queryInfos.isFullIdFound()) {
+					if (regEntry.eId() != null) {
+						queryInfos.getIds().add(regEntry.eId());
+					} else {
+						if (id != null) {
+							queryInfos.setIds(Sets.newHashSet(id));
+							queryInfos.setFullIdFound(true);
+						} else if (idPattern != null) {
+							queryInfos.setIdPattern(idPattern);
+						}
+					}
+				}
+				if (!queryInfos.isFullTypesFound()) {
+					if (regEntry.type() != null) {
+						queryInfos.getTypes().add(regEntry.type());
+					} else {
+						if (typeQuery != null) {
+							queryInfos.setTypes(typeQuery.getAllTypes());
+							queryInfos.setFullTypesFound(true);
+						}
+					}
+				}
+				if (!queryInfos.isFullAttrsFound()) {
+					if (regEntry.eProp() != null) {
+						queryInfos.getAttrs().add(regEntry.eProp());
+					} else if (regEntry.eRel() != null) {
+						queryInfos.getAttrs().add(regEntry.eRel());
+					} else {
+						queryInfos.setFullAttrsFound(true);
+						if (attrsQuery != null && attrsQuery.getAttrs() != null && !attrsQuery.getAttrs().isEmpty()) {
+							queryInfos.setAttrs(attrsQuery.getAttrs());
+						}
+					}
+				}
+			}
+
+		}
+		List<QueryRemoteHost> result = new ArrayList<>(remoteHost2QueryInfo.size());
+		for (Entry<QueryRemoteHost, QueryInfos> entry : remoteHost2QueryInfo.entrySet()) {
+			QueryRemoteHost tmpHost = entry.getKey();
+			String queryString = entry.getValue().toQueryString(context, typeQuery, geoQuery, langQuery, false);
+			result.add(new QueryRemoteHost(tmpHost.host(), tmpHost.tenant(), tmpHost.headers(), tmpHost.cSourceId(),
+					tmpHost.canDoSingleOp(), tmpHost.canDoBatchOp(), tmpHost.regMode(), queryString,
+					tmpHost.canDoEntityMap(), tmpHost.canDoZip(), tmpHost.remoteToken()));
+		}
+		return result;
 	}
 
 }

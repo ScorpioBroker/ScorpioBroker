@@ -12,16 +12,19 @@ public class EntityMap {
 
 	private List<EntityMapEntry> entityList = Lists.newArrayList();
 
-	private boolean isDist;
+	private boolean onlyFullEntitiesDistributed;
 
 	private boolean regEmpty;
 
+	private boolean noRootLevelRegEntry;
+
 	private String id;
 
-	public EntityMap(String id, boolean isDist, boolean regEmpty) {
+	public EntityMap(String id, boolean onlyFullEntitiesDistributed, boolean regEmpty, boolean noRootLevelRegEntry) {
 		this.id = id;
-		this.isDist = isDist;
+		this.onlyFullEntitiesDistributed = onlyFullEntitiesDistributed;
 		this.regEmpty = regEmpty;
+		this.noRootLevelRegEntry = noRootLevelRegEntry;
 	}
 
 	public EntityMapEntry getEntry(String entityId) {
@@ -74,8 +77,8 @@ public class EntityMap {
 		return entityList.size();
 	}
 
-	public boolean isDist() {
-		return isDist;
+	public boolean onlyFullEntitiesDistributed() {
+		return onlyFullEntitiesDistributed;
 	}
 
 	public boolean isRegEmpty() {
@@ -84,6 +87,10 @@ public class EntityMap {
 
 	public String getId() {
 		return id;
+	}
+
+	public boolean isNoRootLevelRegEntry() {
+		return noRootLevelRegEntry;
 	}
 
 }

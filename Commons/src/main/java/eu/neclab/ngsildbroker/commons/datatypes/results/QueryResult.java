@@ -18,7 +18,6 @@ public class QueryResult {
 	private Long resultsLeftAfter;
 	private Long resultsLeftBefore;
 	private List<Map<String, Object>> data;
-	private Map<String, Map<String, Object>> entityId2Data = Maps.newHashMap();
 	private Long count = 0L;
 
 	public QueryResult() {
@@ -80,13 +79,7 @@ public class QueryResult {
 		this.count = count;
 	}
 
-	public Map<String, Map<String, Object>> getEntityId2Data() {
-		return entityId2Data;
-	}
-
-	public void setEntityId2Data(Map<String, Map<String, Object>> entityId2Data) {
-		this.entityId2Data = entityId2Data;
-	}
+	
 
 //	public void finalize() throws Throwable {
 //

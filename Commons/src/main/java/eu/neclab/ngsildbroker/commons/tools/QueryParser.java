@@ -116,7 +116,6 @@ public class QueryParser {
 				current = child;
 				readingAttrib = true;
 				readingOperant = false;
-
 			} else if (b == ';') {
 				QQueryTerm next = new QQueryTerm(context);
 				current.setOperant(operant);
@@ -164,6 +163,9 @@ public class QueryParser {
 				readingAttrib = true;
 				readingOperant = false;
 				operant = "";
+				if (b == '}') {
+					readingLinkedQ = false;
+				}
 
 			} else if ((b == '!' || b == '=' || b == '<' || b == '>' || b == '~') && !readingOperant) {
 				operator.append(b);
@@ -174,8 +176,14 @@ public class QueryParser {
 					attribName = "";
 				}
 			} else if (b == '{') {
+				root.setHasLinkedQ(true);
 				current.setLinkedQ(true);
 				current.setLinkedAttrName(attribName);
+				QQueryTerm child = new QQueryTerm(context);
+				current.setFirstChild(child);
+				current = child;
+				readingAttrib = true;
+				readingOperant = false;
 				readingLinkedQ = true;
 				attribName = "";
 

@@ -1040,25 +1040,48 @@ public class QueryDAO {
 		});
 	}
 
-	public Uni<Tuple3<Long, EntityMap, Map<String, Map<String, Object>>>> getEntityMap(String tenant, String qToken,
-			int limit, int offSet) {
+	public Uni<EntityMap> getEntityMap(String tenant, String qToken) {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
 			Tuple tuple;
 			String sql;
-			if (limit == -1) {
-				sql = "WITH a AS (UPDATE entitymap_management SET last_access=now() WHERE q_token=$1), b as (SELECT entity_id, remote_hosts, local FROM entitymap WHERE q_token = $1 order by order_field) select b.entity_id, b.remote_hosts, entity, b.isDist, b.regEmpty FROM b left join ENTITY ON b.entity_id = ENTITY.id";
-				tuple = Tuple.of(qToken);
-			} else {
-				sql = "WITH a AS (UPDATE entitymap_management SET last_access=now() WHERE q_token=$1), b as (SELECT entity_id, remote_hosts, local FROM entitymap WHERE q_token = $1 order by order_field LIMIT $2 OFFSET $3) select b.entity_id, b.remote_hosts, entity, b.isDist, b.regEmpty FROM b left join ENTITY ON b.entity_id = ENTITY.id";
-				tuple = Tuple.of(qToken, limit, offSet);
-			}
+			sql = "SELECT entity_id, remote_hosts, isDist, regEmpty, noRegEntry FROM entitymap WHERE q_token = $1 order by order_field;";
+			tuple = Tuple.of(qToken);
+			return client.preparedQuery(sql).execute(tuple).onItem().transformToUni(rows -> {
+				if (rows.rowCount() == 0) {
+					return Uni.createFrom()
+							.failure(new ResponseException(ErrorType.InvalidRequest, "EntityMapId is invalid."));
+				}
+				Row first = rows.iterator().next();
+				EntityMap entityMap = new EntityMap(qToken, first.getBoolean(2), first.getBoolean(3),
+						first.getBoolean(4));
+				rows.forEach(row -> {
+					String entityId = row.getString(0);
+					entityMap.getEntry(entityId).getRemoteHosts()
+							.addAll(QueryRemoteHost.getRemoteHostsFromJson(row.getJsonArray(1).getList()));
+
+				});
+				return Uni.createFrom().item(entityMap);
+			});
+		});
+
+	}
+
+	public Uni<Tuple3<Long, EntityMap, Map<String, Map<String, Object>>>> getEntityMapAndEntitiesAndUpdateExpires(
+			String tenant, String qToken, int limit, int offSet) {
+		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
+			Tuple tuple;
+			String sql;
+
+			sql = "WITH a AS (UPDATE entitymap_management SET last_access=now() WHERE q_token=$1), b as (SELECT entity_id, remote_hosts, local FROM entitymap WHERE q_token = $1 order by order_field LIMIT $2 OFFSET $3) select b.entity_id, b.remote_hosts, entity, b.isDist, b.regEmpty, b.noRegEntry FROM b left join ENTITY ON b.entity_id = ENTITY.id";
+			tuple = Tuple.of(qToken, limit, offSet);
+
 			return client.preparedQuery(sql).execute(tuple).onItem().transformToUni(rows -> {
 				if (rows.rowCount() == 0) {
 					return Uni.createFrom().failure(new ResponseException(ErrorType.InvalidRequest,
 							"Token is invalid. Please rerequest without a token to retrieve a new token"));
 				}
 				Row first = rows.iterator().next();
-				EntityMap entityIdList = new EntityMap(qToken, first.getBoolean(3), first.getBoolean(4));
+				EntityMap entityIdList = new EntityMap(qToken, first.getBoolean(3), first.getBoolean(4), first.getBoolean(5));
 				Map<String, Map<String, Object>> localEntities = Maps.newHashMap();
 				rows.forEach(row -> {
 					String entityId = row.getString(0);

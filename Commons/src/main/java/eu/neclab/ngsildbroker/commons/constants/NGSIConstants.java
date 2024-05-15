@@ -508,5 +508,7 @@ public interface NGSIConstants {
 	public static final String QUERY_PARAMETER_JOINLEVEL = "joinLevel";
 	public static final String QUERY_PARAMETER_ENTITY_DIST = "entityDist";
 	public static final String NGSI_LD_ENTITY_MAP_SHORT = "entityMap";
+	public static final String NGSI_LD_ENTITY = "https://uri.etsi.org/ngsi-ld/entity";
+	
 	public static final String JSON_LD_NULL = "@null";
 }

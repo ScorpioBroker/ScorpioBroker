@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import com.github.jsonldjava.core.Context;
@@ -17,10 +18,16 @@ import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.BaseEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.BaseProperty;
 import eu.neclab.ngsildbroker.commons.datatypes.PropertyEntry;
+import eu.neclab.ngsildbroker.commons.datatypes.QueryRemoteHost;
+import eu.neclab.ngsildbroker.commons.datatypes.RegistrationEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.RelationshipEntry;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.tuples.Tuple2;
+import io.vertx.mutiny.ext.web.client.WebClient;
 import io.vertx.mutiny.sqlclient.Tuple;
 
 public class QQueryTerm implements Serializable {
@@ -49,6 +56,7 @@ public class QQueryTerm implements Serializable {
 	private boolean isLinkedQ = false;
 	private List<String> linkedEntityTypes = Lists.newArrayList();
 	private String linkedAttrName = null;
+	private boolean hasLinkedQ = false;
 
 	public List<String> getLinkedEntityTypes() {
 		return linkedEntityTypes;
@@ -1535,6 +1543,120 @@ public class QQueryTerm implements Serializable {
 
 	public void setLinkHeaders(Context linkHeaders) {
 		this.linkHeaders = linkHeaders;
+	}
+
+	public boolean hasLinkedQ() {
+		return hasLinkedQ;
+	}
+
+	public void setHasLinkedQ(boolean hasLinkedQ) {
+		this.hasLinkedQ = hasLinkedQ;
+	}
+
+	public Uni<Map<String, Map<String, Object>>> calculateQuery(Map<String, Map<String, Object>> localResults,
+			Map<String, Map<String, Object>> fullEntityCache, Map<String, List<RegistrationEntry>> regEntries,
+			boolean onlyFullEntities, WebClient webClient) {
+
+		List<Uni<Tuple2<Boolean, String>>> calcUnis = Lists.newArrayList();
+		for (Entry<String, Map<String, Object>> entry : localResults.entrySet()) {
+			String entityId = entry.getKey();
+			Map<String, Object> entity = entry.getValue();
+			calcUnis.add(calculateEntity(entity, fullEntityCache, regEntries, onlyFullEntities, webClient).onItem()
+					.transform(calcResult -> Tuple2.of(calcResult, entityId)));
+		}
+
+		return Uni.combine().all().unis(calcUnis).combinedWith(list -> {
+			for (Object obj : list) {
+				Tuple2<Boolean, String> t = (Tuple2<Boolean, String>) obj;
+				if (!t.getItem1()) {
+					localResults.remove(t.getItem2());
+				}
+			}
+			return localResults;
+		});
+
+	}
+
+	private Uni<Boolean> calculateEntity(Map<String, Object> entity, Map<String, Map<String, Object>> fullEntityCache,
+			Map<String, List<RegistrationEntry>> regEntries, boolean onlyFullEntities, WebClient webClient) {
+		if (this.isLinkedQ) {
+			Object attrObj = entity.get(this.linkedAttrName);
+			if (attrObj == null) {
+				return Uni.createFrom().item(false);
+			}
+			boolean result = false;
+			if (attrObj instanceof List attrList) {
+				for (Object listAttrObj : attrList) {
+					if (listAttrObj instanceof Map listAttrMap) {
+						Object typeObj = listAttrMap.get(NGSIConstants.JSON_LD_TYPE);
+						if (typeObj != null && typeObj instanceof List typeList) {
+							List<Uni<Boolean>> calcResults = Lists.newArrayList();
+							if (typeList.contains(NGSIConstants.NGSI_LD_RELATIONSHIP)) {
+								List<Map<String, String>> hasObject = (List<Map<String, String>>) listAttrMap
+										.get(NGSIConstants.NGSI_LD_HAS_OBJECT);
+								for (Map<String, String> objectEntry : hasObject) {
+									String entityId = objectEntry.get(NGSIConstants.JSON_LD_ID);
+									if (onlyFullEntities) {
+										QQueryTerm linkedQ = this.getFirstChild();
+										if (fullEntityCache.containsKey(entityId)) {
+											Map<String, Object> linkedEntity = fullEntityCache.get(entityId);
+											List<String> entityTypes = (List<String>) linkedEntity
+													.get(NGSIConstants.JSON_LD_TYPE);
+											if (entityTypes.stream()
+													.anyMatch(linkedQ.getLinkedEntityTypes()::contains)) {
+												calcResults.add(linkedQ.calculateEntity(linkedEntity, fullEntityCache,
+														regEntries, onlyFullEntities, webClient));
+											}
+										} else {
+											List<QueryRemoteHost> remoteHosts = EntityTools.getRemoteQueries(
+													new String[] { "entityId" }, null, null, null, linkedQ, null, null,
+													null, regEntries.values().iterator(), linkHeaders);
+											for (QueryRemoteHost remoteHost : remoteHosts) {
+												calcResults.add(EntityTools.getRemoteEntities(remoteHost, webClient)
+														.onItem().transformToUni(queryResult -> {
+															if (queryResult.isEmpty()) {
+																return Uni.createFrom().item(false);
+															}
+															Map<String, Object> linkedEntity = queryResult.get(0);
+															List<String> entityTypes = (List<String>) linkedEntity
+																	.get(NGSIConstants.JSON_LD_TYPE);
+															if (entityTypes.stream().anyMatch(
+																	linkedQ.getLinkedEntityTypes()::contains)) {
+																return linkedQ.calculateEntity(linkedEntity,
+																		fullEntityCache, regEntries, onlyFullEntities,
+																		webClient);
+															}
+															return Uni.createFrom().item(false);
+														}));
+												// calcResults.add();
+											}
+
+										}
+									} else {
+
+									}
+
+								}
+							} else if (typeList.contains(NGSIConstants.NGSI_LD_LISTRELATIONSHIP)) {
+
+							}
+							return Uni.combine().all().unis(calcResults).combinedWith(list -> {
+								for (Object obj : list) {
+									if ((Boolean) obj) {
+										return true;
+									}
+								}
+								return false;
+							});
+						}
+					}
+
+				}
+			}
+		} else {
+			//
+		}
+		return Uni.createFrom().item(false);
 	}
 
 }
