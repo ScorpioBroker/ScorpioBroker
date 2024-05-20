@@ -54,15 +54,7 @@ jobs:
           docker tag scorpiobroker/all-in-one-runner:java-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:java-latest
       - name: start docker aaio
         run: |
-          docker-compose -f ./compose-files/docker-compose-java-aaio.yml up > dockerout.log &
-          sleep 120
-      - name: start docker aaio remote one
-        run: |
-          docker-compose -p one -f ./compose-files/docker-compose-java-aaio-rem-one.yml up > dockeroutone.log &
-          sleep 120
-      - name: start docker aaio remote two
-        run: |
-          docker-compose -p two -f ./compose-files/docker-compose-java-aaio-rem-two.yml up > dockerouttwo.log &
+          docker-compose -f ./compose-files/docker-compose-java-aaio-fed.yml up > dockerout.log &
           sleep 120
       - name: newman action
         uses: matt-ball/newman-action@master
@@ -72,15 +64,11 @@ jobs:
       - name: Stopping Scorpio 
         if: always()
         run: |
-          docker-compose -f ./compose-files/docker-compose-java-aaio.yml down &
-          docker-compose -f ./compose-files/docker-compose-java-aaio-rem-one.yml down &
-          docker-compose -f ./compose-files/docker-compose-java-aaio-rem-two.yml down
+          docker-compose -f ./compose-files/docker-compose-java-aaio-fed.yml down
       - name: print log
         if: always()
         run: |
-          cat dockerout.log &
-          cat dockeroutone.log
-          cat dockerouttwo.log
+          cat dockerout.log
       - name: docker-login
         uses: docker/login-action@v2
         with:

@@ -70,10 +70,22 @@
 			"value": "http://localhost:9070",
 			"type": "default",
 			"enabled": true
+		},
+		{
+			"key": "scorpioone",
+			"value": "http://host.docker.internal:9080",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "scorpiotwo",
+			"value": "http://host.docker.internal:9070",
+			"type": "default",
+			"enabled": true
 		}
 	],
 	"name": "Globals",
 	"_postman_variable_scope": "globals",
-	"_postman_exported_at": "2024-05-17T07:29:25.853Z",
+	"_postman_exported_at": "2024-05-20T12:43:13.092Z",
 	"_postman_exported_using": "Postman/11.1.2"
 }

@@ -44,7 +44,7 @@
 												],
 												"body": {
 													"mode": "raw",
-													"raw": "{\r\n    \"id\":\"urn:regtest1\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{remote-one}}\"\r\n}",
+													"raw": "{\r\n    \"id\":\"urn:regtest1\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{scorpioone}}\"\r\n}",
 													"options": {
 														"raw": {
 															"language": "json"
@@ -291,7 +291,7 @@
 												],
 												"body": {
 													"mode": "raw",
-													"raw": "{\r\n    \"id\":\"urn:regtest1\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{remote-one}}\",\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
+													"raw": "{\r\n    \"id\":\"urn:regtest1\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{scorpioone}}\",\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
 													"options": {
 														"raw": {
 															"language": "json"
@@ -549,7 +549,7 @@
 												],
 												"body": {
 													"mode": "raw",
-													"raw": "{\r\n    \"id\":\"urn:regtest1\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{remote-one}}\",\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
+													"raw": "{\r\n    \"id\":\"urn:regtest1\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{scorpioone}}\",\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
 													"options": {
 														"raw": {
 															"language": "json"
@@ -818,7 +818,7 @@
 												],
 												"body": {
 													"mode": "raw",
-													"raw": "{\r\n    \"id\":\"urn:regtest1\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{remote-one}}\"\r\n}",
+													"raw": "{\r\n    \"id\":\"urn:regtest1\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{scorpioone}}\"\r\n}",
 													"options": {
 														"raw": {
 															"language": "json"
@@ -1150,7 +1150,7 @@
 												],
 												"body": {
 													"mode": "raw",
-													"raw": "{\r\n    \"id\":\"urn:regtest1\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{remote-one}}\"\r\n}",
+													"raw": "{\r\n    \"id\":\"urn:regtest1\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{scorpioone}}\"\r\n}",
 													"options": {
 														"raw": {
 															"language": "json"
@@ -1198,7 +1198,7 @@
 												],
 												"body": {
 													"mode": "raw",
-													"raw": "{\r\n    \"id\":\"urn:regtest2\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{remote-two}}\"\r\n}",
+													"raw": "{\r\n    \"id\":\"urn:regtest2\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{scorpiotwo}}\"\r\n}",
 													"options": {
 														"raw": {
 															"language": "json"
@@ -1601,7 +1601,7 @@
 												],
 												"body": {
 													"mode": "raw",
-													"raw": "{\r\n    \"id\":\"urn:regtest1\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{remote-one}}\",\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
+													"raw": "{\r\n    \"id\":\"urn:regtest1\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{scorpioone}}\",\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
 													"options": {
 														"raw": {
 															"language": "json"
@@ -1649,7 +1649,7 @@
 												],
 												"body": {
 													"mode": "raw",
-													"raw": "{\r\n    \"id\":\"urn:regtest2\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{remote-two}}\",\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
+													"raw": "{\r\n    \"id\":\"urn:regtest2\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{scorpiotwo}}\",\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
 													"options": {
 														"raw": {
 															"language": "json"
@@ -2058,7 +2058,7 @@
 												],
 												"body": {
 													"mode": "raw",
-													"raw": "{\r\n    \"id\":\"urn:regtest1\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{remote-one}}\",\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
+													"raw": "{\r\n    \"id\":\"urn:regtest1\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{scorpioone}}\",\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
 													"options": {
 														"raw": {
 															"language": "json"
@@ -2106,7 +2106,7 @@
 												],
 												"body": {
 													"mode": "raw",
-													"raw": "{\r\n    \"id\":\"urn:regtest2\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{remote-two}}\",\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
+													"raw": "{\r\n    \"id\":\"urn:regtest2\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{scorpiotwo}}\",\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
 													"options": {
 														"raw": {
 															"language": "json"
@@ -2515,7 +2515,7 @@
 												],
 												"body": {
 													"mode": "raw",
-													"raw": "{\r\n    \"id\":\"urn:regtest1\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{remote-one}}\"\r\n}",
+													"raw": "{\r\n    \"id\":\"urn:regtest1\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{scorpioone}}\"\r\n}",
 													"options": {
 														"raw": {
 															"language": "json"
@@ -2563,7 +2563,7 @@
 												],
 												"body": {
 													"mode": "raw",
-													"raw": "{\r\n    \"id\":\"urn:regtest2\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{remote-two}}\"\r\n}",
+													"raw": "{\r\n    \"id\":\"urn:regtest2\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{scorpiotwo}}\"\r\n}",
 													"options": {
 														"raw": {
 															"language": "json"
