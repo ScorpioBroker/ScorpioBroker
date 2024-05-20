@@ -1,0 +1,19 @@
+version: '3'
+name: remoteone
+services:
+  postgresone:
+    image: postgis/postgis
+    ports:
+      - "5432"
+    environment:
+      POSTGRES_USER: ngb
+      POSTGRES_PASSWORD: ngb
+      POSTGRES_DB: ngb
+  scorpioone:
+    image: scorpiobroker/all-in-one-runner:java-latest
+    environment:
+      DBHOST: postgresone
+    ports:
+      - "9080:9090"
+    depends_on:
+      - postgresone

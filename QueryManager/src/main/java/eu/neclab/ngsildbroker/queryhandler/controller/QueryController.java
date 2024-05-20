@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Set;
 
 import eu.neclab.ngsildbroker.commons.datatypes.terms.DataSetIdTerm;
+import io.vertx.mutiny.core.MultiMap;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import jakarta.ws.rs.DefaultValue;
@@ -137,7 +138,7 @@ public class QueryController {
 				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 			}
 			return queryService.retrieveEntity(context, HttpUtils.getTenant(request), entityId, finalPick, langQuery,
-					localOnly, containedBy, join, idsOnly, joinLevel).onItem().transformToUni(entity -> {
+					localOnly, containedBy, join, idsOnly, joinLevel, request.headers()).onItem().transformToUni(entity -> {
 						if (doNotCompact) {
 							return Uni.createFrom().item(RestResponse.ok((Object) entity));
 						}
@@ -367,13 +368,13 @@ public class QueryController {
 		List<Object> contextHeader = HttpUtils.getAtContext(request);
 		return HttpUtils.getContext(contextHeader, ldService).onItem().transformToUni(context -> {
 			if (details) {
-				return queryService.getTypesWithDetail(HttpUtils.getTenant(request), localOnly).onItem()
+				return queryService.getTypesWithDetail(HttpUtils.getTenant(request), localOnly,request.headers()).onItem()
 						.transformToUni(types -> {
 							return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, types, null,
 									null, null, ldService,null,null);
 						});
 			} else {
-				return queryService.getTypes(HttpUtils.getTenant(request), localOnly).onItem().transformToUni(types -> {
+				return queryService.getTypes(HttpUtils.getTenant(request), localOnly,request.headers()).onItem().transformToUni(types -> {
 					return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, types, null, null, null,
 							ldService,null,null);
 				});
@@ -393,7 +394,7 @@ public class QueryController {
 		List<Object> contextHeader = HttpUtils.getAtContext(request);
 		return HttpUtils.getContext(contextHeader, ldService).onItem().transformToUni(context -> {
 			return queryService
-					.getType(HttpUtils.getTenant(request), context.expandIri(type, false, true, null, null), localOnly)
+					.getType(HttpUtils.getTenant(request), context.expandIri(type, false, true, null, null), localOnly,request.headers())
 					.onItem().transformToUni(map -> {
 						if (map.isEmpty()) {
 							return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
@@ -418,12 +419,12 @@ public class QueryController {
 		List<Object> contextHeader = HttpUtils.getAtContext(request);
 		return HttpUtils.getContext(contextHeader, ldService).onItem().transformToUni(context -> {
 			if (!details) {
-				return queryService.getAttribs(HttpUtils.getTenant(request), localOnly).onItem().transformToUni(map -> {
+				return queryService.getAttribs(HttpUtils.getTenant(request), localOnly,request.headers()).onItem().transformToUni(map -> {
 					return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, map, null, null, null,
 							ldService,null,null);
 				});
 			} else {
-				return queryService.getAttribsWithDetails(HttpUtils.getTenant(request), localOnly).onItem()
+				return queryService.getAttribsWithDetails(HttpUtils.getTenant(request), localOnly,request.headers()).onItem()
 						.transformToUni(list -> {
 							return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, list, null,
 									null, null, ldService,null,null);
@@ -445,7 +446,7 @@ public class QueryController {
 		List<Object> headerContext = HttpUtils.getAtContext(request);
 		return HttpUtils.getContext(headerContext, ldService).onItem().transformToUni(context -> {
 			return queryService.getAttrib(HttpUtils.getTenant(request),
-					context.expandIri(attribute, false, true, null, null), localOnly).onItem().transformToUni(map -> {
+					context.expandIri(attribute, false, true, null, null), localOnly,request.headers()).onItem().transformToUni(map -> {
 						if (map.isEmpty()) {
 							return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound) {
 							});

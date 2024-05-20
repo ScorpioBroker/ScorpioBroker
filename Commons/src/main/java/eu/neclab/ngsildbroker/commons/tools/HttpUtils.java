@@ -446,7 +446,9 @@ public final class HttpUtils {
 					.formatted(result.get(NGSIConstants.JSONLD_CONTEXT));
 			result.remove(NGSIConstants.JSONLD_CONTEXT).add("Link", linkHeader);
 		}
-		result.add("Accept", "application/json");
+		if(!result.contains("Accept")) {
+			result.add("Accept", "application/json");
+		}
 		if (tenant != null) {
 			result.add(NGSIConstants.TENANT_HEADER, tenant);
 		}
