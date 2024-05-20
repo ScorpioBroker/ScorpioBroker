@@ -58,11 +58,11 @@ jobs:
           sleep 120
       - name: start docker aaio remote one
         run: |
-          docker-compose -f ./compose-files/docker-compose-java-aaio-rem-one.yml up > dockeroutone.log &
+          docker-compose -p one -f ./compose-files/docker-compose-java-aaio-rem-one.yml up > dockeroutone.log &
           sleep 120
       - name: start docker aaio remote two
         run: |
-          docker-compose -f ./compose-files/docker-compose-java-aaio-rem-two.yml up > dockerouttwo.log &
+          docker-compose -p two -f ./compose-files/docker-compose-java-aaio-rem-two.yml up > dockerouttwo.log &
           sleep 120
       - name: newman action
         uses: matt-ball/newman-action@master
