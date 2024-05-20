@@ -1,5 +1,4 @@
 version: '3'
-name: remoteone
 services:
   postgresone:
     image: postgis/postgis
