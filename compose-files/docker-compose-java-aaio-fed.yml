@@ -10,6 +10,8 @@ services:
       POSTGRES_DB: ngb
   scorpio:
     image: scorpiobroker/all-in-one-runner:java-latest
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       DBHOST: postgres
     ports:
@@ -27,6 +29,8 @@ services:
       POSTGRES_DB: ngb
   scorpioone:
     image: scorpiobroker/all-in-one-runner:java-latest
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       DBHOST: postgresone
     ports:
@@ -43,6 +47,8 @@ services:
       POSTGRES_DB: ngb
   scorpiotwo:
     image: scorpiobroker/all-in-one-runner:java-latest
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       DBHOST: postgrestwo
     ports:
