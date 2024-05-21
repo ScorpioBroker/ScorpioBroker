@@ -1112,6 +1112,161 @@
 									]
 								}
 							]
+						},
+						{
+							"name": "Header forward CsourceReg",
+							"item": [
+								{
+									"name": "TestType reg",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"pm.test(\"Status code is 201\", function () {\r",
+													"    pm.response.to.have.status(201);\r",
+													"});"
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"id\":\"urn:regtest1\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"contextSourceInfo\": [\r\n        {\r\n            \"key\": \"Test-Head\",\r\n            \"value\": \"urn:ngsi-ld:request\"\r\n        }\r\n    ],\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{dumpreq}}\"\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{registry-manager}}/ngsi-ld/v1/csourceRegistrations/",
+											"host": [
+												"{{registry-manager}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"csourceRegistrations",
+												""
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Get Created Entity and Validate content",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var expected = pm.collectionVariables.get(\"created\");\r",
+													"pm.test(\"Status code is 200\", function () {\r",
+													"    pm.response.to.have.status(200);\r",
+													"});\r",
+													"setTimeout(function(){\r",
+													"    var dumpServer = pm.environment.get(\"dumpreq\");\r",
+													"    pm.sendRequest(dumpServer + \"/\" + \"last-request\", function (err, response) {\r",
+													"            pm.test(\"Check for request header\", function () {\r",
+													"            var value = response.json();\r",
+													"            console.log(\"Retrieving from dumpServer\")\r",
+													"            console.log(value);\r",
+													"            headers = value.headers;\r",
+													"            pm.expect(headers).to.have.property(\"Test-Head\");\r",
+													"            pm.expect(headers[\"Test-Head\"]).to.eql(\"testvalue\");\r",
+													"            });\r",
+													"        });\r",
+													"}, 3000);"
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Accept",
+												"value": "application/json"
+											},
+											{
+												"key": "Test-Head",
+												"value": "testvalue"
+											}
+										],
+										"url": {
+											"raw": "{{query-manager}}/ngsi-ld/v1/entities/?type=TestType",
+											"host": [
+												"{{query-manager}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												""
+											],
+											"query": [
+												{
+													"key": "type",
+													"value": "TestType"
+												}
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "TestType reg",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"pm.test(\"Status code is 204\", function () {\r",
+													"    pm.response.to.have.status(204);\r",
+													"});"
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "DELETE",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"url": {
+											"raw": "{{registry-manager}}/ngsi-ld/v1/csourceRegistrations/urn:regtest1",
+											"host": [
+												"{{registry-manager}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"csourceRegistrations",
+												"urn:regtest1"
+											]
+										}
+									},
+									"response": []
+								}
+							]
 						}
 					]
 				},
@@ -3083,6 +3238,16 @@
 					]
 				}
 			]
+		}
+	],
+	"variable": [
+		{
+			"key": "created",
+			"value": ""
+		},
+		{
+			"key": "entityId",
+			"value": ""
 		}
 	]
 }

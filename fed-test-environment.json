@@ -82,10 +82,16 @@
 			"value": "http://host.docker.internal:9070",
 			"type": "default",
 			"enabled": true
+		},
+		{
+			"key": "dumpreq",
+			"value": "http://host.docker.internal:8090",
+			"type": "default",
+			"enabled": true
 		}
 	],
 	"name": "Globals",
 	"_postman_variable_scope": "globals",
-	"_postman_exported_at": "2024-05-20T12:43:13.092Z",
-	"_postman_exported_using": "Postman/11.1.2"
+	"_postman_exported_at": "2024-05-21T06:24:40.211Z",
+	"_postman_exported_using": "Postman/11.1.3"
 }

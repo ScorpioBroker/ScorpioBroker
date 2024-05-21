@@ -1,5 +1,13 @@
 version: '3'
 services:
+  testserver:
+    image: testserver
+    ports:
+      - "8080:8080"
+  dumprequest:
+    image: dumprequest
+    ports:
+      - "8090:8090"
   postgres:
     image: postgis/postgis
     ports:

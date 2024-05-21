@@ -34,27 +34,26 @@ jobs:
         run: |
           cd testserver
           docker build -t testserver .
+      - name: Build dump request server
+        run: |
+          cd dumpreq
+          docker build -t dumprequest .
       - name: Get release number
         id: get-id
         run: |
           id=$(echo ${{github.ref_name}} | cut -d/ -f2)
           echo "::set-output name=id::$id"
-      - name: start kafka & postgis for unit tests
-        run: |
-          docker-compose -f ./compose-files/docker-compose-postgis.yml up &
-          sleep 30
+
       - name: build-java
         run: |
           mvn clean package -DskipTests -Din-memory -Pin-memory -Ddocker -Ddocker-tag=java-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=in-memory
-      - name: stop postgis for unit tests
-        run: |
-          docker-compose -f ./compose-files/docker-compose-postgis.yml down
+
       - name: docker tag
         run: |
           docker tag scorpiobroker/all-in-one-runner:java-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:java-latest
       - name: start docker aaio
         run: |
-          docker-compose -f ./compose-files/docker-compose-java-aaio-fed.yml up > dockerout.log &
+          docker-compose -f ./compose-files/docker-compose-java-aaio-fed-test.yml up > dockerout.log &
           sleep 120
       - name: newman action
         uses: matt-ball/newman-action@master
@@ -64,7 +63,7 @@ jobs:
       - name: Stopping Scorpio 
         if: always()
         run: |
-          docker-compose -f ./compose-files/docker-compose-java-aaio-fed.yml down
+          docker-compose -f ./compose-files/docker-compose-java-aaio-fed-test.yml down
       - name: print log
         if: always()
         run: |
