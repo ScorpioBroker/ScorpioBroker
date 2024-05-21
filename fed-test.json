@@ -1176,7 +1176,7 @@
 													"    pm.response.to.have.status(200);\r",
 													"});\r",
 													"setTimeout(function(){\r",
-													"    var dumpServer = pm.environment.get(\"dumpreq\");\r",
+													"    var dumpServer = pm.environment.get(\"dumpreqexternal\");\r",
 													"    pm.sendRequest(dumpServer + \"/\" + \"last-request\", function (err, response) {\r",
 													"            pm.test(\"Check for request header\", function () {\r",
 													"            var value = response.json();\r",
