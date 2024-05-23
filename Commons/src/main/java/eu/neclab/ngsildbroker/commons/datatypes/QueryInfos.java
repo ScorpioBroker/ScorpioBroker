@@ -3,14 +3,17 @@ package eu.neclab.ngsildbroker.commons.datatypes;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import org.locationtech.spatial4j.shape.Shape;
 import com.github.jsonldjava.core.Context;
+import com.google.common.collect.Sets;
 
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
+import io.smallrye.mutiny.tuples.Tuple2;
 
 public class QueryInfos {
 
@@ -107,12 +110,39 @@ public class QueryInfos {
 	}
 
 	public String toQueryString(Context context, TypeQueryTerm typeQuery, GeoQueryTerm geoQuery,
-			LanguageQueryTerm langQuery, boolean ignoredId) {
+			LanguageQueryTerm langQuery, boolean ignoredId, Map<String, Map<String, Tuple2<Map<String, Object>, Map<String, QueryRemoteHost>>>> fullEntityCache, QueryRemoteHost tmpHost) {
 		StringBuilder result = new StringBuilder("?");
-
-		if (!ids.isEmpty() && !ignoredId) {
+		Set<String> idsToBeUsed;
+		if (fullEntityCache != null) {
+			idsToBeUsed = Sets.newHashSet();
+			for(String type: types) {
+				Map<String, Tuple2<Map<String, Object>, Map<String, QueryRemoteHost>>> cacheIds = fullEntityCache.get(type);
+				for(String id: ids) {
+					if(cacheIds.containsKey(id)) {
+						Tuple2<Map<String, Object>, Map<String, QueryRemoteHost>> entityAndHosts = cacheIds.get(id);
+						Map<String, QueryRemoteHost> hostName2Host = entityAndHosts.getItem2();
+						if(hostName2Host == null) {
+							idsToBeUsed.add(id);
+						}else {
+							if(!hostName2Host.containsKey(tmpHost.host())) {
+								idsToBeUsed.add(id);
+							}
+						}
+					}else {
+						idsToBeUsed.add(id);
+					}
+				}
+						
+			}
+			if(idsToBeUsed.isEmpty()) {
+				return null;
+			}
+		}else {
+			idsToBeUsed = ids;
+		}
+		if (!idsToBeUsed.isEmpty() && !ignoredId) {
 			result.append("id=");
-			result.append(String.join(",", ids));
+			result.append(String.join(",", idsToBeUsed));
 			result.append('&');
 		}
 		if (idPattern != null) {

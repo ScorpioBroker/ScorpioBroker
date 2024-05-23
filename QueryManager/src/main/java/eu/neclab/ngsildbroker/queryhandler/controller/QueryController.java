@@ -556,7 +556,7 @@ public class QueryController {
 			return queryService.getAndStoreEntityIdList(HttpUtils.getTenant(request), ids, idPattern, q, typeQueryTerm,
 					attrsQuery, geoQueryTerm, qQueryTerm, scopeQueryTerm, langQuery, 1, 0, context, request.headers(),
 					false, dataSetIdTerm, null, 0, true).onItem().transformToUni(t -> {
-						return HttpUtils.generateEntityMapResult(t.getItem3());
+						return HttpUtils.generateEntityMapResult(t.getItem2());
 					}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 		});
 	}

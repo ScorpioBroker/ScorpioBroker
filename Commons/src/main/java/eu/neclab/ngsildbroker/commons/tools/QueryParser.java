@@ -86,9 +86,10 @@ public class QueryParser {
 	private static String queryTermAssoc = "\\((" + queryTerm + "((" + logicalOp + ")(" + queryTerm + "))*)\\)";
 	private static String query = "((" + queryTerm + ")|(" + queryTermAssoc + "))" + "((" + logicalOp + ")(("
 			+ queryTerm + ")|(" + queryTermAssoc + ")))*";
+
 	@SuppressWarnings("unused")
 	// TODO validate queries still not working ... rework regex ???
-	private static Pattern p = Pattern.compile(query);
+	// private static Pattern p = Pattern.compile(query);
 
 	public static CSFQueryTerm parseCSFQuery(String input, Context context) throws ResponseException {
 		return null;
@@ -108,6 +109,8 @@ public class QueryParser {
 		String operant = "";
 		input = URLDecoder.decode(input, StandardCharsets.UTF_8);
 		OfInt it = input.chars().iterator();
+		int currentJoinLevel = 0;
+		Tuple2<String, Set<String>> joinTuple;
 		while (it.hasNext()) {
 			char b = (char) it.next().intValue();
 			if (b == '(') {
@@ -164,6 +167,7 @@ public class QueryParser {
 				readingOperant = false;
 				operant = "";
 				if (b == '}') {
+					currentJoinLevel--;
 					readingLinkedQ = false;
 				}
 
@@ -176,9 +180,11 @@ public class QueryParser {
 					attribName = "";
 				}
 			} else if (b == '{') {
+				currentJoinLevel++;
 				root.setHasLinkedQ(true);
 				current.setLinkedQ(true);
 				current.setLinkedAttrName(attribName);
+				root.addJoinLevel2AttribAndTypes(currentJoinLevel, attribName, null);
 				QQueryTerm child = new QQueryTerm(context);
 				current.setFirstChild(child);
 				current = child;
@@ -190,8 +196,12 @@ public class QueryParser {
 			} else {
 				if (readingLinkedQ) {
 					if (b == ':' || b == ',') {
-						current.addLinkedEntityType(attribName);
+						current.getParent().addLinkedEntityType(attribName);
 						attribName = "";
+						if (b == ':') {
+							root.addJoinLevel2AttribAndTypes(currentJoinLevel, current.getParent().getLinkedAttrName(),
+									current.getParent().getLinkedEntityTypes());
+						}
 					}
 
 				} else {

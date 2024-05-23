@@ -12,6 +12,7 @@ import java.util.Set;
 
 import com.github.jsonldjava.core.Context;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -23,7 +24,10 @@ import eu.neclab.ngsildbroker.commons.datatypes.RegistrationEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.RelationshipEntry;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.interfaces.QueryServiceInterface;
+import eu.neclab.ngsildbroker.commons.storage.ClientManager;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
+import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
@@ -54,11 +58,42 @@ public class QQueryTerm implements Serializable {
 	private String operant = "";
 	private String expandedOpt = "";
 	private boolean isLinkedQ = false;
-	private List<String> linkedEntityTypes = Lists.newArrayList();
+	private Set<String> linkedEntityTypes = Sets.newHashSet();
 	private String linkedAttrName = null;
 	private boolean hasLinkedQ = false;
+	private Map<Integer, Map<String, Set<String>>> joinLevel2AttribAndTypes = Maps.newHashMap();
+	private int maxJoinLevel = 0;
 
-	public List<String> getLinkedEntityTypes() {
+	public int getMaxJoinLevel() {
+		return maxJoinLevel;
+	}
+
+	public void addJoinLevel2AttribAndTypes(Integer joinLevel, String attrib, Set<String> types) {
+		Map<String, Set<String>> attrib2Types = joinLevel2AttribAndTypes.get(joinLevel);
+		if (attrib2Types == null) {
+			attrib2Types = Maps.newHashMap();
+			joinLevel2AttribAndTypes.put(joinLevel, attrib2Types);
+		}
+		Set<String> currentTypes = attrib2Types.get(attrib);
+		if (currentTypes == null) {
+			attrib2Types.put(attrib, types);
+		} else {
+			if (types != null) {
+				currentTypes.addAll(types);
+			}
+
+		}
+		if (joinLevel > maxJoinLevel) {
+			maxJoinLevel = joinLevel;
+		}
+
+	}
+
+	public Map<Integer, Map<String, Set<String>>> getJoinLevel2AttribAndTypes() {
+		return joinLevel2AttribAndTypes;
+	}
+
+	public Set<String> getLinkedEntityTypes() {
 		return linkedEntityTypes;
 	}
 
@@ -1553,110 +1588,165 @@ public class QQueryTerm implements Serializable {
 		this.hasLinkedQ = hasLinkedQ;
 	}
 
-	public Uni<Map<String, Map<String, Object>>> calculateQuery(Map<String, Map<String, Object>> localResults,
-			Map<String, Map<String, Object>> fullEntityCache, Map<String, List<RegistrationEntry>> regEntries,
-			boolean onlyFullEntities, WebClient webClient) {
-
-		List<Uni<Tuple2<Boolean, String>>> calcUnis = Lists.newArrayList();
-		for (Entry<String, Map<String, Object>> entry : localResults.entrySet()) {
-			String entityId = entry.getKey();
+	public Map<String, Map<String, Object>> calculateQuery(Map<String, Map<String, Object>> queryResults,
+			Map<String, Map<String, Tuple2<Map<String, Object>, Map<String, QueryRemoteHost>>>> fullEntityCache,
+			Set<String> jsonKeys, boolean localOnly) {
+		Iterator<Entry<String, Map<String, Object>>> it = queryResults.entrySet().iterator();
+		while (it.hasNext()) {
+			Entry<String, Map<String, Object>> entry = it.next();
 			Map<String, Object> entity = entry.getValue();
-			calcUnis.add(calculateEntity(entity, fullEntityCache, regEntries, onlyFullEntities, webClient).onItem()
-					.transform(calcResult -> Tuple2.of(calcResult, entityId)));
-		}
+			if (!calculateEntity(entity, fullEntityCache, jsonKeys, localOnly)) {
+				it.remove();
+			}
 
-		return Uni.combine().all().unis(calcUnis).combinedWith(list -> {
-			for (Object obj : list) {
-				Tuple2<Boolean, String> t = (Tuple2<Boolean, String>) obj;
-				if (!t.getItem1()) {
-					localResults.remove(t.getItem2());
+		}
+		return queryResults;
+	}
+
+	public boolean calculateEntity(Map<String, Object> entity,
+			Map<String, Map<String, Tuple2<Map<String, Object>, Map<String, QueryRemoteHost>>>> fullEntityCache,
+			Set<String> jsonKeys, boolean localOnly) {
+		if (this.isLinkedQ) {
+			return calculateLinkedEntity(entity, fullEntityCache, jsonKeys, localOnly);
+		} else {
+			boolean result = false;
+			if (firstChild == null) {
+				result = calculate(entity, attribute, operator, operant, jsonKeys);
+			} else {
+				result = firstChild.calculateEntity(entity, fullEntityCache, jsonKeys, localOnly);
+			}
+			if (hasNext()) {
+				if (nextAnd) {
+					result = result && next.calculateEntity(entity, fullEntityCache, jsonKeys, localOnly);
+				} else {
+					result = result || next.calculateEntity(entity, fullEntityCache, jsonKeys, localOnly);
 				}
 			}
-			return localResults;
-		});
+
+			return result;
+		}
 
 	}
 
-	private Uni<Boolean> calculateEntity(Map<String, Object> entity, Map<String, Map<String, Object>> fullEntityCache,
-			Map<String, List<RegistrationEntry>> regEntries, boolean onlyFullEntities, WebClient webClient) {
-		if (this.isLinkedQ) {
-			Object attrObj = entity.get(this.linkedAttrName);
-			if (attrObj == null) {
-				return Uni.createFrom().item(false);
-			}
-			boolean result = false;
-			if (attrObj instanceof List attrList) {
-				for (Object listAttrObj : attrList) {
-					if (listAttrObj instanceof Map listAttrMap) {
-						Object typeObj = listAttrMap.get(NGSIConstants.JSON_LD_TYPE);
-						if (typeObj != null && typeObj instanceof List typeList) {
-							List<Uni<Boolean>> calcResults = Lists.newArrayList();
-							if (typeList.contains(NGSIConstants.NGSI_LD_RELATIONSHIP)) {
-								List<Map<String, String>> hasObject = (List<Map<String, String>>) listAttrMap
-										.get(NGSIConstants.NGSI_LD_HAS_OBJECT);
-								for (Map<String, String> objectEntry : hasObject) {
-									String entityId = objectEntry.get(NGSIConstants.JSON_LD_ID);
-									if (onlyFullEntities) {
+	private boolean calculateLinkedEntity(Map<String, Object> entity,
+			Map<String, Map<String, Tuple2<Map<String, Object>, Map<String, QueryRemoteHost>>>> fullEntityCache,
+			Set<String> jsonKeys, boolean localOnly) {
+		Object attrObj = entity.get(this.linkedAttrName);
+		if (attrObj != null && attrObj instanceof List attrList) {
+			for (Object listAttrObj : attrList) {
+				if (listAttrObj instanceof Map listAttrMap) {
+					Object typeObj = listAttrMap.get(NGSIConstants.JSON_LD_TYPE);
+					if (typeObj != null && typeObj instanceof List typeList) {
+						if (typeList.contains(NGSIConstants.NGSI_LD_RELATIONSHIP)) {
+							List<Map<String, String>> hasObject = (List<Map<String, String>>) listAttrMap
+									.get(NGSIConstants.NGSI_LD_HAS_OBJECT);
+							Object objectTypeObj = listAttrMap.get(NGSIConstants.NGSI_LD_OBJECT_TYPE);
+							for (Map<String, String> objectEntry : hasObject) {
+								String entityId = objectEntry.get(NGSIConstants.JSON_LD_ID);
+								QQueryTerm linkedQ = this.getFirstChild();
+								if (localOnly) {
+									Collection<Map<String, Tuple2<Map<String, Object>, Map<String, QueryRemoteHost>>>> ids2EntityAndHosts = fullEntityCache
+											.values();
+									for (Map<String, Tuple2<Map<String, Object>, Map<String, QueryRemoteHost>>> entry : ids2EntityAndHosts) {
+										Tuple2<Map<String, Object>, Map<String, QueryRemoteHost>> t = entry
+												.get(entityId);
+										if (t != null) {
+											Map<String, Object> linkedEntity = t.getItem1();
+											if (linkedEntity != null && linkedQ.calculateEntity(linkedEntity,
+													fullEntityCache, jsonKeys, localOnly)) {
+												return true;
+											}
+										}
+									}
+								} else {
+									if (objectTypeObj != null && objectTypeObj instanceof List objectTypes) {
+										for (Object objectTypeEntry : objectTypes) {
+											if (objectTypeEntry instanceof Map objectType) {
+												String type = (String) objectType.get(NGSIConstants.JSON_LD_ID);
+												if (linkedEntityTypes.isEmpty() || linkedEntityTypes.contains(type)) {
+													Map<String, Tuple2<Map<String, Object>, Map<String, QueryRemoteHost>>> ids2EntityAndHosts = fullEntityCache
+															.get(type);
+													if (ids2EntityAndHosts != null) {
+														Tuple2<Map<String, Object>, Map<String, QueryRemoteHost>> t = ids2EntityAndHosts
+																.get(entityId);
+														if (t != null) {
+															Map<String, Object> linkedEntity = t.getItem1();
+															if (linkedEntity != null
+																	&& linkedQ.calculateEntity(linkedEntity,
+																			fullEntityCache, jsonKeys, localOnly)) {
+																return true;
+															}
+														}
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+
+						} else if (typeList.contains(NGSIConstants.NGSI_LD_LISTRELATIONSHIP)) {
+							List<Map<String, List<Map<String, List<Map<String, String>>>>>> hasObjectList = (List<Map<String, List<Map<String, List<Map<String, String>>>>>>) listAttrMap
+									.get(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST);
+							Object objectTypeObj = listAttrMap.get(NGSIConstants.NGSI_LD_OBJECT_TYPE);
+							for (Map<String, List<Map<String, List<Map<String, String>>>>> atListEntry : hasObjectList) {
+								List<Map<String, List<Map<String, String>>>> atList = atListEntry
+										.get(NGSIConstants.JSON_LD_LIST);
+								for (Map<String, List<Map<String, String>>> hasObjectEntry : atList) {
+									List<Map<String, String>> objectList = hasObjectEntry
+											.get(NGSIConstants.NGSI_LD_HAS_OBJECT);
+									for (Map<String, String> objectEntry : objectList) {
+										String entityId = objectEntry.get(NGSIConstants.JSON_LD_ID);
 										QQueryTerm linkedQ = this.getFirstChild();
-										if (fullEntityCache.containsKey(entityId)) {
-											Map<String, Object> linkedEntity = fullEntityCache.get(entityId);
-											List<String> entityTypes = (List<String>) linkedEntity
-													.get(NGSIConstants.JSON_LD_TYPE);
-											if (entityTypes.stream()
-													.anyMatch(linkedQ.getLinkedEntityTypes()::contains)) {
-												calcResults.add(linkedQ.calculateEntity(linkedEntity, fullEntityCache,
-														regEntries, onlyFullEntities, webClient));
+										if (localOnly) {
+											Collection<Map<String, Tuple2<Map<String, Object>, Map<String, QueryRemoteHost>>>> ids2EntityAndHosts = fullEntityCache
+													.values();
+											for (Map<String, Tuple2<Map<String, Object>, Map<String, QueryRemoteHost>>> entry : ids2EntityAndHosts) {
+												Tuple2<Map<String, Object>, Map<String, QueryRemoteHost>> t = entry
+														.get(entityId);
+												if (t != null) {
+													Map<String, Object> linkedEntity = t.getItem1();
+													if (linkedEntity != null && linkedQ.calculateEntity(linkedEntity,
+															fullEntityCache, jsonKeys, localOnly)) {
+														return true;
+													}
+												}
 											}
 										} else {
-											List<QueryRemoteHost> remoteHosts = EntityTools.getRemoteQueries(
-													new String[] { "entityId" }, null, null, null, linkedQ, null, null,
-													null, regEntries.values().iterator(), linkHeaders);
-											for (QueryRemoteHost remoteHost : remoteHosts) {
-												calcResults.add(EntityTools.getRemoteEntities(remoteHost, webClient)
-														.onItem().transformToUni(queryResult -> {
-															if (queryResult.isEmpty()) {
-																return Uni.createFrom().item(false);
+											if (objectTypeObj != null && objectTypeObj instanceof List objectTypes) {
+												for (Object objectTypeEntry : objectTypes) {
+													if (objectTypeEntry instanceof Map objectType) {
+														String type = (String) objectType.get(NGSIConstants.JSON_LD_ID);
+														if (linkedEntityTypes.isEmpty()
+																|| linkedEntityTypes.contains(type)) {
+															Map<String, Tuple2<Map<String, Object>, Map<String, QueryRemoteHost>>> ids2EntityAndHosts = fullEntityCache
+																	.get(type);
+															if (ids2EntityAndHosts != null) {
+																Tuple2<Map<String, Object>, Map<String, QueryRemoteHost>> t = ids2EntityAndHosts
+																		.get(entityId);
+																if (t != null) {
+																	Map<String, Object> linkedEntity = t.getItem1();
+																	if (linkedEntity != null && linkedQ.calculateEntity(
+																			linkedEntity, fullEntityCache, jsonKeys,
+																			localOnly)) {
+																		return true;
+																	}
+																}
 															}
-															Map<String, Object> linkedEntity = queryResult.get(0);
-															List<String> entityTypes = (List<String>) linkedEntity
-																	.get(NGSIConstants.JSON_LD_TYPE);
-															if (entityTypes.stream().anyMatch(
-																	linkedQ.getLinkedEntityTypes()::contains)) {
-																return linkedQ.calculateEntity(linkedEntity,
-																		fullEntityCache, regEntries, onlyFullEntities,
-																		webClient);
-															}
-															return Uni.createFrom().item(false);
-														}));
-												// calcResults.add();
+														}
+													}
+												}
 											}
-
 										}
-									} else {
-
 									}
-
 								}
-							} else if (typeList.contains(NGSIConstants.NGSI_LD_LISTRELATIONSHIP)) {
-
 							}
-							return Uni.combine().all().unis(calcResults).combinedWith(list -> {
-								for (Object obj : list) {
-									if ((Boolean) obj) {
-										return true;
-									}
-								}
-								return false;
-							});
 						}
 					}
-
 				}
 			}
-		} else {
-			//
 		}
-		return Uni.createFrom().item(false);
+		return false;
 	}
 
 }

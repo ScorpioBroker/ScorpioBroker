@@ -3,9 +3,13 @@ package eu.neclab.ngsildbroker.commons.constants;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 import com.github.jsonldjava.core.JsonLdOptions;
+import com.google.common.collect.Maps;
+
+import eu.neclab.ngsildbroker.commons.datatypes.QueryRemoteHost;
 
 /**
  * @version 1.0
@@ -84,7 +88,8 @@ public class AppConstants {
 	public static final List<String> FORCE_ARRAY_FIELDS = Arrays.asList(NGSIConstants.NGSI_LD_WATCHED_ATTRIBUTES,
 			NGSIConstants.NGSI_LD_ENTITIES, NGSIConstants.NGSI_LD_PROPERTIES, NGSIConstants.NGSI_LD_RELATIONSHIPS,
 			NGSIConstants.NGSI_LD_INFORMATION, NGSIConstants.NGSI_LD_RECEIVERINFO, NGSIConstants.NGSI_LD_NOTIFIERINFO,
-			NGSIConstants.NGSI_LD_UPDATED, NGSIConstants.NGSI_LD_NOT_UPDATED, NGSIConstants.NGSI_LD_ATTRIBUTE_TYPES, NGSIConstants.NGSI_LD_TYPE_NAMES, NGSIConstants.NGSI_LD_TYPE_LIST);
+			NGSIConstants.NGSI_LD_UPDATED, NGSIConstants.NGSI_LD_NOT_UPDATED, NGSIConstants.NGSI_LD_ATTRIBUTE_TYPES,
+			NGSIConstants.NGSI_LD_TYPE_NAMES, NGSIConstants.NGSI_LD_TYPE_LIST);
 	public static final int ATTRIBUTE_PAYLOAD = 11;
 	public static final int NOTIFICAITION_RECEIVED = 12;
 	public static final int QUERY_PAYLOAD = 13;
@@ -150,7 +155,7 @@ public class AppConstants {
 	public static final String SQL_NOT_FOUND = "02000";
 	public static final String SQL_INVALID_OPERATOR = "42804";
 	public static final String SQL_INVALID_INTERVAL = "22007";
-	
+
 	public static final String NGB_APPLICATION_ZIP = "application/zip";
 	public static final int INTERNAL_NOTIFICATION_REQUEST = 99;
 	public static final int INTERVAL_NOTIFICATION_REQUEST = 100;
@@ -161,8 +166,12 @@ public class AppConstants {
 	public static final String HIST_SYNC_CHANNEL = "histsync";
 	public static final String INVALID_REGULAR_EXPRESSION = "2201B";
 	public static final String INVALID_GEO_QUERY = "XX000";
-	
 
 	public static JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
+
+	public static final QueryRemoteHost DB_REMOTE_HOST = new QueryRemoteHost(INTERNAL_NULL_KEY, null, null, null, false,
+			false, -1, null, false, false, null);
+	public static final Map<String, QueryRemoteHost> DEFAULT_REMOTE_HOST_MAP = Maps
+			.newHashMap(Map.of(INTERNAL_NULL_KEY, DB_REMOTE_HOST));
 
 }

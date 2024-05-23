@@ -588,17 +588,20 @@ public abstract class EntityTools {
 
 	}
 
-	public static List<QueryRemoteHost> getRemoteQueries(String tenant, String[] id, TypeQueryTerm typeQuery,
-			String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery, GeoQueryTerm geoQuery,
-			ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery,
-			Table<String, String, List<RegistrationEntry>> tenant2CId2RegEntries, Context context) {
+	public static Map<QueryRemoteHost, Set<String>> getRemoteQueries(String tenant, String[] id,
+			TypeQueryTerm typeQuery, String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery,
+			GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery,
+			Table<String, String, List<RegistrationEntry>> tenant2CId2RegEntries, Context context,
+			Map<String, Map<String, Tuple2<Map<String, Object>, Map<String, QueryRemoteHost>>>> fullEntityCache, boolean onlyFullEntitiesDistributed) {
 		return getRemoteQueries(id, typeQuery, idPattern, attrsQuery, qQuery, geoQuery, scopeQuery, langQuery,
-				tenant2CId2RegEntries.row(tenant).values().iterator(), context);
+				tenant2CId2RegEntries.row(tenant).values().iterator(), context, fullEntityCache);
 	}
 
-	public static List<QueryRemoteHost> getRemoteQueries(String[] id, TypeQueryTerm typeQuery, String idPattern,
-			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery,
-			LanguageQueryTerm langQuery, Iterator<List<RegistrationEntry>> it, Context context) {
+	public static Map<QueryRemoteHost, Set<String>> getRemoteQueries(String[] id, TypeQueryTerm typeQuery,
+			String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery, GeoQueryTerm geoQuery,
+			ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, Iterator<List<RegistrationEntry>> it,
+			Context context,
+			Map<String, Map<String, Tuple2<Map<String, Object>, Map<String, QueryRemoteHost>>>> fullEntityCache) {
 
 		// ids, types, attrs, geo, scope
 		Map<QueryRemoteHost, QueryInfos> remoteHost2QueryInfo = Maps.newHashMap();
@@ -665,13 +668,18 @@ public abstract class EntityTools {
 			}
 
 		}
-		List<QueryRemoteHost> result = new ArrayList<>(remoteHost2QueryInfo.size());
+		Map<QueryRemoteHost, Set<String>> result = Maps.newHashMap();
 		for (Entry<QueryRemoteHost, QueryInfos> entry : remoteHost2QueryInfo.entrySet()) {
 			QueryRemoteHost tmpHost = entry.getKey();
-			String queryString = entry.getValue().toQueryString(context, typeQuery, geoQuery, langQuery, false);
-			result.add(new QueryRemoteHost(tmpHost.host(), tmpHost.tenant(), tmpHost.headers(), tmpHost.cSourceId(),
-					tmpHost.canDoSingleOp(), tmpHost.canDoBatchOp(), tmpHost.regMode(), queryString,
-					tmpHost.canDoEntityMap(), tmpHost.canDoZip(), tmpHost.remoteToken()));
+			String queryString = entry.getValue().toQueryString(context, typeQuery, geoQuery, langQuery, false,
+					fullEntityCache, tmpHost);
+			if (queryString != null) {
+				result.put(
+						new QueryRemoteHost(tmpHost.host(), tmpHost.tenant(), tmpHost.headers(), tmpHost.cSourceId(),
+								tmpHost.canDoSingleOp(), tmpHost.canDoBatchOp(), tmpHost.regMode(), queryString,
+								tmpHost.canDoEntityMap(), tmpHost.canDoZip(), tmpHost.remoteToken()),
+						entry.getValue().getIds());
+			}
 		}
 		return result;
 	}

@@ -20,6 +20,8 @@ public class EntityMap {
 
 	private String id;
 
+	private Map<String, String> linkedMaps = Maps.newHashMap();
+
 	public EntityMap(String id, boolean onlyFullEntitiesDistributed, boolean regEmpty, boolean noRootLevelRegEntry) {
 		this.id = id;
 		this.onlyFullEntitiesDistributed = onlyFullEntitiesDistributed;
@@ -91,6 +93,34 @@ public class EntityMap {
 
 	public boolean isNoRootLevelRegEntry() {
 		return noRootLevelRegEntry;
+	}
+
+	public boolean isOnlyFullEntitiesDistributed() {
+		return onlyFullEntitiesDistributed;
+	}
+
+	public void setOnlyFullEntitiesDistributed(boolean onlyFullEntitiesDistributed) {
+		this.onlyFullEntitiesDistributed = onlyFullEntitiesDistributed;
+	}
+
+	public void setRegEmpty(boolean regEmpty) {
+		this.regEmpty = regEmpty;
+	}
+
+	public void setNoRootLevelRegEntry(boolean noRootLevelRegEntry) {
+		this.noRootLevelRegEntry = noRootLevelRegEntry;
+	}
+
+	public Map<String, String> getLinkedMaps() {
+		return linkedMaps;
+	}
+
+	public void addLinkedMap(String cSourceId, String entityMapId) {
+		this.linkedMaps.put(cSourceId, entityMapId);
+	}
+
+	public void setLinkedMaps(Map<String, String> linkedMaps) {
+		this.linkedMaps = linkedMaps;
 	}
 
 }
