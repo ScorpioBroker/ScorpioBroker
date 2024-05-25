@@ -1,11 +1,17 @@
 package eu.neclab.ngsildbroker.commons.datatypes.terms;
 
 import java.io.Serializable;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+
+import com.google.common.collect.Maps;
 
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 
-public class ScopeQueryTerm  implements Serializable {
+public class ScopeQueryTerm implements Serializable {
 
 	/**
 	 * 
@@ -19,7 +25,7 @@ public class ScopeQueryTerm  implements Serializable {
 	private boolean nextAnd = true;
 	private ScopeQueryTerm firstChild = null;
 	private ScopeQueryTerm parent = null;
-	
+
 	public ScopeQueryTerm() {
 		// for serialization
 	}
@@ -34,6 +40,20 @@ public class ScopeQueryTerm  implements Serializable {
 
 	public boolean hasNext() {
 		return next != null;
+	}
+
+	public Map<String, Map<String, Object>> calculateQuery(List<Map<String, Object>> queryResult) {
+		Iterator<Map<String, Object>> it = queryResult.iterator();
+		Map<String, Map<String, Object>> removed = Maps.newHashMap();
+		while (it.hasNext()) {
+			Map<String, Object> entity = it.next();
+			List<String[]> scopes = EntityTools.getScopes(entity);
+			if (!calculate(scopes)) {
+				removed.put((String) entity.get(NGSIConstants.JSON_LD_ID), entity);
+				it.remove();
+			}
+		}
+		return removed;
 	}
 
 	public boolean calculate(List<String[]> scopes) {

@@ -1,6 +1,10 @@
 package eu.neclab.ngsildbroker.commons.datatypes.terms;
 
 import java.io.Serializable;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import com.github.jsonldjava.core.Context;
@@ -49,7 +53,7 @@ public class AttrsQueryTerm implements Serializable {
 	}
 
 	public int toSqlConstructEntity(StringBuilder query, Tuple tuple, int dollar) {
-		
+
 		query.append("JSONB_BUILD_OBJECT('");
 		query.append(NGSIConstants.JSON_LD_ID);
 		query.append("', ENTITY -> '");
@@ -67,7 +71,7 @@ public class AttrsQueryTerm implements Serializable {
 		query.append("', ENTITY -> '");
 		query.append(NGSIConstants.NGSI_LD_MODIFIED_AT);
 		query.append("')");
-		
+
 		for (String attrs : getAttrs()) {
 			query.append(" || ");
 			query.append("CASE WHEN ENTITY ? ");
@@ -90,6 +94,18 @@ public class AttrsQueryTerm implements Serializable {
 		query.append(NGSIConstants.NGSI_LD_SCOPE);
 		query.append("' ) ELSE '{}'::jsonb END");
 		return dollar;
+	}
+
+	public void calculateQuery(List<Map<String, Object>> resultData) {
+		for (Map<String, Object> entity : resultData) {
+			Iterator<Entry<String, Object>> it = entity.entrySet().iterator();
+			while (it.hasNext()) {
+				String key = it.next().getKey();
+				if (!NGSIConstants.ENTITY_BASE_PROPS.contains(key) && !attrs.contains(key)) {
+					it.remove();
+				}
+			}
+		}
 	}
 
 }

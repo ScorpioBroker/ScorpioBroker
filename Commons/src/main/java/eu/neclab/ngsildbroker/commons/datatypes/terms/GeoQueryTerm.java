@@ -2,7 +2,9 @@ package eu.neclab.ngsildbroker.commons.datatypes.terms;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
@@ -25,11 +27,13 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.github.jsonldjava.core.Context;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.SubscriptionTools;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.vertx.mutiny.sqlclient.Tuple;
@@ -100,6 +104,20 @@ public class GeoQueryTerm implements Serializable {
 		}
 		this.coordinatesAsList = (List<Object>) outerShell.get(0);
 
+	}
+
+	public Map<String, Map<String, Object>> calculateQuery(List<Map<String, Object>> queryResult) {
+		Iterator<Map<String, Object>> it = queryResult.iterator();
+		Map<String, Map<String, Object>> removed = Maps.newHashMap();
+		while (it.hasNext()) {
+			Map<String, Object> entity = it.next();
+			Object locations = entity.get(geoproperty);
+			if (locations == null || !SubscriptionTools.evaluateGeoQuery(this, (List<Map<String, Object>>) locations)) {
+				removed.put((String) entity.get(NGSIConstants.JSON_LD_ID), entity);
+				it.remove();
+			}
+		}
+		return removed;
 	}
 
 	public List<Object> getCoordinatesAsList() {
@@ -259,7 +277,7 @@ public class GeoQueryTerm implements Serializable {
 		return dollar;
 	}
 
-	public int toTempSql(StringBuilder query, Tuple tuple, int dollar) throws ResponseException{
+	public int toTempSql(StringBuilder query, Tuple tuple, int dollar) throws ResponseException {
 		String dbColumn;
 		if (!geoproperty.equals(NGSIConstants.NGSI_LD_LOCATION)) {
 //			query.append("data @> '{\"");
@@ -271,7 +289,8 @@ public class GeoQueryTerm implements Serializable {
 //			query.append("\"]}]}' AND ");
 //			dbColumn = "ST_SetSRID(ST_GeomFromGeoJSON( getGeoJson( " + "data#>'{" + geoproperty + ",0,"
 //					+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0}') ), 4326)";
-			throw new ResponseException(ErrorType.InvalidRequest, "Unfortunatley the temporal api can only support geoqueries on the location field");
+			throw new ResponseException(ErrorType.InvalidRequest,
+					"Unfortunatley the temporal api can only support geoqueries on the location field");
 		} else {
 			dbColumn = "location";
 		}
@@ -443,7 +462,7 @@ public class GeoQueryTerm implements Serializable {
 		}
 		return queryShape;
 	}
-	
+
 	@JsonIgnore
 	public void toRequestString(StringBuilder result, Shape geo, String georel) {
 		result.append("geoproperty=");

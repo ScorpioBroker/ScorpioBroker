@@ -14,7 +14,7 @@ import io.smallrye.mutiny.tuples.Tuple2;
 
 public interface QueryServiceInterface {
 
-	Uni<Map<String, Map<String, Tuple2<Map<String, Object>, Map<String, QueryRemoteHost>>>>> getEntitiesFromUncalledHosts(
+	Uni<Tuple2<Map<String, Map<String, Tuple2<Map<String, Object>, Map<String, QueryRemoteHost>>>>, List<Map<String, Object>>>> getEntitiesFromUncalledHosts(
 			String tenant, Map<Set<String>, Set<String>> types2EntityIds,
 			Map<String, Map<String, Tuple2<Map<String, Object>, Map<String, QueryRemoteHost>>>> fullEntityCache,
 			Context linkHeaders, QQueryTerm linkedQ, boolean expectFullEntities);

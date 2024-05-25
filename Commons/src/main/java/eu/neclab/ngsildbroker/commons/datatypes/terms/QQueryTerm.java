@@ -1588,19 +1588,19 @@ public class QQueryTerm implements Serializable {
 		this.hasLinkedQ = hasLinkedQ;
 	}
 
-	public Map<String, Map<String, Object>> calculateQuery(Map<String, Map<String, Object>> queryResults,
+	public Map<String, Map<String, Object>> calculateQuery(List<Map<String,Object>> resultData,
 			Map<String, Map<String, Tuple2<Map<String, Object>, Map<String, QueryRemoteHost>>>> fullEntityCache,
 			Set<String> jsonKeys, boolean localOnly) {
-		Iterator<Entry<String, Map<String, Object>>> it = queryResults.entrySet().iterator();
+		Iterator<Map<String, Object>> it = resultData.iterator();
+		Map<String, Map<String, Object>> deleted = Maps.newHashMap();
 		while (it.hasNext()) {
-			Entry<String, Map<String, Object>> entry = it.next();
-			Map<String, Object> entity = entry.getValue();
+			Map<String, Object> entity = it.next();
 			if (!calculateEntity(entity, fullEntityCache, jsonKeys, localOnly)) {
+				deleted.put((String) entity.get(NGSIConstants.JSON_LD_ID), entity);
 				it.remove();
 			}
-
 		}
-		return queryResults;
+		return deleted;
 	}
 
 	public boolean calculateEntity(Map<String, Object> entity,
