@@ -576,7 +576,7 @@ public class QueryParser {
 			return null;
 		}
 		ids = ids.replace("\"", "");
-		List<String> idsList = Arrays.asList(ids.split(","));
+		Set<String> idsList = Sets.newHashSet(ids.split(","));
 		DataSetIdTerm result = new DataSetIdTerm();
 		result.setIds(idsList);
 		return result;

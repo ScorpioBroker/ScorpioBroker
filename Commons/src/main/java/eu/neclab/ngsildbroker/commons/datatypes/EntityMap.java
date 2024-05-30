@@ -1,7 +1,12 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -17,10 +22,14 @@ public class EntityMap {
 	private boolean regEmpty;
 
 	private boolean noRootLevelRegEntry;
+	
+	private boolean changed = false;
 
 	private String id;
 
-	private Map<String, String> linkedMaps = Maps.newHashMap();
+	private Map<String, Object> linkedMaps = Maps.newHashMap();
+
+	private Map<String, Set<String>> remoteHost2Ids = Maps.newHashMap();
 
 	public EntityMap(String id, boolean onlyFullEntitiesDistributed, boolean regEmpty, boolean noRootLevelRegEntry) {
 		this.id = id;
@@ -111,7 +120,7 @@ public class EntityMap {
 		this.noRootLevelRegEntry = noRootLevelRegEntry;
 	}
 
-	public Map<String, String> getLinkedMaps() {
+	public Map<String, Object> getLinkedMaps() {
 		return linkedMaps;
 	}
 
@@ -119,8 +128,44 @@ public class EntityMap {
 		this.linkedMaps.put(cSourceId, entityMapId);
 	}
 
-	public void setLinkedMaps(Map<String, String> linkedMaps) {
+	public void setLinkedMaps(Map<String, Object> linkedMaps) {
 		this.linkedMaps = linkedMaps;
 	}
+
+	public void removeEntries(Set<String> entityIds) {
+		List<Integer> toDelete = new ArrayList<>(entityIds.size());
+		entityIds.forEach(entityId -> {
+			Integer listPos = id2ListPosition.get(entityId);
+			toDelete.add(listPos);
+		});
+		Collections.sort(toDelete);
+		for (int i = 0; i < toDelete.size(); i++) {
+			int index = toDelete.get(i) - i;
+			EntityMapEntry removed = entityList.remove(index);
+			for (QueryRemoteHost remoteHost : removed.remoteHosts) {
+				Set<String> ids = remoteHost2Ids.get(remoteHost.host);
+				ids.remove(removed.entityId);
+				if (ids.isEmpty()) {
+					remoteHost2Ids.remove(remoteHost.host);
+					linkedMaps.remove(remoteHost.cSourceId);
+				}
+			}
+		}
+		id2ListPosition = Maps.newHashMap();
+		for (int i = 0; i < entityList.size(); i++) {
+			EntityMapEntry entityMapEntry = entityList.get(i);
+			id2ListPosition.put(entityMapEntry.getEntityId(), i);
+		}
+	}
+
+	public boolean isChanged() {
+		return changed;
+	}
+
+	public void setChanged(boolean changed) {
+		this.changed = changed;
+	}
+	
+	
 
 }

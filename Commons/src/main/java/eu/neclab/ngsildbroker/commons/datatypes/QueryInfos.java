@@ -110,13 +110,13 @@ public class QueryInfos {
 	}
 
 	public String toQueryString(Context context, TypeQueryTerm typeQuery, GeoQueryTerm geoQuery,
-			LanguageQueryTerm langQuery, boolean ignoredId, Map<String, Map<String, Tuple2<Map<String, Object>, Map<String, QueryRemoteHost>>>> fullEntityCache, QueryRemoteHost tmpHost) {
+			LanguageQueryTerm langQuery, boolean ignoredId, EntityCache fullEntityCache, QueryRemoteHost tmpHost) {
 		StringBuilder result = new StringBuilder("?");
 		Set<String> idsToBeUsed;
 		if (fullEntityCache != null) {
 			idsToBeUsed = Sets.newHashSet();
 			for(String type: types) {
-				Map<String, Tuple2<Map<String, Object>, Map<String, QueryRemoteHost>>> cacheIds = fullEntityCache.get(type);
+				Map<String, Tuple2<Map<String, Object>, Map<String, QueryRemoteHost>>> cacheIds = fullEntityCache.getByType(type);
 				for(String id: ids) {
 					if(cacheIds.containsKey(id)) {
 						Tuple2<Map<String, Object>, Map<String, QueryRemoteHost>> entityAndHosts = cacheIds.get(id);

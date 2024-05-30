@@ -21,6 +21,7 @@ import java.util.UUID;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.BaseProperty;
+import eu.neclab.ngsildbroker.commons.datatypes.EntityCache;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoProperty;
 import eu.neclab.ngsildbroker.commons.datatypes.LDGeoQuery;
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
@@ -592,7 +593,7 @@ public abstract class EntityTools {
 			TypeQueryTerm typeQuery, String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery,
 			GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery,
 			Table<String, String, List<RegistrationEntry>> tenant2CId2RegEntries, Context context,
-			Map<String, Map<String, Tuple2<Map<String, Object>, Map<String, QueryRemoteHost>>>> fullEntityCache, boolean onlyFullEntitiesDistributed) {
+			EntityCache fullEntityCache, boolean onlyFullEntitiesDistributed) {
 		return getRemoteQueries(id, typeQuery, idPattern, attrsQuery, qQuery, geoQuery, scopeQuery, langQuery,
 				tenant2CId2RegEntries.row(tenant).values().iterator(), context, fullEntityCache);
 	}
@@ -601,7 +602,7 @@ public abstract class EntityTools {
 			String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery, GeoQueryTerm geoQuery,
 			ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, Iterator<List<RegistrationEntry>> it,
 			Context context,
-			Map<String, Map<String, Tuple2<Map<String, Object>, Map<String, QueryRemoteHost>>>> fullEntityCache) {
+			EntityCache fullEntityCache) {
 
 		// ids, types, attrs, geo, scope
 		Map<QueryRemoteHost, QueryInfos> remoteHost2QueryInfo = Maps.newHashMap();
@@ -682,6 +683,11 @@ public abstract class EntityTools {
 			}
 		}
 		return result;
+	}
+
+	public static Map<String, Object> mergeEntity(Map<String, Object> currentEntity, Map<String, Object> entity) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }
