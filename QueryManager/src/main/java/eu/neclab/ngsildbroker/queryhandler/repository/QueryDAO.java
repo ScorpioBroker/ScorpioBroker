@@ -974,7 +974,7 @@ public class QueryDAO {
 		});
 	}
 
-	public Uni<Void> storeEntityMap(String tenant, String qToken, EntityMap entityMap) {
+	public Uni<Void> storeEntityMap(String tenant, String qToken, EntityMap entityMap, boolean deleteOldEntries) {
 
 		if (entityMap.getEntityList().isEmpty()) {
 			return Uni.createFrom().voidItem();
@@ -1005,12 +1005,22 @@ public class QueryDAO {
 			batch.add(tuple);
 		}
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
-			return client.preparedQuery("INSERT INTO entitymap VALUES ($1, $2, $3, $4, $5, $6, $7)").executeBatch(batch).onItem()
-					.transformToUni(r -> {
-						return client.preparedQuery(
-								"INSERT INTO entitymap_management VALUES ($1, now(), $2) ON CONFLICT(q_token) DO UPDATE SET last_access=now()")
-								.execute(Tuple.of(qToken, new JsonObject(entityMap.getLinkedMaps()))).onItem().transformToUni(r2 -> Uni.createFrom().voidItem());
-					});
+			String sql;
+			Uni<Void> delete;
+			if (deleteOldEntries) {
+				delete = client.preparedQuery("DELETE FROM entitymap WHERE id=$1").execute(Tuple.of(qToken)).onItem()
+						.transformToUni(rows -> Uni.createFrom().voidItem());
+			} else {
+				delete = Uni.createFrom().voidItem();
+			}
+			return delete.onItem().transformToUni(
+					v -> client.preparedQuery("INSERT INTO entitymap VALUES ($1, $2, $3, $4, $5, $6, $7)")
+							.executeBatch(batch).onItem().transformToUni(r -> {
+								return client.preparedQuery(
+										"INSERT INTO entitymap_management VALUES ($1, now(), $2) ON CONFLICT(q_token) DO UPDATE SET last_access=now(), linked_maps=$2")
+										.execute(Tuple.of(qToken, new JsonObject(entityMap.getLinkedMaps()))).onItem()
+										.transformToUni(r2 -> Uni.createFrom().voidItem());
+							}));
 		});
 	}
 

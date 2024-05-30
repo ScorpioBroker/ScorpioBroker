@@ -222,7 +222,7 @@ public class QueryService implements QueryServiceInterface {
 									langQuery.calculateQuery(resultData);
 								}
 								if (entityMap.isChanged()) {
-									return queryDAO.storeEntityMap(tenant, entityMap.getId(), entityMap).onItem()
+									return queryDAO.storeEntityMap(tenant, entityMap.getId(), entityMap, true).onItem()
 											.transformToUni(v -> {
 												return doJoinIfNeeded(tenant, result, updatedEntityCache, context, join,
 														joinLevel, onlyFullEntities);
@@ -272,8 +272,8 @@ public class QueryService implements QueryServiceInterface {
 										langQuery.calculateQuery(resultData);
 									}
 									if (entityMap.isChanged()) {
-										return queryDAO.storeEntityMap(tenant, entityMap.getId(), entityMap).onItem()
-												.transformToUni(v -> {
+										return queryDAO.storeEntityMap(tenant, entityMap.getId(), entityMap, true)
+												.onItem().transformToUni(v -> {
 													return doJoinIfNeeded(tenant, result, updatedEntityCache, context,
 															join, joinLevel, onlyFullEntities);
 												});
@@ -301,9 +301,8 @@ public class QueryService implements QueryServiceInterface {
 												}
 												if (deleted.isEmpty()) {
 													if (entityMap.isChanged()) {
-														return queryDAO
-																.storeEntityMap(tenant, entityMap.getId(), entityMap)
-																.onItem().transformToUni(v -> {
+														return queryDAO.storeEntityMap(tenant, entityMap.getId(),
+																entityMap, true).onItem().transformToUni(v -> {
 																	return doJoinIfNeeded(tenant, result,
 																			updatedEntityCache, context, join,
 																			joinLevel, onlyFullEntities);
@@ -324,8 +323,8 @@ public class QueryService implements QueryServiceInterface {
 										attrsQuery.calculateQuery(resultData);
 									}
 									if (entityMap.isChanged()) {
-										return queryDAO.storeEntityMap(tenant, entityMap.getId(), entityMap).onItem()
-												.transformToUni(v -> {
+										return queryDAO.storeEntityMap(tenant, entityMap.getId(), entityMap, true)
+												.onItem().transformToUni(v -> {
 													return doJoinIfNeeded(tenant, result, updatedEntityCache, context,
 															join, joinLevel, onlyFullEntities);
 												});
@@ -356,8 +355,8 @@ public class QueryService implements QueryServiceInterface {
 										langQuery.calculateQuery(resultData);
 									}
 									if (entityMap.isChanged()) {
-										return queryDAO.storeEntityMap(tenant, entityMap.getId(), entityMap).onItem()
-												.transformToUni(v -> {
+										return queryDAO.storeEntityMap(tenant, entityMap.getId(), entityMap, true)
+												.onItem().transformToUni(v -> {
 													return doJoinIfNeeded(tenant, result, updatedEntityCache, context,
 															join, joinLevel, onlyFullEntities);
 												});
@@ -2056,7 +2055,7 @@ public class QueryService implements QueryServiceInterface {
 		return entityCacheAndEntityMap.onItem().transform(tuple -> {
 			EntityMap entityMap = tuple.getItem2();
 			if (!doNotCompact) {
-				queryDAO.storeEntityMap(tenant, qToken, entityMap).subscribe().with(t -> {
+				queryDAO.storeEntityMap(tenant, qToken, entityMap, false).subscribe().with(t -> {
 					logger.debug("Stored entity map " + qToken);
 				});
 			}
