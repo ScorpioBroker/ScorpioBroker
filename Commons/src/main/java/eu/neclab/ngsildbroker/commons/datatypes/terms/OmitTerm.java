@@ -1,6 +1,9 @@
 package eu.neclab.ngsildbroker.commons.datatypes.terms;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -17,17 +20,20 @@ public class OmitTerm extends ProjectionTerm {
 	protected ProjectionTerm getInstance() {
 		return new OmitTerm();
 	}
+
 	public static OmitTerm getNewRootInstance() {
 		OmitTerm result = new OmitTerm();
-		result.attrib = NGSIConstants.NGSI_LD_CREATED_AT;
-		result = (OmitTerm) result.getNext();
-		result.attrib = NGSIConstants.NGSI_LD_MODIFIED_AT;
-		return (OmitTerm) result.getNext();
-		
+//		result.attrib = NGSIConstants.NGSI_LD_CREATED_AT;
+//		result = (OmitTerm) result.getNext();
+//		result.attrib = NGSIConstants.NGSI_LD_MODIFIED_AT;
+		return result;
+
 	}
+
 	private OmitTerm() {
-		
+
 	}
+
 	@Override
 	public int toSqlConstructEntity(StringBuilder query, Tuple tuple, int dollar, String tableToUse,
 			DataSetIdTerm dataSetIdTerm) {
@@ -94,16 +100,55 @@ public class OmitTerm extends ProjectionTerm {
 		query.append("NOT (ARRAY(SELECT jsonb_object_keys(ENTITY)) <@ $");
 		query.append(dollar);
 		dollar++;
-		tuple.addArrayOfString(getAllTopLevelAttribs().toArray(new String[0]));
+		HashSet<String> tmp = Sets.newHashSet(getAllTopLevelAttribs());
+		tmp.add(NGSIConstants.NGSI_LD_CREATED_AT);
+		tmp.add(NGSIConstants.NGSI_LD_MODIFIED_AT);
+		tuple.addArrayOfString(tmp.toArray(new String[0]));
 		query.append(')');
 		return dollar;
 	}
 
 	@Override
-	public void calculateEntity(Map<String, Object> entity) {
-		for (String attrib : getAllTopLevelAttribs()) {
-			entity.remove(attrib);
+	public Map<String, Object> calculateEntity(Map<String, Object> entity) {
+		ProjectionTerm current = this;
+		while (current != null) {
+			if (current.hasLinked) {
+				Object attribObj = entity.get(current.attrib);
+				if (attribObj != null) {
+					if (attribObj instanceof List<?> attrList) {
+						for (Object attrInstanceObj : attrList) {
+							if (attrInstanceObj instanceof Map<?, ?> instanceMap
+									&& instanceMap.containsKey(NGSIConstants.NGSI_LD_ENTITY)) {
+								List<Map<String, Object>> entities = (List<Map<String, Object>>) instanceMap
+										.get(NGSIConstants.NGSI_LD_ENTITY);
+								Iterator<Map<String, Object>> it = entities.iterator();
+								while (it.hasNext()) {
+									Map<String, Object> linkedEntity = it.next();
+									current.linkedChild.calculateEntity(linkedEntity);
+									if(linkedEntity.isEmpty()) {
+										it.remove();
+									}
+								}
+								if (entities.isEmpty()) {
+									instanceMap.remove(NGSIConstants.NGSI_LD_ENTITY);
+								} 
+							}
+
+						}
+					}
+				}
+
+			} else {
+				entity.remove(current.attrib);
+			}
+			current = current.next;
 		}
+		// only createdat and modifiedat are left so it's empty for the result
+		if (entity.size() == 2) {
+			entity.remove(NGSIConstants.NGSI_LD_CREATED_AT);
+			entity.remove(NGSIConstants.NGSI_LD_MODIFIED_AT);
+		}
+		return entity;
 	}
 
 	private Set<String> getAllTopLevelAttribs() {

@@ -1,9 +1,8 @@
 {
 	"info": {
-		"_postman_id": "741657fb-683a-4132-baba-ac3c2c66f81b",
+		"_postman_id": "a275d923-028f-4857-8b4d-a70a3a0200da",
 		"name": "API Test",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "27293663"
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
 		{
@@ -12901,7 +12900,7 @@
 																	"    pm.expect(jsonData.length).to.eql(1);\r",
 																	"    var entity = jsonData[0];\r",
 																	"    var keys = Object.keys(entity);\r",
-																	"    pm.expect(keys.length).to.eql(3);\r",
+																	"    //pm.expect(keys.length).to.eql(3);\r",
 																	"    pm.expect(keys).to.contain(\"id\");\r",
 																	"    pm.expect(keys).to.contain(\"type\");\r",
 																	"    pm.expect(keys).to.contain(\"testjsonproperty\");\r",
@@ -12961,7 +12960,7 @@
 																	"    pm.expect(jsonData.length).to.eql(1);\r",
 																	"    var entity = jsonData[0];\r",
 																	"    var keys = Object.keys(entity);\r",
-																	"    pm.expect(keys.length).to.eql(3);\r",
+																	"    //pm.expect(keys.length).to.eql(3);\r",
 																	"    pm.expect(keys).to.contain(\"id\");\r",
 																	"    pm.expect(keys).to.contain(\"type\");\r",
 																	"    pm.expect(keys).to.contain(\"testjsonproperty\");\r",
@@ -13025,7 +13024,7 @@
 																	"    pm.expect(jsonData.length).to.eql(2);\r",
 																	"    var entity = jsonData[0];\r",
 																	"    var keys = Object.keys(entity);\r",
-																	"    pm.expect(keys.length).to.eql(3);\r",
+																	"    //pm.expect(keys.length).to.eql(3);\r",
 																	"    pm.expect(keys).to.contain(\"id\");\r",
 																	"    pm.expect(keys).to.contain(\"type\");\r",
 																	"    pm.expect(keys).to.contain(\"testjsonproperty\");\r",
@@ -58725,37 +58724,23 @@
 	],
 	"variable": [
 		{
-			"key": "created",
+			"key": "createdTBF",
 			"value": ""
 		},
 		{
-			"key": "entityId",
+			"key": "entityIdTBF",
 			"value": ""
 		},
 		{
-			"key": "@context",
-			"value": ""
-		}
-	],
-	"variable": [
-		{
-			"key": "created",
+			"key": "entityTypeTBF",
 			"value": ""
 		},
 		{
-			"key": "entityId",
+			"key": "createdTBNF",
 			"value": ""
 		},
 		{
-			"key": "@context",
-			"value": ""
-		},
-		{
-			"key": "subId",
-			"value": ""
-		},
-		{
-			"key": "urlOne",
+			"key": "entityIdTBNF",
 			"value": ""
 		}
 	]

@@ -1218,9 +1218,9 @@ public class QueryDAO {
 			} else {
 				query.append("ENTITY.ENTITY");
 			}
-			query.append(" as ENTITY, NULL as PARENT FROM b left join ENTITY on b.ID = ENTITY.ID");
+			query.append(" as ENTITY, NULL as PARENT, ENTITY.E_TYPES AS E_TYPES FROM b left join ENTITY on b.ID = ENTITY.ID");
 			if (attrsQuery == null && (dataSetIdTerm != null || omitTerm != null || pickTerm != null)) {
-				query.append(", JSONB_EACH(ENTITY) AS entityAttrs");
+				query.append(", JSONB_EACH(ENTITY.ENTITY) AS entityAttrs GROUP BY ENTITY.ID");
 			}
 			query.append(")  ");
 			String currentEntitySet = "c";
@@ -1252,7 +1252,7 @@ public class QueryDAO {
 					query.append(counter + 1);
 					query.append(" as (SELECT E.ID as id, E.ENTITY as entity, C");
 					query.append(counter + 1);
-					query.append(".link as parent");
+					query.append(".link as parent, E.E_TYPES as E_TYPES");
 
 					query.append(" from C");
 					query.append(counter + 1);
@@ -1276,7 +1276,10 @@ public class QueryDAO {
 			query.append(currentEntitySet);
 			query.append(".ENTITY, ");
 			query.append(currentEntitySet);
-			query.append(".parent FROM a left outer join ");
+			query.append(".parent, ");
+			query.append(currentEntitySet);
+			query.append(".E_TYPES");
+			query.append(" FROM a left outer join ");
 			query.append(currentEntitySet);
 			query.append(" on a.ID = ");
 			query.append(currentEntitySet);
@@ -1293,13 +1296,13 @@ public class QueryDAO {
 					String id = row.getString(0);
 					JsonObject entityObj = row.getJsonObject(1);
 					String parent = row.getString(2);
+					String[] types = row.getArrayOfStrings(3);
 					if (parent == null) {
 						resultEntityMap.getEntry(id).addRemoteHost(AppConstants.DB_REMOTE_HOST);
 					}
 
 					if (entityObj != null) {
 						Map<String, Object> entity = entityObj.getMap();
-						List<String> types = (List<String>) entity.get(NGSIConstants.JSON_LD_TYPE);
 						for (String type : types) {
 							resultEntities.setEntityIntoEntityCache(type, id, entity,
 									AppConstants.DEFAULT_REMOTE_HOST_MAP);

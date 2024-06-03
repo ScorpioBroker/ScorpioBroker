@@ -1,6 +1,9 @@
 package eu.neclab.ngsildbroker.commons.datatypes.terms;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -25,7 +28,7 @@ public class PickTerm extends ProjectionTerm {
 			DataSetIdTerm dataSetIdTerm) {
 		query.append("JSONB_STRIP_NULLS(JSONB_OBJECT_AGG(");
 		query.append(tableToUse);
-		query.append(".KEY, CASE WHEN NOY ");
+		query.append(".KEY, CASE WHEN NOT ");
 		query.append(tableToUse);
 		query.append(".KEY = ANY($");
 		query.append(dollar);
@@ -104,15 +107,44 @@ public class PickTerm extends ProjectionTerm {
 	}
 
 	@Override
-	public void calculateEntity(Map<String, Object> entity) {
+	public Map<String, Object> calculateEntity(Map<String, Object> entity) {
+		ProjectionTerm current = this;
+		Map<String, Object> result = new HashMap<>(entity.size());
+		while (current != null) {
+			Object attribObj = entity.get(current.attrib);
+			if (attribObj != null) {
+				if (current.hasLinked) {
+					if (attribObj instanceof List<?> attrList) {
+						for (Object attrInstanceObj : attrList) {
+							if (attrInstanceObj instanceof Map<?, ?> instanceMap
+									&& instanceMap.containsKey(NGSIConstants.NGSI_LD_ENTITY)) {
+								List<Map<String, Object>> entities = (List<Map<String, Object>>) instanceMap
+										.get(NGSIConstants.NGSI_LD_ENTITY);
+								List<Map<String, Object>> resultAttEntityrList = new ArrayList<>(entities.size());
+								for (Map<String, Object> linkedEntity : entities) {
+									Map<String, Object> cleanedLinkedEntity = current.linkedChild
+											.calculateEntity(linkedEntity);
+									if (!cleanedLinkedEntity.isEmpty()) {
+										resultAttEntityrList.add(cleanedLinkedEntity);
+									}
+								}
+								if (resultAttEntityrList.isEmpty()) {
+									instanceMap.remove(NGSIConstants.NGSI_LD_ENTITY);
+								} else {
+									((Map<String, Object>) instanceMap).put(NGSIConstants.NGSI_LD_ENTITY,
+											resultAttEntityrList);
+								}
+							}
 
-		Iterator<Entry<String, Object>> it = entity.entrySet().iterator();
-		while (it.hasNext()) {
-			Entry<String, Object> itNext = it.next();
-			if (!getAllTopLevelAttribs().contains(itNext.getKey())) {
-				it.remove();
+						}
+					}
+				}
+				result.put(current.attrib, attribObj);
 			}
 		}
+		result.put(NGSIConstants.NGSI_LD_CREATED_AT, entity.get(NGSIConstants.NGSI_LD_CREATED_AT));
+		result.put(NGSIConstants.NGSI_LD_MODIFIED_AT, entity.get(NGSIConstants.NGSI_LD_MODIFIED_AT));
+		return result;
 	}
 
 }

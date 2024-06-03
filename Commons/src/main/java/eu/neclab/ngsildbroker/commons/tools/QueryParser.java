@@ -598,7 +598,7 @@ public class QueryParser {
 		while (it.hasNext()) {
 			char b = (char) it.next().intValue();
 			if (b == '{') {
-				ProjectionTerm child = current.getLinkedChild();
+				ProjectionTerm child = current.createNewChild();
 				expanded = context.expandIri(attribName.toString(), false, true, null, null);
 				current.setAttrib(expanded);
 				current.setHasLinked(true);

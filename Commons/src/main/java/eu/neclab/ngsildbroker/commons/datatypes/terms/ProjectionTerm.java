@@ -76,6 +76,6 @@ public abstract class ProjectionTerm {
 
 	public abstract int toSql(StringBuilder query, Tuple tuple, int dollar);
 
-	public abstract void calculateEntity(Map<String, Object> entity);
+	public abstract Map<String, Object> calculateEntity(Map<String, Object> entity);
 
 }
