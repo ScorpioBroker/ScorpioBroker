@@ -27,6 +27,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.ProjectionTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TemporalQueryTerm;
@@ -272,6 +273,7 @@ public class QueryParser {
 		if (attrs == null || attrs.isEmpty()) {
 			return null;
 		}
+		attrs = attrs.replaceAll("[\"\\n\\s]", "");
 		AttrsQueryTerm result = new AttrsQueryTerm(context);
 		for (String attr : attrs.split(",")) {
 			result.addAttr(attr);
@@ -580,6 +582,48 @@ public class QueryParser {
 		DataSetIdTerm result = new DataSetIdTerm();
 		result.setIds(idsList);
 		return result;
+	}
+
+	public static void parseProjectionTerm(ProjectionTerm projectionTerm, String input, Context context)
+			throws ResponseException {
+		if (input == null) {
+			return;
+		}
+		ProjectionTerm root = projectionTerm;
+		ProjectionTerm current = root;
+		StringBuilder attribName = new StringBuilder();
+		input = URLDecoder.decode(input, StandardCharsets.UTF_8);
+		String expanded;
+		OfInt it = input.chars().iterator();
+		while (it.hasNext()) {
+			char b = (char) it.next().intValue();
+			if (b == '{') {
+				ProjectionTerm child = current.getLinkedChild();
+				expanded = context.expandIri(attribName.toString(), false, true, null, null);
+				current.setAttrib(expanded);
+				current.setHasLinked(true);
+				attribName.setLength(0);
+				current = child;
+			} else if (b == ',' || b == '|') {
+				ProjectionTerm next = current.getNext();
+				expanded = context.expandIri(attribName.toString(), false, true, null, null);
+				current.setAttrib(expanded);
+				attribName.setLength(0);
+				current = next;
+			} else if (b == '}') {
+				expanded = context.expandIri(attribName.toString(), false, true, null, null);
+				current.setAttrib(expanded);
+				attribName.setLength(0);
+				current = current.getParent();
+			} else {
+				attribName.append(b);
+			}
+
+		}
+		if (attribName.length() > 0) {
+			expanded = context.expandIri(attribName.toString(), false, true, null, null);
+			current.setAttrib(expanded);
+		}
 	}
 
 }

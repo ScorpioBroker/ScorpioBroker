@@ -511,4 +511,6 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_ENTITY = "https://uri.etsi.org/ngsi-ld/entity";
 	
 	public static final String JSON_LD_NULL = "@null";
+	public static final String QUERY_PARAMETER_OMIT = "omit";
+	public static final String QUERY_PARAMETER_PICK = "pick";
 }

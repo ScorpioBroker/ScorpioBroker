@@ -971,14 +971,14 @@ public final class HttpUtils {
 
 	public static Uni<RestResponse<Object>> generateQueryResult(HttpServerRequest request, QueryResult queryResult,
 			String options, String geometryProperty, int acceptHeader, boolean count, int limit, LanguageQueryTerm lang,
-			Context context, JsonLDService ldService, List<String> omitList, List<String> pickList) {
+			Context context, JsonLDService ldService) {
 		return generateQueryResult(request, queryResult, options, geometryProperty, acceptHeader, count, limit, lang,
-				context, ldService, omitList, pickList, false);
+				context, ldService, false);
 	}
 
 	public static Uni<RestResponse<Object>> generateQueryResult(HttpServerRequest request, QueryResult queryResult,
 			String options, String geometryProperty, int acceptHeader, boolean count, int limit, LanguageQueryTerm lang,
-			Context context, JsonLDService ldService, List<String> omitList, List<String> pickList, boolean forceList) {
+			Context context, JsonLDService ldService, boolean forceList) {
 		ResponseBuilder<Object> builder;
 		if (count) {
 			builder = RestResponseBuilderImpl.ok().header(NGSIConstants.COUNT_HEADER_RESULT, queryResult.getCount());
@@ -1014,7 +1014,7 @@ public final class HttpUtils {
 					for (Tuple2<String, String> entry : headers) {
 						myBuilder = myBuilder.header(entry.getItem1(), entry.getItem2());
 					}
-					Object result = processPickOmit(resultAndHeaders.getItem1(), pickList, omitList);
+					Object result = resultAndHeaders.getItem1();
 					if (forceList) {
 						forceList(result);
 					}

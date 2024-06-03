@@ -52,7 +52,7 @@ public class AttrsQueryTerm implements Serializable {
 		return dollar;
 	}
 
-	public int toSqlConstructEntity(StringBuilder query, Tuple tuple, int dollar) {
+	public int toSqlConstructEntity(StringBuilder query, Tuple tuple, int dollar, DataSetIdTerm datasetIdTerm) {
 
 		query.append("JSONB_BUILD_OBJECT('");
 		query.append(NGSIConstants.JSON_LD_ID);
@@ -72,18 +72,56 @@ public class AttrsQueryTerm implements Serializable {
 		query.append(NGSIConstants.NGSI_LD_MODIFIED_AT);
 		query.append("')");
 
-		for (String attrs : getAttrs()) {
-			query.append(" || ");
-			query.append("CASE WHEN ENTITY ? ");
-			query.append("$");
-			query.append(dollar);
-			query.append(" THEN JSONB_BUILD_OBJECT($");
-			query.append(dollar);
-			query.append(", ENTITY->$");
-			query.append(dollar);
-			query.append(" ) ELSE '{}'::jsonb END");
-			tuple.addString(attrs);
-			dollar++;
+		if (datasetIdTerm == null) {
+			for (String attrs : getAttrs()) {
+				query.append(" || ");
+				query.append("CASE WHEN ENTITY ? ");
+				query.append("$");
+				query.append(dollar);
+				query.append(" THEN JSONB_BUILD_OBJECT($");
+				query.append(dollar);
+				query.append(", ENTITY->$");
+				query.append(dollar);
+				query.append(" ) ELSE '{}'::jsonb END");
+				tuple.addString(attrs);
+				dollar++;
+			}
+		} else {
+			for (String attrs : getAttrs()) {
+				query.append(" || ");
+				query.append("CASE WHEN ENTITY ? ");
+				query.append("$");
+				query.append(dollar);
+				query.append(" THEN (SELECT CASE WHEN jsonb_array_length(filtered.res) > 0 THEN JSONB_BUILD_OBJECT($");
+				query.append(dollar);
+				query.append(", filtered.res) ELSE '{}'::jsonb END FROM (SELECT jsonb_agg(val) as res FROM jsonb_array_elements(ENTITY -> $");
+				query.append(dollar);
+				tuple.addString(attrs);
+				dollar++;
+				query.append(") as val where ");
+				if(datasetIdTerm.ids.remove(NGSIConstants.JSON_LD_NONE)) {
+					query.append("NOT val ? '");
+					query.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
+					query.append("'");
+					if(!datasetIdTerm.ids.isEmpty()) {
+						query.append(" OR ");	
+					}
+				}
+				if(!datasetIdTerm.ids.isEmpty()) {
+					query.append("val ? '");
+					query.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
+					query.append("' and val #>> '{");
+					query.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
+					query.append(",0,");
+					query.append(NGSIConstants.JSON_LD_ID);
+					query.append("}' = ANY($");
+					query.append(dollar);
+					query.append(")");
+					tuple.addArrayOfString(datasetIdTerm.ids.toArray(new String[0]));
+					dollar++;
+				}
+				query.append(") as filtered)");
+			}
 		}
 		query.append(" || ");
 		query.append("CASE WHEN ENTITY-> '");

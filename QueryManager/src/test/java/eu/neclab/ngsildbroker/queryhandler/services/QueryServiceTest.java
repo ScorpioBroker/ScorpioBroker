@@ -88,7 +88,7 @@ public class QueryServiceTest {
 
 		Uni<Map<String, Object>> getEntityRes = Uni.createFrom().item(resolved);
 
-		when(queryDAO.getEntity(anyString(), anyString(), any())).thenReturn(getEntityRes);
+		when(queryDAO.getEntity(anyString(), anyString(), any(), any())).thenReturn(getEntityRes);
 
 		Uni<Map<String, Object>> originalEntityResUni = queryService.retrieveEntity(context, "", entityId, null, null,
 				true,null,null,false,1);
@@ -97,7 +97,7 @@ public class QueryServiceTest {
 
 		assertEquals(true,
 				originalEntityRes.containsKey("https://uri.etsi.org/ngsi-ld/default-context/complexproperty"));
-		verify(queryDAO, times(1)).getEntity(anyString(), anyString(), any());
+		verify(queryDAO, times(1)).getEntity(anyString(), anyString(), any(), any());
 
 	}
 
@@ -106,7 +106,7 @@ public class QueryServiceTest {
 	public void retrieveEntityNotFoundTest() {
 
 		Uni<Map<String, Object>> getEntityRes = Uni.createFrom().item(new HashMap<String, Object>());
-		when(queryDAO.getEntity(anyString(), anyString(), any())).thenReturn(getEntityRes);
+		when(queryDAO.getEntity(anyString(), anyString(), any(), any())).thenReturn(getEntityRes);
 		Uni<Map<String, Object>> originalEntityResUni = queryService.retrieveEntity(context, "", entityId, null, null,
 				true,null,null,false,1);
 		Map<String, Object> originalEntityRes = originalEntityResUni.await().indefinitely();

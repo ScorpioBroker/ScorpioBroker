@@ -42,6 +42,8 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.DataSetIdTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.OmitTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.PickTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
@@ -115,27 +117,29 @@ public class QueryService implements QueryServiceInterface {
 			GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, int limit, int offSet,
 			boolean count, boolean localOnly, Context context, io.vertx.core.MultiMap headersFromReq,
 			boolean doNotCompact, Set<String> jsonKeys, DataSetIdTerm dataSetIdTerm, String join, int joinLevel,
-			boolean entityDist) {
+			boolean entityDist, PickTerm pickTerm, OmitTerm omitTerm) {
 		if (localOnly) {
 			return localQueryLevel1(tenant, ids, typeQuery, idPattern, attrsQuery, qQuery, geoQuery, scopeQuery,
-					langQuery, limit, offSet, count, dataSetIdTerm, join, joinLevel);
+					langQuery, limit, offSet, count, dataSetIdTerm, join, joinLevel, pickTerm, omitTerm);
 		}
 		if (!tokenProvided) {
 			return getAndStoreEntityIdList(tenant, ids, idPattern, qToken, typeQuery, attrsQuery, geoQuery, qQuery,
 					scopeQuery, langQuery, limit, offSet, context, headersFromReq, doNotCompact, dataSetIdTerm, join,
-					joinLevel, entityDist).onItem().transformToUni(t -> {
+					joinLevel, entityDist, pickTerm, omitTerm).onItem().transformToUni(t -> {
 						return handleEntityMap(t.getItem2(), t.getItem1(), tenant, ids, typeQuery, idPattern,
 								attrsQuery, qQuery, geoQuery, scopeQuery, langQuery, limit, offSet, count,
-								dataSetIdTerm, join, joinLevel, context, entityDist, jsonKeys, headersFromReq);
+								dataSetIdTerm, join, joinLevel, context, entityDist, jsonKeys, headersFromReq, pickTerm,
+								omitTerm);
 
 					});
 		} else {
 			return getEntityMapAndEntitiesAndUpdateExpires(tenant, ids, typeQuery, idPattern, attrsQuery, qQuery,
-					geoQuery, scopeQuery, context, limit, offSet, dataSetIdTerm, join, joinLevel, qToken).onItem()
-					.transformToUni(t -> {
+					geoQuery, scopeQuery, context, limit, offSet, dataSetIdTerm, join, joinLevel, qToken, pickTerm,
+					omitTerm).onItem().transformToUni(t -> {
 						return handleEntityMap(t.getItem2(), t.getItem1(), tenant, ids, typeQuery, idPattern,
 								attrsQuery, qQuery, geoQuery, scopeQuery, langQuery, limit, offSet, count,
-								dataSetIdTerm, join, joinLevel, context, entityDist, jsonKeys, headersFromReq);
+								dataSetIdTerm, join, joinLevel, context, entityDist, jsonKeys, headersFromReq, pickTerm,
+								omitTerm);
 
 					});
 		}
@@ -144,14 +148,15 @@ public class QueryService implements QueryServiceInterface {
 	private Uni<Tuple2<EntityCache, EntityMap>> getEntityMapAndEntitiesAndUpdateExpires(String tenant, String[] ids,
 			TypeQueryTerm typeQuery, String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery,
 			GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, Context context, int limit, int offset,
-			DataSetIdTerm dataSetIdTerm, String join, int joinLevel, String qToken) {
+			DataSetIdTerm dataSetIdTerm, String join, int joinLevel, String qToken, PickTerm pickTerm,
+			OmitTerm omitTerm) {
 		Uni<Tuple2<EntityCache, EntityMap>> entityCacheAndEntityMap;
 		if (tenant2CId2RegEntries.isEmpty()) {
 			entityCacheAndEntityMap = queryDAO.queryForEntitiesAndEntityMapNoRegEntry(tenant, attrsQuery, limit, offset,
-					dataSetIdTerm, join, joinLevel, qToken);
+					dataSetIdTerm, join, joinLevel, qToken, pickTerm, omitTerm);
 		} else {
 			entityCacheAndEntityMap = queryDAO.queryForEntitiesAndEntityMap(tenant, attrsQuery, limit, offset,
-					dataSetIdTerm, join, joinLevel, qToken);
+					dataSetIdTerm, join, joinLevel, qToken, pickTerm, omitTerm);
 		}
 		return entityCacheAndEntityMap;
 	}
@@ -160,7 +165,8 @@ public class QueryService implements QueryServiceInterface {
 			TypeQueryTerm typeQuery, String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery,
 			GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, int limit, int offSet,
 			boolean count, DataSetIdTerm dataSetIdTerm, String join, int joinLevel, Context context,
-			boolean onlyFullEntities, Set<String> jsonKeys, io.vertx.core.MultiMap headersFromReq) {
+			boolean onlyFullEntities, Set<String> jsonKeys, io.vertx.core.MultiMap headersFromReq, PickTerm pickTerm,
+			OmitTerm omitTerm) {
 		QueryResult result = new QueryResult();
 
 		List<Map<String, Object>> resultData = Lists.newArrayList();
@@ -234,7 +240,7 @@ public class QueryService implements QueryServiceInterface {
 								return updateEntityMapAndRepull(deleted, entityMap, updatedEntityCache, tenant, id,
 										typeQuery, idPattern, attrsQuery, qQuery, geoQuery, scopeQuery, langQuery,
 										limit, offSet, count, dataSetIdTerm, join, joinLevel, context, onlyFullEntities,
-										jsonKeys, headersFromReq);
+										jsonKeys, headersFromReq, pickTerm, omitTerm);
 							}
 						});
 			} else {
@@ -284,7 +290,7 @@ public class QueryService implements QueryServiceInterface {
 									return updateEntityMapAndRepull(deleted, entityMap, updatedEntityCache, tenant, id,
 											typeQuery, idPattern, attrsQuery, qQuery, geoQuery, scopeQuery, langQuery,
 											limit, offSet, count, dataSetIdTerm, join, joinLevel, context,
-											onlyFullEntities, jsonKeys, headersFromReq);
+											onlyFullEntities, jsonKeys, headersFromReq, pickTerm, omitTerm);
 								}
 							}
 
@@ -315,7 +321,7 @@ public class QueryService implements QueryServiceInterface {
 															updatedEntityCache2, tenant, id, typeQuery, idPattern,
 															attrsQuery, qQuery, geoQuery, scopeQuery, langQuery, limit,
 															offSet, count, dataSetIdTerm, join, joinLevel, context,
-															onlyFullEntities, jsonKeys, headersFromReq);
+															onlyFullEntities, jsonKeys, headersFromReq, pickTerm, omitTerm);
 												}
 											});
 								} else {
@@ -367,7 +373,7 @@ public class QueryService implements QueryServiceInterface {
 									return updateEntityMapAndRepull(deleted, entityMap, updatedEntityCache, tenant, id,
 											typeQuery, idPattern, attrsQuery, qQuery, geoQuery, scopeQuery, langQuery,
 											limit, offSet, count, dataSetIdTerm, join, joinLevel, context,
-											onlyFullEntities, jsonKeys, headersFromReq);
+											onlyFullEntities, jsonKeys, headersFromReq, pickTerm, omitTerm);
 								}
 							}
 						}
@@ -612,7 +618,7 @@ public class QueryService implements QueryServiceInterface {
 			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery,
 			LanguageQueryTerm langQuery, int limit, int offSet, boolean count, DataSetIdTerm dataSetIdTerm, String join,
 			int joinLevel, Context context, boolean onlyFullEntities, Set<String> jsonKeys,
-			io.vertx.core.MultiMap headersFromReq) {
+			io.vertx.core.MultiMap headersFromReq, PickTerm pickTerm, OmitTerm omitTerm) {
 		entityMap.removeEntries(deleted.keySet());
 		List<EntityMapEntry> subMap = entityMap.getSubMap(offSet, limit + (deleted.size() * 3));
 		entityMap.setChanged(true);
@@ -620,7 +626,7 @@ public class QueryService implements QueryServiceInterface {
 				.transformToUni(updatedCache -> {
 					return handleEntityMap(entityMap, entityCache, tenant, id, typeQuery, idPattern, attrsQuery, qQuery,
 							geoQuery, scopeQuery, langQuery, limit, offSet, count, dataSetIdTerm, join, joinLevel,
-							context, onlyFullEntities, jsonKeys, headersFromReq);
+							context, onlyFullEntities, jsonKeys, headersFromReq, pickTerm, omitTerm);
 				});
 
 	}
@@ -1083,9 +1089,11 @@ public class QueryService implements QueryServiceInterface {
 	private Uni<QueryResult> localQueryLevel1(String tenant, String[] id, TypeQueryTerm typeQuery, String idPattern,
 			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery,
 			LanguageQueryTerm langQuery, int limit, int offSet, boolean count, DataSetIdTerm dataSetIdTerm, String join,
-			int joinLevel) {
-		return queryDAO.queryLocalOnly(tenant, id, typeQuery, idPattern, attrsQuery, qQuery, geoQuery, scopeQuery,
-				langQuery, limit, offSet, count, dataSetIdTerm, join, joinLevel).onItem().transform(rows -> {
+			int joinLevel, PickTerm pickTerm, OmitTerm omitTerm) {
+		return queryDAO
+				.queryLocalOnly(tenant, id, typeQuery, idPattern, attrsQuery, qQuery, geoQuery, scopeQuery, langQuery,
+						limit, offSet, count, dataSetIdTerm, join, joinLevel, pickTerm, omitTerm)
+				.onItem().transform(rows -> {
 					QueryResult result = new QueryResult();
 					if (limit == 0 && count) {
 						result.setCount(rows.iterator().next().getLong(0));
@@ -1639,7 +1647,7 @@ public class QueryService implements QueryServiceInterface {
 	public Uni<Map<String, Object>> retrieveEntity(Context context, String tenant, String entityId,
 			AttrsQueryTerm attrsQuery, LanguageQueryTerm lang, boolean localOnly) {
 		Uni<Map<String, Object>> local;
-		local = queryDAO.getEntity(entityId, tenant, attrsQuery);
+		local = queryDAO.getEntity(entityId, tenant, attrsQuery, null);
 		if (localOnly) {
 			return local;
 		}
@@ -1935,13 +1943,13 @@ public class QueryService implements QueryServiceInterface {
 			String qToken, TypeQueryTerm typeQuery, AttrsQueryTerm attrsQuery, GeoQueryTerm geoQuery, QQueryTerm qQuery,
 			ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, int limit, int offset, Context context,
 			io.vertx.core.MultiMap headersFromReq, boolean doNotCompact, DataSetIdTerm dataSetIdTerm, String join,
-			int joinLevel, boolean onlyFullEntitiesDistributed) {
+			int joinLevel, boolean onlyFullEntitiesDistributed, PickTerm pickTerm, OmitTerm omitTerm) {
 		// we got no registry entries
 		Uni<Tuple2<EntityCache, EntityMap>> entityCacheAndEntityMap;
 		if (tenant2CId2RegEntries.isEmpty()) {
 			entityCacheAndEntityMap = queryDAO.queryForEntityIdsAndEntitiesRegEmpty(tenant, ids, typeQuery, idPattern,
 					attrsQuery, qQuery, geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel,
-					qToken);
+					qToken, pickTerm, omitTerm);
 		} else {
 			EntityCache fullEntityCache = new EntityCache();
 			Map<QueryRemoteHost, Set<String>> remoteHost2Query = EntityTools.getRemoteQueries(tenant, ids, typeQuery,
@@ -1951,7 +1959,7 @@ public class QueryService implements QueryServiceInterface {
 				if ((join == null || joinLevel <= 0) && (qQuery == null || !qQuery.hasLinkedQ())) {
 					entityCacheAndEntityMap = queryDAO.queryForEntityIdsAndEntitiesRegEmpty(tenant, ids, typeQuery,
 							idPattern, attrsQuery, qQuery, geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm,
-							join, joinLevel, qToken).onItem().transform(t -> {
+							join, joinLevel, qToken, pickTerm, omitTerm).onItem().transform(t -> {
 								EntityMap entityMap = t.getItem2();
 								entityMap.setRegEmpty(false);
 								entityMap.setOnlyFullEntitiesDistributed(onlyFullEntitiesDistributed);

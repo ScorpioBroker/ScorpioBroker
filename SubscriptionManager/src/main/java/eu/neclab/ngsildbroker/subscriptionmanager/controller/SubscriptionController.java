@@ -108,7 +108,7 @@ public class SubscriptionController {
 			return subService.getAllSubscriptions(HttpUtils.getTenant(request), actualLimit, offset).onItem()
 					.transformToUni(subscriptions -> {
 						return HttpUtils.generateQueryResult(request, subscriptions, options, null, acceptHeader, false,
-								actualLimit, null, ctx, ldService,null,null);
+								actualLimit, null, ctx, ldService);
 					});
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 

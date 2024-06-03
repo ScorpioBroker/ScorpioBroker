@@ -29,6 +29,8 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.OmitTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.PickTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
@@ -126,6 +128,9 @@ public class EntityOperationsQueryController {
 				CSFQueryTerm csfQueryTerm = null;
 				GeoQueryTerm geoQueryTerm = null;
 				ScopeQueryTerm scopeQueryTerm = null;
+				OmitTerm omitTerm = null;
+				PickTerm pickTerm = null;
+
 				LanguageQueryTerm langQuery;
 				Object entities = body.get(NGSIConstants.NGSI_LD_ENTITIES_SHORT);
 				Object attrs = body.get(NGSIConstants.QUERY_PARAMETER_ATTRS);
@@ -145,6 +150,8 @@ public class EntityOperationsQueryController {
 				Object lang = body.get(NGSIConstants.QUERY_PARAMETER_LANG);
 				Object scopeQ = body.get(NGSIConstants.QUERY_PARAMETER_SCOPE_QUERY);
 				Object csf = body.get(NGSIConstants.QUERY_PARAMETER_CSF);
+				Object omit = body.get(NGSIConstants.QUERY_PARAMETER_OMIT);
+				Object pick = body.get(NGSIConstants.QUERY_PARAMETER_PICK);
 				if (attrs != null) {
 					attrsQuery = QueryParser.parseAttrs(String.join(",", (ArrayList<String>) attrs), context);
 				}
@@ -171,6 +178,14 @@ public class EntityOperationsQueryController {
 					langQuery = QueryParser.parseLangQuery((String) lang);
 				} else {
 					langQuery = null;
+				}
+				if (pick != null) {
+					pickTerm = new PickTerm();
+					QueryParser.parseProjectionTerm(pickTerm, (String) pick, context);
+				}
+				if (omit != null) {
+					omitTerm = OmitTerm.getNewRootInstance();
+					QueryParser.parseProjectionTerm(omitTerm, (String) omit, context);
 				}
 				String tenant = HttpUtils.getTenant(request);
 				if (entities != null) {
@@ -216,7 +231,7 @@ public class EntityOperationsQueryController {
 								id == null ? null : new String[] { id }, typeQueryTerm, idPattern, attrsQuery,
 								qQueryTerm, csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset,
 								count, localOnly, context, request.headers(), false, null, null, join, joinLevel,
-								entityDist));
+								entityDist, pickTerm, omitTerm));
 					}
 					return Uni.combine().all().unis(unis).combinedWith(list -> {
 						Iterator<?> it = list.iterator();
@@ -226,10 +241,8 @@ public class EntityOperationsQueryController {
 							first.getData().addAll(((QueryResult) it.next()).getData());
 						}
 						return first;
-					}).onItem()
-							.transformToUni(first -> HttpUtils.generateQueryResult(request, first, options,
-									geometryProperty, acceptHeader, count, actualLimit, langQuery, context, ldService,
-									null, null));
+					}).onItem().transformToUni(first -> HttpUtils.generateQueryResult(request, first, options,
+							geometryProperty, acceptHeader, count, actualLimit, langQuery, context, ldService));
 				} else {
 					String token;
 					boolean tokenProvided;
@@ -259,13 +272,12 @@ public class EntityOperationsQueryController {
 						token = RandomStringUtils.randomAlphabetic(6) + md5;
 						tokenProvided = false;
 					}
-					return queryService
-							.query(tenant, token, tokenProvided, null, null, null, attrsQuery, qQueryTerm, csfQueryTerm,
-									geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset, count, localOnly,
-									context, request.headers(), false, null, null, join, joinLevel, entityDist)
-							.onItem().transformToUni(queryResult -> {
+					return queryService.query(tenant, token, tokenProvided, null, null, null, attrsQuery, qQueryTerm,
+							csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset, count,
+							localOnly, context, request.headers(), false, null, null, join, joinLevel, entityDist,
+							pickTerm, omitTerm).onItem().transformToUni(queryResult -> {
 								return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty,
-										acceptHeader, count, actualLimit, langQuery, context, ldService, null, null);
+										acceptHeader, count, actualLimit, langQuery, context, ldService);
 							}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e));
 				}
 			} catch (Exception e) {

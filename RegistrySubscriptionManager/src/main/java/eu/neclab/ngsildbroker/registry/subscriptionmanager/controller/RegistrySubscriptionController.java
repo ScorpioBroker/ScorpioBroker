@@ -79,7 +79,7 @@ public class RegistrySubscriptionController {
 			return subService.getAllSubscriptions(HttpUtils.getTenant(request), limitTBU, offset).onItem()
 					.transformToUni(subscriptions -> {
 						return HttpUtils.generateQueryResult(request, subscriptions, options, null, acceptHeader, false,
-								acceptHeader, null, ctx, ldService,null,null);
+								acceptHeader, null, ctx, ldService);
 					}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);

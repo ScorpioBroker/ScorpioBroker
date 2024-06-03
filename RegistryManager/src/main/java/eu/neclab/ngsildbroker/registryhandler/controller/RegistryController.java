@@ -121,7 +121,7 @@ public class RegistryController {
 							csfQueryTerm, geoQueryTerm, scopeQueryTerm,qQueryTerm, actualLimit, offset, count)
 					.onItem().transformToUni(queryResult -> {
 						return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty,
-								acceptHeader, count, actualLimit, null, context, ldService,null,null);
+								acceptHeader, count, actualLimit, null, context, ldService);
 					});
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
