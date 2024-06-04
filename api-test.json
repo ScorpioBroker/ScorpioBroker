@@ -16843,10 +16843,35 @@
 																	"        }\r",
 																	"    };\r",
 																	"\r",
+																	"var expectedEntity1 = {\r",
+																	"        \"id\": \"urn:ngsi-ld:WeatherForecast:002\",\r",
+																	"        \"type\": \"WeatherForecast\",\r",
+																	"        \"humidity\": {\r",
+																	"            \"type\": \"Property\",\r",
+																	"            \"datasetId\": \"urn:12345\",\r",
+																	"            \"value\": 300,\r",
+																	"            \"unitCode\": \"PCT\"\r",
+																	"        },\r",
+																	"        \"temperature\": {\r",
+																	"            \"type\": \"Property\",\r",
+																	"            \"datasetId\": \"urn:12345\",\r",
+																	"            \"value\": 49,\r",
+																	"            \"unitCode\": \"CEL\"\r",
+																	"        },\r",
+																	"        \"windSpeed\": {\r",
+																	"            \"type\": \"Property\",\r",
+																	"            \"datasetId\": \"urn:12345\",\r",
+																	"            \"value\": 6,\r",
+																	"            \"unitCode\": \"KMH\"\r",
+																	"        }\r",
+																	"    };\r",
+																	"\r",
 																	"pm.test(\"Validate that result contains expected entity\", function () {\r",
 																	"    var jsonData = pm.response.json();\r",
 																	"    pm.expect(jsonData.length).to.eql(2);\r",
-																	"    pm.expect(jsonData[0]).to.eql(expectedEntity);\r",
+																	"    pm.expect(jsonData[0]).to.eql(expectedEntity1);\r",
+																	"    pm.expect(jsonData[1]).to.eql(expectedEntity);\r",
+																	"    //pm.expect(jsonData).any.to.eql(expectedEntity1);\r",
 																	"});\r",
 																	""
 																],
@@ -58733,14 +58758,6 @@
 		},
 		{
 			"key": "entityTypeTBF",
-			"value": ""
-		},
-		{
-			"key": "createdTBNF",
-			"value": ""
-		},
-		{
-			"key": "entityIdTBNF",
 			"value": ""
 		}
 	]

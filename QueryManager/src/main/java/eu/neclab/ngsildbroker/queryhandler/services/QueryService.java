@@ -209,6 +209,10 @@ public class QueryService implements QueryServiceInterface {
 
 				}
 			}
+			// run pick and omit again in case of linked projection ... this should be also
+			// in the DB once my head is ready for sql again
+			EntityTools.evaluateFilterQueries(resultData, null, null, null, null, pickTerm, omitTerm, null, null, null,
+					null);
 			return Uni.createFrom().item(result);
 		} else if (entityMap.isNoRootLevelRegEntry()) {
 			for (EntityMapEntry entityMapEntry : subMap) {
