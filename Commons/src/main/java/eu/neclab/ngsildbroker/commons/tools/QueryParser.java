@@ -605,7 +605,7 @@ public class QueryParser {
 				attribName.setLength(0);
 				current = child;
 			} else if (b == ',' || b == '|') {
-				ProjectionTerm next = current.getNext();
+				ProjectionTerm next = current.createNewNext();
 				expanded = context.expandIri(attribName.toString(), false, true, null, null);
 				current.setAttrib(expanded);
 				attribName.setLength(0);
