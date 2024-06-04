@@ -141,6 +141,7 @@ public class PickTerm extends ProjectionTerm {
 				}
 				result.put(current.attrib, attribObj);
 			}
+			current = current.next;
 		}
 		if(result.isEmpty()) {
 			return false;

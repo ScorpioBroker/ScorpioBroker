@@ -489,7 +489,7 @@ public final class HttpUtils {
 			int acceptHeader, Object entity, String geometryProperty, String options, LanguageQueryTerm langQuery,
 			JsonLDService ldService, List<String> omitList, List<String> pickList, boolean forceList) {
 		return generateCompactedResult(contextHeader, context, acceptHeader, entity, geometryProperty, options,
-				langQuery, false, ldService).onItem().transform(resultBodyAndHeaders -> {
+				langQuery, false, false, ldService).onItem().transform(resultBodyAndHeaders -> {
 					ResponseBuilder<Object> resp = RestResponseBuilderImpl.ok();
 					List<Tuple2<String, String>> headers = resultBodyAndHeaders.getItem2();
 					for (Tuple2<String, String> entry : headers) {
@@ -585,7 +585,7 @@ public final class HttpUtils {
 
 	public static Uni<Tuple2<Object, List<Tuple2<String, String>>>> generateCompactedResult(List<Object> contextHeader,
 			Context context, int acceptHeader, Object entity, String geometryProperty, String options,
-			LanguageQueryTerm langQuery, boolean forceArray, JsonLDService ldService) {
+			LanguageQueryTerm langQuery, boolean forceArray, boolean forceAttributeList, JsonLDService ldService) {
 
 		Set<String> optionSet = null;
 		if (options != null) {
@@ -607,6 +607,9 @@ public final class HttpUtils {
 						finalCompacted = compacted.getOrDefault(JsonLdConsts.GRAPH, compacted);
 						if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)) {
 							makeConcise(finalCompacted);
+						}
+						if (forceAttributeList) {
+							enforceAttributeList(finalCompacted);
 						}
 						if (forceArray && !(finalCompacted instanceof List)) {
 							finalCompacted = List.of(finalCompacted);
@@ -645,6 +648,9 @@ public final class HttpUtils {
 						if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)) {
 							makeConcise(finalCompacted);
 						}
+						if (forceAttributeList) {
+							enforceAttributeList(finalCompacted);
+						}
 						if (forceArray && !(finalCompacted instanceof List)) {
 							finalCompacted = List.of(finalCompacted);
 						}
@@ -681,6 +687,9 @@ public final class HttpUtils {
 						if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)) {
 							makeConcise(finalCompacted);
 						}
+						if (forceAttributeList) {
+							enforceAttributeList(finalCompacted);
+						}
 						if (forceArray && !(finalCompacted instanceof List)) {
 							finalCompacted = List.of(finalCompacted);
 						}
@@ -716,6 +725,23 @@ public final class HttpUtils {
 
 			return Tuple2.of(result, headers);
 		});
+	}
+
+	private static void enforceAttributeList(Object finalCompacted) {
+		if (finalCompacted instanceof Map<?, ?> entityMap) {
+			for (Object key : entityMap.keySet()) {
+				if (NGSIConstants.ENTITY_BASE_PROPS_SHORT.contains(key)) {
+					continue;
+				}
+				Object valueObj = entityMap.get(key);
+				if (!(valueObj instanceof List)) {
+					((Map<String, Object>) entityMap).put((String) key, Lists.newArrayList(valueObj));
+				}
+			}
+		} else if (finalCompacted instanceof List<?> list) {
+			list.forEach(entry -> enforceAttributeList(entry));
+		}
+
 	}
 
 	private static String getLinkHeader(Object entry) {
@@ -973,12 +999,12 @@ public final class HttpUtils {
 			String options, String geometryProperty, int acceptHeader, boolean count, int limit, LanguageQueryTerm lang,
 			Context context, JsonLDService ldService) {
 		return generateQueryResult(request, queryResult, options, geometryProperty, acceptHeader, count, limit, lang,
-				context, ldService, false);
+				context, ldService, true, true);
 	}
 
 	public static Uni<RestResponse<Object>> generateQueryResult(HttpServerRequest request, QueryResult queryResult,
 			String options, String geometryProperty, int acceptHeader, boolean count, int limit, LanguageQueryTerm lang,
-			Context context, JsonLDService ldService, boolean forceList) {
+			Context context, JsonLDService ldService, boolean forceList, boolean forceAttributeList) {
 		ResponseBuilder<Object> builder;
 		if (count) {
 			builder = RestResponseBuilderImpl.ok().header(NGSIConstants.COUNT_HEADER_RESULT, queryResult.getCount());
@@ -990,7 +1016,7 @@ public final class HttpUtils {
 		}
 		List<Object> atContext = request == null ? Lists.newArrayList() : getAtContext(request);
 		return generateCompactedResult(atContext, context, acceptHeader, queryResult.getData(), geometryProperty,
-				options, lang, true, ldService).onItem().transform(resultAndHeaders -> {
+				options, lang, forceList, forceAttributeList, ldService).onItem().transform(resultAndHeaders -> {
 					String nextLink;
 					String prevLink;
 					if (request != null) {
@@ -1015,9 +1041,6 @@ public final class HttpUtils {
 						myBuilder = myBuilder.header(entry.getItem1(), entry.getItem2());
 					}
 					Object result = resultAndHeaders.getItem1();
-					if (forceList) {
-						forceList(result);
-					}
 					return myBuilder.entity(result).build();
 				});
 
