@@ -34,8 +34,11 @@ import eu.neclab.ngsildbroker.commons.datatypes.RemoteHost;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.DataSetIdTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.OmitTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.PickTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
@@ -601,8 +604,7 @@ public abstract class EntityTools {
 	public static Map<QueryRemoteHost, Set<String>> getRemoteQueries(String[] id, TypeQueryTerm typeQuery,
 			String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery, GeoQueryTerm geoQuery,
 			ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, Iterator<List<RegistrationEntry>> it,
-			Context context,
-			EntityCache fullEntityCache) {
+			Context context, EntityCache fullEntityCache) {
 
 		// ids, types, attrs, geo, scope
 		Map<QueryRemoteHost, QueryInfos> remoteHost2QueryInfo = Maps.newHashMap();
@@ -688,6 +690,33 @@ public abstract class EntityTools {
 	public static Map<String, Object> mergeEntity(Map<String, Object> currentEntity, Map<String, Object> entity) {
 		// TODO Auto-generated method stub
 		return null;
+	}
+
+	public static Map<String, Map<String, Object>> evaluateFilterQueries(List<Map<String, Object>> resultData,
+			QQueryTerm qQuery, ScopeQueryTerm scopeQuery, GeoQueryTerm geoQuery, AttrsQueryTerm attrsTerm,
+			PickTerm pickTerm, OmitTerm omitTerm, LanguageQueryTerm langTerm, DataSetIdTerm dataSetIdTerm,
+			EntityCache entityCache, Set<String> jsonKeys) {
+		Map<String, Map<String, Object>> deleted = Maps.newHashMap();
+		Iterator<Map<String, Object>> it = resultData.iterator();
+		while (it.hasNext()) {
+			Map<String, Object> entity = it.next();
+			// order is important here qquery scope and geo remove full entities and the
+			// rest modifies the entities and might result in empty entities
+			if (!((qQuery == null || qQuery.calculateEntity(entity, entityCache, jsonKeys, false))
+					&& (scopeQuery == null || scopeQuery.calculateEntity(entity))
+					&& (geoQuery == null || geoQuery.calculateEntity(entity))
+					&& (attrsTerm == null || attrsTerm.calculateEntity(entity))
+					&& (pickTerm == null || pickTerm.calculateEntity(entity))
+					&& (omitTerm == null || omitTerm.calculateEntity(entity))
+					&& (dataSetIdTerm == null || dataSetIdTerm.calculateEntity(entity))
+					&& (langTerm == null || langTerm.calculateEntity(entity)))) {
+				it.remove();
+				deleted.put((String) entity.get(NGSIConstants.JSON_LD_ID), entity);
+				continue;
+			}
+
+		}
+		return deleted;
 	}
 
 }

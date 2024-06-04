@@ -107,7 +107,7 @@ public class PickTerm extends ProjectionTerm {
 	}
 
 	@Override
-	public Map<String, Object> calculateEntity(Map<String, Object> entity) {
+	public boolean calculateEntity(Map<String, Object> entity) {
 		ProjectionTerm current = this;
 		Map<String, Object> result = new HashMap<>(entity.size());
 		while (current != null) {
@@ -122,10 +122,10 @@ public class PickTerm extends ProjectionTerm {
 										.get(NGSIConstants.NGSI_LD_ENTITY);
 								List<Map<String, Object>> resultAttEntityrList = new ArrayList<>(entities.size());
 								for (Map<String, Object> linkedEntity : entities) {
-									Map<String, Object> cleanedLinkedEntity = current.linkedChild
-											.calculateEntity(linkedEntity);
-									if (!cleanedLinkedEntity.isEmpty()) {
-										resultAttEntityrList.add(cleanedLinkedEntity);
+									
+									if (current.linkedChild
+											.calculateEntity(linkedEntity)) {
+										resultAttEntityrList.add(linkedEntity);
 									}
 								}
 								if (resultAttEntityrList.isEmpty()) {
@@ -142,9 +142,14 @@ public class PickTerm extends ProjectionTerm {
 				result.put(current.attrib, attribObj);
 			}
 		}
+		if(result.isEmpty()) {
+			return false;
+		}
 		result.put(NGSIConstants.NGSI_LD_CREATED_AT, entity.get(NGSIConstants.NGSI_LD_CREATED_AT));
 		result.put(NGSIConstants.NGSI_LD_MODIFIED_AT, entity.get(NGSIConstants.NGSI_LD_MODIFIED_AT));
-		return result;
+		entity.clear();
+		entity.putAll(result);
+		return true;
 	}
 
 }

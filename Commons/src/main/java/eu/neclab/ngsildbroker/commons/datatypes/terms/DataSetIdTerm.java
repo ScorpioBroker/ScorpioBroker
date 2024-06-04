@@ -201,4 +201,35 @@ public class DataSetIdTerm implements Serializable {
 		return dollar;
 	}
 
+	public boolean calculateEntity(Map<String, Object> entity) {
+		Iterator<Entry<String, Object>> it = entity.entrySet().iterator();
+		while (it.hasNext()) {
+			Entry<String, Object> attrs = it.next();
+			String attrsName = attrs.getKey();
+			if (NGSIConstants.ENTITY_BASE_PROPS.contains(attrsName)) {
+				continue;
+			}
+			List<Map<String, Object>> attrsValueList = (List<Map<String, Object>>) attrs.getValue();
+			Iterator<Map<String, Object>> it2 = attrsValueList.iterator();
+			while (it2.hasNext()) {
+				Map<String, Object> attrInstance = it2.next();
+				Object datasetObj = attrInstance.get(NGSIConstants.NGSI_LD_DATA_SET_ID);
+				if (datasetObj == null) {
+					if (!ids.contains(NGSIConstants.JSON_LD_NONE)) {
+						it2.remove();
+					}
+				} else {
+					String datasetId = ((Map<String, String>) datasetObj).get(NGSIConstants.JSON_LD_ID);
+					if (!ids.contains(NGSIConstants.JSON_LD_NONE)) {
+						it2.remove();
+					}
+				}
+			}
+			if (attrsValueList.isEmpty()) {
+				it.remove();
+			}
+		}
+		return !entity.isEmpty();
+	}
+
 }

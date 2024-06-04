@@ -555,4 +555,9 @@ public class GeoQueryTerm implements Serializable {
 
 	}
 
+	public boolean calculateEntity(Map<String, Object> entity) {
+		Object locations = entity.get(geoproperty);
+		return (locations != null && SubscriptionTools.evaluateGeoQuery(this, (List<Map<String, Object>>) locations));
+	}
+
 }

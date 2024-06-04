@@ -94,20 +94,21 @@ public class AttrsQueryTerm implements Serializable {
 				query.append(dollar);
 				query.append(" THEN (SELECT CASE WHEN jsonb_array_length(filtered.res) > 0 THEN JSONB_BUILD_OBJECT($");
 				query.append(dollar);
-				query.append(", filtered.res) ELSE '{}'::jsonb END FROM (SELECT jsonb_agg(val) as res FROM jsonb_array_elements(ENTITY -> $");
+				query.append(
+						", filtered.res) ELSE '{}'::jsonb END FROM (SELECT jsonb_agg(val) as res FROM jsonb_array_elements(ENTITY -> $");
 				query.append(dollar);
 				tuple.addString(attrs);
 				dollar++;
 				query.append(") as val where ");
-				if(datasetIdTerm.ids.remove(NGSIConstants.JSON_LD_NONE)) {
+				if (datasetIdTerm.ids.remove(NGSIConstants.JSON_LD_NONE)) {
 					query.append("NOT val ? '");
 					query.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
 					query.append("'");
-					if(!datasetIdTerm.ids.isEmpty()) {
-						query.append(" OR ");	
+					if (!datasetIdTerm.ids.isEmpty()) {
+						query.append(" OR ");
 					}
 				}
-				if(!datasetIdTerm.ids.isEmpty()) {
+				if (!datasetIdTerm.ids.isEmpty()) {
 					query.append("val ? '");
 					query.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
 					query.append("' and val #>> '{");
@@ -144,6 +145,22 @@ public class AttrsQueryTerm implements Serializable {
 				}
 			}
 		}
+	}
+
+	/**
+	 * 
+	 * @param entity
+	 * @return returns if the resulting entity shall be removed
+	 */
+	public boolean calculateEntity(Map<String, Object> entity) {
+		Iterator<Entry<String, Object>> it = entity.entrySet().iterator();
+		while (it.hasNext()) {
+			String key = it.next().getKey();
+			if (!NGSIConstants.ENTITY_BASE_PROPS.contains(key) && !attrs.contains(key)) {
+				it.remove();
+			}
+		}
+		return NGSIConstants.ENTITY_BASE_PROPS.containsAll(entity.keySet());
 	}
 
 }

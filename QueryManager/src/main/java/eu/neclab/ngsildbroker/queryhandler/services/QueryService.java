@@ -217,16 +217,10 @@ public class QueryService implements QueryServiceInterface {
 			if (qQuery.hasLinkedQ()) {
 				return retrieveJoins(tenant, resultData, entityCache, context, qQuery, onlyFullEntities, 0, -1,
 						qQuery.getMaxJoinLevel()).onItem().transformToUni(updatedEntityCache -> {
-							Map<String, Map<String, Object>> deleted = qQuery.calculateQuery(resultData,
-									updatedEntityCache, jsonKeys, onlyFullEntities);
-
+							Map<String, Map<String, Object>> deleted = EntityTools.evaluateFilterQueries(resultData,
+									qQuery, null, null, attrsQuery, pickTerm, omitTerm, langQuery, dataSetIdTerm,
+									updatedEntityCache, jsonKeys);
 							if (deleted.isEmpty()) {
-								if (attrsQuery != null) {
-									attrsQuery.calculateQuery(resultData);
-								}
-								if (langQuery != null) {
-									langQuery.calculateQuery(resultData);
-								}
 								if (entityMap.isChanged()) {
 									return queryDAO.storeEntityMap(tenant, entityMap.getId(), entityMap, true).onItem()
 											.transformToUni(v -> {
@@ -259,24 +253,10 @@ public class QueryService implements QueryServiceInterface {
 							if (onlyFullEntities) {
 								return Uni.createFrom().item(result);
 							} else {
-								Map<String, Map<String, Object>> deleted = Maps.newHashMap();
-								if (qQuery != null) {
-									deleted.putAll(
-											qQuery.calculateQuery(resultData, entityCache, jsonKeys, onlyFullEntities));
-								}
-								if (scopeQuery != null) {
-									deleted.putAll(scopeQuery.calculateQuery(resultData));
-								}
-								if (geoQuery != null) {
-									deleted.putAll(geoQuery.calculateQuery(resultData));
-								}
+								Map<String, Map<String, Object>> deleted = EntityTools.evaluateFilterQueries(resultData,
+										qQuery, scopeQuery, geoQuery, attrsQuery, pickTerm, omitTerm, langQuery,
+										dataSetIdTerm, updatedEntityCache, jsonKeys);
 								if (deleted.isEmpty()) {
-									if (attrsQuery != null) {
-										attrsQuery.calculateQuery(resultData);
-									}
-									if (langQuery != null) {
-										langQuery.calculateQuery(resultData);
-									}
 									if (entityMap.isChanged()) {
 										return queryDAO.storeEntityMap(tenant, entityMap.getId(), entityMap, true)
 												.onItem().transformToUni(v -> {
@@ -300,11 +280,10 @@ public class QueryService implements QueryServiceInterface {
 									return retrieveJoins(tenant, resultData, entityCache, context, qQuery,
 											onlyFullEntities, 0, -1, qQuery.getMaxJoinLevel()).onItem()
 											.transformToUni(updatedEntityCache2 -> {
-												Map<String, Map<String, Object>> deleted = qQuery.calculateQuery(
-														resultData, updatedEntityCache2, jsonKeys, onlyFullEntities);
-												if (attrsQuery != null) {
-													attrsQuery.calculateQuery(resultData);
-												}
+												Map<String, Map<String, Object>> deleted = EntityTools
+														.evaluateFilterQueries(resultData, qQuery, null, null,
+																attrsQuery, pickTerm, omitTerm, null, null, entityCache,
+																jsonKeys);
 												if (deleted.isEmpty()) {
 													if (entityMap.isChanged()) {
 														return queryDAO.storeEntityMap(tenant, entityMap.getId(),
@@ -321,7 +300,8 @@ public class QueryService implements QueryServiceInterface {
 															updatedEntityCache2, tenant, id, typeQuery, idPattern,
 															attrsQuery, qQuery, geoQuery, scopeQuery, langQuery, limit,
 															offSet, count, dataSetIdTerm, join, joinLevel, context,
-															onlyFullEntities, jsonKeys, headersFromReq, pickTerm, omitTerm);
+															onlyFullEntities, jsonKeys, headersFromReq, pickTerm,
+															omitTerm);
 												}
 											});
 								} else {
@@ -339,27 +319,10 @@ public class QueryService implements QueryServiceInterface {
 											onlyFullEntities);
 								}
 							} else {
-								Map<String, Map<String, Object>> deleted = Maps.newHashMap();
-								if (qQuery != null) {
-									deleted.putAll(
-											qQuery.calculateQuery(resultData, entityCache, jsonKeys, onlyFullEntities));
-								}
-								if (scopeQuery != null) {
-									deleted.putAll(scopeQuery.calculateQuery(resultData));
-								}
-								if (geoQuery != null) {
-									deleted.putAll(geoQuery.calculateQuery(resultData));
-								}
+								Map<String, Map<String, Object>> deleted = EntityTools.evaluateFilterQueries(resultData,
+										qQuery, scopeQuery, geoQuery, attrsQuery, pickTerm, omitTerm, langQuery,
+										dataSetIdTerm, entityCache, jsonKeys);
 								if (deleted.isEmpty()) {
-									if (attrsQuery != null) {
-										attrsQuery.calculateQuery(resultData);
-									}
-									if (dataSetIdTerm != null) {
-										dataSetIdTerm.calculate(resultData);
-									}
-									if (langQuery != null) {
-										langQuery.calculateQuery(resultData);
-									}
 									if (entityMap.isChanged()) {
 										return queryDAO.storeEntityMap(tenant, entityMap.getId(), entityMap, true)
 												.onItem().transformToUni(v -> {

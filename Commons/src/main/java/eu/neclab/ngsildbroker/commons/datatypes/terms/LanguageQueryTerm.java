@@ -96,4 +96,44 @@ public class LanguageQueryTerm implements Serializable {
 		result.setCharAt(result.length() - 1, '&');
 	}
 
+	public boolean calculateEntity(Map<String, Object> entity) {
+		for (Entry<String, Object> attrib : entity.entrySet()) {
+			Object attribValueObj = attrib.getValue();
+			if (attribValueObj instanceof List list) {
+				for (Object entry : list) {
+					if (entry instanceof Map map) {
+						Object types = map.get(NGSIConstants.JSON_LD_TYPE);
+						if (types != null && types instanceof List typeList
+								&& typeList.contains(NGSIConstants.LANGUAGE_PROPERTY)) {
+							Object hasLanguageMap = map.get(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP);
+							if (hasLanguageMap != null && hasLanguageMap instanceof List languageMapEntries) {
+								Iterator it = languageMapEntries.iterator();
+								float bestFound = 0;
+								while (it.hasNext()) {
+									Object next = it.next();
+									Map<String, String> languageMapEntry = (Map<String, String>) next;
+									String lang = languageMapEntry.get(NGSIConstants.JSON_LD_LANGUAGE);
+									boolean remove = true;
+									for (Tuple2<Set<String>, Float> langQEntry : entries) {
+										if (langQEntry.getItem2() > bestFound && langQEntry.getItem1().contains(lang)) {
+											remove = false;
+											break;
+										}
+									}
+									if (remove) {
+										it.remove();
+									}
+								}
+							}
+						}
+					}
+
+				}
+			}
+
+		}
+
+		return !entity.isEmpty();
+	}
+
 }

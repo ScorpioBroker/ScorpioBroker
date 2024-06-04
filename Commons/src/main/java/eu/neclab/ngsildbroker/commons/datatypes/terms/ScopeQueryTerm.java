@@ -181,4 +181,8 @@ public class ScopeQueryTerm implements Serializable {
 		return prev;
 	}
 
+	public boolean calculateEntity(Map<String, Object> entity) {
+		return calculate(EntityTools.getScopes(entity));
+	}
+
 }

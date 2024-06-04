@@ -109,7 +109,7 @@ public class OmitTerm extends ProjectionTerm {
 	}
 
 	@Override
-	public Map<String, Object> calculateEntity(Map<String, Object> entity) {
+	public boolean calculateEntity(Map<String, Object> entity) {
 		ProjectionTerm current = this;
 		while (current != null) {
 			if (current.hasLinked) {
@@ -145,10 +145,11 @@ public class OmitTerm extends ProjectionTerm {
 		}
 		// only createdat and modifiedat are left so it's empty for the result
 		if (entity.size() == 2) {
-			entity.remove(NGSIConstants.NGSI_LD_CREATED_AT);
-			entity.remove(NGSIConstants.NGSI_LD_MODIFIED_AT);
+//			entity.remove(NGSIConstants.NGSI_LD_CREATED_AT);
+//			entity.remove(NGSIConstants.NGSI_LD_MODIFIED_AT);
+			return false;
 		}
-		return entity;
+		return true;
 	}
 
 	private Set<String> getAllTopLevelAttribs() {
