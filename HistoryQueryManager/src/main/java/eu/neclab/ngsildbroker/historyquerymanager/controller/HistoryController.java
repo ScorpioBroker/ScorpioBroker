@@ -146,7 +146,7 @@ public class HistoryController {
 							lastNTBU, actualLimit, offset, count, localOnly, context, request)
 					.onItem().transformToUni(queryResult -> {
 						return HttpUtils.generateQueryResult(request, queryResult, finalOptions, geoproperty, acceptHeader,
-								count, actualLimit, languageQueryTerm, context, ldService,true);
+								count, actualLimit, languageQueryTerm, context, ldService,true, true);
 					});
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}

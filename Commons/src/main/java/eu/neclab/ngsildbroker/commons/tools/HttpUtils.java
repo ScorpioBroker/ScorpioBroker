@@ -999,7 +999,7 @@ public final class HttpUtils {
 			String options, String geometryProperty, int acceptHeader, boolean count, int limit, LanguageQueryTerm lang,
 			Context context, JsonLDService ldService) {
 		return generateQueryResult(request, queryResult, options, geometryProperty, acceptHeader, count, limit, lang,
-				context, ldService, true, true);
+				context, ldService, true, false);
 	}
 
 	public static Uni<RestResponse<Object>> generateQueryResult(HttpServerRequest request, QueryResult queryResult,
