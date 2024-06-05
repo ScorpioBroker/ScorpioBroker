@@ -14162,6 +14162,79 @@
 															"response": []
 														},
 														{
+															"name": "Query Created Entity flat with normalized",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"var expected = pm.collectionVariables.get(\"created\");\r",
+																			"pm.test(\"Status code is 200\", function () {\r",
+																			"    pm.response.to.have.status(200);\r",
+																			"});\r",
+																			"\r",
+																			"pm.test(\"Validate that result\", function () {\r",
+																			"    var jsonData = pm.response.json();\r",
+																			"    console.log(\"data \",jsonData);\r",
+																			"    pm.expect(jsonData.length).to.eql(3);\r",
+																			"    var entityFirst = jsonData[0];\r",
+																			"   var entitySecond = jsonData[1];\r",
+																			"     var entityThired = jsonData[2];\r",
+																			"     var keysFirstEntity = Object.keys(entityFirst);\r",
+																			"     console.log(\"key \",keysFirstEntity);\r",
+																			"    pm.expect(keysFirstEntity.length).to.eql(7);\r",
+																			"    pm.expect(keysFirstEntity).to.contain(\"type\");\r",
+																			"    pm.expect(keysFirstEntity).to.contain(\"observation\");\r",
+																			"    \r",
+																			"});"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "GET",
+																"header": [
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default"
+																	}
+																],
+																"url": {
+																	"raw": "{{query-manager}}/ngsi-ld/v1/entities/?type=AgriParcel&options=normalized&join=flat&joinLevel=6",
+																	"host": [
+																		"{{query-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities",
+																		""
+																	],
+																	"query": [
+																		{
+																			"key": "type",
+																			"value": "AgriParcel"
+																		},
+																		{
+																			"key": "options",
+																			"value": "normalized"
+																		},
+																		{
+																			"key": "join",
+																			"value": "flat"
+																		},
+																		{
+																			"key": "joinLevel",
+																			"value": "6"
+																		}
+																	]
+																}
+															},
+															"response": []
+														},
+														{
 															"name": "Get Created Entity flat with concise",
 															"event": [
 																{
@@ -45871,17 +45944,17 @@
 																"key": "Content-Type",
 																"value": "application/json",
 																"type": "default"
+															},
+															{
+																"key": "NGSILD-EntityMap",
+																"value": "{{entityMapHeader}}",
+																"type": "default"
 															}
 														],
 														"url": {
-															"raw": "{{entity-manager}}/ngsi-ld/v1/entities{{nextLink}}",
+															"raw": "{{nextLink}}",
 															"host": [
-																"{{entity-manager}}"
-															],
-															"path": [
-																"ngsi-ld",
-																"v1",
-																"entities{{nextLink}}"
+																"{{nextLink}}"
 															]
 														}
 													},
@@ -58771,6 +58844,14 @@
 		},
 		{
 			"key": "entityTypeTBF",
+			"value": ""
+		},
+		{
+			"key": "created",
+			"value": ""
+		},
+		{
+			"key": "entityId",
 			"value": ""
 		}
 	]

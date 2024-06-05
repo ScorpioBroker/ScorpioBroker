@@ -1229,7 +1229,7 @@ public class QueryDAO {
 				int counter;
 				query.append(", D0 as (SELECT * FROM ");
 				query.append(currentEntitySet);
-				query.append(")");
+				query.append("), ");
 				for (counter = 0; counter < joinLevel; counter++) {
 					query.append('B');
 					query.append(counter + 1);
@@ -1540,7 +1540,7 @@ public class QueryDAO {
 					query.append(", JSONB_ARRAY_ELEMENTS(B");
 					query.append(counter + 1);
 					query.append(
-							".VALUE) AS Y, JSONB_ARRAY_ELEMENTS(Y #> '{https://uri.etsi.org/ngsi-ld/hasObject}') AS Z WHERE Y #>> '{@type,0}' = 'https://uri.etsi.org/ngsi-ld/Relationship') AND Y ? 'https://uri.etsi.org/ngsi-ld/hasObjectType', ");
+							".VALUE) AS Y, JSONB_ARRAY_ELEMENTS(Y #> '{https://uri.etsi.org/ngsi-ld/hasObject}') AS Z WHERE Y #>> '{@type,0}' = 'https://uri.etsi.org/ngsi-ld/Relationship' AND Y ? 'https://uri.etsi.org/ngsi-ld/hasObjectType'), ");
 					query.append('D');
 					query.append(counter + 1);
 					query.append(" as (SELECT E.ID as id, E.ENTITY as entity, C");
