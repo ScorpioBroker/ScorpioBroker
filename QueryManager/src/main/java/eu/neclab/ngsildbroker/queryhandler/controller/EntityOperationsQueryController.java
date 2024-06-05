@@ -8,6 +8,7 @@ import java.util.Map;
 import io.vertx.core.json.JsonObject;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
+import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
@@ -37,6 +38,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.commons.tools.QueryParser;
 import eu.neclab.ngsildbroker.queryhandler.services.QueryService;
 import io.smallrye.mutiny.Uni;
@@ -47,6 +49,9 @@ import io.vertx.core.http.HttpServerRequest;
 public class EntityOperationsQueryController {
 	@Inject
 	QueryService queryService;
+
+	@Inject
+	MicroServiceUtils microServiceUtils;
 
 	@ConfigProperty(name = "scorpio.entity.default-limit", defaultValue = "50")
 	int defaultLimit;
@@ -67,7 +72,8 @@ public class EntityOperationsQueryController {
 			@QueryParam(value = "options") String options, @QueryParam(value = "count") boolean count,
 			@QueryParam(value = "localOnly") boolean localOnly,
 			@QueryParam(value = "geometryProperty") String geometryProperty,
-			@QueryParam("entityMap") String entityMapToken) {
+			@HeaderParam("NGSILD-EntityMap") String entityMapToken,
+			@QueryParam("entityMap") boolean retrieveEntityMap) {
 
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		Map<String, Object> body;
@@ -241,8 +247,11 @@ public class EntityOperationsQueryController {
 							first.getData().addAll(((QueryResult) it.next()).getData());
 						}
 						return first;
-					}).onItem().transformToUni(first -> HttpUtils.generateQueryResult(request, first, options,
-							geometryProperty, acceptHeader, count, actualLimit, langQuery, context, ldService));
+					}).onItem()
+							.transformToUni(first -> HttpUtils.generateQueryResult(request, first, options,
+									geometryProperty, acceptHeader, count, actualLimit, langQuery, context, ldService,
+									retrieveEntityMap, microServiceUtils.getGatewayURL().toString(),
+									NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT));
 				} else {
 					String token;
 					boolean tokenProvided;
@@ -277,7 +286,9 @@ public class EntityOperationsQueryController {
 							localOnly, context, request.headers(), false, null, null, join, joinLevel, entityDist,
 							pickTerm, omitTerm).onItem().transformToUni(queryResult -> {
 								return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty,
-										acceptHeader, count, actualLimit, langQuery, context, ldService);
+										acceptHeader, count, actualLimit, langQuery, context, ldService,
+										retrieveEntityMap, microServiceUtils.getGatewayURL().toString(),
+										NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT);
 							}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e));
 				}
 			} catch (Exception e) {

@@ -1,6 +1,8 @@
 package eu.neclab.ngsildbroker.historyquerymanager.controller;
 
 import com.github.jsonldjava.core.JsonLDService;
+
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AggrTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
@@ -13,6 +15,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.commons.tools.QueryParser;
 import eu.neclab.ngsildbroker.historyquerymanager.service.HistoryQueryService;
 import io.smallrye.common.annotation.Blocking;
@@ -40,6 +43,8 @@ public class HistoryController {
 
 	private final static Logger logger = LoggerFactory.getLogger(HistoryController.class);
 
+	@Inject
+	MicroServiceUtils microServiceUtils;
 	@Inject
 	HistoryQueryService historyQueryService;
 	@ConfigProperty(name = "scorpio.history.defaultLimit", defaultValue = "50")
@@ -70,10 +75,10 @@ public class HistoryController {
 			@QueryParam("aggrPeriodDuration") String aggrPeriodDuration, @QueryParam(value = "limit") Integer limit,
 			@QueryParam(value = "offset") int offset, @QueryParam(value = "entityMap") String qToken,
 			@QueryParam(value = "options") String options, @QueryParam(value = "count") boolean count,
-			@QueryParam(value = "localOnly") boolean localOnly,@QueryParam("format") String format) {
+			@QueryParam(value = "localOnly") boolean localOnly, @QueryParam("format") String format) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
-		if(format!=null && !format.isEmpty()){
-			options+=","+format;
+		if (format != null && !format.isEmpty()) {
+			options += "," + format;
 		}
 		String q;
 		if (qInput != null) {
@@ -145,8 +150,10 @@ public class HistoryController {
 							csfQueryTerm, geoQueryTerm, scopeQueryTerm, temporalQueryTerm, aggrTerm, languageQueryTerm,
 							lastNTBU, actualLimit, offset, count, localOnly, context, request)
 					.onItem().transformToUni(queryResult -> {
-						return HttpUtils.generateQueryResult(request, queryResult, finalOptions, geoproperty, acceptHeader,
-								count, actualLimit, languageQueryTerm, context, ldService,true, true);
+						return HttpUtils.generateQueryResult(request, queryResult, finalOptions, geoproperty,
+								acceptHeader, count, actualLimit, languageQueryTerm, context, ldService, true, true,
+								false, microServiceUtils.getGatewayURL().toString(),
+								NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT);
 					});
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
@@ -161,11 +168,12 @@ public class HistoryController {
 			@QueryParam("localOnly") boolean localOnly, @QueryParam(value = "options") String optionsString,
 			@QueryParam(value = "geometryProperty") String geometryProperty,
 			@QueryParam("timeproperty") String timeProperty, @QueryParam("timerel") String timeRel,
-			@QueryParam("timeAt") String timeAt, @QueryParam("endTimeAt") String endTimeAt,@QueryParam("format") String format) {
+			@QueryParam("timeAt") String timeAt, @QueryParam("endTimeAt") String endTimeAt,
+			@QueryParam("format") String format) {
 
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
-		if(format!=null && !format.isEmpty()){
-			optionsString+=","+format;
+		if (format != null && !format.isEmpty()) {
+			optionsString += "," + format;
 		}
 		if (acceptHeader != 1 && acceptHeader != 2) {
 			return HttpUtils.getInvalidHeader();
@@ -196,7 +204,7 @@ public class HistoryController {
 			return historyQueryService.retrieveEntity(HttpUtils.getTenant(request), entityId, attrsQuery, aggrQuery,
 					tempQuery, lang, lastNTBU, localOnly, context).onItem().transformToUni(entity -> {
 						return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, entity,
-								geometryProperty, finalOptionsString, null, ldService,null,null,true);
+								geometryProperty, finalOptionsString, null, ldService, null, null, true);
 					});
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 

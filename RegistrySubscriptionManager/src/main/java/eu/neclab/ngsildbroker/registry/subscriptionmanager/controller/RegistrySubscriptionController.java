@@ -16,19 +16,24 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.github.jsonldjava.core.JsonLDService;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.registry.subscriptionmanager.service.RegistrySubscriptionService;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
 
 @Singleton
-@Path("/ngsi-ld/v1/csourceSubscriptions")
+@Path(NGSIConstants.NGSI_LD_REGISTRY_SUB_ENDPOINT)
 public class RegistrySubscriptionController {
 
 	private final static Logger logger = LoggerFactory.getLogger(RegistrySubscriptionController.class);
 
+	@Inject
+	MicroServiceUtils microServiceUtils;
+	
 	@Inject
 	RegistrySubscriptionService subService;
 
@@ -79,7 +84,7 @@ public class RegistrySubscriptionController {
 			return subService.getAllSubscriptions(HttpUtils.getTenant(request), limitTBU, offset).onItem()
 					.transformToUni(subscriptions -> {
 						return HttpUtils.generateQueryResult(request, subscriptions, options, null, acceptHeader, false,
-								acceptHeader, null, ctx, ldService);
+								acceptHeader, null, ctx, ldService, false, microServiceUtils.getGatewayURL().toString(), NGSIConstants.NGSI_LD_REGISTRY_SUB_ENDPOINT);
 					}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);

@@ -694,8 +694,8 @@ public abstract class EntityTools {
 
 	public static Map<String, Map<String, Object>> evaluateFilterQueries(List<Map<String, Object>> resultData,
 			QQueryTerm qQuery, ScopeQueryTerm scopeQuery, GeoQueryTerm geoQuery, AttrsQueryTerm attrsTerm,
-			PickTerm pickTerm, OmitTerm omitTerm, LanguageQueryTerm langTerm, DataSetIdTerm dataSetIdTerm,
-			EntityCache entityCache, Set<String> jsonKeys) {
+			PickTerm pickTerm, OmitTerm omitTerm, DataSetIdTerm dataSetIdTerm, EntityCache entityCache,
+			Set<String> jsonKeys) {
 		Map<String, Map<String, Object>> deleted = Maps.newHashMap();
 		Iterator<Map<String, Object>> it = resultData.iterator();
 		while (it.hasNext()) {
@@ -708,8 +708,7 @@ public abstract class EntityTools {
 					&& (attrsTerm == null || attrsTerm.calculateEntity(entity))
 					&& (pickTerm == null || pickTerm.calculateEntity(entity))
 					&& (omitTerm == null || omitTerm.calculateEntity(entity))
-					&& (dataSetIdTerm == null || dataSetIdTerm.calculateEntity(entity))
-					&& (langTerm == null || langTerm.calculateEntity(entity)))) {
+					&& (dataSetIdTerm == null || dataSetIdTerm.calculateEntity(entity)))) {
 				it.remove();
 				deleted.put((String) entity.get(NGSIConstants.JSON_LD_ID), entity);
 				continue;

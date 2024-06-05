@@ -259,16 +259,19 @@ public final class HttpUtils {
 		return baos.toByteArray();
 	}
 
-	static String generateNextLink(MultiMap params, QueryResult qResult) {
+	static String generateNextLink(MultiMap params, QueryResult qResult, String baseUrl, String ngsiLdEndpoint) {
 		if (qResult.getResultsLeftAfter() == null || qResult.getResultsLeftAfter() <= 0) {
 			return null;
 		}
 		return generateFollowUpLinkHeader(params, qResult.getOffset() + qResult.getLimit(), qResult.getLimit(),
-				qResult.getqToken(), "next");
+				qResult.getqToken(), "next", baseUrl, ngsiLdEndpoint);
 	}
 
-	public static String generateFollowUpLinkHeader(MultiMap params, int offset, int limit, String token, String rel) {
-		StringBuilder builder = new StringBuilder("</");
+	public static String generateFollowUpLinkHeader(MultiMap params, int offset, int limit, String token, String rel,
+			String baseUrl, String ngsiLdEndpoint) {
+		StringBuilder builder = new StringBuilder("<");
+		builder.append(baseUrl);
+		builder.append(ngsiLdEndpoint);
 		builder.append("?");
 
 		for (Entry<String, String> entry : params.entries()) {
@@ -286,12 +289,13 @@ public final class HttpUtils {
 		}
 		builder.append("offset=" + offset);
 		builder.append("&limit=" + limit);
-		builder.append("&entityMap=" + token);
+		//builder.append("&entityMap=" + token);
 		builder.append(">;rel=\"" + rel + "\"");
 		return builder.toString();
 	}
 
-	private static String generatePrevLink(MultiMap params, QueryResult qResult) {
+	private static String generatePrevLink(MultiMap params, QueryResult qResult, String baseUrl,
+			String ngsiLdEndpoint) {
 		if (qResult.getResultsLeftBefore() == null || qResult.getResultsLeftBefore() <= 0) {
 			return null;
 		}
@@ -300,7 +304,7 @@ public final class HttpUtils {
 			offset = 0;
 		}
 		int limit = qResult.getLimit();
-		return generateFollowUpLinkHeader(params, offset, limit, qResult.getqToken(), "prev");
+		return generateFollowUpLinkHeader(params, offset, limit, qResult.getqToken(), "prev", baseUrl, ngsiLdEndpoint);
 	}
 
 	public static RestResponse<Object> handleControllerExceptions(Throwable e) {
@@ -997,14 +1001,15 @@ public final class HttpUtils {
 
 	public static Uni<RestResponse<Object>> generateQueryResult(HttpServerRequest request, QueryResult queryResult,
 			String options, String geometryProperty, int acceptHeader, boolean count, int limit, LanguageQueryTerm lang,
-			Context context, JsonLDService ldService) {
+			Context context, JsonLDService ldService, boolean entityMap, String baseUrl, String ngsiLdEndpoint) {
 		return generateQueryResult(request, queryResult, options, geometryProperty, acceptHeader, count, limit, lang,
-				context, ldService, true, false);
+				context, ldService, true, false, entityMap, baseUrl, ngsiLdEndpoint);
 	}
 
 	public static Uni<RestResponse<Object>> generateQueryResult(HttpServerRequest request, QueryResult queryResult,
 			String options, String geometryProperty, int acceptHeader, boolean count, int limit, LanguageQueryTerm lang,
-			Context context, JsonLDService ldService, boolean forceList, boolean forceAttributeList) {
+			Context context, JsonLDService ldService, boolean forceList, boolean forceAttributeList, boolean entityMap,
+			String baseUrl, String ngsiLdEndpoint) {
 		ResponseBuilder<Object> builder;
 		if (count) {
 			builder = RestResponseBuilderImpl.ok().header(NGSIConstants.COUNT_HEADER_RESULT, queryResult.getCount());
@@ -1021,8 +1026,8 @@ public final class HttpUtils {
 					String prevLink;
 					if (request != null) {
 						MultiMap urlParams = request.params();
-						nextLink = HttpUtils.generateNextLink(urlParams, queryResult);
-						prevLink = HttpUtils.generatePrevLink(urlParams, queryResult);
+						nextLink = HttpUtils.generateNextLink(urlParams, queryResult, baseUrl, ngsiLdEndpoint);
+						prevLink = HttpUtils.generatePrevLink(urlParams, queryResult, baseUrl, ngsiLdEndpoint);
 					} else {
 						prevLink = null;
 						nextLink = null;
@@ -1035,6 +1040,11 @@ public final class HttpUtils {
 					}
 					if (prevLink != null) {
 						myBuilder = myBuilder.header(HttpHeaders.LINK, prevLink);
+					}
+					if (entityMap) {
+						myBuilder = myBuilder.header(HttpHeaders.LINK,
+								"<" + baseUrl + NGSIConstants.NGSI_LD_ENTITY_MAP_ENDPOINT + "/"
+										+ queryResult.getqToken() + ">;rel=\"entityMap\"");
 					}
 					List<Tuple2<String, String>> headers = resultAndHeaders.getItem2();
 					for (Tuple2<String, String> entry : headers) {

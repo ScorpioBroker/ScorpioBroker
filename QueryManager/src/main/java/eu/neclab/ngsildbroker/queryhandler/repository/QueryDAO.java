@@ -1218,7 +1218,8 @@ public class QueryDAO {
 			} else {
 				query.append("ENTITY.ENTITY");
 			}
-			query.append(" as ENTITY, NULL as PARENT, ENTITY.E_TYPES AS E_TYPES FROM b left join ENTITY on b.ID = ENTITY.ID");
+			query.append(
+					" as ENTITY, NULL as PARENT, ENTITY.E_TYPES AS E_TYPES FROM b left join ENTITY on b.ID = ENTITY.ID");
 			if (attrsQuery == null && (dataSetIdTerm != null || omitTerm != null || pickTerm != null)) {
 				query.append(", JSONB_EACH(ENTITY.ENTITY) AS entityAttrs GROUP BY ENTITY.ID");
 			}
@@ -1490,8 +1491,139 @@ public class QueryDAO {
 			AttrsQueryTerm attrsQuery, int limit, int offset, DataSetIdTerm dataSetIdTerm, String join, int joinLevel,
 			String qToken, PickTerm pickTerm, OmitTerm omitTerm) {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
-			return null;
+			Tuple tuple = Tuple.tuple();
+			boolean doJoin = (join != null && joinLevel > 0);
+			StringBuilder query = new StringBuilder(
+					"WITH A AS (UPDATE ENTITYMAP_MANAGEMENT SET LAST_ACCESS = NOW() WHERE Q_TOKEN = $1), B AS (SELECT ENTITY_ID, REMOTE_HOSTS, FULLENTITIES_DIST, REGEMPTY, NOREGENTRY FROM ENTITYMAP WHERE Q_TOKEN = $1 ORDER BY ORDER_FIELD), c as (SELECT ENTITY.ID, ");
+
+			tuple.addString(qToken);
+			int dollar = 2;
+
+			if (attrsQuery != null) {
+				dollar = attrsQuery.toSqlConstructEntity(query, tuple, dollar, dataSetIdTerm);
+			} else if (pickTerm != null) {
+				dollar = pickTerm.toSqlConstructEntity(query, tuple, dollar, "entityAttrs", dataSetIdTerm);
+			} else if (omitTerm != null) {
+				dollar = omitTerm.toSqlConstructEntity(query, tuple, dollar, "entityAttrs", dataSetIdTerm);
+			} else if (dataSetIdTerm != null) {
+				dollar = dataSetIdTerm.toSqlConstructEntity(query, tuple, "entityAttrs", dollar);
+			} else {
+				query.append("ENTITY.ENTITY");
+			}
+			query.append(
+					" as ENTITY, NULL as PARENT, ENTITY.E_TYPES AS E_TYPES FROM b left join ENTITY on b.ENTITY_ID = ENTITY.ID");
+			if (attrsQuery == null && (dataSetIdTerm != null || omitTerm != null || pickTerm != null)) {
+				query.append(", JSONB_EACH(ENTITY.ENTITY) AS entityAttrs GROUP BY ENTITY.ID");
+			}
+			query.append(")  ");
+			String currentEntitySet = "c";
+			if (doJoin) {
+				int counter;
+				query.append(", D0 as (SELECT * FROM ");
+				query.append(currentEntitySet);
+				query.append(")");
+				for (counter = 0; counter < joinLevel; counter++) {
+					query.append('B');
+					query.append(counter + 1);
+					query.append(" AS (SELECT ");
+					query.append('D');
+					query.append(counter);
+					query.append(".ID AS ID, X.VALUE AS VALUE FROM D");
+					query.append(counter);
+					query.append(", JSONB_EACH(D");
+					query.append(counter);
+					query.append(".ENTITY) AS X WHERE JSONB_TYPEOF(X.VALUE) = 'array'), ");
+					query.append('C');
+					query.append(counter + 1);
+					query.append(" AS (SELECT distinct Z ->> '@id' as link FROM B");
+					query.append(counter + 1);
+					query.append(", JSONB_ARRAY_ELEMENTS(B");
+					query.append(counter + 1);
+					query.append(
+							".VALUE) AS Y, JSONB_ARRAY_ELEMENTS(Y #> '{https://uri.etsi.org/ngsi-ld/hasObject}') AS Z WHERE Y #>> '{@type,0}' = 'https://uri.etsi.org/ngsi-ld/Relationship') AND Y ? 'https://uri.etsi.org/ngsi-ld/hasObjectType', ");
+					query.append('D');
+					query.append(counter + 1);
+					query.append(" as (SELECT E.ID as id, E.ENTITY as entity, C");
+					query.append(counter + 1);
+					query.append(".link as parent, E.E_TYPES as E_TYPES");
+
+					query.append(" from C");
+					query.append(counter + 1);
+					query.append(" join ENTITY as E on C");
+					query.append(counter + 1);
+					query.append(".link = E.ID), ");
+				}
+				query.setLength(query.length() - 2);
+				query.append(" SELECT * FROM (");
+				for (int i = 0; i <= joinLevel; i++) {
+					query.append("SELECT * FROM D");
+					query.append(i);
+					query.append(" UNION ALL ");
+				}
+				query.setLength(query.length() - " UNION ALL ".length());
+				query.append(") as xyz group by id, entity, parent");
+				currentEntitySet = "xyz";
+			}
+
+			query.append(" SELECT b.ENTITY_ID, ");
+			query.append(currentEntitySet);
+			query.append(".ENTITY, ");
+			query.append(currentEntitySet);
+			query.append(".parent, ");
+			query.append(currentEntitySet);
+			query.append(".E_TYPES");
+			query.append(" FROM b left outer join ");
+			query.append(currentEntitySet);
+			query.append(" on b.ENTITY_ID = ");
+			query.append(currentEntitySet);
+			query.append(".ID");
+
+			String queryString = query.toString();
+			logger.debug("SQL REQUEST: " + queryString);
+			logger.debug("SQL TUPLE: " + tuple.deepToString());
+			return client.preparedQuery(queryString).execute(tuple).onItem().transformToUni(rows -> {
+				if (rows.rowCount() == 0) {
+					return Uni.createFrom().failure(new ResponseException(ErrorType.InvalidRequest,
+							"Token is invalid. Please rerequest without a token to retrieve a new token"));
+				}
+				EntityCache resultEntities = new EntityCache();
+				EntityMap resultEntityMap = new EntityMap(qToken, true, true, true);
+
+				rows.forEach(row -> {
+					String id = row.getString(0);
+					JsonObject entityObj = row.getJsonObject(1);
+					String parent = row.getString(2);
+					String[] types = row.getArrayOfStrings(3);
+					if (parent == null) {
+						resultEntityMap.getEntry(id).addRemoteHost(AppConstants.DB_REMOTE_HOST);
+					}
+
+					if (entityObj != null) {
+						Map<String, Object> entity = entityObj.getMap();
+						for (String type : types) {
+							resultEntities.setEntityIntoEntityCache(type, id, entity,
+									AppConstants.DEFAULT_REMOTE_HOST_MAP);
+						}
+
+					}
+				});
+				return Uni.createFrom().item(Tuple2.of(resultEntities, resultEntityMap));
+			});
+		}).onFailure().recoverWithUni(e -> {
+			if (e instanceof PgException pge) {
+				logger.debug(pge.getPosition());
+				if (pge.getSqlState().equals(AppConstants.INVALID_REGULAR_EXPRESSION)) {
+					return Uni.createFrom()
+							.failure(new ResponseException(ErrorType.BadRequestData, "Invalid regular expression"));
+				}
+				if (pge.getSqlState().equals(AppConstants.INVALID_GEO_QUERY)) {
+					return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData,
+							"Invalid geo query. " + pge.getErrorMessage()));
+				}
+			}
+			return Uni.createFrom().failure(e);
 		});
+
 	}
 
 	public Uni<Tuple2<EntityCache, EntityMap>> queryForEntitiesAndEntityMap(String tenant, AttrsQueryTerm attrsQuery,

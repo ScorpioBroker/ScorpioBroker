@@ -7,6 +7,7 @@ import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
@@ -37,6 +38,9 @@ public class SubscriptionController {
 	@Inject
 	SubscriptionService subService;
 
+	@Inject
+	MicroServiceUtils microServiceUtils;
+
 	@ConfigProperty(name = "ngsild.corecontext", defaultValue = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld")
 	String coreContext;
 
@@ -50,35 +54,39 @@ public class SubscriptionController {
 
 	@POST
 	public Uni<RestResponse<Object>> subscribe(HttpServerRequest request, Map<String, Object> map) {
-		try{
-			if(!map.containsKey(NGSIConstants.JSONLD_CONTEXT)){
+		try {
+			if (!map.containsKey(NGSIConstants.JSONLD_CONTEXT)) {
 				String contextLink;
 				if (request.getHeader(NGSIConstants.LINK_HEADER) != null) {
-					contextLink = request.getHeader(NGSIConstants.LINK_HEADER).split(";")[0].replace("<","").replace(">","");
+					contextLink = request.getHeader(NGSIConstants.LINK_HEADER).split(";")[0].replace("<", "")
+							.replace(">", "");
 				} else if (map.containsKey(JsonLdConsts.CONTEXT)) {
 					if (map.get(JsonLdConsts.CONTEXT) instanceof List<?>) {
 						contextLink = ((List<String>) map.get(JsonLdConsts.CONTEXT)).get(0);
-					}
-					else{
-						contextLink =  map.get(JsonLdConsts.CONTEXT).toString();
+					} else {
+						contextLink = map.get(JsonLdConsts.CONTEXT).toString();
 					}
 				} else {
-					contextLink=coreContext;
+					contextLink = coreContext;
 				}
-				map.put(NGSIConstants.JSONLD_CONTEXT,contextLink);
+				map.put(NGSIConstants.JSONLD_CONTEXT, contextLink);
 			}
-		}catch(Exception e){
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData)));
+		} catch (Exception e) {
+			return Uni.createFrom()
+					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData)));
 		}
 		HeadersMultiMap otherHead = new HeadersMultiMap();
-		if(request.headers().contains(NGSIConstants.TENANT_HEADER)){
-			otherHead.add(NGSIConstants.TENANT_HEADER,request.headers().get(NGSIConstants.TENANT_HEADER));
+		if (request.headers().contains(NGSIConstants.TENANT_HEADER)) {
+			otherHead.add(NGSIConstants.TENANT_HEADER, request.headers().get(NGSIConstants.TENANT_HEADER));
 		}
-		otherHead.add(NGSIConstants.LINK_HEADER,"<%s>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"".formatted(map.get(NGSIConstants.JSONLD_CONTEXT)));
+		otherHead.add(NGSIConstants.LINK_HEADER,
+				"<%s>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\""
+						.formatted(map.get(NGSIConstants.JSONLD_CONTEXT)));
 		return HttpUtils.expandBody(request, map, AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, ldService).onItem()
 				.transformToUni(tuple -> {
 					return subService
-							.createSubscription(otherHead,HttpUtils.getTenant(request), tuple.getItem2(), tuple.getItem1())
+							.createSubscription(otherHead, HttpUtils.getTenant(request), tuple.getItem2(),
+									tuple.getItem1())
 							.onItem().transform(t -> HttpUtils.generateSubscriptionResult(t, tuple.getItem1()));
 				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
@@ -108,7 +116,8 @@ public class SubscriptionController {
 			return subService.getAllSubscriptions(HttpUtils.getTenant(request), actualLimit, offset).onItem()
 					.transformToUni(subscriptions -> {
 						return HttpUtils.generateQueryResult(request, subscriptions, options, null, acceptHeader, false,
-								actualLimit, null, ctx, ldService);
+								actualLimit, null, ctx, ldService, false, microServiceUtils.getGatewayURL().toString(),
+								NGSIConstants.NGSI_LD_SUB_ENDPOINT);
 					});
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 
@@ -132,7 +141,7 @@ public class SubscriptionController {
 			return subService.getSubscription(HttpUtils.getTenant(request), subscriptionId).onItem()
 					.transformToUni(subscription -> {
 						return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, subscription, null,
-								options, null, ldService,null,null);
+								options, null, ldService, null, null);
 					});
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}

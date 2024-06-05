@@ -515,4 +515,8 @@ public interface NGSIConstants {
 	public static final String JSON_LD_NULL = "@null";
 	public static final String QUERY_PARAMETER_OMIT = "omit";
 	public static final String QUERY_PARAMETER_PICK = "pick";
+	public static final String NGSI_LD_REGISTRY_SUB_ENDPOINT = "/ngsi-ld/v1/csourceSubscriptions";
+	public static final String NGSI_LD_REGISTRY_ENDPOINT = "/ngsi-ld/v1/csourceRegistrations";
+	public static final String NGSI_LD_SUB_ENDPOINT = "/ngsi-ld/v1/subscriptions";
+	
 }

@@ -211,8 +211,7 @@ public class QueryService implements QueryServiceInterface {
 			}
 			// run pick and omit again in case of linked projection ... this should be also
 			// in the DB once my head is ready for sql again
-			EntityTools.evaluateFilterQueries(resultData, null, null, null, null, pickTerm, omitTerm, null, null, null,
-					null);
+			EntityTools.evaluateFilterQueries(resultData, null, null, null, null, pickTerm, omitTerm, null, null, null);
 			return Uni.createFrom().item(result);
 		} else if (entityMap.isNoRootLevelRegEntry()) {
 			for (EntityMapEntry entityMapEntry : subMap) {
@@ -222,7 +221,7 @@ public class QueryService implements QueryServiceInterface {
 				return retrieveJoins(tenant, resultData, entityCache, context, qQuery, onlyFullEntities, 0, -1,
 						qQuery.getMaxJoinLevel()).onItem().transformToUni(updatedEntityCache -> {
 							Map<String, Map<String, Object>> deleted = EntityTools.evaluateFilterQueries(resultData,
-									qQuery, null, null, attrsQuery, pickTerm, omitTerm, langQuery, dataSetIdTerm,
+									qQuery, null, null, attrsQuery, pickTerm, omitTerm, dataSetIdTerm,
 									updatedEntityCache, jsonKeys);
 							if (deleted.isEmpty()) {
 								if (entityMap.isChanged()) {
@@ -258,8 +257,8 @@ public class QueryService implements QueryServiceInterface {
 								return Uni.createFrom().item(result);
 							} else {
 								Map<String, Map<String, Object>> deleted = EntityTools.evaluateFilterQueries(resultData,
-										qQuery, scopeQuery, geoQuery, attrsQuery, pickTerm, omitTerm, langQuery,
-										dataSetIdTerm, updatedEntityCache, jsonKeys);
+										qQuery, scopeQuery, geoQuery, attrsQuery, pickTerm, omitTerm, dataSetIdTerm,
+										updatedEntityCache, jsonKeys);
 								if (deleted.isEmpty()) {
 									if (entityMap.isChanged()) {
 										return queryDAO.storeEntityMap(tenant, entityMap.getId(), entityMap, true)
@@ -286,7 +285,7 @@ public class QueryService implements QueryServiceInterface {
 											.transformToUni(updatedEntityCache2 -> {
 												Map<String, Map<String, Object>> deleted = EntityTools
 														.evaluateFilterQueries(resultData, qQuery, null, null,
-																attrsQuery, pickTerm, omitTerm, null, null, entityCache,
+																attrsQuery, pickTerm, omitTerm, null, entityCache,
 																jsonKeys);
 												if (deleted.isEmpty()) {
 													if (entityMap.isChanged()) {
@@ -324,8 +323,8 @@ public class QueryService implements QueryServiceInterface {
 								}
 							} else {
 								Map<String, Map<String, Object>> deleted = EntityTools.evaluateFilterQueries(resultData,
-										qQuery, scopeQuery, geoQuery, attrsQuery, pickTerm, omitTerm, langQuery,
-										dataSetIdTerm, entityCache, jsonKeys);
+										qQuery, scopeQuery, geoQuery, attrsQuery, pickTerm, omitTerm, dataSetIdTerm,
+										entityCache, jsonKeys);
 								if (deleted.isEmpty()) {
 									if (entityMap.isChanged()) {
 										return queryDAO.storeEntityMap(tenant, entityMap.getId(), entityMap, true)

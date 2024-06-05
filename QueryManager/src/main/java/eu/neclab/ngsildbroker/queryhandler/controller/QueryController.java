@@ -14,6 +14,7 @@ import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
@@ -43,6 +44,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.commons.tools.QueryParser;
 import eu.neclab.ngsildbroker.queryhandler.services.QueryService;
 import io.smallrye.mutiny.Uni;
@@ -59,6 +61,9 @@ public class QueryController {
 
 	@Inject
 	QueryService queryService;
+
+	@Inject
+	MicroServiceUtils microServiceUtils;
 
 	@ConfigProperty(name = "scorpio.entity.default-limit", defaultValue = "50")
 	int defaultLimit;
@@ -172,11 +177,11 @@ public class QueryController {
 			@QueryParam("options") String options, @QueryParam("limit") Integer limit, @QueryParam("offset") int offset,
 			@QueryParam("count") boolean count, @QueryParam("containedBy") @DefaultValue("") String containedBy,
 			@QueryParam("join") String join, @QueryParam("joinLevel") @DefaultValue("0") int joinLevel,
-			@QueryParam("doNotCompact") boolean doNotCompact, @QueryParam("entityMap") String entityMapToken,
-			@QueryParam("maxDistance") String maxDistance, @QueryParam("minDistance") String minDistance,
-			@Context UriInfo uriInfo, @QueryParam("pick") String pick, @QueryParam("omit") String omit,
-			@QueryParam("format") String format, @QueryParam("jsonKeys") String jsonKeysQP,
-			@QueryParam("datasetId") String datasetId,
+			@QueryParam("doNotCompact") boolean doNotCompact, @HeaderParam("entityMap") String entityMapToken,
+			@QueryParam("NGSILD-EntityMap") boolean entityMapRetrieve, @QueryParam("maxDistance") String maxDistance,
+			@QueryParam("minDistance") String minDistance, @Context UriInfo uriInfo, @QueryParam("pick") String pick,
+			@QueryParam("omit") String omit, @QueryParam("format") String format,
+			@QueryParam("jsonKeys") String jsonKeysQP, @QueryParam("datasetId") String datasetId,
 			@QueryParam("entityDist") @DefaultValue("false") boolean entityDist) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		if ((pick != null && omit != null) || (pick != null && attrs != null) || (attrs != null && omit != null)) {
@@ -259,15 +264,15 @@ public class QueryController {
 			OmitTerm omitTerm = null;
 			PickTerm pickTerm = null;
 			try {
-				if(pick != null) {
+				if (pick != null) {
 					pickTerm = new PickTerm();
 					QueryParser.parseProjectionTerm(pickTerm, pick, context);
 				}
-				if(omit != null) {
+				if (omit != null) {
 					omitTerm = OmitTerm.getNewRootInstance();
 					QueryParser.parseProjectionTerm(omitTerm, omit, context);
 				}
-				
+
 				attrsQuery = QueryParser.parseAttrs(attrs, context);
 				dataSetIdTerm = QueryParser.parseDataSetId(datasetId);
 				typeQueryTerm = QueryParser.parseTypeQuery(typeQuery, context);
@@ -323,7 +328,8 @@ public class QueryController {
 							return Uni.createFrom().item(RestResponse.ok((Object) queryResult.getData()));
 						}
 						return HttpUtils.generateQueryResult(request, queryResult, finalOptions, geometryProperty,
-								acceptHeader, count, actualLimit, langQuery, context, ldService);
+								acceptHeader, count, actualLimit, langQuery, context, ldService, entityMapRetrieve,
+								microServiceUtils.getGatewayURL().toString(), NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT);
 					});
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
