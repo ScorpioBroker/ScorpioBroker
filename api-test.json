@@ -45784,6 +45784,7 @@
 																	"\r",
 																	"console.log(nextLink);\r",
 																	"pm.collectionVariables.set(\"nextLink\", nextLink);\r",
+																	"pm.collectionVariables.set(\"entityMapHeader\", pm.response.headers.get(\"NGSILD-EntityMap\"));\r",
 																	"\r",
 																	"\r",
 																	"pm.test(\"Successful query request\", function () {\r",
@@ -58748,6 +58749,18 @@
 		}
 	],
 	"variable": [
+		{
+			"key": "nextLink",
+			"value": ""
+		},
+		{
+			"key": "nextlink",
+			"value": ""
+		},
+		{
+			"key": "entityMapHeader",
+			"value": ""
+		},
 		{
 			"key": "createdTBF",
 			"value": ""
