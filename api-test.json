@@ -14202,7 +14202,7 @@
 																	}
 																],
 																"url": {
-																	"raw": "{{query-manager}}/ngsi-ld/v1/entities/?type=AgriParcel&options=normalized&join=flat&joinLevel=6",
+																	"raw": "{{query-manager}}/ngsi-ld/v1/entities/?type=AgriParcel&options=normalized&join=flat&joinLevel=7",
 																	"host": [
 																		"{{query-manager}}"
 																	],
@@ -14227,7 +14227,7 @@
 																		},
 																		{
 																			"key": "joinLevel",
-																			"value": "6"
+																			"value": "7"
 																		}
 																	]
 																}
@@ -14285,6 +14285,77 @@
 																		"urn:ngsi-ld:AgriParcel:001"
 																	],
 																	"query": [
+																		{
+																			"key": "options",
+																			"value": "concise"
+																		},
+																		{
+																			"key": "join",
+																			"value": "flat"
+																		},
+																		{
+																			"key": "joinLevel",
+																			"value": "10"
+																		}
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Query Created Entity flat with concise",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"var expected = pm.collectionVariables.get(\"created\");\r",
+																			"pm.test(\"Status code is 200\", function () {\r",
+																			"    pm.response.to.have.status(200);\r",
+																			"});\r",
+																			"\r",
+																			"pm.test(\"Validate that result\", function () {\r",
+																			"    var jsonData = pm.response.json();\r",
+																			"    console.log(\"data \",jsonData);\r",
+																			"    pm.expect(jsonData.length).to.eql(3);\r",
+																			"    var entityFirst = jsonData[0];\r",
+																			"    var entitySecond = jsonData[1];\r",
+																			"    var entityThired = jsonData[2];\r",
+																			"    var keysFirstEntity = Object.keys(entityFirst);\r",
+																			"     console.log(\"key \",keysFirstEntity);\r",
+																			"    pm.expect(keysFirstEntity.length).to.eql(7);\r",
+																			"     pm.expect(keysFirstEntity).to.contain(\"id\");\r",
+																			"    \r",
+																			"  });"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "GET",
+																"header": [
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default"
+																	}
+																],
+																"url": {
+																	"raw": "{{query-manager}}/ngsi-ld/v1/entities?type=AgriParcel&options=concise&join=flat&joinLevel=10",
+																	"host": [
+																		"{{query-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities"
+																	],
+																	"query": [
+																		{
+																			"key": "type",
+																			"value": "AgriParcel"
+																		},
 																		{
 																			"key": "options",
 																			"value": "concise"
@@ -15362,6 +15433,173 @@
 																		{
 																			"key": "joinLevel",
 																			"value": "10"
+																		}
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "Query Created Entity Inline with concise",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"var expected = pm.collectionVariables.get(\"created\");\r",
+																			"pm.test(\"Status code is 200\", function () {\r",
+																			"    pm.response.to.have.status(200);\r",
+																			"});\r",
+																			"\r",
+																			"pm.test(\"Response has correct ID\", function() {\r",
+																			"    pm.expect(pm.response.json()[0].id).to.equal(\"urn:ngsi-ld:AgriParcel:001\");\r",
+																			"});\r",
+																			"pm.test(\"Response has correct structure\", function () {\r",
+																			"    pm.response.to.have.status(200);\r",
+																			"    pm.response.to.be.json;\r",
+																			"    var jsonData = pm.response.json()[0];\r",
+																			"    pm.expect(jsonData).to.have.property(\"id\");\r",
+																			"    pm.expect(jsonData).to.have.property(\"type\");\r",
+																			"    pm.expect(jsonData).to.have.property(\"cropType\");\r",
+																			"    pm.expect(jsonData).to.have.property(\"observation\");\r",
+																			"    pm.expect(jsonData).to.have.property(\"prediction\");\r",
+																			"    pm.expect(jsonData).to.have.property(\"soilType\");\r",
+																			"    pm.expect(jsonData).to.have.property(\"location\");\r",
+																			"});\r",
+																			"pm.test(\"Observation entity has required properties\", function () {\r",
+																			"    var observationEntity = pm.response.json()[0].observation.entity;\r",
+																			"    pm.expect(observationEntity).to.have.property(\"id\");\r",
+																			"    pm.expect(observationEntity).to.have.property(\"type\");\r",
+																			"    pm.expect(observationEntity).to.have.property(\"humidity\");\r",
+																			"    pm.expect(observationEntity).to.have.property(\"temperature\");\r",
+																			"    pm.expect(observationEntity).to.have.property(\"windSpeed\");\r",
+																			"});\r",
+																			"\r",
+																			"pm.test(\"Location coordinates are correct\", function () {\r",
+																			"    var locationCoords = pm.response.json()[0].location.coords;\r",
+																			"    pm.expect(locationCoords).to.be.an('array').that.has.lengthOf(2);\r",
+																			"    pm.expect(locationCoords[0]).to.eql(13);\r",
+																			"    pm.expect(locationCoords[1]).to.eql(58);\r",
+																			"});\r",
+																			"\r",
+																			""
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "GET",
+																"header": [
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default"
+																	}
+																],
+																"url": {
+																	"raw": "{{query-manager}}/ngsi-ld/v1/entities/?type=AgriParcel&options=concise&join=inline&joinLevel=7",
+																	"host": [
+																		"{{query-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities",
+																		""
+																	],
+																	"query": [
+																		{
+																			"key": "type",
+																			"value": "AgriParcel"
+																		},
+																		{
+																			"key": "options",
+																			"value": "concise"
+																		},
+																		{
+																			"key": "join",
+																			"value": "inline"
+																		},
+																		{
+																			"key": "joinLevel",
+																			"value": "7"
+																		}
+																	]
+																}
+															},
+															"response": []
+														},
+														{
+															"name": "QueryCreated Entity Inline with normalized",
+															"event": [
+																{
+																	"listen": "test",
+																	"script": {
+																		"exec": [
+																			"var expected = pm.collectionVariables.get(\"created\");\r",
+																			"pm.test(\"Status code is 200\", function () {\r",
+																			"    pm.response.to.have.status(200);\r",
+																			"});\r",
+																			"\r",
+																			"pm.test(\"Response has correct ID\", function() {\r",
+																			"    pm.expect(pm.response.json()[0].id).to.equal(\"urn:ngsi-ld:AgriParcel:001\");\r",
+																			"});\r",
+																			"pm.test(\"Validate that result\", function () {\r",
+																			"    var jsonData = pm.response.json()[0];\r",
+																			"    console.log(\"data \",jsonData);\r",
+																			"    const cropType = jsonData.cropType;\r",
+																			"    pm.expect(cropType.type).to.equal(\"Relationship\");\r",
+																			"    pm.expect(cropType.object).to.equal(\"urn:ngsi-ld:AgriCrop:BuckWheat\");\r",
+																			"});\r",
+																			"pm.test(\"Location has correct type and coordinates\", function() {\r",
+																			"    const location = pm.response.json()[0].location;\r",
+																			"    pm.expect(location.type).to.equal(\"GeoProperty\");\r",
+																			"    pm.expect(location.value.type).to.equal(\"Point\");\r",
+																			"    pm.expect(location.value.coords[0]).to.equal(13);\r",
+																			"    pm.expect(location.value.coords[1]).to.equal(58);\r",
+																			"});"
+																		],
+																		"type": "text/javascript"
+																	}
+																}
+															],
+															"request": {
+																"method": "GET",
+																"header": [
+																	{
+																		"key": "Accept",
+																		"value": "application/json",
+																		"type": "default"
+																	}
+																],
+																"url": {
+																	"raw": "{{query-manager}}/ngsi-ld/v1/entities/?type=AgriParcel&options=normalized&join=inline&joinLevel=7",
+																	"host": [
+																		"{{query-manager}}"
+																	],
+																	"path": [
+																		"ngsi-ld",
+																		"v1",
+																		"entities",
+																		""
+																	],
+																	"query": [
+																		{
+																			"key": "type",
+																			"value": "AgriParcel"
+																		},
+																		{
+																			"key": "options",
+																			"value": "normalized"
+																		},
+																		{
+																			"key": "join",
+																			"value": "inline"
+																		},
+																		{
+																			"key": "joinLevel",
+																			"value": "7"
 																		}
 																	]
 																}
@@ -18689,6 +18927,365 @@
 															"response": []
 														}
 													]
+												}
+											]
+										},
+										{
+											"name": "Pagination local test",
+											"item": [
+												{
+													"name": "Create multiple dummy entities",
+													"request": {
+														"method": "POST",
+														"header": [],
+														"body": {
+															"mode": "raw",
+															"raw": "[{\r\n\t\"id\": \"test:0\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:1\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:2\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:3\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:4\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:5\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:6\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:7\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:8\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:9\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:10\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:11\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:12\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:13\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:14\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:15\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:16\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:17\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:18\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:19\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:20\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:21\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:22\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:23\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:24\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:25\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:26\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:27\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:28\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:29\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:30\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:31\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:32\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:33\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:34\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:35\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:36\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:37\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:38\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:39\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:40\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:41\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:42\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:43\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:44\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:45\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:46\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:47\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:48\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:49\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:51\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:52\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:53\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:54\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:55\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:56\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:57\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:58\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:59\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:60\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:61\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:62\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:63\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:64\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:65\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:66\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:67\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:68\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:69\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:70\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:71\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:72\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:73\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:74\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:75\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:76\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:77\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:78\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:79\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:80\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:81\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:82\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:83\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:84\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:85\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:86\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:87\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:88\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:89\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:90\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:91\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:92\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:93\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:94\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:95\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:96\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:97\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:98\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:99\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:100\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:101\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:102\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:103\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:104\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:105\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:106\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:107\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:108\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:109\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:110\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:111\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:112\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:113\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:114\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:115\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:116\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:117\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:118\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:119\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:120\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:121\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:122\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:123\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:124\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:125\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:126\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:127\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:128\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:129\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:130\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:131\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:132\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:133\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:134\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:135\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:136\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:137\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:138\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:139\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:140\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:141\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:142\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:143\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:144\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:145\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:146\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:147\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:148\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:149\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}]",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entityOperations/create",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entityOperations",
+																"create"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Get local entity",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"let nextLink = pm.response.headers.filter(header => header.key === \"Link\")[0][\"value\"];\r",
+																	"nextLink = nextLink.substring(1, nextLink.length -12);\r",
+																	"\r",
+																	"console.log(nextLink);\r",
+																	"pm.collectionVariables.set(\"nextLink\", nextLink);\r",
+																	"pm.collectionVariables.set(\"entityMapHeader\", pm.response.headers.get(\"NGSILD-EntityMap\"));\r",
+																	"\r",
+																	"\r",
+																	"pm.test(\"Successful query request\", function () {\r",
+																	"    pm.expect(pm.response.code).to.equal(200);\r",
+																	"});\r",
+																	"\r",
+																	"pm.test(\"Count result\", function () {\r",
+																	"    pm.expect(pm.response.json().length).to.equal(50);\r",
+																	"});\r",
+																	"\r",
+																	"\r",
+																	"  \r",
+																	"   \r",
+																	" \r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															}
+														],
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities?type=Test2",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities"
+															],
+															"query": [
+																{
+																	"key": "type",
+																	"value": "Test2"
+																}
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Get next set",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var nextLink = pm.response.headers.all(\"Link\");\r",
+																	"console.log(nextLink);\r",
+																	"pm.collectionVariables.set(\"nextlink\", nextLink);\r",
+																	"\r",
+																	"\r",
+																	"pm.test(\"Successful query request\", function () {\r",
+																	"    pm.expect(pm.response.code).to.equal(200);\r",
+																	"});\r",
+																	"\r",
+																	"pm.test(\"Count result\", function () {\r",
+																	"    pm.expect(pm.response.json().length).to.equal(50);\r",
+																	"});\r",
+																	"\r",
+																	"\r",
+																	"  \r",
+																	"   \r",
+																	" \r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "NGSILD-EntityMap",
+																"value": "{{entityMapHeader}}",
+																"type": "default"
+															}
+														],
+														"url": {
+															"raw": "{{nextLink}}",
+															"host": [
+																"{{nextLink}}"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Get next set with wrong entitymap",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var nextLink = pm.response.headers.all(\"Link\");\r",
+																	"console.log(nextLink);\r",
+																	"pm.collectionVariables.set(\"nextlink\", nextLink);\r",
+																	"\r",
+																	"\r",
+																	"pm.test(\"Successful query request\", function () {\r",
+																	"    pm.expect(pm.response.code).to.equal(200);\r",
+																	"});\r",
+																	"\r",
+																	"pm.test(\"Count result\", function () {\r",
+																	"    pm.expect(pm.response.json().length).to.equal(50);\r",
+																	"});\r",
+																	"\r",
+																	"\r",
+																	"  \r",
+																	"   \r",
+																	" \r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "NGSILD-EntityMap",
+																"value": "urn:does:not:exist",
+																"type": "default"
+															}
+														],
+														"url": {
+															"raw": "{{nextLink}}",
+															"host": [
+																"{{nextLink}}"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Get local entity with pick",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"let nextLink = pm.response.headers.filter(header => header.key === \"Link\")[0][\"value\"];\r",
+																	"nextLink = nextLink.substring(1, nextLink.length -12);\r",
+																	"\r",
+																	"console.log(nextLink);\r",
+																	"pm.collectionVariables.set(\"nextLink\", nextLink);\r",
+																	"pm.collectionVariables.set(\"entityMapHeader\", pm.response.headers.get(\"NGSILD-EntityMap\"));\r",
+																	"\r",
+																	"\r",
+																	"pm.test(\"Successful query request\", function () {\r",
+																	"    pm.expect(pm.response.code).to.equal(200);\r",
+																	"});\r",
+																	"\r",
+																	"pm.test(\"Count result\", function () {\r",
+																	"    pm.expect(pm.response.json().length).to.equal(50);\r",
+																	"});\r",
+																	"\r",
+																	"\r",
+																	"  \r",
+																	"   \r",
+																	" \r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															}
+														],
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities?type=Test2",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities"
+															],
+															"query": [
+																{
+																	"key": "type",
+																	"value": "Test2"
+																}
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Get next set with pick",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var nextLink = pm.response.headers.all(\"Link\");\r",
+																	"console.log(nextLink);\r",
+																	"pm.collectionVariables.set(\"nextlink\", nextLink);\r",
+																	"\r",
+																	"\r",
+																	"pm.test(\"Successful query request\", function () {\r",
+																	"    pm.expect(pm.response.code).to.equal(200);\r",
+																	"});\r",
+																	"\r",
+																	"pm.test(\"Count result\", function () {\r",
+																	"    pm.expect(pm.response.json().length).to.equal(50);\r",
+																	"});\r",
+																	"\r",
+																	"\r",
+																	"  \r",
+																	"   \r",
+																	" \r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "NGSILD-EntityMap",
+																"value": "{{entityMapHeader}}",
+																"type": "default"
+															}
+														],
+														"url": {
+															"raw": "{{nextLink}}",
+															"host": [
+																"{{nextLink}}"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Delete entities",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [],
+														"body": {
+															"mode": "raw",
+															"raw": "[\r\n\t\"test:0\",\r\n\t\"test:1\",\r\n\t\"test:2\",\r\n\t\"test:3\",\r\n\t\"test:4\",\r\n\t\"test:5\",\r\n\t\"test:6\",\r\n\t\"test:7\",\r\n\t\"test:8\",\r\n\t\"test:9\",\r\n\t\"test:10\",\r\n\t\"test:11\",\r\n\t\"test:12\",\r\n\t\"test:13\",\r\n\t\"test:14\",\r\n\t\"test:15\",\r\n\t\"test:16\",\r\n\t\"test:17\",\r\n\t\"test:18\",\r\n\t\"test:19\",\r\n\t\"test:20\",\r\n\t\"test:21\",\r\n\t\"test:22\",\r\n\t\"test:23\",\r\n\t\"test:24\",\r\n\t\"test:25\",\r\n\t\"test:26\",\r\n\t\"test:27\",\r\n\t\"test:28\",\r\n\t\"test:29\",\r\n\t\"test:30\",\r\n\t\"test:31\",\r\n\t\"test:32\",\r\n\t\"test:33\",\r\n\t\"test:34\",\r\n\t\"test:35\",\r\n\t\"test:36\",\r\n\t\"test:37\",\r\n\t\"test:38\",\r\n\t\"test:39\",\r\n\t\"test:40\",\r\n\t\"test:41\",\r\n\t\"test:42\",\r\n\t\"test:43\",\r\n\t\"test:44\",\r\n\t\"test:45\",\r\n\t\"test:46\",\r\n\t\"test:47\",\r\n\t\"test:48\",\r\n\t\"test:49\",\r\n\t\"test:51\",\r\n\t\"test:52\",\r\n\t\"test:53\",\r\n\t\"test:54\",\r\n\t\"test:55\",\r\n\t\"test:56\",\r\n\t\"test:57\",\r\n\t\"test:58\",\r\n\t\"test:59\",\r\n\t\"test:60\",\r\n\t\"test:61\",\r\n\t\"test:62\",\r\n\t\"test:63\",\r\n\t\"test:64\",\r\n\t\"test:65\",\r\n\t\"test:66\",\r\n\t\"test:67\",\r\n\t\"test:68\",\r\n\t\"test:69\",\r\n\t\"test:70\",\r\n\t\"test:71\",\r\n\t\"test:72\",\r\n\t\"test:73\",\r\n\t\"test:74\",\r\n\t\"test:75\",\r\n\t\"test:76\",\r\n\t\"test:77\",\r\n\t\"test:78\",\r\n\t\"test:79\",\r\n\t\"test:80\",\r\n\t\"test:81\",\r\n\t\"test:82\",\r\n\t\"test:83\",\r\n\t\"test:84\",\r\n\t\"test:85\",\r\n\t\"test:86\",\r\n\t\"test:87\",\r\n\t\"test:88\",\r\n\t\"test:89\",\r\n\t\"test:90\",\r\n\t\"test:91\",\r\n\t\"test:92\",\r\n\t\"test:93\",\r\n\t\"test:94\",\r\n\t\"test:95\",\r\n\t\"test:96\",\r\n\t\"test:97\",\r\n\t\"test:98\",\r\n\t\"test:99\",\r\n\t\"test:100\",\r\n\t\"test:101\",\r\n\t\"test:102\",\r\n\t\"test:103\",\r\n\t\"test:104\",\r\n\t\"test:105\",\r\n\t\"test:106\",\r\n\t\"test:107\",\r\n\t\"test:108\",\r\n\t\"test:109\",\r\n\t\"test:110\",\r\n\t\"test:111\",\r\n\t\"test:112\",\r\n\t\"test:113\",\r\n\t\"test:114\",\r\n\t\"test:115\",\r\n\t\"test:116\",\r\n\t\"test:117\",\r\n\t\"test:118\",\r\n\t\"test:119\",\r\n\t\"test:120\",\r\n\t\"test:121\",\r\n\t\"test:122\",\r\n\t\"test:123\",\r\n\t\"test:124\",\r\n\t\"test:125\",\r\n\t\"test:126\",\r\n\t\"test:127\",\r\n\t\"test:128\",\r\n\t\"test:129\",\r\n\t\"test:130\",\r\n\t\"test:131\",\r\n\t\"test:132\",\r\n\t\"test:133\",\r\n\t\"test:134\",\r\n\t\"test:135\",\r\n\t\"test:136\",\r\n\t\"test:137\",\r\n\t\"test:138\",\r\n\t\"test:139\",\r\n\t\"test:140\",\r\n\t\"test:141\",\r\n\t\"test:142\",\r\n\t\"test:143\",\r\n\t\"test:144\",\r\n\t\"test:145\",\r\n\t\"test:146\",\r\n\t\"test:147\",\r\n\t\"test:148\",\r\n\t\"test:149\"\r\n]",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entityOperations/delete",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entityOperations",
+																"delete"
+															]
+														}
+													},
+													"response": []
 												}
 											]
 										}
@@ -45806,197 +46403,6 @@
 																"v1",
 																"entities",
 																"{{entityIdmulti}}"
-															]
-														}
-													},
-													"response": []
-												}
-											]
-										},
-										{
-											"name": "Pagination local test",
-											"item": [
-												{
-													"name": "Create multiple dummy entities",
-													"request": {
-														"method": "POST",
-														"header": [],
-														"body": {
-															"mode": "raw",
-															"raw": "[{\r\n\t\"id\": \"test:0\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:1\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:2\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:3\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:4\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:5\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:6\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:7\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:8\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:9\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:10\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:11\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:12\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:13\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:14\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:15\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:16\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:17\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:18\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:19\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:20\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:21\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:22\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:23\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:24\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:25\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:26\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:27\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:28\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:29\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:30\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:31\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:32\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:33\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:34\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:35\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:36\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:37\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:38\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:39\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:40\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:41\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:42\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:43\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:44\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:45\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:46\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:47\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:48\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:49\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:51\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:52\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:53\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:54\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:55\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:56\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:57\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:58\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:59\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:60\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:61\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:62\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:63\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:64\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:65\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:66\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:67\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:68\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:69\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:70\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:71\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:72\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:73\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:74\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:75\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:76\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:77\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:78\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:79\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:80\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:81\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:82\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:83\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:84\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:85\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:86\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:87\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:88\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:89\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:90\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:91\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:92\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:93\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:94\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:95\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:96\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:97\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:98\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:99\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:100\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:101\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:102\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:103\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:104\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:105\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:106\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:107\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:108\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:109\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:110\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:111\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:112\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:113\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:114\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:115\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:116\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:117\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:118\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:119\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:120\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:121\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:122\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:123\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:124\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:125\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:126\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:127\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:128\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:129\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:130\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:131\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:132\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:133\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:134\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:135\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:136\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:137\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:138\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:139\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:140\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:141\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:142\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:143\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:144\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:145\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:146\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:147\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:148\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}, {\r\n\t\"id\": \"test:149\",\r\n\t\"type\": \"Test2\",\r\n\t\"dummy\": {\r\n\t\t\"type\": \"Property\",\r\n\t\t\"value\": 123\r\n\t}\r\n}]",
-															"options": {
-																"raw": {
-																	"language": "json"
-																}
-															}
-														},
-														"url": {
-															"raw": "{{entity-manager}}/ngsi-ld/v1/entityOperations/create",
-															"host": [
-																"{{entity-manager}}"
-															],
-															"path": [
-																"ngsi-ld",
-																"v1",
-																"entityOperations",
-																"create"
-															]
-														}
-													},
-													"response": []
-												},
-												{
-													"name": "Get local entity",
-													"event": [
-														{
-															"listen": "test",
-															"script": {
-																"exec": [
-																	"let nextLink = pm.response.headers.filter(header => header.key === \"Link\")[0][\"value\"];\r",
-																	"nextLink = nextLink.substring(1, nextLink.length -12);\r",
-																	"\r",
-																	"console.log(nextLink);\r",
-																	"pm.collectionVariables.set(\"nextLink\", nextLink);\r",
-																	"pm.collectionVariables.set(\"entityMapHeader\", pm.response.headers.get(\"NGSILD-EntityMap\"));\r",
-																	"\r",
-																	"\r",
-																	"pm.test(\"Successful query request\", function () {\r",
-																	"    pm.expect(pm.response.code).to.equal(200);\r",
-																	"});\r",
-																	"\r",
-																	"pm.test(\"Count result\", function () {\r",
-																	"    pm.expect(pm.response.json().length).to.equal(50);\r",
-																	"});\r",
-																	"\r",
-																	"\r",
-																	"  \r",
-																	"   \r",
-																	" \r",
-																	""
-																],
-																"type": "text/javascript"
-															}
-														}
-													],
-													"request": {
-														"method": "GET",
-														"header": [
-															{
-																"key": "Content-Type",
-																"value": "application/json",
-																"type": "default"
-															}
-														],
-														"url": {
-															"raw": "{{entity-manager}}/ngsi-ld/v1/entities?type=Test2",
-															"host": [
-																"{{entity-manager}}"
-															],
-															"path": [
-																"ngsi-ld",
-																"v1",
-																"entities"
-															],
-															"query": [
-																{
-																	"key": "type",
-																	"value": "Test2"
-																}
-															]
-														}
-													},
-													"response": []
-												},
-												{
-													"name": "Get next set",
-													"event": [
-														{
-															"listen": "test",
-															"script": {
-																"exec": [
-																	"var nextLink = pm.response.headers.all(\"Link\");\r",
-																	"console.log(nextLink);\r",
-																	"pm.collectionVariables.set(\"nextlink\", nextLink);\r",
-																	"\r",
-																	"\r",
-																	"pm.test(\"Successful query request\", function () {\r",
-																	"    pm.expect(pm.response.code).to.equal(200);\r",
-																	"});\r",
-																	"\r",
-																	"pm.test(\"Count result\", function () {\r",
-																	"    pm.expect(pm.response.json().length).to.equal(50);\r",
-																	"});\r",
-																	"\r",
-																	"\r",
-																	"  \r",
-																	"   \r",
-																	" \r",
-																	""
-																],
-																"type": "text/javascript"
-															}
-														}
-													],
-													"request": {
-														"method": "GET",
-														"header": [
-															{
-																"key": "Content-Type",
-																"value": "application/json",
-																"type": "default"
-															},
-															{
-																"key": "NGSILD-EntityMap",
-																"value": "{{entityMapHeader}}",
-																"type": "default"
-															}
-														],
-														"url": {
-															"raw": "{{nextLink}}",
-															"host": [
-																"{{nextLink}}"
-															]
-														}
-													},
-													"response": []
-												},
-												{
-													"name": "Delete entities",
-													"event": [
-														{
-															"listen": "test",
-															"script": {
-																"exec": [
-																	"pm.test(\"Status code is 204\", function () {\r",
-																	"    pm.response.to.have.status(204);\r",
-																	"});"
-																],
-																"type": "text/javascript"
-															}
-														}
-													],
-													"request": {
-														"method": "POST",
-														"header": [],
-														"body": {
-															"mode": "raw",
-															"raw": "[\r\n\t\"test:0\",\r\n\t\"test:1\",\r\n\t\"test:2\",\r\n\t\"test:3\",\r\n\t\"test:4\",\r\n\t\"test:5\",\r\n\t\"test:6\",\r\n\t\"test:7\",\r\n\t\"test:8\",\r\n\t\"test:9\",\r\n\t\"test:10\",\r\n\t\"test:11\",\r\n\t\"test:12\",\r\n\t\"test:13\",\r\n\t\"test:14\",\r\n\t\"test:15\",\r\n\t\"test:16\",\r\n\t\"test:17\",\r\n\t\"test:18\",\r\n\t\"test:19\",\r\n\t\"test:20\",\r\n\t\"test:21\",\r\n\t\"test:22\",\r\n\t\"test:23\",\r\n\t\"test:24\",\r\n\t\"test:25\",\r\n\t\"test:26\",\r\n\t\"test:27\",\r\n\t\"test:28\",\r\n\t\"test:29\",\r\n\t\"test:30\",\r\n\t\"test:31\",\r\n\t\"test:32\",\r\n\t\"test:33\",\r\n\t\"test:34\",\r\n\t\"test:35\",\r\n\t\"test:36\",\r\n\t\"test:37\",\r\n\t\"test:38\",\r\n\t\"test:39\",\r\n\t\"test:40\",\r\n\t\"test:41\",\r\n\t\"test:42\",\r\n\t\"test:43\",\r\n\t\"test:44\",\r\n\t\"test:45\",\r\n\t\"test:46\",\r\n\t\"test:47\",\r\n\t\"test:48\",\r\n\t\"test:49\",\r\n\t\"test:51\",\r\n\t\"test:52\",\r\n\t\"test:53\",\r\n\t\"test:54\",\r\n\t\"test:55\",\r\n\t\"test:56\",\r\n\t\"test:57\",\r\n\t\"test:58\",\r\n\t\"test:59\",\r\n\t\"test:60\",\r\n\t\"test:61\",\r\n\t\"test:62\",\r\n\t\"test:63\",\r\n\t\"test:64\",\r\n\t\"test:65\",\r\n\t\"test:66\",\r\n\t\"test:67\",\r\n\t\"test:68\",\r\n\t\"test:69\",\r\n\t\"test:70\",\r\n\t\"test:71\",\r\n\t\"test:72\",\r\n\t\"test:73\",\r\n\t\"test:74\",\r\n\t\"test:75\",\r\n\t\"test:76\",\r\n\t\"test:77\",\r\n\t\"test:78\",\r\n\t\"test:79\",\r\n\t\"test:80\",\r\n\t\"test:81\",\r\n\t\"test:82\",\r\n\t\"test:83\",\r\n\t\"test:84\",\r\n\t\"test:85\",\r\n\t\"test:86\",\r\n\t\"test:87\",\r\n\t\"test:88\",\r\n\t\"test:89\",\r\n\t\"test:90\",\r\n\t\"test:91\",\r\n\t\"test:92\",\r\n\t\"test:93\",\r\n\t\"test:94\",\r\n\t\"test:95\",\r\n\t\"test:96\",\r\n\t\"test:97\",\r\n\t\"test:98\",\r\n\t\"test:99\",\r\n\t\"test:100\",\r\n\t\"test:101\",\r\n\t\"test:102\",\r\n\t\"test:103\",\r\n\t\"test:104\",\r\n\t\"test:105\",\r\n\t\"test:106\",\r\n\t\"test:107\",\r\n\t\"test:108\",\r\n\t\"test:109\",\r\n\t\"test:110\",\r\n\t\"test:111\",\r\n\t\"test:112\",\r\n\t\"test:113\",\r\n\t\"test:114\",\r\n\t\"test:115\",\r\n\t\"test:116\",\r\n\t\"test:117\",\r\n\t\"test:118\",\r\n\t\"test:119\",\r\n\t\"test:120\",\r\n\t\"test:121\",\r\n\t\"test:122\",\r\n\t\"test:123\",\r\n\t\"test:124\",\r\n\t\"test:125\",\r\n\t\"test:126\",\r\n\t\"test:127\",\r\n\t\"test:128\",\r\n\t\"test:129\",\r\n\t\"test:130\",\r\n\t\"test:131\",\r\n\t\"test:132\",\r\n\t\"test:133\",\r\n\t\"test:134\",\r\n\t\"test:135\",\r\n\t\"test:136\",\r\n\t\"test:137\",\r\n\t\"test:138\",\r\n\t\"test:139\",\r\n\t\"test:140\",\r\n\t\"test:141\",\r\n\t\"test:142\",\r\n\t\"test:143\",\r\n\t\"test:144\",\r\n\t\"test:145\",\r\n\t\"test:146\",\r\n\t\"test:147\",\r\n\t\"test:148\",\r\n\t\"test:149\"\r\n]",
-															"options": {
-																"raw": {
-																	"language": "json"
-																}
-															}
-														},
-														"url": {
-															"raw": "{{entity-manager}}/ngsi-ld/v1/entityOperations/delete",
-															"host": [
-																"{{entity-manager}}"
-															],
-															"path": [
-																"ngsi-ld",
-																"v1",
-																"entityOperations",
-																"delete"
 															]
 														}
 													},

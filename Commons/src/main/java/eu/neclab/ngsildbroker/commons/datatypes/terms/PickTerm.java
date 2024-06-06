@@ -2,6 +2,7 @@ package eu.neclab.ngsildbroker.commons.datatypes.terms;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -16,7 +17,7 @@ import io.vertx.mutiny.sqlclient.Tuple;
 
 public class PickTerm extends ProjectionTerm {
 
-	Set<String> allTopLevelAttribs = null;
+	String[] allTopLevelAttribs = null;
 
 	@Override
 	protected ProjectionTerm getInstance() {
@@ -33,7 +34,7 @@ public class PickTerm extends ProjectionTerm {
 		query.append(".KEY = ANY($");
 		query.append(dollar);
 		dollar++;
-		tuple.addArrayOfString(allTopLevelAttribs.toArray(new String[0]));
+		tuple.addArrayOfString(getAllTopLevelAttribs());
 		query.append(") THEN NULL ELSE ");
 		if (dataSetIdTerm == null) {
 			query.append(tableToUse);
@@ -47,7 +48,7 @@ public class PickTerm extends ProjectionTerm {
 			tuple.addArrayOfString(NGSIConstants.ENTITY_BASE_PROPS.toArray(new String[0]));
 			query.append(dollar);
 			dollar++;
-			tuple.addArrayOfString(allTopLevelAttribs.toArray(new String[0]));
+			tuple.addArrayOfString(getAllTopLevelAttribs());
 			query.append(") THEN ");
 			query.append(tableToUse);
 			query.append(".VALUE ");
@@ -89,18 +90,19 @@ public class PickTerm extends ProjectionTerm {
 		query.append("ENTITY ?| $");
 		query.append(dollar);
 		dollar++;
-		tuple.addArrayOfString(getAllTopLevelAttribs().toArray(new String[0]));
+		tuple.addArrayOfString(getAllTopLevelAttribs());
 		return dollar;
 	}
 
-	private Set<String> getAllTopLevelAttribs() {
+	private String[] getAllTopLevelAttribs() {
 		if (allTopLevelAttribs == null) {
-			allTopLevelAttribs = Sets.newHashSet();
+			HashSet<Object> tmp = Sets.newHashSet();
 			ProjectionTerm current = this;
 			while (current != null) {
-				allTopLevelAttribs.add(current.attrib);
+				tmp.add(current.attrib);
 				current = current.next;
 			}
+			allTopLevelAttribs = tmp.toArray(new String[0]);
 		}
 		return allTopLevelAttribs;
 

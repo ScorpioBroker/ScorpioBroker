@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 import eu.neclab.ngsildbroker.commons.datatypes.terms.DataSetIdTerm;
 import jakarta.inject.Inject;
@@ -177,8 +178,8 @@ public class QueryController {
 			@QueryParam("options") String options, @QueryParam("limit") Integer limit, @QueryParam("offset") int offset,
 			@QueryParam("count") boolean count, @QueryParam("containedBy") @DefaultValue("") String containedBy,
 			@QueryParam("join") String join, @QueryParam("joinLevel") @DefaultValue("0") int joinLevel,
-			@QueryParam("doNotCompact") boolean doNotCompact, @HeaderParam("entityMap") String entityMapToken,
-			@QueryParam("NGSILD-EntityMap") boolean entityMapRetrieve, @QueryParam("maxDistance") String maxDistance,
+			@QueryParam("doNotCompact") boolean doNotCompact, @HeaderParam("NGSILD-EntityMap") String entityMapToken,
+			@QueryParam("entityMap") boolean entityMapRetrieve, @QueryParam("maxDistance") String maxDistance,
 			@QueryParam("minDistance") String minDistance, @Context UriInfo uriInfo, @QueryParam("pick") String pick,
 			@QueryParam("omit") String omit, @QueryParam("format") String format,
 			@QueryParam("jsonKeys") String jsonKeysQP, @QueryParam("datasetId") String datasetId,
@@ -293,30 +294,17 @@ public class QueryController {
 			}
 			String token;
 			boolean tokenProvided;
-			String md5 = String.valueOf(Objects.hashCode(typeQuery, attrs, q, csf, geometry, georel, coordinates,
-					geoproperty, geometryProperty, lang, scopeQ, localOnly, finalOptions));
-			String headerToken = request.headers().get(NGSIConstants.ENTITY_MAP_TOKEN_HEADER);
-			if (headerToken != null && entityMapToken != null) {
-				if (!headerToken.equals(entityMapToken)) {
-					return Uni.createFrom().item(
-							HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.InvalidRequest)));
-				}
-			}
-			String tokenToTest = null;
+
 			if (entityMapToken != null) {
-				tokenToTest = entityMapToken;
-			} else if (headerToken != null) {
-				tokenToTest = headerToken;
-			}
-			if (tokenToTest != null) {
-				if (!tokenToTest.substring(6).equals(md5)) {
-					return Uni.createFrom().item(
-							HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.InvalidRequest)));
+				try {
+					HttpUtils.validateUri(entityMapToken);
+				} catch (ResponseException e) {
+					return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 				}
-				token = tokenToTest;
+				token = entityMapToken;
 				tokenProvided = true;
 			} else {
-				token = RandomStringUtils.randomAlphabetic(6) + md5;
+				token = "urn:ngsi-ld:entitymap:" + UUID.randomUUID().toString();
 				tokenProvided = false;
 			}
 

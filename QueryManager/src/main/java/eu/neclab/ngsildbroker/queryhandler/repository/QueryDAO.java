@@ -1206,7 +1206,7 @@ public class QueryDAO {
 			query.append(dollar);
 			tuple.addInteger(offset);
 			dollar++;
-			query.append("), c as (SELECT ENTITY.ID, ");
+			query.append("), D0 as (SELECT ENTITY.ID, ");
 			if (attrsQuery != null) {
 				dollar = attrsQuery.toSqlConstructEntity(query, tuple, dollar, dataSetIdTerm);
 			} else if (pickTerm != null) {
@@ -1219,72 +1219,20 @@ public class QueryDAO {
 				query.append("ENTITY.ENTITY");
 			}
 			query.append(
-					" as ENTITY, NULL as PARENT, ENTITY.E_TYPES AS E_TYPES FROM b left join ENTITY on b.ID = ENTITY.ID");
+					" as ENTITY, TRUE as PARENT, ENTITY.E_TYPES AS E_TYPES FROM b left join ENTITY on b.ID = ENTITY.ID");
 			if (attrsQuery == null && (dataSetIdTerm != null || omitTerm != null || pickTerm != null)) {
 				query.append(", JSONB_EACH(ENTITY.ENTITY) AS entityAttrs GROUP BY ENTITY.ID");
 			}
 			query.append(")  ");
-			String currentEntitySet = "c";
-			if (doJoin) {
-				int counter;
-				query.append(", D0 as (SELECT * FROM ");
-				query.append(currentEntitySet);
-				query.append("), ");
-				for (counter = 0; counter < joinLevel; counter++) {
-					query.append('B');
-					query.append(counter + 1);
-					query.append(" AS (SELECT ");
-					query.append('D');
-					query.append(counter);
-					query.append(".ID AS ID, X.VALUE AS VALUE FROM D");
-					query.append(counter);
-					query.append(", JSONB_EACH(D");
-					query.append(counter);
-					query.append(".ENTITY) AS X WHERE JSONB_TYPEOF(X.VALUE) = 'array'), ");
-					query.append('C');
-					query.append(counter + 1);
-					query.append(" AS (SELECT distinct Z ->> '@id' as link FROM B");
-					query.append(counter + 1);
-					query.append(", JSONB_ARRAY_ELEMENTS(B");
-					query.append(counter + 1);
-					query.append(
-							".VALUE) AS Y, JSONB_ARRAY_ELEMENTS(Y #> '{https://uri.etsi.org/ngsi-ld/hasObject}') AS Z WHERE Y #>> '{@type,0}' = 'https://uri.etsi.org/ngsi-ld/Relationship') AND Y ? 'https://uri.etsi.org/ngsi-ld/hasObjectType', ");
-					query.append('D');
-					query.append(counter + 1);
-					query.append(" as (SELECT E.ID as id, E.ENTITY as entity, C");
-					query.append(counter + 1);
-					query.append(".link as parent, E.E_TYPES as E_TYPES");
 
-					query.append(" from C");
-					query.append(counter + 1);
-					query.append(" join ENTITY as E on C");
-					query.append(counter + 1);
-					query.append(".link = E.ID), ");
-				}
-				query.setLength(query.length() - 2);
-				query.append(" SELECT * FROM (");
-				for (int i = 0; i <= joinLevel; i++) {
-					query.append("SELECT * FROM D");
-					query.append(i);
-					query.append(" UNION ALL ");
-				}
-				query.setLength(query.length() - " UNION ALL ".length());
-				query.append(") as xyz group by id, entity, parent");
-				currentEntitySet = "xyz";
+			if (doJoin) {
+				generateJoinQuery(query, joinLevel);
 			}
 
-			query.append(" SELECT a.ID, ");
-			query.append(currentEntitySet);
-			query.append(".ENTITY, ");
-			query.append(currentEntitySet);
-			query.append(".parent, ");
-			query.append(currentEntitySet);
-			query.append(".E_TYPES");
-			query.append(" FROM a left outer join ");
-			query.append(currentEntitySet);
-			query.append(" on a.ID = ");
-			query.append(currentEntitySet);
-			query.append(".ID");
+			query.append(" SELECT a.ID, D0.ENTITY, D0.parent, D0.E_TYPES FROM a left outer join D0 on a.ID = D0.ID");
+			if (doJoin) {
+				query.append(" UNION ALL (SELECT * FROM JOINENTITIES)");
+			}
 
 			String queryString = query.toString();
 			logger.debug("SQL REQUEST: " + queryString);
@@ -1296,9 +1244,9 @@ public class QueryDAO {
 				rows.forEach(row -> {
 					String id = row.getString(0);
 					JsonObject entityObj = row.getJsonObject(1);
-					String parent = row.getString(2);
+					Boolean parent = row.getBoolean(2);
 					String[] types = row.getArrayOfStrings(3);
-					if (parent == null) {
+					if (parent == null || parent || entityObj == null) {
 						resultEntityMap.getEntry(id).addRemoteHost(AppConstants.DB_REMOTE_HOST);
 					}
 
@@ -1327,6 +1275,88 @@ public class QueryDAO {
 			}
 			return Uni.createFrom().failure(e);
 		});
+	}
+
+	private void generateJoinQuery(StringBuilder query, int joinLevel) {
+		query.append(", ");
+		int counter;
+		for (counter = 0; counter < joinLevel; counter++) {
+			query.append('B');
+			query.append(counter + 1);
+			query.append(" AS (SELECT ");
+			query.append('D');
+			query.append(counter);
+			query.append(".ID AS ID, X.VALUE AS VALUE FROM D");
+			query.append(counter);
+			query.append(", JSONB_EACH(D");
+			query.append(counter);
+			query.append(".ENTITY) AS X WHERE JSONB_TYPEOF(X.VALUE) = 'array'), ");
+			query.append('C');
+			query.append(counter + 1);
+			query.append(" AS (SELECT DISTINCT (CASE WHEN Y #>> '{");
+			query.append(NGSIConstants.JSON_LD_TYPE);
+			query.append(",0}' = '");
+			query.append(NGSIConstants.NGSI_LD_RELATIONSHIP);
+			query.append("' THEN Z ->> '");
+			query.append(NGSIConstants.JSON_LD_ID);
+			query.append("' WHEN Y #>> '{");
+			query.append(NGSIConstants.JSON_LD_TYPE);
+			query.append(",0}' = '");
+			query.append(NGSIConstants.NGSI_LD_LISTRELATIONSHIP);
+			query.append("' THEN Z #>> '{");
+			query.append(NGSIConstants.NGSI_LD_HAS_OBJECT);
+			query.append(",0,");
+			query.append(NGSIConstants.JSON_LD_ID);
+			query.append("}' ELSE NULL END) AS LINK, ARRAY_AGG(E_TYPES ->> '");
+			query.append(NGSIConstants.JSON_LD_ID);
+			query.append(
+					"') AS ET FROM B1, JSONB_ARRAY_ELEMENTS(B1.VALUE) AS Y, JSONB_ARRAY_ELEMENTS(CASE WHEN Y #>> '{");
+			query.append(NGSIConstants.JSON_LD_TYPE);
+			query.append(",0}' = '");
+			query.append(NGSIConstants.NGSI_LD_RELATIONSHIP);
+			query.append("' THEN Y #> '{");
+			query.append(NGSIConstants.NGSI_LD_HAS_OBJECT);
+			query.append("}' WHEN Y #>> '{");
+			query.append(NGSIConstants.JSON_LD_TYPE);
+			query.append(",0}' = '");
+			query.append(NGSIConstants.NGSI_LD_LISTRELATIONSHIP);
+			query.append("' THEN Y #> '{");
+			query.append(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST);
+			query.append(",0,");
+			query.append(NGSIConstants.JSON_LD_LIST);
+			query.append("}' ELSE null END) AS Z, JSONB_ARRAY_ELEMENTS(Y -> '");
+			query.append(NGSIConstants.NGSI_LD_OBJECT_TYPE);
+			query.append("') AS E_TYPES WHERE Y #>> '{");
+			query.append(NGSIConstants.JSON_LD_TYPE);
+			query.append(",0}' = ANY('{");
+			query.append(NGSIConstants.NGSI_LD_RELATIONSHIP);
+			query.append(",");
+			query.append(NGSIConstants.NGSI_LD_LISTRELATIONSHIP);
+			query.append("}') AND Y ? '");
+			query.append(NGSIConstants.NGSI_LD_OBJECT_TYPE);
+			query.append("' GROUP BY y.value, z.value), ");
+
+			query.append('D');
+			query.append(counter + 1);
+			query.append(" as (SELECT E.ID as id, E.ENTITY as entity, FALSE as parent, E.E_TYPES as E_TYPES");
+			query.append(" from C");
+			query.append(counter + 1);
+			query.append(" LEFT JOIN ENTITY as E on C");
+			query.append(counter + 1);
+			query.append(".link = E.ID WHERE C");
+			query.append(counter + 1);
+			query.append(".ET && E.E_TYPES), ");
+		}
+
+		query.append(" JOINENTITIES AS (");
+		for (int i = 1; i <= joinLevel; i++) {
+			query.append("SELECT * FROM D");
+			query.append(i);
+			query.append(" UNION ALL ");
+		}
+		query.setLength(query.length() - " UNION ALL ".length());
+		query.append(")");
+
 	}
 
 	public Uni<Tuple2<EntityCache, EntityMap>> queryForEntityIdsAndEntitiesRegNotEmpty(String tenant, String[] ids,
@@ -1494,10 +1524,12 @@ public class QueryDAO {
 			Tuple tuple = Tuple.tuple();
 			boolean doJoin = (join != null && joinLevel > 0);
 			StringBuilder query = new StringBuilder(
-					"WITH A AS (UPDATE ENTITYMAP_MANAGEMENT SET LAST_ACCESS = NOW() WHERE Q_TOKEN = $1), B AS (SELECT ENTITY_ID, REMOTE_HOSTS, FULLENTITIES_DIST, REGEMPTY, NOREGENTRY FROM ENTITYMAP WHERE Q_TOKEN = $1 ORDER BY ORDER_FIELD), c as (SELECT ENTITY.ID, ");
+					"WITH A AS (UPDATE ENTITYMAP_MANAGEMENT SET LAST_ACCESS = NOW() WHERE Q_TOKEN = $1), B AS (SELECT ENTITY_ID FROM ENTITYMAP WHERE Q_TOKEN = $1 ORDER BY ORDER_FIELD), C AS (SELECT * FROM B OFFSET $2 LIMIT $3), D0 as (SELECT ENTITY.ID, ");
 
 			tuple.addString(qToken);
-			int dollar = 2;
+			tuple.addInteger(offset);
+			tuple.addInteger(limit);
+			int dollar = 4;
 
 			if (attrsQuery != null) {
 				dollar = attrsQuery.toSqlConstructEntity(query, tuple, dollar, dataSetIdTerm);
@@ -1511,90 +1543,33 @@ public class QueryDAO {
 				query.append("ENTITY.ENTITY");
 			}
 			query.append(
-					" as ENTITY, NULL as PARENT, ENTITY.E_TYPES AS E_TYPES FROM b left join ENTITY on b.ENTITY_ID = ENTITY.ID");
+					" as ENTITY, TRUE as PARENT, ENTITY.E_TYPES AS E_TYPES FROM C left join ENTITY on C.ENTITY_ID = ENTITY.ID");
 			if (attrsQuery == null && (dataSetIdTerm != null || omitTerm != null || pickTerm != null)) {
 				query.append(", JSONB_EACH(ENTITY.ENTITY) AS entityAttrs GROUP BY ENTITY.ID");
 			}
 			query.append(")  ");
-			String currentEntitySet = "c";
-			if (doJoin) {
-				int counter;
-				query.append(", D0 as (SELECT * FROM ");
-				query.append(currentEntitySet);
-				query.append(")");
-				for (counter = 0; counter < joinLevel; counter++) {
-					query.append('B');
-					query.append(counter + 1);
-					query.append(" AS (SELECT ");
-					query.append('D');
-					query.append(counter);
-					query.append(".ID AS ID, X.VALUE AS VALUE FROM D");
-					query.append(counter);
-					query.append(", JSONB_EACH(D");
-					query.append(counter);
-					query.append(".ENTITY) AS X WHERE JSONB_TYPEOF(X.VALUE) = 'array'), ");
-					query.append('C');
-					query.append(counter + 1);
-					query.append(" AS (SELECT distinct Z ->> '@id' as link FROM B");
-					query.append(counter + 1);
-					query.append(", JSONB_ARRAY_ELEMENTS(B");
-					query.append(counter + 1);
-					query.append(
-							".VALUE) AS Y, JSONB_ARRAY_ELEMENTS(Y #> '{https://uri.etsi.org/ngsi-ld/hasObject}') AS Z WHERE Y #>> '{@type,0}' = 'https://uri.etsi.org/ngsi-ld/Relationship' AND Y ? 'https://uri.etsi.org/ngsi-ld/hasObjectType'), ");
-					query.append('D');
-					query.append(counter + 1);
-					query.append(" as (SELECT E.ID as id, E.ENTITY as entity, C");
-					query.append(counter + 1);
-					query.append(".link as parent, E.E_TYPES as E_TYPES");
 
-					query.append(" from C");
-					query.append(counter + 1);
-					query.append(" join ENTITY as E on C");
-					query.append(counter + 1);
-					query.append(".link = E.ID), ");
-				}
-				query.setLength(query.length() - 2);
-				query.append(" SELECT * FROM (");
-				for (int i = 0; i <= joinLevel; i++) {
-					query.append("SELECT * FROM D");
-					query.append(i);
-					query.append(" UNION ALL ");
-				}
-				query.setLength(query.length() - " UNION ALL ".length());
-				query.append(") as xyz group by id, entity, parent");
-				currentEntitySet = "xyz";
+			if (doJoin) {
+				generateJoinQuery(query, joinLevel);
 			}
 
-			query.append(" SELECT b.ENTITY_ID, ");
-			query.append(currentEntitySet);
-			query.append(".ENTITY, ");
-			query.append(currentEntitySet);
-			query.append(".parent, ");
-			query.append(currentEntitySet);
-			query.append(".E_TYPES");
-			query.append(" FROM b left outer join ");
-			query.append(currentEntitySet);
-			query.append(" on b.ENTITY_ID = ");
-			query.append(currentEntitySet);
-			query.append(".ID");
-
+			query.append(" SELECT B.ENTITY_ID AS ID, D0.ENTITY, D0.parent, D0.E_TYPES FROM B left outer join D0 on B.ENTITY_ID = D0.ID");
+			if (doJoin) {
+				query.append(" UNION ALL (SELECT * FROM JOINENTITIES)");
+			}
 			String queryString = query.toString();
 			logger.debug("SQL REQUEST: " + queryString);
 			logger.debug("SQL TUPLE: " + tuple.deepToString());
 			return client.preparedQuery(queryString).execute(tuple).onItem().transformToUni(rows -> {
-				if (rows.rowCount() == 0) {
-					return Uni.createFrom().failure(new ResponseException(ErrorType.InvalidRequest,
-							"Token is invalid. Please rerequest without a token to retrieve a new token"));
-				}
 				EntityCache resultEntities = new EntityCache();
 				EntityMap resultEntityMap = new EntityMap(qToken, true, true, true);
 
 				rows.forEach(row -> {
 					String id = row.getString(0);
 					JsonObject entityObj = row.getJsonObject(1);
-					String parent = row.getString(2);
+					Boolean parent = row.getBoolean(2);
 					String[] types = row.getArrayOfStrings(3);
-					if (parent == null) {
+					if (parent == null || parent || entityObj == null) {
 						resultEntityMap.getEntry(id).addRemoteHost(AppConstants.DB_REMOTE_HOST);
 					}
 

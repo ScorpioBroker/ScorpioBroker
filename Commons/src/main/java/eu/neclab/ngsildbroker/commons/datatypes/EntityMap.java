@@ -132,13 +132,14 @@ public class EntityMap {
 		this.linkedMaps = linkedMaps;
 	}
 
-	public void removeEntries(Set<String> entityIds) {
+	public boolean removeEntries(Set<String> entityIds) {
 		List<Integer> toDelete = new ArrayList<>(entityIds.size());
 		entityIds.forEach(entityId -> {
 			Integer listPos = id2ListPosition.get(entityId);
 			toDelete.add(listPos);
 		});
 		Collections.sort(toDelete);
+		boolean lastWasDeleted = (toDelete.get(toDelete.size() - 1) == entityList.size() - 1); 
 		for (int i = 0; i < toDelete.size(); i++) {
 			int index = toDelete.get(i) - i;
 			EntityMapEntry removed = entityList.remove(index);
@@ -156,6 +157,7 @@ public class EntityMap {
 			EntityMapEntry entityMapEntry = entityList.get(i);
 			id2ListPosition.put(entityMapEntry.getEntityId(), i);
 		}
+		return lastWasDeleted;
 	}
 
 	public boolean isChanged() {

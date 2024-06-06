@@ -136,6 +136,17 @@ public class QueryService implements QueryServiceInterface {
 			return getEntityMapAndEntitiesAndUpdateExpires(tenant, ids, typeQuery, idPattern, attrsQuery, qQuery,
 					geoQuery, scopeQuery, context, limit, offSet, dataSetIdTerm, join, joinLevel, qToken, pickTerm,
 					omitTerm).onItem().transformToUni(t -> {
+						if(t.getItem2().isEmpty()) {
+							return getAndStoreEntityIdList(tenant, ids, idPattern, qToken, typeQuery, attrsQuery, geoQuery, qQuery,
+									scopeQuery, langQuery, limit, offSet, context, headersFromReq, doNotCompact, dataSetIdTerm, join,
+									joinLevel, entityDist, pickTerm, omitTerm).onItem().transformToUni(t2 -> {
+										return handleEntityMap(t2.getItem2(), t2.getItem1(), tenant, ids, typeQuery, idPattern,
+												attrsQuery, qQuery, geoQuery, scopeQuery, langQuery, limit, offSet, count,
+												dataSetIdTerm, join, joinLevel, context, entityDist, jsonKeys, headersFromReq, pickTerm,
+												omitTerm);
+
+									});
+						}
 						return handleEntityMap(t.getItem2(), t.getItem1(), tenant, ids, typeQuery, idPattern,
 								attrsQuery, qQuery, geoQuery, scopeQuery, langQuery, limit, offSet, count,
 								dataSetIdTerm, join, joinLevel, context, entityDist, jsonKeys, headersFromReq, pickTerm,
@@ -203,10 +214,9 @@ public class QueryService implements QueryServiceInterface {
 						resultData.add(entityEntry.getValue().getItem1());
 					}
 				} else if (join.equals(NGSIConstants.INLINE)) {
-					resultData.forEach(entity -> {
+					for (Map<String, Object> entity : resultData) {
 						inlineEntity(entity, entityCache, 1, joinLevel, false);
-					});
-
+					}
 				}
 			}
 			// run pick and omit again in case of linked projection ... this should be also
@@ -585,9 +595,31 @@ public class QueryService implements QueryServiceInterface {
 			LanguageQueryTerm langQuery, int limit, int offSet, boolean count, DataSetIdTerm dataSetIdTerm, String join,
 			int joinLevel, Context context, boolean onlyFullEntities, Set<String> jsonKeys,
 			io.vertx.core.MultiMap headersFromReq, PickTerm pickTerm, OmitTerm omitTerm) {
-		entityMap.removeEntries(deleted.keySet());
+		if (entityMap.removeEntries(deleted.keySet())) {
+			QueryResult result = new QueryResult();
+			List<Map<String, Object>> resultData = Lists.newArrayList();
+			result.setData(resultData);
+			result.setCount(entityMap.size());
+			result.setqToken(entityMap.getId());
+			result.setLimit(limit);
+			result.setOffset(offSet);
+
+			long leftAfter = entityMap.size() - (offSet + limit);
+			if (leftAfter < 0) {
+				leftAfter = 0;
+			}
+			result.setResultsLeftAfter(leftAfter);
+			result.setResultsLeftBefore((long) offSet);
+			List<EntityMapEntry> subMap = entityMap.getSubMap(offSet, limit);
+			for (EntityMapEntry mapEntry : subMap) {
+				resultData.add(entityCache.getAllIds2EntityAndHosts().get(mapEntry.getEntityId()).getItem1());
+			}
+			return doJoinIfNeeded(tenant, result, entityCache, context, join, joinLevel, onlyFullEntities);
+
+		}
 		List<EntityMapEntry> subMap = entityMap.getSubMap(offSet, limit + (deleted.size() * 3));
 		entityMap.setChanged(true);
+
 		return fillCacheFromEntityMap(subMap, entityCache, context, headersFromReq, true, tenant).onItem()
 				.transformToUni(updatedCache -> {
 					return handleEntityMap(entityMap, entityCache, tenant, id, typeQuery, idPattern, attrsQuery, qQuery,
@@ -759,8 +791,8 @@ public class QueryService implements QueryServiceInterface {
 								}
 							}
 						}
-					} else if (attribMap.containsKey(NGSIConstants.OBJECT_TYPE)) {
-						List<Object> linkedTypes = (List<Object>) attribMap.get(NGSIConstants.OBJECT_TYPE);
+					} else if (attribMap.containsKey(NGSIConstants.NGSI_LD_OBJECT_TYPE)) {
+						List<Object> linkedTypes = (List<Object>) attribMap.get(NGSIConstants.NGSI_LD_OBJECT_TYPE);
 						for (Object linkedTypeObj : linkedTypes) {
 							if (linkedTypeObj instanceof Map linkedTypeMap
 									&& linkedTypeMap.containsKey(NGSIConstants.JSON_LD_ID)) {
@@ -830,8 +862,8 @@ public class QueryService implements QueryServiceInterface {
 							}
 
 						}
-					} else if (attribMap.containsKey(NGSIConstants.OBJECT_TYPE)) {
-						List<Object> linkedTypes = (List<Object>) attribMap.get(NGSIConstants.OBJECT_TYPE);
+					} else if (attribMap.containsKey(NGSIConstants.NGSI_LD_OBJECT_TYPE)) {
+						List<Object> linkedTypes = (List<Object>) attribMap.get(NGSIConstants.NGSI_LD_OBJECT_TYPE);
 						for (Object linkedTypeObj : linkedTypes) {
 							if (linkedTypeObj instanceof Map linkedTypeMap
 									&& linkedTypeMap.containsKey(NGSIConstants.JSON_LD_ID)) {
