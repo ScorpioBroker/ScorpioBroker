@@ -7,6 +7,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 
+import com.github.jsonldjava.core.Context;
 import com.google.common.collect.Lists;
 
 import io.vertx.core.json.JsonObject;
@@ -24,6 +25,7 @@ public class QueryRemoteHost {
 	boolean canDoEntityMap;
 	boolean canDoZip;
 	String remoteToken;
+	Context context;
 	
 
 	public QueryRemoteHost(String host, String tenant, MultiMap headers, String cSourceId, boolean canDoSingleOp,
@@ -40,6 +42,7 @@ public class QueryRemoteHost {
 		this.canDoEntityMap = canDoEntityMap;
 		this.canDoZip = canDoZip;
 		this.remoteToken = remoteToken;
+		this.context = context;
 	}
 
 	public JsonObject toJson() {
@@ -281,6 +284,26 @@ public class QueryRemoteHost {
 
 	public void setRemoteToken(String remoteToken) {
 		this.remoteToken = remoteToken;
+	}
+
+	public String getFollowUpUrl(String toUseIds) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public String getIdString() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public int getBaseLength() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	public Context getContext() {
+		// TODO Auto-generated method stub
+		return context;
 	}
 	
 	

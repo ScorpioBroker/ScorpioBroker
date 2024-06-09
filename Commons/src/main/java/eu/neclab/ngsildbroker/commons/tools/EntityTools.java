@@ -19,6 +19,10 @@ import com.google.common.collect.Table;
 import java.util.Set;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.BaseProperty;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityCache;
@@ -49,10 +53,11 @@ import io.vertx.mutiny.ext.web.client.WebClient;
 public abstract class EntityTools {
 
 	private static final String BROKER_PREFIX = "ngsildbroker:";
-	public static final String REG_MODE_KEY = "!@#$%";
+	
 	public static final Set<String> DO_NOT_MERGE_KEYS = Sets.newHashSet(NGSIConstants.JSON_LD_ID,
 			NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_CREATED_AT, NGSIConstants.NGSI_LD_OBSERVED_AT,
 			NGSIConstants.NGSI_LD_MODIFIED_AT);
+	private static final Logger logger = LoggerFactory.getLogger(EntityTools.class);
 
 	public static String getRandomID(String prefix) {
 		if (prefix == null) {
@@ -244,7 +249,7 @@ public abstract class EntityTools {
 			}
 			List<Map<String, Object>> list = (List<Map<String, Object>>) attrib.getValue();
 			for (Map<String, Object> entry : list) {
-				entry.remove(REG_MODE_KEY);
+				entry.remove(AppConstants.REG_MODE_KEY);
 			}
 		}
 
@@ -278,16 +283,16 @@ public abstract class EntityTools {
 				// do nothing intentionally
 			}
 			regMode = -1;
-			if (entry.containsKey(REG_MODE_KEY)) {
-				regMode = (int) entry.get(REG_MODE_KEY);
+			if (entry.containsKey(AppConstants.REG_MODE_KEY)) {
+				regMode = (int) entry.get(AppConstants.REG_MODE_KEY);
 			}
 			removeIndex = -1;
 			found = false;
 			for (int i = 0; i < currentValue.size(); i++) {
 				Map<String, Object> currentEntry = currentValue.get(i);
 				currentRegMode = -1;
-				if (currentEntry.containsKey(REG_MODE_KEY)) {
-					currentRegMode = (int) currentEntry.get(REG_MODE_KEY);
+				if (currentEntry.containsKey(AppConstants.REG_MODE_KEY)) {
+					currentRegMode = (int) currentEntry.get(AppConstants.REG_MODE_KEY);
 				}
 				String currentDatasetId;
 				if (currentEntry.containsKey(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
@@ -356,7 +361,7 @@ public abstract class EntityTools {
 
 	public static void addRegModeToValue(List<Map<String, Object>> newValue, int regMode) {
 		for (Map<String, Object> entry : newValue) {
-			entry.put(REG_MODE_KEY, regMode);
+			entry.put(AppConstants.REG_MODE_KEY, regMode);
 		}
 	}
 
@@ -575,20 +580,92 @@ public abstract class EntityTools {
 		}
 	}
 
+	private static Uni<List<Map<String, Object>>> handle414(WebClient webClient, QueryRemoteHost remoteHost) {
+		int maxLengthForIds = 2000 - remoteHost.getBaseLength();
+		String idsString = remoteHost.getIdString();
+		if (maxLengthForIds <= idsString.indexOf(",")) {
+			logger.warn("failed to split up query");
+			return Uni.createFrom().item(new ArrayList<>(0));
+		}
+		int index;
+		List<Uni<List<Map<String, Object>>>> backUpUnis = Lists.newArrayList();
+
+		while (!idsString.isEmpty()) {
+			String toUseIds;
+			if (idsString.length() <= maxLengthForIds) {
+				toUseIds = idsString;
+				index = idsString.length() - 2;
+			} else {
+				index = idsString.lastIndexOf(",", maxLengthForIds);
+				toUseIds = idsString.substring(0, index);
+			}
+
+			String url = remoteHost.getFollowUpUrl(toUseIds);
+			backUpUnis.add(webClient.getAbs(url).putHeaders(remoteHost.headers()).send()
+					.onItem().transformToUni(response -> {
+						if (response != null && response.statusCode() == 200) {
+							return Uni.createFrom()
+									.item((List<Map<String, Object>>) response.bodyAsJsonArray().getList());
+						}
+						logger.warn("failed to query remote host: " + url);
+						if (response != null) {
+							logger.debug("response code: " + response.statusCode());
+							logger.debug("response : " + response.bodyAsString());
+						} else {
+							logger.debug("null response");
+						}
+
+						return Uni.createFrom().item(new ArrayList<Map<String, Object>>(0));
+					}).onFailure().recoverWithUni(e -> {
+						logger.warn("failed to query with error " + e.getMessage());
+						return Uni.createFrom().item(new ArrayList<Map<String, Object>>(0));
+					}));
+
+			idsString = idsString.substring(index + 1);
+		}
+		return Uni.combine().all().unis(backUpUnis).combinedWith(l1 -> {
+			List<Map<String, Object>> result = Lists.newArrayList();
+			for (Object obj1 : l1) {
+				List<Map<String, Object>> m1 = (List<Map<String, Object>>) obj1;
+				result.addAll(m1);
+			}
+			return result;
+		});
+
+	}
+
 	public static Uni<List<Map<String, Object>>> getRemoteEntities(QueryRemoteHost remoteHost, WebClient webClient) {
 		return webClient.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + remoteHost.queryString())
-				.send().onItem().transformToUni(response -> {
-					List<Map<String, Object>> result = Lists.newArrayList();
-					result.addAll(response.bodyAsJsonArray().getList());
-					if (response.headers().contains("Next")) {
-						QueryRemoteHost updatedHost = remoteHost.updatedDuplicate(response.headers().get("Next"));
-						return getRemoteEntities(updatedHost, webClient).onItem().transform(nextResult -> {
-							result.addAll(nextResult);
-							return result;
-						});
+				.timeout(5000).send().onItem().transformToUni(response -> {
+					switch (response.statusCode()) {
+					case 200: {
+						List<Map<String, Object>> result = Lists.newArrayList();
+						result.addAll(response.bodyAsJsonArray().getList());
+						if (response.headers().contains("Next")) {
+							QueryRemoteHost updatedHost = remoteHost.updatedDuplicate(response.headers().get("Next"));
+							return getRemoteEntities(updatedHost, webClient).onItem().transform(nextResult -> {
+								result.addAll(nextResult);
+								return result;
+							});
+						}
+						return Uni.createFrom().item(result);
 					}
-					return Uni.createFrom().item(result);
-				}).onFailure().recoverWithItem(e -> Lists.newArrayList());
+					case 414: {
+						return handle414(webClient, remoteHost);
+					}
+					default: {
+						List<Map<String, Object>> result = Lists.newArrayList();
+						return Uni.createFrom().item(result);
+					}
+
+					}
+
+				}).onFailure().recoverWithItem(e -> Lists.newArrayList()).onItem().transform(entities -> {
+					entities.forEach(entity -> {
+						entity.put(AppConstants.REG_MODE_KEY, remoteHost.regMode());
+					});
+					return entities;
+				});
 
 	}
 

@@ -17,7 +17,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.QueryRemoteHost;
  */
 
 public class AppConstants {
-
+	public static final String REG_MODE_KEY = "!@#$%";
 	// entities URL for
 	public final static String ENTITES_URL = "/ngsi-ld/v1/entities/";
 	public final static int ENTITIES_URL_ID = 0;

@@ -252,7 +252,7 @@ public class HistoryQueryService {
 								return ldService.expand(HttpUtils.getContextFromHeader(remoteHost.headers()),
 										responseEntity, HttpUtils.opts, -1, false).onItem().transform(expanded -> {
 											Map<String, Object> result = (Map<String, Object>) expanded.get(0);
-											result.put(EntityTools.REG_MODE_KEY, remoteHost.regMode());
+											result.put(AppConstants.REG_MODE_KEY, remoteHost.regMode());
 											return result;
 										});
 							}
@@ -265,7 +265,7 @@ public class HistoryQueryService {
 						continue;
 					}
 					Map<String, Object> entityMap = (Map<String, Object>) entry;
-					int regMode = (int) entityMap.remove(EntityTools.REG_MODE_KEY);
+					int regMode = (int) entityMap.remove(AppConstants.REG_MODE_KEY);
 					for (Entry<String, Object> attrib : entityMap.entrySet()) {
 						String key = attrib.getKey();
 						if (EntityTools.DO_NOT_MERGE_KEYS.contains(key)) {

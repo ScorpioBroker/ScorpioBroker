@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.queryhandler.repository;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -18,7 +19,9 @@ import org.locationtech.spatial4j.io.GeoJSONReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.core.JsonGenerationException;
 import com.github.jsonldjava.core.Context;
+import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -940,32 +943,41 @@ public class QueryDAO {
 		StringBuilder query = new StringBuilder("SELECT id, entity FROM entity WHERE (");
 		int dollarCount = 1;
 		for (Entry<Set<String>, Set<String>> entry : types2EntityIds.entrySet()) {
-			Set<String> types = entry.getValue();
-			Set<String> entityIds = entry.getKey();
+			Set<String> types = entry.getKey();
+			Set<String> entityIds = entry.getValue();
 			query.append("(id = ANY(");
-			for (String id : entityIds) {
-				query.append('$');
-				query.append(dollarCount);
-				query.append(',');
-				dollarCount++;
-				tuple.addString(id);
-			}
-			query.setCharAt(query.length() - 1, ')');
+			query.append('$');
+			query.append(dollarCount);
+			dollarCount++;
+			tuple.addArrayOfString(entityIds.toArray(new String[0]));
+			query.append(')');
 			query.append(" AND e_types && $");
 			query.append(dollarCount);
 			dollarCount++;
 			tuple.addArrayOfString(types.toArray(new String[0]));
-			query.append("::text[]) AND ");
+			query.append(") OR ");
 
 		}
-		query.setLength(query.length() - 5);
+		query.setLength(query.length() - 4);
 		query.append(")");
 		if (qQuery != null) {
 			query.append(" AND ");
 			dollarCount = qQuery.toSql(query, dollarCount, tuple, false, true);
 		}
+		String sql = query.toString();
+		logger.debug("SQL Request: " + sql);
+		logger.debug("Tuple: " + tuple.deepToString());
+		try {
+			logger.debug(JsonUtils.toPrettyString(types2EntityIds));
+		} catch (JsonGenerationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
-			return client.preparedQuery(query.toString()).execute(tuple).onItem().transform(rows -> {
+			return client.preparedQuery(sql).execute(tuple).onItem().transform(rows -> {
 				List<Map<String, Object>> result = Lists.newArrayList();
 				rows.forEach(row -> {
 					result.add(row.getJsonObject(1).getMap());
@@ -1504,13 +1516,16 @@ public class QueryDAO {
 		});
 	}
 
-	public Uni<Tuple2<Object, QueryRemoteHost>> queryForEntities(String tenant, Set<String> idsForDBCall) {
+	public Uni<Tuple2<List<Map<String, Object>>, QueryRemoteHost>> queryForEntities(String tenant,
+			Set<String> idsForDBCall) {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
 			return client.preparedQuery("SELECT ENTITY FROM ENTITY WHERE id=ANY($1);")
 					.execute(Tuple.of(idsForDBCall.toArray(new String[0]))).onItem().transform(rows -> {
 						List<Map<String, Object>> resultEntities = new ArrayList<>(rows.size());
 						rows.forEach(row -> {
-							resultEntities.add(row.getJsonObject(0).getMap());
+							Map<String, Object> entity = row.getJsonObject(0).getMap();
+							entity.put(AppConstants.REG_MODE_KEY, 1);
+							resultEntities.add(entity);
 						});
 						return Tuple2.of(resultEntities, AppConstants.DB_REMOTE_HOST);
 					});
@@ -1553,7 +1568,8 @@ public class QueryDAO {
 				generateJoinQuery(query, joinLevel);
 			}
 
-			query.append(" SELECT B.ENTITY_ID AS ID, D0.ENTITY, D0.parent, D0.E_TYPES FROM B left outer join D0 on B.ENTITY_ID = D0.ID");
+			query.append(
+					" SELECT B.ENTITY_ID AS ID, D0.ENTITY, D0.parent, D0.E_TYPES FROM B left outer join D0 on B.ENTITY_ID = D0.ID");
 			if (doJoin) {
 				query.append(" UNION ALL (SELECT * FROM JOINENTITIES)");
 			}

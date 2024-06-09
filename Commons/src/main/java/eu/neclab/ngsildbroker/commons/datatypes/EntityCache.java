@@ -1,8 +1,10 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import com.google.common.collect.Maps;
 
@@ -164,6 +166,31 @@ public class EntityCache {
 		}
 		allIds2EntityAndHosts.put(id, Tuple2.of(entity, remoteHostMap));
 		id2EntityAndRemoteHostInfo.put(id, Tuple2.of(entity, remoteHostMap));
+
+	}
+
+	public void putEntity(String entityId, Collection<String> types, Map<String, Object> entity,
+			Map<String, QueryRemoteHost> name2Host) {
+
+		for (String type : types) {
+
+			Map<String, Tuple2<Map<String, Object>, Map<String, QueryRemoteHost>>> id2EntityAndHosts = type2Id2EntityAndHosts
+					.get(type);
+			if (id2EntityAndHosts == null) {
+				id2EntityAndHosts = Maps.newHashMap();
+				type2Id2EntityAndHosts.put(type, id2EntityAndHosts);
+			}
+			Tuple2<Map<String, Object>, Map<String, QueryRemoteHost>> value = id2EntityAndHosts.get(entityId);
+			if (value == null) {
+				value = Tuple2.of(entity, name2Host);
+			} else {
+				name2Host.putAll(value.getItem2());
+				value = Tuple2.of(entity, name2Host);
+			}
+			id2EntityAndHosts.put(entityId, value);
+			allIds2EntityAndHosts.put(entityId, value);
+		}
+		
 
 	}
 
