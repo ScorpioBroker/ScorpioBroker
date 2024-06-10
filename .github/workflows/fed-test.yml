@@ -1,0 +1,78 @@
+name: API Fed test against Java version
+on: [push,pull_request]
+jobs:
+#      - name: docker-login
+#        uses: docker/login-action@v2
+#        with:
+#          username: ${{ secrets.DOCKER_USER }}
+#          password: ${{ secrets.DOCKER_TOKEN }}
+#      - name: docker tag and push
+#        run: |
+#          docker tag scorpiobroker/all-in-one-runner:java-kafka-latest scorpiobroker/all-in-one-runner:java-kafka-debugging
+#          docker push scorpiobroker/all-in-one-runner:java-kafka-debugging
+#      - name: start docker dist 
+#        run: |
+#          docker-compose -f ./compose-files/docker-compose-java-dist-kafka-test.yml up &
+#          sleep 120
+#      - name: newman action
+#        uses: matt-ball/newman-action@master
+#        with:
+#          collection: api-test.json
+#          environment: api-test-dist-environment.json
+#      - name: Stopping Scorpio 
+#        run: docker-compose -f ./compose-files/docker-compose-java-dist-kafka-test.yml down
+  build-java-aaio:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2     
+      - name: Set up JDK 1.22
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin' # See 'Supported distributions' for available options
+          java-version: '17'
+      - name: Build testserver
+        run: |
+          cd testserver
+          docker build -t testserver .
+      - name: Build dump request server
+        run: |
+          cd dumpreq
+          docker build -t dumprequest .
+      - name: Get release number
+        id: get-id
+        run: |
+          id=$(echo ${{github.ref_name}} | cut -d/ -f2)
+          echo "::set-output name=id::$id"
+
+      - name: build-java
+        run: |
+          mvn clean package -DskipTests -Din-memory -Pin-memory -Ddocker -Ddocker-tag=java-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=in-memory
+
+      - name: docker tag
+        run: |
+          docker tag scorpiobroker/all-in-one-runner:java-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:java-latest
+      - name: start docker aaio
+        run: |
+          docker-compose -f ./compose-files/docker-compose-java-aaio-fed-test.yml up > dockerout.log &
+          sleep 120
+      - name: newman action
+        uses: matt-ball/newman-action@master
+        with:
+          collection: fed-test.json
+          environment: fed-test-environment.json
+      - name: Stopping Scorpio 
+        if: always()
+        run: |
+          docker-compose -f ./compose-files/docker-compose-java-aaio-fed-test.yml down
+      - name: print log
+        if: always()
+        run: |
+          cat dockerout.log
+      - name: docker-login
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+#      - name: docker tag and push
+#        run: |
+#          docker push scorpiobroker/all-in-one-runner:java-${{steps.get-id.outputs.id}}

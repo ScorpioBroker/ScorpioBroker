@@ -194,7 +194,7 @@ public class HistoryController {
 				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 			}
 			return historyQueryService.retrieveEntity(HttpUtils.getTenant(request), entityId, attrsQuery, aggrQuery,
-					tempQuery, lang, lastNTBU, localOnly, context).onItem().transformToUni(entity -> {
+					tempQuery, lang, lastNTBU, localOnly, context,request.headers()).onItem().transformToUni(entity -> {
 						return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, entity,
 								geometryProperty, finalOptionsString, null, ldService,null,null,true);
 					});

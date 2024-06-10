@@ -1,0 +1,65 @@
+version: '3'
+services:
+  testserver:
+    image: testserver
+    ports:
+      - "8080:8080"
+  dumprequest:
+    image: dumprequest
+    ports:
+      - "8090:8090"
+  postgres:
+    image: postgis/postgis
+    ports:
+      - "5432"
+    environment:
+      POSTGRES_USER: ngb
+      POSTGRES_PASSWORD: ngb
+      POSTGRES_DB: ngb
+  scorpio:
+    image: scorpiobroker/all-in-one-runner:java-latest
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      DBHOST: postgres
+    ports:
+      - "9090:9090"
+    depends_on:
+      - postgres
+
+  postgresone:
+    image: postgis/postgis
+    ports:
+      - "5432"
+    environment:
+      POSTGRES_USER: ngb
+      POSTGRES_PASSWORD: ngb
+      POSTGRES_DB: ngb
+  scorpioone:
+    image: scorpiobroker/all-in-one-runner:java-latest
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      DBHOST: postgresone
+    ports:
+      - "9080:9090"
+    depends_on:
+      - postgresone
+  postgrestwo:
+    image: postgis/postgis
+    ports:
+      - "5432"
+    environment:
+      POSTGRES_USER: ngb
+      POSTGRES_PASSWORD: ngb
+      POSTGRES_DB: ngb
+  scorpiotwo:
+    image: scorpiobroker/all-in-one-runner:java-latest
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      DBHOST: postgrestwo
+    ports:
+      - "9070:9090"
+    depends_on:
+      - postgrestwo

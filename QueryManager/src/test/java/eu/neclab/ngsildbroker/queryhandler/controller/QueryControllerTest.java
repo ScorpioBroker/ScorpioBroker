@@ -131,14 +131,14 @@ public class QueryControllerTest {
 		Map<String, Object> result = Maps.newHashMap();
 		result.put("entities", entities);
 		Mockito.when(queryService.retrieveEntity(any(), any(), any(), any(), any(), anyBoolean(), any(), any(),
-				anyBoolean(), any())).thenReturn(Uni.createFrom().item(result));
+				anyBoolean(), any(),any())).thenReturn(Uni.createFrom().item(result));
 
 		ExtractableResponse<Response> response = given().accept(AppConstants.NGB_APPLICATION_JSONLD).request()
 				.contentType(AppConstants.NGB_APPLICATION_JSON).when()
 				.get("/ngsi-ld/v1/entities/urn:ngsi-ld:Vehicle:A101").then().statusCode(200).extract();
 		assertEquals(200, response.statusCode());
 		Mockito.verify(queryService).retrieveEntity(any(), any(), any(), any(), any(), anyBoolean(), any(), any(),
-				anyBoolean(), any());
+				anyBoolean(), any(),any());
 
 	}
 
@@ -147,7 +147,7 @@ public class QueryControllerTest {
 		Map<String, Object> result = Maps.newHashMap();
 		result.put("entities", entities);
 		Mockito.when(queryService.retrieveEntity(any(), any(), any(), any(), any(), anyBoolean(), any(), any(),
-				anyBoolean(), any())).thenReturn(Uni.createFrom().item(result));
+				anyBoolean(), any(),any())).thenReturn(Uni.createFrom().item(result));
 
 		ExtractableResponse<Response> response = given().accept(AppConstants.NGB_APPLICATION_JSONLD).request()
 				.contentType(AppConstants.NGB_APPLICATION_JSON).when()
@@ -193,7 +193,7 @@ public class QueryControllerTest {
 		Map<String, Object> map = new HashMap<>();
 		map.put("id", entity);
 		list.add(map);
-		Mockito.when(queryService.getTypesWithDetail(any(), anyBoolean())).thenReturn(Uni.createFrom().item(list));
+		Mockito.when(queryService.getTypesWithDetail(any(), anyBoolean(),any())).thenReturn(Uni.createFrom().item(list));
 		Boolean details = true;
 
 		ExtractableResponse<Response> response = given().accept(AppConstants.NGB_APPLICATION_JSONLD).request()
@@ -210,8 +210,8 @@ public class QueryControllerTest {
 		Map<String, Object> map = new HashMap<>();
 		map.put("id", entity);
 		list.add(map);
-		Mockito.when(queryService.getTypesWithDetail(any(), anyBoolean())).thenReturn(Uni.createFrom().item(list));
-		Mockito.when(queryService.getTypes(any(), anyBoolean())).thenReturn(Uni.createFrom().item(map));
+		Mockito.when(queryService.getTypesWithDetail(any(), anyBoolean(),any())).thenReturn(Uni.createFrom().item(list));
+		Mockito.when(queryService.getTypes(any(), anyBoolean(),any())).thenReturn(Uni.createFrom().item(map));
 		Boolean details = false;
 
 		ExtractableResponse<Response> response = given().accept(AppConstants.NGB_APPLICATION_JSONLD).request()
@@ -227,7 +227,7 @@ public class QueryControllerTest {
 		Map<String, Object> map = new HashMap<>();
 		map.put("id", entity);
 
-		Mockito.when(queryService.getType(any(), any(), anyBoolean())).thenReturn(Uni.createFrom().item(map));
+		Mockito.when(queryService.getType(any(), any(), anyBoolean(),any())).thenReturn(Uni.createFrom().item(map));
 		Boolean details = false;
 
 		ExtractableResponse<Response> response = given().accept(AppConstants.NGB_APPLICATION_JSONLD).request()
@@ -243,7 +243,7 @@ public class QueryControllerTest {
 		Map<String, Object> map = new HashMap<>();
 		map.put("id", entity);
 
-		Mockito.when(queryService.getAttribs(any(), anyBoolean())).thenReturn(Uni.createFrom().item(map));
+		Mockito.when(queryService.getAttribs(any(), anyBoolean(),any())).thenReturn(Uni.createFrom().item(map));
 		Boolean details = false;
 
 		ExtractableResponse<Response> response = given().accept(AppConstants.NGB_APPLICATION_JSONLD).request()
@@ -259,7 +259,7 @@ public class QueryControllerTest {
 		Map<String, Object> map = new HashMap<>();
 		map.put("id", entity);
 
-		Mockito.when(queryService.getAttrib(any(), any(), anyBoolean())).thenReturn(Uni.createFrom().item(map));
+		Mockito.when(queryService.getAttrib(any(), any(), anyBoolean(),any())).thenReturn(Uni.createFrom().item(map));
 		Boolean details = true;
 
 		ExtractableResponse<Response> response = given().accept(AppConstants.NGB_APPLICATION_JSONLD).request()
