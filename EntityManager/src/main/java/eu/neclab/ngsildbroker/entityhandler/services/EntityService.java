@@ -285,14 +285,7 @@ public class EntityService {
 			Map<String, Object> expanded = remoteEntityAndHost.getItem2();
 
 			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
-			MultiMap toFrwd = MultiMap.newInstance(HeadersMultiMap.headers());
-			for(Entry<String, String> entry: remoteHost.headers().entries()){
-				if(entry.getValue().equals("urn:ngsi-ld:request")){
-					toFrwd.add(entry.getKey(), headersFromReq.get(entry.getKey()));
-				}else{
-					toFrwd.add(entry.getKey(), entry.getValue());
-				}
-			}
+			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),headersFromReq);
 			if (remoteHost.canDoSingleOp()) {
 				unis.add(prepareSplitUpEntityForSending(expanded, context).onItem().transformToUni(compacted -> {
 					return webClient
@@ -361,14 +354,7 @@ public class EntityService {
 //		}
 		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(remoteHosts.size());
 		for (RemoteHost remoteHost : remoteHosts) {
-			MultiMap toFrwd = MultiMap.newInstance(HeadersMultiMap.headers());
-			for(Entry<String, String> entry: remoteHost.headers().entries()){
-				if(entry.getValue().equals("urn:ngsi-ld:request")){
-					toFrwd.add(entry.getKey(), headersFromReq.get(entry.getKey()));
-				}else{
-					toFrwd.add(entry.getKey(), entry.getValue());
-				}
-			}
+			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),headersFromReq);
 			unis.add(webClient
 					.deleteAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + request.getId())
 					.putHeaders(toFrwd).send().onItemOrFailure().transform((response, failure) -> {
@@ -443,14 +429,7 @@ public class EntityService {
 //		}
 		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(remoteHosts.size());
 		for (RemoteHost remoteHost : remoteHosts) {
-			MultiMap toFrwd = MultiMap.newInstance(HeadersMultiMap.headers());
-			for(Entry<String, String> entry: remoteHost.headers().entries()){
-				if(entry.getValue().equals("urn:ngsi-ld:request")){
-					toFrwd.add(entry.getKey(), headersFromReq.get(entry.getKey()));
-				}else{
-					toFrwd.add(entry.getKey(), entry.getValue());
-				}
-			}
+			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),headersFromReq);
 			if (remoteHost.canDoSingleOp()) {
 				unis.add(webClient
 						.deleteAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + request.getId())
@@ -533,14 +512,7 @@ public class EntityService {
 		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(remoteEntitiesAndHosts.size());
 		for (Tuple2<RemoteHost, Map<String, Object>> remoteEntityAndHost : remoteEntitiesAndHosts) {
 			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
-			MultiMap toFrwd = MultiMap.newInstance(HeadersMultiMap.headers());
-			for(Entry<String, String> entry: remoteHost.headers().entries()){
-				if(entry.getValue().equals("urn:ngsi-ld:request")){
-					toFrwd.add(entry.getKey(), headersFromReq.get(entry.getKey()));
-				}else{
-					toFrwd.add(entry.getKey(), entry.getValue());
-				}
-			}
+			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),headersFromReq);
 			if (remoteHost.canDoSingleOp()) {
 				unis.add(prepareSplitUpEntityForSending(remoteEntityAndHost.getItem2(), context).onItem()
 						.transformToUni(compacted -> {
@@ -610,14 +582,7 @@ public class EntityService {
 		for (Tuple2<RemoteHost, Map<String, Object>> remoteEntityAndHost : remoteEntitiesAndHosts) {
 			Map<String, Object> expanded = remoteEntityAndHost.getItem2();
 			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
-			MultiMap toFrwd = MultiMap.newInstance(HeadersMultiMap.headers());
-			for(Entry<String, String> entry: remoteHost.headers().entries()){
-				if(entry.getValue().equals("urn:ngsi-ld:request")){
-					toFrwd.add(entry.getKey(), headersFromReq.get(entry.getKey()));
-				}else{
-					toFrwd.add(entry.getKey(), entry.getValue());
-				}
-			}
+			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),headersFromReq);
 
 			unis.add(prepareSplitUpEntityForSending(expanded, context).onItem().transformToUni(compacted -> {
 				return webClient
@@ -695,14 +660,7 @@ public class EntityService {
 		for (Tuple2<RemoteHost, Map<String, Object>> remoteEntityAndHost : remoteEntitiesAndHosts) {
 			Map<String, Object> expanded = remoteEntityAndHost.getItem2();
 			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
-			MultiMap toFrwd = MultiMap.newInstance(HeadersMultiMap.headers());
-			for(Entry<String, String> entry: remoteHost.headers().entries()){
-				if(entry.getValue().equals("urn:ngsi-ld:request")){
-					toFrwd.add(entry.getKey(), headersFromReq.get(entry.getKey()));
-				}else{
-					toFrwd.add(entry.getKey(), entry.getValue());
-				}
-			}
+			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),headersFromReq);
 
 			if (remoteHost.canDoSingleOp()) {
 				unis.add(prepareSplitUpEntityForSending(expanded, context).onItem().transformToUni(compacted -> {
@@ -1053,14 +1011,7 @@ public class EntityService {
 		if (!localOnly) {
 			for (Entry<RemoteHost, List<Tuple2<Context, Map<String, Object>>>> entry : remoteHost2Batch.entrySet()) {
 				RemoteHost remoteHost = entry.getKey();
-				MultiMap toFrwd = MultiMap.newInstance(HeadersMultiMap.headers());
-				for(Entry<String, String> remHeadEntry: remoteHost.headers().entries()){
-					if(remHeadEntry.getValue().equals("urn:ngsi-ld:request")){
-						toFrwd.add(remHeadEntry.getKey(), headersFromReq.get(remHeadEntry.getKey()));
-					}else{
-						toFrwd.add(remHeadEntry.getKey(), remHeadEntry.getValue());
-					}
-				}
+				MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),headersFromReq);
 				List<Tuple2<Context, Map<String, Object>>> tuples = entry.getValue();
 				List<Uni<Map<String, Object>>> compactedUnis = Lists.newArrayList();
 				for (Tuple2<Context, Map<String, Object>> tuple : tuples) {
@@ -1193,14 +1144,7 @@ public class EntityService {
 		if (!localOnly) {
 			for (Entry<RemoteHost, List<Tuple2<Context, Map<String, Object>>>> entry : remoteHost2Batch.entrySet()) {
 				RemoteHost remoteHost = entry.getKey();
-				MultiMap toFrwd = MultiMap.newInstance(HeadersMultiMap.headers());
-				for(Entry<String, String> headEntry: remoteHost.headers().entries()){
-					if(headEntry.getValue().equals("urn:ngsi-ld:request")){
-						toFrwd.add(headEntry.getKey(), headersFromReq.get(headEntry.getKey()));
-					}else{
-						toFrwd.add(headEntry.getKey(), headEntry.getValue());
-					}
-				}
+				MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),headersFromReq);
 
 				List<Tuple2<Context, Map<String, Object>>> tuples = entry.getValue();
 				List<Uni<Map<String, Object>>> compactedUnis = Lists.newArrayList();
@@ -1403,14 +1347,7 @@ public class EntityService {
 
 		for (Entry<RemoteHost, List<Tuple2<Context, Map<String, Object>>>> entry : remoteHost2Batch.entrySet()) {
 			RemoteHost remoteHost = entry.getKey();
-			MultiMap toFrwd = MultiMap.newInstance(HeadersMultiMap.headers());
-			for(Entry<String, String> headEntry: remoteHost.headers().entries()){
-				if(headEntry.getValue().equals("urn:ngsi-ld:request")){
-					toFrwd.add(headEntry.getKey(), headersFromReq.get(headEntry.getKey()));
-				}else{
-					toFrwd.add(headEntry.getKey(), headEntry.getValue());
-				}
-			}
+			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),headersFromReq);
 
 			List<Tuple2<Context, Map<String, Object>>> tuples = entry.getValue();
 			List<Uni<Map<String, Object>>> compactedUnis = Lists.newArrayList();
@@ -1501,14 +1438,7 @@ public class EntityService {
 		List<Uni<List<NGSILDOperationResult>>> unis = new ArrayList<>(host2Ids.keySet().size());
 		for (Entry<RemoteHost, List<String>> entry : host2Ids.entrySet()) {
 			RemoteHost remoteHost = entry.getKey();
-			MultiMap toFrwd = MultiMap.newInstance(HeadersMultiMap.headers());
-			for(Entry<String, String> headEntry: remoteHost.headers().entries()){
-				if(headEntry.getValue().equals("urn:ngsi-ld:request")){
-					toFrwd.add(headEntry.getKey(), headersFromReq.get(headEntry.getKey()));
-				}else{
-					toFrwd.add(headEntry.getKey(), headEntry.getValue());
-				}
-			}
+			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),headersFromReq);
 			List<String> toSend = entry.getValue();
 			if (remoteHost.canDoBatchOp()) {
 				unis.add(webClient.postAbs(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_DELETE)
@@ -1601,14 +1531,7 @@ public class EntityService {
 		for (Tuple2<RemoteHost, Map<String, Object>> remoteEntityAndHost : remoteEntitiesAndHosts) {
 			Map<String, Object> expanded = remoteEntityAndHost.getItem2();
 			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
-			MultiMap toFrwd = MultiMap.newInstance(HeadersMultiMap.headers());
-			for(Entry<String, String> entry: remoteHost.headers().entries()){
-				if(entry.getValue().equals("urn:ngsi-ld:request")){
-					toFrwd.add(entry.getKey(), headersFromReq.get(entry.getKey()));
-				}else{
-					toFrwd.add(entry.getKey(), entry.getValue());
-				}
-			}
+			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),headersFromReq);
 
 			if (remoteHost.canDoSingleOp()) {
 				unis.add(prepareSplitUpEntityForSending(expanded, context).onItem().transformToUni(compacted -> {
@@ -1688,14 +1611,7 @@ public class EntityService {
 		for (Tuple2<RemoteHost, Map<String, Object>> remoteEntityAndHost : remoteEntitiesAndHosts) {
 			Map<String, Object> expanded = remoteEntityAndHost.getItem2();
 			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
-			MultiMap toFrwd = MultiMap.newInstance(HeadersMultiMap.headers());
-			for(Entry<String, String> entry: remoteHost.headers().entries()){
-				if(entry.getValue().equals("urn:ngsi-ld:request")){
-					toFrwd.add(entry.getKey(), headersFromReq.get(entry.getKey()));
-				}else{
-					toFrwd.add(entry.getKey(), entry.getValue());
-				}
-			}
+			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),headersFromReq);
 			if (remoteHost.canDoSingleOp()) {
 				unis.add(prepareSplitUpEntityForSending(expanded, context).onItem().transformToUni(compacted -> {
 					return webClient
@@ -1773,14 +1689,7 @@ public class EntityService {
 		for (Tuple2<RemoteHost, Map<String, Object>> remoteEntityAndHost : remoteEntitiesAndHosts) {
 			Map<String, Object> expanded = remoteEntityAndHost.getItem2();
 			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
-			MultiMap toFrwd = MultiMap.newInstance(HeadersMultiMap.headers());
-			for(Entry<String, String> entry: remoteHost.headers().entries()){
-				if(entry.getValue().equals("urn:ngsi-ld:request")){
-					toFrwd.add(entry.getKey(), headersFromReq.get(entry.getKey()));
-				}else{
-					toFrwd.add(entry.getKey(), entry.getValue());
-				}
-			}
+			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),headersFromReq);
 			if (remoteHost.canDoSingleOp()) {
 				unis.add(prepareSplitUpEntityForSending(expanded, context).onItem().transformToUni(compacted -> {
 					return webClient
@@ -1900,14 +1809,7 @@ public class EntityService {
 				if (!localOnly) {
 			for (Entry<RemoteHost, List<Tuple2<Context, Map<String, Object>>>> entry : remoteHost2Batch.entrySet()) {
 				RemoteHost remoteHost = entry.getKey();
-				MultiMap toFrwd = MultiMap.newInstance(HeadersMultiMap.headers());
-				for(Entry<String, String> headEntry: remoteHost.headers().entries()){
-					if(headEntry.getValue().equals("urn:ngsi-ld:request")){
-						toFrwd.add(headEntry.getKey(), headersFromReq.get(headEntry.getKey()));
-					}else{
-						toFrwd.add(headEntry.getKey(), headEntry.getValue());
-					}
-				}
+				MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),headersFromReq);
 				List<Tuple2<Context, Map<String, Object>>> tuples = entry.getValue();
 				List<Uni<Map<String, Object>>> compactedUnis = Lists.newArrayList();
 				for (Tuple2<Context, Map<String, Object>> tuple : tuples) {

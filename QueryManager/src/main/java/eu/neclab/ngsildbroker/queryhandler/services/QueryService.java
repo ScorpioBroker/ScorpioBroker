@@ -175,14 +175,7 @@ public class QueryService {
 					contextLinks = parseLinkHeaderNoUni(remoteHost.headers().getAll("Link"),
 							NGSIConstants.HEADER_REL_LDCONTEXT);
 				}
-				MultiMap toFrwd = MultiMap.newInstance(HeadersMultiMap.headers());
-				for(Entry<String, String> headEntry: remoteHost.headers().entries()){
-					if(headEntry.getValue().equals("urn:ngsi-ld:request")){
-						toFrwd.add(headEntry.getKey(), headersFromReq.get(headEntry.getKey()));
-					}else{
-						toFrwd.add(headEntry.getKey(), headEntry.getValue());
-					}
-				}
+				MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),headersFromReq);
 				String idList = String.join(",", entry.getValue());
 				logger.debug("calling: " + remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "?id=" + idList
 						+ "&options=sysAttrs&limit=1000");
@@ -342,14 +335,7 @@ public class QueryService {
 
 			index = idsString.lastIndexOf(",", maxLengthForIds);
 			String toUseIds = idsString.substring(0, index);
-			MultiMap toFrwd = MultiMap.newInstance(HeadersMultiMap.headers());
-			for(Entry<String, String> entry: remoteHost.headers().entries()){
-				if(entry.getValue().equals("urn:ngsi-ld:request")){
-					toFrwd.add(entry.getKey(), headersFromReq.get(entry.getKey()));
-				}else{
-					toFrwd.add(entry.getKey(), entry.getValue());
-				}
-			}
+			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),headersFromReq);
 			backUpUnis.add(webClient
 					.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "?id=" + toUseIds
 							+ "&options=sysAttrs&limit=1000")
@@ -1087,14 +1073,7 @@ public class QueryService {
 			String host = row.getString(0);
 			MultiMap remoteHeaders = MultiMap
 					.newInstance(HttpUtils.getHeadersForRemoteCall(row.getJsonArray(2), row.getString(1)));
-			MultiMap toFrwd = MultiMap.newInstance(HeadersMultiMap.headers());
-			for(Entry<String, String> entry: remoteHeaders.entries()){
-				if(entry.getValue().equals("urn:ngsi-ld:request")){
-					toFrwd.add(entry.getKey(), headersFromReq.get(entry.getKey()));
-				}else{
-					toFrwd.add(entry.getKey(), entry.getValue());
-				}
-			}
+			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHeaders,headersFromReq);
 
 			unis.add(webClient.getAbs(host + endpoint).putHeaders(toFrwd).send().onFailure().recoverWithNull()
 					.onItem().transformToUni(response -> {
@@ -1169,14 +1148,7 @@ public class QueryService {
 			} else {
 				queryString = remoteHost.queryString() + "&options=sysAttrs";
 			}
-			MultiMap toFrwd = MultiMap.newInstance(HeadersMultiMap.headers());
-			for(Entry<String, String> entry: remoteHost.headers().entries()){
-				if(entry.getValue().equals("urn:ngsi-ld:request")){
-					toFrwd.add(entry.getKey(), headersFromReq.get(entry.getKey()));
-				}else{
-					toFrwd.add(entry.getKey(), entry.getValue());
-				}
-			}
+			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),headersFromReq);
 
 			unis.add(webClient
 					.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + entityId + queryString)
@@ -1424,14 +1396,7 @@ public class QueryService {
 		} else {
 			List<Uni<Tuple2<QueryRemoteHost, List<String>>>> unis = Lists.newArrayList();
 			for (QueryRemoteHost remoteHost : remoteHost2Query) {
-				MultiMap toFrwd = MultiMap.newInstance(HeadersMultiMap.headers());
-				for(Entry<String, String> entry: remoteHost.headers().entries()){
-					if(entry.getValue().equals("urn:ngsi-ld:request")){
-						toFrwd.add(entry.getKey(), headersFromReq.get(entry.getKey()));
-					}else{
-						toFrwd.add(entry.getKey(), entry.getValue());
-					}
-				}
+				MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),headersFromReq);
 				String linkHead;
 				if (!remoteHost.headers().contains("Link") && headersFromReq.contains("Link")) {
 					linkHead = headersFromReq.get("Link");
@@ -1565,14 +1530,7 @@ public class QueryService {
 	private Uni<Tuple2<QueryRemoteHost, List<String>>> handle414IdQuery(int baseLength, QueryRemoteHost remoteHost,
 																		String linkHead, boolean entityMap, io.vertx.core.MultiMap headersFromReq) {
 		int start = remoteHost.queryString().indexOf("id=");
-		MultiMap toFrwd = MultiMap.newInstance(HeadersMultiMap.headers());
-		for(Entry<String, String> entry: remoteHost.headers().entries()){
-			if(entry.getValue().equals("urn:ngsi-ld:request")){
-				toFrwd.add(entry.getKey(), headersFromReq.get(entry.getKey()));
-			}else{
-				toFrwd.add(entry.getKey(), entry.getValue());
-			}
-		}
+		MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),headersFromReq);
 		if (start == -1) {
 			logger.warn("failed to split up query");
 			return Uni.createFrom().item(Tuple2.of(remoteHost, Lists.newArrayList()));

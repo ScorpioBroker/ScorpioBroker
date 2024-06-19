@@ -13,7 +13,6 @@ import java.util.Set;
 
 import com.github.jsonldjava.core.JsonLdConsts;
 import io.vertx.core.http.HttpServerRequest;
-import io.vertx.core.http.impl.headers.HeadersMultiMap;
 import io.vertx.mutiny.core.MultiMap;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.event.Observes;
@@ -125,14 +124,7 @@ public class HistoryQueryService {
 		List<Uni<QueryResult>> remoteCalls = new ArrayList<>(remoteHosts.size());
 		for (Entry<RemoteHost, String> entry : remoteHosts.entrySet()) {
 			RemoteHost remoteHost = entry.getKey();
-			MultiMap toFrwd = MultiMap.newInstance(HeadersMultiMap.headers());
-			for(Entry<String, String> headEntry: remoteHost.headers().entries()){
-				if(headEntry.getValue().equals("urn:ngsi-ld:request")){
-					toFrwd.add(headEntry.getKey(), request.headers().get(headEntry.getKey()));
-				}else{
-					toFrwd.add(headEntry.getKey(), headEntry.getValue());
-				}
-			}
+			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),request.headers());
 
 			String url = remoteHost.host() + NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT + "?" + entry.getValue();
 			String linkHead;
@@ -244,14 +236,7 @@ public class HistoryQueryService {
 			List<Uni<Map<String, Object>>> remoteCalls = new ArrayList<>(remoteHosts.size());
 			for (Entry<RemoteHost, Set<String>> entry : remoteHosts.entrySet()) {
 				RemoteHost remoteHost = entry.getKey();
-				MultiMap toFrwd = MultiMap.newInstance(HeadersMultiMap.headers());
-				for(Entry<String, String> headEntry: remoteHost.headers().entries()){
-					if(headEntry.getValue().equals("urn:ngsi-ld:request")){
-						toFrwd.add(headEntry.getKey(), headersFromReq.get(headEntry.getKey()));
-					}else{
-						toFrwd.add(headEntry.getKey(), headEntry.getValue());
-					}
-				}
+				MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),headersFromReq);
 
 				String url = remoteHost.host() + NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT + "/" + entityId;
 				Set<String> attrs = entry.getValue();

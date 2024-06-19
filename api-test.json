@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "741657fb-683a-4132-baba-ac3c2c66f81b",
+		"_postman_id": "8485f470-e20a-4974-a5af-e9f272c1b835",
 		"name": "API Test",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "27293663"
@@ -52654,6 +52654,226 @@
 													"response": []
 												}
 											]
+										},
+										{
+											"name": "Accept",
+											"item": [
+												{
+													"name": "Create Simple Registry Entry application/json",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"console.log(payloadBody.id);\r",
+																	"var cSourceId = payloadBody.id;\r",
+																	"pm.collectionVariables.set(\"created\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"cSourceId\", cSourceId);\r",
+																	"pm.test(\"Status code is 201\", function () {\r",
+																	"    pm.response.to.have.status(201);\r",
+																	"});\r",
+																	"\r",
+																	"\r",
+																	""
+																],
+																"type": "text/javascript",
+																"packages": {}
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
+																],
+																"type": "text/javascript",
+																"packages": {}
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n    \"id\": \"tenanttest:urn:ngsi-ld:ContextSourceRegistration:csr1a34561\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"Store1\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"contextSourceInfo\": [\r\n        {\r\n            \"key\": \"Accept\",\r\n            \"value\": \"application/json\"\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"http://registrant-broker\"\r\n}",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{registry-manager}}/ngsi-ld/v1/csourceRegistrations",
+															"host": [
+																"{{registry-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"csourceRegistrations"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Create Simple Registry Entry No Context application/ld+json",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"console.log(payloadBody.id);\r",
+																	"var cSourceId = payloadBody.id;\r",
+																	"pm.collectionVariables.set(\"created\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"cSourceId\", cSourceId);\r",
+																	"pm.test(\"Status code is 201\", function () {\r",
+																	"    pm.response.to.have.status(201);\r",
+																	"});\r",
+																	"\r",
+																	"\r",
+																	"\r",
+																	""
+																],
+																"type": "text/javascript",
+																"packages": {}
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
+																],
+																"type": "text/javascript",
+																"packages": {}
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n    \"id\": \"tenanttest:urn:ngsi-ld:ContextSourceRegistration:csr1a3456w\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"Store2\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"contextSourceInfo\": [\r\n        {\r\n            \"key\": \"Accept\",\r\n            \"value\": \"application/ld+json\"\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"http://registrant-broker\"\r\n}",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{registry-manager}}/ngsi-ld/v1/csourceRegistrations",
+															"host": [
+																"{{registry-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"csourceRegistrations"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Delete registration Copy",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});\r",
+																	"pm.collectionVariables.clear();"
+																],
+																"type": "text/javascript",
+																"packages": {}
+															}
+														}
+													],
+													"request": {
+														"method": "DELETE",
+														"header": [],
+														"url": {
+															"raw": "{{registry-manager}}/ngsi-ld/v1/csourceRegistrations/tenanttest:urn:ngsi-ld:ContextSourceRegistration:csr1a34561",
+															"host": [
+																"{{registry-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"csourceRegistrations",
+																"tenanttest:urn:ngsi-ld:ContextSourceRegistration:csr1a34561"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Delete registration Copy 2",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});\r",
+																	"pm.collectionVariables.clear();"
+																],
+																"type": "text/javascript",
+																"packages": {}
+															}
+														}
+													],
+													"request": {
+														"method": "DELETE",
+														"header": [],
+														"url": {
+															"raw": "{{registry-manager}}/ngsi-ld/v1/csourceRegistrations/tenanttest:urn:ngsi-ld:ContextSourceRegistration:csr1a3456w",
+															"host": [
+																"{{registry-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"csourceRegistrations",
+																"tenanttest:urn:ngsi-ld:ContextSourceRegistration:csr1a3456w"
+															]
+														}
+													},
+													"response": []
+												}
+											]
 										}
 									]
 								},
@@ -58717,6 +58937,84 @@
 									"response": []
 								}
 							]
+						},
+						{
+							"name": "Csource Error Test",
+							"item": [
+								{
+									"name": "Create Simple Registry Entry No Context application/geo+json",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+													"console.log(payloadBody.id);\r",
+													"var cSourceId = payloadBody.id;\r",
+													"pm.collectionVariables.set(\"created\", payloadBody);\r",
+													"pm.collectionVariables.set(\"cSourceId\", cSourceId);\r",
+													"pm.test(\"Status code is 406\", function () {\r",
+													"    pm.response.to.have.status(406);\r",
+													"});\r",
+													"\r",
+													"\r",
+													"\r",
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										},
+										{
+											"listen": "prerequest",
+											"script": {
+												"exec": [
+													""
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json",
+												"type": "default"
+											},
+											{
+												"key": "Accept",
+												"value": "application/json",
+												"type": "default",
+												"disabled": true
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"Store3\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"contextSourceInfo\": [\r\n        {\r\n            \"key\": \"Accept\",\r\n            \"value\": \"application/geo+json\"\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"http://registrant-broker\"\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{registry-manager}}/ngsi-ld/v1/csourceRegistrations",
+											"host": [
+												"{{registry-manager}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"csourceRegistrations"
+											]
+										}
+									},
+									"response": []
+								}
+							]
 						}
 					]
 				}
@@ -58729,33 +59027,7 @@
 			"value": ""
 		},
 		{
-			"key": "entityId",
-			"value": ""
-		},
-		{
-			"key": "@context",
-			"value": ""
-		}
-	],
-	"variable": [
-		{
-			"key": "created",
-			"value": ""
-		},
-		{
-			"key": "entityId",
-			"value": ""
-		},
-		{
-			"key": "@context",
-			"value": ""
-		},
-		{
-			"key": "subId",
-			"value": ""
-		},
-		{
-			"key": "urlOne",
+			"key": "cSourceId",
 			"value": ""
 		}
 	]

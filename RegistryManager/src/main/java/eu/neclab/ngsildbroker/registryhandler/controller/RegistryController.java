@@ -1,6 +1,8 @@
 package eu.neclab.ngsildbroker.registryhandler.controller;
 
 import java.util.List;
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import io.vertx.core.json.JsonObject;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import jakarta.ws.rs.DELETE;
@@ -128,6 +130,15 @@ public class RegistryController {
 
 	@POST
 	public Uni<RestResponse<Object>> registerCSource(HttpServerRequest request, String payload) {
+		JsonObject jsonObject = new JsonObject(payload);
+		if(jsonObject.containsKey(NGSIConstants.CONTEXT_SOURCE_INFO)){
+			for(Object obj : jsonObject.getJsonArray(NGSIConstants.CONTEXT_SOURCE_INFO)){
+				JsonObject jsonObject1 = (JsonObject) obj;
+				if(jsonObject1.getString("key").equalsIgnoreCase("Accept") && !List.of("application/json","application/ld+json").contains(jsonObject1.getString("value"))){
+					return Uni.createFrom().item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.NotAcceptable,"Accept should be application/json or application/ld+json")));
+				}
+			}
+		}
 		return HttpUtils.expandBody(request, payload, AppConstants.CSOURCE_REG_CREATE_PAYLOAD, ldService).onItem()
 				.transformToUni(tuple -> {
 					return csourceService.createRegistration(HttpUtils.getTenant(request), tuple.getItem2()).onItem()
