@@ -220,7 +220,7 @@ public class QueryDAO {
 	public Uni<Map<String, Object>> getTypes(String tenantId) {
 		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
 			return client
-					.preparedQuery("SELECT DISTINCT myTypes from (SELECT to_jsonb(unnest(e_types)) as myTypes from entity UNION ALL SELECT to_jsonb(e_type) as myTypes from csourceinformation);")
+					.preparedQuery("SELECT DISTINCT myTypes from (SELECT to_jsonb(unnest(e_types)) as myTypes from entity UNION ALL SELECT to_jsonb(e_type) as myTypes from csourceinformation) as NA;")
 					.execute().onItem().transform(rows -> {
 						Map<String, Object> result = Maps.newHashMap();
 						result.put(NGSIConstants.JSON_LD_TYPE, Lists.newArrayList(NGSIConstants.NGSI_LD_ENTITY_LIST));

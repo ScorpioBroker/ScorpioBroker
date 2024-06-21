@@ -44,7 +44,7 @@ public class HistoryController {
 	public Uni<RestResponse<Object>> createTemporalEntity(HttpServerRequest request, Map<String, Object> payload) {
 		return HttpUtils.expandBody(request, payload, AppConstants.TEMP_ENTITY_CREATE_PAYLOAD, ldService).onItem()
 				.transformToUni(tuple -> {
-					return historyService.createEntry(HttpUtils.getTenant(request), tuple.getItem2(), tuple.getItem1())
+					return historyService.createEntry(HttpUtils.getTenant(request), tuple.getItem2(), tuple.getItem1(),request.headers())
 							.onItem().transform(opResult -> {
 								return HttpUtils.generateCreateResult(opResult, AppConstants.HISTORY_URL);
 							});
@@ -61,7 +61,7 @@ public class HistoryController {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 		}
 		return ldService.parse(HttpUtils.getAtContext(request)).onItem().transformToUni(ctx -> {
-			return historyService.deleteEntry(HttpUtils.getTenant(request), entityId, ctx).onItem()
+			return historyService.deleteEntry(HttpUtils.getTenant(request), entityId, ctx,request.headers()).onItem()
 					.transform(result -> {
 						return HttpUtils.generateDeleteResult(result);
 					});
@@ -80,7 +80,7 @@ public class HistoryController {
 		return HttpUtils.expandBody(request, payload, AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD, ldService).onItem()
 				.transformToUni(tuple -> {
 					return historyService
-							.appendToEntry(HttpUtils.getTenant(request), entityId, tuple.getItem2(), tuple.getItem1())
+							.appendToEntry(HttpUtils.getTenant(request), entityId, tuple.getItem2(), tuple.getItem1(),request.headers())
 							.onItem().transform(opResult -> {
 								return HttpUtils.generateUpdateResultResponse(opResult);
 							});
@@ -100,7 +100,7 @@ public class HistoryController {
 		return ldService.parse(HttpUtils.getAtContext(request)).onItem().transformToUni(context -> {
 			return historyService
 					.deleteAttrFromEntry(HttpUtils.getTenant(request), entityId,
-							context.expandIri(attrId, false, true, null, null), datasetId, deleteAll, context)
+							context.expandIri(attrId, false, true, null, null), datasetId, deleteAll, context,request.headers())
 					.onItem().transform(opResult -> {
 						return HttpUtils.generateDeleteResult(opResult);
 					});
@@ -123,7 +123,7 @@ public class HistoryController {
 				.transformToUni(tuple -> {
 					return historyService.updateInstanceOfAttr(HttpUtils.getTenant(request), entityId,
 							tuple.getItem1().expandIri(attrId, false, true, null, null), instanceId, tuple.getItem2(),
-							tuple.getItem1()).onItem().transform(opResult -> {
+							tuple.getItem1(),request.headers()).onItem().transform(opResult -> {
 								return HttpUtils.generateUpdateResultResponse(opResult);
 							});
 				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
@@ -143,7 +143,7 @@ public class HistoryController {
 		return ldService.parse(HttpUtils.getAtContext(request)).onItem().transformToUni(context -> {
 			return historyService
 					.deleteInstanceOfAttr(HttpUtils.getTenant(request), entityId,
-							context.expandIri(attrId, false, true, null, null), instanceId, context)
+							context.expandIri(attrId, false, true, null, null), instanceId, context,request.headers())
 					.onItem().transform(opResult -> {
 						return HttpUtils.generateDeleteResult(opResult);
 					});

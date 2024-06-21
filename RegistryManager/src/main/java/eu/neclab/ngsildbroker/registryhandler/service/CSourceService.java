@@ -131,8 +131,6 @@ public class CSourceService {
 		if (idObj == null) {
 			id = EntityTools.generateUniqueRegId(registration);
 			registration.put(NGSIConstants.JSON_LD_ID, id);
-		} else {
-			id = (String) idObj;
 		}
 		try {
 			request = new CreateCSourceRequest(tenant, registration);

@@ -91,7 +91,7 @@ public class QueryServiceTest {
 		when(queryDAO.getEntity(anyString(), anyString(), any())).thenReturn(getEntityRes);
 
 		Uni<Map<String, Object>> originalEntityResUni = queryService.retrieveEntity(context, "", entityId, null, null,
-				true,null,null,false,1);
+				true,null,null,false,1,null);
 
 		Map<String, Object> originalEntityRes = originalEntityResUni.await().indefinitely();
 
@@ -108,7 +108,7 @@ public class QueryServiceTest {
 		Uni<Map<String, Object>> getEntityRes = Uni.createFrom().item(new HashMap<String, Object>());
 		when(queryDAO.getEntity(anyString(), anyString(), any())).thenReturn(getEntityRes);
 		Uni<Map<String, Object>> originalEntityResUni = queryService.retrieveEntity(context, "", entityId, null, null,
-				true,null,null,false,1);
+				true,null,null,false,1,null);
 		Map<String, Object> originalEntityRes = originalEntityResUni.await().indefinitely();
 
 		assertTrue(originalEntityRes.isEmpty());

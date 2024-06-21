@@ -13,6 +13,7 @@ import java.util.Set;
 
 import com.github.jsonldjava.core.JsonLdConsts;
 import io.vertx.core.http.HttpServerRequest;
+import io.vertx.mutiny.core.MultiMap;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
@@ -123,6 +124,8 @@ public class HistoryQueryService {
 		List<Uni<QueryResult>> remoteCalls = new ArrayList<>(remoteHosts.size());
 		for (Entry<RemoteHost, String> entry : remoteHosts.entrySet()) {
 			RemoteHost remoteHost = entry.getKey();
+			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),request.headers());
+
 			String url = remoteHost.host() + NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT + "?" + entry.getValue();
 			String linkHead;
 			List<Object> contextLinks;
@@ -135,7 +138,7 @@ public class HistoryQueryService {
 				contextLinks = parseLinkHeaderNoUni(remoteHost.headers().getAll(NGSIConstants.LINK_HEADER),
 						NGSIConstants.HEADER_REL_LDCONTEXT);
 			}
-			remoteCalls.add(webClient.getAbs(url).putHeaders(remoteHost.headers())
+			remoteCalls.add(webClient.getAbs(url).putHeaders(toFrwd)
 					.putHeader(NGSIConstants.LINK_HEADER, linkHead).send().onItem().transformToUni(response -> {
 
 						if (response == null || response.statusCode() != 200) {
@@ -206,7 +209,7 @@ public class HistoryQueryService {
 	 */
 	public Uni<Map<String, Object>> retrieveEntity(String tenant, String entityId, AttrsQueryTerm attrsQuery,
 			AggrTerm aggrQuery, TemporalQueryTerm tempQuery, String lang, int lastN, boolean localOnly,
-			Context context) {
+			Context context,io.vertx.core.MultiMap headersFromReq) {
 
 		Uni<Map<String, Object>> local = historyDAO.retrieveEntity(tenant, entityId, attrsQuery, aggrQuery, tempQuery,
 				lang, lastN);
@@ -233,6 +236,8 @@ public class HistoryQueryService {
 			List<Uni<Map<String, Object>>> remoteCalls = new ArrayList<>(remoteHosts.size());
 			for (Entry<RemoteHost, Set<String>> entry : remoteHosts.entrySet()) {
 				RemoteHost remoteHost = entry.getKey();
+				MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),headersFromReq);
+
 				String url = remoteHost.host() + NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT + "/" + entityId;
 				Set<String> attrs = entry.getValue();
 				if (attrs != null) {
@@ -243,7 +248,7 @@ public class HistoryQueryService {
 					url = url.substring(0, url.length() - 1);
 				}
 
-				remoteCalls.add(webClient.getAbs(url).putHeaders(remoteHost.headers()).send().onItem()
+				remoteCalls.add(webClient.getAbs(url).putHeaders(toFrwd).send().onItem()
 						.transformToUni(response -> {
 							if (response == null || response.statusCode() != 200) {
 								return Uni.createFrom().nullItem();
