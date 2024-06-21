@@ -1,0 +1,103 @@
+{
+	"id": "e24f1862-2643-4176-8d9e-b6bead41d033",
+	"values": [
+		{
+			"key": "notificationserver",
+			"value": "http://localhost:8080",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "entity-manager",
+			"value": "http://localhost:9090",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "query-manager",
+			"value": "http://localhost:9090",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "subscription-manager",
+			"value": "http://localhost:9090",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "registry-manager",
+			"value": "http://localhost:9090",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "registry-subscription-manager",
+			"value": "http://localhost:9090",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "history-manager",
+			"value": "http://localhost:9090",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "notificationserver-external",
+			"value": "http://localhost:8080",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "history-entity-manager",
+			"value": "http://localhost:9090",
+			"enabled": true
+		},
+		{
+			"key": "history-query-manager",
+			"value": "http://localhost:9090",
+			"enabled": true
+		},
+		{
+			"key": "remote-one",
+			"value": "http://localhost:9080",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "remote-two",
+			"value": "http://localhost:9070",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "scorpioone",
+			"value": "http://host.docker.internal:9080",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "scorpiotwo",
+			"value": "http://host.docker.internal:9070",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "dumpreq",
+			"value": "http://host.docker.internal:8090",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "dumpreqexternal",
+			"value": "http://localhost:8090",
+			"type": "default",
+			"enabled": true
+		}
+	],
+	"name": "Globals",
+	"_postman_variable_scope": "globals",
+	"_postman_exported_at": "2024-05-21T07:05:21.240Z",
+	"_postman_exported_using": "Postman/11.1.3"
+}

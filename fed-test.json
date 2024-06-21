@@ -1,0 +1,3253 @@
+{
+	"info": {
+		"_postman_id": "d2a9b625-d352-4294-b7d4-9286ae456f58",
+		"name": "fed-test",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "27293663"
+	},
+	"item": [
+		{
+			"name": "Inclusive",
+			"item": [
+				{
+					"name": "1 child",
+					"item": [
+						{
+							"name": "Entity Create Tests",
+							"item": [
+								{
+									"name": "Entity No Context",
+									"item": [
+										{
+											"name": "TestType reg",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 201\", function () {\r",
+															"    pm.response.to.have.status(201);\r",
+															"});"
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "POST",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json"
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\r\n    \"id\":\"urn:regtest1\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{scorpioone}}\"\r\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{registry-manager}}/ngsi-ld/v1/csourceRegistrations/",
+													"host": [
+														"{{registry-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"csourceRegistrations",
+														""
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Create Simple Entity No Context",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+															"console.log(payloadBody.id);\r",
+															"var entityId = payloadBody.id;\r",
+															"pm.collectionVariables.set(\"created\", payloadBody);\r",
+															"pm.collectionVariables.set(\"entityId\", entityId);\r",
+															"pm.test(\"Status code is 201\", function () {\r",
+															"    pm.response.to.have.status(201);\r",
+															"});\r",
+															"pm.test(\"Check location header\", function () {\r",
+															"    pm.response.to.have.header(\"Location\");\r",
+															"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+															"});\r",
+															"\r",
+															"\r",
+															""
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												},
+												{
+													"listen": "prerequest",
+													"script": {
+														"exec": [
+															""
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "POST",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json"
+													},
+													{
+														"key": "Accept",
+														"value": "application/json",
+														"disabled": true
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n    \"listproperty\": {\"type\": \"ListProperty\", \"valueList\": [100,200,300]},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"passenger\": {\r\n       \"type\": \"ListRelationship\",\r\n       \"objectType\": \"Person\",\r\n       \"objectList\": [\r\n           \"urn:ngsi-ld:Person:Alice\",\r\n           \"urn:ngsi-ld:Person:Bob\"\r\n       ]\r\n   },\r\n    \"street\": {\r\n        \"type\": \"LanguageProperty\",\r\n        \"languageMap\": {\r\n            \"fr\": \"Grand Place\",\r\n            \"nl\": \"Grote Markt\"\r\n        }\r\n    },\r\n    \"testjsonproperty\": {\r\n         \"type\": \"JsonProperty\",\r\n         \"json\": {\r\n             \"id\": \"85a6cc52-0589-45f9\",\r\n            \"value\": \"Overstay 60 minutes\"\r\n      }\r\n  }\r\n\r\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{remote-one}}/ngsi-ld/v1/entities",
+													"host": [
+														"{{remote-one}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"entities"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Get Created Entity and Validate content",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"var expected = pm.collectionVariables.get(\"created\");\r",
+															"pm.test(\"Status code is 200\", function () {\r",
+															"    pm.response.to.have.status(200);\r",
+															"});\r",
+															"pm.test(\"Validate content\", function () {\r",
+															"    var jsonData = pm.response.json();\r",
+															"    console.log(\"Expected: \" + expected);\r",
+															"    console.log(\"Received: \" + jsonData);\r",
+															"    pm.expect(jsonData).to.eql(expected);\r",
+															"});"
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "GET",
+												"header": [
+													{
+														"key": "Accept",
+														"value": "application/json"
+													}
+												],
+												"url": {
+													"raw": "{{query-manager}}/ngsi-ld/v1/entities/urn:test:testentity1",
+													"host": [
+														"{{query-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"entities",
+														"urn:test:testentity1"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Delete Entity",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 204\", function () {\r",
+															"    pm.response.to.have.status(204);\r",
+															"});\r",
+															"pm.collectionVariables.clear();"
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "DELETE",
+												"header": [],
+												"url": {
+													"raw": "{{remote-one}}/ngsi-ld/v1/entities/urn:test:testentity1",
+													"host": [
+														"{{remote-one}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"entities",
+														"urn:test:testentity1"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "TestType reg",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 204\", function () {\r",
+															"    pm.response.to.have.status(204);\r",
+															"});"
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "DELETE",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json"
+													}
+												],
+												"url": {
+													"raw": "{{registry-manager}}/ngsi-ld/v1/csourceRegistrations/urn:regtest1",
+													"host": [
+														"{{registry-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"csourceRegistrations",
+														"urn:regtest1"
+													]
+												}
+											},
+											"response": []
+										}
+									]
+								},
+								{
+									"name": "Entity Context In Body",
+									"item": [
+										{
+											"name": "TestType reg",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 201\", function () {\r",
+															"    pm.response.to.have.status(201);\r",
+															"});"
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "POST",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/ld+json"
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\r\n    \"id\":\"urn:regtest1\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{scorpioone}}\",\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{registry-manager}}/ngsi-ld/v1/csourceRegistrations/",
+													"host": [
+														"{{registry-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"csourceRegistrations",
+														""
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Create Simple Entity With @context in body",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+															"console.log(payloadBody.id);\r",
+															"var entityId = payloadBody.id;\r",
+															"pm.collectionVariables.set(\"created\", payloadBody);\r",
+															"pm.collectionVariables.set(\"entityId\", entityId);\r",
+															"pm.collectionVariables.set(\"@context\", payloadBody[\"@context\"][0]);\r",
+															"pm.test(\"Status code is 201\", function () {\r",
+															"    pm.response.to.have.status(201);\r",
+															"});\r",
+															"pm.test(\"Check location header\", function () {\r",
+															"    pm.response.to.have.header(\"Location\");\r",
+															"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+															"});\r",
+															"\r",
+															"\r",
+															""
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												},
+												{
+													"listen": "prerequest",
+													"script": {
+														"exec": [
+															""
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "POST",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/ld+json"
+													},
+													{
+														"key": "Accept",
+														"value": "application/json",
+														"disabled": true
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n     \"listproperty\": {\"type\": \"ListProperty\", \"valueList\": [100,200,300]},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"passenger\": {\r\n       \"type\": \"ListRelationship\",\r\n       \"objectType\": \"Person\",\r\n       \"objectList\": [\r\n           \"urn:ngsi-ld:Person:Alice\",\r\n           \"urn:ngsi-ld:Person:Bob\"\r\n       ]\r\n   },\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{remote-one}}/ngsi-ld/v1/entities",
+													"host": [
+														"{{remote-one}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"entities"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Get Created Entity and Validate content",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"var expected = pm.collectionVariables.get(\"created\");\r",
+															"pm.test(\"Status code is 200\", function () {\r",
+															"    pm.response.to.have.status(200);\r",
+															"});\r",
+															"pm.test(\"Validate content\", function () {\r",
+															"    var jsonData = pm.response.json()[0];\r",
+															"    console.log(\"Expected: \" + JSON.stringify(expected));\r",
+															"    console.log(\"Received: \" + JSON.stringify(jsonData));\r",
+															"    pm.expect(jsonData).to.eql(expected);\r",
+															"});"
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "GET",
+												"header": [
+													{
+														"key": "Accept",
+														"value": "application/ld+json"
+													},
+													{
+														"key": "Link",
+														"value": "<{{@context}}>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"',"
+													}
+												],
+												"url": {
+													"raw": "{{query-manager}}/ngsi-ld/v1/entities/?type=TestType",
+													"host": [
+														"{{query-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"entities",
+														""
+													],
+													"query": [
+														{
+															"key": "type",
+															"value": "TestType"
+														}
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Delete Entity",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 204\", function () {\r",
+															"    pm.response.to.have.status(204);\r",
+															"});\r",
+															"pm.collectionVariables.clear();"
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "DELETE",
+												"header": [],
+												"url": {
+													"raw": "{{remote-one}}/ngsi-ld/v1/entities/urn:test:testentity1",
+													"host": [
+														"{{remote-one}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"entities",
+														"urn:test:testentity1"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "TestType reg",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 204\", function () {\r",
+															"    pm.response.to.have.status(204);\r",
+															"});"
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "DELETE",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json"
+													}
+												],
+												"url": {
+													"raw": "{{registry-manager}}/ngsi-ld/v1/csourceRegistrations/urn:regtest1",
+													"host": [
+														"{{registry-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"csourceRegistrations",
+														"urn:regtest1"
+													]
+												}
+											},
+											"response": []
+										}
+									]
+								},
+								{
+									"name": "Entity Context in Link",
+									"item": [
+										{
+											"name": "TestType reg",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 201\", function () {\r",
+															"    pm.response.to.have.status(201);\r",
+															"});"
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "POST",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/ld+json"
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\r\n    \"id\":\"urn:regtest1\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{scorpioone}}\",\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{registry-manager}}/ngsi-ld/v1/csourceRegistrations/",
+													"host": [
+														"{{registry-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"csourceRegistrations",
+														""
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Create Simple Entity With @context in link",
+											"event": [
+												{
+													"listen": "prerequest",
+													"script": {
+														"exec": [
+															""
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												},
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+															"console.log(payloadBody.id);\r",
+															"var entityId = payloadBody.id;\r",
+															"pm.collectionVariables.set(\"created\", payloadBody);\r",
+															"pm.collectionVariables.set(\"entityId\", entityId);\r",
+															"pm.collectionVariables.set(\"link\", pm.request.headers.get(\"Link\"));\r",
+															"\r",
+															"pm.test(\"Status code is 201\", function () {\r",
+															"    pm.response.to.have.status(201);\r",
+															"});\r",
+															"pm.test(\"Check location header\", function () {\r",
+															"    pm.response.to.have.header(\"Location\");\r",
+															"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+															"});\r",
+															"\r",
+															"\r",
+															""
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "POST",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json"
+													},
+													{
+														"key": "Link",
+														"value": "<https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\""
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n    \"listproperty\": {\"type\": \"ListProperty\", \"valueList\": [100,200,300]},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"passenger\": {\r\n       \"type\": \"ListRelationship\",\r\n       \"objectType\": \"Person\",\r\n       \"objectList\": [\r\n           \"urn:ngsi-ld:Person:Alice\",\r\n           \"urn:ngsi-ld:Person:Bob\"\r\n       ]\r\n   }\r\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{remote-one}}/ngsi-ld/v1/entities",
+													"host": [
+														"{{remote-one}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"entities"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Get Created Entity and Validate content",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"var expected = pm.collectionVariables.get(\"created\");\r",
+															"var expectedLink = pm.collectionVariables.get(\"link\");\r",
+															"pm.test(\"Status code is 200\", function () {\r",
+															"    pm.response.to.have.status(200);\r",
+															"});\r",
+															"pm.test(\"Validate content\", function () {\r",
+															"    var jsonData = pm.response.json();\r",
+															"    pm.expect(jsonData[0]).to.eql(expected);\r",
+															"});\r",
+															"pm.test(\"Validate Link header\", function () {\r",
+															"    var headers = pm.response.headers.all();\r",
+															"    var links = []\r",
+															"    headers.forEach(function(itm, idx){\r",
+															"        if(itm.key == \"Link\"){\r",
+															"            links.push(itm.value);\r",
+															"        }\r",
+															"    });\r",
+															"    console.log(\"expected Link: \" + expectedLink);\r",
+															"    console.log(\"received Links: \" + links);\r",
+															"    pm.expect(links).to.include(expectedLink);\r",
+															"});"
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "GET",
+												"header": [
+													{
+														"key": "Accept",
+														"value": "application/json"
+													},
+													{
+														"key": "Link",
+														"value": "{{link}}"
+													}
+												],
+												"url": {
+													"raw": "{{query-manager}}/ngsi-ld/v1/entities/?type=TestType",
+													"host": [
+														"{{query-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"entities",
+														""
+													],
+													"query": [
+														{
+															"key": "type",
+															"value": "TestType"
+														}
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Delete Entity",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 204\", function () {\r",
+															"    pm.response.to.have.status(204);\r",
+															"});\r",
+															"pm.collectionVariables.clear();"
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "DELETE",
+												"header": [],
+												"url": {
+													"raw": "{{remote-one}}/ngsi-ld/v1/entities/urn:test:testentity1",
+													"host": [
+														"{{remote-one}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"entities",
+														"urn:test:testentity1"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "TestType reg",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 204\", function () {\r",
+															"    pm.response.to.have.status(204);\r",
+															"});"
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "DELETE",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json"
+													}
+												],
+												"url": {
+													"raw": "{{registry-manager}}/ngsi-ld/v1/csourceRegistrations/urn:regtest1",
+													"host": [
+														"{{registry-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"csourceRegistrations",
+														"urn:regtest1"
+													]
+												}
+											},
+											"response": []
+										}
+									]
+								},
+								{
+									"name": "Entity Concise",
+									"item": [
+										{
+											"name": "TestType reg",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 201\", function () {\r",
+															"    pm.response.to.have.status(201);\r",
+															"});"
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "POST",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json"
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\r\n    \"id\":\"urn:regtest1\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{scorpioone}}\"\r\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{registry-manager}}/ngsi-ld/v1/csourceRegistrations/",
+													"host": [
+														"{{registry-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"csourceRegistrations",
+														""
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Create Simple Entity No Context",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+															"console.log(payloadBody.id);\r",
+															"var entityId = payloadBody.id;\r",
+															"pm.collectionVariables.set(\"created\", payloadBody);\r",
+															"pm.collectionVariables.set(\"entityId\", entityId);\r",
+															"pm.test(\"Status code is 201\", function () {\r",
+															"    pm.response.to.have.status(201);\r",
+															"});\r",
+															"pm.test(\"Check location header\", function () {\r",
+															"    pm.response.to.have.header(\"Location\");\r",
+															"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+															"});\r",
+															"\r",
+															"\r",
+															""
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												},
+												{
+													"listen": "prerequest",
+													"script": {
+														"exec": [
+															""
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "POST",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json"
+													},
+													{
+														"key": "Accept",
+														"value": "application/json",
+														"disabled": true
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": \"teststring\",\r\n    \"vocabproperty\": {\"vocab\": \"x\"},\r\n    \"intproperty\": 123,\r\n    \"floatproperty\": 123.456,\r\n    \"intarraytest\":[1,2,3],\r\n    \"stringarraytest\":[\"a\",\"b\",\"c\"],\r\n    \"complexproperty\": {\"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"mapproperty\": {\"some\": {\"more\": \"values\"}},\r\n    \"testrelationship\": {\"object\": \"urn:testref1\"},\r\n    \"street\": {\r\n        \"languageMap\": {\r\n            \"fr\": \"Grand Place\",\r\n            \"nl\": \"Grote Markt\"\r\n        }\r\n    },\r\n    \"testjsonpropery\": {\r\n         \"json\": {\r\n             \"id\": \"85a6cc52-0589-45f9\",\r\n            \"value\": \"Overstay 60 minutes\"\r\n      }\r\n  }\r\n\r\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{remote-one}}/ngsi-ld/v1/entities",
+													"host": [
+														"{{remote-one}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"entities"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Get Created Entity and Validate content",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"var expected = [{\r",
+															"    \"id\": \"urn:test:testentity1\",\r",
+															"    \"type\": \"TestType\",\r",
+															"    \"complexproperty\": {\r",
+															"        \"type\": \"Property\",\r",
+															"        \"value\": {\r",
+															"            \"some\": {\r",
+															"                \"more\": \"values\"\r",
+															"            }\r",
+															"        }\r",
+															"    },\r",
+															"    \"floatproperty\": {\r",
+															"        \"type\": \"Property\",\r",
+															"        \"value\": 123.456\r",
+															"    },\r",
+															"    \"intarraytest\": {\r",
+															"        \"type\": \"Property\",\r",
+															"        \"value\": [\r",
+															"            1,\r",
+															"            2,\r",
+															"            3\r",
+															"        ]\r",
+															"    },\r",
+															"    \"intproperty\": {\r",
+															"        \"type\": \"Property\",\r",
+															"        \"value\": 123\r",
+															"    },\r",
+															"    \"mapproperty\": {\r",
+															"        \"type\": \"Property\",\r",
+															"        \"value\": {\r",
+															"            \"some\": {\r",
+															"                \"more\": \"values\"\r",
+															"            }\r",
+															"        }\r",
+															"    },\r",
+															"    \"street\": {\r",
+															"        \"type\": \"LanguageProperty\",\r",
+															"        \"languageMap\": {\r",
+															"            \"fr\": \"Grand Place\",\r",
+															"            \"nl\": \"Grote Markt\"\r",
+															"        }\r",
+															"    },\r",
+															"    \"stringarraytest\": {\r",
+															"        \"type\": \"Property\",\r",
+															"        \"value\": [\r",
+															"            \"a\",\r",
+															"            \"b\",\r",
+															"            \"c\"\r",
+															"        ]\r",
+															"    },\r",
+															"    \"stringproperty\": {\r",
+															"        \"type\": \"Property\",\r",
+															"        \"value\": \"teststring\"\r",
+															"    },\r",
+															"    \"testrelationship\": {\r",
+															"        \"type\": \"Relationship\",\r",
+															"        \"object\": \"urn:testref1\"\r",
+															"    },\r",
+															"    \"vocabproperty\": {\r",
+															"        \"type\": \"VocabProperty\",\r",
+															"        \"vocab\": \"x\"\r",
+															"    },\r",
+															"    \"testjsonpropery\": {\r",
+															"        \"type\": \"JsonProperty\",\r",
+															"         \"json\": {\r",
+															"             \"id\": \"85a6cc52-0589-45f9\",\r",
+															"            \"value\": \"Overstay 60 minutes\"\r",
+															"      }\r",
+															"  }\r",
+															"}];\r",
+															"pm.test(\"Status code is 200\", function () {\r",
+															"    pm.response.to.have.status(200);\r",
+															"});\r",
+															"pm.test(\"Validate content\", function () {\r",
+															"    var jsonData = pm.response.json();\r",
+															"    console.log(\"Expected: \" + expected);\r",
+															"    console.log(\"Received: \" + jsonData);\r",
+															"    pm.expect(jsonData).to.eql(expected);\r",
+															"});"
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "GET",
+												"header": [
+													{
+														"key": "Accept",
+														"value": "application/json"
+													}
+												],
+												"url": {
+													"raw": "{{query-manager}}/ngsi-ld/v1/entities/?type=TestType",
+													"host": [
+														"{{query-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"entities",
+														""
+													],
+													"query": [
+														{
+															"key": "type",
+															"value": "TestType"
+														}
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Delete Entity",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 204\", function () {\r",
+															"    pm.response.to.have.status(204);\r",
+															"});\r",
+															"pm.collectionVariables.clear();"
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "DELETE",
+												"header": [],
+												"url": {
+													"raw": "{{remote-one}}/ngsi-ld/v1/entities/urn:test:testentity1",
+													"host": [
+														"{{remote-one}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"entities",
+														"urn:test:testentity1"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "TestType reg",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 204\", function () {\r",
+															"    pm.response.to.have.status(204);\r",
+															"});"
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "DELETE",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json"
+													}
+												],
+												"url": {
+													"raw": "{{registry-manager}}/ngsi-ld/v1/csourceRegistrations/urn:regtest1",
+													"host": [
+														"{{registry-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"csourceRegistrations",
+														"urn:regtest1"
+													]
+												}
+											},
+											"response": []
+										}
+									]
+								}
+							]
+						},
+						{
+							"name": "Header forward CsourceReg",
+							"item": [
+								{
+									"name": "TestType reg",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"pm.test(\"Status code is 201\", function () {\r",
+													"    pm.response.to.have.status(201);\r",
+													"});"
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"id\":\"urn:regtest1\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"contextSourceInfo\": [\r\n        {\r\n            \"key\": \"Test-Head\",\r\n            \"value\": \"urn:ngsi-ld:request\"\r\n        }\r\n    ],\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{dumpreq}}\"\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{registry-manager}}/ngsi-ld/v1/csourceRegistrations/",
+											"host": [
+												"{{registry-manager}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"csourceRegistrations",
+												""
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Get Created Entity and Validate content",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"var expected = pm.collectionVariables.get(\"created\");\r",
+													"pm.test(\"Status code is 200\", function () {\r",
+													"    pm.response.to.have.status(200);\r",
+													"});\r",
+													"setTimeout(function(){\r",
+													"    var dumpServer = pm.environment.get(\"dumpreqexternal\");\r",
+													"    pm.sendRequest(dumpServer + \"/\" + \"last-request\", function (err, response) {\r",
+													"            pm.test(\"Check for request header\", function () {\r",
+													"            var value = response.json();\r",
+													"            console.log(\"Retrieving from dumpServer\")\r",
+													"            console.log(value);\r",
+													"            headers = value.headers;\r",
+													"            pm.expect(headers).to.have.property(\"Test-Head\");\r",
+													"            pm.expect(headers[\"Test-Head\"]).to.eql(\"testvalue\");\r",
+													"            });\r",
+													"        });\r",
+													"}, 3000);"
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Accept",
+												"value": "application/json"
+											},
+											{
+												"key": "Test-Head",
+												"value": "testvalue"
+											}
+										],
+										"url": {
+											"raw": "{{query-manager}}/ngsi-ld/v1/entities/?type=TestType",
+											"host": [
+												"{{query-manager}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"entities",
+												""
+											],
+											"query": [
+												{
+													"key": "type",
+													"value": "TestType"
+												}
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "TestType reg",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"pm.test(\"Status code is 204\", function () {\r",
+													"    pm.response.to.have.status(204);\r",
+													"});"
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "DELETE",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"url": {
+											"raw": "{{registry-manager}}/ngsi-ld/v1/csourceRegistrations/urn:regtest1",
+											"host": [
+												"{{registry-manager}}"
+											],
+											"path": [
+												"ngsi-ld",
+												"v1",
+												"csourceRegistrations",
+												"urn:regtest1"
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "2 child",
+					"item": [
+						{
+							"name": "Entity Create Tests",
+							"item": [
+								{
+									"name": "Entity No Context",
+									"item": [
+										{
+											"name": "TestType reg rem one",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 201\", function () {\r",
+															"    pm.response.to.have.status(201);\r",
+															"});"
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "POST",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json"
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\r\n    \"id\":\"urn:regtest1\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{scorpioone}}\"\r\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{registry-manager}}/ngsi-ld/v1/csourceRegistrations/",
+													"host": [
+														"{{registry-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"csourceRegistrations",
+														""
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "TestType reg rem two",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 201\", function () {\r",
+															"    pm.response.to.have.status(201);\r",
+															"});"
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "POST",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json"
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\r\n    \"id\":\"urn:regtest2\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{scorpiotwo}}\"\r\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{registry-manager}}/ngsi-ld/v1/csourceRegistrations/",
+													"host": [
+														"{{registry-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"csourceRegistrations",
+														""
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Create Simple Entity No Context rem one",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+															"console.log(payloadBody.id);\r",
+															"var entityId = payloadBody.id;\r",
+															"pm.collectionVariables.set(\"createdOne\", payloadBody);\r",
+															"pm.collectionVariables.set(\"entityIdOne\", entityId);\r",
+															"pm.test(\"Status code is 201\", function () {\r",
+															"    pm.response.to.have.status(201);\r",
+															"});\r",
+															"pm.test(\"Check location header\", function () {\r",
+															"    pm.response.to.have.header(\"Location\");\r",
+															"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+															"});\r",
+															"\r",
+															"\r",
+															""
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												},
+												{
+													"listen": "prerequest",
+													"script": {
+														"exec": [
+															""
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "POST",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json"
+													},
+													{
+														"key": "Accept",
+														"value": "application/json",
+														"disabled": true
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\r\n    \"id\": \"urn:test:testentity:remone\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n    \"listproperty\": {\"type\": \"ListProperty\", \"valueList\": [100,200,300]},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"passenger\": {\r\n       \"type\": \"ListRelationship\",\r\n       \"objectType\": \"Person\",\r\n       \"objectList\": [\r\n           \"urn:ngsi-ld:Person:Alice\",\r\n           \"urn:ngsi-ld:Person:Bob\"\r\n       ]\r\n   },\r\n    \"street\": {\r\n        \"type\": \"LanguageProperty\",\r\n        \"languageMap\": {\r\n            \"fr\": \"Grand Place\",\r\n            \"nl\": \"Grote Markt\"\r\n        }\r\n    },\r\n    \"testjsonproperty\": {\r\n         \"type\": \"JsonProperty\",\r\n         \"json\": {\r\n             \"id\": \"85a6cc52-0589-45f9\",\r\n            \"value\": \"Overstay 60 minutes\"\r\n      }\r\n  }\r\n\r\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{remote-one}}/ngsi-ld/v1/entities",
+													"host": [
+														"{{remote-one}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"entities"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Create Simple Entity No Context rem two",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+															"console.log(payloadBody.id);\r",
+															"var entityId = payloadBody.id;\r",
+															"pm.collectionVariables.set(\"createdTwo\", payloadBody);\r",
+															"pm.collectionVariables.set(\"entityIdTwo\", entityId);\r",
+															"pm.test(\"Status code is 201\", function () {\r",
+															"    pm.response.to.have.status(201);\r",
+															"});\r",
+															"pm.test(\"Check location header\", function () {\r",
+															"    pm.response.to.have.header(\"Location\");\r",
+															"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+															"});\r",
+															"\r",
+															"\r",
+															""
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												},
+												{
+													"listen": "prerequest",
+													"script": {
+														"exec": [
+															""
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "POST",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json"
+													},
+													{
+														"key": "Accept",
+														"value": "application/json",
+														"disabled": true
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\r\n    \"id\": \"urn:test:testentity:remtwo\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n    \"listproperty\": {\"type\": \"ListProperty\", \"valueList\": [100,200,300]},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"passenger\": {\r\n       \"type\": \"ListRelationship\",\r\n       \"objectType\": \"Person\",\r\n       \"objectList\": [\r\n           \"urn:ngsi-ld:Person:Alice\",\r\n           \"urn:ngsi-ld:Person:Bob\"\r\n       ]\r\n   },\r\n    \"street\": {\r\n        \"type\": \"LanguageProperty\",\r\n        \"languageMap\": {\r\n            \"fr\": \"Grand Place\",\r\n            \"nl\": \"Grote Markt\"\r\n        }\r\n    },\r\n    \"testjsonproperty\": {\r\n         \"type\": \"JsonProperty\",\r\n         \"json\": {\r\n             \"id\": \"85a6cc52-0589-45f9\",\r\n            \"value\": \"Overstay 60 minutes\"\r\n      }\r\n  }\r\n\r\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{remote-two}}/ngsi-ld/v1/entities",
+													"host": [
+														"{{remote-two}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"entities"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Get Created Entity and Validate content",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"var expected = [pm.collectionVariables.get(\"createdTwo\"),pm.collectionVariables.get(\"createdOne\")];\r",
+															"pm.test(\"Status code is 200\", function () {\r",
+															"    pm.response.to.have.status(200);\r",
+															"});\r",
+															"pm.test(\"Validate content\", function () {\r",
+															"    var jsonData = pm.response.json();\r",
+															"    jsonData.sort((a, b) => a.id > b.id ? 1 : -1);\r",
+															"    expected.sort((a, b) => a.id > b.id ? 1 : -1);\r",
+															"    console.log(\"Expected: \" + expected[0].id);\r",
+															"    console.log(\"Received: \" + jsonData[0].id);\r",
+															"    pm.expect(jsonData).to.eql(expected);\r",
+															"});"
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "GET",
+												"header": [
+													{
+														"key": "Accept",
+														"value": "application/json"
+													}
+												],
+												"url": {
+													"raw": "{{query-manager}}/ngsi-ld/v1/entities/?type=TestType",
+													"host": [
+														"{{query-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"entities",
+														""
+													],
+													"query": [
+														{
+															"key": "type",
+															"value": "TestType"
+														}
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Delete Entity rem one",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 204\", function () {\r",
+															"    pm.response.to.have.status(204);\r",
+															"});\r",
+															"pm.collectionVariables.clear();"
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "DELETE",
+												"header": [],
+												"url": {
+													"raw": "{{remote-one}}/ngsi-ld/v1/entities/urn:test:testentity:remone",
+													"host": [
+														"{{remote-one}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"entities",
+														"urn:test:testentity:remone"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Delete Entity rem two",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 204\", function () {\r",
+															"    pm.response.to.have.status(204);\r",
+															"});\r",
+															"pm.collectionVariables.clear();"
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "DELETE",
+												"header": [],
+												"url": {
+													"raw": "{{remote-two}}/ngsi-ld/v1/entities/urn:test:testentity:remtwo",
+													"host": [
+														"{{remote-two}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"entities",
+														"urn:test:testentity:remtwo"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "TestType reg rem one",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 204\", function () {\r",
+															"    pm.response.to.have.status(204);\r",
+															"});"
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "DELETE",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json"
+													}
+												],
+												"url": {
+													"raw": "{{registry-manager}}/ngsi-ld/v1/csourceRegistrations/urn:regtest1",
+													"host": [
+														"{{registry-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"csourceRegistrations",
+														"urn:regtest1"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "TestType reg rem two",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 204\", function () {\r",
+															"    pm.response.to.have.status(204);\r",
+															"});"
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "DELETE",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json"
+													}
+												],
+												"url": {
+													"raw": "{{registry-manager}}/ngsi-ld/v1/csourceRegistrations/urn:regtest2",
+													"host": [
+														"{{registry-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"csourceRegistrations",
+														"urn:regtest2"
+													]
+												}
+											},
+											"response": []
+										}
+									]
+								},
+								{
+									"name": "Entity Context In Body",
+									"item": [
+										{
+											"name": "TestType reg rem one",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 201\", function () {\r",
+															"    pm.response.to.have.status(201);\r",
+															"});"
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "POST",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/ld+json"
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\r\n    \"id\":\"urn:regtest1\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{scorpioone}}\",\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{registry-manager}}/ngsi-ld/v1/csourceRegistrations/",
+													"host": [
+														"{{registry-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"csourceRegistrations",
+														""
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "TestType reg rem two",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 201\", function () {\r",
+															"    pm.response.to.have.status(201);\r",
+															"});"
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "POST",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/ld+json"
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\r\n    \"id\":\"urn:regtest2\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{scorpiotwo}}\",\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{registry-manager}}/ngsi-ld/v1/csourceRegistrations/",
+													"host": [
+														"{{registry-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"csourceRegistrations",
+														""
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Create Simple Entity With @context in body rem one",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+															"console.log(payloadBody.id);\r",
+															"var entityId = payloadBody.id;\r",
+															"pm.collectionVariables.set(\"createdOne\", payloadBody);\r",
+															"pm.collectionVariables.set(\"entityIdOne\", entityId);\r",
+															"pm.collectionVariables.set(\"@context\", payloadBody[\"@context\"][0]);\r",
+															"pm.test(\"Status code is 201\", function () {\r",
+															"    pm.response.to.have.status(201);\r",
+															"});\r",
+															"pm.test(\"Check location header\", function () {\r",
+															"    pm.response.to.have.header(\"Location\");\r",
+															"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+															"});\r",
+															"\r",
+															"\r",
+															""
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												},
+												{
+													"listen": "prerequest",
+													"script": {
+														"exec": [
+															""
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "POST",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/ld+json"
+													},
+													{
+														"key": "Accept",
+														"value": "application/json",
+														"disabled": true
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\r\n    \"id\": \"urn:test:testentity:remone\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n     \"listproperty\": {\"type\": \"ListProperty\", \"valueList\": [100,200,300]},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"passenger\": {\r\n       \"type\": \"ListRelationship\",\r\n       \"objectType\": \"Person\",\r\n       \"objectList\": [\r\n           \"urn:ngsi-ld:Person:Alice\",\r\n           \"urn:ngsi-ld:Person:Bob\"\r\n       ]\r\n   },\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{remote-one}}/ngsi-ld/v1/entities",
+													"host": [
+														"{{remote-one}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"entities"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Create Simple Entity With @context in body rem two",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+															"console.log(payloadBody.id);\r",
+															"var entityId = payloadBody.id;\r",
+															"pm.collectionVariables.set(\"createdTwo\", payloadBody);\r",
+															"pm.collectionVariables.set(\"entityIdTwo\", entityId);\r",
+															"pm.collectionVariables.set(\"@context\", payloadBody[\"@context\"][0]);\r",
+															"pm.test(\"Status code is 201\", function () {\r",
+															"    pm.response.to.have.status(201);\r",
+															"});\r",
+															"pm.test(\"Check location header\", function () {\r",
+															"    pm.response.to.have.header(\"Location\");\r",
+															"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+															"});\r",
+															"\r",
+															"\r",
+															""
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												},
+												{
+													"listen": "prerequest",
+													"script": {
+														"exec": [
+															""
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "POST",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/ld+json"
+													},
+													{
+														"key": "Accept",
+														"value": "application/json",
+														"disabled": true
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\r\n    \"id\": \"urn:test:testentity:remtwo\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n     \"listproperty\": {\"type\": \"ListProperty\", \"valueList\": [100,200,300]},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"passenger\": {\r\n       \"type\": \"ListRelationship\",\r\n       \"objectType\": \"Person\",\r\n       \"objectList\": [\r\n           \"urn:ngsi-ld:Person:Alice\",\r\n           \"urn:ngsi-ld:Person:Bob\"\r\n       ]\r\n   },\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{remote-two}}/ngsi-ld/v1/entities",
+													"host": [
+														"{{remote-two}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"entities"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Get Created Entity and Validate content",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"var expected = [pm.collectionVariables.get(\"createdOne\"),pm.collectionVariables.get(\"createdTwo\")];\r",
+															"pm.test(\"Status code is 200\", function () {\r",
+															"    pm.response.to.have.status(200);\r",
+															"});\r",
+															"pm.test(\"Validate content\", function () {\r",
+															"    var jsonData = pm.response.json();\r",
+															"    jsonData.sort((a, b) => a.id > b.id ? 1 : -1);\r",
+															"    expected.sort((a, b) => a.id > b.id ? 1 : -1);\r",
+															"    console.log(\"Expected: \" + expected[0].id);\r",
+															"    console.log(\"Received: \" + jsonData[0].id);\r",
+															"    pm.expect(jsonData).to.eql(expected);\r",
+															"});"
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "GET",
+												"header": [
+													{
+														"key": "Accept",
+														"value": "application/ld+json"
+													},
+													{
+														"key": "Link",
+														"value": "<{{@context}}>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"',"
+													}
+												],
+												"url": {
+													"raw": "{{query-manager}}/ngsi-ld/v1/entities/?type=TestType",
+													"host": [
+														"{{query-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"entities",
+														""
+													],
+													"query": [
+														{
+															"key": "type",
+															"value": "TestType"
+														}
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Delete Entity rem one",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 204\", function () {\r",
+															"    pm.response.to.have.status(204);\r",
+															"});\r",
+															"pm.collectionVariables.clear();"
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "DELETE",
+												"header": [],
+												"url": {
+													"raw": "{{remote-one}}/ngsi-ld/v1/entities/urn:test:testentity:remone",
+													"host": [
+														"{{remote-one}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"entities",
+														"urn:test:testentity:remone"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Delete Entity rem two",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 204\", function () {\r",
+															"    pm.response.to.have.status(204);\r",
+															"});\r",
+															"pm.collectionVariables.clear();"
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "DELETE",
+												"header": [],
+												"url": {
+													"raw": "{{remote-two}}/ngsi-ld/v1/entities/urn:test:testentity:remtwo",
+													"host": [
+														"{{remote-two}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"entities",
+														"urn:test:testentity:remtwo"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "TestType reg rem one",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 204\", function () {\r",
+															"    pm.response.to.have.status(204);\r",
+															"});"
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "DELETE",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json"
+													}
+												],
+												"url": {
+													"raw": "{{registry-manager}}/ngsi-ld/v1/csourceRegistrations/urn:regtest1",
+													"host": [
+														"{{registry-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"csourceRegistrations",
+														"urn:regtest1"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "TestType reg rem two",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 204\", function () {\r",
+															"    pm.response.to.have.status(204);\r",
+															"});"
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "DELETE",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json"
+													}
+												],
+												"url": {
+													"raw": "{{registry-manager}}/ngsi-ld/v1/csourceRegistrations/urn:regtest2",
+													"host": [
+														"{{registry-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"csourceRegistrations",
+														"urn:regtest2"
+													]
+												}
+											},
+											"response": []
+										}
+									]
+								},
+								{
+									"name": "Entity Context in Link",
+									"item": [
+										{
+											"name": "TestType reg rem one",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 201\", function () {\r",
+															"    pm.response.to.have.status(201);\r",
+															"});"
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "POST",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/ld+json"
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\r\n    \"id\":\"urn:regtest1\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{scorpioone}}\",\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{registry-manager}}/ngsi-ld/v1/csourceRegistrations/",
+													"host": [
+														"{{registry-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"csourceRegistrations",
+														""
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "TestType reg rem two",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 201\", function () {\r",
+															"    pm.response.to.have.status(201);\r",
+															"});"
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "POST",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/ld+json"
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\r\n    \"id\":\"urn:regtest2\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{scorpiotwo}}\",\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{registry-manager}}/ngsi-ld/v1/csourceRegistrations/",
+													"host": [
+														"{{registry-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"csourceRegistrations",
+														""
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Create Simple Entity With @context in link rem one",
+											"event": [
+												{
+													"listen": "prerequest",
+													"script": {
+														"exec": [
+															""
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												},
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+															"console.log(payloadBody.id);\r",
+															"var entityId = payloadBody.id;\r",
+															"pm.collectionVariables.set(\"createdOne\", payloadBody);\r",
+															"pm.collectionVariables.set(\"entityId\", entityId);\r",
+															"pm.collectionVariables.set(\"link\", pm.request.headers.get(\"Link\"));\r",
+															"\r",
+															"pm.test(\"Status code is 201\", function () {\r",
+															"    pm.response.to.have.status(201);\r",
+															"});\r",
+															"pm.test(\"Check location header\", function () {\r",
+															"    pm.response.to.have.header(\"Location\");\r",
+															"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+															"});\r",
+															"\r",
+															"\r",
+															""
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "POST",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json"
+													},
+													{
+														"key": "Link",
+														"value": "<https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\""
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\r\n    \"id\": \"urn:test:testentity:remone\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n    \"listproperty\": {\"type\": \"ListProperty\", \"valueList\": [100,200,300]},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"passenger\": {\r\n       \"type\": \"ListRelationship\",\r\n       \"objectType\": \"Person\",\r\n       \"objectList\": [\r\n           \"urn:ngsi-ld:Person:Alice\",\r\n           \"urn:ngsi-ld:Person:Bob\"\r\n       ]\r\n   }\r\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{remote-one}}/ngsi-ld/v1/entities",
+													"host": [
+														"{{remote-one}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"entities"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Create Simple Entity With @context in link rem two",
+											"event": [
+												{
+													"listen": "prerequest",
+													"script": {
+														"exec": [
+															""
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												},
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+															"console.log(payloadBody.id);\r",
+															"var entityId = payloadBody.id;\r",
+															"pm.collectionVariables.set(\"createdTwo\", payloadBody);\r",
+															"pm.collectionVariables.set(\"entityId\", entityId);\r",
+															"pm.collectionVariables.set(\"link\", pm.request.headers.get(\"Link\"));\r",
+															"\r",
+															"pm.test(\"Status code is 201\", function () {\r",
+															"    pm.response.to.have.status(201);\r",
+															"});\r",
+															"pm.test(\"Check location header\", function () {\r",
+															"    pm.response.to.have.header(\"Location\");\r",
+															"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+															"});\r",
+															"\r",
+															"\r",
+															""
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "POST",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json"
+													},
+													{
+														"key": "Link",
+														"value": "<https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\""
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\r\n    \"id\": \"urn:test:testentity:remtwo\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n    \"listproperty\": {\"type\": \"ListProperty\", \"valueList\": [100,200,300]},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"passenger\": {\r\n       \"type\": \"ListRelationship\",\r\n       \"objectType\": \"Person\",\r\n       \"objectList\": [\r\n           \"urn:ngsi-ld:Person:Alice\",\r\n           \"urn:ngsi-ld:Person:Bob\"\r\n       ]\r\n   }\r\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{remote-one}}/ngsi-ld/v1/entities",
+													"host": [
+														"{{remote-one}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"entities"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Get Created Entity and Validate content",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"var expected = [pm.collectionVariables.get(\"createdTwo\"),pm.collectionVariables.get(\"createdOne\")];\r",
+															"pm.test(\"Status code is 200\", function () {\r",
+															"    pm.response.to.have.status(200);\r",
+															"});\r",
+															"pm.test(\"Validate content\", function () {\r",
+															"    var jsonData = pm.response.json();\r",
+															"    jsonData.sort((a, b) => a.id > b.id ? 1 : -1);\r",
+															"    expected.sort((a, b) => a.id > b.id ? 1 : -1);\r",
+															"    console.log(\"Expected: \" + expected[0].id);\r",
+															"    console.log(\"Received: \" + jsonData[0].id);\r",
+															"    pm.expect(jsonData).to.eql(expected);\r",
+															"});"
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "GET",
+												"header": [
+													{
+														"key": "Accept",
+														"value": "application/json"
+													},
+													{
+														"key": "Link",
+														"value": "{{link}}"
+													}
+												],
+												"url": {
+													"raw": "{{query-manager}}/ngsi-ld/v1/entities/?type=TestType",
+													"host": [
+														"{{query-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"entities",
+														""
+													],
+													"query": [
+														{
+															"key": "type",
+															"value": "TestType"
+														}
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Delete Entity rem one",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 204\", function () {\r",
+															"    pm.response.to.have.status(204);\r",
+															"});\r",
+															"pm.collectionVariables.clear();"
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "DELETE",
+												"header": [],
+												"url": {
+													"raw": "{{remote-one}}/ngsi-ld/v1/entities/urn:test:testentity:remone",
+													"host": [
+														"{{remote-one}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"entities",
+														"urn:test:testentity:remone"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Delete Entity rem two",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 204\", function () {\r",
+															"    pm.response.to.have.status(204);\r",
+															"});\r",
+															"pm.collectionVariables.clear();"
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "DELETE",
+												"header": [],
+												"url": {
+													"raw": "{{remote-one}}/ngsi-ld/v1/entities/urn:test:testentity:remtwo",
+													"host": [
+														"{{remote-one}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"entities",
+														"urn:test:testentity:remtwo"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "TestType reg rem one",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 204\", function () {\r",
+															"    pm.response.to.have.status(204);\r",
+															"});"
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "DELETE",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json"
+													}
+												],
+												"url": {
+													"raw": "{{registry-manager}}/ngsi-ld/v1/csourceRegistrations/urn:regtest1",
+													"host": [
+														"{{registry-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"csourceRegistrations",
+														"urn:regtest1"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "TestType reg rem two",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 204\", function () {\r",
+															"    pm.response.to.have.status(204);\r",
+															"});"
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "DELETE",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json"
+													}
+												],
+												"url": {
+													"raw": "{{registry-manager}}/ngsi-ld/v1/csourceRegistrations/urn:regtest2",
+													"host": [
+														"{{registry-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"csourceRegistrations",
+														"urn:regtest2"
+													]
+												}
+											},
+											"response": []
+										}
+									]
+								},
+								{
+									"name": "Entity Concise",
+									"item": [
+										{
+											"name": "TestType reg rem one",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 201\", function () {\r",
+															"    pm.response.to.have.status(201);\r",
+															"});"
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "POST",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json"
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\r\n    \"id\":\"urn:regtest1\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{scorpioone}}\"\r\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{registry-manager}}/ngsi-ld/v1/csourceRegistrations/",
+													"host": [
+														"{{registry-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"csourceRegistrations",
+														""
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "TestType reg rem two",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 201\", function () {\r",
+															"    pm.response.to.have.status(201);\r",
+															"});"
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "POST",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json"
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\r\n    \"id\":\"urn:regtest2\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{scorpiotwo}}\"\r\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{registry-manager}}/ngsi-ld/v1/csourceRegistrations/",
+													"host": [
+														"{{registry-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"csourceRegistrations",
+														""
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Create Simple Entity No Context rem one",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+															"console.log(payloadBody.id);\r",
+															"var entityId = payloadBody.id;\r",
+															"pm.collectionVariables.set(\"createdOne\", payloadBody);\r",
+															"pm.collectionVariables.set(\"entityId\", entityId);\r",
+															"pm.test(\"Status code is 201\", function () {\r",
+															"    pm.response.to.have.status(201);\r",
+															"});\r",
+															"pm.test(\"Check location header\", function () {\r",
+															"    pm.response.to.have.header(\"Location\");\r",
+															"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+															"});\r",
+															"\r",
+															"\r",
+															""
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												},
+												{
+													"listen": "prerequest",
+													"script": {
+														"exec": [
+															""
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "POST",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json"
+													},
+													{
+														"key": "Accept",
+														"value": "application/json",
+														"disabled": true
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\r\n    \"id\": \"urn:test:testentity:remone\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": \"teststring\",\r\n    \"vocabproperty\": {\r\n        \"vocab\": \"x\"\r\n    },\r\n    \"intproperty\": 123,\r\n    \"floatproperty\": 123.456,\r\n    \"intarraytest\": [\r\n        1,\r\n        2,\r\n        3\r\n    ],\r\n    \"stringarraytest\": [\r\n        \"a\",\r\n        \"b\",\r\n        \"c\"\r\n    ],\r\n    \"complexproperty\": {\r\n        \"value\": {\r\n            \"some\": {\r\n                \"more\": \"values\"\r\n            }\r\n        }\r\n    },\r\n    \"mapproperty\": {\r\n        \"some\": {\r\n            \"more\": \"values\"\r\n        }\r\n    },\r\n    \"testrelationship\": {\r\n        \"object\": \"urn:testref1\"\r\n    },\r\n    \"street\": {\r\n        \"languageMap\": {\r\n            \"fr\": \"Grand Place\",\r\n            \"nl\": \"Grote Markt\"\r\n        }\r\n    },\r\n    \"testjsonpropery\": {\r\n        \"json\": {\r\n            \"id\": \"85a6cc52-0589-45f9\",\r\n            \"value\": \"Overstay 60 minutes\"\r\n        }\r\n    }\r\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{remote-one}}/ngsi-ld/v1/entities",
+													"host": [
+														"{{remote-one}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"entities"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Create Simple Entity No Context rem two",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+															"console.log(payloadBody.id);\r",
+															"var entityId = payloadBody.id;\r",
+															"pm.collectionVariables.set(\"createdTwo\", payloadBody);\r",
+															"pm.collectionVariables.set(\"entityId\", entityId);\r",
+															"pm.test(\"Status code is 201\", function () {\r",
+															"    pm.response.to.have.status(201);\r",
+															"});\r",
+															"pm.test(\"Check location header\", function () {\r",
+															"    pm.response.to.have.header(\"Location\");\r",
+															"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+															"});\r",
+															"\r",
+															"\r",
+															""
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												},
+												{
+													"listen": "prerequest",
+													"script": {
+														"exec": [
+															""
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "POST",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json"
+													},
+													{
+														"key": "Accept",
+														"value": "application/json",
+														"disabled": true
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\r\n    \"id\": \"urn:test:testentity:remtwo\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": \"teststring\",\r\n    \"vocabproperty\": {\r\n        \"vocab\": \"x\"\r\n    },\r\n    \"intproperty\": 123,\r\n    \"floatproperty\": 123.456,\r\n    \"intarraytest\": [\r\n        1,\r\n        2,\r\n        3\r\n    ],\r\n    \"stringarraytest\": [\r\n        \"a\",\r\n        \"b\",\r\n        \"c\"\r\n    ],\r\n    \"complexproperty\": {\r\n        \"value\": {\r\n            \"some\": {\r\n                \"more\": \"values\"\r\n            }\r\n        }\r\n    },\r\n    \"mapproperty\": {\r\n        \"some\": {\r\n            \"more\": \"values\"\r\n        }\r\n    },\r\n    \"testrelationship\": {\r\n        \"object\": \"urn:testref1\"\r\n    },\r\n    \"street\": {\r\n        \"languageMap\": {\r\n            \"fr\": \"Grand Place\",\r\n            \"nl\": \"Grote Markt\"\r\n        }\r\n    },\r\n    \"testjsonpropery\": {\r\n        \"json\": {\r\n            \"id\": \"85a6cc52-0589-45f9\",\r\n            \"value\": \"Overstay 60 minutes\"\r\n        }\r\n    }\r\n}",
+													"options": {
+														"raw": {
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{remote-one}}/ngsi-ld/v1/entities",
+													"host": [
+														"{{remote-one}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"entities"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Get Created Entity and Validate content",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"let expected = [\r",
+															"    {\r",
+															"        \"id\": \"urn:test:testentity:remone\",\r",
+															"        \"type\": \"TestType\",\r",
+															"        \"complexproperty\": {\r",
+															"            \"type\": \"Property\",\r",
+															"            \"value\": {\r",
+															"                \"some\": {\r",
+															"                    \"more\": \"values\"\r",
+															"                }\r",
+															"            }\r",
+															"        },\r",
+															"        \"floatproperty\": {\r",
+															"            \"type\": \"Property\",\r",
+															"            \"value\": 123.456\r",
+															"        },\r",
+															"        \"intarraytest\": {\r",
+															"            \"type\": \"Property\",\r",
+															"            \"value\": [\r",
+															"                1,\r",
+															"                2,\r",
+															"                3\r",
+															"            ]\r",
+															"        },\r",
+															"        \"intproperty\": {\r",
+															"            \"type\": \"Property\",\r",
+															"            \"value\": 123\r",
+															"        },\r",
+															"        \"mapproperty\": {\r",
+															"            \"type\": \"Property\",\r",
+															"            \"value\": {\r",
+															"                \"some\": {\r",
+															"                    \"more\": \"values\"\r",
+															"                }\r",
+															"            }\r",
+															"        },\r",
+															"        \"street\": {\r",
+															"            \"type\": \"LanguageProperty\",\r",
+															"            \"languageMap\": {\r",
+															"                \"fr\": \"Grand Place\",\r",
+															"                \"nl\": \"Grote Markt\"\r",
+															"            }\r",
+															"        },\r",
+															"        \"stringarraytest\": {\r",
+															"            \"type\": \"Property\",\r",
+															"            \"value\": [\r",
+															"                \"a\",\r",
+															"                \"b\",\r",
+															"                \"c\"\r",
+															"            ]\r",
+															"        },\r",
+															"        \"stringproperty\": {\r",
+															"            \"type\": \"Property\",\r",
+															"            \"value\": \"teststring\"\r",
+															"        },\r",
+															"        \"testjsonpropery\": {\r",
+															"            \"type\": \"JsonProperty\",\r",
+															"            \"json\": {\r",
+															"                \"id\": \"85a6cc52-0589-45f9\",\r",
+															"                \"value\": \"Overstay 60 minutes\"\r",
+															"            }\r",
+															"        },\r",
+															"        \"testrelationship\": {\r",
+															"            \"type\": \"Relationship\",\r",
+															"            \"object\": \"urn:testref1\"\r",
+															"        },\r",
+															"        \"vocabproperty\": {\r",
+															"            \"type\": \"VocabProperty\",\r",
+															"            \"vocab\": \"x\"\r",
+															"        }\r",
+															"    },\r",
+															"    {\r",
+															"        \"id\": \"urn:test:testentity:remtwo\",\r",
+															"        \"type\": \"TestType\",\r",
+															"        \"complexproperty\": {\r",
+															"            \"type\": \"Property\",\r",
+															"            \"value\": {\r",
+															"                \"some\": {\r",
+															"                    \"more\": \"values\"\r",
+															"                }\r",
+															"            }\r",
+															"        },\r",
+															"        \"floatproperty\": {\r",
+															"            \"type\": \"Property\",\r",
+															"            \"value\": 123.456\r",
+															"        },\r",
+															"        \"intarraytest\": {\r",
+															"            \"type\": \"Property\",\r",
+															"            \"value\": [\r",
+															"                1,\r",
+															"                2,\r",
+															"                3\r",
+															"            ]\r",
+															"        },\r",
+															"        \"intproperty\": {\r",
+															"            \"type\": \"Property\",\r",
+															"            \"value\": 123\r",
+															"        },\r",
+															"        \"mapproperty\": {\r",
+															"            \"type\": \"Property\",\r",
+															"            \"value\": {\r",
+															"                \"some\": {\r",
+															"                    \"more\": \"values\"\r",
+															"                }\r",
+															"            }\r",
+															"        },\r",
+															"        \"street\": {\r",
+															"            \"type\": \"LanguageProperty\",\r",
+															"            \"languageMap\": {\r",
+															"                \"fr\": \"Grand Place\",\r",
+															"                \"nl\": \"Grote Markt\"\r",
+															"            }\r",
+															"        },\r",
+															"        \"stringarraytest\": {\r",
+															"            \"type\": \"Property\",\r",
+															"            \"value\": [\r",
+															"                \"a\",\r",
+															"                \"b\",\r",
+															"                \"c\"\r",
+															"            ]\r",
+															"        },\r",
+															"        \"stringproperty\": {\r",
+															"            \"type\": \"Property\",\r",
+															"            \"value\": \"teststring\"\r",
+															"        },\r",
+															"        \"testjsonpropery\": {\r",
+															"            \"type\": \"JsonProperty\",\r",
+															"            \"json\": {\r",
+															"                \"id\": \"85a6cc52-0589-45f9\",\r",
+															"                \"value\": \"Overstay 60 minutes\"\r",
+															"            }\r",
+															"        },\r",
+															"        \"testrelationship\": {\r",
+															"            \"type\": \"Relationship\",\r",
+															"            \"object\": \"urn:testref1\"\r",
+															"        },\r",
+															"        \"vocabproperty\": {\r",
+															"            \"type\": \"VocabProperty\",\r",
+															"            \"vocab\": \"x\"\r",
+															"        }\r",
+															"    }\r",
+															"];\r",
+															"pm.test(\"Status code is 200\", function () {\r",
+															"    pm.response.to.have.status(200);\r",
+															"});\r",
+															"pm.test(\"Validate content\", function () {\r",
+															"    let jsonData = pm.response.json();\r",
+															"    jsonData.sort((a, b) => a.id > b.id ? 1 : -1);\r",
+															"    expected.sort((a, b) => a.id > b.id ? 1 : -1);\r",
+															"    console.log(\"Expected: \" + expected[0].id);\r",
+															"    console.log(\"Received: \" + jsonData[0].id);\r",
+															"    pm.expect(jsonData).to.eql(expected);\r",
+															"});"
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "GET",
+												"header": [
+													{
+														"key": "Accept",
+														"value": "application/json"
+													}
+												],
+												"url": {
+													"raw": "{{query-manager}}/ngsi-ld/v1/entities/?type=TestType",
+													"host": [
+														"{{query-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"entities",
+														""
+													],
+													"query": [
+														{
+															"key": "type",
+															"value": "TestType"
+														}
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Delete Entity rem one",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 204\", function () {\r",
+															"    pm.response.to.have.status(204);\r",
+															"});\r",
+															"pm.collectionVariables.clear();"
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "DELETE",
+												"header": [],
+												"url": {
+													"raw": "{{remote-one}}/ngsi-ld/v1/entities/urn:test:testentity:remone",
+													"host": [
+														"{{remote-one}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"entities",
+														"urn:test:testentity:remone"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "Delete Entity rem one rem two",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 204\", function () {\r",
+															"    pm.response.to.have.status(204);\r",
+															"});\r",
+															"pm.collectionVariables.clear();"
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "DELETE",
+												"header": [],
+												"url": {
+													"raw": "{{remote-one}}/ngsi-ld/v1/entities/urn:test:testentity:remtwo",
+													"host": [
+														"{{remote-one}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"entities",
+														"urn:test:testentity:remtwo"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "TestType reg rem one",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 204\", function () {\r",
+															"    pm.response.to.have.status(204);\r",
+															"});"
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "DELETE",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json"
+													}
+												],
+												"url": {
+													"raw": "{{registry-manager}}/ngsi-ld/v1/csourceRegistrations/urn:regtest1",
+													"host": [
+														"{{registry-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"csourceRegistrations",
+														"urn:regtest1"
+													]
+												}
+											},
+											"response": []
+										},
+										{
+											"name": "TestType reg rem two",
+											"event": [
+												{
+													"listen": "test",
+													"script": {
+														"exec": [
+															"pm.test(\"Status code is 204\", function () {\r",
+															"    pm.response.to.have.status(204);\r",
+															"});"
+														],
+														"type": "text/javascript",
+														"packages": {}
+													}
+												}
+											],
+											"request": {
+												"method": "DELETE",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json"
+													}
+												],
+												"url": {
+													"raw": "{{registry-manager}}/ngsi-ld/v1/csourceRegistrations/urn:regtest2",
+													"host": [
+														"{{registry-manager}}"
+													],
+													"path": [
+														"ngsi-ld",
+														"v1",
+														"csourceRegistrations",
+														"urn:regtest2"
+													]
+												}
+											},
+											"response": []
+										}
+									]
+								}
+							]
+						}
+					]
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "created",
+			"value": ""
+		},
+		{
+			"key": "entityId",
+			"value": ""
+		}
+	]
+}

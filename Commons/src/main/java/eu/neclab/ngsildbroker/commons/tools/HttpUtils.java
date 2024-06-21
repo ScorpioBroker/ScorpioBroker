@@ -446,7 +446,9 @@ public final class HttpUtils {
 					.formatted(result.get(NGSIConstants.JSONLD_CONTEXT));
 			result.remove(NGSIConstants.JSONLD_CONTEXT).add("Link", linkHeader);
 		}
-		result.add("Accept", "application/json");
+		if(!result.contains("Accept")) {
+			result.add("Accept", "application/json");
+		}
 		if (tenant != null) {
 			result.add(NGSIConstants.TENANT_HEADER, tenant);
 		}
@@ -1107,4 +1109,15 @@ public final class HttpUtils {
 		}
 		return context;
 	}
+	public static io.vertx.mutiny.core.MultiMap getHeadToFrwd(io.vertx.mutiny.core.MultiMap remoteHeaders, MultiMap headersFromReq) {
+		io.vertx.mutiny.core.MultiMap toFrwd = io.vertx.mutiny.core.MultiMap.newInstance(HeadersMultiMap.headers());
+		for(Entry<String, String> entry: remoteHeaders.entries()){
+			if(entry.getValue().equals("urn:ngsi-ld:request")){
+				toFrwd.add(entry.getKey(), headersFromReq.get(entry.getKey()));
+			}else{
+				toFrwd.add(entry.getKey(), entry.getValue());
+			}
+		}
+        return toFrwd;
+    }
 }

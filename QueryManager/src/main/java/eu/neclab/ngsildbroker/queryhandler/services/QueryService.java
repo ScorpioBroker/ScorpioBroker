@@ -15,6 +15,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.github.jsonldjava.core.JsonLdConsts;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.DataSetIdTerm;
 import eu.neclab.ngsildbroker.commons.tools.QueryParser;
+import io.vertx.core.http.impl.headers.HeadersMultiMap;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
@@ -174,7 +175,7 @@ public class QueryService {
 					contextLinks = parseLinkHeaderNoUni(remoteHost.headers().getAll("Link"),
 							NGSIConstants.HEADER_REL_LDCONTEXT);
 				}
-
+				MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),headersFromReq);
 				String idList = String.join(",", entry.getValue());
 				logger.debug("calling: " + remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "?id=" + idList
 						+ "&options=sysAttrs&limit=1000");
@@ -182,7 +183,7 @@ public class QueryService {
 				unis.add(webClient
 						.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "?id=" + idList
 								+ "&options=sysAttrs&limit=1000")
-						.putHeaders(remoteHost.headers()).putHeader("Link", linkHead).send().onItem()
+						.putHeaders(toFrwd).putHeader("Link", linkHead).send().onItem()
 						.transformToUni(response -> {
 							if (response != null && response.statusCode() == 200) {
 								return ldService.expand(contextLinks, response.bodyAsJsonArray().getList(), opts,
@@ -203,7 +204,7 @@ public class QueryService {
 								int baseLength = (remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "?id="
 										+ "&options=sysAttrs&limit=1000").length();
 								return handle414(baseLength, remoteHost, linkHead, String.join(",", entry.getValue()),
-										contextLinks);
+										contextLinks,headersFromReq);
 							}
 							if (response != null) {
 								logger.debug("response code: " + response.statusCode());
@@ -321,7 +322,7 @@ public class QueryService {
 	}
 
 	private Uni<Map<String, Map<String, Object>>> handle414(int baseLength, QueryRemoteHost remoteHost, String linkHead,
-			String idsString, List<Object> contextLinks) {
+															String idsString, List<Object> contextLinks, io.vertx.core.MultiMap headersFromReq) {
 		int maxLengthForIds = 2000 - baseLength;
 		if (maxLengthForIds <= idsString.indexOf(",")) {
 			logger.warn("failed to split up query");
@@ -334,11 +335,11 @@ public class QueryService {
 
 			index = idsString.lastIndexOf(",", maxLengthForIds);
 			String toUseIds = idsString.substring(0, index);
-
+			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),headersFromReq);
 			backUpUnis.add(webClient
 					.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "?id=" + toUseIds
 							+ "&options=sysAttrs&limit=1000")
-					.putHeaders(remoteHost.headers()).putHeader("Link", linkHead).send().onItem()
+					.putHeaders(toFrwd).putHeader("Link", linkHead).send().onItem()
 					.transformToUni(response -> {
 						if (response != null && response.statusCode() == 200) {
 							return ldService.expand(contextLinks, response.bodyAsJsonArray().getList(), opts,
@@ -367,13 +368,12 @@ public class QueryService {
 						logger.warn("failed to query with error " + e.getMessage());
 						return Uni.createFrom().item(new HashMap<String, Map<String, Object>>(0));
 					}));
-
 			idsString = idsString.substring(index + 1);
 			if (idsString.length() <= maxLengthForIds) {
 				backUpUnis.add(webClient
 						.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "?id=" + idsString
 								+ "&options=sysAttrs&limit=1000")
-						.putHeaders(remoteHost.headers()).putHeader("Link", linkHead).send().onItem()
+						.putHeaders(toFrwd).putHeader("Link", linkHead).send().onItem()
 						.transformToUni(response -> {
 							if (response != null && response.statusCode() == 200) {
 								return ldService.expand(contextLinks, response.bodyAsJsonArray().getList(), opts,
@@ -615,7 +615,7 @@ public class QueryService {
 				});
 	}
 
-	public Uni<List<Map<String, Object>>> getTypesWithDetail(String tenant, boolean localOnly) {
+	public Uni<List<Map<String, Object>>> getTypesWithDetail(String tenant, boolean localOnly,io.vertx.core.MultiMap headersFromReq) {
 		Uni<List<Map<String, Object>>> local = queryDAO.getTypesWithDetails(tenant);
 		if (localOnly) {
 			return local;
@@ -628,7 +628,7 @@ public class QueryService {
 					RowSet<Row> rows = t.getItem1();
 					if (rows.size() > 0) {
 						List<Uni<List<Object>>> unis = getRemoteCalls(rows,
-								NGSIConstants.NGSI_LD_TYPES_ENDPOINT + "?details=true");
+								NGSIConstants.NGSI_LD_TYPES_ENDPOINT + "?details=true",headersFromReq);
 						return Uni.combine().all().unis(unis).combinedWith(list -> {
 							for (Object entry : list) {
 								if (((List) entry).isEmpty()) {
@@ -696,7 +696,7 @@ public class QueryService {
 
 	}
 
-	public Uni<Map<String, Object>> getTypes(String tenant, boolean localOnly) {
+	public Uni<Map<String, Object>> getTypes(String tenant, boolean localOnly,io.vertx.core.MultiMap headersFromReq) {
 		Uni<Map<String, Object>> local = queryDAO.getTypes(tenant);
 		if (localOnly) {
 			return local;
@@ -709,7 +709,7 @@ public class QueryService {
 					RowSet<Row> rows = t.getItem1();
 					Set<String> currentTypes = Sets.newHashSet(t.getItem2());
 					if (rows.size() > 0) {
-						List<Uni<List<Object>>> unis = getRemoteCalls(rows, NGSIConstants.NGSI_LD_TYPES_ENDPOINT);
+						List<Uni<List<Object>>> unis = getRemoteCalls(rows, NGSIConstants.NGSI_LD_TYPES_ENDPOINT,headersFromReq);
 						return Uni.combine().all().unis(unis).combinedWith(list -> {
 							for (Object entry : list) {
 								if (!((List) entry).isEmpty()) {
@@ -754,7 +754,7 @@ public class QueryService {
 
 	}
 
-	public Uni<Map<String, Object>> getType(String tenant, String type, boolean localOnly) {
+	public Uni<Map<String, Object>> getType(String tenant, String type, boolean localOnly,io.vertx.core.MultiMap headersFromReq) {
 		Uni<Map<String, Object>> local = queryDAO.getType(tenant, type);
 		if (localOnly) {
 			return local;
@@ -768,7 +768,7 @@ public class QueryService {
 					RowSet<Row> rows = t.getItem1();
 					if (rows.size() > 0) {
 						List<Uni<List<Object>>> remoteResults = getRemoteCalls(rows,
-								NGSIConstants.NGSI_LD_TYPES_ENDPOINT + "/" + type);
+								NGSIConstants.NGSI_LD_TYPES_ENDPOINT + "/" + type,headersFromReq);
 						return Uni.combine().all().unis(remoteResults).combinedWith(list -> {
 							long count = 0;
 							for (Object obj : list) {
@@ -849,7 +849,7 @@ public class QueryService {
 		});
 	}
 
-	public Uni<List<Map<String, Object>>> getAttribsWithDetails(String tenant, boolean localOnly) {
+	public Uni<List<Map<String, Object>>> getAttribsWithDetails(String tenant, boolean localOnly,io.vertx.core.MultiMap headersFromReq) {
 		Uni<List<Map<String, Object>>> local = queryDAO.getAttributesDetail(tenant);
 		if (localOnly) {
 			return local;
@@ -862,7 +862,7 @@ public class QueryService {
 					Map<String, Set<String>> attrib2EntityTypes = t.getItem2();
 					if (rows.size() > 0) {
 						List<Uni<List<Object>>> remoteResults = getRemoteCalls(rows,
-								NGSIConstants.NGSI_LD_ATTRIBUTES_ENDPOINT + "?details=true");
+								NGSIConstants.NGSI_LD_ATTRIBUTES_ENDPOINT + "?details=true",headersFromReq);
 						return Uni.combine().all().unis(remoteResults).combinedWith(list -> {
 							for (Object obj : list) {
 								if (((List) obj).isEmpty()) {
@@ -925,7 +925,7 @@ public class QueryService {
 
 	}
 
-	public Uni<Map<String, Object>> getAttribs(String tenant, boolean localOnly) {
+	public Uni<Map<String, Object>> getAttribs(String tenant, boolean localOnly,io.vertx.core.MultiMap headersFromReq) {
 		Uni<Map<String, Object>> local = queryDAO.getAttributeList(tenant);
 		if (localOnly) {
 			return local;
@@ -938,7 +938,7 @@ public class QueryService {
 					Set<String> attribIds = t.getItem2();
 					if (rows.size() > 0) {
 						List<Uni<List<Object>>> remoteResults = getRemoteCalls(rows,
-								NGSIConstants.NGSI_LD_ATTRIBUTES_ENDPOINT);
+								NGSIConstants.NGSI_LD_ATTRIBUTES_ENDPOINT,headersFromReq);
 						return Uni.combine().all().unis(remoteResults).combinedWith(list -> {
 							for (Object obj : list) {
 								if (((List) obj).isEmpty()) {
@@ -979,7 +979,7 @@ public class QueryService {
 		});
 	}
 
-	public Uni<Map<String, Object>> getAttrib(String tenant, String attrib, boolean localOnly) {
+	public Uni<Map<String, Object>> getAttrib(String tenant, String attrib, boolean localOnly,io.vertx.core.MultiMap headersFromReq) {
 		Uni<Map<String, Object>> local = queryDAO.getAttributeDetail(tenant, attrib);
 		if (localOnly) {
 			return local;
@@ -994,7 +994,7 @@ public class QueryService {
 					Set<String> entityTypes = t2.getItem2();
 					if (rows.size() > 0) {
 						List<Uni<List<Object>>> remoteResults = getRemoteCalls(rows,
-								NGSIConstants.NGSI_LD_ATTRIBUTES_ENDPOINT + "/" + attrib);
+								NGSIConstants.NGSI_LD_ATTRIBUTES_ENDPOINT + "/" + attrib,headersFromReq);
 						return Uni.combine().all().unis(remoteResults).combinedWith(list -> {
 							long count = 0;
 							for (Object obj : list) {
@@ -1066,14 +1066,16 @@ public class QueryService {
 		return localResult;
 	}
 
-	private List<Uni<List<Object>>> getRemoteCalls(RowSet<Row> rows, String endpoint) {
+	private List<Uni<List<Object>>> getRemoteCalls(RowSet<Row> rows, String endpoint,io.vertx.core.MultiMap headersFromReq) {
 		List<Uni<List<Object>>> unis = Lists.newArrayList();
 		rows.forEach(row -> {
 			// C.endpoint C.tenant_id, c.headers, c.reg_mode
 			String host = row.getString(0);
 			MultiMap remoteHeaders = MultiMap
 					.newInstance(HttpUtils.getHeadersForRemoteCall(row.getJsonArray(2), row.getString(1)));
-			unis.add(webClient.getAbs(host + endpoint).putHeaders(remoteHeaders).send().onFailure().recoverWithNull()
+			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHeaders,headersFromReq);
+
+			unis.add(webClient.getAbs(host + endpoint).putHeaders(toFrwd).send().onFailure().recoverWithNull()
 					.onItem().transformToUni(response -> {
 						String responseTypes;
 						if (response == null || response.statusCode() != 200) {
@@ -1097,7 +1099,7 @@ public class QueryService {
 	}
 	public Uni<Map<String, Object>> retrieveEntity(Context context, String tenant, String entityId, String attrs,
 												   LanguageQueryTerm lang, boolean localOnly, String containedBy, String join, boolean idsOnly,
-												   int joinLevel) {
+												   int joinLevel, io.vertx.core.MultiMap headersFromReq) {
 		AttrsQueryTerm attrsQuery;
 		try {
 			attrsQuery = QueryParser.parseAttrs(attrs, context);
@@ -1107,20 +1109,20 @@ public class QueryService {
 		Map<String, Object> attrsMap = QueryParser.parseInput(attrs);
 		Uni<Map<String, Object>> entity;
 		if (idsOnly) {
-			entity = idsOnly(getEntityFlat(context,tenant,entityId,attrsMap,lang,localOnly,containedBy,joinLevel,null));
+			entity = idsOnly(getEntityFlat(context,tenant,entityId,attrsMap,lang,localOnly,containedBy,joinLevel,null,headersFromReq));
 		} else if (join == null) {
-			entity = retrieveEntity(context,tenant,entityId,attrsQuery,lang,localOnly);
+			entity = retrieveEntity(context,tenant,entityId,attrsQuery,lang,localOnly,headersFromReq);
 		} else if (join.equals(NGSIConstants.FLAT)) {
-			entity = getEntityFlat(context,tenant,entityId,attrsMap,lang,localOnly,containedBy,joinLevel,null);
+			entity = getEntityFlat(context,tenant,entityId,attrsMap,lang,localOnly,containedBy,joinLevel,null,headersFromReq);
 		} else if (join.equals(NGSIConstants.INLINE)) {
-			entity = getEntityInline(context,tenant,entityId,attrsMap,lang,localOnly,containedBy,joinLevel);
+			entity = getEntityInline(context,tenant,entityId,attrsMap,lang,localOnly,containedBy,joinLevel,headersFromReq);
 		} else {
 			return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData));
 		}
         return entity;
     }
 	public Uni<Map<String, Object>> retrieveEntity(Context context, String tenant, String entityId, AttrsQueryTerm attrsQuery,
-			LanguageQueryTerm lang, boolean localOnly) {
+			LanguageQueryTerm lang, boolean localOnly, io.vertx.core.MultiMap headersFromReq) {
 		Uni<Map<String, Object>> local;
 		local = queryDAO.getEntity(entityId, tenant, attrsQuery);
 		if (localOnly) {
@@ -1146,9 +1148,11 @@ public class QueryService {
 			} else {
 				queryString = remoteHost.queryString() + "&options=sysAttrs";
 			}
+			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),headersFromReq);
+
 			unis.add(webClient
 					.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + entityId + queryString)
-					.putHeaders(remoteHost.headers()).send().onItem().transformToUni(response -> {
+					.putHeaders(toFrwd).send().onItem().transformToUni(response -> {
 						if (response == null || response.statusCode() != 200) {
 							return Uni.createFrom().item(new HashMap<String, Object>());
 						}
@@ -1392,6 +1396,7 @@ public class QueryService {
 		} else {
 			List<Uni<Tuple2<QueryRemoteHost, List<String>>>> unis = Lists.newArrayList();
 			for (QueryRemoteHost remoteHost : remoteHost2Query) {
+				MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),headersFromReq);
 				String linkHead;
 				if (!remoteHost.headers().contains("Link") && headersFromReq.contains("Link")) {
 					linkHead = headersFromReq.get("Link");
@@ -1411,7 +1416,7 @@ public class QueryService {
 					unis.add(webClient
 							.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT
 									+ remoteHost.queryString() + entityMapString)
-							.putHeaders(remoteHost.headers()).putHeader("Link", linkHead).timeout(timeout).send()
+							.putHeaders(toFrwd).putHeader("Link", linkHead).timeout(timeout).send()
 							.onItem().transformToUni(response -> {
 								List<String> result;
 								if (response != null && response.statusCode() == 200) {
@@ -1423,7 +1428,7 @@ public class QueryService {
 									if (response != null && response.statusCode() == 414) {
 										int baseLength = (remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT
 												+ entityMapString).length();
-										return handle414IdQuery(baseLength, remoteHost, linkHead, true);
+										return handle414IdQuery(baseLength, remoteHost, linkHead, true,headersFromReq);
 									}
 									if (response != null) {
 										logger.warn("status code: " + response.statusCode());
@@ -1443,7 +1448,7 @@ public class QueryService {
 					unis.add(webClient
 							.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT
 									+ remoteHost.queryString() + "&limit=1000")
-							.putHeaders(remoteHost.headers()).putHeader("Link", linkHead).timeout(timeout).send()
+							.putHeaders(toFrwd).putHeader("Link", linkHead).timeout(timeout).send()
 							.onItem().transformToUni(response -> {
 								List<String> result = Lists.newArrayList();
 								if (response != null && response.statusCode() == 200) {
@@ -1463,7 +1468,7 @@ public class QueryService {
 									if (response != null && response.statusCode() == 414) {
 										int baseLength = (remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT
 												+ "&limit=1000").length();
-										return handle414IdQuery(baseLength, remoteHost, linkHead, false);
+										return handle414IdQuery(baseLength, remoteHost, linkHead, false,headersFromReq);
 									}
 									if (response != null) {
 										logger.warn("status code: " + response.statusCode());
@@ -1523,8 +1528,9 @@ public class QueryService {
 	}
 
 	private Uni<Tuple2<QueryRemoteHost, List<String>>> handle414IdQuery(int baseLength, QueryRemoteHost remoteHost,
-			String linkHead, boolean entityMap) {
+																		String linkHead, boolean entityMap, io.vertx.core.MultiMap headersFromReq) {
 		int start = remoteHost.queryString().indexOf("id=");
+		MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),headersFromReq);
 		if (start == -1) {
 			logger.warn("failed to split up query");
 			return Uni.createFrom().item(Tuple2.of(remoteHost, Lists.newArrayList()));
@@ -1564,7 +1570,7 @@ public class QueryService {
 			backUpUnis.add(webClient
 					.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + baseQueryString + "id="
 							+ toUseIds + "&limit=1000")
-					.putHeaders(remoteHost.headers()).putHeader("Link", linkHead).timeout(timeout).send().onItem()
+					.putHeaders(toFrwd).putHeader("Link", linkHead).timeout(timeout).send().onItem()
 					.transformToUni(backupResponse -> {
 						List<String> backupResult = Lists.newArrayList();
 						if (backupResponse != null && backupResponse.statusCode() == 200) {
@@ -1581,7 +1587,7 @@ public class QueryService {
 				backUpUnis.add(webClient
 						.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + baseQueryString + "id="
 								+ idsString + "&limit=1000")
-						.putHeaders(remoteHost.headers()).putHeader("Link", linkHead).timeout(timeout).send().onItem()
+						.putHeaders(toFrwd).putHeader("Link", linkHead).timeout(timeout).send().onItem()
 						.transformToUni(backupResponse -> {
 							List<String> backupResult = Lists.newArrayList();
 							if (backupResponse != null && backupResponse.statusCode() == 200) {
@@ -1616,7 +1622,7 @@ public class QueryService {
 
 	public Uni<Map<String, Object>> getEntityFlat(Context context, String tenant, String entityId, Map<String, Object> attrsMap,
 												  LanguageQueryTerm lang, boolean localOnly, String containedBy,
-												  int joinLevel, List<Map<String, Object>> relResult) {
+												  int joinLevel, List<Map<String, Object>> relResult,io.vertx.core.MultiMap headersFromReq) {
 		if (relResult == null) {
 			relResult = new ArrayList<>();
 		}
@@ -1630,7 +1636,7 @@ public class QueryService {
 			}
 		}
 		AtomicInteger joinLvl = new AtomicInteger(joinLevel);
-		return retrieveEntity(context, tenant, entityId, attrsQuery, lang, localOnly)
+		return retrieveEntity(context, tenant, entityId, attrsQuery, lang, localOnly,headersFromReq)
 				.onItem().transformToUni(ent -> {
                     if (ent.isEmpty()) {
                         return Uni.createFrom().failure(
@@ -1655,14 +1661,14 @@ public class QueryService {
 					if(((Map<String, Object>)attrib.get(0)).containsKey(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST)){
 						for(Map<String,Object> idsMap: ((Map<String, List<Map<String, List<Map<String,Object>>>>>)attrib.get(0)).get(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST).get(0).get(JsonLdConsts.LIST)){
 							unisOfMaps.add(getEntityFlat(context,tenant, (String) idsMap.get(JsonLdConsts.VALUE),finalAttrs,lang,localOnly,
-									containedBy + ent.get(JsonLdConsts.ID),joinLvl.get(),finalRelResult));
+									containedBy + ent.get(JsonLdConsts.ID),joinLvl.get(),finalRelResult,headersFromReq));
 						}
 					}
 					else {
 						for (Map<String, Object> idMap : ((Map<String, List<Map<String, Object>>>) attrib.get(0))
 								.get(NGSIConstants.NGSI_LD_HAS_OBJECT)) {
 							unisOfMaps.add(getEntityFlat(context, tenant, (String) idMap.get(JsonLdConsts.ID), finalAttrs, lang, localOnly,
-									containedBy + ent.get(JsonLdConsts.ID), joinLvl.get(), finalRelResult));
+									containedBy + ent.get(JsonLdConsts.ID), joinLvl.get(), finalRelResult,headersFromReq));
 						}
 					}
 				}
@@ -1679,7 +1685,7 @@ public class QueryService {
 
 public Uni<Map<String, Object>> getEntityInline(Context context, String tenant, String entityId, Map<String, Object> attrsMap,
 												LanguageQueryTerm lang, boolean localOnly, String containedBy,
-												int joinLevel) {
+												int joinLevel, io.vertx.core.MultiMap headersFromReq) {
 		AttrsQueryTerm attrsQuery = null;
 		if (attrsMap != null && !attrsMap.isEmpty()) {
 			try {
@@ -1689,7 +1695,7 @@ public Uni<Map<String, Object>> getEntityInline(Context context, String tenant, 
 			}
 		}
 		AtomicInteger joinLvl = new AtomicInteger(joinLevel);
-		return retrieveEntity(context,tenant,entityId,attrsQuery,lang,localOnly).onItem().transformToUni(ent -> {
+		return retrieveEntity(context,tenant,entityId,attrsQuery,lang,localOnly,headersFromReq).onItem().transformToUni(ent -> {
             if (ent.isEmpty()) {
                 return Uni.createFrom().failure(
                         new ResponseException(ErrorType.NotFound, "Entity with ID " + entityId + " was not found"));
@@ -1713,7 +1719,7 @@ public Uni<Map<String, Object>> getEntityInline(Context context, String tenant, 
                     if(((Map<String, Object>)attrib.get(0)).containsKey(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST)){
                         for(Map<String,Object> idsMap: ((Map<String, List<Map<String, List<Map<String,Object>>>>>)attrib.get(0)).get(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST).get(0).get(JsonLdConsts.LIST)){
 							unisOfMaps.add(getEntityInline(context, tenant, (String) idsMap.get(JsonLdConsts.VALUE), finalAttrsMap, lang, localOnly,
-									containedBy + ent.get(JsonLdConsts.ID), joinLvl.get()).onItem()
+									containedBy + ent.get(JsonLdConsts.ID), joinLvl.get(),headersFromReq).onItem()
 									.transform(map -> {
 										flatResult.add(map);
 										((List<Map<String, Object>>) ent.get(key)).get(0).put("entity", flatResult);
@@ -1726,7 +1732,7 @@ public Uni<Map<String, Object>> getEntityInline(Context context, String tenant, 
                         for(Map<String,Object> idMap:((Map<String, List<Map<String, Object>>>) attrib.get(0))
 								.get(NGSIConstants.NGSI_LD_HAS_OBJECT)){
 							unisOfMaps.add(getEntityInline(context, tenant, (String) idMap.get(JsonLdConsts.ID), finalAttrsMap, lang, localOnly,
-									containedBy + ent.get(JsonLdConsts.ID), joinLvl.get()).onItem()
+									containedBy + ent.get(JsonLdConsts.ID), joinLvl.get(),headersFromReq).onItem()
 									.transform(map -> {
 										flatResult.add(map);
 										((List<Map<String, Object>>) ent.get(key)).get(0).put("entity", flatResult);

@@ -108,7 +108,7 @@ public class EntityBatchController {
 			if(expandedEntities.isEmpty()){
 				return Uni.createFrom().item(fails).onItem().transform(HttpUtils::generateBatchResult);
 			}
-			return entityService.createBatch(HttpUtils.getTenant(request), expandedEntities, contexts, localOnly)
+			return entityService.createBatch(HttpUtils.getTenant(request), expandedEntities, contexts, localOnly,request.headers())
 					.onItem().transform(opResults -> {
 						opResults.addAll(fails);
 						return HttpUtils.generateBatchResult(opResults);
@@ -166,7 +166,7 @@ public class EntityBatchController {
 			List<NGSILDOperationResult> fails = tuple.getItem1();
 			List<Map<String, Object>> expandedEntities = tuple.getItem2();
 			List<Context> contexts = tuple.getItem3();
-			return entityService.upsertBatch(HttpUtils.getTenant(request), expandedEntities, contexts, localOnly, doReplace)
+			return entityService.upsertBatch(HttpUtils.getTenant(request), expandedEntities, contexts, localOnly, doReplace,request.headers())
 					.onItem().transform(opResults -> {
 						opResults.addAll(fails);
 						return HttpUtils.generateBatchResult(opResults);
@@ -227,7 +227,7 @@ public class EntityBatchController {
 			List<NGSILDOperationResult> fails = tuple.getItem1();
 			List<Map<String, Object>> expandedEntities = tuple.getItem2();
 			List<Context> contexts = tuple.getItem3();
-			return entityService.appendBatch(HttpUtils.getTenant(request), expandedEntities, contexts, localOnly,isNoOverwrite)
+			return entityService.appendBatch(HttpUtils.getTenant(request), expandedEntities, contexts, localOnly,isNoOverwrite,request.headers())
 					.onItem().transform(opResults -> {
 						opResults.addAll(fails);
 						return HttpUtils.generateBatchResult(opResults);
@@ -245,7 +245,7 @@ public class EntityBatchController {
 		}catch (DecodeException e){
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 		}
-		return entityService.deleteBatch(HttpUtils.getTenant(request), entityIds, localOnly).onItem()
+		return entityService.deleteBatch(HttpUtils.getTenant(request), entityIds, localOnly,request.headers()).onItem()
 				.transform(opResults -> {
 					return HttpUtils.generateBatchResult(opResults);
 				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
@@ -293,7 +293,7 @@ public class EntityBatchController {
 			List<NGSILDOperationResult> fails = tuple.getItem1();
 			List<Map<String, Object>> expandedEntities = tuple.getItem2();
 			List<Context> contexts = tuple.getItem3();
-			return entityService.mergeBatch(HttpUtils.getTenant(request), expandedEntities, contexts, localOnly,isNoOverwrite)
+			return entityService.mergeBatch(HttpUtils.getTenant(request), expandedEntities, contexts, localOnly,isNoOverwrite,request.headers())
 					.onItem().transform(opResults -> {
 						opResults.addAll(fails);
 						return HttpUtils.generateBatchResult(opResults);
