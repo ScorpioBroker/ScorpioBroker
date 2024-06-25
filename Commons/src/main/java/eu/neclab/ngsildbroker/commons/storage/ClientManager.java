@@ -2,6 +2,7 @@ package eu.neclab.ngsildbroker.commons.storage;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.sql.SQLException;
 import java.time.Duration;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -12,6 +13,7 @@ import javax.sql.DataSource;
 import com.google.common.collect.Maps;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.flywaydb.core.Flyway;
+import org.flywaydb.core.api.FlywayException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
@@ -27,12 +29,11 @@ import io.quarkus.arc.Arc;
 import io.quarkus.flyway.runtime.FlywayContainer;
 import io.quarkus.flyway.runtime.FlywayContainerProducer;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.tuples.Tuple2;
-import io.smallrye.mutiny.unchecked.Unchecked;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.pgclient.PgPool;
 import io.vertx.mutiny.sqlclient.Tuple;
 import io.vertx.pgclient.PgConnectOptions;
+import io.vertx.pgclient.SslMode;
 import io.vertx.sqlclient.PoolOptions;
 
 @Singleton
@@ -40,7 +41,8 @@ public class ClientManager {
 
 	Logger logger = LoggerFactory.getLogger(ClientManager.class);
 
-	@Inject
+	// @Inject
+	// Create local/custom pgPool from quarkus.datasource properties, so all pgPools are created in the same way
 	PgPool pgClient;
 
 	@Inject
@@ -49,8 +51,6 @@ public class ClientManager {
 	@Inject
 	Vertx vertx;
 
-	@ConfigProperty(name = "quarkus.datasource.reactive.url")
-	String reactiveDefaultUrl;
 	@ConfigProperty(name = "quarkus.datasource.jdbc.url")
 	String jdbcBaseUrl;
 	@ConfigProperty(name = "quarkus.datasource.jdbc.driver")
@@ -59,6 +59,22 @@ public class ClientManager {
 	String username;
 	@ConfigProperty(name = "quarkus.datasource.password")
 	String password;
+
+	@ConfigProperty(name = "quarkus.flyway.migrate-at-start")
+	boolean dbMigrateAtStart;
+	@ConfigProperty(name = "quarkus.flyway.repair-at-start")
+	boolean dbRepairAtStart;
+
+	@ConfigProperty(name = "quarkus.datasource.reactive.url")
+	String reactiveDsDefaultUrl;
+	@ConfigProperty(name = "quarkus.datasource.reactive.postgresql.ssl-mode")
+	String reactiveDsPostgresqlSslMode;
+	@ConfigProperty(name = "quarkus.datasource.reactive.trust-all")
+	boolean reactiveDsPostgresqlSslTrustAll;
+	@ConfigProperty(name = "quarkus.datasource.reactive.shared")
+	boolean reactiveDsShared;
+	@ConfigProperty(name = "quarkus.datasource.reactive.cache-prepared-statements")
+	boolean reactiveDsCachePreparedStatements;
 
 	@ConfigProperty(name = "quarkus.datasource.reactive.max-size")
 	int reactiveMaxSize;
@@ -75,88 +91,139 @@ public class ClientManager {
 	@ConfigProperty(name = "pool.initialSize")
 	int initialSize;
 
-	private String reactiveBaseUrl;
+	@ConfigProperty(name = "ngsild.create-tenant-datasource-at-start", defaultValue = "false")
+	boolean createTenantDatasourceAtStart;
+
+	@ConfigProperty(name = "ngsild.datasource-test_query", defaultValue = "SELECT 1")
+	String datasourceTestQuery;
+
 	protected ConcurrentMap<String, Uni<PgPool>> tenant2Client = Maps.newConcurrentMap();
 
 	@PostConstruct
 	void loadTenantClients() throws URISyntaxException {
-		URI uri = new URI(reactiveDefaultUrl);
-		reactiveBaseUrl = uri.getScheme() + "://" + uri.getHost() + ":" + uri.getPort() + "/";
+		logger.warn("Using custom reactive datasource connection pool!");
+
+		logger.info("Base jdbc url: {}", new URI(jdbcBaseUrl));
+		logger.info("Default reactive jdbc url: {}, sslmode: {}", new URI(reactiveDsDefaultUrl), reactiveDsPostgresqlSslMode);
+
+		// Migration of the database defined in quarkus.datasource.jdbc.url is done automatically, no need to do it here.
+		logger.info("Creating custom default reactive datasource connection pool: {}", reactiveDsDefaultUrl);
+		pgClient = createPgPool("scorpio_default_pool", reactiveDsDefaultUrl);
+		testPgPoolSync(pgClient, "scorpio_default_pool");
 		tenant2Client.put(AppConstants.INTERNAL_NULL_KEY, Uni.createFrom().item(pgClient));
+		logger.debug("Created custom default reactive datasource connection pool: {}", reactiveDsDefaultUrl);
+		if (createTenantDatasourceAtStart) {
+			// All tenant databases are migrated as part of the client pool creation.
+			createAllTenantConnections(pgClient);
+		}
 	}
 
 	public Uni<PgPool> getClient(String tenant, boolean create) {
-		if (tenant == null) {
+		if (tenant == null || AppConstants.INTERNAL_NULL_KEY.equals(tenant)) {
 			return tenant2Client.get(AppConstants.INTERNAL_NULL_KEY);
 		}
-		Uni<PgPool> result = tenant2Client.get(tenant);
-		if (result == null) {
-			result = getTenant(tenant, create);
-			return result.onItem().transformToUni(pgClient->{
-                return tenant2Client.put(tenant, Uni.createFrom().item(pgClient));
-			});
+		if (tenant2Client.containsKey(tenant)) {
+			logger.trace("Tenant client cache hit for tenant {}", tenant);
+			return tenant2Client.get(tenant);
+		} else {
+			logger.debug("Tenant client cache miss for tenant {}; asynchronously creating connection pool", tenant);
+			return findDataBaseNameByTenantId(tenant, create).onItem().transformToUni(dbName -> {
+			try {
+				return Uni.createFrom().item(migrateDbAndCreatePgPool(tenant, dbName))
+					.invoke(p -> {
+						tenant2Client.put(tenant, Uni.createFrom().item(p));
+						logger.debug("Cached new tenant '{}' client pool.", tenant);
+					});
+			} catch (SQLException e) {
+				return Uni.createFrom().failure(e);
+			}
+		 });
 		}
-		return result;
 	}
 
-	private Uni<PgPool> getTenant(String tenant, boolean createDB) {
-		return determineTargetDataSource(tenant, createDB).onItem().transformToUni(Unchecked.function(finalDataBase -> {
-			PoolOptions options = new PoolOptions();
-			options.setName(finalDataBase);
-			options.setShared(true);
-			options.setMaxSize(reactiveMaxSize);
-			options.setIdleTimeout((int) idleTime.getSeconds());
-			options.setIdleTimeoutUnit(TimeUnit.SECONDS);
-			options.setConnectionTimeout((int) connectionTime.getSeconds());
-			options.setConnectionTimeoutUnit(TimeUnit.SECONDS);
-
-			PgPool pool = PgPool.pool(vertx, PgConnectOptions.fromUri(reactiveBaseUrl + finalDataBase).setUser(username)
-					.setPassword(password).setCachePreparedStatements(true), options);
-			Uni<PgPool> result = Uni.createFrom().item(pool);
-			tenant2Client.put(tenant, result);
-			return result;
-		}));
+	private String getClientPoolName(String tenant) {
+		return "scorpio_tenant_" + tenant + "_pool";
 	}
 
-	public Uni<String> determineTargetDataSource(String tenantidvalue, boolean createDB) {
-		return createDataSourceForTenantId(tenantidvalue, createDB).onItem().transform(tenantDataSource -> {
-			flywayMigrate(tenantDataSource.getItem1());
-			tenantDataSource.getItem1().close();
-			return tenantDataSource.getItem2();
-		});
+	private void createAllTenantConnections(PgPool pool) {
+		logger.debug("Creating all reactive datasource pools");
+		pool.query("SELECT tenant_id, database_name FROM public.tenant").execute().await().atMost(Duration.ofSeconds(10)).forEach(r ->
+			{
+				String tenant = r.getString("tenant_id");
+				try {
+					PgPool tenantPool = migrateDbAndCreatePgPool(tenant, r.getString("database_name"));
+					tenant2Client.put(tenant, Uni.createFrom().item(tenantPool));
+				} catch (SQLException e) {
+					logger.error("Error creating ractive datasource pool for tenant '{}': ", tenant, e);
+					e.printStackTrace();
+				}
+			}
+		);
 	}
 
-	private Uni<Tuple2<AgroalDataSource, String>> createDataSourceForTenantId(String tenantidvalue, boolean createDB) {
-		return findDataBaseNameByTenantId(tenantidvalue, createDB).onItem()
-				.transform(Unchecked.function(tenantDatabaseName -> {
-					// TODO this needs to be from the config not hardcoded!!!
-					String tenantJdbcURL = DBUtil.databaseURLFromPostgresJdbcUrl(jdbcBaseUrl, tenantDatabaseName);
-					AgroalDataSourceConfigurationSupplier configuration = new AgroalDataSourceConfigurationSupplier()
-							.dataSourceImplementation(DataSourceImplementation.AGROAL).metricsEnabled(false)
-							.connectionPoolConfiguration(
-									cp -> cp.minSize(minsize).maxSize(maxsize).initialSize(initialSize)
-											.connectionFactoryConfiguration(cf -> cf.jdbcUrl(tenantJdbcURL)
-													.connectionProviderClassName(jdbcDriver).autoCommit(false)
-													.principal(new NamePrincipal(username))
-													.credential(new SimplePassword(password))));
-					AgroalDataSource agroaldataSource = AgroalDataSource.from(configuration);
-					return Tuple2.of(agroaldataSource, tenantDatabaseName);
-				}));
-
+	private PgPool createPgPool(String poolName, String databaseUrl) {
+		logger.debug("Creating reactive datasource pool '{}'; database: {}, sslmode: {}", poolName, databaseUrl, reactiveDsPostgresqlSslMode);
+		return PgPool.pool(vertx,
+				getPgConnectOptions(databaseUrl),
+				new PoolOptions()
+				.setName(poolName)
+				.setShared(reactiveDsShared)
+				.setMaxSize(reactiveMaxSize)
+				.setIdleTimeout((int) idleTime.getSeconds())
+				.setIdleTimeoutUnit(TimeUnit.SECONDS)
+				.setConnectionTimeout((int) connectionTime.getSeconds())
+				.setConnectionTimeoutUnit(TimeUnit.SECONDS)
+			);
 	}
 
-	public ConcurrentMap<String, Uni<PgPool>> getAllClients() {
-		return tenant2Client;
+	private boolean testPgPoolSync(PgPool pool, String poolName) {
+		boolean testResult = pool.query(datasourceTestQuery).execute().await().atMost(Duration.ofSeconds(5)).rowCount()==1;
+		logger.debug("Reactive datasource pool {} test query {} ({})", poolName, testResult?"OK":"ERROR", pool);
+		return testResult;
 	}
 
-	public Uni<String> findDataBaseNameByTenantId(String tenant, boolean create) {
+	private PgPool migrateDbAndCreatePgPool(String tenant, String dbName) throws SQLException {
+		String dbUrl = DBUtil.databaseURLFromPostgresJdbcUrl(reactiveDsDefaultUrl, dbName);
+		try {
+			logger.info("Creating reactive database client pool for tenant '{}': {}", tenant, dbUrl);
+			flywayMigrate(tenant, dbName);
+			PgPool pool = createPgPool(getClientPoolName(tenant), dbUrl);
+			logger.debug("Created reactive database client pool for tenant '{}': {} ({})", tenant, dbUrl, pool);
+			return pool;
+		} catch (SQLException e) {
+			logger.error("Client pool creation for tenant '{}' failed: Database migration error: {}", tenant, e);
+			throw e;
+		}
+	}
+
+	private AgroalDataSource createDatasourceForTenant(String tenant, String dbName) throws SQLException {
+		String tenantJdbcURL = "jdbc:" + DBUtil.databaseURLFromPostgresJdbcUrl(jdbcBaseUrl, dbName);
+		logger.debug("Creating datasource for tenant '{}' with jdbc url: {}", tenant, tenantJdbcURL);
+		return createDatasource(tenantJdbcURL);
+	}
+
+	private AgroalDataSource createDatasource(String jdbcURL) throws SQLException {
+		// TODO this needs to be from the config not hardcoded!!!
+		AgroalDataSourceConfigurationSupplier configuration = new AgroalDataSourceConfigurationSupplier()
+				.dataSourceImplementation(DataSourceImplementation.AGROAL).metricsEnabled(false)
+				.connectionPoolConfiguration(
+						cp -> cp.minSize(minsize).maxSize(maxsize).initialSize(initialSize)
+								.connectionFactoryConfiguration(cf -> cf.jdbcUrl(jdbcURL)
+										.connectionProviderClassName(jdbcDriver)
+										.autoCommit(false)
+										.principal(new NamePrincipal(username))
+										.credential(new SimplePassword(password))));
+		return AgroalDataSource.from(configuration);
+	}
+
+	private Uni<String> findDataBaseNameByTenantId(String tenant, boolean create) {
 		String databasename = "ngb" + tenant.hashCode();
 		String databasenameWithoutHash = "ngb" + tenant;
 		return pgClient.preparedQuery("SELECT datname FROM pg_database where datname = $1 OR datname = $2")
 				.execute(Tuple.of(databasename, databasenameWithoutHash)).onItem().transformToUni(pgRowSet -> {
 					if (pgRowSet.size() == 0) {
 						if (create) {
-							return pgClient.preparedQuery("create database \"" + databasename + "\"").execute().onItem()
+							return pgClient.preparedQuery("CREATE DATABASE \"" + databasename + "\"").execute().onItem()
 									.transformToUni(t -> {
 										return storeTenantdata(tenant, databasename).onItem()
 												.transform(t2 -> databasename);
@@ -183,26 +250,47 @@ public class ClientManager {
 				.execute(Tuple.of(tenantidvalue, databasename)).onItem().ignore().andContinueWithNull();
 	}
 
-	public Boolean flywayMigrate(DataSource tenantDataSource) {
-
-        FlywayContainerProducer flywayProducer = Arc.container().instance(FlywayContainerProducer.class).get();
-        FlywayContainer flywayContainer = flywayProducer.createFlyway(tenantDataSource, "<default>", true, true);
-        Flyway flyway = flywayContainer.getFlyway();
-		try {
-			flyway.migrate();
-		} catch (Exception e) {
-			logger.warn("failed to create tenant database attempting repair", e);
-			try {
-				flyway.repair();
-				flyway.migrate();
-			} catch (Exception e1) {
-				logger.error("repair failed", e);
-				return false;
-			}
-
+	private void flywayMigrate(String tenant, String dbName) throws FlywayException, SQLException {
+		logger.debug("Running database migration for tenant '{}' on database '{}'", tenant, dbName);
+		try (AgroalDataSource tenantDataSource = createDatasourceForTenant(tenant, dbName);) {
+			flywayMigrate(tenant, tenantDataSource);
+			logger.debug("Tenant '{}' database migration finished", tenant);
 		}
-
-		return true;
 	}
 
+	private void flywayMigrate(String tenant, DataSource tenantDataSource) throws FlywayException {
+		FlywayContainerProducer flywayProducer = Arc.container().instance(FlywayContainerProducer.class).get();
+		FlywayContainer flywayContainer = flywayProducer.createFlyway(tenantDataSource, "scoprpio_tenant_" + tenant + "_datasource", true, true);
+		Flyway flyway = flywayContainer.getFlyway();
+		try {
+			flyway.migrate();
+		} catch (FlywayException e) {
+			if (dbRepairAtStart) {
+				logger.warn("Tenant '{}' database migration failed, attempting repair.", tenant, e);
+				try {
+					flyway.repair();
+					flyway.migrate();
+				} catch (FlywayException fe) {
+					logger.error("Tenant '{}' database repair and migration failed!", tenant, fe);
+					throw fe;
+				}
+			} else {
+				logger.error("Tenant '{}' database migration failed!", tenant, e);
+				throw e;
+			}
+		}
+	}
+
+    public PgConnectOptions getDefaultPgConnectionOptions() {
+        return getPgConnectOptions(reactiveDsDefaultUrl);
+    }
+
+	private PgConnectOptions getPgConnectOptions(String databaseUrl) {
+			return PgConnectOptions.fromUri(databaseUrl)
+			.setUser(username)
+			.setPassword(password)
+			.setCachePreparedStatements(reactiveDsCachePreparedStatements)
+			.setSslMode(SslMode.valueOf(reactiveDsPostgresqlSslMode.toUpperCase()))
+			.setTrustAll(reactiveDsPostgresqlSslTrustAll);
+	}
 }
