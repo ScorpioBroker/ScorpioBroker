@@ -4,6 +4,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Set;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 public class ViaHeaders {
@@ -35,8 +36,8 @@ public class ViaHeaders {
 				}
 			}
 		}
-		viaHeaders.add(selfViaEntry);
-		this.viaHeaders = viaHeaders;
+		this.viaHeaders =  Lists.newArrayList(viaHeaders);
+		this.viaHeaders.add(selfViaEntry);
 
 	}
 
