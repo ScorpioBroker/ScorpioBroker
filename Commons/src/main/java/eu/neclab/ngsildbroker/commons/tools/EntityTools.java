@@ -35,6 +35,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.QueryInfos;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryRemoteHost;
 import eu.neclab.ngsildbroker.commons.datatypes.RegistrationEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.RemoteHost;
+import eu.neclab.ngsildbroker.commons.datatypes.ViaHeaders;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
@@ -48,12 +49,14 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
+import io.vertx.mutiny.core.buffer.Buffer;
+import io.vertx.mutiny.ext.web.client.HttpRequest;
 import io.vertx.mutiny.ext.web.client.WebClient;
 
 public abstract class EntityTools {
 
 	private static final String BROKER_PREFIX = "ngsildbroker:";
-	
+
 	public static final Set<String> DO_NOT_MERGE_KEYS = Sets.newHashSet(NGSIConstants.JSON_LD_ID,
 			NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_CREATED_AT, NGSIConstants.NGSI_LD_OBSERVED_AT,
 			NGSIConstants.NGSI_LD_MODIFIED_AT);
@@ -581,91 +584,94 @@ public abstract class EntityTools {
 	}
 
 	private static Uni<List<Map<String, Object>>> handle414(WebClient webClient, QueryRemoteHost remoteHost) {
-		int maxLengthForIds = 2000 - remoteHost.getBaseLength();
-		String idsString = remoteHost.getIdString();
-		if (maxLengthForIds <= idsString.indexOf(",")) {
-			logger.warn("failed to split up query");
-			return Uni.createFrom().item(new ArrayList<>(0));
-		}
-		int index;
-		List<Uni<List<Map<String, Object>>>> backUpUnis = Lists.newArrayList();
-
-		while (!idsString.isEmpty()) {
-			String toUseIds;
-			if (idsString.length() <= maxLengthForIds) {
-				toUseIds = idsString;
-				index = idsString.length() - 2;
-			} else {
-				index = idsString.lastIndexOf(",", maxLengthForIds);
-				toUseIds = idsString.substring(0, index);
-			}
-
-			String url = remoteHost.getFollowUpUrl(toUseIds);
-			backUpUnis.add(webClient.getAbs(url).putHeaders(remoteHost.headers()).send()
-					.onItem().transformToUni(response -> {
-						if (response != null && response.statusCode() == 200) {
-							return Uni.createFrom()
-									.item((List<Map<String, Object>>) response.bodyAsJsonArray().getList());
-						}
-						logger.warn("failed to query remote host: " + url);
-						if (response != null) {
-							logger.debug("response code: " + response.statusCode());
-							logger.debug("response : " + response.bodyAsString());
-						} else {
-							logger.debug("null response");
-						}
-
-						return Uni.createFrom().item(new ArrayList<Map<String, Object>>(0));
-					}).onFailure().recoverWithUni(e -> {
-						logger.warn("failed to query with error " + e.getMessage());
-						return Uni.createFrom().item(new ArrayList<Map<String, Object>>(0));
-					}));
-
-			idsString = idsString.substring(index + 1);
-		}
-		return Uni.combine().all().unis(backUpUnis).combinedWith(l1 -> {
-			List<Map<String, Object>> result = Lists.newArrayList();
-			for (Object obj1 : l1) {
-				List<Map<String, Object>> m1 = (List<Map<String, Object>>) obj1;
-				result.addAll(m1);
-			}
-			return result;
-		});
-
+//		int maxLengthForIds = 2000 - remoteHost.getBaseLength();
+//		String idsString = remoteHost.getIdString();
+//		if (maxLengthForIds <= idsString.indexOf(",")) {
+//			logger.warn("failed to split up query");
+//			return Uni.createFrom().item(new ArrayList<>(0));
+//		}
+//		int index;
+//		List<Uni<List<Map<String, Object>>>> backUpUnis = Lists.newArrayList();
+//
+//		while (!idsString.isEmpty()) {
+//			String toUseIds;
+//			if (idsString.length() <= maxLengthForIds) {
+//				toUseIds = idsString;
+//				index = idsString.length() - 2;
+//			} else {
+//				index = idsString.lastIndexOf(",", maxLengthForIds);
+//				toUseIds = idsString.substring(0, index);
+//			}
+//
+//			String url = remoteHost.getFollowUpUrl(toUseIds);
+//			backUpUnis.add(webClient.getAbs(url).putHeaders(remoteHost.headers()).send()
+//					.onItem().transformToUni(response -> {
+//						if (response != null && response.statusCode() == 200) {
+//							return Uni.createFrom()
+//									.item((List<Map<String, Object>>) response.bodyAsJsonArray().getList());
+//						}
+//						logger.warn("failed to query remote host: " + url);
+//						if (response != null) {
+//							logger.debug("response code: " + response.statusCode());
+//							logger.debug("response : " + response.bodyAsString());
+//						} else {
+//							logger.debug("null response");
+//						}
+//
+//						return Uni.createFrom().item(new ArrayList<Map<String, Object>>(0));
+//					}).onFailure().recoverWithUni(e -> {
+//						logger.warn("failed to query with error " + e.getMessage());
+//						return Uni.createFrom().item(new ArrayList<Map<String, Object>>(0));
+//					}));
+//
+//			idsString = idsString.substring(index + 1);
+//		}
+//		return Uni.combine().all().unis(backUpUnis).combinedWith(l1 -> {
+//			List<Map<String, Object>> result = Lists.newArrayList();
+//			for (Object obj1 : l1) {
+//				List<Map<String, Object>> m1 = (List<Map<String, Object>>) obj1;
+//				result.addAll(m1);
+//			}
+//			return result;
+//		});
+		return null;
 	}
 
 	public static Uni<List<Map<String, Object>>> getRemoteEntities(QueryRemoteHost remoteHost, WebClient webClient) {
-		return webClient.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + remoteHost.queryString())
-				.timeout(5000).send().onItem().transformToUni(response -> {
-					switch (response.statusCode()) {
-					case 200: {
-						List<Map<String, Object>> result = Lists.newArrayList();
-						result.addAll(response.bodyAsJsonArray().getList());
-						if (response.headers().contains("Next")) {
-							QueryRemoteHost updatedHost = remoteHost.updatedDuplicate(response.headers().get("Next"));
-							return getRemoteEntities(updatedHost, webClient).onItem().transform(nextResult -> {
-								result.addAll(nextResult);
-								return result;
-							});
-						}
-						return Uni.createFrom().item(result);
-					}
-					case 414: {
-						return handle414(webClient, remoteHost);
-					}
-					default: {
-						List<Map<String, Object>> result = Lists.newArrayList();
-						return Uni.createFrom().item(result);
-					}
-
-					}
-
-				}).onFailure().recoverWithItem(e -> Lists.newArrayList()).onItem().transform(entities -> {
-					entities.forEach(entity -> {
-						entity.put(AppConstants.REG_MODE_KEY, remoteHost.regMode());
+		HttpRequest<Buffer> req = webClient.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT);
+		for (Entry<String, Object> param : remoteHost.getQueryParam().entrySet()) {
+			req = req.setQueryParam(param.getKey(), (String) param.getValue());
+		}
+		return req.timeout(5000).send().onItem().transformToUni(response -> {
+			switch (response.statusCode()) {
+			case 200: {
+				List<Map<String, Object>> result = Lists.newArrayList();
+				result.addAll(response.bodyAsJsonArray().getList());
+				if (response.headers().contains("Next")) {
+					remoteHost.setParamsFromNext(response.headers().get("Next"));
+					return getRemoteEntities(remoteHost, webClient).onItem().transform(nextResult -> {
+						result.addAll(nextResult);
+						return result;
 					});
-					return entities;
-				});
+				}
+				return Uni.createFrom().item(result);
+			}
+			case 414: {
+				return handle414(webClient, remoteHost);
+			}
+			default: {
+				List<Map<String, Object>> result = Lists.newArrayList();
+				return Uni.createFrom().item(result);
+			}
+
+			}
+
+		}).onFailure().recoverWithItem(e -> Lists.newArrayList()).onItem().transform(entities -> {
+			entities.forEach(entity -> {
+				entity.put(AppConstants.REG_MODE_KEY, remoteHost.regMode());
+			});
+			return entities;
+		});
 
 	}
 
@@ -673,15 +679,15 @@ public abstract class EntityTools {
 			TypeQueryTerm typeQuery, String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery,
 			GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery,
 			Table<String, String, List<RegistrationEntry>> tenant2CId2RegEntries, Context context,
-			EntityCache fullEntityCache, boolean onlyFullEntitiesDistributed) {
+			EntityCache fullEntityCache, boolean onlyFullEntitiesDistributed, ViaHeaders viaHeaders) {
 		return getRemoteQueries(id, typeQuery, idPattern, attrsQuery, qQuery, geoQuery, scopeQuery, langQuery,
-				tenant2CId2RegEntries.row(tenant).values().iterator(), context, fullEntityCache);
+				tenant2CId2RegEntries.row(tenant).values().iterator(), context, fullEntityCache, viaHeaders);
 	}
 
 	public static Map<QueryRemoteHost, Set<String>> getRemoteQueries(String[] id, TypeQueryTerm typeQuery,
 			String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery, GeoQueryTerm geoQuery,
 			ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, Iterator<List<RegistrationEntry>> it,
-			Context context, EntityCache fullEntityCache) {
+			Context context, EntityCache fullEntityCache, ViaHeaders viaHeaders) {
 
 		// ids, types, attrs, geo, scope
 		Map<QueryRemoteHost, QueryInfos> remoteHost2QueryInfo = Maps.newHashMap();
@@ -703,8 +709,11 @@ public abstract class EntityTools {
 				}
 
 				RemoteHost regHost = regEntry.host();
-				QueryRemoteHost hostToQuery = QueryRemoteHost.fromRemoteHost(regHost, null, regEntry.canDoIdQuery(),
-						regEntry.canDoZip(), null);
+				if(viaHeaders.getHostUrls().contains(regHost.host())) {
+					continue;
+				}
+				QueryRemoteHost hostToQuery = QueryRemoteHost.fromRemoteHost(regHost,regEntry.canDoIdQuery(),
+						regEntry.canDoZip());
 				QueryInfos queryInfos = remoteHost2QueryInfo.get(hostToQuery);
 				if (queryInfos == null) {
 					queryInfos = new QueryInfos();
@@ -751,18 +760,18 @@ public abstract class EntityTools {
 		Map<QueryRemoteHost, Set<String>> result = Maps.newHashMap();
 		for (Entry<QueryRemoteHost, QueryInfos> entry : remoteHost2QueryInfo.entrySet()) {
 			QueryRemoteHost tmpHost = entry.getKey();
-			String queryString = entry.getValue().toQueryString(context, typeQuery, geoQuery, langQuery, false,
-					fullEntityCache, tmpHost);
-			if (queryString != null) {
-				result.put(
-						new QueryRemoteHost(tmpHost.host(), tmpHost.tenant(), tmpHost.headers(), tmpHost.cSourceId(),
-								tmpHost.canDoSingleOp(), tmpHost.canDoBatchOp(), tmpHost.regMode(), queryString,
-								tmpHost.canDoEntityMap(), tmpHost.canDoZip(), tmpHost.remoteToken()),
-						entry.getValue().getIds());
-			}
+				viaHeaders.addViaHeader(tmpHost.host());
+				result.put(new QueryRemoteHost(tmpHost.host(), tmpHost.tenant(), tmpHost.headers(), tmpHost.cSourceId(),
+						tmpHost.isCanDoQuery(), tmpHost.isCanDoBatchQuery(), tmpHost.isCanDoRetrieve(),
+						tmpHost.regMode(), entry.getValue().toQueryParams(context, typeQuery, geoQuery, langQuery, false,
+								fullEntityCache, tmpHost), tmpHost.canDoEntityMap(), tmpHost.canDoZip(),
+						tmpHost.entityMapToken(), viaHeaders), entry.getValue().getIds());
+			
 		}
 		return result;
 	}
+
+
 
 	public static Map<String, Object> mergeEntity(Map<String, Object> currentEntity, Map<String, Object> entity) {
 		// TODO Auto-generated method stub

@@ -200,6 +200,96 @@ public class DataSetIdTerm implements Serializable {
 		query.append(") as filtered) END ))");
 		return dollar;
 	}
+	
+	public int toSqlConstructEntity(StringBuilder query, StringBuilder followUp, Tuple tuple, String tableToUse, int dollar) {
+		query.append("JSONB_STRIP_NULLS(JSONB_OBJECT_AGG(");
+		query.append(tableToUse);
+		query.append(".KEY, CASE WHEN ");
+		query.append(tableToUse);
+		query.append(".KEY = ANY('{");
+		query.append(NGSIConstants.JSON_LD_ID);
+		query.append(',');
+		query.append(NGSIConstants.JSON_LD_TYPE);
+		query.append(',');
+		query.append(NGSIConstants.NGSI_LD_SCOPE);
+		query.append(',');
+		query.append(NGSIConstants.NGSI_LD_CREATED_AT);
+		query.append(',');
+		query.append(NGSIConstants.NGSI_LD_MODIFIED_AT);
+		query.append("}') THEN ");
+		query.append(tableToUse);
+		query.append(".VALUE ELSE (SELECT CASE WHEN jsonb_array_length(filtered.res) > 0 THEN filtered.res ELSE NULL::jsonb END FROM (SELECT jsonb_agg(val) as res FROM jsonb_array_elements(");
+		query.append(tableToUse);
+		query.append(".VALUE) as val where ");
+		
+		followUp.append("JSONB_STRIP_NULLS(JSONB_OBJECT_AGG(");
+		followUp.append(tableToUse);
+		followUp.append(".KEY, CASE WHEN ");
+		followUp.append(tableToUse);
+		followUp.append(".KEY = ANY(''{");
+		followUp.append(NGSIConstants.JSON_LD_ID);
+		followUp.append(',');
+		followUp.append(NGSIConstants.JSON_LD_TYPE);
+		followUp.append(',');
+		followUp.append(NGSIConstants.NGSI_LD_SCOPE);
+		followUp.append(',');
+		followUp.append(NGSIConstants.NGSI_LD_CREATED_AT);
+		followUp.append(',');
+		followUp.append(NGSIConstants.NGSI_LD_MODIFIED_AT);
+		followUp.append("}'') THEN ");
+		followUp.append(tableToUse);
+		followUp.append(".VALUE ELSE (SELECT CASE WHEN jsonb_array_length(filtered.res) > 0 THEN filtered.res ELSE NULL::jsonb END FROM (SELECT jsonb_agg(val) as res FROM jsonb_array_elements(");
+		followUp.append(tableToUse);
+		followUp.append(".VALUE) as val where ");
+		if(ids.remove(NGSIConstants.JSON_LD_NONE)) {
+			query.append("NOT val ? '");
+			query.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
+			query.append("'");
+			
+			followUp.append("NOT val ? ''");
+			followUp.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
+			followUp.append("''");
+			
+			if(!ids.isEmpty()) {
+				query.append(" OR ");	
+				followUp.append(" OR ");
+			}
+		}
+		if(!ids.isEmpty()) {
+			query.append("val ? '");
+			query.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
+			query.append("' and val #>> '{");
+			query.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
+			query.append(",0,");
+			query.append(NGSIConstants.JSON_LD_ID);
+			query.append("}' = ANY(ARRAY[");
+			
+			followUp.append("val ? ''");
+			followUp.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
+			followUp.append("'' and val #>> ''{");
+			followUp.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
+			followUp.append(",0,");
+			followUp.append(NGSIConstants.JSON_LD_ID);
+			followUp.append("}'' = ANY(ARRAY[''' || ");
+			for(String id: ids) {
+				query.append('$');
+				query.append(dollar);
+				query.append(',');
+				followUp.append('$');
+				followUp.append(dollar);
+				followUp.append(" || ''',''' || ");
+				dollar++;
+				tuple.addString(id);
+			}
+			query.setLength(query.length() - 1);
+			query.append("])");
+			followUp.setLength(followUp.length() - 8);
+			followUp.append("])");
+		}
+		query.append(") as filtered) END ))");
+		followUp.append(") as filtered) END ))");
+		return dollar;
+	}
 
 	public boolean calculateEntity(Map<String, Object> entity) {
 		Iterator<Entry<String, Object>> it = entity.entrySet().iterator();

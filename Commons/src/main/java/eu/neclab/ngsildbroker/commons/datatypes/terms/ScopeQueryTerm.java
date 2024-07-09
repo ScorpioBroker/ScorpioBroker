@@ -110,7 +110,24 @@ public class ScopeQueryTerm implements Serializable {
 			firstChild.toSql(result);
 			result.append(")");
 		} else {
-			result.append("matchScope(" + DBConstants.DBCOLUMN_SCOPE + "," + getSQLScopeQuery() + ")");
+			result.append("matchScope(" + DBConstants.DBCOLUMN_SCOPE + ",'^");
+			for (String entry : scopeLevels) {
+				switch (entry) {
+				case "+":
+					result.append("\\/");
+					result.append(REGEX_PLUS);
+					break;
+				case "#":
+					result.append(REGEX_HASH);
+					break;
+				default:
+					result.append("\\/");
+					result.append(entry);
+					break;
+				}
+			}
+			result.append("$'");
+			result.append(")");
 		}
 		if (hasNext()) {
 			if (nextAnd) {
@@ -121,7 +138,7 @@ public class ScopeQueryTerm implements Serializable {
 			next.toSql(result);
 		}
 	}
-
+	
 	public String getSQLScopeQuery() {
 		StringBuilder result = new StringBuilder("'^");
 		for (String entry : scopeLevels) {
@@ -141,6 +158,48 @@ public class ScopeQueryTerm implements Serializable {
 		}
 		result.append("$'");
 		return result.toString();
+	}
+	
+	public void toSql(StringBuilder result, StringBuilder followUp) {
+		if (firstChild != null) {
+			result.append("(");
+			followUp.append("(");
+			firstChild.toSql(result);
+			result.append(")");
+			followUp.append(")");
+		} else {
+			result.append("matchScope(" + DBConstants.DBCOLUMN_SCOPE + ",'^");
+			followUp.append("matchScope(" + DBConstants.DBCOLUMN_SCOPE + ",''^");
+			for (String entry : scopeLevels) {
+				switch (entry) {
+				case "+":
+					result.append("\\/");
+					result.append(REGEX_PLUS);
+					break;
+				case "#":
+					result.append(REGEX_HASH);
+					break;
+				default:
+					result.append("\\/");
+					result.append(entry);
+					break;
+				}
+			}
+			result.append("$'");
+			followUp.append("$''");
+			followUp.append(")");
+			result.append(")");
+		}
+		if (hasNext()) {
+			if (nextAnd) {
+				result.append(" and ");
+				followUp.append(" and ");
+			} else {
+				result.append(" or ");
+				followUp.append(" or ");
+			}
+			next.toSql(result);
+		}
 	}
 
 	public ScopeQueryTerm getNext() {

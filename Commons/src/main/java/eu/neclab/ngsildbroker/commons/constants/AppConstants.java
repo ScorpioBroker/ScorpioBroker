@@ -170,7 +170,7 @@ public class AppConstants {
 	public static JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
 
 	public static final QueryRemoteHost DB_REMOTE_HOST = new QueryRemoteHost(INTERNAL_NULL_KEY, null, null, null, false,
-			false, -1, null, false, false, null);
+			false, false, -1, null, false, false, null, null);
 	public static final Map<String, QueryRemoteHost> DEFAULT_REMOTE_HOST_MAP = Maps
 			.newHashMap(Map.of(INTERNAL_NULL_KEY, DB_REMOTE_HOST));
 

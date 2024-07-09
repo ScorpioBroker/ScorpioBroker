@@ -84,6 +84,130 @@ public class PickTerm extends ProjectionTerm {
 		query.append(" END ))");
 		return dollar;
 	}
+	
+	public int toSqlConstructEntity(StringBuilder query, StringBuilder followUp, Tuple tuple, int dollar, String tableToUse,
+			DataSetIdTerm dataSetIdTerm) {
+		query.append("JSONB_STRIP_NULLS(JSONB_OBJECT_AGG(");
+		query.append(tableToUse);
+		query.append(".KEY, CASE WHEN NOT ");
+		query.append(tableToUse);
+		query.append(".KEY = ANY(ARRAY[");
+		
+		followUp.append("JSONB_STRIP_NULLS(JSONB_OBJECT_AGG(");
+		followUp.append(tableToUse);
+		followUp.append(".KEY, CASE WHEN NOT ");
+		followUp.append(tableToUse);
+		followUp.append(".KEY = ANY(ARRAY[''' || ");
+		for(String attr: getAllTopLevelAttribs()) {
+			query.append('$');
+			query.append(dollar);
+			query.append(',');
+			followUp.append('$');
+			followUp.append(dollar);
+			followUp.append(" || ''',''' || ");
+			tuple.addString(attr);
+			dollar++;	
+		}
+		query.setLength(query.length() - 1);
+		followUp.setLength(followUp.length() - 8);
+		query.append("]) THEN NULL ELSE ");
+		followUp.append("]) THEN NULL ELSE ");
+		if (dataSetIdTerm == null) {
+			query.append(tableToUse);
+			query.append(".VALUE ");
+			followUp.append(tableToUse);
+			followUp.append(".VALUE ");
+		} else {
+			query.append("(SELECT CASE WHEN ");
+			query.append(tableToUse);
+			query.append(".KEY = ANY(ARRAY[");
+			
+			followUp.append("(SELECT CASE WHEN ");
+			followUp.append(tableToUse);
+			followUp.append(".KEY = ANY(ARRAY[''' || ");
+			for(String attr: NGSIConstants.ENTITY_BASE_PROPS) {
+				query.append('$');
+				query.append(dollar);
+				query.append(',');
+				followUp.append('$');
+				followUp.append(dollar);
+				followUp.append("''',''' || ");
+				tuple.addString(attr);
+				dollar++;	
+			}
+			query.setLength(query.length() - 1);
+			query.append("]) THEN ");
+			query.append(tableToUse);
+			query.append(".VALUE ");
+			query.append(
+					"WHEN jsonb_array_length(filtered.res) > 0 THEN filtered.res ELSE null END FROM (SELECT jsonb_agg(val) as res FROM jsonb_array_elements(");
+			query.append(tableToUse);
+			query.append(".VALUE ");
+			query.append(") as val where ");
+
+			followUp.setLength(followUp.length() - 8);
+			followUp.append("]) THEN ");
+			followUp.append(tableToUse);
+			followUp.append(".VALUE ");
+			followUp.append(
+					"WHEN jsonb_array_length(filtered.res) > 0 THEN filtered.res ELSE null END FROM (SELECT jsonb_agg(val) as res FROM jsonb_array_elements(");
+			followUp.append(tableToUse);
+			followUp.append(".VALUE ");
+			followUp.append(") as val where ");
+			if (dataSetIdTerm.ids.remove(NGSIConstants.JSON_LD_NONE)) {
+				query.append("NOT val ? '");
+				query.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
+				query.append("'");
+				
+				followUp.append("NOT val ? '");
+				followUp.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
+				followUp.append("'");
+				if (!dataSetIdTerm.ids.isEmpty()) {
+					query.append(" OR ");
+					followUp.append(" OR ");
+				}
+			}
+			if (!dataSetIdTerm.ids.isEmpty()) {
+				query.append("val ? '");
+				query.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
+				query.append("' and val #>> '{");
+				query.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
+				query.append(",0,");
+				query.append(NGSIConstants.JSON_LD_ID);
+				query.append("}' = ANY(ARRAY[");
+				
+				followUp.append("val ? '");
+				followUp.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
+				followUp.append("' and val #>> '{");
+				followUp.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
+				followUp.append(",0,");
+				followUp.append(NGSIConstants.JSON_LD_ID);
+				followUp.append("}' = ANY(ARRAY[''' || ");
+				for(String attr: dataSetIdTerm.ids) {
+					query.append('$');
+					query.append(dollar);
+					query.append(',');
+					
+					followUp.append('$');
+					followUp.append(dollar);
+					followUp.append("''',''' || ");
+					tuple.addString(attr);
+					dollar++;	
+				}
+				query.setLength(query.length() - 1);
+				query.append("])");
+				
+				followUp.setLength(followUp.length() - 8);
+				followUp.append("])");
+			}
+			query.append(") as filtered)");
+			followUp.append(") as filtered)");
+
+		}
+		query.append(" END ))");
+		followUp.append(" END ))");
+		return dollar;
+	}
 
 	@Override
 	public int toSql(StringBuilder query, Tuple tuple, int dollar) {
@@ -91,6 +215,25 @@ public class PickTerm extends ProjectionTerm {
 		query.append(dollar);
 		dollar++;
 		tuple.addArrayOfString(getAllTopLevelAttribs());
+		return dollar;
+	}
+	public int toSql(StringBuilder query, StringBuilder followUp, Tuple tuple, int dollar) {
+		query.append("ENTITY ?| ARRAY[");
+		followUp.append("ENTITY ?| ARRAY['''");
+		String[] attribs = getAllTopLevelAttribs();
+		for(String attrib: attribs) {
+			query.append('$');
+			query.append(dollar);
+			query.append(',');
+			followUp.append(" || $");
+			followUp.append(dollar);
+			followUp.append(" || ''','''");
+			dollar++;
+			tuple.addString(attrib);
+		}
+		followUp.setLength(followUp.length() - 4);
+		followUp.append(']');
+		query.setCharAt(query.length() - 1, ']');
 		return dollar;
 	}
 

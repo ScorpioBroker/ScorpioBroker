@@ -1,6 +1,8 @@
 package eu.neclab.ngsildbroker.queryhandler.controller;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -11,6 +13,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import eu.neclab.ngsildbroker.commons.datatypes.terms.DataSetIdTerm;
+import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import jakarta.ws.rs.DefaultValue;
@@ -33,6 +36,7 @@ import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.base.Objects;
 import com.google.common.net.HttpHeaders;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.ViaHeaders;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
@@ -74,6 +78,14 @@ public class QueryController {
 
 	@ConfigProperty(name = "ngsild.corecontext", defaultValue = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld")
 	String coreContext;
+
+	private String selfViaHeader;
+	
+	@PostConstruct
+	public void setup() {
+		URI gateway = microServiceUtils.getGatewayURL();
+		this.selfViaHeader = gateway.getScheme().toUpperCase() + "/1.1 " + gateway.getAuthority();
+	}
 
 	/**
 	 * Method(GET) for multiple attributes separated by comma list
@@ -183,7 +195,8 @@ public class QueryController {
 			@QueryParam("minDistance") String minDistance, @Context UriInfo uriInfo, @QueryParam("pick") String pick,
 			@QueryParam("omit") String omit, @QueryParam("format") String format,
 			@QueryParam("jsonKeys") String jsonKeysQP, @QueryParam("datasetId") String datasetId,
-			@QueryParam("entityDist") @DefaultValue("false") boolean entityDist) {
+			@QueryParam("splitEntities") @DefaultValue("false") boolean distEntities) {
+		
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		if ((pick != null && omit != null) || (pick != null && attrs != null) || (attrs != null && omit != null)) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
@@ -307,17 +320,29 @@ public class QueryController {
 				token = "urn:ngsi-ld:entitymap:" + UUID.randomUUID().toString();
 				tokenProvided = false;
 			}
-
-			return queryService.query(HttpUtils.getTenant(request), token, tokenProvided, ids, typeQueryTerm, idPattern,
-					attrsQuery, qQueryTerm, csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset,
-					count, localOnly, context, request.headers(), doNotCompact, jsonKeys, dataSetIdTerm, join,
-					joinLevel, entityDist, pickTerm, omitTerm).onItem().transformToUni(queryResult -> {
+			String checkSum;
+			if (typeQuery == null && attrs == null && q == null && csf == null && geometry == null && georel == null
+					&& coordinates == null && geoproperty == null && geometryProperty == null && scopeQ == null
+					&& pick == null && omit == null) {
+				checkSum = null;
+			} else {
+				checkSum = String.valueOf(Objects.hashCode(typeQuery, attrs, q, csf, geometry, georel, coordinates,
+						geoproperty, geometryProperty, scopeQ, pick, omit));
+			}
+			ViaHeaders viaHeaders = new ViaHeaders(request.headers().getAll(HttpHeaders.VIA), this.selfViaHeader);
+			return queryService
+					.query(HttpUtils.getTenant(request), token, tokenProvided, ids, typeQueryTerm, idPattern,
+							attrsQuery, qQueryTerm, csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit,
+							offset, count, localOnly, context, request.headers(), doNotCompact, jsonKeys, dataSetIdTerm,
+							join, joinLevel, distEntities, pickTerm, omitTerm, checkSum, viaHeaders)
+					.onItem().transformToUni(queryResult -> {
 						if (doNotCompact) {
 							return Uni.createFrom().item(RestResponse.ok((Object) queryResult.getData()));
 						}
 						return HttpUtils.generateQueryResult(request, queryResult, finalOptions, geometryProperty,
-								acceptHeader, count, actualLimit, langQuery, context, ldService, entityMapRetrieve,
-								microServiceUtils.getGatewayURL().toString(), NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT);
+								acceptHeader, count, actualLimit, queryResult.getLanguageQueryTerm(), context,
+								ldService, entityMapRetrieve, microServiceUtils.getGatewayURL().toString(),
+								NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT);
 					});
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
@@ -540,9 +565,19 @@ public class QueryController {
 			} else {
 				ids = null;
 			}
-			return queryService.getAndStoreEntityIdList(HttpUtils.getTenant(request), ids, idPattern, q, typeQueryTerm,
+			String checkSum;
+			if (typeQuery == null && attrs == null && q == null && csf == null && geometry == null && georel == null
+					&& coordinates == null && geoproperty == null && geometryProperty == null && scopeQ == null
+					&& pick == null && omit == null) {
+				checkSum = null;
+			} else {
+				checkSum = String.valueOf(Objects.hashCode(typeQuery, attrs, q, csf, geometry, georel, coordinates,
+						geoproperty, geometryProperty, scopeQ, pick, omit));
+			}
+			ViaHeaders viaHeaders = new ViaHeaders(request.headers().getAll(HttpHeaders.VIA), this.selfViaHeader);
+			return queryService.getAndStoreEntityMap(HttpUtils.getTenant(request), ids, idPattern, q, typeQueryTerm,
 					attrsQuery, geoQueryTerm, qQueryTerm, scopeQueryTerm, langQuery, 1, 0, context, request.headers(),
-					false, dataSetIdTerm, null, 0, true, null, null).onItem().transformToUni(t -> {
+					false, dataSetIdTerm, null, 0, true, null, null, checkSum, viaHeaders).onItem().transform(t -> {
 						return HttpUtils.generateEntityMapResult(t.getItem2());
 					}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 		});
@@ -553,7 +588,7 @@ public class QueryController {
 	public Uni<RestResponse<Object>> getEntityMap(HttpServerRequest request,
 			@PathParam("entityMapId") String entityMapId) {
 		return queryService.getEntityMap(HttpUtils.getTenant(request), entityMapId).onItem()
-				.transformToUni(entityMap -> HttpUtils.generateEntityMapResult(entityMap));
+				.transform(entityMap -> HttpUtils.generateEntityMapResult(entityMap));
 
 	}
 

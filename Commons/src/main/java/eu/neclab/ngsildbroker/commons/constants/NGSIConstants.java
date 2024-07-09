@@ -473,7 +473,7 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_REG_OPERATION_RETRIEVESUBSCRIPTION = "retrieveSubscription";
 	public static final String NGSI_LD_REG_OPERATION_QUERYSUBSCRIPTION = "querySubscription";
 	public static final String NGSI_LD_REG_OPERATION_DELETESUBSCRIPTION = "deleteSubscription";
-	public static final String NGSI_LD_REG_OPERATION_ENTITYMAP = "entityMap";
+	public static final String NGSI_LD_REG_OPERATION_ENTITYMAP = "entityMapQuery";
 	public static final String NGSI_LD_REG_OPERATION_CANCOMPRESS = "canCompress";
 	public static final String ENTITY_MAP_TOKEN_HEADER = "NGSILD-EntityMap";
 

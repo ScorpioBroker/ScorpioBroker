@@ -218,6 +218,87 @@ public class GeoQueryTerm implements Serializable {
 		return Tuple2.of(result, dollar);
 	}
 
+	public int toSql(StringBuilder query, StringBuilder followUp, Tuple tuple, int dollar) {
+		String dbColumn;
+		String followUpDBColumn;
+		if (!geoproperty.equals(NGSIConstants.NGSI_LD_LOCATION)) {
+			query.append("data @> '{\"");
+			query.append(geoproperty);
+			query.append("\": [{\"");
+			query.append(NGSIConstants.JSON_LD_TYPE);
+			query.append("\":[\"");
+			query.append(NGSIConstants.NGSI_LD_GEOPROPERTY);
+			query.append("\"]}]}' AND ");
+
+			followUp.append("data @> ''{\"");
+			followUp.append(geoproperty);
+			followUp.append("\": [{\"");
+			followUp.append(NGSIConstants.JSON_LD_TYPE);
+			followUp.append("\":[\"");
+			followUp.append(NGSIConstants.NGSI_LD_GEOPROPERTY);
+			followUp.append("\"]}]}'' AND ");
+			dbColumn = "ST_SetSRID(ST_GeomFromGeoJSON( getGeoJson( " + "data#>'{" + geoproperty + ",0,"
+					+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0}') ), 4326)";
+			followUpDBColumn = "ST_SetSRID(ST_GeomFromGeoJSON( getGeoJson( " + "data#>''{" + geoproperty + ",0,"
+					+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0}'') ), 4326)";
+		} else {
+			dbColumn = "location";
+			followUpDBColumn = "location";
+		}
+
+		String referenceValue = "ST_SetSRID(ST_GeomFromGeoJSON('{\"type\": \"" + geometry + "\", \"coordinates\": "
+				+ coordinates + " }'), 4326)";
+		String followReferenceValue = "ST_SetSRID(ST_GeomFromGeoJSON(''{\"type\": \"" + geometry
+				+ "\", \"coordinates\": " + coordinates + " }''), 4326)";
+		String sqlPostgisFunction = DBConstants.NGSILD_TO_POSTGIS_GEO_OPERATORS_MAPPING.get(georel);
+		switch (georel) {
+		case NGSIConstants.GEO_REL_NEAR:
+			if (distanceType.equals(NGSIConstants.GEO_REL_MIN_DISTANCE)) {
+				query.append("NOT ");
+				followUp.append("NOT ");
+			}
+			query.append(sqlPostgisFunction);
+			query.append("( ");
+			query.append(dbColumn);
+			query.append("::geography, ");
+			query.append(referenceValue);
+			query.append("::geography, ");
+			query.append(distanceValue);
+			query.append(") ");
+
+			followUp.append(sqlPostgisFunction);
+			followUp.append("( ");
+			followUp.append(dbColumn);
+			followUp.append("::geography, ");
+			followUp.append(followReferenceValue);
+			followUp.append("::geography, ");
+			followUp.append(distanceValue);
+			followUp.append(") ");
+			break;
+		case NGSIConstants.GEO_REL_WITHIN:
+		case NGSIConstants.GEO_REL_CONTAINS:
+		case NGSIConstants.GEO_REL_OVERLAPS:
+		case NGSIConstants.GEO_REL_INTERSECTS:
+		case NGSIConstants.GEO_REL_EQUALS:
+		case NGSIConstants.GEO_REL_DISJOINT:
+			query.append(sqlPostgisFunction);
+			query.append("( ");
+			query.append(dbColumn);
+			query.append(", ");
+			query.append(referenceValue);
+			query.append(") ");
+
+			followUp.append(sqlPostgisFunction);
+			followUp.append("( ");
+			followUp.append(dbColumn);
+			followUp.append(", ");
+			followUp.append(followReferenceValue);
+			followUp.append(") ");
+			break;
+		}
+		return dollar;
+	}
+
 	public int toSql(StringBuilder query, Tuple tuple, int dollar) {
 		String dbColumn;
 		if (!geoproperty.equals(NGSIConstants.NGSI_LD_LOCATION)) {
@@ -250,15 +331,6 @@ public class GeoQueryTerm implements Serializable {
 			query.append("::geography, ");
 			query.append(distanceValue);
 			query.append(") ");
-//			query.append("or ");
-//			query.append(sqlPostgisFunction);
-//			query.append("( ");
-//			query.append(dbColumn);
-//			query.append(", ");
-//			query.append(referenceValue);
-//			query.append(", ");
-//			query.append(distanceValue);
-//			query.append(") ");
 			break;
 		case NGSIConstants.GEO_REL_WITHIN:
 		case NGSIConstants.GEO_REL_CONTAINS:
@@ -464,18 +536,15 @@ public class GeoQueryTerm implements Serializable {
 	}
 
 	@JsonIgnore
-	public void toRequestString(StringBuilder result, Shape geo, String georel) {
-		result.append("geoproperty=");
-		result.append(geoproperty);
-		result.append("&georel=");
-		result.append(georel);
+	public void addToRequestParams(Map<String, Object> queryParams, Shape geo, String georel) {
+		queryParams.put("geoproperty", geoproperty);
+
 		if (georel.equals(NGSIConstants.GEO_REL_NEAR)) {
-			result.append(";");
-			result.append(distanceType);
-			result.append("=");
-			result.append(distanceValue);
+			georel = georel + ";" + distanceType + "=" + distanceValue;
 		}
-		result.append("&coordinates=");
+		queryParams.put("georel", georel);
+		
+		StringBuilder result = new StringBuilder();
 		result.append('[');
 		if (geo instanceof JtsPoint) {
 			JtsPoint point = (JtsPoint) geo;
@@ -497,7 +566,7 @@ public class GeoQueryTerm implements Serializable {
 					handleLine(line, result);
 					result.append(',');
 				}
-				result.setCharAt(result.length(), ']');
+				result.setCharAt(result.length() - 1, ']');
 			} else if (geom instanceof Polygon) {
 				Polygon poly = (Polygon) geom;
 				handlePoly(poly, result);
@@ -509,10 +578,11 @@ public class GeoQueryTerm implements Serializable {
 					handlePoly((Polygon) multiPoly.getGeometryN(i), result);
 					result.append(',');
 				}
-				result.setCharAt(result.length(), ']');
+				result.setCharAt(result.length() - 1, ']');
 			}
 		}
 		result.append(']');
+		queryParams.put("coordinates", result.toString());
 	}
 
 	private void handleLine(LineString line, StringBuilder result) {

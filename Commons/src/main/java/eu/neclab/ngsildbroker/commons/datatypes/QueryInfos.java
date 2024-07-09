@@ -8,6 +8,7 @@ import java.util.Set;
 
 import org.locationtech.spatial4j.shape.Shape;
 import com.github.jsonldjava.core.Context;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
@@ -109,75 +110,69 @@ public class QueryInfos {
 		this.fullScopeFound = fullScopeFound;
 	}
 
-	public String toQueryString(Context context, TypeQueryTerm typeQuery, GeoQueryTerm geoQuery,
+	public Map<String, Object> toQueryParams(Context context, TypeQueryTerm typeQuery, GeoQueryTerm geoQuery,
 			LanguageQueryTerm langQuery, boolean ignoredId, EntityCache fullEntityCache, QueryRemoteHost tmpHost) {
-		StringBuilder result = new StringBuilder("?");
+
+		Map<String, Object> result = Maps.newHashMap();
 		Set<String> idsToBeUsed;
-		if (fullEntityCache != null) {
+		if (fullEntityCache != null && ids != null && !ids.isEmpty()) {
 			idsToBeUsed = Sets.newHashSet();
-			for(String type: types) {
-				Map<String, Tuple2<Map<String, Object>, Map<String, QueryRemoteHost>>> cacheIds = fullEntityCache.getByType(type);
-				for(String id: ids) {
-					if(cacheIds.containsKey(id)) {
-						Tuple2<Map<String, Object>, Map<String, QueryRemoteHost>> entityAndHosts = cacheIds.get(id);
-						Map<String, QueryRemoteHost> hostName2Host = entityAndHosts.getItem2();
-						if(hostName2Host == null) {
+				for (String id : ids) {
+					if (fullEntityCache.containsEntity(id)) {
+						Tuple2<Map<String,Object>,Set<String>> entityAndHosts = fullEntityCache.get(id);
+						Set<String> csourceIds = entityAndHosts.getItem2();
+						if (csourceIds == null) {
 							idsToBeUsed.add(id);
-						}else {
-							if(!hostName2Host.containsKey(tmpHost.host())) {
+						} else {
+							if (!csourceIds.contains(tmpHost.cSourceId())) {
 								idsToBeUsed.add(id);
 							}
 						}
-					}else {
+					} else {
 						idsToBeUsed.add(id);
 					}
 				}
-						
-			}
-			if(idsToBeUsed.isEmpty()) {
+			if (idsToBeUsed.isEmpty()) {
 				return null;
 			}
-		}else {
+		} else {
 			idsToBeUsed = ids;
 		}
 		if (!idsToBeUsed.isEmpty() && !ignoredId) {
-			result.append("id=");
-			result.append(String.join(",", idsToBeUsed));
-			result.append('&');
+			result.put("id", String.join(",", idsToBeUsed));
 		}
 		if (idPattern != null) {
-			result.append("idPattern=");
-			result.append(idPattern);
-			result.append('&');
+			result.put("idPattern", idPattern);
 		}
 		if (!types.isEmpty() && typeQuery != null) {
-			result.append("type=");
-			typeQuery.toRequestString(result, context);
-			result.append('&');
+			StringBuilder tmp = new StringBuilder();
+			typeQuery.toRequestString(tmp, context);
+			result.put("type", tmp.toString());
 		}
 		if (!attrs.isEmpty()) {
-			result.append("attrs=");
+			StringBuilder tmp = new StringBuilder();
 			for (String attr : attrs) {
-				result.append(URLEncoder.encode(context.compactIri(attr), StandardCharsets.UTF_8));
-				result.append(',');
+				tmp.append(URLEncoder.encode(context.compactIri(attr), StandardCharsets.UTF_8));
+				tmp.append(',');
 			}
-			result.setCharAt(result.length() - 1, '&');
+			tmp.setLength(tmp.length() - 1);
+			result.put("attrs", tmp.toString());
 		}
 		if (!scopes.isEmpty()) {
-			result.append("scopeQ=");
-			result.append(String.join(",", scopes));
-			result.append('&');
+			result.put("scopeQ", String.join(",", scopes));
 		}
 		if (langQuery != null) {
-			langQuery.toRequestString(result);
+			result.put("lang", langQuery.toRequestString());
+			
 		}
 		if (geo != null && geoQuery != null) {
-			geoQuery.toRequestString(result, geo, geoQuery.getGeorel());
+			geoQuery.addToRequestParams(result, geo, geoQuery.getGeorel());
 
 		}
 
-		result.setLength(result.length() - 1);
-		return result.toString();
+		
+
+		return result;
 	}
 
 	public void addId(String id) {

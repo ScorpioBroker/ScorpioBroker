@@ -446,16 +446,24 @@ public class TypeQueryTerm implements Serializable {
 //		return equals(obj, false);
 //	}
 
-	public int toBroadSql(StringBuilder result, Tuple tuple, int dollar) {
+	public int toBroadSql(StringBuilder result, StringBuilder queryToStoreWherePart, Tuple tuple, int dollar) {
 		result.append("e_types && ARRAY[");
+		queryToStoreWherePart.append("e_types && ARRAY[''' || ");
 		for(String type: allTypes) {
 			result.append('$');
 			result.append(dollar);
-			dollar++;
 			result.append(',');
+			
+			queryToStoreWherePart.append('$');
+			queryToStoreWherePart.append(dollar);
+			queryToStoreWherePart.append(" || ''',''' || ");
+			
+			dollar++;
 			tuple.addString(type);
 		}
-		result.setCharAt(result.length(), ']');
+		queryToStoreWherePart.setLength(queryToStoreWherePart.length() - 8);
+		queryToStoreWherePart.append("]");
+		result.setCharAt(result.length() - 1, ']');
 		return dollar;
 	}
 	public int toSql(StringBuilder result, Tuple tuple, int dollar) {
@@ -524,6 +532,100 @@ public class TypeQueryTerm implements Serializable {
 				result.append(") ");
 			} else {
 				result.append("]::text[]) ");
+			}
+		}
+		return dollar;
+	}
+	
+	public int toSql(StringBuilder result, StringBuilder followUp, Tuple tuple, int dollar) {
+		if (type == null || type.isEmpty()) {
+			TypeQueryTerm current = this;
+			while (current.firstChild != null) {
+				current = current.firstChild;
+			}
+			current.next.toSql(result, tuple, dollar);
+		} else {
+			result.append("(e_types ");
+			followUp.append("(e_types ");
+			if (next != null && nextAnd) {
+				result.append("@> ");
+				followUp.append("@> ");
+			} else {
+				result.append("&& ");
+				followUp.append("&& ");
+			}
+			result.append("ARRAY[$");
+			result.append(dollar);
+			followUp.append("ARRAY[''' || $");
+			followUp.append(dollar);
+			followUp.append("||'''");
+			dollar++;
+			tuple.addString(type);
+			if (!hasNext()) {
+				result.append("]::text[])");
+				followUp.append("]::text[])");
+				return dollar;
+			}
+			TypeQueryTerm current = this;
+			Boolean childPresentFlag = false;
+			while (current.hasNext() || current.firstChild != null) {
+				if (current.firstChild != null) {
+					result.append("]::text[]");
+					followUp.append("]::text[]");
+					if (current.prev.nextAnd) {
+						result.append(" AND (");
+						followUp.append(" AND (");
+					} else {
+						result.append(" OR (");
+						followUp.append(" OR (");
+					}
+					childPresentFlag = true;
+					dollar = current.firstChild.toSql(result, followUp, tuple, dollar);
+					result.append(")");
+					followUp.append(")");
+					break;
+				}
+				current = current.getNext();
+				if (current.type != null && !current.type.isEmpty()) {
+					if (current.prev.nextAnd != current.nextAnd && current.next != null) {
+						result.append("]");
+						followUp.append("]");
+						if (current.prev.nextAnd) {
+							result.append(" AND ");
+							followUp.append(" AND ");
+						} else {
+							result.append(" OR ");
+							followUp.append(" OR ");
+						}
+						result.append("e_types ");
+						followUp.append("e_types ");
+						if (current.nextAnd) {
+							result.append("@> ");
+							followUp.append("@> ");
+						} else {
+							result.append("&& ");
+							followUp.append("&& ");
+						}
+						result.append("ARRAY[$");
+						followUp.append("ARRAY[' || $");
+					} else {
+						result.append(",$");
+						followUp.append(",' || $");
+					}
+					result.append(dollar);
+					followUp.append(dollar);
+					followUp.append(" || '");
+					dollar++;
+					tuple.addString(current.type);
+				}
+			}
+
+			if (childPresentFlag) {
+				result.append(") ");
+				followUp.append(") ");
+			} else {
+				result.append("]::text[]) ");
+				followUp.append("]::text[]) ");
 			}
 		}
 		return dollar;

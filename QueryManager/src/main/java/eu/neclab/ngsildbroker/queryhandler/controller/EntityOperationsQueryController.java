@@ -1,11 +1,14 @@
 package eu.neclab.ngsildbroker.queryhandler.controller;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import io.vertx.core.json.JsonObject;
+import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import jakarta.ws.rs.HeaderParam;
@@ -22,9 +25,11 @@ import com.github.jsonldjava.core.JsonLDService;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
+import com.google.common.net.HttpHeaders;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.ViaHeaders;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
@@ -64,6 +69,14 @@ public class EntityOperationsQueryController {
 
 	@Inject
 	JsonLDService ldService;
+
+	private String selfViaHeader;
+
+	@PostConstruct
+	public void setup() {
+		URI gateway = microServiceUtils.getGatewayURL();
+		this.selfViaHeader = gateway.getScheme().toUpperCase() + "/1.1 " + gateway.getAuthority();
+	}
 
 	@Path("/query")
 	@POST
@@ -158,6 +171,12 @@ public class EntityOperationsQueryController {
 				Object csf = body.get(NGSIConstants.QUERY_PARAMETER_CSF);
 				Object omit = body.get(NGSIConstants.QUERY_PARAMETER_OMIT);
 				Object pick = body.get(NGSIConstants.QUERY_PARAMETER_PICK);
+				Object georel = null;
+				String coordinates = null;
+				Object geoproperty = null;
+				Object geometry = null;
+				ViaHeaders viaHeaders = new ViaHeaders(request.headers().getAll(HttpHeaders.VIA), this.selfViaHeader);
+
 				if (attrs != null) {
 					attrsQuery = QueryParser.parseAttrs(String.join(",", (ArrayList<String>) attrs), context);
 				}
@@ -166,10 +185,10 @@ public class EntityOperationsQueryController {
 				}
 				if (geoQ != null) {
 					Map<String, Object> tmp = (Map<String, Object>) geoQ;
-					Object georel = tmp.get(NGSIConstants.QUERY_PARAMETER_GEOREL);
-					String coordinates = JsonUtils.toString(tmp.get(NGSIConstants.QUERY_PARAMETER_COORDINATES));
-					Object geoproperty = tmp.get(NGSIConstants.QUERY_PARAMETER_GEOPROPERTY);
-					Object geometry = tmp.get(NGSIConstants.QUERY_PARAMETER_GEOMETRY);
+					georel = tmp.get(NGSIConstants.QUERY_PARAMETER_GEOREL);
+					coordinates = JsonUtils.toString(tmp.get(NGSIConstants.QUERY_PARAMETER_COORDINATES));
+					geoproperty = tmp.get(NGSIConstants.QUERY_PARAMETER_GEOPROPERTY);
+					geometry = tmp.get(NGSIConstants.QUERY_PARAMETER_GEOMETRY);
 					geoQueryTerm = QueryParser.parseGeoQuery(georel == null ? null : (String) georel, coordinates,
 							geometry == null ? null : (String) geometry,
 							geoproperty == null ? null : (String) geoproperty, context);
@@ -194,6 +213,20 @@ public class EntityOperationsQueryController {
 					QueryParser.parseProjectionTerm(omitTerm, (String) omit, context);
 				}
 				String tenant = HttpUtils.getTenant(request);
+				String token;
+				boolean tokenProvided;
+				if (entityMapToken != null) {
+					try {
+						HttpUtils.validateUri(entityMapToken);
+					} catch (ResponseException e) {
+						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+					}
+					token = entityMapToken;
+					tokenProvided = true;
+				} else {
+					token = "urn:ngsi-ld:entitymap:" + UUID.randomUUID().toString();
+					tokenProvided = false;
+				}
 				if (entities != null) {
 					if (!(entities instanceof List)) {
 						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
@@ -205,39 +238,22 @@ public class EntityOperationsQueryController {
 						String idPattern = entityEntry.get(NGSIConstants.QUERY_PARAMETER_IDPATTERN);
 						String typeQuery = entityEntry.get(NGSIConstants.QUERY_PARAMETER_TYPE);
 						typeQueryTerm = QueryParser.parseTypeQuery(typeQuery, context);
-						String token;
-						boolean tokenProvided;
-						String md5 = "" + Objects.hashCode(typeQuery, attrs, q, csf, geoQ, geometryProperty, lang,
-								scopeQ, localOnly, options);
-						String headerToken = request.headers().get(NGSIConstants.ENTITY_MAP_TOKEN_HEADER);
-						if (headerToken != null && entityMapToken != null) {
-							if (!headerToken.equals(entityMapToken)) {
-								return Uni.createFrom().item(HttpUtils
-										.handleControllerExceptions(new ResponseException(ErrorType.InvalidRequest)));
-							}
-						}
-						String tokenToTest = null;
-						if (entityMapToken != null) {
-							tokenToTest = entityMapToken;
-						} else if (headerToken != null) {
-							tokenToTest = headerToken;
-						}
-						if (tokenToTest != null) {
-							if (!tokenToTest.substring(6).equals(md5)) {
-								return Uni.createFrom().item(HttpUtils
-										.handleControllerExceptions(new ResponseException(ErrorType.InvalidRequest)));
-							}
-							token = tokenToTest;
-							tokenProvided = true;
+
+						String checkSum;
+						if (typeQuery == null && attrs == null && q == null && csf == null && geometry == null
+								&& georel == null && coordinates == null && geoproperty == null
+								&& geometryProperty == null && scopeQ == null && pick == null && omit == null) {
+							checkSum = null;
 						} else {
-							token = RandomStringUtils.randomAlphabetic(6) + md5;
-							tokenProvided = false;
+							checkSum = String.valueOf(Objects.hashCode(typeQuery, attrs, q, csf, geometry, georel,
+									coordinates, geoproperty, geometryProperty, scopeQ, pick, omit));
 						}
+
 						unis.add(queryService.query(HttpUtils.getTenant(request), token, tokenProvided,
 								id == null ? null : new String[] { id }, typeQueryTerm, idPattern, attrsQuery,
 								qQueryTerm, csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset,
 								count, localOnly, context, request.headers(), false, null, null, join, joinLevel,
-								entityDist, pickTerm, omitTerm));
+								entityDist, pickTerm, omitTerm, checkSum, viaHeaders));
 					}
 					return Uni.combine().all().unis(unis).combinedWith(list -> {
 						Iterator<?> it = list.iterator();
@@ -253,38 +269,19 @@ public class EntityOperationsQueryController {
 									retrieveEntityMap, microServiceUtils.getGatewayURL().toString(),
 									NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT));
 				} else {
-					String token;
-					boolean tokenProvided;
-					String md5 = ""
-							+ Objects.hashCode(attrs, q, csf, geoQ, geometryProperty, lang, scopeQ, localOnly, options);
-					String headerToken = request.headers().get(NGSIConstants.ENTITY_MAP_TOKEN_HEADER);
-					if (headerToken != null && entityMapToken != null) {
-						if (!headerToken.equals(entityMapToken)) {
-							return Uni.createFrom().item(HttpUtils
-									.handleControllerExceptions(new ResponseException(ErrorType.InvalidRequest)));
-						}
-					}
-					String tokenToTest = null;
-					if (entityMapToken != null) {
-						tokenToTest = entityMapToken;
-					} else if (headerToken != null) {
-						tokenToTest = headerToken;
-					}
-					if (tokenToTest != null) {
-						if (!tokenToTest.substring(6).equals(md5)) {
-							return Uni.createFrom().item(HttpUtils
-									.handleControllerExceptions(new ResponseException(ErrorType.InvalidRequest)));
-						}
-						token = tokenToTest;
-						tokenProvided = true;
+					String checkSum;
+					if (attrs == null && q == null && csf == null && geometry == null && georel == null
+							&& coordinates == null && geoproperty == null && geometryProperty == null && scopeQ == null
+							&& pick == null && omit == null) {
+						checkSum = null;
 					} else {
-						token = RandomStringUtils.randomAlphabetic(6) + md5;
-						tokenProvided = false;
+						checkSum = String.valueOf(Objects.hashCode(null, attrs, q, csf, geometry, georel, coordinates,
+								geoproperty, geometryProperty, scopeQ, pick, omit));
 					}
 					return queryService.query(tenant, token, tokenProvided, null, null, null, attrsQuery, qQueryTerm,
 							csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset, count,
 							localOnly, context, request.headers(), false, null, null, join, joinLevel, entityDist,
-							pickTerm, omitTerm).onItem().transformToUni(queryResult -> {
+							pickTerm, omitTerm, checkSum, viaHeaders).onItem().transformToUni(queryResult -> {
 								return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty,
 										acceptHeader, count, actualLimit, langQuery, context, ldService,
 										retrieveEntityMap, microServiceUtils.getGatewayURL().toString(),

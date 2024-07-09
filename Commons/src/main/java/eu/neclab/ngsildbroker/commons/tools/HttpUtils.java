@@ -1153,31 +1153,14 @@ public final class HttpUtils {
 		return context;
 	}
 
-	public static Uni<RestResponse<Object>> generateEntityMapResult(EntityMap entityMap) {
-		Map<String, Object> result = Maps.newHashMap();
-		result.put(NGSIConstants.TYPE, NGSIConstants.NGSI_LD_ENTITY_MAP_SHORT);
-		result.put(NGSIConstants.ID, entityMap.getId());
-		Map<String, List<String>> entityMapEntry = Maps.newHashMap();
-
-		entityMap.getEntityList().forEach(entry -> {
-			String entityId = entry.getEntityId();
-			List<String> csourceIds;
-			if (entityMapEntry.containsKey(entityId)) {
-				csourceIds = entityMapEntry.get(entityId);
-			} else {
-				csourceIds = Lists.newArrayList();
-				entityMapEntry.put(entityId, csourceIds);
-			}
-			entry.getRemoteHosts().forEach(remoteHost -> {
-				if (remoteHost.cSourceId() == null) {
-					csourceIds.add(NGSIConstants.JSON_LD_NULL);
-				} else {
-					csourceIds.add(remoteHost.cSourceId());
-				}
-			});
-
-		});
-		result.put(NGSIConstants.NGSI_LD_ENTITY_MAP_SHORT, entityMapEntry);
-		return Uni.createFrom().item(RestResponse.ok(result, new MediaType(MediaType.APPLICATION_JSON, null)));
+	public static RestResponse<Object> generateEntityMapResult(Map<String, Object> entityMap) {
+		// TODO Auto-generated method stub
+		return null;
 	}
+
+	public static RestResponse<Object> generateEntityMapResult(EntityMap item2) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }

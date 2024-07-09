@@ -85,15 +85,16 @@ public class LanguageQueryTerm implements Serializable {
 		}
 	}
 
-	public void toRequestString(StringBuilder result) {
-		result.append("lang=");
+	public String toRequestString() {
+		StringBuilder result = new StringBuilder();
 		for (Tuple2<Set<String>, Float> entry : entries) {
 			result.append(String.join(",", entry.getItem1()));
 			result.append(";q=");
 			result.append(entry.getItem2());
 			result.append(',');
 		}
-		result.setCharAt(result.length() - 1, '&');
+		result.setLength(result.length() - 1);
+		return result.toString();
 	}
 
 	public boolean calculateEntity(Map<String, Object> entity) {

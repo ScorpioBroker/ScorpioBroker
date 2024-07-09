@@ -162,7 +162,7 @@ public class QueryControllerTest {
 
 		Mockito.when(queryService.query(any(), any(), anyBoolean(), any(), any(), any(), any(), any(), any(), any(),
 				any(), any(), anyInt(), anyInt(), anyBoolean(), anyBoolean(), any(), any(), anyBoolean(), any(), any(),
-				any(), any(), any(), any(), any())).thenReturn(Uni.createFrom().item(mockResutl));
+				any(), any(), any(), any(), any(), any(), any())).thenReturn(Uni.createFrom().item(mockResutl));
 
 		ExtractableResponse<Response> response = given().accept(AppConstants.NGB_APPLICATION_JSONLD).request()
 				.contentType(AppConstants.NGB_APPLICATION_JSON).when().get("/ngsi-ld/v1/entities?type=Vehicle").then()
@@ -177,7 +177,7 @@ public class QueryControllerTest {
 		int limit = 200;
 		Mockito.when(queryService.query(any(), any(), anyBoolean(), any(), any(), any(), any(), any(), any(), any(),
 				any(), any(), anyInt(), anyInt(), anyBoolean(), anyBoolean(), any(), any(), anyBoolean(), any(), any(),
-				any(), any(), any(), any(), any())).thenReturn(Uni.createFrom().item(mockResutl));
+				any(), any(), any(), any(), any(), any(), any())).thenReturn(Uni.createFrom().item(mockResutl));
 
 		ExtractableResponse<Response> response = given().accept(AppConstants.NGB_APPLICATION_JSONLD).request()
 				.contentType(AppConstants.NGB_APPLICATION_JSON).queryParam("limit", limit).when()
@@ -276,7 +276,7 @@ public class QueryControllerTest {
 		int limit = 200;
 		Mockito.when(queryService.query(any(), any(), anyBoolean(), any(), any(), any(), any(), any(), any(), any(),
 				any(), any(), anyInt(), anyInt(), anyBoolean(), anyBoolean(), any(), any(), anyBoolean(), any(), any(),
-				any(), any(), any(), any(), any())).thenReturn(Uni.createFrom().item(mockResutl));
+				any(), any(), any(), any(), any(), any(), any())).thenReturn(Uni.createFrom().item(mockResutl));
 
 		ExtractableResponse<Response> response = RestAssured.given()
 				.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
@@ -298,7 +298,7 @@ public class QueryControllerTest {
 
 		Mockito.when(queryService.query(any(), any(), anyBoolean(), any(), any(), any(), any(), any(), any(), any(),
 				any(), any(), anyInt(), anyInt(), anyBoolean(), anyBoolean(), any(), any(), anyBoolean(), any(), any(),
-				any(), any(), any(), any(), any())).thenReturn(Uni.createFrom().item(mockResutl));
+				any(), any(), any(), any(), any(), any(), any())).thenReturn(Uni.createFrom().item(mockResutl));
 
 		ExtractableResponse<Response> response = RestAssured.given()
 				.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
@@ -317,7 +317,7 @@ public class QueryControllerTest {
 
 		Mockito.when(queryService.query(any(), any(), anyBoolean(), any(), any(), any(), any(), any(), any(), any(),
 				any(), any(), anyInt(), anyInt(), anyBoolean(), anyBoolean(), any(), any(), anyBoolean(), any(), any(),
-				any(), any(), any(), any(), any())).thenReturn(Uni.createFrom().item(mockResutl));
+				any(), any(), any(), any(), any(), any(), any())).thenReturn(Uni.createFrom().item(mockResutl));
 
 		ExtractableResponse<Response> response = RestAssured.given()
 				.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD)
@@ -335,7 +335,7 @@ public class QueryControllerTest {
 		int limit = 200;
 		Mockito.when(queryService.query(any(), any(), anyBoolean(), any(), any(), any(), any(), any(), any(), any(),
 				any(), any(), anyInt(), anyInt(), anyBoolean(), anyBoolean(), any(), any(), anyBoolean(), any(), any(),
-				any(), any(), any(), any(), any())).thenReturn(Uni.createFrom().item(mockResutl));
+				any(), any(), any(), any(), any(), any(), any())).thenReturn(Uni.createFrom().item(mockResutl));
 
 		ExtractableResponse<Response> response = RestAssured.given()
 				.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)

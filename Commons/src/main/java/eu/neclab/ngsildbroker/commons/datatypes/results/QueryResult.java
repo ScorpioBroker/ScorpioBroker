@@ -5,6 +5,8 @@ import java.util.Map;
 
 import com.google.common.collect.Maps;
 
+import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
+
 /**
  * @author hebgen
  * @version 1.0
@@ -19,6 +21,7 @@ public class QueryResult {
 	private Long resultsLeftBefore;
 	private List<Map<String, Object>> data;
 	private Long count = 0L;
+	private LanguageQueryTerm languageQueryTerm;
 
 	public QueryResult() {
 	}
@@ -79,6 +82,15 @@ public class QueryResult {
 		this.count = count;
 	}
 
+	public LanguageQueryTerm getLanguageQueryTerm() {
+		return languageQueryTerm;
+	}
+
+	public void setLanguageQueryTerm(LanguageQueryTerm languageQueryTerm) {
+		this.languageQueryTerm = languageQueryTerm;
+	}
+
+	
 	
 
 //	public void finalize() throws Throwable {
