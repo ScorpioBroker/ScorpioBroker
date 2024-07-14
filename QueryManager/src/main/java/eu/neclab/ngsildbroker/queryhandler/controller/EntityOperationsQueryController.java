@@ -47,6 +47,7 @@ import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.commons.tools.QueryParser;
 import eu.neclab.ngsildbroker.queryhandler.services.QueryService;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.tuples.Tuple3;
 import io.vertx.core.http.HttpServerRequest;
 
 @Singleton
@@ -227,67 +228,49 @@ public class EntityOperationsQueryController {
 					token = "urn:ngsi-ld:entitymap:" + UUID.randomUUID().toString();
 					tokenProvided = false;
 				}
+				List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeQueryAndIdPattern;
+
 				if (entities != null) {
 					if (!(entities instanceof List)) {
-						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
-								new ResponseException(ErrorType.BadRequestData, "entities needs to be an array")));
+						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(new ResponseException(
+								ErrorType.BadRequestData, "entities needs to be an array with an entry")));
 					}
-					List<Uni<QueryResult>> unis = Lists.newArrayList();
+					int listSize = ((List) entities).size();
+					if (listSize <= 0) {
+						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(new ResponseException(
+								ErrorType.BadRequestData, "entities needs to be an array with an entry")));
+					}
+					idsAndTypeQueryAndIdPattern = new ArrayList<>(listSize);
 					for (Map<String, String> entityEntry : (List<Map<String, String>>) entities) {
 						String id = entityEntry.get(NGSIConstants.QUERY_PARAMETER_ID);
 						String idPattern = entityEntry.get(NGSIConstants.QUERY_PARAMETER_IDPATTERN);
 						String typeQuery = entityEntry.get(NGSIConstants.QUERY_PARAMETER_TYPE);
 						typeQueryTerm = QueryParser.parseTypeQuery(typeQuery, context);
-
-						String checkSum;
-						if (typeQuery == null && attrs == null && q == null && csf == null && geometry == null
-								&& georel == null && coordinates == null && geoproperty == null
-								&& geometryProperty == null && scopeQ == null && pick == null && omit == null) {
-							checkSum = null;
-						} else {
-							checkSum = String.valueOf(Objects.hashCode(typeQuery, attrs, q, csf, geometry, georel,
-									coordinates, geoproperty, geometryProperty, scopeQ, pick, omit));
-						}
-
-						unis.add(queryService.query(HttpUtils.getTenant(request), token, tokenProvided,
-								id == null ? null : new String[] { id }, typeQueryTerm, idPattern, attrsQuery,
-								qQueryTerm, csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset,
-								count, localOnly, context, request.headers(), false, null, null, join, joinLevel,
-								entityDist, pickTerm, omitTerm, checkSum, viaHeaders));
+						String[] ids = id == null ? null : id.split(",");
+						idsAndTypeQueryAndIdPattern.add(Tuple3.of(ids, typeQueryTerm, idPattern));
 					}
-					return Uni.combine().all().unis(unis).combinedWith(list -> {
-						Iterator<?> it = list.iterator();
-						QueryResult first = (QueryResult) it.next();
-
-						while (it.hasNext()) {
-							first.getData().addAll(((QueryResult) it.next()).getData());
-						}
-						return first;
-					}).onItem()
-							.transformToUni(first -> HttpUtils.generateQueryResult(request, first, options,
-									geometryProperty, acceptHeader, count, actualLimit, langQuery, context, ldService,
-									retrieveEntityMap, microServiceUtils.getGatewayURL().toString(),
-									NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT));
 				} else {
-					String checkSum;
-					if (attrs == null && q == null && csf == null && geometry == null && georel == null
-							&& coordinates == null && geoproperty == null && geometryProperty == null && scopeQ == null
-							&& pick == null && omit == null) {
-						checkSum = null;
-					} else {
-						checkSum = String.valueOf(Objects.hashCode(null, attrs, q, csf, geometry, georel, coordinates,
-								geoproperty, geometryProperty, scopeQ, pick, omit));
-					}
-					return queryService.query(tenant, token, tokenProvided, null, null, null, attrsQuery, qQueryTerm,
-							csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset, count,
-							localOnly, context, request.headers(), false, null, null, join, joinLevel, entityDist,
-							pickTerm, omitTerm, checkSum, viaHeaders).onItem().transformToUni(queryResult -> {
-								return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty,
-										acceptHeader, count, actualLimit, langQuery, context, ldService,
-										retrieveEntityMap, microServiceUtils.getGatewayURL().toString(),
-										NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT);
-							}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e));
+					idsAndTypeQueryAndIdPattern = null;
 				}
+				String checkSum;
+				if (idsAndTypeQueryAndIdPattern == null && attrs == null && q == null && csf == null && geometry == null
+						&& georel == null && coordinates == null && geoproperty == null && geometryProperty == null
+						&& scopeQ == null && pick == null && omit == null) {
+					checkSum = null;
+				} else {
+					checkSum = String.valueOf(Objects.hashCode(idsAndTypeQueryAndIdPattern, attrs, q, csf, geometry,
+							georel, coordinates, geoproperty, geometryProperty, scopeQ, pick, omit));
+				}
+				return queryService.query(tenant, token, tokenProvided, idsAndTypeQueryAndIdPattern, attrsQuery,
+						qQueryTerm, csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset, count,
+						localOnly, context, request.headers(), false, null, null, join, joinLevel, entityDist, pickTerm,
+						omitTerm, checkSum, viaHeaders).onItem().transformToUni(queryResult -> {
+							return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty,
+									acceptHeader, count, actualLimit, langQuery, context, ldService, retrieveEntityMap,
+									microServiceUtils.getGatewayURL().toString(),
+									NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT);
+						}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e));
+
 			} catch (Exception e) {
 				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 			}

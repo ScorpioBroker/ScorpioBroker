@@ -1,9 +1,12 @@
 package eu.neclab.ngsildbroker.commons.datatypes.terms;
 
+import java.util.List;
 import java.util.Set;
 
+import io.smallrye.mutiny.tuples.Tuple3;
+
 public class Query {
-	TypeQueryTerm typeQueryTerm;
+	List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeAndIdPattern;
 	ScopeQueryTerm scopeQueryTerm;
 	QQueryTerm qQueryTerm;
 	PickTerm pickTerm;
@@ -15,11 +18,12 @@ public class Query {
 	private Set<String> jsonKeys;
 	private String join;
 	private int joinLevel;
-	public TypeQueryTerm getTypeQueryTerm() {
-		return typeQueryTerm;
+	
+	public List<Tuple3<String[], TypeQueryTerm, String>> getIdsAndTypeAndIdPattern() {
+		return idsAndTypeAndIdPattern;
 	}
-	public void setTypeQueryTerm(TypeQueryTerm typeQueryTerm) {
-		this.typeQueryTerm = typeQueryTerm;
+	public void setIdsAndTypeAndIdPattern(List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeAndIdPattern) {
+		this.idsAndTypeAndIdPattern = idsAndTypeAndIdPattern;
 	}
 	public ScopeQueryTerm getScopeQueryTerm() {
 		return scopeQueryTerm;

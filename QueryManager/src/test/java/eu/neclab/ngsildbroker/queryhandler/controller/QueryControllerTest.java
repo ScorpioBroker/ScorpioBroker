@@ -161,8 +161,8 @@ public class QueryControllerTest {
 		QueryResult mockResutl = Mockito.mock(QueryResult.class);
 
 		Mockito.when(queryService.query(any(), any(), anyBoolean(), any(), any(), any(), any(), any(), any(), any(),
-				any(), any(), anyInt(), anyInt(), anyBoolean(), anyBoolean(), any(), any(), anyBoolean(), any(), any(),
-				any(), any(), any(), any(), any(), any(), any())).thenReturn(Uni.createFrom().item(mockResutl));
+				anyInt(), anyInt(), anyBoolean(), anyBoolean(), any(), any(), anyBoolean(), any(), any(), any(), any(),
+				any(), any(), any(), any(), any())).thenReturn(Uni.createFrom().item(mockResutl));
 
 		ExtractableResponse<Response> response = given().accept(AppConstants.NGB_APPLICATION_JSONLD).request()
 				.contentType(AppConstants.NGB_APPLICATION_JSON).when().get("/ngsi-ld/v1/entities?type=Vehicle").then()
@@ -175,7 +175,7 @@ public class QueryControllerTest {
 	public void queryAcceptHeaderTest() {
 		QueryResult mockResutl = Mockito.mock(QueryResult.class);
 		int limit = 200;
-		Mockito.when(queryService.query(any(), any(), anyBoolean(), any(), any(), any(), any(), any(), any(), any(),
+		Mockito.when(queryService.query(any(), any(), anyBoolean(), any(), any(), any(), any(), any(),
 				any(), any(), anyInt(), anyInt(), anyBoolean(), anyBoolean(), any(), any(), anyBoolean(), any(), any(),
 				any(), any(), any(), any(), any(), any(), any())).thenReturn(Uni.createFrom().item(mockResutl));
 
@@ -274,7 +274,7 @@ public class QueryControllerTest {
 
 		QueryResult mockResutl = Mockito.mock(QueryResult.class);
 		int limit = 200;
-		Mockito.when(queryService.query(any(), any(), anyBoolean(), any(), any(), any(), any(), any(), any(), any(),
+		Mockito.when(queryService.query(any(), any(), anyBoolean(), any(), any(), any(), any(), any(),
 				any(), any(), anyInt(), anyInt(), anyBoolean(), anyBoolean(), any(), any(), anyBoolean(), any(), any(),
 				any(), any(), any(), any(), any(), any(), any())).thenReturn(Uni.createFrom().item(mockResutl));
 
@@ -296,7 +296,7 @@ public class QueryControllerTest {
 
 		QueryResult mockResutl = Mockito.mock(QueryResult.class);
 
-		Mockito.when(queryService.query(any(), any(), anyBoolean(), any(), any(), any(), any(), any(), any(), any(),
+		Mockito.when(queryService.query(any(), any(), anyBoolean(), any(), any(), any(), any(), any(),
 				any(), any(), anyInt(), anyInt(), anyBoolean(), anyBoolean(), any(), any(), anyBoolean(), any(), any(),
 				any(), any(), any(), any(), any(), any(), any())).thenReturn(Uni.createFrom().item(mockResutl));
 
@@ -315,7 +315,7 @@ public class QueryControllerTest {
 
 		QueryResult mockResutl = Mockito.mock(QueryResult.class);
 
-		Mockito.when(queryService.query(any(), any(), anyBoolean(), any(), any(), any(), any(), any(), any(), any(),
+		Mockito.when(queryService.query(any(), any(), anyBoolean(), any(), any(), any(), any(), any(),
 				any(), any(), anyInt(), anyInt(), anyBoolean(), anyBoolean(), any(), any(), anyBoolean(), any(), any(),
 				any(), any(), any(), any(), any(), any(), any())).thenReturn(Uni.createFrom().item(mockResutl));
 
@@ -333,7 +333,7 @@ public class QueryControllerTest {
 
 		QueryResult mockResutl = Mockito.mock(QueryResult.class);
 		int limit = 200;
-		Mockito.when(queryService.query(any(), any(), anyBoolean(), any(), any(), any(), any(), any(), any(), any(),
+		Mockito.when(queryService.query(any(), any(), anyBoolean(), any(), any(), any(), any(), any(),
 				any(), any(), anyInt(), anyInt(), anyBoolean(), anyBoolean(), any(), any(), anyBoolean(), any(), any(),
 				any(), any(), any(), any(), any(), any(), any())).thenReturn(Uni.createFrom().item(mockResutl));
 

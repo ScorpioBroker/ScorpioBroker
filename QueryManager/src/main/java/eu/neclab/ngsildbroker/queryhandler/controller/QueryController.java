@@ -34,6 +34,7 @@ import com.fasterxml.jackson.core.JsonGenerationException;
 import com.github.jsonldjava.core.JsonLDService;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.base.Objects;
+import com.google.common.collect.Lists;
 import com.google.common.net.HttpHeaders;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.ViaHeaders;
@@ -53,6 +54,7 @@ import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.commons.tools.QueryParser;
 import eu.neclab.ngsildbroker.queryhandler.services.QueryService;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.tuples.Tuple3;
 import io.vertx.core.http.HttpServerRequest;
 
 @Singleton
@@ -330,8 +332,16 @@ public class QueryController {
 						geoproperty, geometryProperty, scopeQ, pick, omit));
 			}
 			ViaHeaders viaHeaders = new ViaHeaders(request.headers().getAll(HttpHeaders.VIA), this.selfViaHeader);
+			List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeQueryAndIdPattern;
+			if(typeQuery != null || ids != null || idPattern != null) {
+				idsAndTypeQueryAndIdPattern = new ArrayList<>(1);
+				idsAndTypeQueryAndIdPattern.add(Tuple3.of(ids, typeQueryTerm, idPattern));
+			}else {
+				idsAndTypeQueryAndIdPattern = null;
+			}
+				
 			return queryService
-					.query(HttpUtils.getTenant(request), token, tokenProvided, ids, typeQueryTerm, idPattern,
+					.query(HttpUtils.getTenant(request), token, tokenProvided, idsAndTypeQueryAndIdPattern,
 							attrsQuery, qQueryTerm, csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit,
 							offset, count, localOnly, context, request.headers(), doNotCompact, jsonKeys, dataSetIdTerm,
 							join, joinLevel, distEntities, pickTerm, omitTerm, checkSum, viaHeaders)
@@ -574,8 +584,18 @@ public class QueryController {
 				checkSum = String.valueOf(Objects.hashCode(typeQuery, attrs, q, csf, geometry, georel, coordinates,
 						geoproperty, geometryProperty, scopeQ, pick, omit));
 			}
+			List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeQueryAndIdPattern;
+			if(typeQuery != null || ids != null || idPattern != null) {
+				idsAndTypeQueryAndIdPattern = new ArrayList<>(1);
+				idsAndTypeQueryAndIdPattern.add(Tuple3.of(ids, typeQueryTerm, idPattern));
+			}else {
+				idsAndTypeQueryAndIdPattern = null;
+			}
+			String token = "urn:ngsi-ld:entitymap:" + UUID.randomUUID().toString();
+				
+			
 			ViaHeaders viaHeaders = new ViaHeaders(request.headers().getAll(HttpHeaders.VIA), this.selfViaHeader);
-			return queryService.getAndStoreEntityMap(HttpUtils.getTenant(request), ids, idPattern, q, typeQueryTerm,
+			return queryService.getAndStoreEntityMap(HttpUtils.getTenant(request), token, idsAndTypeQueryAndIdPattern,
 					attrsQuery, geoQueryTerm, qQueryTerm, scopeQueryTerm, langQuery, 1, 0, context, request.headers(),
 					false, dataSetIdTerm, null, 0, true, null, null, checkSum, viaHeaders).onItem().transform(t -> {
 						return HttpUtils.generateEntityMapResult(t.getItem2());

@@ -122,50 +122,51 @@ public class QueryService {
 	void startup(@Observes StartupEvent event) {
 	}
 
-	public Uni<QueryResult> query(String tenant, String qToken, boolean tokenProvided, String[] ids,
-			TypeQueryTerm typeQuery, String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery, CSFQueryTerm csf,
-			GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, int limit, int offSet,
-			boolean count, boolean localOnly, Context context, io.vertx.core.MultiMap headersFromReq,
-			boolean doNotCompact, Set<String> jsonKeys, DataSetIdTerm dataSetIdTerm, String join, int joinLevel,
-			boolean entityDist, PickTerm pickTerm, OmitTerm omitTerm, String checkSum, ViaHeaders viaHeaders) {
+	public Uni<QueryResult> query(String tenant, String qToken, boolean tokenProvided,
+			List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeQueryAndIdPattern, AttrsQueryTerm attrsQuery,
+			QQueryTerm qQuery, CSFQueryTerm csf, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery,
+			LanguageQueryTerm langQuery, int limit, int offSet, boolean count, boolean localOnly, Context context,
+			io.vertx.core.MultiMap headersFromReq, boolean doNotCompact, Set<String> jsonKeys,
+			DataSetIdTerm dataSetIdTerm, String join, int joinLevel, boolean entityDist, PickTerm pickTerm,
+			OmitTerm omitTerm, String checkSum, ViaHeaders viaHeaders) {
 		if (localOnly) {
-			return localQueryLevel1(tenant, ids, typeQuery, idPattern, attrsQuery, qQuery, geoQuery, scopeQuery,
-					langQuery, limit, offSet, count, dataSetIdTerm, join, joinLevel, pickTerm, omitTerm);
+			return localQuery(tenant, idsAndTypeQueryAndIdPattern, attrsQuery, qQuery, geoQuery, scopeQuery, langQuery,
+					limit, offSet, count, dataSetIdTerm, join, joinLevel, pickTerm, omitTerm);
 		}
 		if (!tokenProvided) {
-			return getAndStoreEntityMap(tenant, ids, idPattern, qToken, typeQuery, attrsQuery, geoQuery, qQuery,
+			return getAndStoreEntityMap(tenant, qToken, idsAndTypeQueryAndIdPattern, attrsQuery, geoQuery, qQuery,
 					scopeQuery, langQuery, limit, offSet, context, headersFromReq, doNotCompact, dataSetIdTerm, join,
 					joinLevel, entityDist, pickTerm, omitTerm, checkSum, viaHeaders).onItem().transformToUni(t -> {
-						return handleEntityMap(t.getItem2(), t.getItem1(), tenant, ids, typeQuery, idPattern,
+						return handleEntityMap(t.getItem2(), t.getItem1(), tenant, idsAndTypeQueryAndIdPattern,
 								attrsQuery, qQuery, geoQuery, scopeQuery, langQuery, limit, offSet, count,
 								dataSetIdTerm, join, joinLevel, context, jsonKeys, headersFromReq, pickTerm, omitTerm,
 								viaHeaders);
 
 					});
 		} else {
-			return getEntityMapAndEntitiesAndUpdateExpires(tenant, ids, limit, offSet, qToken, checkSum).onItem()
-					.transformToUni(t -> {
+			return getEntityMapAndEntitiesAndUpdateExpires(tenant, idsAndTypeQueryAndIdPattern, limit, offSet, qToken,
+					checkSum).onItem().transformToUni(t -> {
 						EntityMap entityMap = t.getItem2();
 						if (entityMap == null) {
-							if (ids == null && idPattern == null && typeQuery == null && attrsQuery == null
-									&& geoQuery == null && qQuery == null && scopeQuery == null && langQuery == null
-									&& pickTerm == null && omitTerm == null) {
+							if (idsAndTypeQueryAndIdPattern == null && attrsQuery == null && geoQuery == null
+									&& qQuery == null && scopeQuery == null && langQuery == null && pickTerm == null
+									&& omitTerm == null) {
 								return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData,
 										"Unknow entitymap and no query details provided please requery with the original query params"));
 							}
-							return getAndStoreEntityMap(tenant, ids, idPattern, qToken, typeQuery, attrsQuery, geoQuery,
-									qQuery, scopeQuery, langQuery, limit, offSet, context, headersFromReq, doNotCompact,
-									dataSetIdTerm, join, joinLevel, entityDist, pickTerm, omitTerm, checkSum,
-									viaHeaders).onItem().transformToUni(t2 -> {
-										return handleEntityMap(t2.getItem2(), t2.getItem1(), tenant, ids, typeQuery,
-												idPattern, attrsQuery, qQuery, geoQuery, scopeQuery, langQuery, limit,
-												offSet, count, dataSetIdTerm, join, joinLevel, context, jsonKeys,
-												headersFromReq, pickTerm, omitTerm, viaHeaders);
+							return getAndStoreEntityMap(tenant, qToken, idsAndTypeQueryAndIdPattern, attrsQuery,
+									geoQuery, qQuery, scopeQuery, langQuery, limit, offSet, context, headersFromReq,
+									doNotCompact, dataSetIdTerm, join, joinLevel, entityDist, pickTerm, omitTerm,
+									checkSum, viaHeaders).onItem().transformToUni(t2 -> {
+										return handleEntityMap(t2.getItem2(), t2.getItem1(), tenant,
+												idsAndTypeQueryAndIdPattern, attrsQuery, qQuery, geoQuery, scopeQuery,
+												langQuery, limit, offSet, count, dataSetIdTerm, join, joinLevel,
+												context, jsonKeys, headersFromReq, pickTerm, omitTerm, viaHeaders);
 
 									});
 						}
 
-						TypeQueryTerm typeQueryTBU = typeQuery;
+						List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeQueryAndIdPatternTBU = idsAndTypeQueryAndIdPattern;
 						AttrsQueryTerm attrsQueryTBU = attrsQuery;
 						QQueryTerm qQueryTBU = qQuery;
 						GeoQueryTerm geoQueryTBU = geoQuery;
@@ -179,7 +180,7 @@ public class QueryService {
 						OmitTerm omitTermTBU = omitTerm;
 
 						if (entityMap.isRegEmptyOrNoRegEntryAndNoLinkedQuery()) {
-							return handleEntityMap(t.getItem2(), t.getItem1(), tenant, ids, typeQuery, idPattern,
+							return handleEntityMap(t.getItem2(), t.getItem1(), tenant, idsAndTypeQueryAndIdPattern,
 									attrsQuery, qQuery, geoQuery, scopeQuery, langQuery, limit, offSet, count,
 									dataSetIdTerm, join, joinLevel, context, jsonKeys, headersFromReq, pickTerm,
 									omitTerm, viaHeaders);
@@ -195,12 +196,12 @@ public class QueryService {
 								jsonKeysTBU = storedQuery.getJsonKeys();
 							}
 						} else {
-							if (typeQuery == null && attrsQuery == null && qQuery == null && csf == null
-									&& geoQuery == null && scopeQuery == null && langQuery == null && jsonKeys == null
-									&& dataSetIdTerm == null && join == null && joinLevel <= 0 && pickTerm == null
-									&& omitTerm == null) {
+							if (idsAndTypeQueryAndIdPattern == null && attrsQuery == null && qQuery == null
+									&& csf == null && geoQuery == null && scopeQuery == null && langQuery == null
+									&& jsonKeys == null && dataSetIdTerm == null && join == null && joinLevel <= 0
+									&& pickTerm == null && omitTerm == null) {
 								Query storedQuery = entityMap.getQuery();
-								typeQueryTBU = storedQuery.getTypeQueryTerm();
+								idsAndTypeQueryAndIdPatternTBU = storedQuery.getIdsAndTypeAndIdPattern();
 								attrsQueryTBU = storedQuery.getAttrsQueryTerm();
 								qQueryTBU = storedQuery.getqQueryTerm();
 								geoQueryTBU = storedQuery.getGeoQueryTerm();
@@ -214,7 +215,7 @@ public class QueryService {
 								omitTermTBU = storedQuery.getOmitTerm();
 							}
 						}
-						return handleEntityMap(t.getItem2(), t.getItem1(), tenant, ids, typeQueryTBU, idPattern,
+						return handleEntityMap(t.getItem2(), t.getItem1(), tenant, idsAndTypeQueryAndIdPattern,
 								attrsQueryTBU, qQueryTBU, geoQueryTBU, scopeQueryTBU, langQueryTBU, limit, offSet,
 								count, dataSetIdTermTBU, joinTBU, joinLevelTBU, context, jsonKeysTBU, headersFromReq,
 								pickTermTBU, omitTermTBU, viaHeaders);
@@ -222,17 +223,19 @@ public class QueryService {
 		}
 	}
 
-	private Uni<Tuple2<EntityCache, EntityMap>> getEntityMapAndEntitiesAndUpdateExpires(String tenant, String[] ids,
-			int limit, int offset, String qToken, String checkSum) {
+	private Uni<Tuple2<EntityCache, EntityMap>> getEntityMapAndEntitiesAndUpdateExpires(String tenant,
+			List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeQueryAndIdPattern, int limit, int offset,
+			String qToken, String checkSum) {
 
-		return queryDAO.queryForEntityMapAndEntities(tenant, qToken, ids, limit, offset, checkSum);
+		return queryDAO.queryForEntityMapAndEntities(tenant, qToken, idsAndTypeQueryAndIdPattern, limit, offset,
+				checkSum);
 
 	}
 
-	private Uni<QueryResult> handleEntityMap(EntityMap entityMap, EntityCache entityCache, String tenant, String[] id,
-			TypeQueryTerm typeQuery, String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery,
-			GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, int limit, int offSet,
-			boolean count, DataSetIdTerm dataSetIdTerm, String join, int joinLevel, Context context,
+	private Uni<QueryResult> handleEntityMap(EntityMap entityMap, EntityCache entityCache, String tenant,
+			List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeQueryAndIdPattern, AttrsQueryTerm attrsQuery,
+			QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, int limit,
+			int offSet, boolean count, DataSetIdTerm dataSetIdTerm, String join, int joinLevel, Context context,
 			Set<String> jsonKeys, io.vertx.core.MultiMap headersFromReq, PickTerm pickTerm, OmitTerm omitTerm,
 			ViaHeaders viaHeaders) {
 		QueryResult result = new QueryResult();
@@ -302,10 +305,10 @@ public class QueryService {
 								return doJoinIfNeeded(tenant, result, updatedEntityCache, context, join, joinLevel,
 										viaHeaders);
 							} else {
-								return updateEntityMapAndRepull(deleted, entityMap, updatedEntityCache, tenant, id,
-										typeQuery, idPattern, attrsQuery, qQuery, geoQuery, scopeQuery, langQuery,
-										limit, offSet, count, dataSetIdTerm, join, joinLevel, context, jsonKeys,
-										headersFromReq, pickTerm, omitTerm, viaHeaders);
+								return updateEntityMapAndRepull(deleted, entityMap, updatedEntityCache, tenant,
+										idsAndTypeQueryAndIdPattern, attrsQuery, qQuery, geoQuery, scopeQuery,
+										langQuery, limit, offSet, count, dataSetIdTerm, join, joinLevel, context,
+										jsonKeys, headersFromReq, pickTerm, omitTerm, viaHeaders);
 							}
 						});
 			} else {
@@ -317,11 +320,10 @@ public class QueryService {
 		} else {
 			return fillCacheFromEntityMap(entityMap, entityCache, context, headersFromReq, false, tenant, offSet, limit)
 					.onItem().transformToUni(updatedEntityCache -> {
-						if ((join == null || joinLevel < 0) && qQuery.hasLinkedQ()) {
-							subMap.forEach(id2Hosts -> {
-								resultData.add(ids2EntityAndHost.get(id2Hosts.getKey()).getItem1());
-							});
-
+						subMap.forEach(id2Hosts -> {
+							resultData.add(ids2EntityAndHost.get(id2Hosts.getKey()).getItem1());
+						});
+						if ((join == null || joinLevel < 0) && !qQuery.hasLinkedQ()) {
 							if (entityMap.isDistEntities()) {
 								return Uni.createFrom().item(result);
 							} else {
@@ -339,10 +341,10 @@ public class QueryService {
 									return doJoinIfNeeded(tenant, result, updatedEntityCache, context, join, joinLevel,
 											viaHeaders);
 								} else {
-									return updateEntityMapAndRepull(deleted, entityMap, updatedEntityCache, tenant, id,
-											typeQuery, idPattern, attrsQuery, qQuery, geoQuery, scopeQuery, langQuery,
-											limit, offSet, count, dataSetIdTerm, join, joinLevel, context, jsonKeys,
-											headersFromReq, pickTerm, omitTerm, viaHeaders);
+									return updateEntityMapAndRepull(deleted, entityMap, updatedEntityCache, tenant,
+											idsAndTypeQueryAndIdPattern, attrsQuery, qQuery, geoQuery, scopeQuery,
+											langQuery, limit, offSet, count, dataSetIdTerm, join, joinLevel, context,
+											jsonKeys, headersFromReq, pickTerm, omitTerm, viaHeaders);
 								}
 							}
 
@@ -370,7 +372,7 @@ public class QueryService {
 															join, joinLevel, viaHeaders);
 												} else {
 													return updateEntityMapAndRepull(deleted, entityMap,
-															updatedEntityCache2, tenant, id, typeQuery, idPattern,
+															updatedEntityCache2, tenant, idsAndTypeQueryAndIdPattern,
 															attrsQuery, qQuery, geoQuery, scopeQuery, langQuery, limit,
 															offSet, count, dataSetIdTerm, join, joinLevel, context,
 															jsonKeys, headersFromReq, pickTerm, omitTerm, viaHeaders);
@@ -405,10 +407,10 @@ public class QueryService {
 									return doJoinIfNeeded(tenant, result, updatedEntityCache, context, join, joinLevel,
 											viaHeaders);
 								} else {
-									return updateEntityMapAndRepull(deleted, entityMap, updatedEntityCache, tenant, id,
-											typeQuery, idPattern, attrsQuery, qQuery, geoQuery, scopeQuery, langQuery,
-											limit, offSet, count, dataSetIdTerm, join, joinLevel, context, jsonKeys,
-											headersFromReq, pickTerm, omitTerm, viaHeaders);
+									return updateEntityMapAndRepull(deleted, entityMap, updatedEntityCache, tenant,
+											idsAndTypeQueryAndIdPattern, attrsQuery, qQuery, geoQuery, scopeQuery,
+											langQuery, limit, offSet, count, dataSetIdTerm, join, joinLevel, context,
+											jsonKeys, headersFromReq, pickTerm, omitTerm, viaHeaders);
 								}
 							}
 						}
@@ -455,7 +457,7 @@ public class QueryService {
 		List<Uni<Tuple2<List<Map<String, Object>>, QueryRemoteHost>>> unis = Lists.newArrayList();
 		for (Entry<QueryRemoteHost, Set<String>> entry : remoteHost2Ids.entrySet()) {
 			QueryRemoteHost host = entry.getKey();
-			Map<String, Object> queryParams = host.getQueryParam();
+			Map<String, String> queryParams = host.getQueryParam();
 			queryParams.put("id", StringUtils.join(entry.getValue(), ','));
 
 			unis.add(EntityTools.getRemoteEntities(host, webClient).onItem()
@@ -463,6 +465,9 @@ public class QueryService {
 		}
 		if (!idsForDBCall.isEmpty()) {
 			unis.add(0, queryDAO.queryForEntities(tenant, idsForDBCall));
+		}
+		if (unis.isEmpty()) {
+			return Uni.createFrom().item(entityCache);
 		}
 		return Uni.combine().all().unis(unis).combinedWith(l -> {
 			mergeMultipleQueryResults(l, entityCache);
@@ -714,11 +719,12 @@ public class QueryService {
 	}
 
 	private Uni<QueryResult> updateEntityMapAndRepull(Map<String, Map<String, Object>> deleted, EntityMap entityMap,
-			EntityCache entityCache, String tenant, String[] id, TypeQueryTerm typeQuery, String idPattern,
-			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery,
-			LanguageQueryTerm langQuery, int limit, int offSet, boolean count, DataSetIdTerm dataSetIdTerm, String join,
-			int joinLevel, Context context, Set<String> jsonKeys, io.vertx.core.MultiMap headersFromReq,
-			PickTerm pickTerm, OmitTerm omitTerm, ViaHeaders viaHeaders) {
+			EntityCache entityCache, String tenant,
+			List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeQueryAndIdPattern, AttrsQueryTerm attrsQuery,
+			QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, int limit,
+			int offSet, boolean count, DataSetIdTerm dataSetIdTerm, String join, int joinLevel, Context context,
+			Set<String> jsonKeys, io.vertx.core.MultiMap headersFromReq, PickTerm pickTerm, OmitTerm omitTerm,
+			ViaHeaders viaHeaders) {
 		if (entityMap.removeEntries(deleted.keySet())) {
 			QueryResult result = new QueryResult();
 			List<Map<String, Object>> resultData = Lists.newArrayList();
@@ -748,9 +754,9 @@ public class QueryService {
 
 		return fillCacheFromEntityMap(entityMap, entityCache, context, headersFromReq, true, tenant, offSet,
 				limit + (deleted.size() * 3)).onItem().transformToUni(updatedCache -> {
-					return handleEntityMap(entityMap, entityCache, tenant, id, typeQuery, idPattern, attrsQuery, qQuery,
-							geoQuery, scopeQuery, langQuery, limit, offSet, count, dataSetIdTerm, join, joinLevel,
-							context, jsonKeys, headersFromReq, pickTerm, omitTerm, viaHeaders);
+					return handleEntityMap(entityMap, entityCache, tenant, idsAndTypeQueryAndIdPattern, attrsQuery,
+							qQuery, geoQuery, scopeQuery, langQuery, limit, offSet, count, dataSetIdTerm, join,
+							joinLevel, context, jsonKeys, headersFromReq, pickTerm, omitTerm, viaHeaders);
 				});
 
 	}
@@ -1105,13 +1111,14 @@ public class QueryService {
 
 	}
 
-	private Uni<QueryResult> localQueryLevel1(String tenant, String[] id, TypeQueryTerm typeQuery, String idPattern,
-			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery,
-			LanguageQueryTerm langQuery, int limit, int offSet, boolean count, DataSetIdTerm dataSetIdTerm, String join,
-			int joinLevel, PickTerm pickTerm, OmitTerm omitTerm) {
+	private Uni<QueryResult> localQuery(String tenant,
+			List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeQueryAndIdPattern, AttrsQueryTerm attrsQuery,
+			QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, int limit,
+			int offSet, boolean count, DataSetIdTerm dataSetIdTerm, String join, int joinLevel, PickTerm pickTerm,
+			OmitTerm omitTerm) {
 		return queryDAO
-				.queryLocalOnly(tenant, id, typeQuery, idPattern, attrsQuery, qQuery, geoQuery, scopeQuery, langQuery,
-						limit, offSet, count, dataSetIdTerm, join, joinLevel, pickTerm, omitTerm)
+				.queryLocalOnly(tenant, idsAndTypeQueryAndIdPattern, attrsQuery, qQuery, geoQuery, scopeQuery,
+						langQuery, limit, offSet, count, dataSetIdTerm, join, joinLevel, pickTerm, omitTerm)
 				.onItem().transform(rows -> {
 					QueryResult result = new QueryResult();
 					if (limit == 0 && count) {
@@ -1687,7 +1694,7 @@ public class QueryService {
 			HttpRequest<Buffer> req = webClient
 					.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + entityId);
 
-			for (Entry<String, Object> param : remoteHost.getQueryParam().entrySet()) {
+			for (Entry<String, String> param : remoteHost.getQueryParam().entrySet()) {
 				req = req.setQueryParam(param.getKey(), (String) param.getValue());
 			}
 			req = req.setQueryParam("options", "sysAttrs");
@@ -1923,7 +1930,7 @@ public class QueryService {
 		// + remoteHost.queryString()
 		// + "&limit=1000"
 		HttpRequest<Buffer> req = webClient.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT);
-		for (Entry<String, Object> param : remoteHost.getQueryParam().entrySet()) {
+		for (Entry<String, String> param : remoteHost.getQueryParam().entrySet()) {
 			req = req.setQueryParam(param.getKey(), (String) param.getValue());
 		}
 		req = req.setQueryParam("limit", "1000");
@@ -1962,42 +1969,41 @@ public class QueryService {
 				});
 	}
 
-	public Uni<Tuple2<EntityCache, EntityMap>> getAndStoreEntityMap(String tenant, String[] ids, String idPattern,
-			String qToken, TypeQueryTerm typeQuery, AttrsQueryTerm attrsQuery, GeoQueryTerm geoQuery, QQueryTerm qQuery,
-			ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, int limit, int offset, Context context,
-			io.vertx.core.MultiMap headersFromReq, boolean doNotCompact, DataSetIdTerm dataSetIdTerm, String join,
-			int joinLevel, boolean splitEntities, PickTerm pickTerm, OmitTerm omitTerm, String queryCechksum,
-			ViaHeaders viaHeaders) {
+	public Uni<Tuple2<EntityCache, EntityMap>> getAndStoreEntityMap(String tenant, String qToken,
+			List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeQueryAndIdPattern, AttrsQueryTerm attrsQuery,
+			GeoQueryTerm geoQuery, QQueryTerm qQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, int limit,
+			int offset, Context context, io.vertx.core.MultiMap headersFromReq, boolean doNotCompact,
+			DataSetIdTerm dataSetIdTerm, String join, int joinLevel, boolean splitEntities, PickTerm pickTerm,
+			OmitTerm omitTerm, String queryCechksum, ViaHeaders viaHeaders) {
 
 		// we got no registry entries
 		Uni<Tuple2<EntityCache, EntityMap>> entityCacheAndEntityMap;
 		if (tenant2CId2RegEntries.isEmpty()) {
-			return queryDAO.queryForEntityIdsAndEntitiesRegEmpty(tenant, ids, typeQuery, idPattern, attrsQuery, qQuery,
-					geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel, qToken, pickTerm,
-					omitTerm, queryCechksum, splitEntities, true, false);
+			return queryDAO.queryForEntityIdsAndEntitiesRegEmpty(tenant, idsAndTypeQueryAndIdPattern, attrsQuery,
+					qQuery, geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel, qToken,
+					pickTerm, omitTerm, queryCechksum, splitEntities, true, false);
 		} else {
 			EntityCache fullEntityCache = new EntityCache();
-			Map<QueryRemoteHost, Set<String>> remoteHost2Query = EntityTools.getRemoteQueries(tenant, ids, typeQuery,
-					idPattern, attrsQuery, qQuery, geoQuery, scopeQuery, langQuery, tenant2CId2RegEntries, context,
-					fullEntityCache, splitEntities, viaHeaders);
+			Collection<QueryRemoteHost> remoteHost2Query = EntityTools.getRemoteQueries(tenant,
+					idsAndTypeQueryAndIdPattern, attrsQuery, qQuery, geoQuery, scopeQuery, langQuery,
+					tenant2CId2RegEntries, context, fullEntityCache, splitEntities, viaHeaders);
 			if (remoteHost2Query.isEmpty()) {
 				if ((join == null || joinLevel <= 0) && (qQuery == null || !qQuery.hasLinkedQ())) {
-					return queryDAO.queryForEntityIdsAndEntitiesRegEmpty(tenant, ids, typeQuery, idPattern, attrsQuery,
-							qQuery, geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel,
-							qToken, pickTerm, omitTerm, queryCechksum, splitEntities, true, false);
+					return queryDAO.queryForEntityIdsAndEntitiesRegEmpty(tenant, idsAndTypeQueryAndIdPattern,
+							attrsQuery, qQuery, geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join,
+							joinLevel, qToken, pickTerm, omitTerm, queryCechksum, splitEntities, true, false);
 				} else {
-					return queryDAO.queryForEntityIdsAndEntitiesRegEmpty(tenant, ids, typeQuery, idPattern, attrsQuery,
-							qQuery, geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel,
-							qToken, pickTerm, omitTerm, queryCechksum, splitEntities, false, true);
+					return queryDAO.queryForEntityIdsAndEntitiesRegEmpty(tenant, idsAndTypeQueryAndIdPattern,
+							attrsQuery, qQuery, geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join,
+							joinLevel, qToken, pickTerm, omitTerm, queryCechksum, splitEntities, false, true);
 				}
 			} else {
 				Uni<Tuple2<EntityCache, EntityMap>> localEntityCacheAndEntityMap = queryDAO
-						.queryForEntityIdsAndEntitiesRegEmpty(tenant, ids, typeQuery, idPattern, attrsQuery, qQuery,
+						.queryForEntityIdsAndEntitiesRegEmpty(tenant, idsAndTypeQueryAndIdPattern, attrsQuery, qQuery,
 								geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel, qToken,
 								pickTerm, omitTerm, queryCechksum, splitEntities, false, false);
 				List<Uni<Tuple2<Object, QueryRemoteHost>>> unis = Lists.newArrayList();
-				for (Entry<QueryRemoteHost, Set<String>> remoteHostEntry : remoteHost2Query.entrySet()) {
-					QueryRemoteHost remoteHost = remoteHostEntry.getKey();
+				for (QueryRemoteHost remoteHost: remoteHost2Query) {
 					String linkHead;
 					if (!remoteHost.headers().contains("Link") && headersFromReq.contains("Link")) {
 						linkHead = headersFromReq.get("Link");
@@ -2009,7 +2015,7 @@ public class QueryService {
 					if (remoteHost.canDoEntityMap()) {
 						HttpRequest<Buffer> req = webClient
 								.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITY_MAP_ENDPOINT);
-						for (Entry<String, Object> param : remoteHost.getQueryParam().entrySet()) {
+						for (Entry<String, String> param : remoteHost.getQueryParam().entrySet()) {
 							req = req.setQueryParam(param.getKey(), (String) param.getValue());
 						}
 						req = req.putHeader(HttpHeaders.VIA, remoteHost.getViaHeaders().getViaHeaders());
@@ -2396,11 +2402,13 @@ public class QueryService {
 			if (!idsForDB.isEmpty()) {
 				types2EntityIdsForDB.put(types, idsForDB);
 			}
-			Map<QueryRemoteHost, Set<String>> remoteQueries = EntityTools.getRemoteQueries(entityIds, typeQueryTerm,
-					null, null, linkedQ, null, null, null, tenant2CId2RegEntries.row(tenant).values().iterator(),
-					linkHeaders, fullEntityCache, viaHeaders);
-			for (Entry<QueryRemoteHost, Set<String>> remoteHostEntry : remoteQueries.entrySet()) {
-				QueryRemoteHost remoteQuery = remoteHostEntry.getKey();
+			List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypes = new ArrayList<>(1);
+			idsAndTypes.add(Tuple3.of(entityIds, currentTypeQuery, null));
+			Collection<QueryRemoteHost> remoteQueries = EntityTools.getRemoteQueries(idsAndTypes, null, linkedQ,
+					null, null, null, tenant2CId2RegEntries.row(tenant).values(), linkHeaders,
+					fullEntityCache, viaHeaders);
+			for (QueryRemoteHost remoteQuery : remoteQueries) {
+				
 				unis.add(EntityTools.getRemoteEntities(remoteQuery, webClient).onItem()
 						.transform(l -> Tuple3.of(l, remoteQuery)));
 			}
@@ -2417,4 +2425,3 @@ public class QueryService {
 	}
 
 }
-	

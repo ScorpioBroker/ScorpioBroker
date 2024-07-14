@@ -18,6 +18,9 @@ import io.smallrye.mutiny.tuples.Tuple2;
 
 public class QueryInfos {
 
+	TypeQueryTerm typeQuery;
+	GeoQueryTerm geoQuery;
+	LanguageQueryTerm langQuery;
 	boolean fullIdFound = false;
 	boolean fullTypesFound = false;
 	boolean fullAttrsFound = false;
@@ -110,28 +113,28 @@ public class QueryInfos {
 		this.fullScopeFound = fullScopeFound;
 	}
 
-	public Map<String, Object> toQueryParams(Context context, TypeQueryTerm typeQuery, GeoQueryTerm geoQuery,
-			LanguageQueryTerm langQuery, boolean ignoredId, EntityCache fullEntityCache, QueryRemoteHost tmpHost) {
+	public Map<String, String> toQueryParams(Context context, boolean ignoredId, EntityCache fullEntityCache,
+			QueryRemoteHost tmpHost) {
 
-		Map<String, Object> result = Maps.newHashMap();
+		Map<String, String> result = Maps.newHashMap();
 		Set<String> idsToBeUsed;
 		if (fullEntityCache != null && ids != null && !ids.isEmpty()) {
 			idsToBeUsed = Sets.newHashSet();
-				for (String id : ids) {
-					if (fullEntityCache.containsEntity(id)) {
-						Tuple2<Map<String,Object>,Set<String>> entityAndHosts = fullEntityCache.get(id);
-						Set<String> csourceIds = entityAndHosts.getItem2();
-						if (csourceIds == null) {
-							idsToBeUsed.add(id);
-						} else {
-							if (!csourceIds.contains(tmpHost.cSourceId())) {
-								idsToBeUsed.add(id);
-							}
-						}
-					} else {
+			for (String id : ids) {
+				if (fullEntityCache.containsEntity(id)) {
+					Tuple2<Map<String, Object>, Set<String>> entityAndHosts = fullEntityCache.get(id);
+					Set<String> csourceIds = entityAndHosts.getItem2();
+					if (csourceIds == null) {
 						idsToBeUsed.add(id);
+					} else {
+						if (!csourceIds.contains(tmpHost.cSourceId())) {
+							idsToBeUsed.add(id);
+						}
 					}
+				} else {
+					idsToBeUsed.add(id);
 				}
+			}
 			if (idsToBeUsed.isEmpty()) {
 				return null;
 			}
@@ -163,14 +166,12 @@ public class QueryInfos {
 		}
 		if (langQuery != null) {
 			result.put("lang", langQuery.toRequestString());
-			
+
 		}
 		if (geo != null && geoQuery != null) {
 			geoQuery.addToRequestParams(result, geo, geoQuery.getGeorel());
 
 		}
-
-		
 
 		return result;
 	}
@@ -228,6 +229,30 @@ public class QueryInfos {
 	public void setGeoOp(String geoRel) {
 		this.geoRel = geoRel;
 
+	}
+
+	public TypeQueryTerm getTypeQuery() {
+		return typeQuery;
+	}
+
+	public void setTypeQuery(TypeQueryTerm typeQuery) {
+		this.typeQuery = typeQuery;
+	}
+
+	public GeoQueryTerm getGeoQuery() {
+		return geoQuery;
+	}
+
+	public void setGeoQuery(GeoQueryTerm geoQuery) {
+		this.geoQuery = geoQuery;
+	}
+
+	public LanguageQueryTerm getLangQuery() {
+		return langQuery;
+	}
+
+	public void setLangQuery(LanguageQueryTerm langQuery) {
+		this.langQuery = langQuery;
 	}
 
 }

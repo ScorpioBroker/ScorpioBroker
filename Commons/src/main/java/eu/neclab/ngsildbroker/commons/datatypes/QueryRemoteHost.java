@@ -11,6 +11,7 @@ import com.github.jsonldjava.core.Context;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
+import io.smallrye.mutiny.tuples.Tuple3;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.MultiMap;
 
@@ -23,7 +24,8 @@ public class QueryRemoteHost {
 	boolean canDoBatchQuery;
 	boolean canDoRetrieve;
 	int regMode;
-	Map<String, Object> queryParams;
+	List<Tuple3<String, String, String>> idsAndTypesAndIdPattern = Lists.newArrayList();
+	Map<String, String> queryParams;
 	boolean canDoEntityMap;
 	boolean canDoZip;
 	String entityMapToken;
@@ -31,8 +33,9 @@ public class QueryRemoteHost {
 	private ViaHeaders viaHeaders;
 
 	public QueryRemoteHost(String host, String tenant, MultiMap headers, String cSourceId, boolean canDoQuery,
-			boolean canDoBatchQuery,boolean canDoRetrieve, int regMode, Map<String, Object> queryParams, boolean canDoEntityMap, boolean canDoZip,
-			String entityMapToken, ViaHeaders viaHeaders) {
+			boolean canDoBatchQuery, boolean canDoRetrieve, int regMode,
+			List<Tuple3<String, String, String>> idsAndTypesAndIdPattern, Map<String, String> queryParams,
+			boolean canDoEntityMap, boolean canDoZip, String entityMapToken, ViaHeaders viaHeaders) {
 		this.host = host;
 		this.tenant = tenant;
 		this.headers = headers;
@@ -45,10 +48,10 @@ public class QueryRemoteHost {
 		this.canDoZip = canDoZip;
 		this.entityMapToken = entityMapToken;
 		this.queryParams = queryParams;
+		this.idsAndTypesAndIdPattern = idsAndTypesAndIdPattern;
 		this.viaHeaders = viaHeaders;
 	}
 
-	
 	public String host() {
 		return host;
 	}
@@ -81,7 +84,6 @@ public class QueryRemoteHost {
 		this.cSourceId = cSourceId;
 	}
 
-	
 	public int regMode() {
 		return regMode;
 	}
@@ -90,50 +92,41 @@ public class QueryRemoteHost {
 		this.regMode = regMode;
 	}
 
-	public Map<String, Object> getQueryParam() {
+	public Map<String, String> getQueryParam() {
 		return queryParams;
 	}
 
-	public void setQueryParam(Map<String, Object> queryParams) {
+	public void setQueryParam(Map<String, String> queryParams) {
 		this.queryParams = queryParams;
 	}
-	
-	
 
 	public boolean isCanDoQuery() {
 		return canDoQuery;
 	}
 
-
 	public void setCanDoQuery(boolean canDoQuery) {
 		this.canDoQuery = canDoQuery;
 	}
-
 
 	public boolean isCanDoBatchQuery() {
 		return canDoBatchQuery;
 	}
 
-
 	public void setCanDoBatchQuery(boolean canDoBatchQuery) {
 		this.canDoBatchQuery = canDoBatchQuery;
 	}
-
 
 	public boolean isCanDoRetrieve() {
 		return canDoRetrieve;
 	}
 
-
 	public void setCanDoRetrieve(boolean canDoRetrieve) {
 		this.canDoRetrieve = canDoRetrieve;
 	}
 
-
 	public boolean isCanDoEntityMap() {
 		return canDoEntityMap;
 	}
-
 
 	public boolean canDoEntityMap() {
 		return canDoEntityMap;
@@ -167,63 +160,56 @@ public class QueryRemoteHost {
 		this.context = context;
 	}
 
-	
-
-
-
-
-	
-
-	
-
-
 	public void setParamsFromNext(String nextLink) {
-		String pureLink = nextLink.substring(1, nextLink.length() -12);
-		
+		String pureLink = nextLink.substring(1, nextLink.length() - 12);
+
 		String params = pureLink.substring(pureLink.indexOf('?'));
-		int index = params.indexOf('&' ,0);
+		int index = params.indexOf('&', 0);
 		int lastIndex = 0;
 		int equalIdx;
 		queryParams.clear();
 		String paramPart;
-		while(index != -1) {
+		while (index != -1) {
 			paramPart = params.substring(lastIndex, index);
 			equalIdx = paramPart.indexOf('=', lastIndex);
-			if(equalIdx == -1) {
+			if (equalIdx == -1) {
 				queryParams.put(paramPart, "true");
-			}else {
+			} else {
 				queryParams.put(paramPart.substring(0, equalIdx), paramPart.substring(equalIdx, paramPart.length()));
 			}
 			lastIndex = index;
-			index = params.indexOf('&' ,lastIndex);
+			index = params.indexOf('&', lastIndex);
 		}
 		paramPart = params.substring(lastIndex, index);
 		equalIdx = paramPart.indexOf('=', lastIndex);
-		if(equalIdx == -1) {
+		if (equalIdx == -1) {
 			queryParams.put(paramPart, "true");
-		}else {
+		} else {
 			queryParams.put(paramPart.substring(0, equalIdx), paramPart.substring(equalIdx, paramPart.length()));
 		}
-		
+
 	}
 
+	public List<Tuple3<String, String, String>> getIdsAndTypesAndIdPattern() {
+		return idsAndTypesAndIdPattern;
+	}
+
+	public void addIdsAndTypesAndIdPattern(Tuple3<String, String, String> idsAndTypesAndIdPattern) {
+		this.idsAndTypesAndIdPattern.add(idsAndTypesAndIdPattern);
+	}
 
 	public static QueryRemoteHost fromRemoteHost(RemoteHost remoteHost, boolean canDoIdQuery, boolean canDoZip) {
 		return new QueryRemoteHost(remoteHost.host(), remoteHost.tenant(), remoteHost.headers(), remoteHost.cSourceId(),
-				remoteHost.canDoSingleOp(), remoteHost.canDoBatchOp(), remoteHost.canDoBatchOp(), remoteHost.regMode(), Maps.newHashMap(), canDoIdQuery,
-				canDoZip, null, null);
+				remoteHost.canDoSingleOp(), remoteHost.canDoBatchOp(), remoteHost.canDoBatchOp(), remoteHost.regMode(),
+				Lists.newArrayList(), Maps.newHashMap(), canDoIdQuery, canDoZip, null, null);
 	}
-
 
 	public ViaHeaders getViaHeaders() {
 		return viaHeaders;
 	}
 
-
 	public void setViaHeaders(ViaHeaders viaHeaders) {
 		this.viaHeaders = viaHeaders;
 	}
-	
-	
 
 }

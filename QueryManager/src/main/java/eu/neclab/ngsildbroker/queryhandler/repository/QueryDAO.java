@@ -124,10 +124,11 @@ public class QueryDAO {
 		});
 	}
 
-	public Uni<RowSet<Row>> queryLocalOnly(String tenantId, String[] ids, TypeQueryTerm typeQuery, String idPattern,
-			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery,
-			LanguageQueryTerm langQuery, int limit, int offSet, boolean count, DataSetIdTerm dataSetIdTerm, String join,
-			int joinLevel, PickTerm pickTerm, OmitTerm omitTerm) {
+	public Uni<RowSet<Row>> queryLocalOnly(String tenantId,
+			List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeQueryAndIdPattern, AttrsQueryTerm attrsQuery,
+			QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, int limit,
+			int offSet, boolean count, DataSetIdTerm dataSetIdTerm, String join, int joinLevel, PickTerm pickTerm,
+			OmitTerm omitTerm) {
 		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
 			StringBuilder query = new StringBuilder();
 			int dollar = 1;
@@ -152,15 +153,58 @@ public class QueryDAO {
 				query.append(" as entity, id");
 			}
 			query.append(" FROM ENTITY WHERE ");
-			if (typeQuery == null && attrsQuery == null && geoQuery == null && qQuery == null && ids == null
-					&& idPattern == null && scopeQuery == null) {
+			if (attrsQuery == null && geoQuery == null && qQuery == null && idsAndTypeQueryAndIdPattern == null
+					&& scopeQuery == null) {
 				query.append("TRUE ");
 			} else {
+
 				boolean sqlAdded = false;
-				if (typeQuery != null) {
-					dollar = typeQuery.toSql(query, tuple, dollar);
+
+				if (idsAndTypeQueryAndIdPattern != null) {
+					query.append('(');
 					sqlAdded = true;
+					for (Tuple3<String[], TypeQueryTerm, String> t : idsAndTypeQueryAndIdPattern) {
+						TypeQueryTerm typeQuery = t.getItem2();
+						String[] ids = t.getItem1();
+						String idPattern = t.getItem3();
+						boolean tSqlAdded = false;
+						query.append('(');
+						if (typeQuery != null) {
+							dollar = typeQuery.toSql(query, tuple, dollar);
+							tSqlAdded = true;
+						}
+						if (ids != null) {
+							if (tSqlAdded) {
+								query.append(" AND ");
+							}
+							query.append("id IN (");
+							for (String id : ids) {
+								query.append('$');
+								query.append(dollar);
+								query.append(',');
+								tuple.addString(id);
+								dollar++;
+							}
+
+							query.setCharAt(query.length() - 1, ')');
+							tSqlAdded = true;
+						}
+						if (idPattern != null) {
+							if (tSqlAdded) {
+								query.append(" AND ");
+							}
+							query.append("id ~ $");
+							query.append(dollar);
+							tuple.addString(idPattern);
+							dollar++;
+							tSqlAdded = true;
+						}
+						query.append(") OR ");
+					}
+					query.setLength(query.length() - 4);
+					query.append(')');
 				}
+
 				if (attrsQuery != null) {
 					if (sqlAdded) {
 						query.append(" AND ");
@@ -183,32 +227,7 @@ public class QueryDAO {
 					dollar = qQuery.toSql(query, dollar, tuple, false, true);
 					sqlAdded = true;
 				}
-				if (ids != null) {
-					if (sqlAdded) {
-						query.append(" AND ");
-					}
-					query.append("id IN (");
-					for (String id : ids) {
-						query.append('$');
-						query.append(dollar);
-						query.append(',');
-						tuple.addString(id);
-						dollar++;
-					}
 
-					query.setCharAt(query.length() - 1, ')');
-					sqlAdded = true;
-				}
-				if (idPattern != null) {
-					if (sqlAdded) {
-						query.append(" AND ");
-					}
-					query.append("id ~ $");
-					query.append(dollar);
-					tuple.addString(idPattern);
-					dollar++;
-					sqlAdded = true;
-				}
 				if (scopeQuery != null) {
 					query.append(" AND ");
 					scopeQuery.toSql(query);
@@ -1053,10 +1072,18 @@ public class QueryDAO {
 	 * Uni.createFrom().failure(e); }); }
 	 */
 	public Uni<Tuple2<EntityCache, EntityMap>> queryForEntityMapAndEntities(String tenant, String entityMapToken,
-			String[] ids, int limit, int offset, String checkSum) {
+			List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeQueryAndIdPattern, int limit, int offset,
+			String checkSum) {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
+			Set<String> ids = Sets.newHashSet();
+			idsAndTypeQueryAndIdPattern.forEach(entry -> {
+				for (String id : entry.getItem1()) {
+					ids.add(id);
+				}
+			});
 			return client.preparedQuery("SELECT * FROM getEntityMapAndEntities($1, $2, $3, $4)")
-					.execute(Tuple.of(entityMapToken, ids, limit, offset)).onItem().transformToUni(rows -> {
+					.execute(Tuple.of(entityMapToken, ids.toArray(new String[0]), limit, offset)).onItem()
+					.transformToUni(rows -> {
 
 						Tuple2<EntityCache, EntityMap> t = putQueryResultIntoMapAndCache(rows, entityMapToken);
 						if (checkSum != null && t.getItem2().getQueryCheckSum().equals(checkSum)) {
@@ -1073,9 +1100,9 @@ public class QueryDAO {
 		});
 	}
 
-	public Uni<Tuple2<EntityCache, EntityMap>> queryForEntityIdsAndEntitiesRegEmpty(String tenant, String[] ids,
-			TypeQueryTerm typeQuery, String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery,
-			GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, Context context, int limit, int offset,
+	public Uni<Tuple2<EntityCache, EntityMap>> queryForEntityIdsAndEntitiesRegEmpty(String tenant,
+			List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeAndIdPattern, AttrsQueryTerm attrsQuery,
+			QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, Context context, int limit, int offset,
 			DataSetIdTerm dataSetIdTerm, String join, int joinLevel, String qToken, PickTerm pickTerm,
 			OmitTerm omitTerm, String queryChecksum, boolean splitEntities,
 			boolean regEmptyOrNoRegEntryAndNoLinkedQuery, boolean noRootLevelRegEntryAndLinkedQuery) {
@@ -1096,17 +1123,64 @@ public class QueryDAO {
 
 			query.append(" FROM ENTITY WHERE ");
 			boolean sqlAdded = false;
-			if (typeQuery != null) {
-				if ((!regEmptyOrNoRegEntryAndNoLinkedQuery || !noRootLevelRegEntryAndLinkedQuery) && splitEntities) {
-					dollar = typeQuery.toBroadSql(query, queryToStoreWherePart, tuple, dollar);
-					queryParams.setTypeQueryTerm(typeQuery);
-				} else {
-					dollar = typeQuery.toSql(query, queryToStoreWherePart, tuple, dollar);
-					queryParams.setTypeQueryTerm(typeQuery);
-				}
-
+			if (idsAndTypeAndIdPattern != null) {
 				sqlAdded = true;
+				query.append('(');
+				queryToStoreWherePart.append('(');
+				for (Tuple3<String[], TypeQueryTerm, String> t : idsAndTypeAndIdPattern) {
+					TypeQueryTerm typeQuery = t.getItem2();
+					String[] ids = t.getItem1();
+					String idPattern = t.getItem3();
+					boolean tSqlAdded = false;
+					query.append('(');
+					queryToStoreWherePart.append('(');
+					queryParams.setIdsAndTypeAndIdPattern(idsAndTypeAndIdPattern);
+					if (typeQuery != null) {
+						if ((!regEmptyOrNoRegEntryAndNoLinkedQuery || !noRootLevelRegEntryAndLinkedQuery)
+								&& splitEntities) {
+							dollar = typeQuery.toBroadSql(query, queryToStoreWherePart, tuple, dollar);
+						} else {
+							dollar = typeQuery.toSql(query, queryToStoreWherePart, tuple, dollar);
+						}
+
+						tSqlAdded = true;
+					}
+					if (ids != null) {
+						if (tSqlAdded) {
+							query.append(" AND ");
+						}
+						query.append("id IN (");
+						for (String id : ids) {
+							query.append('$');
+							query.append(dollar);
+							query.append(',');
+							tuple.addString(id);
+							dollar++;
+						}
+
+						query.setCharAt(query.length() - 1, ')');
+						tSqlAdded = true;
+					}
+					if (idPattern != null) {
+						if (tSqlAdded) {
+							query.append(" AND ");
+						}
+						query.append("id ~ $");
+						query.append(dollar);
+						tuple.addString(idPattern);
+						dollar++;
+						tSqlAdded = true;
+					}
+					query.append(") OR ");
+					queryToStoreWherePart.append(") OR ");
+				}
+				query.setLength(query.length() - 4);
+				queryToStoreWherePart.setLength(queryToStoreWherePart.length() - 4);
+
+				query.append(')');
+				queryToStoreWherePart.append(')');
 			}
+
 			if (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery || !splitEntities) {
 				if (attrsQuery != null) {
 					if (sqlAdded) {
@@ -1154,32 +1228,6 @@ public class QueryDAO {
 					dollar = qQuery.toSql(query, queryToStoreWherePart, dollar, tuple, splitEntities, false);
 					sqlAdded = true;
 				}
-			}
-			if (ids != null) {
-				if (sqlAdded) {
-					query.append(" AND ");
-				}
-				query.append("id IN (");
-				for (String id : ids) {
-					query.append('$');
-					query.append(dollar);
-					query.append(',');
-					tuple.addString(id);
-					dollar++;
-				}
-
-				query.setCharAt(query.length() - 1, ')');
-				sqlAdded = true;
-			}
-			if (idPattern != null) {
-				if (sqlAdded) {
-					query.append(" AND ");
-				}
-				query.append("id ~ $");
-				query.append(dollar);
-				tuple.addString(idPattern);
-				dollar++;
-				sqlAdded = true;
 			}
 
 			if (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery || !splitEntities) {

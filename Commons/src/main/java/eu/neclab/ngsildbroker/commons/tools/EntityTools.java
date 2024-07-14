@@ -2,6 +2,7 @@ package eu.neclab.ngsildbroker.commons.tools;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -49,6 +50,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
+import io.smallrye.mutiny.tuples.Tuple3;
 import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
 import io.vertx.mutiny.ext.web.client.WebClient;
@@ -639,7 +641,7 @@ public abstract class EntityTools {
 
 	public static Uni<List<Map<String, Object>>> getRemoteEntities(QueryRemoteHost remoteHost, WebClient webClient) {
 		HttpRequest<Buffer> req = webClient.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT);
-		for (Entry<String, Object> param : remoteHost.getQueryParam().entrySet()) {
+		for (Entry<String, String> param : remoteHost.getQueryParam().entrySet()) {
 			req = req.setQueryParam(param.getKey(), (String) param.getValue());
 		}
 		return req.timeout(5000).send().onItem().transformToUni(response -> {
@@ -675,107 +677,125 @@ public abstract class EntityTools {
 
 	}
 
-	public static Map<QueryRemoteHost, Set<String>> getRemoteQueries(String tenant, String[] id,
-			TypeQueryTerm typeQuery, String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery,
-			GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery,
+	public static Collection<QueryRemoteHost> getRemoteQueries(String tenant,
+			List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeQueryAndIdPattern, AttrsQueryTerm attrsQuery,
+			QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery,
 			Table<String, String, List<RegistrationEntry>> tenant2CId2RegEntries, Context context,
 			EntityCache fullEntityCache, boolean onlyFullEntitiesDistributed, ViaHeaders viaHeaders) {
-		return getRemoteQueries(id, typeQuery, idPattern, attrsQuery, qQuery, geoQuery, scopeQuery, langQuery,
-				tenant2CId2RegEntries.row(tenant).values().iterator(), context, fullEntityCache, viaHeaders);
+		return getRemoteQueries(idsAndTypeQueryAndIdPattern, attrsQuery, qQuery, geoQuery, scopeQuery, langQuery,
+				tenant2CId2RegEntries.row(tenant).values(), context, fullEntityCache, viaHeaders);
 	}
 
-	public static Map<QueryRemoteHost, Set<String>> getRemoteQueries(String[] id, TypeQueryTerm typeQuery,
-			String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery, GeoQueryTerm geoQuery,
-			ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, Iterator<List<RegistrationEntry>> it,
-			Context context, EntityCache fullEntityCache, ViaHeaders viaHeaders) {
+	public static Collection<QueryRemoteHost> getRemoteQueries(
+			List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeQueryAndIdPattern, AttrsQueryTerm attrsQuery,
+			QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery,
+			Collection<List<RegistrationEntry>> regEntries, Context context, EntityCache fullEntityCache,
+			ViaHeaders viaHeaders) {
 
 		// ids, types, attrs, geo, scope
-		Map<QueryRemoteHost, QueryInfos> remoteHost2QueryInfo = Maps.newHashMap();
-		while (it.hasNext()) {
-			Iterator<RegistrationEntry> tenantRegs = it.next().iterator();
-			while (tenantRegs.hasNext()) {
+		List<Map<QueryRemoteHost, QueryInfos>> remoteHost2QueryInfos = Lists.newArrayList();
 
-				RegistrationEntry regEntry = tenantRegs.next();
-				if (regEntry.expiresAt() > 0 && regEntry.expiresAt() <= System.currentTimeMillis()) {
-					it.remove();
-					continue;
-				}
-				if (!regEntry.queryBatch() && !regEntry.queryEntity()) {
-					continue;
-				}
+		for (Tuple3<String[], TypeQueryTerm, String> t : idsAndTypeQueryAndIdPattern) {
+			Map<QueryRemoteHost, QueryInfos> remoteHost2QueryInfo = Maps.newHashMap();
+			remoteHost2QueryInfos.add(remoteHost2QueryInfo);
+			Iterator<List<RegistrationEntry>> it = regEntries.iterator();
+			String[] id = t.getItem1();
+			TypeQueryTerm typeQuery = t.getItem2();
+			String idPattern = t.getItem3();
+			while (it.hasNext()) {
+				Iterator<RegistrationEntry> tenantRegs = it.next().iterator();
+				while (tenantRegs.hasNext()) {
 
-				if (regEntry.matches(id, idPattern, typeQuery, attrsQuery, qQuery, geoQuery, scopeQuery) == null) {
-					continue;
-				}
+					RegistrationEntry regEntry = tenantRegs.next();
+					if (regEntry.expiresAt() > 0 && regEntry.expiresAt() <= System.currentTimeMillis()) {
+						it.remove();
+						continue;
+					}
+					if (!regEntry.queryBatch() && !regEntry.queryEntity()) {
+						continue;
+					}
 
-				RemoteHost regHost = regEntry.host();
-				if(viaHeaders.getHostUrls().contains(regHost.host())) {
-					continue;
-				}
-				QueryRemoteHost hostToQuery = QueryRemoteHost.fromRemoteHost(regHost,regEntry.canDoIdQuery(),
-						regEntry.canDoZip());
-				QueryInfos queryInfos = remoteHost2QueryInfo.get(hostToQuery);
-				if (queryInfos == null) {
-					queryInfos = new QueryInfos();
-					remoteHost2QueryInfo.put(hostToQuery, queryInfos);
-				}
+					if (regEntry.matches(id, idPattern, typeQuery, attrsQuery, qQuery, geoQuery, scopeQuery) == null) {
+						continue;
+					}
 
-				if (!queryInfos.isFullIdFound()) {
-					if (regEntry.eId() != null) {
-						queryInfos.getIds().add(regEntry.eId());
-					} else {
-						if (id != null) {
-							queryInfos.setIds(Sets.newHashSet(id));
-							queryInfos.setFullIdFound(true);
-						} else if (idPattern != null) {
-							queryInfos.setIdPattern(idPattern);
+					RemoteHost regHost = regEntry.host();
+					if (viaHeaders.getHostUrls().contains(regHost.host())) {
+						continue;
+					}
+					QueryRemoteHost hostToQuery = QueryRemoteHost.fromRemoteHost(regHost, regEntry.canDoIdQuery(),
+							regEntry.canDoZip());
+					QueryInfos queryInfos = remoteHost2QueryInfo.get(hostToQuery);
+					if (queryInfos == null) {
+						queryInfos = new QueryInfos();
+						queryInfos.setGeoQuery(geoQuery);
+						queryInfos.setLangQuery(langQuery);
+						queryInfos.setTypeQuery(typeQuery);
+						remoteHost2QueryInfo.put(hostToQuery, queryInfos);
+					}
+
+					if (!queryInfos.isFullIdFound()) {
+						if (regEntry.eId() != null) {
+							queryInfos.getIds().add(regEntry.eId());
+						} else {
+							if (id != null) {
+								queryInfos.setIds(Sets.newHashSet(id));
+								queryInfos.setFullIdFound(true);
+							} else if (idPattern != null) {
+								queryInfos.setIdPattern(idPattern);
+							}
+						}
+					}
+					if (!queryInfos.isFullTypesFound()) {
+						if (regEntry.type() != null) {
+							queryInfos.getTypes().add(regEntry.type());
+						} else {
+							if (typeQuery != null) {
+								queryInfos.setTypes(typeQuery.getAllTypes());
+								queryInfos.setFullTypesFound(true);
+							}
+						}
+					}
+					if (!queryInfos.isFullAttrsFound()) {
+						if (regEntry.eProp() != null) {
+							queryInfos.getAttrs().add(regEntry.eProp());
+						} else if (regEntry.eRel() != null) {
+							queryInfos.getAttrs().add(regEntry.eRel());
+						} else {
+							queryInfos.setFullAttrsFound(true);
+							if (attrsQuery != null && attrsQuery.getAttrs() != null
+									&& !attrsQuery.getAttrs().isEmpty()) {
+								queryInfos.setAttrs(attrsQuery.getAttrs());
+							}
 						}
 					}
 				}
-				if (!queryInfos.isFullTypesFound()) {
-					if (regEntry.type() != null) {
-						queryInfos.getTypes().add(regEntry.type());
-					} else {
-						if (typeQuery != null) {
-							queryInfos.setTypes(typeQuery.getAllTypes());
-							queryInfos.setFullTypesFound(true);
-						}
-					}
-				}
-				if (!queryInfos.isFullAttrsFound()) {
-					if (regEntry.eProp() != null) {
-						queryInfos.getAttrs().add(regEntry.eProp());
-					} else if (regEntry.eRel() != null) {
-						queryInfos.getAttrs().add(regEntry.eRel());
-					} else {
-						queryInfos.setFullAttrsFound(true);
-						if (attrsQuery != null && attrsQuery.getAttrs() != null && !attrsQuery.getAttrs().isEmpty()) {
-							queryInfos.setAttrs(attrsQuery.getAttrs());
-						}
-					}
-				}
+
 			}
-
 		}
-		Map<QueryRemoteHost, Set<String>> result = Maps.newHashMap();
-		for (Entry<QueryRemoteHost, QueryInfos> entry : remoteHost2QueryInfo.entrySet()) {
-			QueryRemoteHost tmpHost = entry.getKey();
-				viaHeaders.addViaHeader(tmpHost.host());
-				result.put(new QueryRemoteHost(tmpHost.host(), tmpHost.tenant(), tmpHost.headers(), tmpHost.cSourceId(),
-						tmpHost.isCanDoQuery(), tmpHost.isCanDoBatchQuery(), tmpHost.isCanDoRetrieve(),
-						tmpHost.regMode(), entry.getValue().toQueryParams(context, typeQuery, geoQuery, langQuery, false,
-								fullEntityCache, tmpHost), tmpHost.canDoEntityMap(), tmpHost.canDoZip(),
-						tmpHost.entityMapToken(), viaHeaders), entry.getValue().getIds());
-			
+		Map<String, QueryRemoteHost> cSourceId2QueryRemoteHost = Maps.newHashMap();
+
+		for (Map<QueryRemoteHost, QueryInfos> remoteHost2QueryInfo : remoteHost2QueryInfos) {
+			for (Entry<QueryRemoteHost, QueryInfos> entry : remoteHost2QueryInfo.entrySet()) {
+				QueryRemoteHost tmpHost = entry.getKey();
+				QueryRemoteHost finalHost = cSourceId2QueryRemoteHost.get(tmpHost.cSourceId());
+				if (finalHost == null) {
+					finalHost = tmpHost;
+					viaHeaders.addViaHeader(tmpHost.host());
+					finalHost.setViaHeaders(viaHeaders);
+					cSourceId2QueryRemoteHost.put(finalHost.cSourceId(), finalHost);
+				}
+
+				Map<String, String> queryParams = entry.getValue().toQueryParams(context, false, fullEntityCache,
+						finalHost);
+				finalHost.addIdsAndTypesAndIdPattern(
+						Tuple3.of(queryParams.remove(NGSIConstants.ID), queryParams.remove(NGSIConstants.TYPE),
+								queryParams.remove(NGSIConstants.QUERY_PARAMETER_IDPATTERN)));
+				finalHost.setQueryParam(queryParams);
+			}
 		}
-		return result;
-	}
 
-
-
-	public static Map<String, Object> mergeEntity(Map<String, Object> currentEntity, Map<String, Object> entity) {
-		// TODO Auto-generated method stub
-		return null;
+		return cSourceId2QueryRemoteHost.values();
 	}
 
 	public static Map<String, Map<String, Object>> evaluateFilterQueries(List<Map<String, Object>> resultData,

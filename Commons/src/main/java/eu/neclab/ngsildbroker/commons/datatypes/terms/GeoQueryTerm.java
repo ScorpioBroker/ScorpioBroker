@@ -536,7 +536,7 @@ public class GeoQueryTerm implements Serializable {
 	}
 
 	@JsonIgnore
-	public void addToRequestParams(Map<String, Object> queryParams, Shape geo, String georel) {
+	public void addToRequestParams(Map<String, String> queryParams, Shape geo, String georel) {
 		queryParams.put("geoproperty", geoproperty);
 
 		if (georel.equals(NGSIConstants.GEO_REL_NEAR)) {
