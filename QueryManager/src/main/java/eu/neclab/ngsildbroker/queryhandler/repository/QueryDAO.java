@@ -1544,13 +1544,6 @@ public class QueryDAO {
 
 	}
 
-	public Uni<Tuple2<EntityCache, EntityMap>> queryForEntityIdsAndEntitiesRegNotEmptyExpectDistEntities(String tenant,
-			String[] ids, TypeQueryTerm typeQuery, String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery,
-			GeoQueryTerm geoQuery, String join, int joinLevel, String qToken) {
-		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
-			return null;
-		});
-	}
 
 	public Uni<Tuple2<List<Map<String, Object>>, QueryRemoteHost>> queryForEntities(String tenant,
 			Set<String> idsForDBCall) {
@@ -1568,12 +1561,6 @@ public class QueryDAO {
 		});
 	}
 
-	public Uni<Tuple2<EntityCache, EntityMap>> queryForEntityIdsAndEntitiesRegNotEmpty(String tenant, String[] ids,
-			TypeQueryTerm typeQuery, String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery,
-			GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, int limit, int offset, String qToken,
-			boolean onlyFullEntitiesDistributed) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+	
 
 }
