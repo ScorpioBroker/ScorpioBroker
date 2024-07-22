@@ -60,7 +60,7 @@ public class EntityMap {
 		boolean noRootLevelRegEntryAndLinkedQuery = json.getBoolean("noRootLevelRegEntryAndLinkedQuery");
 		EntityMap result = new EntityMap(id, splitEntities, regEmptyOrNoRegEntryAndNoLinkedQuery,
 				noRootLevelRegEntryAndLinkedQuery);
-
+		result.setQueryCheckSum(json.getString("checkSum"));
 		LinkedHashMap<String, Set<String>> id2Cid = result.getEntityId2CSourceIds();
 		HashMap<String, QueryRemoteHost> cId2Host = result.getcSourceId2RemoteHost();
 		JsonArray entityMap = json.getJsonArray("entityMap");

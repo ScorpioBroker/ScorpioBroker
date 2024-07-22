@@ -1075,18 +1075,31 @@ public class QueryDAO {
 			List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeQueryAndIdPattern, int limit, int offset,
 			String checkSum) {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
-			Set<String> ids = Sets.newHashSet();
-			idsAndTypeQueryAndIdPattern.forEach(entry -> {
-				for (String id : entry.getItem1()) {
-					ids.add(id);
+			String[] ids;
+			if (idsAndTypeQueryAndIdPattern == null) {
+				ids = null;
+			} else {
+				Set<String> tmpIds = Sets.newHashSet();
+				idsAndTypeQueryAndIdPattern.forEach(entry -> {
+					String[] itemIds = entry.getItem1();
+					if (itemIds != null) {
+						for (String id : itemIds) {
+							tmpIds.add(id);
+						}
+					}
+				});
+				if (tmpIds.isEmpty()) {
+					ids = null;
+				} else {
+					ids = tmpIds.toArray(new String[0]);
 				}
-			});
+			}
+
 			return client.preparedQuery("SELECT * FROM getEntityMapAndEntities($1, $2, $3, $4)")
-					.execute(Tuple.of(entityMapToken, ids.toArray(new String[0]), limit, offset)).onItem()
-					.transformToUni(rows -> {
+					.execute(Tuple.of(entityMapToken, ids, limit, offset)).onItem().transformToUni(rows -> {
 
 						Tuple2<EntityCache, EntityMap> t = putQueryResultIntoMapAndCache(rows, entityMapToken);
-						if (checkSum != null && t.getItem2().getQueryCheckSum().equals(checkSum)) {
+						if (checkSum != null && !t.getItem2().getQueryCheckSum().equals(checkSum)) {
 							return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData,
 									"Provided query does not match the original query."));
 						}
@@ -1125,8 +1138,10 @@ public class QueryDAO {
 			boolean sqlAdded = false;
 			if (idsAndTypeAndIdPattern != null) {
 				sqlAdded = true;
+				queryParams.setIdsAndTypeAndIdPattern(idsAndTypeAndIdPattern);
 				query.append('(');
 				queryToStoreWherePart.append('(');
+
 				for (Tuple3<String[], TypeQueryTerm, String> t : idsAndTypeAndIdPattern) {
 					TypeQueryTerm typeQuery = t.getItem2();
 					String[] ids = t.getItem1();
@@ -1134,7 +1149,7 @@ public class QueryDAO {
 					boolean tSqlAdded = false;
 					query.append('(');
 					queryToStoreWherePart.append('(');
-					queryParams.setIdsAndTypeAndIdPattern(idsAndTypeAndIdPattern);
+
 					if (typeQuery != null) {
 						if ((!regEmptyOrNoRegEntryAndNoLinkedQuery || !noRootLevelRegEntryAndLinkedQuery)
 								&& splitEntities) {
@@ -1179,6 +1194,11 @@ public class QueryDAO {
 
 				query.append(')');
 				queryToStoreWherePart.append(')');
+				// if it's only brackets because of no type query
+				if (queryToStoreWherePart.length() == 4) {
+					queryToStoreWherePart.setLength(0);
+					queryToStoreWherePart.append("1=1");
+				}
 			}
 
 			if (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery || !splitEntities) {
@@ -1236,6 +1256,7 @@ public class QueryDAO {
 					scopeQuery.toSql(query, queryToStoreWherePart);
 				}
 			}
+			
 			query.append(" ORDER BY createdAt), b as (SELECT a.ID FROM a limit $");
 			query.append(dollar);
 			tuple.addInteger(limit);
@@ -1278,7 +1299,8 @@ public class QueryDAO {
 			queryToStoreSelectPart.append(" FROM a left join ENTITY on a.ID = ENTITY.ID");
 			if (attrsQuery == null && (dataSetIdTerm != null || omitTerm != null || pickTerm != null)) {
 				query.append(", JSONB_EACH(ENTITY.ENTITY) AS entityAttrs GROUP BY ENTITY.ID");
-				queryToStoreSelectPart.append(", JSONB_EACH(ENTITY.ENTITY) AS entityAttrs GROUP BY ENTITY.ID");
+				queryToStoreSelectPart.append(", JSONB_EACH(ENTITY.ENTITY) AS entityAttrs");
+				queryToStoreWherePart.append(" GROUP BY a.ordinality, ENTITY.ID order by a.ordinality");
 			}
 			query.append(")  ");
 			queryToStoreSelectPart.append(" WHERE ");
@@ -1329,7 +1351,7 @@ public class QueryDAO {
 			query.append("', 'queryParams', '");
 			try {
 				query.append(objectMapper.writeValueAsString(queryParams));
-			} catch (JsonProcessingException e1) {
+			} catch (Exception e1) {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
@@ -1544,7 +1566,6 @@ public class QueryDAO {
 
 	}
 
-
 	public Uni<Tuple2<List<Map<String, Object>>, QueryRemoteHost>> queryForEntities(String tenant,
 			Set<String> idsForDBCall) {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
@@ -1560,7 +1581,5 @@ public class QueryDAO {
 					});
 		});
 	}
-
-	
 
 }

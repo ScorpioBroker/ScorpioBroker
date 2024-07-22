@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import java.util.Set;
@@ -84,21 +85,21 @@ public class PickTerm extends ProjectionTerm {
 		query.append(" END ))");
 		return dollar;
 	}
-	
-	public int toSqlConstructEntity(StringBuilder query, StringBuilder followUp, Tuple tuple, int dollar, String tableToUse,
-			DataSetIdTerm dataSetIdTerm) {
+
+	public int toSqlConstructEntity(StringBuilder query, StringBuilder followUp, Tuple tuple, int dollar,
+			String tableToUse, DataSetIdTerm dataSetIdTerm) {
 		query.append("JSONB_STRIP_NULLS(JSONB_OBJECT_AGG(");
 		query.append(tableToUse);
 		query.append(".KEY, CASE WHEN NOT ");
 		query.append(tableToUse);
 		query.append(".KEY = ANY(ARRAY[");
-		
+
 		followUp.append("JSONB_STRIP_NULLS(JSONB_OBJECT_AGG(");
 		followUp.append(tableToUse);
 		followUp.append(".KEY, CASE WHEN NOT ");
 		followUp.append(tableToUse);
 		followUp.append(".KEY = ANY(ARRAY[''' || ");
-		for(String attr: getAllTopLevelAttribs()) {
+		for (String attr : getAllTopLevelAttribs()) {
 			query.append('$');
 			query.append(dollar);
 			query.append(',');
@@ -106,7 +107,7 @@ public class PickTerm extends ProjectionTerm {
 			followUp.append(dollar);
 			followUp.append(" || ''',''' || ");
 			tuple.addString(attr);
-			dollar++;	
+			dollar++;
 		}
 		query.setLength(query.length() - 1);
 		followUp.setLength(followUp.length() - 8);
@@ -121,11 +122,11 @@ public class PickTerm extends ProjectionTerm {
 			query.append("(SELECT CASE WHEN ");
 			query.append(tableToUse);
 			query.append(".KEY = ANY(ARRAY[");
-			
+
 			followUp.append("(SELECT CASE WHEN ");
 			followUp.append(tableToUse);
 			followUp.append(".KEY = ANY(ARRAY[''' || ");
-			for(String attr: NGSIConstants.ENTITY_BASE_PROPS) {
+			for (String attr : NGSIConstants.ENTITY_BASE_PROPS) {
 				query.append('$');
 				query.append(dollar);
 				query.append(',');
@@ -133,7 +134,7 @@ public class PickTerm extends ProjectionTerm {
 				followUp.append(dollar);
 				followUp.append("''',''' || ");
 				tuple.addString(attr);
-				dollar++;	
+				dollar++;
 			}
 			query.setLength(query.length() - 1);
 			query.append("]) THEN ");
@@ -158,7 +159,7 @@ public class PickTerm extends ProjectionTerm {
 				query.append("NOT val ? '");
 				query.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
 				query.append("'");
-				
+
 				followUp.append("NOT val ? '");
 				followUp.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
 				followUp.append("'");
@@ -175,7 +176,7 @@ public class PickTerm extends ProjectionTerm {
 				query.append(",0,");
 				query.append(NGSIConstants.JSON_LD_ID);
 				query.append("}' = ANY(ARRAY[");
-				
+
 				followUp.append("val ? '");
 				followUp.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
 				followUp.append("' and val #>> '{");
@@ -183,20 +184,20 @@ public class PickTerm extends ProjectionTerm {
 				followUp.append(",0,");
 				followUp.append(NGSIConstants.JSON_LD_ID);
 				followUp.append("}' = ANY(ARRAY[''' || ");
-				for(String attr: dataSetIdTerm.ids) {
+				for (String attr : dataSetIdTerm.ids) {
 					query.append('$');
 					query.append(dollar);
 					query.append(',');
-					
+
 					followUp.append('$');
 					followUp.append(dollar);
 					followUp.append("''',''' || ");
 					tuple.addString(attr);
-					dollar++;	
+					dollar++;
 				}
 				query.setLength(query.length() - 1);
 				query.append("])");
-				
+
 				followUp.setLength(followUp.length() - 8);
 				followUp.append("])");
 			}
@@ -217,11 +218,12 @@ public class PickTerm extends ProjectionTerm {
 		tuple.addArrayOfString(getAllTopLevelAttribs());
 		return dollar;
 	}
+
 	public int toSql(StringBuilder query, StringBuilder followUp, Tuple tuple, int dollar) {
 		query.append("ENTITY ?| ARRAY[");
 		followUp.append("ENTITY ?| ARRAY['''");
 		String[] attribs = getAllTopLevelAttribs();
-		for(String attrib: attribs) {
+		for (String attrib : attribs) {
 			query.append('$');
 			query.append(dollar);
 			query.append(',');
@@ -252,7 +254,8 @@ public class PickTerm extends ProjectionTerm {
 	}
 
 	@Override
-	public boolean calculateEntity(Map<String, Object> entity) {
+	public boolean calculateEntity(Map<String, Object> entity, boolean inlineJoin,
+			Map<String, Map<String, Object>> flatEntities) {
 		ProjectionTerm current = this;
 		Map<String, Object> result = new HashMap<>(entity.size());
 		while (current != null) {
@@ -260,27 +263,71 @@ public class PickTerm extends ProjectionTerm {
 			if (attribObj != null) {
 				if (current.hasLinked) {
 					if (attribObj instanceof List<?> attrList) {
-						for (Object attrInstanceObj : attrList) {
-							if (attrInstanceObj instanceof Map<?, ?> instanceMap
-									&& instanceMap.containsKey(NGSIConstants.NGSI_LD_ENTITY)) {
-								List<Map<String, Object>> entities = (List<Map<String, Object>>) instanceMap
-										.get(NGSIConstants.NGSI_LD_ENTITY);
-								List<Map<String, Object>> resultAttEntityrList = new ArrayList<>(entities.size());
-								for (Map<String, Object> linkedEntity : entities) {
-									
-									if (current.linkedChild
-											.calculateEntity(linkedEntity)) {
-										resultAttEntityrList.add(linkedEntity);
+						if (inlineJoin) {
+							for (Object attrInstanceObj : attrList) {
+								if (attrInstanceObj instanceof Map<?, ?> instanceMap
+										&& instanceMap.containsKey(NGSIConstants.NGSI_LD_ENTITY)) {
+									List<Map<String, Object>> entities = (List<Map<String, Object>>) instanceMap
+											.get(NGSIConstants.NGSI_LD_ENTITY);
+									List<Map<String, Object>> resultAttEntityrList = new ArrayList<>(entities.size());
+									for (Map<String, Object> linkedEntity : entities) {
+
+										if (current.linkedChild.calculateEntity(linkedEntity, inlineJoin,
+												flatEntities)) {
+											resultAttEntityrList.add(linkedEntity);
+										}
+									}
+									if (resultAttEntityrList.isEmpty()) {
+										instanceMap.remove(NGSIConstants.NGSI_LD_ENTITY);
+									} else {
+										((Map<String, Object>) instanceMap).put(NGSIConstants.NGSI_LD_ENTITY,
+												resultAttEntityrList);
 									}
 								}
-								if (resultAttEntityrList.isEmpty()) {
-									instanceMap.remove(NGSIConstants.NGSI_LD_ENTITY);
-								} else {
-									((Map<String, Object>) instanceMap).put(NGSIConstants.NGSI_LD_ENTITY,
-											resultAttEntityrList);
+
+							}
+						} else {
+							for (Object attrInstanceObj : attrList) {
+								if (attrInstanceObj instanceof Map<?, ?> instanceMap
+										&& instanceMap.containsKey(NGSIConstants.JSON_LD_TYPE)) {
+									String type = ((List<String>) instanceMap.get(NGSIConstants.JSON_LD_TYPE)).get(0);
+									if (NGSIConstants.NGSI_LD_RELATIONSHIP.equals(type)) {
+										Set<String> ids = Sets.newHashSet();
+										List<Map<String, String>> objList = (List<Map<String, String>>) instanceMap
+												.get(NGSIConstants.NGSI_LD_HAS_OBJECT);
+										for (Map<String, String> objEntry : objList) {
+											ids.add(objEntry.get(NGSIConstants.JSON_LD_ID));
+										}
+										for (String id : ids) {
+											Map<String, Object> objEntity = flatEntities.get(id);
+											if (!current.linkedChild.calculateEntity(objEntity, inlineJoin,
+													flatEntities)) {
+												flatEntities.remove(id);
+											}
+										}
+									} else if (NGSIConstants.NGSI_LD_LISTRELATIONSHIP.equals(type)) {
+										Set<String> ids = Sets.newHashSet();
+										List<Map<String, List<Map<String, List<Map<String, String>>>>>> objList = (List<Map<String, List<Map<String, List<Map<String, String>>>>>>) instanceMap
+												.get(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST);
+										for (Map<String, List<Map<String, String>>> objEntry : objList.get(0)
+												.get(NGSIConstants.JSON_LD_LIST)) {
+											List<Map<String, String>> hasObjList = (List<Map<String, String>>) instanceMap
+													.get(NGSIConstants.NGSI_LD_HAS_OBJECT);
+											for (Map<String, String> hasObjEntry : hasObjList) {
+												ids.add(hasObjEntry.get(NGSIConstants.JSON_LD_ID));
+											}
+										}
+										for (String id : ids) {
+											Map<String, Object> objEntity = flatEntities.get(id);
+											if (!current.linkedChild.calculateEntity(objEntity, inlineJoin,
+													flatEntities)) {
+												flatEntities.remove(id);
+											}
+										}
+									}
+
 								}
 							}
-
 						}
 					}
 				}
@@ -288,7 +335,7 @@ public class PickTerm extends ProjectionTerm {
 			}
 			current = current.next;
 		}
-		if(result.isEmpty()) {
+		if (result.isEmpty()) {
 			return false;
 		}
 		result.put(NGSIConstants.NGSI_LD_CREATED_AT, entity.get(NGSIConstants.NGSI_LD_CREATED_AT));

@@ -220,7 +220,8 @@ public class QueryService {
 	private Uni<Tuple2<EntityCache, EntityMap>> getEntityMapAndEntitiesAndUpdateExpires(String tenant,
 			List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeQueryAndIdPattern, int limit, int offset,
 			String qToken, String checkSum) {
-
+		System.out.println("LIMIT " + limit);
+		System.out.println("OFFSET " + offset);
 		return queryDAO.queryForEntityMapAndEntities(tenant, qToken, idsAndTypeQueryAndIdPattern, limit, offset,
 				checkSum);
 
@@ -252,9 +253,13 @@ public class QueryService {
 		Map<String, Tuple2<Map<String, Object>, Set<String>>> ids2EntityAndHost = entityCache
 				.getAllIds2EntityAndHosts();
 		// no registry entries just push out the result
+		boolean doInline = NGSIConstants.INLINE.equals(join);
+		result.setDoInline(doInline);
 		if (entityMap.isRegEmptyOrNoRegEntryAndNoLinkedQuery()) {
-			boolean doInline = NGSIConstants.INLINE.equals(join);
+
 			subMap.forEach(id2Hosts -> {
+				String id = id2Hosts.getKey();
+				System.out.println(id);
 				if (!doInline) {
 					resultData.add(ids2EntityAndHost.remove(id2Hosts.getKey()).getItem1());
 				} else {
@@ -263,20 +268,30 @@ public class QueryService {
 			});
 
 			if (join != null && joinLevel > 0) {
-				if (join.equals(NGSIConstants.FLAT)) {
+				if (NGSIConstants.FLAT.equals(join)) {
+					Map<String, Map<String, Object>> flatEntities = new HashMap<>(ids2EntityAndHost.size());
 					for (Entry<String, Tuple2<Map<String, Object>, Set<String>>> entityEntry : ids2EntityAndHost
 							.entrySet()) {
-						resultData.add(entityEntry.getValue().getItem1());
+						Map<String, Object> entity = entityEntry.getValue().getItem1();
+						flatEntities.put((String) entity.get(NGSIConstants.JSON_LD_ID), entity);
+						result.setFlatJoin(flatEntities);
 					}
-				} else if (join.equals(NGSIConstants.INLINE)) {
+				} else if (NGSIConstants.INLINE.equals(join)) {
 					for (Map<String, Object> entity : resultData) {
 						inlineEntity(entity, entityCache, 1, joinLevel, false);
 					}
 				}
+				if ((pickTerm != null && pickTerm.isHasAnyLinked())
+						|| (omitTerm != null && omitTerm.isHasAnyLinked())) {
+					EntityTools.evaluateFilterQueries(result, null, null, null, null, pickTerm, omitTerm, null,
+							entityCache, null);
+				} else {
+					if (result.getFlatJoin() != null) {
+						result.getData().addAll(result.getFlatJoin().values());
+					}
+				}
 			}
-			// run pick and omit again in case of linked projection ... this should be also
-			// in the DB once my head is ready for sql again
-			EntityTools.evaluateFilterQueries(resultData, null, null, null, null, pickTerm, omitTerm, null, null, null);
+
 			return Uni.createFrom().item(result);
 		} else if (entityMap.isNoRootLevelRegEntryAndLinkedQuery()) {
 			subMap.forEach(id2Hosts -> {
@@ -285,19 +300,19 @@ public class QueryService {
 			if (qQuery != null && qQuery.hasLinkedQ()) {
 				return retrieveJoins(tenant, resultData, entityCache, context, qQuery, 0, -1, qQuery.getMaxJoinLevel(),
 						viaHeaders).onItem().transformToUni(updatedEntityCache -> {
-							Map<String, Map<String, Object>> deleted = EntityTools.evaluateFilterQueries(resultData,
-									qQuery, null, null, attrsQuery, pickTerm, omitTerm, dataSetIdTerm,
-									updatedEntityCache, jsonKeys);
+							Map<String, Map<String, Object>> deleted = EntityTools.evaluateFilterQueries(result, qQuery,
+									null, null, attrsQuery, pickTerm, omitTerm, dataSetIdTerm, updatedEntityCache,
+									jsonKeys);
 							if (deleted.isEmpty()) {
 								if (entityMap.isChanged()) {
 									return queryDAO.storeEntityMap(tenant, entityMap.getId(), entityMap).onItem()
 											.transformToUni(v -> {
 												return doJoinIfNeeded(tenant, result, updatedEntityCache, context, join,
-														joinLevel, viaHeaders);
+														joinLevel, viaHeaders, pickTerm, omitTerm);
 											});
 								}
 								return doJoinIfNeeded(tenant, result, updatedEntityCache, context, join, joinLevel,
-										viaHeaders);
+										viaHeaders, pickTerm, omitTerm);
 							} else {
 								return updateEntityMapAndRepull(deleted, entityMap, updatedEntityCache, tenant,
 										idsAndTypeQueryAndIdPattern, attrsQuery, qQuery, geoQuery, scopeQuery,
@@ -309,7 +324,8 @@ public class QueryService {
 				if (attrsQuery != null) {
 					attrsQuery.calculateQuery(resultData);
 				}
-				return doJoinIfNeeded(tenant, result, entityCache, context, join, joinLevel, viaHeaders);
+				return doJoinIfNeeded(tenant, result, entityCache, context, join, joinLevel, viaHeaders, pickTerm,
+						omitTerm);
 			}
 		} else {
 			return fillCacheFromEntityMap(entityMap, entityCache, context, headersFromReq, false, tenant, offSet, limit)
@@ -317,11 +333,11 @@ public class QueryService {
 						subMap.forEach(id2Hosts -> {
 							resultData.add(ids2EntityAndHost.get(id2Hosts.getKey()).getItem1());
 						});
-						if ((join == null || joinLevel < 0) && !qQuery.hasLinkedQ()) {
+						if ((join == null || joinLevel < 0) && (qQuery == null || !qQuery.hasLinkedQ())) {
 							if (entityMap.isDistEntities()) {
 								return Uni.createFrom().item(result);
 							} else {
-								Map<String, Map<String, Object>> deleted = EntityTools.evaluateFilterQueries(resultData,
+								Map<String, Map<String, Object>> deleted = EntityTools.evaluateFilterQueries(result,
 										qQuery, scopeQuery, geoQuery, attrsQuery, pickTerm, omitTerm, dataSetIdTerm,
 										updatedEntityCache, jsonKeys);
 								if (deleted.isEmpty()) {
@@ -329,11 +345,11 @@ public class QueryService {
 										return queryDAO.storeEntityMap(tenant, entityMap.getId(), entityMap).onItem()
 												.transformToUni(v -> {
 													return doJoinIfNeeded(tenant, result, updatedEntityCache, context,
-															join, joinLevel, viaHeaders);
+															join, joinLevel, viaHeaders, pickTerm, omitTerm);
 												});
 									}
 									return doJoinIfNeeded(tenant, result, updatedEntityCache, context, join, joinLevel,
-											viaHeaders);
+											viaHeaders, pickTerm, omitTerm);
 								} else {
 									return updateEntityMapAndRepull(deleted, entityMap, updatedEntityCache, tenant,
 											idsAndTypeQueryAndIdPattern, attrsQuery, qQuery, geoQuery, scopeQuery,
@@ -344,14 +360,13 @@ public class QueryService {
 
 						} else {
 							if (!entityMap.isDistEntities()) {
-								if (qQuery.hasLinkedQ()) {
+								if (qQuery != null && qQuery.hasLinkedQ()) {
 									return retrieveJoins(tenant, resultData, entityCache, context, qQuery, 0, -1,
 											qQuery.getMaxJoinLevel(), viaHeaders).onItem()
 											.transformToUni(updatedEntityCache2 -> {
 												Map<String, Map<String, Object>> deleted = EntityTools
-														.evaluateFilterQueries(resultData, qQuery, null, null,
-																attrsQuery, pickTerm, omitTerm, null, entityCache,
-																jsonKeys);
+														.evaluateFilterQueries(result, qQuery, null, null, attrsQuery,
+																pickTerm, omitTerm, null, entityCache, jsonKeys);
 												if (deleted.isEmpty()) {
 													if (entityMap.isChanged()) {
 														return queryDAO
@@ -359,11 +374,11 @@ public class QueryService {
 																.onItem().transformToUni(v -> {
 																	return doJoinIfNeeded(tenant, result,
 																			updatedEntityCache, context, join,
-																			joinLevel, viaHeaders);
+																			joinLevel, viaHeaders, pickTerm, omitTerm);
 																});
 													}
 													return doJoinIfNeeded(tenant, result, updatedEntityCache2, context,
-															join, joinLevel, viaHeaders);
+															join, joinLevel, viaHeaders, pickTerm, omitTerm);
 												} else {
 													return updateEntityMapAndRepull(deleted, entityMap,
 															updatedEntityCache2, tenant, idsAndTypeQueryAndIdPattern,
@@ -380,14 +395,14 @@ public class QueryService {
 										return queryDAO.storeEntityMap(tenant, entityMap.getId(), entityMap).onItem()
 												.transformToUni(v -> {
 													return doJoinIfNeeded(tenant, result, updatedEntityCache, context,
-															join, joinLevel, viaHeaders);
+															join, joinLevel, viaHeaders, pickTerm, omitTerm);
 												});
 									}
 									return doJoinIfNeeded(tenant, result, entityCache, context, join, joinLevel,
-											viaHeaders);
+											viaHeaders, pickTerm, omitTerm);
 								}
 							} else {
-								Map<String, Map<String, Object>> deleted = EntityTools.evaluateFilterQueries(resultData,
+								Map<String, Map<String, Object>> deleted = EntityTools.evaluateFilterQueries(result,
 										qQuery, scopeQuery, geoQuery, attrsQuery, pickTerm, omitTerm, dataSetIdTerm,
 										entityCache, jsonKeys);
 								if (deleted.isEmpty()) {
@@ -395,11 +410,11 @@ public class QueryService {
 										return queryDAO.storeEntityMap(tenant, entityMap.getId(), entityMap).onItem()
 												.transformToUni(v -> {
 													return doJoinIfNeeded(tenant, result, updatedEntityCache, context,
-															join, joinLevel, viaHeaders);
+															join, joinLevel, viaHeaders, pickTerm, omitTerm);
 												});
 									}
 									return doJoinIfNeeded(tenant, result, updatedEntityCache, context, join, joinLevel,
-											viaHeaders);
+											viaHeaders, pickTerm, omitTerm);
 								} else {
 									return updateEntityMapAndRepull(deleted, entityMap, updatedEntityCache, tenant,
 											idsAndTypeQueryAndIdPattern, attrsQuery, qQuery, geoQuery, scopeQuery,
@@ -546,22 +561,31 @@ public class QueryService {
 	}
 
 	private Uni<QueryResult> doJoinIfNeeded(String tenant, QueryResult result, EntityCache entityCache, Context context,
-			String join, int joinLevel, ViaHeaders viaHeaders) {
+			String join, int joinLevel, ViaHeaders viaHeaders, PickTerm pick, OmitTerm omit) {
 		if (join != null && joinLevel > 0) {
 			List<Map<String, Object>> resultData = result.getData();
 			return retrieveJoins(tenant, resultData, entityCache, context, null, 0, joinLevel, joinLevel, viaHeaders)
 					.onItem().transformToUni(updatedCache2 -> {
-						if (NGSIConstants.FLAT.equals(join)) {
+						boolean doFlatJoin = NGSIConstants.FLAT.equals(join);
+						if (doFlatJoin) {
 							Map<String, Map<String, Object>> toAdd = Maps.newHashMap();
 							for (Map<String, Object> entity : resultData) {
 								flatAddEntity(entity, entityCache, 0, joinLevel, toAdd, false);
 							}
-							resultData.addAll(toAdd.values());
+							result.setFlatJoin(toAdd);
 						} else if (NGSIConstants.INLINE.equals(join)) {
 							for (Map<String, Object> entity : resultData) {
 								inlineEntity(entity, entityCache, 0, joinLevel, false);
 							}
 						}
+						if ((pick != null && pick.isHasAnyLinked()) || (omit != null && omit.isHasAnyLinked())) {
+							EntityTools.evaluateFilterQueries(result, null, null, null, null, pick, omit, null,
+									entityCache, null);
+						}
+						if (doFlatJoin) {
+							result.getData().addAll(result.getFlatJoin().values());
+						}
+
 						return Uni.createFrom().item(result);
 					});
 		}
@@ -740,7 +764,8 @@ public class QueryService {
 				resultData.add(entityCache.getAllIds2EntityAndHosts().get(id2Hosts.getKey()).getItem1());
 			});
 
-			return doJoinIfNeeded(tenant, result, entityCache, context, join, joinLevel, viaHeaders);
+			return doJoinIfNeeded(tenant, result, entityCache, context, join, joinLevel, viaHeaders, pickTerm,
+					omitTerm);
 
 		}
 
@@ -1638,8 +1663,6 @@ public class QueryService {
 		return unis;
 	}
 
-	
-
 	private void mergeAttr(String key, List<Map<String, Object>> value,
 			Map<String, Map<String, Map<String, Object>>> result, int regMode,
 			Map<String, Integer> attsDataset2CurrentRegMode) {
@@ -2047,8 +2070,6 @@ public class QueryService {
 		return queryDAO.runEntityMapCleanup(entityMapTTL);
 	}
 
-	
-
 	public Uni<Map<String, Object>> idsOnly(Uni<Map<String, Object>> uniMap) {
 		return uniMap.onItem().transform(map -> {
 			Map<String, Object> result = new HashMap<>();
@@ -2083,7 +2104,8 @@ public class QueryService {
 				TypeQueryTerm next = new TypeQueryTerm(linkHeaders);
 				currentTypeQuery.setNext(next);
 				currentTypeQuery = next;
-				Map<String, Tuple2<Map<String, Object>, Map<String, QueryRemoteHost>>> cacheIds = null;
+				Map<String, Tuple2<Map<String, Object>, Set<String>>> cacheIds = fullEntityCache
+						.getAllIds2EntityAndHosts();
 				// todo
 //						fullEntityCache
 //						.getByType(type);
@@ -2092,12 +2114,12 @@ public class QueryService {
 				}
 				for (String id : entityIds) {
 					if (cacheIds.containsKey(id)) {
-						Tuple2<Map<String, Object>, Map<String, QueryRemoteHost>> entityAndHosts = cacheIds.get(id);
-						Map<String, QueryRemoteHost> hostName2Host = entityAndHosts.getItem2();
-						if (hostName2Host == null) {
+						Tuple2<Map<String, Object>, Set<String>> entityAndHosts = cacheIds.get(id);
+						Set<String> hostName = entityAndHosts.getItem2();
+						if (hostName == null) {
 							idsForDB.add(id);
 						} else {
-							if (!hostName2Host.containsKey(AppConstants.INTERNAL_NULL_KEY)) {
+							if (!hostName.contains(NGSIConstants.JSON_LD_NONE)) {
 								idsForDB.add(id);
 							}
 						}
@@ -2111,7 +2133,7 @@ public class QueryService {
 				types2EntityIdsForDB.put(types, idsForDB);
 			}
 			List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypes = new ArrayList<>(1);
-			idsAndTypes.add(Tuple3.of(entityIds, currentTypeQuery, null));
+			idsAndTypes.add(Tuple3.of(entityIds, typeQueryTerm, null));
 			Collection<QueryRemoteHost> remoteQueries = EntityTools.getRemoteQueries(idsAndTypes, null, linkedQ, null,
 					null, null, tenant2CId2RegEntries.row(tenant).values(), linkHeaders, fullEntityCache, viaHeaders);
 			for (QueryRemoteHost remoteQuery : remoteQueries) {
@@ -2124,6 +2146,9 @@ public class QueryService {
 		if (!types2EntityIdsForDB.isEmpty()) {
 			unis.add(0, queryDAO.getEntities(tenant, types2EntityIdsForDB, linkedQ).onItem()
 					.transform(entities -> Tuple2.of(entities, AppConstants.DB_REMOTE_HOST)));
+		}
+		if (unis.isEmpty()) {
+			return Uni.createFrom().item(Tuple2.of(fullEntityCache, Lists.newArrayList()));
 		}
 		return Uni.combine().all().unis(unis).combinedWith(l -> {
 			Collection<Map<String, Object>> result = mergeMultipleQueryResults(l, fullEntityCache);

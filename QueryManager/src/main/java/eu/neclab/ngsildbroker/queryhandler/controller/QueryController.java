@@ -119,17 +119,20 @@ public class QueryController {
 		return queryForQueryResult(request, entityId, null, null, attrs, null, null, null, null, null, null,
 				geometryProperty, lang, null, localOnly, options, 1, 0, false, containedBy, join, joinLevel,
 				doNotCompact, entityMapToken, entityMap, null, null, pick, omit, format, null, datasetId, distEntities)
-				.onItem().transformToUni(t -> {
+				.onItemOrFailure().transformToUni((t, e) -> {
+					if (e != null) {
+						return Uni.createFrom().failure(e);
+					}
 					QueryResult queryResult = t.getItem1();
 					if (queryResult.getData().isEmpty()) {
-						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
-								new ResponseException(ErrorType.NotFound, entityId + " was not found")));
+						return Uni.createFrom()
+								.failure(new ResponseException(ErrorType.NotFound, entityId + " was not found"));
 					}
 					return HttpUtils.generateQueryResult(request, queryResult, t.getItem2(), geometryProperty,
 							t.getItem3(), false, t.getItem4(), queryResult.getLanguageQueryTerm(), t.getItem5(),
 							ldService, false, false, entityMap, microServiceUtils.getGatewayURL().toString(),
 							NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT);
-				});
+				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
 
 	/**
@@ -161,7 +164,10 @@ public class QueryController {
 		return queryForQueryResult(request, id, typeQuery, idPattern, attrs, qInput, csf, geometry, georelInput,
 				coordinates, geoproperty, geometryProperty, lang, scopeQ, localOnly, options, limit, offset, count,
 				containedBy, join, joinLevel, doNotCompact, entityMapToken, entityMapRetrieve, maxDistance, minDistance,
-				pick, omit, format, jsonKeysQP, datasetId, distEntities).onItem().transformToUni(t -> {
+				pick, omit, format, jsonKeysQP, datasetId, distEntities).onItemOrFailure().transformToUni((t, e) -> {
+					if (e != null) {
+						return Uni.createFrom().failure(e);
+					}
 					QueryResult queryResult = t.getItem1();
 					String finalOptions = t.getItem2();
 					Integer acceptHeader = t.getItem3();

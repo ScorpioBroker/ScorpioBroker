@@ -592,7 +592,7 @@ public class QueryParser {
 		ProjectionTerm root = projectionTerm;
 		ProjectionTerm current = root;
 		StringBuilder attribName = new StringBuilder();
-		input = URLDecoder.decode(input, StandardCharsets.UTF_8);
+		input = URLDecoder.decode(input, StandardCharsets.UTF_8).trim();
 		String expanded;
 		OfInt it = input.chars().iterator();
 		while (it.hasNext()) {
@@ -602,6 +602,7 @@ public class QueryParser {
 				expanded = context.expandIri(attribName.toString(), false, true, null, null);
 				current.setAttrib(expanded);
 				current.setHasLinked(true);
+				root.setHasAnyLinked(true);
 				attribName.setLength(0);
 				current = child;
 			} else if (b == ',' || b == '|') {

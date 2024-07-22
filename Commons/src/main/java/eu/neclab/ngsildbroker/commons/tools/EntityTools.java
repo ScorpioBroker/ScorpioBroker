@@ -39,6 +39,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.RemoteHost;
 import eu.neclab.ngsildbroker.commons.datatypes.ViaHeaders;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.DataSetIdTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
@@ -694,7 +695,10 @@ public abstract class EntityTools {
 
 		// ids, types, attrs, geo, scope
 		List<Map<QueryRemoteHost, QueryInfos>> remoteHost2QueryInfos = Lists.newArrayList();
-
+		if(idsAndTypeQueryAndIdPattern == null) {
+			idsAndTypeQueryAndIdPattern = Lists.newArrayList();
+			idsAndTypeQueryAndIdPattern.add(Tuple3.of(null, null, null));
+		}
 		for (Tuple3<String[], TypeQueryTerm, String> t : idsAndTypeQueryAndIdPattern) {
 			Map<QueryRemoteHost, QueryInfos> remoteHost2QueryInfo = Maps.newHashMap();
 			remoteHost2QueryInfos.add(remoteHost2QueryInfo);
@@ -798,28 +802,34 @@ public abstract class EntityTools {
 		return cSourceId2QueryRemoteHost.values();
 	}
 
-	public static Map<String, Map<String, Object>> evaluateFilterQueries(List<Map<String, Object>> resultData,
-			QQueryTerm qQuery, ScopeQueryTerm scopeQuery, GeoQueryTerm geoQuery, AttrsQueryTerm attrsTerm,
-			PickTerm pickTerm, OmitTerm omitTerm, DataSetIdTerm dataSetIdTerm, EntityCache entityCache,
-			Set<String> jsonKeys) {
+	public static Map<String, Map<String, Object>> evaluateFilterQueries(QueryResult queryResult, QQueryTerm qQuery,
+			ScopeQueryTerm scopeQuery, GeoQueryTerm geoQuery, AttrsQueryTerm attrsTerm, PickTerm pickTerm,
+			OmitTerm omitTerm, DataSetIdTerm dataSetIdTerm, EntityCache entityCache, Set<String> jsonKeys) {
 		Map<String, Map<String, Object>> deleted = Maps.newHashMap();
+		List<Map<String, Object>> resultData = queryResult.getData();
 		Iterator<Map<String, Object>> it = resultData.iterator();
+		Map<String, Map<String, Object>> flatEntities = queryResult.getFlatJoin();
+		boolean inlineEntities = queryResult.isDoInline();
 		while (it.hasNext()) {
 			Map<String, Object> entity = it.next();
 			// order is important here qquery scope and geo remove full entities and the
 			// rest modifies the entities and might result in empty entities
-			if (!((qQuery == null || qQuery.calculateEntity(entity, entityCache, jsonKeys, false))
-					&& (scopeQuery == null || scopeQuery.calculateEntity(entity))
-					&& (geoQuery == null || geoQuery.calculateEntity(entity))
-					&& (attrsTerm == null || attrsTerm.calculateEntity(entity))
-					&& (pickTerm == null || pickTerm.calculateEntity(entity))
-					&& (omitTerm == null || omitTerm.calculateEntity(entity))
-					&& (dataSetIdTerm == null || dataSetIdTerm.calculateEntity(entity)))) {
+			boolean qResult = (qQuery != null && !qQuery.calculateEntity(entity, entityCache, jsonKeys, false));
+			boolean scopeResult = (scopeQuery != null && !scopeQuery.calculateEntity(entity));
+			boolean geoQResult = (geoQuery != null && !geoQuery.calculateEntity(entity));
+			boolean attrsResult = (attrsTerm != null && !attrsTerm.calculateEntity(entity));
+			boolean pickResult = (pickTerm != null && !pickTerm.calculateEntity(entity, inlineEntities, flatEntities));
+			boolean omitResult = (omitTerm != null && !omitTerm.calculateEntity(entity, inlineEntities, flatEntities));
+			boolean datasetIdResult = (dataSetIdTerm != null && !dataSetIdTerm.calculateEntity(entity));
+			if (qResult && scopeResult && geoQResult && attrsResult && pickResult && omitResult && datasetIdResult) {
 				it.remove();
 				deleted.put((String) entity.get(NGSIConstants.JSON_LD_ID), entity);
 				continue;
 			}
 
+		}
+		if (flatEntities != null) {
+			resultData.addAll(flatEntities.values());
 		}
 		return deleted;
 	}

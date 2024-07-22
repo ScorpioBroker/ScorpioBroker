@@ -5,6 +5,7 @@ import java.util.Map;
 
 import com.google.common.collect.Maps;
 
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
 
 /**
@@ -22,6 +23,9 @@ public class QueryResult {
 	private List<Map<String, Object>> data;
 	private Long count = 0L;
 	private LanguageQueryTerm languageQueryTerm;
+	private Map<String, Map<String, Object>> flatJoin;
+	private boolean doInline;
+	
 
 	public QueryResult() {
 	}
@@ -88,6 +92,22 @@ public class QueryResult {
 
 	public void setLanguageQueryTerm(LanguageQueryTerm languageQueryTerm) {
 		this.languageQueryTerm = languageQueryTerm;
+	}
+
+	public Map<String, Map<String, Object>> getFlatJoin() {
+		return flatJoin;
+	}
+
+	public void setFlatJoin(Map<String, Map<String, Object>> flatJoin) {
+		this.flatJoin = flatJoin;
+	}
+
+	public boolean isDoInline() {
+		return doInline;
+	}
+
+	public void setDoInline(boolean doInline) {
+		this.doInline = doInline;
 	}
 
 	
