@@ -18,7 +18,7 @@ import io.vertx.mutiny.sqlclient.Tuple;
 
 public class PickTerm extends ProjectionTerm {
 
-	String[] allTopLevelAttribs = null;
+	
 
 	@Override
 	protected ProjectionTerm getInstance() {
@@ -35,7 +35,7 @@ public class PickTerm extends ProjectionTerm {
 		query.append(".KEY = ANY($");
 		query.append(dollar);
 		dollar++;
-		tuple.addArrayOfString(getAllTopLevelAttribs());
+		tuple.addArrayOfString(getAllTopLevelAttribs(true).toArray(new String[0]));
 		query.append(") THEN NULL ELSE ");
 		if (dataSetIdTerm == null) {
 			query.append(tableToUse);
@@ -49,7 +49,7 @@ public class PickTerm extends ProjectionTerm {
 			tuple.addArrayOfString(NGSIConstants.ENTITY_BASE_PROPS.toArray(new String[0]));
 			query.append(dollar);
 			dollar++;
-			tuple.addArrayOfString(getAllTopLevelAttribs());
+			tuple.addArrayOfString(getAllTopLevelAttribs(true).toArray(new String[0]));
 			query.append(") THEN ");
 			query.append(tableToUse);
 			query.append(".VALUE ");
@@ -99,7 +99,7 @@ public class PickTerm extends ProjectionTerm {
 		followUp.append(".KEY, CASE WHEN NOT ");
 		followUp.append(tableToUse);
 		followUp.append(".KEY = ANY(ARRAY[''' || ");
-		for (String attr : getAllTopLevelAttribs()) {
+		for (String attr : getAllTopLevelAttribs(true)) {
 			query.append('$');
 			query.append(dollar);
 			query.append(',');
@@ -132,7 +132,7 @@ public class PickTerm extends ProjectionTerm {
 				query.append(',');
 				followUp.append('$');
 				followUp.append(dollar);
-				followUp.append("''',''' || ");
+				followUp.append(" || ''',''' || ");
 				tuple.addString(attr);
 				dollar++;
 			}
@@ -177,13 +177,13 @@ public class PickTerm extends ProjectionTerm {
 				query.append(NGSIConstants.JSON_LD_ID);
 				query.append("}' = ANY(ARRAY[");
 
-				followUp.append("val ? '");
+				followUp.append("val ? ''");
 				followUp.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
-				followUp.append("' and val #>> '{");
+				followUp.append("'' and val #>> ''{");
 				followUp.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
 				followUp.append(",0,");
 				followUp.append(NGSIConstants.JSON_LD_ID);
-				followUp.append("}' = ANY(ARRAY[''' || ");
+				followUp.append("}'' = ANY(ARRAY[''' || ");
 				for (String attr : dataSetIdTerm.ids) {
 					query.append('$');
 					query.append(dollar);
@@ -191,7 +191,7 @@ public class PickTerm extends ProjectionTerm {
 
 					followUp.append('$');
 					followUp.append(dollar);
-					followUp.append("''',''' || ");
+					followUp.append(" || ''',''' || ");
 					tuple.addString(attr);
 					dollar++;
 				}
@@ -215,14 +215,14 @@ public class PickTerm extends ProjectionTerm {
 		query.append("ENTITY ?| $");
 		query.append(dollar);
 		dollar++;
-		tuple.addArrayOfString(getAllTopLevelAttribs());
+		tuple.addArrayOfString(getAllTopLevelAttribs(true).toArray(new String[0]));
 		return dollar;
 	}
 
 	public int toSql(StringBuilder query, StringBuilder followUp, Tuple tuple, int dollar) {
 		query.append("ENTITY ?| ARRAY[");
 		followUp.append("ENTITY ?| ARRAY['''");
-		String[] attribs = getAllTopLevelAttribs();
+		Set<String> attribs = getAllTopLevelAttribs(true);
 		for (String attrib : attribs) {
 			query.append('$');
 			query.append(dollar);
@@ -239,20 +239,7 @@ public class PickTerm extends ProjectionTerm {
 		return dollar;
 	}
 
-	private String[] getAllTopLevelAttribs() {
-		if (allTopLevelAttribs == null) {
-			HashSet<Object> tmp = Sets.newHashSet();
-			ProjectionTerm current = this;
-			while (current != null) {
-				tmp.add(current.attrib);
-				current = current.next;
-			}
-			allTopLevelAttribs = tmp.toArray(new String[0]);
-		}
-		return allTopLevelAttribs;
-
-	}
-
+	
 	@Override
 	public boolean calculateEntity(Map<String, Object> entity, boolean inlineJoin,
 			Map<String, Map<String, Object>> flatEntities) {

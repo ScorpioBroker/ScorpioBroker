@@ -1,6 +1,7 @@
 package eu.neclab.ngsildbroker.commons.datatypes.terms;
 
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -31,7 +32,22 @@ public abstract class ProjectionTerm {
 	protected ProjectionTerm parent;
 	protected String attrib;
 	
+	private Set<String> allTopLevelAttribs;
 	
+	public Set<String> getAllTopLevelAttribs(boolean pick) {
+		if (allTopLevelAttribs == null) {
+			allTopLevelAttribs = Sets.newHashSet();
+			ProjectionTerm current = this;
+			while (current != null) {
+				if (!current.hasLinked || pick) {
+					allTopLevelAttribs.add(current.attrib);
+				}
+				current = current.next;
+			}
+		}
+		return allTopLevelAttribs;
+
+	}
 
 	public boolean isHasAnyLinked() {
 		return hasAnyLinked;

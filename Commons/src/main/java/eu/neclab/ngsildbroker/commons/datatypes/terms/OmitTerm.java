@@ -14,7 +14,7 @@ import io.vertx.mutiny.sqlclient.Tuple;
 
 public class OmitTerm extends ProjectionTerm {
 
-	private Set<String> allTopLevelAttribs;
+	
 
 	@Override
 	protected ProjectionTerm getInstance() {
@@ -44,7 +44,7 @@ public class OmitTerm extends ProjectionTerm {
 		query.append(".KEY = ANY($");
 		query.append(dollar);
 		dollar++;
-		tuple.addArrayOfString(allTopLevelAttribs.toArray(new String[0]));
+		tuple.addArrayOfString(getAllTopLevelAttribs(false).toArray(new String[0]));
 		query.append(") THEN NULL ELSE ");
 		if (dataSetIdTerm == null) {
 			query.append(tableToUse);
@@ -58,7 +58,7 @@ public class OmitTerm extends ProjectionTerm {
 			tuple.addArrayOfString(NGSIConstants.ENTITY_BASE_PROPS.toArray(new String[0]));
 			query.append(dollar);
 			dollar++;
-			tuple.addArrayOfString(allTopLevelAttribs.toArray(new String[0]));
+			tuple.addArrayOfString(getAllTopLevelAttribs(false).toArray(new String[0]));
 			query.append(") THEN ");
 			query.append(tableToUse);
 			query.append(".VALUE ");
@@ -109,14 +109,14 @@ public class OmitTerm extends ProjectionTerm {
 		followUp.append(tableToUse);
 		followUp.append(".KEY = ANY(ARRAY[''' || ");
 
-		for (String attr : allTopLevelAttribs) {
+		for (String attr : getAllTopLevelAttribs(false)) {
 			query.append('$');
 			query.append(dollar);
 			query.append(',');
 
 			followUp.append('$');
 			followUp.append(dollar);
-			followUp.append("|| ''',''' || ");
+			followUp.append(" || ''',''' || ");
 			dollar++;
 			tuple.addString(attr);
 		}
@@ -229,7 +229,7 @@ public class OmitTerm extends ProjectionTerm {
 		query.append("NOT (ARRAY(SELECT jsonb_object_keys(ENTITY)) <@ $");
 		query.append(dollar);
 		dollar++;
-		HashSet<String> tmp = Sets.newHashSet(getAllTopLevelAttribs());
+		HashSet<String> tmp = Sets.newHashSet(getAllTopLevelAttribs(false));
 		tmp.add(NGSIConstants.NGSI_LD_CREATED_AT);
 		tmp.add(NGSIConstants.NGSI_LD_MODIFIED_AT);
 		tuple.addArrayOfString(tmp.toArray(new String[0]));
@@ -238,7 +238,7 @@ public class OmitTerm extends ProjectionTerm {
 	}
 
 	public int toSql(StringBuilder query, StringBuilder followUp, Tuple tuple, int dollar) {
-		HashSet<String> tmp = Sets.newHashSet(getAllTopLevelAttribs());
+		HashSet<String> tmp = Sets.newHashSet(getAllTopLevelAttribs(false));
 		tmp.add(NGSIConstants.NGSI_LD_CREATED_AT);
 		tmp.add(NGSIConstants.NGSI_LD_MODIFIED_AT);
 		query.append("NOT (ARRAY(SELECT jsonb_object_keys(ENTITY)) <@ ARRAY[");
@@ -350,19 +350,6 @@ public class OmitTerm extends ProjectionTerm {
 		return true;
 	}
 
-	private Set<String> getAllTopLevelAttribs() {
-		if (allTopLevelAttribs == null) {
-			allTopLevelAttribs = Sets.newHashSet();
-			ProjectionTerm current = this;
-			while (current != null) {
-				if (!current.hasLinked) {
-					allTopLevelAttribs.add(current.attrib);
-				}
-				current = current.next;
-			}
-		}
-		return allTopLevelAttribs;
 
-	}
 
 }

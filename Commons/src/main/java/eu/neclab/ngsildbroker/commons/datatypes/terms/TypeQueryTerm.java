@@ -8,7 +8,11 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.SplittableRandom;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.github.jsonldjava.core.Context;
 import com.google.common.collect.Sets;
 
@@ -17,8 +21,14 @@ import eu.neclab.ngsildbroker.commons.datatypes.BaseProperty;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import io.vertx.mutiny.sqlclient.Tuple;
 
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 public class TypeQueryTerm implements Serializable {
-
+	
+	
+	@JsonIgnore
+	private static SplittableRandom random = new SplittableRandom();
+	protected int id = random.nextInt();
+	
 	/**
 	 * 
 	 */
@@ -711,5 +721,15 @@ public class TypeQueryTerm implements Serializable {
 		}
 
 	}
+
+	public int getId() {
+		return id;
+	}
+
+	public void setId(int id) {
+		this.id = id;
+	}
+	
+	
 
 }

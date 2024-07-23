@@ -292,7 +292,7 @@ public class QueryDAO {
 
 			if (dataSetIdTerm != null) {
 				query.append(",");
-				dollar = dataSetIdTerm.toSql(query, tuple, dollar, entitySelect);
+				// dollar = dataSetIdTerm.toSql(query, tuple, dollar, entitySelect);
 				if (count && limit == 0) {
 					query.append("select count(x.entity) from x");
 				} else {
@@ -1248,6 +1248,15 @@ public class QueryDAO {
 					dollar = qQuery.toSql(query, queryToStoreWherePart, dollar, tuple, splitEntities, false);
 					sqlAdded = true;
 				}
+				if (dataSetIdTerm != null) {
+					if (sqlAdded) {
+						query.append(" AND ");
+						queryToStoreWherePart.append(" AND ");
+					}
+					queryParams.setDataSetIdTerm(dataSetIdTerm);
+					dollar = dataSetIdTerm.toSql(query, queryToStoreWherePart, tuple, dollar, pickTerm, omitTerm, attrsQuery);
+					sqlAdded = true;
+				}
 			}
 
 			if (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery || !splitEntities) {
@@ -1256,7 +1265,7 @@ public class QueryDAO {
 					scopeQuery.toSql(query, queryToStoreWherePart);
 				}
 			}
-			
+
 			query.append(" ORDER BY createdAt), b as (SELECT a.ID FROM a limit $");
 			query.append(dollar);
 			tuple.addInteger(limit);
