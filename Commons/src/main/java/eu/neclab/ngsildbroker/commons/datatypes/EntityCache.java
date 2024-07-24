@@ -11,6 +11,7 @@ import com.google.common.collect.Sets;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import io.smallrye.mutiny.tuples.Tuple2;
 
@@ -62,6 +63,20 @@ public class EntityCache {
 
 	public boolean containsEntity(String id) {
 		return allIds2EntityAndHosts.containsKey(id);
+	}
+
+	public Tuple2<Map<String,Object>,Set<String>> remove(String key) {
+		
+		return allIds2EntityAndHosts.remove(key);
+	}
+
+	public int size() {
+		return allIds2EntityAndHosts.size();
+	}
+
+	public Set<Entry<String,Tuple2<Map<String,Object>,Set<String>>>> entrySet() {
+		
+		return allIds2EntityAndHosts.entrySet();
 	}
 
 }

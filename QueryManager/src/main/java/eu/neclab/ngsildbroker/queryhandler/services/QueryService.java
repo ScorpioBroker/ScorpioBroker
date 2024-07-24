@@ -250,26 +250,25 @@ public class QueryService {
 		result.setResultsLeftBefore((long) offSet);
 		Stream<Entry<String, Set<String>>> subMap = entityMap.getEntityId2CSourceIds().entrySet().stream().skip(offSet)
 				.limit(limit);
-		Map<String, Tuple2<Map<String, Object>, Set<String>>> ids2EntityAndHost = entityCache
-				.getAllIds2EntityAndHosts();
+		
 		// no registry entries just push out the result
 		boolean isFlatJoin = NGSIConstants.FLAT.equals(join);
 		result.setIsFlatJoin(isFlatJoin);
 		if (entityMap.isRegEmptyOrNoRegEntryAndNoLinkedQuery()) {
-
+			
 			subMap.forEach(id2Hosts -> {
 				String id = id2Hosts.getKey();
 				if (isFlatJoin) {
-					resultData.add(ids2EntityAndHost.remove(id2Hosts.getKey()).getItem1());
+					resultData.add(entityCache.remove(id2Hosts.getKey()).getItem1());
 				} else {
-					resultData.add(ids2EntityAndHost.get(id2Hosts.getKey()).getItem1());
+					resultData.add(entityCache.get(id2Hosts.getKey()).getItem1());
 				}
 			});
 
 			if (join != null && joinLevel > 0) {
 				if (NGSIConstants.FLAT.equals(join)) {
-					Map<String, Map<String, Object>> flatEntities = new HashMap<>(ids2EntityAndHost.size());
-					for (Entry<String, Tuple2<Map<String, Object>, Set<String>>> entityEntry : ids2EntityAndHost
+					Map<String, Map<String, Object>> flatEntities = new HashMap<>(entityCache.size());
+					for (Entry<String, Tuple2<Map<String, Object>, Set<String>>> entityEntry : entityCache
 							.entrySet()) {
 						Map<String, Object> entity = entityEntry.getValue().getItem1();
 						flatEntities.put((String) entity.get(NGSIConstants.JSON_LD_ID), entity);
@@ -293,8 +292,9 @@ public class QueryService {
 
 			return Uni.createFrom().item(result);
 		} else if (entityMap.isNoRootLevelRegEntryAndLinkedQuery()) {
+			
 			subMap.forEach(id2Hosts -> {
-				resultData.add(ids2EntityAndHost.get(id2Hosts.getKey()).getItem1());
+				resultData.add(entityCache.get(id2Hosts.getKey()).getItem1());
 			});
 			if (qQuery != null && qQuery.hasLinkedQ()) {
 				return retrieveJoins(tenant, resultData, entityCache, context, qQuery, 0, -1, qQuery.getMaxJoinLevel(),
@@ -330,7 +330,8 @@ public class QueryService {
 			return fillCacheFromEntityMap(entityMap, entityCache, context, headersFromReq, false, tenant, offSet, limit)
 					.onItem().transformToUni(updatedEntityCache -> {
 						subMap.forEach(id2Hosts -> {
-							resultData.add(ids2EntityAndHost.get(id2Hosts.getKey()).getItem1());
+							System.out.println(id2Hosts.getKey());
+							resultData.add(updatedEntityCache.get(id2Hosts.getKey()).getItem1());
 						});
 						if ((join == null || joinLevel < 0) && (qQuery == null || !qQuery.hasLinkedQ())) {
 							if (entityMap.isDistEntities()) {
@@ -440,20 +441,19 @@ public class QueryService {
 			List<QueryRemoteHost> hosts = Lists.newArrayList();
 			String entityId = id2Host.getKey();
 			id2Host.getValue().forEach(cId -> {
-				hosts.add(entityMap.getRemoteHost(cId));
+				if (!NGSIConstants.JSON_LD_NONE.equals(cId)) {
+					hosts.add(entityMap.getRemoteHost(cId));
+				}
 			});
 			for (QueryRemoteHost host : hosts) {
-				if (host.host().equals(AppConstants.INTERNAL_NULL_KEY)) {
-					if (callDB) {
-						Tuple2<Map<String, Object>, Set<String>> cacheEntry = entityCache.get(entityId);
-						if (cacheEntry == null || !cacheEntry.getItem2().contains(NGSIConstants.JSON_LD_NONE)) {
-							idsForDBCall.add(entityId);
-						}
-					} else {
-						continue;
-					}
 
+				if (callDB) {
+					Tuple2<Map<String, Object>, Set<String>> cacheEntry = entityCache.get(entityId);
+					if (cacheEntry == null || !cacheEntry.getItem2().contains(NGSIConstants.JSON_LD_NONE)) {
+						idsForDBCall.add(entityId);
+					}
 				}
+
 				Set<String> ids = remoteHost2Ids.get(host);
 				if (ids == null) {
 					ids = Sets.newHashSet();

@@ -87,13 +87,13 @@ BEGIN
 					|| (entitymap ->> 'selectPart') || (entitymap ->> 'wherePart') || ' limit $3), X as (SELECT D0.ID as id, max(D0.ordinality) as maxOrdinality FROM D0 GROUP BY D0.ID), C as (SELECT updateMapIfNeeded(ids.aggIds, $4, $5) as entity_map FROM (SELECT ARRAY_AGG(a.id) as aggIds FROM a LEFT JOIN X ON a.id = X.ID WHERE X.ID IS NULL AND a.ordinality <= X.maxOrdinality) as ids)' 
 					|| (entitymap ->> 'finalselect')) using (entitymap->'entityMap'), ioffset, ilimit, entitymap, entityMapToken;
 		else
-			return query execute ('WITH a as (SELECT entityIdEntry.key as entityId FROM JSONB_ARRAY_ELEMENTS($1) WITH ORDINALITY as val, jsonb_each(val.value) as entityIdEntry where val.ORDINALITY between $2 and $3 and entityIdEntry.value ? ''@none''), ' || (entitymap ->> 'selectPart') || (entitymap ->> 'wherePart')  || (entitymap ->> 'finalselect')) using entitymap->'entityMap', ioffset, ilimit;
+			return query execute ('WITH a as (SELECT entityIdEntry.key as id, val.ordinality as ordinality FROM JSONB_ARRAY_ELEMENTS($1) WITH ORDINALITY as val, jsonb_each(val.value) as entityIdEntry where val.ORDINALITY between $2 and ($2 + $3) and entityIdEntry.value ? ''@none''), C as (SELECT $4 as entity_map), ' || (entitymap ->> 'selectPart') || (entitymap ->> 'wherePart')  || ')' ||(entitymap ->> 'finalselect')) using entitymap->'entityMap', ioffset, ilimit, entitymap;
 		end if;
 	else
 		if regempty or noRootLevelRegEntry then
-			return query execute ((entitymap ->> 'selectPart') || ' id=any($1) AND ' || (entitymap ->> 'wherePart') || (entitymap ->> 'finalselect')) using ids;
+			return query execute ((entitymap ->> 'selectPart') || ' id=any($1) AND ' || (entitymap ->> 'wherePart')  || ')' || (entitymap ->> 'finalselect')) using ids;
 		else
-			return query execute ((entitymap ->> 'selectPart') || ' id=any($1) AND ' || (entitymap ->> 'wherePart') || (entitymap ->> 'finalselect')) using ids;
+			return query execute ((entitymap ->> 'selectPart') || ' id=any($1) AND ' || (entitymap ->> 'wherePart')  || ')' || (entitymap ->> 'finalselect')) using ids;
 		end if;
 	end if;
 END;

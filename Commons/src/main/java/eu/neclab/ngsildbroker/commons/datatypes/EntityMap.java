@@ -32,6 +32,12 @@ public class EntityMap {
 
 	private Map<String, Object> linkedMaps = Maps.newHashMap();
 
+	private String selectPart;
+
+	private String wherePart;
+
+	private String finalSelectPart;
+
 	private String queryCheckSum;
 
 	private boolean distEntities;
@@ -88,6 +94,11 @@ public class EntityMap {
 				}
 			});
 		}
+
+		result.setSelectPart(json.getString("selectPart"));
+		result.setWherePart(json.getString("wherePart"));
+		result.setFinalSelectPart(json.getString("finalselect"));
+
 		return result;
 	}
 
@@ -171,9 +182,13 @@ public class EntityMap {
 	public JsonObject toSQLJson(ObjectMapper objectMapper) {
 		JsonObject result = new JsonObject();
 		result.put("id", id);
-		result.put("entityMap", entityId2CSourceIds);
+		JsonArray entityMap = new JsonArray();
+		for(Entry<String, Set<String>> entry: entityId2CSourceIds.entrySet()) {
+			entityMap.add(new JsonObject().put(entry.getKey(), entry.getValue()));
+		}
+		result.put("entityMap", entityMap);
 		result.put("linkedMaps", linkedMaps);
-		result.put("distEntities", distEntities);
+		result.put("splitEntities", distEntities);
 		result.put("regEmptyOrNoRegEntryAndNoLinkedQuery", regEmptyOrNoRegEntryAndNoLinkedQuery);
 		result.put("noRootLevelRegEntryAndLinkedQuery", noRootLevelRegEntryAndLinkedQuery);
 		JsonObject hosts = new JsonObject();
@@ -186,6 +201,10 @@ public class EntityMap {
 			}
 		}
 		result.put("hosts", hosts);
+		result.put("checkSum", queryCheckSum);
+		result.put("selectPart", selectPart);
+		result.put("wherePart", wherePart);
+		result.put("finalselect", finalSelectPart);
 		return result;
 	}
 
@@ -239,6 +258,30 @@ public class EntityMap {
 
 	public void setDistEntities(boolean distEntities) {
 		this.distEntities = distEntities;
+	}
+
+	public String getSelectPart() {
+		return selectPart;
+	}
+
+	public void setSelectPart(String selectPart) {
+		this.selectPart = selectPart;
+	}
+
+	public String getWherePart() {
+		return wherePart;
+	}
+
+	public void setWherePart(String wherePart) {
+		this.wherePart = wherePart;
+	}
+
+	public String getFinalSelectPart() {
+		return finalSelectPart;
+	}
+
+	public void setFinalSelectPart(String finalSelectPart) {
+		this.finalSelectPart = finalSelectPart;
 	}
 
 }

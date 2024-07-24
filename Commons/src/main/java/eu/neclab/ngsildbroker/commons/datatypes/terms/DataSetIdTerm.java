@@ -354,8 +354,8 @@ public class DataSetIdTerm implements Serializable {
 						it2.remove();
 					}
 				} else {
-					String datasetId = ((Map<String, String>) datasetObj).get(NGSIConstants.JSON_LD_ID);
-					if (!ids.contains(NGSIConstants.JSON_LD_NONE)) {
+					String datasetId = ((List<Map<String, String>>) datasetObj).get(0).get(NGSIConstants.JSON_LD_ID);
+					if (!ids.contains(datasetId)) {
 						it2.remove();
 					}
 				}
