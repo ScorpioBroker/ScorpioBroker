@@ -25,6 +25,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ser.BeanSerializer;
 import com.github.jsonldjava.core.Context;
+import com.github.jsonldjava.core.JsonLdUtils;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
@@ -1410,6 +1411,7 @@ public class QueryDAO {
 			entityObj = row.getJsonObject(1);
 			parent = row.getBoolean(2);
 			String[] types = row.getArrayOfStrings(3);
+			
 			if (entityObj != null) {
 				Map<String, Object> entity = entityObj.getMap();
 				resultEntities.setEntityIntoEntityCache(id, entity, NGSIConstants.JSON_LD_NONE);
@@ -1452,7 +1454,11 @@ public class QueryDAO {
 			query.append("}' ELSE NULL END) AS LINK, ARRAY_AGG(E_TYPES ->> '");
 			query.append(NGSIConstants.JSON_LD_ID);
 			query.append(
-					"') AS ET FROM B1, JSONB_ARRAY_ELEMENTS(B1.VALUE) AS Y, JSONB_ARRAY_ELEMENTS(CASE WHEN Y #>> '{");
+					"') AS ET FROM B");
+			query.append(counter + 1);
+			query.append(", JSONB_ARRAY_ELEMENTS(B");
+			query.append(counter + 1);
+			query.append(".VALUE) AS Y, JSONB_ARRAY_ELEMENTS(CASE WHEN Y #>> '{");
 			query.append(NGSIConstants.JSON_LD_TYPE);
 			query.append(",0}' = '");
 			query.append(NGSIConstants.NGSI_LD_RELATIONSHIP);
@@ -1519,7 +1525,11 @@ public class QueryDAO {
 			followUp.append("}'' ELSE NULL END) AS LINK, ARRAY_AGG(E_TYPES ->> ''");
 			followUp.append(NGSIConstants.JSON_LD_ID);
 			followUp.append(
-					"'') AS ET FROM B1, JSONB_ARRAY_ELEMENTS(B1.VALUE) AS Y, JSONB_ARRAY_ELEMENTS(CASE WHEN Y #>> ''{");
+					"'') AS ET FROM B");
+			followUp.append(counter + 1);
+			followUp.append(", JSONB_ARRAY_ELEMENTS(B");
+			followUp.append(counter + 1);
+			followUp.append(".VALUE) AS Y, JSONB_ARRAY_ELEMENTS(CASE WHEN Y #>> ''{");
 			followUp.append(NGSIConstants.JSON_LD_TYPE);
 			followUp.append(",0}'' = ''");
 			followUp.append(NGSIConstants.NGSI_LD_RELATIONSHIP);

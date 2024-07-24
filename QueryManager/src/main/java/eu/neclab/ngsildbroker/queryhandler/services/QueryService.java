@@ -253,14 +253,13 @@ public class QueryService {
 		Map<String, Tuple2<Map<String, Object>, Set<String>>> ids2EntityAndHost = entityCache
 				.getAllIds2EntityAndHosts();
 		// no registry entries just push out the result
-		boolean doInline = NGSIConstants.INLINE.equals(join);
-		result.setDoInline(doInline);
+		boolean isFlatJoin = NGSIConstants.FLAT.equals(join);
+		result.setIsFlatJoin(isFlatJoin);
 		if (entityMap.isRegEmptyOrNoRegEntryAndNoLinkedQuery()) {
 
 			subMap.forEach(id2Hosts -> {
 				String id = id2Hosts.getKey();
-				System.out.println(id);
-				if (!doInline) {
+				if (isFlatJoin) {
 					resultData.add(ids2EntityAndHost.remove(id2Hosts.getKey()).getItem1());
 				} else {
 					resultData.add(ids2EntityAndHost.get(id2Hosts.getKey()).getItem1());
@@ -581,8 +580,7 @@ public class QueryService {
 						if ((pick != null && pick.isHasAnyLinked()) || (omit != null && omit.isHasAnyLinked())) {
 							EntityTools.evaluateFilterQueries(result, null, null, null, null, pick, omit, null,
 									entityCache, null);
-						}
-						if (doFlatJoin) {
+						} else if (doFlatJoin) {
 							result.getData().addAll(result.getFlatJoin().values());
 						}
 

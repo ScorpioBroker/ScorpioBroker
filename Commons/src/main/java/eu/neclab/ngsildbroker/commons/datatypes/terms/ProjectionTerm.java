@@ -129,6 +129,6 @@ public abstract class ProjectionTerm {
 
 	public abstract int toSql(StringBuilder query, Tuple tuple, int dollar);
 	
-	public abstract boolean calculateEntity(Map<String, Object> entity, boolean inlineJoin, Map<String, Map<String, Object>> flatEntities);
+	public abstract boolean calculateEntity(Map<String, Object> entity, boolean inlineJoin, Map<String, Map<String, Object>> flatEntities, Set<String> pickForFlat);
 
 }

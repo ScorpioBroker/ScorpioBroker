@@ -24,7 +24,7 @@ public class QueryResult {
 	private Long count = 0L;
 	private LanguageQueryTerm languageQueryTerm;
 	private Map<String, Map<String, Object>> flatJoin;
-	private boolean doInline;
+	private boolean isFlatJoin;
 	
 
 	public QueryResult() {
@@ -102,12 +102,12 @@ public class QueryResult {
 		this.flatJoin = flatJoin;
 	}
 
-	public boolean isDoInline() {
-		return doInline;
+	public boolean isFlatJoin() {
+		return isFlatJoin;
 	}
 
-	public void setDoInline(boolean doInline) {
-		this.doInline = doInline;
+	public void setIsFlatJoin(boolean isFlatJoin) {
+		this.isFlatJoin = isFlatJoin;
 	}
 
 	

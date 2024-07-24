@@ -18,8 +18,6 @@ import io.vertx.mutiny.sqlclient.Tuple;
 
 public class PickTerm extends ProjectionTerm {
 
-	
-
 	@Override
 	protected ProjectionTerm getInstance() {
 		return new PickTerm();
@@ -239,10 +237,9 @@ public class PickTerm extends ProjectionTerm {
 		return dollar;
 	}
 
-	
 	@Override
-	public boolean calculateEntity(Map<String, Object> entity, boolean inlineJoin,
-			Map<String, Map<String, Object>> flatEntities) {
+	public boolean calculateEntity(Map<String, Object> entity, boolean flatJoin,
+			Map<String, Map<String, Object>> flatEntities, Set<String> pickForFlat) {
 		ProjectionTerm current = this;
 		Map<String, Object> result = new HashMap<>(entity.size());
 		while (current != null) {
@@ -250,7 +247,7 @@ public class PickTerm extends ProjectionTerm {
 			if (attribObj != null) {
 				if (current.hasLinked) {
 					if (attribObj instanceof List<?> attrList) {
-						if (inlineJoin) {
+						if (!flatJoin) {
 							for (Object attrInstanceObj : attrList) {
 								if (attrInstanceObj instanceof Map<?, ?> instanceMap
 										&& instanceMap.containsKey(NGSIConstants.NGSI_LD_ENTITY)) {
@@ -259,8 +256,8 @@ public class PickTerm extends ProjectionTerm {
 									List<Map<String, Object>> resultAttEntityrList = new ArrayList<>(entities.size());
 									for (Map<String, Object> linkedEntity : entities) {
 
-										if (current.linkedChild.calculateEntity(linkedEntity, inlineJoin,
-												flatEntities)) {
+										if (current.linkedChild.calculateEntity(linkedEntity, flatJoin, flatEntities,
+												pickForFlat)) {
 											resultAttEntityrList.add(linkedEntity);
 										}
 									}
@@ -287,9 +284,9 @@ public class PickTerm extends ProjectionTerm {
 										}
 										for (String id : ids) {
 											Map<String, Object> objEntity = flatEntities.get(id);
-											if (!current.linkedChild.calculateEntity(objEntity, inlineJoin,
-													flatEntities)) {
-												flatEntities.remove(id);
+											if (current.linkedChild.calculateEntity(objEntity, flatJoin, flatEntities,
+													pickForFlat)) {
+												pickForFlat.add(id);
 											}
 										}
 									} else if (NGSIConstants.NGSI_LD_LISTRELATIONSHIP.equals(type)) {
@@ -306,13 +303,45 @@ public class PickTerm extends ProjectionTerm {
 										}
 										for (String id : ids) {
 											Map<String, Object> objEntity = flatEntities.get(id);
-											if (!current.linkedChild.calculateEntity(objEntity, inlineJoin,
-													flatEntities)) {
-												flatEntities.remove(id);
+											if (current.linkedChild.calculateEntity(objEntity, flatJoin, flatEntities,
+													pickForFlat)) {
+												pickForFlat.add(id);
 											}
 										}
 									}
 
+								}
+							}
+						}
+					}
+				} else {
+					if (flatJoin) {
+						if (attribObj instanceof List<?> attrList) {
+							for (Object attrInstanceObj : attrList) {
+								if (attrInstanceObj instanceof Map<?, ?> instanceMap
+										&& instanceMap.containsKey(NGSIConstants.JSON_LD_TYPE)) {
+									String type = ((List<String>) instanceMap.get(NGSIConstants.JSON_LD_TYPE)).get(0);
+									if (NGSIConstants.NGSI_LD_RELATIONSHIP.equals(type)) {
+
+										List<Map<String, String>> objList = (List<Map<String, String>>) instanceMap
+												.get(NGSIConstants.NGSI_LD_HAS_OBJECT);
+										for (Map<String, String> objEntry : objList) {
+											pickForFlat.add(objEntry.get(NGSIConstants.JSON_LD_ID));
+										}
+
+									} else if (NGSIConstants.NGSI_LD_LISTRELATIONSHIP.equals(type)) {
+
+										List<Map<String, List<Map<String, List<Map<String, String>>>>>> objList = (List<Map<String, List<Map<String, List<Map<String, String>>>>>>) instanceMap
+												.get(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST);
+										for (Map<String, List<Map<String, String>>> objEntry : objList.get(0)
+												.get(NGSIConstants.JSON_LD_LIST)) {
+											List<Map<String, String>> hasObjList = (List<Map<String, String>>) instanceMap
+													.get(NGSIConstants.NGSI_LD_HAS_OBJECT);
+											for (Map<String, String> hasObjEntry : hasObjList) {
+												pickForFlat.add(hasObjEntry.get(NGSIConstants.JSON_LD_ID));
+											}
+										}
+									}
 								}
 							}
 						}

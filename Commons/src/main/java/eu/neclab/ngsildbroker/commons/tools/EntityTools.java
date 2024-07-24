@@ -695,7 +695,7 @@ public abstract class EntityTools {
 
 		// ids, types, attrs, geo, scope
 		List<Map<QueryRemoteHost, QueryInfos>> remoteHost2QueryInfos = Lists.newArrayList();
-		if(idsAndTypeQueryAndIdPattern == null) {
+		if (idsAndTypeQueryAndIdPattern == null) {
 			idsAndTypeQueryAndIdPattern = Lists.newArrayList();
 			idsAndTypeQueryAndIdPattern.add(Tuple3.of(null, null, null));
 		}
@@ -809,7 +809,8 @@ public abstract class EntityTools {
 		List<Map<String, Object>> resultData = queryResult.getData();
 		Iterator<Map<String, Object>> it = resultData.iterator();
 		Map<String, Map<String, Object>> flatEntities = queryResult.getFlatJoin();
-		boolean inlineEntities = queryResult.isDoInline();
+		Set<String> pickForFlat = Sets.newHashSet();
+		boolean flatJoin = queryResult.isFlatJoin();
 		while (it.hasNext()) {
 			Map<String, Object> entity = it.next();
 			// order is important here qquery scope and geo remove full entities and the
@@ -818,8 +819,10 @@ public abstract class EntityTools {
 			boolean scopeResult = (scopeQuery != null && !scopeQuery.calculateEntity(entity));
 			boolean geoQResult = (geoQuery != null && !geoQuery.calculateEntity(entity));
 			boolean attrsResult = (attrsTerm != null && !attrsTerm.calculateEntity(entity));
-			boolean pickResult = (pickTerm != null && !pickTerm.calculateEntity(entity, inlineEntities, flatEntities));
-			boolean omitResult = (omitTerm != null && !omitTerm.calculateEntity(entity, inlineEntities, flatEntities));
+			boolean pickResult = (pickTerm != null
+					&& !pickTerm.calculateEntity(entity, flatJoin, flatEntities, pickForFlat));
+			boolean omitResult = (omitTerm != null
+					&& !omitTerm.calculateEntity(entity, flatJoin, flatEntities, pickForFlat));
 			boolean datasetIdResult = (dataSetIdTerm != null && !dataSetIdTerm.calculateEntity(entity));
 			if (qResult && scopeResult && geoQResult && attrsResult && pickResult && omitResult && datasetIdResult) {
 				it.remove();
@@ -828,8 +831,14 @@ public abstract class EntityTools {
 			}
 
 		}
-		if (flatEntities != null) {
-			resultData.addAll(flatEntities.values());
+		if (flatEntities != null && flatJoin) {
+			if (pickTerm == null && omitTerm == null) {
+				resultData.addAll(flatEntities.values());
+			} else {
+				for (String id : pickForFlat) {
+					resultData.add(flatEntities.get(id));
+				}
+			}
 		}
 		return deleted;
 	}
