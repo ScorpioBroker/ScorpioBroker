@@ -518,5 +518,6 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_REGISTRY_SUB_ENDPOINT = "/ngsi-ld/v1/csourceSubscriptions";
 	public static final String NGSI_LD_REGISTRY_ENDPOINT = "/ngsi-ld/v1/csourceRegistrations";
 	public static final String NGSI_LD_SUB_ENDPOINT = "/ngsi-ld/v1/subscriptions";
+	public static final String ENTITY_MAP_COMPACTED_ENTRY = "entityMap";
 	
 }

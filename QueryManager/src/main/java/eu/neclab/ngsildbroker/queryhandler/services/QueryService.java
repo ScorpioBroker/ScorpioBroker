@@ -61,6 +61,7 @@ import eu.neclab.ngsildbroker.queryhandler.repository.QueryDAO;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.groups.UniAndGroupIterable;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple3;
 import io.vertx.mutiny.core.MultiMap;
@@ -100,7 +101,7 @@ public class QueryService {
 	String entityMapTTL;
 
 	@ConfigProperty(name = "scorpio.fed.timeout", defaultValue = "20000")
-	long timeout;
+	int timeout;
 
 	@PostConstruct
 	void setup() {
@@ -250,12 +251,12 @@ public class QueryService {
 		result.setResultsLeftBefore((long) offSet);
 		Stream<Entry<String, Set<String>>> subMap = entityMap.getEntityId2CSourceIds().entrySet().stream().skip(offSet)
 				.limit(limit);
-		
+
 		// no registry entries just push out the result
 		boolean isFlatJoin = NGSIConstants.FLAT.equals(join);
 		result.setIsFlatJoin(isFlatJoin);
 		if (entityMap.isRegEmptyOrNoRegEntryAndNoLinkedQuery()) {
-			
+
 			subMap.forEach(id2Hosts -> {
 				String id = id2Hosts.getKey();
 				if (isFlatJoin) {
@@ -268,8 +269,7 @@ public class QueryService {
 			if (join != null && joinLevel > 0) {
 				if (NGSIConstants.FLAT.equals(join)) {
 					Map<String, Map<String, Object>> flatEntities = new HashMap<>(entityCache.size());
-					for (Entry<String, Tuple2<Map<String, Object>, Set<String>>> entityEntry : entityCache
-							.entrySet()) {
+					for (Entry<String, Tuple2<Map<String, Object>, Set<String>>> entityEntry : entityCache.entrySet()) {
 						Map<String, Object> entity = entityEntry.getValue().getItem1();
 						flatEntities.put((String) entity.get(NGSIConstants.JSON_LD_ID), entity);
 						result.setFlatJoin(flatEntities);
@@ -292,7 +292,7 @@ public class QueryService {
 
 			return Uni.createFrom().item(result);
 		} else if (entityMap.isNoRootLevelRegEntryAndLinkedQuery()) {
-			
+
 			subMap.forEach(id2Hosts -> {
 				resultData.add(entityCache.get(id2Hosts.getKey()).getItem1());
 			});
@@ -330,8 +330,14 @@ public class QueryService {
 			return fillCacheFromEntityMap(entityMap, entityCache, context, headersFromReq, false, tenant, offSet, limit)
 					.onItem().transformToUni(updatedEntityCache -> {
 						subMap.forEach(id2Hosts -> {
-							System.out.println(id2Hosts.getKey());
-							resultData.add(updatedEntityCache.get(id2Hosts.getKey()).getItem1());
+							Tuple2<Map<String, Object>, Set<String>> tpl = updatedEntityCache.get(id2Hosts.getKey());
+							if (tpl != null) {
+								Map<String, Object> itm1 = tpl.getItem1();
+								if (itm1 != null) {
+									resultData.add(itm1);
+								}
+							}
+
 						});
 						if ((join == null || joinLevel < 0) && (qQuery == null || !qQuery.hasLinkedQ())) {
 							if (entityMap.isDistEntities()) {
@@ -468,7 +474,7 @@ public class QueryService {
 			Map<String, String> queryParams = host.getQueryParam();
 			queryParams.put("id", StringUtils.join(entry.getValue(), ','));
 
-			unis.add(EntityTools.getRemoteEntities(host, webClient).onItem()
+			unis.add(EntityTools.getRemoteEntities(host, webClient, context, timeout, ldService).onItem()
 					.transform(entities -> Tuple2.of(entities, host)));
 		}
 		if (!idsForDBCall.isEmpty()) {
@@ -478,12 +484,13 @@ public class QueryService {
 			return Uni.createFrom().item(entityCache);
 		}
 		return Uni.combine().all().unis(unis).combinedWith(l -> {
-			mergeMultipleQueryResults(l, entityCache);
+			mergeMultipleQueryResults(l, entityCache, null);
 			return entityCache;
 		});
 	}
 
-	private Collection<Map<String, Object>> mergeMultipleQueryResults(List l, EntityCache entityCache) {
+	private Collection<Map<String, Object>> mergeMultipleQueryResults(List l, EntityCache entityCache,
+			EntityMap entityMap) {
 		Map<String, Set<String>> entityId2Types = Maps.newHashMap();
 		Map<String, Set<String>> entityId2Scopes = Maps.newHashMap();
 		Map<String, Long> entityId2YoungestModified = Maps.newHashMap();
@@ -498,10 +505,13 @@ public class QueryService {
 			@SuppressWarnings("unchecked")
 			Tuple2<List<Map<String, Object>>, QueryRemoteHost> t = (Tuple2<List<Map<String, Object>>, QueryRemoteHost>) o;
 			List<Map<String, Object>> entities = t.getItem1();
+			QueryRemoteHost remoteHost = t.getItem2();
 			for (Map<String, Object> entity : entities) {
 				id = (String) entity.get(NGSIConstants.JSON_LD_ID);
 				Tuple2<Map<String, Object>, Set<String>> potentialLocalEntity = entityCache.get(id);
-
+				if (entityMap != null) {
+					entityMap.addEntry(id, "generated", remoteHost);
+				}
 				if (potentialLocalEntity == null || potentialLocalEntity.getItem1() == null) {
 					entityCache.putEntity(id, entity, t.getItem2().cSourceId());
 					id2Entity.put(id, entity);
@@ -794,8 +804,8 @@ public class QueryService {
 		if (types2EntityIds.isEmpty()) {
 			return Uni.createFrom().item(entityCache);
 		}
-		return getEntitiesFromUncalledHosts(tenant, types2EntityIds, entityCache, context, qQuery, viaHeaders).onItem()
-				.transformToUni(t -> {
+		return getEntitiesFromUncalledHosts(tenant, types2EntityIds, entityCache, context, qQuery, viaHeaders, context)
+				.onItem().transformToUni(t -> {
 					int nextLevel = currentJoinLevel + 1;
 					if (nextLevel < maxJoinLevel && !t.getItem2().isEmpty()) {
 						return retrieveJoins(tenant, t.getItem2(), entityCache, context, qQuery, nextLevel, joinLevel,
@@ -1770,68 +1780,6 @@ public class QueryService {
 		return Uni.createFrom().voidItem();
 	}
 
-	@SuppressWarnings("unchecked")
-	/**
-	 * 
-	 * @param remoteHost
-	 * @param headersFromReq
-	 * @param context
-	 * @return a Tuple of Object and RemoteHost to fit in the initial entitymap
-	 *         creation algorithm return actually a List<Map<String, Object>> in the
-	 *         Object
-	 */
-	private Uni<Tuple2<Object, QueryRemoteHost>> getFullQueryResult(QueryRemoteHost remoteHost,
-			io.vertx.core.MultiMap headersFromReq, Context context) {
-		String linkHead;
-		if (!remoteHost.headers().contains("Link") && headersFromReq.contains("Link")) {
-			linkHead = headersFromReq.get("Link");
-		} else if (remoteHost.headers().contains("Link")) {
-			linkHead = remoteHost.headers().get("Link");
-		} else {
-			linkHead = "";
-		}
-		// + remoteHost.queryString()
-		// + "&limit=1000"
-		HttpRequest<Buffer> req = webClient.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT);
-		for (Entry<String, String> param : remoteHost.getQueryParam().entrySet()) {
-			req = req.setQueryParam(param.getKey(), (String) param.getValue());
-		}
-		req = req.setQueryParam("limit", "1000");
-		req = req.putHeader(HttpHeaders.VIA, remoteHost.getViaHeaders().getViaHeaders());
-		return req.putHeaders(remoteHost.headers()).putHeader("Link", linkHead).timeout(timeout).send().onItem()
-				.transformToUni(response -> {
-
-					if (response != null && response.statusCode() == 200) {
-						List<?> tmpList = response.bodyAsJsonArray().getList();
-						return ldService.expand(context, tmpList, opts, -1, false).onItem().transformToUni(expanded -> {
-
-							if (response.headers().contains("Next")) {
-//								QueryRemoteHost updatedHost = remoteHost
-//										.updatedDuplicate(response.headers().get("Next"));
-								remoteHost.setParamsFromNext(response.headers().get("Next"));
-								return getFullQueryResult(remoteHost, headersFromReq, context).onItem()
-										.transform(nextResult -> {
-											Object nextEntities = nextResult.getItem1();
-											if (nextEntities != null) {
-												expanded.addAll((List<Object>) nextEntities);
-											}
-
-											return Tuple2.of((Object) expanded, remoteHost);
-										});
-							}
-							return Uni.createFrom().item(Tuple2.of((Object) expanded, remoteHost));
-						});
-					} else {
-						return Uni.createFrom().item(Tuple2.of(null, remoteHost));
-					}
-
-				}).onFailure().recoverWithUni(e -> {
-					logger.warn("Failed to query remote host" + remoteHost.toString());
-
-					return Uni.createFrom().item(Tuple2.of(null, remoteHost));
-				});
-	}
-
 	public Uni<Tuple2<EntityCache, EntityMap>> getAndStoreEntityMap(String tenant, String qToken,
 			List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeQueryAndIdPattern, AttrsQueryTerm attrsQuery,
 			GeoQueryTerm geoQuery, QQueryTerm qQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, int limit,
@@ -1865,95 +1813,107 @@ public class QueryService {
 						.queryForEntityIdsAndEntitiesRegEmpty(tenant, idsAndTypeQueryAndIdPattern, attrsQuery, qQuery,
 								geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel, qToken,
 								pickTerm, omitTerm, queryCechksum, splitEntities, false, false);
-				List<Uni<Tuple2<Object, QueryRemoteHost>>> unis = Lists.newArrayList();
+				List<Uni<Tuple2<QueryRemoteHost, List<Map<String, Object>>>>> unisForEntityRetrieval = Lists
+						.newArrayList();
+				List<Uni<Tuple2<QueryRemoteHost, Map<String, Object>>>> unisForEntityMapRetrieval = Lists
+						.newArrayList();
+
 				for (QueryRemoteHost remoteHost : remoteHost2Query) {
-					String linkHead;
-					if (!remoteHost.headers().contains("Link") && headersFromReq.contains("Link")) {
-						linkHead = headersFromReq.get("Link");
-					} else if (remoteHost.headers().contains("Link")) {
-						linkHead = remoteHost.headers().get("Link");
-					} else {
-						linkHead = "";
-					}
 					if (remoteHost.canDoEntityMap()) {
-						HttpRequest<Buffer> req = webClient
-								.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITY_MAP_ENDPOINT);
-						for (Entry<String, String> param : remoteHost.getQueryParam().entrySet()) {
-							req = req.setQueryParam(param.getKey(), (String) param.getValue());
+						List<Tuple3<String, String, String>> idsAndTypesAndIdPattern = remoteHost
+								.getIdsAndTypesAndIdPattern();
+						if (idsAndTypesAndIdPattern == null) {
+							Tuple3<String, String, String> tmpTpl = Tuple3.of(null, null, null);
+							idsAndTypesAndIdPattern = Lists.newArrayList();
+							idsAndTypesAndIdPattern.add(tmpTpl);
 						}
-						req = req.putHeader(HttpHeaders.VIA, remoteHost.getViaHeaders().getViaHeaders());
-						unis.add(req.putHeaders(remoteHost.headers()).putHeader("Link", linkHead).timeout(timeout)
-								.send().onItem().transformToUni(response -> {
+						for (Tuple3<String, String, String> tpl : idsAndTypesAndIdPattern) {
+							String id = tpl.getItem1();
+							String type = tpl.getItem2();
+							String idPattern = tpl.getItem3();
+							HttpRequest<Buffer> req = webClient
+									.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITY_MAP_ENDPOINT);
+							if (id != null) {
+								req = req.setQueryParam(NGSIConstants.ID, id);
+							}
+							if (type != null) {
+								req = req.setQueryParam(NGSIConstants.TYPE, type);
+							}
+							if (idPattern != null) {
+								req = req.setQueryParam(NGSIConstants.QUERY_PARAMETER_IDPATTERN, idPattern);
+							}
+							for (Entry<String, String> param : remoteHost.getQueryParam().entrySet()) {
+								req = req.setQueryParam(param.getKey(), (String) param.getValue());
+							}
+							req = req.putHeader(HttpHeaders.VIA, remoteHost.getViaHeaders().getViaHeaders());
+							unisForEntityMapRetrieval.add(req.putHeaders(remoteHost.headers()).timeout(timeout).send()
+									.onItem().transform(response -> {
+										Map<String, Object> result;
+										if (response != null && response.statusCode() == 200) {
+											result = response.bodyAsJsonObject().getMap();
 
-									Object result = null;
-									if (response != null && response.statusCode() == 200) {
-										result = response.bodyAsJsonObject().getMap();
-
-									}
-									logger.debug("from remote host: " + remoteHost.host()
-											+ NGSIConstants.NGSI_LD_ENTITY_MAP_ENDPOINT + remoteHost.getQueryParam());
-									return Uni.createFrom().item(Tuple2.of(result, remoteHost));
-								}).onFailure().recoverWithItem(e -> {
-									logger.warn("Failed to query entity list from remote host" + remoteHost.toString());
-									return null;
-								}));
+										} else {
+											result = Maps.newHashMap();
+										}
+										logger.debug("from remote host: " + remoteHost.host()
+												+ NGSIConstants.NGSI_LD_ENTITY_MAP_ENDPOINT
+												+ remoteHost.getQueryParam());
+										return Tuple2.of(remoteHost, result);
+									}).onFailure().recoverWithItem(e -> {
+										logger.warn(
+												"Failed to query entity list from remote host" + remoteHost.toString());
+										return Tuple2.of(remoteHost, new HashMap<String, Object>(0));
+									}));
+						}
 					} else {
-						unis.add(getFullQueryResult(remoteHost, headersFromReq, context));
+						unisForEntityRetrieval
+								.add(EntityTools.getRemoteEntities(remoteHost, webClient, context, timeout, ldService)
+										.onItem().transform(entities -> Tuple2.of(remoteHost, entities)));
 					}
 				}
-				Uni<Tuple2<EntityCache, EntityMap>> remoteResults = Uni.combine().all().unis(unis)
-						.combinedWith(list -> {
-							EntityCache result = new EntityCache();
-							EntityMap entityMap = new EntityMap(null, splitEntities, false, false);
-							for (Object obj : list) {
-								if (obj != null) {
-									Tuple2<Object, QueryRemoteHost> t = (Tuple2<Object, QueryRemoteHost>) obj;
-									Object resultObj = t.getItem1();
-									if (resultObj != null) {
-										QueryRemoteHost host = t.getItem2();
-										if (host.canDoEntityMap()) {
-											Map<String, Object> responseMap = (Map<String, Object>) resultObj;
-											Map<String, Object> entityMapEntry = (Map<String, Object>) responseMap
-													.get(NGSIConstants.NGSI_LD_ENTITY_MAP_SHORT);
-											String id = (String) responseMap.get(NGSIConstants.ID);
+				Uni<List<?>> combinedMaps;
+				Uni<List<?>> combinedRemoteEntities;
+				if (!unisForEntityMapRetrieval.isEmpty()) {
+					combinedMaps = Uni.combine().all().unis(unisForEntityMapRetrieval).combinedWith(l -> l);
+				} else {
+					combinedMaps = Uni.createFrom().nullItem();
+				}
 
-											entityMapEntry.keySet().forEach(
-													entry -> entityMap.addEntry(entry, host.cSourceId(), host));
-											entityMap.addLinkedMap(host.cSourceId(), id);
-										} else {
-											List<Map<String, Object>> responseEntities = (List<Map<String, Object>>) resultObj;
-											responseEntities.forEach(entity -> {
-												String eId = (String) entity.get(NGSIConstants.JSON_LD_ID);
-												result.putEntity(eId, entity, host.cSourceId());
-												entityMap.addEntry(eId, host.cSourceId(), host);
-											});
-											entityMap.addLinkedMap(host.cSourceId(), "generated");
-										}
+				if (!unisForEntityRetrieval.isEmpty()) {
+					combinedRemoteEntities = Uni.combine().all().unis(unisForEntityRetrieval).combinedWith(l -> l);
+				} else {
+					combinedRemoteEntities = Uni.createFrom().nullItem();
+				}
+				return Uni.combine().all().unis(localEntityCacheAndEntityMap, combinedMaps, combinedRemoteEntities)
+						.asTuple().onItem().transformToUni(tpl -> {
+							Tuple2<EntityCache, EntityMap> localTpl = tpl.getItem1();
+							List<?> maps = tpl.getItem2();
+							List<?> remoteEntities = tpl.getItem3();
+							EntityMap entityMap = localTpl.getItem2();
+							EntityCache entityCache = localTpl.getItem1();
+							if (maps != null) {
+
+								for (Object obj : maps) {
+									Tuple2<QueryRemoteHost, Map<String, Object>> mapT = (Tuple2<QueryRemoteHost, Map<String, Object>>) obj;
+									QueryRemoteHost rHost = mapT.getItem1();
+									Map<String, Object> rMap = mapT.getItem2();
+									String cSourceId = rHost.cSourceId();
+									entityMap.addLinkedMap(cSourceId, (String) rMap.get(NGSIConstants.ID));
+									Map<String, List<String>> entityMapEntry = (Map<String, List<String>>) rMap
+											.get(NGSIConstants.ENTITY_MAP_COMPACTED_ENTRY);
+									for (Entry<String, List<String>> mapEntry : entityMapEntry.entrySet()) {
+										entityMap.addEntry(mapEntry.getKey(), cSourceId, rHost);
 									}
 								}
 							}
-							return Tuple2.of(result, entityMap);
-						});
-				entityCacheAndEntityMap = Uni.combine().all().unis(localEntityCacheAndEntityMap, remoteResults)
-						.asTuple().onItem().transform(t -> {
-							Tuple2<EntityCache, EntityMap> localT = t.getItem1();
-							Tuple2<EntityCache, EntityMap> remoteT = t.getItem2();
-							mergeLocalAndRemoteCacheAndMap(localT, remoteT);
-							return localT;
+							if (remoteEntities != null) {
+								mergeMultipleQueryResults(remoteEntities, entityCache, entityMap);
+							}
+							return queryDAO.storeEntityMap(tenant, qToken, entityMap).onItem().transform(v -> localTpl);
 						});
 			}
-
 		}
-		return entityCacheAndEntityMap.onItem().transform(tuple -> {
-			EntityMap entityMap = tuple.getItem2();
-			if (!doNotCompact) {
-				queryDAO.storeEntityMap(tenant, qToken, entityMap).subscribe().with(t -> {
-					logger.debug("Stored entity map " + qToken);
-				});
-			}
 
-			return tuple;
-		});
 	}
 
 	private void mergeLocalAndRemoteCacheAndMap(Tuple2<EntityCache, EntityMap> localT,
@@ -1973,95 +1933,6 @@ public class QueryService {
 
 		});
 	}
-
-//	private Uni<Tuple2<QueryRemoteHost, Map<String, Map<String, Object>>>> handle414IdQuery(int baseLength,
-//			QueryRemoteHost remoteHost, String linkHead, boolean entityMap) {
-//		int start = remoteHost.queryString().indexOf("id=");
-//		if (start == -1) {
-//			logger.warn("failed to split up query");
-//			return Uni.createFrom().item(Tuple2.of(remoteHost, Maps.newHashMap()));
-//		}
-//		int end = remoteHost.queryString().indexOf("&", start);
-//		String idsString;
-//		if (end == -1) {
-//			idsString = remoteHost.queryString().substring(start + 3);
-//		} else {
-//			idsString = remoteHost.queryString().substring(start + 3, end);
-//		}
-//		// assuming 2000kb for this ... since ... internet explorer set this as a
-//		// minimum
-//		int maxLengthForIds = 2000 - (baseLength + (remoteHost.queryString().length() - (idsString.length() + 4)));
-//		if (maxLengthForIds <= idsString.indexOf(",")) {
-//			logger.warn("failed to split up query");
-//			return Uni.createFrom().item(Tuple2.of(remoteHost, Maps.newHashMap()));
-//		}
-//		int index;
-//		List<Uni<Tuple2<QueryRemoteHost, Map<String, Map<String, Object>>>>> backUpUnis = Lists.newArrayList();
-//		String baseQueryString;
-//		if (end == -1) {
-//			baseQueryString = remoteHost.queryString().substring(0, start + 1);
-//		} else {
-//			baseQueryString = remoteHost.queryString().substring(0, start + 1)
-//					+ remoteHost.queryString().substring(end);
-//		}
-//		if (baseQueryString.isEmpty()) {
-//			baseQueryString = "?";
-//		} else {
-//			baseQueryString += "&";
-//		}
-//		while (!idsString.isEmpty()) {
-//
-//			index = idsString.lastIndexOf(",", maxLengthForIds);
-//			String toUseIds = idsString.substring(0, index);
-//			backUpUnis.add(webClient
-//					.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + baseQueryString + "id="
-//							+ toUseIds + "&limit=1000")
-//					.putHeaders(remoteHost.headers()).putHeader("Link", linkHead).timeout(timeout).send().onItem()
-//					.transformToUni(backupResponse -> {
-//						Map<String, Map<String, Object>> backupResult = Maps.newHashMap();
-//						if (backupResponse != null && backupResponse.statusCode() == 200) {
-//							List tmpList = backupResponse.bodyAsJsonArray().getList();
-//							for (Object obj : tmpList) {
-//								Map<String, Object> entity = (Map<String, Object>) obj;
-//								backupResult.put((String) entity.get(NGSIConstants.ID), entity);
-//							}
-//							logger.debug("retrieved entity list: " + backupResult.toString());
-//						}
-//						return Uni.createFrom().item(Tuple2.of(remoteHost, backupResult));
-//					}).onFailure().recoverWithItem(e1 -> null));
-//			idsString = idsString.substring(index + 1);
-//			if (idsString.length() <= maxLengthForIds) {
-//				backUpUnis.add(webClient
-//						.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + baseQueryString + "id="
-//								+ idsString + "&limit=1000")
-//						.putHeaders(remoteHost.headers()).putHeader("Link", linkHead).timeout(timeout).send().onItem()
-//						.transformToUni(backupResponse -> {
-//							Map<String, Map<String, Object>> backupResult = Maps.newHashMap();
-//							if (backupResponse != null && backupResponse.statusCode() == 200) {
-//								List tmpList = backupResponse.bodyAsJsonArray().getList();
-//								for (Object obj : tmpList) {
-//									Map<String, Object> entity = (Map<String, Object>) obj;
-//									backupResult.put((String) entity.get(NGSIConstants.ID), entity);
-//								}
-//								logger.debug("retrieved entity list: " + backupResult.toString());
-//							}
-//							return Uni.createFrom().item(Tuple2.of(remoteHost, backupResult));
-//						}).onFailure().recoverWithItem(e1 -> null));
-//				idsString = "";
-//			}
-//		}
-//		return Uni.combine().all().unis(backUpUnis).combinedWith(l1 -> {
-//			Map<String, Map<String, Object>> allIds = Maps.newHashMap();
-//			QueryRemoteHost qrh = null;
-//			for (Object obj1 : l1) {
-//				Tuple2<QueryRemoteHost, Map<String, Map<String, Object>>> t1 = (Tuple2<QueryRemoteHost, Map<String, Map<String, Object>>>) obj1;
-//				qrh = t1.getItem1();
-//				allIds.putAll(t1.getItem2());
-//			}
-//			return Tuple2.of(qrh, allIds);
-//		});
-//
-//	}
 
 	@Scheduled(every = "${scorpio.entitymap.cleanup.schedule}", delayed = "${scorpio.startupdelay}")
 	public Uni<Void> scheduleEntityMapCleanUp() {
@@ -2083,7 +1954,7 @@ public class QueryService {
 
 	public Uni<Tuple2<EntityCache, Collection<Map<String, Object>>>> getEntitiesFromUncalledHosts(String tenant,
 			Map<Set<String>, Set<String>> types2EntityIds, EntityCache fullEntityCache, Context linkHeaders,
-			QQueryTerm linkedQ, ViaHeaders viaHeaders) {
+			QQueryTerm linkedQ, ViaHeaders viaHeaders, Context context) {
 		TypeQueryTerm typeQueryTerm = new TypeQueryTerm(linkHeaders);
 		TypeQueryTerm currentTypeQuery = typeQueryTerm;
 		Map<Set<String>, Set<String>> types2EntityIdsForDB = Maps.newHashMap();
@@ -2136,7 +2007,7 @@ public class QueryService {
 					null, null, tenant2CId2RegEntries.row(tenant).values(), linkHeaders, fullEntityCache, viaHeaders);
 			for (QueryRemoteHost remoteQuery : remoteQueries) {
 
-				unis.add(EntityTools.getRemoteEntities(remoteQuery, webClient).onItem()
+				unis.add(EntityTools.getRemoteEntities(remoteQuery, webClient, context, timeout, ldService).onItem()
 						.transform(l -> Tuple3.of(l, remoteQuery)));
 			}
 
@@ -2149,7 +2020,7 @@ public class QueryService {
 			return Uni.createFrom().item(Tuple2.of(fullEntityCache, Lists.newArrayList()));
 		}
 		return Uni.combine().all().unis(unis).combinedWith(l -> {
-			Collection<Map<String, Object>> result = mergeMultipleQueryResults(l, fullEntityCache);
+			Collection<Map<String, Object>> result = mergeMultipleQueryResults(l, fullEntityCache, null);
 			return Tuple2.of(fullEntityCache, result);
 		});
 	}
