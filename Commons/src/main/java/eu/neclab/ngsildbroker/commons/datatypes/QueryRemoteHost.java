@@ -52,6 +52,15 @@ public class QueryRemoteHost {
 		this.viaHeaders = viaHeaders;
 	}
 
+	public QueryRemoteHost copyFor414Handle(String id, String type, String idPattern) {
+		Tuple3<String, String, String> tmpTuple = Tuple3.of(id, type, idPattern);
+		List<Tuple3<String, String, String>> idAndTypesAndIdPatternEntry = new ArrayList<>(1);
+		idAndTypesAndIdPatternEntry.add(tmpTuple);
+		return new QueryRemoteHost(host, tenant, headers, cSourceId, canDoQuery, canDoBatchQuery, canDoRetrieve,
+				regMode, idAndTypesAndIdPatternEntry, queryParams, canDoEntityMap, canDoZip, entityMapToken,
+				viaHeaders);
+	}
+
 	public String host() {
 		return host;
 	}

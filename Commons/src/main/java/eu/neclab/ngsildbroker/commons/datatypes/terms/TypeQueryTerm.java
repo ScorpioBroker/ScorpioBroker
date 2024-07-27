@@ -472,8 +472,9 @@ public class TypeQueryTerm implements Serializable {
 			tuple.addString(type);
 		}
 		queryToStoreWherePart.setLength(queryToStoreWherePart.length() - 8);
-		queryToStoreWherePart.append("]");
+		queryToStoreWherePart.append("]::text[]");
 		result.setCharAt(result.length() - 1, ']');
+		result.append("::text[]");
 		return dollar;
 	}
 	public int toSql(StringBuilder result, Tuple tuple, int dollar) {

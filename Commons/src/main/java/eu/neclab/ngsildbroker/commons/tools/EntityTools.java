@@ -57,7 +57,11 @@ import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
 import io.vertx.mutiny.ext.web.client.WebClient;
 
-public abstract class EntityTools {
+public final class EntityTools {
+
+	private EntityTools() {
+
+	}
 
 	private static final String BROKER_PREFIX = "ngsildbroker:";
 
@@ -587,8 +591,48 @@ public abstract class EntityTools {
 		}
 	}
 
-	private static Uni<List<Map<String, Object>>> handle414(WebClient webClient, QueryRemoteHost remoteHost) {
-		return null;
+	private static Uni<List<Map<String, Object>>> handle414(WebClient webClient, QueryRemoteHost remoteHost,
+			Context context, int timeout, JsonLDService ldService, String id, String type, String idPattern) {
+		logger.debug("Attempting 414 recovery");
+		if (id == null) {
+			logger.debug("Can't recover 414 because no id has been used");
+			return Uni.createFrom().item(Lists.newArrayList());
+		}
+		int idMiddle = (int) (id.length() / 2);
+		String newHalfIdOne;
+		String newHalfIdTwo;
+		if (id.charAt(idMiddle) == ',') {
+			newHalfIdOne = id.substring(0, idMiddle);
+			newHalfIdTwo = id.substring(idMiddle + 1, id.length());
+		} else {
+			int idx = id.substring(0, idMiddle).lastIndexOf(',');
+			if (idx == -1) {
+				logger.debug("Can't recover 414 because no multiple ids has been used");
+				return Uni.createFrom().item(Lists.newArrayList());
+			}
+			newHalfIdOne = id.substring(0, idx);
+			newHalfIdTwo = id.substring(idx + 1, id.length());
+		}
+		
+		logger.debug(newHalfIdOne);
+		logger.debug(newHalfIdTwo);
+		QueryRemoteHost hostOne = remoteHost.copyFor414Handle(newHalfIdOne, type, idPattern);
+		QueryRemoteHost hostTwo = remoteHost.copyFor414Handle(newHalfIdTwo, type, idPattern);
+
+		return Uni.combine().all()
+				.unis(getRemoteEntities(hostOne, webClient, context, timeout, ldService),
+						getRemoteEntities(hostTwo, webClient, context, timeout, ldService))
+				.asTuple().onItem().transform(tpl -> {
+					List<Map<String, Object>> result = tpl.getItem1();
+					result.addAll(tpl.getItem2());
+					return result;
+				});
+	}
+
+	public static void main(String[] args) {
+		String bla = "01234,567890";
+		System.out.println(bla.substring(0, bla.indexOf(',')));
+		System.out.println(bla.substring(bla.indexOf(','), bla.length()));
 	}
 
 	public static Uni<List<Map<String, Object>>> getRemoteEntities(QueryRemoteHost remoteHost, WebClient webClient,
@@ -646,9 +690,11 @@ public abstract class EntityTools {
 								});
 					}
 					case 414: {
-						return handle414(webClient, remoteHost).onItem().transformToUni(entities -> {
-							return ldService.expand(context, entities, AppConstants.opts, -1, false);
-						});
+						return handle414(webClient, remoteHost, context, timeout, ldService, id, type, idPattern)
+								.onItem().transformToUni(entities -> {
+									logger.debug("414 recovered");
+									return ldService.expand(context, entities, AppConstants.opts, -1, false);
+								});
 					}
 					default: {
 
@@ -661,7 +707,7 @@ public abstract class EntityTools {
 				}
 
 			}).onFailure().recoverWithUni(e -> {
-				logger.warn("Failed to query remote host" + remoteHost.toString());
+				logger.warn("Failed to query remote host" + remoteHost.toString(), e);
 
 				return Uni.createFrom().item(Lists.newArrayList());
 			}));

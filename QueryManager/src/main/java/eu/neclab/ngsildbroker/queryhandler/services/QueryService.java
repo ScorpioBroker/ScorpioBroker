@@ -1813,9 +1813,9 @@ public class QueryService {
 						.queryForEntityIdsAndEntitiesRegEmpty(tenant, idsAndTypeQueryAndIdPattern, attrsQuery, qQuery,
 								geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel, qToken,
 								pickTerm, omitTerm, queryCechksum, splitEntities, false, false);
-				List<Uni<Tuple2<QueryRemoteHost, List<Map<String, Object>>>>> unisForEntityRetrieval = Lists
+				List<Uni<Tuple2<List<Map<String, Object>>, QueryRemoteHost>>> unisForEntityRetrieval = Lists
 						.newArrayList();
-				List<Uni<Tuple2<QueryRemoteHost, Map<String, Object>>>> unisForEntityMapRetrieval = Lists
+				List<Uni<Tuple2<Map<String, Object>, QueryRemoteHost>>> unisForEntityMapRetrieval = Lists
 						.newArrayList();
 
 				for (QueryRemoteHost remoteHost : remoteHost2Query) {
@@ -1858,17 +1858,17 @@ public class QueryService {
 										logger.debug("from remote host: " + remoteHost.host()
 												+ NGSIConstants.NGSI_LD_ENTITY_MAP_ENDPOINT
 												+ remoteHost.getQueryParam());
-										return Tuple2.of(remoteHost, result);
+										return Tuple2.of(result, remoteHost);
 									}).onFailure().recoverWithItem(e -> {
 										logger.warn(
 												"Failed to query entity list from remote host" + remoteHost.toString());
-										return Tuple2.of(remoteHost, new HashMap<String, Object>(0));
+										return Tuple2.of(new HashMap<String, Object>(0), remoteHost);
 									}));
 						}
 					} else {
 						unisForEntityRetrieval
 								.add(EntityTools.getRemoteEntities(remoteHost, webClient, context, timeout, ldService)
-										.onItem().transform(entities -> Tuple2.of(remoteHost, entities)));
+										.onItem().transform(entities -> Tuple2.of(entities, remoteHost)));
 					}
 				}
 				Uni<List<?>> combinedMaps;
@@ -1894,9 +1894,9 @@ public class QueryService {
 							if (maps != null) {
 
 								for (Object obj : maps) {
-									Tuple2<QueryRemoteHost, Map<String, Object>> mapT = (Tuple2<QueryRemoteHost, Map<String, Object>>) obj;
-									QueryRemoteHost rHost = mapT.getItem1();
-									Map<String, Object> rMap = mapT.getItem2();
+									Tuple2<Map<String, Object>, QueryRemoteHost> mapT = (Tuple2<Map<String, Object>, QueryRemoteHost>) obj;
+									QueryRemoteHost rHost = mapT.getItem2();
+									Map<String, Object> rMap = mapT.getItem1();
 									String cSourceId = rHost.cSourceId();
 									entityMap.addLinkedMap(cSourceId, (String) rMap.get(NGSIConstants.ID));
 									Map<String, List<String>> entityMapEntry = (Map<String, List<String>>) rMap
@@ -1914,24 +1914,6 @@ public class QueryService {
 			}
 		}
 
-	}
-
-	private void mergeLocalAndRemoteCacheAndMap(Tuple2<EntityCache, EntityMap> localT,
-			Tuple2<EntityCache, EntityMap> remoteT) {
-
-		EntityCache localCache = localT.getItem1();
-		EntityCache remoteCache = remoteT.getItem1();
-		// TODO merge cache
-		EntityMap remoteMap = remoteT.getItem2();
-		EntityMap localMap = localT.getItem2();
-		remoteMap.getEntityId2CSourceIds().entrySet().forEach(entry -> {
-			String entityId = entry.getKey();
-			Set<String> cSourceIds = entry.getValue();
-			cSourceIds.forEach(cSourceId -> {
-				localMap.addEntry(entityId, cSourceId, remoteMap.getRemoteHost(cSourceId));
-			});
-
-		});
 	}
 
 	@Scheduled(every = "${scorpio.entitymap.cleanup.schedule}", delayed = "${scorpio.startupdelay}")

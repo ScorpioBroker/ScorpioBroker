@@ -52,7 +52,10 @@ public class EntityCache {
 			value = Tuple2.of(entity, Sets.newHashSet(csourceId));
 			allIds2EntityAndHosts.put(entityId, value);
 		} else {
-			value.getItem2().add(csourceId);
+			Set<String> cSourceIds = value.getItem2();
+			cSourceIds.add(csourceId);
+			allIds2EntityAndHosts.put(entityId, Tuple2.of(entity, cSourceIds));
+			
 		}
 
 	}

@@ -114,7 +114,7 @@ public class QueryController {
 			@QueryParam("joinLevel") @DefaultValue("0") int joinLevel, @QueryParam("pick") String pick,
 			@QueryParam("omit") String omit, @QueryParam("format") String format,
 			@QueryParam("entityMap") boolean entityMap, @QueryParam("datasetId") String datasetId,
-			@QueryParam("splitEntities") @DefaultValue("false") boolean distEntities,
+			@QueryParam("splitEntities") @DefaultValue("true") boolean distEntities,
 			@HeaderParam("NGSILD-EntityMap") String entityMapToken) {
 		return queryForQueryResult(request, entityId, null, null, attrs, null, null, null, null, null, null,
 				geometryProperty, lang, null, localOnly, options, 1, 0, false, containedBy, join, joinLevel,
@@ -160,7 +160,7 @@ public class QueryController {
 			@QueryParam("minDistance") String minDistance, @QueryParam("pick") String pick,
 			@QueryParam("omit") String omit, @QueryParam("format") String format,
 			@QueryParam("jsonKeys") String jsonKeysQP, @QueryParam("datasetId") String datasetId,
-			@QueryParam("splitEntities") @DefaultValue("false") boolean distEntities) {
+			@QueryParam("splitEntities") @DefaultValue("true") boolean distEntities) {
 		return queryForQueryResult(request, id, typeQuery, idPattern, attrs, qInput, csf, geometry, georelInput,
 				coordinates, geoproperty, geometryProperty, lang, scopeQ, localOnly, options, limit, offset, count,
 				containedBy, join, joinLevel, doNotCompact, entityMapToken, entityMapRetrieve, maxDistance, minDistance,
@@ -458,13 +458,7 @@ public class QueryController {
 		if (format != null && !format.isEmpty()) {
 			options += "," + format;
 		}
-		if (id != null) {
-			try {
-				HttpUtils.validateUri(id);
-			} catch (Exception e) {
-				return Uni.createFrom().failure(e);
-			}
-		}
+
 		if (qInput != null) {
 			String uri = URLDecoder.decode(request.absoluteURI(), StandardCharsets.UTF_8);
 			uri = uri.substring(uri.indexOf("q=") + 2);
@@ -549,7 +543,33 @@ public class QueryController {
 			}
 			String[] ids;
 			if (id != null) {
-				ids = id.split(",");
+				List<String> tmpIds = Lists.newArrayList();
+				int lastIdx = 0;
+				int currentIdx = 0;
+				String tmpId;
+				while (true) {
+					currentIdx = id.indexOf(',', lastIdx + 1);
+					if (currentIdx == -1) {
+						tmpId = id.substring(lastIdx);
+						try {
+							HttpUtils.validateUri(tmpId);
+						} catch (Exception e) {
+							return Uni.createFrom().failure(e);
+						}
+						tmpIds.add(tmpId);
+						break;
+					}
+					tmpId = id.substring(lastIdx, currentIdx);
+					try {
+						HttpUtils.validateUri(tmpId);
+					} catch (Exception e) {
+						return Uni.createFrom().failure(e);
+					}
+					tmpIds.add(tmpId);
+					lastIdx = currentIdx + 1;
+				}
+
+				ids = tmpIds.toArray(new String[0]);
 			} else {
 				ids = null;
 			}
