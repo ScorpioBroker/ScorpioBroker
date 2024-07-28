@@ -52,6 +52,8 @@ public class EntityMap {
 
 	private String id;
 
+	private long expiresAt;
+
 	public EntityMap(String id, boolean distEntities, boolean regEmptyOrNoRegEntryAndNoLinkedQuery,
 			boolean noRootLevelRegEntryAndLinkedQuery) {
 		this.id = id;
@@ -282,6 +284,14 @@ public class EntityMap {
 
 	public void setFinalSelectPart(String finalSelectPart) {
 		this.finalSelectPart = finalSelectPart;
+	}
+
+	public long getExpiresAt() {
+		return expiresAt;
+	}
+	
+	public void getExpiresAt(long expiresAt) {
+		this.expiresAt = expiresAt;
 	}
 
 }

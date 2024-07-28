@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -16,9 +17,11 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.DataSetIdTerm;
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
+import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.HeaderParam;
+import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
@@ -437,6 +440,31 @@ public class QueryController {
 			@PathParam("entityMapId") String entityMapId) {
 		return queryService.getEntityMap(HttpUtils.getTenant(request), entityMapId).onItem()
 				.transform(entityMap -> HttpUtils.generateEntityMapResult(entityMap));
+
+	}
+
+	@Path("/entityMap/{entityMapId}")
+	@DELETE
+	public Uni<RestResponse<Object>> deleteEntityMap(HttpServerRequest request,
+			@PathParam("entityMapId") String entityMapId) {
+		return queryService.deleteEntityMap(HttpUtils.getTenant(request), entityMapId).onItem()
+				.transform(v -> RestResponse.status(204));
+
+	}
+
+	@Path("/entityMap/{entityMapId}")
+	@PATCH
+	public Uni<RestResponse<Object>> updateEntityMap(HttpServerRequest request, String bodyStr,
+			@PathParam("entityMapId") String entityMapId) {
+
+		return JsonUtils.fromString(bodyStr).onItem().transformToUni(obj -> {
+			Map<String, Object> body = (Map<String, Object>) obj;
+			long expiresAt = (long) body.get(NGSIConstants.EXPIRES_AT);
+
+			return queryService.updateEntityMap(HttpUtils.getTenant(request), entityMapId, expiresAt).onItem()
+					.transform(v -> RestResponse.status(204));
+
+		});
 
 	}
 

@@ -289,7 +289,7 @@ public final class HttpUtils {
 		}
 		builder.append("offset=" + offset);
 		builder.append("&limit=" + limit);
-		//builder.append("&entityMap=" + token);
+		// builder.append("&entityMap=" + token);
 		builder.append(">;rel=\"" + rel + "\"");
 		return builder.toString();
 	}
@@ -1154,13 +1154,31 @@ public final class HttpUtils {
 	}
 
 	public static RestResponse<Object> generateEntityMapResult(Map<String, Object> entityMap) {
-		// TODO Auto-generated method stub
-		return null;
+		Map<String, Object> result = Maps.newHashMap();
+		Map<String, List<String>> entityMapEntry = Maps.newLinkedHashMap();
+		List<Map<String, List<String>>> dbEntityMap = (List<Map<String, List<String>>>) entityMap
+				.get(NGSIConstants.ENTITY_MAP_COMPACTED_ENTRY);
+		dbEntityMap.forEach(entry -> {
+			entry.entrySet().forEach(id2Cid -> {
+				entityMapEntry.put(id2Cid.getKey(), id2Cid.getValue());
+			});
+		});
+		result.put(NGSIConstants.ENTITY_MAP_COMPACTED_ENTRY, entityMapEntry);
+		if (entityMap.containsKey(NGSIConstants.LINKED_MAP_COMPACTED_ENTRY)) {
+			result.put(NGSIConstants.LINKED_MAP_COMPACTED_ENTRY,
+					entityMap.get(NGSIConstants.LINKED_MAP_COMPACTED_ENTRY));
+		}
+		
+		result.put(NGSIConstants.EXPIRES_AT, entityMap.get(NGSIConstants.EXPIRES_AT));
+		return RestResponse.ok(result, MediaType.APPLICATION_JSON);
 	}
 
-	public static RestResponse<Object> generateEntityMapResult(EntityMap item2) {
-		// TODO Auto-generated method stub
-		return null;
+	public static RestResponse<Object> generateEntityMapResult(EntityMap entityMap) {
+		Map<String, Object> result = Maps.newHashMap();
+		result.put(NGSIConstants.ENTITY_MAP_COMPACTED_ENTRY, entityMap.getEntityId2CSourceIds());
+		result.put(NGSIConstants.LINKED_MAP_COMPACTED_ENTRY, entityMap.getLinkedMaps());
+		result.put(NGSIConstants.EXPIRES_AT, entityMap.getExpiresAt());
+		return RestResponse.ok(result, MediaType.APPLICATION_JSON);
 	}
 
 }

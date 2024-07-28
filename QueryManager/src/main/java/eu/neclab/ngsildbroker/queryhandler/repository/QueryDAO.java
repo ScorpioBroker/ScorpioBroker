@@ -986,14 +986,16 @@ public class QueryDAO {
 	public Uni<Map<String, Object>> getEntityMap(String tenant, String qToken) {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
 
-			String sql = "SELECT entity_map from entitymap WHERE id=$1";
+			String sql = "SELECT entity_map, expires_at from entitymap WHERE id=$1";
 			return client.preparedQuery(sql).execute(Tuple.of(qToken)).onItem().transformToUni(rows -> {
 				if (rows.rowCount() == 0) {
 					return Uni.createFrom()
 							.failure(new ResponseException(ErrorType.InvalidRequest, "EntityMapId is invalid."));
 				}
 				Row first = rows.iterator().next();
-				return Uni.createFrom().item(first.getJsonObject(0).getMap());
+				Map<String, Object> tmp = first.getJsonObject(0).getMap();
+				tmp.put(NGSIConstants.EXPIRES_AT, first.getLong(1));
+				return Uni.createFrom().item(tmp);
 			});
 		});
 
@@ -1255,7 +1257,8 @@ public class QueryDAO {
 						queryToStoreWherePart.append(" AND ");
 					}
 					queryParams.setDataSetIdTerm(dataSetIdTerm);
-					dollar = dataSetIdTerm.toSql(query, queryToStoreWherePart, tuple, dollar, pickTerm, omitTerm, attrsQuery);
+					dollar = dataSetIdTerm.toSql(query, queryToStoreWherePart, tuple, dollar, pickTerm, omitTerm,
+							attrsQuery);
 					sqlAdded = true;
 				}
 			}
@@ -1411,12 +1414,13 @@ public class QueryDAO {
 			entityObj = row.getJsonObject(1);
 			parent = row.getBoolean(2);
 			String[] types = row.getArrayOfStrings(3);
-			
+
 			if (entityObj != null) {
 				Map<String, Object> entity = entityObj.getMap();
 				resultEntities.setEntityIntoEntityCache(id, entity, NGSIConstants.JSON_LD_NONE);
 			}
 		}
+		resultEntityMap.getExpiresAt(System.currentTimeMillis() + 300000);
 		return Tuple2.of(resultEntities, resultEntityMap);
 	}
 
@@ -1453,8 +1457,7 @@ public class QueryDAO {
 			query.append(NGSIConstants.JSON_LD_ID);
 			query.append("}' ELSE NULL END) AS LINK, ARRAY_AGG(E_TYPES ->> '");
 			query.append(NGSIConstants.JSON_LD_ID);
-			query.append(
-					"') AS ET FROM B");
+			query.append("') AS ET FROM B");
 			query.append(counter + 1);
 			query.append(", JSONB_ARRAY_ELEMENTS(B");
 			query.append(counter + 1);
@@ -1524,8 +1527,7 @@ public class QueryDAO {
 			followUp.append(NGSIConstants.JSON_LD_ID);
 			followUp.append("}'' ELSE NULL END) AS LINK, ARRAY_AGG(E_TYPES ->> ''");
 			followUp.append(NGSIConstants.JSON_LD_ID);
-			followUp.append(
-					"'') AS ET FROM B");
+			followUp.append("'') AS ET FROM B");
 			followUp.append(counter + 1);
 			followUp.append(", JSONB_ARRAY_ELEMENTS(B");
 			followUp.append(counter + 1);
@@ -1597,6 +1599,30 @@ public class QueryDAO {
 							resultEntities.add(entity);
 						});
 						return Tuple2.of(resultEntities, AppConstants.DB_REMOTE_HOST);
+					});
+		});
+	}
+
+	public Uni<Void> deleteEntityMap(String tenant, String entityMapId) {
+		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
+			return client.preparedQuery("DELETE FROM ENTITYMAP WHERE id=$1 RETURNING id").execute(Tuple.of(entityMapId))
+					.onItem().transformToUni(rows -> {
+						if (rows.rowCount() == 0) {
+							return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
+						}
+						return Uni.createFrom().voidItem();
+					});
+		});
+	}
+
+	public Uni<Void> updateEntityMap(String tenant, String entityMapId, long expiresAt) {
+		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
+			return client.preparedQuery("UPDATE ENTITYMAP SET EXPIRES_AT=$1 WHERE id=$2 RETURNING id")
+					.execute(Tuple.of(expiresAt, entityMapId)).onItem().transformToUni(rows -> {
+						if (rows.rowCount() == 0) {
+							return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
+						}
+						return Uni.createFrom().voidItem();
 					});
 		});
 	}

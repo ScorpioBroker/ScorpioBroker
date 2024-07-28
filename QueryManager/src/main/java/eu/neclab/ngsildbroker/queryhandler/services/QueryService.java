@@ -14,6 +14,7 @@ import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.resteasy.reactive.RestResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -2028,5 +2029,14 @@ public class QueryService {
 			Collection<Map<String, Object>> result = mergeMultipleQueryResults(l, fullEntityCache, null);
 			return Tuple2.of(fullEntityCache, result);
 		});
+	}
+
+	public Uni<Void> deleteEntityMap(String tenant, String entityMapId) {
+		
+		return queryDAO.deleteEntityMap(tenant, entityMapId);
+	}
+
+	public Uni<Void> updateEntityMap(String tenant, String entityMapId, long expiresAt) {
+		return queryDAO.updateEntityMap(tenant, entityMapId, expiresAt);
 	}
 }
