@@ -341,7 +341,7 @@ public class QueryService {
 
 						});
 						if ((join == null || joinLevel < 0) && (qQuery == null || !qQuery.hasLinkedQ())) {
-							if (entityMap.isDistEntities()) {
+							if (!entityMap.isDistEntities()) {
 								return Uni.createFrom().item(result);
 							} else {
 								Map<String, Map<String, Object>> deleted = EntityTools.evaluateFilterQueries(result,

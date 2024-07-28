@@ -983,7 +983,7 @@ public final class EntityTools {
 			boolean omitResult = (omitTerm != null
 					&& !omitTerm.calculateEntity(entity, flatJoin, flatEntities, pickForFlat));
 			boolean datasetIdResult = (dataSetIdTerm != null && !dataSetIdTerm.calculateEntity(entity));
-			if (qResult && scopeResult && geoQResult && attrsResult && pickResult && omitResult && datasetIdResult) {
+			if (qResult || scopeResult || geoQResult || attrsResult || pickResult || omitResult || datasetIdResult) {
 				it.remove();
 				deleted.put((String) entity.get(NGSIConstants.JSON_LD_ID), entity);
 				continue;
