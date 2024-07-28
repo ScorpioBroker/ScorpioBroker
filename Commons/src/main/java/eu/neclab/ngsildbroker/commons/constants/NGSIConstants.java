@@ -374,7 +374,7 @@ public interface NGSIConstants {
 	public static final String ENDPOINT_BATCH_UPSERT = "/ngsi-ld/v1/entityOperations/upsert";
 	public static final String ENDPOINT_BATCH_DELETE = "/ngsi-ld/v1/entityOperations/delete";
 	public static final String ENDPOINT_BATCH_UPDATE = "/ngsi-ld/v1/entityOperations/update";
-
+	public static final String ENDPOINT_BATCH_QUERY = "/ngsi-ld/v1/entityOperations/query";
 	public static final String ENDPOINT_BATCH_MERGE = "/ngsi-ld/v1/entityOperations/merge";
 	public static final String NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT = "/ngsi-ld/v1/temporal/entities";
 	public static final String ENDPOINT_TEMPORAL_BATCH_DELETE = "/ngsi-ld/v1/temporal/entityOperations/delete";
@@ -473,7 +473,11 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_REG_OPERATION_RETRIEVESUBSCRIPTION = "retrieveSubscription";
 	public static final String NGSI_LD_REG_OPERATION_QUERYSUBSCRIPTION = "querySubscription";
 	public static final String NGSI_LD_REG_OPERATION_DELETESUBSCRIPTION = "deleteSubscription";
-	public static final String NGSI_LD_REG_OPERATION_ENTITYMAP = "entityMapQuery";
+	public static final String NGSI_LD_REG_OPERATION_QUERY_ENTITYMAP = "queryEntityMap";
+	public static final String NGSI_LD_REG_OPERATION_CREATE_ENTITYMAP = "createEntityMap";
+	public static final String NGSI_LD_REG_OPERATION_UPDATE_ENTITYMAP = "updateEntityMap";
+	public static final String NGSI_LD_REG_OPERATION_DELETE_ENTITYMAP = "deleteEntityMap";
+	public static final String NGSI_LD_REG_OPERATION_RETRIEVE_ENTITYMAP = "retrieveEntityMap";
 	public static final String NGSI_LD_REG_OPERATION_CANCOMPRESS = "canCompress";
 	public static final String ENTITY_MAP_TOKEN_HEADER = "NGSILD-EntityMap";
 

@@ -408,7 +408,7 @@ public class HistoryEntityService {
 						|| (regEntry.eIdp() != null && request.getId().matches(regEntry.eIdp()))) {
 					result.add(new RemoteHost(regEntry.host().host(), regEntry.host().tenant(),
 							regEntry.host().headers(), regEntry.host().cSourceId(), true, false, regEntry.regMode(),
-							regEntry.canDoZip(), regEntry.canDoIdQuery()));
+							false, regEntry.queryEntityMap()));
 				}
 			}
 		}
@@ -428,7 +428,7 @@ public class HistoryEntityService {
 								&& (regEntry.eProp() == null || regEntry.eProp().equals(request.getAttribName()))) {
 					result.add(new RemoteHost(regEntry.host().host(), regEntry.host().tenant(),
 							regEntry.host().headers(), regEntry.host().cSourceId(), true, false, regEntry.regMode(),
-							regEntry.canDoZip(), regEntry.canDoIdQuery()));
+							false, regEntry.queryEntityMap()));
 				}
 			}
 		}
@@ -448,7 +448,7 @@ public class HistoryEntityService {
 								&& (regEntry.eProp() == null || regEntry.eProp().equals(request.getAttribName()))) {
 					result.add(new RemoteHost(regEntry.host().host(), regEntry.host().tenant(),
 							regEntry.host().headers(), regEntry.host().cSourceId(), true, false, regEntry.regMode(),
-							regEntry.canDoZip(), regEntry.canDoIdQuery()));
+							false, regEntry.queryEntityMap()));
 				}
 			}
 		}
@@ -605,32 +605,32 @@ public class HistoryEntityService {
 							case AppConstants.CREATE_TEMPORAL_REQUEST:
 								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
 										regHost.cSourceId(), regEntry.upsertTemporal(), false, regEntry.regMode(),
-										regEntry.canDoZip(), regEntry.canDoIdQuery());
+										false, regEntry.queryEntityMap());
 								break;
 							case AppConstants.APPEND_TEMPORAL_REQUEST:
 								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
 										regHost.cSourceId(), regEntry.appendAttrsTemporal(), false, regEntry.regMode(),
-										regEntry.canDoZip(), regEntry.canDoIdQuery());
+										false, regEntry.queryEntityMap());
 								break;
 							case AppConstants.UPDATE_TEMPORAL_INSTANCE_REQUEST:
 								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
 										regHost.cSourceId(), regEntry.updateAttrsTemporal(), false, regEntry.regMode(),
-										regEntry.canDoZip(), regEntry.canDoIdQuery());
+										false, regEntry.queryEntityMap());
 								break;
 							case AppConstants.DELETE_TEMPORAL_REQUEST:
 								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
 										regHost.cSourceId(), regEntry.deleteTemporal(), false, regEntry.regMode(),
-										regEntry.canDoZip(), regEntry.canDoIdQuery());
+										false, regEntry.queryEntityMap());
 								break;
 							case AppConstants.DELETE_TEMPORAL_ATTRIBUTE_REQUEST:
 								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
 										regHost.cSourceId(), regEntry.deleteAttrsTemporal(), false, regEntry.regMode(),
-										regEntry.canDoZip(), regEntry.canDoIdQuery());
+										false, regEntry.queryEntityMap());
 								break;
 							case AppConstants.DELETE_TEMPORAL_ATTRIBUTE_INSTANCE_REQUEST:
 								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
 										regHost.cSourceId(), regEntry.deleteAttrInstanceTemporal(), false,
-										regEntry.regMode(), regEntry.canDoZip(), regEntry.canDoIdQuery());
+										regEntry.regMode(), false, regEntry.queryEntityMap());
 								break;
 							default:
 								return null;

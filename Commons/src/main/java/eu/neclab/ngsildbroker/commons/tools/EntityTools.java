@@ -55,6 +55,7 @@ import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple3;
 import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
+import io.vertx.mutiny.ext.web.client.HttpResponse;
 import io.vertx.mutiny.ext.web.client.WebClient;
 
 public final class EntityTools {
@@ -613,7 +614,7 @@ public final class EntityTools {
 			newHalfIdOne = id.substring(0, idx);
 			newHalfIdTwo = id.substring(idx + 1, id.length());
 		}
-		
+
 		logger.debug(newHalfIdOne);
 		logger.debug(newHalfIdTwo);
 		QueryRemoteHost hostOne = remoteHost.copyFor414Handle(newHalfIdOne, type, idPattern);
@@ -639,65 +640,46 @@ public final class EntityTools {
 			Context context, int timeout, JsonLDService ldService) {
 
 		List<Tuple3<String, String, String>> idsAndTypesAndIdPattern = remoteHost.getIdsAndTypesAndIdPattern();
-		if (idsAndTypesAndIdPattern == null) {
-			Tuple3<String, String, String> tmpTpl = Tuple3.of(null, null, null);
-			idsAndTypesAndIdPattern = Lists.newArrayList();
-			idsAndTypesAndIdPattern.add(tmpTpl);
-		}
-		List<Uni<List<Object>>> unis = new ArrayList<>(idsAndTypesAndIdPattern.size());
-		for (Tuple3<String, String, String> tpl : idsAndTypesAndIdPattern) {
-			String id = tpl.getItem1();
-			String type = tpl.getItem2();
-			String idPattern = tpl.getItem3();
-			HttpRequest<Buffer> req = webClient.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT);
-			if (id != null) {
-				req = req.setQueryParam(NGSIConstants.ID, id);
-			}
-			if (type != null) {
-				req = req.setQueryParam(NGSIConstants.TYPE, type);
-			}
-			if (idPattern != null) {
-				req = req.setQueryParam(NGSIConstants.QUERY_PARAMETER_IDPATTERN, idPattern);
-			}
 
-			for (Entry<String, String> param : remoteHost.getQueryParam().entrySet()) {
-				req = req.setQueryParam(param.getKey(), (String) param.getValue());
+		List<Uni<List<Object>>> unis = new ArrayList<>();
+		if (remoteHost.isCanDoBatchQuery()) {
+			Map<String, Object> batchBody = Maps.newHashMap();
+			batchBody.put(NGSIConstants.TYPE, NGSIConstants.QUERY_TYPE);
+			List<Tuple3<String, String, String>> idsTypeAndPattern = remoteHost.getIdsAndTypesAndIdPattern();
+			if (idsTypeAndPattern != null) {
+				List<Map<String, String>> entities = Lists.newArrayList();
+				for (Tuple3<String, String, String> entry : idsTypeAndPattern) {
+					String id = entry.getItem1();
+					String type = entry.getItem2();
+					String idPattern = entry.getItem3();
+					Map<String, String> tmp = Maps.newHashMap();
+					if (id != null) {
+						tmp.put(NGSIConstants.ID, id);
+					}
+					if (type != null) {
+						tmp.put(NGSIConstants.TYPE, type);
+					}
+					if (id != null) {
+						tmp.put(NGSIConstants.QUERY_PARAMETER_IDPATTERN, idPattern);
+					}
+					entities.add(tmp);
+				}
+				batchBody.put(NGSIConstants.NGSI_LD_ENTITIES_SHORT, entities);
 			}
+			Map<String, String> queryParams = remoteHost.getQueryParam();
+			if (queryParams != null) {
+				batchBody.putAll(queryParams);
+			}
+			HttpRequest<Buffer> req = webClient.postAbs(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_QUERY);
 			req = req.setQueryParam("limit", "1000");
 			req = req.putHeader(HttpHeaders.VIA, remoteHost.getViaHeaders().getViaHeaders());
 			unis.add(req.putHeaders(remoteHost.headers()).timeout(timeout).send().onItem().transformToUni(response -> {
-
 				if (response != null) {
 					switch (response.statusCode()) {
 					case 200: {
-						List<Map<String, Object>> tmpList = response.bodyAsJsonArray().getList();
-						return ldService.expand(context, tmpList, AppConstants.opts, -1, false).onItem()
-								.transformToUni(expanded -> {
-									if (response.headers().contains("Next")) {
-										remoteHost.setParamsFromNext(response.headers().get("Next"));
-										return getRemoteEntities(remoteHost, webClient, context, timeout, ldService)
-												.onItem().transform(nextResult -> {
-
-													if (nextResult != null) {
-														expanded.addAll(nextResult);
-													}
-
-													return expanded;
-												});
-
-									}
-									return Uni.createFrom().item(expanded);
-								});
-					}
-					case 414: {
-						return handle414(webClient, remoteHost, context, timeout, ldService, id, type, idPattern)
-								.onItem().transformToUni(entities -> {
-									logger.debug("414 recovered");
-									return ldService.expand(context, entities, AppConstants.opts, -1, false);
-								});
+						return handle200(webClient, remoteHost, context, response, ldService, timeout);
 					}
 					default: {
-
 						return Uni.createFrom().item(Lists.newArrayList());
 					}
 
@@ -708,9 +690,117 @@ public final class EntityTools {
 
 			}).onFailure().recoverWithUni(e -> {
 				logger.warn("Failed to query remote host" + remoteHost.toString(), e);
-
 				return Uni.createFrom().item(Lists.newArrayList());
 			}));
+
+		} else if (remoteHost.isCanDoQuery()) {
+			if (idsAndTypesAndIdPattern == null) {
+				Tuple3<String, String, String> tmpTpl = Tuple3.of(null, null, null);
+				idsAndTypesAndIdPattern = Lists.newArrayList();
+				idsAndTypesAndIdPattern.add(tmpTpl);
+			}
+			for (Tuple3<String, String, String> tpl : idsAndTypesAndIdPattern) {
+				String id = tpl.getItem1();
+				String type = tpl.getItem2();
+				String idPattern = tpl.getItem3();
+				HttpRequest<Buffer> req = webClient.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT);
+				if (id != null) {
+					req = req.setQueryParam(NGSIConstants.ID, id);
+				}
+				if (type != null) {
+					req = req.setQueryParam(NGSIConstants.TYPE, type);
+				}
+				if (idPattern != null) {
+					req = req.setQueryParam(NGSIConstants.QUERY_PARAMETER_IDPATTERN, idPattern);
+				}
+
+				for (Entry<String, String> param : remoteHost.getQueryParam().entrySet()) {
+					req = req.setQueryParam(param.getKey(), (String) param.getValue());
+				}
+				req = req.setQueryParam("limit", "1000");
+				req = req.putHeader(HttpHeaders.VIA, remoteHost.getViaHeaders().getViaHeaders());
+				unis.add(req.putHeaders(remoteHost.headers()).timeout(timeout).send().onItem()
+						.transformToUni(response -> {
+
+							if (response != null) {
+								switch (response.statusCode()) {
+								case 200: {
+									return handle200(webClient, remoteHost, context, response, ldService, timeout);
+								}
+								case 414: {
+									return handle414(webClient, remoteHost, context, timeout, ldService, id, type,
+											idPattern).onItem().transformToUni(entities -> {
+												logger.debug("414 recovered");
+												return ldService.expand(context, entities, AppConstants.opts, -1,
+														false);
+											});
+								}
+								default: {
+
+									return Uni.createFrom().item(Lists.newArrayList());
+								}
+
+								}
+							} else {
+								return Uni.createFrom().item(Lists.newArrayList());
+							}
+
+						}).onFailure().recoverWithUni(e -> {
+							logger.warn("Failed to query remote host" + remoteHost.toString(), e);
+
+							return Uni.createFrom().item(Lists.newArrayList());
+						}));
+			}
+		} else if (remoteHost.isCanDoRetrieve()) {
+			List<Tuple3<String, String, String>> idsTypeAndPattern = remoteHost.getIdsAndTypesAndIdPattern();
+			Map<String, String> queryParams = remoteHost.getQueryParam();
+
+			if (idsTypeAndPattern != null) {
+				for (Tuple3<String, String, String> tpl : idsTypeAndPattern) {
+					String id = tpl.getItem1();
+					if (id != null) {
+						String[] ids = id.split(",");
+						for (String idEntry : ids) {
+							HttpRequest<Buffer> req = webClient.getAbs(
+									remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + idEntry);
+							req = req.putHeader(HttpHeaders.VIA, remoteHost.getViaHeaders().getViaHeaders());
+							if (queryParams != null) {
+								for (Entry<String, String> param : queryParams.entrySet()) {
+									req = req.addQueryParam(param.getKey(), param.getValue());
+								}
+							}
+							unis.add(req.putHeaders(remoteHost.headers()).timeout(timeout).send().onItem()
+									.transformToUni(response -> {
+
+										if (response != null) {
+											switch (response.statusCode()) {
+											case 200: {
+												return handle200(webClient, remoteHost, context, response, ldService,
+														timeout);
+											}
+											default: {
+
+												return Uni.createFrom().item(Lists.newArrayList());
+											}
+
+											}
+										} else {
+											return Uni.createFrom().item(Lists.newArrayList());
+										}
+
+									}).onFailure().recoverWithUni(e -> {
+										logger.warn("Failed to query remote host" + remoteHost.toString(), e);
+
+										return Uni.createFrom().item(Lists.newArrayList());
+									}));
+
+						}
+					}
+				}
+			}
+		}
+		if (unis.isEmpty()) {
+			return Uni.createFrom().item(Lists.newArrayList());
 		}
 		return Uni.combine().all().unis(unis).combinedWith(l -> {
 			List<Map<String, Object>> result = Lists.newArrayList();
@@ -723,6 +813,27 @@ public final class EntityTools {
 				}
 			}
 			return result;
+		});
+	}
+
+	private static Uni<List<Object>> handle200(WebClient webClient, QueryRemoteHost remoteHost, Context context,
+			HttpResponse<Buffer> response, JsonLDService ldService, int timeout) {
+		List<Map<String, Object>> tmpList = response.bodyAsJsonArray().getList();
+		return ldService.expand(context, tmpList, AppConstants.opts, -1, false).onItem().transformToUni(expanded -> {
+			if (response.headers().contains("Next")) {
+				remoteHost.setParamsFromNext(response.headers().get("Next"));
+				return getRemoteEntities(remoteHost, webClient, context, timeout, ldService).onItem()
+						.transform(nextResult -> {
+
+							if (nextResult != null) {
+								expanded.addAll(nextResult);
+							}
+
+							return expanded;
+						});
+
+			}
+			return Uni.createFrom().item(expanded);
 		});
 	}
 
@@ -775,8 +886,8 @@ public final class EntityTools {
 					if (viaHeaders.getHostUrls().contains(regHost.host())) {
 						continue;
 					}
-					QueryRemoteHost hostToQuery = QueryRemoteHost.fromRemoteHost(regHost, regEntry.canDoIdQuery(),
-							regEntry.canDoZip());
+					QueryRemoteHost hostToQuery = QueryRemoteHost.fromRemoteHost(regHost, regEntry.queryEntityMap(),
+							false);
 					QueryInfos queryInfos = remoteHost2QueryInfo.get(hostToQuery);
 					if (queryInfos == null) {
 						queryInfos = new QueryInfos();

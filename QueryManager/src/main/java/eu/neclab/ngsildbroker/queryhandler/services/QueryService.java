@@ -1852,6 +1852,9 @@ public class QueryService {
 										if (response != null && response.statusCode() == 200) {
 											result = response.bodyAsJsonObject().getMap();
 
+										}
+										if (response != null && response.statusCode() == 404) {
+											result = null;
 										} else {
 											result = Maps.newHashMap();
 										}
@@ -1862,7 +1865,7 @@ public class QueryService {
 									}).onFailure().recoverWithItem(e -> {
 										logger.warn(
 												"Failed to query entity list from remote host" + remoteHost.toString());
-										return Tuple2.of(new HashMap<String, Object>(0), remoteHost);
+										return Tuple2.of(null, remoteHost);
 									}));
 						}
 					} else {
@@ -1891,12 +1894,20 @@ public class QueryService {
 							List<?> remoteEntities = tpl.getItem3();
 							EntityMap entityMap = localTpl.getItem2();
 							EntityCache entityCache = localTpl.getItem1();
+							List<Uni<Tuple2<List<Map<String, Object>>, QueryRemoteHost>>> recoverEntityMapFail = Lists
+									.newArrayList();
 							if (maps != null) {
 
 								for (Object obj : maps) {
 									Tuple2<Map<String, Object>, QueryRemoteHost> mapT = (Tuple2<Map<String, Object>, QueryRemoteHost>) obj;
 									QueryRemoteHost rHost = mapT.getItem2();
 									Map<String, Object> rMap = mapT.getItem1();
+									if (rMap == null) {
+										recoverEntityMapFail.add(EntityTools
+												.getRemoteEntities(rHost, webClient, context, timeout, ldService)
+												.onItem().transform(entities -> Tuple2.of(entities, rHost)));
+										continue;
+									}
 									String cSourceId = rHost.cSourceId();
 									entityMap.addLinkedMap(cSourceId, (String) rMap.get(NGSIConstants.ID));
 									Map<String, List<String>> entityMapEntry = (Map<String, List<String>>) rMap
@@ -1905,6 +1916,18 @@ public class QueryService {
 										entityMap.addEntry(mapEntry.getKey(), cSourceId, rHost);
 									}
 								}
+							}
+							if (!recoverEntityMapFail.isEmpty()) {
+								return Uni.combine().all().unis(recoverEntityMapFail).combinedWith(l -> {
+									List tmpList = l;
+									if(remoteEntities != null) {
+										tmpList.addAll(remoteEntities);
+									}
+									return tmpList;
+								}).onItem().transformToUni(l1 -> {
+									mergeMultipleQueryResults(l1, entityCache, entityMap);
+									return queryDAO.storeEntityMap(tenant, qToken, entityMap).onItem().transform(v -> localTpl);		
+								});
 							}
 							if (remoteEntities != null) {
 								mergeMultipleQueryResults(remoteEntities, entityCache, entityMap);

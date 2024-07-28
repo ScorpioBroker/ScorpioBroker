@@ -409,7 +409,7 @@ public class EntityService {
 						)) {
 					result.add(new RemoteHost(regEntry.host().host(), regEntry.host().tenant(),
 							regEntry.host().headers(), regEntry.host().cSourceId(), regEntry.deleteEntity(),
-							regEntry.deleteBatch(), regEntry.regMode(), regEntry.canDoZip(), regEntry.canDoIdQuery()));
+							regEntry.deleteBatch(), regEntry.regMode(), false, regEntry.queryEntityMap()));
 				}
 			}
 		}
@@ -486,7 +486,7 @@ public class EntityService {
 						|| (regEntry.eIdp() != null && request.getId().matches(regEntry.eIdp()))) {
 					result.add(new RemoteHost(regEntry.host().host(), regEntry.host().tenant(),
 							regEntry.host().headers(), regEntry.host().cSourceId(), regEntry.deleteEntity(),
-							regEntry.deleteBatch(), regEntry.regMode(), regEntry.canDoZip(), regEntry.canDoIdQuery()));
+							regEntry.deleteBatch(), regEntry.regMode(), false, regEntry.queryEntityMap()));
 				}
 			}
 		}
@@ -815,42 +815,41 @@ public class EntityService {
 							case AppConstants.CREATE_REQUEST:
 								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
 										regHost.cSourceId(), regEntry.createEntity(), regEntry.createBatch(),
-										regEntry.regMode(), regEntry.canDoZip(), regEntry.canDoIdQuery());
+										regEntry.regMode(), false, regEntry.queryEntityMap());
 								break;
 							case AppConstants.UPDATE_REQUEST:
 								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
 										regHost.cSourceId(), regEntry.updateAttrs(), regEntry.updateBatch(),
-										regEntry.regMode(), regEntry.canDoZip(), regEntry.canDoIdQuery());
+										regEntry.regMode(), false, regEntry.queryEntityMap());
 								break;
 							case AppConstants.MERGE_PATCH_REQUEST:
 								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
 										regHost.cSourceId(), regEntry.mergeEntity(), regEntry.mergeBatch(),
-										regEntry.regMode(), regEntry.canDoZip(), regEntry.canDoIdQuery());
+										regEntry.regMode(), false, regEntry.queryEntityMap());
 								break;
 							case AppConstants.REPLACE_ENTITY_REQUEST:
 								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
-										regHost.cSourceId(), regEntry.replaceEntity(), false, regEntry.regMode(),
-										regEntry.canDoZip(), regEntry.canDoIdQuery());
+										regHost.cSourceId(), regEntry.replaceEntity(), false, regEntry.regMode(), false,
+										regEntry.queryEntityMap());
 								break;
 							case AppConstants.REPLACE_ATTRIBUTE_REQUEST:
 								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
-										regHost.cSourceId(), regEntry.replaceAttrs(), false, regEntry.regMode(),
-										regEntry.canDoZip(), regEntry.canDoIdQuery());
+										regHost.cSourceId(), regEntry.replaceAttrs(), false, regEntry.regMode(), false,
+										regEntry.queryEntityMap());
 							case AppConstants.PARTIAL_UPDATE_REQUEST:
 								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
-										regHost.cSourceId(), regEntry.updateAttrs(), false, regEntry.regMode(),
-										regEntry.canDoZip(), regEntry.canDoIdQuery());
+										regHost.cSourceId(), regEntry.updateAttrs(), false, regEntry.regMode(), false,
+										regEntry.queryEntityMap());
 								break;
 							case AppConstants.APPEND_REQUEST:
 								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
 										regHost.cSourceId(), regEntry.appendAttrs(), regEntry.updateBatch(),
-										regEntry.regMode(), regEntry.canDoZip(), regEntry.canDoIdQuery());
+										regEntry.regMode(), false, regEntry.queryEntityMap());
 								break;
 							case AppConstants.UPSERT_REQUEST:
 								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
 										regHost.cSourceId(), (regEntry.appendAttrs() && regEntry.createEntity()),
-										regEntry.upsertBatch(), regEntry.regMode(), regEntry.canDoZip(),
-										regEntry.canDoIdQuery());
+										regEntry.upsertBatch(), regEntry.regMode(), false, regEntry.queryEntityMap());
 								break;
 							default:
 								return null;
@@ -877,7 +876,7 @@ public class EntityService {
 				}
 			}
 		}
-		if(originalEntity.isEmpty()){
+		if (originalEntity.isEmpty()) {
 			Map<String, Object> toStore = new HashMap<>();
 			toStore.put(NGSIConstants.JSON_LD_ID, entityId);
 			toStore.put(NGSIConstants.JSON_LD_TYPE, originalTypes);
@@ -887,9 +886,9 @@ public class EntityService {
 			EntityTools.addSysAttrs(toStore, request.getSendTimestamp());
 			return Tuple2.of(toStore, cId2RemoteHostEntity.values());
 		}
-        for (String s : toBeRemoved) {
-            originalEntity.remove(s);
-        }
+		for (String s : toBeRemoved) {
+			originalEntity.remove(s);
+		}
 		Map<String, Object> toStore = null;
 		if (!originalEntity.isEmpty()) {
 			if (cId2RemoteHostEntity.isEmpty()) {
@@ -1099,7 +1098,7 @@ public class EntityService {
 	}
 
 	public Uni<List<NGSILDOperationResult>> appendBatch(String tenant, List<Map<String, Object>> expandedEntities,
-			List<Context> contexts, boolean localOnly,boolean noOverWrite) {
+			List<Context> contexts, boolean localOnly, boolean noOverWrite) {
 		Iterator<Map<String, Object>> itEntities = expandedEntities.iterator();
 		Iterator<Context> itContext = contexts.iterator();
 		Map<RemoteHost, List<Tuple2<Context, Map<String, Object>>>> remoteHost2Batch = Maps.newHashMap();
@@ -1289,44 +1288,48 @@ public class EntityService {
 		}
 
 		BatchRequest request = new BatchRequest(tenant, localEntities, contexts, AppConstants.UPSERT_REQUEST);
-		Uni<List<NGSILDOperationResult>> local = entityDAO.batchUpsertEntity(request, doReplace).onItem().transform(dbResult -> {
-			List<NGSILDOperationResult> result = Lists.newArrayList();
-			List<Map<String, Object>> successes = (List<Map<String, Object>>) dbResult.get("success");
-			List<Map<String, String>> fails = (List<Map<String, String>>) dbResult.get("failure");
+		Uni<List<NGSILDOperationResult>> local = entityDAO.batchUpsertEntity(request, doReplace).onItem()
+				.transform(dbResult -> {
+					List<NGSILDOperationResult> result = Lists.newArrayList();
+					List<Map<String, Object>> successes = (List<Map<String, Object>>) dbResult.get("success");
+					List<Map<String, String>> fails = (List<Map<String, String>>) dbResult.get("failure");
 
-			List<Map<String, Object>> olds = Lists.newArrayList();
-			List<Map<String, Object>> news = Lists.newArrayList();
-			for (Map<String, Object> entityResult : successes) {
-				String entityId = (String) entityResult.get("id");
-				boolean updated = (boolean) entityResult.get("updated");
-				Map<String, Object> old = (Map<String, Object>) entityResult.get("old");
-				Map<String, Object> newEntity = (Map<String, Object>) entityResult.get("new");
-				olds.add(old);
-				news.add(newEntity);
-				NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.UPSERT_REQUEST, entityId);
-				opResult.setWasUpdated(updated);
-				opResult.addSuccess(new CRUDSuccess(null, null, null, Sets.newHashSet()));
-				result.add(opResult);
-			}
-			request.setBestCompleteResult(news);
-			request.setPreviousEntity(olds);
-			for (Map<String, String> fail : fails) {
-				fail.entrySet().forEach(entry -> {
-					String entityId = entry.getKey();
-					String sqlstate = entry.getValue();
-					request.removeFromPayloadAndContext(entityId);
-					NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.UPSERT_REQUEST, entityId);
-					opResult.addFailure(new ResponseException(ErrorType.InvalidRequest, sqlstate));
-					result.add(opResult);
+					List<Map<String, Object>> olds = Lists.newArrayList();
+					List<Map<String, Object>> news = Lists.newArrayList();
+					for (Map<String, Object> entityResult : successes) {
+						String entityId = (String) entityResult.get("id");
+						boolean updated = (boolean) entityResult.get("updated");
+						Map<String, Object> old = (Map<String, Object>) entityResult.get("old");
+						Map<String, Object> newEntity = (Map<String, Object>) entityResult.get("new");
+						olds.add(old);
+						news.add(newEntity);
+						NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.UPSERT_REQUEST,
+								entityId);
+						opResult.setWasUpdated(updated);
+						opResult.addSuccess(new CRUDSuccess(null, null, null, Sets.newHashSet()));
+						result.add(opResult);
+					}
+					request.setBestCompleteResult(news);
+					request.setPreviousEntity(olds);
+					for (Map<String, String> fail : fails) {
+						fail.entrySet().forEach(entry -> {
+							String entityId = entry.getKey();
+							String sqlstate = entry.getValue();
+							request.removeFromPayloadAndContext(entityId);
+							NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.UPSERT_REQUEST,
+									entityId);
+							opResult.addFailure(new ResponseException(ErrorType.InvalidRequest, sqlstate));
+							result.add(opResult);
+						});
+
+					}
+					if (!request.getEntityIds().isEmpty()) {
+						logger.debug("Upsert batch request sending to kafka " + request.getEntityIds());
+						MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, batchEmitter,
+								objectMapper);
+					}
+					return result;
 				});
-
-			}
-			if (!request.getEntityIds().isEmpty()) {
-				logger.debug("Upsert batch request sending to kafka " + request.getEntityIds());
-				MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, batchEmitter, objectMapper);
-			}
-			return result;
-		});
 		if (localOnly) {
 			return local;
 		}
@@ -1754,9 +1757,8 @@ public class EntityService {
 		return false;
 	}
 
-
 	public Uni<List<NGSILDOperationResult>> mergeBatch(String tenant, List<Map<String, Object>> expandedEntities,
-														List<Context> contexts, boolean localOnly,boolean noOverWrite) {
+			List<Context> contexts, boolean localOnly, boolean noOverWrite) {
 		Iterator<Map<String, Object>> itEntities = expandedEntities.iterator();
 		Iterator<Context> itContext = contexts.iterator();
 		Map<RemoteHost, List<Tuple2<Context, Map<String, Object>>>> remoteHost2Batch = Maps.newHashMap();
@@ -1787,7 +1789,7 @@ public class EntityService {
 		}
 
 		List<Uni<List<NGSILDOperationResult>>> unis = new ArrayList<>();
-				if (!localOnly) {
+		if (!localOnly) {
 			for (Entry<RemoteHost, List<Tuple2<Context, Map<String, Object>>>> entry : remoteHost2Batch.entrySet()) {
 				RemoteHost remoteHost = entry.getKey();
 				List<Tuple2<Context, Map<String, Object>>> tuples = entry.getValue();
@@ -1862,8 +1864,8 @@ public class EntityService {
 								String entityId = entry.getKey();
 								String sqlstate = entry.getValue();
 								request.removeFromPayloadAndContext(entityId);
-								NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.MERGE_PATCH_REQUEST,
-										entityId);
+								NGSILDOperationResult opResult = new NGSILDOperationResult(
+										AppConstants.MERGE_PATCH_REQUEST, entityId);
 								if (sqlstate.equals(AppConstants.SQL_NOT_FOUND)) {
 									opResult.addFailure(new ResponseException(ErrorType.NotFound, entityId));
 								} else {

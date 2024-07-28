@@ -360,7 +360,7 @@ public class HistoryQueryService {
 						|| (regEntry.eIdp() != null && entityId.matches(regEntry.eIdp()))) {
 					RemoteHost remoteHost = new RemoteHost(regEntry.host().host(), regEntry.host().tenant(),
 							regEntry.host().headers(), regEntry.host().cSourceId(), true, false, regEntry.regMode(),
-							regEntry.canDoZip(), regEntry.canDoIdQuery());
+							false, regEntry.queryEntityMap());
 
 					Set<String> attribs;
 					if (result.containsKey(remoteHost)) {
@@ -406,7 +406,7 @@ public class HistoryQueryService {
 
 				RemoteHost remoteHost = new RemoteHost(regEntry.host().host(), regEntry.host().tenant(),
 						regEntry.host().headers(), regEntry.host().cSourceId(), true, false, regEntry.regMode(),
-						regEntry.canDoZip(), regEntry.canDoIdQuery());
+						false, regEntry.queryEntityMap());
 
 				if (regEntry.eId() != null || regEntry.eIdp() != null) {
 					for (String id : entityIds) {
