@@ -283,7 +283,7 @@ public class QueryService {
 				if ((pickTerm != null && pickTerm.isHasAnyLinked())
 						|| (omitTerm != null && omitTerm.isHasAnyLinked())) {
 					EntityTools.evaluateFilterQueries(result, null, null, null, null, pickTerm, omitTerm, null,
-							entityCache, null);
+							entityCache, null, true);
 				} else {
 					if (result.getFlatJoin() != null) {
 						result.getData().addAll(result.getFlatJoin().values());
@@ -299,20 +299,21 @@ public class QueryService {
 			});
 			if (qQuery != null && qQuery.hasLinkedQ()) {
 				return retrieveJoins(tenant, resultData, entityCache, context, qQuery, 0, -1, qQuery.getMaxJoinLevel(),
-						viaHeaders).onItem().transformToUni(updatedEntityCache -> {
+						viaHeaders, entityMap.isDistEntities()).onItem().transformToUni(updatedEntityCache -> {
 							Map<String, Map<String, Object>> deleted = EntityTools.evaluateFilterQueries(result, qQuery,
 									null, null, attrsQuery, pickTerm, omitTerm, dataSetIdTerm, updatedEntityCache,
-									jsonKeys);
+									jsonKeys, false);
 							if (deleted.isEmpty()) {
 								if (entityMap.isChanged()) {
 									return queryDAO.storeEntityMap(tenant, entityMap.getId(), entityMap).onItem()
 											.transformToUni(v -> {
 												return doJoinIfNeeded(tenant, result, updatedEntityCache, context, join,
-														joinLevel, viaHeaders, pickTerm, omitTerm);
+														joinLevel, viaHeaders, pickTerm, omitTerm,
+														entityMap.isDistEntities());
 											});
 								}
 								return doJoinIfNeeded(tenant, result, updatedEntityCache, context, join, joinLevel,
-										viaHeaders, pickTerm, omitTerm);
+										viaHeaders, pickTerm, omitTerm, entityMap.isDistEntities());
 							} else {
 								return updateEntityMapAndRepull(deleted, entityMap, updatedEntityCache, tenant,
 										idsAndTypeQueryAndIdPattern, attrsQuery, qQuery, geoQuery, scopeQuery,
@@ -325,7 +326,7 @@ public class QueryService {
 					attrsQuery.calculateQuery(resultData);
 				}
 				return doJoinIfNeeded(tenant, result, entityCache, context, join, joinLevel, viaHeaders, pickTerm,
-						omitTerm);
+						omitTerm, entityMap.isDistEntities());
 			}
 		} else {
 			return fillCacheFromEntityMap(entityMap, entityCache, context, headersFromReq, false, tenant, offSet, limit)
@@ -346,17 +347,18 @@ public class QueryService {
 							} else {
 								Map<String, Map<String, Object>> deleted = EntityTools.evaluateFilterQueries(result,
 										qQuery, scopeQuery, geoQuery, attrsQuery, pickTerm, omitTerm, dataSetIdTerm,
-										updatedEntityCache, jsonKeys);
+										updatedEntityCache, jsonKeys, false);
 								if (deleted.isEmpty()) {
 									if (entityMap.isChanged()) {
 										return queryDAO.storeEntityMap(tenant, entityMap.getId(), entityMap).onItem()
 												.transformToUni(v -> {
 													return doJoinIfNeeded(tenant, result, updatedEntityCache, context,
-															join, joinLevel, viaHeaders, pickTerm, omitTerm);
+															join, joinLevel, viaHeaders, pickTerm, omitTerm,
+															entityMap.isDistEntities());
 												});
 									}
 									return doJoinIfNeeded(tenant, result, updatedEntityCache, context, join, joinLevel,
-											viaHeaders, pickTerm, omitTerm);
+											viaHeaders, pickTerm, omitTerm, entityMap.isDistEntities());
 								} else {
 									return updateEntityMapAndRepull(deleted, entityMap, updatedEntityCache, tenant,
 											idsAndTypeQueryAndIdPattern, attrsQuery, qQuery, geoQuery, scopeQuery,
@@ -366,69 +368,69 @@ public class QueryService {
 							}
 
 						} else {
-							if (!entityMap.isDistEntities()) {
-								if (qQuery != null && qQuery.hasLinkedQ()) {
-									return retrieveJoins(tenant, resultData, entityCache, context, qQuery, 0, -1,
-											qQuery.getMaxJoinLevel(), viaHeaders).onItem()
-											.transformToUni(updatedEntityCache2 -> {
-												Map<String, Map<String, Object>> deleted = EntityTools
-														.evaluateFilterQueries(result, qQuery, null, null, attrsQuery,
-																pickTerm, omitTerm, null, entityCache, jsonKeys);
-												if (deleted.isEmpty()) {
-													if (entityMap.isChanged()) {
-														return queryDAO
-																.storeEntityMap(tenant, entityMap.getId(), entityMap)
-																.onItem().transformToUni(v -> {
-																	return doJoinIfNeeded(tenant, result,
-																			updatedEntityCache, context, join,
-																			joinLevel, viaHeaders, pickTerm, omitTerm);
-																});
-													}
-													return doJoinIfNeeded(tenant, result, updatedEntityCache2, context,
-															join, joinLevel, viaHeaders, pickTerm, omitTerm);
-												} else {
-													return updateEntityMapAndRepull(deleted, entityMap,
-															updatedEntityCache2, tenant, idsAndTypeQueryAndIdPattern,
-															attrsQuery, qQuery, geoQuery, scopeQuery, langQuery, limit,
-															offSet, count, dataSetIdTerm, join, joinLevel, context,
-															jsonKeys, headersFromReq, pickTerm, omitTerm, viaHeaders);
-												}
-											});
-								} else {
-									if (attrsQuery != null) {
-										attrsQuery.calculateQuery(resultData);
-									}
-									if (entityMap.isChanged()) {
-										return queryDAO.storeEntityMap(tenant, entityMap.getId(), entityMap).onItem()
-												.transformToUni(v -> {
-													return doJoinIfNeeded(tenant, result, updatedEntityCache, context,
-															join, joinLevel, viaHeaders, pickTerm, omitTerm);
-												});
-									}
-									return doJoinIfNeeded(tenant, result, entityCache, context, join, joinLevel,
-											viaHeaders, pickTerm, omitTerm);
-								}
+							int qMaxJoinLevel;
+							if (qQuery != null && qQuery.hasLinkedQ()) {
+								qMaxJoinLevel = qQuery.getMaxJoinLevel();
 							} else {
-								Map<String, Map<String, Object>> deleted = EntityTools.evaluateFilterQueries(result,
-										qQuery, scopeQuery, geoQuery, attrsQuery, pickTerm, omitTerm, dataSetIdTerm,
-										entityCache, jsonKeys);
-								if (deleted.isEmpty()) {
-									if (entityMap.isChanged()) {
-										return queryDAO.storeEntityMap(tenant, entityMap.getId(), entityMap).onItem()
-												.transformToUni(v -> {
-													return doJoinIfNeeded(tenant, result, updatedEntityCache, context,
-															join, joinLevel, viaHeaders, pickTerm, omitTerm);
-												});
-									}
-									return doJoinIfNeeded(tenant, result, updatedEntityCache, context, join, joinLevel,
-											viaHeaders, pickTerm, omitTerm);
-								} else {
-									return updateEntityMapAndRepull(deleted, entityMap, updatedEntityCache, tenant,
-											idsAndTypeQueryAndIdPattern, attrsQuery, qQuery, geoQuery, scopeQuery,
-											langQuery, limit, offSet, count, dataSetIdTerm, join, joinLevel, context,
-											jsonKeys, headersFromReq, pickTerm, omitTerm, viaHeaders);
-								}
+								qMaxJoinLevel = -1;
 							}
+							if (qMaxJoinLevel < joinLevel) {
+								qMaxJoinLevel = joinLevel;
+							}
+							return retrieveJoins(tenant, resultData, entityCache, context, qQuery, 0, joinLevel,
+									qMaxJoinLevel, viaHeaders, false).onItem().transformToUni(updatedEntityCache2 -> {
+										if (!entityMap.isDistEntities()) {
+											Map<String, Map<String, Object>> deleted = EntityTools
+													.evaluateFilterQueries(result, qQuery, null, null, attrsQuery,
+															pickTerm, omitTerm, null, entityCache, jsonKeys, false);
+											if (deleted.isEmpty()) {
+												if (entityMap.isChanged()) {
+													return queryDAO.storeEntityMap(tenant, entityMap.getId(), entityMap)
+															.onItem().transformToUni(v -> {
+																return doJoinIfNeeded(tenant, result,
+																		updatedEntityCache, context, join, joinLevel,
+																		viaHeaders, pickTerm, omitTerm,
+																		entityMap.isDistEntities());
+															});
+												}
+												return doJoinIfNeeded(tenant, result, updatedEntityCache2, context,
+														join, joinLevel, viaHeaders, pickTerm, omitTerm,
+														entityMap.isDistEntities());
+											} else {
+												return updateEntityMapAndRepull(deleted, entityMap, updatedEntityCache2,
+														tenant, idsAndTypeQueryAndIdPattern, attrsQuery, qQuery,
+														geoQuery, scopeQuery, langQuery, limit, offSet, count,
+														dataSetIdTerm, join, joinLevel, context, jsonKeys,
+														headersFromReq, pickTerm, omitTerm, viaHeaders);
+											}
+										} else {
+											Map<String, Map<String, Object>> deleted = EntityTools
+													.evaluateFilterQueries(result, qQuery, scopeQuery, geoQuery,
+															attrsQuery, pickTerm, omitTerm, dataSetIdTerm, entityCache,
+															jsonKeys, false);
+											if (deleted.isEmpty()) {
+												if (entityMap.isChanged()) {
+													return queryDAO.storeEntityMap(tenant, entityMap.getId(), entityMap)
+															.onItem().transformToUni(v -> {
+																return doJoinIfNeeded(tenant, result,
+																		updatedEntityCache, context, join, joinLevel,
+																		viaHeaders, pickTerm, omitTerm,
+																		entityMap.isDistEntities());
+															});
+												}
+												return doJoinIfNeeded(tenant, result, updatedEntityCache, context, join,
+														joinLevel, viaHeaders, pickTerm, omitTerm,
+														entityMap.isDistEntities());
+											} else {
+												return updateEntityMapAndRepull(deleted, entityMap, updatedEntityCache,
+														tenant, idsAndTypeQueryAndIdPattern, attrsQuery, qQuery,
+														geoQuery, scopeQuery, langQuery, limit, offSet, count,
+														dataSetIdTerm, join, joinLevel, context, jsonKeys,
+														headersFromReq, pickTerm, omitTerm, viaHeaders);
+											}
+										}
+									});
+
 						}
 
 					});
@@ -571,11 +573,11 @@ public class QueryService {
 	}
 
 	private Uni<QueryResult> doJoinIfNeeded(String tenant, QueryResult result, EntityCache entityCache, Context context,
-			String join, int joinLevel, ViaHeaders viaHeaders, PickTerm pick, OmitTerm omit) {
+			String join, int joinLevel, ViaHeaders viaHeaders, PickTerm pick, OmitTerm omit, boolean splitEntities) {
 		if (join != null && joinLevel > 0) {
 			List<Map<String, Object>> resultData = result.getData();
-			return retrieveJoins(tenant, resultData, entityCache, context, null, 0, joinLevel, joinLevel, viaHeaders)
-					.onItem().transformToUni(updatedCache2 -> {
+			return retrieveJoins(tenant, resultData, entityCache, context, null, 0, joinLevel, joinLevel, viaHeaders,
+					splitEntities).onItem().transformToUni(updatedCache2 -> {
 						boolean doFlatJoin = NGSIConstants.FLAT.equals(join);
 						if (doFlatJoin) {
 							Map<String, Map<String, Object>> toAdd = Maps.newHashMap();
@@ -590,7 +592,7 @@ public class QueryService {
 						}
 						if ((pick != null && pick.isHasAnyLinked()) || (omit != null && omit.isHasAnyLinked())) {
 							EntityTools.evaluateFilterQueries(result, null, null, null, null, pick, omit, null,
-									entityCache, null);
+									entityCache, null, true);
 						} else if (doFlatJoin) {
 							result.getData().addAll(result.getFlatJoin().values());
 						}
@@ -773,8 +775,8 @@ public class QueryService {
 				resultData.add(entityCache.getAllIds2EntityAndHosts().get(id2Hosts.getKey()).getItem1());
 			});
 
-			return doJoinIfNeeded(tenant, result, entityCache, context, join, joinLevel, viaHeaders, pickTerm,
-					omitTerm);
+			return doJoinIfNeeded(tenant, result, entityCache, context, join, joinLevel, viaHeaders, pickTerm, omitTerm,
+					entityMap.isDistEntities());
 
 		}
 
@@ -791,26 +793,26 @@ public class QueryService {
 
 	private Uni<EntityCache> retrieveJoins(String tenant, Collection<Map<String, Object>> currentLevel,
 			EntityCache entityCache, Context context, QQueryTerm qQuery, int currentJoinLevel, int joinLevel,
-			int maxJoinLevel, ViaHeaders viaHeaders) {
-		Map<Set<String>, Set<String>> types2EntityIds;
+			int maxJoinLevel, ViaHeaders viaHeaders, boolean splitEntities) {
+		Map<Set<String>, Set<String>> types2EntityIds = null;
 		if (currentJoinLevel < joinLevel) {
 			types2EntityIds = getAllTypesAndIds(currentLevel);
-		} else {
+		} else if (qQuery != null) {
 			Map<String, Set<String>> attribAndTypes = qQuery.getJoinLevel2AttribAndTypes().get(currentJoinLevel);
 			if (attribAndTypes == null) {
 				return Uni.createFrom().item(entityCache);
 			}
 			types2EntityIds = getAllTypesAndIds(currentLevel, attribAndTypes);
 		}
-		if (types2EntityIds.isEmpty()) {
+		if (types2EntityIds == null || types2EntityIds.isEmpty()) {
 			return Uni.createFrom().item(entityCache);
 		}
-		return getEntitiesFromUncalledHosts(tenant, types2EntityIds, entityCache, context, qQuery, viaHeaders, context)
-				.onItem().transformToUni(t -> {
+		return getEntitiesFromUncalledHosts(tenant, types2EntityIds, entityCache, context, qQuery, viaHeaders, context,
+				splitEntities).onItem().transformToUni(t -> {
 					int nextLevel = currentJoinLevel + 1;
 					if (nextLevel < maxJoinLevel && !t.getItem2().isEmpty()) {
 						return retrieveJoins(tenant, t.getItem2(), entityCache, context, qQuery, nextLevel, joinLevel,
-								maxJoinLevel, viaHeaders);
+								maxJoinLevel, viaHeaders, splitEntities);
 					}
 					return Uni.createFrom().item(t.getItem1());
 				});
@@ -1921,13 +1923,14 @@ public class QueryService {
 							if (!recoverEntityMapFail.isEmpty()) {
 								return Uni.combine().all().unis(recoverEntityMapFail).combinedWith(l -> {
 									List tmpList = l;
-									if(remoteEntities != null) {
+									if (remoteEntities != null) {
 										tmpList.addAll(remoteEntities);
 									}
 									return tmpList;
 								}).onItem().transformToUni(l1 -> {
 									mergeMultipleQueryResults(l1, entityCache, entityMap);
-									return queryDAO.storeEntityMap(tenant, qToken, entityMap).onItem().transform(v -> localTpl);		
+									return queryDAO.storeEntityMap(tenant, qToken, entityMap).onItem()
+											.transform(v -> localTpl);
 								});
 							}
 							if (remoteEntities != null) {
@@ -1960,7 +1963,7 @@ public class QueryService {
 
 	public Uni<Tuple2<EntityCache, Collection<Map<String, Object>>>> getEntitiesFromUncalledHosts(String tenant,
 			Map<Set<String>, Set<String>> types2EntityIds, EntityCache fullEntityCache, Context linkHeaders,
-			QQueryTerm linkedQ, ViaHeaders viaHeaders, Context context) {
+			QQueryTerm linkedQ, ViaHeaders viaHeaders, Context context, boolean splitEntities) {
 		TypeQueryTerm typeQueryTerm = new TypeQueryTerm(linkHeaders);
 		TypeQueryTerm currentTypeQuery = typeQueryTerm;
 		Map<Set<String>, Set<String>> types2EntityIdsForDB = Maps.newHashMap();
@@ -2010,7 +2013,8 @@ public class QueryService {
 			List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypes = new ArrayList<>(1);
 			idsAndTypes.add(Tuple3.of(entityIds, typeQueryTerm, null));
 			Collection<QueryRemoteHost> remoteQueries = EntityTools.getRemoteQueries(idsAndTypes, null, linkedQ, null,
-					null, null, tenant2CId2RegEntries.row(tenant).values(), linkHeaders, fullEntityCache, viaHeaders);
+					null, null, tenant2CId2RegEntries.row(tenant).values(), linkHeaders, fullEntityCache, viaHeaders,
+					splitEntities);
 			for (QueryRemoteHost remoteQuery : remoteQueries) {
 
 				unis.add(EntityTools.getRemoteEntities(remoteQuery, webClient, context, timeout, ldService).onItem()
@@ -2032,7 +2036,7 @@ public class QueryService {
 	}
 
 	public Uni<Void> deleteEntityMap(String tenant, String entityMapId) {
-		
+
 		return queryDAO.deleteEntityMap(tenant, entityMapId);
 	}
 

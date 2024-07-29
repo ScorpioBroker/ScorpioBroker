@@ -260,81 +260,83 @@ public class OmitTerm extends ProjectionTerm {
 
 	@Override
 	public boolean calculateEntity(Map<String, Object> entity, boolean flatJoin,
-			Map<String, Map<String, Object>> flatEntities, Set<String> pickForFlat) {
+			Map<String, Map<String, Object>> flatEntities, Set<String> pickForFlat, boolean calculateLinked) {
 		ProjectionTerm current = this;
 		while (current != null) {
 			if (current.hasLinked) {
-				Object attribObj = entity.get(current.attrib);
-				if (attribObj != null) {
-					if (attribObj instanceof List<?> attrList) {
-						if (!flatJoin) {
-							for (Object attrInstanceObj : attrList) {
-								if (attrInstanceObj instanceof Map<?, ?> instanceMap
-										&& instanceMap.containsKey(NGSIConstants.NGSI_LD_ENTITY)) {
-									List<Map<String, Object>> entities = (List<Map<String, Object>>) instanceMap
-											.get(NGSIConstants.NGSI_LD_ENTITY);
-									Iterator<Map<String, Object>> it = entities.iterator();
-									while (it.hasNext()) {
-										Map<String, Object> linkedEntity = it.next();
-										current.linkedChild.calculateEntity(linkedEntity, flatJoin, flatEntities,
-												pickForFlat);
-										if (linkedEntity.isEmpty()) {
-											it.remove();
+				if (calculateLinked) {
+					Object attribObj = entity.get(current.attrib);
+					if (attribObj != null) {
+						if (attribObj instanceof List<?> attrList) {
+							if (!flatJoin) {
+								for (Object attrInstanceObj : attrList) {
+									if (attrInstanceObj instanceof Map<?, ?> instanceMap
+											&& instanceMap.containsKey(NGSIConstants.NGSI_LD_ENTITY)) {
+										List<Map<String, Object>> entities = (List<Map<String, Object>>) instanceMap
+												.get(NGSIConstants.NGSI_LD_ENTITY);
+										Iterator<Map<String, Object>> it = entities.iterator();
+										while (it.hasNext()) {
+											Map<String, Object> linkedEntity = it.next();
+											current.linkedChild.calculateEntity(linkedEntity, flatJoin, flatEntities,
+													pickForFlat, calculateLinked);
+											if (linkedEntity.isEmpty()) {
+												it.remove();
+											}
+										}
+										if (entities.isEmpty()) {
+											instanceMap.remove(NGSIConstants.NGSI_LD_ENTITY);
 										}
 									}
-									if (entities.isEmpty()) {
-										instanceMap.remove(NGSIConstants.NGSI_LD_ENTITY);
-									}
+
 								}
-
-							}
-						} else {
-							for (Object attrInstanceObj : attrList) {
-								if (attrInstanceObj instanceof Map<?, ?> instanceMap
-										&& instanceMap.containsKey(NGSIConstants.JSON_LD_TYPE)) {
-									String type = ((List<String>) instanceMap.get(NGSIConstants.JSON_LD_TYPE)).get(0);
-									if (NGSIConstants.NGSI_LD_RELATIONSHIP.equals(type)) {
-										Set<String> ids = Sets.newHashSet();
-										List<Map<String, String>> objList = (List<Map<String, String>>) instanceMap
-												.get(NGSIConstants.NGSI_LD_HAS_OBJECT);
-										for (Map<String, String> objEntry : objList) {
-											ids.add(objEntry.get(NGSIConstants.JSON_LD_ID));
-										}
-										for (String id : ids) {
-											Map<String, Object> objEntity = flatEntities.get(id);
-											if (current.linkedChild.calculateEntity(objEntity, flatJoin, flatEntities,
-													pickForFlat)) {
-												pickForFlat.add(id);
-											}
-										}
-
-									} else if (NGSIConstants.NGSI_LD_LISTRELATIONSHIP.equals(type)) {
-										Set<String> ids = Sets.newHashSet();
-										List<Map<String, List<Map<String, List<Map<String, String>>>>>> objList = (List<Map<String, List<Map<String, List<Map<String, String>>>>>>) instanceMap
-												.get(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST);
-										for (Map<String, List<Map<String, String>>> objEntry : objList.get(0)
-												.get(NGSIConstants.JSON_LD_LIST)) {
-											List<Map<String, String>> hasObjList = (List<Map<String, String>>) instanceMap
+							} else {
+								for (Object attrInstanceObj : attrList) {
+									if (attrInstanceObj instanceof Map<?, ?> instanceMap
+											&& instanceMap.containsKey(NGSIConstants.JSON_LD_TYPE)) {
+										String type = ((List<String>) instanceMap.get(NGSIConstants.JSON_LD_TYPE))
+												.get(0);
+										if (NGSIConstants.NGSI_LD_RELATIONSHIP.equals(type)) {
+											Set<String> ids = Sets.newHashSet();
+											List<Map<String, String>> objList = (List<Map<String, String>>) instanceMap
 													.get(NGSIConstants.NGSI_LD_HAS_OBJECT);
-											for (Map<String, String> hasObjEntry : hasObjList) {
-												ids.add(hasObjEntry.get(NGSIConstants.JSON_LD_ID));
+											for (Map<String, String> objEntry : objList) {
+												ids.add(objEntry.get(NGSIConstants.JSON_LD_ID));
 											}
-										}
-										for (String id : ids) {
-											Map<String, Object> objEntity = flatEntities.get(id);
-											if (!current.linkedChild.calculateEntity(objEntity, flatJoin, flatEntities,
-													pickForFlat)) {
-												pickForFlat.add(id);
+											for (String id : ids) {
+												Map<String, Object> objEntity = flatEntities.get(id);
+												if (current.linkedChild.calculateEntity(objEntity, flatJoin,
+														flatEntities, pickForFlat, calculateLinked)) {
+													pickForFlat.add(id);
+												}
 											}
-										}
-									}
 
+										} else if (NGSIConstants.NGSI_LD_LISTRELATIONSHIP.equals(type)) {
+											Set<String> ids = Sets.newHashSet();
+											List<Map<String, List<Map<String, List<Map<String, String>>>>>> objList = (List<Map<String, List<Map<String, List<Map<String, String>>>>>>) instanceMap
+													.get(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST);
+											for (Map<String, List<Map<String, String>>> objEntry : objList.get(0)
+													.get(NGSIConstants.JSON_LD_LIST)) {
+												List<Map<String, String>> hasObjList = (List<Map<String, String>>) instanceMap
+														.get(NGSIConstants.NGSI_LD_HAS_OBJECT);
+												for (Map<String, String> hasObjEntry : hasObjList) {
+													ids.add(hasObjEntry.get(NGSIConstants.JSON_LD_ID));
+												}
+											}
+											for (String id : ids) {
+												Map<String, Object> objEntity = flatEntities.get(id);
+												if (!current.linkedChild.calculateEntity(objEntity, flatJoin,
+														flatEntities, pickForFlat, calculateLinked)) {
+													pickForFlat.add(id);
+												}
+											}
+										}
+
+									}
 								}
 							}
 						}
 					}
 				}
-
 			} else {
 				entity.remove(current.attrib);
 			}

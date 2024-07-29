@@ -1202,6 +1202,49 @@ public class QueryDAO {
 					queryToStoreWherePart.setLength(0);
 					queryToStoreWherePart.append("1=1");
 				}
+			} else if (splitEntities && !regEmptyOrNoRegEntryAndNoLinkedQuery) {
+				if (attrsQuery != null) {
+					if (sqlAdded) {
+						query.append(" AND ");
+						queryToStoreWherePart.append(" AND ");
+					}
+					queryParams.setAttrsQueryTerm(attrsQuery);
+					dollar = attrsQuery.toSql(query, queryToStoreWherePart, tuple, dollar);
+					sqlAdded = true;
+				} else if (pickTerm != null) {
+					if (sqlAdded) {
+						query.append(" AND ");
+						queryToStoreWherePart.append(" AND ");
+					}
+					queryParams.setPickTerm(pickTerm);
+					dollar = pickTerm.toSql(query, queryToStoreWherePart, tuple, dollar);
+					sqlAdded = true;
+				} else if (omitTerm != null) {
+					if (sqlAdded) {
+						query.append(" AND ");
+						queryToStoreWherePart.append(" AND ");
+					}
+					queryParams.setOmitTerm(omitTerm);
+					dollar = omitTerm.toSql(query, queryToStoreWherePart, tuple, dollar);
+					sqlAdded = true;
+				} else if (qQuery != null) {
+					if (sqlAdded) {
+						query.append(" AND ");
+						queryToStoreWherePart.append(" AND ");
+					}
+					queryParams.setqQueryTerm(qQuery);
+					dollar = qQuery.toSql(query, queryToStoreWherePart, dollar, tuple, splitEntities, false);
+					sqlAdded = true;
+				} else if (geoQuery != null) {
+					if (sqlAdded) {
+						query.append(" AND ");
+						queryToStoreWherePart.append(" AND ");
+					}
+					dollar = geoQuery.toSql(query, queryToStoreWherePart, tuple, dollar);
+					queryParams.setGeoQueryTerm(geoQuery);
+					sqlAdded = true;
+				}
+
 			}
 
 			if (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery || !splitEntities) {

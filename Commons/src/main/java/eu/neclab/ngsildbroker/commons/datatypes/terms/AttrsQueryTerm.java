@@ -342,7 +342,7 @@ public class AttrsQueryTerm implements Serializable {
 				it.remove();
 			}
 		}
-		return NGSIConstants.ENTITY_BASE_PROPS.containsAll(entity.keySet());
+		return !NGSIConstants.ENTITY_BASE_PROPS.containsAll(entity.keySet());
 	}
 
 }

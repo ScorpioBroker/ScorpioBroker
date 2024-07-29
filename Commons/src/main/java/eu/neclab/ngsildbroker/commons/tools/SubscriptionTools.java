@@ -63,13 +63,7 @@ public class SubscriptionTools {
 				String relation = geoQuery.getGeorel();
 				String regCoordinatesAsString = Subscription
 						.getCoordinates((List<Map<String, Object>>) location.get(NGSIConstants.NGSI_LD_COORDINATES));
-				if (relation.equals(NGSIConstants.GEO_REL_EQUALS)) {
-					result = geoQuery.getCoordinates().equals(regCoordinatesAsString);
-					if (result) {
-						return result;
-					}
-					continue;
-				}
+
 				Shape queryShape;
 				List<List<Number>> tmp;
 				switch (geoQuery.getGeometry()) {
@@ -81,7 +75,7 @@ public class SubscriptionTools {
 					LineStringBuilder lineStringBuilder = shapeFactory.lineString();
 					List<Object> lineList = geoQuery.getCoordinatesAsList();
 					for (Object pointObj : lineList) {
-						List<Number> point = (List<Number>) pointObj; 
+						List<Number> point = (List<Number>) pointObj;
 						lineStringBuilder.pointXY(point.get(0).doubleValue(), point.get(1).doubleValue());
 					}
 					queryShape = lineStringBuilder.build();
@@ -152,9 +146,12 @@ public class SubscriptionTools {
 				}
 
 				switch (relation) {
+				case NGSIConstants.GEO_REL_EQUALS:
+					result = SpatialPredicate.IsEqualTo.evaluate(entityShape, queryShape);
+					break;
 				case NGSIConstants.GEO_REL_NEAR:
 					if (geoQuery.getDistanceType() == null) {
-						result = geoQuery.getCoordinates().equals(regCoordinatesAsString);
+						result = SpatialPredicate.IsEqualTo.evaluate(entityShape, queryShape);
 					}
 					Shape bufferedShape;
 					switch (geoQuery.getDistanceType()) {
@@ -232,8 +229,8 @@ public class SubscriptionTools {
 							break;
 						case 2:
 							// ld+
-							 data.forEach(entry -> entry.put(NGSIConstants.JSON_LD_CONTEXT,
-									 Collections.singletonList(potentialSub.getSubscription().getJsonldContext())));
+							data.forEach(entry -> entry.put(NGSIConstants.JSON_LD_CONTEXT,
+									Collections.singletonList(potentialSub.getSubscription().getJsonldContext())));
 							break;
 						case 3:
 							break;
@@ -295,7 +292,7 @@ public class SubscriptionTools {
 		}
 		if (accept.equals(AppConstants.NGB_APPLICATION_JSON)) {
 			result.addAll(otherHead);
-		}else{
+		} else {
 			result.addAll(otherHead);
 			result.remove(NGSIConstants.LINK_HEADER);
 		}

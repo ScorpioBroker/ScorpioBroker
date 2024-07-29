@@ -843,14 +843,14 @@ public final class EntityTools {
 			Table<String, String, List<RegistrationEntry>> tenant2CId2RegEntries, Context context,
 			EntityCache fullEntityCache, boolean onlyFullEntitiesDistributed, ViaHeaders viaHeaders) {
 		return getRemoteQueries(idsAndTypeQueryAndIdPattern, attrsQuery, qQuery, geoQuery, scopeQuery, langQuery,
-				tenant2CId2RegEntries.row(tenant).values(), context, fullEntityCache, viaHeaders);
+				tenant2CId2RegEntries.row(tenant).values(), context, fullEntityCache, viaHeaders, onlyFullEntitiesDistributed);
 	}
 
 	public static Collection<QueryRemoteHost> getRemoteQueries(
 			List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeQueryAndIdPattern, AttrsQueryTerm attrsQuery,
 			QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery,
 			Collection<List<RegistrationEntry>> regEntries, Context context, EntityCache fullEntityCache,
-			ViaHeaders viaHeaders) {
+			ViaHeaders viaHeaders, boolean isDist) {
 
 		// ids, types, attrs, geo, scope
 		List<Map<QueryRemoteHost, QueryInfos>> remoteHost2QueryInfos = Lists.newArrayList();
@@ -963,7 +963,7 @@ public final class EntityTools {
 
 	public static Map<String, Map<String, Object>> evaluateFilterQueries(QueryResult queryResult, QQueryTerm qQuery,
 			ScopeQueryTerm scopeQuery, GeoQueryTerm geoQuery, AttrsQueryTerm attrsTerm, PickTerm pickTerm,
-			OmitTerm omitTerm, DataSetIdTerm dataSetIdTerm, EntityCache entityCache, Set<String> jsonKeys) {
+			OmitTerm omitTerm, DataSetIdTerm dataSetIdTerm, EntityCache entityCache, Set<String> jsonKeys, boolean calculateLinked) {
 		Map<String, Map<String, Object>> deleted = Maps.newHashMap();
 		List<Map<String, Object>> resultData = queryResult.getData();
 		Iterator<Map<String, Object>> it = resultData.iterator();
@@ -979,14 +979,13 @@ public final class EntityTools {
 			boolean geoQResult = (geoQuery != null && !geoQuery.calculateEntity(entity));
 			boolean attrsResult = (attrsTerm != null && !attrsTerm.calculateEntity(entity));
 			boolean pickResult = (pickTerm != null
-					&& !pickTerm.calculateEntity(entity, flatJoin, flatEntities, pickForFlat));
+					&& !pickTerm.calculateEntity(entity, flatJoin, flatEntities, pickForFlat, calculateLinked));
 			boolean omitResult = (omitTerm != null
-					&& !omitTerm.calculateEntity(entity, flatJoin, flatEntities, pickForFlat));
+					&& !omitTerm.calculateEntity(entity, flatJoin, flatEntities, pickForFlat, calculateLinked));
 			boolean datasetIdResult = (dataSetIdTerm != null && !dataSetIdTerm.calculateEntity(entity));
 			if (qResult || scopeResult || geoQResult || attrsResult || pickResult || omitResult || datasetIdResult) {
 				it.remove();
 				deleted.put((String) entity.get(NGSIConstants.JSON_LD_ID), entity);
-				continue;
 			}
 
 		}

@@ -239,13 +239,15 @@ public class PickTerm extends ProjectionTerm {
 
 	@Override
 	public boolean calculateEntity(Map<String, Object> entity, boolean flatJoin,
-			Map<String, Map<String, Object>> flatEntities, Set<String> pickForFlat) {
+			Map<String, Map<String, Object>> flatEntities, Set<String> pickForFlat, boolean calculateLinked) {
 		ProjectionTerm current = this;
 		Map<String, Object> result = new HashMap<>(entity.size());
 		while (current != null) {
 			Object attribObj = entity.get(current.attrib);
 			if (attribObj != null) {
-				if (current.hasLinked) {
+				if (current.hasLinked && calculateLinked) {
+					
+					
 					if (attribObj instanceof List<?> attrList) {
 						if (!flatJoin) {
 							for (Object attrInstanceObj : attrList) {
@@ -257,7 +259,7 @@ public class PickTerm extends ProjectionTerm {
 									for (Map<String, Object> linkedEntity : entities) {
 
 										if (current.linkedChild.calculateEntity(linkedEntity, flatJoin, flatEntities,
-												pickForFlat)) {
+												pickForFlat, calculateLinked)) {
 											resultAttEntityrList.add(linkedEntity);
 										}
 									}
@@ -285,7 +287,7 @@ public class PickTerm extends ProjectionTerm {
 										for (String id : ids) {
 											Map<String, Object> objEntity = flatEntities.get(id);
 											if (current.linkedChild.calculateEntity(objEntity, flatJoin, flatEntities,
-													pickForFlat)) {
+													pickForFlat, calculateLinked)) {
 												pickForFlat.add(id);
 											}
 										}
@@ -304,7 +306,7 @@ public class PickTerm extends ProjectionTerm {
 										for (String id : ids) {
 											Map<String, Object> objEntity = flatEntities.get(id);
 											if (current.linkedChild.calculateEntity(objEntity, flatJoin, flatEntities,
-													pickForFlat)) {
+													pickForFlat, calculateLinked)) {
 												pickForFlat.add(id);
 											}
 										}
