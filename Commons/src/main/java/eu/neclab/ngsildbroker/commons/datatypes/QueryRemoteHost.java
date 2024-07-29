@@ -207,7 +207,7 @@ public class QueryRemoteHost {
 		this.idsAndTypesAndIdPattern.add(idsAndTypesAndIdPattern);
 	}
 
-	public static QueryRemoteHost fromRemoteHost(RemoteHost remoteHost, boolean canDoIdQuery, boolean canDoZip) {
+	public static QueryRemoteHost fromRegEntry(RemoteHost remoteHost, boolean canDoIdQuery, boolean canDoZip) {
 		return new QueryRemoteHost(remoteHost.host(), remoteHost.tenant(), remoteHost.headers(), remoteHost.cSourceId(),
 				remoteHost.canDoSingleOp(), remoteHost.canDoBatchOp(), remoteHost.canDoBatchOp(), remoteHost.regMode(),
 				Lists.newArrayList(), Maps.newHashMap(), canDoIdQuery, canDoZip, null, null);
@@ -219,6 +219,14 @@ public class QueryRemoteHost {
 
 	public void setViaHeaders(ViaHeaders viaHeaders) {
 		this.viaHeaders = viaHeaders;
+	}
+
+	public static QueryRemoteHost fromRegEntry(RegistrationEntry regEntry) {
+		RemoteHost remoteHost = regEntry.host();
+
+		return new QueryRemoteHost(remoteHost.host(), remoteHost.tenant(), remoteHost.headers(), remoteHost.cSourceId(),
+				regEntry.queryEntity(), regEntry.queryBatch(), regEntry.retrieveEntity(), remoteHost.regMode(),
+				Lists.newArrayList(), Maps.newHashMap(), regEntry.queryEntityMap(), false, null, null);
 	}
 
 }

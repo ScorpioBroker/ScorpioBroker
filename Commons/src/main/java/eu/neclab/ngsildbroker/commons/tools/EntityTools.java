@@ -630,12 +630,6 @@ public final class EntityTools {
 				});
 	}
 
-	public static void main(String[] args) {
-		String bla = "01234,567890";
-		System.out.println(bla.substring(0, bla.indexOf(',')));
-		System.out.println(bla.substring(bla.indexOf(','), bla.length()));
-	}
-
 	public static Uni<List<Map<String, Object>>> getRemoteEntities(QueryRemoteHost remoteHost, WebClient webClient,
 			Context context, int timeout, JsonLDService ldService) {
 
@@ -667,13 +661,15 @@ public final class EntityTools {
 				batchBody.put(NGSIConstants.NGSI_LD_ENTITIES_SHORT, entities);
 			}
 			Map<String, String> queryParams = remoteHost.getQueryParam();
+			queryParams.remove(NGSIConstants.ID);
+			queryParams.remove(NGSIConstants.TYPE);
 			if (queryParams != null) {
 				batchBody.putAll(queryParams);
 			}
 			HttpRequest<Buffer> req = webClient.postAbs(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_QUERY);
 			req = req.setQueryParam("limit", "1000");
 			req = req.putHeader(HttpHeaders.VIA, remoteHost.getViaHeaders().getViaHeaders());
-			unis.add(req.putHeaders(remoteHost.headers()).timeout(timeout).send().onItem().transformToUni(response -> {
+			unis.add(req.putHeaders(remoteHost.headers()).timeout(timeout).sendJson(batchBody).onItem().transformToUni(response -> {
 				if (response != null) {
 					switch (response.statusCode()) {
 					case 200: {
@@ -843,7 +839,8 @@ public final class EntityTools {
 			Table<String, String, List<RegistrationEntry>> tenant2CId2RegEntries, Context context,
 			EntityCache fullEntityCache, boolean onlyFullEntitiesDistributed, ViaHeaders viaHeaders) {
 		return getRemoteQueries(idsAndTypeQueryAndIdPattern, attrsQuery, qQuery, geoQuery, scopeQuery, langQuery,
-				tenant2CId2RegEntries.row(tenant).values(), context, fullEntityCache, viaHeaders, onlyFullEntitiesDistributed);
+				tenant2CId2RegEntries.row(tenant).values(), context, fullEntityCache, viaHeaders,
+				onlyFullEntitiesDistributed);
 	}
 
 	public static Collection<QueryRemoteHost> getRemoteQueries(
@@ -886,8 +883,7 @@ public final class EntityTools {
 					if (viaHeaders.getHostUrls().contains(regHost.host())) {
 						continue;
 					}
-					QueryRemoteHost hostToQuery = QueryRemoteHost.fromRemoteHost(regHost, regEntry.queryEntityMap(),
-							false);
+					QueryRemoteHost hostToQuery = QueryRemoteHost.fromRegEntry(regEntry);
 					QueryInfos queryInfos = remoteHost2QueryInfo.get(hostToQuery);
 					if (queryInfos == null) {
 						queryInfos = new QueryInfos();
@@ -963,7 +959,8 @@ public final class EntityTools {
 
 	public static Map<String, Map<String, Object>> evaluateFilterQueries(QueryResult queryResult, QQueryTerm qQuery,
 			ScopeQueryTerm scopeQuery, GeoQueryTerm geoQuery, AttrsQueryTerm attrsTerm, PickTerm pickTerm,
-			OmitTerm omitTerm, DataSetIdTerm dataSetIdTerm, EntityCache entityCache, Set<String> jsonKeys, boolean calculateLinked) {
+			OmitTerm omitTerm, DataSetIdTerm dataSetIdTerm, EntityCache entityCache, Set<String> jsonKeys,
+			boolean calculateLinked) {
 		Map<String, Map<String, Object>> deleted = Maps.newHashMap();
 		List<Map<String, Object>> resultData = queryResult.getData();
 		Iterator<Map<String, Object>> it = resultData.iterator();

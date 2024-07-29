@@ -222,8 +222,6 @@ public class QueryService {
 	private Uni<Tuple2<EntityCache, EntityMap>> getEntityMapAndEntitiesAndUpdateExpires(String tenant,
 			List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeQueryAndIdPattern, int limit, int offset,
 			String qToken, String checkSum) {
-		System.out.println("LIMIT " + limit);
-		System.out.println("OFFSET " + offset);
 		return queryDAO.queryForEntityMapAndEntities(tenant, qToken, idsAndTypeQueryAndIdPattern, limit, offset,
 				checkSum);
 
@@ -440,7 +438,7 @@ public class QueryService {
 	}
 
 	private Uni<EntityCache> fillCacheFromEntityMap(EntityMap entityMap, EntityCache entityCache, Context context,
-			io.vertx.core.MultiMap headersFromReq, boolean callDB, String tenant, int limit, int offset) {
+			io.vertx.core.MultiMap headersFromReq, boolean callDB, String tenant, int offset, int limit) {
 		Map<QueryRemoteHost, Set<String>> remoteHost2Ids = Maps.newHashMap();
 		Set<String> idsForDBCall = Sets.newHashSet();
 		Stream<Entry<String, Set<String>>> subMap = entityMap.getEntityId2CSourceIds().entrySet().stream().skip(offset)
@@ -513,7 +511,7 @@ public class QueryService {
 				id = (String) entity.get(NGSIConstants.JSON_LD_ID);
 				Tuple2<Map<String, Object>, Set<String>> potentialLocalEntity = entityCache.get(id);
 				if (entityMap != null) {
-					entityMap.addEntry(id, "generated", remoteHost);
+					entityMap.addEntry(id, "generated-" + remoteHost.cSourceId(), remoteHost);
 				}
 				if (potentialLocalEntity == null || potentialLocalEntity.getItem1() == null) {
 					entityCache.putEntity(id, entity, t.getItem2().cSourceId());
@@ -1790,8 +1788,7 @@ public class QueryService {
 			DataSetIdTerm dataSetIdTerm, String join, int joinLevel, boolean splitEntities, PickTerm pickTerm,
 			OmitTerm omitTerm, String queryCechksum, ViaHeaders viaHeaders) {
 
-		// we got no registry entries
-		Uni<Tuple2<EntityCache, EntityMap>> entityCacheAndEntityMap;
+
 		if (tenant2CId2RegEntries.isEmpty()) {
 			return queryDAO.queryForEntityIdsAndEntitiesRegEmpty(tenant, idsAndTypeQueryAndIdPattern, attrsQuery,
 					qQuery, geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel, qToken,
@@ -1855,8 +1852,7 @@ public class QueryService {
 										if (response != null && response.statusCode() == 200) {
 											result = response.bodyAsJsonObject().getMap();
 
-										}
-										if (response != null && response.statusCode() == 404) {
+										} else if (response != null && response.statusCode() == 404) {
 											result = null;
 										} else {
 											result = Maps.newHashMap();

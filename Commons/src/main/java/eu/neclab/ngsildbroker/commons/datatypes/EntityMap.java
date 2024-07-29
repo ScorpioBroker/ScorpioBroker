@@ -111,7 +111,7 @@ public class EntityMap {
 			entityId2CSourceIds.put(entityId, csourceIds);
 		}
 		csourceIds.add(csourceId);
-		if (remoteHost != null && NGSIConstants.JSON_LD_NONE.equals(csourceId)) {
+		if (remoteHost != null && !NGSIConstants.JSON_LD_NONE.equals(csourceId)) {
 			cSourceId2RemoteHost.put(csourceId, remoteHost);
 			linkedMaps.put(csourceId, remoteHost.entityMapToken);
 		}
