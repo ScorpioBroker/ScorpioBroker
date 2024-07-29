@@ -301,6 +301,7 @@ public interface NGSIConstants {
 
 	public static final String LINK_HEADER = "Link";
 	public static final String QUERY_TYPE = "Query";
+	public static final String ENTITY_MAP_TYPE = "EntityMap";
 	public static final String ISACTIVE_FALSE = "paused";
 	public static final String ISACTIVE_TRUE = "active";
 	public final static String LIST = "list";

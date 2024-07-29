@@ -4,6 +4,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -1154,8 +1156,10 @@ public final class HttpUtils {
 	}
 
 	public static RestResponse<Object> generateEntityMapResult(Map<String, Object> entityMap) {
-		Map<String, Object> result = Maps.newHashMap();
+		Map<String, Object> result = Maps.newLinkedHashMap();
 		Map<String, List<String>> entityMapEntry = Maps.newLinkedHashMap();
+		result.put(NGSIConstants.ID, entityMap.get(NGSIConstants.ID));
+		result.put(NGSIConstants.TYPE, NGSIConstants.ENTITY_MAP_TYPE);
 		List<Map<String, List<String>>> dbEntityMap = (List<Map<String, List<String>>>) entityMap
 				.get(NGSIConstants.ENTITY_MAP_COMPACTED_ENTRY);
 		dbEntityMap.forEach(entry -> {
@@ -1168,16 +1172,20 @@ public final class HttpUtils {
 			result.put(NGSIConstants.LINKED_MAP_COMPACTED_ENTRY,
 					entityMap.get(NGSIConstants.LINKED_MAP_COMPACTED_ENTRY));
 		}
-		
-		result.put(NGSIConstants.EXPIRES_AT, entityMap.get(NGSIConstants.EXPIRES_AT));
+		LocalDateTime expiresAt = (LocalDateTime) entityMap.get(NGSIConstants.EXPIRES_AT);
+		result.put(NGSIConstants.EXPIRES_AT, SerializationTools.formatter.format(expiresAt));
+
 		return RestResponse.ok(result, MediaType.APPLICATION_JSON);
 	}
 
 	public static RestResponse<Object> generateEntityMapResult(EntityMap entityMap) {
-		Map<String, Object> result = Maps.newHashMap();
+		Map<String, Object> result = Maps.newLinkedHashMap();
+		result.put(NGSIConstants.ID, entityMap.getId());
+		result.put(NGSIConstants.TYPE, NGSIConstants.ENTITY_MAP_TYPE);
 		result.put(NGSIConstants.ENTITY_MAP_COMPACTED_ENTRY, entityMap.getEntityId2CSourceIds());
 		result.put(NGSIConstants.LINKED_MAP_COMPACTED_ENTRY, entityMap.getLinkedMaps());
-		result.put(NGSIConstants.EXPIRES_AT, entityMap.getExpiresAt());
+		result.put(NGSIConstants.EXPIRES_AT,
+				SerializationTools.formatter.format(Instant.ofEpochMilli(entityMap.getExpiresAt())));
 		return RestResponse.ok(result, MediaType.APPLICATION_JSON);
 	}
 

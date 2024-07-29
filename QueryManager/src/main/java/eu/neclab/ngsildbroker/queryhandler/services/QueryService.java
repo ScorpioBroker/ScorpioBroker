@@ -2040,7 +2040,7 @@ public class QueryService {
 		return queryDAO.deleteEntityMap(tenant, entityMapId);
 	}
 
-	public Uni<Void> updateEntityMap(String tenant, String entityMapId, long expiresAt) {
+	public Uni<Void> updateEntityMap(String tenant, String entityMapId, String expiresAt) {
 		return queryDAO.updateEntityMap(tenant, entityMapId, expiresAt);
 	}
 }

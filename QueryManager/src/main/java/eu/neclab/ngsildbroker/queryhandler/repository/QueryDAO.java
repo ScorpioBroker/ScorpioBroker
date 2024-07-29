@@ -54,6 +54,7 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.storage.ClientManager;
 import eu.neclab.ngsildbroker.commons.tools.DBUtil;
+import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple3;
@@ -994,7 +995,8 @@ public class QueryDAO {
 				}
 				Row first = rows.iterator().next();
 				Map<String, Object> tmp = first.getJsonObject(0).getMap();
-				tmp.put(NGSIConstants.EXPIRES_AT, first.getLong(1));
+				tmp.put(NGSIConstants.ID, qToken);
+				tmp.put(NGSIConstants.EXPIRES_AT, first.getLocalDateTime(1));
 				return Uni.createFrom().item(tmp);
 			});
 		});
@@ -1658,10 +1660,11 @@ public class QueryDAO {
 		});
 	}
 
-	public Uni<Void> updateEntityMap(String tenant, String entityMapId, long expiresAt) {
+	public Uni<Void> updateEntityMap(String tenant, String entityMapId, String expiresAt) {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
 			return client.preparedQuery("UPDATE ENTITYMAP SET EXPIRES_AT=$1 WHERE id=$2 RETURNING id")
-					.execute(Tuple.of(expiresAt, entityMapId)).onItem().transformToUni(rows -> {
+					.execute(Tuple.of(SerializationTools.localDateTimeFormatter(expiresAt), entityMapId)).onItem()
+					.transformToUni(rows -> {
 						if (rows.rowCount() == 0) {
 							return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
 						}
