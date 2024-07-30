@@ -36,7 +36,7 @@ public class ViaHeaders {
 				}
 			}
 		}
-		this.viaHeaders =  Lists.newArrayList(viaHeaders);
+		this.viaHeaders = Lists.newArrayList(viaHeaders);
 		this.viaHeaders.add(selfViaEntry);
 
 	}
@@ -59,6 +59,9 @@ public class ViaHeaders {
 
 	public void addViaHeader(String host) {
 		int schemeIdx = host.indexOf("://");
+		if (schemeIdx == -1) {
+			host = "http://" + host;
+		}
 		viaHeaders.add(
 				host.substring(0, schemeIdx).toUpperCase() + "/1.1 " + host.substring(schemeIdx + 3, host.length()));
 

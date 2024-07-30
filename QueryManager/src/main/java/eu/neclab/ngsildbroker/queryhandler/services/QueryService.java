@@ -499,7 +499,7 @@ public class QueryService {
 		Map<String, Map<String, Integer>> entityId2AttrDatasetId2CurrentRegMode = Maps.newHashMap();
 		Map<String, Map<String, Map<String, Map<String, Object>>>> entityId2AttrName2DatasetId2AttrValue = Maps
 				.newHashMap();
-		Map<String, String> entityId2RemoteHost = Maps.newHashMap();
+		List<String> onlyAddedToCache = Lists.newArrayList();
 		String id;
 		Map<String, Map<String, Object>> id2Entity = Maps.newHashMap();
 		for (Object o : l) {
@@ -516,6 +516,7 @@ public class QueryService {
 				if (potentialLocalEntity == null || potentialLocalEntity.getItem1() == null) {
 					entityCache.putEntity(id, entity, t.getItem2().cSourceId());
 					id2Entity.put(id, entity);
+					onlyAddedToCache.add(id);
 				} else {
 					if (!entityId2Types.containsKey(id)) {
 						mergeEntity(id, potentialLocalEntity.getItem1(), entityId2AttrName2DatasetId2AttrValue,
@@ -562,9 +563,12 @@ public class QueryService {
 			for (Entry<String, Map<String, Map<String, Object>>> attribEntry : attribMap.entrySet()) {
 				entity.put(attribEntry.getKey(), Lists.newArrayList(attribEntry.getValue().values()));
 			}
-
+			entity.remove(AppConstants.REG_MODE_KEY);
 			entityCache.putEntity(entityId, entity, "dummy");
 			id2Entity.put(entityId, entity);
+		}
+		for(String idEntry: onlyAddedToCache) {
+			id2Entity.get(idEntry).remove(AppConstants.REG_MODE_KEY);
 		}
 		return id2Entity.values();
 

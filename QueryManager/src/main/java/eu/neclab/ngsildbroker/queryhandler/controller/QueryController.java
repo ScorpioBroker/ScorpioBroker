@@ -569,6 +569,7 @@ public class QueryController {
 			result.setFinalOptions(finalOptions);
 			result.setLimit(actualLimit);
 			result.setAcceptHeader(acceptHeader);
+			result.setDataSetIdTerm(dataSetIdTerm);
 			return Uni.createFrom().item(result);
 		});
 	}
