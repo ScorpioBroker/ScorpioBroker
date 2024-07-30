@@ -20,6 +20,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import eu.neclab.ngsildbroker.commons.exceptions.LdContextException;
 import io.vertx.core.json.DecodeException;
+import io.vertx.core.json.Json;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.http.HttpStatus;
 import org.jboss.resteasy.reactive.RestResponse;
@@ -480,12 +481,12 @@ public final class HttpUtils {
 	}
 	public static Uni<RestResponse<Object>> generateEntityResult(List<Object> contextHeader, Context context,
 																 int acceptHeader, Object entity, String geometryProperty, String options, LanguageQueryTerm langQuery,
-																 JsonLDService ldService,List<String> omitList,List<String> pickList) {
+																 JsonLDService ldService,List<String> omitList,Map<String,Object> pickList) {
 		return generateEntityResult(contextHeader, context,acceptHeader, entity, geometryProperty, options, langQuery, ldService,omitList, pickList, false);
 	}
 	public static Uni<RestResponse<Object>> generateEntityResult(List<Object> contextHeader, Context context,
 																 int acceptHeader, Object entity, String geometryProperty, String options, LanguageQueryTerm langQuery,
-																 JsonLDService ldService,List<String> omitList,List<String> pickList,boolean forceList) {
+																 JsonLDService ldService,List<String> omitList,Map<String,Object> pickList,boolean forceList) {
 		return generateCompactedResult(contextHeader, context, acceptHeader, entity, geometryProperty, options,
 				langQuery, false, ldService).onItem().transform(resultBodyAndHeaders -> {
 			ResponseBuilder<Object> resp = RestResponseBuilderImpl.ok();
@@ -500,7 +501,7 @@ public final class HttpUtils {
 			return resp.entity(result).build();
 		});
 	}
-	public static Object processPickOmit(Object object,List<String> pickList, List<String> omitList){
+	public static Object processPickOmit(Object object,Map<String,Object> pick, List<String> omitList){
 		try {
 			JsonObject jsonObject = new JsonObject(object.toString());
 			if (omitList != null && !omitList.isEmpty()) {
@@ -508,15 +509,8 @@ public final class HttpUtils {
 					jsonObject.remove(key);
 				}
 			}
-			if (pickList!= null && !pickList.isEmpty()) {
-				JsonObject finalJsonObject = new JsonObject();
-				for (String key : pickList) {
-					Object value = jsonObject.getValue(key);
-					if (value != null) {
-						finalJsonObject.put(key, value);
-					}
-				}
-				return finalJsonObject;
+			if(pick != null) {
+				return pick(jsonObject, new JsonObject(pick), new JsonObject());
 			}
 			else return jsonObject;
 		} catch (DecodeException decodeException) {
@@ -530,24 +524,45 @@ public final class HttpUtils {
 					}
 				}
 			}
-			if (pickList!= null && !pickList.isEmpty()) {
+			if (pick!= null && !pick.isEmpty()) {
 				JsonArray finalJsonArray = new JsonArray();
 				for (Object jsonObject : jsonArray) {
-					if (jsonObject instanceof JsonObject) {
-						JsonObject finalJsonObject = new JsonObject();
-						for (String key : pickList) {
-							Object value = ((JsonObject) jsonObject).getValue(key);
-							if (value != null) {
-								finalJsonObject.put(key, value);
-							}
-						}
-						finalJsonArray.add(finalJsonObject);
-					}
+					finalJsonArray.add(pick(new JsonObject(jsonObject.toString()),new JsonObject(pick), new JsonObject()));
 				}
 				return finalJsonArray;
 			} else return jsonArray;
+
 		}
-	}
+    }
+
+	private static JsonObject pick(JsonObject source, JsonObject pick, JsonObject result) {
+		if(pick == null || pick.isEmpty()){
+			return source;
+		}
+		for (String key : pick.getMap().keySet()) {
+			if (pick.getValue(key) instanceof JsonObject) {
+				if (source.containsKey(key) && source.getValue(key) instanceof JsonObject) {
+					JsonObject nestedSource = source.getJsonObject(key);
+					JsonObject nestedResult = new JsonObject();
+					result.put(key, nestedResult);
+					pick(nestedSource, pick.getJsonObject(key), nestedResult);
+				}else if(source.containsKey(key) && source.getValue(key) instanceof JsonArray jsonArray){
+					JsonArray nestedResult = new JsonArray();
+					result.put(key, nestedResult);
+					for(Object object: jsonArray){
+						nestedResult.add(pick((JsonObject) object, pick.getJsonObject(key), new JsonObject()));
+					}
+				}
+			} else {
+				if (source.containsKey(key)) {
+					result.put(key, source.getValue(key));
+				}
+			}
+		}
+        return result;
+    }
+
+
 	public static void makeConcise(Object compacted) {
 		makeConcise(compacted, null, null);
 	}
@@ -969,12 +984,12 @@ public final class HttpUtils {
 	}
 	public static Uni<RestResponse<Object>> generateQueryResult(HttpServerRequest request, QueryResult queryResult,
 																String options, String geometryProperty, int acceptHeader, boolean count, int limit, LanguageQueryTerm lang,
-																Context context, JsonLDService ldService,List<String> omitList,List<String> pickList) {
-		return generateQueryResult(request,queryResult, options, geometryProperty, acceptHeader, count, limit, lang, context, ldService, omitList, pickList,false);
+																Context context, JsonLDService ldService,List<String> omitList,Map<String,Object> pick) {
+		return generateQueryResult(request,queryResult, options, geometryProperty, acceptHeader, count, limit, lang, context, ldService, omitList, pick,false);
 	}
 	public static Uni<RestResponse<Object>> generateQueryResult(HttpServerRequest request, QueryResult queryResult,
 																String options, String geometryProperty, int acceptHeader, boolean count, int limit, LanguageQueryTerm lang,
-																Context context, JsonLDService ldService,List<String> omitList,List<String> pickList,boolean forceList) {
+																Context context, JsonLDService ldService,List<String> omitList,Map<String,Object> pick,boolean forceList) {
 		ResponseBuilder<Object> builder;
 		if (count) {
 			builder = RestResponseBuilderImpl.ok().header(NGSIConstants.COUNT_HEADER_RESULT, queryResult.getCount());
@@ -1010,7 +1025,7 @@ public final class HttpUtils {
 			for (Tuple2<String, String> entry : headers) {
 				myBuilder = myBuilder.header(entry.getItem1(), entry.getItem2());
 			}
-			Object result = processPickOmit(resultAndHeaders.getItem1(),pickList,omitList);
+			Object result = processPickOmit(resultAndHeaders.getItem1(),pick,omitList);
 			if(forceList){
 				forceList(result);
 			}
