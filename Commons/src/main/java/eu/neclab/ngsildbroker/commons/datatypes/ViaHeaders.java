@@ -60,6 +60,7 @@ public class ViaHeaders {
 	public void addViaHeader(String host) {
 		int schemeIdx = host.indexOf("://");
 		if (schemeIdx == -1) {
+			schemeIdx = 4;
 			host = "http://" + host;
 		}
 		viaHeaders.add(

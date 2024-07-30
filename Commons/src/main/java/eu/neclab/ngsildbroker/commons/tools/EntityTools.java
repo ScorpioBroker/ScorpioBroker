@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.commons.tools;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -10,8 +11,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import com.fasterxml.jackson.core.JsonGenerationException;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLDService;
+import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -53,6 +56,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple3;
+import io.vertx.core.MultiMap;
 import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
 import io.vertx.mutiny.ext.web.client.HttpResponse;
@@ -668,26 +672,37 @@ public final class EntityTools {
 			}
 			HttpRequest<Buffer> req = webClient.postAbs(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_QUERY);
 			req = req.setQueryParam("limit", "1000");
+			req = req.setQueryParam("options", "sysAttrs");
 			req = req.putHeader(HttpHeaders.VIA, remoteHost.getViaHeaders().getViaHeaders());
-			unis.add(req.putHeaders(remoteHost.headers()).timeout(timeout).sendJson(batchBody).onItem().transformToUni(response -> {
-				if (response != null) {
-					switch (response.statusCode()) {
-					case 200: {
-						return handle200(webClient, remoteHost, context, response, ldService, timeout);
-					}
-					default: {
-						return Uni.createFrom().item(Lists.newArrayList());
-					}
-
-					}
-				} else {
-					return Uni.createFrom().item(Lists.newArrayList());
-				}
-
-			}).onFailure().recoverWithUni(e -> {
-				logger.warn("Failed to query remote host" + remoteHost.toString(), e);
+			String batchString;
+			try {
+				batchString = JsonUtils.toPrettyString(batchBody);
+			} catch (Exception e) {
+				logger.warn("failed to serialize batch request");
 				return Uni.createFrom().item(Lists.newArrayList());
-			}));
+			}
+			req.putHeader(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD);
+			batchBody.put(NGSIConstants.JSON_LD_CONTEXT, context.getOriginalAtContext());
+			unis.add(req.putHeaders(remoteHost.headers()).timeout(timeout).sendBuffer(Buffer.buffer(batchString))
+					.onItem().transformToUni(response -> {
+						if (response != null) {
+							switch (response.statusCode()) {
+							case 200: {
+								return handle200(webClient, remoteHost, context, response, ldService, timeout);
+							}
+							default: {
+								return Uni.createFrom().item(Lists.newArrayList());
+							}
+
+							}
+						} else {
+							return Uni.createFrom().item(Lists.newArrayList());
+						}
+
+					}).onFailure().recoverWithUni(e -> {
+						logger.warn("Failed to query remote host" + remoteHost.toString(), e);
+						return Uni.createFrom().item(Lists.newArrayList());
+					}));
 
 		} else if (remoteHost.isCanDoQuery()) {
 			if (idsAndTypesAndIdPattern == null) {
@@ -714,7 +729,20 @@ public final class EntityTools {
 					req = req.setQueryParam(param.getKey(), (String) param.getValue());
 				}
 				req = req.setQueryParam("limit", "1000");
+				req = req.setQueryParam("options", "sysAttrs");
 				req = req.putHeader(HttpHeaders.VIA, remoteHost.getViaHeaders().getViaHeaders());
+				// <https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json>;
+				// rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"
+				if (context != null && context.getOriginalAtContext() != null
+						&& !context.getOriginalAtContext().isEmpty()) {
+					Object ctx = context.getOriginalAtContext().get(0);
+					if (ctx instanceof String ctxStr) {
+						req = req.putHeader(HttpHeaders.LINK,
+								"<" + ctxStr + ">; rel=\"" + NGSIConstants.HEADER_REL_LDCONTEXT + "\"; type=\""
+										+ AppConstants.NGB_APPLICATION_JSONLD + "\"");
+					}
+				}
+
 				unis.add(req.putHeaders(remoteHost.headers()).timeout(timeout).send().onItem()
 						.transformToUni(response -> {
 
@@ -765,6 +793,16 @@ public final class EntityTools {
 									req = req.addQueryParam(param.getKey(), param.getValue());
 								}
 							}
+							if (context != null && context.getOriginalAtContext() != null
+									&& !context.getOriginalAtContext().isEmpty()) {
+								Object ctx = context.getOriginalAtContext().get(0);
+								if (ctx instanceof String ctxStr) {
+									req = req.putHeader(HttpHeaders.LINK,
+											"<" + ctxStr + ">; rel=\"" + NGSIConstants.HEADER_REL_LDCONTEXT + "\"; type=\""
+													+ AppConstants.NGB_APPLICATION_JSONLD + "\"");
+								}
+							}
+							req = req.setQueryParam("options", "sysAttrs");
 							unis.add(req.putHeaders(remoteHost.headers()).timeout(timeout).send().onItem()
 									.transformToUni(response -> {
 
@@ -837,10 +875,9 @@ public final class EntityTools {
 			List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeQueryAndIdPattern, AttrsQueryTerm attrsQuery,
 			QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery,
 			Table<String, String, List<RegistrationEntry>> tenant2CId2RegEntries, Context context,
-			EntityCache fullEntityCache, boolean onlyFullEntitiesDistributed, ViaHeaders viaHeaders) {
+			EntityCache fullEntityCache, boolean splitEntities, ViaHeaders viaHeaders) {
 		return getRemoteQueries(idsAndTypeQueryAndIdPattern, attrsQuery, qQuery, geoQuery, scopeQuery, langQuery,
-				tenant2CId2RegEntries.row(tenant).values(), context, fullEntityCache, viaHeaders,
-				onlyFullEntitiesDistributed);
+				tenant2CId2RegEntries.row(tenant).values(), context, fullEntityCache, viaHeaders, splitEntities);
 	}
 
 	public static Collection<QueryRemoteHost> getRemoteQueries(
@@ -883,6 +920,7 @@ public final class EntityTools {
 					if (viaHeaders.getHostUrls().contains(regHost.host())) {
 						continue;
 					}
+
 					QueryRemoteHost hostToQuery = QueryRemoteHost.fromRegEntry(regEntry);
 					QueryInfos queryInfos = remoteHost2QueryInfo.get(hostToQuery);
 					if (queryInfos == null) {
@@ -951,6 +989,7 @@ public final class EntityTools {
 						Tuple3.of(queryParams.remove(NGSIConstants.ID), queryParams.remove(NGSIConstants.TYPE),
 								queryParams.remove(NGSIConstants.QUERY_PARAMETER_IDPATTERN)));
 				finalHost.setQueryParam(queryParams);
+				finalHost.setContext(context);
 			}
 		}
 
