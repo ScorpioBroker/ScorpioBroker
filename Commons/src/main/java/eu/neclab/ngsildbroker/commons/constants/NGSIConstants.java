@@ -511,6 +511,7 @@ public interface NGSIConstants {
 			NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_CREATED, NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_UPDATED,
 			NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_DELETED, NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_CREATED,
 			NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_UPDATED, NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_DELETED);
+
 	public static final String QUERY_PARAMETER_JOIN = "join";
 	public static final String QUERY_PARAMETER_JOINLEVEL = "joinLevel";
 	public static final String QUERY_PARAMETER_ENTITY_DIST = "entityDist";
@@ -526,4 +527,7 @@ public interface NGSIConstants {
 	public static final String ENTITY_MAP_COMPACTED_ENTRY = "entityMap";
 	public static final String LINKED_MAP_COMPACTED_ENTRY = "linkedMaps";
 	
+
+	public static final String CONTEXT_SOURCE_INFO = "contextSourceInfo";
+
 }

@@ -1191,7 +1191,8 @@ public class QueryService {
 				});
 	}
 
-	public Uni<List<Map<String, Object>>> getTypesWithDetail(String tenant, boolean localOnly) {
+	public Uni<List<Map<String, Object>>> getTypesWithDetail(String tenant, boolean localOnly,
+			io.vertx.core.MultiMap headersFromReq) {
 		Uni<List<Map<String, Object>>> local = queryDAO.getTypesWithDetails(tenant);
 		if (localOnly) {
 			return local;
@@ -1204,7 +1205,7 @@ public class QueryService {
 					RowSet<Row> rows = t.getItem1();
 					if (rows.size() > 0) {
 						List<Uni<List<Object>>> unis = getRemoteCalls(rows,
-								NGSIConstants.NGSI_LD_TYPES_ENDPOINT + "?details=true");
+								NGSIConstants.NGSI_LD_TYPES_ENDPOINT + "?details=true", headersFromReq);
 						return Uni.combine().all().unis(unis).combinedWith(list -> {
 							for (Object entry : list) {
 								if (((List) entry).isEmpty()) {
@@ -1272,7 +1273,7 @@ public class QueryService {
 
 	}
 
-	public Uni<Map<String, Object>> getTypes(String tenant, boolean localOnly) {
+	public Uni<Map<String, Object>> getTypes(String tenant, boolean localOnly, io.vertx.core.MultiMap headersFromReq) {
 		Uni<Map<String, Object>> local = queryDAO.getTypes(tenant);
 		if (localOnly) {
 			return local;
@@ -1285,7 +1286,8 @@ public class QueryService {
 					RowSet<Row> rows = t.getItem1();
 					Set<String> currentTypes = Sets.newHashSet(t.getItem2());
 					if (rows.size() > 0) {
-						List<Uni<List<Object>>> unis = getRemoteCalls(rows, NGSIConstants.NGSI_LD_TYPES_ENDPOINT);
+						List<Uni<List<Object>>> unis = getRemoteCalls(rows, NGSIConstants.NGSI_LD_TYPES_ENDPOINT,
+								headersFromReq);
 						return Uni.combine().all().unis(unis).combinedWith(list -> {
 							for (Object entry : list) {
 								if (!((List) entry).isEmpty()) {
@@ -1330,7 +1332,8 @@ public class QueryService {
 
 	}
 
-	public Uni<Map<String, Object>> getType(String tenant, String type, boolean localOnly) {
+	public Uni<Map<String, Object>> getType(String tenant, String type, boolean localOnly,
+			io.vertx.core.MultiMap headersFromReq) {
 		Uni<Map<String, Object>> local = queryDAO.getType(tenant, type);
 		if (localOnly) {
 			return local;
@@ -1344,7 +1347,7 @@ public class QueryService {
 					RowSet<Row> rows = t.getItem1();
 					if (rows.size() > 0) {
 						List<Uni<List<Object>>> remoteResults = getRemoteCalls(rows,
-								NGSIConstants.NGSI_LD_TYPES_ENDPOINT + "/" + type);
+								NGSIConstants.NGSI_LD_TYPES_ENDPOINT + "/" + type, headersFromReq);
 						return Uni.combine().all().unis(remoteResults).combinedWith(list -> {
 							long count = 0;
 							for (Object obj : list) {
@@ -1425,7 +1428,8 @@ public class QueryService {
 		});
 	}
 
-	public Uni<List<Map<String, Object>>> getAttribsWithDetails(String tenant, boolean localOnly) {
+	public Uni<List<Map<String, Object>>> getAttribsWithDetails(String tenant, boolean localOnly,
+			io.vertx.core.MultiMap headersFromReq) {
 		Uni<List<Map<String, Object>>> local = queryDAO.getAttributesDetail(tenant);
 		if (localOnly) {
 			return local;
@@ -1438,7 +1442,7 @@ public class QueryService {
 					Map<String, Set<String>> attrib2EntityTypes = t.getItem2();
 					if (rows.size() > 0) {
 						List<Uni<List<Object>>> remoteResults = getRemoteCalls(rows,
-								NGSIConstants.NGSI_LD_ATTRIBUTES_ENDPOINT + "?details=true");
+								NGSIConstants.NGSI_LD_ATTRIBUTES_ENDPOINT + "?details=true", headersFromReq);
 						return Uni.combine().all().unis(remoteResults).combinedWith(list -> {
 							for (Object obj : list) {
 								if (((List) obj).isEmpty()) {
@@ -1501,7 +1505,8 @@ public class QueryService {
 
 	}
 
-	public Uni<Map<String, Object>> getAttribs(String tenant, boolean localOnly) {
+	public Uni<Map<String, Object>> getAttribs(String tenant, boolean localOnly,
+			io.vertx.core.MultiMap headersFromReq) {
 		Uni<Map<String, Object>> local = queryDAO.getAttributeList(tenant);
 		if (localOnly) {
 			return local;
@@ -1514,7 +1519,7 @@ public class QueryService {
 					Set<String> attribIds = t.getItem2();
 					if (rows.size() > 0) {
 						List<Uni<List<Object>>> remoteResults = getRemoteCalls(rows,
-								NGSIConstants.NGSI_LD_ATTRIBUTES_ENDPOINT);
+								NGSIConstants.NGSI_LD_ATTRIBUTES_ENDPOINT, headersFromReq);
 						return Uni.combine().all().unis(remoteResults).combinedWith(list -> {
 							for (Object obj : list) {
 								if (((List) obj).isEmpty()) {
@@ -1555,7 +1560,8 @@ public class QueryService {
 		});
 	}
 
-	public Uni<Map<String, Object>> getAttrib(String tenant, String attrib, boolean localOnly) {
+	public Uni<Map<String, Object>> getAttrib(String tenant, String attrib, boolean localOnly,
+			io.vertx.core.MultiMap headersFromReq) {
 		Uni<Map<String, Object>> local = queryDAO.getAttributeDetail(tenant, attrib);
 		if (localOnly) {
 			return local;
@@ -1570,7 +1576,7 @@ public class QueryService {
 					Set<String> entityTypes = t2.getItem2();
 					if (rows.size() > 0) {
 						List<Uni<List<Object>>> remoteResults = getRemoteCalls(rows,
-								NGSIConstants.NGSI_LD_ATTRIBUTES_ENDPOINT + "/" + attrib);
+								NGSIConstants.NGSI_LD_ATTRIBUTES_ENDPOINT + "/" + attrib, headersFromReq);
 						return Uni.combine().all().unis(remoteResults).combinedWith(list -> {
 							long count = 0;
 							for (Object obj : list) {
@@ -1642,15 +1648,18 @@ public class QueryService {
 		return localResult;
 	}
 
-	private List<Uni<List<Object>>> getRemoteCalls(RowSet<Row> rows, String endpoint) {
+	private List<Uni<List<Object>>> getRemoteCalls(RowSet<Row> rows, String endpoint,
+			io.vertx.core.MultiMap headersFromReq) {
 		List<Uni<List<Object>>> unis = Lists.newArrayList();
 		rows.forEach(row -> {
 			// C.endpoint C.tenant_id, c.headers, c.reg_mode
 			String host = row.getString(0);
 			MultiMap remoteHeaders = MultiMap
 					.newInstance(HttpUtils.getHeadersForRemoteCall(row.getJsonArray(2), row.getString(1)));
-			unis.add(webClient.getAbs(host + endpoint).putHeaders(remoteHeaders).send().onFailure().recoverWithNull()
-					.onItem().transformToUni(response -> {
+			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHeaders, headersFromReq);
+
+			unis.add(webClient.getAbs(host + endpoint).putHeaders(toFrwd).send().onFailure().recoverWithNull().onItem()
+					.transformToUni(response -> {
 						String responseTypes;
 						if (response == null || response.statusCode() != 200) {
 							return Uni.createFrom().item(Lists.newArrayList());
@@ -1935,7 +1944,8 @@ public class QueryService {
 							return queryDAO.storeEntityMap(tenant, qToken, entityMap).onItem().transform(v -> localTpl);
 						});
 			}
-		}
+
+	}
 
 	}
 
@@ -1943,6 +1953,7 @@ public class QueryService {
 	public Uni<Void> scheduleEntityMapCleanUp() {
 		return queryDAO.runEntityMapCleanup(entityMapTTL);
 	}
+
 
 	public Uni<Map<String, Object>> idsOnly(Uni<Map<String, Object>> uniMap) {
 		return uniMap.onItem().transform(map -> {

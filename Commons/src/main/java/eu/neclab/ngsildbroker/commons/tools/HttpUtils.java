@@ -22,6 +22,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import eu.neclab.ngsildbroker.commons.exceptions.LdContextException;
 import io.vertx.core.json.DecodeException;
+import io.vertx.core.json.Json;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.http.HttpStatus;
 import org.jboss.resteasy.reactive.RestResponse;
@@ -453,7 +454,9 @@ public final class HttpUtils {
 					.formatted(result.get(NGSIConstants.JSONLD_CONTEXT));
 			result.remove(NGSIConstants.JSONLD_CONTEXT).add("Link", linkHeader);
 		}
-		result.add("Accept", "application/json");
+		if (!result.contains("Accept")) {
+			result.add("Accept", "application/json");
+		}
 		if (tenant != null) {
 			result.add(NGSIConstants.TENANT_HEADER, tenant);
 		}
@@ -485,6 +488,7 @@ public final class HttpUtils {
 	}
 
 	public static Uni<RestResponse<Object>> generateEntityResult(List<Object> contextHeader, Context context,
+
 			int acceptHeader, Object entity, String geometryProperty, String options, LanguageQueryTerm langQuery,
 			JsonLDService ldService, List<String> omitList, List<String> pickList) {
 		return generateEntityResult(contextHeader, context, acceptHeader, entity, geometryProperty, options, langQuery,
@@ -501,62 +505,12 @@ public final class HttpUtils {
 					for (Tuple2<String, String> entry : headers) {
 						resp = resp.header(entry.getItem1(), entry.getItem2());
 					}
-					Object result = processPickOmit(resultBodyAndHeaders.getItem1(), pickList, omitList);
+					Object result = resultBodyAndHeaders.getItem1();
 					if (forceList) {
 						forceList(result);
 					}
 					return resp.entity(result).build();
 				});
-	}
-
-	public static Object processPickOmit(Object object, List<String> pickList, List<String> omitList) {
-		try {
-			JsonObject jsonObject = new JsonObject(object.toString());
-			if (omitList != null && !omitList.isEmpty()) {
-				for (String key : omitList) {
-					jsonObject.remove(key);
-				}
-			}
-			if (pickList != null && !pickList.isEmpty()) {
-				JsonObject finalJsonObject = new JsonObject();
-				for (String key : pickList) {
-					Object value = jsonObject.getValue(key);
-					if (value != null) {
-						finalJsonObject.put(key, value);
-					}
-				}
-				return finalJsonObject;
-			} else
-				return jsonObject;
-		} catch (DecodeException decodeException) {
-			JsonArray jsonArray = new JsonArray(object.toString());
-			for (Object jsonObject : jsonArray) {
-				if (jsonObject instanceof JsonObject) {
-					if (omitList != null && !omitList.isEmpty()) {
-						for (String key : omitList) {
-							((JsonObject) jsonObject).remove(key);
-						}
-					}
-				}
-			}
-			if (pickList != null && !pickList.isEmpty()) {
-				JsonArray finalJsonArray = new JsonArray();
-				for (Object jsonObject : jsonArray) {
-					if (jsonObject instanceof JsonObject) {
-						JsonObject finalJsonObject = new JsonObject();
-						for (String key : pickList) {
-							Object value = ((JsonObject) jsonObject).getValue(key);
-							if (value != null) {
-								finalJsonObject.put(key, value);
-							}
-						}
-						finalJsonArray.add(finalJsonObject);
-					}
-				}
-				return finalJsonArray;
-			} else
-				return jsonArray;
-		}
 	}
 
 	public static void makeConcise(Object compacted) {
@@ -1002,6 +956,7 @@ public final class HttpUtils {
 	}
 
 	public static Uni<RestResponse<Object>> generateQueryResult(HttpServerRequest request, QueryResult queryResult,
+
 			String options, String geometryProperty, int acceptHeader, boolean count, int limit, LanguageQueryTerm lang,
 			Context context, JsonLDService ldService, boolean entityMap, String baseUrl, String ngsiLdEndpoint) {
 		return generateQueryResult(request, queryResult, options, geometryProperty, acceptHeader, count, limit, lang,
@@ -1009,6 +964,7 @@ public final class HttpUtils {
 	}
 
 	public static Uni<RestResponse<Object>> generateQueryResult(HttpServerRequest request, QueryResult queryResult,
+
 			String options, String geometryProperty, int acceptHeader, boolean count, int limit, LanguageQueryTerm lang,
 			Context context, JsonLDService ldService, boolean forceList, boolean forceAttributeList, boolean entityMap,
 			String baseUrl, String ngsiLdEndpoint) {
@@ -1187,6 +1143,19 @@ public final class HttpUtils {
 		result.put(NGSIConstants.EXPIRES_AT,
 				SerializationTools.formatter.format(Instant.ofEpochMilli(entityMap.getExpiresAt())));
 		return RestResponse.ok(result, MediaType.APPLICATION_JSON);
+	}
+
+	public static io.vertx.mutiny.core.MultiMap getHeadToFrwd(io.vertx.mutiny.core.MultiMap remoteHeaders,
+			MultiMap headersFromReq) {
+		io.vertx.mutiny.core.MultiMap toFrwd = io.vertx.mutiny.core.MultiMap.newInstance(HeadersMultiMap.headers());
+		for (Entry<String, String> entry : remoteHeaders.entries()) {
+			if (entry.getValue().equals("urn:ngsi-ld:request")) {
+				toFrwd.add(entry.getKey(), headersFromReq.get(entry.getKey()));
+			} else {
+				toFrwd.add(entry.getKey(), entry.getValue());
+			}
+		}
+		return toFrwd;
 	}
 
 }

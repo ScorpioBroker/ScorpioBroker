@@ -546,20 +546,20 @@ public class QueryParser {
 
 		StringBuilder keyBuilder = new StringBuilder();
 		for (char c : input.toCharArray()) {
-			if (c == '{') {
+			if (c == '{' || c == '.') {
 				String key = keyBuilder.toString();
 				Map<String, Object> childMap = new HashMap<>();
 				stack.peek().put(key, childMap);
 				stack.push(childMap);
 				keyBuilder.setLength(0);
 			} else if (c == '}') {
-				if (keyBuilder.length() > 0) {
+				if (!keyBuilder.isEmpty()) {
 					stack.peek().put(keyBuilder.toString(), null);
 					keyBuilder.setLength(0);
 				}
 				stack.pop();
 			} else if (c == ',') {
-				if (keyBuilder.length() > 0) {
+				if (!keyBuilder.isEmpty()) {
 					stack.peek().put(keyBuilder.toString(), null);
 					keyBuilder.setLength(0);
 				}
@@ -567,8 +567,10 @@ public class QueryParser {
 				keyBuilder.append(c);
 			}
 		}
+
 		if (resultMap.isEmpty()) {
 			return Map.of(input, new HashMap<>());
+
 		}
 		return resultMap;
 	}

@@ -258,6 +258,7 @@ public class QQueryTerm implements Serializable {
 
 		boolean finalReturnValue = false;
 //        if (!attribute.matches(URI) && attribute.contains(".")) {
+
 		String[] splittedAttrib = attribute.split("[\\[\\].]");
 		List<String> doNotExpandAttrs = new ArrayList<>();
 		if (jsonKeys != null && !jsonKeys.isEmpty()) {
@@ -294,6 +295,7 @@ public class QQueryTerm implements Serializable {
 		}
 		if (operant != null && operant.matches(RANGE)) {
 			String[] range = operant.split("\\.\\.");
+
 
 			switch (operator) {
 			case "==":
@@ -937,6 +939,7 @@ public class QQueryTerm implements Serializable {
 			return false;
 		return true;
 	}
+
 
 	@Override
 	public boolean equals(Object obj) {

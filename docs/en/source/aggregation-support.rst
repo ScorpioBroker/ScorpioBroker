@@ -32,68 +32,67 @@ In order to create an entity, we can hit the endpoint POST **http://<IP Address>
 
 Payload:
 
-.. code-block:: JSON
+.. code-block:: curl
 
- {
-     "id": "urn:ngsi-ld:Vehicle:B9211",
-     "type": "Vehicle",
-     "brandName": [
-         {
-             "type": "Property",
-             "value": "Mercedes"
-         }
-     ],
-     "speed": [
-         {
-             "type": "Property",
-             "value": 120,
-             "observedAt": "2020-08-01T12:00:00Z"
-         },
-         {
-             "type": "Property",
-             "value": 100,
-             "observedAt": "2020-08-01T12:01:00Z"
-         },
-         {
-             "type": "Property",
-             "value": 95,
-             "observedAt": "2020-08-01T12:02:00Z"
-         },
-         {
-             "type": "Property",
-             "value": 85,
-             "observedAt": "2020-08-01T12:03:00Z"
-         },
-         {
-             "type": "Property",
-             "value": 100,
-             "observedAt": "2020-08-01T12:04:00Z"
-         },
-         {
-             "type": "Property",
-             "value": 115,
-             "observedAt": "2020-08-01T12:05:00Z"
-         },
-         {
-             "type": "Property",
-             "value": 100,
-             "observedAt": "2020-08-01T12:06:00Z"
-         },
-         {
-             "type": "Property",
-             "value": 80,
-             "observedAt": "2020-08-01T12:07:00Z"
-         },
-         {
-             "type": "Property",
-             "value": 55,
-             "observedAt": "2020-08-01T12:08:00Z"
-         }
-     ],
-     "@context": [
-         "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld"
-     ]
- }
+ curl --location 'http://localhost:9090/ngsi-ld/v1/temporal/entities' --header 'Content-Type: application/ld+json' --data-raw '{
+    "id": "urn:ngsi-ld:Vehicle:B9211",
+    "type": "Vehicle",
+    "brandName": [
+        {
+            "type": "Property",
+            "value": "Mercedes"
+        }
+    ],
+    "speed": [
+        {
+            "type": "Property",
+            "value": 120,
+            "observedAt": "2020-08-01T12:00:00Z"
+        },
+        {
+            "type": "Property",
+            "value": 100,
+            "observedAt": "2020-08-01T12:01:00Z"
+        },
+        {
+            "type": "Property",
+            "value": 95,
+            "observedAt": "2020-08-01T12:02:00Z"
+        },
+        {
+            "type": "Property",
+            "value": 85,
+            "observedAt": "2020-08-01T12:03:00Z"
+        },
+        {
+            "type": "Property",
+            "value": 100,
+            "observedAt": "2020-08-01T12:04:00Z"
+        },
+        {
+            "type": "Property",
+            "value": 115,
+            "observedAt": "2020-08-01T12:05:00Z"
+        },
+        {
+            "type": "Property",
+            "value": 100,
+            "observedAt": "2020-08-01T12:06:00Z"
+        },
+        {
+            "type": "Property",
+            "value": 80,
+            "observedAt": "2020-08-01T12:07:00Z"
+        },
+        {
+            "type": "Property",
+            "value": 55,
+            "observedAt": "2020-08-01T12:08:00Z"
+        }
+    ],
+    "@context": [
+        "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld"
+    ]}'
 
 
 2. Query Operation
@@ -103,7 +102,9 @@ To retrieve entity with aggregation support, you can send an HTTP GET to - **htt
 
 **EXAMPLE:** Give back all aggr methods (max, min, avg, sum, sumsq, stddev, totalCount, distinctCount) for Entities of type Vehicle
 
-	GET - **http://localhost:9090/ngsi-ld/v1/temporal/entities?type=Vehicle&aggrMethods=max%2Cmin%2Cavg%2Csum%2Csumsq%2Cstddev%2CtotalCount%2CdistinctCount&timeproperty=observedAt'**
+.. code-block:: curl
+
+	curl --location 'http://localhost:9090/ngsi-ld/v1/temporal/entities?type=Vehicle&aggrMethods=max%2Cmin%2Cavg%2Csum%2Csumsq%2Cstddev%2CtotalCount%2CdistinctCount&timeproperty=observedAt'
 
 Response:
 

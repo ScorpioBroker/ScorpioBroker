@@ -19,7 +19,7 @@ Starting the Scorpio Broker for the tutorials
 In order to start the broker we recommend to use docker-compose. Get the docker-compose file from the github repo of Scorpio.
 ::
 
-	curl https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/development-quarkus/compose-files/docker-compose-java-aaio.yml
+	curl -O https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/development-quarkus/compose-files/docker-compose-java-aaio.yml
 
 and start the container with 
 ::
@@ -37,25 +37,35 @@ To issue requests to the broker, you can use the curl command line tool. curl is
 The basic patterns for all the curl examples in this document are the following:
 
 For POST:
-curl localhost:9090/ngsi-ld/v1/<ngsi-ld-resource-path> -s -S [headers]' -X POST -d @- <<EOF
-[payload]
-EOF
+::
+
+    curl localhost:9090/ngsi-ld/v1/<ngsi-ld-resource-path> -s -S [headers]' -X POST -d @- <<EOF
+    [payload]
+    EOF
 
 For PUT:
-curl localhost:9090/ngsi-ld/v1/<ngsi-ld-resource-path> -s -S [headers] -X PUT -d @- <<EOF
-[payload]
-EOF
+::
+
+    curl localhost:9090/ngsi-ld/v1/<ngsi-ld-resource-path> -s -S [headers] -X PUT -d @- <<EOF
+    [payload]
+    EOF
 
 For PATCH:
-curl localhost:9090/ngsi-ld/v1/<ngsi-ld-resource-path> -s -S [headers] -X PATCH -d @- <<EOF
-[payload]
-EOF
+::
+
+    curl localhost:9090/ngsi-ld/v1/<ngsi-ld-resource-path> -s -S [headers] -X PATCH -d @- <<EOF
+    [payload]
+    EOF
 
 For GET:
-curl localhost:9090/ngsi-ld/v1/<ngsi-ld-resource-path> -s -S [headers]
+::
+
+    curl localhost:9090/ngsi-ld/v1/<ngsi-ld-resource-path> -s -S [headers]
 
 For DELETE:
-curl localhost:9090/ngsi-ld/v1/<ngsi-ld-resource-path> -s -S [headers] -X DELETE
+::
+
+    curl localhost:9090/ngsi-ld/v1/<ngsi-ld-resource-path> -s -S [headers] -X DELETE
 
 
 Regarding [headers] you have to include the following ones:
@@ -781,7 +791,8 @@ Assuming that there is a temperature change in all of our rooms we will get 3 in
 		"notifiedAt": "2020-08-07T14:00:12.475000Z",
 		"subscriptionId": "urn:subscription:1"
 	}
-	
+
+
 ::
 
 	{

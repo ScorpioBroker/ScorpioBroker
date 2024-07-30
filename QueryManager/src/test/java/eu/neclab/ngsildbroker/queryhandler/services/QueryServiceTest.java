@@ -82,5 +82,5 @@ public class QueryServiceTest {
 		resolved = objectMapper.readValue(jsonLdObject, Map.class);
 	}
 
-	
+
 }
