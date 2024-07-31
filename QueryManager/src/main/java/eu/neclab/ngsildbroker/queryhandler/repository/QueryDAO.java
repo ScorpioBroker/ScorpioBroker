@@ -926,9 +926,9 @@ public class QueryDAO {
 //			    expires_at timestamp without time zone,
 //				last_access timestamp without time zone,
 //			    entity_map jsonb,
-			String sql = "INSERT INTO entitymap VALUES ($1, now() + interval '$2', now(), $3) ON CONFLICT(id) DO UPDATE SET last_access=now(), entity_map=$3";
+			String sql = "INSERT INTO entitymap VALUES ($1, now() + interval '"+entityMapTTL+"', now(), $2) ON CONFLICT(id) DO UPDATE SET last_access=now(), entity_map=$2";
 			client.preparedQuery(sql)
-					.executeAndForget(Tuple.of(qToken, entityMapTTL, entityMap.toSQLJson(objectMapper)));
+					.executeAndForget(Tuple.of(qToken, entityMap.toSQLJson(objectMapper)));
 			return Uni.createFrom().voidItem();
 		});
 	}
@@ -1375,13 +1375,12 @@ public class QueryDAO {
 			query.append(dollar);
 			dollar++;
 			tuple.addString(qToken);
-			query.append(", now() + (interval $");
-			query.append(dollar);
-			dollar++;
-			tuple.addString(entityMapTTL);
+			query.append(", now() + interval '");
+			query.append(entityMapTTL);
+
 
 			query.append(
-					"),now(), jsonb_build_object('entityMap', jsonb_agg(jsonb_build_object(id, jsonb_build_array('");
+					"',now(), jsonb_build_object('entityMap', jsonb_agg(jsonb_build_object(id, jsonb_build_array('");
 			query.append(NGSIConstants.JSON_LD_NONE);
 			query.append("'))), 'splitEntities', $");
 			query.append(dollar);
