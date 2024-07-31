@@ -1375,13 +1375,13 @@ public class QueryDAO {
 			query.append(dollar);
 			dollar++;
 			tuple.addString(qToken);
-			query.append(", now() + interval '$");
+			query.append(", now() + (interval $");
 			query.append(dollar);
 			dollar++;
 			tuple.addString(entityMapTTL);
 
 			query.append(
-					"',now(), jsonb_build_object('entityMap', jsonb_agg(jsonb_build_object(id, jsonb_build_array('");
+					"),now(), jsonb_build_object('entityMap', jsonb_agg(jsonb_build_object(id, jsonb_build_array('");
 			query.append(NGSIConstants.JSON_LD_NONE);
 			query.append("'))), 'splitEntities', $");
 			query.append(dollar);
