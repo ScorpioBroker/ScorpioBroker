@@ -768,7 +768,9 @@ public class JsonLdApi {
 								.setFromHasValue(ngsiElement.isHasAtValue() || ngsiElement.isFromHasValue()),
 						payloadType, atContextAllowed, webClient,atContextUrl));
 			}
-
+			if(unis.isEmpty()) {
+				return Uni.createFrom().item(ngsiElement);
+			}
 			return Uni.combine().all().unis(unis).combinedWith(list -> list).onItem().transformToUni(list -> {
 				final List<Object> result = new ArrayList<Object>();
 				// 3.2)

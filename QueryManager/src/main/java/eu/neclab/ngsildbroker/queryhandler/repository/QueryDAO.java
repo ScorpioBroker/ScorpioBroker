@@ -1,9 +1,11 @@
 package eu.neclab.ngsildbroker.queryhandler.repository;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 
@@ -11,13 +13,20 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.DataSetIdTerm;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.locationtech.spatial4j.context.SpatialContextFactory;
 import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
 import org.locationtech.spatial4j.io.GeoJSONReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ser.BeanSerializer;
 import com.github.jsonldjava.core.Context;
+import com.github.jsonldjava.core.JsonLdUtils;
+import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -26,6 +35,7 @@ import com.google.common.collect.Table;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.EntityCache;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityMap;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityMapEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryRemoteHost;
@@ -34,13 +44,17 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.OmitTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.PickTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.Query;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.storage.ClientManager;
 import eu.neclab.ngsildbroker.commons.tools.DBUtil;
+import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple3;
@@ -58,17 +72,24 @@ public class QueryDAO {
 	@Inject
 	ClientManager clientManager;
 
+	@Inject
+	ObjectMapper objectMapper;
+
+	@ConfigProperty(name = "scorpio.entitymap.cleanup.ttl", defaultValue = "300 sec")
+	String entityMapTTL;
+
 	GeoJSONReader geoReader = new GeoJSONReader(JtsSpatialContext.GEO, new SpatialContextFactory());
 
 	private static Logger logger = LoggerFactory.getLogger(QueryDAO.class);
 
-	public Uni<Map<String, Object>> getEntity(String entityId, String tenantId, AttrsQueryTerm attrsQuery) {
+	public Uni<Map<String, Object>> getEntity(String entityId, String tenantId, AttrsQueryTerm attrsQuery,
+			DataSetIdTerm datasetIdTerm) {
 		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
 			Tuple tuple = Tuple.tuple();
 			int dollar = 1;
 			StringBuilder query = new StringBuilder("SELECT ");
 			if (attrsQuery != null) {
-				dollar = attrsQuery.toSqlConstructEntity(query, tuple, dollar);
+				dollar = attrsQuery.toSqlConstructEntity(query, tuple, dollar, datasetIdTerm);
 			} else {
 				query.append("ENTITY");
 			}
@@ -105,88 +126,116 @@ public class QueryDAO {
 		});
 	}
 
-	public Uni<RowSet<Row>> queryLocalOnly(String tenantId, String[] ids, TypeQueryTerm typeQuery, String idPattern,
-			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery,
-			LanguageQueryTerm langQuery, int limit, int offSet, boolean count, DataSetIdTerm dataSetIdTerm) {
+	public Uni<RowSet<Row>> queryLocalOnly(String tenantId,
+			List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeQueryAndIdPattern, AttrsQueryTerm attrsQuery,
+			QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, int limit,
+			int offSet, boolean count, DataSetIdTerm dataSetIdTerm, String join, int joinLevel, PickTerm pickTerm,
+			OmitTerm omitTerm) {
 		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
 			StringBuilder query = new StringBuilder();
 			int dollar = 1;
 			Tuple tuple = Tuple.tuple();
-			query.append("with a as(");
+			String entitySelect = "D0";
+			query.append("with D0 as(");
 			if (count && limit == 0 && dataSetIdTerm == null) {
 				query.append("SELECT COUNT(ENTITY)");
 			} else {
 				query.append("SELECT ");
+				if (join != null && joinLevel > 0) {
+					query.append("ID, true AS PARENT, ");
+				}
 				if (attrsQuery != null) {
-					dollar = attrsQuery.toSqlConstructEntity(query, tuple, dollar);
+					dollar = attrsQuery.toSqlConstructEntity(query, tuple, dollar, dataSetIdTerm);
 				} else {
-					query.append(" ENTITY ");
+					query.append("ENTITY");
+				}
+				if (count) {
+					query.append(", COUNT(*) as count");
 				}
 				query.append(" as entity, id");
 			}
 			query.append(" FROM ENTITY WHERE ");
-			if(typeQuery == null && attrsQuery == null && geoQuery == null && qQuery == null
-					&& ids == null && idPattern == null && scopeQuery == null){
+			if (attrsQuery == null && geoQuery == null && qQuery == null && idsAndTypeQueryAndIdPattern == null
+					&& scopeQuery == null) {
 				query.append("TRUE ");
-			}
-			boolean sqlAdded = false;
-			if (typeQuery != null) {
-				dollar = typeQuery.toSql(query, tuple, dollar);
-				sqlAdded = true;
-			}
-			if (attrsQuery != null) {
-				if (sqlAdded) {
-					query.append(" AND ");
-				}
-				dollar = attrsQuery.toSql(query, tuple, dollar);
-				sqlAdded = true;
-			}
-			if (geoQuery != null) {
-				if (sqlAdded) {
-					query.append(" AND ");
-				}
-				dollar = geoQuery.toSql(query, tuple, dollar);
-				sqlAdded = true;
-			}
+			} else {
 
-			if (qQuery != null) {
-				if (sqlAdded) {
-					query.append(" AND ");
-				}
-				dollar = qQuery.toSql(query, dollar, tuple);
-				sqlAdded = true;
-			}
-			if (ids != null) {
-				if (sqlAdded) {
-					query.append(" AND ");
-				}
-				query.append("id IN (");
-				for (String id : ids) {
-					query.append('$');
-					query.append(dollar);
-					query.append(',');
-					tuple.addString(id);
-					dollar++;
+				boolean sqlAdded = false;
+
+				if (idsAndTypeQueryAndIdPattern != null) {
+					query.append('(');
+					sqlAdded = true;
+					for (Tuple3<String[], TypeQueryTerm, String> t : idsAndTypeQueryAndIdPattern) {
+						TypeQueryTerm typeQuery = t.getItem2();
+						String[] ids = t.getItem1();
+						String idPattern = t.getItem3();
+						boolean tSqlAdded = false;
+						query.append('(');
+						if (typeQuery != null) {
+							dollar = typeQuery.toSql(query, tuple, dollar);
+							tSqlAdded = true;
+						}
+						if (ids != null) {
+							if (tSqlAdded) {
+								query.append(" AND ");
+							}
+							query.append("id IN (");
+							for (String id : ids) {
+								query.append('$');
+								query.append(dollar);
+								query.append(',');
+								tuple.addString(id);
+								dollar++;
+							}
+
+							query.setCharAt(query.length() - 1, ')');
+							tSqlAdded = true;
+						}
+						if (idPattern != null) {
+							if (tSqlAdded) {
+								query.append(" AND ");
+							}
+							query.append("id ~ $");
+							query.append(dollar);
+							tuple.addString(idPattern);
+							dollar++;
+							tSqlAdded = true;
+						}
+						query.append(") OR ");
+					}
+					query.setLength(query.length() - 4);
+					query.append(')');
 				}
 
-				query.setCharAt(query.length() - 1, ')');
-				sqlAdded = true;
-			}
-			if (idPattern != null) {
-				if (sqlAdded) {
-					query.append(" AND ");
+				if (attrsQuery != null) {
+					if (sqlAdded) {
+						query.append(" AND ");
+					}
+					dollar = attrsQuery.toSql(query, tuple, dollar);
+					sqlAdded = true;
 				}
-				query.append("id ~ $");
-				query.append(dollar);
-				tuple.addString(idPattern);
-				dollar++;
-				sqlAdded = true;
+				if (geoQuery != null) {
+					if (sqlAdded) {
+						query.append(" AND ");
+					}
+					dollar = geoQuery.toSql(query, tuple, dollar);
+					sqlAdded = true;
+				}
+
+				if (qQuery != null) {
+					if (sqlAdded) {
+						query.append(" AND ");
+					}
+					dollar = qQuery.toSql(query, dollar, tuple, false, true);
+					sqlAdded = true;
+				}
+
+				if (scopeQuery != null) {
+					query.append(" AND ");
+					scopeQuery.toSql(query);
+				}
 			}
-			if (scopeQuery != null) {
-				query.append(" AND ");
-				scopeQuery.toSql(query);
-			}
-			if (!(count && limit == 0 && dataSetIdTerm==null)) {
+			if (!(count && limit == 0 && dataSetIdTerm == null)) {
 				query.append(" GROUP BY ENTITY,id");
 			}
 			if (limit != 0) {
@@ -196,16 +245,62 @@ public class QueryDAO {
 				query.append(offSet);
 			}
 			query.append(")");
-			if(dataSetIdTerm!=null){
+			int counter = 0;
+			if (join != null && joinLevel > 0) {
+
+				query.append(", ");
+				for (counter = 0; counter < joinLevel; counter++) {
+					query.append('B');
+					query.append(counter + 1);
+					query.append(" AS (SELECT ");
+					query.append('D');
+					query.append(counter);
+					query.append(".ID AS ID, X.VALUE AS VALUE FROM D");
+					query.append(counter);
+					query.append(", JSONB_EACH(D");
+					query.append(counter);
+					query.append(".ENTITY) AS X WHERE JSONB_TYPEOF(X.VALUE) = 'array'), ");
+					query.append('C');
+					query.append(counter + 1);
+					query.append(" AS (SELECT distinct Z ->> '@id' as link FROM B");
+					query.append(counter + 1);
+					query.append(", JSONB_ARRAY_ELEMENTS(B");
+					query.append(counter + 1);
+					query.append(
+							".VALUE) AS Y, JSONB_ARRAY_ELEMENTS(Y #> '{https://uri.etsi.org/ngsi-ld/hasObject}') AS Z WHERE Y #>> '{@type,0}' = 'https://uri.etsi.org/ngsi-ld/Relationship'), ");
+					query.append('D');
+					query.append(counter + 1);
+					query.append(" as (SELECT E.ID as id, false as parent, E.ENTITY as entity");
+					if (count) {
+						query.append(", -1 as count");
+					}
+					query.append(" from C");
+					query.append(counter + 1);
+					query.append(" join ENTITY as E on C");
+					query.append(counter + 1);
+					query.append(".link = E.ID), ");
+				}
+				query.setLength(query.length() - 2);
+				query.append(" SELECT * FROM (");
+				for (int i = 0; i <= joinLevel; i++) {
+					query.append("SELECT * FROM D");
+					query.append(i);
+					query.append(" UNION ALL ");
+				}
+				query.setLength(query.length() - " UNION ALL ".length());
+				query.append(") as xyz group by id, entity, parent");
+				entitySelect = "xyz";
+			}
+
+			if (dataSetIdTerm != null) {
 				query.append(",");
-				dollar = dataSetIdTerm.toSql(query,tuple,dollar,"a");
-				if(count && limit==0){
+				// dollar = dataSetIdTerm.toSql(query, tuple, dollar, entitySelect);
+				if (count && limit == 0) {
 					query.append("select count(x.entity) from x");
-				}else {
+				} else {
 					query.append("select x.entity, (select count(x.entity) from x),x.id from x");
 				}
-			}
-			else{
+			} else {
 				query.append("select a.entity,(select count(*) from a) from a");
 
 			}
@@ -701,7 +796,7 @@ public class QueryDAO {
 					.transformToUni(tenantRows -> {
 						List<Uni<Tuple2<String, RowSet<Row>>>> unis = Lists.newArrayList();
 						RowIterator<Row> it = tenantRows.iterator();
-						String sql = "SELECT cs_id, c_id, e_id, e_id_p, e_type, e_prop, e_rel, ST_AsGeoJSON(i_location), scopes, EXTRACT(MILLISECONDS FROM expires), endpoint, tenant_id, headers, reg_mode, createEntity, updateEntity, appendAttrs, updateAttrs, deleteAttrs, deleteEntity, createBatch, upsertBatch, updateBatch, deleteBatch, upsertTemporal, appendAttrsTemporal, deleteAttrsTemporal, updateAttrsTemporal, deleteAttrInstanceTemporal, deleteTemporal, mergeEntity, replaceEntity, replaceAttrs, mergeBatch, retrieveEntity, queryEntity, queryBatch, retrieveTemporal, queryTemporal, retrieveEntityTypes, retrieveEntityTypeDetails, retrieveEntityTypeInfo, retrieveAttrTypes, retrieveAttrTypeDetails, retrieveAttrTypeInfo, createSubscription, updateSubscription, retrieveSubscription, querySubscription, deleteSubscription FROM csourceinformation WHERE queryentity OR querybatch OR retrieveentity OR retrieveentitytypes OR retrieveentitytypedetails OR retrieveentitytypeinfo OR retrieveattrtypes OR retrieveattrtypedetails OR retrieveattrtypeinfo";
+						String sql = "SELECT cs_id, c_id, e_id, e_id_p, e_type, e_prop, e_rel, ST_AsGeoJSON(i_location), scopes, EXTRACT(MILLISECONDS FROM expires), endpoint, tenant_id, headers, reg_mode, createEntity, updateEntity, appendAttrs, updateAttrs, deleteAttrs, deleteEntity, createBatch, upsertBatch, updateBatch, deleteBatch, upsertTemporal, appendAttrsTemporal, deleteAttrsTemporal, updateAttrsTemporal, deleteAttrInstanceTemporal, deleteTemporal, mergeEntity, replaceEntity, replaceAttrs, mergeBatch, retrieveEntity, queryEntity, queryBatch, retrieveTemporal, queryTemporal, retrieveEntityTypes, retrieveEntityTypeDetails, retrieveEntityTypeInfo, retrieveAttrTypes, retrieveAttrTypeDetails, retrieveAttrTypeInfo, createSubscription, updateSubscription, retrieveSubscription, querySubscription, deleteSubscription, queryEntityMap, createEntityMap, updateEntityMap, deleteEntityMap, retrieveEntityMap FROM csourceinformation WHERE queryentity OR querybatch OR retrieveentity OR retrieveentitytypes OR retrieveentitytypedetails OR retrieveentitytypeinfo OR retrieveattrtypes OR retrieveattrtypedetails OR retrieveattrtypeinfo";
 						unis.add(client.preparedQuery(sql).execute().onItem()
 								.transform(rows -> Tuple2.of(AppConstants.INTERNAL_NULL_KEY, rows)));
 						while (it.hasNext()) {
@@ -734,74 +829,492 @@ public class QueryDAO {
 
 	}
 
-	public Uni<Tuple2<Map<String, Map<String, Object>>, List<String>>> queryForEntityIds(String tenant, String[] ids,
-																						 TypeQueryTerm typeQuery, String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery,
-																						 GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, Context context, int limit, int offset, DataSetIdTerm dataSetIdTerm) {
+	/*
+	 * public Uni<Map<String, Tuple2<Map<String, Object>, String>>>
+	 * queryForEntityIds(String tenant, String[] ids, TypeQueryTerm typeQuery,
+	 * String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery, GeoQueryTerm
+	 * geoQuery, ScopeQueryTerm scopeQuery, Context context, int limit, int offset,
+	 * DataSetIdTerm dataSetIdTerm, String join, int joinLevel, boolean isDist) {
+	 * return clientManager.getClient(tenant, false).onItem().transformToUni(client
+	 * -> { StringBuilder query = new StringBuilder(); int dollar = 1; Tuple tuple =
+	 * Tuple.tuple(); boolean doJoin = (join != null && joinLevel > 0);
+	 * query.append("WITH a as (SELECT ID");
+	 * 
+	 * query.append(" FROM ENTITY WHERE "); boolean sqlAdded = false; if (typeQuery
+	 * != null) { dollar = typeQuery.toSql(query, tuple, dollar); sqlAdded = true; }
+	 * if (attrsQuery != null) { if (sqlAdded) { query.append(" AND "); } dollar =
+	 * attrsQuery.toSql(query, tuple, dollar); sqlAdded = true; } if (geoQuery !=
+	 * null) { if (sqlAdded) { query.append(" AND "); } dollar =
+	 * geoQuery.toSql(query, tuple, dollar); sqlAdded = true; }
+	 * 
+	 * if (qQuery != null) { if (sqlAdded) { query.append(" AND "); } dollar =
+	 * qQuery.toSql(query, dollar, tuple, isDist, false); sqlAdded = true; } if (ids
+	 * != null) { if (sqlAdded) { query.append(" AND "); } query.append("id IN (");
+	 * for (String id : ids) { query.append('$'); query.append(dollar);
+	 * query.append(','); tuple.addString(id); dollar++; }
+	 * 
+	 * query.setCharAt(query.length() - 1, ')'); sqlAdded = true; } if (idPattern !=
+	 * null) { if (sqlAdded) { query.append(" AND "); } query.append("id ~ $");
+	 * query.append(dollar); tuple.addString(idPattern); dollar++; sqlAdded = true;
+	 * } if (scopeQuery != null) { query.append(" AND "); scopeQuery.toSql(query); }
+	 * query.append(" ORDER BY createdAt), b as (SELECT a.ID FROM a limit $");
+	 * query.append(dollar); tuple.addInteger(limit); dollar++;
+	 * query.append(" offset $"); query.append(dollar); tuple.addInteger(offset);
+	 * dollar++; query.append("), c as (SELECT ENTITY.ID, "); if (attrsQuery !=
+	 * null) { dollar = attrsQuery.toSqlConstructEntity(query, tuple, dollar,
+	 * dataSetIdTerm); } else { query.append("ENTITY.ENTITY"); } query.
+	 * append(" as ENTITY, NULL as PARENT FROM b left join ENTITY on b.ID = ENTITY.ID)  "
+	 * ); String currentEntitySet = "c"; if (dataSetIdTerm != null) {
+	 * query.append(", "); dollar = dataSetIdTerm.toSql(query, tuple, dollar,
+	 * currentEntitySet); currentEntitySet = "x"; } if (doJoin) { int counter;
+	 * query.append(", D0 as (SELECT * FROM "); query.append(currentEntitySet);
+	 * query.append(")"); for (counter = 0; counter < joinLevel; counter++) {
+	 * query.append('B'); query.append(counter + 1); query.append(" AS (SELECT ");
+	 * query.append('D'); query.append(counter);
+	 * query.append(".ID AS ID, X.VALUE AS VALUE FROM D"); query.append(counter);
+	 * query.append(", JSONB_EACH(D"); query.append(counter);
+	 * query.append(".ENTITY) AS X WHERE JSONB_TYPEOF(X.VALUE) = 'array'), ");
+	 * query.append('C'); query.append(counter + 1);
+	 * query.append(" AS (SELECT distinct Z ->> '@id' as link FROM B");
+	 * query.append(counter + 1); query.append(", JSONB_ARRAY_ELEMENTS(B");
+	 * query.append(counter + 1); query.append(
+	 * ".VALUE) AS Y, JSONB_ARRAY_ELEMENTS(Y #> '{https://uri.etsi.org/ngsi-ld/hasObject}') AS Z WHERE Y #>> '{@type,0}' = 'https://uri.etsi.org/ngsi-ld/Relationship') AND Y ? 'https://uri.etsi.org/ngsi-ld/hasObjectType', "
+	 * ); query.append('D'); query.append(counter + 1);
+	 * query.append(" as (SELECT E.ID as id, E.ENTITY as entity, C");
+	 * query.append(counter + 1); query.append(".link as parent");
+	 * 
+	 * query.append(" from C"); query.append(counter + 1);
+	 * query.append(" join ENTITY as E on C"); query.append(counter + 1);
+	 * query.append(".link = E.ID), "); } query.setLength(query.length() - 2);
+	 * query.append(" SELECT * FROM ("); for (int i = 0; i <= joinLevel; i++) {
+	 * query.append("SELECT * FROM D"); query.append(i);
+	 * query.append(" UNION ALL "); } query.setLength(query.length() -
+	 * " UNION ALL ".length());
+	 * query.append(") as xyz group by id, entity, parent"); currentEntitySet =
+	 * "xyz"; }
+	 * 
+	 * query.append(" SELECT a.ID, "); query.append(currentEntitySet);
+	 * query.append(".ENTITY, "); query.append(currentEntitySet);
+	 * query.append(".parent FROM a left outer join ");
+	 * query.append(currentEntitySet); query.append(" on a.ID = ");
+	 * query.append(currentEntitySet); query.append(".ID");
+	 * 
+	 * String queryString = query.toString(); logger.debug("SQL REQUEST: " +
+	 * queryString); logger.debug("SQL TUPLE: " + tuple.deepToString()); return
+	 * client.preparedQuery(queryString).execute(tuple).onItem().transform(rows -> {
+	 * Map<String, Tuple2<Map<String, Object>, String>> result = Maps.newHashMap();
+	 * rows.forEach(row -> { String id = row.getString(0); JsonObject entity =
+	 * row.getJsonObject(1); String parent = row.getString(2); Map<String, Object>
+	 * entityMap = null; if (entity != null) { entityMap = entity.getMap(); }
+	 * 
+	 * result.put(id, Tuple2.of(entityMap, parent));
+	 * 
+	 * }); return result; }); }).onFailure().recoverWithUni(e -> { if (e instanceof
+	 * PgException pge) { logger.debug(pge.getPosition()); if
+	 * (pge.getSqlState().equals(AppConstants.INVALID_REGULAR_EXPRESSION)) { return
+	 * Uni.createFrom() .failure(new ResponseException(ErrorType.BadRequestData,
+	 * "Invalid regular expression")); } if
+	 * (pge.getSqlState().equals(AppConstants.INVALID_GEO_QUERY)) { return
+	 * Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData,
+	 * "Invalid geo query. " + pge.getErrorMessage())); } } return
+	 * Uni.createFrom().failure(e); }); }
+	 */
+	public Uni<Void> storeEntityMap(String tenant, String qToken, EntityMap entityMap) {
+
+		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
+//			 id text,
+//			    expires_at timestamp without time zone,
+//				last_access timestamp without time zone,
+//			    entity_map jsonb,
+			String sql = "INSERT INTO entitymap VALUES ($1, now() + interval '$2', now(), $3) ON CONFLICT(id) DO UPDATE SET last_access=now(), entity_map=$3";
+			client.preparedQuery(sql)
+					.executeAndForget(Tuple.of(qToken, entityMapTTL, entityMap.toSQLJson(objectMapper)));
+			return Uni.createFrom().voidItem();
+		});
+	}
+
+	public Uni<List<Map<String, Object>>> getEntities(String tenant, Map<Set<String>, Set<String>> types2EntityIds,
+			QQueryTerm qQuery) {
+		Tuple tuple = Tuple.tuple();
+		StringBuilder query = new StringBuilder("SELECT id, entity FROM entity WHERE (");
+		int dollarCount = 1;
+		for (Entry<Set<String>, Set<String>> entry : types2EntityIds.entrySet()) {
+			Set<String> types = entry.getKey();
+			Set<String> entityIds = entry.getValue();
+			query.append("(id = ANY(");
+			query.append('$');
+			query.append(dollarCount);
+			dollarCount++;
+			tuple.addArrayOfString(entityIds.toArray(new String[0]));
+			query.append(')');
+			query.append(" AND e_types && $");
+			query.append(dollarCount);
+			dollarCount++;
+			tuple.addArrayOfString(types.toArray(new String[0]));
+			query.append(") OR ");
+
+		}
+		query.setLength(query.length() - 4);
+		query.append(")");
+		if (qQuery != null) {
+			query.append(" AND ");
+			dollarCount = qQuery.toSql(query, dollarCount, tuple, false, true);
+		}
+		String sql = query.toString();
+		logger.debug("SQL Request: " + sql);
+		logger.debug("Tuple: " + tuple.deepToString());
+		try {
+			logger.debug(JsonUtils.toPrettyString(types2EntityIds));
+		} catch (JsonGenerationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
+			return client.preparedQuery(sql).execute(tuple).onItem().transform(rows -> {
+				List<Map<String, Object>> result = Lists.newArrayList();
+				rows.forEach(row -> {
+					result.add(row.getJsonObject(1).getMap());
+				});
+
+				return result;
+			});
+		});
+	}
+
+	public Uni<Map<String, Object>> getEntityMap(String tenant, String qToken) {
+		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
+
+			String sql = "SELECT entity_map, expires_at from entitymap WHERE id=$1";
+			return client.preparedQuery(sql).execute(Tuple.of(qToken)).onItem().transformToUni(rows -> {
+				if (rows.rowCount() == 0) {
+					return Uni.createFrom()
+							.failure(new ResponseException(ErrorType.InvalidRequest, "EntityMapId is invalid."));
+				}
+				Row first = rows.iterator().next();
+				Map<String, Object> tmp = first.getJsonObject(0).getMap();
+				tmp.put(NGSIConstants.ID, qToken);
+				tmp.put(NGSIConstants.EXPIRES_AT, first.getLocalDateTime(1));
+				return Uni.createFrom().item(tmp);
+			});
+		});
+
+	}
+
+	public Uni<Void> runEntityMapCleanup(String cleanUpInterval) {
+		return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
+			return client.preparedQuery("select tenant_id from tenant").execute().onItem().transformToUni(rows -> {
+				List<Uni<Void>> cleanUpUnis = Lists.newArrayList();
+				String sql = "DELETE FROM entitymap WHERE last_access < NOW() - INTERVAL '" + cleanUpInterval + "'";
+				cleanUpUnis.add(
+						client.preparedQuery(sql).execute().onItem().transformToUni(r -> Uni.createFrom().voidItem()));
+				rows.forEach(row -> {
+					cleanUpUnis.add(
+							clientManager.getClient(row.getString(0), false).onItem().transformToUni(tenantClient -> {
+								return tenantClient.preparedQuery(sql).execute().onItem()
+										.transformToUni(r -> Uni.createFrom().voidItem());
+							}));
+				});
+				return Uni.combine().all().unis(cleanUpUnis).discardItems();
+			});
+		});
+	}
+
+	/*
+	 * public Uni<Map<String, Tuple2<Map<String, Object>, Boolean>>>
+	 * queryForEntityIds(String tenant, String[] ids, TypeQueryTerm typeQuery,
+	 * String idPattern, AttrsQueryTerm attrsQuery, int limit, int offset, String
+	 * join, int joinLevel) { return clientManager.getClient(tenant,
+	 * false).onItem().transformToUni(client -> { StringBuilder query = new
+	 * StringBuilder(); int dollar = 1; Tuple tuple = Tuple.tuple();
+	 * 
+	 * query.append("WITH a as (SELECT ID");
+	 * 
+	 * query.append(" FROM ENTITY WHERE "); boolean sqlAdded = false; if (typeQuery
+	 * != null) { dollar = typeQuery.toBroadSql(query, tuple, dollar); sqlAdded =
+	 * true; } if (attrsQuery != null) { if (sqlAdded) { query.append(" AND "); }
+	 * dollar = attrsQuery.toSql(query, tuple, dollar); sqlAdded = true; }
+	 * 
+	 * if (ids != null) { if (sqlAdded) { query.append(" AND "); }
+	 * query.append("id IN ("); for (String id : ids) { query.append('$');
+	 * query.append(dollar); query.append(','); tuple.addString(id); dollar++; }
+	 * 
+	 * query.setCharAt(query.length() - 1, ')'); sqlAdded = true; } if (idPattern !=
+	 * null) { if (sqlAdded) { query.append(" AND "); } query.append("id ~ $");
+	 * query.append(dollar); tuple.addString(idPattern); dollar++; sqlAdded = true;
+	 * }
+	 * 
+	 * query.append(" ORDER BY createdAt), b as (SELECT a.ID FROM a limit $");
+	 * query.append(dollar); tuple.addInteger(limit); dollar++;
+	 * query.append(" offset $"); query.append(dollar); tuple.addInteger(offset);
+	 * dollar++; query.append("), c as (SELECT ENTITY.ID, "); if (attrsQuery !=
+	 * null) { dollar = attrsQuery.toSqlConstructEntity(query, tuple, dollar, null);
+	 * } else { query.append("ENTITY.ENTITY"); }
+	 * query.append(" as ENTITY FROM b left join ENTITY on b.ID = ENTITY.ID)  ");
+	 * query.append("SELECT a.ID, c.ENTITY FROM a left outer join c on a.ID = c.ID"
+	 * );
+	 * 
+	 * String queryString = query.toString(); logger.debug("SQL REQUEST: " +
+	 * queryString); logger.debug("SQL TUPLE: " + tuple.deepToString()); return
+	 * client.preparedQuery(queryString).execute(tuple).onItem().transform(rows -> {
+	 * Map<String, Tuple2<Map<String, Object>, Boolean>> result = Maps.newHashMap();
+	 * rows.forEach(row -> { String id = row.getString(0); JsonObject entity =
+	 * row.getJsonObject(1); Boolean parent = row.getBoolean(2); Map<String, Object>
+	 * entityMap = null; if (entity != null) { entityMap = entity.getMap(); } if
+	 * (parent == null) { parent = true; } result.put(id, Tuple2.of(entityMap,
+	 * parent));
+	 * 
+	 * }); return result; }); }).onFailure().recoverWithUni(e -> { if (e instanceof
+	 * PgException pge) { logger.debug(pge.getPosition()); if
+	 * (pge.getSqlState().equals(AppConstants.INVALID_REGULAR_EXPRESSION)) { return
+	 * Uni.createFrom() .failure(new ResponseException(ErrorType.BadRequestData,
+	 * "Invalid regular expression")); } if
+	 * (pge.getSqlState().equals(AppConstants.INVALID_GEO_QUERY)) { return
+	 * Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData,
+	 * "Invalid geo query. " + pge.getErrorMessage())); } } return
+	 * Uni.createFrom().failure(e); }); }
+	 */
+	public Uni<Tuple2<EntityCache, EntityMap>> queryForEntityMapAndEntities(String tenant, String entityMapToken,
+			List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeQueryAndIdPattern, int limit, int offset,
+			String checkSum) {
+		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
+			String[] ids;
+			if (idsAndTypeQueryAndIdPattern == null) {
+				ids = null;
+			} else {
+				Set<String> tmpIds = Sets.newHashSet();
+				idsAndTypeQueryAndIdPattern.forEach(entry -> {
+					String[] itemIds = entry.getItem1();
+					if (itemIds != null) {
+						for (String id : itemIds) {
+							tmpIds.add(id);
+						}
+					}
+				});
+				if (tmpIds.isEmpty()) {
+					ids = null;
+				} else {
+					ids = tmpIds.toArray(new String[0]);
+				}
+			}
+
+			return client.preparedQuery("SELECT * FROM getEntityMapAndEntities($1, $2, $3, $4)")
+					.execute(Tuple.of(entityMapToken, ids, limit, offset)).onItem().transformToUni(rows -> {
+
+						Tuple2<EntityCache, EntityMap> t = putQueryResultIntoMapAndCache(rows, entityMapToken);
+						if (checkSum != null && !t.getItem2().getQueryCheckSum().equals(checkSum)) {
+							return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData,
+									"Provided query does not match the original query."));
+						}
+						return Uni.createFrom().item(t);
+					}).onFailure().recoverWithUni(e -> {
+						if (e instanceof PgException pge && pge.getSqlState().equals("S0001")) {
+							return Uni.createFrom().item(Tuple2.of(null, null));
+						}
+						return Uni.createFrom().failure(e);
+					});
+		});
+	}
+
+	public Uni<Tuple2<EntityCache, EntityMap>> queryForEntityIdsAndEntitiesRegEmpty(String tenant,
+			List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeAndIdPattern, AttrsQueryTerm attrsQuery,
+			QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, Context context, int limit, int offset,
+			DataSetIdTerm dataSetIdTerm, String join, int joinLevel, String qToken, PickTerm pickTerm,
+			OmitTerm omitTerm, String queryChecksum, boolean splitEntities,
+			boolean regEmptyOrNoRegEntryAndNoLinkedQuery, boolean noRootLevelRegEntryAndLinkedQuery) {
+
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
 			StringBuilder query = new StringBuilder();
+			StringBuilder queryToStoreWherePart = new StringBuilder();
+			StringBuilder queryToStoreSelectPart = new StringBuilder();
+			StringBuilder queryToStoreFinalSelectPart = new StringBuilder();
+
+			Query queryParams = new Query();
+
 			int dollar = 1;
 			Tuple tuple = Tuple.tuple();
 
+			boolean doJoin = (join != null && joinLevel > 0);
 			query.append("WITH a as (SELECT ID");
 
 			query.append(" FROM ENTITY WHERE ");
 			boolean sqlAdded = false;
-			if (typeQuery != null) {
-				dollar = typeQuery.toSql(query, tuple, dollar);
+			if (idsAndTypeAndIdPattern != null) {
 				sqlAdded = true;
-			}
-			if (attrsQuery != null) {
-				if (sqlAdded) {
-					query.append(" AND ");
+				queryParams.setIdsAndTypeAndIdPattern(idsAndTypeAndIdPattern);
+				query.append('(');
+				queryToStoreWherePart.append('(');
+
+				for (Tuple3<String[], TypeQueryTerm, String> t : idsAndTypeAndIdPattern) {
+					TypeQueryTerm typeQuery = t.getItem2();
+					String[] ids = t.getItem1();
+					String idPattern = t.getItem3();
+					boolean tSqlAdded = false;
+					query.append('(');
+					queryToStoreWherePart.append('(');
+
+					if (typeQuery != null) {
+						if ((!regEmptyOrNoRegEntryAndNoLinkedQuery || !noRootLevelRegEntryAndLinkedQuery)
+								&& splitEntities) {
+							dollar = typeQuery.toBroadSql(query, queryToStoreWherePart, tuple, dollar);
+						} else {
+							dollar = typeQuery.toSql(query, queryToStoreWherePart, tuple, dollar);
+						}
+
+						tSqlAdded = true;
+					}
+					if (ids != null) {
+						if (tSqlAdded) {
+							query.append(" AND ");
+						}
+						query.append("id IN (");
+						for (String id : ids) {
+							query.append('$');
+							query.append(dollar);
+							query.append(',');
+							tuple.addString(id);
+							dollar++;
+						}
+
+						query.setCharAt(query.length() - 1, ')');
+						tSqlAdded = true;
+					}
+					if (idPattern != null) {
+						if (tSqlAdded) {
+							query.append(" AND ");
+						}
+						query.append("id ~ $");
+						query.append(dollar);
+						tuple.addString(idPattern);
+						dollar++;
+						tSqlAdded = true;
+					}
+					query.append(") OR ");
+					queryToStoreWherePart.append(") OR ");
 				}
-				dollar = attrsQuery.toSql(query, tuple, dollar);
-				sqlAdded = true;
-			}
-			if (geoQuery != null) {
-				if (sqlAdded) {
-					query.append(" AND ");
+				query.setLength(query.length() - 4);
+				queryToStoreWherePart.setLength(queryToStoreWherePart.length() - 4);
+
+				query.append(')');
+				queryToStoreWherePart.append(')');
+				// if it's only brackets because of no type query
+				if (queryToStoreWherePart.length() == 4) {
+					queryToStoreWherePart.setLength(0);
+					queryToStoreWherePart.append("1=1");
 				}
-				dollar = geoQuery.toSql(query, tuple, dollar);
-				sqlAdded = true;
+			} else if (splitEntities && !regEmptyOrNoRegEntryAndNoLinkedQuery) {
+				if (attrsQuery != null) {
+					if (sqlAdded) {
+						query.append(" AND ");
+						queryToStoreWherePart.append(" AND ");
+					}
+					queryParams.setAttrsQueryTerm(attrsQuery);
+					dollar = attrsQuery.toSql(query, queryToStoreWherePart, tuple, dollar);
+					sqlAdded = true;
+				} else if (pickTerm != null) {
+					if (sqlAdded) {
+						query.append(" AND ");
+						queryToStoreWherePart.append(" AND ");
+					}
+					queryParams.setPickTerm(pickTerm);
+					dollar = pickTerm.toSql(query, queryToStoreWherePart, tuple, dollar);
+					sqlAdded = true;
+				} else if (omitTerm != null) {
+					if (sqlAdded) {
+						query.append(" AND ");
+						queryToStoreWherePart.append(" AND ");
+					}
+					queryParams.setOmitTerm(omitTerm);
+					dollar = omitTerm.toSql(query, queryToStoreWherePart, tuple, dollar);
+					sqlAdded = true;
+				} else if (qQuery != null) {
+					if (sqlAdded) {
+						query.append(" AND ");
+						queryToStoreWherePart.append(" AND ");
+					}
+					queryParams.setqQueryTerm(qQuery);
+					dollar = qQuery.toSql(query, queryToStoreWherePart, dollar, tuple, splitEntities, false);
+					sqlAdded = true;
+				} else if (geoQuery != null) {
+					if (sqlAdded) {
+						query.append(" AND ");
+						queryToStoreWherePart.append(" AND ");
+					}
+					dollar = geoQuery.toSql(query, queryToStoreWherePart, tuple, dollar);
+					queryParams.setGeoQueryTerm(geoQuery);
+					sqlAdded = true;
+				}
+
 			}
 
-			if (qQuery != null) {
-				if (sqlAdded) {
-					query.append(" AND ");
+			if (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery || !splitEntities) {
+				if (attrsQuery != null) {
+					if (sqlAdded) {
+						query.append(" AND ");
+						queryToStoreWherePart.append(" AND ");
+					}
+					queryParams.setAttrsQueryTerm(attrsQuery);
+					dollar = attrsQuery.toSql(query, queryToStoreWherePart, tuple, dollar);
+					sqlAdded = true;
 				}
-				dollar = qQuery.toSql(query, dollar, tuple);
-				sqlAdded = true;
-			}
-			if (ids != null) {
-				if (sqlAdded) {
-					query.append(" AND ");
+				if (pickTerm != null) {
+					if (sqlAdded) {
+						query.append(" AND ");
+						queryToStoreWherePart.append(" AND ");
+					}
+					queryParams.setPickTerm(pickTerm);
+					dollar = pickTerm.toSql(query, queryToStoreWherePart, tuple, dollar);
+					sqlAdded = true;
 				}
-				query.append("id IN (");
-				for (String id : ids) {
-					query.append('$');
-					query.append(dollar);
-					query.append(',');
-					tuple.addString(id);
-					dollar++;
+				if (omitTerm != null) {
+					if (sqlAdded) {
+						query.append(" AND ");
+						queryToStoreWherePart.append(" AND ");
+					}
+					queryParams.setOmitTerm(omitTerm);
+					dollar = omitTerm.toSql(query, queryToStoreWherePart, tuple, dollar);
+					sqlAdded = true;
+				}
+				if (geoQuery != null) {
+					if (sqlAdded) {
+						query.append(" AND ");
+						queryToStoreWherePart.append(" AND ");
+					}
+					dollar = geoQuery.toSql(query, queryToStoreWherePart, tuple, dollar);
+					queryParams.setGeoQueryTerm(geoQuery);
+					sqlAdded = true;
 				}
 
-				query.setCharAt(query.length() - 1, ')');
-				sqlAdded = true;
-			}
-			if (idPattern != null) {
-				if (sqlAdded) {
-					query.append(" AND ");
+				if (qQuery != null) {
+					if (sqlAdded) {
+						query.append(" AND ");
+						queryToStoreWherePart.append(" AND ");
+					}
+					queryParams.setqQueryTerm(qQuery);
+					dollar = qQuery.toSql(query, queryToStoreWherePart, dollar, tuple, splitEntities, false);
+					sqlAdded = true;
 				}
-				query.append("id ~ $");
-				query.append(dollar);
-				tuple.addString(idPattern);
-				dollar++;
-				sqlAdded = true;
+				if (dataSetIdTerm != null) {
+					if (sqlAdded) {
+						query.append(" AND ");
+						queryToStoreWherePart.append(" AND ");
+					}
+					queryParams.setDataSetIdTerm(dataSetIdTerm);
+					dollar = dataSetIdTerm.toSql(query, queryToStoreWherePart, tuple, dollar, pickTerm, omitTerm,
+							attrsQuery);
+					sqlAdded = true;
+				}
 			}
-			if (scopeQuery != null) {
-				query.append(" AND ");
-				scopeQuery.toSql(query);
+
+			if (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery || !splitEntities) {
+				if (scopeQuery != null) {
+					query.append(" AND ");
+					scopeQuery.toSql(query, queryToStoreWherePart);
+				}
 			}
+
 			query.append(" ORDER BY createdAt), b as (SELECT a.ID FROM a limit $");
 			query.append(dollar);
 			tuple.addInteger(limit);
@@ -810,39 +1323,110 @@ public class QueryDAO {
 			query.append(dollar);
 			tuple.addInteger(offset);
 			dollar++;
-			query.append("), c as (SELECT ENTITY.ID, ");
-			if (attrsQuery != null) {
-				dollar = attrsQuery.toSqlConstructEntity(query, tuple, dollar);
-			} else {
+			query.append("), ");
+
+			query.append("D0 as (SELECT ENTITY.ID, ");
+			queryToStoreSelectPart.append("D0 as (SELECT ENTITY.ID, ");
+			if (regEmptyOrNoRegEntryAndNoLinkedQuery) {
+				if (attrsQuery != null) {
+					dollar = attrsQuery.toSqlConstructEntity(query, queryToStoreSelectPart, tuple, dollar,
+							dataSetIdTerm);
+				} else if (pickTerm != null) {
+					dollar = pickTerm.toSqlConstructEntity(query, queryToStoreSelectPart, tuple, dollar, "entityAttrs",
+							dataSetIdTerm);
+				} else if (omitTerm != null) {
+					dollar = omitTerm.toSqlConstructEntity(query, queryToStoreSelectPart, tuple, dollar, "entityAttrs",
+							dataSetIdTerm);
+				} else if (dataSetIdTerm != null) {
+					dollar = dataSetIdTerm.toSqlConstructEntity(query, queryToStoreSelectPart, tuple, "entityAttrs",
+							dollar);
+				} else {
 					query.append("ENTITY.ENTITY");
+					queryToStoreSelectPart.append("ENTITY.ENTITY");
+				}
+			} else {
+				query.append("ENTITY.ENTITY");
+				queryToStoreSelectPart.append("ENTITY.ENTITY");
 			}
-			query.append(" as ENTITY FROM b left join ENTITY on b.ID = ENTITY.ID)  ");
-			if(dataSetIdTerm!=null){
-				query.append(", ");
-				dollar = dataSetIdTerm.toSql(query,tuple,dollar,"c");
-				query.append("SELECT a.ID, x.ENTITY FROM a left outer join x on a.ID = x.ID");
+			query.append(
+					" as ENTITY, TRUE as PARENT, ENTITY.E_TYPES AS E_TYPES, null::jsonb FROM b left join ENTITY on b.ID = ENTITY.ID");
+			queryToStoreSelectPart.append(" as ENTITY, TRUE as PARENT, ENTITY.E_TYPES AS E_TYPES, null::jsonb");
+			if (regEmptyOrNoRegEntryAndNoLinkedQuery) {
+				queryToStoreSelectPart.append(", a.ordinality");
 			}
-			else{
-				query.append("SELECT a.ID, c.ENTITY FROM a left outer join c on a.ID = c.ID");
+			queryToStoreSelectPart.append(" FROM a left join ENTITY on a.ID = ENTITY.ID");
+			if (attrsQuery == null && (dataSetIdTerm != null || omitTerm != null || pickTerm != null)) {
+				query.append(", JSONB_EACH(ENTITY.ENTITY) AS entityAttrs GROUP BY ENTITY.ID");
+				queryToStoreSelectPart.append(", JSONB_EACH(ENTITY.ENTITY) AS entityAttrs");
+				queryToStoreWherePart.append(" GROUP BY a.ordinality, ENTITY.ID order by a.ordinality");
 			}
+			query.append(")  ");
+			queryToStoreSelectPart.append(" WHERE ");
+
+			if (doJoin) {
+				generateJoinQuery(query, queryToStoreSelectPart, joinLevel);
+			}
+			queryToStoreFinalSelectPart.append(
+					" SELECT null::text as id, null::jsonb as entity, null::boolean as parent, null::text[] as e_types, c.entity_map as entity_map FROM c UNION ALL SELECT D0.ID as id, D0.ENTITY as entity, D0.parent as parent, D0.E_TYPES as e_types, null::jsonb as entity_map FROM D0");
+			if (doJoin) {
+				queryToStoreFinalSelectPart.append(" UNION ALL (SELECT * FROM JOINENTITIES)");
+			}
+			query.append(", c as (INSERT INTO entitymap (SELECT $");
+			query.append(dollar);
+			dollar++;
+			tuple.addString(qToken);
+			query.append(", now() + interval '$");
+			query.append(dollar);
+			dollar++;
+			tuple.addString(entityMapTTL);
+
+			query.append(
+					"',now(), jsonb_build_object('entityMap', jsonb_agg(jsonb_build_object(id, jsonb_build_array('");
+			query.append(NGSIConstants.JSON_LD_NONE);
+			query.append("'))), 'splitEntities', $");
+			query.append(dollar);
+			dollar++;
+			tuple.addBoolean(splitEntities);
+			query.append(", 'regEmptyOrNoRegEntryAndNoLinkedQuery', $");
+			query.append(dollar);
+			dollar++;
+			tuple.addBoolean(regEmptyOrNoRegEntryAndNoLinkedQuery);
+			query.append(", 'noRootLevelRegEntryAndLinkedQuery', $");
+			query.append(dollar);
+			dollar++;
+			tuple.addBoolean(noRootLevelRegEntryAndLinkedQuery);
+			query.append(", 'checkSum', $");
+
+			query.append(dollar);
+			dollar++;
+			tuple.addString(queryChecksum);
+			query.append(", 'wherePart', '");
+			query.append(queryToStoreWherePart.toString());
+			query.append("', 'selectPart', '");
+			query.append(queryToStoreSelectPart.toString());
+			query.append("', 'finalselect', '");
+			query.append(queryToStoreFinalSelectPart.toString());
+			query.append("', 'queryParams', '");
+			try {
+				query.append(objectMapper.writeValueAsString(queryParams));
+			} catch (Exception e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+
+			query.append("'::jsonb) FROM a) RETURNING entity_map) ");
+			query.append(
+					" SELECT null::text, null::jsonb, null::boolean, null::text[], entity_map FROM c UNION ALL SELECT D0.ID, D0.ENTITY, D0.parent, D0.E_TYPES, null FROM D0");
+
+			if (doJoin) {
+				query.append(" UNION ALL (SELECT * FROM JOINENTITIES)");
+			}
+
 			String queryString = query.toString();
 			logger.debug("SQL REQUEST: " + queryString);
 			logger.debug("SQL TUPLE: " + tuple.deepToString());
-			return client.preparedQuery(queryString).execute(tuple).onItem().transform(rows -> {
-				List<String> entityIds = Lists.newArrayList();
-				Map<String, Map<String, Object>> entities = Maps.newHashMap();
-				;
-				rows.forEach(row -> {
-					String id = row.getString(0);
-					JsonObject entity = row.getJsonObject(1);
-					entityIds.add(id);
-					if (entity != null) {
-						entities.put(id, entity.getMap());
-					}
-
-				});
-				return Tuple2.of(entities, entityIds);
-			});
+			return client.preparedQuery(queryString).execute(tuple).onItem()
+					.transform(rows -> putQueryResultIntoMapAndCache(rows, qToken));
 		}).onFailure().recoverWithUni(e -> {
 			if (e instanceof PgException pge) {
 				logger.debug(pge.getPosition());
@@ -859,121 +1443,233 @@ public class QueryDAO {
 		});
 	}
 
-	public Uni<Void> storeEntityMap(String tenant, String qToken, EntityMap entityMap) {
+	private Tuple2<EntityCache, EntityMap> putQueryResultIntoMapAndCache(RowSet rows, String qToken) {
+		EntityCache resultEntities = new EntityCache();
 
-		if (entityMap.getEntityList().isEmpty()) {
-			return Uni.createFrom().voidItem();
-		}
-		List<Tuple> batch = Lists.newArrayList();
-//			"q_token" text NOT NULL,
-//		    "entity_id" text,
-//			"remote_hosts" jsonb,
-//			"order_field" numeric NOT NULL
-		long count = 0;
-		for (EntityMapEntry entityId2RemoteHosts : entityMap.getEntityList()) {
-			Tuple tuple = Tuple.tuple();
-			tuple.addString(qToken);
-			tuple.addString(entityId2RemoteHosts.getEntityId());
-			JsonArray remoteHosts = new JsonArray();
-			for (QueryRemoteHost remoteHost : entityId2RemoteHosts.getRemoteHosts()) {
-				remoteHosts.add(remoteHost.toJson());
-			}
-			tuple.addJsonArray(remoteHosts);
-			tuple.addLong(count);
-			count++;
-			batch.add(tuple);
-		}
-		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
-			return client.preparedQuery("INSERT INTO entitymap VALUES ($1, $2, $3, $4)").executeBatch(batch).onItem()
-					.transformToUni(r -> {
-						return client.preparedQuery(
-								"INSERT INTO entitymap_management VALUES ($1, now()) ON CONFLICT(q_token) DO UPDATE SET last_access=now()")
-								.execute(Tuple.of(qToken)).onItem().transformToUni(r2 -> Uni.createFrom().voidItem());
-					});
-		});
-	}
+		RowIterator<Row> it = rows.iterator();
+		Row first = it.next();
+		EntityMap resultEntityMap = EntityMap.fromJson(qToken, first.getJsonObject(4), objectMapper);
+		Row row;
+		String id;
+		Boolean parent;
+		JsonObject entityObj;
+		while (it.hasNext()) {
+			row = it.next();
+			id = row.getString(0);
+			entityObj = row.getJsonObject(1);
+			parent = row.getBoolean(2);
+			String[] types = row.getArrayOfStrings(3);
 
-	public Uni<Map<String, Map<String, Object>>> getEntities(String tenant, List<String> entityIds,
-			AttrsQueryTerm attrsQuery) {
-		Tuple tuple = Tuple.tuple();
-		StringBuilder query = new StringBuilder("SELECT id, entity");
-		int dollarCount = 1;
-		if (attrsQuery != null) {
-			if (attrsQuery != null) {
-				query.append("-$1");
-				tuple.addArrayOfString(attrsQuery.getAttrs().toArray(new String[0]));
-				dollarCount++;
+			if (entityObj != null) {
+				Map<String, Object> entity = entityObj.getMap();
+				resultEntities.setEntityIntoEntityCache(id, entity, NGSIConstants.JSON_LD_NONE);
 			}
 		}
-		query.append(" FROM entity WHERE id in (");
-
-		for (String id : entityIds) {
-			query.append('$');
-			query.append(dollarCount);
-			query.append(',');
-			dollarCount++;
-			tuple.addString(id);
-		}
-		query.setCharAt(query.length() - 1, ')');
-		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
-			return client.preparedQuery(query.toString()).execute(tuple).onItem().transform(rows -> {
-				Map<String, Map<String, Object>> result = Maps.newHashMap();
-				rows.forEach(row -> {
-					result.put(row.getString(0), row.getJsonObject(1).getMap());
-				});
-
-				return result;
-			});
-		});
+		resultEntityMap.getExpiresAt(System.currentTimeMillis() + 300000);
+		return Tuple2.of(resultEntities, resultEntityMap);
 	}
 
-	public Uni<Tuple3<Long, EntityMap, Map<String, Map<String, Object>>>> getEntityMap(String tenant, String qToken,
-			int limit, int offSet, boolean count) {
+	private void generateJoinQuery(StringBuilder query, StringBuilder followUp, int joinLevel) {
+		query.append(", ");
+		followUp.append(", ");
+		int counter;
+		for (counter = 0; counter < joinLevel; counter++) {
+			query.append('B');
+			query.append(counter + 1);
+			query.append(" AS (SELECT ");
+			query.append('D');
+			query.append(counter);
+			query.append(".ID AS ID, X.VALUE AS VALUE FROM D");
+			query.append(counter);
+			query.append(", JSONB_EACH(D");
+			query.append(counter);
+			query.append(".ENTITY) AS X WHERE JSONB_TYPEOF(X.VALUE) = 'array'), ");
+			query.append('C');
+			query.append(counter + 1);
+			query.append(" AS (SELECT DISTINCT (CASE WHEN Y #>> '{");
+			query.append(NGSIConstants.JSON_LD_TYPE);
+			query.append(",0}' = '");
+			query.append(NGSIConstants.NGSI_LD_RELATIONSHIP);
+			query.append("' THEN Z ->> '");
+			query.append(NGSIConstants.JSON_LD_ID);
+			query.append("' WHEN Y #>> '{");
+			query.append(NGSIConstants.JSON_LD_TYPE);
+			query.append(",0}' = '");
+			query.append(NGSIConstants.NGSI_LD_LISTRELATIONSHIP);
+			query.append("' THEN Z #>> '{");
+			query.append(NGSIConstants.NGSI_LD_HAS_OBJECT);
+			query.append(",0,");
+			query.append(NGSIConstants.JSON_LD_ID);
+			query.append("}' ELSE NULL END) AS LINK, ARRAY_AGG(E_TYPES ->> '");
+			query.append(NGSIConstants.JSON_LD_ID);
+			query.append("') AS ET FROM B");
+			query.append(counter + 1);
+			query.append(", JSONB_ARRAY_ELEMENTS(B");
+			query.append(counter + 1);
+			query.append(".VALUE) AS Y, JSONB_ARRAY_ELEMENTS(CASE WHEN Y #>> '{");
+			query.append(NGSIConstants.JSON_LD_TYPE);
+			query.append(",0}' = '");
+			query.append(NGSIConstants.NGSI_LD_RELATIONSHIP);
+			query.append("' THEN Y #> '{");
+			query.append(NGSIConstants.NGSI_LD_HAS_OBJECT);
+			query.append("}' WHEN Y #>> '{");
+			query.append(NGSIConstants.JSON_LD_TYPE);
+			query.append(",0}' = '");
+			query.append(NGSIConstants.NGSI_LD_LISTRELATIONSHIP);
+			query.append("' THEN Y #> '{");
+			query.append(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST);
+			query.append(",0,");
+			query.append(NGSIConstants.JSON_LD_LIST);
+			query.append("}' ELSE null END) AS Z, JSONB_ARRAY_ELEMENTS(Y -> '");
+			query.append(NGSIConstants.NGSI_LD_OBJECT_TYPE);
+			query.append("') AS E_TYPES WHERE Y #>> '{");
+			query.append(NGSIConstants.JSON_LD_TYPE);
+			query.append(",0}' = ANY('{");
+			query.append(NGSIConstants.NGSI_LD_RELATIONSHIP);
+			query.append(",");
+			query.append(NGSIConstants.NGSI_LD_LISTRELATIONSHIP);
+			query.append("}') AND Y ? '");
+			query.append(NGSIConstants.NGSI_LD_OBJECT_TYPE);
+			query.append("' GROUP BY y.value, z.value), ");
+
+			query.append('D');
+			query.append(counter + 1);
+			query.append(
+					" as (SELECT E.ID as id, E.ENTITY as entity, FALSE as parent, E.E_TYPES as E_TYPES, null::jsonb");
+			query.append(" from C");
+			query.append(counter + 1);
+			query.append(" LEFT JOIN ENTITY as E on C");
+			query.append(counter + 1);
+			query.append(".link = E.ID WHERE C");
+			query.append(counter + 1);
+			query.append(".ET && E.E_TYPES), ");
+
+			followUp.append('B');
+			followUp.append(counter + 1);
+			followUp.append(" AS (SELECT ");
+			followUp.append('D');
+			followUp.append(counter);
+			followUp.append(".ID AS ID, X.VALUE AS VALUE FROM D");
+			followUp.append(counter);
+			followUp.append(", JSONB_EACH(D");
+			followUp.append(counter);
+			followUp.append(".ENTITY) AS X WHERE JSONB_TYPEOF(X.VALUE) = ''array''), ");
+			followUp.append('C');
+			followUp.append(counter + 1);
+			followUp.append(" AS (SELECT DISTINCT (CASE WHEN Y #>> ''{");
+			followUp.append(NGSIConstants.JSON_LD_TYPE);
+			followUp.append(",0}'' = ''");
+			followUp.append(NGSIConstants.NGSI_LD_RELATIONSHIP);
+			followUp.append("'' THEN Z ->> ''");
+			followUp.append(NGSIConstants.JSON_LD_ID);
+			followUp.append("'' WHEN Y #>> ''{");
+			followUp.append(NGSIConstants.JSON_LD_TYPE);
+			followUp.append(",0}'' = ''");
+			followUp.append(NGSIConstants.NGSI_LD_LISTRELATIONSHIP);
+			followUp.append("'' THEN Z #>> ''{");
+			followUp.append(NGSIConstants.NGSI_LD_HAS_OBJECT);
+			followUp.append(",0,");
+			followUp.append(NGSIConstants.JSON_LD_ID);
+			followUp.append("}'' ELSE NULL END) AS LINK, ARRAY_AGG(E_TYPES ->> ''");
+			followUp.append(NGSIConstants.JSON_LD_ID);
+			followUp.append("'') AS ET FROM B");
+			followUp.append(counter + 1);
+			followUp.append(", JSONB_ARRAY_ELEMENTS(B");
+			followUp.append(counter + 1);
+			followUp.append(".VALUE) AS Y, JSONB_ARRAY_ELEMENTS(CASE WHEN Y #>> ''{");
+			followUp.append(NGSIConstants.JSON_LD_TYPE);
+			followUp.append(",0}'' = ''");
+			followUp.append(NGSIConstants.NGSI_LD_RELATIONSHIP);
+			followUp.append("'' THEN Y #> ''{");
+			followUp.append(NGSIConstants.NGSI_LD_HAS_OBJECT);
+			followUp.append("}'' WHEN Y #>> ''{");
+			followUp.append(NGSIConstants.JSON_LD_TYPE);
+			followUp.append(",0}'' = ''");
+			followUp.append(NGSIConstants.NGSI_LD_LISTRELATIONSHIP);
+			followUp.append("'' THEN Y #> ''{");
+			followUp.append(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST);
+			followUp.append(",0,");
+			followUp.append(NGSIConstants.JSON_LD_LIST);
+			followUp.append("}'' ELSE null END) AS Z, JSONB_ARRAY_ELEMENTS(Y -> ''");
+			followUp.append(NGSIConstants.NGSI_LD_OBJECT_TYPE);
+			followUp.append("'') AS E_TYPES WHERE Y #>> ''{");
+			followUp.append(NGSIConstants.JSON_LD_TYPE);
+			followUp.append(",0}'' = ANY(''{");
+			followUp.append(NGSIConstants.NGSI_LD_RELATIONSHIP);
+			followUp.append(",");
+			followUp.append(NGSIConstants.NGSI_LD_LISTRELATIONSHIP);
+			followUp.append("}'') AND Y ? ''");
+			followUp.append(NGSIConstants.NGSI_LD_OBJECT_TYPE);
+			followUp.append("'' GROUP BY y.value, z.value), ");
+
+			followUp.append('D');
+			followUp.append(counter + 1);
+			followUp.append(" as (SELECT E.ID as id, E.ENTITY as entity, FALSE as parent, E.E_TYPES as E_TYPES, null");
+			followUp.append(" from C");
+			followUp.append(counter + 1);
+			followUp.append(" LEFT JOIN ENTITY as E on C");
+			followUp.append(counter + 1);
+			followUp.append(".link = E.ID WHERE C");
+			followUp.append(counter + 1);
+			followUp.append(".ET && E.E_TYPES), ");
+		}
+
+		query.append(" JOINENTITIES AS (");
+		followUp.append(" JOINENTITIES AS (");
+		for (int i = 1; i <= joinLevel; i++) {
+			query.append("SELECT * FROM D");
+			query.append(i);
+			query.append(" UNION ALL ");
+
+			followUp.append("SELECT * FROM D");
+			followUp.append(i);
+			followUp.append(" UNION ALL ");
+		}
+		query.setLength(query.length() - " UNION ALL ".length());
+		query.append(")");
+		followUp.setLength(followUp.length() - " UNION ALL ".length());
+		followUp.append(")");
+
+	}
+
+	public Uni<Tuple2<List<Map<String, Object>>, QueryRemoteHost>> queryForEntities(String tenant,
+			Set<String> idsForDBCall) {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
-			return client.preparedQuery(
-					"WITH a AS (UPDATE entitymap_management SET last_access=now() WHERE q_token=$1), b as (SELECT entity_id, remote_hosts FROM entitymap WHERE q_token = $1 order by order_field LIMIT $2 OFFSET $3) select b.entity_id, b.remote_hosts, entity FROM b left join ENTITY ON b.entity_id = ENTITY.id")
-					.execute(Tuple.of(qToken, limit, offSet)).onItem().transformToUni(rows -> {
-						if (rows.rowCount() == 0) {
-							return Uni.createFrom().failure(new ResponseException(ErrorType.InvalidRequest,
-									"Token is invalid. Please rerequest without a token to retrieve a new token"));
-						}
-						EntityMap entityIdList = new EntityMap();
-						Map<String, Map<String, Object>> localEntities = Maps.newHashMap();
+			return client.preparedQuery("SELECT ENTITY FROM ENTITY WHERE id=ANY($1);")
+					.execute(Tuple.of(idsForDBCall.toArray(new String[0]))).onItem().transform(rows -> {
+						List<Map<String, Object>> resultEntities = new ArrayList<>(rows.size());
 						rows.forEach(row -> {
-							String entityId = row.getString(0);
-							entityIdList.getEntry(entityId).getRemoteHosts()
-									.addAll(QueryRemoteHost.getRemoteHostsFromJson(row.getJsonArray(1).getList()));
-							JsonObject localEntity = row.getJsonObject(2);
-							if (localEntity != null) {
-								localEntities.put(entityId, localEntity.getMap());
-							}
-
+							Map<String, Object> entity = row.getJsonObject(0).getMap();
+							entity.put(AppConstants.REG_MODE_KEY, 1);
+							resultEntities.add(entity);
 						});
-						return Uni.createFrom().item(Tuple3.of(0l, entityIdList, localEntities));
+						return Tuple2.of(resultEntities, AppConstants.DB_REMOTE_HOST);
 					});
 		});
-
 	}
 
-	public Uni<Void> runEntityMapCleanup(String cleanUpInterval) {
-		return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
-			return client.preparedQuery("select tenant_id from tenant").execute().onItem().transformToUni(rows -> {
-				List<Uni<Void>> cleanUpUnis = Lists.newArrayList();
-				String sql = "WITH a as (SELECT q_token FROM entitymap_management WHERE entitymap_management.last_access < NOW() - INTERVAL '"
-						+ cleanUpInterval + "'),"
-						+ " b as (DELETE FROM entitymap WHERE entitymap.q_token IN (SELECT q_token FROM a)) "
-						+ "DELETE FROM entitymap_management WHERE entitymap_management.q_token IN (SELECT q_token FROM a)";
-				cleanUpUnis.add(
-						client.preparedQuery(sql).execute().onItem().transformToUni(r -> Uni.createFrom().voidItem()));
-				rows.forEach(row -> {
-					cleanUpUnis.add(
-							clientManager.getClient(row.getString(0), false).onItem().transformToUni(tenantClient -> {
-								return tenantClient.preparedQuery(sql).execute().onItem()
-										.transformToUni(r -> Uni.createFrom().voidItem());
-							}));
-				});
-				return Uni.combine().all().unis(cleanUpUnis).discardItems();
-			});
+	public Uni<Void> deleteEntityMap(String tenant, String entityMapId) {
+		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
+			return client.preparedQuery("DELETE FROM ENTITYMAP WHERE id=$1 RETURNING id").execute(Tuple.of(entityMapId))
+					.onItem().transformToUni(rows -> {
+						if (rows.rowCount() == 0) {
+							return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
+						}
+						return Uni.createFrom().voidItem();
+					});
+		});
+	}
+
+	public Uni<Void> updateEntityMap(String tenant, String entityMapId, String expiresAt) {
+		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
+			return client.preparedQuery("UPDATE ENTITYMAP SET EXPIRES_AT=$1 WHERE id=$2 RETURNING id")
+					.execute(Tuple.of(SerializationTools.localDateTimeFormatter(expiresAt), entityMapId)).onItem()
+					.transformToUni(rows -> {
+						if (rows.rowCount() == 0) {
+							return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
+						}
+						return Uni.createFrom().voidItem();
+					});
 		});
 	}
 

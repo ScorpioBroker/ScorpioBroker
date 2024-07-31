@@ -27,6 +27,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.ProjectionTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TemporalQueryTerm;
@@ -86,9 +87,10 @@ public class QueryParser {
 	private static String queryTermAssoc = "\\((" + queryTerm + "((" + logicalOp + ")(" + queryTerm + "))*)\\)";
 	private static String query = "((" + queryTerm + ")|(" + queryTermAssoc + "))" + "((" + logicalOp + ")(("
 			+ queryTerm + ")|(" + queryTermAssoc + ")))*";
+
 	@SuppressWarnings("unused")
 	// TODO validate queries still not working ... rework regex ???
-	private static Pattern p = Pattern.compile(query);
+	// private static Pattern p = Pattern.compile(query);
 
 	public static CSFQueryTerm parseCSFQuery(String input, Context context) throws ResponseException {
 		return null;
@@ -102,11 +104,14 @@ public class QueryParser {
 		QQueryTerm current = root;
 		boolean readingAttrib = true;
 		boolean readingOperant = false;
+		boolean readingLinkedQ = false;
 		String attribName = "";
 		StringBuilder operator = new StringBuilder();
 		String operant = "";
 		input = URLDecoder.decode(input, StandardCharsets.UTF_8);
 		OfInt it = input.chars().iterator();
+		int currentJoinLevel = 0;
+		Tuple2<String, Set<String>> joinTuple;
 		while (it.hasNext()) {
 			char b = (char) it.next().intValue();
 			if (b == '(') {
@@ -115,7 +120,6 @@ public class QueryParser {
 				current = child;
 				readingAttrib = true;
 				readingOperant = false;
-
 			} else if (b == ';') {
 				QQueryTerm next = new QQueryTerm(context);
 				current.setOperant(operant);
@@ -155,7 +159,7 @@ public class QueryParser {
 				readingOperant = false;
 				operant = "";
 
-			} else if (b == ')') {
+			} else if (b == ')' || b == '}') {
 				current.setOperant(operant);
 				String expandedOpt = context.expandIri(operant.replaceAll("\"", ""), false, true, null, null);
 				current.setExpandedOpt(expandedOpt);
@@ -163,6 +167,10 @@ public class QueryParser {
 				readingAttrib = true;
 				readingOperant = false;
 				operant = "";
+				if (b == '}') {
+					currentJoinLevel--;
+					readingLinkedQ = false;
+				}
 
 			} else if ((b == '!' || b == '=' || b == '<' || b == '>' || b == '~') && !readingOperant) {
 				operator.append(b);
@@ -172,16 +180,42 @@ public class QueryParser {
 					root.addAttrib(attribName);
 					attribName = "";
 				}
+			} else if (b == '{') {
+				currentJoinLevel++;
+				root.setHasLinkedQ(true);
+				current.setLinkedQ(true);
+				current.setLinkedAttrName(attribName);
+				root.addJoinLevel2AttribAndTypes(currentJoinLevel, attribName, null);
+				QQueryTerm child = new QQueryTerm(context);
+				current.setFirstChild(child);
+				current = child;
+				readingAttrib = true;
+				readingOperant = false;
+				readingLinkedQ = true;
+				attribName = "";
+
 			} else {
-				if (readingAttrib) {
-					attribName += (char) b;
-				} else {
-					if (!operator.toString().isEmpty()) {
-						current.setOperator(operator.toString());
-						operator = new StringBuilder();
+				if (readingLinkedQ) {
+					if (b == ':' || b == ',') {
+						current.getParent().addLinkedEntityType(attribName);
+						attribName = "";
+						if (b == ':') {
+							root.addJoinLevel2AttribAndTypes(currentJoinLevel, current.getParent().getLinkedAttrName(),
+									current.getParent().getLinkedEntityTypes());
+						}
 					}
-					readingOperant = true;
-					operant += (char) b;
+
+				} else {
+					if (readingAttrib) {
+						attribName += (char) b;
+					} else {
+						if (!operator.toString().isEmpty()) {
+							current.setOperator(operator.toString());
+							operator = new StringBuilder();
+						}
+						readingOperant = true;
+						operant += (char) b;
+					}
 				}
 			}
 
@@ -212,14 +246,9 @@ public class QueryParser {
 			throw new ResponseException(ErrorType.BadRequestData, "geometry needs to be provided");
 		}
 		String[] temp = georel.split(";");
-		if(!List.of(NGSIConstants.GEO_REL_NEAR,
-				NGSIConstants.GEO_REL_WITHIN,
-				NGSIConstants.GEO_REL_CONTAINS,
-				NGSIConstants.GEO_REL_DISJOINT,
-				NGSIConstants.GEO_REL_INTERSECTS,
-				NGSIConstants.GEO_REL_EQUALS,
-				NGSIConstants.GEO_REL_OVERLAPS)
-				.contains(temp[0])){
+		if (!List.of(NGSIConstants.GEO_REL_NEAR, NGSIConstants.GEO_REL_WITHIN, NGSIConstants.GEO_REL_CONTAINS,
+				NGSIConstants.GEO_REL_DISJOINT, NGSIConstants.GEO_REL_INTERSECTS, NGSIConstants.GEO_REL_EQUALS,
+				NGSIConstants.GEO_REL_OVERLAPS).contains(temp[0])) {
 			throw new ResponseException(ErrorType.BadRequestData, "georel is invalid");
 		}
 		GeoQueryTerm result = new GeoQueryTerm(context);
@@ -244,13 +273,14 @@ public class QueryParser {
 		if (attrs == null || attrs.isEmpty()) {
 			return null;
 		}
+		attrs = attrs.replaceAll("[\"\\n\\s]", "");
 		AttrsQueryTerm result = new AttrsQueryTerm(context);
 		for (String attr : attrs.split(",")) {
 			result.addAttr(attr);
 		}
-		if(result.getCompactedAttrs().contains(NGSIConstants.ID)
-				|| result.getCompactedAttrs().contains(NGSIConstants.TYPE)){
-				throw new ResponseException(ErrorType.BadRequestData);
+		if (result.getCompactedAttrs().contains(NGSIConstants.ID)
+				|| result.getCompactedAttrs().contains(NGSIConstants.TYPE)) {
+			throw new ResponseException(ErrorType.BadRequestData);
 		}
 		return result;
 	}
@@ -317,8 +347,8 @@ public class QueryParser {
 		if (!scopeLevels.isEmpty() && current != null) {
 			current.setScopeLevels(scopeLevels.toArray(new String[0]));
 		}
-		if(current != null && current.getScopeLevels()==null){
-			throw new ResponseException(ErrorType.BadRequestData,"Bad scope query");
+		if (current != null && current.getScopeLevels() == null) {
+			throw new ResponseException(ErrorType.BadRequestData, "Bad scope query");
 		}
 		return result;
 	}
@@ -537,8 +567,10 @@ public class QueryParser {
 				keyBuilder.append(c);
 			}
 		}
-		if(resultMap.isEmpty()){
-			return new HashMap<>(Map.of(input,new HashMap<>()));
+
+		if (resultMap.isEmpty()) {
+			return Map.of(input, new HashMap<>());
+
 		}
 		return resultMap;
 	}
@@ -547,11 +579,54 @@ public class QueryParser {
 		if (ids == null || ids.isEmpty()) {
 			return null;
 		}
-		ids = ids.replace("\"","");
-		List<String> idsList = Arrays.asList(ids.split(","));
-		DataSetIdTerm result = new  DataSetIdTerm();
+		ids = ids.replace("\"", "");
+		Set<String> idsList = Sets.newHashSet(ids.split(","));
+		DataSetIdTerm result = new DataSetIdTerm();
 		result.setIds(idsList);
 		return result;
+	}
+
+	public static void parseProjectionTerm(ProjectionTerm projectionTerm, String input, Context context)
+			throws ResponseException {
+		if (input == null) {
+			return;
+		}
+		ProjectionTerm root = projectionTerm;
+		ProjectionTerm current = root;
+		StringBuilder attribName = new StringBuilder();
+		input = URLDecoder.decode(input, StandardCharsets.UTF_8).trim();
+		String expanded;
+		OfInt it = input.chars().iterator();
+		while (it.hasNext()) {
+			char b = (char) it.next().intValue();
+			if (b == '{') {
+				ProjectionTerm child = current.createNewChild();
+				expanded = context.expandIri(attribName.toString(), false, true, null, null);
+				current.setAttrib(expanded);
+				current.setHasLinked(true);
+				root.setHasAnyLinked(true);
+				attribName.setLength(0);
+				current = child;
+			} else if (b == ',' || b == '|') {
+				ProjectionTerm next = current.createNewNext();
+				expanded = context.expandIri(attribName.toString(), false, true, null, null);
+				current.setAttrib(expanded);
+				attribName.setLength(0);
+				current = next;
+			} else if (b == '}') {
+				expanded = context.expandIri(attribName.toString(), false, true, null, null);
+				current.setAttrib(expanded);
+				attribName.setLength(0);
+				current = current.getParent();
+			} else {
+				attribName.append(b);
+			}
+
+		}
+		if (attribName.length() > 0) {
+			expanded = context.expandIri(attribName.toString(), false, true, null, null);
+			current.setAttrib(expanded);
+		}
 	}
 
 }

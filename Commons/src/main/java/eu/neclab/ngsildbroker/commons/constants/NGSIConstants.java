@@ -301,6 +301,7 @@ public interface NGSIConstants {
 
 	public static final String LINK_HEADER = "Link";
 	public static final String QUERY_TYPE = "Query";
+	public static final String ENTITY_MAP_TYPE = "EntityMap";
 	public static final String ISACTIVE_FALSE = "paused";
 	public static final String ISACTIVE_TRUE = "active";
 	public final static String LIST = "list";
@@ -369,11 +370,12 @@ public interface NGSIConstants {
 	public static final String ERROR_CODE = "errorCode";
 	public static final String NGSI_LD_TYPES_ENDPOINT = "/ngsi-ld/v1/types";
 	public static final String NGSI_LD_ENTITIES_ENDPOINT = "/ngsi-ld/v1/entities";
+	public static final String NGSI_LD_ENTITY_MAP_ENDPOINT = "/ngsi-ld/v1/entityMap";
 	public static final String ENDPOINT_BATCH_CREATE = "/ngsi-ld/v1/entityOperations/create";
 	public static final String ENDPOINT_BATCH_UPSERT = "/ngsi-ld/v1/entityOperations/upsert";
 	public static final String ENDPOINT_BATCH_DELETE = "/ngsi-ld/v1/entityOperations/delete";
 	public static final String ENDPOINT_BATCH_UPDATE = "/ngsi-ld/v1/entityOperations/update";
-
+	public static final String ENDPOINT_BATCH_QUERY = "/ngsi-ld/v1/entityOperations/query";
 	public static final String ENDPOINT_BATCH_MERGE = "/ngsi-ld/v1/entityOperations/merge";
 	public static final String NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT = "/ngsi-ld/v1/temporal/entities";
 	public static final String ENDPOINT_TEMPORAL_BATCH_DELETE = "/ngsi-ld/v1/temporal/entityOperations/delete";
@@ -472,7 +474,11 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_REG_OPERATION_RETRIEVESUBSCRIPTION = "retrieveSubscription";
 	public static final String NGSI_LD_REG_OPERATION_QUERYSUBSCRIPTION = "querySubscription";
 	public static final String NGSI_LD_REG_OPERATION_DELETESUBSCRIPTION = "deleteSubscription";
-	public static final String NGSI_LD_REG_OPERATION_ENTITYMAP = "entityMap";
+	public static final String NGSI_LD_REG_OPERATION_QUERY_ENTITYMAP = "queryEntityMap";
+	public static final String NGSI_LD_REG_OPERATION_CREATE_ENTITYMAP = "createEntityMap";
+	public static final String NGSI_LD_REG_OPERATION_UPDATE_ENTITYMAP = "updateEntityMap";
+	public static final String NGSI_LD_REG_OPERATION_DELETE_ENTITYMAP = "deleteEntityMap";
+	public static final String NGSI_LD_REG_OPERATION_RETRIEVE_ENTITYMAP = "retrieveEntityMap";
 	public static final String NGSI_LD_REG_OPERATION_CANCOMPRESS = "canCompress";
 	public static final String ENTITY_MAP_TOKEN_HEADER = "NGSILD-EntityMap";
 
@@ -483,6 +489,8 @@ public interface NGSIConstants {
 	public static final String LANGUAGE_MAP = "languageMap";
 	public static final Set<String> ENTITY_BASE_PROPS = Sets.newHashSet(JSON_LD_ID, JSON_LD_TYPE, NGSI_LD_CREATED_AT,
 			NGSI_LD_MODIFIED_AT, NGSI_LD_SCOPE);
+	public static final Set<String> ENTITY_BASE_PROPS_SHORT = Sets.newHashSet(ID, TYPE, QUERY_PARAMETER_CREATED_AT,
+			QUERY_PARAMETER_MODIFIED_AT, SCOPE);
 	public final static String NGSI_LD_HAS_KEY = "https://uri.etsi.org/ngsi-ld/hasKey";
 	public final static String KEY = "key";
 	public static final String OBJECT_TYPE = "objectType";
@@ -503,5 +511,23 @@ public interface NGSIConstants {
 			NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_CREATED, NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_UPDATED,
 			NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_DELETED, NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_CREATED,
 			NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_UPDATED, NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_DELETED);
+
+	public static final String QUERY_PARAMETER_JOIN = "join";
+	public static final String QUERY_PARAMETER_JOINLEVEL = "joinLevel";
+	public static final String QUERY_PARAMETER_ENTITY_DIST = "entityDist";
+	public static final String NGSI_LD_ENTITY_MAP_SHORT = "entityMap";
+	public static final String NGSI_LD_ENTITY = "https://uri.etsi.org/ngsi-ld/entity";
+	
+	public static final String JSON_LD_NULL = "@null";
+	public static final String QUERY_PARAMETER_OMIT = "omit";
+	public static final String QUERY_PARAMETER_PICK = "pick";
+	public static final String NGSI_LD_REGISTRY_SUB_ENDPOINT = "/ngsi-ld/v1/csourceSubscriptions";
+	public static final String NGSI_LD_REGISTRY_ENDPOINT = "/ngsi-ld/v1/csourceRegistrations";
+	public static final String NGSI_LD_SUB_ENDPOINT = "/ngsi-ld/v1/subscriptions";
+	public static final String ENTITY_MAP_COMPACTED_ENTRY = "entityMap";
+	public static final String LINKED_MAP_COMPACTED_ENTRY = "linkedMaps";
+	
+
 	public static final String CONTEXT_SOURCE_INFO = "contextSourceInfo";
+
 }

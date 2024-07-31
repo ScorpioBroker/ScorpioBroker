@@ -257,7 +257,7 @@ public class HistoryQueryService {
 								return ldService.expand(HttpUtils.getContextFromHeader(remoteHost.headers()),
 										responseEntity, HttpUtils.opts, -1, false).onItem().transform(expanded -> {
 											Map<String, Object> result = (Map<String, Object>) expanded.get(0);
-											result.put(EntityTools.REG_MODE_KEY, remoteHost.regMode());
+											result.put(AppConstants.REG_MODE_KEY, remoteHost.regMode());
 											return result;
 										});
 							}
@@ -270,7 +270,7 @@ public class HistoryQueryService {
 						continue;
 					}
 					Map<String, Object> entityMap = (Map<String, Object>) entry;
-					int regMode = (int) entityMap.remove(EntityTools.REG_MODE_KEY);
+					int regMode = (int) entityMap.remove(AppConstants.REG_MODE_KEY);
 					for (Entry<String, Object> attrib : entityMap.entrySet()) {
 						String key = attrib.getKey();
 						if (EntityTools.DO_NOT_MERGE_KEYS.contains(key)) {
@@ -365,7 +365,7 @@ public class HistoryQueryService {
 						|| (regEntry.eIdp() != null && entityId.matches(regEntry.eIdp()))) {
 					RemoteHost remoteHost = new RemoteHost(regEntry.host().host(), regEntry.host().tenant(),
 							regEntry.host().headers(), regEntry.host().cSourceId(), true, false, regEntry.regMode(),
-							regEntry.canDoZip(), regEntry.canDoIdQuery());
+							false, regEntry.queryEntityMap());
 
 					Set<String> attribs;
 					if (result.containsKey(remoteHost)) {
@@ -411,7 +411,7 @@ public class HistoryQueryService {
 
 				RemoteHost remoteHost = new RemoteHost(regEntry.host().host(), regEntry.host().tenant(),
 						regEntry.host().headers(), regEntry.host().cSourceId(), true, false, regEntry.regMode(),
-						regEntry.canDoZip(), regEntry.canDoIdQuery());
+						false, regEntry.queryEntityMap());
 
 				if (regEntry.eId() != null || regEntry.eIdp() != null) {
 					for (String id : entityIds) {

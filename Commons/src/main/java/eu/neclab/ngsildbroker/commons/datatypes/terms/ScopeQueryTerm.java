@@ -1,11 +1,17 @@
 package eu.neclab.ngsildbroker.commons.datatypes.terms;
 
 import java.io.Serializable;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+
+import com.google.common.collect.Maps;
 
 import eu.neclab.ngsildbroker.commons.constants.DBConstants;
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 
-public class ScopeQueryTerm  implements Serializable {
+public class ScopeQueryTerm implements Serializable {
 
 	/**
 	 * 
@@ -19,7 +25,7 @@ public class ScopeQueryTerm  implements Serializable {
 	private boolean nextAnd = true;
 	private ScopeQueryTerm firstChild = null;
 	private ScopeQueryTerm parent = null;
-	
+
 	public ScopeQueryTerm() {
 		// for serialization
 	}
@@ -34,6 +40,20 @@ public class ScopeQueryTerm  implements Serializable {
 
 	public boolean hasNext() {
 		return next != null;
+	}
+
+	public Map<String, Map<String, Object>> calculateQuery(List<Map<String, Object>> queryResult) {
+		Iterator<Map<String, Object>> it = queryResult.iterator();
+		Map<String, Map<String, Object>> removed = Maps.newHashMap();
+		while (it.hasNext()) {
+			Map<String, Object> entity = it.next();
+			List<String[]> scopes = EntityTools.getScopes(entity);
+			if (!calculate(scopes)) {
+				removed.put((String) entity.get(NGSIConstants.JSON_LD_ID), entity);
+				it.remove();
+			}
+		}
+		return removed;
 	}
 
 	public boolean calculate(List<String[]> scopes) {
@@ -90,7 +110,24 @@ public class ScopeQueryTerm  implements Serializable {
 			firstChild.toSql(result);
 			result.append(")");
 		} else {
-			result.append("matchScope(" + DBConstants.DBCOLUMN_SCOPE + "," + getSQLScopeQuery() + ")");
+			result.append("matchScope(" + DBConstants.DBCOLUMN_SCOPE + ",'^");
+			for (String entry : scopeLevels) {
+				switch (entry) {
+				case "+":
+					result.append("\\/");
+					result.append(REGEX_PLUS);
+					break;
+				case "#":
+					result.append(REGEX_HASH);
+					break;
+				default:
+					result.append("\\/");
+					result.append(entry);
+					break;
+				}
+			}
+			result.append("$'");
+			result.append(")");
 		}
 		if (hasNext()) {
 			if (nextAnd) {
@@ -101,7 +138,7 @@ public class ScopeQueryTerm  implements Serializable {
 			next.toSql(result);
 		}
 	}
-
+	
 	public String getSQLScopeQuery() {
 		StringBuilder result = new StringBuilder("'^");
 		for (String entry : scopeLevels) {
@@ -121,6 +158,48 @@ public class ScopeQueryTerm  implements Serializable {
 		}
 		result.append("$'");
 		return result.toString();
+	}
+	
+	public void toSql(StringBuilder result, StringBuilder followUp) {
+		if (firstChild != null) {
+			result.append("(");
+			followUp.append("(");
+			firstChild.toSql(result);
+			result.append(")");
+			followUp.append(")");
+		} else {
+			result.append("matchScope(" + DBConstants.DBCOLUMN_SCOPE + ",'^");
+			followUp.append("matchScope(" + DBConstants.DBCOLUMN_SCOPE + ",''^");
+			for (String entry : scopeLevels) {
+				switch (entry) {
+				case "+":
+					result.append("\\/");
+					result.append(REGEX_PLUS);
+					break;
+				case "#":
+					result.append(REGEX_HASH);
+					break;
+				default:
+					result.append("\\/");
+					result.append(entry);
+					break;
+				}
+			}
+			result.append("$'");
+			followUp.append("$''");
+			followUp.append(")");
+			result.append(")");
+		}
+		if (hasNext()) {
+			if (nextAnd) {
+				result.append(" and ");
+				followUp.append(" and ");
+			} else {
+				result.append(" or ");
+				followUp.append(" or ");
+			}
+			next.toSql(result);
+		}
 	}
 
 	public ScopeQueryTerm getNext() {
@@ -159,6 +238,10 @@ public class ScopeQueryTerm  implements Serializable {
 
 	public ScopeQueryTerm getPrev() {
 		return prev;
+	}
+
+	public boolean calculateEntity(Map<String, Object> entity) {
+		return calculate(EntityTools.getScopes(entity));
 	}
 
 }

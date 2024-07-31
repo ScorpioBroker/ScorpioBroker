@@ -3,17 +3,24 @@ package eu.neclab.ngsildbroker.commons.datatypes;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import org.locationtech.spatial4j.shape.Shape;
 import com.github.jsonldjava.core.Context;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
+import io.smallrye.mutiny.tuples.Tuple2;
 
 public class QueryInfos {
 
+	TypeQueryTerm typeQuery;
+	GeoQueryTerm geoQuery;
+	LanguageQueryTerm langQuery;
 	boolean fullIdFound = false;
 	boolean fullTypesFound = false;
 	boolean fullAttrsFound = false;
@@ -106,48 +113,67 @@ public class QueryInfos {
 		this.fullScopeFound = fullScopeFound;
 	}
 
-	public String toQueryString(Context context, TypeQueryTerm typeQuery, GeoQueryTerm geoQuery,
-			LanguageQueryTerm langQuery, boolean ignoredId) {
-		StringBuilder result = new StringBuilder("?");
+	public Map<String, String> toQueryParams(Context context, boolean ignoredId, EntityCache fullEntityCache,
+			QueryRemoteHost tmpHost) {
 
-		if (!ids.isEmpty() && !ignoredId) {
-			result.append("id=");
-			result.append(String.join(",", ids));
-			result.append('&');
+		Map<String, String> result = Maps.newHashMap();
+		Set<String> idsToBeUsed;
+		if (fullEntityCache != null && ids != null && !ids.isEmpty()) {
+			idsToBeUsed = Sets.newHashSet();
+			for (String id : ids) {
+				if (fullEntityCache.containsEntity(id)) {
+					Tuple2<Map<String, Object>, Set<String>> entityAndHosts = fullEntityCache.get(id);
+					Set<String> csourceIds = entityAndHosts.getItem2();
+					if (csourceIds == null) {
+						idsToBeUsed.add(id);
+					} else {
+						if (!csourceIds.contains(tmpHost.cSourceId())) {
+							idsToBeUsed.add(id);
+						}
+					}
+				} else {
+					idsToBeUsed.add(id);
+				}
+			}
+			if (idsToBeUsed.isEmpty()) {
+				return null;
+			}
+		} else {
+			idsToBeUsed = ids;
+		}
+		if (!idsToBeUsed.isEmpty() && !ignoredId) {
+			result.put("id", String.join(",", idsToBeUsed));
 		}
 		if (idPattern != null) {
-			result.append("idPattern=");
-			result.append(idPattern);
-			result.append('&');
+			result.put("idPattern", idPattern);
 		}
 		if (!types.isEmpty() && typeQuery != null) {
-			result.append("type=");
-			typeQuery.toRequestString(result, context);
-			result.append('&');
+			StringBuilder tmp = new StringBuilder();
+			typeQuery.toRequestString(tmp, context);
+			result.put("type", tmp.toString());
 		}
 		if (!attrs.isEmpty()) {
-			result.append("attrs=");
+			StringBuilder tmp = new StringBuilder();
 			for (String attr : attrs) {
-				result.append(URLEncoder.encode(context.compactIri(attr), StandardCharsets.UTF_8));
-				result.append(',');
+				tmp.append(URLEncoder.encode(context.compactIri(attr), StandardCharsets.UTF_8));
+				tmp.append(',');
 			}
-			result.setCharAt(result.length() - 1, '&');
+			tmp.setLength(tmp.length() - 1);
+			result.put("attrs", tmp.toString());
 		}
 		if (!scopes.isEmpty()) {
-			result.append("scopeQ=");
-			result.append(String.join(",", scopes));
-			result.append('&');
+			result.put("scopeQ", String.join(",", scopes));
 		}
 		if (langQuery != null) {
-			langQuery.toRequestString(result);
+			result.put("lang", langQuery.toRequestString());
+
 		}
 		if (geo != null && geoQuery != null) {
-			geoQuery.toRequestString(result, geo, geoQuery.getGeorel());
+			geoQuery.addToRequestParams(result, geo, geoQuery.getGeorel());
 
 		}
 
-		result.setLength(result.length() - 1);
-		return result.toString();
+		return result;
 	}
 
 	public void addId(String id) {
@@ -203,6 +229,30 @@ public class QueryInfos {
 	public void setGeoOp(String geoRel) {
 		this.geoRel = geoRel;
 
+	}
+
+	public TypeQueryTerm getTypeQuery() {
+		return typeQuery;
+	}
+
+	public void setTypeQuery(TypeQueryTerm typeQuery) {
+		this.typeQuery = typeQuery;
+	}
+
+	public GeoQueryTerm getGeoQuery() {
+		return geoQuery;
+	}
+
+	public void setGeoQuery(GeoQueryTerm geoQuery) {
+		this.geoQuery = geoQuery;
+	}
+
+	public LanguageQueryTerm getLangQuery() {
+		return langQuery;
+	}
+
+	public void setLangQuery(LanguageQueryTerm langQuery) {
+		this.langQuery = langQuery;
 	}
 
 }

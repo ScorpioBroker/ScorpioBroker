@@ -5,143 +5,228 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Set;
 
+import com.github.jsonldjava.core.Context;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
+import io.smallrye.mutiny.tuples.Tuple3;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.MultiMap;
 
-public record QueryRemoteHost(String host, String tenant, MultiMap headers, String cSourceId, boolean canDoSingleOp,
-		boolean canDoBatchOp, int regMode, String queryString, boolean canDoIdQuery, boolean canDoZip,
-		String remoteToken) {
+public class QueryRemoteHost {
+	String host;
+	String tenant;
+	MultiMap headers;
+	String cSourceId;
+	boolean canDoQuery;
+	boolean canDoBatchQuery;
+	boolean canDoRetrieve;
+	int regMode;
+	List<Tuple3<String, String, String>> idsAndTypesAndIdPattern = Lists.newArrayList();
+	Map<String, String> queryParams;
+	boolean canDoEntityMap;
+	boolean canDoZip;
+	String entityMapToken;
+	Context context;
+	private ViaHeaders viaHeaders;
 
-	public JsonObject toJson() {
-		JsonObject result = new JsonObject();
-		List<String[]> headersToStore;
-		if (headers == null) {
-			headersToStore = null;
+	public QueryRemoteHost(String host, String tenant, MultiMap headers, String cSourceId, boolean canDoQuery,
+			boolean canDoBatchQuery, boolean canDoRetrieve, int regMode,
+			List<Tuple3<String, String, String>> idsAndTypesAndIdPattern, Map<String, String> queryParams,
+			boolean canDoEntityMap, boolean canDoZip, String entityMapToken, ViaHeaders viaHeaders) {
+		this.host = host;
+		this.tenant = tenant;
+		this.headers = headers;
+		this.cSourceId = cSourceId;
+		this.canDoBatchQuery = canDoBatchQuery;
+		this.canDoQuery = canDoQuery;
+		this.canDoRetrieve = canDoRetrieve;
+		this.regMode = regMode;
+		this.canDoEntityMap = canDoEntityMap;
+		this.canDoZip = canDoZip;
+		this.entityMapToken = entityMapToken;
+		this.queryParams = queryParams;
+		this.idsAndTypesAndIdPattern = idsAndTypesAndIdPattern;
+		this.viaHeaders = viaHeaders;
+	}
+
+	public QueryRemoteHost copyFor414Handle(String id, String type, String idPattern) {
+		Tuple3<String, String, String> tmpTuple = Tuple3.of(id, type, idPattern);
+		List<Tuple3<String, String, String>> idAndTypesAndIdPatternEntry = new ArrayList<>(1);
+		idAndTypesAndIdPatternEntry.add(tmpTuple);
+		return new QueryRemoteHost(host, tenant, headers, cSourceId, canDoQuery, canDoBatchQuery, canDoRetrieve,
+				regMode, idAndTypesAndIdPatternEntry, queryParams, canDoEntityMap, canDoZip, entityMapToken,
+				viaHeaders);
+	}
+
+	public String host() {
+		return host;
+	}
+
+	public void setHost(String host) {
+		this.host = host;
+	}
+
+	public String tenant() {
+		return tenant;
+	}
+
+	public void setTenant(String tenant) {
+		this.tenant = tenant;
+	}
+
+	public MultiMap headers() {
+		return headers;
+	}
+
+	public void setHeaders(MultiMap headers) {
+		this.headers = headers;
+	}
+
+	public String cSourceId() {
+		return cSourceId;
+	}
+
+	public void setcSourceId(String cSourceId) {
+		this.cSourceId = cSourceId;
+	}
+
+	public int regMode() {
+		return regMode;
+	}
+
+	public void setRegMode(int regMode) {
+		this.regMode = regMode;
+	}
+
+	public Map<String, String> getQueryParam() {
+		return queryParams;
+	}
+
+	public void setQueryParam(Map<String, String> queryParams) {
+		this.queryParams = queryParams;
+	}
+
+	public boolean isCanDoQuery() {
+		return canDoQuery;
+	}
+
+	public void setCanDoQuery(boolean canDoQuery) {
+		this.canDoQuery = canDoQuery;
+	}
+
+	public boolean isCanDoBatchQuery() {
+		return canDoBatchQuery;
+	}
+
+	public void setCanDoBatchQuery(boolean canDoBatchQuery) {
+		this.canDoBatchQuery = canDoBatchQuery;
+	}
+
+	public boolean isCanDoRetrieve() {
+		return canDoRetrieve;
+	}
+
+	public void setCanDoRetrieve(boolean canDoRetrieve) {
+		this.canDoRetrieve = canDoRetrieve;
+	}
+
+	public boolean isCanDoEntityMap() {
+		return canDoEntityMap;
+	}
+
+	public boolean canDoEntityMap() {
+		return canDoEntityMap;
+	}
+
+	public void setCanDoEntityMap(boolean canDoEntityMap) {
+		this.canDoEntityMap = canDoEntityMap;
+	}
+
+	public boolean canDoZip() {
+		return canDoZip;
+	}
+
+	public void setCanDoZip(boolean canDoZip) {
+		this.canDoZip = canDoZip;
+	}
+
+	public String entityMapToken() {
+		return entityMapToken;
+	}
+
+	public void setEntityMapToken(String entityMapToken) {
+		this.entityMapToken = entityMapToken;
+	}
+
+	public Context context() {
+		return context;
+	}
+
+	public void setContext(Context context) {
+		this.context = context;
+	}
+
+	public void setParamsFromNext(String nextLink) {
+		String pureLink = nextLink.substring(1, nextLink.length() - 12);
+
+		String params = pureLink.substring(pureLink.indexOf('?'));
+		int index = params.indexOf('&', 0);
+		int lastIndex = 0;
+		int equalIdx;
+		queryParams.clear();
+		String paramPart;
+		while (index != -1) {
+			paramPart = params.substring(lastIndex, index);
+			equalIdx = paramPart.indexOf('=', lastIndex);
+			if (equalIdx == -1) {
+				queryParams.put(paramPart, "true");
+			} else {
+				queryParams.put(paramPart.substring(0, equalIdx), paramPart.substring(equalIdx, paramPart.length()));
+			}
+			lastIndex = index;
+			index = params.indexOf('&', lastIndex);
+		}
+		paramPart = params.substring(lastIndex, index);
+		equalIdx = paramPart.indexOf('=', lastIndex);
+		if (equalIdx == -1) {
+			queryParams.put(paramPart, "true");
 		} else {
-			headersToStore = Lists.newArrayList();
-			for (Entry<String, String> header : headers.entries()) {
-				headersToStore.add(new String[] { header.getKey(), header.getValue() });
-			}
+			queryParams.put(paramPart.substring(0, equalIdx), paramPart.substring(equalIdx, paramPart.length()));
 		}
-		result.put("h", host);
-		result.put("t", tenant);
-		result.put("k", headersToStore); // k for kopf german for header since h is taken
-		result.put("c", cSourceId);
-		result.put("s", canDoSingleOp);
-		result.put("b", canDoBatchOp);
-		result.put("r", regMode);
-		result.put("q", queryString);
-		result.put("i", canDoIdQuery);
-		result.put("z", canDoZip);
-		result.put("o", remoteToken); // o because r and t are taken and i can't think of something sensible
-		return result;
+
 	}
 
-	public boolean isLocal() {
-		return host == null;
+	public List<Tuple3<String, String, String>> getIdsAndTypesAndIdPattern() {
+		return idsAndTypesAndIdPattern;
 	}
 
-	public static List<QueryRemoteHost> getRemoteHostsFromJson(List list) {
-		List<QueryRemoteHost> result = new ArrayList<>(list.size());
-		for (Object obj : list) {
-			Map<String, Object> map = (Map<String, Object>) obj;
-			String host = null;
-			String tenant = null;
-			MultiMap headers = null;
-			String cSourceId = null;
-			boolean canDoSingleOp = false;
-			boolean canDoBatchOp = false;
-			int regMode = -1;
-			String queryString = null;
-			boolean canDoIdQuery = false;
-			boolean canDoZip = false;
-			String remoteToken = null;
-			for (Entry<String, Object> entry : map.entrySet()) {
-				Object value = entry.getValue();
-				switch (entry.getKey()) {
-				case "h":
-					host = value == null ? null : (String) value;
-					break;
-				case "t":
-					tenant = (String) entry.getValue();
-					break;
-				case "k":
-					if (value != null) {
-						List<Map<String, String>> tmp = (List<Map<String, String>>) value;
-						headers = new MultiMap(null);
-						for (Map<String, String> header : tmp) {
-							Entry<String, String> headerEntry = header.entrySet().iterator().next();
-							headers.add(headerEntry.getKey(), headerEntry.getValue());
-						}
-					}
-				case "c":
-					cSourceId = value == null ? null : (String) value;
-					break;
-				case "s":
-					canDoSingleOp = value == null ? false : (Boolean) value;
-					break;
-				case "b":
-					canDoBatchOp = value == null ? false : (Boolean) value;
-					break;
-				case "r":
-					regMode = value == null ? -1 : (Integer) value;
-					break;
-				case "q":
-					queryString = value == null ? null : (String) value;
-					break;
-				case "i":
-					canDoIdQuery = value == null ? false : (Boolean) value;
-					break;
-				case "z":
-					canDoZip = value == null ? false : (Boolean) value;
-					break;
-				case "o":
-					remoteToken = value == null ? null : (String) value;
-					break;
-				default:
-					break;
-				}
-			}
-			result.add(new QueryRemoteHost(host, tenant, headers, cSourceId, canDoSingleOp, canDoBatchOp, regMode,
-					queryString, canDoIdQuery, canDoZip, remoteToken));
-		}
-		return result;
+	public void addIdsAndTypesAndIdPattern(Tuple3<String, String, String> idsAndTypesAndIdPattern) {
+		this.idsAndTypesAndIdPattern.add(idsAndTypesAndIdPattern);
 	}
 
-	public static QueryRemoteHost fromRemoteHost(RemoteHost remoteHost, String queryString, boolean canDoIdQuery,
-			boolean canDoZip, String remoteToken) {
-		String finalHost=remoteHost.host();
-		if(remoteHost.host().endsWith("/")){
-			finalHost= remoteHost.host().substring(0,remoteHost.host().length()-1);
-		}
-		return new QueryRemoteHost(finalHost, remoteHost.tenant(), remoteHost.headers(), remoteHost.cSourceId(),
-				remoteHost.canDoSingleOp(), remoteHost.canDoBatchOp(), remoteHost.regMode(), queryString, canDoIdQuery,
-				canDoZip, remoteToken);
+	public static QueryRemoteHost fromRegEntry(RemoteHost remoteHost, boolean canDoIdQuery, boolean canDoZip) {
+		return new QueryRemoteHost(remoteHost.host(), remoteHost.tenant(), remoteHost.headers(), remoteHost.cSourceId(),
+				remoteHost.canDoSingleOp(), remoteHost.canDoBatchOp(), remoteHost.canDoBatchOp(), remoteHost.regMode(),
+				Lists.newArrayList(), Maps.newHashMap(), canDoIdQuery, canDoZip, null, null);
 	}
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(cSourceId, canDoBatchOp, canDoIdQuery, canDoSingleOp, canDoZip, host, queryString, regMode,
-				remoteToken, tenant);
+	public ViaHeaders getViaHeaders() {
+		return viaHeaders;
 	}
 
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		QueryRemoteHost other = (QueryRemoteHost) obj;
-		return Objects.equals(cSourceId, other.cSourceId) && canDoBatchOp == other.canDoBatchOp
-				&& canDoIdQuery == other.canDoIdQuery && canDoSingleOp == other.canDoSingleOp
-				&& canDoZip == other.canDoZip && Objects.equals(host, other.host)
-				&& Objects.equals(queryString, other.queryString) && regMode == other.regMode
-				&& Objects.equals(remoteToken, other.remoteToken) && Objects.equals(tenant, other.tenant);
+	public void setViaHeaders(ViaHeaders viaHeaders) {
+		this.viaHeaders = viaHeaders;
+	}
+
+	public static QueryRemoteHost fromRegEntry(RegistrationEntry regEntry) {
+		RemoteHost remoteHost = regEntry.host();
+
+		return new QueryRemoteHost(remoteHost.host(), remoteHost.tenant(), remoteHost.headers(), remoteHost.cSourceId(),
+				regEntry.queryEntity(), regEntry.queryBatch(), regEntry.retrieveEntity(), remoteHost.regMode(),
+				Lists.newArrayList(), Maps.newHashMap(), regEntry.queryEntityMap(), false, null, null);
 	}
 
 }

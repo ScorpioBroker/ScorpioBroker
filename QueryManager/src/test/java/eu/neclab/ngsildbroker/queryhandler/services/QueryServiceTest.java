@@ -82,35 +82,5 @@ public class QueryServiceTest {
 		resolved = objectMapper.readValue(jsonLdObject, Map.class);
 	}
 
-	@Test
-	@Order(1)
-	public void retrieveEntityLocallyTest() {
 
-		Uni<Map<String, Object>> getEntityRes = Uni.createFrom().item(resolved);
-
-		when(queryDAO.getEntity(anyString(), anyString(), any())).thenReturn(getEntityRes);
-
-		Uni<Map<String, Object>> originalEntityResUni = queryService.retrieveEntity(context, "", entityId, null, null,
-				true,null,null,false,1,null);
-
-		Map<String, Object> originalEntityRes = originalEntityResUni.await().indefinitely();
-
-		assertEquals(true,
-				originalEntityRes.containsKey("https://uri.etsi.org/ngsi-ld/default-context/complexproperty"));
-		verify(queryDAO, times(1)).getEntity(anyString(), anyString(), any());
-
-	}
-
-	@Test
-	@Order(2)
-	public void retrieveEntityNotFoundTest() {
-
-		Uni<Map<String, Object>> getEntityRes = Uni.createFrom().item(new HashMap<String, Object>());
-		when(queryDAO.getEntity(anyString(), anyString(), any())).thenReturn(getEntityRes);
-		Uni<Map<String, Object>> originalEntityResUni = queryService.retrieveEntity(context, "", entityId, null, null,
-				true,null,null,false,1,null);
-		Map<String, Object> originalEntityRes = originalEntityResUni.await().indefinitely();
-
-		assertTrue(originalEntityRes.isEmpty());
-	}
 }

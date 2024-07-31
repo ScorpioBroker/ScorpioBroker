@@ -30,7 +30,6 @@ public class DBUtil {
 		}
 	}
 
-
 	public static RegistrationEntry getRegistrationEntry(Row row, String tenant, Logger logger) {
 //		cs_id bigint,
 //		c_id text,  
@@ -82,7 +81,7 @@ public class DBUtil {
 //		retrieveSubscription boolean,
 //		querySubscription boolean,
 //		deleteSubscription boolean,
-
+//		queryEntityMap, createEntityMap, updateEntityMap, deleteEntityMap, retrieveEntityMap
 		// 1 2 3 4 5 6 7geo, 8 scopes 9endpoint 10 tenant 11 headers 12 regMode 13 - ops
 
 		Shape geoJson = null;
@@ -90,7 +89,7 @@ public class DBUtil {
 		if (geoString != null) {
 			try {
 				geoJson = geoReader.read(geoString);
-				
+
 			} catch (InvalidShapeException | IOException | ParseException e) {
 				logger.error("Failed to load registrations for the entity mananger", e);
 			}
@@ -108,7 +107,8 @@ public class DBUtil {
 				row.getBoolean(34), row.getBoolean(35), row.getBoolean(36), row.getBoolean(37), row.getBoolean(38),
 				row.getBoolean(39), row.getBoolean(40), row.getBoolean(41), row.getBoolean(42), row.getBoolean(43),
 				row.getBoolean(44), row.getBoolean(45), row.getBoolean(46), row.getBoolean(47), row.getBoolean(48),
-				row.getBoolean(49), false, false,
+				row.getBoolean(49), row.getBoolean(50), row.getBoolean(51), row.getBoolean(52), row.getBoolean(53),
+				row.getBoolean(54),
 				new RemoteHost(row.getString(10), row.getString(11),
 						MultiMap.newInstance(
 								HttpUtils.getHeadersForRemoteCall(row.getJsonArray(12), row.getString(11))),

@@ -21,6 +21,7 @@ import com.github.jsonldjava.core.JsonLDService;
 import com.google.common.collect.Sets;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
@@ -30,6 +31,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.commons.tools.QueryParser;
 import eu.neclab.ngsildbroker.registryhandler.service.CSourceService;
 import io.smallrye.mutiny.Uni;
@@ -45,6 +47,8 @@ import io.vertx.core.http.HttpServerRequest;
 public class RegistryController {
 	private final static Logger logger = LoggerFactory.getLogger(RegistryController.class);
 
+	@Inject
+	MicroServiceUtils microServiceUtils;
 	@Inject
 	CSourceService csourceService;
 	@ConfigProperty(name = "scorpio.entity.default-limit", defaultValue = "50")
@@ -87,7 +91,7 @@ public class RegistryController {
 			return Uni.createFrom()
 					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData)));
 		}
-		if(ids!=null) {
+		if (ids != null) {
 			try {
 				HttpUtils.validateUri(ids);
 			} catch (Exception e) {
@@ -114,16 +118,18 @@ public class RegistryController {
 			} catch (Exception e) {
 				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 			}
-			if(qQueryTerm!=null && qQueryTerm.getOperator().isEmpty()){
-				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData)));
+			if (qQueryTerm != null && qQueryTerm.getOperator().isEmpty()) {
+				return Uni.createFrom()
+						.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData)));
 			}
 			return csourceService
 					.queryRegistrations(HttpUtils.getTenant(request),
 							ids == null ? null : Sets.newHashSet(ids.split(",")), typeQueryTerm, idPattern, attrsQuery,
-							csfQueryTerm, geoQueryTerm, scopeQueryTerm,qQueryTerm, actualLimit, offset, count)
+							csfQueryTerm, geoQueryTerm, scopeQueryTerm, qQueryTerm, actualLimit, offset, count)
 					.onItem().transformToUni(queryResult -> {
 						return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty,
-								acceptHeader, count, actualLimit, null, context, ldService,null,null);
+								acceptHeader, count, actualLimit, null, context, ldService, false,
+								microServiceUtils.getGatewayURL().toString(), NGSIConstants.NGSI_LD_REGISTRY_ENDPOINT);
 					});
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}
@@ -169,7 +175,7 @@ public class RegistryController {
 			return csourceService.retrieveRegistration(HttpUtils.getTenant(request), registrationId).onItem()
 					.transformToUni(entity -> {
 						return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, entity, null, null,
-								null, ldService,null,null);
+								null, ldService, null, null);
 					});
 		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}

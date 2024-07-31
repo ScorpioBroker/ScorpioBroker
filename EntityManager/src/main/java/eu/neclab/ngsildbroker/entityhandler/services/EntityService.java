@@ -261,7 +261,7 @@ public class EntityService {
 	}
 
 	public Uni<NGSILDOperationResult> partialUpdateAttribute(String tenant, String entityId, String attribName,
-			Map<String, Object> payload, Context context,io.vertx.core.MultiMap headersFromReq) {
+			Map<String, Object> payload, Context context, io.vertx.core.MultiMap headersFromReq) {
 		logger.trace("updateMessage() :: started");
 		Map<String, Object> effectivePayload;
 		if (payload.containsKey(attribName)) {
@@ -285,14 +285,14 @@ public class EntityService {
 			Map<String, Object> expanded = remoteEntityAndHost.getItem2();
 
 			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
-			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),headersFromReq);
+			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(), headersFromReq);
 			if (remoteHost.canDoSingleOp()) {
 				unis.add(prepareSplitUpEntityForSending(expanded, context).onItem().transformToUni(compacted -> {
 					return webClient
 							.postAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + request.getId()
 									+ "/attrs/" + request.getAttribName())
-							.putHeaders(toFrwd).sendJsonObject(new JsonObject(compacted))
-							.onItemOrFailure().transform((response, failure) -> {
+							.putHeaders(toFrwd).sendJsonObject(new JsonObject(compacted)).onItemOrFailure()
+							.transform((response, failure) -> {
 								return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(204),
 										remoteHost, AppConstants.PARTIAL_UPDATE_REQUEST, request.getId(),
 										HttpUtils.getAttribsFromCompactedPayload(compacted));
@@ -346,7 +346,7 @@ public class EntityService {
 	}
 
 	public Uni<NGSILDOperationResult> deleteAttribute(String tenant, String entityId, String attribName,
-			String datasetId, boolean deleteAll, Context context,io.vertx.core.MultiMap headersFromReq) {
+			String datasetId, boolean deleteAll, Context context, io.vertx.core.MultiMap headersFromReq) {
 		DeleteAttributeRequest request = new DeleteAttributeRequest(tenant, entityId, attribName, datasetId, deleteAll);
 		Set<RemoteHost> remoteHosts = getRemoteHostsForDeleteAttrib(request);
 //		if (remoteHosts.isEmpty()) {
@@ -354,7 +354,7 @@ public class EntityService {
 //		}
 		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(remoteHosts.size());
 		for (RemoteHost remoteHost : remoteHosts) {
-			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),headersFromReq);
+			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(), headersFromReq);
 			unis.add(webClient
 					.deleteAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + request.getId())
 					.putHeaders(toFrwd).send().onItemOrFailure().transform((response, failure) -> {
@@ -413,14 +413,15 @@ public class EntityService {
 						)) {
 					result.add(new RemoteHost(regEntry.host().host(), regEntry.host().tenant(),
 							regEntry.host().headers(), regEntry.host().cSourceId(), regEntry.deleteEntity(),
-							regEntry.deleteBatch(), regEntry.regMode(), regEntry.canDoZip(), regEntry.canDoIdQuery()));
+							regEntry.deleteBatch(), regEntry.regMode(), false, regEntry.queryEntityMap()));
 				}
 			}
 		}
 		return result;
 	}
 
-	public Uni<NGSILDOperationResult> deleteEntity(String tenant, String entityId, Context context,io.vertx.core.MultiMap headersFromReq) {
+	public Uni<NGSILDOperationResult> deleteEntity(String tenant, String entityId, Context context,
+			io.vertx.core.MultiMap headersFromReq) {
 		DeleteEntityRequest request = new DeleteEntityRequest(tenant, entityId);
 		Set<RemoteHost> remoteHosts = getRemoteHostsForDelete(request);
 
@@ -429,7 +430,7 @@ public class EntityService {
 //		}
 		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(remoteHosts.size());
 		for (RemoteHost remoteHost : remoteHosts) {
-			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),headersFromReq);
+			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(), headersFromReq);
 			if (remoteHost.canDoSingleOp()) {
 				unis.add(webClient
 						.deleteAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + request.getId())
@@ -442,8 +443,7 @@ public class EntityService {
 						}));
 			} else {
 
-				unis.add(webClient.postAbs(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_DELETE)
-						.putHeaders(toFrwd)
+				unis.add(webClient.postAbs(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_DELETE).putHeaders(toFrwd)
 						.sendJson(new JsonArray(Lists.newArrayList(new JsonObject(request.getId())))).onItemOrFailure()
 						.transform((response, failure) -> {
 							return handleBatchDeleteResponse(response, failure, remoteHost, List.of(request.getId()),
@@ -491,7 +491,7 @@ public class EntityService {
 						|| (regEntry.eIdp() != null && request.getId().matches(regEntry.eIdp()))) {
 					result.add(new RemoteHost(regEntry.host().host(), regEntry.host().tenant(),
 							regEntry.host().headers(), regEntry.host().cSourceId(), regEntry.deleteEntity(),
-							regEntry.deleteBatch(), regEntry.regMode(), regEntry.canDoZip(), regEntry.canDoIdQuery()));
+							regEntry.deleteBatch(), regEntry.regMode(), false, regEntry.queryEntityMap()));
 				}
 			}
 		}
@@ -499,7 +499,7 @@ public class EntityService {
 	}
 
 	public Uni<NGSILDOperationResult> appendToEntity(String tenant, String entityId, Map<String, Object> payload,
-			boolean noOverwrite, Context context,io.vertx.core.MultiMap headersFromReq) {
+			boolean noOverwrite, Context context, io.vertx.core.MultiMap headersFromReq) {
 		AppendEntityRequest request = new AppendEntityRequest(tenant, entityId, payload);
 		Tuple2<Map<String, Object>, Collection<Tuple2<RemoteHost, Map<String, Object>>>> localAndRemote = splitEntity(
 				request);
@@ -512,15 +512,15 @@ public class EntityService {
 		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(remoteEntitiesAndHosts.size());
 		for (Tuple2<RemoteHost, Map<String, Object>> remoteEntityAndHost : remoteEntitiesAndHosts) {
 			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
-			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),headersFromReq);
+			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(), headersFromReq);
 			if (remoteHost.canDoSingleOp()) {
 				unis.add(prepareSplitUpEntityForSending(remoteEntityAndHost.getItem2(), context).onItem()
 						.transformToUni(compacted -> {
 							return webClient
 									.postAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/"
 											+ request.getId() + "/attrs")
-									.putHeaders(toFrwd).sendJsonObject(new JsonObject(compacted))
-									.onItemOrFailure().transform((response, failure) -> {
+									.putHeaders(toFrwd).sendJsonObject(new JsonObject(compacted)).onItemOrFailure()
+									.transform((response, failure) -> {
 										return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(204),
 												remoteHost, AppConstants.APPEND_REQUEST, request.getId(),
 												HttpUtils.getAttribsFromCompactedPayload(compacted));
@@ -568,7 +568,7 @@ public class EntityService {
 	}
 
 	public Uni<NGSILDOperationResult> updateEntity(String tenant, String entityId, Map<String, Object> payload,
-			Context context,io.vertx.core.MultiMap headersFromReq) {
+			Context context, io.vertx.core.MultiMap headersFromReq) {
 		UpdateEntityRequest request = new UpdateEntityRequest(tenant, entityId, payload, null);
 		Tuple2<Map<String, Object>, Collection<Tuple2<RemoteHost, Map<String, Object>>>> localAndRemote = splitEntity(
 				request);
@@ -582,7 +582,7 @@ public class EntityService {
 		for (Tuple2<RemoteHost, Map<String, Object>> remoteEntityAndHost : remoteEntitiesAndHosts) {
 			Map<String, Object> expanded = remoteEntityAndHost.getItem2();
 			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
-			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),headersFromReq);
+			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(), headersFromReq);
 
 			unis.add(prepareSplitUpEntityForSending(expanded, context).onItem().transformToUni(compacted -> {
 				return webClient
@@ -645,7 +645,8 @@ public class EntityService {
 		});
 	}
 
-	public Uni<NGSILDOperationResult> createEntity(String tenant, Map<String, Object> resolved, Context context,io.vertx.core.MultiMap headersFromReq) {
+	public Uni<NGSILDOperationResult> createEntity(String tenant, Map<String, Object> resolved, Context context,
+			io.vertx.core.MultiMap headersFromReq) {
 		logger.debug("createMessage() :: started");
 		CreateEntityRequest request = new CreateEntityRequest(tenant, resolved);
 		Tuple2<Map<String, Object>, Collection<Tuple2<RemoteHost, Map<String, Object>>>> localAndRemote = splitEntity(
@@ -660,13 +661,13 @@ public class EntityService {
 		for (Tuple2<RemoteHost, Map<String, Object>> remoteEntityAndHost : remoteEntitiesAndHosts) {
 			Map<String, Object> expanded = remoteEntityAndHost.getItem2();
 			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
-			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),headersFromReq);
+			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(), headersFromReq);
 
 			if (remoteHost.canDoSingleOp()) {
 				unis.add(prepareSplitUpEntityForSending(expanded, context).onItem().transformToUni(compacted -> {
 					return webClient.postAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT)
-							.putHeaders(toFrwd).sendJsonObject(new JsonObject(compacted))
-							.onItemOrFailure().transform((response, failure) -> {
+							.putHeaders(toFrwd).sendJsonObject(new JsonObject(compacted)).onItemOrFailure()
+							.transform((response, failure) -> {
 								return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(201),
 										remoteHost, AppConstants.CREATE_REQUEST, request.getId(),
 										HttpUtils.getAttribsFromCompactedPayload(compacted));
@@ -674,8 +675,7 @@ public class EntityService {
 				}));
 			} else {
 				unis.add(prepareSplitUpEntityForSending(expanded, context).onItem().transformToUni(compacted -> {
-					return webClient.postAbs(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_CREATE)
-							.putHeaders(toFrwd)
+					return webClient.postAbs(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_CREATE).putHeaders(toFrwd)
 							.sendJson(new JsonArray(Lists.newArrayList(new JsonObject(compacted)))).onItemOrFailure()
 							.transform((response, failure) -> {
 								return handleBatchResponse(response, failure, remoteHost, Lists.newArrayList(compacted),
@@ -825,42 +825,41 @@ public class EntityService {
 							case AppConstants.CREATE_REQUEST:
 								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
 										regHost.cSourceId(), regEntry.createEntity(), regEntry.createBatch(),
-										regEntry.regMode(), regEntry.canDoZip(), regEntry.canDoIdQuery());
+										regEntry.regMode(), false, regEntry.queryEntityMap());
 								break;
 							case AppConstants.UPDATE_REQUEST:
 								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
 										regHost.cSourceId(), regEntry.updateAttrs(), regEntry.updateBatch(),
-										regEntry.regMode(), regEntry.canDoZip(), regEntry.canDoIdQuery());
+										regEntry.regMode(), false, regEntry.queryEntityMap());
 								break;
 							case AppConstants.MERGE_PATCH_REQUEST:
 								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
 										regHost.cSourceId(), regEntry.mergeEntity(), regEntry.mergeBatch(),
-										regEntry.regMode(), regEntry.canDoZip(), regEntry.canDoIdQuery());
+										regEntry.regMode(), false, regEntry.queryEntityMap());
 								break;
 							case AppConstants.REPLACE_ENTITY_REQUEST:
 								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
-										regHost.cSourceId(), regEntry.replaceEntity(), false, regEntry.regMode(),
-										regEntry.canDoZip(), regEntry.canDoIdQuery());
+										regHost.cSourceId(), regEntry.replaceEntity(), false, regEntry.regMode(), false,
+										regEntry.queryEntityMap());
 								break;
 							case AppConstants.REPLACE_ATTRIBUTE_REQUEST:
 								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
-										regHost.cSourceId(), regEntry.replaceAttrs(), false, regEntry.regMode(),
-										regEntry.canDoZip(), regEntry.canDoIdQuery());
+										regHost.cSourceId(), regEntry.replaceAttrs(), false, regEntry.regMode(), false,
+										regEntry.queryEntityMap());
 							case AppConstants.PARTIAL_UPDATE_REQUEST:
 								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
-										regHost.cSourceId(), regEntry.updateAttrs(), false, regEntry.regMode(),
-										regEntry.canDoZip(), regEntry.canDoIdQuery());
+										regHost.cSourceId(), regEntry.updateAttrs(), false, regEntry.regMode(), false,
+										regEntry.queryEntityMap());
 								break;
 							case AppConstants.APPEND_REQUEST:
 								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
 										regHost.cSourceId(), regEntry.appendAttrs(), regEntry.updateBatch(),
-										regEntry.regMode(), regEntry.canDoZip(), regEntry.canDoIdQuery());
+										regEntry.regMode(), false, regEntry.queryEntityMap());
 								break;
 							case AppConstants.UPSERT_REQUEST:
 								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
 										regHost.cSourceId(), (regEntry.appendAttrs() && regEntry.createEntity()),
-										regEntry.upsertBatch(), regEntry.regMode(), regEntry.canDoZip(),
-										regEntry.canDoIdQuery());
+										regEntry.upsertBatch(), regEntry.regMode(), false, regEntry.queryEntityMap());
 								break;
 							default:
 								return null;
@@ -887,7 +886,7 @@ public class EntityService {
 				}
 			}
 		}
-		if(originalEntity.isEmpty()){
+		if (originalEntity.isEmpty()) {
 			Map<String, Object> toStore = new HashMap<>();
 			toStore.put(NGSIConstants.JSON_LD_ID, entityId);
 			toStore.put(NGSIConstants.JSON_LD_TYPE, originalTypes);
@@ -897,9 +896,9 @@ public class EntityService {
 			EntityTools.addSysAttrs(toStore, request.getSendTimestamp());
 			return Tuple2.of(toStore, cId2RemoteHostEntity.values());
 		}
-        for (String s : toBeRemoved) {
-            originalEntity.remove(s);
-        }
+		for (String s : toBeRemoved) {
+			originalEntity.remove(s);
+		}
 		Map<String, Object> toStore = null;
 		if (!originalEntity.isEmpty()) {
 			if (cId2RemoteHostEntity.isEmpty()) {
@@ -979,7 +978,7 @@ public class EntityService {
 	}
 
 	public Uni<List<NGSILDOperationResult>> createBatch(String tenant, List<Map<String, Object>> expandedEntities,
-			List<Context> contexts, boolean localOnly,io.vertx.core.MultiMap headersFromReq) {
+			List<Context> contexts, boolean localOnly, io.vertx.core.MultiMap headersFromReq) {
 		Iterator<Map<String, Object>> itEntities = expandedEntities.iterator();
 		Iterator<Context> itContext = contexts.iterator();
 		Map<RemoteHost, List<Tuple2<Context, Map<String, Object>>>> remoteHost2Batch = Maps.newHashMap();
@@ -1011,7 +1010,7 @@ public class EntityService {
 		if (!localOnly) {
 			for (Entry<RemoteHost, List<Tuple2<Context, Map<String, Object>>>> entry : remoteHost2Batch.entrySet()) {
 				RemoteHost remoteHost = entry.getKey();
-				MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),headersFromReq);
+				MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(), headersFromReq);
 				List<Tuple2<Context, Map<String, Object>>> tuples = entry.getValue();
 				List<Uni<Map<String, Object>>> compactedUnis = Lists.newArrayList();
 				for (Tuple2<Context, Map<String, Object>> tuple : tuples) {
@@ -1040,8 +1039,8 @@ public class EntityService {
 					for (Uni<Map<String, Object>> compactedUni : compactedUnis) {
 						singleUnis.add(compactedUni.onItem().transformToUni(entity -> {
 							return webClient.postAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT)
-									.putHeaders(toFrwd).sendJsonObject(new JsonObject(entity))
-									.onItemOrFailure().transform((response, failure) -> {
+									.putHeaders(toFrwd).sendJsonObject(new JsonObject(entity)).onItemOrFailure()
+									.transform((response, failure) -> {
 										return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(201),
 												remoteHost, AppConstants.CREATE_REQUEST,
 												(String) entity.get(NGSIConstants.JSON_LD_ID),
@@ -1110,7 +1109,7 @@ public class EntityService {
 	}
 
 	public Uni<List<NGSILDOperationResult>> appendBatch(String tenant, List<Map<String, Object>> expandedEntities,
-			List<Context> contexts, boolean localOnly,boolean noOverWrite,io.vertx.core.MultiMap headersFromReq) {
+			List<Context> contexts, boolean localOnly, boolean noOverWrite, io.vertx.core.MultiMap headersFromReq) {
 		Iterator<Map<String, Object>> itEntities = expandedEntities.iterator();
 		Iterator<Context> itContext = contexts.iterator();
 		Map<RemoteHost, List<Tuple2<Context, Map<String, Object>>>> remoteHost2Batch = Maps.newHashMap();
@@ -1144,7 +1143,7 @@ public class EntityService {
 		if (!localOnly) {
 			for (Entry<RemoteHost, List<Tuple2<Context, Map<String, Object>>>> entry : remoteHost2Batch.entrySet()) {
 				RemoteHost remoteHost = entry.getKey();
-				MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),headersFromReq);
+				MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(), headersFromReq);
 
 				List<Tuple2<Context, Map<String, Object>>> tuples = entry.getValue();
 				List<Uni<Map<String, Object>>> compactedUnis = Lists.newArrayList();
@@ -1176,8 +1175,8 @@ public class EntityService {
 									.postAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/"
 											+ entity.get(NGSIConstants.JSON_LD_ID) + "/"
 											+ NGSIConstants.QUERY_PARAMETER_ATTRS)
-									.putHeaders(toFrwd).sendJsonObject(new JsonObject(entity))
-									.onItemOrFailure().transform((response, failure) -> {
+									.putHeaders(toFrwd).sendJsonObject(new JsonObject(entity)).onItemOrFailure()
+									.transform((response, failure) -> {
 										return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(201),
 												remoteHost, AppConstants.APPEND_REQUEST,
 												(String) entity.get(NGSIConstants.JSON_LD_ID),
@@ -1273,7 +1272,7 @@ public class EntityService {
 	}
 
 	public Uni<List<NGSILDOperationResult>> upsertBatch(String tenant, List<Map<String, Object>> expandedEntities,
-			List<Context> contexts, boolean localOnly, boolean doReplace,io.vertx.core.MultiMap headersFromReq) {
+			List<Context> contexts, boolean localOnly, boolean doReplace, io.vertx.core.MultiMap headersFromReq) {
 		Iterator<Map<String, Object>> itEntities = expandedEntities.iterator();
 		Iterator<Context> itContext = contexts.iterator();
 		Map<RemoteHost, List<Tuple2<Context, Map<String, Object>>>> remoteHost2Batch = Maps.newHashMap();
@@ -1302,44 +1301,48 @@ public class EntityService {
 		}
 
 		BatchRequest request = new BatchRequest(tenant, localEntities, contexts, AppConstants.UPSERT_REQUEST);
-		Uni<List<NGSILDOperationResult>> local = entityDAO.batchUpsertEntity(request, doReplace).onItem().transform(dbResult -> {
-			List<NGSILDOperationResult> result = Lists.newArrayList();
-			List<Map<String, Object>> successes = (List<Map<String, Object>>) dbResult.get("success");
-			List<Map<String, String>> fails = (List<Map<String, String>>) dbResult.get("failure");
+		Uni<List<NGSILDOperationResult>> local = entityDAO.batchUpsertEntity(request, doReplace).onItem()
+				.transform(dbResult -> {
+					List<NGSILDOperationResult> result = Lists.newArrayList();
+					List<Map<String, Object>> successes = (List<Map<String, Object>>) dbResult.get("success");
+					List<Map<String, String>> fails = (List<Map<String, String>>) dbResult.get("failure");
 
-			List<Map<String, Object>> olds = Lists.newArrayList();
-			List<Map<String, Object>> news = Lists.newArrayList();
-			for (Map<String, Object> entityResult : successes) {
-				String entityId = (String) entityResult.get("id");
-				boolean updated = (boolean) entityResult.get("updated");
-				Map<String, Object> old = (Map<String, Object>) entityResult.get("old");
-				Map<String, Object> newEntity = (Map<String, Object>) entityResult.get("new");
-				olds.add(old);
-				news.add(newEntity);
-				NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.UPSERT_REQUEST, entityId);
-				opResult.setWasUpdated(updated);
-				opResult.addSuccess(new CRUDSuccess(null, null, null, Sets.newHashSet()));
-				result.add(opResult);
-			}
-			request.setBestCompleteResult(news);
-			request.setPreviousEntity(olds);
-			for (Map<String, String> fail : fails) {
-				fail.entrySet().forEach(entry -> {
-					String entityId = entry.getKey();
-					String sqlstate = entry.getValue();
-					request.removeFromPayloadAndContext(entityId);
-					NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.UPSERT_REQUEST, entityId);
-					opResult.addFailure(new ResponseException(ErrorType.InvalidRequest, sqlstate));
-					result.add(opResult);
+					List<Map<String, Object>> olds = Lists.newArrayList();
+					List<Map<String, Object>> news = Lists.newArrayList();
+					for (Map<String, Object> entityResult : successes) {
+						String entityId = (String) entityResult.get("id");
+						boolean updated = (boolean) entityResult.get("updated");
+						Map<String, Object> old = (Map<String, Object>) entityResult.get("old");
+						Map<String, Object> newEntity = (Map<String, Object>) entityResult.get("new");
+						olds.add(old);
+						news.add(newEntity);
+						NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.UPSERT_REQUEST,
+								entityId);
+						opResult.setWasUpdated(updated);
+						opResult.addSuccess(new CRUDSuccess(null, null, null, Sets.newHashSet()));
+						result.add(opResult);
+					}
+					request.setBestCompleteResult(news);
+					request.setPreviousEntity(olds);
+					for (Map<String, String> fail : fails) {
+						fail.entrySet().forEach(entry -> {
+							String entityId = entry.getKey();
+							String sqlstate = entry.getValue();
+							request.removeFromPayloadAndContext(entityId);
+							NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.UPSERT_REQUEST,
+									entityId);
+							opResult.addFailure(new ResponseException(ErrorType.InvalidRequest, sqlstate));
+							result.add(opResult);
+						});
+
+					}
+					if (!request.getEntityIds().isEmpty()) {
+						logger.debug("Upsert batch request sending to kafka " + request.getEntityIds());
+						MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, batchEmitter,
+								objectMapper);
+					}
+					return result;
 				});
-
-			}
-			if (!request.getEntityIds().isEmpty()) {
-				logger.debug("Upsert batch request sending to kafka " + request.getEntityIds());
-				MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, batchEmitter, objectMapper);
-			}
-			return result;
-		});
 		if (localOnly) {
 			return local;
 		}
@@ -1347,7 +1350,7 @@ public class EntityService {
 
 		for (Entry<RemoteHost, List<Tuple2<Context, Map<String, Object>>>> entry : remoteHost2Batch.entrySet()) {
 			RemoteHost remoteHost = entry.getKey();
-			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),headersFromReq);
+			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(), headersFromReq);
 
 			List<Tuple2<Context, Map<String, Object>>> tuples = entry.getValue();
 			List<Uni<Map<String, Object>>> compactedUnis = Lists.newArrayList();
@@ -1364,9 +1367,8 @@ public class EntityService {
 					}
 					return toSend;
 				}).onItem().transformToUni(toSend -> {
-					return webClient.postAbs(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_UPSERT)
-							.putHeaders(toFrwd).sendJson(new JsonArray(toSend)).onItemOrFailure()
-							.transform((response, failure) -> {
+					return webClient.postAbs(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_UPSERT).putHeaders(toFrwd)
+							.sendJson(new JsonArray(toSend)).onItemOrFailure().transform((response, failure) -> {
 								return handleBatchResponse(response, failure, remoteHost, toSend,
 										ArrayUtils.toArray(204));
 							});
@@ -1379,8 +1381,8 @@ public class EntityService {
 								.postAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/"
 										+ entity.get(NGSIConstants.JSON_LD_ID) + "/"
 										+ NGSIConstants.QUERY_PARAMETER_ATTRS)
-								.putHeaders(toFrwd).sendJsonObject(new JsonObject(entity))
-								.onItemOrFailure().transformToUni((response, failure) -> {
+								.putHeaders(toFrwd).sendJsonObject(new JsonObject(entity)).onItemOrFailure()
+								.transformToUni((response, failure) -> {
 									if (response.statusCode() == 404) {
 										return webClient
 												.postAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT)
@@ -1422,7 +1424,8 @@ public class EntityService {
 		});
 	}
 
-	public Uni<List<NGSILDOperationResult>> deleteBatch(String tenant, List<String> entityIds, boolean localOnly,io.vertx.core.MultiMap headersFromReq) {
+	public Uni<List<NGSILDOperationResult>> deleteBatch(String tenant, List<String> entityIds, boolean localOnly,
+			io.vertx.core.MultiMap headersFromReq) {
 		Map<RemoteHost, List<String>> host2Ids = Maps.newHashMap();
 		for (String entityId : entityIds) {
 			DeleteEntityRequest request = new DeleteEntityRequest(tenant, entityId);
@@ -1438,12 +1441,11 @@ public class EntityService {
 		List<Uni<List<NGSILDOperationResult>>> unis = new ArrayList<>(host2Ids.keySet().size());
 		for (Entry<RemoteHost, List<String>> entry : host2Ids.entrySet()) {
 			RemoteHost remoteHost = entry.getKey();
-			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),headersFromReq);
+			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(), headersFromReq);
 			List<String> toSend = entry.getValue();
 			if (remoteHost.canDoBatchOp()) {
-				unis.add(webClient.postAbs(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_DELETE)
-						.putHeaders(toFrwd).sendJson(new JsonArray(toSend)).onItemOrFailure()
-						.transform((response, failure) -> {
+				unis.add(webClient.postAbs(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_DELETE).putHeaders(toFrwd)
+						.sendJson(new JsonArray(toSend)).onItemOrFailure().transform((response, failure) -> {
 							return handleBatchDeleteResponse(response, failure, remoteHost, toSend,
 									ArrayUtils.toArray(204));
 						}));
@@ -1452,8 +1454,7 @@ public class EntityService {
 				for (String entityId : toSend) {
 					singleUnis.add(webClient
 							.deleteAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + entityId)
-							.putHeaders(toFrwd).send().onItemOrFailure()
-							.transform((response, failure) -> {
+							.putHeaders(toFrwd).send().onItemOrFailure().transform((response, failure) -> {
 								return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(201),
 										remoteHost, AppConstants.CREATE_REQUEST, entityId, Sets.newHashSet());
 
@@ -1516,7 +1517,7 @@ public class EntityService {
 	}
 
 	public Uni<NGSILDOperationResult> mergePatch(String tenant, String entityId, Map<String, Object> resolved,
-			Context context,io.vertx.core.MultiMap headersFromReq) {
+			Context context, io.vertx.core.MultiMap headersFromReq) {
 		logger.debug("createMessage() :: started");
 		MergePatchRequest request = new MergePatchRequest(tenant, entityId, resolved);
 		Tuple2<Map<String, Object>, Collection<Tuple2<RemoteHost, Map<String, Object>>>> localAndRemote = splitEntity(
@@ -1531,14 +1532,14 @@ public class EntityService {
 		for (Tuple2<RemoteHost, Map<String, Object>> remoteEntityAndHost : remoteEntitiesAndHosts) {
 			Map<String, Object> expanded = remoteEntityAndHost.getItem2();
 			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
-			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),headersFromReq);
+			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(), headersFromReq);
 
 			if (remoteHost.canDoSingleOp()) {
 				unis.add(prepareSplitUpEntityForSending(expanded, context).onItem().transformToUni(compacted -> {
 					return webClient
 							.patchAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + entityId)
-							.putHeaders(toFrwd).sendJsonObject(new JsonObject(compacted))
-							.onItemOrFailure().transform((response, failure) -> {
+							.putHeaders(toFrwd).sendJsonObject(new JsonObject(compacted)).onItemOrFailure()
+							.transform((response, failure) -> {
 								return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(201),
 										remoteHost, AppConstants.CREATE_REQUEST, request.getId(),
 										HttpUtils.getAttribsFromCompactedPayload(compacted));
@@ -1546,8 +1547,7 @@ public class EntityService {
 				}));
 			} else {
 				unis.add(prepareSplitUpEntityForSending(expanded, context).onItem().transformToUni(compacted -> {
-					return webClient.post(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_CREATE)
-							.putHeaders(toFrwd)
+					return webClient.post(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_CREATE).putHeaders(toFrwd)
 							.sendJson(new JsonArray(Lists.newArrayList(new JsonObject(compacted)))).onItemOrFailure()
 							.transform((response, failure) -> {
 								return handleBatchResponse(response, failure, remoteHost, Lists.newArrayList(compacted),
@@ -1595,7 +1595,8 @@ public class EntityService {
 		});
 	}
 
-	public Uni<NGSILDOperationResult> replaceEntity(String tenant, Map<String, Object> resolved, Context context,io.vertx.core.MultiMap headersFromReq) {
+	public Uni<NGSILDOperationResult> replaceEntity(String tenant, Map<String, Object> resolved, Context context,
+			io.vertx.core.MultiMap headersFromReq) {
 		logger.debug("ReplaceMessage() :: started");
 
 		ReplaceEntityRequest request = new ReplaceEntityRequest(tenant, resolved);
@@ -1611,13 +1612,13 @@ public class EntityService {
 		for (Tuple2<RemoteHost, Map<String, Object>> remoteEntityAndHost : remoteEntitiesAndHosts) {
 			Map<String, Object> expanded = remoteEntityAndHost.getItem2();
 			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
-			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),headersFromReq);
+			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(), headersFromReq);
 			if (remoteHost.canDoSingleOp()) {
 				unis.add(prepareSplitUpEntityForSending(expanded, context).onItem().transformToUni(compacted -> {
 					return webClient
 							.putAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + request.getId())
-							.putHeaders(toFrwd).sendJsonObject(new JsonObject(compacted))
-							.onItemOrFailure().transform((response, failure) -> {
+							.putHeaders(toFrwd).sendJsonObject(new JsonObject(compacted)).onItemOrFailure()
+							.transform((response, failure) -> {
 								return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(201),
 										remoteHost, AppConstants.CREATE_REQUEST, request.getId(),
 										HttpUtils.getAttribsFromCompactedPayload(compacted));
@@ -1665,7 +1666,7 @@ public class EntityService {
 	}
 
 	public Uni<NGSILDOperationResult> replaceAttribute(String tenant, Map<String, Object> resolved, Context context,
-			String entityId, String attrId,io.vertx.core.MultiMap headersFromReq) {
+			String entityId, String attrId, io.vertx.core.MultiMap headersFromReq) {
 		logger.debug("ReplaceMessage() :: started");
 		if (!resolved.containsKey(attrId)) {
 			if (resolved.size() == 1) {
@@ -1689,7 +1690,7 @@ public class EntityService {
 		for (Tuple2<RemoteHost, Map<String, Object>> remoteEntityAndHost : remoteEntitiesAndHosts) {
 			Map<String, Object> expanded = remoteEntityAndHost.getItem2();
 			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
-			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),headersFromReq);
+			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(), headersFromReq);
 			if (remoteHost.canDoSingleOp()) {
 				unis.add(prepareSplitUpEntityForSending(expanded, context).onItem().transformToUni(compacted -> {
 					return webClient
@@ -1773,9 +1774,9 @@ public class EntityService {
 		return false;
 	}
 
-
 	public Uni<List<NGSILDOperationResult>> mergeBatch(String tenant, List<Map<String, Object>> expandedEntities,
-														List<Context> contexts, boolean localOnly,boolean noOverWrite,io.vertx.core.MultiMap headersFromReq) {
+			List<Context> contexts, boolean localOnly, boolean noOverWrite, io.vertx.core.MultiMap headersFromReq) {
+
 		Iterator<Map<String, Object>> itEntities = expandedEntities.iterator();
 		Iterator<Context> itContext = contexts.iterator();
 		Map<RemoteHost, List<Tuple2<Context, Map<String, Object>>>> remoteHost2Batch = Maps.newHashMap();
@@ -1806,10 +1807,10 @@ public class EntityService {
 		}
 
 		List<Uni<List<NGSILDOperationResult>>> unis = new ArrayList<>();
-				if (!localOnly) {
+		if (!localOnly) {
 			for (Entry<RemoteHost, List<Tuple2<Context, Map<String, Object>>>> entry : remoteHost2Batch.entrySet()) {
 				RemoteHost remoteHost = entry.getKey();
-				MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),headersFromReq);
+				MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(), headersFromReq);
 				List<Tuple2<Context, Map<String, Object>>> tuples = entry.getValue();
 				List<Uni<Map<String, Object>>> compactedUnis = Lists.newArrayList();
 				for (Tuple2<Context, Map<String, Object>> tuple : tuples) {
@@ -1840,8 +1841,8 @@ public class EntityService {
 									.postAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/"
 											+ entity.get(NGSIConstants.JSON_LD_ID) + "/"
 											+ NGSIConstants.QUERY_PARAMETER_ATTRS)
-									.putHeaders(toFrwd).sendJsonObject(new JsonObject(entity))
-									.onItemOrFailure().transform((response, failure) -> {
+									.putHeaders(toFrwd).sendJsonObject(new JsonObject(entity)).onItemOrFailure()
+									.transform((response, failure) -> {
 										return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(201),
 												remoteHost, AppConstants.MERGE_PATCH_REQUEST,
 												(String) entity.get(NGSIConstants.JSON_LD_ID),
@@ -1882,8 +1883,8 @@ public class EntityService {
 								String entityId = entry.getKey();
 								String sqlstate = entry.getValue();
 								request.removeFromPayloadAndContext(entityId);
-								NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.MERGE_PATCH_REQUEST,
-										entityId);
+								NGSILDOperationResult opResult = new NGSILDOperationResult(
+										AppConstants.MERGE_PATCH_REQUEST, entityId);
 								if (sqlstate.equals(AppConstants.SQL_NOT_FOUND)) {
 									opResult.addFailure(new ResponseException(ErrorType.NotFound, entityId));
 								} else {

@@ -1,39 +1,79 @@
 package eu.neclab.ngsildbroker.commons.tools;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import com.fasterxml.jackson.core.JsonGenerationException;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLDService;
+import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.common.collect.Table;
+import com.google.common.net.HttpHeaders;
 
 import java.util.Set;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.BaseProperty;
+import eu.neclab.ngsildbroker.commons.datatypes.EntityCache;
 import eu.neclab.ngsildbroker.commons.datatypes.GeoProperty;
 import eu.neclab.ngsildbroker.commons.datatypes.LDGeoQuery;
 import eu.neclab.ngsildbroker.commons.datatypes.Notification;
 import eu.neclab.ngsildbroker.commons.datatypes.Property;
 import eu.neclab.ngsildbroker.commons.datatypes.PropertyEntry;
+import eu.neclab.ngsildbroker.commons.datatypes.QueryInfos;
+import eu.neclab.ngsildbroker.commons.datatypes.QueryRemoteHost;
+import eu.neclab.ngsildbroker.commons.datatypes.RegistrationEntry;
+import eu.neclab.ngsildbroker.commons.datatypes.RemoteHost;
+import eu.neclab.ngsildbroker.commons.datatypes.ViaHeaders;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.DataSetIdTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.OmitTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.PickTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.tuples.Tuple2;
+import io.smallrye.mutiny.tuples.Tuple3;
+import io.vertx.core.MultiMap;
+import io.vertx.mutiny.core.buffer.Buffer;
+import io.vertx.mutiny.ext.web.client.HttpRequest;
+import io.vertx.mutiny.ext.web.client.HttpResponse;
+import io.vertx.mutiny.ext.web.client.WebClient;
 
-public abstract class EntityTools {
+public final class EntityTools {
+
+	private EntityTools() {
+
+	}
 
 	private static final String BROKER_PREFIX = "ngsildbroker:";
-	public static final String REG_MODE_KEY = "!@#$%";
+
 	public static final Set<String> DO_NOT_MERGE_KEYS = Sets.newHashSet(NGSIConstants.JSON_LD_ID,
 			NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_CREATED_AT, NGSIConstants.NGSI_LD_OBSERVED_AT,
 			NGSIConstants.NGSI_LD_MODIFIED_AT);
+	private static final Logger logger = LoggerFactory.getLogger(EntityTools.class);
 
 	public static String getRandomID(String prefix) {
 		if (prefix == null) {
@@ -165,7 +205,7 @@ public abstract class EntityTools {
 				case NGSIConstants.NGSI_LD_ListProperty:
 					prop = generateFakeProperty(key, tmp);
 					break;
-					case NGSIConstants.NGSI_LD_LOCALONLY:
+				case NGSIConstants.NGSI_LD_LOCALONLY:
 					prop = generateFakeProperty(key, tmp);
 					break;
 				case NGSIConstants.NGSI_LD_PROPERTY:
@@ -225,7 +265,7 @@ public abstract class EntityTools {
 			}
 			List<Map<String, Object>> list = (List<Map<String, Object>>) attrib.getValue();
 			for (Map<String, Object> entry : list) {
-				entry.remove(REG_MODE_KEY);
+				entry.remove(AppConstants.REG_MODE_KEY);
 			}
 		}
 
@@ -259,16 +299,16 @@ public abstract class EntityTools {
 				// do nothing intentionally
 			}
 			regMode = -1;
-			if (entry.containsKey(REG_MODE_KEY)) {
-				regMode = (int) entry.get(REG_MODE_KEY);
+			if (entry.containsKey(AppConstants.REG_MODE_KEY)) {
+				regMode = (int) entry.get(AppConstants.REG_MODE_KEY);
 			}
 			removeIndex = -1;
 			found = false;
 			for (int i = 0; i < currentValue.size(); i++) {
 				Map<String, Object> currentEntry = currentValue.get(i);
 				currentRegMode = -1;
-				if (currentEntry.containsKey(REG_MODE_KEY)) {
-					currentRegMode = (int) currentEntry.get(REG_MODE_KEY);
+				if (currentEntry.containsKey(AppConstants.REG_MODE_KEY)) {
+					currentRegMode = (int) currentEntry.get(AppConstants.REG_MODE_KEY);
 				}
 				String currentDatasetId;
 				if (currentEntry.containsKey(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
@@ -337,7 +377,7 @@ public abstract class EntityTools {
 
 	public static void addRegModeToValue(List<Map<String, Object>> newValue, int regMode) {
 		for (Map<String, Object> entry : newValue) {
-			entry.put(REG_MODE_KEY, regMode);
+			entry.put(AppConstants.REG_MODE_KEY, regMode);
 		}
 	}
 
@@ -452,7 +492,7 @@ public abstract class EntityTools {
 	}
 
 	public static void noConcise(Object object) {
-		noConcise(object, null, null,0);
+		noConcise(object, null, null, 0);
 	}
 
 	private static void noConcise(Object object, Map<String, Object> parentMap, String keyOfObject, int level) {
@@ -461,11 +501,9 @@ public abstract class EntityTools {
 			// Map have object but not type
 			if (map.containsKey(NGSIConstants.OBJECT)) {
 				((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.RELATIONSHIP);
-			}
-			else if (map.containsKey(NGSIConstants.OBJECT_LIST)) {
+			} else if (map.containsKey(NGSIConstants.OBJECT_LIST)) {
 				((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.LISTRELATIONSHIP);
-			}
-			else if (map.containsKey(NGSIConstants.VALUE_LIST)) {
+			} else if (map.containsKey(NGSIConstants.VALUE_LIST)) {
 				((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.LISTPROPERTY);
 			}
 			// Map have vocab but not type
@@ -478,8 +516,7 @@ public abstract class EntityTools {
 				if (map.get(NGSIConstants.VALUE) instanceof Map<?, ?> nestedMap
 						&& (NGSIConstants.GEO_KEYWORDS.contains(nestedMap.get(NGSIConstants.TYPE)))) {
 					((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.NGSI_LD_GEOPROPERTY_SHORT);
-				}
-				else
+				} else
 					((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.PROPERTY);
 			}
 			// for GeoProperty
@@ -490,20 +527,16 @@ public abstract class EntityTools {
 				newMap.put(NGSIConstants.TYPE, NGSIConstants.NGSI_LD_GEOPROPERTY_SHORT);
 				newMap.put(NGSIConstants.VALUE, map);
 				parentMap.put(keyOfObject, newMap);
-			}
-			else if (map.containsKey(NGSIConstants.LANGUAGE_MAP)) {
+			} else if (map.containsKey(NGSIConstants.LANGUAGE_MAP)) {
 				((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.LANGUAGE_PROPERTY);
-			}
-			else if (map.containsKey(NGSIConstants.JSON)) {
+			} else if (map.containsKey(NGSIConstants.JSON)) {
 				((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.JSONPROPERTY);
-			}
-			else if(parentMap != null && !map.containsKey(NGSIConstants.TYPE) && level==1){
+			} else if (parentMap != null && !map.containsKey(NGSIConstants.TYPE) && level == 1) {
 				Map<String, Object> newMap = new HashMap<>();
 				newMap.put(NGSIConstants.VALUE, map);
 				newMap.put(NGSIConstants.TYPE, NGSIConstants.PROPERTY);
 				parentMap.put(keyOfObject, newMap);
-			}
-			else {
+			} else {
 				// Iterate through every element of Map
 				Object[] mapKeys = map.keySet().toArray();
 				for (Object key : mapKeys) {
@@ -513,42 +546,38 @@ public abstract class EntityTools {
 							&& !key.equals(NGSIConstants.QUERY_PARAMETER_OBSERVED_AT)
 							&& !key.equals(NGSIConstants.INSTANCE_ID)
 							&& !key.equals(NGSIConstants.QUERY_PARAMETER_DATA_SET_ID)
-							&& !key.equals(NGSIConstants.OBJECT)
-							&& !key.equals(NGSIConstants.OBJECT_LIST)
+							&& !key.equals(NGSIConstants.OBJECT) && !key.equals(NGSIConstants.OBJECT_LIST)
 							&& !key.equals(NGSIConstants.VALUE) && !key.equals(NGSIConstants.SCOPE)
 							&& !key.equals(NGSIConstants.QUERY_PARAMETER_UNIT_CODE)
-							&& !key.equals(NGSIConstants.LANGUAGE_MAP)
-							&& !key.equals(NGSIConstants.JSON)
-							&& !key.equals(NGSIConstants.VOCAB)
-							&& !key.equals(NGSIConstants.LIST)
-							&& !key.equals(NGSIConstants.LOCALONLY)
-							&& !key.equals(NGSIConstants.OBJECT_TYPE)) {
-						noConcise(map.get(key), (Map<String, Object>) map, key.toString(),level+1);
+							&& !key.equals(NGSIConstants.LANGUAGE_MAP) && !key.equals(NGSIConstants.JSON)
+							&& !key.equals(NGSIConstants.VOCAB) && !key.equals(NGSIConstants.LIST)
+							&& !key.equals(NGSIConstants.LOCALONLY) && !key.equals(NGSIConstants.OBJECT_TYPE)) {
+						noConcise(map.get(key), (Map<String, Object>) map, key.toString(), level + 1);
 					}
 				}
 			}
-			if(map.containsKey(NGSIConstants.PROVIDED_BY)){
-				noConcise(map.get(NGSIConstants.PROVIDED_BY), (Map<String, Object>) map, NGSIConstants.PROVIDED_BY,level+1);
+			if (map.containsKey(NGSIConstants.PROVIDED_BY)) {
+				noConcise(map.get(NGSIConstants.PROVIDED_BY), (Map<String, Object>) map, NGSIConstants.PROVIDED_BY,
+						level + 1);
 			}
 		}
 		// Object is List
 		else if (object instanceof List<?> list) {
 			boolean putType = true;
-			for (Object obj:list){
-				if (obj instanceof Map<?,?> map && map.containsKey(NGSIConstants.TYPE)){
+			for (Object obj : list) {
+				if (obj instanceof Map<?, ?> map && map.containsKey(NGSIConstants.TYPE)) {
 					putType = false;
 					break;
 				}
 			}
-			if(putType && parentMap != null && level==1){
+			if (putType && parentMap != null && level == 1) {
 				Map<String, Object> newMap = new HashMap<>();
 				newMap.put(NGSIConstants.VALUE, list);
 				newMap.put(NGSIConstants.TYPE, NGSIConstants.PROPERTY);
 				parentMap.put(keyOfObject, newMap);
-			}
-			else {
+			} else {
 				for (Object o : list) {
-					noConcise(o, null, null,level);
+					noConcise(o, null, null, level);
 				}
 			}
 		}
@@ -565,6 +594,447 @@ public abstract class EntityTools {
 			}
 
 		}
+	}
+
+	private static Uni<List<Map<String, Object>>> handle414(WebClient webClient, QueryRemoteHost remoteHost,
+			Context context, int timeout, JsonLDService ldService, String id, String type, String idPattern) {
+		logger.debug("Attempting 414 recovery");
+		if (id == null) {
+			logger.debug("Can't recover 414 because no id has been used");
+			return Uni.createFrom().item(Lists.newArrayList());
+		}
+		int idMiddle = (int) (id.length() / 2);
+		String newHalfIdOne;
+		String newHalfIdTwo;
+		if (id.charAt(idMiddle) == ',') {
+			newHalfIdOne = id.substring(0, idMiddle);
+			newHalfIdTwo = id.substring(idMiddle + 1, id.length());
+		} else {
+			int idx = id.substring(0, idMiddle).lastIndexOf(',');
+			if (idx == -1) {
+				logger.debug("Can't recover 414 because no multiple ids has been used");
+				return Uni.createFrom().item(Lists.newArrayList());
+			}
+			newHalfIdOne = id.substring(0, idx);
+			newHalfIdTwo = id.substring(idx + 1, id.length());
+		}
+
+		logger.debug(newHalfIdOne);
+		logger.debug(newHalfIdTwo);
+		QueryRemoteHost hostOne = remoteHost.copyFor414Handle(newHalfIdOne, type, idPattern);
+		QueryRemoteHost hostTwo = remoteHost.copyFor414Handle(newHalfIdTwo, type, idPattern);
+
+		return Uni.combine().all()
+				.unis(getRemoteEntities(hostOne, webClient, context, timeout, ldService),
+						getRemoteEntities(hostTwo, webClient, context, timeout, ldService))
+				.asTuple().onItem().transform(tpl -> {
+					List<Map<String, Object>> result = tpl.getItem1();
+					result.addAll(tpl.getItem2());
+					return result;
+				});
+	}
+
+	public static Uni<List<Map<String, Object>>> getRemoteEntities(QueryRemoteHost remoteHost, WebClient webClient,
+			Context context, int timeout, JsonLDService ldService) {
+
+		List<Tuple3<String, String, String>> idsAndTypesAndIdPattern = remoteHost.getIdsAndTypesAndIdPattern();
+
+		List<Uni<List<Object>>> unis = new ArrayList<>();
+		if (remoteHost.isCanDoBatchQuery()) {
+			Map<String, Object> batchBody = Maps.newHashMap();
+			batchBody.put(NGSIConstants.TYPE, NGSIConstants.QUERY_TYPE);
+			List<Tuple3<String, String, String>> idsTypeAndPattern = remoteHost.getIdsAndTypesAndIdPattern();
+			if (idsTypeAndPattern != null) {
+				List<Map<String, String>> entities = Lists.newArrayList();
+				for (Tuple3<String, String, String> entry : idsTypeAndPattern) {
+					String id = entry.getItem1();
+					String type = entry.getItem2();
+					String idPattern = entry.getItem3();
+					Map<String, String> tmp = Maps.newHashMap();
+					if (id != null) {
+						tmp.put(NGSIConstants.ID, id);
+					}
+					if (type != null) {
+						tmp.put(NGSIConstants.TYPE, type);
+					}
+					if (id != null) {
+						tmp.put(NGSIConstants.QUERY_PARAMETER_IDPATTERN, idPattern);
+					}
+					entities.add(tmp);
+				}
+				batchBody.put(NGSIConstants.NGSI_LD_ENTITIES_SHORT, entities);
+			}
+			Map<String, String> queryParams = remoteHost.getQueryParam();
+			queryParams.remove(NGSIConstants.ID);
+			queryParams.remove(NGSIConstants.TYPE);
+			if (queryParams != null) {
+				batchBody.putAll(queryParams);
+			}
+			HttpRequest<Buffer> req = webClient.postAbs(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_QUERY);
+			req = req.setQueryParam("limit", "1000");
+			req = req.setQueryParam("options", "sysAttrs");
+			req = req.putHeader(HttpHeaders.VIA, remoteHost.getViaHeaders().getViaHeaders());
+			String batchString;
+			try {
+				batchString = JsonUtils.toPrettyString(batchBody);
+			} catch (Exception e) {
+				logger.warn("failed to serialize batch request");
+				return Uni.createFrom().item(Lists.newArrayList());
+			}
+			req.putHeader(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD);
+			batchBody.put(NGSIConstants.JSON_LD_CONTEXT, context.getOriginalAtContext());
+			unis.add(req.putHeaders(remoteHost.headers()).timeout(timeout).sendBuffer(Buffer.buffer(batchString))
+					.onItem().transformToUni(response -> {
+						if (response != null) {
+							switch (response.statusCode()) {
+							case 200: {
+								return handle200(webClient, remoteHost, context, response, ldService, timeout);
+							}
+							default: {
+								return Uni.createFrom().item(Lists.newArrayList());
+							}
+
+							}
+						} else {
+							return Uni.createFrom().item(Lists.newArrayList());
+						}
+
+					}).onFailure().recoverWithUni(e -> {
+						logger.warn("Failed to query remote host" + remoteHost.toString(), e);
+						return Uni.createFrom().item(Lists.newArrayList());
+					}));
+
+		} else if (remoteHost.isCanDoQuery()) {
+			if (idsAndTypesAndIdPattern == null) {
+				Tuple3<String, String, String> tmpTpl = Tuple3.of(null, null, null);
+				idsAndTypesAndIdPattern = Lists.newArrayList();
+				idsAndTypesAndIdPattern.add(tmpTpl);
+			}
+			for (Tuple3<String, String, String> tpl : idsAndTypesAndIdPattern) {
+				String id = tpl.getItem1();
+				String type = tpl.getItem2();
+				String idPattern = tpl.getItem3();
+				HttpRequest<Buffer> req = webClient.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT);
+				if (id != null) {
+					req = req.setQueryParam(NGSIConstants.ID, id);
+				}
+				if (type != null) {
+					req = req.setQueryParam(NGSIConstants.TYPE, type);
+				}
+				if (idPattern != null) {
+					req = req.setQueryParam(NGSIConstants.QUERY_PARAMETER_IDPATTERN, idPattern);
+				}
+
+				for (Entry<String, String> param : remoteHost.getQueryParam().entrySet()) {
+					req = req.setQueryParam(param.getKey(), (String) param.getValue());
+				}
+				req = req.setQueryParam("limit", "1000");
+				req = req.setQueryParam("options", "sysAttrs");
+				req = req.putHeader(HttpHeaders.VIA, remoteHost.getViaHeaders().getViaHeaders());
+				// <https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json>;
+				// rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"
+				if (context != null && context.getOriginalAtContext() != null
+						&& !context.getOriginalAtContext().isEmpty()) {
+					Object ctx = context.getOriginalAtContext().get(0);
+					if (ctx instanceof String ctxStr) {
+						req = req.putHeader(HttpHeaders.LINK,
+								"<" + ctxStr + ">; rel=\"" + NGSIConstants.HEADER_REL_LDCONTEXT + "\"; type=\""
+										+ AppConstants.NGB_APPLICATION_JSONLD + "\"");
+					}
+				}
+
+				unis.add(req.putHeaders(remoteHost.headers()).timeout(timeout).send().onItem()
+						.transformToUni(response -> {
+
+							if (response != null) {
+								switch (response.statusCode()) {
+								case 200: {
+									return handle200(webClient, remoteHost, context, response, ldService, timeout);
+								}
+								case 414: {
+									return handle414(webClient, remoteHost, context, timeout, ldService, id, type,
+											idPattern).onItem().transformToUni(entities -> {
+												logger.debug("414 recovered");
+												return ldService.expand(context, entities, AppConstants.opts, -1,
+														false);
+											});
+								}
+								default: {
+
+									return Uni.createFrom().item(Lists.newArrayList());
+								}
+
+								}
+							} else {
+								return Uni.createFrom().item(Lists.newArrayList());
+							}
+
+						}).onFailure().recoverWithUni(e -> {
+							logger.warn("Failed to query remote host" + remoteHost.toString(), e);
+
+							return Uni.createFrom().item(Lists.newArrayList());
+						}));
+			}
+		} else if (remoteHost.isCanDoRetrieve()) {
+			List<Tuple3<String, String, String>> idsTypeAndPattern = remoteHost.getIdsAndTypesAndIdPattern();
+			Map<String, String> queryParams = remoteHost.getQueryParam();
+
+			if (idsTypeAndPattern != null) {
+				for (Tuple3<String, String, String> tpl : idsTypeAndPattern) {
+					String id = tpl.getItem1();
+					if (id != null) {
+						String[] ids = id.split(",");
+						for (String idEntry : ids) {
+							HttpRequest<Buffer> req = webClient.getAbs(
+									remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + idEntry);
+							req = req.putHeader(HttpHeaders.VIA, remoteHost.getViaHeaders().getViaHeaders());
+							if (queryParams != null) {
+								for (Entry<String, String> param : queryParams.entrySet()) {
+									req = req.addQueryParam(param.getKey(), param.getValue());
+								}
+							}
+							if (context != null && context.getOriginalAtContext() != null
+									&& !context.getOriginalAtContext().isEmpty()) {
+								Object ctx = context.getOriginalAtContext().get(0);
+								if (ctx instanceof String ctxStr) {
+									req = req.putHeader(HttpHeaders.LINK,
+											"<" + ctxStr + ">; rel=\"" + NGSIConstants.HEADER_REL_LDCONTEXT + "\"; type=\""
+													+ AppConstants.NGB_APPLICATION_JSONLD + "\"");
+								}
+							}
+							req = req.setQueryParam("options", "sysAttrs");
+							unis.add(req.putHeaders(remoteHost.headers()).timeout(timeout).send().onItem()
+									.transformToUni(response -> {
+
+										if (response != null) {
+											switch (response.statusCode()) {
+											case 200: {
+												return handle200(webClient, remoteHost, context, response, ldService,
+														timeout);
+											}
+											default: {
+
+												return Uni.createFrom().item(Lists.newArrayList());
+											}
+
+											}
+										} else {
+											return Uni.createFrom().item(Lists.newArrayList());
+										}
+
+									}).onFailure().recoverWithUni(e -> {
+										logger.warn("Failed to query remote host" + remoteHost.toString(), e);
+
+										return Uni.createFrom().item(Lists.newArrayList());
+									}));
+
+						}
+					}
+				}
+			}
+		}
+		if (unis.isEmpty()) {
+			return Uni.createFrom().item(Lists.newArrayList());
+		}
+		return Uni.combine().all().unis(unis).combinedWith(l -> {
+			List<Map<String, Object>> result = Lists.newArrayList();
+			for (Object obj : l) {
+				List<Object> entities = (List<Object>) obj;
+				for (Object entityObj : entities) {
+					Map<String, Object> entityEntry = (Map<String, Object>) entityObj;
+					entityEntry.put(AppConstants.REG_MODE_KEY, remoteHost.regMode());
+					result.add(entityEntry);
+				}
+			}
+			return result;
+		});
+	}
+
+	private static Uni<List<Object>> handle200(WebClient webClient, QueryRemoteHost remoteHost, Context context,
+			HttpResponse<Buffer> response, JsonLDService ldService, int timeout) {
+		List<Map<String, Object>> tmpList = response.bodyAsJsonArray().getList();
+		return ldService.expand(context, tmpList, AppConstants.opts, -1, false).onItem().transformToUni(expanded -> {
+			if (response.headers().contains("Next")) {
+				remoteHost.setParamsFromNext(response.headers().get("Next"));
+				return getRemoteEntities(remoteHost, webClient, context, timeout, ldService).onItem()
+						.transform(nextResult -> {
+
+							if (nextResult != null) {
+								expanded.addAll(nextResult);
+							}
+
+							return expanded;
+						});
+
+			}
+			return Uni.createFrom().item(expanded);
+		});
+	}
+
+	public static Collection<QueryRemoteHost> getRemoteQueries(String tenant,
+			List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeQueryAndIdPattern, AttrsQueryTerm attrsQuery,
+			QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery,
+			Table<String, String, List<RegistrationEntry>> tenant2CId2RegEntries, Context context,
+			EntityCache fullEntityCache, boolean splitEntities, ViaHeaders viaHeaders) {
+		return getRemoteQueries(idsAndTypeQueryAndIdPattern, attrsQuery, qQuery, geoQuery, scopeQuery, langQuery,
+				tenant2CId2RegEntries.row(tenant).values(), context, fullEntityCache, viaHeaders, splitEntities);
+	}
+
+	public static Collection<QueryRemoteHost> getRemoteQueries(
+			List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeQueryAndIdPattern, AttrsQueryTerm attrsQuery,
+			QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery,
+			Collection<List<RegistrationEntry>> regEntries, Context context, EntityCache fullEntityCache,
+			ViaHeaders viaHeaders, boolean isDist) {
+
+		// ids, types, attrs, geo, scope
+		List<Map<QueryRemoteHost, QueryInfos>> remoteHost2QueryInfos = Lists.newArrayList();
+		if (idsAndTypeQueryAndIdPattern == null) {
+			idsAndTypeQueryAndIdPattern = Lists.newArrayList();
+			idsAndTypeQueryAndIdPattern.add(Tuple3.of(null, null, null));
+		}
+		for (Tuple3<String[], TypeQueryTerm, String> t : idsAndTypeQueryAndIdPattern) {
+			Map<QueryRemoteHost, QueryInfos> remoteHost2QueryInfo = Maps.newHashMap();
+			remoteHost2QueryInfos.add(remoteHost2QueryInfo);
+			Iterator<List<RegistrationEntry>> it = regEntries.iterator();
+			String[] id = t.getItem1();
+			TypeQueryTerm typeQuery = t.getItem2();
+			String idPattern = t.getItem3();
+			while (it.hasNext()) {
+				Iterator<RegistrationEntry> tenantRegs = it.next().iterator();
+				while (tenantRegs.hasNext()) {
+
+					RegistrationEntry regEntry = tenantRegs.next();
+					if (regEntry.expiresAt() > 0 && regEntry.expiresAt() <= System.currentTimeMillis()) {
+						it.remove();
+						continue;
+					}
+					if (!regEntry.queryBatch() && !regEntry.queryEntity()) {
+						continue;
+					}
+
+					if (regEntry.matches(id, idPattern, typeQuery, attrsQuery, qQuery, geoQuery, scopeQuery) == null) {
+						continue;
+					}
+
+					RemoteHost regHost = regEntry.host();
+					if (viaHeaders.getHostUrls().contains(regHost.host())) {
+						continue;
+					}
+
+					QueryRemoteHost hostToQuery = QueryRemoteHost.fromRegEntry(regEntry);
+					QueryInfos queryInfos = remoteHost2QueryInfo.get(hostToQuery);
+					if (queryInfos == null) {
+						queryInfos = new QueryInfos();
+						queryInfos.setGeoQuery(geoQuery);
+						queryInfos.setLangQuery(langQuery);
+						queryInfos.setTypeQuery(typeQuery);
+						remoteHost2QueryInfo.put(hostToQuery, queryInfos);
+					}
+
+					if (!queryInfos.isFullIdFound()) {
+						if (regEntry.eId() != null) {
+							queryInfos.getIds().add(regEntry.eId());
+						} else {
+							if (id != null) {
+								queryInfos.setIds(Sets.newHashSet(id));
+								queryInfos.setFullIdFound(true);
+							} else if (idPattern != null) {
+								queryInfos.setIdPattern(idPattern);
+							}
+						}
+					}
+					if (!queryInfos.isFullTypesFound()) {
+						if (regEntry.type() != null) {
+							queryInfos.getTypes().add(regEntry.type());
+						} else {
+							if (typeQuery != null) {
+								queryInfos.setTypes(typeQuery.getAllTypes());
+								queryInfos.setFullTypesFound(true);
+							}
+						}
+					}
+					if (!queryInfos.isFullAttrsFound()) {
+						if (regEntry.eProp() != null) {
+							queryInfos.getAttrs().add(regEntry.eProp());
+						} else if (regEntry.eRel() != null) {
+							queryInfos.getAttrs().add(regEntry.eRel());
+						} else {
+							queryInfos.setFullAttrsFound(true);
+							if (attrsQuery != null && attrsQuery.getAttrs() != null
+									&& !attrsQuery.getAttrs().isEmpty()) {
+								queryInfos.setAttrs(attrsQuery.getAttrs());
+							}
+						}
+					}
+				}
+
+			}
+		}
+		Map<String, QueryRemoteHost> cSourceId2QueryRemoteHost = Maps.newHashMap();
+
+		for (Map<QueryRemoteHost, QueryInfos> remoteHost2QueryInfo : remoteHost2QueryInfos) {
+			for (Entry<QueryRemoteHost, QueryInfos> entry : remoteHost2QueryInfo.entrySet()) {
+				QueryRemoteHost tmpHost = entry.getKey();
+				QueryRemoteHost finalHost = cSourceId2QueryRemoteHost.get(tmpHost.cSourceId());
+				if (finalHost == null) {
+					finalHost = tmpHost;
+					viaHeaders.addViaHeader(tmpHost.host());
+					finalHost.setViaHeaders(viaHeaders);
+					cSourceId2QueryRemoteHost.put(finalHost.cSourceId(), finalHost);
+				}
+
+				Map<String, String> queryParams = entry.getValue().toQueryParams(context, false, fullEntityCache,
+						finalHost);
+				finalHost.addIdsAndTypesAndIdPattern(
+						Tuple3.of(queryParams.remove(NGSIConstants.ID), queryParams.remove(NGSIConstants.TYPE),
+								queryParams.remove(NGSIConstants.QUERY_PARAMETER_IDPATTERN)));
+				finalHost.setQueryParam(queryParams);
+				finalHost.setContext(context);
+			}
+		}
+
+		return cSourceId2QueryRemoteHost.values();
+	}
+
+	public static Map<String, Map<String, Object>> evaluateFilterQueries(QueryResult queryResult, QQueryTerm qQuery,
+			ScopeQueryTerm scopeQuery, GeoQueryTerm geoQuery, AttrsQueryTerm attrsTerm, PickTerm pickTerm,
+			OmitTerm omitTerm, DataSetIdTerm dataSetIdTerm, EntityCache entityCache, Set<String> jsonKeys,
+			boolean calculateLinked) {
+		Map<String, Map<String, Object>> deleted = Maps.newHashMap();
+		List<Map<String, Object>> resultData = queryResult.getData();
+		Iterator<Map<String, Object>> it = resultData.iterator();
+		Map<String, Map<String, Object>> flatEntities = queryResult.getFlatJoin();
+		Set<String> pickForFlat = Sets.newHashSet();
+		boolean flatJoin = queryResult.isFlatJoin();
+		while (it.hasNext()) {
+			Map<String, Object> entity = it.next();
+			// order is important here qquery scope and geo remove full entities and the
+			// rest modifies the entities and might result in empty entities
+			boolean qResult = (qQuery != null && !qQuery.calculateEntity(entity, entityCache, jsonKeys, false));
+			boolean scopeResult = (scopeQuery != null && !scopeQuery.calculateEntity(entity));
+			boolean geoQResult = (geoQuery != null && !geoQuery.calculateEntity(entity));
+			boolean attrsResult = (attrsTerm != null && !attrsTerm.calculateEntity(entity));
+			boolean pickResult = (pickTerm != null
+					&& !pickTerm.calculateEntity(entity, flatJoin, flatEntities, pickForFlat, calculateLinked));
+			boolean omitResult = (omitTerm != null
+					&& !omitTerm.calculateEntity(entity, flatJoin, flatEntities, pickForFlat, calculateLinked));
+			boolean datasetIdResult = (dataSetIdTerm != null && !dataSetIdTerm.calculateEntity(entity));
+			if (qResult || scopeResult || geoQResult || attrsResult || pickResult || omitResult || datasetIdResult) {
+				it.remove();
+				deleted.put((String) entity.get(NGSIConstants.JSON_LD_ID), entity);
+			}
+
+		}
+		if (flatEntities != null && flatJoin) {
+			if (pickTerm == null && omitTerm == null) {
+				resultData.addAll(flatEntities.values());
+			} else {
+				for (String id : pickForFlat) {
+					resultData.add(flatEntities.get(id));
+				}
+			}
+		}
+		return deleted;
 	}
 
 }

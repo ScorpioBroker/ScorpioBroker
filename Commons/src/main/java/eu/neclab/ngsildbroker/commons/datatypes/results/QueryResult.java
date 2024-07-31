@@ -5,6 +5,9 @@ import java.util.Map;
 
 import com.google.common.collect.Maps;
 
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
+
 /**
  * @author hebgen
  * @version 1.0
@@ -18,8 +21,11 @@ public class QueryResult {
 	private Long resultsLeftAfter;
 	private Long resultsLeftBefore;
 	private List<Map<String, Object>> data;
-	private Map<String, Map<String, Object>> entityId2Data = Maps.newHashMap();
 	private Long count = 0L;
+	private LanguageQueryTerm languageQueryTerm;
+	private Map<String, Map<String, Object>> flatJoin;
+	private boolean isFlatJoin;
+	
 
 	public QueryResult() {
 	}
@@ -80,13 +86,32 @@ public class QueryResult {
 		this.count = count;
 	}
 
-	public Map<String, Map<String, Object>> getEntityId2Data() {
-		return entityId2Data;
+	public LanguageQueryTerm getLanguageQueryTerm() {
+		return languageQueryTerm;
 	}
 
-	public void setEntityId2Data(Map<String, Map<String, Object>> entityId2Data) {
-		this.entityId2Data = entityId2Data;
+	public void setLanguageQueryTerm(LanguageQueryTerm languageQueryTerm) {
+		this.languageQueryTerm = languageQueryTerm;
 	}
+
+	public Map<String, Map<String, Object>> getFlatJoin() {
+		return flatJoin;
+	}
+
+	public void setFlatJoin(Map<String, Map<String, Object>> flatJoin) {
+		this.flatJoin = flatJoin;
+	}
+
+	public boolean isFlatJoin() {
+		return isFlatJoin;
+	}
+
+	public void setIsFlatJoin(boolean isFlatJoin) {
+		this.isFlatJoin = isFlatJoin;
+	}
+
+	
+	
 
 //	public void finalize() throws Throwable {
 //

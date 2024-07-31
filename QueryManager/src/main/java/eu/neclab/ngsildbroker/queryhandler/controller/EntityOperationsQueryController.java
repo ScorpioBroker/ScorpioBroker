@@ -1,13 +1,17 @@
 package eu.neclab.ngsildbroker.queryhandler.controller;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import io.vertx.core.json.JsonObject;
+import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
+import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
@@ -21,23 +25,29 @@ import com.github.jsonldjava.core.JsonLDService;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
+import com.google.common.net.HttpHeaders;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.ViaHeaders;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.OmitTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.PickTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.commons.tools.QueryParser;
 import eu.neclab.ngsildbroker.queryhandler.services.QueryService;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.tuples.Tuple3;
 import io.vertx.core.http.HttpServerRequest;
 
 @Singleton
@@ -45,6 +55,9 @@ import io.vertx.core.http.HttpServerRequest;
 public class EntityOperationsQueryController {
 	@Inject
 	QueryService queryService;
+
+	@Inject
+	MicroServiceUtils microServiceUtils;
 
 	@ConfigProperty(name = "scorpio.entity.default-limit", defaultValue = "50")
 	int defaultLimit;
@@ -58,6 +71,14 @@ public class EntityOperationsQueryController {
 	@Inject
 	JsonLDService ldService;
 
+	private String selfViaHeader;
+
+	@PostConstruct
+	public void setup() {
+		URI gateway = microServiceUtils.getGatewayURL();
+		this.selfViaHeader = gateway.getScheme().toUpperCase() + "/1.1 " + gateway.getAuthority();
+	}
+
 	@Path("/query")
 	@POST
 	public Uni<RestResponse<Object>> postQuery(HttpServerRequest request, String bodyStr,
@@ -65,10 +86,11 @@ public class EntityOperationsQueryController {
 			@QueryParam(value = "options") String options, @QueryParam(value = "count") boolean count,
 			@QueryParam(value = "localOnly") boolean localOnly,
 			@QueryParam(value = "geometryProperty") String geometryProperty,
-			@QueryParam("entityMap") String entityMapToken) {
+			@HeaderParam("NGSILD-EntityMap") String entityMapToken,
+			@QueryParam("entityMap") boolean retrieveEntityMap) {
 
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
-		Map<String,Object> body;
+		Map<String, Object> body;
 		if (acceptHeader == -1) {
 			return HttpUtils.getInvalidHeader();
 		}
@@ -83,7 +105,7 @@ public class EntityOperationsQueryController {
 					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.TooManyResults)));
 		}
 		try {
-		 	body = new JsonObject(bodyStr).getMap();
+			body = new JsonObject(bodyStr).getMap();
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 		}
@@ -126,11 +148,19 @@ public class EntityOperationsQueryController {
 				CSFQueryTerm csfQueryTerm = null;
 				GeoQueryTerm geoQueryTerm = null;
 				ScopeQueryTerm scopeQueryTerm = null;
+				OmitTerm omitTerm = null;
+				PickTerm pickTerm = null;
+
 				LanguageQueryTerm langQuery;
 				Object entities = body.get(NGSIConstants.NGSI_LD_ENTITIES_SHORT);
 				Object attrs = body.get(NGSIConstants.QUERY_PARAMETER_ATTRS);
 				Object q = body.get(NGSIConstants.QUERY_PARAMETER_QUERY);
 				Object geoQ = body.get(NGSIConstants.NGSI_LD_GEO_QUERY_SHORT);
+				Object joinObj = body.get(NGSIConstants.QUERY_PARAMETER_JOIN);
+				Object joinLevelObj = body.get(NGSIConstants.QUERY_PARAMETER_JOINLEVEL);
+				String join = joinObj == null ? null : (String) joinObj;
+				int joinLevel = joinLevelObj == null ? 0 : (int) joinLevelObj;
+				boolean entityDist = (boolean) body.getOrDefault(NGSIConstants.QUERY_PARAMETER_ENTITY_DIST, false);
 				if (entities == null && attrs == null && q == null && geoQ == null) {
 					return Uni.createFrom()
 							.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData,
@@ -140,18 +170,26 @@ public class EntityOperationsQueryController {
 				Object lang = body.get(NGSIConstants.QUERY_PARAMETER_LANG);
 				Object scopeQ = body.get(NGSIConstants.QUERY_PARAMETER_SCOPE_QUERY);
 				Object csf = body.get(NGSIConstants.QUERY_PARAMETER_CSF);
+				Object omit = body.get(NGSIConstants.QUERY_PARAMETER_OMIT);
+				Object pick = body.get(NGSIConstants.QUERY_PARAMETER_PICK);
+				Object georel = null;
+				String coordinates = null;
+				Object geoproperty = null;
+				Object geometry = null;
+				ViaHeaders viaHeaders = new ViaHeaders(request.headers().getAll(HttpHeaders.VIA), this.selfViaHeader);
+
 				if (attrs != null) {
-					attrsQuery = QueryParser.parseAttrs(String.join(",",(ArrayList<String>)attrs), context);
+					attrsQuery = QueryParser.parseAttrs(String.join(",", (ArrayList<String>) attrs), context);
 				}
 				if (q != null) {
 					qQueryTerm = QueryParser.parseQuery((String) q, context);
 				}
 				if (geoQ != null) {
 					Map<String, Object> tmp = (Map<String, Object>) geoQ;
-					Object georel = tmp.get(NGSIConstants.QUERY_PARAMETER_GEOREL);
-					String coordinates = JsonUtils.toString(tmp.get(NGSIConstants.QUERY_PARAMETER_COORDINATES));
-					Object geoproperty = tmp.get(NGSIConstants.QUERY_PARAMETER_GEOPROPERTY);
-					Object geometry = tmp.get(NGSIConstants.QUERY_PARAMETER_GEOMETRY);
+					georel = tmp.get(NGSIConstants.QUERY_PARAMETER_GEOREL);
+					coordinates = JsonUtils.toString(tmp.get(NGSIConstants.QUERY_PARAMETER_COORDINATES));
+					geoproperty = tmp.get(NGSIConstants.QUERY_PARAMETER_GEOPROPERTY);
+					geometry = tmp.get(NGSIConstants.QUERY_PARAMETER_GEOMETRY);
 					geoQueryTerm = QueryParser.parseGeoQuery(georel == null ? null : (String) georel, coordinates,
 							geometry == null ? null : (String) geometry,
 							geoproperty == null ? null : (String) geoproperty, context);
@@ -167,97 +205,72 @@ public class EntityOperationsQueryController {
 				} else {
 					langQuery = null;
 				}
+				if (pick != null) {
+					pickTerm = new PickTerm();
+					QueryParser.parseProjectionTerm(pickTerm, (String) pick, context);
+				}
+				if (omit != null) {
+					omitTerm = OmitTerm.getNewRootInstance();
+					QueryParser.parseProjectionTerm(omitTerm, (String) omit, context);
+				}
 				String tenant = HttpUtils.getTenant(request);
+				String token;
+				boolean tokenProvided;
+				if (entityMapToken != null) {
+					try {
+						HttpUtils.validateUri(entityMapToken);
+					} catch (ResponseException e) {
+						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+					}
+					token = entityMapToken;
+					tokenProvided = true;
+				} else {
+					token = "urn:ngsi-ld:entitymap:" + UUID.randomUUID().toString();
+					tokenProvided = false;
+				}
+				List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeQueryAndIdPattern;
+
 				if (entities != null) {
 					if (!(entities instanceof List)) {
-						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
-								new ResponseException(ErrorType.BadRequestData, "entities needs to be an array")));
+						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(new ResponseException(
+								ErrorType.BadRequestData, "entities needs to be an array with an entry")));
 					}
-					List<Uni<QueryResult>> unis = Lists.newArrayList();
+					int listSize = ((List) entities).size();
+					if (listSize <= 0) {
+						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(new ResponseException(
+								ErrorType.BadRequestData, "entities needs to be an array with an entry")));
+					}
+					idsAndTypeQueryAndIdPattern = new ArrayList<>(listSize);
 					for (Map<String, String> entityEntry : (List<Map<String, String>>) entities) {
 						String id = entityEntry.get(NGSIConstants.QUERY_PARAMETER_ID);
 						String idPattern = entityEntry.get(NGSIConstants.QUERY_PARAMETER_IDPATTERN);
 						String typeQuery = entityEntry.get(NGSIConstants.QUERY_PARAMETER_TYPE);
 						typeQueryTerm = QueryParser.parseTypeQuery(typeQuery, context);
-						String token;
-						boolean tokenProvided;
-						String md5 = "" + Objects.hashCode(typeQuery, attrs, q, csf, geoQ, geometryProperty, lang,
-								scopeQ, localOnly, options);
-						String headerToken = request.headers().get(NGSIConstants.ENTITY_MAP_TOKEN_HEADER);
-						if (headerToken != null && entityMapToken != null) {
-							if (!headerToken.equals(entityMapToken)) {
-								return Uni.createFrom().item(HttpUtils
-										.handleControllerExceptions(new ResponseException(ErrorType.InvalidRequest)));
-							}
-						}
-						String tokenToTest = null;
-						if (entityMapToken != null) {
-							tokenToTest = entityMapToken;
-						} else if (headerToken != null) {
-							tokenToTest = headerToken;
-						}
-						if (tokenToTest != null) {
-							if (!tokenToTest.substring(6).equals(md5)) {
-								return Uni.createFrom().item(HttpUtils
-										.handleControllerExceptions(new ResponseException(ErrorType.InvalidRequest)));
-							}
-							token = tokenToTest;
-							tokenProvided = true;
-						} else {
-							token = RandomStringUtils.randomAlphabetic(6) + md5;
-							tokenProvided = false;
-						}
-						unis.add(queryService.query(HttpUtils.getTenant(request), token, tokenProvided,
-								id == null ? null : new String[] { id }, typeQueryTerm, idPattern, attrsQuery,
-								qQueryTerm, csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset,
-								count, localOnly, context, request.headers(), false,null,null));
+						String[] ids = id == null ? null : id.split(",");
+						idsAndTypeQueryAndIdPattern.add(Tuple3.of(ids, typeQueryTerm, idPattern));
 					}
-					return Uni.combine().all().unis(unis).combinedWith(list -> {
-						Iterator<?> it = list.iterator();
-						QueryResult first = (QueryResult) it.next();
-
-						while (it.hasNext()) {
-							first.getData().addAll(((QueryResult) it.next()).getData());
-						}
-						return first;
-					}).onItem().transformToUni(first -> HttpUtils.generateQueryResult(request, first, options,
-							geometryProperty, acceptHeader, count, actualLimit, langQuery, context, ldService,null,null));
 				} else {
-					String token;
-					boolean tokenProvided;
-					String md5 = ""
-							+ Objects.hashCode(attrs, q, csf, geoQ, geometryProperty, lang, scopeQ, localOnly, options);
-					String headerToken = request.headers().get(NGSIConstants.ENTITY_MAP_TOKEN_HEADER);
-					if (headerToken != null && entityMapToken != null) {
-						if (!headerToken.equals(entityMapToken)) {
-							return Uni.createFrom().item(HttpUtils
-									.handleControllerExceptions(new ResponseException(ErrorType.InvalidRequest)));
-						}
-					}
-					String tokenToTest = null;
-					if (entityMapToken != null) {
-						tokenToTest = entityMapToken;
-					} else if (headerToken != null) {
-						tokenToTest = headerToken;
-					}
-					if (tokenToTest != null) {
-						if (!tokenToTest.substring(6).equals(md5)) {
-							return Uni.createFrom().item(HttpUtils
-									.handleControllerExceptions(new ResponseException(ErrorType.InvalidRequest)));
-						}
-						token = tokenToTest;
-						tokenProvided = true;
-					} else {
-						token = RandomStringUtils.randomAlphabetic(6) + md5;
-						tokenProvided = false;
-					}
-					return queryService.query(tenant, token, tokenProvided, null, null, null, attrsQuery, qQueryTerm,
-							csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset, count,
-							localOnly, context, request.headers(), false,null,null).onItem().transformToUni(queryResult -> {
-								return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty,
-										acceptHeader, count, actualLimit, langQuery, context, ldService,null,null);
-							}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e));
+					idsAndTypeQueryAndIdPattern = null;
 				}
+				String checkSum;
+				if (idsAndTypeQueryAndIdPattern == null && attrs == null && q == null && csf == null && geometry == null
+						&& georel == null && coordinates == null && geoproperty == null && geometryProperty == null
+						&& scopeQ == null && pick == null && omit == null) {
+					checkSum = null;
+				} else {
+					checkSum = String.valueOf(Objects.hashCode(idsAndTypeQueryAndIdPattern, attrs, q, csf, geometry,
+							georel, coordinates, geoproperty, geometryProperty, scopeQ, pick, omit));
+				}
+				return queryService.query(tenant, token, tokenProvided, idsAndTypeQueryAndIdPattern, attrsQuery,
+						qQueryTerm, csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset, count,
+						localOnly, context, request.headers(), false, null, null, join, joinLevel, entityDist, pickTerm,
+						omitTerm, checkSum, viaHeaders).onItem().transformToUni(queryResult -> {
+							return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty,
+									acceptHeader, count, actualLimit, langQuery, context, ldService, retrieveEntityMap,
+									microServiceUtils.getGatewayURL().toString(),
+									NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT);
+						}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e));
+
 			} catch (Exception e) {
 				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 			}
