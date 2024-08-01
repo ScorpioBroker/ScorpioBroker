@@ -21,6 +21,9 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple4;
 import io.vertx.core.http.impl.headers.HeadersMultiMap;
 import io.vertx.mutiny.core.MultiMap;
+import jakarta.ws.rs.core.HttpHeaders;
+
+import org.apache.http.client.methods.HttpHead;
 import org.locationtech.spatial4j.SpatialPredicate;
 import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
 import org.locationtech.spatial4j.distance.DistanceUtils;
@@ -296,8 +299,8 @@ public class SubscriptionTools {
 			result.addAll(otherHead);
 			result.remove(NGSIConstants.LINK_HEADER);
 		}
-		result.set(NGSIConstants.ACCEPT, accept);
-		result.set(NGSIConstants.CONTENT_TYPE, accept);
+		result.set(HttpHeaders.ACCEPT, accept);
+		result.set(HttpHeaders.CONTENT_TYPE, accept);
 		return new MultiMap(result);
 	}
 
