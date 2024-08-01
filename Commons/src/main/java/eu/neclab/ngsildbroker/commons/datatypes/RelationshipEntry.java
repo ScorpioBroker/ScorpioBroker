@@ -1,6 +1,5 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
-import java.net.URI;
 import java.util.List;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;

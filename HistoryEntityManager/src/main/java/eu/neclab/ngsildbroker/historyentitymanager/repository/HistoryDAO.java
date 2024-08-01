@@ -273,8 +273,8 @@ public class HistoryDAO {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
 			String sql = "DELETE FROM " + DBConstants.DBTABLE_TEMPORALENTITY + " WHERE id = $1 RETURNING "+DBConstants.DBTABLE_TEMPORALENTITY ;
 			return client.preparedQuery(sql).execute(Tuple.of(request.getId())).onFailure().recoverWithUni(e -> {
-				if (e instanceof PgException) {
-					if (((PgException) e).getCode().equals(AppConstants.SQL_NOT_FOUND)) {
+				if (e instanceof PgException pge) {
+					if (pge.getSqlState().equals(AppConstants.SQL_NOT_FOUND)) {
 						return Uni.createFrom().failure(
 								new ResponseException(ErrorType.NotFound, request.getId() + " does not exist"));
 					}
@@ -318,8 +318,8 @@ public class HistoryDAO {
 			payload.remove(NGSIConstants.JSON_LD_TYPE);
 			payload.remove(NGSIConstants.JSON_LD_ID);
 			return client.preparedQuery(sql).execute(tuple).onFailure().recoverWithUni(e -> {
-				if (e instanceof PgException) {
-					if (((PgException) e).getCode().equals(AppConstants.SQL_NOT_FOUND)) {
+				if (e instanceof PgException pge) {
+					if (pge.getSqlState().equals(AppConstants.SQL_NOT_FOUND)) {
 						return Uni.createFrom().failure(
 								new ResponseException(ErrorType.NotFound, request.getId() + " does not exist"));
 					}
@@ -359,8 +359,8 @@ public class HistoryDAO {
 					+ " SET data = data || $1::jsonb WHERE attributeid=$2 AND instanceid=$3 AND temporalentity_id=$4")
 					.execute(Tuple.of(payload, request.getAttribName(), request.getInstanceId(), request.getId()))
 					.onFailure().recoverWithUni(e -> {
-						if (e instanceof PgException) {
-							if (((PgException) e).getCode().equals(AppConstants.SQL_NOT_FOUND)) {
+						if (e instanceof PgException pge) {
+							if (pge.getSqlState().equals(AppConstants.SQL_NOT_FOUND)) {
 								return Uni.createFrom().failure(
 										new ResponseException(ErrorType.NotFound, request.getId() + " does not exist"));
 							}
@@ -408,8 +408,8 @@ public class HistoryDAO {
 			}
 
 			return query1.onFailure().recoverWithUni(e -> {
-				if (e instanceof PgException) {
-					if (((PgException) e).getCode().equals(AppConstants.SQL_NOT_FOUND)) {
+				if (e instanceof PgException pge) {
+					if (pge.getSqlState().equals(AppConstants.SQL_NOT_FOUND)) {
 						return Uni.createFrom().failure(
 								new ResponseException(ErrorType.NotFound, request.getId() + " does not exist"));
 					}
@@ -435,8 +435,8 @@ public class HistoryDAO {
 							+ " WHERE attributeid=$1 AND instanceid=$2 AND temporalentity_id=$3")
 					.execute(Tuple.of(request.getAttribName(), request.getInstanceId(), request.getId())).onFailure()
 					.recoverWithUni(e -> {
-						if (e instanceof PgException) {
-							if (((PgException) e).getCode().equals(AppConstants.SQL_NOT_FOUND)) {
+						if (e instanceof PgException pge) {
+							if (pge.getSqlState().equals(AppConstants.SQL_NOT_FOUND)) {
 								return Uni.createFrom().failure(
 										new ResponseException(ErrorType.NotFound, request.getId() + " does not exist"));
 							}
@@ -479,8 +479,8 @@ public class HistoryDAO {
 					+ " (temporalentity_id, attributeid, data, deletedat, instanceId) VALUES ($1, $2, $3::jsonb, $4, $5)")
 					.execute(Tuple.of(request.getId(), request.getAttribName(), deletePayload, now, instanceId))
 					.onFailure().recoverWithUni(e -> {
-						if (e instanceof PgException) {
-							if (((PgException) e).getCode().equals(AppConstants.SQL_NOT_FOUND)) {
+						if (e instanceof PgException pge) {
+							if (pge.getSqlState().equals(AppConstants.SQL_NOT_FOUND)) {
 								return Uni.createFrom().failure(
 										new ResponseException(ErrorType.NotFound, request.getId() + " does not exist"));
 							}

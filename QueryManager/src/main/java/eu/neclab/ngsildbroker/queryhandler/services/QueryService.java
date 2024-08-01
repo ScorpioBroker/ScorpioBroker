@@ -14,7 +14,6 @@ import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.resteasy.reactive.RestResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,7 +61,6 @@ import eu.neclab.ngsildbroker.queryhandler.repository.QueryDAO;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.groups.UniAndGroupIterable;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple3;
 import io.vertx.mutiny.core.MultiMap;

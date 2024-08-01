@@ -8,8 +8,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import java.util.SplittableRandom;
-
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
@@ -26,8 +24,13 @@ public class TypeQueryTerm implements Serializable {
 	
 	
 	@JsonIgnore
-	private static SplittableRandom random = new SplittableRandom();
-	protected int id = random.nextInt();
+	private static int idCount = 0;
+
+	private static synchronized int nextId() {
+		idCount++;
+		return idCount;
+	}
+	protected int id = nextId();
 	
 	/**
 	 * 

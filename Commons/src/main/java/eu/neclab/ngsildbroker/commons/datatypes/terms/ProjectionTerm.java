@@ -1,20 +1,13 @@
 package eu.neclab.ngsildbroker.commons.datatypes.terms;
 
 
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.SplittableRandom;
-import java.util.UUID;
-
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import io.vertx.mutiny.sqlclient.Tuple;
 
 
@@ -22,8 +15,13 @@ import io.vertx.mutiny.sqlclient.Tuple;
 @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 public abstract class ProjectionTerm {
 	@JsonIgnore
-	private static SplittableRandom random = new SplittableRandom();
-	protected int id = random.nextInt(); 
+	private static int idCount = 0;
+
+	private static synchronized int nextId() {
+		idCount++;
+		return idCount;
+	}
+	protected int id = nextId(); 
 	protected boolean hasLinked = false;
 	protected boolean hasAnyLinked = false;
 	

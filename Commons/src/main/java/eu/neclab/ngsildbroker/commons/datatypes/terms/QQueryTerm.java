@@ -7,15 +7,12 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
-import java.util.SplittableRandom;
 
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.github.jsonldjava.core.Context;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
@@ -24,27 +21,25 @@ import eu.neclab.ngsildbroker.commons.datatypes.BaseEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.BaseProperty;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityCache;
 import eu.neclab.ngsildbroker.commons.datatypes.PropertyEntry;
-import eu.neclab.ngsildbroker.commons.datatypes.QueryRemoteHost;
-import eu.neclab.ngsildbroker.commons.datatypes.RegistrationEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.RelationshipEntry;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.interfaces.QueryServiceInterface;
-import eu.neclab.ngsildbroker.commons.storage.ClientManager;
-import eu.neclab.ngsildbroker.commons.tools.EntityTools;
-import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
-import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
-import io.vertx.mutiny.ext.web.client.WebClient;
 import io.vertx.mutiny.sqlclient.Tuple;
 
 @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 public class QQueryTerm implements Serializable {
 
 	@JsonIgnore
-	private static SplittableRandom random = new SplittableRandom();
-	protected int id = random.nextInt();
+	private static int idCount = 0;
+
+	private static synchronized int nextId() {
+		idCount++;
+		return idCount;
+	}
+
+	protected int id = nextId();
 	/**
 	 *
 	 */
@@ -295,7 +290,6 @@ public class QQueryTerm implements Serializable {
 		}
 		if (operant != null && operant.matches(RANGE)) {
 			String[] range = operant.split("\\.\\.");
-
 
 			switch (operator) {
 			case "==":
@@ -939,7 +933,6 @@ public class QQueryTerm implements Serializable {
 			return false;
 		return true;
 	}
-
 
 	@Override
 	public boolean equals(Object obj) {
@@ -2572,7 +2565,5 @@ public class QQueryTerm implements Serializable {
 	public void setId(int id) {
 		this.id = id;
 	}
-	
-	
 
 }

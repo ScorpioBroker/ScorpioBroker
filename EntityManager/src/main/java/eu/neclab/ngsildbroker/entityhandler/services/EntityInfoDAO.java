@@ -38,7 +38,6 @@ import org.slf4j.LoggerFactory;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -180,8 +179,8 @@ public class EntityInfoDAO {
 			return client.preparedQuery("INSERT INTO ENTITY(ID,E_TYPES, ENTITY) VALUES ($1, $2, $3)")
 					.execute(Tuple.of(request.getId(), types, new JsonObject(request.getPayload()))).onFailure()
 					.recoverWithUni(e -> {
-						if (e instanceof PgException) {
-							if (((PgException) e).getCode().equals(AppConstants.SQL_ALREADY_EXISTS)) {
+						if (e instanceof PgException pge) {
+							if (pge.getSqlState().equals(AppConstants.SQL_ALREADY_EXISTS)) {
 								return Uni.createFrom().failure(new ResponseException(ErrorType.AlreadyExists,
 										request.getId() + " already exists"));
 							}
@@ -424,8 +423,8 @@ public class EntityInfoDAO {
 			String sql = "SELECT * FROM MERGE_JSON($1,$2);";
 			Tuple tuple = Tuple.of(request.getId(), new JsonObject(request.getPayload()));
 			return client.preparedQuery(sql).execute(tuple).onFailure().recoverWithUni(e -> {
-				if (e instanceof PgException) {
-					if (((PgException) e).getCode().equals(AppConstants.SQL_NOT_FOUND)) {
+				if (e instanceof PgException pge) {
+					if (pge.getSqlState().equals(AppConstants.SQL_NOT_FOUND)) {
 						return Uni.createFrom()
 								.failure(new ResponseException(ErrorType.NotFound, request.getId() + " not found"));
 					}

@@ -227,7 +227,7 @@ public class EntityServiceTest {
 	public void deleteEntityTest() throws Exception {
 		try {
 
-			Uni<Map<String, Object>> deleteEntityRes = Uni.createFrom().item(new HashMap());
+			Uni<Map<String, Object>> deleteEntityRes = Uni.createFrom().item(new HashMap<>());
 			when(entityDAO.deleteEntity(any())).thenReturn(deleteEntityRes);
 
 			Uni<Void> emitterResponse = Uni.createFrom().nullItem();

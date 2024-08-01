@@ -59,6 +59,7 @@ public class HistoryDAO {
 	 * @param lastN
 	 * @return a single row with a single column containing the constructed entity.
 	 */
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public Uni<Map<String, Object>> retrieveEntity(String tenant, String entityId, AttrsQueryTerm attrsQuery,
 			AggrTerm aggrQuery, TemporalQueryTerm tempQuery, String lang, int lastN) {
 		Tuple2<String, Tuple> t;

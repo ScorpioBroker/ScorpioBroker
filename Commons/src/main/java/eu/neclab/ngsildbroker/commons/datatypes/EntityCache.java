@@ -1,7 +1,5 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
-import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -9,10 +7,7 @@ import java.util.Set;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
-import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
-import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import io.smallrye.mutiny.tuples.Tuple2;
 
 public class EntityCache {

@@ -1,21 +1,15 @@
 package eu.neclab.ngsildbroker.commons.datatypes.terms;
 
-import com.github.jsonldjava.core.Context;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import io.vertx.core.json.JsonArray;
 import io.vertx.mutiny.sqlclient.Tuple;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.StringJoiner;
 
 public class DataSetIdTerm implements Serializable {
 

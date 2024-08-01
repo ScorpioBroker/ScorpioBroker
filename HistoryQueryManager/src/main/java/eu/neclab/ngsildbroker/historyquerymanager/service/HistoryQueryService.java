@@ -107,7 +107,7 @@ public class HistoryQueryService {
 						PgException pge = (PgException) e;
 						logger.debug("At position " + pge.getPosition());
 						logger.debug("failed to query", pge);
-						if (pge.getCode().equals(AppConstants.SQL_INVALID_OPERATOR)) {
+						if (pge.getSqlState().equals(AppConstants.SQL_INVALID_OPERATOR)) {
 							return Uni.createFrom().failure(new ResponseException(ErrorType.InvalidRequest,
 									"Invalid operator in q query or aggr query"));
 						}

@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import io.vertx.core.http.impl.headers.HeadersMultiMap;
 import io.vertx.mutiny.core.MultiMap;
 import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.microprofile.config.inject.ConfigProperty;

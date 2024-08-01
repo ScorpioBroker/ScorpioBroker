@@ -6,7 +6,6 @@ import org.eclipse.microprofile.reactive.messaging.Incoming;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import io.quarkus.arc.profile.IfBuildProfile;
-import io.quarkus.arc.profile.UnlessBuildProfile;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
 import jakarta.inject.Singleton;
