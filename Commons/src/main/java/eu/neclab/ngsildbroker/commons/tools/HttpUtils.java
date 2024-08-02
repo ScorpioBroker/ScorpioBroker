@@ -861,7 +861,7 @@ public final class HttpUtils {
 		}
 		if (originalPayload.toString().contains(NGSIConstants.VALUE + "=null")
 				|| originalPayload.toString().contains(NGSIConstants.TYPE + "=null")) {
-			return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData));
+			return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData, "null values are not allowed in NGSI-LD"));
 		}
 		if (originalPayload.containsKey(NGSIConstants.SCOPE)
 				&& !(originalPayload.get(NGSIConstants.SCOPE) instanceof String

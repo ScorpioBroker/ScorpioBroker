@@ -1380,15 +1380,15 @@ public class QueryDAO {
 			query.append(dollar);
 			dollar++;
 			tuple.addBoolean(splitEntities);
-			query.append(", 'regEmptyOrNoRegEntryAndNoLinkedQuery', $");
+			query.append("::boolean, 'regEmptyOrNoRegEntryAndNoLinkedQuery', $");
 			query.append(dollar);
 			dollar++;
 			tuple.addBoolean(regEmptyOrNoRegEntryAndNoLinkedQuery);
-			query.append(", 'noRootLevelRegEntryAndLinkedQuery', $");
+			query.append("::boolean, 'noRootLevelRegEntryAndLinkedQuery', $");
 			query.append(dollar);
 			dollar++;
 			tuple.addBoolean(noRootLevelRegEntryAndLinkedQuery);
-			query.append(", 'checkSum', $");
+			query.append("::boolean, 'checkSum', $");
 
 			query.append(dollar);
 			dollar++;
