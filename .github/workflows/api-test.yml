@@ -21,14 +21,14 @@ jobs:
           echo "::set-output name=id::$id"
       - name: start mqtt & postgis for unit tests
         run: |
-          docker-compose -f ./compose-files/docker-compose-mqtt-postgis.yml up &
+          docker compose -f ./compose-files/docker-compose-mqtt-postgis.yml up &
           sleep 30
       - name: build-java-with-mqtt
         run: |
           mvn clean package -DskipTests -Pmqtt -Dmqtt -Ddocker -Ddocker-tag=java-mqtt-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=mqtt
       - name: stop mqtt & postgis for unit tests
         run: |
-          docker-compose -f ./compose-files/docker-compose-mqtt-postgis.yml down
+          docker compose -f ./compose-files/docker-compose-mqtt-postgis.yml down
       - name: docker tag 
         run: |
           docker tag scorpiobroker/at-context-server:java-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/at-context-server:java-mqtt-latest
@@ -42,7 +42,7 @@ jobs:
           docker tag scorpiobroker/all-in-one-runner:java-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:java-mqtt-latest
       - name: start docker aaio 
         run: |
-          docker-compose -f ./compose-files/docker-compose-java-aaio-mqtt-test.yml up > dockerout.log &
+          docker compose -f ./compose-files/docker-compose-java-aaio-mqtt-test.yml up > dockerout.log &
           sleep 120
 #      - name: newman action
 #        uses: matt-ball/newman-action@master
@@ -51,7 +51,7 @@ jobs:
 #          environment: api-test-aaio-environment.json
       - name: Stopping Scorpio
         if: always()
-        run: docker-compose -f ./compose-files/docker-compose-java-aaio-mqtt-test.yml down
+        run: docker compose -f ./compose-files/docker-compose-java-aaio-mqtt-test.yml down
       - name: print log
         if: always()
         run: |
@@ -112,14 +112,14 @@ jobs:
           echo "::set-output name=id::$id"
       - name: start rabbitmq & postgis for unit tests
         run: |
-          docker-compose -f ./compose-files/docker-compose-rabbitmq-postgis.yml up &
+          docker compose -f ./compose-files/docker-compose-rabbitmq-postgis.yml up &
           sleep 30
       - name: build-java-with-rabbitmq
         run: |
           mvn clean package -DskipTests -Prabbitmq -Drabbitmq -Ddocker -Ddocker-tag=java-rabbitmq-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=rabbitmq
       - name: stop rabbitmq & postgis for unit tests
         run: |
-          docker-compose -f ./compose-files/docker-compose-rabbitmq-postgis.yml down
+          docker compose -f ./compose-files/docker-compose-rabbitmq-postgis.yml down
       - name: docker tag 
         run: |
           docker tag scorpiobroker/at-context-server:java-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/at-context-server:java-rabbitmq-latest
@@ -133,7 +133,7 @@ jobs:
           docker tag scorpiobroker/all-in-one-runner:java-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:java-rabbitmq-latest
       - name: start docker aaio 
         run: |
-          docker-compose -f ./compose-files/docker-compose-java-aaio-rabbitmq-test.yml up > dockerout.log &
+          docker compose -f ./compose-files/docker-compose-java-aaio-rabbitmq-test.yml up > dockerout.log &
           sleep 120
       - name: newman action
         uses: matt-ball/newman-action@master
@@ -142,7 +142,7 @@ jobs:
           environment: api-test-aaio-environment.json
       - name: Stopping Scorpio
         if: always()
-        run: docker-compose -f ./compose-files/docker-compose-java-aaio-rabbitmq-test.yml down
+        run: docker compose -f ./compose-files/docker-compose-java-aaio-rabbitmq-test.yml down
       - name: print log
         if: always()
         run: |
@@ -167,14 +167,14 @@ jobs:
           echo "::set-output name=id::$id"
       - name: start kafka & postgis for unit tests
         run: |
-          docker-compose -f ./compose-files/docker-compose-kafka-postgis.yml up &
+          docker compose -f ./compose-files/docker-compose-kafka-postgis.yml up &
           sleep 30
       - name: build-java-with-kafka
         run: |
           mvn clean package -DskipTests -Pkafka -Dkafka -Ddocker -Ddocker-tag=java-kafka-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=kafka
       - name: stop kafka & postgis for unit tests
         run: |
-          docker-compose -f ./compose-files/docker-compose-kafka-postgis.yml down
+          docker compose -f ./compose-files/docker-compose-kafka-postgis.yml down
       - name: docker tag 
         run: |
           docker tag scorpiobroker/at-context-server:java-kafka-${{steps.get-id.outputs.id}} scorpiobroker/at-context-server:java-kafka-latest
@@ -188,7 +188,7 @@ jobs:
           docker tag scorpiobroker/all-in-one-runner:java-kafka-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:java-kafka-latest
       - name: start docker aaio 
         run: |
-          docker-compose -f ./compose-files/docker-compose-java-aaio-kafka-test.yml up > dockerout.log &
+          docker compose -f ./compose-files/docker-compose-java-aaio-kafka-test.yml up > dockerout.log &
           sleep 120
       - name: newman action
         uses: matt-ball/newman-action@master
@@ -197,7 +197,7 @@ jobs:
           environment: api-test-aaio-environment.json
       - name: Stopping Scorpio
         if: always()
-        run: docker-compose -f ./compose-files/docker-compose-java-aaio-kafka-test.yml down
+        run: docker compose -f ./compose-files/docker-compose-java-aaio-kafka-test.yml down
       - name: print log
         if: always()
         run: |
@@ -213,7 +213,7 @@ jobs:
 #          docker push scorpiobroker/all-in-one-runner:java-kafka-debugging
 #      - name: start docker dist 
 #        run: |
-#          docker-compose -f ./compose-files/docker-compose-java-dist-kafka-test.yml up &
+#          docker compose -f ./compose-files/docker-compose-java-dist-kafka-test.yml up &
 #          sleep 120
 #      - name: newman action
 #        uses: matt-ball/newman-action@master
@@ -221,7 +221,7 @@ jobs:
 #          collection: api-test.json
 #          environment: api-test-dist-environment.json
 #      - name: Stopping Scorpio 
-#        run: docker-compose -f ./compose-files/docker-compose-java-dist-kafka-test.yml down
+#        run: docker compose -f ./compose-files/docker-compose-java-dist-kafka-test.yml down
   build-java-aaio:
     runs-on: ubuntu-latest
     steps:
@@ -242,20 +242,20 @@ jobs:
           echo "::set-output name=id::$id"
       - name: start kafka & postgis for unit tests
         run: |
-          docker-compose -f ./compose-files/docker-compose-postgis.yml up &
+          docker compose -f ./compose-files/docker-compose-postgis.yml up &
           sleep 30
       - name: build-java
         run: |
           mvn clean package -DskipTests -Din-memory -Pin-memory -Ddocker -Ddocker-tag=java-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=in-memory
       - name: stop postgis for unit tests
         run: |
-          docker-compose -f ./compose-files/docker-compose-postgis.yml down
+          docker compose -f ./compose-files/docker-compose-postgis.yml down
       - name: docker tag
         run: |
           docker tag scorpiobroker/all-in-one-runner:java-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:java-latest
       - name: start docker aaio 
         run: |
-          docker-compose -f ./compose-files/docker-compose-java-aaio-test.yml up > dockerout.log &
+          docker compose -f ./compose-files/docker-compose-java-aaio-test.yml up > dockerout.log &
           sleep 120
       - name: newman action
         uses: matt-ball/newman-action@master
@@ -264,7 +264,7 @@ jobs:
           environment: api-test-aaio-environment.json
       - name: Stopping Scorpio 
         if: always()
-        run: docker-compose -f ./compose-files/docker-compose-java-aaio-test.yml down 
+        run: docker compose -f ./compose-files/docker-compose-java-aaio-test.yml down 
       - name: print log
         if: always()
         run: |
