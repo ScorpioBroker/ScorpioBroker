@@ -33,6 +33,9 @@ public class Query {
 	private int limit;
 	private String finalOptions;
 	private int acceptHeader;
+	public Query() {
+		// for serializer
+	}
 
 	public List<Tuple3<String[], TypeQueryTerm, String>> getIdsAndTypeAndIdPattern() {
 		return idsAndTypeAndIdPattern;
