@@ -12,7 +12,7 @@ jobs:
 #          docker push scorpiobroker/all-in-one-runner:java-kafka-debugging
 #      - name: start docker dist 
 #        run: |
-#          docker compose -f ./compose-files/docker compose-java-dist-kafka-test.yml up &
+#          docker compose -f ./compose-files/docker-compose-java-dist-kafka-test.yml up &
 #          sleep 120
 #      - name: newman action
 #        uses: matt-ball/newman-action@master
@@ -20,7 +20,7 @@ jobs:
 #          collection: api-test.json
 #          environment: api-test-dist-environment.json
 #      - name: Stopping Scorpio 
-#        run: docker compose -f ./compose-files/docker compose-java-dist-kafka-test.yml down
+#        run: docker compose -f ./compose-files/docker-compose-java-dist-kafka-test.yml down
   build-java-aaio:
     runs-on: ubuntu-latest
     steps:
@@ -53,7 +53,7 @@ jobs:
           docker tag scorpiobroker/all-in-one-runner:java-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:java-latest
       - name: start docker aaio
         run: |
-          docker compose -f ./compose-files/docker compose-java-aaio-fed-test.yml up > dockerout.log &
+          docker compose -f ./compose-files/docker-compose-java-aaio-fed-test.yml up > dockerout.log &
           sleep 120
       - name: newman action
         uses: matt-ball/newman-action@master
@@ -63,7 +63,7 @@ jobs:
       - name: Stopping Scorpio 
         if: always()
         run: |
-          docker compose -f ./compose-files/docker compose-java-aaio-fed-test.yml down
+          docker compose -f ./compose-files/docker-compose-java-aaio-fed-test.yml down
       - name: print log
         if: always()
         run: |

@@ -55,7 +55,7 @@ jobs:
           docker tag scorpiobroker/all-in-one-runner:ubuntu-kafka-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:ubuntu-kafka-latest
       - name: start docker aaio 
         run: |
-          docker compose -f ./compose-files/docker compose-ubuntu-aaio-kafka-test.yml up > dockerout.log &
+          docker compose -f ./compose-files/docker-compose-ubuntu-aaio-kafka-test.yml up > dockerout.log &
           sleep 120
       - name: newman action
         uses: matt-ball/newman-action@master
@@ -64,14 +64,14 @@ jobs:
           environment: api-test-aaio-environment.json
       - name: Stopping Scorpio 
         if: always()
-        run: docker compose -f ./compose-files/docker compose-ubuntu-aaio-kafka-test.yml down
+        run: docker compose -f ./compose-files/docker-compose-ubuntu-aaio-kafka-test.yml down
       - name: print log
         if: always()
         run: |
           cat dockerout.log
 #      - name: start docker dist 
 #        run: |
-#          docker compose -f ./compose-files/docker compose-ubuntu-dist-kafka-test.yml up &
+#          docker compose -f ./compose-files/docker-compose-ubuntu-dist-kafka-test.yml up &
 #          sleep 120
 #      - name: newman action
 #        uses: matt-ball/newman-action@master
@@ -79,7 +79,7 @@ jobs:
 #          collection: api-test.json
 #          environment: api-test-dist-environment.json
 #      - name: Stopping Scorpio 
-#        run: docker compose -f ./compose-files/docker compose-ubuntu-dist-kafka-test.yml down
+#        run: docker compose -f ./compose-files/docker-compose-ubuntu-dist-kafka-test.yml down
   build-ubuntu-mqtt:
     runs-on: ubuntu-latest
     steps:
@@ -126,7 +126,7 @@ jobs:
           docker tag scorpiobroker/all-in-one-runner:ubuntu-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:ubuntu-mqtt-latest
       - name: start docker aaio 
         run: |
-          docker compose -f ./compose-files/docker compose-ubuntu-aaio-mqtt-test.yml up > dockerout.log &
+          docker compose -f ./compose-files/docker-compose-ubuntu-aaio-mqtt-test.yml up > dockerout.log &
           sleep 120
 #      - name: newman action
 #        uses: matt-ball/newman-action@master
@@ -135,7 +135,7 @@ jobs:
 #          environment: api-test-aaio-environment.json
       - name: Stopping Scorpio 
         if: always()
-        run: docker compose -f ./compose-files/docker compose-ubuntu-aaio-mqtt-test.yml down
+        run: docker compose -f ./compose-files/docker-compose-ubuntu-aaio-mqtt-test.yml down
       - name: print log
         if: always()
         run: |
@@ -186,7 +186,7 @@ jobs:
           docker tag scorpiobroker/all-in-one-runner:ubuntu-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:ubuntu-rabbitmq-latest
       - name: start docker aaio 
         run: |
-          docker compose -f ./compose-files/docker compose-ubuntu-aaio-rabbitmq-test.yml up > dockerout.log &
+          docker compose -f ./compose-files/docker-compose-ubuntu-aaio-rabbitmq-test.yml up > dockerout.log &
           sleep 120
       - name: newman action
         uses: matt-ball/newman-action@master
@@ -195,7 +195,7 @@ jobs:
           environment: api-test-aaio-environment.json
       - name: Stopping Scorpio 
         if: always()
-        run: docker compose -f ./compose-files/docker compose-ubuntu-aaio-rabbitmq-test.yml down
+        run: docker compose -f ./compose-files/docker-compose-ubuntu-aaio-rabbitmq-test.yml down
       - name: print log
         if: always()
         run: |
@@ -232,7 +232,7 @@ jobs:
           docker tag scorpiobroker/all-in-one-runner:ubuntu-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:ubuntu-latest
       - name: start docker aaio 
         run: |
-          docker compose -f ./compose-files/docker compose-ubuntu-aaio-test.yml up > dockerout.log &
+          docker compose -f ./compose-files/docker-compose-ubuntu-aaio-test.yml up > dockerout.log &
           sleep 120
       - name: newman action
         uses: matt-ball/newman-action@master
@@ -241,7 +241,7 @@ jobs:
           environment: api-test-aaio-environment.json
       - name: Stopping Scorpio 
         if: always()
-        run: docker compose -f ./compose-files/docker compose-ubuntu-aaio-test.yml down 
+        run: docker compose -f ./compose-files/docker-compose-ubuntu-aaio-test.yml down 
       - name: print log
         if: always()
         run: |
