@@ -7,8 +7,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.jsonldjava.core.Context;
 
 import eu.neclab.ngsildbroker.commons.datatypes.ViaHeaders;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.smallrye.mutiny.tuples.Tuple3;
 
+@RegisterForReflection
 public class Query {
 	List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeAndIdPattern;
 	ScopeQueryTerm scopeQueryTerm;

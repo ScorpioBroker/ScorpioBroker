@@ -1393,7 +1393,7 @@ public class QueryDAO {
 			query.append(dollar);
 			dollar++;
 			tuple.addString(queryChecksum);
-			query.append(", 'wherePart', '");
+			query.append("::text, 'wherePart', '");
 			query.append(queryToStoreWherePart.toString());
 			query.append("', 'selectPart', '");
 			query.append(queryToStoreSelectPart.toString());
