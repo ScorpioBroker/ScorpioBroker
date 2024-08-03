@@ -17,6 +17,7 @@ services:
     image: scorpiobroker/all-in-one-runner:ubuntu-latest
     environment:
       DBHOST: postgres
+      QUARKUS_LOG_LEVEL: DEBUG
     ports:
       - "9090:9090"
     depends_on:
