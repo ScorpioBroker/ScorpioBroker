@@ -1403,8 +1403,9 @@ public class QueryDAO {
 			try {
 				query.append(objectMapper.writeValueAsString(queryParams));
 			} catch (Exception e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
+				logger.error("Failed to serialize query.", e1);
+				query.append("{}");
+				logger.warn("follow up restoring will not work on this query");
 			}
 
 			query.append("'::jsonb) FROM a) RETURNING entity_map) ");
