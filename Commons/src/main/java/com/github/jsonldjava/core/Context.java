@@ -45,7 +45,7 @@ public class Context extends LinkedHashMap<String, Object> {
 
 	private boolean dontAddCoreContext;
 
-	private List<Object> localContext;
+	private List<String> localContext;
 
 	public Context() {
 		this(new JsonLdOptions());
@@ -342,7 +342,7 @@ public class Context extends LinkedHashMap<String, Object> {
 				result.createTermDefinition((Map<String, Object>) context, key, defined);
 			}
 		}
-		result.setOriginalAtContext((List<Object>) localContext);
+		result.setOriginalAtContext(remoteContexts);
 		if (rds.isEmpty()) {
 			return Uni.createFrom().item(result);
 		} else {
@@ -373,10 +373,10 @@ public class Context extends LinkedHashMap<String, Object> {
 		}
 	}
 
-	public void setOriginalAtContext(List<Object> localContext) {
-		this.localContext = localContext;
+	public void setOriginalAtContext(List<String> remoteContexts) {
+		this.localContext = remoteContexts;
 	}
-	public List<Object> getOriginalAtContext() {
+	public List<String> getOriginalAtContext() {
 		return localContext;
 	}
 

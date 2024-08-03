@@ -565,7 +565,7 @@ public class QueryService {
 			entityCache.putEntity(entityId, entity, "dummy");
 			id2Entity.put(entityId, entity);
 		}
-		for(String idEntry: onlyAddedToCache) {
+		for (String idEntry : onlyAddedToCache) {
 			id2Entity.get(idEntry).remove(AppConstants.REG_MODE_KEY);
 		}
 		return id2Entity.values();
@@ -1799,7 +1799,6 @@ public class QueryService {
 			DataSetIdTerm dataSetIdTerm, String join, int joinLevel, boolean splitEntities, PickTerm pickTerm,
 			OmitTerm omitTerm, String queryCechksum, ViaHeaders viaHeaders) {
 
-
 		if (tenant2CId2RegEntries.isEmpty()) {
 			return queryDAO.queryForEntityIdsAndEntitiesRegEmpty(tenant, idsAndTypeQueryAndIdPattern, attrsQuery,
 					qQuery, geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel, qToken,
@@ -1857,6 +1856,12 @@ public class QueryService {
 								req = req.setQueryParam(param.getKey(), (String) param.getValue());
 							}
 							req = req.putHeader(HttpHeaders.VIA, remoteHost.getViaHeaders().getViaHeaders());
+							//todo check how to solve this proper once and for all
+							List<String> ogAtContext = context.getOriginalAtContext();
+							if (ogAtContext != null && !ogAtContext.isEmpty()) {
+								req = req.putHeader(HttpHeaders.LINK, "<" + ogAtContext.get(0)
+										+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
+							}
 							unisForEntityMapRetrieval.add(req.putHeaders(remoteHost.headers()).timeout(timeout).send()
 									.onItem().transform(response -> {
 										Map<String, Object> result;
@@ -1947,7 +1952,7 @@ public class QueryService {
 						});
 			}
 
-	}
+		}
 
 	}
 
@@ -1955,7 +1960,6 @@ public class QueryService {
 	public Uni<Void> scheduleEntityMapCleanUp() {
 		return queryDAO.runEntityMapCleanup(entityMapTTL);
 	}
-
 
 	public Uni<Map<String, Object>> idsOnly(Uni<Map<String, Object>> uniMap) {
 		return uniMap.onItem().transform(map -> {
