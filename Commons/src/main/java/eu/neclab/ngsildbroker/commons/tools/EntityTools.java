@@ -677,7 +677,9 @@ public final class EntityTools {
 				logger.warn("failed to serialize batch request");
 				return Uni.createFrom().item(Lists.newArrayList());
 			}
-
+			if(!remoteHost.headers().contains(HttpHeaders.ACCEPT)) {
+				req = req.putHeader(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSON);
+			}
 			
 			unis.add(req.putHeaders(remoteHost.headers()).timeout(timeout).sendBuffer(Buffer.buffer(batchString))
 					.onItem().transformToUni(response -> {
@@ -738,7 +740,9 @@ public final class EntityTools {
 										+ AppConstants.NGB_APPLICATION_JSONLD + "\"");
 					}
 				}
-
+				if(!remoteHost.headers().contains(HttpHeaders.ACCEPT)) {
+					req = req.putHeader(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSON);
+				}
 				unis.add(req.putHeaders(remoteHost.headers()).timeout(timeout).send().onItem()
 						.transformToUni(response -> {
 
@@ -799,6 +803,9 @@ public final class EntityTools {
 								}
 							}
 							req = req.setQueryParam("options", "sysAttrs");
+							if(!remoteHost.headers().contains(HttpHeaders.ACCEPT)) {
+								req = req.putHeader(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSON);
+							}
 							unis.add(req.putHeaders(remoteHost.headers()).timeout(timeout).send().onItem()
 									.transformToUni(response -> {
 
