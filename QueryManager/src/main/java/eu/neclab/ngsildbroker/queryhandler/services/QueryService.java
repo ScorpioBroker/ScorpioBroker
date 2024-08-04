@@ -1929,8 +1929,10 @@ public class QueryService {
 									entityMap.addLinkedMap(cSourceId, (String) rMap.get(NGSIConstants.ID));
 									Map<String, List<String>> entityMapEntry = (Map<String, List<String>>) rMap
 											.get(NGSIConstants.ENTITY_MAP_COMPACTED_ENTRY);
-									for (Entry<String, List<String>> mapEntry : entityMapEntry.entrySet()) {
-										entityMap.addEntry(mapEntry.getKey(), cSourceId, rHost);
+									if (entityMapEntry != null) {
+										for (Entry<String, List<String>> mapEntry : entityMapEntry.entrySet()) {
+											entityMap.addEntry(mapEntry.getKey(), cSourceId, rHost);
+										}
 									}
 								}
 							}
