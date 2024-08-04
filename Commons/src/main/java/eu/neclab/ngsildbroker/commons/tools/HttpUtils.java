@@ -475,9 +475,10 @@ public final class HttpUtils {
 		if (result.contains(NGSIConstants.JSONLD_CONTEXT)) {
 			String linkHeader = "<%s>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"',"
 					.formatted(result.get(NGSIConstants.JSONLD_CONTEXT));
-			result.remove(NGSIConstants.JSONLD_CONTEXT).add("Link", linkHeader);
+			result.add("Link", linkHeader);
+			result.add("Accept", "application/json");
 		}
-		result.add("Accept", "application/json");
+		//
 		if (!tenant.equals(AppConstants.INTERNAL_NULL_KEY)) {
 			result.add(NGSIConstants.TENANT_HEADER, tenant);
 		}

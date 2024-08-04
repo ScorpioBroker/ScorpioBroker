@@ -14,6 +14,9 @@ import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
 import org.locationtech.spatial4j.shape.Shape;
 import org.locationtech.spatial4j.shape.jts.JtsGeometry;
 import org.locationtech.spatial4j.shape.jts.JtsPoint;
+
+import com.github.jsonldjava.core.Context;
+import com.github.jsonldjava.core.JsonLDService;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
@@ -27,6 +30,7 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import eu.neclab.ngsildbroker.commons.tools.SubscriptionTools;
+import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.vertx.mutiny.core.MultiMap;
 
@@ -42,9 +46,9 @@ public record RegistrationEntry(String cId, String eId, String eIdp, String type
 		boolean retrieveAttrTypeInfo, boolean createSubscription, boolean updateSubscription,
 		boolean retrieveSubscription, boolean querySubscription, boolean deleteSubscription, boolean queryEntityMap,
 		boolean createEntityMap, boolean updateEntityMap, boolean deleteEntityMap, boolean retrieveEntityMap,
-		RemoteHost host) {
+		RemoteHost host, Context context) {
 
-	public static List<RegistrationEntry> fromRegPayload(Map<String, Object> payload) {
+	public static Uni<List<RegistrationEntry>> fromRegPayload(Map<String, Object> payload, JsonLDService ldService) {
 		List<RegistrationEntry> result = Lists.newArrayList();
 		boolean canDoSingleOp = false;
 		boolean canDoBatchOp = false;
@@ -61,377 +65,398 @@ public record RegistrationEntry(String cId, String eId, String eIdp, String type
 		List<Map<String, Object>> csourceInfo = (List<Map<String, Object>>) payload
 				.get("https://uri.etsi.org/ngsi-ld/contextSourceInfo");
 		MultiMap headers = MultiMap.newInstance(HttpUtils.getHeadersForRemoteCallFromRegUpdate(csourceInfo, tenant));
-		Shape location;
-		if (payload.containsKey(NGSIConstants.NGSI_LD_LOCATION)) {
-			try {
-				location = SubscriptionTools
-						.getShape((Map<String, Object>) payload.get(NGSIConstants.NGSI_LD_LOCATION));
-			} catch (ResponseException e) {
-				location = null;
-			}
+		String atContextLink = headers.get(NGSIConstants.JSONLD_CONTEXT);
+		Uni<Context> ctxUni;
+		if (atContextLink == null) {
+			ctxUni = Uni.createFrom().nullItem();
 		} else {
-			location = null;
+			headers.remove(NGSIConstants.JSONLD_CONTEXT);
+			ctxUni = ldService.parse(atContextLink);
 		}
-		String[] scopes;
-		if (payload.containsKey(NGSIConstants.NGSI_LD_SCOPE)) {
-			scopes = getScopesFromPayload(payload.get(NGSIConstants.NGSI_LD_SCOPE));
-		} else {
-			scopes = null;
-		}
-		int mode = 1;
-		if (payload.containsKey(NGSIConstants.NGSI_LD_REG_MODE)) {
-			String modeText = ((List<Map<String, String>>) payload.get(NGSIConstants.NGSI_LD_REG_MODE)).get(0)
-					.get(NGSIConstants.JSON_LD_VALUE);
-			switch (modeText) {
-			case NGSIConstants.NGSI_LD_REG_MODE_AUX:
-				mode = 0;
-				break;
-			case NGSIConstants.NGSI_LD_REG_MODE_INC:
-				mode = 1;
-				break;
-			case NGSIConstants.NGSI_LD_REG_MODE_RED:
-				mode = 2;
-				break;
-			case NGSIConstants.NGSI_LD_REG_MODE_EXC:
-				mode = 3;
-				break;
-
+		return ctxUni.onItem().transform(ctx -> {
+			Shape tmpLocation;
+			if (payload.containsKey(NGSIConstants.NGSI_LD_LOCATION)) {
+				try {
+					tmpLocation = SubscriptionTools
+							.getShape((Map<String, Object>) payload.get(NGSIConstants.NGSI_LD_LOCATION));
+				} catch (ResponseException e) {
+					tmpLocation = null;
+				}
+			} else {
+				tmpLocation = null;
 			}
-		}
-		long tmpEexpiresAt = -1l;
-		if (payload.containsKey(NGSIConstants.NGSI_LD_EXPIRES)) {
-			tmpEexpiresAt = SerializationTools
-					.date2Long(((List<Map<String, String>>) payload.get(NGSIConstants.NGSI_LD_EXPIRES)).get(0)
-							.get(NGSIConstants.JSON_LD_VALUE));
-		}
-		RemoteHost remoteHost = new RemoteHost(host, tenant, headers, cSourceId, canDoSingleOp, canDoBatchOp, 0, false,
-				false);
-
-		boolean tmpCreateEntity = false;
-		boolean tmpUpdateEntity = false;
-		boolean tmpAppendAttrs = false;
-		boolean tmpUpdateAttrs = false;
-		boolean tmpDeleteAttrs = false;
-		boolean tmpDeleteEntity = false;
-		boolean tmpCreateBatch = false;
-		boolean tmpUpsertBatch = false;
-		boolean tmpUpdateBatch = false;
-		boolean tmpDeleteBatch = false;
-		boolean tmpUpsertTemporal = false;
-		boolean tmpAppendAttrsTemporal = false;
-		boolean tmpDeleteAttrsTemporal = false;
-		boolean tmpUpdateAttrsTemporal = false;
-		boolean tmpDeleteAttrInstanceTemporal = false;
-		boolean tmpDeleteTemporal = false;
-		boolean tmpMergeEntity = false;
-		boolean tmpReplaceEntity = false;
-		boolean tmpReplaceAttrs = false;
-		boolean tmpMergeBatch = false;
-		boolean tmpRetrieveEntity = false;
-		boolean tmpQueryEntity = false;
-		boolean tmpQueryBatch = false;
-		boolean tmpRetrieveTemporal = false;
-		boolean tmpQueryTemporal = false;
-		boolean tmpRetrieveEntityTypes = false;
-		boolean tmpRetrieveEntityTypeDetails = false;
-		boolean tmpRetrieveEntityTypeInfo = false;
-		boolean tmpRetrieveAttrTypes = false;
-		boolean tmpRetrieveAttrTypeDetails = false;
-		boolean tmpRetrieveAttrTypeInfo = false;
-		boolean tmpCreateSubscription = false;
-		boolean tmpUpdateSubscription = false;
-		boolean tmpRetrieveSubscription = false;
-
-		boolean tmpDeleteSubscription = false;
-		boolean tmpQuerySubscription = false;
-		boolean tmpQueryEntityMap = false;
-		boolean tmpCreateEntityMap = false;
-		boolean tmpUpdateEntityMap = false;
-		boolean tmpDeleteEntityMap = false;
-		boolean tmpRetrieveEntityMap = false;
-		if (payload.containsKey(NGSIConstants.NGSI_LD_REG_OPERATIONS)) {
-			for (Map<String, String> opEntry : (List<Map<String, String>>) payload
-					.get(NGSIConstants.NGSI_LD_REG_OPERATIONS)) {
-				String operation = opEntry.get(NGSIConstants.JSON_LD_VALUE);
-				switch (operation) {
-				case NGSIConstants.NGSI_LD_REG_OPERATION_FEDERATION_OPS:
-					tmpRetrieveEntity = tmpQueryEntity = tmpRetrieveEntityTypes = tmpRetrieveEntityTypeDetails = tmpRetrieveEntityTypeInfo = tmpRetrieveAttrTypes = tmpRetrieveAttrTypeDetails = tmpRetrieveAttrTypeInfo = tmpCreateSubscription = tmpUpdateSubscription = tmpRetrieveSubscription = tmpQuerySubscription = tmpDeleteSubscription = tmpQueryEntityMap = tmpCreateEntityMap = tmpUpdateEntityMap = tmpDeleteEntityMap = tmpRetrieveEntityMap = true;
+			Shape location = tmpLocation;
+			String[] scopes;
+			if (payload.containsKey(NGSIConstants.NGSI_LD_SCOPE)) {
+				scopes = getScopesFromPayload(payload.get(NGSIConstants.NGSI_LD_SCOPE));
+			} else {
+				scopes = null;
+			}
+			int mode;
+			if (payload.containsKey(NGSIConstants.NGSI_LD_REG_MODE)) {
+				String modeText = ((List<Map<String, String>>) payload.get(NGSIConstants.NGSI_LD_REG_MODE)).get(0)
+						.get(NGSIConstants.JSON_LD_VALUE);
+				switch (modeText) {
+				case NGSIConstants.NGSI_LD_REG_MODE_AUX:
+					mode = 0;
 					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_UPDATE_OPS:
-					tmpUpdateEntity = tmpUpdateAttrs = tmpReplaceEntity = tmpReplaceAttrs = true;
+				case NGSIConstants.NGSI_LD_REG_MODE_INC:
+					mode = 1;
 					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVE_OPS:
-					tmpRetrieveEntity = tmpQueryEntity = true;
+				case NGSIConstants.NGSI_LD_REG_MODE_RED:
+					mode = 2;
 					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_REDIRECTION_OPS:
-					tmpCreateEntity = tmpUpdateEntity = tmpAppendAttrs = tmpUpdateAttrs = tmpDeleteAttrs = tmpDeleteEntity = tmpMergeEntity = tmpReplaceEntity = tmpReplaceAttrs = tmpRetrieveEntity = tmpQueryEntity = tmpRetrieveEntityTypes = tmpRetrieveEntityTypeDetails = tmpRetrieveEntityTypeInfo = tmpRetrieveAttrTypes = tmpRetrieveAttrTypeDetails = tmpRetrieveAttrTypeInfo = true;
+				case NGSIConstants.NGSI_LD_REG_MODE_EXC:
+					mode = 3;
 					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_CREATEENTITY:
-					tmpCreateEntity = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_UPDATEENTITY:
-					tmpUpdateEntity = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_APPENDATTRS:
-					tmpAppendAttrs = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_UPDATEATTRS:
-					tmpUpdateAttrs = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_DELETEATTRS:
-					tmpDeleteAttrs = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_DELETEENTITY:
-					tmpDeleteEntity = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_CREATEBATCH:
-					tmpCreateBatch = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_UPSERTBATCH:
-					tmpUpsertBatch = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_UPDATEBATCH:
-					tmpUpdateBatch = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_DELETEBATCH:
-					tmpDeleteBatch = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_UPSERTTEMPORAL:
-					tmpUpsertTemporal = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_APPENDATTRSTEMPORAL:
-					tmpAppendAttrsTemporal = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_DELETEATTRSTEMPORAL:
-					tmpDeleteAttrsTemporal = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_UPDATEATTRSTEMPORAL:
-					tmpUpdateAttrsTemporal = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_DELETEATTRINSTANCETEMPORAL:
-					tmpDeleteAttrInstanceTemporal = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_DELETETEMPORAL:
-					tmpDeleteTemporal = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_MERGEENTITY:
-					tmpMergeEntity = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_REPLACEENTITY:
-					tmpReplaceEntity = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_REPLACEATTRS:
-					tmpReplaceAttrs = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_MERGEBATCH:
-					tmpMergeBatch = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVEENTITY:
-					tmpRetrieveEntity = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_QUERYENTITY:
-					tmpQueryEntity = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_QUERYBATCH:
-					tmpQueryBatch = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVETEMPORAL:
-					tmpRetrieveTemporal = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_QUERYTEMPORAL:
-					tmpQueryTemporal = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVEENTITYTYPES:
-					tmpRetrieveEntityTypes = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVEENTITYTYPEDETAILS:
-					tmpRetrieveEntityTypeDetails = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVEENTITYTYPEINFO:
-					tmpRetrieveEntityTypeInfo = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVEATTRTYPES:
-					tmpRetrieveAttrTypes = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVEATTRTYPEDETAILS:
-					tmpRetrieveAttrTypeDetails = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVEATTRTYPEINFO:
-					tmpRetrieveAttrTypeInfo = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_CREATESUBSCRIPTION:
-					tmpCreateSubscription = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_UPDATESUBSCRIPTION:
-					tmpUpdateSubscription = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVESUBSCRIPTION:
-					tmpRetrieveSubscription = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_QUERYSUBSCRIPTION:
-					tmpQuerySubscription = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_DELETESUBSCRIPTION:
-					tmpDeleteSubscription = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_QUERY_ENTITYMAP:
-					tmpQueryEntityMap = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_CREATE_ENTITYMAP:
-					tmpCreateEntityMap = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_UPDATE_ENTITYMAP:
-					tmpUpdateEntityMap = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_DELETE_ENTITYMAP:
-					tmpDeleteEntityMap = true;
-					break;
-				case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVE_ENTITYMAP:
-					tmpRetrieveEntityMap = true;
+				default:
+					mode = 1;
 					break;
 				}
+			} else {
+				mode = 1;
 			}
-		} else {
-			tmpRetrieveEntity = true;
-			tmpQueryEntity = true;
-			tmpRetrieveEntityTypes = true;
-			tmpRetrieveEntityTypeDetails = true;
-			tmpRetrieveEntityTypeInfo = true;
-			tmpRetrieveAttrTypes = true;
-			tmpRetrieveAttrTypeDetails = true;
-			tmpRetrieveAttrTypeInfo = true;
-			tmpCreateSubscription = true;
-			tmpUpdateSubscription = true;
-			tmpRetrieveSubscription = true;
-			tmpQuerySubscription = true;
-			tmpDeleteSubscription = true;
-			tmpQueryEntityMap = true;
-			tmpCreateEntityMap = true;
-			tmpUpdateEntityMap = true;
-			tmpDeleteEntityMap = true;
-			tmpRetrieveEntityMap = true;
-		}
-		for (Map<String, Object> infoEntry : (List<Map<String, Object>>) payload
-				.get(NGSIConstants.NGSI_LD_INFORMATION)) {
-			if (infoEntry.containsKey(NGSIConstants.NGSI_LD_ENTITIES)) {
-				for (Map<String, Object> entitiesEntry : (List<Map<String, Object>>) infoEntry
-						.get(NGSIConstants.NGSI_LD_ENTITIES)) {
-					for (String entityType : (List<String>) entitiesEntry.get(NGSIConstants.JSON_LD_TYPE)) {
-						String tmpEId = null;
-						String tmpEIdp = null;
-						if (entitiesEntry.containsKey(NGSIConstants.JSON_LD_ID)) {
-							tmpEId = (String) entitiesEntry.get(NGSIConstants.JSON_LD_ID);
-						}
-						if (entitiesEntry.containsKey(NGSIConstants.NGSI_LD_ID_PATTERN)) {
-							tmpEIdp = ((List<Map<String, String>>) entitiesEntry.get(NGSIConstants.JSON_LD_ID)).get(0)
-									.get(NGSIConstants.JSON_LD_VALUE);
-						}
+			long tmpEexpiresAt;
+			if (payload.containsKey(NGSIConstants.NGSI_LD_EXPIRES)) {
+				tmpEexpiresAt = SerializationTools
+						.date2Long(((List<Map<String, String>>) payload.get(NGSIConstants.NGSI_LD_EXPIRES)).get(0)
+								.get(NGSIConstants.JSON_LD_VALUE));
+			} else {
+				tmpEexpiresAt = -1l;
+			}
+			RemoteHost remoteHost = new RemoteHost(host, tenant, headers, cSourceId, canDoSingleOp, canDoBatchOp, 0,
+					false, false);
 
-						boolean containsProps = infoEntry.containsKey(NGSIConstants.NGSI_LD_PROPERTIES);
-						boolean containsRels = infoEntry.containsKey(NGSIConstants.NGSI_LD_RELATIONSHIPS);
-						if (containsProps || containsRels) {
-							if (containsProps) {
-								for (Map<String, String> prop : (List<Map<String, String>>) infoEntry
-										.get(NGSIConstants.NGSI_LD_PROPERTIES)) {
-									result.add(new RegistrationEntry(cSourceId, tmpEId, tmpEIdp, entityType,
-											prop.get(NGSIConstants.JSON_LD_ID), null, location, scopes, tmpEexpiresAt,
-											mode, tmpCreateEntity, tmpUpdateEntity, tmpAppendAttrs, tmpUpdateAttrs,
-											tmpDeleteAttrs, tmpDeleteEntity, tmpCreateBatch, tmpUpsertBatch,
-											tmpUpdateBatch, tmpDeleteBatch, tmpUpsertTemporal, tmpAppendAttrsTemporal,
-											tmpDeleteAttrsTemporal, tmpUpdateAttrsTemporal,
-											tmpDeleteAttrInstanceTemporal, tmpDeleteTemporal, tmpMergeEntity,
-											tmpReplaceEntity, tmpReplaceAttrs, tmpMergeBatch, tmpRetrieveEntity,
-											tmpQueryEntity, tmpQueryBatch, tmpRetrieveTemporal, tmpQueryTemporal,
-											tmpRetrieveEntityTypes, tmpRetrieveEntityTypeDetails,
-											tmpRetrieveEntityTypeInfo, tmpRetrieveAttrTypes, tmpRetrieveAttrTypeDetails,
-											tmpRetrieveAttrTypeInfo, tmpCreateSubscription, tmpUpdateSubscription,
-											tmpRetrieveSubscription, tmpQuerySubscription, tmpDeleteSubscription,
-											tmpQueryEntityMap, tmpCreateEntityMap, tmpUpdateEntityMap,
-											tmpDeleteEntityMap, tmpRetrieveEntityMap, remoteHost));
-								}
-							}
-							if (containsRels) {
-								for (Map<String, String> rel : (List<Map<String, String>>) infoEntry
-										.get(NGSIConstants.NGSI_LD_RELATIONSHIPS)) {
-									result.add(new RegistrationEntry(cSourceId, tmpEId, tmpEIdp, entityType, null,
-											rel.get(NGSIConstants.JSON_LD_ID), location, scopes, tmpEexpiresAt, mode,
-											tmpCreateEntity, tmpUpdateEntity, tmpAppendAttrs, tmpUpdateAttrs,
-											tmpDeleteAttrs, tmpDeleteEntity, tmpCreateBatch, tmpUpsertBatch,
-											tmpUpdateBatch, tmpDeleteBatch, tmpUpsertTemporal, tmpAppendAttrsTemporal,
-											tmpDeleteAttrsTemporal, tmpUpdateAttrsTemporal,
-											tmpDeleteAttrInstanceTemporal, tmpDeleteTemporal, tmpMergeEntity,
-											tmpReplaceEntity, tmpReplaceAttrs, tmpMergeBatch, tmpRetrieveEntity,
-											tmpQueryEntity, tmpQueryBatch, tmpRetrieveTemporal, tmpQueryTemporal,
-											tmpRetrieveEntityTypes, tmpRetrieveEntityTypeDetails,
-											tmpRetrieveEntityTypeInfo, tmpRetrieveAttrTypes, tmpRetrieveAttrTypeDetails,
-											tmpRetrieveAttrTypeInfo, tmpCreateSubscription, tmpUpdateSubscription,
-											tmpRetrieveSubscription, tmpQuerySubscription, tmpDeleteSubscription,
-											tmpQueryEntityMap, tmpCreateEntityMap, tmpUpdateEntityMap,
-											tmpDeleteEntityMap, tmpRetrieveEntityMap, remoteHost));
-								}
-							}
-						} else {
-							result.add(new RegistrationEntry(cSourceId, tmpEId, tmpEIdp, entityType, null, null,
-									location, scopes, tmpEexpiresAt, mode, tmpCreateEntity, tmpUpdateEntity,
-									tmpAppendAttrs, tmpUpdateAttrs, tmpDeleteAttrs, tmpDeleteEntity, tmpCreateBatch,
-									tmpUpsertBatch, tmpUpdateBatch, tmpDeleteBatch, tmpUpsertTemporal,
-									tmpAppendAttrsTemporal, tmpDeleteAttrsTemporal, tmpUpdateAttrsTemporal,
-									tmpDeleteAttrInstanceTemporal, tmpDeleteTemporal, tmpMergeEntity, tmpReplaceEntity,
-									tmpReplaceAttrs, tmpMergeBatch, tmpRetrieveEntity, tmpQueryEntity, tmpQueryBatch,
-									tmpRetrieveTemporal, tmpQueryTemporal, tmpRetrieveEntityTypes,
-									tmpRetrieveEntityTypeDetails, tmpRetrieveEntityTypeInfo, tmpRetrieveAttrTypes,
-									tmpRetrieveAttrTypeDetails, tmpRetrieveAttrTypeInfo, tmpCreateSubscription,
-									tmpUpdateSubscription, tmpRetrieveSubscription, tmpQuerySubscription,
-									tmpDeleteSubscription, tmpQueryEntityMap, tmpCreateEntityMap, tmpUpdateEntityMap,
-									tmpDeleteEntityMap, tmpRetrieveEntityMap, remoteHost));
-						}
+			boolean tmpCreateEntity = false;
+			boolean tmpUpdateEntity = false;
+			boolean tmpAppendAttrs = false;
+			boolean tmpUpdateAttrs = false;
+			boolean tmpDeleteAttrs = false;
+			boolean tmpDeleteEntity = false;
+			boolean tmpCreateBatch = false;
+			boolean tmpUpsertBatch = false;
+			boolean tmpUpdateBatch = false;
+			boolean tmpDeleteBatch = false;
+			boolean tmpUpsertTemporal = false;
+			boolean tmpAppendAttrsTemporal = false;
+			boolean tmpDeleteAttrsTemporal = false;
+			boolean tmpUpdateAttrsTemporal = false;
+			boolean tmpDeleteAttrInstanceTemporal = false;
+			boolean tmpDeleteTemporal = false;
+			boolean tmpMergeEntity = false;
+			boolean tmpReplaceEntity = false;
+			boolean tmpReplaceAttrs = false;
+			boolean tmpMergeBatch = false;
+			boolean tmpRetrieveEntity = false;
+			boolean tmpQueryEntity = false;
+			boolean tmpQueryBatch = false;
+			boolean tmpRetrieveTemporal = false;
+			boolean tmpQueryTemporal = false;
+			boolean tmpRetrieveEntityTypes = false;
+			boolean tmpRetrieveEntityTypeDetails = false;
+			boolean tmpRetrieveEntityTypeInfo = false;
+			boolean tmpRetrieveAttrTypes = false;
+			boolean tmpRetrieveAttrTypeDetails = false;
+			boolean tmpRetrieveAttrTypeInfo = false;
+			boolean tmpCreateSubscription = false;
+			boolean tmpUpdateSubscription = false;
+			boolean tmpRetrieveSubscription = false;
 
+			boolean tmpDeleteSubscription = false;
+			boolean tmpQuerySubscription = false;
+			boolean tmpQueryEntityMap = false;
+			boolean tmpCreateEntityMap = false;
+			boolean tmpUpdateEntityMap = false;
+			boolean tmpDeleteEntityMap = false;
+			boolean tmpRetrieveEntityMap = false;
+			if (payload.containsKey(NGSIConstants.NGSI_LD_REG_OPERATIONS)) {
+				for (Map<String, String> opEntry : (List<Map<String, String>>) payload
+						.get(NGSIConstants.NGSI_LD_REG_OPERATIONS)) {
+					String operation = opEntry.get(NGSIConstants.JSON_LD_VALUE);
+					switch (operation) {
+					case NGSIConstants.NGSI_LD_REG_OPERATION_FEDERATION_OPS:
+						tmpRetrieveEntity = tmpQueryEntity = tmpRetrieveEntityTypes = tmpRetrieveEntityTypeDetails = tmpRetrieveEntityTypeInfo = tmpRetrieveAttrTypes = tmpRetrieveAttrTypeDetails = tmpRetrieveAttrTypeInfo = tmpCreateSubscription = tmpUpdateSubscription = tmpRetrieveSubscription = tmpQuerySubscription = tmpDeleteSubscription = tmpQueryEntityMap = tmpCreateEntityMap = tmpUpdateEntityMap = tmpDeleteEntityMap = tmpRetrieveEntityMap = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_UPDATE_OPS:
+						tmpUpdateEntity = tmpUpdateAttrs = tmpReplaceEntity = tmpReplaceAttrs = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVE_OPS:
+						tmpRetrieveEntity = tmpQueryEntity = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_REDIRECTION_OPS:
+						tmpCreateEntity = tmpUpdateEntity = tmpAppendAttrs = tmpUpdateAttrs = tmpDeleteAttrs = tmpDeleteEntity = tmpMergeEntity = tmpReplaceEntity = tmpReplaceAttrs = tmpRetrieveEntity = tmpQueryEntity = tmpRetrieveEntityTypes = tmpRetrieveEntityTypeDetails = tmpRetrieveEntityTypeInfo = tmpRetrieveAttrTypes = tmpRetrieveAttrTypeDetails = tmpRetrieveAttrTypeInfo = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_CREATEENTITY:
+						tmpCreateEntity = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_UPDATEENTITY:
+						tmpUpdateEntity = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_APPENDATTRS:
+						tmpAppendAttrs = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_UPDATEATTRS:
+						tmpUpdateAttrs = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_DELETEATTRS:
+						tmpDeleteAttrs = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_DELETEENTITY:
+						tmpDeleteEntity = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_CREATEBATCH:
+						tmpCreateBatch = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_UPSERTBATCH:
+						tmpUpsertBatch = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_UPDATEBATCH:
+						tmpUpdateBatch = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_DELETEBATCH:
+						tmpDeleteBatch = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_UPSERTTEMPORAL:
+						tmpUpsertTemporal = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_APPENDATTRSTEMPORAL:
+						tmpAppendAttrsTemporal = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_DELETEATTRSTEMPORAL:
+						tmpDeleteAttrsTemporal = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_UPDATEATTRSTEMPORAL:
+						tmpUpdateAttrsTemporal = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_DELETEATTRINSTANCETEMPORAL:
+						tmpDeleteAttrInstanceTemporal = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_DELETETEMPORAL:
+						tmpDeleteTemporal = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_MERGEENTITY:
+						tmpMergeEntity = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_REPLACEENTITY:
+						tmpReplaceEntity = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_REPLACEATTRS:
+						tmpReplaceAttrs = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_MERGEBATCH:
+						tmpMergeBatch = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVEENTITY:
+						tmpRetrieveEntity = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_QUERYENTITY:
+						tmpQueryEntity = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_QUERYBATCH:
+						tmpQueryBatch = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVETEMPORAL:
+						tmpRetrieveTemporal = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_QUERYTEMPORAL:
+						tmpQueryTemporal = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVEENTITYTYPES:
+						tmpRetrieveEntityTypes = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVEENTITYTYPEDETAILS:
+						tmpRetrieveEntityTypeDetails = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVEENTITYTYPEINFO:
+						tmpRetrieveEntityTypeInfo = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVEATTRTYPES:
+						tmpRetrieveAttrTypes = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVEATTRTYPEDETAILS:
+						tmpRetrieveAttrTypeDetails = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVEATTRTYPEINFO:
+						tmpRetrieveAttrTypeInfo = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_CREATESUBSCRIPTION:
+						tmpCreateSubscription = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_UPDATESUBSCRIPTION:
+						tmpUpdateSubscription = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVESUBSCRIPTION:
+						tmpRetrieveSubscription = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_QUERYSUBSCRIPTION:
+						tmpQuerySubscription = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_DELETESUBSCRIPTION:
+						tmpDeleteSubscription = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_QUERY_ENTITYMAP:
+						tmpQueryEntityMap = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_CREATE_ENTITYMAP:
+						tmpCreateEntityMap = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_UPDATE_ENTITYMAP:
+						tmpUpdateEntityMap = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_DELETE_ENTITYMAP:
+						tmpDeleteEntityMap = true;
+						break;
+					case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVE_ENTITYMAP:
+						tmpRetrieveEntityMap = true;
+						break;
 					}
 				}
 			} else {
-				boolean containsProps = infoEntry.containsKey(NGSIConstants.NGSI_LD_PROPERTIES);
-				boolean containsRels = infoEntry.containsKey(NGSIConstants.NGSI_LD_RELATIONSHIPS);
+				tmpRetrieveEntity = true;
+				tmpQueryEntity = true;
+				tmpRetrieveEntityTypes = true;
+				tmpRetrieveEntityTypeDetails = true;
+				tmpRetrieveEntityTypeInfo = true;
+				tmpRetrieveAttrTypes = true;
+				tmpRetrieveAttrTypeDetails = true;
+				tmpRetrieveAttrTypeInfo = true;
+				tmpCreateSubscription = true;
+				tmpUpdateSubscription = true;
+				tmpRetrieveSubscription = true;
+				tmpQuerySubscription = true;
+				tmpDeleteSubscription = true;
+				tmpQueryEntityMap = true;
+				tmpCreateEntityMap = true;
+				tmpUpdateEntityMap = true;
+				tmpDeleteEntityMap = true;
+				tmpRetrieveEntityMap = true;
+			}
 
-				if (containsProps) {
-					for (Map<String, String> prop : (List<Map<String, String>>) infoEntry
-							.get(NGSIConstants.NGSI_LD_PROPERTIES)) {
-						result.add(new RegistrationEntry(cSourceId, null, null, null,
-								prop.get(NGSIConstants.JSON_LD_ID), null, location, scopes, tmpEexpiresAt, mode,
-								tmpCreateEntity, tmpUpdateEntity, tmpAppendAttrs, tmpUpdateAttrs, tmpDeleteAttrs,
-								tmpDeleteEntity, tmpCreateBatch, tmpUpsertBatch, tmpUpdateBatch, tmpDeleteBatch,
-								tmpUpsertTemporal, tmpAppendAttrsTemporal, tmpDeleteAttrsTemporal,
-								tmpUpdateAttrsTemporal, tmpDeleteAttrInstanceTemporal, tmpDeleteTemporal,
-								tmpMergeEntity, tmpReplaceEntity, tmpReplaceAttrs, tmpMergeBatch, tmpRetrieveEntity,
-								tmpQueryEntity, tmpQueryBatch, tmpRetrieveTemporal, tmpQueryTemporal,
-								tmpRetrieveEntityTypes, tmpRetrieveEntityTypeDetails, tmpRetrieveEntityTypeInfo,
-								tmpRetrieveAttrTypes, tmpRetrieveAttrTypeDetails, tmpRetrieveAttrTypeInfo,
-								tmpCreateSubscription, tmpUpdateSubscription, tmpRetrieveSubscription,
-								tmpQuerySubscription, tmpDeleteSubscription, tmpQueryEntityMap, tmpCreateEntityMap,
-								tmpUpdateEntityMap, tmpDeleteEntityMap, tmpRetrieveEntityMap, remoteHost));
+			for (Map<String, Object> infoEntry : (List<Map<String, Object>>) payload
+					.get(NGSIConstants.NGSI_LD_INFORMATION)) {
+				if (infoEntry.containsKey(NGSIConstants.NGSI_LD_ENTITIES)) {
+					for (Map<String, Object> entitiesEntry : (List<Map<String, Object>>) infoEntry
+							.get(NGSIConstants.NGSI_LD_ENTITIES)) {
+						for (String entityType : (List<String>) entitiesEntry.get(NGSIConstants.JSON_LD_TYPE)) {
+							String tmpEId = null;
+							String tmpEIdp = null;
+							if (entitiesEntry.containsKey(NGSIConstants.JSON_LD_ID)) {
+								tmpEId = (String) entitiesEntry.get(NGSIConstants.JSON_LD_ID);
+							}
+							if (entitiesEntry.containsKey(NGSIConstants.NGSI_LD_ID_PATTERN)) {
+								tmpEIdp = ((List<Map<String, String>>) entitiesEntry.get(NGSIConstants.JSON_LD_ID))
+										.get(0).get(NGSIConstants.JSON_LD_VALUE);
+							}
+
+							boolean containsProps = infoEntry.containsKey(NGSIConstants.NGSI_LD_PROPERTIES);
+							boolean containsRels = infoEntry.containsKey(NGSIConstants.NGSI_LD_RELATIONSHIPS);
+							if (containsProps || containsRels) {
+								if (containsProps) {
+									for (Map<String, String> prop : (List<Map<String, String>>) infoEntry
+											.get(NGSIConstants.NGSI_LD_PROPERTIES)) {
+										result.add(new RegistrationEntry(cSourceId, tmpEId, tmpEIdp, entityType,
+												prop.get(NGSIConstants.JSON_LD_ID), null, location, scopes,
+												tmpEexpiresAt, mode, tmpCreateEntity, tmpUpdateEntity, tmpAppendAttrs,
+												tmpUpdateAttrs, tmpDeleteAttrs, tmpDeleteEntity, tmpCreateBatch,
+												tmpUpsertBatch, tmpUpdateBatch, tmpDeleteBatch, tmpUpsertTemporal,
+												tmpAppendAttrsTemporal, tmpDeleteAttrsTemporal, tmpUpdateAttrsTemporal,
+												tmpDeleteAttrInstanceTemporal, tmpDeleteTemporal, tmpMergeEntity,
+												tmpReplaceEntity, tmpReplaceAttrs, tmpMergeBatch, tmpRetrieveEntity,
+												tmpQueryEntity, tmpQueryBatch, tmpRetrieveTemporal, tmpQueryTemporal,
+												tmpRetrieveEntityTypes, tmpRetrieveEntityTypeDetails,
+												tmpRetrieveEntityTypeInfo, tmpRetrieveAttrTypes,
+												tmpRetrieveAttrTypeDetails, tmpRetrieveAttrTypeInfo,
+												tmpCreateSubscription, tmpUpdateSubscription, tmpRetrieveSubscription,
+												tmpQuerySubscription, tmpDeleteSubscription, tmpQueryEntityMap,
+												tmpCreateEntityMap, tmpUpdateEntityMap, tmpDeleteEntityMap,
+												tmpRetrieveEntityMap, remoteHost, ctx));
+									}
+								}
+								if (containsRels) {
+									for (Map<String, String> rel : (List<Map<String, String>>) infoEntry
+											.get(NGSIConstants.NGSI_LD_RELATIONSHIPS)) {
+										result.add(new RegistrationEntry(cSourceId, tmpEId, tmpEIdp, entityType, null,
+												rel.get(NGSIConstants.JSON_LD_ID), location, scopes, tmpEexpiresAt,
+												mode, tmpCreateEntity, tmpUpdateEntity, tmpAppendAttrs, tmpUpdateAttrs,
+												tmpDeleteAttrs, tmpDeleteEntity, tmpCreateBatch, tmpUpsertBatch,
+												tmpUpdateBatch, tmpDeleteBatch, tmpUpsertTemporal,
+												tmpAppendAttrsTemporal, tmpDeleteAttrsTemporal, tmpUpdateAttrsTemporal,
+												tmpDeleteAttrInstanceTemporal, tmpDeleteTemporal, tmpMergeEntity,
+												tmpReplaceEntity, tmpReplaceAttrs, tmpMergeBatch, tmpRetrieveEntity,
+												tmpQueryEntity, tmpQueryBatch, tmpRetrieveTemporal, tmpQueryTemporal,
+												tmpRetrieveEntityTypes, tmpRetrieveEntityTypeDetails,
+												tmpRetrieveEntityTypeInfo, tmpRetrieveAttrTypes,
+												tmpRetrieveAttrTypeDetails, tmpRetrieveAttrTypeInfo,
+												tmpCreateSubscription, tmpUpdateSubscription, tmpRetrieveSubscription,
+												tmpQuerySubscription, tmpDeleteSubscription, tmpQueryEntityMap,
+												tmpCreateEntityMap, tmpUpdateEntityMap, tmpDeleteEntityMap,
+												tmpRetrieveEntityMap, remoteHost, ctx));
+									}
+								}
+							} else {
+								result.add(new RegistrationEntry(cSourceId, tmpEId, tmpEIdp, entityType, null, null,
+										location, scopes, tmpEexpiresAt, mode, tmpCreateEntity, tmpUpdateEntity,
+										tmpAppendAttrs, tmpUpdateAttrs, tmpDeleteAttrs, tmpDeleteEntity, tmpCreateBatch,
+										tmpUpsertBatch, tmpUpdateBatch, tmpDeleteBatch, tmpUpsertTemporal,
+										tmpAppendAttrsTemporal, tmpDeleteAttrsTemporal, tmpUpdateAttrsTemporal,
+										tmpDeleteAttrInstanceTemporal, tmpDeleteTemporal, tmpMergeEntity,
+										tmpReplaceEntity, tmpReplaceAttrs, tmpMergeBatch, tmpRetrieveEntity,
+										tmpQueryEntity, tmpQueryBatch, tmpRetrieveTemporal, tmpQueryTemporal,
+										tmpRetrieveEntityTypes, tmpRetrieveEntityTypeDetails, tmpRetrieveEntityTypeInfo,
+										tmpRetrieveAttrTypes, tmpRetrieveAttrTypeDetails, tmpRetrieveAttrTypeInfo,
+										tmpCreateSubscription, tmpUpdateSubscription, tmpRetrieveSubscription,
+										tmpQuerySubscription, tmpDeleteSubscription, tmpQueryEntityMap,
+										tmpCreateEntityMap, tmpUpdateEntityMap, tmpDeleteEntityMap,
+										tmpRetrieveEntityMap, remoteHost, ctx));
+							}
+
+						}
 					}
-				}
-				if (containsRels) {
-					for (Map<String, String> rel : (List<Map<String, String>>) infoEntry
-							.get(NGSIConstants.NGSI_LD_RELATIONSHIPS)) {
-						result.add(new RegistrationEntry(cSourceId, null, null, null, null,
-								rel.get(NGSIConstants.JSON_LD_ID), location, scopes, tmpEexpiresAt, mode,
-								tmpCreateEntity, tmpUpdateEntity, tmpAppendAttrs, tmpUpdateAttrs, tmpDeleteAttrs,
-								tmpDeleteEntity, tmpCreateBatch, tmpUpsertBatch, tmpUpdateBatch, tmpDeleteBatch,
-								tmpUpsertTemporal, tmpAppendAttrsTemporal, tmpDeleteAttrsTemporal,
-								tmpUpdateAttrsTemporal, tmpDeleteAttrInstanceTemporal, tmpDeleteTemporal,
-								tmpMergeEntity, tmpReplaceEntity, tmpReplaceAttrs, tmpMergeBatch, tmpRetrieveEntity,
-								tmpQueryEntity, tmpQueryBatch, tmpRetrieveTemporal, tmpQueryTemporal,
-								tmpRetrieveEntityTypes, tmpRetrieveEntityTypeDetails, tmpRetrieveEntityTypeInfo,
-								tmpRetrieveAttrTypes, tmpRetrieveAttrTypeDetails, tmpRetrieveAttrTypeInfo,
-								tmpCreateSubscription, tmpUpdateSubscription, tmpRetrieveSubscription,
-								tmpQuerySubscription, tmpDeleteSubscription, tmpQueryEntityMap, tmpCreateEntityMap,
-								tmpUpdateEntityMap, tmpDeleteEntityMap, tmpRetrieveEntityMap, remoteHost));
+				} else {
+					boolean containsProps = infoEntry.containsKey(NGSIConstants.NGSI_LD_PROPERTIES);
+					boolean containsRels = infoEntry.containsKey(NGSIConstants.NGSI_LD_RELATIONSHIPS);
+
+					if (containsProps) {
+						for (Map<String, String> prop : (List<Map<String, String>>) infoEntry
+								.get(NGSIConstants.NGSI_LD_PROPERTIES)) {
+							result.add(new RegistrationEntry(cSourceId, null, null, null,
+									prop.get(NGSIConstants.JSON_LD_ID), null, location, scopes, tmpEexpiresAt, mode,
+									tmpCreateEntity, tmpUpdateEntity, tmpAppendAttrs, tmpUpdateAttrs, tmpDeleteAttrs,
+									tmpDeleteEntity, tmpCreateBatch, tmpUpsertBatch, tmpUpdateBatch, tmpDeleteBatch,
+									tmpUpsertTemporal, tmpAppendAttrsTemporal, tmpDeleteAttrsTemporal,
+									tmpUpdateAttrsTemporal, tmpDeleteAttrInstanceTemporal, tmpDeleteTemporal,
+									tmpMergeEntity, tmpReplaceEntity, tmpReplaceAttrs, tmpMergeBatch, tmpRetrieveEntity,
+									tmpQueryEntity, tmpQueryBatch, tmpRetrieveTemporal, tmpQueryTemporal,
+									tmpRetrieveEntityTypes, tmpRetrieveEntityTypeDetails, tmpRetrieveEntityTypeInfo,
+									tmpRetrieveAttrTypes, tmpRetrieveAttrTypeDetails, tmpRetrieveAttrTypeInfo,
+									tmpCreateSubscription, tmpUpdateSubscription, tmpRetrieveSubscription,
+									tmpQuerySubscription, tmpDeleteSubscription, tmpQueryEntityMap, tmpCreateEntityMap,
+									tmpUpdateEntityMap, tmpDeleteEntityMap, tmpRetrieveEntityMap, remoteHost, ctx));
+						}
+					}
+					if (containsRels) {
+						for (Map<String, String> rel : (List<Map<String, String>>) infoEntry
+								.get(NGSIConstants.NGSI_LD_RELATIONSHIPS)) {
+							result.add(new RegistrationEntry(cSourceId, null, null, null, null,
+									rel.get(NGSIConstants.JSON_LD_ID), location, scopes, tmpEexpiresAt, mode,
+									tmpCreateEntity, tmpUpdateEntity, tmpAppendAttrs, tmpUpdateAttrs, tmpDeleteAttrs,
+									tmpDeleteEntity, tmpCreateBatch, tmpUpsertBatch, tmpUpdateBatch, tmpDeleteBatch,
+									tmpUpsertTemporal, tmpAppendAttrsTemporal, tmpDeleteAttrsTemporal,
+									tmpUpdateAttrsTemporal, tmpDeleteAttrInstanceTemporal, tmpDeleteTemporal,
+									tmpMergeEntity, tmpReplaceEntity, tmpReplaceAttrs, tmpMergeBatch, tmpRetrieveEntity,
+									tmpQueryEntity, tmpQueryBatch, tmpRetrieveTemporal, tmpQueryTemporal,
+									tmpRetrieveEntityTypes, tmpRetrieveEntityTypeDetails, tmpRetrieveEntityTypeInfo,
+									tmpRetrieveAttrTypes, tmpRetrieveAttrTypeDetails, tmpRetrieveAttrTypeInfo,
+									tmpCreateSubscription, tmpUpdateSubscription, tmpRetrieveSubscription,
+									tmpQuerySubscription, tmpDeleteSubscription, tmpQueryEntityMap, tmpCreateEntityMap,
+									tmpUpdateEntityMap, tmpDeleteEntityMap, tmpRetrieveEntityMap, remoteHost, ctx));
+						}
 					}
 				}
 			}
-		}
 
-		return result;
+			return result;
+		});
 	}
 
 	private static String[] getScopesFromPayload(Object object) {

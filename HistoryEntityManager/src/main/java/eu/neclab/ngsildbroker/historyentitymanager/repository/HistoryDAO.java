@@ -16,6 +16,7 @@ import jakarta.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.github.jsonldjava.core.JsonLDService;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -56,6 +57,9 @@ public class HistoryDAO {
 
 	@Inject
 	ClientManager clientManager;
+
+	@Inject
+	JsonLDService ldService;
 
 	public Uni<Boolean> createHistoryEntity(CreateHistoryEntityRequest request) {
 
@@ -118,7 +122,7 @@ public class HistoryDAO {
 					}
 				}
 				logger.debug(insertSql);
-				for(Tuple entry: batch) {
+				for (Tuple entry : batch) {
 					logger.debug(entry.deepToString());
 				}
 				return client.preparedQuery(insertSql).executeBatch(batch).onItem()
@@ -271,7 +275,8 @@ public class HistoryDAO {
 
 	public Uni<Void> deleteHistoryEntity(DeleteHistoryEntityRequest request) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
-			String sql = "DELETE FROM " + DBConstants.DBTABLE_TEMPORALENTITY + " WHERE id = $1 RETURNING "+DBConstants.DBTABLE_TEMPORALENTITY ;
+			String sql = "DELETE FROM " + DBConstants.DBTABLE_TEMPORALENTITY + " WHERE id = $1 RETURNING "
+					+ DBConstants.DBTABLE_TEMPORALENTITY;
 			return client.preparedQuery(sql).execute(Tuple.of(request.getId())).onFailure().recoverWithUni(e -> {
 				if (e instanceof PgException pge) {
 					if (pge.getSqlState().equals(AppConstants.SQL_NOT_FOUND)) {
@@ -281,11 +286,11 @@ public class HistoryDAO {
 				}
 				return Uni.createFrom().failure(e);
 			}).onItem().transformToUni(rows -> {
-				if(rows.size()==0){
-					return Uni.createFrom().failure(
-							new ResponseException(ErrorType.NotFound, request.getId() + " does not exist"));
+				if (rows.size() == 0) {
+					return Uni.createFrom()
+							.failure(new ResponseException(ErrorType.NotFound, request.getId() + " does not exist"));
 				}
-				return  Uni.createFrom().voidItem();
+				return Uni.createFrom().voidItem();
 			});
 		});
 	}
@@ -332,8 +337,8 @@ public class HistoryDAO {
 					@SuppressWarnings("unchecked")
 					List<Map<String, Object>> entries = (List<Map<String, Object>>) entry.getValue();
 					for (Map<String, Object> attribEntry : entries) {
-						if(createdAt != null){
-							attribEntry.put(NGSIConstants.NGSI_LD_CREATED_AT,createdAt);
+						if (createdAt != null) {
+							attribEntry.put(NGSIConstants.NGSI_LD_CREATED_AT, createdAt);
 						}
 						attribEntry.put(NGSIConstants.NGSI_LD_INSTANCE_ID, List
 								.of(Map.of(NGSIConstants.JSON_LD_ID, "instanceid:" + UUID.randomUUID().toString())));
@@ -508,42 +513,9 @@ public class HistoryDAO {
 	}
 
 	public Uni<Table<String, String, List<RegistrationEntry>>> getAllRegistries() {
-		return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
-			return client.preparedQuery("SELECT tenant_id FROM tenant").execute().onItem()
-					.transformToUni(tenantRows -> {
-						List<Uni<Tuple2<String, RowSet<Row>>>> unis = Lists.newArrayList();
-						RowIterator<Row> it = tenantRows.iterator();
-						String sql = "SELECT cs_id, c_id, e_id, e_id_p, e_type, e_prop, e_rel, ST_AsGeoJSON(i_location), scopes, EXTRACT(MILLISECONDS FROM expires), endpoint, tenant_id, headers, reg_mode, createEntity, updateEntity, appendAttrs, updateAttrs, deleteAttrs, deleteEntity, createBatch, upsertBatch, updateBatch, deleteBatch, upsertTemporal, appendAttrsTemporal, deleteAttrsTemporal, updateAttrsTemporal, deleteAttrInstanceTemporal, deleteTemporal, mergeEntity, replaceEntity, replaceAttrs, mergeBatch, retrieveEntity, queryEntity, queryBatch, retrieveTemporal, queryTemporal, retrieveEntityTypes, retrieveEntityTypeDetails, retrieveEntityTypeInfo, retrieveAttrTypes, retrieveAttrTypeDetails, retrieveAttrTypeInfo, createSubscription, updateSubscription, retrieveSubscription, querySubscription, deleteSubscription, queryEntityMap, createEntityMap, updateEntityMap, deleteEntityMap, retrieveEntityMap  FROM csourceinformation WHERE upsertTemporal OR appendAttrsTemporal OR deleteAttrsTemporal OR updateAttrsTemporal OR deleteAttrInstanceTemporal OR deleteTemporal";
-						unis.add(client.preparedQuery(sql).execute().onItem()
-								.transform(rows -> Tuple2.of(AppConstants.INTERNAL_NULL_KEY, rows)));
-						while (it.hasNext()) {
-							unis.add(clientManager.getClient(it.next().getString(0), false).onItem()
-									.transformToUni(tenantClient -> {
-										return tenantClient.preparedQuery(sql).execute().onItem().transform(
-												tenantReg -> Tuple2.of(AppConstants.INTERNAL_NULL_KEY, tenantReg));
-									}));
-						}
-						return Uni.combine().all().unis(unis).combinedWith(list -> {
-							Table<String, String, List<RegistrationEntry>> result = HashBasedTable.create();
-							for (Object obj : list) {
-								Tuple2<String, RowSet<Row>> tuple = (Tuple2<String, RowSet<Row>>) obj;
-								String tenant = tuple.getItem1();
-								RowIterator<Row> it2 = tuple.getItem2().iterator();
-								while (it2.hasNext()) {
-									Row row = it2.next();
-									List<RegistrationEntry> entries = result.get(tenant, row.getString(1));
-									if (entries == null) {
-										entries = Lists.newArrayList();
-										result.put(tenant, row.getString(1), entries);
-									}
-									entries.add(DBUtil.getRegistrationEntry(row, tenant, logger));
-								}
-							}
-							return result;
-						});
-					});
-		});
-
+		return DBUtil.getAllRegistries(clientManager, ldService,
+				"SELECT cs_id, c_id, e_id, e_id_p, e_type, e_prop, e_rel, ST_AsGeoJSON(i_location), scopes, EXTRACT(MILLISECONDS FROM expires), endpoint, tenant_id, headers, reg_mode, createEntity, updateEntity, appendAttrs, updateAttrs, deleteAttrs, deleteEntity, createBatch, upsertBatch, updateBatch, deleteBatch, upsertTemporal, appendAttrsTemporal, deleteAttrsTemporal, updateAttrsTemporal, deleteAttrInstanceTemporal, deleteTemporal, mergeEntity, replaceEntity, replaceAttrs, mergeBatch, retrieveEntity, queryEntity, queryBatch, retrieveTemporal, queryTemporal, retrieveEntityTypes, retrieveEntityTypeDetails, retrieveEntityTypeInfo, retrieveAttrTypes, retrieveAttrTypeDetails, retrieveAttrTypeInfo, createSubscription, updateSubscription, retrieveSubscription, querySubscription, deleteSubscription, queryEntityMap, createEntityMap, updateEntityMap, deleteEntityMap, retrieveEntityMap  FROM csourceinformation WHERE upsertTemporal OR appendAttrsTemporal OR deleteAttrsTemporal OR updateAttrsTemporal OR deleteAttrInstanceTemporal OR deleteTemporal",
+				logger);
 	}
 
 	public Uni<Void> setMergePatch(BaseRequest request) {

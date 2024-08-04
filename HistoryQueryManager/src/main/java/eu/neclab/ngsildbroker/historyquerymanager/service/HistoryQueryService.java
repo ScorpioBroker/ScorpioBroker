@@ -124,7 +124,7 @@ public class HistoryQueryService {
 		List<Uni<QueryResult>> remoteCalls = new ArrayList<>(remoteHosts.size());
 		for (Entry<RemoteHost, String> entry : remoteHosts.entrySet()) {
 			RemoteHost remoteHost = entry.getKey();
-			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),request.headers());
+			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(), request.headers());
 
 			String url = remoteHost.host() + NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT + "?" + entry.getValue();
 			String linkHead;
@@ -138,8 +138,8 @@ public class HistoryQueryService {
 				contextLinks = parseLinkHeaderNoUni(remoteHost.headers().getAll(NGSIConstants.LINK_HEADER),
 						NGSIConstants.HEADER_REL_LDCONTEXT);
 			}
-			remoteCalls.add(webClient.getAbs(url).putHeaders(toFrwd)
-					.putHeader(NGSIConstants.LINK_HEADER, linkHead).send().onItem().transformToUni(response -> {
+			remoteCalls.add(webClient.getAbs(url).putHeaders(toFrwd).putHeader(NGSIConstants.LINK_HEADER, linkHead)
+					.send().onItem().transformToUni(response -> {
 
 						if (response == null || response.statusCode() != 200) {
 							return Uni.createFrom().nullItem();
@@ -208,19 +208,19 @@ public class HistoryQueryService {
 	 * @return Single entity merged with potential
 	 */
 	public Uni<Map<String, Object>> retrieveEntity(String tenant, String entityId, AttrsQueryTerm attrsQuery,
-			AggrTerm aggrQuery, TemporalQueryTerm tempQuery, String lang, int lastN, boolean localOnly,
-			Context context,io.vertx.core.MultiMap headersFromReq) {
+			AggrTerm aggrQuery, TemporalQueryTerm tempQuery, String lang, int lastN, boolean localOnly, Context context,
+			io.vertx.core.MultiMap headersFromReq) {
 
 		Uni<Map<String, Object>> local = historyDAO.retrieveEntity(tenant, entityId, attrsQuery, aggrQuery, tempQuery,
 				lang, lastN);
 		if (localOnly) {
 			return local.onItem().transformToUni(localItem -> {
-					if (localItem.isEmpty()) {
-						return Uni.createFrom()
-								.failure(new ResponseException(ErrorType.NotFound, entityId + " was not found"));
-					}
-					return Uni.createFrom().item(localItem);
-				});
+				if (localItem.isEmpty()) {
+					return Uni.createFrom()
+							.failure(new ResponseException(ErrorType.NotFound, entityId + " was not found"));
+				}
+				return Uni.createFrom().item(localItem);
+			});
 
 		} else {
 			Map<RemoteHost, Set<String>> remoteHosts = getRemoteHostsForRetrieve(tenant, entityId, attrsQuery);
@@ -236,7 +236,7 @@ public class HistoryQueryService {
 			List<Uni<Map<String, Object>>> remoteCalls = new ArrayList<>(remoteHosts.size());
 			for (Entry<RemoteHost, Set<String>> entry : remoteHosts.entrySet()) {
 				RemoteHost remoteHost = entry.getKey();
-				MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),headersFromReq);
+				MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(), headersFromReq);
 
 				String url = remoteHost.host() + NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT + "/" + entityId;
 				Set<String> attrs = entry.getValue();
@@ -248,20 +248,19 @@ public class HistoryQueryService {
 					url = url.substring(0, url.length() - 1);
 				}
 
-				remoteCalls.add(webClient.getAbs(url).putHeaders(toFrwd).send().onItem()
-						.transformToUni(response -> {
-							if (response == null || response.statusCode() != 200) {
-								return Uni.createFrom().nullItem();
-							} else {
-								Map<String, Object> responseEntity = response.bodyAsJsonObject().getMap();
-								return ldService.expand(HttpUtils.getContextFromHeader(remoteHost.headers()),
-										responseEntity, HttpUtils.opts, -1, false).onItem().transform(expanded -> {
-											Map<String, Object> result = (Map<String, Object>) expanded.get(0);
-											result.put(AppConstants.REG_MODE_KEY, remoteHost.regMode());
-											return result;
-										});
-							}
-						}));
+				remoteCalls.add(webClient.getAbs(url).putHeaders(toFrwd).send().onItem().transformToUni(response -> {
+					if (response == null || response.statusCode() != 200) {
+						return Uni.createFrom().nullItem();
+					} else {
+						Map<String, Object> responseEntity = response.bodyAsJsonObject().getMap();
+						return ldService.expand(HttpUtils.getContextFromHeader(remoteHost.headers()), responseEntity,
+								HttpUtils.opts, -1, false).onItem().transform(expanded -> {
+									Map<String, Object> result = (Map<String, Object>) expanded.get(0);
+									result.put(AppConstants.REG_MODE_KEY, remoteHost.regMode());
+									return result;
+								});
+					}
+				}));
 			}
 			Uni<Map<String, Object>> remote = Uni.combine().all().unis(remoteCalls).combinedWith(list -> {
 				Map<String, Object> result = Maps.newHashMap();
@@ -410,8 +409,8 @@ public class HistoryQueryService {
 				}
 
 				RemoteHost remoteHost = new RemoteHost(regEntry.host().host(), regEntry.host().tenant(),
-						regEntry.host().headers(), regEntry.host().cSourceId(), true, false, regEntry.regMode(),
-						false, regEntry.queryEntityMap());
+						regEntry.host().headers(), regEntry.host().cSourceId(), true, false, regEntry.regMode(), false,
+						regEntry.queryEntityMap());
 
 				if (regEntry.eId() != null || regEntry.eIdp() != null) {
 					for (String id : entityIds) {
@@ -489,17 +488,19 @@ public class HistoryQueryService {
 	}
 
 	public Uni<Void> handleRegistryChange(BaseRequest req) {
-		tenant2CId2RegEntries.remove(req.getTenant(), req.getId());
-		if (req.getRequestType() != AppConstants.DELETE_REQUEST) {
-			List<RegistrationEntry> newRegs = Lists.newArrayList();
-			for (RegistrationEntry regEntry : RegistrationEntry.fromRegPayload(req.getPayload())) {
-				if (regEntry.retrieveTemporal() || regEntry.queryTemporal()) {
-					newRegs.add(regEntry);
+		return RegistrationEntry.fromRegPayload(req.getPayload(), ldService).onItem().transformToUni(regs -> {
+			tenant2CId2RegEntries.remove(req.getTenant(), req.getId());
+			if (req.getRequestType() != AppConstants.DELETE_REQUEST) {
+				List<RegistrationEntry> newRegs = Lists.newArrayList();
+				for (RegistrationEntry regEntry : regs) {
+					if (regEntry.retrieveTemporal() || regEntry.queryTemporal()) {
+						newRegs.add(regEntry);
+					}
 				}
+				tenant2CId2RegEntries.put(req.getTenant(), req.getId(), newRegs);
 			}
-			tenant2CId2RegEntries.put(req.getTenant(), req.getId(), newRegs);
-		}
-		return Uni.createFrom().voidItem();
+			return Uni.createFrom().voidItem();
+		});
 	}
 
 }

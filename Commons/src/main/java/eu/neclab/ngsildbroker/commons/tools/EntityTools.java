@@ -794,8 +794,8 @@ public final class EntityTools {
 								Object ctx = context.getOriginalAtContext().get(0);
 								if (ctx instanceof String ctxStr) {
 									req = req.putHeader(HttpHeaders.LINK,
-											"<" + ctxStr + ">; rel=\"" + NGSIConstants.HEADER_REL_LDCONTEXT + "\"; type=\""
-													+ AppConstants.NGB_APPLICATION_JSONLD + "\"");
+											"<" + ctxStr + ">; rel=\"" + NGSIConstants.HEADER_REL_LDCONTEXT
+													+ "\"; type=\"" + AppConstants.NGB_APPLICATION_JSONLD + "\"");
 								}
 							}
 							req = req.setQueryParam("options", "sysAttrs");
@@ -849,7 +849,7 @@ public final class EntityTools {
 	private static Uni<List<Object>> handle200(WebClient webClient, QueryRemoteHost remoteHost, Context context,
 			HttpResponse<Buffer> response, JsonLDService ldService, int timeout) {
 		List<Map<String, Object>> tmpList = response.bodyAsJsonArray().getList();
-		return ldService.expand(context, tmpList, AppConstants.opts, -1, false).onItem().transformToUni(expanded -> {
+		return ldService.expand(remoteHost.context(), tmpList, AppConstants.opts, -1, false).onItem().transformToUni(expanded -> {
 			if (response.headers().contains("Next")) {
 				remoteHost.setParamsFromNext(response.headers().get("Next"));
 				return getRemoteEntities(remoteHost, webClient, context, timeout, ldService).onItem()
@@ -979,13 +979,18 @@ public final class EntityTools {
 					cSourceId2QueryRemoteHost.put(finalHost.cSourceId(), finalHost);
 				}
 
+				Context contextToUse = finalHost.context();
+				if (contextToUse == null) {
+					finalHost.setContext(context);
+					contextToUse = context;
+				}
 				Map<String, String> queryParams = entry.getValue().toQueryParams(context, false, fullEntityCache,
 						finalHost);
 				finalHost.addIdsAndTypesAndIdPattern(
 						Tuple3.of(queryParams.remove(NGSIConstants.ID), queryParams.remove(NGSIConstants.TYPE),
 								queryParams.remove(NGSIConstants.QUERY_PARAMETER_IDPATTERN)));
 				finalHost.setQueryParam(queryParams);
-				finalHost.setContext(context);
+
 			}
 		}
 

@@ -1779,17 +1779,19 @@ public class QueryService {
 	}
 
 	public Uni<Void> handleRegistryChange(BaseRequest req) {
-		List<RegistrationEntry> newRegs = Lists.newArrayList();
-		tenant2CId2RegEntries.remove(req.getTenant(), req.getId());
-		if (req.getRequestType() != AppConstants.DELETE_REQUEST) {
-			for (RegistrationEntry regEntry : RegistrationEntry.fromRegPayload(req.getPayload())) {
-				if (regEntry.retrieveEntity() || regEntry.queryEntity() || regEntry.queryBatch()) {
-					newRegs.add(regEntry);
+		return RegistrationEntry.fromRegPayload(req.getPayload(), ldService).onItem().transformToUni(regs -> {
+			List<RegistrationEntry> newRegs = Lists.newArrayList();
+			tenant2CId2RegEntries.remove(req.getTenant(), req.getId());
+			if (req.getRequestType() != AppConstants.DELETE_REQUEST) {
+				for (RegistrationEntry regEntry : regs) {
+					if (regEntry.retrieveEntity() || regEntry.queryEntity() || regEntry.queryBatch()) {
+						newRegs.add(regEntry);
+					}
 				}
+				tenant2CId2RegEntries.put(req.getTenant(), req.getId(), newRegs);
 			}
-			tenant2CId2RegEntries.put(req.getTenant(), req.getId(), newRegs);
-		}
-		return Uni.createFrom().voidItem();
+			return Uni.createFrom().voidItem();
+		});
 	}
 
 	public Uni<Tuple2<EntityCache, EntityMap>> getAndStoreEntityMap(String tenant, String qToken,
@@ -1856,7 +1858,7 @@ public class QueryService {
 								req = req.setQueryParam(param.getKey(), (String) param.getValue());
 							}
 							req = req.putHeader(HttpHeaders.VIA, remoteHost.getViaHeaders().getViaHeaders());
-							//todo check how to solve this proper once and for all
+							// todo check how to solve this proper once and for all
 							List<String> ogAtContext = context.getOriginalAtContext();
 							if (ogAtContext != null && !ogAtContext.isEmpty()) {
 								req = req.putHeader(HttpHeaders.LINK, "<" + ogAtContext.get(0)

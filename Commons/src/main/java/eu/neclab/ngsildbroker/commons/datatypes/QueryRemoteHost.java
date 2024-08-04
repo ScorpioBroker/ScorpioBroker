@@ -218,10 +218,12 @@ public class QueryRemoteHost {
 
 	public static QueryRemoteHost fromRegEntry(RegistrationEntry regEntry) {
 		RemoteHost remoteHost = regEntry.host();
-
-		return new QueryRemoteHost(remoteHost.host(), remoteHost.tenant(), remoteHost.headers(), remoteHost.cSourceId(),
-				regEntry.queryEntity(), regEntry.queryBatch(), regEntry.retrieveEntity(), remoteHost.regMode(),
-				Lists.newArrayList(), Maps.newHashMap(), regEntry.queryEntityMap(), false, null, null);
+		QueryRemoteHost result = new QueryRemoteHost(remoteHost.host(), remoteHost.tenant(), remoteHost.headers(),
+				remoteHost.cSourceId(), regEntry.queryEntity(), regEntry.queryBatch(), regEntry.retrieveEntity(),
+				remoteHost.regMode(), Lists.newArrayList(), Maps.newHashMap(), regEntry.queryEntityMap(), false, null,
+				null);
+		result.setContext(regEntry.context());
+		return result;
 	}
 
 }

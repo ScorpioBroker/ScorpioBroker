@@ -103,8 +103,8 @@ public class HistoryEntityService {
 		webClient = WebClient.create(vertx);
 	}
 
-	public Uni<NGSILDOperationResult> createEntry(String tenant, Map<String, Object> resolved,
-			Context originalContext,io.vertx.core.MultiMap headersFromReq) {
+	public Uni<NGSILDOperationResult> createEntry(String tenant, Map<String, Object> resolved, Context originalContext,
+			io.vertx.core.MultiMap headersFromReq) {
 		logger.debug("createMessage() :: started");
 		CreateHistoryEntityRequest request = new CreateHistoryEntityRequest(tenant, resolved);
 		Tuple2<Map<String, Object>, Collection<Tuple2<RemoteHost, Map<String, Object>>>> splitted = splitEntity(
@@ -126,13 +126,13 @@ public class HistoryEntityService {
 		for (Tuple2<RemoteHost, Map<String, Object>> remoteEntityAndHost : remoteEntitiesAndHosts) {
 			Map<String, Object> expanded = remoteEntityAndHost.getItem2();
 			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
-			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),headersFromReq);
+			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(), headersFromReq);
 
 			unis.add(EntityTools.prepareSplitUpEntityForSending(expanded, originalContext, ldService).onItem()
 					.transformToUni(compacted -> {
 						return webClient.post(remoteHost.host() + NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT)
-								.putHeaders(toFrwd).sendJsonObject(new JsonObject(compacted))
-								.onItemOrFailure().transform((response, failure) -> {
+								.putHeaders(toFrwd).sendJsonObject(new JsonObject(compacted)).onItemOrFailure()
+								.transform((response, failure) -> {
 									NGSILDOperationResult result = HttpUtils.handleWebResponse(response, failure,
 											ArrayUtils.toArray(201, 204), remoteHost,
 											AppConstants.CREATE_TEMPORAL_REQUEST, request.getId(),
@@ -163,7 +163,7 @@ public class HistoryEntityService {
 	}
 
 	public Uni<NGSILDOperationResult> appendToEntry(String tenant, String entityId, Map<String, Object> appendEntry,
-			Context originalContext,io.vertx.core.MultiMap headersFromReq) {
+			Context originalContext, io.vertx.core.MultiMap headersFromReq) {
 		AppendHistoryEntityRequest request = new AppendHistoryEntityRequest(tenant, appendEntry, entityId);
 		Tuple2<Map<String, Object>, Collection<Tuple2<RemoteHost, Map<String, Object>>>> splitted = splitEntity(
 				request);
@@ -183,15 +183,15 @@ public class HistoryEntityService {
 		for (Tuple2<RemoteHost, Map<String, Object>> remoteEntityAndHost : remoteEntitiesAndHosts) {
 			Map<String, Object> expanded = remoteEntityAndHost.getItem2();
 			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
-			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),headersFromReq);
+			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(), headersFromReq);
 
 			unis.add(EntityTools.prepareSplitUpEntityForSending(expanded, originalContext, ldService).onItem()
 					.transformToUni(compacted -> {
 						return webClient
 								.post(remoteHost.host() + NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT + "/"
 										+ NGSIConstants.QUERY_PARAMETER_ATTRS)
-								.putHeaders(toFrwd).sendJsonObject(new JsonObject(compacted))
-								.onItemOrFailure().transform((response, failure) -> {
+								.putHeaders(toFrwd).sendJsonObject(new JsonObject(compacted)).onItemOrFailure()
+								.transform((response, failure) -> {
 									return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(204),
 											remoteHost, AppConstants.APPEND_TEMPORAL_REQUEST, request.getId(),
 											HttpUtils.getAttribsFromCompactedPayload(compacted));
@@ -213,7 +213,8 @@ public class HistoryEntityService {
 	}
 
 	public Uni<NGSILDOperationResult> updateInstanceOfAttr(String tenant, String entityId, String attribId,
-			String instanceId, Map<String, Object> payload, Context originalContext,io.vertx.core.MultiMap headersFromReq) {
+			String instanceId, Map<String, Object> payload, Context originalContext,
+			io.vertx.core.MultiMap headersFromReq) {
 		UpdateAttrHistoryEntityRequest request = new UpdateAttrHistoryEntityRequest(tenant, entityId, attribId,
 				instanceId, payload);
 		Tuple2<Map<String, Object>, Collection<Tuple2<RemoteHost, Map<String, Object>>>> splitted = splitEntity(
@@ -235,7 +236,7 @@ public class HistoryEntityService {
 		for (Tuple2<RemoteHost, Map<String, Object>> remoteEntityAndHost : remoteEntitiesAndHosts) {
 			Map<String, Object> expanded = remoteEntityAndHost.getItem2();
 			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
-			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),headersFromReq);
+			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(), headersFromReq);
 
 			unis.add(EntityTools.prepareSplitUpEntityForSending(expanded, originalContext, ldService).onItem()
 					.transformToUni(compacted -> {
@@ -243,8 +244,8 @@ public class HistoryEntityService {
 								.post(remoteHost.host() + NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT + "/"
 										+ NGSIConstants.QUERY_PARAMETER_ATTRS + "/" + request.getAttribName() + "/"
 										+ request.getInstanceId())
-								.putHeaders(toFrwd).sendJsonObject(new JsonObject(compacted))
-								.onItemOrFailure().transform((response, failure) -> {
+								.putHeaders(toFrwd).sendJsonObject(new JsonObject(compacted)).onItemOrFailure()
+								.transform((response, failure) -> {
 									return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(204),
 											remoteHost, AppConstants.UPDATE_TEMPORAL_INSTANCE_REQUEST, request.getId(),
 											HttpUtils.getAttribsFromCompactedPayload(compacted));
@@ -266,7 +267,8 @@ public class HistoryEntityService {
 
 	}
 
-	public Uni<NGSILDOperationResult> deleteEntry(String tenant, String entityId, Context originalContext,io.vertx.core.MultiMap headersFromReq) {
+	public Uni<NGSILDOperationResult> deleteEntry(String tenant, String entityId, Context originalContext,
+			io.vertx.core.MultiMap headersFromReq) {
 		DeleteHistoryEntityRequest request = new DeleteHistoryEntityRequest(tenant, entityId);
 		Uni<NGSILDOperationResult> local = historyDAO.deleteHistoryEntity(request).onItem().transform(v -> {
 			NGSILDOperationResult result;
@@ -281,8 +283,7 @@ public class HistoryEntityService {
 		}
 		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(remoteHosts.size());
 		for (RemoteHost remoteHost : remoteHosts) {
-			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),headersFromReq);
-
+			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(), headersFromReq);
 
 			unis.add(webClient
 					.delete(remoteHost.host() + NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT + "/"
@@ -311,7 +312,7 @@ public class HistoryEntityService {
 	}
 
 	public Uni<NGSILDOperationResult> deleteAttrFromEntry(String tenant, String entityId, String attrId,
-			String datasetId, boolean deleteAll, Context originalContext,io.vertx.core.MultiMap headersFromReq) {
+			String datasetId, boolean deleteAll, Context originalContext, io.vertx.core.MultiMap headersFromReq) {
 		DeleteAttrHistoryEntityRequest request = new DeleteAttrHistoryEntityRequest(tenant, entityId, attrId, datasetId,
 				deleteAll);
 		Uni<NGSILDOperationResult> local = historyDAO.deleteAttrFromHistoryEntity(request).onItem().transform(v -> {
@@ -328,7 +329,7 @@ public class HistoryEntityService {
 		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(remoteHosts.size());
 		String compactedAttr = originalContext.compactIri(attrId);
 		for (RemoteHost remoteHost : remoteHosts) {
-			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),headersFromReq);
+			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(), headersFromReq);
 
 			String url = remoteHost.host() + NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT + "/" + request.getId()
 					+ "/" + NGSIConstants.QUERY_PARAMETER_ATTRS + "/" + compactedAttr;
@@ -337,8 +338,8 @@ public class HistoryEntityService {
 			} else if (deleteAll) {
 				url += "?" + NGSIConstants.QUERY_PARAMETER_DELETE_ALL + "=true";
 			}
-			unis.add(webClient.delete(url).putHeaders(toFrwd).send().onItemOrFailure()
-					.transform((response, failure) -> {
+			unis.add(
+					webClient.delete(url).putHeaders(toFrwd).send().onItemOrFailure().transform((response, failure) -> {
 						Set<Attrib> attribs = new HashSet<>();
 						attribs.add(new Attrib(null, entityId));
 						return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(204), remoteHost,
@@ -361,7 +362,7 @@ public class HistoryEntityService {
 	}
 
 	public Uni<NGSILDOperationResult> deleteInstanceOfAttr(String tenant, String entityId, String attribId,
-			String instanceId, Context originalContext,io.vertx.core.MultiMap headersFromReq) {
+			String instanceId, Context originalContext, io.vertx.core.MultiMap headersFromReq) {
 		DeleteAttrInstanceHistoryEntityRequest request = new DeleteAttrInstanceHistoryEntityRequest(tenant, entityId,
 				attribId, instanceId);
 
@@ -382,14 +383,13 @@ public class HistoryEntityService {
 		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(remoteHosts.size());
 		String compactedAttr = originalContext.compactIri(attribId);
 		for (RemoteHost remoteHost : remoteHosts) {
-			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(),headersFromReq);
-
+			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(), headersFromReq);
 
 			String url = remoteHost.host() + NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT + "/" + request.getId()
 					+ "/" + NGSIConstants.QUERY_PARAMETER_ATTRS + "/" + compactedAttr + "/" + instanceId;
 
-			unis.add(webClient.delete(url).putHeaders(toFrwd).send().onItemOrFailure()
-					.transform((response, failure) -> {
+			unis.add(
+					webClient.delete(url).putHeaders(toFrwd).send().onItemOrFailure().transform((response, failure) -> {
 						Set<Attrib> attribs = new HashSet<>();
 						attribs.add(new Attrib(null, entityId));
 						return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(204), remoteHost,
@@ -472,44 +472,44 @@ public class HistoryEntityService {
 
 	public Uni<Void> handleInternalRequest(BaseRequest request) {
 		switch (request.getRequestType()) {
-			case AppConstants.CREATE_REQUEST:
-				return historyDAO.createHistoryEntity(new CreateHistoryEntityRequest(request)).onItem()
-						.transformToUni(b -> {
-							return Uni.createFrom().voidItem();
-						}).onFailure().recoverWithUni(e -> {
-							logger.debug("Failed to record create", e);
-							return Uni.createFrom().voidItem();
-						});
-			case AppConstants.APPEND_REQUEST:
-			case AppConstants.UPDATE_REQUEST:
-			case AppConstants.REPLACE_ENTITY_REQUEST:
-			case AppConstants.REPLACE_ATTRIBUTE_REQUEST:
-			case AppConstants.PARTIAL_UPDATE_REQUEST:
-				return historyDAO.appendToHistoryEntity(new AppendHistoryEntityRequest(request)).onItem()
-						.transformToUni(resultTable -> {
-							return Uni.createFrom().voidItem();
-						}).onFailure().recoverWithUni(e -> {
-							logger.debug("Failed to record update", e);
-							return Uni.createFrom().voidItem();
-						});
-			case AppConstants.DELETE_REQUEST:
-				return historyDAO.setEntityDeleted(request).onFailure().recoverWithUni(e -> {
-					logger.debug("Failed to record delete", e);
-					return Uni.createFrom().voidItem();
-				});
-			case AppConstants.DELETE_ATTRIBUTE_REQUEST:
-				return historyDAO.setAttributeDeleted(request).onFailure().recoverWithUni(e -> {
-					logger.debug("Failed to record delete attrs", e);
-					return Uni.createFrom().voidItem();
-				});
-			case AppConstants.MERGE_PATCH_REQUEST:
-				return historyDAO.setMergePatch(request).onFailure().recoverWithUni(e -> {
-					logger.debug("Failed to record merge patch", e);
-					return Uni.createFrom().voidItem();
-				});
-			default:
+		case AppConstants.CREATE_REQUEST:
+			return historyDAO.createHistoryEntity(new CreateHistoryEntityRequest(request)).onItem()
+					.transformToUni(b -> {
+						return Uni.createFrom().voidItem();
+					}).onFailure().recoverWithUni(e -> {
+						logger.debug("Failed to record create", e);
+						return Uni.createFrom().voidItem();
+					});
+		case AppConstants.APPEND_REQUEST:
+		case AppConstants.UPDATE_REQUEST:
+		case AppConstants.REPLACE_ENTITY_REQUEST:
+		case AppConstants.REPLACE_ATTRIBUTE_REQUEST:
+		case AppConstants.PARTIAL_UPDATE_REQUEST:
+			return historyDAO.appendToHistoryEntity(new AppendHistoryEntityRequest(request)).onItem()
+					.transformToUni(resultTable -> {
+						return Uni.createFrom().voidItem();
+					}).onFailure().recoverWithUni(e -> {
+						logger.debug("Failed to record update", e);
+						return Uni.createFrom().voidItem();
+					});
+		case AppConstants.DELETE_REQUEST:
+			return historyDAO.setEntityDeleted(request).onFailure().recoverWithUni(e -> {
+				logger.debug("Failed to record delete", e);
 				return Uni.createFrom().voidItem();
-			}
+			});
+		case AppConstants.DELETE_ATTRIBUTE_REQUEST:
+			return historyDAO.setAttributeDeleted(request).onFailure().recoverWithUni(e -> {
+				logger.debug("Failed to record delete attrs", e);
+				return Uni.createFrom().voidItem();
+			});
+		case AppConstants.MERGE_PATCH_REQUEST:
+			return historyDAO.setMergePatch(request).onFailure().recoverWithUni(e -> {
+				logger.debug("Failed to record merge patch", e);
+				return Uni.createFrom().voidItem();
+			});
+		default:
+			return Uni.createFrom().voidItem();
+		}
 	}
 
 	public Uni<Void> handleInternalBatchRequest(BatchRequest request) {
@@ -695,19 +695,21 @@ public class HistoryEntityService {
 	}
 
 	public Uni<Void> handleRegistryChange(BaseRequest req) {
-		tenant2CId2RegEntries.remove(req.getTenant(), req.getId());
-		if (req.getRequestType() != AppConstants.DELETE_REQUEST) {
-			List<RegistrationEntry> newRegs = Lists.newArrayList();
-			for (RegistrationEntry regEntry : RegistrationEntry.fromRegPayload(req.getPayload())) {
-				if (regEntry.appendAttrsTemporal() || regEntry.deleteAttrsTemporal()
-						|| regEntry.deleteAttrInstanceTemporal() || regEntry.deleteTemporal()
-						|| regEntry.updateAttrsTemporal() || regEntry.upsertTemporal()) {
-					newRegs.add(regEntry);
+		return RegistrationEntry.fromRegPayload(req.getPayload(),ldService).onItem().transformToUni(regs -> {
+			tenant2CId2RegEntries.remove(req.getTenant(), req.getId());
+			if (req.getRequestType() != AppConstants.DELETE_REQUEST) {
+				List<RegistrationEntry> newRegs = Lists.newArrayList();
+				for (RegistrationEntry regEntry : regs) {
+					if (regEntry.appendAttrsTemporal() || regEntry.deleteAttrsTemporal()
+							|| regEntry.deleteAttrInstanceTemporal() || regEntry.deleteTemporal()
+							|| regEntry.updateAttrsTemporal() || regEntry.upsertTemporal()) {
+						newRegs.add(regEntry);
+					}
 				}
+				tenant2CId2RegEntries.put(req.getTenant(), req.getId(), newRegs);
 			}
-			tenant2CId2RegEntries.put(req.getTenant(), req.getId(), newRegs);
-		}
-		return Uni.createFrom().voidItem();
+			return Uni.createFrom().voidItem();
+		});
 	}
 
 }
