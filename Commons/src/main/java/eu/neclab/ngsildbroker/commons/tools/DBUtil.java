@@ -203,6 +203,9 @@ public class DBUtil {
 
 							return Tuple2.of(result, regEntries);
 						}).onItem().transformToUni(tpl -> {
+							if (tpl.getItem2().isEmpty()) {
+								return Uni.createFrom().item(tpl.getItem1());
+							}
 							return Uni.combine().all().unis(tpl.getItem2()).combinedWith(v -> tpl.getItem1());
 						});
 					});
