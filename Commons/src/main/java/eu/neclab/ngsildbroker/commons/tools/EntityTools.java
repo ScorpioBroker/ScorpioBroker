@@ -669,6 +669,8 @@ public final class EntityTools {
 			req = req.setQueryParam("options", "sysAttrs");
 			req = req.putHeader(HttpHeaders.VIA, remoteHost.getViaHeaders().getViaHeaders());
 			String batchString;
+			req.putHeader(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD);
+			batchBody.put(NGSIConstants.JSON_LD_CONTEXT, context.getOriginalAtContext());
 			try {
 				batchString = JsonUtils.toPrettyString(batchBody);
 			} catch (Exception e) {
@@ -676,8 +678,7 @@ public final class EntityTools {
 				return Uni.createFrom().item(Lists.newArrayList());
 			}
 
-			req.putHeader(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD);
-			batchBody.put(NGSIConstants.JSON_LD_CONTEXT, context.getOriginalAtContext());
+			
 			unis.add(req.putHeaders(remoteHost.headers()).timeout(timeout).sendBuffer(Buffer.buffer(batchString))
 					.onItem().transformToUni(response -> {
 						if (response != null) {
