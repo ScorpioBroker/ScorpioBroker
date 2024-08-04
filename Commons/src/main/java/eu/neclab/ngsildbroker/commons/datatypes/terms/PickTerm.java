@@ -9,8 +9,10 @@ import com.google.common.collect.Sets;
 import java.util.Set;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.vertx.mutiny.sqlclient.Tuple;
 
+@RegisterForReflection
 public class PickTerm extends ProjectionTerm {
 
 	@Override

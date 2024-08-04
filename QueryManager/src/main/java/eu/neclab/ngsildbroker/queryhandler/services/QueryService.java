@@ -1802,7 +1802,7 @@ public class QueryService {
 			OmitTerm omitTerm, String queryCechksum, ViaHeaders viaHeaders) {
 
 		if (tenant2CId2RegEntries.isEmpty()) {
-			return queryDAO.queryForEntityIdsAndEntitiesRegEmpty(tenant, idsAndTypeQueryAndIdPattern, attrsQuery,
+			return queryDAO.createEntityMapAndFillEntityCache(tenant, idsAndTypeQueryAndIdPattern, attrsQuery,
 					qQuery, geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel, qToken,
 					pickTerm, omitTerm, queryCechksum, splitEntities, true, false);
 		} else {
@@ -1812,17 +1812,17 @@ public class QueryService {
 					tenant2CId2RegEntries, context, fullEntityCache, splitEntities, viaHeaders);
 			if (remoteHost2Query.isEmpty()) {
 				if ((join == null || joinLevel <= 0) && (qQuery == null || !qQuery.hasLinkedQ())) {
-					return queryDAO.queryForEntityIdsAndEntitiesRegEmpty(tenant, idsAndTypeQueryAndIdPattern,
+					return queryDAO.createEntityMapAndFillEntityCache(tenant, idsAndTypeQueryAndIdPattern,
 							attrsQuery, qQuery, geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join,
 							joinLevel, qToken, pickTerm, omitTerm, queryCechksum, splitEntities, true, false);
 				} else {
-					return queryDAO.queryForEntityIdsAndEntitiesRegEmpty(tenant, idsAndTypeQueryAndIdPattern,
+					return queryDAO.createEntityMapAndFillEntityCache(tenant, idsAndTypeQueryAndIdPattern,
 							attrsQuery, qQuery, geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join,
 							joinLevel, qToken, pickTerm, omitTerm, queryCechksum, splitEntities, false, true);
 				}
 			} else {
 				Uni<Tuple2<EntityCache, EntityMap>> localEntityCacheAndEntityMap = queryDAO
-						.queryForEntityIdsAndEntitiesRegEmpty(tenant, idsAndTypeQueryAndIdPattern, attrsQuery, qQuery,
+						.createEntityMapAndFillEntityCache(tenant, idsAndTypeQueryAndIdPattern, attrsQuery, qQuery,
 								geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel, qToken,
 								pickTerm, omitTerm, queryCechksum, splitEntities, false, false);
 				List<Uni<Tuple2<List<Map<String, Object>>, QueryRemoteHost>>> unisForEntityRetrieval = Lists
@@ -1859,11 +1859,13 @@ public class QueryService {
 							}
 							req = req.putHeader(HttpHeaders.VIA, remoteHost.getViaHeaders().getViaHeaders());
 							// todo check how to solve this proper once and for all
-							List<String> ogAtContext = context.getOriginalAtContext();
+							Context contextTBU = remoteHost.context();
+							List<String> ogAtContext = contextTBU.getOriginalAtContext();
 							if (ogAtContext != null && !ogAtContext.isEmpty()) {
 								req = req.putHeader(HttpHeaders.LINK, "<" + ogAtContext.get(0)
 										+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
 							}
+							req = req.putHeader(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSON);
 							unisForEntityMapRetrieval.add(req.putHeaders(remoteHost.headers()).timeout(timeout).send()
 									.onItem().transform(response -> {
 										Map<String, Object> result;

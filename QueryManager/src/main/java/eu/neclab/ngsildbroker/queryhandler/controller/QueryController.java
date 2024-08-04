@@ -384,9 +384,7 @@ public class QueryController {
 			boolean doNotCompact, String entityMapToken, boolean entityMapRetrieve, String maxDistance,
 			String minDistance, String pick, String omit, String format, String jsonKeysQP, String datasetId,
 			boolean distEntities) {
-		request.headers().getAll("Accept").forEach(ah -> {
-			logger.info("Accept header: " + ah);	
-		});
+		
 		
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		if ((pick != null && omit != null) || (pick != null && attrs != null) || (attrs != null && omit != null)) {
