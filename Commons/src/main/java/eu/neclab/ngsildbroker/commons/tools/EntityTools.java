@@ -593,7 +593,7 @@ public final class EntityTools {
 	}
 
 	private static Uni<List<Map<String, Object>>> handle414(WebClient webClient, QueryRemoteHost remoteHost,
-			Context context, int timeout, JsonLDService ldService, String id, String type, String idPattern) {
+			int timeout, JsonLDService ldService, String id, String type, String idPattern) {
 		logger.debug("Attempting 414 recovery");
 		if (id == null) {
 			logger.debug("Can't recover 414 because no id has been used");
@@ -620,10 +620,8 @@ public final class EntityTools {
 		QueryRemoteHost hostOne = remoteHost.copyFor414Handle(newHalfIdOne, type, idPattern);
 		QueryRemoteHost hostTwo = remoteHost.copyFor414Handle(newHalfIdTwo, type, idPattern);
 
-		return Uni.combine().all()
-				.unis(getRemoteEntities(hostOne, webClient, context, timeout, ldService),
-						getRemoteEntities(hostTwo, webClient, context, timeout, ldService))
-				.asTuple().onItem().transform(tpl -> {
+		return Uni.combine().all().unis(getRemoteEntities(hostOne, webClient, timeout, ldService),
+				getRemoteEntities(hostTwo, webClient, timeout, ldService)).asTuple().onItem().transform(tpl -> {
 					List<Map<String, Object>> result = tpl.getItem1();
 					result.addAll(tpl.getItem2());
 					return result;
@@ -631,10 +629,10 @@ public final class EntityTools {
 	}
 
 	public static Uni<List<Map<String, Object>>> getRemoteEntities(QueryRemoteHost remoteHost, WebClient webClient,
-			Context context, int timeout, JsonLDService ldService) {
+			int timeout, JsonLDService ldService) {
 
 		List<Tuple3<String, String, String>> idsAndTypesAndIdPattern = remoteHost.getIdsAndTypesAndIdPattern();
-
+		Context context = remoteHost.context();
 		List<Uni<List<Object>>> unis = new ArrayList<>();
 		if (remoteHost.isCanDoBatchQuery()) {
 			Map<String, Object> batchBody = Maps.newHashMap();
@@ -677,6 +675,7 @@ public final class EntityTools {
 				logger.warn("failed to serialize batch request");
 				return Uni.createFrom().item(Lists.newArrayList());
 			}
+
 			req.putHeader(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD);
 			batchBody.put(NGSIConstants.JSON_LD_CONTEXT, context.getOriginalAtContext());
 			unis.add(req.putHeaders(remoteHost.headers()).timeout(timeout).sendBuffer(Buffer.buffer(batchString))
@@ -684,7 +683,7 @@ public final class EntityTools {
 						if (response != null) {
 							switch (response.statusCode()) {
 							case 200: {
-								return handle200(webClient, remoteHost, context, response, ldService, timeout);
+								return handle200(webClient, remoteHost, response, ldService, timeout);
 							}
 							default: {
 								return Uni.createFrom().item(Lists.newArrayList());
@@ -745,11 +744,11 @@ public final class EntityTools {
 							if (response != null) {
 								switch (response.statusCode()) {
 								case 200: {
-									return handle200(webClient, remoteHost, context, response, ldService, timeout);
+									return handle200(webClient, remoteHost, response, ldService, timeout);
 								}
 								case 414: {
-									return handle414(webClient, remoteHost, context, timeout, ldService, id, type,
-											idPattern).onItem().transformToUni(entities -> {
+									return handle414(webClient, remoteHost, timeout, ldService, id, type, idPattern)
+											.onItem().transformToUni(entities -> {
 												logger.debug("414 recovered");
 												return ldService.expand(context, entities, AppConstants.opts, -1,
 														false);
@@ -805,8 +804,7 @@ public final class EntityTools {
 										if (response != null) {
 											switch (response.statusCode()) {
 											case 200: {
-												return handle200(webClient, remoteHost, context, response, ldService,
-														timeout);
+												return handle200(webClient, remoteHost, response, ldService, timeout);
 											}
 											default: {
 
@@ -846,25 +844,26 @@ public final class EntityTools {
 		});
 	}
 
-	private static Uni<List<Object>> handle200(WebClient webClient, QueryRemoteHost remoteHost, Context context,
+	private static Uni<List<Object>> handle200(WebClient webClient, QueryRemoteHost remoteHost,
 			HttpResponse<Buffer> response, JsonLDService ldService, int timeout) {
 		List<Map<String, Object>> tmpList = response.bodyAsJsonArray().getList();
-		return ldService.expand(remoteHost.context(), tmpList, AppConstants.opts, -1, false).onItem().transformToUni(expanded -> {
-			if (response.headers().contains("Next")) {
-				remoteHost.setParamsFromNext(response.headers().get("Next"));
-				return getRemoteEntities(remoteHost, webClient, context, timeout, ldService).onItem()
-						.transform(nextResult -> {
+		return ldService.expand(remoteHost.context(), tmpList, AppConstants.opts, -1, false).onItem()
+				.transformToUni(expanded -> {
+					if (response.headers().contains("Next")) {
+						remoteHost.setParamsFromNext(response.headers().get("Next"));
+						return getRemoteEntities(remoteHost, webClient, timeout, ldService).onItem()
+								.transform(nextResult -> {
 
-							if (nextResult != null) {
-								expanded.addAll(nextResult);
-							}
+									if (nextResult != null) {
+										expanded.addAll(nextResult);
+									}
 
-							return expanded;
-						});
+									return expanded;
+								});
 
-			}
-			return Uni.createFrom().item(expanded);
-		});
+					}
+					return Uni.createFrom().item(expanded);
+				});
 	}
 
 	public static Collection<QueryRemoteHost> getRemoteQueries(String tenant,

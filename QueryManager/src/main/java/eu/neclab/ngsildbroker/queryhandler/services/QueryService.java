@@ -473,7 +473,7 @@ public class QueryService {
 			Map<String, String> queryParams = host.getQueryParam();
 			queryParams.put("id", StringUtils.join(entry.getValue(), ','));
 
-			unis.add(EntityTools.getRemoteEntities(host, webClient, context, timeout, ldService).onItem()
+			unis.add(EntityTools.getRemoteEntities(host, webClient, timeout, ldService).onItem()
 					.transform(entities -> Tuple2.of(entities, host)));
 		}
 		if (!idsForDBCall.isEmpty()) {
@@ -1889,7 +1889,7 @@ public class QueryService {
 						}
 					} else {
 						unisForEntityRetrieval
-								.add(EntityTools.getRemoteEntities(remoteHost, webClient, context, timeout, ldService)
+								.add(EntityTools.getRemoteEntities(remoteHost, webClient, timeout, ldService)
 										.onItem().transform(entities -> Tuple2.of(entities, remoteHost)));
 					}
 				}
@@ -1923,7 +1923,7 @@ public class QueryService {
 									Map<String, Object> rMap = mapT.getItem1();
 									if (rMap == null) {
 										recoverEntityMapFail.add(EntityTools
-												.getRemoteEntities(rHost, webClient, context, timeout, ldService)
+												.getRemoteEntities(rHost, webClient, timeout, ldService)
 												.onItem().transform(entities -> Tuple2.of(entities, rHost)));
 										continue;
 									}
@@ -2036,7 +2036,7 @@ public class QueryService {
 					splitEntities);
 			for (QueryRemoteHost remoteQuery : remoteQueries) {
 
-				unis.add(EntityTools.getRemoteEntities(remoteQuery, webClient, context, timeout, ldService).onItem()
+				unis.add(EntityTools.getRemoteEntities(remoteQuery, webClient, timeout, ldService).onItem()
 						.transform(l -> Tuple3.of(l, remoteQuery)));
 			}
 
