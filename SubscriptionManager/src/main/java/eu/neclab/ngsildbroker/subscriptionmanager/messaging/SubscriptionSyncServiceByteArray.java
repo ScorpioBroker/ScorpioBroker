@@ -32,6 +32,7 @@ import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
 import io.netty.channel.EventLoopGroup;
 import io.quarkus.arc.profile.IfBuildProfile;
+import io.quarkus.arc.properties.IfBuildProperty;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
@@ -39,6 +40,7 @@ import io.vertx.mutiny.core.Vertx;
 
 @Singleton
 @IfBuildProfile(anyOf = { "mqtt", "rabbitmq" })
+@IfBuildProperty(enableIfMissing = true, name = "scorpio.subsync.enabled", stringValue = "true")
 public class SubscriptionSyncServiceByteArray implements SyncService {
 
 	public static final String SYNC_ID = UUID.randomUUID().toString();
@@ -78,6 +80,7 @@ public class SubscriptionSyncServiceByteArray implements SyncService {
 	@PostConstruct
 	public void setup() {
 		INSTANCE_ID = new AliveAnnouncement(SYNC_ID);
+		INSTANCE_ID.setSubType(AliveAnnouncement.NORMAL_SUB);
 		subService.addSyncService(this);
 		this.executor = vertx.getDelegate().nettyEventLoopGroup();
 	}
@@ -112,7 +115,7 @@ public class SubscriptionSyncServiceByteArray implements SyncService {
 			}
 			String key = message.getSyncId();
 			SubscriptionRequest sub = message.getRequest();
-			if (key.equals(SYNC_ID)) {
+			if (key.equals(SYNC_ID) || message.getSubType() == SyncMessage.REG_SUB) {
 				return;
 			}
 			switch (sub.getRequestType()) {
@@ -145,7 +148,7 @@ public class SubscriptionSyncServiceByteArray implements SyncService {
 				logger.error("failed to read sync id", e);
 				return;
 			}
-			if (message.getId().equals(SYNC_ID)) {
+			if (message.getId().equals(SYNC_ID) || message.getSubType() == SyncMessage.REG_SUB) {
 				return;
 			}
 			currentInstances.add(message.getId());
@@ -185,7 +188,7 @@ public class SubscriptionSyncServiceByteArray implements SyncService {
 	}
 
 	public Uni<Void> sync(SubscriptionRequest request) {
-		MicroServiceUtils.serializeAndSplitObjectAndEmit(new SyncMessage(SYNC_ID, request), messageSize, syncEmitter,
+		MicroServiceUtils.serializeAndSplitObjectAndEmit(new SyncMessage(SYNC_ID, request, SyncMessage.NORMAL_SUB), messageSize, syncEmitter,
 				objectMapper);
 		return Uni.createFrom().voidItem();
 	}

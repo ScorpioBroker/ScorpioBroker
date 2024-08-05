@@ -67,4 +67,11 @@ public class ViaHeaders {
 
 	}
 
+	@Override
+	public String toString() {
+		return "ViaHeaders [viaHeaders=" + viaHeaders + ", hostUrls=" + hostUrls + "]";
+	}
+	
+	
+
 }

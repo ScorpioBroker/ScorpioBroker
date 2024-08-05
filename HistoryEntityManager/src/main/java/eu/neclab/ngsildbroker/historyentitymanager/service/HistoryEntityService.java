@@ -7,6 +7,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 
 import io.vertx.mutiny.core.MultiMap;
@@ -72,12 +73,12 @@ public class HistoryEntityService {
 	@ConfigProperty(name = "scorpio.topics.temporal")
 	String TEMP_TOPIC;
 
-	@ConfigProperty(name = "scorpio.history.tokafka", defaultValue = "false")
-	boolean historyToKafkaEnabled;
+//	@ConfigProperty(name = "scorpio.history.tokafka", defaultValue = "false")
+//	boolean historyToKafkaEnabled;
 
-	@Inject
-	@Channel(AppConstants.HISTORY_CHANNEL)
-	MutinyEmitter<String> kafkaSenderInterface;
+//	@Inject
+//	@Channel(AppConstants.HISTORY_CHANNEL)
+//	Optional<MutinyEmitter<String>> kafkaSenderInterface;
 
 	@Inject
 	Vertx vertx;

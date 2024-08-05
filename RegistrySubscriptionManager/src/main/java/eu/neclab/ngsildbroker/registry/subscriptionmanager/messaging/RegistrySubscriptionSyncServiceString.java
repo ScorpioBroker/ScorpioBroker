@@ -32,6 +32,7 @@ import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.registry.subscriptionmanager.service.RegistrySubscriptionService;
 import io.netty.channel.EventLoopGroup;
 import io.quarkus.arc.profile.IfBuildProfile;
+import io.quarkus.arc.properties.IfBuildProperty;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
@@ -54,11 +55,11 @@ public class RegistrySubscriptionSyncServiceString implements SyncService {
 	private MessageCollector collector = new MessageCollector(this.getClass().getName());
 
 	@Inject
-	@Channel(AppConstants.REG_SUB_ALIVE_CHANNEL)
+	@Channel(AppConstants.SUB_ALIVE_CHANNEL)
 	MutinyEmitter<String> aliveEmitter;
 
 	@Inject
-	@Channel(AppConstants.REG_SUB_SYNC_CHANNEL)
+	@Channel(AppConstants.SUB_SYNC_CHANNEL)
 	MutinyEmitter<String> syncEmitter;
 
 	@Inject
@@ -84,7 +85,7 @@ public class RegistrySubscriptionSyncServiceString implements SyncService {
 			}
 			String key = message.getSyncId();
 			SubscriptionRequest sub = message.getRequest();
-			if (key.equals(SYNC_ID)) {
+			if (key.equals(SYNC_ID) || message.getSubType() == SyncMessage.NORMAL_SUB) {
 				return;
 			}
 			switch (sub.getRequestType()) {
@@ -117,7 +118,7 @@ public class RegistrySubscriptionSyncServiceString implements SyncService {
 				logger.error("failed to read sync id", e);
 				return;
 			}
-			if (message.getId().equals(SYNC_ID)) {
+			if (message.getId().equals(SYNC_ID) || message.getSubType() == SyncMessage.NORMAL_SUB) {
 				return;
 			}
 			currentInstances.add(message.getId());
@@ -130,6 +131,7 @@ public class RegistrySubscriptionSyncServiceString implements SyncService {
 	@PostConstruct
 	public void setup() {
 		INSTANCE_ID = new AliveAnnouncement(SYNC_ID);
+		INSTANCE_ID.setSubType(AliveAnnouncement.REG_SUB);
 		subService.addSyncService(this);
 		this.executor = vertx.getDelegate().nettyEventLoopGroup();
 	}
@@ -151,14 +153,14 @@ public class RegistrySubscriptionSyncServiceString implements SyncService {
 		return Uni.createFrom().voidItem();
 	}
 
-	@Incoming(AppConstants.REG_SUB_SYNC_RETRIEVE_CHANNEL)
+	@Incoming(AppConstants.SUB_SYNC_RETRIEVE_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
 	Uni<Void> listenForSubs(String byteMessage) {
 		collector.collect(byteMessage, collectListenerSubs);
 		return Uni.createFrom().voidItem();
 	}
 
-	@Incoming(AppConstants.REG_SUB_ALIVE_RETRIEVE_CHANNEL)
+	@Incoming(AppConstants.SUB_ALIVE_RETRIEVE_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
 	Uni<Void> listenForAlive(String byteMessage) {
 		collector.collect(byteMessage, collectListenerAlive);
@@ -184,7 +186,7 @@ public class RegistrySubscriptionSyncServiceString implements SyncService {
 	}
 
 	public Uni<Void> sync(SubscriptionRequest request) {
-		MicroServiceUtils.serializeAndSplitObjectAndEmit(new SyncMessage(SYNC_ID, request), messageSize, syncEmitter,
+		MicroServiceUtils.serializeAndSplitObjectAndEmit(new SyncMessage(SYNC_ID, request, SyncMessage.REG_SUB), messageSize, syncEmitter,
 				objectMapper);
 		return Uni.createFrom().voidItem();
 	}
