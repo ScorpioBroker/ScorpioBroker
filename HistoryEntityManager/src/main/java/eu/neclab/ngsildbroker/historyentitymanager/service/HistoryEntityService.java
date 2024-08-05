@@ -73,12 +73,12 @@ public class HistoryEntityService {
 	@ConfigProperty(name = "scorpio.topics.temporal")
 	String TEMP_TOPIC;
 
-	@ConfigProperty(name = "scorpio.history.tokafka", defaultValue = "false")
-	boolean historyToKafkaEnabled;
+//	@ConfigProperty(name = "scorpio.history.tokafka", defaultValue = "false")
+//	boolean historyToKafkaEnabled;
 
-	@Inject
-	@Channel(AppConstants.HISTORY_CHANNEL)
-	Optional<MutinyEmitter<String>> kafkaSenderInterface;
+//	@Inject
+//	@Channel(AppConstants.HISTORY_CHANNEL)
+//	Optional<MutinyEmitter<String>> kafkaSenderInterface;
 
 	@Inject
 	Vertx vertx;
