@@ -10,7 +10,7 @@ services:
       POSTGRES_PASSWORD: ngb
       POSTGRES_DB: ngb
   scorpio:
-    image: scorpiobroker/all-in-one-runner:ubuntu-latest
+    image: scorpiobroker/all-in-one-runner:linux-amd64-latest
     environment:
       DBHOST: postgres
     ports:

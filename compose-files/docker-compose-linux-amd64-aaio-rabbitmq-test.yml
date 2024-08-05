@@ -20,7 +20,7 @@ services:
     depends_on:
       - rabbitmq
   scorpio:
-    image: scorpiobroker/all-in-one-runner:ubuntu-rabbitmq-latest
+    image: scorpiobroker/all-in-one-runner:linux-amd64-rabbitmq-latest
     ports:
       - "9090:9090"
     environment:

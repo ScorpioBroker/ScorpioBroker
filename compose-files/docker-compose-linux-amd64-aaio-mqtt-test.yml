@@ -22,7 +22,7 @@ services:
       POSTGRES_PASSWORD: ngb
       POSTGRES_DB: ngb
   scorpio:
-    image: scorpiobroker/all-in-one-runner:ubuntu-mqtt-latest
+    image: scorpiobroker/all-in-one-runner:linux-amd64-mqtt-latest
     ports:
       - "9090:9090"
     environment:

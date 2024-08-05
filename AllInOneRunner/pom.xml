@@ -52,6 +52,22 @@
 	</dependencies>
 	<profiles>
 		<profile>
+			<id>sqs</id>
+			<activation>
+				<property>
+					<name>sqs</name>
+				</property>
+			</activation>
+			<dependencies>
+				<dependency>
+					<groupId>eu.neclab.ngsildbroker</groupId>
+					<artifactId>sns-fanout-messaging</artifactId>
+					<version>${parent.version}</version>
+				</dependency>
+			</dependencies>
+		</profile>
+
+		<profile>
 			<id>docker</id>
 			<activation>
 				<property>

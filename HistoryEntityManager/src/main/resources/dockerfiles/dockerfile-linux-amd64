@@ -1,0 +1,11 @@
+FROM --platform=linux/amd64 quay.io/quarkus/quarkus-micro-image:2.0
+WORKDIR /work/
+ARG FILE_BUILD
+ARG FILE_RUN
+ENV FILE_RUN=${FILE_RUN}
+ENV DBHOST=postgres
+ENV BUSHOST=kafka
+COPY target/${FILE_BUILD} ./${FILE_RUN}
+RUN chmod 775 /work
+
+CMD ["./$FILE_RUN", "-Dquarkus.http.host=0.0.0.0"]

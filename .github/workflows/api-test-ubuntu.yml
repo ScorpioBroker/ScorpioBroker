@@ -9,16 +9,10 @@ on:
       - '**/pom.xml'
   pull_request:
 jobs:
-  build-ubuntu-kafka:
+  build-linux-amd64-kafka:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2     
-      - name: Setup GraalVM
-        uses: graalvm/setup-graalvm@v1
-        with:
-          java-version: '17' # for a specific JDK 17; or '17' for the latest JDK 17
-          distribution: 'mandrel'
-          version: 'mandrel-23.0.1.2-Final'
       - name: Build testserver
         run: |
           cd testserver
@@ -39,23 +33,23 @@ jobs:
           cd BrokerParent
           id=$(mvn help:evaluate -Dexpression="project.version" -q -DforceStdout)
           echo "::set-output name=id::$id"
-      - name: build-ubuntu-with-kafka
+      - name: build-linux-amd64-with-kafka
         run: |
-          mvn clean package -DskipTests -Dkafka -Pkafka -Dnative -Ddocker -Ddocker-tag=ubuntu-kafka-${{steps.get-id.outputs.id}} -Dos=ubuntu -Dquarkus.profile=kafka
+          mvn clean package -DskipTests -Dkafka -Pkafka -Dnative -Ddocker -Ddocker-tag=linux-amd64-kafka-${{steps.get-id.outputs.id}} -Dos=linux-amd64 -Dquarkus.profile=kafka -Dquarkus.native.container-build=true -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64 -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-graalvmce-builder-image:22.3.2-java17-amd64
       - name: docker tag 
         run: |
-          docker tag scorpiobroker/at-context-server:ubuntu-kafka-${{steps.get-id.outputs.id}} scorpiobroker/at-context-server:ubuntu-kafka-latest
-          docker tag scorpiobroker/history-entity-manager:ubuntu-kafka-${{steps.get-id.outputs.id}} scorpiobroker/history-entity-manager:ubuntu-kafka-latest
-          docker tag scorpiobroker/history-query-manager:ubuntu-kafka-${{steps.get-id.outputs.id}} scorpiobroker/history-query-manager:ubuntu-kafka-latest
-          docker tag scorpiobroker/registry-subscription-manager:ubuntu-kafka-${{steps.get-id.outputs.id}} scorpiobroker/registry-subscription-manager:ubuntu-kafka-latest
-          docker tag scorpiobroker/registry-manager:ubuntu-kafka-${{steps.get-id.outputs.id}} scorpiobroker/registry-manager:ubuntu-kafka-latest
-          docker tag scorpiobroker/subscription-manager:ubuntu-kafka-${{steps.get-id.outputs.id}} scorpiobroker/subscription-manager:ubuntu-kafka-latest
-          docker tag scorpiobroker/query-manager:ubuntu-kafka-${{steps.get-id.outputs.id}} scorpiobroker/query-manager:ubuntu-kafka-latest
-          docker tag scorpiobroker/entity-manager:ubuntu-kafka-${{steps.get-id.outputs.id}} scorpiobroker/entity-manager:ubuntu-kafka-latest
-          docker tag scorpiobroker/all-in-one-runner:ubuntu-kafka-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:ubuntu-kafka-latest
+          docker tag scorpiobroker/at-context-server:linux-amd64-kafka-${{steps.get-id.outputs.id}} scorpiobroker/at-context-server:linux-amd64-kafka-latest
+          docker tag scorpiobroker/history-entity-manager:linux-amd64-kafka-${{steps.get-id.outputs.id}} scorpiobroker/history-entity-manager:linux-amd64-kafka-latest
+          docker tag scorpiobroker/history-query-manager:linux-amd64-kafka-${{steps.get-id.outputs.id}} scorpiobroker/history-query-manager:linux-amd64-kafka-latest
+          docker tag scorpiobroker/registry-subscription-manager:linux-amd64-kafka-${{steps.get-id.outputs.id}} scorpiobroker/registry-subscription-manager:linux-amd64-kafka-latest
+          docker tag scorpiobroker/registry-manager:linux-amd64-kafka-${{steps.get-id.outputs.id}} scorpiobroker/registry-manager:linux-amd64-kafka-latest
+          docker tag scorpiobroker/subscription-manager:linux-amd64-kafka-${{steps.get-id.outputs.id}} scorpiobroker/subscription-manager:linux-amd64-kafka-latest
+          docker tag scorpiobroker/query-manager:linux-amd64-kafka-${{steps.get-id.outputs.id}} scorpiobroker/query-manager:linux-amd64-kafka-latest
+          docker tag scorpiobroker/entity-manager:linux-amd64-kafka-${{steps.get-id.outputs.id}} scorpiobroker/entity-manager:linux-amd64-kafka-latest
+          docker tag scorpiobroker/all-in-one-runner:linux-amd64-kafka-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:linux-amd64-kafka-latest
       - name: start docker aaio 
         run: |
-          docker compose -f ./compose-files/docker-compose-ubuntu-aaio-kafka-test.yml up > dockerout.log &
+          docker compose -f ./compose-files/docker-compose-linux-amd64-aaio-kafka-test.yml up > dockerout.log &
           sleep 120
       - name: newman action
         uses: matt-ball/newman-action@master
@@ -64,7 +58,7 @@ jobs:
           environment: api-test-aaio-environment.json
       - name: Stopping Scorpio 
         if: always()
-        run: docker compose -f ./compose-files/docker-compose-ubuntu-aaio-kafka-test.yml down
+        run: docker compose -f ./compose-files/docker-compose-linux-amd64-aaio-kafka-test.yml down
       - name: print log
         if: always()
         run: |
@@ -80,16 +74,10 @@ jobs:
 #          environment: api-test-dist-environment.json
 #      - name: Stopping Scorpio 
 #        run: docker compose -f ./compose-files/docker-compose-ubuntu-dist-kafka-test.yml down
-  build-ubuntu-mqtt:
+  build-linux-amd64-mqtt:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2     
-      - name: Setup GraalVM
-        uses: graalvm/setup-graalvm@v1
-        with:
-          java-version: '17' # for a specific JDK 17; or '17' for the latest JDK 17
-          distribution: 'mandrel'
-          version: 'mandrel-23.0.1.2-Final'
       - name: Build testserver
         run: |
           cd testserver
@@ -110,23 +98,23 @@ jobs:
           cd BrokerParent
           id=$(mvn help:evaluate -Dexpression="project.version" -q -DforceStdout)
           echo "::set-output name=id::$id"
-      - name: build-ubuntu-with-mqtt
+      - name: build-linux-amd64-with-mqtt
         run: |
-          mvn clean package -DskipTests -Dmqtt -Pmqtt -Dnative -Ddocker -Ddocker-tag=ubuntu-mqtt-${{steps.get-id.outputs.id}} -Dos=ubuntu -Dquarkus.profile=mqtt
+          mvn clean package -DskipTests -Dmqtt -Pmqtt -Dnative -Ddocker -Ddocker-tag=linux-amd64-mqtt-${{steps.get-id.outputs.id}} -Dos=linux-amd64 -Dquarkus.profile=mqtt -Dquarkus.native.container-build=true -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64 -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-graalvmce-builder-image:22.3.2-java17-amd64
       - name: docker tag 
         run: |
-          docker tag scorpiobroker/at-context-server:ubuntu-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/at-context-server:ubuntu-mqtt-latest
-          docker tag scorpiobroker/history-entity-manager:ubuntu-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/history-entity-manager:ubuntu-mqtt-latest
-          docker tag scorpiobroker/history-query-manager:ubuntu-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/history-query-manager:ubuntu-mqtt-latest
-          docker tag scorpiobroker/registry-subscription-manager:ubuntu-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/registry-subscription-manager:ubuntu-mqtt-latest
-          docker tag scorpiobroker/registry-manager:ubuntu-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/registry-manager:ubuntu-mqtt-latest
-          docker tag scorpiobroker/subscription-manager:ubuntu-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/subscription-manager:ubuntu-mqtt-latest
-          docker tag scorpiobroker/query-manager:ubuntu-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/query-manager:ubuntu-mqtt-latest
-          docker tag scorpiobroker/entity-manager:ubuntu-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/entity-manager:ubuntu-mqtt-latest
-          docker tag scorpiobroker/all-in-one-runner:ubuntu-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:ubuntu-mqtt-latest
+          docker tag scorpiobroker/at-context-server:linux-amd64-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/at-context-server:linux-amd64-mqtt-latest
+          docker tag scorpiobroker/history-entity-manager:linux-amd64-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/history-entity-manager:linux-amd64-mqtt-latest
+          docker tag scorpiobroker/history-query-manager:linux-amd64-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/history-query-manager:linux-amd64-mqtt-latest
+          docker tag scorpiobroker/registry-subscription-manager:linux-amd64-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/registry-subscription-manager:linux-amd64-mqtt-latest
+          docker tag scorpiobroker/registry-manager:linux-amd64-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/registry-manager:linux-amd64-mqtt-latest
+          docker tag scorpiobroker/subscription-manager:linux-amd64-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/subscription-manager:linux-amd64-mqtt-latest
+          docker tag scorpiobroker/query-manager:linux-amd64-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/query-manager:linux-amd64-mqtt-latest
+          docker tag scorpiobroker/entity-manager:linux-amd64-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/entity-manager:linux-amd64-mqtt-latest
+          docker tag scorpiobroker/all-in-one-runner:linux-amd64-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:linux-amd64-mqtt-latest
       - name: start docker aaio 
         run: |
-          docker compose -f ./compose-files/docker-compose-ubuntu-aaio-mqtt-test.yml up > dockerout.log &
+          docker compose -f ./compose-files/docker-compose-linux-amd64-aaio-mqtt-test.yml up > dockerout.log &
           sleep 120
 #      - name: newman action
 #        uses: matt-ball/newman-action@master
@@ -135,21 +123,15 @@ jobs:
 #          environment: api-test-aaio-environment.json
       - name: Stopping Scorpio 
         if: always()
-        run: docker compose -f ./compose-files/docker-compose-ubuntu-aaio-mqtt-test.yml down
+        run: docker compose -f ./compose-files/docker-compose-linux-amd64-aaio-mqtt-test.yml down
       - name: print log
         if: always()
         run: |
           cat dockerout.log
-  build-ubuntu-rabbitmq:
+  build-linux-amd64-rabbitmq:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2     
-      - name: Setup GraalVM
-        uses: graalvm/setup-graalvm@v1
-        with:
-          java-version: '17' # for a specific JDK 17; or '17' for the latest JDK 17
-          distribution: 'mandrel'
-          version: 'mandrel-23.0.1.2-Final'
       - name: Build testserver
         run: |
           cd testserver
@@ -170,23 +152,23 @@ jobs:
           cd BrokerParent
           id=$(mvn help:evaluate -Dexpression="project.version" -q -DforceStdout)
           echo "::set-output name=id::$id"
-      - name: build-ubuntu-with-rabbitmq
+      - name: build-linux-amd64-with-rabbitmq
         run: |
-          mvn clean package -DskipTests -Drabbitmq -Prabbitmq -Dnative -Ddocker -Ddocker-tag=ubuntu-rabbitmq-${{steps.get-id.outputs.id}} -Dos=ubuntu -Dquarkus.profile=rabbitmq
+          mvn clean package -DskipTests -Drabbitmq -Prabbitmq -Dnative -Ddocker -Ddocker-tag=linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} -Dos=linux-amd64 -Dquarkus.profile=rabbitmq -Dquarkus.native.container-build=true -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64 -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-graalvmce-builder-image:22.3.2-java17-amd64
       - name: docker tag 
         run: |
-          docker tag scorpiobroker/at-context-server:ubuntu-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/at-context-server:ubuntu-rabbitmq-latest
-          docker tag scorpiobroker/history-entity-manager:ubuntu-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/history-entity-manager:ubuntu-rabbitmq-latest
-          docker tag scorpiobroker/history-query-manager:ubuntu-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/history-query-manager:ubuntu-rabbitmq-latest
-          docker tag scorpiobroker/registry-subscription-manager:ubuntu-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/registry-subscription-manager:ubuntu-rabbitmq-latest
-          docker tag scorpiobroker/registry-manager:ubuntu-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/registry-manager:ubuntu-rabbitmq-latest
-          docker tag scorpiobroker/subscription-manager:ubuntu-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/subscription-manager:ubuntu-rabbitmq-latest
-          docker tag scorpiobroker/query-manager:ubuntu-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/query-manager:ubuntu-rabbitmq-latest
-          docker tag scorpiobroker/entity-manager:ubuntu-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/entity-manager:ubuntu-rabbitmq-latest
-          docker tag scorpiobroker/all-in-one-runner:ubuntu-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:ubuntu-rabbitmq-latest
+          docker tag scorpiobroker/at-context-server:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/at-context-server:linux-amd64-rabbitmq-latest
+          docker tag scorpiobroker/history-entity-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/history-entity-manager:linux-amd64-rabbitmq-latest
+          docker tag scorpiobroker/history-query-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/history-query-manager:linux-amd64-rabbitmq-latest
+          docker tag scorpiobroker/registry-subscription-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/registry-subscription-manager:linux-amd64-rabbitmq-latest
+          docker tag scorpiobroker/registry-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/registry-manager:linux-amd64-rabbitmq-latest
+          docker tag scorpiobroker/subscription-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/subscription-manager:linux-amd64-rabbitmq-latest
+          docker tag scorpiobroker/query-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/query-manager:linux-amd64-rabbitmq-latest
+          docker tag scorpiobroker/entity-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/entity-manager:linux-amd64-rabbitmq-latest
+          docker tag scorpiobroker/all-in-one-runner:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:linux-amd64-rabbitmq-latest
       - name: start docker aaio 
         run: |
-          docker compose -f ./compose-files/docker-compose-ubuntu-aaio-rabbitmq-test.yml up > dockerout.log &
+          docker compose -f ./compose-files/docker-compose-linux-amd64-aaio-rabbitmq-test.yml up > dockerout.log &
           sleep 120
       - name: newman action
         uses: matt-ball/newman-action@master
@@ -195,21 +177,15 @@ jobs:
           environment: api-test-aaio-environment.json
       - name: Stopping Scorpio 
         if: always()
-        run: docker compose -f ./compose-files/docker-compose-ubuntu-aaio-rabbitmq-test.yml down
+        run: docker compose -f ./compose-files/docker-compose-linux-amd64-aaio-rabbitmq-test.yml down
       - name: print log
         if: always()
         run: |
           cat dockerout.log
-  build-ubuntu-aaio:
+  build-linux-amd64-aaio:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2     
-      - name: Setup GraalVM
-        uses: graalvm/setup-graalvm@v1
-        with:
-          java-version: '17' # for a specific JDK 17; or '17' for the latest JDK 17
-          distribution: 'mandrel'
-          version: 'mandrel-23.0.1.2-Final'
       - name: docker-login
         uses: docker/login-action@v2
         with:
@@ -226,13 +202,13 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-ubuntu
         run: |
-          mvn clean package -DskipTests -Din-memory -Pin-memory -Ddocker -Dnative -Ddocker-tag=ubuntu-${{steps.get-id.outputs.id}} -Dos=ubuntu -Dquarkus.profile=in-memory
+          mvn clean package -DskipTests -Din-memory -Pin-memory -Ddocker -Dnative -Ddocker-tag=linx-amd64-${{steps.get-id.outputs.id}} -Dos=ubuntu -Dquarkus.profile=in-memory -Dquarkus.native.container-build=true -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64 -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-graalvmce-builder-image:22.3.2-java17-amd64
       - name: docker tag
         run: |
-          docker tag scorpiobroker/all-in-one-runner:ubuntu-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:ubuntu-latest
+          docker tag scorpiobroker/all-in-one-runner:linux-amd64-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:linux-amd64-latest
       - name: start docker aaio 
         run: |
-          docker compose -f ./compose-files/docker-compose-ubuntu-aaio-test.yml up > dockerout.log &
+          docker compose -f ./compose-files/docker-compose-linux-amd64-aaio-test.yml up > dockerout.log &
           sleep 120
       - name: newman action
         uses: matt-ball/newman-action@master
@@ -241,7 +217,7 @@ jobs:
           environment: api-test-aaio-environment.json
       - name: Stopping Scorpio 
         if: always()
-        run: docker compose -f ./compose-files/docker-compose-ubuntu-aaio-test.yml down 
+        run: docker compose -f ./compose-files/docker-compose-linux-amd64-aaio-test.yml down 
       - name: print log
         if: always()
         run: |
