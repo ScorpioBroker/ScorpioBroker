@@ -8,7 +8,7 @@ CREATE OR REPLACE FUNCTION public.ngsild_deletebatch(IN entity_ids jsonb)
     RETURNS jsonb
     LANGUAGE 'plpgsql'
     VOLATILE
-    PARALLEL SAFE
+    PARALLEL UNSAFE
     COST 100
     
 AS $BODY$
@@ -38,7 +38,7 @@ CREATE OR REPLACE FUNCTION public.ngsild_createbatch(IN entities jsonb)
     RETURNS jsonb
     LANGUAGE 'plpgsql'
     VOLATILE
-    PARALLEL SAFE
+    PARALLEL UNSAFE
     COST 100
     
 AS $BODY$
