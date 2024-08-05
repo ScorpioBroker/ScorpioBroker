@@ -145,10 +145,10 @@ public class AppConstants {
 	public static final String SUB_SYNC_RETRIEVE_CHANNEL = "subsyncretrieve";
 	public static final String SUB_ALIVE_CHANNEL = "subalive";
 	public static final String SUB_ALIVE_RETRIEVE_CHANNEL = "subaliveretrieve";
-	public static final String REG_SUB_SYNC_CHANNEL = "regsubsync";
-	public static final String REG_SUB_SYNC_RETRIEVE_CHANNEL = "regsubsyncretrieve";
-	public static final String REG_SUB_ALIVE_CHANNEL = "regsubalive";
-	public static final String REG_SUB_ALIVE_RETRIEVE_CHANNEL = "regsubaliveretrieve";
+	public static final String REG_SUB_SYNC_CHANNEL = "subsync";
+	public static final String REG_SUB_SYNC_RETRIEVE_CHANNEL = "subsyncretrieve";
+	public static final String REG_SUB_ALIVE_CHANNEL = "subalive";
+	public static final String REG_SUB_ALIVE_RETRIEVE_CHANNEL = "subaliveretrieve";
 	public static final String HISTORY_CHANNEL = "history";
 	public static final int BATCH_ERROR_REQUEST = 99;
 	public static final String SQL_ALREADY_EXISTS = "23505";

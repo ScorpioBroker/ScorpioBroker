@@ -1,6 +1,8 @@
 
 DROP TABLE IF EXISTS public.entitymap;
 DROP TABLE IF EXISTS public.entitymap_management;
+DROP FUNCTION IF EXISTS ngsild_appendbatch(jsonb);
+DROP FUNCTION IF EXISTS ngsild_upsertbatch(jsonb);
 
 CREATE TABLE public.entitymap
 (

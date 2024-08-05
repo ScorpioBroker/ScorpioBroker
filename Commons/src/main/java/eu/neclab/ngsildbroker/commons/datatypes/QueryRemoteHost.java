@@ -226,4 +226,15 @@ public class QueryRemoteHost {
 		return result;
 	}
 
+	@Override
+	public String toString() {
+		return "QueryRemoteHost [host=" + host + ", tenant=" + tenant + ", headers=" + headers + ", cSourceId="
+				+ cSourceId + ", canDoQuery=" + canDoQuery + ", canDoBatchQuery=" + canDoBatchQuery + ", canDoRetrieve="
+				+ canDoRetrieve + ", regMode=" + regMode + ", idsAndTypesAndIdPattern=" + idsAndTypesAndIdPattern
+				+ ", queryParams=" + queryParams + ", canDoEntityMap=" + canDoEntityMap + ", canDoZip=" + canDoZip
+				+ ", entityMapToken=" + entityMapToken + ", context=" + context + ", viaHeaders=" + viaHeaders + "]";
+	}
+	
+	
+
 }
