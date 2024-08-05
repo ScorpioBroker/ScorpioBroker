@@ -56,11 +56,11 @@ public class RegistrySubscriptionSyncServiceByteArray implements SyncService {
 	private MessageCollector collector = new MessageCollector(this.getClass().getName());
 
 	@Inject
-	@Channel(AppConstants.REG_SUB_ALIVE_CHANNEL)
+	@Channel(AppConstants.SUB_ALIVE_CHANNEL)
 	MutinyEmitter<String> aliveEmitter;
 
 	@Inject
-	@Channel(AppConstants.REG_SUB_SYNC_CHANNEL)
+	@Channel(AppConstants.SUB_SYNC_CHANNEL)
 	MutinyEmitter<String> syncEmitter;
 
 	@Inject
@@ -153,14 +153,14 @@ public class RegistrySubscriptionSyncServiceByteArray implements SyncService {
 		return Uni.createFrom().voidItem();
 	}
 
-	@Incoming(AppConstants.REG_SUB_SYNC_RETRIEVE_CHANNEL)
+	@Incoming(AppConstants.SUB_SYNC_RETRIEVE_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
 	Uni<Void> listenForSubs(byte[] byteMessage) {
 		collector.collect(new String(byteMessage), collectListenerSubs);
 		return Uni.createFrom().voidItem();
 	}
 
-	@Incoming(AppConstants.REG_SUB_ALIVE_RETRIEVE_CHANNEL)
+	@Incoming(AppConstants.SUB_ALIVE_RETRIEVE_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
 	Uni<Void> listenForAlive(byte[] byteMessage) {
 		collector.collect(new String(byteMessage), collectListenerAlive);
