@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.entityhandler.services;
 
+import com.github.jsonldjava.core.JsonLDService;
 import com.github.jsonldjava.core.JsonLdConsts;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
@@ -38,7 +39,6 @@ import org.slf4j.LoggerFactory;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -53,6 +53,9 @@ public class EntityInfoDAO {
 
 	@Inject
 	ClientManager clientManager;
+
+	@Inject
+	JsonLDService ldService;
 
 	GeoJSONReader geoReader = new GeoJSONReader(JtsSpatialContext.GEO, new SpatialContextFactory());
 
@@ -79,7 +82,8 @@ public class EntityInfoDAO {
 	public Uni<Map<String, Object>> batchAppendEntity(BatchRequest request) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
 			return client.preparedQuery("SELECT * FROM NGSILD_APPENDBATCH($1, $2)")
-					.execute(Tuple.of(new JsonArray(request.getRequestPayload()), request.isNoOverwrite())).onItem().transform(rows -> {
+					.execute(Tuple.of(new JsonArray(request.getRequestPayload()), request.isNoOverwrite())).onItem()
+					.transform(rows -> {
 						return rows.iterator().next().getJsonObject(0).getMap();
 					});
 		});
@@ -180,8 +184,8 @@ public class EntityInfoDAO {
 			return client.preparedQuery("INSERT INTO ENTITY(ID,E_TYPES, ENTITY) VALUES ($1, $2, $3)")
 					.execute(Tuple.of(request.getId(), types, new JsonObject(request.getPayload()))).onFailure()
 					.recoverWithUni(e -> {
-						if (e instanceof PgException) {
-							if (((PgException) e).getCode().equals(AppConstants.SQL_ALREADY_EXISTS)) {
+						if (e instanceof PgException pge) {
+							if (pge.getSqlState().equals(AppConstants.SQL_ALREADY_EXISTS)) {
 								return Uni.createFrom().failure(new ResponseException(ErrorType.AlreadyExists,
 										request.getId() + " already exists"));
 							}
@@ -204,41 +208,9 @@ public class EntityInfoDAO {
 	}
 
 	public Uni<Table<String, String, List<RegistrationEntry>>> getAllRegistries() {
-		return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
-			return client.preparedQuery("SELECT tenant_id FROM tenant").execute().onItem()
-					.transformToUni(tenantRows -> {
-						List<Uni<Tuple2<String, RowSet<Row>>>> unis = Lists.newArrayList();
-						RowIterator<Row> it = tenantRows.iterator();
-						String sql = "SELECT cs_id, c_id, e_id, e_id_p, e_type, e_prop, e_rel, ST_AsGeoJSON(i_location), scopes, EXTRACT(MILLISECONDS FROM expires), endpoint, tenant_id, headers, reg_mode, createEntity, updateEntity, appendAttrs, updateAttrs, deleteAttrs, deleteEntity, createBatch, upsertBatch, updateBatch, deleteBatch, upsertTemporal, appendAttrsTemporal, deleteAttrsTemporal, updateAttrsTemporal, deleteAttrInstanceTemporal, deleteTemporal, mergeEntity, replaceEntity, replaceAttrs, mergeBatch, retrieveEntity, queryEntity, queryBatch, retrieveTemporal, queryTemporal, retrieveEntityTypes, retrieveEntityTypeDetails, retrieveEntityTypeInfo, retrieveAttrTypes, retrieveAttrTypeDetails, retrieveAttrTypeInfo, createSubscription, updateSubscription, retrieveSubscription, querySubscription, deleteSubscription,queryEntityMap, createEntityMap, updateEntityMap, deleteEntityMap, retrieveEntityMap FROM csourceinformation WHERE createEntity OR createBatch OR updateEntity OR appendAttrs OR deleteAttrs OR deleteEntity OR upsertBatch OR updateBatch OR deleteBatch";
-						unis.add(client.preparedQuery(sql).execute().onItem()
-								.transform(rows -> Tuple2.of(AppConstants.INTERNAL_NULL_KEY, rows)));
-						while (it.hasNext()) {
-							unis.add(clientManager.getClient(it.next().getString(0), false).onItem()
-									.transformToUni(tenantClient -> {
-										return tenantClient.preparedQuery(sql).execute().onItem().transform(
-												tenantReg -> Tuple2.of(AppConstants.INTERNAL_NULL_KEY, tenantReg));
-									}));
-						}
-						return Uni.combine().all().unis(unis).combinedWith(list -> {
-							Table<String, String, List<RegistrationEntry>> result = HashBasedTable.create();
-							for (Object obj : list) {
-								Tuple2<String, RowSet<Row>> tuple = (Tuple2<String, RowSet<Row>>) obj;
-								String tenant = tuple.getItem1();
-								RowIterator<Row> it2 = tuple.getItem2().iterator();
-								while (it2.hasNext()) {
-									Row row = it2.next();
-									List<RegistrationEntry> entries = result.get(tenant, row.getString(1));
-									if (entries == null) {
-										entries = Lists.newArrayList();
-										result.put(tenant, row.getString(1), entries);
-									}
-									entries.add(DBUtil.getRegistrationEntry(row, tenant, logger));
-								}
-							}
-							return result;
-						});
-					});
-		});
+		return DBUtil.getAllRegistries(clientManager, ldService,
+				"SELECT cs_id, c_id, e_id, e_id_p, e_type, e_prop, e_rel, ST_AsGeoJSON(i_location), scopes, EXTRACT(MILLISECONDS FROM expires), endpoint, tenant_id, headers, reg_mode, createEntity, updateEntity, appendAttrs, updateAttrs, deleteAttrs, deleteEntity, createBatch, upsertBatch, updateBatch, deleteBatch, upsertTemporal, appendAttrsTemporal, deleteAttrsTemporal, updateAttrsTemporal, deleteAttrInstanceTemporal, deleteTemporal, mergeEntity, replaceEntity, replaceAttrs, mergeBatch, retrieveEntity, queryEntity, queryBatch, retrieveTemporal, queryTemporal, retrieveEntityTypes, retrieveEntityTypeDetails, retrieveEntityTypeInfo, retrieveAttrTypes, retrieveAttrTypeDetails, retrieveAttrTypeInfo, createSubscription, updateSubscription, retrieveSubscription, querySubscription, deleteSubscription,queryEntityMap, createEntityMap, updateEntityMap, deleteEntityMap, retrieveEntityMap FROM csourceinformation WHERE createEntity OR createBatch OR updateEntity OR appendAttrs OR deleteAttrs OR deleteEntity OR upsertBatch OR updateBatch OR deleteBatch",
+				logger);
 
 	}
 
@@ -291,20 +263,16 @@ public class EntityInfoDAO {
 			sql += "WHERE ID = $" + dollar;
 			tuple.addString(request.getId());
 			sql += " RETURNING (SELECT ENTITY FROM old_entity) AS old_entity, ENTITY as new_entity;";
-			return client.preparedQuery(sql).execute(tuple).onFailure()
-					.recoverWithUni(e ->
-							{
-								return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
-						}
-					).onItem()
-					.transformToUni(rows -> {
-						if (rows.rowCount() == 0) {
-							return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
-						}
-						Row first = rows.iterator().next();
-						return Uni.createFrom()
-								.item(Tuple2.of(first.getJsonObject(0).getMap(), first.getJsonObject(1).getMap()));
-					});
+			return client.preparedQuery(sql).execute(tuple).onFailure().recoverWithUni(e -> {
+				return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
+			}).onItem().transformToUni(rows -> {
+				if (rows.rowCount() == 0) {
+					return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
+				}
+				Row first = rows.iterator().next();
+				return Uni.createFrom()
+						.item(Tuple2.of(first.getJsonObject(0).getMap(), first.getJsonObject(1).getMap()));
+			});
 		});
 
 	}
@@ -424,8 +392,8 @@ public class EntityInfoDAO {
 			String sql = "SELECT * FROM MERGE_JSON($1,$2);";
 			Tuple tuple = Tuple.of(request.getId(), new JsonObject(request.getPayload()));
 			return client.preparedQuery(sql).execute(tuple).onFailure().recoverWithUni(e -> {
-				if (e instanceof PgException) {
-					if (((PgException) e).getCode().equals(AppConstants.SQL_NOT_FOUND)) {
+				if (e instanceof PgException pge) {
+					if (pge.getSqlState().equals(AppConstants.SQL_NOT_FOUND)) {
 						return Uni.createFrom()
 								.failure(new ResponseException(ErrorType.NotFound, request.getId() + " not found"));
 					}
@@ -516,42 +484,9 @@ public class EntityInfoDAO {
 	}
 
 	public Uni<Table<String, String, List<RegistrationEntry>>> getAllQueryRegistries() {
-		return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
-			return client.preparedQuery("SELECT tenant_id FROM tenant").execute().onItem()
-					.transformToUni(tenantRows -> {
-						List<Uni<Tuple2<String, RowSet<Row>>>> unis = Lists.newArrayList();
-						RowIterator<Row> it = tenantRows.iterator();
-						String sql = "SELECT cs_id, c_id, e_id, e_id_p, e_type, e_prop, e_rel, ST_AsGeoJSON(i_location), scopes, EXTRACT(MILLISECONDS FROM expires), endpoint, tenant_id, headers, reg_mode, createEntity, updateEntity, appendAttrs, updateAttrs, deleteAttrs, deleteEntity, createBatch, upsertBatch, updateBatch, deleteBatch, upsertTemporal, appendAttrsTemporal, deleteAttrsTemporal, updateAttrsTemporal, deleteAttrInstanceTemporal, deleteTemporal, mergeEntity, replaceEntity, replaceAttrs, mergeBatch, retrieveEntity, queryEntity, queryBatch, retrieveTemporal, queryTemporal, retrieveEntityTypes, retrieveEntityTypeDetails, retrieveEntityTypeInfo, retrieveAttrTypes, retrieveAttrTypeDetails, retrieveAttrTypeInfo, createSubscription, updateSubscription, retrieveSubscription, querySubscription, deleteSubscription, queryEntityMap, createEntityMap, updateEntityMap, deleteEntityMap, retrieveEntityMap FROM csourceinformation WHERE queryentity OR querybatch OR retrieveentity OR retrieveentitytypes OR retrieveentitytypedetails OR retrieveentitytypeinfo OR retrieveattrtypes OR retrieveattrtypedetails OR retrieveattrtypeinfo";
-						unis.add(client.preparedQuery(sql).execute().onItem()
-								.transform(rows -> Tuple2.of(AppConstants.INTERNAL_NULL_KEY, rows)));
-						while (it.hasNext()) {
-							unis.add(clientManager.getClient(it.next().getString(0), false).onItem()
-									.transformToUni(tenantClient -> {
-										return tenantClient.preparedQuery(sql).execute().onItem().transform(
-												tenantReg -> Tuple2.of(AppConstants.INTERNAL_NULL_KEY, tenantReg));
-									}));
-						}
-						return Uni.combine().all().unis(unis).combinedWith(list -> {
-							Table<String, String, List<RegistrationEntry>> result = HashBasedTable.create();
-							for (Object obj : list) {
-								Tuple2<String, RowSet<Row>> tuple = (Tuple2<String, RowSet<Row>>) obj;
-								String tenant = tuple.getItem1();
-								RowIterator<Row> it2 = tuple.getItem2().iterator();
-								while (it2.hasNext()) {
-									Row row = it2.next();
-									List<RegistrationEntry> entries = result.get(tenant, row.getString(1));
-									if (entries == null) {
-										entries = Lists.newArrayList();
-										result.put(tenant, row.getString(1), entries);
-									}
-									entries.add(DBUtil.getRegistrationEntry(row, tenant, logger));
-								}
-							}
-							return result;
-						});
-					});
-		});
-
+		return DBUtil.getAllRegistries(clientManager, ldService,
+				"SELECT cs_id, c_id, e_id, e_id_p, e_type, e_prop, e_rel, ST_AsGeoJSON(i_location), scopes, EXTRACT(MILLISECONDS FROM expires), endpoint, tenant_id, headers, reg_mode, createEntity, updateEntity, appendAttrs, updateAttrs, deleteAttrs, deleteEntity, createBatch, upsertBatch, updateBatch, deleteBatch, upsertTemporal, appendAttrsTemporal, deleteAttrsTemporal, updateAttrsTemporal, deleteAttrInstanceTemporal, deleteTemporal, mergeEntity, replaceEntity, replaceAttrs, mergeBatch, retrieveEntity, queryEntity, queryBatch, retrieveTemporal, queryTemporal, retrieveEntityTypes, retrieveEntityTypeDetails, retrieveEntityTypeInfo, retrieveAttrTypes, retrieveAttrTypeDetails, retrieveAttrTypeInfo, createSubscription, updateSubscription, retrieveSubscription, querySubscription, deleteSubscription, queryEntityMap, createEntityMap, updateEntityMap, deleteEntityMap, retrieveEntityMap FROM csourceinformation WHERE queryentity OR querybatch OR retrieveentity OR retrieveentitytypes OR retrieveentitytypedetails OR retrieveentitytypeinfo OR retrieveattrtypes OR retrieveattrtypedetails OR retrieveattrtypeinfo",
+				logger);
 	}
 
 	public Uni<Map<String, Object>> mergeBatchEntity(BatchRequest request) {
@@ -562,7 +497,5 @@ public class EntityInfoDAO {
 					});
 		});
 	}
-
-
 
 }

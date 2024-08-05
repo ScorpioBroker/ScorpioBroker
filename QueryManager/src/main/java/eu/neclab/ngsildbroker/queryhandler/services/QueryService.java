@@ -14,7 +14,6 @@ import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.resteasy.reactive.RestResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,7 +61,6 @@ import eu.neclab.ngsildbroker.queryhandler.repository.QueryDAO;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.groups.UniAndGroupIterable;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple3;
 import io.vertx.mutiny.core.MultiMap;
@@ -475,7 +473,7 @@ public class QueryService {
 			Map<String, String> queryParams = host.getQueryParam();
 			queryParams.put("id", StringUtils.join(entry.getValue(), ','));
 
-			unis.add(EntityTools.getRemoteEntities(host, webClient, context, timeout, ldService).onItem()
+			unis.add(EntityTools.getRemoteEntities(host, webClient, timeout, ldService).onItem()
 					.transform(entities -> Tuple2.of(entities, host)));
 		}
 		if (!idsForDBCall.isEmpty()) {
@@ -567,7 +565,7 @@ public class QueryService {
 			entityCache.putEntity(entityId, entity, "dummy");
 			id2Entity.put(entityId, entity);
 		}
-		for(String idEntry: onlyAddedToCache) {
+		for (String idEntry : onlyAddedToCache) {
 			id2Entity.get(idEntry).remove(AppConstants.REG_MODE_KEY);
 		}
 		return id2Entity.values();
@@ -1781,17 +1779,19 @@ public class QueryService {
 	}
 
 	public Uni<Void> handleRegistryChange(BaseRequest req) {
-		List<RegistrationEntry> newRegs = Lists.newArrayList();
-		tenant2CId2RegEntries.remove(req.getTenant(), req.getId());
-		if (req.getRequestType() != AppConstants.DELETE_REQUEST) {
-			for (RegistrationEntry regEntry : RegistrationEntry.fromRegPayload(req.getPayload())) {
-				if (regEntry.retrieveEntity() || regEntry.queryEntity() || regEntry.queryBatch()) {
-					newRegs.add(regEntry);
+		return RegistrationEntry.fromRegPayload(req.getPayload(), ldService).onItem().transformToUni(regs -> {
+			List<RegistrationEntry> newRegs = Lists.newArrayList();
+			tenant2CId2RegEntries.remove(req.getTenant(), req.getId());
+			if (req.getRequestType() != AppConstants.DELETE_REQUEST) {
+				for (RegistrationEntry regEntry : regs) {
+					if (regEntry.retrieveEntity() || regEntry.queryEntity() || regEntry.queryBatch()) {
+						newRegs.add(regEntry);
+					}
 				}
+				tenant2CId2RegEntries.put(req.getTenant(), req.getId(), newRegs);
 			}
-			tenant2CId2RegEntries.put(req.getTenant(), req.getId(), newRegs);
-		}
-		return Uni.createFrom().voidItem();
+			return Uni.createFrom().voidItem();
+		});
 	}
 
 	public Uni<Tuple2<EntityCache, EntityMap>> getAndStoreEntityMap(String tenant, String qToken,
@@ -1801,9 +1801,8 @@ public class QueryService {
 			DataSetIdTerm dataSetIdTerm, String join, int joinLevel, boolean splitEntities, PickTerm pickTerm,
 			OmitTerm omitTerm, String queryCechksum, ViaHeaders viaHeaders) {
 
-
 		if (tenant2CId2RegEntries.isEmpty()) {
-			return queryDAO.queryForEntityIdsAndEntitiesRegEmpty(tenant, idsAndTypeQueryAndIdPattern, attrsQuery,
+			return queryDAO.createEntityMapAndFillEntityCache(tenant, idsAndTypeQueryAndIdPattern, attrsQuery,
 					qQuery, geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel, qToken,
 					pickTerm, omitTerm, queryCechksum, splitEntities, true, false);
 		} else {
@@ -1813,17 +1812,17 @@ public class QueryService {
 					tenant2CId2RegEntries, context, fullEntityCache, splitEntities, viaHeaders);
 			if (remoteHost2Query.isEmpty()) {
 				if ((join == null || joinLevel <= 0) && (qQuery == null || !qQuery.hasLinkedQ())) {
-					return queryDAO.queryForEntityIdsAndEntitiesRegEmpty(tenant, idsAndTypeQueryAndIdPattern,
+					return queryDAO.createEntityMapAndFillEntityCache(tenant, idsAndTypeQueryAndIdPattern,
 							attrsQuery, qQuery, geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join,
 							joinLevel, qToken, pickTerm, omitTerm, queryCechksum, splitEntities, true, false);
 				} else {
-					return queryDAO.queryForEntityIdsAndEntitiesRegEmpty(tenant, idsAndTypeQueryAndIdPattern,
+					return queryDAO.createEntityMapAndFillEntityCache(tenant, idsAndTypeQueryAndIdPattern,
 							attrsQuery, qQuery, geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join,
 							joinLevel, qToken, pickTerm, omitTerm, queryCechksum, splitEntities, false, true);
 				}
 			} else {
 				Uni<Tuple2<EntityCache, EntityMap>> localEntityCacheAndEntityMap = queryDAO
-						.queryForEntityIdsAndEntitiesRegEmpty(tenant, idsAndTypeQueryAndIdPattern, attrsQuery, qQuery,
+						.createEntityMapAndFillEntityCache(tenant, idsAndTypeQueryAndIdPattern, attrsQuery, qQuery,
 								geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel, qToken,
 								pickTerm, omitTerm, queryCechksum, splitEntities, false, false);
 				List<Uni<Tuple2<List<Map<String, Object>>, QueryRemoteHost>>> unisForEntityRetrieval = Lists
@@ -1859,6 +1858,14 @@ public class QueryService {
 								req = req.setQueryParam(param.getKey(), (String) param.getValue());
 							}
 							req = req.putHeader(HttpHeaders.VIA, remoteHost.getViaHeaders().getViaHeaders());
+							// todo check how to solve this proper once and for all
+							Context contextTBU = remoteHost.context();
+							List<String> ogAtContext = contextTBU.getOriginalAtContext();
+							if (ogAtContext != null && !ogAtContext.isEmpty()) {
+								req = req.putHeader(HttpHeaders.LINK, "<" + ogAtContext.get(0)
+										+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
+							}
+							req = req.putHeader(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSON);
 							unisForEntityMapRetrieval.add(req.putHeaders(remoteHost.headers()).timeout(timeout).send()
 									.onItem().transform(response -> {
 										Map<String, Object> result;
@@ -1882,7 +1889,7 @@ public class QueryService {
 						}
 					} else {
 						unisForEntityRetrieval
-								.add(EntityTools.getRemoteEntities(remoteHost, webClient, context, timeout, ldService)
+								.add(EntityTools.getRemoteEntities(remoteHost, webClient, timeout, ldService)
 										.onItem().transform(entities -> Tuple2.of(entities, remoteHost)));
 					}
 				}
@@ -1916,7 +1923,7 @@ public class QueryService {
 									Map<String, Object> rMap = mapT.getItem1();
 									if (rMap == null) {
 										recoverEntityMapFail.add(EntityTools
-												.getRemoteEntities(rHost, webClient, context, timeout, ldService)
+												.getRemoteEntities(rHost, webClient, timeout, ldService)
 												.onItem().transform(entities -> Tuple2.of(entities, rHost)));
 										continue;
 									}
@@ -1924,8 +1931,10 @@ public class QueryService {
 									entityMap.addLinkedMap(cSourceId, (String) rMap.get(NGSIConstants.ID));
 									Map<String, List<String>> entityMapEntry = (Map<String, List<String>>) rMap
 											.get(NGSIConstants.ENTITY_MAP_COMPACTED_ENTRY);
-									for (Entry<String, List<String>> mapEntry : entityMapEntry.entrySet()) {
-										entityMap.addEntry(mapEntry.getKey(), cSourceId, rHost);
+									if (entityMapEntry != null) {
+										for (Entry<String, List<String>> mapEntry : entityMapEntry.entrySet()) {
+											entityMap.addEntry(mapEntry.getKey(), cSourceId, rHost);
+										}
 									}
 								}
 							}
@@ -1949,7 +1958,7 @@ public class QueryService {
 						});
 			}
 
-	}
+		}
 
 	}
 
@@ -1957,7 +1966,6 @@ public class QueryService {
 	public Uni<Void> scheduleEntityMapCleanUp() {
 		return queryDAO.runEntityMapCleanup(entityMapTTL);
 	}
-
 
 	public Uni<Map<String, Object>> idsOnly(Uni<Map<String, Object>> uniMap) {
 		return uniMap.onItem().transform(map -> {
@@ -2028,7 +2036,7 @@ public class QueryService {
 					splitEntities);
 			for (QueryRemoteHost remoteQuery : remoteQueries) {
 
-				unis.add(EntityTools.getRemoteEntities(remoteQuery, webClient, context, timeout, ldService).onItem()
+				unis.add(EntityTools.getRemoteEntities(remoteQuery, webClient, timeout, ldService).onItem()
 						.transform(l -> Tuple3.of(l, remoteQuery)));
 			}
 

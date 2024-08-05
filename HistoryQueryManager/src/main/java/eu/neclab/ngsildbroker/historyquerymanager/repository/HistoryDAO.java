@@ -13,6 +13,7 @@ import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.github.jsonldjava.core.JsonLDService;
 import com.github.jsonldjava.core.JsonLdConsts;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
@@ -49,6 +50,9 @@ public class HistoryDAO {
 	@Inject
 	ClientManager clientManager;
 
+	@Inject
+	JsonLDService ldService;
+
 	/**
 	 * 
 	 * @param tenant     * @param entityId
@@ -59,6 +63,7 @@ public class HistoryDAO {
 	 * @param lastN
 	 * @return a single row with a single column containing the constructed entity.
 	 */
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public Uni<Map<String, Object>> retrieveEntity(String tenant, String entityId, AttrsQueryTerm attrsQuery,
 			AggrTerm aggrQuery, TemporalQueryTerm tempQuery, String lang, int lastN) {
 		Tuple2<String, Tuple> t;
@@ -92,12 +97,10 @@ public class HistoryDAO {
 							List<Map<String, List>> maxes = listEntry.get(NGSIConstants.NGSI_LD_MAX);
 							if (maxes != null) {
 								for (Map<String, List> max : maxes) {
-									List<Map<String, List<Map<String, Object>>>> subMaxes = max
-											.get(JsonLdConsts.LIST);
+									List<Map<String, List<Map<String, Object>>>> subMaxes = max.get(JsonLdConsts.LIST);
 									for (Map<String, List<Map<String, Object>>> subMax : subMaxes) {
 										List<Map<String, Object>> realValues = subMax.get(JsonLdConsts.LIST);
-										String potentialValue =  realValues.get(0)
-												.get(JsonLdConsts.VALUE).toString();
+										String potentialValue = realValues.get(0).get(JsonLdConsts.VALUE).toString();
 										if (NumberUtils.isCreatable(potentialValue)) {
 											realValues.get(0).put(JsonLdConsts.VALUE,
 													NumberUtils.createNumber(potentialValue));
@@ -109,12 +112,10 @@ public class HistoryDAO {
 							List<Map<String, List>> mins = listEntry.get(NGSIConstants.NGSI_LD_MIN);
 							if (mins != null) {
 								for (Map<String, List> min : mins) {
-									List<Map<String, List<Map<String, Object>>>> subMins = min
-											.get(JsonLdConsts.LIST);
+									List<Map<String, List<Map<String, Object>>>> subMins = min.get(JsonLdConsts.LIST);
 									for (Map<String, List<Map<String, Object>>> subMin : subMins) {
 										List<Map<String, Object>> realValues = subMin.get(JsonLdConsts.LIST);
-										String potentialValue = realValues.get(0)
-												.get(JsonLdConsts.VALUE).toString();
+										String potentialValue = realValues.get(0).get(JsonLdConsts.VALUE).toString();
 										if (NumberUtils.isCreatable(potentialValue)) {
 											realValues.get(0).put(JsonLdConsts.VALUE,
 													NumberUtils.createNumber(potentialValue));
@@ -134,43 +135,9 @@ public class HistoryDAO {
 	}
 
 	public Uni<Table<String, String, List<RegistrationEntry>>> getAllRegistries() {
-		return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
-			return client.preparedQuery("SELECT tenant_id FROM tenant").execute().onItem()
-					.transformToUni(tenantRows -> {
-						List<Uni<Tuple2<String, RowSet<Row>>>> unis = Lists.newArrayList();
-						RowIterator<Row> it = tenantRows.iterator();
-						String sql = "SELECT cs_id, c_id, e_id, e_id_p, e_type, e_prop, e_rel, ST_AsGeoJSON(i_location), scopes, EXTRACT(MILLISECONDS FROM expires), endpoint, tenant_id, headers, reg_mode, createEntity, updateEntity, appendAttrs, updateAttrs, deleteAttrs, deleteEntity, createBatch, upsertBatch, updateBatch, deleteBatch, upsertTemporal, appendAttrsTemporal, deleteAttrsTemporal, updateAttrsTemporal, deleteAttrInstanceTemporal, deleteTemporal, mergeEntity, replaceEntity, replaceAttrs, mergeBatch, retrieveEntity, queryEntity, queryBatch, retrieveTemporal, queryTemporal, retrieveEntityTypes, retrieveEntityTypeDetails, retrieveEntityTypeInfo, retrieveAttrTypes, retrieveAttrTypeDetails, retrieveAttrTypeInfo, createSubscription, updateSubscription, retrieveSubscription, querySubscription, deleteSubscription, queryEntityMap, createEntityMap, updateEntityMap, deleteEntityMap, retrieveEntityMap  FROM csourceinformation WHERE retrieveTemporal OR queryTemporal";
-						unis.add(client.preparedQuery(sql).execute().onItem()
-								.transform(rows -> Tuple2.of(AppConstants.INTERNAL_NULL_KEY, rows)));
-						while (it.hasNext()) {
-							unis.add(clientManager.getClient(it.next().getString(0), false).onItem()
-									.transformToUni(tenantClient -> {
-										return tenantClient.preparedQuery(sql).execute().onItem().transform(
-												tenantReg -> Tuple2.of(AppConstants.INTERNAL_NULL_KEY, tenantReg));
-									}));
-						}
-						return Uni.combine().all().unis(unis).combinedWith(list -> {
-							Table<String, String, List<RegistrationEntry>> result = HashBasedTable.create();
-							for (Object obj : list) {
-								@SuppressWarnings("unchecked")
-								Tuple2<String, RowSet<Row>> tuple = (Tuple2<String, RowSet<Row>>) obj;
-								String tenant = tuple.getItem1();
-								RowIterator<Row> it2 = tuple.getItem2().iterator();
-								while (it2.hasNext()) {
-									Row row = it2.next();
-									List<RegistrationEntry> entries = result.get(tenant, row.getString(1));
-									if (entries == null) {
-										entries = Lists.newArrayList();
-										result.put(tenant, row.getString(1), entries);
-									}
-									entries.add(DBUtil.getRegistrationEntry(row, tenant, logger));
-								}
-							}
-							return result;
-						});
-					});
-		});
-
+		return DBUtil.getAllRegistries(clientManager, ldService,
+				"SELECT cs_id, c_id, e_id, e_id_p, e_type, e_prop, e_rel, ST_AsGeoJSON(i_location), scopes, EXTRACT(MILLISECONDS FROM expires), endpoint, tenant_id, headers, reg_mode, createEntity, updateEntity, appendAttrs, updateAttrs, deleteAttrs, deleteEntity, createBatch, upsertBatch, updateBatch, deleteBatch, upsertTemporal, appendAttrsTemporal, deleteAttrsTemporal, updateAttrsTemporal, deleteAttrInstanceTemporal, deleteTemporal, mergeEntity, replaceEntity, replaceAttrs, mergeBatch, retrieveEntity, queryEntity, queryBatch, retrieveTemporal, queryTemporal, retrieveEntityTypes, retrieveEntityTypeDetails, retrieveEntityTypeInfo, retrieveAttrTypes, retrieveAttrTypeDetails, retrieveAttrTypeInfo, createSubscription, updateSubscription, retrieveSubscription, querySubscription, deleteSubscription, queryEntityMap, createEntityMap, updateEntityMap, deleteEntityMap, retrieveEntityMap  FROM csourceinformation WHERE retrieveTemporal OR queryTemporal",
+				logger);
 	}
 
 	public Uni<QueryResult> query(String tenant, String[] entityIds, TypeQueryTerm typeQuery, String idPattern,
@@ -219,8 +186,8 @@ public class HistoryDAO {
 													.get(JsonLdConsts.LIST);
 											for (Map<String, List<Map<String, Object>>> subMax : subMaxes) {
 												List<Map<String, Object>> realValues = subMax.get(JsonLdConsts.LIST);
-												String potentialValue =  realValues.get(0)
-														.get(JsonLdConsts.VALUE).toString();
+												String potentialValue = realValues.get(0).get(JsonLdConsts.VALUE)
+														.toString();
 												if (NumberUtils.isCreatable(potentialValue)) {
 													realValues.get(0).put(JsonLdConsts.VALUE,
 															NumberUtils.createNumber(potentialValue));
@@ -236,8 +203,8 @@ public class HistoryDAO {
 													.get(JsonLdConsts.LIST);
 											for (Map<String, List<Map<String, Object>>> subMin : subMins) {
 												List<Map<String, Object>> realValues = subMin.get(JsonLdConsts.LIST);
-												String potentialValue = realValues.get(0)
-														.get(JsonLdConsts.VALUE).toString();
+												String potentialValue = realValues.get(0).get(JsonLdConsts.VALUE)
+														.toString();
 												if (NumberUtils.isCreatable(potentialValue)) {
 													realValues.get(0).put(JsonLdConsts.VALUE,
 															NumberUtils.createNumber(potentialValue));
@@ -848,17 +815,17 @@ public class HistoryDAO {
 	private int generateTimestampForAttr(StringBuilder sql, int dollarCount, TemporalQueryTerm tempQuery,
 			AggrTerm aggrQuery) {
 		if (aggrQuery.getPeriod() != null) {
-			sql.append(",JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_VALUE
-					+ "', to_char(pr.period, "+TIMESTAMP_FORMAT+")), ");
+			sql.append(",JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_VALUE + "', to_char(pr.period, "
+					+ TIMESTAMP_FORMAT + ")), ");
 			sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_VALUE + "', to_char(pr.period + ");
 			sql.append("$");
 			sql.append(dollarCount);
 			sql.append("::text::interval");
-			sql.append(", "+TIMESTAMP_FORMAT+"))");
+			sql.append(", " + TIMESTAMP_FORMAT + "))");
 			return 1;
 		} else {
-			sql.append(",JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_VALUE
-					+ "', to_char(PT.PRSTART, "+TIMESTAMP_FORMAT+")), ");
+			sql.append(",JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_VALUE + "', to_char(PT.PRSTART, "
+					+ TIMESTAMP_FORMAT + ")), ");
 			sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_VALUE + "', to_char(PT.PRSTOP ");
 			sql.append(", " + TIMESTAMP_FORMAT + "))");
 			return 0;

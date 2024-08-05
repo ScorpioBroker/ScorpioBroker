@@ -1,9 +1,8 @@
 {
 	"info": {
-		"_postman_id": "d2a9b625-d352-4294-b7d4-9286ae456f58",
+		"_postman_id": "9cfe3e26-d810-46c2-b38d-5c568de1dcde",
 		"name": "fed-test",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "27293663"
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
 		{
@@ -1184,13 +1183,12 @@
 													"            console.log(value);\r",
 													"            headers = value.headers;\r",
 													"            pm.expect(headers).to.have.property(\"Test-Head\");\r",
-													"            pm.expect(headers[\"Test-Head\"]).to.eql(\"testvalue\");\r",
+													"            pm.expect(headers[\"Test-Head\"]).to.eql(\"urn:ngsi-ld:request\");\r",
 													"            });\r",
 													"        });\r",
 													"}, 3000);"
 												],
-												"type": "text/javascript",
-												"packages": {}
+												"type": "text/javascript"
 											}
 										}
 									],

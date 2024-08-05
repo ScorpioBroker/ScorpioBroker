@@ -73,7 +73,7 @@ jobs:
           docker tag scorpiobroker/all-in-one-runner:ubuntu-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:ubuntu-kafka-${{steps.get-id.outputs.id}}
       - name: start docker aaio 
         run: |
-          docker-compose -f ./compose-files/docker-compose-ubuntu-aaio-kafka-test.yml up &
+          docker compose -f ./compose-files/docker-compose-ubuntu-aaio-kafka-test.yml up &
           sleep 120
       - name: newman action
         uses: matt-ball/newman-action@master
@@ -81,10 +81,10 @@ jobs:
           collection: api-test.json
           environment: api-test-aaio-environment.json
       - name: Stopping Scorpio 
-        run: docker-compose -f ./compose-files/docker-compose-ubuntu-aaio-kafka-test.yml down
+        run: docker compose -f ./compose-files/docker-compose-ubuntu-aaio-kafka-test.yml down
 #      - name: start docker dist 
 #        run: |
-#          docker-compose -f ./compose-files/docker-compose-ubuntu-dist-kafka-test.yml up &
+#          docker compose -f ./compose-files/docker-compose-ubuntu-dist-kafka-test.yml up &
 #          sleep 120
 #      - name: newman action
 #        uses: matt-ball/newman-action@master
@@ -92,7 +92,7 @@ jobs:
 #          collection: api-test.json
 #          environment: api-test-dist-environment.json
 #      - name: Stopping Scorpio 
-#        run: docker-compose -f ./compose-files/docker-compose-ubuntu-dist-kafka-test.yml down
+#        run: docker compose -f ./compose-files/docker-compose-ubuntu-dist-kafka-test.yml down
       - name: docker-login
         uses: docker/login-action@v2
         with:
@@ -501,7 +501,7 @@ jobs:
           docker tag scorpiobroker/all-in-one-runner:ubuntu-rabbitmq-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:ubuntu-rabbitmq-${{steps.get-id.outputs.id}}
       - name: start docker aaio 
         run: |
-          docker-compose -f ./compose-files/docker-compose-ubuntu-aaio-rabbitmq-test.yml up &
+          docker compose -f ./compose-files/docker-compose-ubuntu-aaio-rabbitmq-test.yml up &
           sleep 120
       - name: newman action
         uses: matt-ball/newman-action@master
@@ -509,10 +509,10 @@ jobs:
           collection: api-test.json
           environment: api-test-aaio-environment.json
       - name: Stopping Scorpio 
-        run: docker-compose -f ./compose-files/docker-compose-ubuntu-aaio-rabbitmq-test.yml down
+        run: docker compose -f ./compose-files/docker-compose-ubuntu-aaio-rabbitmq-test.yml down
 #      - name: start docker dist 
 #        run: |
-#          docker-compose -f ./compose-files/docker-compose-ubuntu-dist-rabbitmq-test.yml up &
+#          docker compose -f ./compose-files/docker-compose-ubuntu-dist-rabbitmq-test.yml up &
 #          sleep 120
 #      - name: newman action
 #        uses: matt-ball/newman-action@master
@@ -520,7 +520,7 @@ jobs:
 #          collection: api-test.json
 #          environment: api-test-dist-environment.json
 #      - name: Stopping Scorpio 
-#        run: docker-compose -f ./compose-files/docker-compose-ubuntu-dist-rabbitmq-test.yml down
+#        run: docker compose -f ./compose-files/docker-compose-ubuntu-dist-rabbitmq-test.yml down
       - name: docker-login
         uses: docker/login-action@v2
         with:
@@ -726,7 +726,7 @@ jobs:
           docker tag scorpiobroker/all-in-one-runner:ubuntu-mqtt-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:ubuntu-mqtt-${{steps.get-id.outputs.id}}
       - name: start docker aaio 
         run: |
-          docker-compose -f ./compose-files/docker-compose-ubuntu-aaio-mqtt-test.yml up &
+          docker compose -f ./compose-files/docker-compose-ubuntu-aaio-mqtt-test.yml up &
           sleep 120
 #      - name: newman action
 #        uses: matt-ball/newman-action@master
@@ -734,10 +734,10 @@ jobs:
 #          collection: api-test.json
 #          environment: api-test-aaio-environment.json
       - name: Stopping Scorpio 
-        run: docker-compose -f ./compose-files/docker-compose-ubuntu-aaio-mqtt-test.yml down
+        run: docker compose -f ./compose-files/docker-compose-ubuntu-aaio-mqtt-test.yml down
 #      - name: start docker dist 
 #        run: |
-#          docker-compose -f ./compose-files/docker-compose-ubuntu-dist-mqtt-test.yml up &
+#          docker compose -f ./compose-files/docker-compose-ubuntu-dist-mqtt-test.yml up &
 #          sleep 120
 #      - name: newman action
 #        uses: matt-ball/newman-action@master
@@ -745,7 +745,7 @@ jobs:
 #          collection: api-test.json
 #          environment: api-test-dist-environment.json
 #      - name: Stopping Scorpio 
-#        run: docker-compose -f ./compose-files/docker-compose-ubuntu-dist-mqtt-test.yml down
+#        run: docker compose -f ./compose-files/docker-compose-ubuntu-dist-mqtt-test.yml down
       - name: docker-login
         uses: docker/login-action@v2
         with:
@@ -928,7 +928,7 @@ jobs:
           docker tag scorpiobroker/all-in-one-runner:ubuntu-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:ubuntu-${{steps.get-id.outputs.id}}
       - name: start docker aaio 
         run: |
-          docker-compose -f ./compose-files/docker-compose-ubuntu-aaio-test.yml up &
+          docker compose -f ./compose-files/docker-compose-ubuntu-aaio-test.yml up &
           sleep 120
       - name: newman action
         uses: matt-ball/newman-action@master
@@ -936,7 +936,7 @@ jobs:
           collection: api-test.json
           environment: api-test-aaio-environment.json
       - name: Stopping Scorpio 
-        run: docker-compose -f ./compose-files/docker-compose-ubuntu-aaio-test.yml down 
+        run: docker compose -f ./compose-files/docker-compose-ubuntu-aaio-test.yml down 
       - name: docker-login
         uses: docker/login-action@v2
         with:

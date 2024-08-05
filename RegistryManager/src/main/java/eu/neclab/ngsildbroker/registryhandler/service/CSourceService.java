@@ -146,8 +146,8 @@ public class CSourceService {
 		}).onFailure().recoverWithUni(e -> {
 			ErrorType error = ErrorType.InternalError;
 			String errorMsg = e.getMessage();
-			if (e instanceof PgException) {
-				if (((PgException) e).getCode().equals("23505")) {
+			if (e instanceof PgException pge) {
+				if (pge.getSqlState().equals("23505")) {
 					error = ErrorType.AlreadyExists;
 					errorMsg = "Registration already exists";
 				}

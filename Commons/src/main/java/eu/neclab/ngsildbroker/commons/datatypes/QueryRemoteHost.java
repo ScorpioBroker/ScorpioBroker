@@ -3,16 +3,11 @@ package eu.neclab.ngsildbroker.commons.datatypes;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Objects;
-import java.util.Set;
-
 import com.github.jsonldjava.core.Context;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import io.smallrye.mutiny.tuples.Tuple3;
-import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.MultiMap;
 
 public class QueryRemoteHost {
@@ -223,10 +218,12 @@ public class QueryRemoteHost {
 
 	public static QueryRemoteHost fromRegEntry(RegistrationEntry regEntry) {
 		RemoteHost remoteHost = regEntry.host();
-
-		return new QueryRemoteHost(remoteHost.host(), remoteHost.tenant(), remoteHost.headers(), remoteHost.cSourceId(),
-				regEntry.queryEntity(), regEntry.queryBatch(), regEntry.retrieveEntity(), remoteHost.regMode(),
-				Lists.newArrayList(), Maps.newHashMap(), regEntry.queryEntityMap(), false, null, null);
+		QueryRemoteHost result = new QueryRemoteHost(remoteHost.host(), remoteHost.tenant(), remoteHost.headers(),
+				remoteHost.cSourceId(), regEntry.queryEntity(), regEntry.queryBatch(), regEntry.retrieveEntity(),
+				remoteHost.regMode(), Lists.newArrayList(), Maps.newHashMap(), regEntry.queryEntityMap(), false, null,
+				null);
+		result.setContext(regEntry.context());
+		return result;
 	}
 
 }

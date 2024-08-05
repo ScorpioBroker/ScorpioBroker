@@ -8,7 +8,6 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -22,7 +21,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import eu.neclab.ngsildbroker.commons.exceptions.LdContextException;
 import io.vertx.core.json.DecodeException;
-import io.vertx.core.json.Json;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.http.HttpStatus;
 import org.jboss.resteasy.reactive.RestResponse;
@@ -30,7 +28,6 @@ import org.jboss.resteasy.reactive.RestResponse.ResponseBuilder;
 import org.jboss.resteasy.reactive.server.jaxrs.RestResponseBuilderImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLDService;
@@ -478,9 +475,10 @@ public final class HttpUtils {
 		if (result.contains(NGSIConstants.JSONLD_CONTEXT)) {
 			String linkHeader = "<%s>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"',"
 					.formatted(result.get(NGSIConstants.JSONLD_CONTEXT));
-			result.remove(NGSIConstants.JSONLD_CONTEXT).add("Link", linkHeader);
+			result.add("Link", linkHeader);
+			result.add("Accept", "application/json");
 		}
-		result.add("Accept", "application/json");
+		//
 		if (!tenant.equals(AppConstants.INTERNAL_NULL_KEY)) {
 			result.add(NGSIConstants.TENANT_HEADER, tenant);
 		}
@@ -864,7 +862,7 @@ public final class HttpUtils {
 		}
 		if (originalPayload.toString().contains(NGSIConstants.VALUE + "=null")
 				|| originalPayload.toString().contains(NGSIConstants.TYPE + "=null")) {
-			return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData));
+			return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData, "null values are not allowed in NGSI-LD"));
 		}
 		if (originalPayload.containsKey(NGSIConstants.SCOPE)
 				&& !(originalPayload.get(NGSIConstants.SCOPE) instanceof String

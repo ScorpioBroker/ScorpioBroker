@@ -1,6 +1,5 @@
 package eu.neclab.ngsildbroker.commons.datatypes.terms;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -10,8 +9,10 @@ import java.util.Set;
 import com.google.common.collect.Sets;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.vertx.mutiny.sqlclient.Tuple;
 
+@RegisterForReflection
 public class OmitTerm extends ProjectionTerm {
 
 	@Override

@@ -3,9 +3,6 @@ package eu.neclab.ngsildbroker.commons.datatypes.results;
 import java.util.List;
 import java.util.Map;
 
-import com.google.common.collect.Maps;
-
-import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
 
 /**

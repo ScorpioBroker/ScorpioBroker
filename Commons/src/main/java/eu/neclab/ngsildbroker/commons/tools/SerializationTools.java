@@ -1,7 +1,5 @@
 package eu.neclab.ngsildbroker.commons.tools;
 
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;

@@ -2,20 +2,17 @@ package eu.neclab.ngsildbroker.commons.datatypes.terms;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import java.util.Set;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.vertx.mutiny.sqlclient.Tuple;
 
+@RegisterForReflection
 public class PickTerm extends ProjectionTerm {
 
 	@Override
