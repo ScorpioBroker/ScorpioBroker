@@ -55,6 +55,11 @@ jobs:
         run: |
           docker compose -f ./compose-files/docker-compose-java-aaio-fed-test.yml up > dockerout.log &
           sleep 120
+      - name: api test action
+        uses: matt-ball/newman-action@master
+        with:
+          collection: api-test.json
+          environment: api-test-aaio-environment.json
       - name: newman action
         uses: matt-ball/newman-action@master
         with:
