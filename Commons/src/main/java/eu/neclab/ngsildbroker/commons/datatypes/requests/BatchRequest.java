@@ -13,6 +13,13 @@ import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 
 public class BatchRequest extends BaseRequest {
 
+	@Override
+	public String toString() {
+		return "BatchRequest [tenant=" + tenant + ", requestPayload=" + requestPayload + ", contexts=" + contexts
+				+ ", entityIds=" + entityIds + ", requestType=" + requestType + ", sendTimestamp=" + sendTimestamp
+				+ ", noOverwrite=" + noOverwrite + "]";
+	}
+
 	/**
 	 * 
 	 */
