@@ -126,8 +126,14 @@ public abstract class HistoryMessagingBase {
 	}
 
 	public Uni<Void> baseHandleEntity(BaseRequest message) {
-
+		logger.info("retrieving " + message.toString());
 		if (!autoRecording || (instancesNr > 1 && message.hashCode() % instancesNr != myInstancePos)) {
+			logger.info("discarding " + message.toString());
+			logger.info("auto recording: " + autoRecording);
+			logger.info("instancesNr: " + instancesNr);
+			logger.info("myInstancePos: " + myInstancePos);
+			logger.info("message.hashCode() % instancesNr: " + (message.hashCode() % instancesNr));
+			
 			return Uni.createFrom().voidItem();
 		}
 		String tenant = message.getTenant();
