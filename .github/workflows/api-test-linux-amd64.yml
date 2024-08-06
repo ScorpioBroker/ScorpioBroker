@@ -40,7 +40,7 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-linux-amd64-with-kafka
         run: |
-          mvn clean package -DskipTests -Dkafka -Pkafka -Dnative -Ddocker -Ddocker-tag=linux-amd64-kafka-${{steps.get-id.outputs.id}} -Dos=linux-amd64 -Dquarkus.profile=kafka -Dquarkus.native.container-build=true -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64 -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-graalvmce-builder-image:22.3.2-java17-amd64
+          mvn clean package -DskipTests -Dkafka -Pkafka -Dnative -Ddocker -Ddocker-tag=linux-amd64-kafka-${{steps.get-id.outputs.id}} -Dos=linux-amd64 -Dquarkus.profile=kafka -Dquarkus.native.container-build=true -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64 -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-graalvmce-builder-image:22.3.3-java17-amd64
       - name: docker tag 
         run: |
           docker tag scorpiobroker/at-context-server:linux-amd64-kafka-${{steps.get-id.outputs.id}} scorpiobroker/at-context-server:linux-amd64-kafka-latest
@@ -110,7 +110,7 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-linux-amd64-with-mqtt
         run: |
-          mvn clean package -DskipTests -Dmqtt -Pmqtt -Dnative -Ddocker -Ddocker-tag=linux-amd64-mqtt-${{steps.get-id.outputs.id}} -Dos=linux-amd64 -Dquarkus.profile=mqtt -Dquarkus.native.container-build=true -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64 -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-graalvmce-builder-image:22.3.2-java17-amd64
+          mvn clean package -DskipTests -Dmqtt -Pmqtt -Dnative -Ddocker -Ddocker-tag=linux-amd64-mqtt-${{steps.get-id.outputs.id}} -Dos=linux-amd64 -Dquarkus.profile=mqtt -Dquarkus.native.container-build=true -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64 -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-graalvmce-builder-image:22.3.3-java17-amd64
       - name: docker tag 
         run: |
           docker tag scorpiobroker/at-context-server:linux-amd64-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/at-context-server:linux-amd64-mqtt-latest
@@ -169,7 +169,7 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-linux-amd64-with-rabbitmq
         run: |
-          mvn clean package -DskipTests -Drabbitmq -Prabbitmq -Dnative -Ddocker -Ddocker-tag=linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} -Dos=linux-amd64 -Dquarkus.profile=rabbitmq -Dquarkus.native.container-build=true -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64 -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-graalvmce-builder-image:22.3.2-java17-amd64
+          mvn clean package -DskipTests -Drabbitmq -Prabbitmq -Dnative -Ddocker -Ddocker-tag=linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} -Dos=linux-amd64 -Dquarkus.profile=rabbitmq -Dquarkus.native.container-build=true -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64 -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-graalvmce-builder-image:22.3.3-java17-amd64
       - name: docker tag 
         run: |
           docker tag scorpiobroker/at-context-server:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/at-context-server:linux-amd64-rabbitmq-latest
@@ -222,7 +222,7 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-linux-amd64
         run: |
-          mvn clean package -DskipTests -Din-memory -Pin-memory -Ddocker -Dnative -Ddocker-tag=linux-amd64-${{steps.get-id.outputs.id}} -Dos=linux-amd64 -Dquarkus.profile=in-memory -Dquarkus.native.container-build=true -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64 -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-graalvmce-builder-image:22.3.2-java17-amd64
+          mvn clean package -DskipTests -Din-memory -Pin-memory -Ddocker -Dnative -Ddocker-tag=linux-amd64-${{steps.get-id.outputs.id}} -Dos=linux-amd64 -Dquarkus.profile=in-memory -Dquarkus.native.container-build=true -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64 -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-graalvmce-builder-image:22.3.3-java17-amd64
       - name: docker tag
         run: |
           docker tag scorpiobroker/all-in-one-runner:linux-amd64-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:linux-amd64-latest
