@@ -1,7 +1,7 @@
 name: Release linux-arm64 version
 on: 
   push:
-#    branches: "quarkus-release/**"
+    branches: "quarkus-release/**"
 jobs:
   build-linux-arm64-kafka:
     runs-on: ubuntu-latest
