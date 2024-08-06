@@ -16,18 +16,6 @@
 	</dependencies>
 	<profiles>
 		<profile>
-			<id>native</id>
-			<activation>
-				<property>
-					<name>native</name>
-				</property>
-			</activation>
-			<properties>
-				<skipITs>false</skipITs>
-				<quarkus.package.type>native</quarkus.package.type>
-			</properties>
-		</profile>
-		<profile>
 			<id>docker</id>
 			<activation>
 				<property>

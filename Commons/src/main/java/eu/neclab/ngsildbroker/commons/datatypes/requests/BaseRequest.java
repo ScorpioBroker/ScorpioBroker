@@ -127,4 +127,12 @@ public class BaseRequest implements Serializable {
 		this.bestCompleteResult = bestCompleteResult;
 	}
 
+	@Override
+	public String toString() {
+		return "BaseRequest [tenant=" + tenant + ", payload=" + payload + ", bestCompleteResult=" + bestCompleteResult
+				+ ", requestType=" + requestType + ", sendTimestamp=" + sendTimestamp + ", id=" + id
+				+ ", previousEntity=" + previousEntity + ", attribName=" + attribName + ", datasetId=" + datasetId
+				+ ", deleteAll=" + deleteAll + ", distributed=" + distributed + "]";
+	}
+
 }
