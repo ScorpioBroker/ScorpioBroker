@@ -222,7 +222,7 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-linux-amd64
         run: |
-          mvn clean package -DskipTests -Din-memory -Pin-memory -Ddocker -Dnative -Ddocker-tag=linx-amd64-${{steps.get-id.outputs.id}} -Dos=linux-amd64 -Dquarkus.profile=in-memory -Dquarkus.native.container-build=true -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64 -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-graalvmce-builder-image:22.3.2-java17-amd64
+          mvn clean package -DskipTests -Din-memory -Pin-memory -Ddocker -Dnative -Ddocker-tag=linux-amd64-${{steps.get-id.outputs.id}} -Dos=linux-amd64 -Dquarkus.profile=in-memory -Dquarkus.native.container-build=true -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64 -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-graalvmce-builder-image:22.3.2-java17-amd64
       - name: docker tag
         run: |
           docker tag scorpiobroker/all-in-one-runner:linux-amd64-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:linux-amd64-latest
