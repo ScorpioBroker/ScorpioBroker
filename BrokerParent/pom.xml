@@ -212,6 +212,15 @@
 			<groupId>io.quarkus</groupId>
 			<artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>io.quarkus</groupId>
+			<artifactId>quarkus-container-image-docker</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>io.quarkiverse.systemd.notify</groupId>
+			<artifactId>quarkus-systemd-notify</artifactId>
+			<version>1.0.1</version>
+		</dependency>
 	</dependencies>
 	<profiles>
 		<profile>
@@ -500,6 +509,18 @@
 			</build>
 			<properties>
 				<quarkus.package.type>native</quarkus.package.type>
+				<quarkus.native.container-build>true</quarkus.native.container-build>
+			</properties>
+		</profile>
+		<profile>
+			<id>nativedocker</id>
+			<activation>
+				<property>
+					<name>nativedocker</name>
+				</property>
+			</activation>
+			<properties>
+				<quarkus.native.container-build>true</quarkus.native.container-build>
 			</properties>
 		</profile>
 		<profile>
