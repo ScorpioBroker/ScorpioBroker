@@ -1,6 +1,8 @@
 package eu.neclab.ngsildbroker.historyentitymanager.messaging;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -133,7 +135,7 @@ public abstract class HistoryMessagingBase {
 			logger.info("instancesNr: " + instancesNr);
 			logger.info("myInstancePos: " + myInstancePos);
 			logger.info("message.hashCode() % instancesNr: " + (message.hashCode() % instancesNr));
-			
+
 			return Uni.createFrom().voidItem();
 		}
 		String tenant = message.getTenant();
@@ -156,28 +158,38 @@ public abstract class HistoryMessagingBase {
 			logger.info("instancesNr: " + instancesNr);
 			logger.info("myInstancePos: " + myInstancePos);
 			logger.info("message.hashCode() % instancesNr: " + (message.hashCode() % instancesNr));
-			
+
 			return Uni.createFrom().voidItem();
 		}
 		logger.debug("history manager batch handling got called: with ids: " + message.getEntityIds());
 		if (message.getRequestType() != AppConstants.DELETE_REQUEST && message.getRequestPayload().isEmpty()) {
+			logger.info("discarding because of none delete request and empty body");
 			return Uni.createFrom().voidItem();
 		}
 		String tenant = message.getTenant();
+		logger.info("attempting to access tenant2Buffer with " + tenant);
 		ConcurrentLinkedQueue<BaseRequest> buffer = tenant2Buffer.get(tenant);
+		logger.info("got buffer " + buffer);
 		if (buffer == null) {
 			buffer = new ConcurrentLinkedQueue<>();
-			tenant2Buffer.put(message.getTenant(), buffer);
+			logger.info("attempting to create new buffer in tenant2Buffer with " + tenant);
+			tenant2Buffer.put(tenant, buffer);
+			logger.info("created buffer " + buffer);
 		}
-
+		logger.info("attempting to store time in tenant2LastReceived");
 		tenant2LastReceived.put(tenant, System.currentTimeMillis());
+		logger.info("stored time in tenant2LastReceived");
 		if (message.getRequestType() == AppConstants.DELETE_REQUEST) {
 			for (String entry : message.getEntityIds()) {
+				logger.info("adding entry in buffer");
 				buffer.add(new DeleteEntityRequest(tenant, entry));
+				logger.info("added entry");
 			}
 		} else {
 			for (Map<String, Object> entry : message.getRequestPayload()) {
+				logger.info("adding entry in buffer");
 				buffer.add(new UpsertEntityRequest(tenant, entry));
+				logger.info("added entry");
 			}
 		}
 		return Uni.createFrom().voidItem();
@@ -193,15 +205,21 @@ public abstract class HistoryMessagingBase {
 			return Uni.createFrom().voidItem();
 		}
 		List<Uni<Void>> unis = Lists.newArrayList();
+		logger.info("checkBuffer before getting tenant2Buffer");
+
 		for (Entry<String, ConcurrentLinkedQueue<BaseRequest>> tenant2BufferEntry : tenant2Buffer.entrySet()) {
 			ConcurrentLinkedQueue<BaseRequest> buffer = tenant2BufferEntry.getValue();
 			String tenant = tenant2BufferEntry.getKey();
+			logger.info("checkBuffer attempts to get tenant2LastReceived for tenant " + tenant);
 			Long lastReceived = tenant2LastReceived.get(tenant);
+			logger.info("checkBuffer received tenant2LastReceived");
 			if (buffer.size() >= maxSize || (lastReceived < System.currentTimeMillis() - 1000 && !buffer.isEmpty())) {
 				Map<Integer, List<Map<String, Object>>> opType2Payload = Maps.newHashMap();
 				List<BaseRequest> notBatch = Lists.newArrayList();
 				while (!buffer.isEmpty()) {
+					logger.info("attempting to empty buffer");
 					BaseRequest request = buffer.poll();
+					logger.info("polled element");
 					if (request.getRequestType() == AppConstants.DELETE_ATTRIBUTE_REQUEST
 							|| request.getRequestType() == AppConstants.REPLACE_ATTRIBUTE_REQUEST
 							|| request.getRequestType() == AppConstants.REPLACE_ENTITY_REQUEST
@@ -221,6 +239,7 @@ public abstract class HistoryMessagingBase {
 					}
 					payload.put(NGSIConstants.JSON_LD_ID, request.getId());
 					payloads.add(payload);
+					logger.info("buffer empty: " + buffer.isEmpty());
 				}
 				for (Entry<Integer, List<Map<String, Object>>> entry : opType2Payload.entrySet()) {
 					unis.add(historyService.handleInternalBatchRequest(
@@ -232,11 +251,15 @@ public abstract class HistoryMessagingBase {
 
 			}
 		}
+		logger.info("checkBuffer after getting tenant2Buffer");
 		if (unis.isEmpty()) {
 			return Uni.createFrom().voidItem();
 		}
-		return Uni.combine().all().unis(unis).combinedWith(list -> null).onItem()
-				.transformToUni(list -> Uni.createFrom().voidItem());
+		logger.info("attempting to store temp entites");
+		return Uni.combine().all().unis(unis).combinedWith(list -> null).onItem().transformToUni(list -> {
+			logger.info("stored temp entites");
+			return Uni.createFrom().voidItem();
+		});
 	}
 
 	void purge() {
@@ -258,9 +281,5 @@ public abstract class HistoryMessagingBase {
 	public void setMyInstancePos(int myInstancePos) {
 		this.myInstancePos = myInstancePos;
 	}
-	
-	
-
-	
 
 }
