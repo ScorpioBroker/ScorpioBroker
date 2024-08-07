@@ -147,7 +147,7 @@
 				<quarkus.container-image.build>true</quarkus.container-image.build>
 				<quarkus.container-image.name>${project.artifactId}</quarkus.container-image.name>
 				<quarkus.container-image.tag>${docker-tag}</quarkus.container-image.tag>
-				<quarkus.container-image.registry>scorpiobroker</quarkus.container-image.registry>
+				<quarkus.container-image.registry>scorpiobroker</quarkus.container-image.registry>    <quarkus.container-image.group></quarkus.container-image.group>
 			</properties>
 		</profile>
 	</profiles>
