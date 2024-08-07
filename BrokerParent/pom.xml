@@ -513,17 +513,6 @@
 			</properties>
 		</profile>
 		<profile>
-			<id>nativedocker</id>
-			<activation>
-				<property>
-					<name>nativedocker</name>
-				</property>
-			</activation>
-			<properties>
-				<quarkus.native.container-build>true</quarkus.native.container-build>
-			</properties>
-		</profile>
-		<profile>
 			<id>windowsext</id>
 			<activation>
 				<os>
