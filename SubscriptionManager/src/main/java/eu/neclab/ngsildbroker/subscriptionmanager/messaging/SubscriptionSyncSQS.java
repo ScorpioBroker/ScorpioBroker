@@ -46,6 +46,10 @@ public class SubscriptionSyncSQS implements SyncService {
 	String password;
 
 	Logger logger = LoggerFactory.getLogger(SubscriptionSyncSQS.class);
+	
+	
+	private long lastFailConnectTime = 0;
+	
 
 	private String seperator = "<&>";
 
@@ -76,6 +80,19 @@ public class SubscriptionSyncSQS implements SyncService {
 			} else {
 				subService.reloadSubscription(noticeSplitted[1], noticeSplitted[0]);
 			}
+		});
+		
+		pgSubscriber.reconnectPolicy(retries -> {
+			long now = System.currentTimeMillis();
+			long reconnectTime;
+			if(lastFailConnectTime + (5000) < now) {
+				reconnectTime = 100;
+				
+			}else {
+				reconnectTime = 5000;
+			}
+			lastFailConnectTime = now;
+			return reconnectTime;
 		});
 		pgSubscriber.connect().await().indefinitely();
 	}
