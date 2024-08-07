@@ -151,7 +151,7 @@ public abstract class HistoryMessagingBase {
 	}
 
 	public Uni<Void> baseHandleBatch(BatchRequest message) {
-		logger.info("retrieving " + message.toString());
+		logger.info("retrieving message with id" + message.getId());
 		if (!autoRecording || (instancesNr > 1 && message.hashCode() % instancesNr != myInstancePos)) {
 			logger.info("discarding " + message.toString());
 			logger.info("auto recording: " + autoRecording);
@@ -169,7 +169,7 @@ public abstract class HistoryMessagingBase {
 		String tenant = message.getTenant();
 		logger.info("attempting to access tenant2Buffer with " + tenant);
 		ConcurrentLinkedQueue<BaseRequest> buffer = tenant2Buffer.get(tenant);
-		logger.info("got buffer " + buffer);
+		// logger.info("got buffer " + buffer);
 		if (buffer == null) {
 			buffer = new ConcurrentLinkedQueue<>();
 			logger.info("attempting to create new buffer in tenant2Buffer with " + tenant);
@@ -239,8 +239,8 @@ public abstract class HistoryMessagingBase {
 					}
 					payload.put(NGSIConstants.JSON_LD_ID, request.getId());
 					payloads.add(payload);
-					logger.info("buffer empty: " + buffer.isEmpty());
 				}
+				logger.info("buffer empty");
 				for (Entry<Integer, List<Map<String, Object>>> entry : opType2Payload.entrySet()) {
 					unis.add(historyService.handleInternalBatchRequest(
 							new BatchRequest(tenant, entry.getValue(), null, entry.getKey())));
