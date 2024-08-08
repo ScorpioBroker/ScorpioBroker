@@ -137,7 +137,17 @@
 				</plugins>
 			</build>
 		</profile>
-
+		<profile>
+			<id>nativedocker</id>
+			<activation>
+				<property>
+					<name>nativedocker</name>
+				</property>
+			</activation>
+			<properties>
+				<quarkus.native.container-build>true</quarkus.native.container-build>
+			</properties>
+		</profile>
 		<profile>
 			<id>docker</id>
 			<activation>
@@ -145,33 +155,13 @@
 					<name>docker</name>
 				</property>
 			</activation>
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>com.spotify</groupId>
-						<artifactId>dockerfile-maven-plugin</artifactId>
-						<version>1.4.12</version>
-						<executions>
-							<execution>
-								<id>default</id>
-								<goals>
-									<goal>build</goal>
-									<goal>push</goal>
-								</goals>
-							</execution>
-						</executions>
-						<configuration>
-							<dockerfile>src/main/resources/dockerfiles/dockerfile-${os}</dockerfile>
-							<repository>scorpiobroker/${project.artifactId}</repository>
-							<tag>${docker-tag}</tag>
-							<buildArgs>
-								<FILE_BUILD>${project.build.finalName}-runner${nativeext}</FILE_BUILD>
-								<FILE_RUN>scorpio-${project.artifactId}${nativeext}</FILE_RUN>
-							</buildArgs>
-						</configuration>
-					</plugin>
-				</plugins>
-			</build>
+			<properties>
+				<quarkus.container-image.build>true</quarkus.container-image.build>
+				<quarkus.container-image.name>${project.artifactId}</quarkus.container-image.name>
+				<quarkus.container-image.tag>${docker-tag}</quarkus.container-image.tag>
+				<quarkus.container-image.registry>scorpiobroker</quarkus.container-image.registry>
+				<quarkus.container-image.group></quarkus.container-image.group>
+			</properties>
 		</profile>
 	</profiles>
 	<dependencies>

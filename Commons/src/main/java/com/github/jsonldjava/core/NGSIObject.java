@@ -13,6 +13,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.math.NumberUtils;
+
 //known structures
 @SuppressWarnings("unchecked")
 class NGSIObject {
@@ -43,12 +45,10 @@ class NGSIObject {
 	private boolean isReceiverInfo = false;
 	private boolean hasAtContext = false;
 
-
-
-	private boolean isLocalOnly =false;
+	private boolean isLocalOnly = false;
 
 	private boolean isJsonProperty = false;
-	private boolean hasJson=false;
+	private boolean hasJson = false;
 
 	public boolean isJsonProperty() {
 		return isJsonProperty;
@@ -245,8 +245,8 @@ class NGSIObject {
 			this.isProperty = true;
 		} else if (NGSIConstants.NGSI_LD_RELATIONSHIP.equals(type)) {
 			this.isRelationship = true;
-		}else if (NGSIConstants.NGSI_LD_LISTRELATIONSHIP.equals(type)) {
-				this.isListRelationship = true;
+		} else if (NGSIConstants.NGSI_LD_LISTRELATIONSHIP.equals(type)) {
+			this.isListRelationship = true;
 		} else if (NGSIConstants.NGSI_LD_GEOPROPERTY.equals(type)) {
 			this.isGeoProperty = true;
 		} else if (NGSIConstants.NGSI_LD_DATE_TIME.equals(type)) {
@@ -255,12 +255,12 @@ class NGSIObject {
 			this.isLanguageProperty = true;
 		} else if (NGSIConstants.NGSI_LD_VocabProperty.equals(type)) {
 			this.isVocabProperty = true;
-		} else if(NGSIConstants.NGSI_LD_ListProperty.equals(type)){
-			this.isListProperty=true;
-		}else if(NGSIConstants.NGSI_LD_LOCALONLY.equals(type)){
-			this.isLocalOnly=true;
-		}else if(NGSIConstants.NGSI_LD_JSON_PROPERTY.equals(type)){
-			this.isJsonProperty=true;
+		} else if (NGSIConstants.NGSI_LD_ListProperty.equals(type)) {
+			this.isListProperty = true;
+		} else if (NGSIConstants.NGSI_LD_LOCALONLY.equals(type)) {
+			this.isLocalOnly = true;
+		} else if (NGSIConstants.NGSI_LD_JSON_PROPERTY.equals(type)) {
+			this.isJsonProperty = true;
 		}
 
 		return this;
@@ -325,18 +325,20 @@ class NGSIObject {
 				validateNotificationEntry(((List<Map<String, Object>>) notification).get(0));
 				Object entities = ((Map<String, Object>) element).get(NGSIConstants.NGSI_LD_ENTITIES);
 				Boolean localOnly = null;
-				if(((Map<?, ?>) element).containsKey(NGSIConstants.NGSI_LD_LOCALONLY)){
-				localOnly	 = ((Map<String, List<Map<String,Boolean>>>) element).get(NGSIConstants.NGSI_LD_LOCALONLY).get(0)
-							.get(NGSIConstants.JSON_LD_VALUE);
+				if (((Map<?, ?>) element).containsKey(NGSIConstants.NGSI_LD_LOCALONLY)) {
+					localOnly = ((Map<String, List<Map<String, Boolean>>>) element).get(NGSIConstants.NGSI_LD_LOCALONLY)
+							.get(0).get(NGSIConstants.JSON_LD_VALUE);
 				}
 				if (entities == null || ((List<Object>) entities).isEmpty()) {
 					if (localOnly == null || !localOnly) {
 						throw new ResponseException(ErrorType.BadRequestData, "A subscription needs an entities entry");
 					}
 				} else {
-					String type = ((List<Map<String, List<String>>>) entities).get(0).get(NGSIConstants.JSON_LD_TYPE).get(0);
+					String type = ((List<Map<String, List<String>>>) entities).get(0).get(NGSIConstants.JSON_LD_TYPE)
+							.get(0);
 					if (type.equals(NGSIConstants.NGSI_LD_STAR) && (localOnly != null && !localOnly)) {
-						throw new ResponseException(ErrorType.BadRequestData, "local Only cannot be false for all type subscription");
+						throw new ResponseException(ErrorType.BadRequestData,
+								"local Only cannot be false for all type subscription");
 					}
 				}
 
@@ -724,26 +726,27 @@ class NGSIObject {
 			validateArray();
 		} else {
 			if (isLdKeyWord && parent == null && !isProperty && !isRelationship && !isGeoProperty && !isDateTime
-					&& !isLanguageProperty && !isVocabProperty && !isListProperty && !isListRelationship
-					&& !isLocalOnly && !isJsonProperty) {
+					&& !isLanguageProperty && !isVocabProperty && !isListProperty && !isListRelationship && !isLocalOnly
+					&& !isJsonProperty) {
 				return;
 			}
 			if (!isProperty && !isRelationship && !isGeoProperty && !isDateTime && !isLanguageProperty
-					&& !isVocabProperty && !isListProperty && !isListRelationship  && !isLocalOnly && !isJsonProperty) {
+					&& !isVocabProperty && !isListProperty && !isListRelationship && !isLocalOnly && !isJsonProperty) {
 				throw new ResponseException(ErrorType.BadRequestData,
 						"The key " + activeProperty + " is an invalid entry.");
 			}
 			if (isProperty && !hasValue) {
 				throw new ResponseException(ErrorType.BadRequestData, "You can't have properties without a value");
-			}if (isLocalOnly && !hasValue) {
+			}
+			if (isLocalOnly && !hasValue) {
 				throw new ResponseException(ErrorType.BadRequestData, "You can't have properties without a value");
 			}
 			if (isVocabProperty && !hasVocab) {
 				throw new ResponseException(ErrorType.BadRequestData,
 						"You can't have vocabulary property without a vocab");
-			}if (isJsonProperty && !hasJson) {
-				throw new ResponseException(ErrorType.BadRequestData,
-						"You can't have json property without a json");
+			}
+			if (isJsonProperty && !hasJson) {
+				throw new ResponseException(ErrorType.BadRequestData, "You can't have json property without a json");
 			}
 			if ((isRelationship && !hasObject)) {
 				throw new ResponseException(ErrorType.BadRequestData, "You can't have relationships without an object");
@@ -753,8 +756,10 @@ class NGSIObject {
 			}
 			if (isProperty && hasObject) {
 				throw new ResponseException(ErrorType.BadRequestData, "You can't have properties with an object");
-			}if ((isListRelationship && !hasListObject)) {
-				throw new ResponseException(ErrorType.BadRequestData, "You can't have list relationships without an object");
+			}
+			if ((isListRelationship && !hasListObject)) {
+				throw new ResponseException(ErrorType.BadRequestData,
+						"You can't have list relationships without an object");
 			}
 			if ((isListRelationship && hasValue)) {
 				throw new ResponseException(ErrorType.BadRequestData, "You can't have list relationships with a value");
@@ -834,6 +839,36 @@ class NGSIObject {
 				throw new ResponseException(ErrorType.BadRequestData, "Can't read location entry");
 			}
 		}
+		geoJsonValue = ((List<Map<String, Object>>) geoPropMap.get(NGSIConstants.NGSI_LD_HAS_VALUE)).get(0);
+		Object geoTypeObj = geoJsonValue.get(NGSIConstants.JSON_LD_TYPE);
+		Object coordinatesObj = geoJsonValue.get(NGSIConstants.NGSI_LD_COORDINATES);
+		if (coordinatesObj == null) {
+			throw new ResponseException(ErrorType.BadRequestData,
+					"Invalid value for GeoProperty. No coordinates entry.");
+		}
+		if (coordinatesObj instanceof List<?> coordinatesL && !coordinatesL.isEmpty()
+				&& coordinatesL.get(0) instanceof Map<?, ?> coordinatesMap) {
+
+			if (geoTypeObj != null && geoTypeObj instanceof List<?> l) {
+				String geoType = (String) l.get(0);
+				if (NGSIConstants.NGSI_LD_POINT.equals(geoType)) {
+					validatePoint(coordinatesMap);
+				} else if (NGSIConstants.NGSI_LD_LINESTRING.equals(geoType)) {
+					validateLineString(coordinatesMap);
+				} else if (NGSIConstants.NGSI_LD_POLYGON.equals(geoType)) {
+					validatePolygon(coordinatesMap);
+				} else {
+					throw new ResponseException(ErrorType.BadRequestData,
+							"Invalid value for GeoProperty. Unknown type.");
+				}
+
+			} else {
+				throw new ResponseException(ErrorType.BadRequestData, "Invalid value for GeoProperty. Type missing.");
+			}
+		} else {
+			throw new ResponseException(ErrorType.BadRequestData,
+					"Invalid value for GeoProperty. Invalid coordinates structure.");
+		}
 	}
 
 	public void setVocabProperty(boolean vocabProperty) {
@@ -844,56 +879,64 @@ class NGSIObject {
 		this.hasVocab = hasVocab;
 	}
 
-	private void validateMultiPolygon(Object geoValue) throws ResponseException {
-		if (!(geoValue instanceof List)) {
-			throw new ResponseException(ErrorType.BadRequestData, "Invalid multi polygon definition");
-		}
-		List<Object> tempList = (List<Object>) geoValue;
-		for (Object entry : tempList) {
-			validatePolygon(entry);
-		}
-	}
-
-	private void validatePolygon(Object geoValue) throws ResponseException {
-		if (!(geoValue instanceof List)) {
-			throw new ResponseException(ErrorType.BadRequestData, "Invalid polygon definition");
-		}
-		List<Object> tempList = (List<Object>) geoValue;
-		if (tempList.size() != 1) {
-			throw new ResponseException(ErrorType.BadRequestData, "Invalid polygon definition");
-		}
-		tempList = (List<Object>) tempList.get(0);
-		Object first = null, last = null;
-		for (Object entry : tempList) {
-			if (first == null) {
-				first = entry;
-			}
-			last = entry;
-			validatePoint(entry);
-		}
-		if (!first.equals(last)) {
-			throw new ResponseException(ErrorType.BadRequestData, "Polygon does not close");
-		}
-
-	}
-
-	private void validateLineString(Object geoValue) throws ResponseException {
-		if (!(geoValue instanceof List)) {
+	private void validatePolygon(Map<?,?> coordinates) throws ResponseException {
+		Object atList = coordinates.get(NGSIConstants.JSON_LD_LIST);
+		if (atList != null && atList instanceof List<?> l) {
+			Object obj = l.get(0);
+				if (obj != null && obj instanceof Map<?, ?> m) {
+					Object atList2 = m.get(NGSIConstants.JSON_LD_LIST);
+					if (atList2 != null && atList2 instanceof List<?> l2) {
+						for (Object obj2 : l2) {
+							if (obj2 instanceof Map<?, ?> m2) {
+								validatePoint(m2);
+							} else {
+								throw new ResponseException(ErrorType.BadRequestData, "Invalid line string definition");
+							}
+						}			
+					}else {
+						throw new ResponseException(ErrorType.BadRequestData, "Invalid line string definition");	
+					}
+				} else {
+					throw new ResponseException(ErrorType.BadRequestData, "Invalid line string definition");
+				}
+			
+		} else {
 			throw new ResponseException(ErrorType.BadRequestData, "Invalid line string definition");
 		}
-		List<Object> tempList = (List<Object>) geoValue;
-		for (Object entry : tempList) {
-			validatePoint(entry);
-		}
-
 	}
 
-	private void validatePoint(Object geoValue) throws ResponseException {
-		if (!(geoValue instanceof List)) {
-			throw new ResponseException(ErrorType.BadRequestData, "Invalid longitude latitude pair definition");
+	private void validateLineString(Map<?, ?> coordinates) throws ResponseException {
+		Object atList = coordinates.get(NGSIConstants.JSON_LD_LIST);
+		if (atList != null && atList instanceof List<?> l) {
+			for (Object obj : l) {
+				if (obj instanceof Map<?, ?> m) {
+					validatePoint(m);
+				} else {
+					throw new ResponseException(ErrorType.BadRequestData, "Invalid line string definition");
+				}
+			}
+		} else {
+			throw new ResponseException(ErrorType.BadRequestData, "Invalid line string definition");
 		}
-		List<Object> tempList = (List<Object>) geoValue;
-		if (tempList.size() != 2 || !(tempList.get(0) instanceof Double) || !(tempList.get(1) instanceof Double)) {
+	}
+
+	private void validatePoint(Map<?, ?> coordinates) throws ResponseException {
+		Object atList = coordinates.get(NGSIConstants.JSON_LD_LIST);
+		if (atList != null && atList instanceof List<?> l) {
+			if (l.size() == 2 && l.get(0) instanceof Map<?, ?> m1 && l.get(1) instanceof Map<?, ?> m2) {
+				Object lon = m1.get(NGSIConstants.JSON_LD_VALUE);
+				if (!(lon instanceof Number)) {
+					throw new ResponseException(ErrorType.BadRequestData, "Longitude is not a number");
+				}
+				Object lat = m2.get(NGSIConstants.JSON_LD_VALUE);
+				if (!(lat instanceof Number)) {
+					throw new ResponseException(ErrorType.BadRequestData, "Latitude is not a number");
+				}
+
+			} else {
+				throw new ResponseException(ErrorType.BadRequestData, "Invalid longitude latitude pair definition");
+			}
+		} else {
 			throw new ResponseException(ErrorType.BadRequestData, "Invalid longitude latitude pair definition");
 		}
 	}
@@ -964,7 +1007,7 @@ class NGSIObject {
 		this.isLdKeyWord = this.isLdKeyWord || ngsiV.isLdKeyWord;
 		this.isScalar = this.isScalar || ngsiV.isScalar;
 		this.isVocabProperty = this.isVocabProperty || ngsiV.isVocabProperty;
-		this.isListProperty  = this.isListProperty  || ngsiV.isListProperty;
+		this.isListProperty = this.isListProperty || ngsiV.isListProperty;
 		this.isLocalOnly = this.isLocalOnly || ngsiV.isLocalOnly;
 		this.isJsonProperty = this.isJsonProperty || ngsiV.isJsonProperty;
 		if ((ngsiV.isRelationship || ngsiV.isListRelationship || ngsiV.isProperty || ngsiV.isLanguageProperty
