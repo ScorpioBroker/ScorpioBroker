@@ -345,4 +345,14 @@ public class AttrsQueryTerm implements Serializable {
 		return !NGSIConstants.ENTITY_BASE_PROPS.containsAll(entity.keySet());
 	}
 
+	public String toQueryParam(Context context) {
+		StringBuilder builder = new StringBuilder();
+		attrs.forEach(attr -> {
+			builder.append(context.compactIri(attr));
+			builder.append(',');
+		});
+		builder.setLength(builder.length() - 1);
+		return builder.toString();
+	}
+
 }

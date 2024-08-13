@@ -30,11 +30,6 @@ public class HistoryMessagingByteArray extends HistoryMessagingBase {
 		return handleEntityRaw(new String(byteMessage));
 	}
 
-	@Incoming(AppConstants.ENTITY_BATCH_RETRIEVE_CHANNEL)
-	@Acknowledgment(Strategy.PRE_PROCESSING)
-	public Uni<Void> handleBatchEntities(byte[] byteMessage) {
-		return handleBatchEntitiesRaw(new String(byteMessage));
-	}
 
 	@Scheduled(every = "20s", delayed = "${scorpio.startupdelay}")
 	void purge() {

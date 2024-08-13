@@ -26,6 +26,7 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.AliveAnnouncement;
 import eu.neclab.ngsildbroker.commons.datatypes.SyncMessage;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
+import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.serialization.messaging.CollectMessageListener;
 import eu.neclab.ngsildbroker.commons.serialization.messaging.MessageCollector;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
@@ -87,7 +88,11 @@ public class SubscriptionSyncServiceByteArray implements SyncService {
 
 	@Scheduled(every = "${scorpio.sync.announcement-time}", delayed = "${scorpio.startupdelay}")
 	Uni<Void> syncTask() {
-		MicroServiceUtils.serializeAndSplitObjectAndEmit(INSTANCE_ID, messageSize, aliveEmitter, objectMapper);
+		try {
+			MicroServiceUtils.serializeAndSplitObjectAndEmit(INSTANCE_ID, messageSize, aliveEmitter, objectMapper);
+		} catch (ResponseException e) {
+			logger.error("Failed to serialize sync message" ,e);
+		}
 		return Uni.createFrom().voidItem();
 	}
 
@@ -188,8 +193,12 @@ public class SubscriptionSyncServiceByteArray implements SyncService {
 	}
 
 	public Uni<Void> sync(SubscriptionRequest request) {
-		MicroServiceUtils.serializeAndSplitObjectAndEmit(new SyncMessage(SYNC_ID, request, SyncMessage.NORMAL_SUB), messageSize, syncEmitter,
-				objectMapper);
+		try {
+			MicroServiceUtils.serializeAndSplitObjectAndEmit(new SyncMessage(SYNC_ID, request, SyncMessage.NORMAL_SUB), messageSize, syncEmitter,
+					objectMapper);
+		} catch (ResponseException e) {
+			logger.error("Failed to serialize sync message" ,e);
+		}
 		return Uni.createFrom().voidItem();
 	}
 

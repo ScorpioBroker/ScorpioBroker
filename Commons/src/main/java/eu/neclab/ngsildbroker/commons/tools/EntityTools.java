@@ -125,20 +125,7 @@ public final class EntityTools {
 		return SerializationTools.parseGeoProperty((List<Map<String, Object>>) obj, locationName);
 	}
 
-	public static Map<String, Object> clearBaseProps(Map<String, Object> fullEntry, SubscriptionRequest subscription) {
-		Set<String> notificationAttrs = subscription.getSubscription().getNotification().getAttributeNames();
-		if (notificationAttrs == null || notificationAttrs.isEmpty()) {
-			return fullEntry;
-		}
-		Set<String> allNames = new HashSet<String>(fullEntry.keySet());
-		allNames.remove(NGSIConstants.JSON_LD_ID);
-		allNames.remove(NGSIConstants.JSON_LD_TYPE);
-		allNames.removeAll(notificationAttrs);
-		for (String name : allNames) {
-			fullEntry.remove(name);
-		}
-		return fullEntry;
-	}
+	
 
 	@SuppressWarnings("unchecked")
 	public static Set<String> getRegisteredTypes(Map<String, Object> cSourceRegistration) {
@@ -225,11 +212,11 @@ public final class EntityTools {
 		return result;
 	}
 
-	@SuppressWarnings("unchecked")
-	public static Set<String> getTypesFromEntity(BaseRequest createRequest) {
-		List<String> temp = (List<String>) createRequest.getPayload().get(NGSIConstants.JSON_LD_TYPE);
-		return new HashSet<String>(temp);
-	}
+//	@SuppressWarnings("unchecked")
+//	public static Set<String> getTypesFromEntity(BaseRequest createRequest) {
+//		List<String> temp = (List<String>) createRequest.getPayload().get(NGSIConstants.JSON_LD_TYPE);
+//		return new HashSet<String>(temp);
+//	}
 
 	@SuppressWarnings("unchecked")
 	public static String getInstanceId(Map<String, Object> jsonElement) {

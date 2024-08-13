@@ -529,5 +529,11 @@ public interface NGSIConstants {
 	
 
 	public static final String CONTEXT_SOURCE_INFO = "contextSourceInfo";
+	public static final String SUBSCRIPTION_NEWLY_MATCHING = "newlyMatching";
+	public static final String SUBSCRIPTION_UPDATED_MATCHING = "updated";
+	public static final String SUBSCRIPTION_NO_LONGER_MATCHING = "noLongerMatching";
+	public static final String NGSI_LD_PICK = "https://uri.etsi.org/ngsi-ld/default-context/pick";
+	public static final String NGSI_LD_OMIT = "https://uri.etsi.org/ngsi-ld/default-context/omit";
+	public static final String QUERY_PARAMETER_DO_NOT_COMPACT = "doNotCompact";
 
 }

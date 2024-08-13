@@ -552,7 +552,7 @@ public class SubscriptionTools {
 					for (Map<String, String> attrib : watchedAttribs) {
 						subTuples.add(Tuple4.of(id, idPattern, type, attrib.get(NGSIConstants.JSON_LD_ID)));
 					}
-				} else {
+				} else { 
 					subTuples.add(Tuple4.of(id, idPattern, type, null));
 				}
 			}

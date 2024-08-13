@@ -2,7 +2,7 @@ package eu.neclab.ngsildbroker.commons.datatypes.requests;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 
-public class DeleteCSourceRequest extends CSourceRequest {
+public class DeleteCSourceRequest extends CSourceBaseRequest {
 
 	/**
 	 * 

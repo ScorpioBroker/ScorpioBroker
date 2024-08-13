@@ -1,6 +1,10 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
 import com.google.common.collect.Sets;
+
+import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.OmitTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.PickTerm;
 import eu.neclab.ngsildbroker.commons.enums.Format;
 
 import java.io.Serializable;
@@ -18,7 +22,11 @@ public class NotificationParam implements Serializable {
 	 *
 	 */
 	private static final long serialVersionUID = -5749495213091903926L;
-	private Set<String> attributeNames;
+	private AttrsQueryTerm attrs;
+	private PickTerm pick;
+	private OmitTerm omit;
+	private int joinLevel = -1;
+	private String join;
 	private EndPoint endPoint;
 	private Format format;
 	private int timesSent = 0;
@@ -30,8 +38,8 @@ public class NotificationParam implements Serializable {
 
 	// duplicate
 	public NotificationParam(NotificationParam notification) {
-		if (notification.attributeNames != null) {
-			this.attributeNames = Sets.newHashSet(notification.attributeNames);
+		if (notification.attrs != null) {
+			this.attrs = notification.attrs;
 		}
 		this.endPoint = new EndPoint(notification.endPoint);
 		this.format = notification.format;
@@ -42,8 +50,8 @@ public class NotificationParam implements Serializable {
 	}
 
 	public NotificationParam update(NotificationParam notification) {
-		if (notification.attributeNames != null) {
-			this.attributeNames = Sets.newHashSet(notification.attributeNames);
+		if (notification.attrs != null) {
+			this.attrs = notification.attrs;
 		}
 		if (notification.endPoint != null) {
 			this.endPoint.update(notification.endPoint);
@@ -93,14 +101,6 @@ public class NotificationParam implements Serializable {
 
 	}
 
-	public Set<String> getAttributeNames() {
-		return attributeNames;
-	}
-
-	public void setAttributeNames(Set<String> attributeNames) {
-		this.attributeNames = attributeNames;
-	}
-
 	public EndPoint getEndPoint() {
 		return endPoint;
 	}
@@ -115,14 +115,6 @@ public class NotificationParam implements Serializable {
 
 	public void setFormat(Format format) {
 		this.format = format;
-	}
-
-	@Override
-	public String toString() {
-		return "NotificationParam [attributeNames=" + attributeNames + ", endPoint=" + endPoint + ", format=" + format
-				+ ", timesSent=" + timesSent + ", lastNotification=" + lastNotification
-				+ ", lastSuccessfulNotification=" + lastSuccessfulNotification + ", lastFailedNotification="
-				+ lastFailedNotification + ", showChanges=" + showChanges + ", sysAttrs=" + sysAttrs + "]";
 	}
 
 	public Boolean getShowChanges() {
@@ -140,5 +132,46 @@ public class NotificationParam implements Serializable {
 	public void setSysAttrs(Boolean sysAttrs) {
 		this.sysAttrs = sysAttrs;
 	}
+
+	public AttrsQueryTerm getAttrs() {
+		return attrs;
+	}
+
+	public void setAttrs(AttrsQueryTerm attrs) {
+		this.attrs = attrs;
+	}
+
+	public PickTerm getPick() {
+		return pick;
+	}
+
+	public void setPick(PickTerm pick) {
+		this.pick = pick;
+	}
+
+	public OmitTerm getOmit() {
+		return omit;
+	}
+
+	public void setOmit(OmitTerm omit) {
+		this.omit = omit;
+	}
+
+	public int getJoinLevel() {
+		return joinLevel;
+	}
+
+	public void setJoinLevel(int joinLevel) {
+		this.joinLevel = joinLevel;
+	}
+
+	public String getJoin() {
+		return join;
+	}
+
+	public void setJoin(String join) {
+		this.join = join;
+	}
+	
 
 }

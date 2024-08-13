@@ -7,8 +7,11 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
 
+import org.checkerframework.common.returnsreceiver.qual.This;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,6 +19,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
@@ -25,6 +29,7 @@ import jakarta.inject.Inject;
 
 public abstract class HistorySync {
 
+	private static final Logger logger = LoggerFactory.getLogger(HistorySync.class);
 	@Inject
 	@Channel(AppConstants.HIST_SYNC_CHANNEL)
 	@Broadcast
@@ -35,7 +40,7 @@ public abstract class HistorySync {
 
 	@Inject
 	HistoryMessagingBase historyMessaging;
-	
+
 	@ConfigProperty(name = "scorpio.history.syncchecktime", defaultValue = "5000")
 	private long syncCheckTime;
 
@@ -45,13 +50,21 @@ public abstract class HistorySync {
 	protected Map<String, Object> announcement = Map.of("instanceId", myInstanceId, "upOrDown", true);
 
 	void syncTask() {
-		MicroServiceUtils.serializeAndSplitObjectAndEmit(announcement, Integer.MAX_VALUE, syncEmitter, objectMapper);
+		try {
+			MicroServiceUtils.serializeAndSplitObjectAndEmit(announcement, Integer.MAX_VALUE, syncEmitter, objectMapper);
+		} catch (ResponseException e) {
+			logger.error("Failed to serialize sync message.", e);
+		}
 	}
 
 	@PreDestroy
 	void shutdown() {
-		MicroServiceUtils.serializeAndSplitObjectAndEmit(Map.of("instanceId", myInstanceId, "upOrDown", false),
-				Integer.MAX_VALUE, syncEmitter, objectMapper);
+		try {
+			MicroServiceUtils.serializeAndSplitObjectAndEmit(Map.of("instanceId", myInstanceId, "upOrDown", false),
+					Integer.MAX_VALUE, syncEmitter, objectMapper);
+		} catch (ResponseException e) {
+			logger.error("Failed to serialize sync message.", e);
+		}
 	}
 
 	Uni<Void> handleAnnouncement(String byteMessage) {

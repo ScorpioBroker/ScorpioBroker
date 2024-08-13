@@ -7,26 +7,22 @@ import com.github.jsonldjava.core.Context;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 
-public class UpdateSubscriptionRequest extends BaseRequest {
+public class UpdateSubscriptionRequest extends SubscriptionRequest {
 
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 53529246590592034L;
-	private Context context;
 
 	public UpdateSubscriptionRequest(String tenant, String subscriptionId, Map<String, Object> update,
 			Context context) {
-		super(tenant, subscriptionId, update, AppConstants.UPDATE_SUBSCRIPTION_REQUEST);
+		this.tenant = tenant;
+		this.id = subscriptionId;
+		this.payload = update;
 		this.context = context;
-	}
+		this.requestType = AppConstants.UPDATE_SUBSCRIPTION_REQUEST;
+		
 
-	public Context getContext() {
-		return context;
-	}
-
-	public void setContext(Context context) {
-		this.context = context;
 	}
 
 }

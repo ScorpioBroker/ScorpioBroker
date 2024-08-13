@@ -20,8 +20,4 @@ public class QueryManagerMessagingString extends QueryManagerMessagingBase {
 		return handleCsourceRaw(byteMessage);
 	}
 
-	@Scheduled(every = "20s", delayed = "5s")
-	void purge() {
-		super.purge();
-	}
 }

@@ -287,6 +287,7 @@ public class QueryParser {
 			return null;
 		}
 		ScopeQueryTerm result = new ScopeQueryTerm();
+		result.setScopeQueryString(queryString);
 		ScopeQueryTerm current = result;
 		StringBuilder scopeLevel = new StringBuilder();
 		ArrayList<String> scopeLevels = new ArrayList<String>();

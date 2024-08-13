@@ -26,9 +26,4 @@ public class SubscriptionMessagingInMemory extends SubscriptionMessagingBase {
 		return handleInternalNotificationRaw(byteMessage);
 	}
 
-	@Incoming(AppConstants.ENTITY_BATCH_CHANNEL)
-	@Acknowledgment(Strategy.PRE_PROCESSING)
-	public Uni<Void> handleBatchEntities(String byteMessage) {
-		return handleBatchEntitiesRaw(byteMessage);
-	}
 }

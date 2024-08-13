@@ -89,7 +89,7 @@ public class EntityServiceTest {
 		entityService.webClient = webClient;
 		entityService.vertx = vertx;
 		entityService.entityEmitter = entityEmitter;
-		entityService.batchEmitter = batchEmitter;
+//		entityService.batchEmitter = batchEmitter;
 
 		Table<String, String, List<RegistrationEntry>> registriesMap = HashBasedTable.create();
 		Uni<Table<String, String, List<RegistrationEntry>>> uniRegistriesMap = Uni.createFrom().item(registriesMap);
@@ -121,7 +121,7 @@ public class EntityServiceTest {
 	@Order(1)
 	public void createEntryTest() throws Exception {
 
-		CreateEntityRequest request = new CreateEntityRequest(tenant, resolved);
+		CreateEntityRequest request = new CreateEntityRequest(tenant, resolved, false);
 
 		Uni<Void> createEntityRes = Uni.createFrom().voidItem();
 		when(entityDAO.createEntity(any())).thenReturn(createEntityRes);
@@ -144,7 +144,7 @@ public class EntityServiceTest {
 	@Order(2)
 	public void updateEntryTest() throws JsonProcessingException {
 
-		UpdateEntityRequest request = new UpdateEntityRequest(tenant, entityId, resolved, null);
+		UpdateEntityRequest request = new UpdateEntityRequest(tenant, entityId, resolved, null, false);
 
 		Uni<Tuple2<Map<String, Object>, Map<String, Object>>> updateEntityRes = Uni.createFrom().nothing();
 		when(entityDAO.updateEntity(any())).thenReturn(updateEntityRes);

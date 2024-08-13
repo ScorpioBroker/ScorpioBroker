@@ -27,12 +27,6 @@ public class HistoryMessagingInMemory extends HistoryMessagingBase {
 		return handleEntityRaw(byteMessage);
 	}
 
-	@Incoming(AppConstants.ENTITY_BATCH_CHANNEL)
-	@Acknowledgment(Strategy.PRE_PROCESSING)
-	public Uni<Void> handleBatchEntities(String byteMessage) {
-		return handleBatchEntitiesRaw(byteMessage);
-	}
-
 	@Scheduled(every = "20s", delayed = "${scorpio.startupdelay}")
 	void purge() {
 		super.purge();

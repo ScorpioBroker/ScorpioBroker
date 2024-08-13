@@ -26,15 +26,4 @@ public class SubscriptionMessagingString extends SubscriptionMessagingBase {
 	public Uni<Void> handleInternalNotification(String byteMessage) {
 		return handleInternalNotificationRaw(byteMessage);
 	}
-
-	@Incoming(AppConstants.ENTITY_BATCH_RETRIEVE_CHANNEL)
-	@Acknowledgment(Strategy.PRE_PROCESSING)
-	public Uni<Void> handleBatchEntities(String byteMessage) {
-		return handleBatchEntitiesRaw(byteMessage);
-	}
-
-	@Scheduled(every = "20s", delayed = "5s")
-	void purge() {
-		super.purge();
-	}
 }

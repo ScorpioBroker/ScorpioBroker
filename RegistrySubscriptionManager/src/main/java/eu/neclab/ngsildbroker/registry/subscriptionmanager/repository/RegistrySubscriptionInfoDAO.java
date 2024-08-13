@@ -74,29 +74,30 @@ public class RegistrySubscriptionInfoDAO {
 							return client.preparedQuery(
 									"UPDATE registry_subscriptions SET subscription=subscription || $2, context=$3 WHERE subscription_id=$1 RETURNING subscription")
 									.execute(Tuple.of(request.getId(), new JsonObject(request.getPayload()), contextId))
-									.onItem().transformToUni(rows ->{
-										if(rows.size()==0){
+									.onItem().transformToUni(rows -> {
+										if (rows.size() == 0) {
+											return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound,
+													request.getId() + " not found"));
+										} else {
 											return Uni.createFrom()
-													.failure(new ResponseException(ErrorType.NotFound, request.getId() + " not found"));
-										}else {
-											return Uni.createFrom().item(Tuple2.of(rows.iterator().next().getJsonObject("subscription").getMap(),
-													request.getContext().serialize().get("@context")));
+													.item(Tuple2.of(
+															rows.iterator().next().getJsonObject("subscription")
+																	.getMap(),
+															request.getContext().serialize().get("@context")));
 										}
 									});
 						}));
 	}
 
 	public Uni<RowSet<Row>> deleteSubscription(DeleteSubscriptionRequest request) {
-		return clientManager.getClient(request.getTenant(), false).onItem()
-				.transformToUni(client -> client.preparedQuery("DELETE FROM registry_subscriptions WHERE subscription_id=$1")
-						.execute(Tuple.of(request.getId())
-								).onItem().transformToUni(rows -> {
-									if (rows.rowCount() == 0) {
-										return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
-									}
-									return Uni.createFrom().item(rows);
-								})
-						);
+		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(
+				client -> client.preparedQuery("DELETE FROM registry_subscriptions WHERE subscription_id=$1")
+						.execute(Tuple.of(request.getId())).onItem().transformToUni(rows -> {
+							if (rows.rowCount() == 0) {
+								return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
+							}
+							return Uni.createFrom().item(rows);
+						}));
 	}
 
 	public Uni<RowSet<Row>> getAllSubscriptions(String tenant, int limit, int offset) {
@@ -211,51 +212,51 @@ public class RegistrySubscriptionInfoDAO {
 
 	public Uni<RowSet<Row>> getInitialNotificationData(SubscriptionRequest subscriptionRequest) {
 		return clientManager.getClient(subscriptionRequest.getTenant(), false).onItem().transformToUni(client -> {
-			
+
 			Tuple tuple = Tuple.tuple();
-			String sql = "with a as (select cs_id from csourceinformation WHERE ";
+			StringBuilder sql = new StringBuilder("with a as (select cs_id from csourceinformation WHERE ");
 			boolean sqlAdded = false;
 			int dollar = 1;
 			Subscription subscription = subscriptionRequest.getSubscription();
 			Iterator<EntityInfo> it = subscription.getEntities().iterator();
 			while (it.hasNext()) {
 				EntityInfo entityInformation = it.next();
-				sql += "(";
+				sql.append("(");
 				if (entityInformation.getId() != null) {
-					sql += "((e_id is null or e_id  = $" + dollar + ") and (e_id_p is null or e_id_p ~ $" + dollar
-							+ "))";
+					sql.append("((e_id is null or e_id  = $" + dollar + ") and (e_id_p is null or e_id_p ~ $" + dollar
+							+ "))");
 					dollar++;
-					
+
 					tuple.addString(entityInformation.getId().toString());
-					if (entityInformation.getType() != null) {
-						sql += " and ";
+					if (entityInformation.getTypeTerm() != null) {
+						sql.append(" and ");
 					}
 				} else if (entityInformation.getIdPattern() != null) {
-					sql += "((e_id is null or $" + dollar + " ~ e_id) and (e_id_p is null or e_id_p = $" + dollar
-							+ "))";
+					sql.append("((e_id is null or $" + dollar + " ~ e_id) and (e_id_p is null or e_id_p = $" + dollar
+							+ "))");
 					dollar++;
 					tuple.addString(entityInformation.getIdPattern());
-					if (entityInformation.getType() != null) {
-						sql += " and ";
+					if (entityInformation.getTypeTerm() != null) {
+						sql.append(" and ");
 					}
 				}
-				if (entityInformation.getType() != null) {
-					sql += "(e_type is null or e_type = ($" + dollar + "))";
-					dollar++;
-					tuple.addString(entityInformation.getType());
+				if (entityInformation.getTypeTerm() != null) {
+					dollar = entityInformation.getTypeTerm().toSql(sql, tuple, dollar);
+
 				}
-				sql += ")";
+				sql.append(")");
 				if (it.hasNext()) {
-					sql += " and ";
+					sql.append(" and ");
 				}
 				sqlAdded = true;
 			}
 
 			if (subscription.getAttributeNames() != null) {
 				if (sqlAdded) {
-					sql += " and ";
+					sql.append(" and ");
 				}
-				sql += "(e_prop is null or e_prop = any($" + dollar + ")) and (e_rel is null or e_rel = any($" + dollar + "))";
+				sql.append("(e_prop is null or e_prop = any($" + dollar + ")) and (e_rel is null or e_rel = any($"
+						+ dollar + "))");
 				tuple.addArrayOfString(subscription.getAttributeNames().toArray(new String[0]));
 				dollar++;
 				sqlAdded = true;
@@ -263,12 +264,12 @@ public class RegistrySubscriptionInfoDAO {
 
 			if (subscription.getLdGeoQuery() != null) {
 				if (sqlAdded) {
-					sql += " and ";
+					sql.append(" and ");
 				}
 				try {
 					Tuple2<StringBuilder, Integer> tmp = subscription.getLdGeoQuery().getGeoSQLQuery(tuple, dollar,
 							"i_location");
-					sql += tmp.getItem1().toString();
+					sql.append(tmp.getItem1().toString());
 					dollar = tmp.getItem2();
 					sqlAdded = true;
 				} catch (ResponseException e) {
@@ -278,43 +279,44 @@ public class RegistrySubscriptionInfoDAO {
 
 			if (subscription.getScopeQuery() != null) {
 				if (sqlAdded) {
-					sql += " and ";
+					sql.append(" and ");
 				}
-				sql += "(scopes IS NULL OR ";
+				sql.append("(scopes IS NULL OR ");
 				ScopeQueryTerm current = subscription.getScopeQuery();
 				while (current != null) {
-					sql += " matchscope(scopes, " + current.getSQLScopeQuery() + ")";
+					sql.append(" matchscope(scopes, " + current.getSQLScopeQuery() + ")");
 
 					if (current.hasNext()) {
 						if (current.isNextAnd()) {
-							sql += " and ";
+							sql.append(" and ");
 						} else {
-							sql += " or ";
+							sql.append(" or ");
 						}
 					}
 					current = current.getNext();
 				}
-				sql += ")";
+				sql.append(")");
 
 			}
 
-			sql += ") select csource.reg from a left join csource on a.cs_id = csource.id";
+			sql.append(") select csource.reg from a left join csource on a.cs_id = csource.id");
 			if (subscription.getCsf() != null) {
 				// if (sqlAdded) {
 				// sql += " and ";
 				// }
 				// dollar++;
 			}
-			
+
 			logger.debug("SQL I noti: " + sql);
 			logger.debug("Tuple I noti: " + tuple.deepToString());
-			return client.preparedQuery(sql).execute(tuple).onFailure().retry().atMost(3);
+			return client.preparedQuery(sql.toString()).execute(tuple).onFailure().retry().atMost(3);
 		});
 	}
 
 	public Uni<Tuple2<Map<String, Object>, Map<String, Object>>> loadRegSubscription(String tenant, String id) {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
-			return client.preparedQuery("SELECT subscription, context FROM registry_subscriptions WHERE subscription_id=$1")
+			return client
+					.preparedQuery("SELECT subscription, context FROM registry_subscriptions WHERE subscription_id=$1")
 					.execute(Tuple.of(id)).onItem().transformToUni(rows -> {
 						if (rows.size() == 0) {
 							Tuple2<Map<String, Object>, Map<String, Object>> r = Tuple2.of(null, null);
@@ -348,7 +350,7 @@ public class RegistrySubscriptionInfoDAO {
 
 					});
 		});
-		
+
 	}
 
 	public Uni<Tuple2<Map<String, Object>, Map<String, Object>>> loadSubscription(String tenant, String id) {
@@ -387,6 +389,6 @@ public class RegistrySubscriptionInfoDAO {
 
 					});
 		});
-		
+
 	}
 }

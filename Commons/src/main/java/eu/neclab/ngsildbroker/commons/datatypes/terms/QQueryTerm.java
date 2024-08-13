@@ -1,6 +1,8 @@
 package eu.neclab.ngsildbroker.commons.datatypes.terms;
 
 import java.io.Serializable;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -2564,6 +2566,30 @@ public class QQueryTerm implements Serializable {
 
 	public void setId(int id) {
 		this.id = id;
+	}
+
+	public String toQueryParam(Context context) {
+		String result;
+		if (firstChild != null) {
+			result = "(" + firstChild.toQueryParam(context) + ")";
+		} else {
+			result = URLEncoder.encode(context.compactIri(attribute), StandardCharsets.UTF_8);
+			if (isLinkedQ) {
+
+			}
+			if (operant != null && operator != null) {
+				result += operator + operant;
+			}
+			if (hasNext()) {
+				if (isNextAnd()) {
+					result += ';';
+				} else {
+					result += '|';
+				}
+				result += next.toQueryParam(context);
+			}
+		}
+		return result;
 	}
 
 }

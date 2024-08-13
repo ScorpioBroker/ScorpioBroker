@@ -39,6 +39,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.RegistrationEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.RemoteHost;
 import eu.neclab.ngsildbroker.commons.datatypes.ViaHeaders;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.CSourceBaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
@@ -1778,7 +1779,7 @@ public class QueryService {
 		return result;
 	}
 
-	public Uni<Void> handleRegistryChange(BaseRequest req) {
+	public Uni<Void> handleRegistryChange(CSourceBaseRequest req) {
 		return RegistrationEntry.fromRegPayload(req.getPayload(), ldService).onItem().transformToUni(regs -> {
 			List<RegistrationEntry> newRegs = Lists.newArrayList();
 			tenant2CId2RegEntries.remove(req.getTenant(), req.getId());

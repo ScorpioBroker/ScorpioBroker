@@ -114,6 +114,8 @@ public class AppConstants {
 	public static final int DELETE_TEMPORAL_ATTRIBUTE_REQUEST = 9;
 	public static final int DELETE_TEMPORAL_ATTRIBUTE_INSTANCE_REQUEST = 10;
 	public static final int UPSERT_REQUEST = 11;
+	
+	
 
 	public static final int OPERATION_CREATE_REGISTRATION = 11;
 	public static final int OPERATION_UPDATE_REGISTRATION = 12;
@@ -124,6 +126,12 @@ public class AppConstants {
 	public static final int CREATE_SUBSCRIPTION_REQUEST = 16;
 
 	public static final int REPLACE_ATTRIBUTE_REQUEST = 23;
+	
+	public static final int BATCH_CREATE_REQUEST = 30;
+	public static final int BATCH_UPSERT_REQUEST = 31;
+	public static final int BATCH_UPDATE_REQUEST = 32;
+	public static final int BATCH_DELETE_REQUEST = 33;
+	public static final int BATCH_MERGE_REQUEST = 34;
 
 	public static final String NGB_APPLICATION_GEO_JSON = "application/geo+json";
 	public static final String INTERNAL_TYPE_REGISTRATION_ID = "scorpio:hosted:types";
@@ -169,5 +177,21 @@ public class AppConstants {
 			true, true, -1, null, null, false, false, null, null);
 	public static final Map<String, QueryRemoteHost> DEFAULT_REMOTE_HOST_MAP = Maps
 			.newHashMap(Map.of(INTERNAL_NULL_KEY, DB_REMOTE_HOST));
+	
+	public static final String TENANT_SERIALIZATION_CHAR = "a";
+	public static final String PAYLOAD_SERIALIZATION_CHAR = "b";
+	public static final String PREVPAYLOAD_SERIALIZATION_CHAR = "c";
+	public static final String REQUESTTYPE_SERIALIZATION_CHAR = "d";
+	public static final String SENDTIMESTAMP_SERIALIZATION_CHAR = "e";
+	public static final String IDS_SERIALIZATION_CHAR = "f";
+	public static final String ATTRIBNAME_SERIALIZATION_CHAR = "g";
+	public static final String DATASETID_SERIALIZATION_CHAR = "h";
+	public static final String DELETEALL_SERIALIZATION_CHAR = "i";
+	public static final String DISTRIBUTED_SERIALIZATION_CHAR = "j";
+	public static final String NOOVERWRITE_SERIALIZATION_CHAR = "k";
+	public static final String INSTANCEID_SERIALIZATION_CHAR = "l";
+	public static final String ZIPPED_SERIALIZATION_CHAR = "m";
+
+
 
 }

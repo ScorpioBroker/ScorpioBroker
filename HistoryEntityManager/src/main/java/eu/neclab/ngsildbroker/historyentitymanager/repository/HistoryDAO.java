@@ -64,7 +64,7 @@ public class HistoryDAO {
 	public Uni<Boolean> createHistoryEntity(CreateHistoryEntityRequest request) {
 
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
-			Map<String, Object> payload = request.getPayload();
+			Map<String, Object> payload = request.getFirstPayload();
 			// return client.getConnection().onItem().transformToUni(conn -> {
 			Tuple tuple = Tuple.of(payload.remove(NGSIConstants.JSON_LD_ID),
 					((List<String>) payload.remove(NGSIConstants.JSON_LD_TYPE)).toArray(new String[0]),
@@ -114,10 +114,10 @@ public class HistoryDAO {
 						attribEntry.put(NGSIConstants.NGSI_LD_INSTANCE_ID, List
 								.of(Map.of(NGSIConstants.JSON_LD_ID, "instanceid:" + UUID.randomUUID().toString())));
 						if (location != null) {
-							batch.add(Tuple.of(request.getId(), entry.getKey(), new JsonObject(attribEntry),
+							batch.add(Tuple.of(request.getFirstId(), entry.getKey(), new JsonObject(attribEntry),
 									geoLocation));
 						} else {
-							batch.add(Tuple.of(request.getId(), entry.getKey(), new JsonObject(attribEntry)));
+							batch.add(Tuple.of(request.getFirstId(), entry.getKey(), new JsonObject(attribEntry)));
 						}
 					}
 				}
@@ -140,78 +140,82 @@ public class HistoryDAO {
 			List<Tuple> batchType = Lists.newArrayList();
 			List<Tuple> batchAttribs = Lists.newArrayList();
 			List<Tuple> batchAttribsWtihLocation = Lists.newArrayList();
-			for (Map<String, Object> payload : request.getRequestPayload()) {
-				String entityId = (String) payload.remove(NGSIConstants.JSON_LD_ID);
-				Object location = payload.get(NGSIConstants.NGSI_LD_LOCATION);
-				JsonObject geoLocation = null;
+			for (List<Map<String, Object>> payloadList : request.getPayload().values()) {
+				for (Map<String, Object> payload : payloadList) {
+					String entityId = (String) payload.remove(NGSIConstants.JSON_LD_ID);
+					Object location = payload.get(NGSIConstants.NGSI_LD_LOCATION);
+					JsonObject geoLocation = null;
 
-				if (location != null) {
-					List<Map<String, List<Map<String, Object>>>> tmp = (List<Map<String, List<Map<String, Object>>>>) location;
-					geoLocation = new JsonObject(tmp.get(0).get(NGSIConstants.NGSI_LD_HAS_VALUE).get(0));
-				}
-				if (payload.containsKey(NGSIConstants.JSON_LD_TYPE)) {
-					Tuple tuple = Tuple.of(entityId);
+					if (location != null) {
+						List<Map<String, List<Map<String, Object>>>> tmp = (List<Map<String, List<Map<String, Object>>>>) location;
+						geoLocation = new JsonObject(tmp.get(0).get(NGSIConstants.NGSI_LD_HAS_VALUE).get(0));
+					}
+					if (payload.containsKey(NGSIConstants.JSON_LD_TYPE)) {
+						Tuple tuple = Tuple.of(entityId);
 
-					tuple.addArrayOfString(
-							((List<String>) payload.remove(NGSIConstants.JSON_LD_TYPE)).toArray(new String[0]));
-					if (payload.containsKey(NGSIConstants.NGSI_LD_CREATED_AT)) {
-						tuple.addString(((List<Map<String, String>>) payload.remove(NGSIConstants.NGSI_LD_CREATED_AT))
-								.get(0).get(NGSIConstants.JSON_LD_VALUE));
-					} else {
-						tuple.addString(null);
-					}
-					if (payload.containsKey(NGSIConstants.NGSI_LD_MODIFIED_AT)) {
-						tuple.addString(((List<Map<String, String>>) payload.remove(NGSIConstants.NGSI_LD_MODIFIED_AT))
-								.get(0).get(NGSIConstants.JSON_LD_VALUE));
-					} else {
-						tuple.addString(null);
-					}
-					if (payload.containsKey(NGSIConstants.NGSI_LD_SCOPE)) {
-						tuple.addJsonArray(
-								new JsonArray((List<Map<String, String>>) payload.remove(NGSIConstants.NGSI_LD_SCOPE)));
-					} else {
-						tuple.addJsonArray(null);
-					}
-					logger.debug("batch no type" + tuple.deepToString());
-					batchType.add(tuple);
-
-				} else {
-					payload.remove(NGSIConstants.NGSI_LD_CREATED_AT);
-					Tuple tuple = Tuple
-							.of(((List<Map<String, String>>) payload.remove(NGSIConstants.NGSI_LD_MODIFIED_AT)).get(0)
-									.get(NGSIConstants.JSON_LD_VALUE));
-					if (payload.containsKey(NGSIConstants.NGSI_LD_SCOPE)) {
-						tuple.addJsonArray(
-								new JsonArray((List<Map<String, String>>) payload.remove(NGSIConstants.NGSI_LD_SCOPE)));
-					} else {
-						tuple.addJsonArray(null);
-					}
-					tuple.addString(entityId);
-					logger.debug("batch no type" + tuple.deepToString());
-					batchNoType.add(tuple);
-				}
-				List<Tuple> attribsToFill;
-				if (location == null) {
-					attribsToFill = batchAttribs;
-				} else {
-					attribsToFill = batchAttribsWtihLocation;
-				}
-				for (Entry<String, Object> entry : payload.entrySet()) {
-					@SuppressWarnings("unchecked")
-					List<Map<String, Object>> entries = (List<Map<String, Object>>) entry.getValue();
-					for (Map<String, Object> attribEntry : entries) {
-						attribEntry.put(NGSIConstants.NGSI_LD_INSTANCE_ID, List
-								.of(Map.of(NGSIConstants.JSON_LD_ID, "instanceid:" + UUID.randomUUID().toString())));
-						Tuple tuple;
-						if (location != null) {
-							tuple = Tuple.of(entityId, entry.getKey(), new JsonObject(attribEntry), geoLocation);
-							attribsToFill.add(tuple);
+						tuple.addArrayOfString(
+								((List<String>) payload.remove(NGSIConstants.JSON_LD_TYPE)).toArray(new String[0]));
+						if (payload.containsKey(NGSIConstants.NGSI_LD_CREATED_AT)) {
+							tuple.addString(
+									((List<Map<String, String>>) payload.remove(NGSIConstants.NGSI_LD_CREATED_AT))
+											.get(0).get(NGSIConstants.JSON_LD_VALUE));
 						} else {
-							tuple = Tuple.of(entityId, entry.getKey(), new JsonObject(attribEntry));
-							attribsToFill.add(tuple);
+							tuple.addString(null);
 						}
-						logger.debug("attrib tuple " + tuple.deepToString());
+						if (payload.containsKey(NGSIConstants.NGSI_LD_MODIFIED_AT)) {
+							tuple.addString(
+									((List<Map<String, String>>) payload.remove(NGSIConstants.NGSI_LD_MODIFIED_AT))
+											.get(0).get(NGSIConstants.JSON_LD_VALUE));
+						} else {
+							tuple.addString(null);
+						}
+						if (payload.containsKey(NGSIConstants.NGSI_LD_SCOPE)) {
+							tuple.addJsonArray(new JsonArray(
+									(List<Map<String, String>>) payload.remove(NGSIConstants.NGSI_LD_SCOPE)));
+						} else {
+							tuple.addJsonArray(null);
+						}
+						logger.debug("batch no type" + tuple.deepToString());
+						batchType.add(tuple);
 
+					} else {
+						payload.remove(NGSIConstants.NGSI_LD_CREATED_AT);
+						Tuple tuple = Tuple
+								.of(((List<Map<String, String>>) payload.remove(NGSIConstants.NGSI_LD_MODIFIED_AT))
+										.get(0).get(NGSIConstants.JSON_LD_VALUE));
+						if (payload.containsKey(NGSIConstants.NGSI_LD_SCOPE)) {
+							tuple.addJsonArray(new JsonArray(
+									(List<Map<String, String>>) payload.remove(NGSIConstants.NGSI_LD_SCOPE)));
+						} else {
+							tuple.addJsonArray(null);
+						}
+						tuple.addString(entityId);
+						logger.debug("batch no type" + tuple.deepToString());
+						batchNoType.add(tuple);
+					}
+					List<Tuple> attribsToFill;
+					if (location == null) {
+						attribsToFill = batchAttribs;
+					} else {
+						attribsToFill = batchAttribsWtihLocation;
+					}
+					for (Entry<String, Object> entry : payload.entrySet()) {
+						@SuppressWarnings("unchecked")
+						List<Map<String, Object>> entries = (List<Map<String, Object>>) entry.getValue();
+						for (Map<String, Object> attribEntry : entries) {
+							attribEntry.put(NGSIConstants.NGSI_LD_INSTANCE_ID, List.of(
+									Map.of(NGSIConstants.JSON_LD_ID, "instanceid:" + UUID.randomUUID().toString())));
+							Tuple tuple;
+							if (location != null) {
+								tuple = Tuple.of(entityId, entry.getKey(), new JsonObject(attribEntry), geoLocation);
+								attribsToFill.add(tuple);
+							} else {
+								tuple = Tuple.of(entityId, entry.getKey(), new JsonObject(attribEntry));
+								attribsToFill.add(tuple);
+							}
+							logger.debug("attrib tuple " + tuple.deepToString());
+
+						}
 					}
 				}
 			}
@@ -263,7 +267,7 @@ public class HistoryDAO {
 	public Uni<Void> setDeletedBatchHistoryEntity(BatchRequest request) {
 		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
 			List<Tuple> batch = Lists.newArrayList();
-			request.getEntityIds().forEach(entityId -> {
+			request.getIds().forEach(entityId -> {
 				batch.add(Tuple.of(
 						LocalDateTime.ofInstant(Instant.ofEpochMilli(request.getSendTimestamp()), ZoneId.of("Z")),
 						entityId));
@@ -277,18 +281,18 @@ public class HistoryDAO {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
 			String sql = "DELETE FROM " + DBConstants.DBTABLE_TEMPORALENTITY + " WHERE id = $1 RETURNING "
 					+ DBConstants.DBTABLE_TEMPORALENTITY;
-			return client.preparedQuery(sql).execute(Tuple.of(request.getId())).onFailure().recoverWithUni(e -> {
+			return client.preparedQuery(sql).execute(Tuple.of(request.getFirstId())).onFailure().recoverWithUni(e -> {
 				if (e instanceof PgException pge) {
 					if (pge.getSqlState().equals(AppConstants.SQL_NOT_FOUND)) {
 						return Uni.createFrom().failure(
-								new ResponseException(ErrorType.NotFound, request.getId() + " does not exist"));
+								new ResponseException(ErrorType.NotFound, request.getFirstId() + " does not exist"));
 					}
 				}
 				return Uni.createFrom().failure(e);
 			}).onItem().transformToUni(rows -> {
 				if (rows.size() == 0) {
-					return Uni.createFrom()
-							.failure(new ResponseException(ErrorType.NotFound, request.getId() + " does not exist"));
+					return Uni.createFrom().failure(
+							new ResponseException(ErrorType.NotFound, request.getFirstId() + " does not exist"));
 				}
 				return Uni.createFrom().voidItem();
 			});
@@ -297,7 +301,7 @@ public class HistoryDAO {
 
 	public Uni<Void> appendToHistoryEntity(AppendHistoryEntityRequest request) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
-			Map<String, Object> payload = request.getPayload();
+			Map<String, Object> payload = request.getFirstPayload();
 			// return client.getConnection().onItem().transformToUni(conn -> {
 			Uni<RowSet<Row>> query1;
 			Tuple tuple = Tuple.tuple();
@@ -319,14 +323,14 @@ public class HistoryDAO {
 						new JsonArray((List<Map<String, String>>) payload.remove(NGSIConstants.NGSI_LD_SCOPE)));
 			}
 			sql += " WHERE id=$" + dollarCount;
-			tuple.addString(request.getId());
+			tuple.addString(request.getFirstId());
 			payload.remove(NGSIConstants.JSON_LD_TYPE);
 			payload.remove(NGSIConstants.JSON_LD_ID);
 			return client.preparedQuery(sql).execute(tuple).onFailure().recoverWithUni(e -> {
 				if (e instanceof PgException pge) {
 					if (pge.getSqlState().equals(AppConstants.SQL_NOT_FOUND)) {
 						return Uni.createFrom().failure(
-								new ResponseException(ErrorType.NotFound, request.getId() + " does not exist"));
+								new ResponseException(ErrorType.NotFound, request.getFirstId() + " does not exist"));
 					}
 				}
 				return Uni.createFrom().failure(e);
@@ -342,7 +346,7 @@ public class HistoryDAO {
 						}
 						attribEntry.put(NGSIConstants.NGSI_LD_INSTANCE_ID, List
 								.of(Map.of(NGSIConstants.JSON_LD_ID, "instanceid:" + UUID.randomUUID().toString())));
-						batch.add(Tuple.of(request.getId(), entry.getKey(), new JsonObject(attribEntry)));
+						batch.add(Tuple.of(request.getFirstId(), entry.getKey(), new JsonObject(attribEntry)));
 					}
 				}
 				return client
@@ -358,27 +362,26 @@ public class HistoryDAO {
 	public Uni<Void> updateAttrInstanceInHistoryEntity(UpdateAttrHistoryEntityRequest request) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
 			Object payload = new JsonObject(
-					((List<Map<String, Object>>) request.getPayload().get(request.getAttribName())).get(0));
+					((List<Map<String, Object>>) request.getFirstPayload().get(request.getAttribName())).get(0));
 			// return client.getConnection().onItem().transformToUni(conn -> {
 			return client.preparedQuery("UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
 					+ " SET data = data || $1::jsonb WHERE attributeid=$2 AND instanceid=$3 AND temporalentity_id=$4")
-					.execute(Tuple.of(payload, request.getAttribName(), request.getInstanceId(), request.getId()))
+					.execute(Tuple.of(payload, request.getAttribName(), request.getInstanceId(), request.getFirstId()))
 					.onFailure().recoverWithUni(e -> {
 						if (e instanceof PgException pge) {
 							if (pge.getSqlState().equals(AppConstants.SQL_NOT_FOUND)) {
-								return Uni.createFrom().failure(
-										new ResponseException(ErrorType.NotFound, request.getId() + " does not exist"));
+								return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound,
+										request.getFirstId() + " does not exist"));
 							}
 						}
 						return Uni.createFrom().failure(e);
 					}).onItem().transformToUni(rows -> {
 						return client
-								.preparedQuery(
-										"UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY
-												+ " SET modifiedat = $1::text::timestamp WHERE id = $2")
-								.execute(Tuple.of(((List<Map<String, String>>) request.getPayload()
+								.preparedQuery("UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY
+										+ " SET modifiedat = $1::text::timestamp WHERE id = $2")
+								.execute(Tuple.of(((List<Map<String, String>>) request.getFirstPayload()
 										.get(NGSIConstants.NGSI_LD_MODIFIED_AT)).get(0)
-										.get(NGSIConstants.JSON_LD_VALUE), request.getId()))
+										.get(NGSIConstants.JSON_LD_VALUE), request.getFirstId()))
 								.onItem().transformToUni(t -> Uni.createFrom().voidItem());
 					});
 
@@ -395,13 +398,13 @@ public class HistoryDAO {
 					query1 = client
 							.preparedQuery("DELETE FROM " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
 									+ " WHERE attributeid=$1 AND temporalentity_id=$2")
-							.execute(Tuple.of(request.getAttribName(), request.getId()));
+							.execute(Tuple.of(request.getAttribName(), request.getFirstId()));
 				} else {
 					query1 = client
 							.preparedQuery("DELETE FROM " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
 									+ " WHERE attributeid=$1 AND temporalentity_id=$2 AND NOT data ?| array['"
 									+ NGSIConstants.NGSI_LD_DATA_SET_ID + "']")
-							.execute(Tuple.of(request.getAttribName(), request.getId()));
+							.execute(Tuple.of(request.getAttribName(), request.getFirstId()));
 				}
 			} else {
 				query1 = client
@@ -409,14 +412,14 @@ public class HistoryDAO {
 								+ " WHERE attributeid=$1 AND temporalentity_id=$2 AND '"
 								+ NGSIConstants.NGSI_LD_DATA_SET_ID + "' ? data AND data@>>'{"
 								+ NGSIConstants.NGSI_LD_DATA_SET_ID + ",0," + NGSIConstants.JSON_LD_ID + "}'=$3")
-						.execute(Tuple.of(request.getAttribName(), request.getId(), request.getDatasetId()));
+						.execute(Tuple.of(request.getAttribName(), request.getFirstId(), request.getDatasetId()));
 			}
 
 			return query1.onFailure().recoverWithUni(e -> {
 				if (e instanceof PgException pge) {
 					if (pge.getSqlState().equals(AppConstants.SQL_NOT_FOUND)) {
 						return Uni.createFrom().failure(
-								new ResponseException(ErrorType.NotFound, request.getId() + " does not exist"));
+								new ResponseException(ErrorType.NotFound, request.getFirstId() + " does not exist"));
 					}
 				}
 				return Uni.createFrom().failure(e);
@@ -425,7 +428,7 @@ public class HistoryDAO {
 						.preparedQuery(
 								"UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY + " SET modifiedat = $1 WHERE id = $2")
 						.execute(Tuple.of(LocalDateTime.ofInstant(Instant.ofEpochMilli(request.getSendTimestamp()),
-								ZoneId.of("Z")), request.getId()));
+								ZoneId.of("Z")), request.getFirstId()));
 
 			}).onItem().transformToUni(t -> Uni.createFrom().voidItem());
 		});
@@ -438,12 +441,12 @@ public class HistoryDAO {
 			return client
 					.preparedQuery("DELETE FROM " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
 							+ " WHERE attributeid=$1 AND instanceid=$2 AND temporalentity_id=$3")
-					.execute(Tuple.of(request.getAttribName(), request.getInstanceId(), request.getId())).onFailure()
-					.recoverWithUni(e -> {
+					.execute(Tuple.of(request.getAttribName(), request.getInstanceId(), request.getFirstId()))
+					.onFailure().recoverWithUni(e -> {
 						if (e instanceof PgException pge) {
 							if (pge.getSqlState().equals(AppConstants.SQL_NOT_FOUND)) {
-								return Uni.createFrom().failure(
-										new ResponseException(ErrorType.NotFound, request.getId() + " does not exist"));
+								return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound,
+										request.getFirstId() + " does not exist"));
 							}
 						}
 						return Uni.createFrom().failure(e);
@@ -453,7 +456,7 @@ public class HistoryDAO {
 										+ " SET modifiedat = $1 WHERE id = $2")
 								.execute(Tuple.of(LocalDateTime
 										.ofInstant(Instant.ofEpochMilli(request.getSendTimestamp()), ZoneId.of("Z")),
-										request.getId()));
+										request.getFirstId()));
 					}).onItem().transformToUni(t -> Uni.createFrom().voidItem());
 		});
 		// });
@@ -466,7 +469,7 @@ public class HistoryDAO {
 					// can't easily convert utc into a timestamp without a timezone
 					.execute(Tuple.of(
 							LocalDateTime.ofInstant(Instant.ofEpochMilli(request.getSendTimestamp()), ZoneId.of("Z")),
-							request.getId()))
+							request.getFirstId()))
 					.onItem().transformToUni(t -> Uni.createFrom().voidItem());
 		});
 
@@ -482,19 +485,20 @@ public class HistoryDAO {
 			JsonObject deletePayload = getAttribDeletedPayload(nowString, instanceId, request.getDatasetId());
 			return client.preparedQuery("INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
 					+ " (temporalentity_id, attributeid, data, deletedat, instanceId) VALUES ($1, $2, $3::jsonb, $4, $5)")
-					.execute(Tuple.of(request.getId(), request.getAttribName(), deletePayload, now, instanceId))
+					.execute(Tuple.of(request.getFirstId(), request.getAttribName(), deletePayload, now, instanceId))
 					.onFailure().recoverWithUni(e -> {
 						if (e instanceof PgException pge) {
 							if (pge.getSqlState().equals(AppConstants.SQL_NOT_FOUND)) {
-								return Uni.createFrom().failure(
-										new ResponseException(ErrorType.NotFound, request.getId() + " does not exist"));
+								return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound,
+										request.getFirstId() + " does not exist"));
 							}
 						}
 						return Uni.createFrom().failure(e);
 					}).onItem().transformToUni(rows -> {
-						return client.preparedQuery(
-								"UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY + " SET modifiedat = $1 WHERE id = $2")
-								.execute(Tuple.of(now, request.getId()));
+						return client
+								.preparedQuery("UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY
+										+ " SET modifiedat = $1 WHERE id = $2")
+								.execute(Tuple.of(now, request.getFirstId()));
 					}).onItem().transformToUni(t -> Uni.createFrom().voidItem());
 		});
 		// });
@@ -527,7 +531,7 @@ public class HistoryDAO {
 			if (value.contains(NGSIConstants.HAS_VALUE_NULL) || value.contains(NGSIConstants.HAS_OBJECT_NULL)) {
 				// separating deleted attr from payload
 				DeleteAttributeRequest deleteAttributeRequest = new DeleteAttributeRequest(request.getTenant(),
-						request.getId(), key, null, false);
+						request.getFirstId(), key, null, false, false);
 				unis.add(setAttributeDeleted(deleteAttributeRequest));
 			} else {
 				newPayload.put(key, request.getPayload().get(key));
@@ -535,7 +539,7 @@ public class HistoryDAO {
 		}
 		if (newPayload.size() > 2) {// size > 2 because there is always id and modifiedat present in the payload
 			AppendHistoryEntityRequest appendHistoryEntityRequest = new AppendHistoryEntityRequest(request.getTenant(),
-					newPayload, request.getId());
+					newPayload, request.getFirstId(), false);
 			unis.add(appendToHistoryEntity(appendHistoryEntityRequest));
 		}
 		return Uni.combine().all().unis(unis).collectFailures().discardItems();

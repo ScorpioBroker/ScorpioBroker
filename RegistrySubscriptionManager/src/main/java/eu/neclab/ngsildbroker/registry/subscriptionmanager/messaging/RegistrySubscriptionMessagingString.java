@@ -26,8 +26,4 @@ public class RegistrySubscriptionMessagingString extends RegistrySubscriptionMes
 		return handleSubscriptionRaw(byteMessage);
 	}
 
-	@Scheduled(every = "20s", delayed = "5s")
-	void purge() {
-		super.purge();
-	}
 }

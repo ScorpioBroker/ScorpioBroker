@@ -4,7 +4,7 @@ import java.util.Map;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 
-public class AppendCSourceRequest extends CSourceRequest {
+public class AppendCSourceRequest extends CSourceBaseRequest {
 
 	/**
 	 * 

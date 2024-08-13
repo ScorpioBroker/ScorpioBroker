@@ -733,6 +733,11 @@ public class TypeQueryTerm implements Serializable {
 	public void setId(int id) {
 		this.id = id;
 	}
+
+	public boolean calculate(List<String> list) {
+		// TODO Auto-generated method stub
+		return true;
+	}
 	
 	
 

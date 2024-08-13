@@ -2,7 +2,7 @@ package eu.neclab.ngsildbroker.commons.datatypes.requests;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 
-public class DeleteAttributeRequest extends EntityRequest {
+public class DeleteAttributeRequest extends BaseRequest {
 
 	/**
 	 * 
@@ -14,8 +14,8 @@ public class DeleteAttributeRequest extends EntityRequest {
 	}
 
 	public DeleteAttributeRequest(String tenant, String entityId, String attribName, String datasetId,
-			boolean deleteAll) {
-		super(tenant, entityId, null, AppConstants.DELETE_ATTRIBUTE_REQUEST);
+			boolean deleteAll, boolean zipped) {
+		super(tenant, entityId, null, AppConstants.DELETE_ATTRIBUTE_REQUEST, zipped);
 		this.attribName = attribName;
 		this.datasetId = datasetId;
 		this.deleteAll = deleteAll;

@@ -6,7 +6,7 @@ import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 
 import java.util.Map;
 
-public class ReplaceEntityRequest extends EntityRequest {
+public class ReplaceEntityRequest extends BaseRequest {
 
 	/**
 	 * 
@@ -20,9 +20,9 @@ public class ReplaceEntityRequest extends EntityRequest {
 
 	}
 
-	public ReplaceEntityRequest(String tenant, Map<String, Object> resolved ) {
+	public ReplaceEntityRequest(String tenant, Map<String, Object> resolved, boolean zipped ) {
 		super(tenant, (String) resolved.get(NGSIConstants.JSON_LD_ID), resolved,
-				AppConstants.REPLACE_ENTITY_REQUEST);
+				AppConstants.REPLACE_ENTITY_REQUEST, zipped);
 
 	}
 

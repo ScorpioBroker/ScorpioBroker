@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.github.jsonldjava.core.Context;
 import com.google.common.collect.Sets;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -386,6 +387,11 @@ public class OmitTerm extends ProjectionTerm {
 			});
 		}
 		return true;
+	}
+
+	public String toQueryParam(Context context) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

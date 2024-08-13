@@ -278,7 +278,7 @@ public class EntityController {// implements EntityHandlerInterface {
 		return HttpUtils.expandBody(request, body, AppConstants.REPLACE_ENTITY_PAYLOAD, ldService).onItem()
 				.transformToUni(tuple -> {
 
-					return entityService.replaceEntity(HttpUtils.getTenant(request), tuple.getItem2(), tuple.getItem1(),request.headers())
+					return entityService.replaceEntity(HttpUtils.getTenant(request), entityId, tuple.getItem2(), tuple.getItem1(),request.headers())
 							.onItem().transform(opResult -> {
 
 								logger.debug("Done replacing entity");

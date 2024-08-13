@@ -20,8 +20,5 @@ public class HistoryMessagingByteArray extends HistoryMessagingBase {
 		return handleCsourceRaw(new String(byteMessage));
 	}
 
-	@Scheduled(every = "20s", delayed = "5s")
-	void purge() {
-		super.purge();
-	}
+
 }

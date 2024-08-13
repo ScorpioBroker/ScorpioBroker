@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.CSourceBaseRequest;
 import eu.neclab.ngsildbroker.commons.serialization.messaging.CollectMessageListener;
 import eu.neclab.ngsildbroker.commons.serialization.messaging.MessageCollector;
 import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
@@ -39,28 +40,37 @@ public abstract class EntityMessagingBase {
 		this.executor = vertx.getDelegate().nettyEventLoopGroup();
 	}
 
-	CollectMessageListener collectListenerRegistry = new CollectMessageListener() {
-
-		@Override
-		public void collected(String byteMessage) {
-			BaseRequest message;
-			try {
-				message = objectMapper.readValue(byteMessage, BaseRequest.class);
-			} catch (IOException e) {
-				logger.error("failed to read sync message", e);
-				return;
-			}
-			baseHandleCsource(message).runSubscriptionOn(executor).subscribe()
-					.with(v -> logger.debug("done handling registry"));
-		}
-	};
+//	CollectMessageListener collectListenerRegistry = new CollectMessageListener() {
+//
+//		@Override
+//		public void collected(String byteMessage) {
+//			BaseRequest message;
+//			try {
+//				message = objectMapper.readValue(byteMessage, BaseRequest.class);
+//			} catch (IOException e) {
+//				logger.error("failed to read sync message", e);
+//				return;
+//			}
+//			baseHandleCsource(message).runSubscriptionOn(executor).subscribe()
+//					.with(v -> logger.debug("done handling registry"));
+//		}
+//	};
 
 	public Uni<Void> handleCsourceRaw(String byteMessage) {
-		collector.collect(byteMessage, collectListenerRegistry);
-		return Uni.createFrom().voidItem();
+		//collector.collect(byteMessage, collectListenerRegistry);
+		CSourceBaseRequest message;
+		try {
+			message = objectMapper.readValue(byteMessage, CSourceBaseRequest.class);
+			return baseHandleCsource(message);
+		} catch (IOException e) {
+			logger.error("failed to read sync message", e);
+			return Uni.createFrom().voidItem();
+		}
+
+		
 	}
 
-	public Uni<Void> baseHandleCsource(BaseRequest message) {
+	public Uni<Void> baseHandleCsource(CSourceBaseRequest message) {
 		logger.debug("entity manager got called for csource: " + message.getId());
 		return entityService.handleRegistryChange(message);
 	}
