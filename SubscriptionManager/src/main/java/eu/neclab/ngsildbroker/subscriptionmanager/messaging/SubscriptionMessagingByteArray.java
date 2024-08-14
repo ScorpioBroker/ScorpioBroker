@@ -21,10 +21,4 @@ public class SubscriptionMessagingByteArray extends SubscriptionMessagingBase {
 		return handleEntityRaw(new String(byteMessage));
 	}
 
-	@Incoming(AppConstants.INTERNAL_RETRIEVE_NOTIFICATION_CHANNEL)
-	@Acknowledgment(Strategy.PRE_PROCESSING)
-	public Uni<Void> handleInternalNotification(byte[] byteMessage) {
-		return handleInternalNotificationRaw(new String(byteMessage));
-	}
-
 }

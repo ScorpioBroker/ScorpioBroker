@@ -191,5 +191,12 @@ public class SubscriptionInfoDAO {
 					});
 		});
 	}
+	
+	public Uni<RowSet<Row>> getRegById(String tenant, String id) {
+		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
+			return client.preparedQuery("SELECT reg FROM csource WHERE id = $1").execute(Tuple.of(id)).onFailure()
+					.retry().atMost(3);
+		});
+	}
 
 }

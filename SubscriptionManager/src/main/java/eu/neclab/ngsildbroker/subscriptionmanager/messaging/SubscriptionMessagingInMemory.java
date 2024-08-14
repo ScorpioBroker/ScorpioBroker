@@ -20,10 +20,4 @@ public class SubscriptionMessagingInMemory extends SubscriptionMessagingBase {
 		return handleEntityRaw(byteMessage);
 	}
 
-	@Incoming(AppConstants.INTERNAL_NOTIFICATION_CHANNEL)
-	@Acknowledgment(Strategy.PRE_PROCESSING)
-	public Uni<Void> handleInternalNotification(String byteMessage) {
-		return handleInternalNotificationRaw(byteMessage);
-	}
-
 }

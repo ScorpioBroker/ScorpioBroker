@@ -44,6 +44,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.EntityInfo;
 import eu.neclab.ngsildbroker.commons.datatypes.NotificationParam;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.CSourceBaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.DeleteSubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.InternalNotification;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
@@ -91,10 +92,10 @@ public class SubscriptionService {
 	@Inject
 	JsonLDService ldService;
 
-	@Inject
-	@Channel(AppConstants.INTERNAL_SUBS_CHANNEL)
-	@Broadcast
-	MutinyEmitter<String> internalSubEmitter;
+//	@Inject
+//	@Channel(AppConstants.INTERNAL_SUBS_CHANNEL)
+//	@Broadcast
+//	MutinyEmitter<String> internalSubEmitter;
 
 	@Inject
 	ObjectMapper objectMapper;
@@ -349,12 +350,12 @@ public class SubscriptionService {
 					syncService = Uni.createFrom().voidItem();
 				}
 				return syncService.onItem().transform(v2 -> {
-					try {
-						MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, internalSubEmitter,
-								objectMapper);
-					} catch (ResponseException e) {
-						logger.error("Failed to serialize subscription message", e);
-					}
+//					try {
+//						MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, internalSubEmitter,
+//								objectMapper);
+//					} catch (ResponseException e) {
+//						logger.error("Failed to serialize subscription message", e);
+//					}
 					NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.CREATE_SUBSCRIPTION_REQUEST,
 							request.getId());
 					result.addSuccess(new CRUDSuccess(null, null, request.getId(), Sets.newHashSet()));
@@ -410,12 +411,12 @@ public class SubscriptionService {
 									subscriptionId2RequestGlobal.put(updatedRequest.getId(), updatedRequest);
 									tenant2subscriptionId2IntervalSubscription.remove(tenant, updatedRequest.getId());
 								}
-								try {
-									MicroServiceUtils.serializeAndSplitObjectAndEmit(updatedRequest, messageSize,
-											internalSubEmitter, objectMapper);
-								} catch (ResponseException e) {
-									logger.error("Failed to serialize subscription message", e);
-								}
+//								try {
+//									MicroServiceUtils.serializeAndSplitObjectAndEmit(updatedRequest, messageSize,
+//											internalSubEmitter, objectMapper);
+//								} catch (ResponseException e) {
+//									logger.error("Failed to serialize subscription message", e);
+//								}
 								return new NGSILDOperationResult(AppConstants.UPDATE_SUBSCRIPTION_REQUEST,
 										request.getId());
 							});
@@ -437,12 +438,12 @@ public class SubscriptionService {
 				syncService = Uni.createFrom().voidItem();
 			}
 			return syncService.onItem().transform(v2 -> {
-				try {
-					MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, internalSubEmitter,
-							objectMapper);
-				} catch (ResponseException e) {
-					logger.error("Failed to serialize subscription message", e);
-				}
+//				try {
+//					MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, internalSubEmitter,
+//							objectMapper);
+//				} catch (ResponseException e) {
+//					logger.error("Failed to serialize subscription message", e);
+//				}
 				return new NGSILDOperationResult(AppConstants.DELETE_SUBSCRIPTION_REQUEST, request.getId());
 			});
 		});
@@ -1091,6 +1092,86 @@ public class SubscriptionService {
 		}).subscribe().with(i -> {
 			logger.info("Reloaded subscription: " + id);
 		});
+	}
+
+	public Uni<Void> checkSubscriptionsForCSource(CSourceBaseRequest message) {
+		Collection<SubscriptionRequest> potentialSubs = tenant2subscriptionId2Subscription.column(message.getTenant())
+				.values();
+		List<Uni<Void>> unis = Lists.newArrayList();
+		for (SubscriptionRequest potentialSub : potentialSubs) {
+			switch (message.getRequestType()) {
+			case AppConstants.UPDATE_REQUEST:
+				if (shouldFireReg(message.getPayload(), potentialSub)) {
+					unis.add(subDAO.getRegById(message.getTenant(), message.getId()).onItem().transformToUni(rows -> {
+
+						return SubscriptionTools.generateCsourceNotification(potentialSub,
+								rows.iterator().next().getJsonObject(0).getMap(), message.getRequestType(), ldService)
+								.onItem().transformToUni(notification -> {
+									NotificationParam notificationParam = potentialSub.getSubscription()
+											.getNotification();
+									return handleRegistryNotification(new InternalNotification(potentialSub.getTenant(),
+											potentialSub.getId(), notification));
+								});
+					}));
+				}
+				break;
+			case AppConstants.CREATE_REQUEST:
+			case AppConstants.DELETE_REQUEST:
+				unis.add(SubscriptionTools.generateCsourceNotification(potentialSub, message.getPayload(),
+						message.getRequestType(), ldService).onItem().transformToUni(notification -> {
+							NotificationParam notificationParam = potentialSub.getSubscription().getNotification();
+							return handleRegistryNotification(new InternalNotification(potentialSub.getTenant(),
+									potentialSub.getId(), notification));
+						}));
+			default:
+				break;
+			}
+
+		}
+		if (unis.isEmpty()) {
+			return Uni.createFrom().voidItem();
+		}
+		return Uni.combine().all().unis(unis).discardItems();
+	}
+
+	protected boolean shouldFireReg(Map<String, Object> entry, SubscriptionRequest subscription) {
+		Set<String> attribs = subscription.getSubscription().getAttributeNames();
+
+		if (attribs == null || attribs.isEmpty()) {
+			return true;
+		}
+		if (entry.containsKey(NGSIConstants.NGSI_LD_INFORMATION)) {
+			@SuppressWarnings("unchecked")
+			List<Map<String, Object>> information = (List<Map<String, Object>>) entry
+					.get(NGSIConstants.NGSI_LD_INFORMATION);
+			for (Map<String, Object> informationEntry : information) {
+				Object propertyNames = informationEntry.get(NGSIConstants.NGSI_LD_PROPERTIES);
+				Object relationshipNames = informationEntry.get(NGSIConstants.NGSI_LD_RELATIONSHIPS);
+				if (relationshipNames == null && relationshipNames == null) {
+					return true;
+				}
+				if (relationshipNames != null) {
+					@SuppressWarnings("unchecked")
+					List<Map<String, String>> list = (List<Map<String, String>>) relationshipNames;
+					for (Map<String, String> relationshipEntry : list) {
+						if (attribs.contains(relationshipEntry.get(NGSIConstants.JSON_LD_ID))) {
+							return true;
+						}
+					}
+				}
+				if (propertyNames != null) {
+					@SuppressWarnings("unchecked")
+					List<Map<String, String>> list = (List<Map<String, String>>) propertyNames;
+					for (Map<String, String> propertyEntry : list) {
+						if (attribs.contains(propertyEntry.get(NGSIConstants.JSON_LD_ID))) {
+							return true;
+						}
+					}
+				}
+			}
+		}
+		// TODO add aditional changes on what could fire in a csource reg
+		return false;
 	}
 
 }

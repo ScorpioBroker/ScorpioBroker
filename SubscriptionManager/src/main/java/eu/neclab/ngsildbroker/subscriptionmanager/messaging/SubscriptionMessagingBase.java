@@ -2,6 +2,7 @@ package eu.neclab.ngsildbroker.subscriptionmanager.messaging;
 
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BatchRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.CSourceBaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.InternalNotification;
 import eu.neclab.ngsildbroker.commons.serialization.messaging.CollectMessageListener;
 import eu.neclab.ngsildbroker.commons.serialization.messaging.MessageCollector;
@@ -77,17 +78,24 @@ public abstract class SubscriptionMessagingBase {
 		return baseHandleEntity(baseRequest);
 
 	}
-
-	public Uni<Void> handleInternalNotificationRaw(String byteMessage) {
-		InternalNotification message;
+	
+	public Uni<Void> handleCsourceRaw(String byteMessage) {
+		CSourceBaseRequest message;
 		try {
-			message = objectMapper.readValue(byteMessage, InternalNotification.class);
+			message = objectMapper.readValue(byteMessage, CSourceBaseRequest.class);
 		} catch (IOException e) {
-			logger.error("failed to read notification message", e);
+			logger.error("failed to read sync message", e);
 			return Uni.createFrom().voidItem();
 		}
-		return baseHandleInternalNotification(message);
+		return baseHandleCsource(message);
+	}
 
+	public Uni<Void> baseHandleCsource(CSourceBaseRequest message) {
+		logger.debug("CSource sub manager got called for csource: " + message.getId());
+		return subscriptionService.checkSubscriptionsForCSource(message).onFailure().recoverWithUni(e -> {
+			logger.debug("failed to handle registry entry", e);
+			return Uni.createFrom().voidItem();
+		});
 	}
 
 }
