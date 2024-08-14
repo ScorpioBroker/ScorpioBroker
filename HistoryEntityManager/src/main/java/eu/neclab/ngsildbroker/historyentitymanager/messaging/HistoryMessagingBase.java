@@ -80,7 +80,7 @@ public abstract class HistoryMessagingBase {
 			return Uni.createFrom().voidItem();
 		}
 		if (baseRequest.getRequestType() > 30) {
-			return baseHandleBatch((BatchRequest) baseRequest);
+			return baseHandleBatch(baseRequest);
 		} else {
 			return baseHandleEntity(baseRequest);
 		}
@@ -110,8 +110,8 @@ public abstract class HistoryMessagingBase {
 		return Uni.createFrom().voidItem();
 	}
 
-	public Uni<Void> baseHandleBatch(BatchRequest message) {
-		logger.info("retrieving message with id" + message.getId());
+	public Uni<Void> baseHandleBatch(BaseRequest message) {
+		logger.info("retrieving message with id" + message.getIds());
 		if (!autoRecording || (instancesNr > 1 && message.hashCode() % instancesNr != myInstancePos)) {
 			logger.info("discarding " + message.toString());
 			logger.info("auto recording: " + autoRecording);
@@ -214,27 +214,40 @@ public abstract class HistoryMessagingBase {
 					default:
 						continue;
 					}
+
 					Map<String, List<Map<String, Object>>> payloads = opType2Payload.get(regTypeToUse);
 					if (payloads == null) {
 						payloads = Maps.newHashMap();
 						opType2Payload.put(request.getRequestType(), payloads);
 					}
-					Map<String, List<Map<String, Object>>> payload = request.getPayload();
-					for (Entry<String, List<Map<String, Object>>> pEntry : payload.entrySet()) {
-						List<Map<String, Object>> tmp = payloads.get(pEntry.getKey());
-						if (tmp == null) {
-							tmp = Lists.newArrayList();
-							payloads.put(pEntry.getKey(), tmp);
+					if (regTypeToUse == AppConstants.BATCH_DELETE_REQUEST) {
+						for (String id : request.getIds()) {
+							payloads.put(id, null);
 						}
-						tmp.addAll(pEntry.getValue());
+					} else {
+						Map<String, List<Map<String, Object>>> payload = request.getPayload();
+						for (Entry<String, List<Map<String, Object>>> pEntry : payload.entrySet()) {
+							List<Map<String, Object>> tmp = payloads.get(pEntry.getKey());
+							if (tmp == null) {
+								tmp = Lists.newArrayList();
+								payloads.put(pEntry.getKey(), tmp);
+							}
+							tmp.addAll(pEntry.getValue());
+						}
 					}
 
 				}
 
 				logger.info("buffer empty");
 				for (Entry<Integer, Map<String, List<Map<String, Object>>>> entry : opType2Payload.entrySet()) {
-					unis.add(historyService.handleInternalBatchRequest(new BatchRequest(tenant,
-							entry.getValue().keySet(), entry.getValue(), entry.getKey(), false)));
+					if (entry.getKey() == AppConstants.BATCH_DELETE_REQUEST) {
+						unis.add(historyService.handleInternalBatchRequest(
+								new BatchRequest(tenant, entry.getValue().keySet(), null, entry.getKey(), false)));
+					} else {
+						unis.add(historyService.handleInternalBatchRequest(new BatchRequest(tenant,
+								entry.getValue().keySet(), entry.getValue(), entry.getKey(), false)));
+					}
+
 				}
 				for (BaseRequest entry : notBatch) {
 					unis.add(historyService.handleInternalRequest(entry));

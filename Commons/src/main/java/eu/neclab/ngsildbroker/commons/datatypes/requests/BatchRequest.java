@@ -24,8 +24,6 @@ public class BatchRequest extends BaseRequest {
 		super(tenant, ids, payload, requestType, zipped);
 	}
 
-	public String getId() {
-		return String.join(",", ids);
-	}
+	
 
 }
