@@ -109,7 +109,7 @@ public class BaseRequestDeserializer extends JsonDeserializer<BaseRequest> {
 
 			} else {
 				payload = mapper.convertValue(payloadArray.get(i + 1), mapTypeRef);
-				prevPayload = mapper.convertValue(payloadArray.get(i + 1), mapTypeRef);
+				prevPayload = mapper.convertValue(payloadArray.get(i + 2), mapTypeRef);
 			}
 			if (payload != null) {
 				MicroServiceUtils.putIntoIdMap(payloadMap, entityId, payload);

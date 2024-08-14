@@ -308,7 +308,7 @@ public class EntityService {
 				request.setDistributed(false);
 			}
 
-			request.addToPayload(entityId, payload);
+			request.setPayloadFromSingle(entityId, localEntity);
 			unis.add(partialUpdateLocalEntity(request, entityId, context).onFailure().recoverWithItem(e -> {
 				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.PARTIAL_UPDATE_REQUEST,
 						entityId);
@@ -749,8 +749,8 @@ public class EntityService {
 		return entityDAO.partialUpdateAttribute(request).onItem().transformToUni(v -> {
 			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.PARTIAL_UPDATE_REQUEST,
 					entityId);
-			request.setPrevPayloadFromSingle(entityId, v.getItem1());
-			request.setPayloadFromSingle(entityId, v.getItem2());
+			request.setPrevPayloadFromSingle(entityId, v);
+		
 			try {
 				MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
 			} catch (ResponseException e) {
@@ -911,7 +911,9 @@ public class EntityService {
 		if (originalEntity.isEmpty()) {
 			Map<String, Object> toStore = new HashMap<>();
 			toStore.put(NGSIConstants.JSON_LD_ID, entityId);
-			toStore.put(NGSIConstants.JSON_LD_TYPE, originalTypes);
+			if (originalTypes != null && !originalTypes.isEmpty()) {
+				toStore.put(NGSIConstants.JSON_LD_TYPE, originalTypes);
+			}
 			if (originalScopes != null) {
 				toStore.put(NGSIConstants.NGSI_LD_SCOPE, originalScopes);
 			}
@@ -929,7 +931,9 @@ public class EntityService {
 				toStore = MicroServiceUtils.deepCopyMap(originalEntity);
 			}
 			toStore.put(NGSIConstants.JSON_LD_ID, entityId);
-			toStore.put(NGSIConstants.JSON_LD_TYPE, originalTypes);
+			if (originalTypes != null && !originalTypes.isEmpty()) {
+				toStore.put(NGSIConstants.JSON_LD_TYPE, originalTypes);
+			}
 			if (originalScopes != null) {
 				toStore.put(NGSIConstants.NGSI_LD_SCOPE, originalScopes);
 			}

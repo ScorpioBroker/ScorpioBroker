@@ -2,6 +2,7 @@ package eu.neclab.ngsildbroker.entityhandler.services;
 
 import com.github.jsonldjava.core.JsonLDService;
 import com.github.jsonldjava.core.JsonLdConsts;
+import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Table;
@@ -39,6 +40,7 @@ import org.slf4j.LoggerFactory;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -61,19 +63,34 @@ public class EntityInfoDAO {
 
 	public Uni<Map<String, Object>> batchCreateEntity(BatchRequest request) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
-			Tuple tuple = Tuple.of(new JsonArray(Lists.newArrayList(request.getPayload().values())));
+			List<Map<String, Object>> entities = Lists.newArrayList();
+			request.getPayload().values().forEach(entityList -> {
+				entities.addAll(entityList);
+			});
+			Tuple tuple = Tuple.of(new JsonArray(entities));
+
 			return client.preparedQuery("SELECT * FROM NGSILD_CREATEBATCH($1)").execute(tuple).onItem()
 					.transform(rows -> {
 						return rows.iterator().next().getJsonObject(0).getMap();
+					}).onFailure().recoverWithUni(e -> {
+						if (e instanceof PgException pge) {
+							logger.error(pge.getDetail());
+						}
+						logger.error("Failed to store entities in batch create.", e);
+						return Uni.createFrom().failure(e);
 					});
 		});
 	}
 
 	public Uni<Map<String, Object>> batchUpsertEntity(BatchRequest request, boolean doReplace) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
-			return client.preparedQuery("SELECT * FROM NGSILD_UPSERTBATCH($1, $2)")
-					.execute(Tuple.of(new JsonArray(Lists.newArrayList(request.getPayload().values())), doReplace))
-					.onItem().transform(rows -> {
+			List<Map<String, Object>> entities = Lists.newArrayList();
+			request.getPayload().values().forEach(entityList -> {
+				entities.addAll(entityList);
+			});
+			Tuple tuple = Tuple.of(new JsonArray(entities), doReplace);
+			return client.preparedQuery("SELECT * FROM NGSILD_UPSERTBATCH($1, $2)").execute(tuple).onItem()
+					.transform(rows -> {
 						return rows.iterator().next().getJsonObject(0).getMap();
 					});
 		});
@@ -81,9 +98,13 @@ public class EntityInfoDAO {
 
 	public Uni<Map<String, Object>> batchAppendEntity(BatchRequest request) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
-			return client.preparedQuery("SELECT * FROM NGSILD_APPENDBATCH($1, $2)").execute(
-					Tuple.of(new JsonArray(Lists.newArrayList(request.getPayload().values())), request.isNoOverwrite()))
-					.onItem().transform(rows -> {
+			List<Map<String, Object>> entities = Lists.newArrayList();
+			request.getPayload().values().forEach(entityList -> {
+				entities.addAll(entityList);
+			});
+			Tuple tuple = Tuple.of(new JsonArray(entities), request.isNoOverwrite());
+			return client.preparedQuery("SELECT * FROM NGSILD_APPENDBATCH($1, $2)").execute(tuple).onItem()
+					.transform(rows -> {
 						return rows.iterator().next().getJsonObject(0).getMap();
 					});
 		});
@@ -99,9 +120,14 @@ public class EntityInfoDAO {
 	}
 
 	@SuppressWarnings("unchecked")
-	public Uni<Tuple2<Map<String, Object>, Map<String, Object>>> partialUpdateAttribute(UpdateEntityRequest request) {
+	/**
+	 * 
+	 * @param request
+	 * @return old value of the attribute. null if not available
+	 */
+	public Uni<Map<String, Object>> partialUpdateAttribute(UpdateEntityRequest request) {
 		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
-			Object objPayload = request.getPayload().get(request.getAttribName());
+			Object objPayload = request.getFirstPayload().get(request.getAttribName());
 			Tuple tuple;
 			List<Object> payloads = new ArrayList<>();
 			if (objPayload instanceof List<?>) {
@@ -120,7 +146,7 @@ public class EntityInfoDAO {
 					UPDATE ENTITY
 					SET ENTITY = NGSILD_PARTIALUPDATE(ENTITY, $1, $2)
 					WHERE id = $3 AND ENTITY ? $1
-					RETURNING (SELECT ENTITY FROM old_entity) AS old_entity, ENTITY AS new_ENTITY;
+					RETURNING (SELECT ENTITY -> $1 FROM old_entity) AS old_entry;
 					""";
 			return client.preparedQuery(sql).execute(tuple).onItem().transformToUni(rows -> {
 				if (rows.size() == 0) {
@@ -128,9 +154,17 @@ public class EntityInfoDAO {
 							"Entity " + request.getFirstId() + " was not found"));
 				}
 				Row first = rows.iterator().next();
-				return Uni.createFrom()
-						.item(Tuple2.of(first.getJsonObject(0).getMap(), first.getJsonObject(1).getMap()));
+				JsonArray result = first.getJsonArray(0);
+				if (result == null) {
+					return Uni.createFrom().nullItem();
+				}
+				Map<String, Object> tmp = new HashMap<>(1);
+				tmp.put(request.getAttribName(), result.getList());
+				return Uni.createFrom().item(tmp);
 			});
+		}).onFailure().recoverWithUni(e -> {
+			logger.error("Failed to add because of unknown error", e);
+			return Uni.createFrom().failure(e);
 		});
 	}
 
@@ -416,7 +450,8 @@ public class EntityInfoDAO {
 	}
 
 	public Uni<Tuple2<Map<String, Object>, Map<String, Object>>> replaceEntity(ReplaceEntityRequest request) {
-		String[] types = ((List<String>) request.getFirstPayload().get(NGSIConstants.JSON_LD_TYPE)).toArray(new String[0]);
+		String[] types = ((List<String>) request.getFirstPayload().get(NGSIConstants.JSON_LD_TYPE))
+				.toArray(new String[0]);
 		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
 			return client
 					.preparedQuery(

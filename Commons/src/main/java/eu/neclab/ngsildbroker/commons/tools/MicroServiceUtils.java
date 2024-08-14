@@ -482,8 +482,8 @@ public class MicroServiceUtils {
 				throw new ResponseException(ErrorType.InternalError, "Failed to serialize object");
 			}
 
-			base = base.substring(0, base.length() - 2);
-			base += "\"" + AppConstants.PAYLOAD_SERIALIZATION_CHAR + "\":[";
+			base = base.substring(0, base.length() - 1);
+			base += ",\"" + AppConstants.PAYLOAD_SERIALIZATION_CHAR + "\":[";
 			String current = base;
 			Map<String, List<Map<String, Object>>> payload = br.getPayload();
 			Map<String, List<Map<String, Object>>> prevPayload = br.getPrevPayload();
@@ -543,7 +543,7 @@ public class MicroServiceUtils {
 							if (first) {
 								throw new ResponseException(ErrorType.RequestEntityTooLarge);
 							}
-							current = current.substring(0, current.length() - 2) + "]}";
+							current = current.substring(0, current.length() - 1) + "]}";
 							toSend.add(current);
 							current = base + "\"" + id + "\",";
 							if (zip) {
@@ -562,11 +562,12 @@ public class MicroServiceUtils {
 								current += "\"";
 							}
 							current += ",";
-
+							first = true;
 						} else if (messageLength == maxMessageSize) {
-							current = current.substring(0, current.length() - 2) + "]}";
+							current = current.substring(0, current.length() - 1) + "]}";
 							toSend.add(current);
 							current = base;
+							first = true;
 						} else {
 							current += "\"" + id + "\",";
 							if (zip) {
@@ -590,7 +591,7 @@ public class MicroServiceUtils {
 					first = false;
 				}
 				if (current.length() != base.length()) {
-					current = current.substring(0, current.length() - 2) + "]}";
+					current = current.substring(0, current.length() - 1) + "]}";
 					toSend.add(current);
 					current = base;
 				}
@@ -627,7 +628,7 @@ public class MicroServiceUtils {
 							if (first) {
 								throw new ResponseException(ErrorType.RequestEntityTooLarge);
 							}
-							current = current.substring(0, current.length() - 2) + "]}";
+							current = current.substring(0, current.length() - 1) + "]}";
 							toSend.add(current);
 							current = base + "\"" + id + "\",";
 							if (zip) {
@@ -646,11 +647,12 @@ public class MicroServiceUtils {
 								current += "\"";
 							}
 							current += ",";
-
+							first = true;
 						} else if (messageLength == maxMessageSize) {
-							current = current.substring(0, current.length() - 2) + "]}";
+							current = current.substring(0, current.length() - 1) + "]}";
 							toSend.add(current);
 							current = base;
+							first = true;
 						} else {
 							current += "\"" + id + "\",";
 							if (zip) {
@@ -674,7 +676,7 @@ public class MicroServiceUtils {
 					first = false;
 				}
 				if (current.length() != base.length()) {
-					current = current.substring(0, current.length() - 2) + "]}";
+					current = current.substring(0, current.length() - 1) + "]}";
 					toSend.add(current);
 					current = base;
 				}
@@ -704,7 +706,7 @@ public class MicroServiceUtils {
 						if (first) {
 							throw new ResponseException(ErrorType.RequestEntityTooLarge);
 						}
-						current = current.substring(0, current.length() - 2) + "]}";
+						current = current.substring(0, current.length() - 1) + "]}";
 						toSend.add(current);
 						current = base + "\"" + id + "\",";
 						if (zip) {
@@ -723,11 +725,12 @@ public class MicroServiceUtils {
 							current += "\"";
 						}
 						current += ",";
-
+						first = true;
 					} else if (messageLength == maxMessageSize) {
-						current = current.substring(0, current.length() - 2) + "]}";
+						current = current.substring(0, current.length() - 1) + "]}";
 						toSend.add(current);
 						current = base;
+						first = true;
 					} else {
 						current += "\"" + id + "\",";
 						if (zip) {
@@ -750,7 +753,7 @@ public class MicroServiceUtils {
 					first = false;
 				}
 				if (current.length() != base.length()) {
-					current = current.substring(0, current.length() - 2) + "]}";
+					current = current.substring(0, current.length() - 1) + "]}";
 					toSend.add(current);
 					current = base;
 				}
