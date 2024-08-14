@@ -81,10 +81,10 @@ public class RegistrySubscriptionService {
 	@Inject
 	RegistrySubscriptionInfoDAO regDAO;
 
-	@Inject
-	@Channel(AppConstants.INTERNAL_NOTIFICATION_CHANNEL)
-	@Broadcast
-	MutinyEmitter<String> internalNotificationSender;
+//	@Inject
+//	@Channel(AppConstants.INTERNAL_NOTIFICATION_CHANNEL)
+//	@Broadcast
+//	MutinyEmitter<String> internalNotificationSender;
 
 	@Inject
 	ObjectMapper objectMapper;
@@ -339,15 +339,15 @@ public class RegistrySubscriptionService {
 						Uni<Void> toSend;
 						switch (notificationParam.getEndPoint().getUri().getScheme()) {
 						case "internal":
-							try {
-								MicroServiceUtils
-										.serializeAndSplitObjectAndEmit(
-												new InternalNotification(potentialSub.getTenant(), potentialSub.getId(),
-														notification),
-												messageSize, internalNotificationSender, objectMapper);
-							} catch (ResponseException e) {
-								logger.error("Failed to send internal notification", e);
-							}
+//							try {
+//								MicroServiceUtils
+//										.serializeAndSplitObjectAndEmit(
+//												new InternalNotification(potentialSub.getTenant(), potentialSub.getId(),
+//														notification),
+//												messageSize, internalNotificationSender, objectMapper);
+//							} catch (ResponseException e) {
+//								logger.error("Failed to send internal notification", e);
+//							}
 							toSend = Uni.createFrom().voidItem();
 							break;
 						case "mqtt":
@@ -1174,13 +1174,13 @@ public class RegistrySubscriptionService {
 				});
 				return SubscriptionTools.generateCsourceNotification(message, data,
 						AppConstants.INTERNAL_NOTIFICATION_REQUEST, ldService).onItem().transformToUni(noti -> {
-							try {
-								MicroServiceUtils.serializeAndSplitObjectAndEmit(
-										new InternalNotification(message.getTenant(), message.getId(), noti),
-										messageSize, internalNotificationSender, objectMapper);
-							} catch (ResponseException e) {
-								logger.error("Failed to serialize notification", e);
-							}
+//							try {
+//								MicroServiceUtils.serializeAndSplitObjectAndEmit(
+//										new InternalNotification(message.getTenant(), message.getId(), noti),
+//										messageSize, internalNotificationSender, objectMapper);
+//							} catch (ResponseException e) {
+//								logger.error("Failed to serialize notification", e);
+//							}
 							return Uni.createFrom().voidItem();
 						});
 
