@@ -191,7 +191,7 @@ public class SubscriptionRequest implements Serializable {
 		if (!typeQueryResult) {
 			return false;
 		}
-		if (!sub.getNotification().getAttrs().calculateEntity(payload)) {
+		if (sub.getNotification().getAttrs() != null && !sub.getNotification().getAttrs().calculateEntity(payload)) {
 			return false;
 		}
 		boolean qResult = (sub.getLdQuery() != null

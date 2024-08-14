@@ -46,15 +46,16 @@ public abstract class RegistrySubscriptionMessagingBase {
 	}
 
 	public Uni<Void> handleSubscriptionRaw(String byteMessage) {
-		SubscriptionRequest message;
-		try {
-			message = objectMapper.readValue(byteMessage, SubscriptionRequest.class);
-		} catch (IOException e) {
-			logger.error(byteMessage);
-			logger.error("failed to read internal subscription", e);
-			return Uni.createFrom().voidItem();
-		}
-		return baseHandleSubscription(message);
+//		SubscriptionRequest message;
+//		try {
+//			message = objectMapper.readValue(byteMessage, SubscriptionRequest.class);
+//		} catch (IOException e) {
+//			logger.error(byteMessage);
+//			logger.error("failed to read internal subscription", e);
+//			return Uni.createFrom().voidItem();
+//		}
+//		return baseHandleSubscription(message);
+		return Uni.createFrom().voidItem();
 
 	}
 

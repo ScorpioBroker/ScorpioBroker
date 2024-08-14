@@ -506,7 +506,7 @@ public class SubscriptionService {
 			List<Map<String, Object>> dataToSend = Lists.newArrayList();
 
 			if ((potentialSub.getSendTimestamp() != -1 && potentialSub.getSendTimestamp() > message.getSendTimestamp())
-					|| notificationTriggerCheck(potentialSub.getSubscription(), message.getRequestType())) {
+					|| !notificationTriggerCheck(potentialSub.getSubscription(), message.getRequestType())) {
 				continue;
 			}
 
@@ -553,7 +553,7 @@ public class SubscriptionService {
 					for (int i = 0; i < entryList.size(); i++) {
 						Map<String, Object> mapEntry = entryList.get(i);
 						Map<String, Object> prevEntry;
-						if (i < prevEntryList.size()) {
+						if (prevEntryList != null && i < prevEntryList.size()) {
 							prevEntry = prevEntryList.get(i);
 						} else {
 							prevEntry = null;
