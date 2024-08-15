@@ -8,6 +8,7 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -575,6 +576,38 @@ public class SubscriptionService {
 				}
 				unis.add(queryFromSubscription(potentialSub, message.getTenant(), idsTbu, prevPayloadToUse).onItem()
 						.transformToUni(tbs -> {
+							List<Map<String, Object>> toAddLater = Lists.newArrayList();
+							Iterator<Map<String, Object>> it = tbs.iterator();
+							while (it.hasNext()) {
+								Map<String, Object> entity = it.next();
+								String entityId = (String) entity.get(NGSIConstants.JSON_LD_ID);
+								List<Map<String, Object>> payload = payloadToUse.get(entityId);
+								if (payload != null) {
+									if (payload.size() == 1) {
+										entity.putAll(payload.get(0));
+										if (potentialSub.getSubscription().getNotification().getShowChanges()) {
+											it.remove();
+											toAddLater.add(compareMaps(prevPayloadToUse.get(entityId).get(0), entity));
+										}
+									} else {
+										it.remove();
+										for (int i = 0; i < payload.size(); i++) {
+											Map<String, Object> pEntry = payload.get(0);
+											Map<String, Object> dupl = MicroServiceUtils.deepCopyMap(entity);
+											dupl.putAll(pEntry);
+											if (potentialSub.getSubscription().getNotification().getShowChanges()) {
+												List<Map<String, Object>> prev = prevPayloadToUse.get(entityId);
+												if (prev != null && i < prev.size()) {
+													dupl = compareMaps(prev.get(i), dupl);
+												}
+
+											}
+											toAddLater.add(dupl);
+										}
+									}
+								}
+							}
+							tbs.addAll(toAddLater);
 							return sendNotification(potentialSub, tbs);
 						}));
 

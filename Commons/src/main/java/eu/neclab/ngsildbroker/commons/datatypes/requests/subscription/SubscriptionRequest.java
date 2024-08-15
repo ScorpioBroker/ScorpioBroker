@@ -175,7 +175,7 @@ public class SubscriptionRequest implements Serializable {
 	public boolean fullEntityCheckToSendOut(String entityId, Map<String, Object> payload, String allTypesSub,
 			Set<String> jsonKeys) {
 		Subscription sub = getSubscription();
-		boolean typeQueryResult = true;
+		boolean typeQueryResult = false;
 		for (EntityInfo entityInfo : sub.getEntities()) {
 			TypeQueryTerm typeTerm = entityInfo.getTypeTerm();
 			if (typeTerm != null) {

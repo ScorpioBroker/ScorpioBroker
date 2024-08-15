@@ -558,7 +558,7 @@ public class TypeQueryTerm implements Serializable {
 			while (current.firstChild != null) {
 				current = current.firstChild;
 			}
-			current.next.toSql(result, tuple, dollar);
+			dollar = current.toSql(result, tuple, dollar);
 		} else {
 			result.append("(e_types ");
 			followUp.append("(e_types ");

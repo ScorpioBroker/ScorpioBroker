@@ -374,7 +374,7 @@ public class QueryParser {
 			} else if (b == ';') {
 				TypeQueryTerm next = new TypeQueryTerm(context);
 				current.setType(type.toString());
-				allTypes.add(type.toString());
+				allTypes.add(current.getType());
 				current.setNext(next);
 				current.setNextAnd(true);
 				current = next;
@@ -383,7 +383,7 @@ public class QueryParser {
 			} else if (b == '|' || b == ',') {
 				TypeQueryTerm next = new TypeQueryTerm(context);
 				current.setType(type.toString());
-				allTypes.add(type.toString());
+				allTypes.add(current.getType());
 				current.setNext(next);
 				current.setNextAnd(false);
 				current = next;
@@ -391,7 +391,7 @@ public class QueryParser {
 
 			} else if (b == ')') {
 				current.setType(type.toString());
-				allTypes.add(type.toString());
+				allTypes.add(current.getType());
 				current = current.getParent();
 				type.setLength(0);
 

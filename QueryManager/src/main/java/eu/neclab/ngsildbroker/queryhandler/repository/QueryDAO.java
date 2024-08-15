@@ -1121,11 +1121,11 @@ public class QueryDAO {
 					queryToStoreWherePart.append('(');
 
 					if (typeQuery != null) {
-						if ((!regEmptyOrNoRegEntryAndNoLinkedQuery || !noRootLevelRegEntryAndLinkedQuery)
-								&& splitEntities) {
-							dollar = typeQuery.toBroadSql(query, queryToStoreWherePart, tuple, dollar);
-						} else {
+						if (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery
+								|| !splitEntities) {
 							dollar = typeQuery.toSql(query, queryToStoreWherePart, tuple, dollar);
+						} else {
+							dollar = typeQuery.toBroadSql(query, queryToStoreWherePart, tuple, dollar);
 						}
 
 						tSqlAdded = true;
