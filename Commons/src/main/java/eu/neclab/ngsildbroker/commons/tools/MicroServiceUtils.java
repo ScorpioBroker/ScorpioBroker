@@ -74,7 +74,7 @@ public class MicroServiceUtils {
 		}
 		tmp.add(local);
 	}
-	
+
 	public static void main(String[] args) throws IOException {
 		String data = "{\r\n" + "  \"@id\": \"urn:ngsi-ld:Mon.Container:1\",\r\n" + "  \"@type\": [\r\n"
 				+ "    \"https://uri.etsi.org/ngsi-ld/default-context/ccoc.mon.docker.container\"\r\n" + "  ],\r\n"
@@ -858,10 +858,12 @@ public class MicroServiceUtils {
 				copiedValue = deepCopyMap((Map<String, Object>) originalValue);
 			} else if (originalValue instanceof Integer) {
 				copiedValue = ((Integer) originalValue).intValue();
-			} else if (originalValue instanceof Double) {
-				copiedValue = ((Double) originalValue).doubleValue();
+			} else if (originalValue instanceof Long) {
+				copiedValue = ((Long) originalValue).longValue();
 			} else if (originalValue instanceof Float) {
 				copiedValue = ((Float) originalValue).floatValue();
+			} else if (originalValue instanceof Double) {
+				copiedValue = ((Double) originalValue).doubleValue();
 			} else if (originalValue instanceof Boolean) {
 				copiedValue = ((Boolean) originalValue).booleanValue();
 			} else if (originalValue == null) {
