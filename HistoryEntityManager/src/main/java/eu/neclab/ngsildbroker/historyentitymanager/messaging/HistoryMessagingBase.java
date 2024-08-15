@@ -122,7 +122,8 @@ public abstract class HistoryMessagingBase {
 			return Uni.createFrom().voidItem();
 		}
 		logger.debug("history manager batch handling got called: with ids: " + message.getIds());
-		if (message.getRequestType() != AppConstants.DELETE_REQUEST && message.getPayload().isEmpty()) {
+		if (message.getRequestType() != AppConstants.DELETE_REQUEST
+				&& (message.getPayload() == null || message.getPayload().isEmpty())) {
 			logger.debug("discarding because of none delete request and empty body");
 			return Uni.createFrom().voidItem();
 		}
@@ -168,21 +169,20 @@ public abstract class HistoryMessagingBase {
 			return Uni.createFrom().voidItem();
 		}
 		List<Uni<Void>> unis = Lists.newArrayList();
-		logger.info("checkBuffer before getting tenant2Buffer");
 
 		for (Entry<String, ConcurrentLinkedQueue<BaseRequest>> tenant2BufferEntry : tenant2Buffer.entrySet()) {
 			ConcurrentLinkedQueue<BaseRequest> buffer = tenant2BufferEntry.getValue();
 			String tenant = tenant2BufferEntry.getKey();
-			logger.info("checkBuffer attempts to get tenant2LastReceived for tenant " + tenant);
+
 			Long lastReceived = tenant2LastReceived.get(tenant);
-			logger.info("checkBuffer received tenant2LastReceived");
+
 			if (buffer.size() >= maxSize || (lastReceived < System.currentTimeMillis() - 1000 && !buffer.isEmpty())) {
 				Map<Integer, Map<String, List<Map<String, Object>>>> opType2Payload = Maps.newHashMap();
 				List<BaseRequest> notBatch = Lists.newArrayList();
 				while (!buffer.isEmpty()) {
-					logger.info("attempting to empty buffer");
+
 					BaseRequest request = buffer.poll();
-					logger.info("polled element");
+
 					if (request.getRequestType() == AppConstants.DELETE_ATTRIBUTE_REQUEST
 							|| request.getRequestType() == AppConstants.REPLACE_ATTRIBUTE_REQUEST
 							|| request.getRequestType() == AppConstants.REPLACE_ENTITY_REQUEST
@@ -238,7 +238,6 @@ public abstract class HistoryMessagingBase {
 
 				}
 
-				logger.info("buffer empty");
 				for (Entry<Integer, Map<String, List<Map<String, Object>>>> entry : opType2Payload.entrySet()) {
 					if (entry.getKey() == AppConstants.BATCH_DELETE_REQUEST) {
 						unis.add(historyService.handleInternalBatchRequest(
@@ -255,13 +254,12 @@ public abstract class HistoryMessagingBase {
 
 			}
 		}
-		logger.info("checkBuffer after getting tenant2Buffer");
+
 		if (unis.isEmpty()) {
 			return Uni.createFrom().voidItem();
 		}
-		logger.info("attempting to store temp entites");
+
 		return Uni.combine().all().unis(unis).combinedWith(list -> null).onItem().transformToUni(list -> {
-			logger.info("stored temp entites");
 			return Uni.createFrom().voidItem();
 		});
 	}

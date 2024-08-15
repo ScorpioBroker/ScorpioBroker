@@ -184,7 +184,22 @@ public class SubscriptionRequest implements Serializable {
 			if (typeTerm != null) {
 				typeQueryResult = typeTerm.calculate((List<String>) payload.get(NGSIConstants.JSON_LD_TYPE));
 				if (typeQueryResult) {
-					break;
+					if(entityInfo.getId() != null) {
+						if(entityInfo.getId().toString().equals(entityId)) {
+							break;
+						}else {
+							typeQueryResult = false;
+						}
+					}else if(entityInfo.getIdPattern() != null) {
+						if(entityId.matches(entityInfo.getIdPattern())) {
+							break;
+						}else {
+							typeQueryResult = false;
+						}
+					}else {
+						break;	
+					}
+					
 				}
 			}
 		}

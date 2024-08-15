@@ -724,9 +724,13 @@ public class SubscriptionService {
 		}
 		Set<String> notificationTriggers = subscription.getNotificationTrigger();
 		switch (triggerReason) {
+		case AppConstants.BATCH_CREATE_REQUEST:
+		case AppConstants.BATCH_UPSERT_REQUEST:
 		case AppConstants.CREATE_REQUEST:
 			return notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_CREATED)
 					|| notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_CREATED);
+		case AppConstants.BATCH_MERGE_REQUEST:
+		case AppConstants.BATCH_UPDATE_REQUEST:
 		case AppConstants.APPEND_REQUEST:
 		case AppConstants.UPDATE_REQUEST:
 		case AppConstants.MERGE_PATCH_REQUEST:
@@ -737,6 +741,7 @@ public class SubscriptionService {
 					|| notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_UPDATED)
 					|| notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_CREATED);
 		case AppConstants.DELETE_REQUEST:
+		case AppConstants.BATCH_DELETE_REQUEST:
 			return notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_DELETED);
 		case AppConstants.DELETE_ATTRIBUTE_REQUEST:
 			return notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_UPDATED)
