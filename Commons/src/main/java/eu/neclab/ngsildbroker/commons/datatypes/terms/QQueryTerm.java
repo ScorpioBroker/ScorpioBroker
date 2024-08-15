@@ -2575,7 +2575,9 @@ public class QQueryTerm implements Serializable {
 		} else {
 			result = URLEncoder.encode(context.compactIri(attribute), StandardCharsets.UTF_8);
 			if (isLinkedQ) {
-
+				
+			}else {
+				
 			}
 			if (operant != null && operator != null) {
 				result += operator + operant;

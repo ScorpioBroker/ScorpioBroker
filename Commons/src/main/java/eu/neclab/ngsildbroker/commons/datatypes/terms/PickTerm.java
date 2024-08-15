@@ -1,13 +1,10 @@
 package eu.neclab.ngsildbroker.commons.datatypes.terms;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.github.jsonldjava.core.Context;
 import com.google.common.collect.Sets;
 
 import java.util.Set;
@@ -364,26 +361,6 @@ public class PickTerm extends ProjectionTerm {
 		return true;
 	}
 
-	public String toQueryParam(Context context) {
-		String result = "";
-//		if (firstChild != null) {
-//			result = "(" + firstChild.toQueryParam(context) + ")";
-//		} else {
-//			result = URLEncoder.encode(context.compactIri(attribute), StandardCharsets.UTF_8);
-//
-//			if (operant != null && operator != null) {
-//				result += operator + operant;
-//			}
-//			if (hasNext()) {
-//				if (isNextAnd()) {
-//					result += ';';
-//				} else {
-//					result += '|';
-//				}
-//				result += next.toQueryParam(context);
-//			}
-//		}
-		return result;
-	}
+	
 
 }

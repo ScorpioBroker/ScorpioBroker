@@ -1,13 +1,9 @@
 package eu.neclab.ngsildbroker.subscriptionmanager.messaging;
 
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.BatchRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CSourceBaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.InternalNotification;
-import eu.neclab.ngsildbroker.commons.serialization.messaging.CollectMessageListener;
-import eu.neclab.ngsildbroker.commons.serialization.messaging.MessageCollector;
 import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
-import io.netty.channel.EventLoopGroup;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Vertx;
 
@@ -21,7 +17,6 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 
 public abstract class SubscriptionMessagingBase {

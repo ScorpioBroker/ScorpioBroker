@@ -8,7 +8,6 @@ import org.eclipse.microprofile.reactive.messaging.Acknowledgment.Strategy;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import io.quarkus.arc.profile.IfBuildProfile;
-import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
 
 @Singleton

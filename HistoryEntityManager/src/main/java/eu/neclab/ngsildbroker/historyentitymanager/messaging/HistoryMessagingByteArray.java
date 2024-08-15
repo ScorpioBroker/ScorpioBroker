@@ -31,10 +31,7 @@ public class HistoryMessagingByteArray extends HistoryMessagingBase {
 	}
 
 
-	@Scheduled(every = "20s", delayed = "${scorpio.startupdelay}")
-	void purge() {
-		super.purge();
-	}
+	
 
 	@Scheduled(every = "5s", delayed = "${scorpio.startupdelay}")
 	@RunOnVirtualThread

@@ -7,16 +7,12 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CSourceBaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
-import eu.neclab.ngsildbroker.commons.serialization.messaging.CollectMessageListener;
 import eu.neclab.ngsildbroker.commons.serialization.messaging.MessageCollector;
 import eu.neclab.ngsildbroker.registry.subscriptionmanager.service.RegistrySubscriptionService;
-import io.netty.channel.EventLoopGroup;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Vertx;
-import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 
 public abstract class RegistrySubscriptionMessagingBase {

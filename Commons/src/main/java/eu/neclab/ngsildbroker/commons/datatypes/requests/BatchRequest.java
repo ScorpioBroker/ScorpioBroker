@@ -1,16 +1,8 @@
 package eu.neclab.ngsildbroker.commons.datatypes.requests;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
-
-import com.github.jsonldjava.core.Context;
-
-import com.github.jsonldjava.core.JsonLdConsts;
-import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 
 public class BatchRequest extends BaseRequest {
 

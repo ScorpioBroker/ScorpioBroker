@@ -3,9 +3,6 @@ package eu.neclab.ngsildbroker.commons.datatypes.requests.subscription;
 import java.io.Serializable;
 import java.util.Map;
 
-import eu.neclab.ngsildbroker.commons.constants.AppConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
-
 public class InternalNotification implements Serializable{
 
 	

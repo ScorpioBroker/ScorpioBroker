@@ -1,14 +1,11 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
-import com.google.common.collect.Sets;
-
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.OmitTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.PickTerm;
 import eu.neclab.ngsildbroker.commons.enums.Format;
 
 import java.io.Serializable;
-import java.util.Set;
 
 /**
  * @author hebgen

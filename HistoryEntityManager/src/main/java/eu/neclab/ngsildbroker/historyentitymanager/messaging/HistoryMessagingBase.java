@@ -1,8 +1,5 @@
 package eu.neclab.ngsildbroker.historyentitymanager.messaging;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -19,20 +16,15 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
-import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BatchRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CSourceBaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.UpsertEntityRequest;
-import eu.neclab.ngsildbroker.commons.serialization.messaging.CollectMessageListener;
-import eu.neclab.ngsildbroker.commons.serialization.messaging.MessageCollector;
 import eu.neclab.ngsildbroker.historyentitymanager.service.HistoryEntityService;
-import io.netty.channel.EventLoopGroup;
 //import eu.neclab.ngsildbroker.historyentitymanager.service.HistoryEntityService;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Vertx;
-import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 
 public abstract class HistoryMessagingBase {
@@ -48,7 +40,6 @@ public abstract class HistoryMessagingBase {
 	boolean autoRecording;
 	@ConfigProperty(name = "scorpio.history.autorecordingbuffersize", defaultValue = "50000")
 	int maxSize;
-	private MessageCollector collector = new MessageCollector(this.getClass().getName());
 
 	int instancesNr = 1;
 	int myInstancePos = 1;
@@ -262,10 +253,6 @@ public abstract class HistoryMessagingBase {
 		return Uni.combine().all().unis(unis).combinedWith(list -> null).onItem().transformToUni(list -> {
 			return Uni.createFrom().voidItem();
 		});
-	}
-
-	void purge() {
-		collector.purge(30000);
 	}
 
 	public int getInstancesNr() {
