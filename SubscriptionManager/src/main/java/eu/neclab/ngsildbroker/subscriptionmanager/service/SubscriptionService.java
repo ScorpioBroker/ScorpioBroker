@@ -15,6 +15,8 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import io.vertx.core.http.impl.headers.HeadersMultiMap;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -505,7 +507,6 @@ public class SubscriptionService {
 					|| !notificationTriggerCheck(potentialSub.getSubscription(), message.getRequestType())) {
 				continue;
 			}
-
 			Map<String, List<Map<String, Object>>> payloadToUse = Maps.newHashMap();
 			Map<String, List<Map<String, Object>>> prevPayloadToUse = Maps.newHashMap();
 			if (message.getPayload() != null) {
@@ -537,35 +538,8 @@ public class SubscriptionService {
 			} else {
 				continue;
 			}
-
-			if (!message.isDistributed() && !potentialSub.doJoin()
-					&& (message.getRequestType() == AppConstants.BATCH_CREATE_REQUEST
-							|| message.getRequestType() == AppConstants.BATCH_UPSERT_REQUEST
-							|| message.getRequestType() == AppConstants.CREATE_REQUEST
-							|| message.getRequestType() == AppConstants.UPSERT_REQUEST)) {
-				for (Entry<String, List<Map<String, Object>>> entry : payloadToUse.entrySet()) {
-					List<Map<String, Object>> entryList = entry.getValue();
-					List<Map<String, Object>> prevEntryList = prevPayloadToUse.get(entry.getKey());
-					for (int i = 0; i < entryList.size(); i++) {
-						Map<String, Object> mapEntry = entryList.get(i);
-						Map<String, Object> prevEntry;
-						if (prevEntryList != null && i < prevEntryList.size()) {
-							prevEntry = prevEntryList.get(i);
-						} else {
-							prevEntry = null;
-						}
-
-						Map<String, Object> dupl = MicroServiceUtils.deepCopyMap(mapEntry);
-						if (potentialSub.fullEntityCheckToSendOut(entry.getKey(), dupl, allTypeSubType, null)) {
-							if (potentialSub.getSubscription().getNotification().getShowChanges()) {
-								dupl = compareMaps(prevEntry, dupl);
-							}
-							dataToSend.add(dupl);
-						}
-					}
-				}
-				unis.add(sendNotification(potentialSub, dataToSend));
-			} else {
+			
+			if (message.isDistributed() || potentialSub.doJoin()) {
 				Set<String> idsTbu;
 				if (!payloadToUse.isEmpty()) {
 					idsTbu = payloadToUse.keySet();
@@ -611,12 +585,186 @@ public class SubscriptionService {
 							return sendNotification(potentialSub, tbs);
 						}));
 
+			} else {
+				switch (message.getRequestType()) {
+				case AppConstants.BATCH_CREATE_REQUEST:
+				case AppConstants.CREATE_REQUEST: {
+					for (Entry<String, List<Map<String, Object>>> entry : payloadToUse.entrySet()) {
+						List<Map<String, Object>> entryList = entry.getValue();
+						for (int i = 0; i < entryList.size(); i++) {
+							Map<String, Object> mapEntry = entryList.get(i);
+
+							Map<String, Object> dupl = MicroServiceUtils.deepCopyMap(mapEntry);
+							if (potentialSub.fullEntityCheckToSendOut(entry.getKey(), dupl, allTypeSubType, null)) {
+								dataToSend.add(dupl);
+							}
+						}
+					}
+
+					break;
+				}
+				case AppConstants.BATCH_UPDATE_REQUEST:
+				case AppConstants.BATCH_UPSERT_REQUEST:
+				case AppConstants.APPEND_REQUEST:
+				case AppConstants.UPDATE_REQUEST:
+				case AppConstants.BATCH_MERGE_REQUEST:
+				case AppConstants.REPLACE_ATTRIBUTE_REQUEST:
+				case AppConstants.REPLACE_ENTITY_REQUEST:
+				case AppConstants.MERGE_PATCH_REQUEST: {
+					dataToSend = mergePrevAndNew(payloadToUse, prevPayloadToUse,
+							potentialSub.getSubscription().getNotification().getShowChanges());
+					break;
+				}
+				default:
+					break;
+				}
+
 			}
+			unis.add(sendNotification(potentialSub, dataToSend));
 		}
 		if (unis.isEmpty()) {
 			return Uni.createFrom().voidItem();
 		}
 		return Uni.combine().all().unis(unis).discardItems();
+	}
+
+	private List<Map<String, Object>> mergePrevAndNew(Map<String, List<Map<String, Object>>> payloadToUse,
+			Map<String, List<Map<String, Object>>> prevPayloadToUse, Boolean showChanges) {
+		List<Map<String, Object>> result = Lists.newArrayList();
+		for (Entry<String, List<Map<String, Object>>> entry : payloadToUse.entrySet()) {
+			String entityId = entry.getKey();
+			List<Map<String, Object>> newValues = entry.getValue();
+			if (prevPayloadToUse == null) {
+				result.addAll(newValues);
+			} else {
+				List<Map<String, Object>> oldValues = prevPayloadToUse.get(entityId);
+				if (oldValues == null) {
+					result.addAll(newValues);
+				} else {
+					for (int i = 0; i < newValues.size(); i++) {
+						Map<String, Object> newValue = newValues.get(i);
+						if (i >= oldValues.size()) {
+							result.addAll(newValues);
+						} else {
+							Map<String, Object> oldValue = oldValues.get(i);
+							if (oldValue == null) {
+								result.addAll(newValues);
+							} else {
+								result.add(mergePrevAndNewEntity(oldValue, newValue, showChanges));
+							}
+						}
+
+					}
+				}
+			}
+		}
+		return result;
+	}
+
+	private Map<String, Object> mergePrevAndNewEntity(Map<String, Object> oldValue, Map<String, Object> newValue,
+			Boolean showChanges) {
+		Map<String, Object> result = MicroServiceUtils.deepCopyMap(oldValue);
+		Object modifiedAt;
+		for (Entry<String, Object> entry : newValue.entrySet()) {
+			String attribName = entry.getKey();
+			switch (attribName) {
+			case NGSIConstants.JSON_LD_ID:
+				continue;
+			case NGSIConstants.JSON_LD_TYPE:
+				List<String> mergedTypes = Stream
+						.concat(((List<String>) result.get(NGSIConstants.JSON_LD_TYPE)).stream(),
+								((List<String>) entry.getValue()).stream())
+						.distinct().collect(Collectors.toList());
+				result.put(attribName, mergedTypes);
+				break;
+			case NGSIConstants.NGSI_LD_SCOPE:
+				result.put(attribName, entry.getValue());
+				break;
+			default:
+				if (showChanges) {
+					List<Map<String, Object>> oldValues = (List<Map<String, Object>>) result.get(attribName);
+					List<Map<String, Object>> newValues = (List<Map<String, Object>>) entry.getValue();
+					if (oldValues == null) {
+						result.put(attribName, entry.getValue());
+					} else {
+						for (Map<String, Object> newEntry : newValues) {
+							Object newDatasetId = newEntry.get(NGSIConstants.NGSI_LD_DATA_SET_ID);
+							Iterator<Map<String, Object>> it = oldValues.iterator();
+							boolean found = false;
+							while (it.hasNext()) {
+								Map<String, Object> oldEntry = it.next();
+								Object oldDatasetId = oldEntry.get(NGSIConstants.NGSI_LD_DATA_SET_ID);
+								if (oldDatasetId == null && newDatasetId == null) {
+									it.remove();
+									mergeAttrib(newEntry, oldEntry);
+									found = true;
+									break;
+								}
+								if (oldDatasetId != null && newDatasetId != null && oldDatasetId.equals(newDatasetId)) {
+									it.remove();
+									mergeAttrib(newEntry, oldEntry);
+									found = true;
+									break;
+								}
+							}
+							if (!found) {
+								mergeAttribToNone(newEntry);
+							}
+							oldValues.add(newEntry);
+						}
+					}
+				} else {
+					result.put(attribName, entry.getValue());
+				}
+				break;
+			}
+		}
+		return result;
+	}
+
+	private void mergeAttribToNone(Map<String, Object> newEntry) {
+		if (newEntry.containsKey(NGSIConstants.NGSI_LD_HAS_VALUE)) {
+			newEntry.put(NGSIConstants.PREVIOUS_VALUE,
+					List.of(Map.of(NGSIConstants.JSON_LD_VALUE, NGSIConstants.JSON_LD_NONE)));
+		} else if (newEntry.containsKey(NGSIConstants.NGSI_LD_HAS_OBJECT)) {
+			newEntry.put(NGSIConstants.PREVIOUS_OBJECT,
+					List.of(Map.of(NGSIConstants.JSON_LD_ID, NGSIConstants.JSON_LD_NONE)));
+		} else if (newEntry.containsKey(NGSIConstants.NGSI_LD_HAS_JSON)) {
+			newEntry.put(NGSIConstants.PREVIOUS_JSON, List.of(Map.of(NGSIConstants.JSON_LD_TYPE,
+					NGSIConstants.JSON_LD_JSON, NGSIConstants.JSON_LD_VALUE, NGSIConstants.JSON_LD_NONE)));
+		} else if (newEntry.containsKey(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP)) {
+			newEntry.put(NGSIConstants.PREVIOUS_LANGUAGE_MAP,
+					List.of(Map.of(NGSIConstants.JSON_LD_VALUE, NGSIConstants.JSON_LD_NONE)));
+		} else if (newEntry.containsKey(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST)) {
+			newEntry.put(NGSIConstants.PREVIOUS_OJBECT_LIST,
+					List.of(Map.of(NGSIConstants.JSON_LD_LIST, NGSIConstants.JSON_LD_NONE)));
+		} else if (newEntry.containsKey(NGSIConstants.NGSI_LD_HAS_LIST)) {
+			newEntry.put(NGSIConstants.PREVIOUS_VALUE_LIST,
+					List.of(Map.of(NGSIConstants.JSON_LD_LIST, NGSIConstants.JSON_LD_NONE)));
+		} else if (newEntry.containsKey(NGSIConstants.NGSI_LD_HAS_VOCAB)) {
+			newEntry.put(NGSIConstants.PREVIOUS_VOCAB,
+					List.of(Map.of(NGSIConstants.JSON_LD_ID, NGSIConstants.JSON_LD_NONE)));
+		}
+
+	}
+
+	private void mergeAttrib(Map<String, Object> newEntry, Map<String, Object> oldEntry) {
+		if (oldEntry.containsKey(NGSIConstants.NGSI_LD_HAS_VALUE)) {
+			newEntry.put(NGSIConstants.PREVIOUS_VALUE, oldEntry.get(NGSIConstants.NGSI_LD_HAS_VALUE));
+		} else if (oldEntry.containsKey(NGSIConstants.NGSI_LD_HAS_OBJECT)) {
+			newEntry.put(NGSIConstants.PREVIOUS_OBJECT, oldEntry.get(NGSIConstants.NGSI_LD_HAS_OBJECT));
+		} else if (oldEntry.containsKey(NGSIConstants.NGSI_LD_HAS_JSON)) {
+			newEntry.put(NGSIConstants.PREVIOUS_JSON, oldEntry.get(NGSIConstants.NGSI_LD_HAS_JSON));
+		} else if (oldEntry.containsKey(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP)) {
+			newEntry.put(NGSIConstants.PREVIOUS_LANGUAGE_MAP, oldEntry.get(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP));
+		} else if (oldEntry.containsKey(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST)) {
+			newEntry.put(NGSIConstants.PREVIOUS_OJBECT_LIST, oldEntry.get(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST));
+		} else if (oldEntry.containsKey(NGSIConstants.NGSI_LD_HAS_LIST)) {
+			newEntry.put(NGSIConstants.PREVIOUS_VALUE_LIST, oldEntry.get(NGSIConstants.NGSI_LD_HAS_LIST));
+		} else if (oldEntry.containsKey(NGSIConstants.NGSI_LD_HAS_VOCAB)) {
+			newEntry.put(NGSIConstants.PREVIOUS_VOCAB, oldEntry.get(NGSIConstants.NGSI_LD_HAS_VOCAB));
+		}
+
 	}
 
 	private Uni<Void> sendNotification(SubscriptionRequest potentialSub, List<Map<String, Object>> dataToSend) {

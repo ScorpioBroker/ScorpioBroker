@@ -384,10 +384,7 @@ public class EntityService {
 
 	private Uni<NGSILDOperationResult> localDeleteAttrib(DeleteAttributeRequest request, String entityId) {
 		return entityDAO.deleteAttribute(request).onItem().transformToUni(resultEntity -> {
-
-			request.setPrevPayloadFromSingle(entityId, resultEntity.getItem1());
-			request.setPayloadFromSingle(entityId, resultEntity.getItem2());
-
+			request.setPrevPayloadFromSingle(entityId, resultEntity);
 			try {
 				MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
 			} catch (ResponseException e) {
@@ -643,8 +640,7 @@ public class EntityService {
 			Context context) {
 		return entityDAO.updateEntity(request).onItem().transformToUni(previousAndNewEntity -> {
 
-			request.setPrevPayloadFromSingle(entityId, previousAndNewEntity.getItem1());
-			request.setPayloadFromSingle(entityId, previousAndNewEntity.getItem2());
+			request.setPrevPayloadFromSingle(entityId, previousAndNewEntity);
 			try {
 				MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
 			} catch (ResponseException e) {
@@ -652,7 +648,7 @@ public class EntityService {
 			}
 
 			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.UPDATE_REQUEST, entityId);
-			localResult.addSuccess(new CRUDSuccess(null, null, null, previousAndNewEntity.getItem2(), context));
+			localResult.addSuccess(new CRUDSuccess(null, null, null, request.getFirstPayload(), context));
 			return Uni.createFrom().item(localResult);
 		});
 	}
@@ -750,7 +746,7 @@ public class EntityService {
 			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.PARTIAL_UPDATE_REQUEST,
 					entityId);
 			request.setPrevPayloadFromSingle(entityId, v);
-		
+
 			try {
 				MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
 			} catch (ResponseException e) {
@@ -1249,7 +1245,6 @@ public class EntityService {
 						List<NGSILDOperationResult> result = Lists.newArrayList();
 						List<Map<String, Object>> successes = (List<Map<String, Object>>) dbResult.get("success");
 						List<Map<String, String>> fails = (List<Map<String, String>>) dbResult.get("failure");
-						Map<String, List<Map<String, Object>>> newEntities = Maps.newHashMap();
 						Map<String, List<Map<String, Object>>> oldEntities = Maps.newHashMap();
 						for (Map<String, Object> success : successes) {
 							String entityId = (String) success.get("id");
@@ -1258,15 +1253,15 @@ public class EntityService {
 							opResult.addSuccess(new CRUDSuccess(null, null, null, Sets.newHashSet()));
 							result.add(opResult);
 							Map<String, Object> old = (Map<String, Object>) success.get("old");
-							Map<String, Object> newEntity = (Map<String, Object>) success.get("new");
-							MicroServiceUtils.putIntoIdMap(newEntities, entityId, newEntity);
 							MicroServiceUtils.putIntoIdMap(oldEntities, entityId, old);
 
 						}
+						request.setPrevPayload(oldEntities);
 						for (Map<String, String> fail : fails) {
 							fail.entrySet().forEach(entry -> {
 								String entityId = entry.getKey();
 								String sqlstate = entry.getValue();
+								request.getPayload().remove(entityId);
 								NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.APPEND_REQUEST,
 										entityId);
 								if (sqlstate.equals(AppConstants.SQL_NOT_FOUND)) {
@@ -1278,8 +1273,6 @@ public class EntityService {
 							});
 
 						}
-						request.setPayload(newEntities);
-						request.setPrevPayload(oldEntities);
 						if (!request.getPayload().isEmpty()) {
 							logger.debug("Append batch request sending to kafka " + request.getIds());
 							try {
@@ -1362,14 +1355,13 @@ public class EntityService {
 					List<Map<String, String>> fails = (List<Map<String, String>>) dbResult.get("failure");
 
 					Map<String, List<Map<String, Object>>> olds = Maps.newHashMap();
-					Map<String, List<Map<String, Object>>> news = Maps.newHashMap();
+
 					for (Map<String, Object> entityResult : successes) {
 						String entityId = (String) entityResult.get("id");
 						boolean updated = (boolean) entityResult.get("updated");
 						Map<String, Object> old = (Map<String, Object>) entityResult.get("old");
-						Map<String, Object> newEntity = (Map<String, Object>) entityResult.get("new");
+
 						MicroServiceUtils.putIntoIdMap(olds, entityId, old);
-						MicroServiceUtils.putIntoIdMap(news, entityId, newEntity);
 
 						NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.UPSERT_REQUEST,
 								entityId);
@@ -1377,12 +1369,14 @@ public class EntityService {
 						opResult.addSuccess(new CRUDSuccess(null, null, null, Sets.newHashSet()));
 						result.add(opResult);
 					}
-					request.setPayload(news);
+
 					request.setPrevPayload(olds);
 					for (Map<String, String> fail : fails) {
 						fail.entrySet().forEach(entry -> {
 							String entityId = entry.getKey();
 							String sqlstate = entry.getValue();
+							request.getPayload().remove(entityId);
+							request.getPrevPayload().remove(entityId);
 							NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.UPSERT_REQUEST,
 									entityId);
 							opResult.addFailure(new ResponseException(ErrorType.InvalidRequest, sqlstate));
@@ -1645,8 +1639,8 @@ public class EntityService {
 
 	private Uni<NGSILDOperationResult> localMergePatch(MergePatchRequest request, String entityId, Context context) {
 		return entityDAO.mergePatch(request).onItem().transformToUni(v -> {
-			request.setPrevPayloadFromSingle(entityId, v.getItem1());
-			request.setPayloadFromSingle(entityId, v.getItem2());
+			request.setPrevPayloadFromSingle(entityId, v);
+
 			try {
 				MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
 			} catch (ResponseException e) {
@@ -1719,8 +1713,7 @@ public class EntityService {
 	private Uni<NGSILDOperationResult> replaceLocalEntity(ReplaceEntityRequest request, String entityId,
 			Context context) {
 		return entityDAO.replaceEntity(request).onItem().transformToUni(v -> {
-			request.setPrevPayloadFromSingle(entityId, v.getItem1());
-			request.setPayloadFromSingle(entityId, v.getItem2());
+			request.setPrevPayloadFromSingle(entityId, v);
 			try {
 				MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
 			} catch (ResponseException e) {
@@ -1802,8 +1795,7 @@ public class EntityService {
 	private Uni<NGSILDOperationResult> replaceLocalAttrib(ReplaceAttribRequest request, String entityId,
 			Context context) {
 		return entityDAO.replaceAttrib(request).onItem().transformToUni(v -> {
-			request.setPrevPayloadFromSingle(entityId, v.getItem1());
-			request.setPayloadFromSingle(entityId, v.getItem2());
+			request.setPrevPayloadFromSingle(entityId, v);
 			try {
 				MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
 			} catch (ResponseException e) {
@@ -1946,13 +1938,18 @@ public class EntityService {
 						List<NGSILDOperationResult> result = Lists.newArrayList();
 						List<Map<String, Object>> successes = (List<Map<String, Object>>) dbResult.get("success");
 						List<Map<String, String>> fails = (List<Map<String, String>>) dbResult.get("failure");
+						Map<String, List<Map<String, Object>>> oldEntities = Maps.newHashMap();
+
 						for (Map<String, Object> success : successes) {
 							String entityId = (String) success.get("id");
+							Map<String, Object> old = (Map<String, Object>) success.get("old");
+							MicroServiceUtils.putIntoIdMap(oldEntities, entityId, old);
 							NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.MERGE_PATCH_REQUEST,
 									entityId);
 							opResult.addSuccess(new CRUDSuccess(null, null, null, Sets.newHashSet()));
 							result.add(opResult);
 						}
+						request.setPrevPayload(oldEntities);
 						for (Map<String, String> fail : fails) {
 							fail.entrySet().forEach(entry -> {
 								String entityId = entry.getKey();

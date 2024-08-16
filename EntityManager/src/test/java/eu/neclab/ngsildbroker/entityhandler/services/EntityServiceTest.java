@@ -146,7 +146,7 @@ public class EntityServiceTest {
 
 		UpdateEntityRequest request = new UpdateEntityRequest(tenant, entityId, resolved, null, false);
 
-		Uni<Tuple2<Map<String, Object>, Map<String, Object>>> updateEntityRes = Uni.createFrom().nothing();
+		Uni<Map<String, Object>> updateEntityRes = Uni.createFrom().nothing();
 		when(entityDAO.updateEntity(any())).thenReturn(updateEntityRes);
 
 		Uni<Void> emitterResponse = Uni.createFrom().nullItem();
@@ -203,8 +203,7 @@ public class EntityServiceTest {
 	public void deleteAttributeTest() throws Exception {
 		try {
 
-			Uni<Tuple2<Map<String, Object>, Map<String, Object>>> deleteAttributeRes = Uni.createFrom()
-					.item(Tuple2.of(new HashMap<>(), new HashMap<>()));
+			Uni<Map<String, Object>> deleteAttributeRes = Uni.createFrom().item(new HashMap<>());
 			when(entityDAO.deleteAttribute(any())).thenReturn(deleteAttributeRes);
 
 			Uni<Void> emitterResponse = Uni.createFrom().nullItem();

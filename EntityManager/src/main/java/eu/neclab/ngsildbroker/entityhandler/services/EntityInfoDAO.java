@@ -120,7 +120,7 @@ public class EntityInfoDAO {
 	/**
 	 * 
 	 * @param request
-	 * @return old value of the attribute. null if not available
+	 * @return old version of the entity
 	 */
 	public Uni<Map<String, Object>> partialUpdateAttribute(UpdateEntityRequest request) {
 		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
@@ -143,7 +143,7 @@ public class EntityInfoDAO {
 					UPDATE ENTITY
 					SET ENTITY = NGSILD_PARTIALUPDATE(ENTITY, $1, $2)
 					WHERE id = $3 AND ENTITY ? $1
-					RETURNING (SELECT ENTITY -> $1 FROM old_entity) AS old_entry;
+					RETURNING (SELECT ENTITY FROM old_entity) AS old_entry;
 					""";
 			return client.preparedQuery(sql).execute(tuple).onItem().transformToUni(rows -> {
 				if (rows.size() == 0) {
@@ -165,7 +165,12 @@ public class EntityInfoDAO {
 		});
 	}
 
-	public Uni<Tuple2<Map<String, Object>, Map<String, Object>>> deleteAttribute(DeleteAttributeRequest request) {
+	/**
+	 * 
+	 * @param request
+	 * @return old version of the entity
+	 */
+	public Uni<Map<String, Object>> deleteAttribute(DeleteAttributeRequest request) {
 		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
 			String sql = """
 					WITH old_entity AS (
@@ -187,15 +192,14 @@ public class EntityInfoDAO {
 						+ NGSIConstants.NGSI_LD_DATA_SET_ID + "')";
 				tuple = Tuple.of(request.getAttribName(), request.getFirstId());
 			}
-			sql += " RETURNING (SELECT ENTITY FROM old_entity) AS old_entity, ENTITY AS new_entity;";
+			sql += " RETURNING (SELECT ENTITY FROM old_entity) AS old_entity;";
 			return client.preparedQuery(sql).execute(tuple).onFailure().retry().atMost(3).onItem()
 					.transformToUni(rows -> {
 						if (rows.size() == 0) {
 							return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
 						}
 						Row first = rows.iterator().next();
-						return Uni.createFrom()
-								.item(Tuple2.of(first.getJsonObject(0).getMap(), first.getJsonObject(1).getMap()));
+						return Uni.createFrom().item(first.getJsonObject(0).getMap());
 					});
 		});
 	}
@@ -245,7 +249,7 @@ public class EntityInfoDAO {
 
 	}
 
-	public Uni<Tuple2<Map<String, Object>, Map<String, Object>>> updateEntity(UpdateEntityRequest request) {
+	public Uni<Map<String, Object>> updateEntity(UpdateEntityRequest request) {
 		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
 			Map<String, Object> payload = request.getFirstPayload();
 			payload.remove(NGSIConstants.JSON_LD_ID);
@@ -293,7 +297,7 @@ public class EntityInfoDAO {
 			}
 			sql += "WHERE ID = $" + dollar;
 			tuple.addString(request.getFirstId());
-			sql += " RETURNING (SELECT ENTITY FROM old_entity) AS old_entity, ENTITY as new_entity;";
+			sql += " RETURNING (SELECT ENTITY FROM old_entity) AS old_entity;";
 			return client.preparedQuery(sql).execute(tuple).onFailure().recoverWithUni(e -> {
 				return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
 			}).onItem().transformToUni(rows -> {
@@ -301,8 +305,7 @@ public class EntityInfoDAO {
 					return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
 				}
 				Row first = rows.iterator().next();
-				return Uni.createFrom()
-						.item(Tuple2.of(first.getJsonObject(0).getMap(), first.getJsonObject(1).getMap()));
+				return Uni.createFrom().item(first.getJsonObject(0).getMap());
 			});
 		});
 
@@ -413,7 +416,7 @@ public class EntityInfoDAO {
 		});
 	}
 
-	public Uni<Tuple2<Map<String, Object>, Map<String, Object>>> mergePatch(MergePatchRequest request) {
+	public Uni<Map<String, Object>> mergePatch(MergePatchRequest request) {
 		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
 			Map<String, Object> payload = request.getFirstPayload();
 			payload.remove(NGSIConstants.NGSI_LD_CREATED_AT);
@@ -440,13 +443,17 @@ public class EntityInfoDAO {
 					return Uni.createFrom()
 							.failure(new ResponseException(ErrorType.NotFound, request.getFirstId() + " not found"));
 				}
-				return Uni.createFrom()
-						.item(Tuple2.of(jsonArray.getJsonObject(0).getMap(), jsonArray.getJsonObject(1).getMap()));
+				return Uni.createFrom().item(jsonArray.getJsonObject(0).getMap());
 			});
 		});
 	}
 
-	public Uni<Tuple2<Map<String, Object>, Map<String, Object>>> replaceEntity(ReplaceEntityRequest request) {
+	/**
+	 * 
+	 * @param request
+	 * @return old version of the entity
+	 */
+	public Uni<Map<String, Object>> replaceEntity(ReplaceEntityRequest request) {
 		String[] types = ((List<String>) request.getFirstPayload().get(NGSIConstants.JSON_LD_TYPE))
 				.toArray(new String[0]);
 		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
@@ -465,20 +472,24 @@ public class EntityInfoDAO {
 									 ELSE value
 									 END )) FROM JSONB_EACH($1::jsonb) CROSS JOIN old_entity )
 									update entity set entity = (select * from json_data) || jsonb_build_object('https://uri.etsi.org/ngsi-ld/createdAt' , entity->'https://uri.etsi.org/ngsi-ld/createdAt') , e_types = $2 where id = $3
-									RETURNING (SELECT ENTITY FROM old_entity) AS old_entity, ENTITY as new_entity;""")
+									RETURNING (SELECT ENTITY FROM old_entity) AS old_entity;""")
 					.execute(Tuple.of(new JsonObject(request.getFirstPayload()), types, request.getFirstId())).onItem()
 					.transformToUni(rows -> {
 						if (rows.rowCount() == 0) {
 							return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
 						}
 						Row first = rows.iterator().next();
-						return Uni.createFrom()
-								.item(Tuple2.of(first.getJsonObject(0).getMap(), first.getJsonObject(1).getMap()));
+						return Uni.createFrom().item(first.getJsonObject(0).getMap());
 					});
 		});
 	}
 
-	public Uni<Tuple2<Map<String, Object>, Map<String, Object>>> replaceAttrib(ReplaceAttribRequest request) {
+	/**
+	 * 
+	 * @param request
+	 * @return old version of the entity
+	 */
+	public Uni<Map<String, Object>> replaceAttrib(ReplaceAttribRequest request) {
 		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
 			return client
 					.preparedQuery(
@@ -500,7 +511,7 @@ public class EntityInfoDAO {
 									WHERE id = $2
 									  AND ENTITY ? $3
 									  AND (ENTITY-> $3 )::jsonb->$4 IS NULL
-									RETURNING (SELECT ENTITY FROM old_entity) AS old_entity, ENTITY AS new_entity;
+									RETURNING (SELECT ENTITY FROM old_entity) AS old_entity;
 									""")
 					.execute(Tuple.of(new JsonObject(request.getFirstPayload()), request.getFirstId(),
 							request.getAttribName(), request.getDatasetId()))
@@ -509,8 +520,7 @@ public class EntityInfoDAO {
 							return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
 						}
 						Row first = rows.iterator().next();
-						return Uni.createFrom()
-								.item(Tuple2.of(first.getJsonObject(0).getMap(), first.getJsonObject(1).getMap()));
+						return Uni.createFrom().item(first.getJsonObject(0).getMap());
 					});
 		});
 	}

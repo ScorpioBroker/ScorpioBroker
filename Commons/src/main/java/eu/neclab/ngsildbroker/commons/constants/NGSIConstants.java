@@ -51,6 +51,7 @@ public interface NGSIConstants {
 	public final static String JSON_LD_NONE = "@none";
 	public final static String JSON_LD_CONTEXT = "@context";
 	public final static String JSON_LD_LANGUAGE = "@language";
+	public final static String JSON_LD_JSON = "@json";
 	public final static String NGSI_LD_DEFAULT_PREFIX = "https://uri.etsi.org/ngsi-ld/default-context/";
 	public final static String NGSI_LD_RELATIONSHIP = "https://uri.etsi.org/ngsi-ld/Relationship";
 
