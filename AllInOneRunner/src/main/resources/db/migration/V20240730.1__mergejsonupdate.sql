@@ -24,7 +24,7 @@ BEGIN
       previous_entity := merged_json;
       resultObj['success'] = jsonb_set(resultObj, '{success}', resultObj -> 'success' || jsonb_build_object('id',newentity->'@id', 'old', previous_entity));
     ELSE
-      resultObj['failure'] = jsonb_set(resultObj, '{failure}', resultObj -> 'failure' || jsonb_object_agg(newentity->'@id'->>0, 'Not Found');
+      resultObj['failure'] = jsonb_set(resultObj, '{failure}', resultObj -> 'failure' || jsonb_object_agg(newentity->'@id'->>0, 'Not Found'));
       CONTINUE;
     END IF;
 
