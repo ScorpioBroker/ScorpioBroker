@@ -1111,7 +1111,7 @@ public class SubscriptionService {
 		for (Entry<String, String> entry : queryParams.entrySet()) {
 			req = req.addQueryParam(entry.getKey(), entry.getValue());
 		}
-		if (idsTBU == null) {
+		if (idsTBU != null) {
 			req = req.addQueryParam(NGSIConstants.ID, StringUtils.join(idsTBU, ','));
 		}
 		req = req.addQueryParam(NGSIConstants.QUERY_PARAMETER_DO_NOT_COMPACT, "true");
