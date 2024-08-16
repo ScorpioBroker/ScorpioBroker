@@ -538,7 +538,7 @@ public class SubscriptionService {
 			} else {
 				continue;
 			}
-			
+
 			if (message.isDistributed() || potentialSub.doJoin()) {
 				Set<String> idsTbu;
 				if (!payloadToUse.isEmpty()) {
@@ -589,18 +589,8 @@ public class SubscriptionService {
 				switch (message.getRequestType()) {
 				case AppConstants.BATCH_CREATE_REQUEST:
 				case AppConstants.CREATE_REQUEST: {
-					for (Entry<String, List<Map<String, Object>>> entry : payloadToUse.entrySet()) {
-						List<Map<String, Object>> entryList = entry.getValue();
-						for (int i = 0; i < entryList.size(); i++) {
-							Map<String, Object> mapEntry = entryList.get(i);
-
-							Map<String, Object> dupl = MicroServiceUtils.deepCopyMap(mapEntry);
-							if (potentialSub.fullEntityCheckToSendOut(entry.getKey(), dupl, allTypeSubType, null)) {
-								dataToSend.add(dupl);
-							}
-						}
-					}
-
+					dataToSend = mergePrevAndNew(payloadToUse, null,
+							potentialSub.getSubscription().getNotification().getShowChanges());
 					break;
 				}
 				case AppConstants.BATCH_UPDATE_REQUEST:
@@ -610,7 +600,8 @@ public class SubscriptionService {
 				case AppConstants.BATCH_MERGE_REQUEST:
 				case AppConstants.REPLACE_ATTRIBUTE_REQUEST:
 				case AppConstants.REPLACE_ENTITY_REQUEST:
-				case AppConstants.MERGE_PATCH_REQUEST: {
+				case AppConstants.MERGE_PATCH_REQUEST:
+				case AppConstants.PARTIAL_UPDATE_REQUEST: {
 					dataToSend = mergePrevAndNew(payloadToUse, prevPayloadToUse,
 							potentialSub.getSubscription().getNotification().getShowChanges());
 					break;
@@ -619,6 +610,14 @@ public class SubscriptionService {
 					break;
 				}
 
+			}
+			Iterator<Map<String, Object>> it = dataToSend.iterator();
+			while (it.hasNext()) {
+				Map<String, Object> next = it.next();
+				if (!potentialSub.fullEntityCheckToSendOut((String) next.get(NGSIConstants.JSON_LD_ID), next,
+						allTypeSubType, null)) {
+					it.remove();
+				}
 			}
 			unis.add(sendNotification(potentialSub, dataToSend));
 		}
@@ -635,7 +634,8 @@ public class SubscriptionService {
 			String entityId = entry.getKey();
 			List<Map<String, Object>> newValues = entry.getValue();
 			if (prevPayloadToUse == null) {
-				result.addAll(newValues);
+				addNoOldValues(result, newValues, showChanges);
+
 			} else {
 				List<Map<String, Object>> oldValues = prevPayloadToUse.get(entityId);
 				if (oldValues == null) {
@@ -644,11 +644,11 @@ public class SubscriptionService {
 					for (int i = 0; i < newValues.size(); i++) {
 						Map<String, Object> newValue = newValues.get(i);
 						if (i >= oldValues.size()) {
-							result.addAll(newValues);
+							addNoOldValue(result, newValue, showChanges);
 						} else {
 							Map<String, Object> oldValue = oldValues.get(i);
 							if (oldValue == null) {
-								result.addAll(newValues);
+								addNoOldValue(result, newValue, showChanges);
 							} else {
 								result.add(mergePrevAndNewEntity(oldValue, newValue, showChanges));
 							}
@@ -661,10 +661,45 @@ public class SubscriptionService {
 		return result;
 	}
 
+	private void addNoOldValues(List<Map<String, Object>> result, List<Map<String, Object>> newValues,
+			Boolean showChanges) {
+		if (showChanges) {
+			for (Map<String, Object> newValue : newValues) {
+				addNoOldValue(result, newValue, showChanges);
+			}
+		} else {
+			result.addAll(newValues);
+		}
+
+	}
+
+	private void addNoOldValue(List<Map<String, Object>> result, Map<String, Object> newValue, Boolean showChanges) {
+		if (showChanges) {
+			for (Entry<String, Object> entry : newValue.entrySet()) {
+				switch (entry.getKey()) {
+				case NGSIConstants.JSON_LD_ID:
+				case NGSIConstants.JSON_LD_TYPE:
+				case NGSIConstants.NGSI_LD_SCOPE:
+				case NGSIConstants.NGSI_LD_MODIFIED_AT:
+				case NGSIConstants.NGSI_LD_CREATED_AT:
+					continue;
+				default: {
+					List<Map<String, Object>> attribEntries = (List<Map<String, Object>>) entry.getValue();
+					for (Map<String, Object> attribEntry : attribEntries) {
+						mergeAttribToNone(attribEntry);
+					}
+
+				}
+				}
+			}
+		}
+		result.add(newValue);
+
+	}
+
 	private Map<String, Object> mergePrevAndNewEntity(Map<String, Object> oldValue, Map<String, Object> newValue,
 			Boolean showChanges) {
 		Map<String, Object> result = MicroServiceUtils.deepCopyMap(oldValue);
-		Object modifiedAt;
 		for (Entry<String, Object> entry : newValue.entrySet()) {
 			String attribName = entry.getKey();
 			switch (attribName) {
@@ -678,8 +713,11 @@ public class SubscriptionService {
 				result.put(attribName, mergedTypes);
 				break;
 			case NGSIConstants.NGSI_LD_SCOPE:
+			case NGSIConstants.NGSI_LD_MODIFIED_AT:
 				result.put(attribName, entry.getValue());
 				break;
+			case NGSIConstants.NGSI_LD_CREATED_AT:
+				continue;
 			default:
 				if (showChanges) {
 					List<Map<String, Object>> oldValues = (List<Map<String, Object>>) result.get(attribName);
@@ -768,7 +806,7 @@ public class SubscriptionService {
 	}
 
 	private Uni<Void> sendNotification(SubscriptionRequest potentialSub, List<Map<String, Object>> dataToSend) {
-		if (dataToSend.isEmpty()) {
+		if (dataToSend == null || dataToSend.isEmpty()) {
 			return Uni.createFrom().voidItem();
 		}
 		return SubscriptionTools.generateNotification(potentialSub, dataToSend, ldService).onItem()

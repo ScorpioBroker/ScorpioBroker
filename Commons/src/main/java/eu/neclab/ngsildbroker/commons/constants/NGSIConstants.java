@@ -68,7 +68,7 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_JSON_PROPERTY="https://uri.etsi.org/ngsi-ld/JsonProperty";
 	public static final String JSON = "json";
 	public final static String JSONPROPERTY="JsonProperty";
-	public static final String PREVIOUS_JSON = "previousJson";
+	public static final String PREVIOUS_JSON = "https://uri.etsi.org/ngsi-ld/hasPreviousJson";
 
 
 	public final static String NGSI_LD_GEOPROPERTY_SHORT = "GeoProperty";
@@ -422,13 +422,13 @@ public interface NGSIConstants {
 	public final static String QUERY_PARAMETER_CONCISE_VALUE = "concise";
 	public final static String QUERY_PARAMETER_CONCISE = "option";
 	public static final String SCOPE = "scope";
-	public static final String PREVIOUS_VALUE = "previousValue";
-	public static final String PREVIOUS_VOCAB = "previousVocab";
-
-	public static final String PREVIOUS_VALUE_LIST = "previousValueList";
-	public static final String PREVIOUS_OJBECT_LIST = "previousObjectList";
-	public static final String PREVIOUS_LANGUAGE_MAP = "previousLanguageMap";
-	public static final String PREVIOUS_OBJECT = "previousObject";
+	public static final String PREVIOUS_VALUE = "https://uri.etsi.org/ngsi-ld/hasPreviousValue";
+	public static final String PREVIOUS_VOCAB = "https://uri.etsi.org/ngsi-ld/hasPreviousVocab";
+	
+	public static final String PREVIOUS_VALUE_LIST = "https://uri.etsi.org/ngsi-ld/hasPreviousValueList";
+	public static final String PREVIOUS_OJBECT_LIST = "https://uri.etsi.org/ngsi-ld/hasPreviousObjectList";
+	public static final String PREVIOUS_LANGUAGE_MAP = "https://uri.etsi.org/ngsi-ld/hasPreviousLanguageMap";
+	public static final String PREVIOUS_OBJECT = "https://uri.etsi.org/ngsi-ld/hasPreviousObject";
 	public static final String NGSI_LD_REG_MODE = "https://uri.etsi.org/ngsi-ld/mode";
 	public static final String NGSI_LD_REG_MODE_AUX = "auxiliary";
 	public static final String NGSI_LD_REG_MODE_INC = "inclusive";
