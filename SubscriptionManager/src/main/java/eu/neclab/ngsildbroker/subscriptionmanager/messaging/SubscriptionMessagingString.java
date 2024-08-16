@@ -19,5 +19,11 @@ public class SubscriptionMessagingString extends SubscriptionMessagingBase {
 	public Uni<Void> handleEntity(String byteMessage) {
 		return handleEntityRaw(byteMessage);
 	}
+	
+	@Incoming(AppConstants.REGISTRY_RETRIEVE_CHANNEL)
+	@Acknowledgment(Strategy.PRE_PROCESSING)
+	public Uni<Void> handleCsource(String byteMessage) {
+		return handleCsourceRaw(byteMessage);
+	}
 
 }

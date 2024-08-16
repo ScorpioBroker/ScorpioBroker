@@ -10,7 +10,6 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CSourceBaseRequest;
-import eu.neclab.ngsildbroker.commons.serialization.messaging.MessageCollector;
 import eu.neclab.ngsildbroker.queryhandler.services.QueryService;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Vertx;
@@ -27,8 +26,6 @@ public abstract class QueryManagerMessagingBase {
 
 	@Inject
 	ObjectMapper objectMapper;
-
-	private MessageCollector collector = new MessageCollector(this.getClass().getName());
 
 	public Uni<Void> handleCsourceRaw(String byteMessage) {
 		CSourceBaseRequest message;

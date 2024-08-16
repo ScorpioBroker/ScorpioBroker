@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CSourceBaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
-import eu.neclab.ngsildbroker.commons.serialization.messaging.MessageCollector;
 import eu.neclab.ngsildbroker.registry.subscriptionmanager.service.RegistrySubscriptionService;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Vertx;
@@ -22,7 +21,7 @@ public abstract class RegistrySubscriptionMessagingBase {
 	@Inject
 	RegistrySubscriptionService subscriptionService;
 
-	private MessageCollector collector = new MessageCollector(this.getClass().getName());
+	
 
 	@Inject
 	Vertx vertx;

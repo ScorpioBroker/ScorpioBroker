@@ -20,4 +20,10 @@ public class SubscriptionMessagingInMemory extends SubscriptionMessagingBase {
 		return handleEntityRaw(byteMessage);
 	}
 
+	@Incoming(AppConstants.REGISTRY_CHANNEL)
+	@Acknowledgment(Strategy.PRE_PROCESSING)
+	public Uni<Void> handleCsource(String byteMessage) {
+		return handleCsourceRaw(byteMessage);
+	}
+
 }

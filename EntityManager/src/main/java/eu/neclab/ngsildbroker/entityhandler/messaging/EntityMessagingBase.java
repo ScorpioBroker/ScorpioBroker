@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CSourceBaseRequest;
-import eu.neclab.ngsildbroker.commons.serialization.messaging.MessageCollector;
 import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
 import io.netty.channel.EventLoopGroup;
 import io.smallrye.mutiny.Uni;
@@ -29,14 +28,9 @@ public abstract class EntityMessagingBase {
 	@Inject
 	ObjectMapper objectMapper;
 
-	private EventLoopGroup executor;
+	
 
-	private MessageCollector collector = new MessageCollector(this.getClass().getName());
 
-	@PostConstruct
-	public void setup() {
-		this.executor = vertx.getDelegate().nettyEventLoopGroup();
-	}
 
 //	CollectMessageListener collectListenerRegistry = new CollectMessageListener() {
 //
@@ -73,8 +67,5 @@ public abstract class EntityMessagingBase {
 		return entityService.handleRegistryChange(message);
 	}
 
-	void purge() {
-		collector.purge(30000);
-	}
 
 }

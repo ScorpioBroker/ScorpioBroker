@@ -20,4 +20,10 @@ public class SubscriptionMessagingByteArray extends SubscriptionMessagingBase {
 		return handleEntityRaw(new String(byteMessage));
 	}
 
+	@Incoming(AppConstants.REGISTRY_RETRIEVE_CHANNEL)
+	@Acknowledgment(Strategy.PRE_PROCESSING)
+	public Uni<Void> handleCsource(byte[] byteMessage) {
+		return handleCsourceRaw(new String(byteMessage));
+	}
+
 }

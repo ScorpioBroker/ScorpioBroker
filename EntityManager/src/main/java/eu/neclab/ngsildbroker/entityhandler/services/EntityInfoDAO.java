@@ -151,13 +151,11 @@ public class EntityInfoDAO {
 							"Entity " + request.getFirstId() + " was not found"));
 				}
 				Row first = rows.iterator().next();
-				JsonArray result = first.getJsonArray(0);
+				JsonObject result = first.getJsonObject(0);
 				if (result == null) {
 					return Uni.createFrom().nullItem();
 				}
-				Map<String, Object> tmp = new HashMap<>(1);
-				tmp.put(request.getAttribName(), result.getList());
-				return Uni.createFrom().item(tmp);
+				return Uni.createFrom().item(result.getMap());
 			});
 		}).onFailure().recoverWithUni(e -> {
 			logger.error("Failed to add because of unknown error", e);
