@@ -156,7 +156,7 @@ public class SubscriptionRequest implements Serializable {
 		}
 
 		if (sub.getAttributeNames() != null && !sub.getAttributeNames().isEmpty()
-				&& !Sets.intersection(sub.getAttributeNames(), payload.keySet()).isEmpty()) {
+				&& Sets.intersection(sub.getAttributeNames(), payload.keySet()).isEmpty()) {
 			return false;
 		}
 

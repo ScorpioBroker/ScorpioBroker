@@ -606,6 +606,44 @@ public class SubscriptionService {
 							potentialSub.getSubscription().getNotification().getShowChanges());
 					break;
 				}
+				case AppConstants.DELETE_ATTRIBUTE_REQUEST: {
+					List<Map<String, Object>> tmp = Lists.newArrayList();
+					if(potentialSub.getSubscription().getNotification().getShowChanges()) {
+						prevPayloadToUse.values().forEach(payloads -> {
+							payloads.forEach(payload -> {
+								List<Map<String, Object>> attribs = (List<Map<String, Object>>) payload.get(message.getAttribName());
+								for(Map<String, Object> attrib: attribs) {
+									putOldAttribFromDelete(attrib, message.getSendTimestamp());
+								}
+								tmp .add(payload);
+							});
+						});
+					}else {
+						prevPayloadToUse.values().forEach(payloads -> {
+							payloads.forEach(payload -> {
+								payload.remove(message.getAttribName());
+								tmp .add(payload);
+							});
+						});
+					}
+					dataToSend = tmp;
+					break;
+				}
+				case AppConstants.DELETE_REQUEST:
+				case AppConstants.BATCH_DELETE_REQUEST: {
+					List<Map<String, Object>> tmp = Lists.newArrayList();
+					prevPayloadToUse.values().forEach(payloads -> {
+						payloads.forEach(payload -> {
+							payload.put(NGSIConstants.NGSI_LD_DELETED_AT,
+									List.of(Map.of(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME,
+											NGSIConstants.JSON_LD_VALUE,
+											SerializationTools.toDateTimeString(message.getSendTimestamp()))));
+							tmp .add(payload);
+						});
+					});
+					dataToSend = tmp;
+					break;
+				}
 				default:
 					break;
 				}
@@ -801,6 +839,29 @@ public class SubscriptionService {
 			newEntry.put(NGSIConstants.PREVIOUS_VALUE_LIST, oldEntry.get(NGSIConstants.NGSI_LD_HAS_LIST));
 		} else if (oldEntry.containsKey(NGSIConstants.NGSI_LD_HAS_VOCAB)) {
 			newEntry.put(NGSIConstants.PREVIOUS_VOCAB, oldEntry.get(NGSIConstants.NGSI_LD_HAS_VOCAB));
+		}
+
+	}
+	
+	private void putOldAttribFromDelete(Map<String, Object> oldEntry, long timeStamp) {
+		oldEntry.put(NGSIConstants.NGSI_LD_DELETED_AT,
+				List.of(Map.of(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME,
+						NGSIConstants.JSON_LD_VALUE,
+						SerializationTools.toDateTimeString(timeStamp))));
+		if (oldEntry.containsKey(NGSIConstants.NGSI_LD_HAS_VALUE)) {
+			oldEntry.put(NGSIConstants.PREVIOUS_VALUE, oldEntry.remove(NGSIConstants.NGSI_LD_HAS_VALUE));
+		} else if (oldEntry.containsKey(NGSIConstants.NGSI_LD_HAS_OBJECT)) {
+			oldEntry.put(NGSIConstants.PREVIOUS_OBJECT, oldEntry.remove(NGSIConstants.NGSI_LD_HAS_OBJECT));
+		} else if (oldEntry.containsKey(NGSIConstants.NGSI_LD_HAS_JSON)) {
+			oldEntry.put(NGSIConstants.PREVIOUS_JSON, oldEntry.remove(NGSIConstants.NGSI_LD_HAS_JSON));
+		} else if (oldEntry.containsKey(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP)) {
+			oldEntry.put(NGSIConstants.PREVIOUS_LANGUAGE_MAP, oldEntry.remove(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP));
+		} else if (oldEntry.containsKey(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST)) {
+			oldEntry.put(NGSIConstants.PREVIOUS_OJBECT_LIST, oldEntry.remove(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST));
+		} else if (oldEntry.containsKey(NGSIConstants.NGSI_LD_HAS_LIST)) {
+			oldEntry.put(NGSIConstants.PREVIOUS_VALUE_LIST, oldEntry.remove(NGSIConstants.NGSI_LD_HAS_LIST));
+		} else if (oldEntry.containsKey(NGSIConstants.NGSI_LD_HAS_VOCAB)) {
+			oldEntry.put(NGSIConstants.PREVIOUS_VOCAB, oldEntry.remove(NGSIConstants.NGSI_LD_HAS_VOCAB));
 		}
 
 	}
