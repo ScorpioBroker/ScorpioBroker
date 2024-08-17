@@ -22,9 +22,9 @@ BEGIN
     IF EXISTS (SELECT entity FROM entity WHERE id = newentity->'@id'->>0) THEN
       merged_json := (SELECT entity FROM entity WHERE id = newentity->'@id'->>0);
       previous_entity := merged_json;
-      resultObj['success'] = jsonb_set(resultObj, '{success}', resultObj -> 'success' || jsonb_build_object('id',newentity->'@id', 'old', previous_entity));
+      resultObj = jsonb_set(resultObj, '{success}', resultObj -> 'success' || jsonb_build_object('id',newentity->>'@id', 'old', previous_entity));
     ELSE
-      resultObj['failure'] = jsonb_set(resultObj, '{failure}', resultObj -> 'failure' || jsonb_build_object(newentity->>'@id', 'Not Found'));
+      resultObj = jsonb_set(resultObj, '{failure}', resultObj -> 'failure' || jsonb_build_object(newentity->>'@id', 'Not Found'));
       CONTINUE;
     END IF;
 
