@@ -1116,10 +1116,11 @@ public class SubscriptionService {
 		}
 		req = req.addQueryParam(NGSIConstants.QUERY_PARAMETER_DO_NOT_COMPACT, "true");
 		req = req.putHeader(NGSIConstants.TENANT_HEADER, tenant).putHeader(HttpHeaders.ACCEPT,
-				AppConstants.NGB_APPLICATION_JSONLD);
+				AppConstants.NGB_APPLICATION_JSON);
 
 		return req.send().onItem().transform(resp -> {
 			if (resp != null && resp.statusCode() == 200) {
+				System.out.println(resp.bodyAsString());
 				JsonArray jsonArray = resp.bodyAsJsonArray();
 				List<Map<String, Object>> dataToNotify = new ArrayList<>(jsonArray.size());
 
