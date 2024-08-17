@@ -178,7 +178,7 @@ public class SubscriptionRequest implements Serializable {
 		boolean typeQueryResult = false;
 		for (EntityInfo entityInfo : sub.getEntities()) {
 			TypeQueryTerm typeTerm = entityInfo.getTypeTerm();
-			if (typeTerm != null) {
+			if (typeTerm != null && !typeTerm.getAllTypes().contains(allTypesSub)) {
 				typeQueryResult = typeTerm.calculate((List<String>) payload.get(NGSIConstants.JSON_LD_TYPE));
 				if (typeQueryResult) {
 					if(entityInfo.getId() != null) {

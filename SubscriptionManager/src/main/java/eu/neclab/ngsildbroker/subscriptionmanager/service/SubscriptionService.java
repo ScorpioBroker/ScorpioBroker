@@ -608,21 +608,22 @@ public class SubscriptionService {
 				}
 				case AppConstants.DELETE_ATTRIBUTE_REQUEST: {
 					List<Map<String, Object>> tmp = Lists.newArrayList();
-					if(potentialSub.getSubscription().getNotification().getShowChanges()) {
+					if (potentialSub.getSubscription().getNotification().getShowChanges()) {
 						prevPayloadToUse.values().forEach(payloads -> {
 							payloads.forEach(payload -> {
-								List<Map<String, Object>> attribs = (List<Map<String, Object>>) payload.get(message.getAttribName());
-								for(Map<String, Object> attrib: attribs) {
+								List<Map<String, Object>> attribs = (List<Map<String, Object>>) payload
+										.get(message.getAttribName());
+								for (Map<String, Object> attrib : attribs) {
 									putOldAttribFromDelete(attrib, message.getSendTimestamp());
 								}
-								tmp .add(payload);
+								tmp.add(payload);
 							});
 						});
-					}else {
+					} else {
 						prevPayloadToUse.values().forEach(payloads -> {
 							payloads.forEach(payload -> {
 								payload.remove(message.getAttribName());
-								tmp .add(payload);
+								tmp.add(payload);
 							});
 						});
 					}
@@ -638,7 +639,7 @@ public class SubscriptionService {
 									List.of(Map.of(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME,
 											NGSIConstants.JSON_LD_VALUE,
 											SerializationTools.toDateTimeString(message.getSendTimestamp()))));
-							tmp .add(payload);
+							tmp.add(payload);
 						});
 					});
 					dataToSend = tmp;
@@ -653,7 +654,7 @@ public class SubscriptionService {
 			while (it.hasNext()) {
 				Map<String, Object> next = it.next();
 				if (!potentialSub.fullEntityCheckToSendOut((String) next.get(NGSIConstants.JSON_LD_ID), next,
-						allTypeSubType, null)) {
+						ALL_TYPES_SUB, null)) {
 					it.remove();
 				}
 			}
@@ -842,11 +843,10 @@ public class SubscriptionService {
 		}
 
 	}
-	
+
 	private void putOldAttribFromDelete(Map<String, Object> oldEntry, long timeStamp) {
 		oldEntry.put(NGSIConstants.NGSI_LD_DELETED_AT,
-				List.of(Map.of(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME,
-						NGSIConstants.JSON_LD_VALUE,
+				List.of(Map.of(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME, NGSIConstants.JSON_LD_VALUE,
 						SerializationTools.toDateTimeString(timeStamp))));
 		if (oldEntry.containsKey(NGSIConstants.NGSI_LD_HAS_VALUE)) {
 			oldEntry.put(NGSIConstants.PREVIOUS_VALUE, oldEntry.remove(NGSIConstants.NGSI_LD_HAS_VALUE));
@@ -1133,7 +1133,7 @@ public class SubscriptionService {
 					});
 				} else {
 					jsonArray.forEach(entityObj -> {
-						Map<String, Object> entity = (Map<String, Object>) entityObj;
+						Map<String, Object> entity = ((JsonObject) entityObj).getMap();
 						String entityId = (String) entity.get(NGSIConstants.JSON_LD_ID);
 						Map<String, Object> prev;
 						List<Map<String, Object>> entitiesPrev = prevPayloadToUse.get(entityId);
@@ -1143,7 +1143,7 @@ public class SubscriptionService {
 							prev = null;
 						}
 
-						dataToNotify.add(compareMaps(entity, prev));
+						dataToNotify.add(compareMaps(prev, entity));
 					});
 				}
 				return dataToNotify;

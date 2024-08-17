@@ -3,6 +3,7 @@ package eu.neclab.ngsildbroker.registry.subscriptionmanager.repository;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -241,7 +242,17 @@ public class RegistrySubscriptionInfoDAO {
 					}
 				}
 				if (entityInformation.getTypeTerm() != null) {
-					dollar = entityInformation.getTypeTerm().toSql(sql, tuple, dollar);
+					//dollar = entityInformation.getTypeTerm().toSql(sql, tuple, dollar);
+					Set<String> types = entityInformation.getTypeTerm().getAllTypes();
+					sql.append("e_type IN (");
+					for(String type: types) {
+						sql.append('$');
+						sql.append(dollar);
+						sql.append(',');
+						dollar++;
+						tuple.addString(type);
+					}
+					sql.setCharAt(sql.length() - 1, ')');
 
 				}
 				sql.append(")");

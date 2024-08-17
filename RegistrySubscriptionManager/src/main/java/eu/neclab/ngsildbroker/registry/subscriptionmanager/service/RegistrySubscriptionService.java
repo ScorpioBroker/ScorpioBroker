@@ -176,15 +176,24 @@ public class RegistrySubscriptionService {
 				syncService = Uni.createFrom().voidItem();
 			}
 			return syncService.onItem().transformToUni(v2 -> {
-				return regDAO.getInitialNotificationData(request).onItem().transformToUni(rows -> {
+				return regDAO.getInitialNotificationData(request).onFailure().recoverWithUni(e -> {
+					e.printStackTrace();
+					return Uni.createFrom().failure(e);
+				}).onItem().transformToUni(rows -> {
 					List<Map<String, Object>> data = Lists.newArrayList();
 					rows.forEach(row -> {
 						data.add(row.getJsonObject(0).getMap());
 					});
 					return SubscriptionTools.generateCsourceNotification(request, data,
-							AppConstants.INTERNAL_NOTIFICATION_REQUEST, ldService).onItem().transformToUni(noti -> {
+							AppConstants.INTERNAL_NOTIFICATION_REQUEST, ldService).onFailure().recoverWithUni(e -> {
+								e.printStackTrace();
+								return Uni.createFrom().failure(e);
+							}).onItem().transformToUni(noti -> {
 								return sendNotification(request, noti, AppConstants.INTERNAL_NOTIFICATION_REQUEST)
-										.onItem().transform(v -> {
+										.onFailure().recoverWithUni(e -> {
+											e.printStackTrace();
+											return Uni.createFrom().failure(e);
+										}).onItem().transform(v -> {
 											NGSILDOperationResult result = new NGSILDOperationResult(
 													AppConstants.CREATE_SUBSCRIPTION_REQUEST, request.getId());
 											result.addSuccess(
@@ -198,6 +207,7 @@ public class RegistrySubscriptionService {
 
 		}).onFailure().recoverWithUni(e -> {
 			// TODO sql check
+			logger.error("failed to create csource subscription.", e);
 			return Uni.createFrom().failure(new ResponseException(ErrorType.AlreadyExists,
 					"Subscription with id " + request.getId() + " exists"));
 		});
