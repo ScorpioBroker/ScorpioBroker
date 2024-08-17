@@ -386,7 +386,7 @@ public class Subscription implements Serializable {
 			switch (entry.getKey()) {
 			case NGSIConstants.NGSI_LD_ATTRIBUTES:
 				List<Map<String, Object>> watchedAttribs = (List<Map<String, Object>>) entry.getValue();
-				String attrs = getCompactedQueryString(watchedAttribs, NGSIConstants.NGSI_LD_ATTRIBUTES, context);
+				String attrs = getCompactedAttrsQueryString(watchedAttribs, context);
 				notifyParam.setAttrs(QueryParser.parseAttrs(attrs, context));
 				break;
 			case NGSIConstants.NGSI_LD_PICK:
@@ -507,6 +507,16 @@ public class Subscription implements Serializable {
 		}
 		notifyParam.setFormat(format);
 		return notifyParam;
+	}
+
+	private static String getCompactedAttrsQueryString(List<Map<String, Object>> watchedAttribs, Context context) {
+		StringBuilder result = new StringBuilder();
+		watchedAttribs.forEach(entry -> {
+			result.append(context.compactIri((String) entry.get(NGSIConstants.JSON_LD_ID)));
+			result.append(',');
+		});
+		result.setLength(result.length() - 1);
+		return result.toString();
 	}
 
 	private static String getCompactedQueryString(List<Map<String, Object>> watchedAttribs, String attribName,
