@@ -1,9 +1,12 @@
 package eu.neclab.ngsildbroker.commons.datatypes.requests.subscription;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import org.apache.commons.lang3.StringUtils;
 
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.github.jsonldjava.core.Context;
@@ -179,28 +182,28 @@ public class SubscriptionRequest implements Serializable {
 		for (EntityInfo entityInfo : sub.getEntities()) {
 			TypeQueryTerm typeTerm = entityInfo.getTypeTerm();
 			if (typeTerm != null) {
-				if(typeTerm.getAllTypes().contains(allTypesSub)) {
+				if (typeTerm.getAllTypes().contains(allTypesSub)) {
 					typeQueryResult = true;
 					break;
 				}
 				typeQueryResult = typeTerm.calculate((List<String>) payload.get(NGSIConstants.JSON_LD_TYPE));
 				if (typeQueryResult) {
-					if(entityInfo.getId() != null) {
-						if(entityInfo.getId().toString().equals(entityId)) {
+					if (entityInfo.getId() != null) {
+						if (entityInfo.getId().toString().equals(entityId)) {
 							break;
-						}else {
+						} else {
 							typeQueryResult = false;
 						}
-					}else if(entityInfo.getIdPattern() != null) {
-						if(entityId.matches(entityInfo.getIdPattern())) {
+					} else if (entityInfo.getIdPattern() != null) {
+						if (entityId.matches(entityInfo.getIdPattern())) {
 							break;
-						}else {
+						} else {
 							typeQueryResult = false;
 						}
-					}else {
-						break;	
+					} else {
+						break;
 					}
-					
+
 				}
 			}
 		}
@@ -232,24 +235,36 @@ public class SubscriptionRequest implements Serializable {
 		return subscription.getNotification().getJoin() != null || subscription.getNotification().getJoinLevel() > 0;
 	}
 
-	public Map<String, String> getAsQueryParams(boolean addIds) {
-		Map<String, String> result = Maps.newHashMap();
+	public Map<String, Object> getAsQueryBody(Set<String> idsTbu) {
+		Map<String, Object> result = Maps.newHashMap();
+		result.put(NGSIConstants.TYPE, NGSIConstants.QUERY_TYPE);
 
-		StringBuilder typeQueryBuilder = new StringBuilder();
 		List<EntityInfo> entities = subscription.getEntities();
-		for (EntityInfo entityInfo : entities) {
-			TypeQueryTerm typeQuery = entityInfo.getTypeTerm();
-			if (typeQuery != null) {
-				typeQueryBuilder.append('(');
-				typeQuery.toRequestString(typeQueryBuilder, context);
-				typeQueryBuilder.append("),");
+		if (entities != null && !entities.isEmpty()) {
+			List<Map<String, String>> entitiesEntry = new ArrayList<>(entities.size());
+			for (EntityInfo entityInfo : entities) {
+				Map<String, String> entityEntry = Maps.newHashMap(); 
+				
+				TypeQueryTerm typeQuery = entityInfo.getTypeTerm();
+				if (typeQuery != null) {
+					StringBuilder typeQueryBuilder = new StringBuilder();
+					typeQuery.toRequestString(typeQueryBuilder, context);
+					entityEntry.put(NGSIConstants.TYPE, typeQuery.toString());
+				}
+				if(idsTbu == null) {
+					if(entityInfo.getId() != null) {
+						entityEntry.put(NGSIConstants.ID, entityInfo.getId().toString());	
+					}else if(entityInfo.getIdPattern() != null) {
+						entityEntry.put(NGSIConstants.QUERY_PARAMETER_IDPATTERN, entityInfo.getIdPattern());
+					}
+				}else {
+					entityEntry.put(NGSIConstants.ID, StringUtils.join(idsTbu, ','));
+				}
+				entitiesEntry.add(entityEntry);
 			}
+			result.put(NGSIConstants.NGSI_LD_ENTITIES_SHORT, entitiesEntry);
 		}
 
-		if (!typeQueryBuilder.isEmpty()) {
-			typeQueryBuilder.setLength(typeQueryBuilder.length() - 1);
-			result.put(NGSIConstants.TYPE, typeQueryBuilder.toString());
-		}
 
 		GeoQueryTerm geoQ = subscription.getLdGeoQuery();
 		if (geoQ != null) {

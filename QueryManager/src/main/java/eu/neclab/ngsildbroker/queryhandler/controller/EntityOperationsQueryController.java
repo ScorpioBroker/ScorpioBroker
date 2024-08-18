@@ -82,8 +82,8 @@ public class EntityOperationsQueryController {
 			@QueryParam(value = "options") String options, @QueryParam(value = "count") boolean count,
 			@QueryParam(value = "localOnly") boolean localOnly,
 			@QueryParam(value = "geometryProperty") String geometryProperty,
-			@HeaderParam("NGSILD-EntityMap") String entityMapToken,
-			@QueryParam("entityMap") boolean retrieveEntityMap) {
+			@HeaderParam("NGSILD-EntityMap") String entityMapToken, @QueryParam("entityMap") boolean retrieveEntityMap,
+			@QueryParam(value = "doNotCompact") boolean doNotCompact) {
 
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		Map<String, Object> body;
@@ -261,6 +261,9 @@ public class EntityOperationsQueryController {
 						qQueryTerm, csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset, count,
 						localOnly, context, request.headers(), false, null, null, join, joinLevel, entityDist, pickTerm,
 						omitTerm, checkSum, viaHeaders).onItem().transformToUni(queryResult -> {
+							if (doNotCompact) {
+								return Uni.createFrom().item(RestResponse.ok((Object) queryResult.getData()));
+							}
 							return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty,
 									acceptHeader, count, actualLimit, langQuery, context, ldService, retrieveEntityMap,
 									microServiceUtils.getGatewayURL().toString(),

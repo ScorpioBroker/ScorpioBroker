@@ -1107,22 +1107,23 @@ public class SubscriptionService {
 
 	private Uni<List<Map<String, Object>>> queryFromSubscription(SubscriptionRequest request, String tenant,
 			Set<String> idsTBU, Map<String, List<Map<String, Object>>> prevPayloadToUse) {
-		HttpRequest<Buffer> req = webClient.getAbs(entityServiceUrl + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT);
-		Map<String, String> queryParams = request.getAsQueryParams(idsTBU == null);
-		for (Entry<String, String> entry : queryParams.entrySet()) {
-			req = req.addQueryParam(entry.getKey(), entry.getValue());
-		}
-		if (idsTBU != null) {
-			req = req.addQueryParam(NGSIConstants.ID, StringUtils.join(idsTBU, ','));
-		}
+		HttpRequest<Buffer> req = webClient.postAbs(entityServiceUrl + NGSIConstants.ENDPOINT_BATCH_QUERY);
+		Map<String, Object> queryBody = request.getAsQueryBody(idsTBU);
+		queryBody.put(NGSIConstants.JSON_LD_CONTEXT, request.getContext().getOriginalAtContext());
 
-		req = req.putHeader(HttpHeaders.LINK, "<" + request.getContext().getOriginalAtContext().get(0)
-				+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
 		req = req.addQueryParam(NGSIConstants.QUERY_PARAMETER_DO_NOT_COMPACT, "true");
-		req = req.putHeader(NGSIConstants.TENANT_HEADER, tenant).putHeader(HttpHeaders.ACCEPT,
-				AppConstants.NGB_APPLICATION_JSON);
-
-		return req.send().onItem().transform(resp -> {
+		req = req.addQueryParam(NGSIConstants.QUERY_PARAMETER_LIMIT, "1000");
+		req = req.putHeader(NGSIConstants.TENANT_HEADER, tenant)
+				.putHeader(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSON)
+				.putHeader(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD);
+		String batchString;
+		try {
+			batchString = JsonUtils.toPrettyString(queryBody);
+		} catch (Exception e) {
+			logger.warn("failed to serialize batch request");
+			return Uni.createFrom().item(Lists.newArrayList());
+		}
+		return req.sendBuffer(Buffer.buffer(batchString)).onItem().transform(resp -> {
 			if (resp != null && resp.statusCode() == 200) {
 				System.out.println(resp.bodyAsString());
 				JsonArray jsonArray = resp.bodyAsJsonArray();
