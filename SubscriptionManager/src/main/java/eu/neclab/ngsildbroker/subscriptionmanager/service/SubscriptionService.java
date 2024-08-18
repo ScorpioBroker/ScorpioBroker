@@ -61,6 +61,7 @@ import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import eu.neclab.ngsildbroker.commons.tools.SubscriptionTools;
 import eu.neclab.ngsildbroker.subscriptionmanager.messaging.SyncService;
 import eu.neclab.ngsildbroker.subscriptionmanager.repository.SubscriptionInfoDAO;
+import io.netty.handler.codec.http.HttpConstants;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.scheduler.Scheduled;
@@ -1114,6 +1115,9 @@ public class SubscriptionService {
 		if (idsTBU != null) {
 			req = req.addQueryParam(NGSIConstants.ID, StringUtils.join(idsTBU, ','));
 		}
+
+		req = req.putHeader(HttpHeaders.LINK, "<" + request.getContext().getOriginalAtContext().get(0)
+				+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
 		req = req.addQueryParam(NGSIConstants.QUERY_PARAMETER_DO_NOT_COMPACT, "true");
 		req = req.putHeader(NGSIConstants.TENANT_HEADER, tenant).putHeader(HttpHeaders.ACCEPT,
 				AppConstants.NGB_APPLICATION_JSON);
