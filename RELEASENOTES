@@ -1,3 +1,28 @@
+RELEASE NOTES 5.0.0
+
+Scorpio adds general NGSI-LD 1.8.1 compliance.
+e.g.
+full join support on queries
+pick and omit support
+queries make use of entity maps now. an entitymap contains a list of entity ids matching a query.
+Scorpio uses this internally to get a full an consistent query result, especially in federated setups. 
+the entity maps identifier will be returned in the header NGSILD-EntityMap after a query and can be used in follow up queries.
+This will avoid the initial gathering of the entitymap in query. The ids might be removed from an entitymap if they are not matching the query.
+It is not possible to change the query of an entitymap for a user. 
+If you are dealing with a very dynamic scenario you will not want to use the entity map header at all to always capture updated results.
+If you have a static scenario with a large number of entities using the entity map header will greatly improve your query time in a federated setup.
+   
+ 
+Removed the need for various Topics in the message bus. left over topics are 
+ - scorpio.topics.registry
+ - scorpio.topics.entity
+ - scorpio.topics.subalive
+ - scorpio.topics.subsync
+ - scorpio.topics.histsync
+
+Added support for compression in the message busses for entity messages. Is off by default can be turned on with the property
+ scorpio.topics.entity.zip/SCORPIO_TOPICS_ENTITY_ZIP
+
 RELEASE NOTES SCORPIO 4.1.15
 
 addresses an issue in the registry subscription manager as stand alone microservice not logging onto the DB properly

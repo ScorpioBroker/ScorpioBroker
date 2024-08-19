@@ -35,6 +35,7 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-java-with-kafka
         run: |
+          find . -name "pom.xml" -exec sed -i 's/${{steps.get-id.outputs.id}}-SNAPSHOT/${{steps.get-id.outputs.id}}/g' {} +
           mvn clean package -DskipTests -Dkafka -Pkafka -Ddocker -Ddocker-tag=java-kafka-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=kafka
       - name: docker tag 
         run: |
@@ -281,6 +282,7 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-java-with-sqs
         run: |
+          find . -name "pom.xml" -exec sed -i 's/${{steps.get-id.outputs.id}}-SNAPSHOT/${{steps.get-id.outputs.id}}/g' {} +
           mvn clean package -DskipTests -Dsqs -Psqs -Ddocker -Ddocker-tag=java-sqs-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=sqs
       - name: docker tag 
         run: |
@@ -505,6 +507,7 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-java-with-rabbitmq
         run: |
+          find . -name "pom.xml" -exec sed -i 's/${{steps.get-id.outputs.id}}-SNAPSHOT/${{steps.get-id.outputs.id}}/g' {} +
           mvn clean package -DskipTests -Drabbitmq -Prabbitmq -Ddocker -Ddocker-tag=java-rabbitmq-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=rabbitmq
       - name: docker tag 
         run: |
@@ -751,6 +754,7 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-java-with-mqtt
         run: |
+          find . -name "pom.xml" -exec sed -i 's/${{steps.get-id.outputs.id}}-SNAPSHOT/${{steps.get-id.outputs.id}}/g' {} +
           mvn clean package -DskipTests -Dmqtt -Pmqtt -Ddocker -Ddocker-tag=java-mqtt-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=mqtt
       - name: docker tag 
         run: |
@@ -998,6 +1002,7 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-java
         run: |
+          find . -name "pom.xml" -exec sed -i 's/${{steps.get-id.outputs.id}}-SNAPSHOT/${{steps.get-id.outputs.id}}/g' {} +
           mvn clean package -DskipTests -Din-memory -Pin-memory -Ddocker -Ddocker-tag=java-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=in-memory
       - name: docker tag
         run: |
