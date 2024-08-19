@@ -21,8 +21,7 @@ import io.vertx.mutiny.sqlclient.Tuple;
 
 @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 public class TypeQueryTerm implements Serializable {
-	
-	
+
 	@JsonIgnore
 	private static int idCount = 0;
 
@@ -30,8 +29,9 @@ public class TypeQueryTerm implements Serializable {
 		idCount++;
 		return idCount;
 	}
+
 	protected int id = nextId();
-	
+
 	/**
 	 * 
 	 */
@@ -462,15 +462,15 @@ public class TypeQueryTerm implements Serializable {
 	public int toBroadSql(StringBuilder result, StringBuilder queryToStoreWherePart, Tuple tuple, int dollar) {
 		result.append("e_types && ARRAY[");
 		queryToStoreWherePart.append("e_types && ARRAY[''' || ");
-		for(String type: allTypes) {
+		for (String type : allTypes) {
 			result.append('$');
 			result.append(dollar);
 			result.append(',');
-			
+
 			queryToStoreWherePart.append('$');
 			queryToStoreWherePart.append(dollar);
 			queryToStoreWherePart.append(" || ''',''' || ");
-			
+
 			dollar++;
 			tuple.addString(type);
 		}
@@ -480,6 +480,7 @@ public class TypeQueryTerm implements Serializable {
 		result.append("::text[]");
 		return dollar;
 	}
+
 	public int toSql(StringBuilder result, Tuple tuple, int dollar) {
 		if (type == null || type.isEmpty()) {
 			TypeQueryTerm current = this;
@@ -550,14 +551,14 @@ public class TypeQueryTerm implements Serializable {
 		}
 		return dollar;
 	}
-	
+
 	public int toSql(StringBuilder result, StringBuilder followUp, Tuple tuple, int dollar) {
 		if (type == null || type.isEmpty()) {
 			TypeQueryTerm current = this;
 			while (current.firstChild != null) {
 				current = current.firstChild;
 			}
-			current.next.toSql(result, tuple, dollar);
+			dollar = current.toSql(result, tuple, dollar);
 		} else {
 			result.append("(e_types ");
 			followUp.append("(e_types ");
@@ -733,7 +734,21 @@ public class TypeQueryTerm implements Serializable {
 	public void setId(int id) {
 		this.id = id;
 	}
-	
-	
+
+	public boolean calculate(List<String> types) {
+		if (firstChild != null) {
+			return firstChild.calculate(types);
+		} else {
+			boolean result = types.contains(type);
+			if (hasNext()) {
+				if (isNextAnd()) {
+					result = result && next.calculate(types);
+				} else {
+					result = result || next.calculate(types);
+				}
+			}
+			return result;
+		}
+	}
 
 }

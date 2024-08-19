@@ -287,6 +287,7 @@ public class QueryParser {
 			return null;
 		}
 		ScopeQueryTerm result = new ScopeQueryTerm();
+		result.setScopeQueryString(queryString);
 		ScopeQueryTerm current = result;
 		StringBuilder scopeLevel = new StringBuilder();
 		ArrayList<String> scopeLevels = new ArrayList<String>();
@@ -373,7 +374,7 @@ public class QueryParser {
 			} else if (b == ';') {
 				TypeQueryTerm next = new TypeQueryTerm(context);
 				current.setType(type.toString());
-				allTypes.add(type.toString());
+				allTypes.add(current.getType());
 				current.setNext(next);
 				current.setNextAnd(true);
 				current = next;
@@ -382,7 +383,7 @@ public class QueryParser {
 			} else if (b == '|' || b == ',') {
 				TypeQueryTerm next = new TypeQueryTerm(context);
 				current.setType(type.toString());
-				allTypes.add(type.toString());
+				allTypes.add(current.getType());
 				current.setNext(next);
 				current.setNextAnd(false);
 				current = next;
@@ -390,7 +391,7 @@ public class QueryParser {
 
 			} else if (b == ')') {
 				current.setType(type.toString());
-				allTypes.add(type.toString());
+				allTypes.add(current.getType());
 				current = current.getParent();
 				type.setLength(0);
 

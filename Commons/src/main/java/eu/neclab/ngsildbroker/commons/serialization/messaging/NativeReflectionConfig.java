@@ -15,6 +15,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.SyncMessage;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BatchRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.CSourceBaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.DeleteSubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.InternalNotification;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
@@ -40,7 +41,7 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
 		TemporalQueryTerm.class, LanguageQueryTerm.class, AttrsQueryTerm.class, LanguageQueryTerm.class,
 		QQueryTerm.class, ScopeQueryTerm.class, TypeQueryTerm.class, InternalNotification.class, BatchRequest.class,
 		BaseRequest.class, DeleteSubscriptionRequest.class, UpdateSubscriptionRequest.class, JsonLdOptions.class,
-		Query.class, ProjectionTerm.class, PickTerm.class, OmitTerm.class, CSFQueryTerm.class, DataSetIdTerm.class }, serialization = true)
+		Query.class, ProjectionTerm.class, PickTerm.class, OmitTerm.class, CSFQueryTerm.class, DataSetIdTerm.class, CSourceBaseRequest.class }, serialization = true)
 public class NativeReflectionConfig {
 
 }

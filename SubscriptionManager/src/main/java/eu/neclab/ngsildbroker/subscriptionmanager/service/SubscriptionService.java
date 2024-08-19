@@ -8,11 +8,15 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import io.vertx.core.http.impl.headers.HeadersMultiMap;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -21,7 +25,6 @@ import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,10 +42,10 @@ import com.google.common.collect.Table.Cell;
 import com.google.common.net.HttpHeaders;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.EntityInfo;
 import eu.neclab.ngsildbroker.commons.datatypes.NotificationParam;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.CSourceBaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.DeleteSubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.InternalNotification;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
@@ -52,24 +55,26 @@ import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import eu.neclab.ngsildbroker.commons.tools.SubscriptionTools;
 import eu.neclab.ngsildbroker.subscriptionmanager.messaging.SyncService;
 import eu.neclab.ngsildbroker.subscriptionmanager.repository.SubscriptionInfoDAO;
+import io.netty.handler.codec.http.HttpConstants;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
-import io.smallrye.reactive.messaging.MutinyEmitter;
-import io.smallrye.reactive.messaging.annotations.Broadcast;
+import io.smallrye.mutiny.tuples.Tuple3;
+import io.smallrye.mutiny.tuples.Tuple4;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mqtt.MqttClientOptions;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.buffer.Buffer;
+import io.vertx.mutiny.ext.web.client.HttpRequest;
 import io.vertx.mutiny.ext.web.client.WebClient;
 import io.vertx.mutiny.mqtt.MqttClient;
 import io.vertx.mutiny.sqlclient.Row;
@@ -87,10 +92,10 @@ public class SubscriptionService {
 	@Inject
 	JsonLDService ldService;
 
-	@Inject
-	@Channel(AppConstants.INTERNAL_SUBS_CHANNEL)
-	@Broadcast
-	MutinyEmitter<String> internalSubEmitter;
+//	@Inject
+//	@Channel(AppConstants.INTERNAL_SUBS_CHANNEL)
+//	@Broadcast
+//	MutinyEmitter<String> internalSubEmitter;
 
 	@Inject
 	ObjectMapper objectMapper;
@@ -115,6 +120,9 @@ public class SubscriptionService {
 	@ConfigProperty(name = "scorpio.alltypesub.type", defaultValue = "*")
 	private String allTypeSubType;
 
+	@ConfigProperty(name = "scorpio.entity-manager-server", defaultValue = "http://localhost:9090")
+	private String entityServiceUrl;
+
 	private String ALL_TYPES_SUB;
 
 	private Table<String, String, SubscriptionRequest> tenant2subscriptionId2Subscription = HashBasedTable.create();
@@ -128,12 +136,14 @@ public class SubscriptionService {
 
 	private Map<String, MqttClient> host2MqttClient = Maps.newHashMap();
 	private SyncService subscriptionSyncService = null;
+	@ConfigProperty(name = "scorpio.at-context-server", defaultValue = "http://localhost:9090")
+	private String atContextUrl;
 
 	private static Map<String, Object> compareMaps(Map<String, Object> oldMap, Map<String, Object> newMap) {
-		Map<String, Object> resultMap = new HashMap<>();
 		if (oldMap == null || oldMap.isEmpty()) {
 			return newMap;
 		}
+		Map<String, Object> resultMap = new HashMap<>();
 		for (Map.Entry<String, Object> entry : newMap.entrySet()) {
 			String key = entry.getKey();
 			if (key.equals(NGSIConstants.JSON_LD_ID) || key.equals(JsonLdConsts.TYPE)) {
@@ -177,7 +187,7 @@ public class SubscriptionService {
 		List<Object> valueList = List.of(propertyMap);
 
 		propertyMap.put(JsonLdConsts.TYPE, ((List<Map<String, Object>>) newValue).get(0).get(JsonLdConsts.TYPE));
-		if(key.equals(NGSIConstants.NGSI_LD_MODIFIED_AT)) {
+		if (key.equals(NGSIConstants.NGSI_LD_MODIFIED_AT)) {
 			propertyMap.put(JsonLdConsts.VALUE, ((List<Map<String, Object>>) newValue).get(0).get(JsonLdConsts.VALUE));
 		}
 		if (((List<Map<String, Object>>) newValue).get(0).containsKey(NGSIConstants.NGSI_LD_HAS_VALUE)) {
@@ -201,8 +211,8 @@ public class SubscriptionService {
 					((List<Map<String, Object>>) newValue).get(0).get(NGSIConstants.NGSI_LD_HAS_VOCAB));
 		}
 		if (((List<Map<String, Object>>) newValue).get(0).containsKey(NGSIConstants.NGSI_LD_HAS_LIST)) {
-					propertyMap.put(NGSIConstants.VALUE_LIST,
-						((List<Map<String, Object>>) newValue).get(0).get(NGSIConstants.NGSI_LD_HAS_LIST));
+			propertyMap.put(NGSIConstants.VALUE_LIST,
+					((List<Map<String, Object>>) newValue).get(0).get(NGSIConstants.NGSI_LD_HAS_LIST));
 		}
 		if (((List<Map<String, Object>>) newValue).get(0).containsKey(NGSIConstants.NGSI_LD_HAS_JSON)) {
 			propertyMap.put(NGSIConstants.JSON,
@@ -267,25 +277,26 @@ public class SubscriptionService {
 		this.webClient = WebClient.create(vertx);
 		ALL_TYPES_SUB = NGSIConstants.NGSI_LD_DEFAULT_PREFIX + allTypeSubType;
 		subDAO.loadSubscriptions().onItem().transformToUni(subs -> {
-			List<Uni<Tuple2<Tuple2<String, Map<String, Object>>, Context>>> unis = Lists.newArrayList();
+			List<Uni<Tuple4<String, Map<String, Object>, String, Context>>> unis = Lists.newArrayList();
 			subs.forEach(tuple -> {
-				unis.add(ldService.parsePure(tuple.getItem3().get(NGSIConstants.JSON_LD_CONTEXT)).onItem()
-						.transform(ctx -> {
-							return Tuple2.of(Tuple2.of(tuple.getItem1(), tuple.getItem2()), ctx);
-						}));
+				unis.add(ldService.parsePure(tuple.getItem4().get(NGSIConstants.JSON_LD_CONTEXT)).onItem().transform(ctx -> {
+					return Tuple4.of(tuple.getItem1(), tuple.getItem2(), tuple.getItem3(), ctx);
+				}));
 			});
 			if (unis.isEmpty()) {
 				return Uni.createFrom().voidItem();
 			}
 			return Uni.combine().all().unis(unis).combinedWith(list -> {
 				for (Object obj : list) {
-					Tuple2<Tuple2<String, Map<String, Object>>, Context> tuple = (Tuple2<Tuple2<String, Map<String, Object>>, Context>) obj;
+					Tuple4<String, Map<String, Object>, String, Context> tuple = (Tuple4<String, Map<String, Object>, String, Context>) obj;
 					SubscriptionRequest request;
 					try {
-						request = new SubscriptionRequest(tuple.getItem1().getItem1(), tuple.getItem1().getItem2(),
-								tuple.getItem2());
-						request.getSubscription().addOtherHead(NGSIConstants.LINK_HEADER,"<%s>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"".formatted(request.getSubscription().getJsonldContext()));
-						request.getSubscription().addOtherHead(NGSIConstants.TENANT_HEADER,request.getTenant());
+						request = new SubscriptionRequest(tuple.getItem1(), tuple.getItem2(), tuple.getItem4());
+						request.setContextId(tuple.getItem3());
+						request.getSubscription().addOtherHead(NGSIConstants.LINK_HEADER,
+								"<%s>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\""
+										.formatted(request.getSubscription().getJsonldContext()));
+						request.getSubscription().addOtherHead(NGSIConstants.TENANT_HEADER, request.getTenant());
 						request.setSendTimestamp(-1);
 						if (isIntervalSub(request)) {
 							this.tenant2subscriptionId2IntervalSubscription.put(request.getTenant(), request.getId(),
@@ -308,8 +319,8 @@ public class SubscriptionService {
 		return request.getSubscription().getTimeInterval() > 0;
 	}
 
-	public Uni<NGSILDOperationResult> createSubscription(HeadersMultiMap linkHead, String tenant, Map<String, Object> subscription,
-														 Context contextLink) {
+	public Uni<NGSILDOperationResult> createSubscription(HeadersMultiMap linkHead, String tenant,
+			Map<String, Object> subscription, Context contextLink) {
 		SubscriptionRequest request;
 		if (!subscription.containsKey(NGSIConstants.JSON_LD_ID)) {
 			String id = "urn:" + UUID.randomUUID();
@@ -324,6 +335,7 @@ public class SubscriptionService {
 		SubscriptionTools.setInitTimesSentAndFailed(request);
 		Map<String, Object> tmp = request.getContext().serialize();
 		return localContextService.createImplicitly(tenant, tmp).onItem().transformToUni(contextId -> {
+			request.setContextId(contextId);
 			return subDAO.createSubscription(request, contextId).onItem().transformToUni(t -> {
 				if (isIntervalSub(request)) {
 					this.tenant2subscriptionId2IntervalSubscription.put(request.getTenant(), request.getId(), request);
@@ -340,8 +352,12 @@ public class SubscriptionService {
 					syncService = Uni.createFrom().voidItem();
 				}
 				return syncService.onItem().transform(v2 -> {
-					MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, internalSubEmitter,
-							objectMapper);
+//					try {
+//						MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, internalSubEmitter,
+//								objectMapper);
+//					} catch (ResponseException e) {
+//						logger.error("Failed to serialize subscription message", e);
+//					}
 					NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.CREATE_SUBSCRIPTION_REQUEST,
 							request.getId());
 					result.addSuccess(new CRUDSuccess(null, null, request.getId(), Sets.newHashSet()));
@@ -366,6 +382,7 @@ public class SubscriptionService {
 		UpdateSubscriptionRequest request = new UpdateSubscriptionRequest(tenant, subscriptionId, update, context);
 		return localContextService.createImplicitly(tenant, request.getContext().serialize()).onItem()
 				.transformToUni(contextId -> {
+					request.setContextId(contextId);
 					return subDAO.updateSubscription(request, contextId).onItem().transformToUni(tup -> {
 						if (tup.size() == 0) {
 							return Uni.createFrom()
@@ -389,16 +406,20 @@ public class SubscriptionService {
 								if (isIntervalSub(updatedRequest)) {
 									tenant2subscriptionId2IntervalSubscription.put(tenant, updatedRequest.getId(),
 											updatedRequest);
-									subscriptionId2RequestGlobal.put(updatedRequest.getId(),updatedRequest);
+									subscriptionId2RequestGlobal.put(updatedRequest.getId(), updatedRequest);
 									tenant2subscriptionId2Subscription.remove(tenant, updatedRequest.getId());
 								} else {
 									tenant2subscriptionId2Subscription.put(tenant, updatedRequest.getId(),
 											updatedRequest);
- 									subscriptionId2RequestGlobal.put(updatedRequest.getId(),updatedRequest);
+									subscriptionId2RequestGlobal.put(updatedRequest.getId(), updatedRequest);
 									tenant2subscriptionId2IntervalSubscription.remove(tenant, updatedRequest.getId());
 								}
-								MicroServiceUtils.serializeAndSplitObjectAndEmit(updatedRequest, messageSize,
-										internalSubEmitter, objectMapper);
+//								try {
+//									MicroServiceUtils.serializeAndSplitObjectAndEmit(updatedRequest, messageSize,
+//											internalSubEmitter, objectMapper);
+//								} catch (ResponseException e) {
+//									logger.error("Failed to serialize subscription message", e);
+//								}
 								return new NGSILDOperationResult(AppConstants.UPDATE_SUBSCRIPTION_REQUEST,
 										request.getId());
 							});
@@ -420,8 +441,12 @@ public class SubscriptionService {
 				syncService = Uni.createFrom().voidItem();
 			}
 			return syncService.onItem().transform(v2 -> {
-				MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, internalSubEmitter,
-						objectMapper);
+//				try {
+//					MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, internalSubEmitter,
+//							objectMapper);
+//				} catch (ResponseException e) {
+//					logger.error("Failed to serialize subscription message", e);
+//				}
 				return new NGSILDOperationResult(AppConstants.DELETE_SUBSCRIPTION_REQUEST, request.getId());
 			});
 		});
@@ -439,10 +464,10 @@ public class SubscriptionService {
 				String subscriptionId = (String) subscriptionData.get(NGSIConstants.JSON_LD_ID);
 				SubscriptionRequest subscriptionRequest = subscriptionId2RequestGlobal.get(subscriptionId);
 				if (subscriptionRequest != null) {
-				subscriptionData.put(NGSIConstants.STATUS, subscriptionRequest.getSubscription().getStatus());
+					subscriptionData.put(NGSIConstants.STATUS, subscriptionRequest.getSubscription().getStatus());
 				}
 				resultData.add(subscriptionData);
-				//resultData.add(next.getJsonObject(0).getMap());
+				// resultData.add(next.getJsonObject(0).getMap());
 			}
 			result.setData(resultData);
 			if (next == null) {
@@ -468,8 +493,9 @@ public class SubscriptionService {
 			if (rows.size() == 0) {
 				return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound, "subscription not found"));
 			}
-		  	Map<String,Object> rowData = rows.iterator().next().getJsonObject(0).getMap();
-			rowData.put(NGSIConstants.STATUS,subscriptionId2RequestGlobal.get(subscriptionId).getSubscription().getStatus());
+			Map<String, Object> rowData = rows.iterator().next().getJsonObject(0).getMap();
+			rowData.put(NGSIConstants.STATUS,
+					subscriptionId2RequestGlobal.get(subscriptionId).getSubscription().getStatus());
 			return Uni.createFrom().item(rowData);
 		});
 	}
@@ -479,176 +505,166 @@ public class SubscriptionService {
 				.values();
 		List<Uni<Void>> unis = Lists.newArrayList();
 		logger.debug("checking subscriptions");
+
 		for (SubscriptionRequest potentialSub : potentialSubs) {
-			if (potentialSub.getSendTimestamp() != -1 && potentialSub.getSendTimestamp() > message.getSendTimestamp()) {
+			List<Map<String, Object>> dataToSend = Lists.newArrayList();
+
+			if ((potentialSub.getSendTimestamp() != -1 && potentialSub.getSendTimestamp() > message.getSendTimestamp())
+					|| !notificationTriggerCheck(potentialSub.getSubscription(), message.getRequestType())) {
 				continue;
 			}
-			// message.setDistributed(true);
-			switch (message.getRequestType()) {
-			case AppConstants.UPDATE_REQUEST, AppConstants.PARTIAL_UPDATE_REQUEST, AppConstants.MERGE_PATCH_REQUEST,
-					AppConstants.REPLACE_ENTITY_REQUEST, AppConstants.REPLACE_ATTRIBUTE_REQUEST -> {
-				if (message.isDistributed()) {
-					unis.add(localEntityService.getAllByIds(message.getTenant(), message.getId(), true,potentialSub.getSubscription().isLocalOnly()).onItem()
-							.transformToUni(entityList -> {
-								if(entityList.isEmpty()){
-									return Uni.createFrom().voidItem();
-								}
-								Map<String, Object> payload = new HashMap<>();
-								if (message.getPreviousEntity() instanceof Map m1) {
-									if (potentialSub.getSubscription().getNotification().getShowChanges()) {
-										payload.put(JsonLdConsts.GRAPH, List.of(compareMaps(m1, entityList.get(0))));
-									} else {
-										payload.put(JsonLdConsts.GRAPH, entityList);
-									}
-								} else if (message.getPreviousEntity() instanceof List l1) {
-									if (potentialSub.getSubscription().getNotification().getShowChanges()) {
-										List<Map<String, Object>> tmp = Lists.newArrayList();
-										for (int i = 0; i < entityList.size(); i++) {
-											tmp.add(compareMaps((Map<String, Object>) l1.get(i), entityList.get(i)));
-										}
-										payload.put(JsonLdConsts.GRAPH, tmp);
-									} else {
-										payload.put(JsonLdConsts.GRAPH, entityList);
-									}
-								} else {
-									return Uni.createFrom().voidItem();
-								}
-
-								return sendNotification(potentialSub, payload, message.getRequestType());
-							}));
-				} else {
-					Map<String, Object> payload = new HashMap<>();
-					if (message.getBestCompleteResult() instanceof Map m1) {
-						if (potentialSub.getSubscription().getNotification().getShowChanges()) {
-							payload.put(JsonLdConsts.GRAPH,
-									List.of(compareMaps((Map<String, Object>) message.getPreviousEntity(), m1)));
-						} else {
-							payload.put(JsonLdConsts.GRAPH, List.of(m1));
-						}
-					} else if (message.getBestCompleteResult() instanceof List l1) {
-						// is list
-						List<Map<String, Object>> prev = (List<Map<String, Object>>) message.getPreviousEntity();
-						if (potentialSub.getSubscription().getNotification().getShowChanges()) {
-							List<Map<String, Object>> tmp = Lists.newArrayList();
-							for (int i = 0; i < l1.size(); i++) {
-								tmp.add(compareMaps(prev.get(i), (Map<String, Object>) l1.get(i)));
+			Map<String, List<Map<String, Object>>> payloadToUse = Maps.newHashMap();
+			Map<String, List<Map<String, Object>>> prevPayloadToUse = Maps.newHashMap();
+			if (message.getPayload() != null) {
+				for (Entry<String, List<Map<String, Object>>> entry : message.getPayload().entrySet()) {
+					for (Map<String, Object> mapEntry : entry.getValue()) {
+						if (potentialSub.firstCheckToSendOut(entry.getKey(), mapEntry, ALL_TYPES_SUB)) {
+							payloadToUse.put(entry.getKey(), entry.getValue());
+							if (message.getPrevPayload() != null) {
+								prevPayloadToUse.put(entry.getKey(), message.getPrevPayload().get(entry.getKey()));
 							}
-							payload.put(JsonLdConsts.GRAPH, tmp);
-						} else {
-							payload.put(JsonLdConsts.GRAPH, l1);
+
 						}
-
 					}
-					unis.add(sendNotification(potentialSub, payload, message.getRequestType()));
-
 				}
+				if (payloadToUse.isEmpty()) {
+					continue;
+				}
+			} else if (message.getPrevPayload() != null) {
+				for (Entry<String, List<Map<String, Object>>> entry : message.getPrevPayload().entrySet()) {
+					for (Map<String, Object> mapEntry : entry.getValue()) {
+						if (potentialSub.firstCheckToSendOut(entry.getKey(), mapEntry, ALL_TYPES_SUB)) {
+							prevPayloadToUse.put(entry.getKey(), entry.getValue());
+						}
+					}
+				}
+				if (prevPayloadToUse.isEmpty()) {
+					continue;
+				}
+			} else {
+				continue;
 			}
-			case AppConstants.UPSERT_REQUEST, AppConstants.CREATE_REQUEST, AppConstants.APPEND_REQUEST -> {
-				if (message.isDistributed()) {
 
-					unis.add(localEntityService.getAllByIds(message.getTenant(), message.getId(), true,potentialSub.getSubscription().isLocalOnly()).onItem()
-							.transformToUni(entityList -> {
-								if(entityList.isEmpty()){
-									return Uni.createFrom().voidItem();
-								}
-								Map<String, Object> payload = new HashMap<>();
-								if (message.getPreviousEntity() instanceof Map m1) {
-									if (potentialSub.getSubscription().getNotification().getShowChanges()) {
-										payload.put(JsonLdConsts.GRAPH, List.of(compareMaps(m1, entityList.get(0))));
-									} else {
-										payload.put(JsonLdConsts.GRAPH, entityList);
-									}
-								} else if (message.getPreviousEntity() instanceof List l1) {
-									if (potentialSub.getSubscription().getNotification().getShowChanges()) {
-										List<Map<String, Object>> tmp = Lists.newArrayList();
-										for (int i = 0; i < entityList.size(); i++) {
-											tmp.add(compareMaps((Map<String, Object>) l1.get(i), entityList.get(i)));
-										}
-										payload.put(JsonLdConsts.GRAPH, tmp);
-									} else {
-										payload.put(JsonLdConsts.GRAPH, entityList);
-									}
-								} else {
-									payload.put(JsonLdConsts.GRAPH, entityList);
-								}
-								return sendNotification(potentialSub, payload, message.getRequestType());
-							}));
+			if (message.isDistributed() || potentialSub.doJoin()) {
+				Set<String> idsTbu;
+				if (!payloadToUse.isEmpty()) {
+					idsTbu = payloadToUse.keySet();
+				} else if (!prevPayloadToUse.isEmpty()) {
+					idsTbu = prevPayloadToUse.keySet();
 				} else {
-					Map<String, Object> payload = new HashMap<>();
-					if (message.getBestCompleteResult() instanceof Map m1) {
-						if (potentialSub.getSubscription().getNotification().getShowChanges()) {
-							payload.put(JsonLdConsts.GRAPH,
-									List.of(compareMaps((Map<String, Object>) message.getPreviousEntity(), m1)));
-						} else {
-							payload.put(JsonLdConsts.GRAPH, List.of(m1));
-						}
-					} else if (message.getBestCompleteResult() instanceof List l1) {
-						// is list
-						List<Map<String, Object>> prev = (List<Map<String, Object>>) message.getPreviousEntity();
-						if (potentialSub.getSubscription().getNotification().getShowChanges()) {
-							List<Map<String, Object>> tmp = Lists.newArrayList();
-							for (int i = 0; i < l1.size(); i++) {
-								tmp.add(compareMaps(prev.get(i), (Map<String, Object>) l1.get(i)));
-							}
-							payload.put(JsonLdConsts.GRAPH, tmp);
-						} else {
-							payload.put(JsonLdConsts.GRAPH, l1);
-						}
-
-					}
-					unis.add(sendNotification(potentialSub, payload, message.getRequestType()));
+					idsTbu = message.getIds();
 				}
-			}
-			case AppConstants.DELETE_REQUEST -> {
-				if (message.getPayload() != null && shouldFire(message.getPayload().keySet(), potentialSub)
-						&& shouldSendOut(potentialSub, message.getPayload())) {
-					Map<String, Object> payload = new HashMap<>();
-					payload.put(NGSIConstants.QUERY_PARAMETER_DELETED_AT,
-							SerializationTools.notifiedAt_formatter.format(LocalDateTime
-									.ofInstant(Instant.ofEpochMilli(System.currentTimeMillis()), ZoneId.of("Z"))));
+				unis.add(queryFromSubscription(potentialSub, message.getTenant(), idsTbu, prevPayloadToUse).onItem()
+						.transformToUni(tbs -> {
+							List<Map<String, Object>> toAddLater = Lists.newArrayList();
+							Iterator<Map<String, Object>> it = tbs.iterator();
+							while (it.hasNext()) {
+								Map<String, Object> entity = it.next();
+								String entityId = (String) entity.get(NGSIConstants.JSON_LD_ID);
+								List<Map<String, Object>> payload = payloadToUse.get(entityId);
+								if (payload != null) {
+									if (payload.size() == 1) {
+										entity.putAll(payload.get(0));
+										if (potentialSub.getSubscription().getNotification().getShowChanges()) {
+											it.remove();
+											toAddLater.add(compareMaps(prevPayloadToUse.get(entityId).get(0), entity));
+										}
+									} else {
+										it.remove();
+										for (int i = 0; i < payload.size(); i++) {
+											Map<String, Object> pEntry = payload.get(0);
+											Map<String, Object> dupl = MicroServiceUtils.deepCopyMap(entity);
+											dupl.putAll(pEntry);
+											if (potentialSub.getSubscription().getNotification().getShowChanges()) {
+												List<Map<String, Object>> prev = prevPayloadToUse.get(entityId);
+												if (prev != null && i < prev.size()) {
+													dupl = compareMaps(prev.get(i), dupl);
+												}
+
+											}
+											toAddLater.add(dupl);
+										}
+									}
+								}
+							}
+							tbs.addAll(toAddLater);
+							return sendNotification(potentialSub, tbs);
+						}));
+
+			} else {
+				switch (message.getRequestType()) {
+				case AppConstants.BATCH_CREATE_REQUEST:
+				case AppConstants.CREATE_REQUEST: {
+					dataToSend = mergePrevAndNew(payloadToUse, null,
+							potentialSub.getSubscription().getNotification().getShowChanges());
+					break;
+				}
+				case AppConstants.BATCH_UPDATE_REQUEST:
+				case AppConstants.BATCH_UPSERT_REQUEST:
+				case AppConstants.APPEND_REQUEST:
+				case AppConstants.UPDATE_REQUEST:
+				case AppConstants.BATCH_MERGE_REQUEST:
+				case AppConstants.REPLACE_ATTRIBUTE_REQUEST:
+				case AppConstants.REPLACE_ENTITY_REQUEST:
+				case AppConstants.MERGE_PATCH_REQUEST:
+				case AppConstants.PARTIAL_UPDATE_REQUEST: {
+					dataToSend = mergePrevAndNew(payloadToUse, prevPayloadToUse,
+							potentialSub.getSubscription().getNotification().getShowChanges());
+					break;
+				}
+				case AppConstants.DELETE_ATTRIBUTE_REQUEST: {
+					List<Map<String, Object>> tmp = Lists.newArrayList();
 					if (potentialSub.getSubscription().getNotification().getShowChanges()) {
-						if (message.getPreviousEntity() instanceof List l1) {
-							payload.put(JsonLdConsts.GRAPH, l1);
-						} else if (message.getPreviousEntity() instanceof Map m1) {
-							payload.putAll(m1);
-						}
-					} else {
-						if (message.getPreviousEntity() instanceof List l1) {
-							List<String> tmp = Lists.newArrayList();
-							for (int i = 0; i < l1.size(); i++) {
-								tmp.add((String) ((Map<String, Object>) l1.get(i)).get(NGSIConstants.JSON_LD_ID));
-							}
-							payload.put(JsonLdConsts.GRAPH, tmp);
-						} else if (message.getPreviousEntity() instanceof Map m1) {
-							payload.put(JsonLdConsts.ID, m1.get(NGSIConstants.JSON_LD_ID));
-						}
-
-					}
-					unis.add(sendNotification(potentialSub, payload, message.getRequestType()));
-				}
-			}
-			case AppConstants.DELETE_ATTRIBUTE_REQUEST -> {
-
-				if (shouldFire(Sets.newHashSet(message.getAttribName()), potentialSub)) {
-					unis.add(localEntityService.getAllByIds(message.getTenant(), message.getId(), true,potentialSub.getSubscription().isLocalOnly()).onItem()
-							.transformToUni(entityList -> {
-								if(entityList.isEmpty()){
-									return Uni.createFrom().voidItem();
+						prevPayloadToUse.values().forEach(payloads -> {
+							payloads.forEach(payload -> {
+								List<Map<String, Object>> attribs = (List<Map<String, Object>>) payload
+										.get(message.getAttribName());
+								for (Map<String, Object> attrib : attribs) {
+									putOldAttribFromDelete(attrib, message.getSendTimestamp());
 								}
-								Map<String, Object> payload = new HashMap<>();
-								if (potentialSub.getSubscription().getNotification().getShowChanges()) {
-									payload.put(JsonLdConsts.GRAPH,
-											List.of(compareMaps((Map<String, Object>) message.getPreviousEntity(),
-													entityList.get(0))));
-								} else
-									payload.put(JsonLdConsts.GRAPH, entityList);
-								return sendNotification(potentialSub, payload, message.getRequestType());
-							}));
+								tmp.add(payload);
+							});
+						});
+					} else {
+						prevPayloadToUse.values().forEach(payloads -> {
+							payloads.forEach(payload -> {
+								payload.remove(message.getAttribName());
+								tmp.add(payload);
+							});
+						});
+					}
+					dataToSend = tmp;
+					break;
+				}
+				case AppConstants.DELETE_REQUEST:
+				case AppConstants.BATCH_DELETE_REQUEST: {
+					List<Map<String, Object>> tmp = Lists.newArrayList();
+					prevPayloadToUse.values().forEach(payloads -> {
+						payloads.forEach(payload -> {
+							payload.put(NGSIConstants.NGSI_LD_DELETED_AT,
+									List.of(Map.of(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME,
+											NGSIConstants.JSON_LD_VALUE,
+											SerializationTools.toDateTimeString(message.getSendTimestamp()))));
+							tmp.add(payload);
+						});
+					});
+					dataToSend = tmp;
+					break;
+				}
+				default:
+					break;
+				}
+
+			}
+			Iterator<Map<String, Object>> it = dataToSend.iterator();
+			while (it.hasNext()) {
+				Map<String, Object> next = it.next();
+				if (!potentialSub.fullEntityCheckToSendOut((String) next.get(NGSIConstants.JSON_LD_ID), next,
+						ALL_TYPES_SUB, null)) {
+					it.remove();
 				}
 			}
-			default -> {
-			}
-			}
+			unis.add(sendNotification(potentialSub, dataToSend));
 		}
 		if (unis.isEmpty()) {
 			return Uni.createFrom().voidItem();
@@ -656,92 +672,236 @@ public class SubscriptionService {
 		return Uni.combine().all().unis(unis).discardItems();
 	}
 
-	private Uni<Void> sendNotification(SubscriptionRequest potentialSub, Map<String, Object> reg, int triggerReason) {
-		if (!notificationTriggerCheck(potentialSub.getSubscription(), triggerReason)) {
-			return Uni.createFrom().voidItem();
-		}
-		List<Map<String, Object>> entityToBeSent = new ArrayList<>();
-		if (triggerReason == AppConstants.DELETE_REQUEST) {
-			entityToBeSent.add(reg);
-		} else if (reg.containsKey(JsonLdConsts.GRAPH)) {
-			for (Map<String, Object> entity : (List<Map<String, Object>>) reg.get(JsonLdConsts.GRAPH)) {
-				if (shouldFire(entity.keySet(), potentialSub) && shouldSendOut(potentialSub, entity)) {
-					entityToBeSent.add(entity);
-				}
-			}
-		} else if (shouldSendOut(potentialSub, reg)) {
-			entityToBeSent.add(reg);
-		}
-		if (!entityToBeSent.isEmpty()) {
-			return SubscriptionTools.generateNotification(potentialSub, entityToBeSent, ldService).onItem()
-					.transformToUni(notification -> {
-						NotificationParam notificationParam = potentialSub.getSubscription().getNotification();
-						Uni<Void> toSend;
-						switch (notificationParam.getEndPoint().getUri().getScheme()) {
-						case "mqtt", "mqtts" -> {
-							try {
-								toSend = getMqttClient(notificationParam).onItem().transformToUni(client -> {
-									int qos = 1;
+	private List<Map<String, Object>> mergePrevAndNew(Map<String, List<Map<String, Object>>> payloadToUse,
+			Map<String, List<Map<String, Object>>> prevPayloadToUse, Boolean showChanges) {
+		List<Map<String, Object>> result = Lists.newArrayList();
+		for (Entry<String, List<Map<String, Object>>> entry : payloadToUse.entrySet()) {
+			String entityId = entry.getKey();
+			List<Map<String, Object>> newValues = entry.getValue();
+			if (prevPayloadToUse == null) {
+				addNoOldValues(result, newValues, showChanges);
 
-									String qosString = notificationParam.getEndPoint().getNotifierInfo()
-											.get(NGSIConstants.MQTT_QOS);
-									if (qosString != null) {
-										qos = Integer.parseInt(qosString);
-									}
-									try {
-										return client
-												.publish(
-														notificationParam.getEndPoint().getUri().getPath().substring(1),
-														Buffer.buffer(SubscriptionTools
-																.getMqttPayload(notificationParam, notification)),
-														MqttQoS.valueOf(qos), false, false)
-												.onItem().transformToUni(t -> {
-													if (t == 0) {
-														// TODO what the fuck is the result here
-													}
-													long now = System.currentTimeMillis();
-													potentialSub.getSubscription().getNotification()
-															.setLastSuccessfulNotification(now);
-													potentialSub.getSubscription().getNotification()
-															.setLastNotification(now);
-													return subDAO.updateNotificationSuccess(potentialSub.getTenant(),
-															potentialSub.getId(),
-															SerializationTools.notifiedAt_formatter.format(
-																	LocalDateTime.ofInstant(Instant.ofEpochMilli(now),
-																			ZoneId.of("Z"))));
-												}).onFailure().recoverWithUni(e -> {
-													logger.error("failed to send notification for subscription "
-															+ potentialSub, e);
-													long now = System.currentTimeMillis();
-													potentialSub.getSubscription().getNotification()
-															.setLastFailedNotification(now);
-													potentialSub.getSubscription().getNotification()
-															.setLastNotification(now);
-													return subDAO.updateNotificationFailure(potentialSub.getTenant(),
-															potentialSub.getId(),
-															SerializationTools.notifiedAt_formatter.format(
-																	LocalDateTime.ofInstant(Instant.ofEpochMilli(now),
-																			ZoneId.of("Z"))));
-												});
-									} catch (Exception e) {
-										logger.error("failed to send notification for subscription " + potentialSub, e);
-										return Uni.createFrom().voidItem();
-									}
-								});
-							} catch (Exception e) {
-								logger.error("failed to send notification for subscription " + potentialSub, e);
-								return Uni.createFrom().voidItem();
+			} else {
+				List<Map<String, Object>> oldValues = prevPayloadToUse.get(entityId);
+				if (oldValues == null) {
+					result.addAll(newValues);
+				} else {
+					for (int i = 0; i < newValues.size(); i++) {
+						Map<String, Object> newValue = newValues.get(i);
+						if (i >= oldValues.size()) {
+							addNoOldValue(result, newValue, showChanges);
+						} else {
+							Map<String, Object> oldValue = oldValues.get(i);
+							if (oldValue == null) {
+								addNoOldValue(result, newValue, showChanges);
+							} else {
+								result.add(mergePrevAndNewEntity(oldValue, newValue, showChanges));
 							}
 						}
-						case "http", "https" -> {
-							try {
-								toSend = webClient.postAbs(notificationParam.getEndPoint().getUri().toString())
-										.putHeaders(SubscriptionTools.getHeaders(notificationParam,potentialSub.getSubscription().getOtherHead()))
-										.sendBuffer(Buffer.buffer(JsonUtils.toPrettyString(notification))).onFailure()
-										.retry().atMost(3).onItem().transformToUni(result -> {
-											int statusCode = result.statusCode();
-											long now = System.currentTimeMillis();
-											if (statusCode >= 200 && statusCode < 300) {
+
+					}
+				}
+			}
+		}
+		return result;
+	}
+
+	private void addNoOldValues(List<Map<String, Object>> result, List<Map<String, Object>> newValues,
+			Boolean showChanges) {
+		if (showChanges) {
+			for (Map<String, Object> newValue : newValues) {
+				addNoOldValue(result, newValue, showChanges);
+			}
+		} else {
+			result.addAll(newValues);
+		}
+
+	}
+
+	private void addNoOldValue(List<Map<String, Object>> result, Map<String, Object> newValue, Boolean showChanges) {
+		if (showChanges) {
+			for (Entry<String, Object> entry : newValue.entrySet()) {
+				switch (entry.getKey()) {
+				case NGSIConstants.JSON_LD_ID:
+				case NGSIConstants.JSON_LD_TYPE:
+				case NGSIConstants.NGSI_LD_SCOPE:
+				case NGSIConstants.NGSI_LD_MODIFIED_AT:
+				case NGSIConstants.NGSI_LD_CREATED_AT:
+					continue;
+				default: {
+					List<Map<String, Object>> attribEntries = (List<Map<String, Object>>) entry.getValue();
+					for (Map<String, Object> attribEntry : attribEntries) {
+						mergeAttribToNone(attribEntry);
+					}
+
+				}
+				}
+			}
+		}
+		result.add(newValue);
+
+	}
+
+	private Map<String, Object> mergePrevAndNewEntity(Map<String, Object> oldValue, Map<String, Object> newValue,
+			Boolean showChanges) {
+		Map<String, Object> result = MicroServiceUtils.deepCopyMap(oldValue);
+		for (Entry<String, Object> entry : newValue.entrySet()) {
+			String attribName = entry.getKey();
+			switch (attribName) {
+			case NGSIConstants.JSON_LD_ID:
+				continue;
+			case NGSIConstants.JSON_LD_TYPE:
+				List<String> mergedTypes = Stream
+						.concat(((List<String>) result.get(NGSIConstants.JSON_LD_TYPE)).stream(),
+								((List<String>) entry.getValue()).stream())
+						.distinct().collect(Collectors.toList());
+				result.put(attribName, mergedTypes);
+				break;
+			case NGSIConstants.NGSI_LD_SCOPE:
+			case NGSIConstants.NGSI_LD_MODIFIED_AT:
+				result.put(attribName, entry.getValue());
+				break;
+			case NGSIConstants.NGSI_LD_CREATED_AT:
+				continue;
+			default:
+				if (showChanges) {
+					List<Map<String, Object>> oldValues = (List<Map<String, Object>>) result.get(attribName);
+					List<Map<String, Object>> newValues = (List<Map<String, Object>>) entry.getValue();
+					if (oldValues == null) {
+						result.put(attribName, entry.getValue());
+					} else {
+						for (Map<String, Object> newEntry : newValues) {
+							Object newDatasetId = newEntry.get(NGSIConstants.NGSI_LD_DATA_SET_ID);
+							Iterator<Map<String, Object>> it = oldValues.iterator();
+							boolean found = false;
+							while (it.hasNext()) {
+								Map<String, Object> oldEntry = it.next();
+								Object oldDatasetId = oldEntry.get(NGSIConstants.NGSI_LD_DATA_SET_ID);
+								if (oldDatasetId == null && newDatasetId == null) {
+									it.remove();
+									mergeAttrib(newEntry, oldEntry);
+									found = true;
+									break;
+								}
+								if (oldDatasetId != null && newDatasetId != null && oldDatasetId.equals(newDatasetId)) {
+									it.remove();
+									mergeAttrib(newEntry, oldEntry);
+									found = true;
+									break;
+								}
+							}
+							if (!found) {
+								mergeAttribToNone(newEntry);
+							}
+							oldValues.add(newEntry);
+						}
+					}
+				} else {
+					result.put(attribName, entry.getValue());
+				}
+				break;
+			}
+		}
+		return result;
+	}
+
+	private void mergeAttribToNone(Map<String, Object> newEntry) {
+		if (newEntry.containsKey(NGSIConstants.NGSI_LD_HAS_VALUE)) {
+			newEntry.put(NGSIConstants.PREVIOUS_VALUE,
+					List.of(Map.of(NGSIConstants.JSON_LD_VALUE, NGSIConstants.JSON_LD_NONE)));
+		} else if (newEntry.containsKey(NGSIConstants.NGSI_LD_HAS_OBJECT)) {
+			newEntry.put(NGSIConstants.PREVIOUS_OBJECT,
+					List.of(Map.of(NGSIConstants.JSON_LD_ID, NGSIConstants.JSON_LD_NONE)));
+		} else if (newEntry.containsKey(NGSIConstants.NGSI_LD_HAS_JSON)) {
+			newEntry.put(NGSIConstants.PREVIOUS_JSON, List.of(Map.of(NGSIConstants.JSON_LD_TYPE,
+					NGSIConstants.JSON_LD_JSON, NGSIConstants.JSON_LD_VALUE, NGSIConstants.JSON_LD_NONE)));
+		} else if (newEntry.containsKey(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP)) {
+			newEntry.put(NGSIConstants.PREVIOUS_LANGUAGE_MAP,
+					List.of(Map.of(NGSIConstants.JSON_LD_VALUE, NGSIConstants.JSON_LD_NONE)));
+		} else if (newEntry.containsKey(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST)) {
+			newEntry.put(NGSIConstants.PREVIOUS_OJBECT_LIST,
+					List.of(Map.of(NGSIConstants.JSON_LD_LIST, NGSIConstants.JSON_LD_NONE)));
+		} else if (newEntry.containsKey(NGSIConstants.NGSI_LD_HAS_LIST)) {
+			newEntry.put(NGSIConstants.PREVIOUS_VALUE_LIST,
+					List.of(Map.of(NGSIConstants.JSON_LD_LIST, NGSIConstants.JSON_LD_NONE)));
+		} else if (newEntry.containsKey(NGSIConstants.NGSI_LD_HAS_VOCAB)) {
+			newEntry.put(NGSIConstants.PREVIOUS_VOCAB,
+					List.of(Map.of(NGSIConstants.JSON_LD_ID, NGSIConstants.JSON_LD_NONE)));
+		}
+
+	}
+
+	private void mergeAttrib(Map<String, Object> newEntry, Map<String, Object> oldEntry) {
+		if (oldEntry.containsKey(NGSIConstants.NGSI_LD_HAS_VALUE)) {
+			newEntry.put(NGSIConstants.PREVIOUS_VALUE, oldEntry.get(NGSIConstants.NGSI_LD_HAS_VALUE));
+		} else if (oldEntry.containsKey(NGSIConstants.NGSI_LD_HAS_OBJECT)) {
+			newEntry.put(NGSIConstants.PREVIOUS_OBJECT, oldEntry.get(NGSIConstants.NGSI_LD_HAS_OBJECT));
+		} else if (oldEntry.containsKey(NGSIConstants.NGSI_LD_HAS_JSON)) {
+			newEntry.put(NGSIConstants.PREVIOUS_JSON, oldEntry.get(NGSIConstants.NGSI_LD_HAS_JSON));
+		} else if (oldEntry.containsKey(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP)) {
+			newEntry.put(NGSIConstants.PREVIOUS_LANGUAGE_MAP, oldEntry.get(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP));
+		} else if (oldEntry.containsKey(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST)) {
+			newEntry.put(NGSIConstants.PREVIOUS_OJBECT_LIST, oldEntry.get(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST));
+		} else if (oldEntry.containsKey(NGSIConstants.NGSI_LD_HAS_LIST)) {
+			newEntry.put(NGSIConstants.PREVIOUS_VALUE_LIST, oldEntry.get(NGSIConstants.NGSI_LD_HAS_LIST));
+		} else if (oldEntry.containsKey(NGSIConstants.NGSI_LD_HAS_VOCAB)) {
+			newEntry.put(NGSIConstants.PREVIOUS_VOCAB, oldEntry.get(NGSIConstants.NGSI_LD_HAS_VOCAB));
+		}
+
+	}
+
+	private void putOldAttribFromDelete(Map<String, Object> oldEntry, long timeStamp) {
+		oldEntry.put(NGSIConstants.NGSI_LD_DELETED_AT,
+				List.of(Map.of(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME, NGSIConstants.JSON_LD_VALUE,
+						SerializationTools.toDateTimeString(timeStamp))));
+		if (oldEntry.containsKey(NGSIConstants.NGSI_LD_HAS_VALUE)) {
+			oldEntry.put(NGSIConstants.PREVIOUS_VALUE, oldEntry.remove(NGSIConstants.NGSI_LD_HAS_VALUE));
+		} else if (oldEntry.containsKey(NGSIConstants.NGSI_LD_HAS_OBJECT)) {
+			oldEntry.put(NGSIConstants.PREVIOUS_OBJECT, oldEntry.remove(NGSIConstants.NGSI_LD_HAS_OBJECT));
+		} else if (oldEntry.containsKey(NGSIConstants.NGSI_LD_HAS_JSON)) {
+			oldEntry.put(NGSIConstants.PREVIOUS_JSON, oldEntry.remove(NGSIConstants.NGSI_LD_HAS_JSON));
+		} else if (oldEntry.containsKey(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP)) {
+			oldEntry.put(NGSIConstants.PREVIOUS_LANGUAGE_MAP, oldEntry.remove(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP));
+		} else if (oldEntry.containsKey(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST)) {
+			oldEntry.put(NGSIConstants.PREVIOUS_OJBECT_LIST, oldEntry.remove(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST));
+		} else if (oldEntry.containsKey(NGSIConstants.NGSI_LD_HAS_LIST)) {
+			oldEntry.put(NGSIConstants.PREVIOUS_VALUE_LIST, oldEntry.remove(NGSIConstants.NGSI_LD_HAS_LIST));
+		} else if (oldEntry.containsKey(NGSIConstants.NGSI_LD_HAS_VOCAB)) {
+			oldEntry.put(NGSIConstants.PREVIOUS_VOCAB, oldEntry.remove(NGSIConstants.NGSI_LD_HAS_VOCAB));
+		}
+
+	}
+
+	private Uni<Void> sendNotification(SubscriptionRequest potentialSub, List<Map<String, Object>> dataToSend) {
+		if (dataToSend == null || dataToSend.isEmpty()) {
+			return Uni.createFrom().voidItem();
+		}
+		return SubscriptionTools.generateNotification(potentialSub, dataToSend, ldService).onItem()
+				.transformToUni(notification -> {
+					NotificationParam notificationParam = potentialSub.getSubscription().getNotification();
+					Uni<Void> toSend;
+					switch (notificationParam.getEndPoint().getUri().getScheme()) {
+					case "mqtt", "mqtts" -> {
+						try {
+							toSend = getMqttClient(notificationParam).onItem().transformToUni(client -> {
+								int qos = 1;
+
+								String qosString = notificationParam.getEndPoint().getNotifierInfo()
+										.get(NGSIConstants.MQTT_QOS);
+								if (qosString != null) {
+									qos = Integer.parseInt(qosString);
+								}
+								try {
+									return client
+											.publish(notificationParam.getEndPoint().getUri().getPath().substring(1),
+													Buffer.buffer(SubscriptionTools.getMqttPayload(notificationParam,
+															notification)),
+													MqttQoS.valueOf(qos), false, false)
+											.onItem().transformToUni(t -> {
+												if (t == 0) {
+													// TODO what the fuck is the result here
+												}
+												long now = System.currentTimeMillis();
 												potentialSub.getSubscription().getNotification()
 														.setLastSuccessfulNotification(now);
 												potentialSub.getSubscription().getNotification()
@@ -750,10 +910,11 @@ public class SubscriptionService {
 														potentialSub.getId(),
 														SerializationTools.notifiedAt_formatter.format(LocalDateTime
 																.ofInstant(Instant.ofEpochMilli(now), ZoneId.of("Z"))));
-											} else {
-												logger.error("failed to send notification for subscription "
-														+ potentialSub.getId() + " with status code " + statusCode
-														+ ". Remember there is no redirect following for post due to security considerations");
+											}).onFailure().recoverWithUni(e -> {
+												logger.error(
+														"failed to send notification for subscription " + potentialSub,
+														e);
+												long now = System.currentTimeMillis();
 												potentialSub.getSubscription().getNotification()
 														.setLastFailedNotification(now);
 												potentialSub.getSubscription().getNotification()
@@ -762,11 +923,38 @@ public class SubscriptionService {
 														potentialSub.getId(),
 														SerializationTools.notifiedAt_formatter.format(LocalDateTime
 																.ofInstant(Instant.ofEpochMilli(now), ZoneId.of("Z"))));
-											}
-										}).onFailure().recoverWithUni(e -> {
-											logger.error("failed to send notification for subscription " + potentialSub,
-													e);
-											long now = System.currentTimeMillis();
+											});
+								} catch (Exception e) {
+									logger.error("failed to send notification for subscription " + potentialSub, e);
+									return Uni.createFrom().voidItem();
+								}
+							});
+						} catch (Exception e) {
+							logger.error("failed to send notification for subscription " + potentialSub, e);
+							return Uni.createFrom().voidItem();
+						}
+					}
+					case "http", "https" -> {
+						try {
+							toSend = webClient.postAbs(notificationParam.getEndPoint().getUri().toString())
+									.putHeaders(SubscriptionTools.getHeaders(notificationParam,
+											potentialSub.getSubscription().getOtherHead()))
+									.sendBuffer(Buffer.buffer(JsonUtils.toPrettyString(notification))).onFailure()
+									.retry().atMost(3).onItem().transformToUni(result -> {
+										int statusCode = result.statusCode();
+										long now = System.currentTimeMillis();
+										if (statusCode >= 200 && statusCode < 300) {
+											potentialSub.getSubscription().getNotification()
+													.setLastSuccessfulNotification(now);
+											potentialSub.getSubscription().getNotification().setLastNotification(now);
+											return subDAO.updateNotificationSuccess(potentialSub.getTenant(),
+													potentialSub.getId(),
+													SerializationTools.notifiedAt_formatter.format(LocalDateTime
+															.ofInstant(Instant.ofEpochMilli(now), ZoneId.of("Z"))));
+										} else {
+											logger.error("failed to send notification for subscription "
+													+ potentialSub.getId() + " with status code " + statusCode
+													+ ". Remember there is no redirect following for post due to security considerations");
 											potentialSub.getSubscription().getNotification()
 													.setLastFailedNotification(now);
 											potentialSub.getSubscription().getNotification().setLastNotification(now);
@@ -774,42 +962,55 @@ public class SubscriptionService {
 													potentialSub.getId(),
 													SerializationTools.notifiedAt_formatter.format(LocalDateTime
 															.ofInstant(Instant.ofEpochMilli(now), ZoneId.of("Z"))));
-										});
-							} catch (Exception e) {
-								logger.error("failed to send notification for subscription " + potentialSub, e);
-								return Uni.createFrom().voidItem();
-							}
-						}
-						default -> {
-							logger.error("unsuported endpoint in subscription " + potentialSub.getId());
+										}
+									}).onFailure().recoverWithUni(e -> {
+										logger.error("failed to send notification for subscription " + potentialSub, e);
+										long now = System.currentTimeMillis();
+										potentialSub.getSubscription().getNotification().setLastFailedNotification(now);
+										potentialSub.getSubscription().getNotification().setLastNotification(now);
+										return subDAO.updateNotificationFailure(potentialSub.getTenant(),
+												potentialSub.getId(),
+												SerializationTools.notifiedAt_formatter.format(LocalDateTime
+														.ofInstant(Instant.ofEpochMilli(now), ZoneId.of("Z"))));
+									});
+						} catch (Exception e) {
+							logger.error("failed to send notification for subscription " + potentialSub, e);
 							return Uni.createFrom().voidItem();
 						}
+					}
+					default -> {
+						logger.error("unsuported endpoint in subscription " + potentialSub.getId());
+						return Uni.createFrom().voidItem();
+					}
+					}
+					if (potentialSub.getSubscription().getThrottling() > 0) {
+						long delay = potentialSub.getSubscription().getThrottling() - (System.currentTimeMillis()
+								- potentialSub.getSubscription().getNotification().getLastNotification());
+						if (delay > 0) {
+							return Uni.createFrom().voidItem().onItem().delayIt().by(Duration.ofMillis(delay)).onItem()
+									.transformToUni(v -> toSend);
+						} else {
+							return toSend;
 						}
-						if (potentialSub.getSubscription().getThrottling() > 0) {
-							long delay = potentialSub.getSubscription().getThrottling() - (System.currentTimeMillis()
-									- potentialSub.getSubscription().getNotification().getLastNotification());
-							if (delay > 0) {
-								return Uni.createFrom().voidItem().onItem().delayIt().by(Duration.ofMillis(delay))
-										.onItem().transformToUni(v -> toSend);
-							} else {
-								return toSend;
-							}
-						}
-						return toSend;
-					});
-		}
-		return Uni.createFrom().voidItem();
+					}
+					return toSend;
+				});
+
 	}
 
 	private boolean notificationTriggerCheck(Subscription subscription, int triggerReason) {
-		if(subscription.getTimeInterval() > 0) {
+		if (subscription.getTimeInterval() > 0) {
 			return true;
 		}
 		Set<String> notificationTriggers = subscription.getNotificationTrigger();
 		switch (triggerReason) {
+		case AppConstants.BATCH_CREATE_REQUEST:
+		case AppConstants.BATCH_UPSERT_REQUEST:
 		case AppConstants.CREATE_REQUEST:
 			return notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_CREATED)
 					|| notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_CREATED);
+		case AppConstants.BATCH_MERGE_REQUEST:
+		case AppConstants.BATCH_UPDATE_REQUEST:
 		case AppConstants.APPEND_REQUEST:
 		case AppConstants.UPDATE_REQUEST:
 		case AppConstants.MERGE_PATCH_REQUEST:
@@ -820,6 +1021,7 @@ public class SubscriptionService {
 					|| notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_UPDATED)
 					|| notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_CREATED);
 		case AppConstants.DELETE_REQUEST:
+		case AppConstants.BATCH_DELETE_REQUEST:
 			return notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_DELETED);
 		case AppConstants.DELETE_ATTRIBUTE_REQUEST:
 			return notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_UPDATED)
@@ -863,141 +1065,6 @@ public class SubscriptionService {
 		}
 	}
 
-	@SuppressWarnings("unchecked")
-	private boolean shouldSendOut(SubscriptionRequest potentialSub, Map<String, Object> entity) {
-		Subscription sub = potentialSub.getSubscription();
-		if (!sub.getIsActive() || sub.getExpiresAt() < System.currentTimeMillis()) {
-			return false;
-		}
-
-		if(sub.isLocalOnly() && sub.getEntities()==null){
-			return  true;
-		}
-
-		if (!SubscriptionTools.evaluateGeoQuery(sub.getLdGeoQuery(),
-				(List<Map<String, Object>>) entity.get(NGSIConstants.NGSI_LD_LOCATION))) {
-			return false;
-		}
-		if (sub.getScopeQuery() != null) {
-			if (!sub.getScopeQuery().calculate(EntityTools.getScopes(entity))) {
-				return false;
-			}
-		}
-		if (sub.getLdQuery() != null) {
-			if (!sub.getLdQuery().calculate(EntityTools.getBaseProperties(entity))) {
-				return false;
-			}
-		}
-
-		for (EntityInfo entityInfo : sub.getEntities()) {
-			if (entityInfo.getType().equals(ALL_TYPES_SUB)) {
-				return true;
-			}
-			if (entityInfo.getId() != null && entityInfo.getType() != null && sub.getAttributeNames() != null) {
-				if (checkEntityForIdTypeAttrs(entityInfo.getId(), entityInfo.getType(), sub.getAttributeNames(),
-						entity)) {
-					return true;
-				}
-			} else if (entityInfo.getIdPattern() != null && entityInfo.getType() != null
-					&& sub.getAttributeNames() != null) {
-				if (checkEntityForIdPatternTypeAttrs(entityInfo.getIdPattern(), entityInfo.getType(),
-						sub.getAttributeNames(), entity)) {
-					return true;
-				}
-			} else if (entityInfo.getId() != null && entityInfo.getType() != null) {
-				if (checkEntityForIdType(entityInfo.getId(), entityInfo.getType(), entity)) {
-					return true;
-				}
-			} else if (entityInfo.getIdPattern() != null && entityInfo.getType() != null) {
-				if (checkEntityForIdPatternType(entityInfo.getIdPattern(), entityInfo.getType(), entity)) {
-					return true;
-				}
-			} else if (entityInfo.getId() != null && sub.getAttributeNames() != null) {
-				if (checkEntityForIdAttrs(entityInfo.getId(), sub.getAttributeNames(), entity)) {
-					return true;
-				}
-			} else if (entityInfo.getIdPattern() != null && sub.getAttributeNames() != null) {
-				if (checkEntityForIdPatternAttrs(entityInfo.getIdPattern(), sub.getAttributeNames(), entity)) {
-					return true;
-				}
-			} else if (entityInfo.getType() != null && sub.getAttributeNames() != null) {
-				if (checkEntityForTypeAttrs(entityInfo.getType(), sub.getAttributeNames(), entity)) {
-					return true;
-				}
-			} else if (entityInfo.getType() != null) {
-				if (checkEntityForType(entityInfo.getType(), entity)) {
-					return true;
-				}
-			} else if (entityInfo.getIdPattern() != null) {
-				if (checkEntityForIdPattern(entityInfo.getIdPattern(), entity)) {
-					return true;
-				}
-			} else if (entityInfo.getId() != null) {
-				if (checkEntityForId(entityInfo.getId(), entity)) {
-					return true;
-				}
-			} else if (sub.getAttributeNames() != null) {
-				if (checkEntityForAttribs(sub.getAttributeNames(), entity)) {
-					return true;
-				}
-			}
-
-		}
-
-		return false;
-	}
-
-	private boolean checkEntityForId(URI id, Map<String, Object> entity) {
-		return entity.get(NGSIConstants.JSON_LD_ID).equals(id.toString());
-	}
-
-	private boolean checkEntityForIdPattern(String idPattern, Map<String, Object> entity) {
-		return ((String) entity.get(NGSIConstants.JSON_LD_ID)).matches(idPattern);
-	}
-
-	private boolean checkEntityForAttribs(Set<String> attributeNames, Map<String, Object> entity) {
-		return !Sets.intersection(attributeNames, entity.keySet()).isEmpty();
-	}
-
-	@SuppressWarnings("unchecked")
-	private boolean checkEntityForType(String type, Map<String, Object> entity) {
-		return ((List<String>) entity.get(NGSIConstants.JSON_LD_TYPE)).contains(type);
-	}
-
-	private boolean checkEntityForTypeAttrs(String type, Set<String> attributeNames, Map<String, Object> entity) {
-		return checkEntityForType(type, entity) && checkEntityForAttribs(attributeNames, entity);
-
-	}
-
-	private boolean checkEntityForIdPatternAttrs(String idPattern, Set<String> attributeNames,
-			Map<String, Object> entity) {
-		return checkEntityForIdPattern(idPattern, entity) && checkEntityForAttribs(attributeNames, entity);
-	}
-
-	private boolean checkEntityForIdAttrs(URI id, Set<String> attributeNames, Map<String, Object> entity) {
-		return checkEntityForId(id, entity) && checkEntityForAttribs(attributeNames, entity);
-	}
-
-	private boolean checkEntityForIdPatternType(String idPattern, String type, Map<String, Object> entity) {
-		return checkEntityForIdPattern(idPattern, entity) && checkEntityForType(type, entity);
-	}
-
-	private boolean checkEntityForIdType(URI id, String type, Map<String, Object> entity) {
-		return checkEntityForId(id, entity) && checkEntityForType(type, entity);
-	}
-
-	private boolean checkEntityForIdPatternTypeAttrs(String idPattern, String type, Set<String> attributeNames,
-			Map<String, Object> entity) {
-		return checkEntityForIdPattern(idPattern, entity) && checkEntityForType(type, entity)
-				&& checkEntityForAttribs(attributeNames, entity);
-	}
-
-	private boolean checkEntityForIdTypeAttrs(URI id, String type, Set<String> attributeNames,
-			Map<String, Object> entity) {
-		return checkEntityForId(id, entity) && checkEntityForType(type, entity)
-				&& checkEntityForAttribs(attributeNames, entity);
-	}
-
 	private boolean shouldFire(Set<String> keys, SubscriptionRequest subscription) {
 		if (subscription.getSubscription().getAttributeNames() == null
 				|| subscription.getSubscription().getAttributeNames().isEmpty()) {
@@ -1021,19 +1088,19 @@ public class SubscriptionService {
 			long now = System.currentTimeMillis();
 			if (sub.getNotification().getLastNotification() + sub.getTimeInterval() * 1000 < now) {
 				sub.getNotification().setLastNotification(now);
-				unis.add(queryFromSubscription(request).onItem().transformToUni(queryResult -> {
-					if (queryResult.isEmpty()) {
-						return Uni.createFrom().voidItem();
-					}
-					try {
-						return sendNotification(request, Map.of(JsonLdConsts.GRAPH, queryResult),
-								AppConstants.INTERVAL_NOTIFICATION_REQUEST);
-					} catch (Exception e) {
-						logger.error("Failed to send initial notifcation", e);
-						return Uni.createFrom().voidItem();
-					}
+				unis.add(queryFromSubscription(request, request.getTenant(), null, Maps.newHashMap()).onItem()
+						.transformToUni(queryResult -> {
+							if (queryResult.isEmpty()) {
+								return Uni.createFrom().voidItem();
+							}
+							try {
+								return sendNotification(request, queryResult);
+							} catch (Exception e) {
+								logger.error("Failed to send initial notifcation", e);
+								return Uni.createFrom().voidItem();
+							}
 
-				}));
+						}));
 			}
 		}
 		if (unis.isEmpty()) {
@@ -1043,32 +1110,61 @@ public class SubscriptionService {
 				.transformToUni(list -> Uni.createFrom().voidItem());
 	}
 
-	private Uni<List<Map<String, Object>>> queryFromSubscription(SubscriptionRequest request) {
-		Subscription sub = request.getSubscription();
-		List<Uni<List<Map<String, Object>>>> unis = Lists.newArrayList();
-		for (EntityInfo entityInfo : sub.getEntities()) {
-			unis.add(localEntityService.query(request.getTenant(),
-					entityInfo.getId() == null ? null : entityInfo.getId().toString(), entityInfo.getType(),
-					entityInfo.getIdPattern(), StringUtils.join(sub.getAttributeNames(), ","), sub.getLdQueryString(),
-					sub.getCsfQueryString(), sub.getLdGeoQuery() == null ? null : sub.getLdGeoQuery().getGeometry(),
-					sub.getLdGeoQuery() == null ? null : sub.getLdGeoQuery().getGeorel(),
-					sub.getLdGeoQuery() == null ? null : sub.getLdGeoQuery().getCoordinates(),
-					sub.getLdGeoQuery() == null ? null : sub.getLdGeoQuery().getGeoproperty(), null, null,
-					sub.getScopeQueryString(), false, null, null, true));
-		}
+	private Uni<List<Map<String, Object>>> queryFromSubscription(SubscriptionRequest request, String tenant,
+			Set<String> idsTBU, Map<String, List<Map<String, Object>>> prevPayloadToUse) {
+		HttpRequest<Buffer> req = webClient.postAbs(entityServiceUrl + NGSIConstants.ENDPOINT_BATCH_QUERY);
+		Map<String, Object> queryBody = request.getAsQueryBody(idsTBU, atContextUrl);
 
-		return Uni.combine().all().unis(unis).combinedWith(list -> {
-			List<Map<String, Object>> result = Lists.newArrayList();
-			for (Object obj : list) {
-				List<Map<String, Object>> qResult = (List<Map<String, Object>>) obj;
-				result.addAll(qResult);
+		req = req.addQueryParam(NGSIConstants.QUERY_PARAMETER_DO_NOT_COMPACT, "true");
+		req = req.addQueryParam(NGSIConstants.QUERY_PARAMETER_LIMIT, "1000");
+		req = req.putHeader(NGSIConstants.TENANT_HEADER, tenant)
+				.putHeader(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSON)
+				.putHeader(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD);
+		String batchString;
+		try {
+			batchString = JsonUtils.toPrettyString(queryBody);
+		} catch (Exception e) {
+			logger.warn("failed to serialize batch request");
+			return Uni.createFrom().item(Lists.newArrayList());
+		}
+		return req.sendBuffer(Buffer.buffer(batchString)).onItem().transform(resp -> {
+			if (resp != null && resp.statusCode() == 200) {
+				System.out.println(resp.bodyAsString());
+				JsonArray jsonArray = resp.bodyAsJsonArray();
+				List<Map<String, Object>> dataToNotify = new ArrayList<>(jsonArray.size());
+
+				if (jsonArray.isEmpty()) {
+					prevPayloadToUse.forEach((id, entities) -> {
+						entities.forEach(entity -> {
+							Map<String, Object> dupl = MicroServiceUtils.deepCopyMap(entity);
+							dataToNotify.add(compareMaps(null, dupl));
+						});
+					});
+				} else {
+					jsonArray.forEach(entityObj -> {
+						Map<String, Object> entity = ((JsonObject) entityObj).getMap();
+						String entityId = (String) entity.get(NGSIConstants.JSON_LD_ID);
+						Map<String, Object> prev;
+						List<Map<String, Object>> entitiesPrev = prevPayloadToUse.get(entityId);
+						if (entitiesPrev != null && !entitiesPrev.isEmpty()) {
+							prev = entitiesPrev.get(0);
+						} else {
+							prev = null;
+						}
+
+						dataToNotify.add(compareMaps(prev, entity));
+					});
+				}
+				return dataToNotify;
 			}
-			return result;
+			return null;
 		});
+
 	}
 
 	public Uni<Void> handleRegistryNotification(InternalNotification message) {
-		if (message.getRequestType() == AppConstants.DELETE_REQUEST) {
+		if (NGSIConstants.SUBSCRIPTION_NO_LONGER_MATCHING
+				.equals(message.getPayload().get(NGSIConstants.NGSI_LD_TRIGGER_REASON_SHORT))) {
 			// entry was deleted
 			return unsubscribeRemote(message.getId(), message.getTenant());
 		} else {
@@ -1099,8 +1195,9 @@ public class SubscriptionService {
 							}
 							temp.append(AppConstants.SUBSCRIPTIONS_URL);
 							return webClient.post(temp.toString())
-									.putHeaders(SubscriptionTools
-											.getHeaders(remoteRequest.getSubscription().getNotification(),remoteRequest.getSubscription().getOtherHead()))
+									.putHeaders(SubscriptionTools.getHeaders(
+											remoteRequest.getSubscription().getNotification(),
+											remoteRequest.getSubscription().getOtherHead()))
 									.sendJsonObject(new JsonObject(compacted)).onFailure().retry().atMost(3).onItem()
 									.transformToUni(response -> {
 										if (response.statusCode() >= 200 && response.statusCode() < 300) {
@@ -1137,7 +1234,7 @@ public class SubscriptionService {
 				unis.add(localEntityService
 						.getEntityById(subscription.getTenant(), (String) entry.get(NGSIConstants.JSON_LD_ID), true)
 						.onItem().transformToUni(entity -> {
-							return sendNotification(subscription, entity, AppConstants.UPDATE_REQUEST);
+							return sendNotification(subscription, List.of(entity));
 						}));
 			}
 		}
@@ -1266,7 +1363,7 @@ public class SubscriptionService {
 
 	public void reloadSubscription(String tenant, String id) {
 		subDAO.loadSubscription(tenant, id).onItem().transformToUni(t -> {
-			return ldService.parsePure(t.getItem2().get(NGSIConstants.JSON_LD_CONTEXT)).onItem().transformToUni(ctx -> {
+			return ldService.parsePure(t.getItem3().get(NGSIConstants.JSON_LD_CONTEXT)).onItem().transformToUni(ctx -> {
 				SubscriptionRequest request;
 				try {
 					request = new SubscriptionRequest(tenant, t.getItem1(), ctx);
@@ -1275,6 +1372,7 @@ public class SubscriptionService {
 					return Uni.createFrom().voidItem();
 				}
 				request.setSendTimestamp(-1);
+				request.setContextId(t.getItem2());
 				if (isIntervalSub(request)) {
 					this.tenant2subscriptionId2IntervalSubscription.put(request.getTenant(), request.getId(), request);
 				} else {
@@ -1286,6 +1384,86 @@ public class SubscriptionService {
 		}).subscribe().with(i -> {
 			logger.info("Reloaded subscription: " + id);
 		});
+	}
+
+	public Uni<Void> checkSubscriptionsForCSource(CSourceBaseRequest message) {
+		Collection<SubscriptionRequest> potentialSubs = tenant2subscriptionId2Subscription.column(message.getTenant())
+				.values();
+		List<Uni<Void>> unis = Lists.newArrayList();
+		for (SubscriptionRequest potentialSub : potentialSubs) {
+			switch (message.getRequestType()) {
+			case AppConstants.UPDATE_REQUEST:
+				if (shouldFireReg(message.getPayload(), potentialSub)) {
+					unis.add(subDAO.getRegById(message.getTenant(), message.getId()).onItem().transformToUni(rows -> {
+
+						return SubscriptionTools.generateCsourceNotification(potentialSub,
+								rows.iterator().next().getJsonObject(0).getMap(), message.getRequestType(), ldService)
+								.onItem().transformToUni(notification -> {
+									NotificationParam notificationParam = potentialSub.getSubscription()
+											.getNotification();
+									return handleRegistryNotification(new InternalNotification(potentialSub.getTenant(),
+											potentialSub.getId(), notification));
+								});
+					}));
+				}
+				break;
+			case AppConstants.CREATE_REQUEST:
+			case AppConstants.DELETE_REQUEST:
+				unis.add(SubscriptionTools.generateCsourceNotification(potentialSub, message.getPayload(),
+						message.getRequestType(), ldService).onItem().transformToUni(notification -> {
+							NotificationParam notificationParam = potentialSub.getSubscription().getNotification();
+							return handleRegistryNotification(new InternalNotification(potentialSub.getTenant(),
+									potentialSub.getId(), notification));
+						}));
+			default:
+				break;
+			}
+
+		}
+		if (unis.isEmpty()) {
+			return Uni.createFrom().voidItem();
+		}
+		return Uni.combine().all().unis(unis).discardItems();
+	}
+
+	protected boolean shouldFireReg(Map<String, Object> entry, SubscriptionRequest subscription) {
+		Set<String> attribs = subscription.getSubscription().getAttributeNames();
+
+		if (attribs == null || attribs.isEmpty()) {
+			return true;
+		}
+		if (entry.containsKey(NGSIConstants.NGSI_LD_INFORMATION)) {
+			@SuppressWarnings("unchecked")
+			List<Map<String, Object>> information = (List<Map<String, Object>>) entry
+					.get(NGSIConstants.NGSI_LD_INFORMATION);
+			for (Map<String, Object> informationEntry : information) {
+				Object propertyNames = informationEntry.get(NGSIConstants.NGSI_LD_PROPERTIES);
+				Object relationshipNames = informationEntry.get(NGSIConstants.NGSI_LD_RELATIONSHIPS);
+				if (relationshipNames == null && relationshipNames == null) {
+					return true;
+				}
+				if (relationshipNames != null) {
+					@SuppressWarnings("unchecked")
+					List<Map<String, String>> list = (List<Map<String, String>>) relationshipNames;
+					for (Map<String, String> relationshipEntry : list) {
+						if (attribs.contains(relationshipEntry.get(NGSIConstants.JSON_LD_ID))) {
+							return true;
+						}
+					}
+				}
+				if (propertyNames != null) {
+					@SuppressWarnings("unchecked")
+					List<Map<String, String>> list = (List<Map<String, String>>) propertyNames;
+					for (Map<String, String> propertyEntry : list) {
+						if (attribs.contains(propertyEntry.get(NGSIConstants.JSON_LD_ID))) {
+							return true;
+						}
+					}
+				}
+			}
+		}
+		// TODO add aditional changes on what could fire in a csource reg
+		return false;
 	}
 
 }

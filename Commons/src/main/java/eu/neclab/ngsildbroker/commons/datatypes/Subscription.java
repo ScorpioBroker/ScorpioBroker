@@ -22,7 +22,11 @@ import com.google.common.collect.Sets;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.DataSetIdTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.OmitTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.PickTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TemporalQueryTerm;
@@ -61,7 +65,7 @@ public class Subscription implements Serializable {
 	private Boolean isActive = true;
 	private Set<String> attributeNames;
 	private List<EntityInfo> entities;
-
+	private LanguageQueryTerm langQuery;
 	private String ldQueryString;
 	private String scopeQueryString;
 	private String csfQueryString;
@@ -76,8 +80,9 @@ public class Subscription implements Serializable {
 	private QQueryTerm csfQuery;
 	@JsonIgnore
 	private ScopeQueryTerm scopeQuery;
+	private DataSetIdTerm datasetIdTerm;
 
-	private boolean localOnly =false;
+	private boolean localOnly = false;
 
 	public boolean isLocalOnly() {
 		return localOnly;
@@ -144,15 +149,17 @@ public class Subscription implements Serializable {
 			Object mapValue = mapEntry.getValue();
 
 			switch (key) {
-				case NGSIConstants.NGSI_LD_JSONLD_CONTEXT:
-					subscription.setJsonldContext(((List<Map<String,String>>)mapValue).get(0).get(JsonLdConsts.VALUE));
-					break;
-				case NGSIConstants.NGSI_LD_LOCALONLY:
-					if(!(mapValue instanceof List<?> list && ((Map<String,Object>)(list.get(0))).get(NGSIConstants.JSON_LD_VALUE) instanceof Boolean)){
-						throw new ResponseException(ErrorType.BadRequestData, "localOnly should be boolean");
-					}
-					subscription.setLocalOnly(((List<Map<String,Boolean>>)mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE));
-					break;
+			case NGSIConstants.NGSI_LD_JSONLD_CONTEXT:
+				subscription.setJsonldContext(((List<Map<String, String>>) mapValue).get(0).get(JsonLdConsts.VALUE));
+				break;
+			case NGSIConstants.NGSI_LD_LOCALONLY:
+				if (!(mapValue instanceof List<?> list
+						&& ((Map<String, Object>) (list.get(0))).get(NGSIConstants.JSON_LD_VALUE) instanceof Boolean)) {
+					throw new ResponseException(ErrorType.BadRequestData, "localOnly should be boolean");
+				}
+				subscription
+						.setLocalOnly(((List<Map<String, Boolean>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE));
+				break;
 			case NGSIConstants.JSON_LD_ID:
 				subscription.setId((String) mapValue);
 				break;
@@ -196,8 +203,10 @@ public class Subscription implements Serializable {
 							break;
 						case NGSIConstants.JSON_LD_TYPE:
 							hasType = true;
-							entityInfo.setType(((List<String>) entitiesEntry.getValue()).get(0));
-							if(entityInfo.getType().equals(NGSIConstants.NGSI_LD_STAR)){
+
+							entityInfo.setTypeTerm(QueryParser
+									.parseTypeQuery(((List<String>) entitiesEntry.getValue()).get(0), context));
+							if (entityInfo.getTypeTerm().getAllTypes().contains(NGSIConstants.NGSI_LD_STAR)) {
 								subscription.setLocalOnly(true);
 							}
 							break;
@@ -368,7 +377,7 @@ public class Subscription implements Serializable {
 		// Default accept
 		String accept = AppConstants.NGB_APPLICATION_JSONLD;
 		Format format = Format.normalized;
-		Set<String> watchedAttribs = Sets.newHashSet();
+
 		String mqttVersion = null;
 		Integer qos = null;
 		NotificationParam notifyParam = new NotificationParam();
@@ -376,8 +385,23 @@ public class Subscription implements Serializable {
 		for (Entry<String, Object> entry : map.entrySet()) {
 			switch (entry.getKey()) {
 			case NGSIConstants.NGSI_LD_ATTRIBUTES:
-				watchedAttribs = getAttribs((List<Map<String, Object>>) entry.getValue());
-				notifyParam.setAttributeNames(watchedAttribs);
+				List<Map<String, Object>> watchedAttribs = (List<Map<String, Object>>) entry.getValue();
+				String attrs = getCompactedAttrsQueryString(watchedAttribs, context);
+				notifyParam.setAttrs(QueryParser.parseAttrs(attrs, context));
+				break;
+			case NGSIConstants.NGSI_LD_PICK:
+				List<Map<String, Object>> pickList = (List<Map<String, Object>>) entry.getValue();
+				String pick = getCompactedQueryString(pickList, NGSIConstants.NGSI_LD_PICK, context);
+				PickTerm pickTerm = new PickTerm();
+				QueryParser.parseProjectionTerm(pickTerm, pick, context);
+				notifyParam.setPick(pickTerm);
+				break;
+			case NGSIConstants.NGSI_LD_OMIT:
+				List<Map<String, Object>> omitList = (List<Map<String, Object>>) entry.getValue();
+				String omit = getCompactedQueryString(omitList, NGSIConstants.NGSI_LD_OMIT, context);
+				OmitTerm omitTerm = OmitTerm.getNewRootInstance();
+				QueryParser.parseProjectionTerm(omitTerm, omit, context);
+				notifyParam.setOmit(omitTerm);
 				break;
 			case NGSIConstants.NGSI_LD_ENDPOINT:
 				EndPoint endPoint = new EndPoint();
@@ -429,13 +453,13 @@ public class Subscription implements Serializable {
 						}
 
 						for (Map<String, Object> headerEntry : receiverInfos) {
-							if(headerEntry.containsKey(NGSIConstants.KEY)){
-								receiverInfo.put(headerEntry.get(NGSIConstants.KEY).toString(), headerEntry.get(NGSIConstants.VALUE).toString());
-							}
-							else if(headerEntry.containsKey(NGSIConstants.NGSI_LD_HAS_KEY)){
-								receiverInfo.put(headerEntry.get(NGSIConstants.NGSI_LD_HAS_KEY).toString(), headerEntry.get(NGSIConstants.NGSI_LD_HAS_VALUE).toString());
-							}
-							else {
+							if (headerEntry.containsKey(NGSIConstants.KEY)) {
+								receiverInfo.put(headerEntry.get(NGSIConstants.KEY).toString(),
+										headerEntry.get(NGSIConstants.VALUE).toString());
+							} else if (headerEntry.containsKey(NGSIConstants.NGSI_LD_HAS_KEY)) {
+								receiverInfo.put(headerEntry.get(NGSIConstants.NGSI_LD_HAS_KEY).toString(),
+										headerEntry.get(NGSIConstants.NGSI_LD_HAS_VALUE).toString());
+							} else {
 								headerEntry.forEach((t, u) -> {
 									receiverInfo.put(t, u.toString());
 								});
@@ -483,6 +507,27 @@ public class Subscription implements Serializable {
 		}
 		notifyParam.setFormat(format);
 		return notifyParam;
+	}
+
+	private static String getCompactedAttrsQueryString(List<Map<String, Object>> watchedAttribs, Context context) {
+		StringBuilder result = new StringBuilder();
+		watchedAttribs.forEach(entry -> {
+			result.append(context.compactIri((String) entry.get(NGSIConstants.JSON_LD_ID)));
+			result.append(',');
+		});
+		result.setLength(result.length() - 1);
+		return result.toString();
+	}
+
+	private static String getCompactedQueryString(List<Map<String, Object>> watchedAttribs, String attribName,
+			Context context) {
+		StringBuilder tmp = new StringBuilder();
+		for (Map<String, Object> listEntry : watchedAttribs) {
+			tmp.append(context.compactValue(attribName, listEntry));
+			tmp.append(',');
+		}
+		tmp.setLength(tmp.length() - 1);
+		return tmp.toString();
 	}
 
 	@SuppressWarnings("unchecked")
@@ -874,9 +919,19 @@ public class Subscription implements Serializable {
 	public void setOtherHead(HeadersMultiMap otherHead) {
 		this.otherHead = otherHead;
 	}
+
 	public void addOtherHead(String key, String value) {
-		this.otherHead.add(key,value);
+		this.otherHead.add(key, value);
 	}
+
+	public DataSetIdTerm getDatasetIdTerm() {
+		return datasetIdTerm;
+	}
+
+	public void setDatasetIdTerm(DataSetIdTerm datasetIdTerm) {
+		this.datasetIdTerm = datasetIdTerm;
+	}
+
 	@Override
 	public String toString() {
 		return "Subscription [description=" + description + ", expiresAt=" + expiresAt + ", id=" + id

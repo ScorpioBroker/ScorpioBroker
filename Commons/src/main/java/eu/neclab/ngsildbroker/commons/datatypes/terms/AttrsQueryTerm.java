@@ -1,6 +1,7 @@
 package eu.neclab.ngsildbroker.commons.datatypes.terms;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -343,6 +344,24 @@ public class AttrsQueryTerm implements Serializable {
 			}
 		}
 		return !NGSIConstants.ENTITY_BASE_PROPS.containsAll(entity.keySet());
+	}
+
+	public String toQueryParam(Context context) {
+		StringBuilder builder = new StringBuilder();
+		attrs.forEach(attr -> {
+			builder.append(context.compactIri(attr));
+			builder.append(',');
+		});
+		builder.setLength(builder.length() - 1);
+		return builder.toString();
+	}
+	public List<String> toQueryBodyEntry(Context context) {
+		List<String> result = new ArrayList<>(attrs.size());
+		
+		attrs.forEach(attr -> {
+			result.add(context.compactIri(attr));
+		});
+		return result;
 	}
 
 }

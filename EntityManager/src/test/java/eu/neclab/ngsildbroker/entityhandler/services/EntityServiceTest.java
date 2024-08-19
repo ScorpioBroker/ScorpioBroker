@@ -89,7 +89,7 @@ public class EntityServiceTest {
 		entityService.webClient = webClient;
 		entityService.vertx = vertx;
 		entityService.entityEmitter = entityEmitter;
-		entityService.batchEmitter = batchEmitter;
+//		entityService.batchEmitter = batchEmitter;
 
 		Table<String, String, List<RegistrationEntry>> registriesMap = HashBasedTable.create();
 		Uni<Table<String, String, List<RegistrationEntry>>> uniRegistriesMap = Uni.createFrom().item(registriesMap);
@@ -121,7 +121,7 @@ public class EntityServiceTest {
 	@Order(1)
 	public void createEntryTest() throws Exception {
 
-		CreateEntityRequest request = new CreateEntityRequest(tenant, resolved);
+		CreateEntityRequest request = new CreateEntityRequest(tenant, resolved, false);
 
 		Uni<Void> createEntityRes = Uni.createFrom().voidItem();
 		when(entityDAO.createEntity(any())).thenReturn(createEntityRes);
@@ -131,8 +131,8 @@ public class EntityServiceTest {
 
 		when(context.compactIri(anyString())).thenReturn("");
 
-		NGSILDOperationResult operationResult = entityService.createEntity(tenant, resolved, context,headersFromReq).await()
-				.indefinitely();
+		NGSILDOperationResult operationResult = entityService.createEntity(tenant, resolved, context, headersFromReq)
+				.await().indefinitely();
 
 		assertEquals(entityId, operationResult.getEntityId());
 		assertEquals(1, operationResult.getSuccesses().size());
@@ -144,16 +144,16 @@ public class EntityServiceTest {
 	@Order(2)
 	public void updateEntryTest() throws JsonProcessingException {
 
-		UpdateEntityRequest request = new UpdateEntityRequest(tenant, entityId, resolved, null);
+		UpdateEntityRequest request = new UpdateEntityRequest(tenant, entityId, resolved, null, false);
 
-		Uni<Tuple2<Map<String, Object>, Map<String, Object>>> updateEntityRes = Uni.createFrom().nothing();
+		Uni<Map<String, Object>> updateEntityRes = Uni.createFrom().nothing();
 		when(entityDAO.updateEntity(any())).thenReturn(updateEntityRes);
 
 		Uni<Void> emitterResponse = Uni.createFrom().nullItem();
 		when(entityEmitter.send(objectMapper.writeValueAsString(request))).thenReturn(emitterResponse);
 
-		NGSILDOperationResult operationResult = entityService.updateEntity(tenant, entityId, resolved, context,headersFromReq).await()
-				.indefinitely();
+		NGSILDOperationResult operationResult = entityService
+				.updateEntity(tenant, entityId, resolved, context, headersFromReq).await().indefinitely();
 
 		assertEquals(entityId, operationResult.getEntityId());
 		assertEquals(1, operationResult.getSuccesses().size());
@@ -172,8 +172,8 @@ public class EntityServiceTest {
 		Uni<Void> emitterResponse = Uni.createFrom().nullItem();
 		when(entityEmitter.send(any(String.class))).thenReturn(emitterResponse);
 
-		NGSILDOperationResult operationResult = entityService.appendToEntity(tenant, entityId, resolved, false, context,headersFromReq)
-				.await().indefinitely();
+		NGSILDOperationResult operationResult = entityService
+				.appendToEntity(tenant, entityId, resolved, false, context, headersFromReq).await().indefinitely();
 
 		assertEquals(entityId, operationResult.getEntityId());
 		assertEquals(1, operationResult.getSuccesses().size());
@@ -186,11 +186,12 @@ public class EntityServiceTest {
 	@Order(4)
 	public void partialUpdateAttributeTest() {
 
-		Uni<Tuple2<Map<String, Object>, Map<String, Object>>> partialUpdateAttributeRes = Uni.createFrom().nullItem();
+		Uni<Map<String, Object>> partialUpdateAttributeRes = Uni.createFrom().nullItem();
 		when(entityDAO.partialUpdateAttribute(any())).thenReturn(partialUpdateAttributeRes);
 
 		NGSILDOperationResult operationResult = entityService
-				.partialUpdateAttribute(tenant, entityId, "brandName", resolved, context,headersFromReq).await().indefinitely();
+				.partialUpdateAttribute(tenant, entityId, "brandName", resolved, context, headersFromReq).await()
+				.indefinitely();
 
 		assertEquals(entityId, operationResult.getEntityId());
 		assertEquals(0, operationResult.getFailures().size());
@@ -202,15 +203,15 @@ public class EntityServiceTest {
 	public void deleteAttributeTest() throws Exception {
 		try {
 
-			Uni<Tuple2<Map<String, Object>, Map<String, Object>>> deleteAttributeRes = Uni.createFrom()
-					.item(Tuple2.of(new HashMap<>(), new HashMap<>()));
+			Uni<Map<String, Object>> deleteAttributeRes = Uni.createFrom().item(new HashMap<>());
 			when(entityDAO.deleteAttribute(any())).thenReturn(deleteAttributeRes);
 
 			Uni<Void> emitterResponse = Uni.createFrom().nullItem();
 			when(entityEmitter.send(any(String.class))).thenReturn(emitterResponse);
 
 			NGSILDOperationResult operationResult = entityService
-					.deleteAttribute(tenant, entityId, "brandName", "datasetId", false, context,headersFromReq).await().indefinitely();
+					.deleteAttribute(tenant, entityId, "brandName", "datasetId", false, context, headersFromReq).await()
+					.indefinitely();
 
 			verify(entityDAO, times(1)).deleteAttribute(any());
 			verify(entityEmitter, times(1)).sendAndForget(any(String.class));
@@ -233,8 +234,8 @@ public class EntityServiceTest {
 			Uni<Void> emitterResponse = Uni.createFrom().nullItem();
 			when(entityEmitter.send(any(String.class))).thenReturn(emitterResponse);
 
-			NGSILDOperationResult operationResult = entityService.deleteEntity(tenant, entityId, context,headersFromReq).await()
-					.indefinitely();
+			NGSILDOperationResult operationResult = entityService
+					.deleteEntity(tenant, entityId, context, headersFromReq).await().indefinitely();
 
 			verify(entityDAO, times(1)).deleteEntity(any());
 			verify(entityEmitter, times(1)).sendAndForget(any(String.class));
@@ -271,7 +272,7 @@ public class EntityServiceTest {
 		when(entityDAO.batchCreateEntity(any())).thenReturn(createEntityRes);
 
 		List<NGSILDOperationResult> operationResultList = entityService
-				.createBatch(tenant, expandedEntities, contextList, true,headersFromReq).await().indefinitely();
+				.createBatch(tenant, expandedEntities, contextList, true, headersFromReq).await().indefinitely();
 
 		assertEquals(1, operationResultList.size());
 		verify(entityDAO, times(1)).batchCreateEntity(any());
@@ -307,7 +308,7 @@ public class EntityServiceTest {
 		when(entityDAO.batchCreateEntity(any())).thenReturn(createEntityRes);
 
 		List<NGSILDOperationResult> operationResultList = entityService
-				.createBatch(tenant, expandedEntities, contextList, true,headersFromReq).await().indefinitely();
+				.createBatch(tenant, expandedEntities, contextList, true, headersFromReq).await().indefinitely();
 
 		assertEquals(2, operationResultList.size());
 		verify(entityDAO, times(1)).batchCreateEntity(any());
@@ -338,7 +339,7 @@ public class EntityServiceTest {
 		when(entityDAO.batchAppendEntity(any())).thenReturn(createEntityRes);
 
 		List<NGSILDOperationResult> operationResultList = entityService
-				.appendBatch(tenant, expandedEntities, contextList, true,false,headersFromReq).await().indefinitely();
+				.appendBatch(tenant, expandedEntities, contextList, true, false, headersFromReq).await().indefinitely();
 
 		assertEquals(1, operationResultList.size());
 		verify(entityDAO, times(1)).batchAppendEntity(any());
@@ -374,7 +375,7 @@ public class EntityServiceTest {
 		when(entityDAO.batchAppendEntity(any())).thenReturn(createEntityRes);
 
 		List<NGSILDOperationResult> operationResultList = entityService
-				.appendBatch(tenant, expandedEntities, contextList, true,false,headersFromReq).await().indefinitely();
+				.appendBatch(tenant, expandedEntities, contextList, true, false, headersFromReq).await().indefinitely();
 
 		assertEquals(2, operationResultList.size());
 		verify(entityDAO, times(1)).batchAppendEntity(any());
@@ -408,7 +409,8 @@ public class EntityServiceTest {
 		when(entityDAO.batchUpsertEntity(any(), anyBoolean())).thenReturn(createEntityRes);
 
 		List<NGSILDOperationResult> operationResultList = entityService
-				.upsertBatch(tenant, expandedEntities, contextList, true, anyBoolean(),headersFromReq).await().indefinitely();
+				.upsertBatch(tenant, expandedEntities, contextList, true, anyBoolean(), headersFromReq).await()
+				.indefinitely();
 
 		assertEquals(1, operationResultList.size());
 		verify(entityDAO, times(1)).batchUpsertEntity(any(), anyBoolean());
@@ -444,7 +446,8 @@ public class EntityServiceTest {
 		when(entityDAO.batchUpsertEntity(any(), anyBoolean())).thenReturn(createEntityRes);
 
 		List<NGSILDOperationResult> operationResultList = entityService
-				.upsertBatch(tenant, expandedEntities, contextList, true, anyBoolean(),headersFromReq).await().indefinitely();
+				.upsertBatch(tenant, expandedEntities, contextList, true, anyBoolean(), headersFromReq).await()
+				.indefinitely();
 
 		assertEquals(2, operationResultList.size());
 		verify(entityDAO, times(1)).batchUpsertEntity(any(), anyBoolean());
@@ -474,8 +477,8 @@ public class EntityServiceTest {
 		Uni<Map<String, Object>> createEntityRes = Uni.createFrom().item(entityBatchDaoRes);
 		when(entityDAO.batchDeleteEntity(any(), any())).thenReturn(createEntityRes);
 
-		List<NGSILDOperationResult> operationResultList = entityService.deleteBatch(tenant, entityIds, true,headersFromReq).await()
-				.indefinitely();
+		List<NGSILDOperationResult> operationResultList = entityService
+				.deleteBatch(tenant, entityIds, true, headersFromReq).await().indefinitely();
 
 		assertEquals(1, operationResultList.size());
 		verify(entityDAO, times(1)).batchDeleteEntity(any(), any());
@@ -509,8 +512,8 @@ public class EntityServiceTest {
 		Uni<Map<String, Object>> createEntityRes = Uni.createFrom().item(entityBatchDaoRes);
 		when(entityDAO.batchDeleteEntity(any(), any())).thenReturn(createEntityRes);
 
-		List<NGSILDOperationResult> operationResultList = entityService.deleteBatch(tenant, entityIds, true,headersFromReq).await()
-				.indefinitely();
+		List<NGSILDOperationResult> operationResultList = entityService
+				.deleteBatch(tenant, entityIds, true, headersFromReq).await().indefinitely();
 
 		assertEquals(1, operationResultList.size());
 		verify(entityDAO, times(1)).batchDeleteEntity(any(), any());

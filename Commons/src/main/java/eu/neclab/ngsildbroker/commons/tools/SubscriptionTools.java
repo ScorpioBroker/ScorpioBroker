@@ -23,7 +23,6 @@ import io.vertx.core.http.impl.headers.HeadersMultiMap;
 import io.vertx.mutiny.core.MultiMap;
 import jakarta.ws.rs.core.HttpHeaders;
 
-import org.apache.http.client.methods.HttpHead;
 import org.locationtech.spatial4j.SpatialPredicate;
 import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
 import org.locationtech.spatial4j.distance.DistanceUtils;
@@ -552,7 +551,7 @@ public class SubscriptionTools {
 					for (Map<String, String> attrib : watchedAttribs) {
 						subTuples.add(Tuple4.of(id, idPattern, type, attrib.get(NGSIConstants.JSON_LD_ID)));
 					}
-				} else {
+				} else { 
 					subTuples.add(Tuple4.of(id, idPattern, type, null));
 				}
 			}

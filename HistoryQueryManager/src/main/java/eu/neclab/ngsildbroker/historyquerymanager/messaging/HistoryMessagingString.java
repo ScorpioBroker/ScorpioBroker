@@ -6,7 +6,6 @@ import org.eclipse.microprofile.reactive.messaging.Incoming;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import io.quarkus.arc.profile.IfBuildProfile;
-import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
 import jakarta.inject.Singleton;
 
@@ -20,8 +19,5 @@ public class HistoryMessagingString extends HistoryMessagingBase {
 		return handleCsourceRaw(byteMessage);
 	}
 
-	@Scheduled(every = "20s", delayed = "5s")
-	void purge() {
-		super.purge();
-	}
+
 }

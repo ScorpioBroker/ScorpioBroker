@@ -20,15 +20,10 @@ public class SubscriptionMessagingInMemory extends SubscriptionMessagingBase {
 		return handleEntityRaw(byteMessage);
 	}
 
-	@Incoming(AppConstants.INTERNAL_NOTIFICATION_CHANNEL)
+	@Incoming(AppConstants.REGISTRY_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
-	public Uni<Void> handleInternalNotification(String byteMessage) {
-		return handleInternalNotificationRaw(byteMessage);
+	public Uni<Void> handleCsource(String byteMessage) {
+		return handleCsourceRaw(byteMessage);
 	}
 
-	@Incoming(AppConstants.ENTITY_BATCH_CHANNEL)
-	@Acknowledgment(Strategy.PRE_PROCESSING)
-	public Uni<Void> handleBatchEntities(String byteMessage) {
-		return handleBatchEntitiesRaw(byteMessage);
-	}
 }

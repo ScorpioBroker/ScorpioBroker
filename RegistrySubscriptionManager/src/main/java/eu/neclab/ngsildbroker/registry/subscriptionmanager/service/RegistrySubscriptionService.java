@@ -19,7 +19,6 @@ import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,19 +37,18 @@ import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityInfo;
 import eu.neclab.ngsildbroker.commons.datatypes.NotificationParam;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.CSourceBaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.DeleteSubscriptionRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.InternalNotification;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.UpdateSubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.results.CRUDSuccess;
 import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
-import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import eu.neclab.ngsildbroker.commons.tools.SubscriptionTools;
 
@@ -61,8 +59,6 @@ import io.quarkus.runtime.StartupEvent;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
-import io.smallrye.reactive.messaging.MutinyEmitter;
-import io.smallrye.reactive.messaging.annotations.Broadcast;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.buffer.Buffer;
@@ -79,10 +75,10 @@ public class RegistrySubscriptionService {
 	@Inject
 	RegistrySubscriptionInfoDAO regDAO;
 
-	@Inject
-	@Channel(AppConstants.INTERNAL_NOTIFICATION_CHANNEL)
-	@Broadcast
-	MutinyEmitter<String> internalNotificationSender;
+//	@Inject
+//	@Channel(AppConstants.INTERNAL_NOTIFICATION_CHANNEL)
+//	@Broadcast
+//	MutinyEmitter<String> internalNotificationSender;
 
 	@Inject
 	ObjectMapper objectMapper;
@@ -180,15 +176,24 @@ public class RegistrySubscriptionService {
 				syncService = Uni.createFrom().voidItem();
 			}
 			return syncService.onItem().transformToUni(v2 -> {
-				return regDAO.getInitialNotificationData(request).onItem().transformToUni(rows -> {
+				return regDAO.getInitialNotificationData(request).onFailure().recoverWithUni(e -> {
+					e.printStackTrace();
+					return Uni.createFrom().failure(e);
+				}).onItem().transformToUni(rows -> {
 					List<Map<String, Object>> data = Lists.newArrayList();
 					rows.forEach(row -> {
 						data.add(row.getJsonObject(0).getMap());
 					});
 					return SubscriptionTools.generateCsourceNotification(request, data,
-							AppConstants.INTERNAL_NOTIFICATION_REQUEST, ldService).onItem().transformToUni(noti -> {
+							AppConstants.INTERNAL_NOTIFICATION_REQUEST, ldService).onFailure().recoverWithUni(e -> {
+								e.printStackTrace();
+								return Uni.createFrom().failure(e);
+							}).onItem().transformToUni(noti -> {
 								return sendNotification(request, noti, AppConstants.INTERNAL_NOTIFICATION_REQUEST)
-										.onItem().transform(v -> {
+										.onFailure().recoverWithUni(e -> {
+											e.printStackTrace();
+											return Uni.createFrom().failure(e);
+										}).onItem().transform(v -> {
 											NGSILDOperationResult result = new NGSILDOperationResult(
 													AppConstants.CREATE_SUBSCRIPTION_REQUEST, request.getId());
 											result.addSuccess(
@@ -202,6 +207,7 @@ public class RegistrySubscriptionService {
 
 		}).onFailure().recoverWithUni(e -> {
 			// TODO sql check
+			logger.error("failed to create csource subscription.", e);
 			return Uni.createFrom().failure(new ResponseException(ErrorType.AlreadyExists,
 					"Subscription with id " + request.getId() + " exists"));
 		});
@@ -294,13 +300,14 @@ public class RegistrySubscriptionService {
 			if (rows.size() == 0) {
 				return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound, "subscription not found"));
 			}
-			Map<String,Object> result = rows.iterator().next().getJsonObject(0).getMap();
-			result.put("status",tenant2subscriptionId2Subscription.get(tenant,subscriptionId).getSubscription().getStatus());
+			Map<String, Object> result = rows.iterator().next().getJsonObject(0).getMap();
+			result.put("status",
+					tenant2subscriptionId2Subscription.get(tenant, subscriptionId).getSubscription().getStatus());
 			return Uni.createFrom().item(result);
 		});
 	}
 
-	public Uni<Void> checkSubscriptions(BaseRequest message) {
+	public Uni<Void> checkSubscriptions(CSourceBaseRequest message) {
 		Collection<SubscriptionRequest> potentialSubs = tenant2subscriptionId2Subscription.column(message.getTenant())
 				.values();
 		List<Uni<Void>> unis = Lists.newArrayList();
@@ -336,11 +343,15 @@ public class RegistrySubscriptionService {
 						Uni<Void> toSend;
 						switch (notificationParam.getEndPoint().getUri().getScheme()) {
 						case "internal":
-							MicroServiceUtils
-									.serializeAndSplitObjectAndEmit(
-											new InternalNotification(potentialSub.getTenant(), potentialSub.getId(),
-													notification),
-											messageSize, internalNotificationSender, objectMapper);
+//							try {
+//								MicroServiceUtils
+//										.serializeAndSplitObjectAndEmit(
+//												new InternalNotification(potentialSub.getTenant(), potentialSub.getId(),
+//														notification),
+//												messageSize, internalNotificationSender, objectMapper);
+//							} catch (ResponseException e) {
+//								logger.error("Failed to send internal notification", e);
+//							}
 							toSend = Uni.createFrom().voidItem();
 							break;
 						case "mqtt":
@@ -406,7 +417,8 @@ public class RegistrySubscriptionService {
 										.compact(notification, null, potentialSub.getContext(), HttpUtils.opts, -1)
 										.onItem().transformToUni(noti -> {
 											return webClient.post(notificationParam.getEndPoint().getUri().toString())
-													.putHeaders(SubscriptionTools.getHeaders(notificationParam,potentialSub.getSubscription().getOtherHead()))
+													.putHeaders(SubscriptionTools.getHeaders(notificationParam,
+															potentialSub.getSubscription().getOtherHead()))
 													.sendJsonObject(new JsonObject(noti)).onFailure().retry().atMost(3)
 													.onItem().transformToUni(result -> {
 														int statusCode = result.statusCode();
@@ -508,28 +520,28 @@ public class RegistrySubscriptionService {
 		}
 
 		for (EntityInfo entityInfo : sub.getEntities()) {
-			if (entityInfo.getType().equals(ALL_TYPES_SUB)) {
+			if (entityInfo.getTypeTerm().getAllTypes().contains(ALL_TYPES_SUB)) {
 				return true;
 			}
-			if (entityInfo.getId() != null && entityInfo.getType() != null && sub.getAttributeNames() != null) {
-				if (checkRegForIdTypeAttrs(entityInfo.getId(), entityInfo.getType(), sub.getAttributeNames(),
+			if (entityInfo.getId() != null && entityInfo.getTypeTerm() != null && sub.getAttributeNames() != null) {
+				if (checkRegForIdTypeAttrs(entityInfo.getId(), entityInfo.getTypeTerm(), sub.getAttributeNames(),
 						(List<Map<String, Object>>) reg.get(NGSIConstants.NGSI_LD_INFORMATION))) {
 					break;
 				}
-			} else if (entityInfo.getIdPattern() != null && entityInfo.getType() != null
+			} else if (entityInfo.getIdPattern() != null && entityInfo.getTypeTerm() != null
 					&& sub.getAttributeNames() != null) {
-				if (checkRegForIdPatternTypeAttrs(entityInfo.getIdPattern(), entityInfo.getType(),
+				if (checkRegForIdPatternTypeAttrs(entityInfo.getIdPattern(), entityInfo.getTypeTerm(),
 						sub.getAttributeNames(),
 						(List<Map<String, Object>>) reg.get(NGSIConstants.NGSI_LD_INFORMATION))) {
 					break;
 				}
-			} else if (entityInfo.getId() != null && entityInfo.getType() != null) {
-				if (checkRegForIdType(entityInfo.getId(), entityInfo.getType(),
+			} else if (entityInfo.getId() != null && entityInfo.getTypeTerm() != null) {
+				if (checkRegForIdType(entityInfo.getId(), entityInfo.getTypeTerm(),
 						(List<Map<String, Object>>) reg.get(NGSIConstants.NGSI_LD_INFORMATION))) {
 					break;
 				}
-			} else if (entityInfo.getIdPattern() != null && entityInfo.getType() != null) {
-				if (checkRegForIdPatternType(entityInfo.getIdPattern(), entityInfo.getType(),
+			} else if (entityInfo.getIdPattern() != null && entityInfo.getTypeTerm() != null) {
+				if (checkRegForIdPatternType(entityInfo.getIdPattern(), entityInfo.getTypeTerm(),
 						(List<Map<String, Object>>) reg.get(NGSIConstants.NGSI_LD_INFORMATION))) {
 					break;
 				}
@@ -543,13 +555,13 @@ public class RegistrySubscriptionService {
 						(List<Map<String, Object>>) reg.get(NGSIConstants.NGSI_LD_INFORMATION))) {
 					break;
 				}
-			} else if (entityInfo.getType() != null && sub.getAttributeNames() != null) {
-				if (checkRegForTypeAttrs(entityInfo.getType(), sub.getAttributeNames(),
+			} else if (entityInfo.getTypeTerm() != null && sub.getAttributeNames() != null) {
+				if (checkRegForTypeAttrs(entityInfo.getTypeTerm(), sub.getAttributeNames(),
 						(List<Map<String, Object>>) reg.get(NGSIConstants.NGSI_LD_INFORMATION))) {
 					break;
 				}
-			} else if (entityInfo.getType() != null) {
-				if (checkRegForType(entityInfo.getType(),
+			} else if (entityInfo.getTypeTerm() != null) {
+				if (checkRegForType(entityInfo.getTypeTerm(),
 						(List<Map<String, Object>>) reg.get(NGSIConstants.NGSI_LD_INFORMATION))) {
 					break;
 				}
@@ -659,7 +671,7 @@ public class RegistrySubscriptionService {
 	}
 
 	@SuppressWarnings("unchecked")
-	private boolean checkRegForType(String type, List<Map<String, Object>> information) {
+	private boolean checkRegForType(TypeQueryTerm typeQueryTerm, List<Map<String, Object>> information) {
 		if (information != null) {
 			for (Map<String, Object> entry : information) {
 				if (!entry.containsKey(NGSIConstants.NGSI_LD_ENTITIES)) {
@@ -669,7 +681,7 @@ public class RegistrySubscriptionService {
 						.get(NGSIConstants.NGSI_LD_ENTITIES);
 				for (Map<String, Object> entity : entities) {
 					if (!entity.containsKey(NGSIConstants.JSON_LD_TYPE)
-							|| ((List<String>) entity.get(NGSIConstants.JSON_LD_TYPE)).contains(type)) {
+							|| typeQueryTerm.calculate((List<String>) entity.get(NGSIConstants.JSON_LD_TYPE))) {
 						return true;
 					}
 				}
@@ -679,7 +691,7 @@ public class RegistrySubscriptionService {
 	}
 
 	@SuppressWarnings("unchecked")
-	private boolean checkRegForTypeAttrs(String type, Set<String> attributeNames,
+	private boolean checkRegForTypeAttrs(TypeQueryTerm typeQueryTerm, Set<String> attributeNames,
 			List<Map<String, Object>> information) {
 		for (Map<String, Object> entry : information) {
 			if (!entry.containsKey(NGSIConstants.NGSI_LD_ENTITIES)) {
@@ -707,7 +719,7 @@ public class RegistrySubscriptionService {
 						.get(NGSIConstants.NGSI_LD_ENTITIES);
 				for (Map<String, Object> entity : entities) {
 					if (!entity.containsKey(NGSIConstants.JSON_LD_TYPE)
-							|| ((List<String>) entity.get(NGSIConstants.JSON_LD_TYPE)).contains(type)) {
+							|| typeQueryTerm.calculate((List<String>) entity.get(NGSIConstants.JSON_LD_TYPE))) {
 						return true;
 					}
 				}
@@ -717,7 +729,7 @@ public class RegistrySubscriptionService {
 				boolean typeFound = false;
 				for (Map<String, Object> entity : entities) {
 					if (!entity.containsKey(NGSIConstants.JSON_LD_TYPE)
-							|| ((List<String>) entity.get(NGSIConstants.JSON_LD_TYPE)).contains(type)) {
+							|| typeQueryTerm.calculate((List<String>) entity.get(NGSIConstants.JSON_LD_TYPE))) {
 						typeFound = true;
 						break;
 					}
@@ -916,7 +928,8 @@ public class RegistrySubscriptionService {
 	}
 
 	@SuppressWarnings("unchecked")
-	private boolean checkRegForIdPatternType(String idPattern, String type, List<Map<String, Object>> information) {
+	private boolean checkRegForIdPatternType(String idPattern, TypeQueryTerm typeQueryTerm,
+			List<Map<String, Object>> information) {
 		for (Map<String, Object> entry : information) {
 			if (!entry.containsKey(NGSIConstants.NGSI_LD_ENTITIES)) {
 				return true;
@@ -931,7 +944,7 @@ public class RegistrySubscriptionService {
 								&& ((List<Map<String, String>>) entity.get(NGSIConstants.NGSI_LD_ID_PATTERN)).get(0)
 										.get(NGSIConstants.JSON_LD_VALUE).equals(idPattern)))
 						&& (!entity.containsKey(NGSIConstants.JSON_LD_TYPE)
-								|| ((List<String>) entity.get(NGSIConstants.JSON_LD_TYPE)).contains(type))) {
+								|| typeQueryTerm.calculate((List<String>) entity.get(NGSIConstants.JSON_LD_TYPE)))) {
 					return true;
 				}
 			}
@@ -941,7 +954,7 @@ public class RegistrySubscriptionService {
 	}
 
 	@SuppressWarnings("unchecked")
-	private boolean checkRegForIdType(URI id, String type, List<Map<String, Object>> information) {
+	private boolean checkRegForIdType(URI id, TypeQueryTerm typeQueryTerm, List<Map<String, Object>> information) {
 		for (Map<String, Object> entry : information) {
 			if (!entry.containsKey(NGSIConstants.NGSI_LD_ENTITIES)) {
 				return true;
@@ -951,7 +964,7 @@ public class RegistrySubscriptionService {
 				if ((!entity.containsKey(NGSIConstants.JSON_LD_ID)
 						|| entity.get(NGSIConstants.JSON_LD_ID).equals(id.toString()))
 						&& (!entity.containsKey(NGSIConstants.JSON_LD_TYPE)
-								|| ((List<String>) entity.get(NGSIConstants.JSON_LD_TYPE)).contains(type))) {
+								|| typeQueryTerm.calculate((List<String>) entity.get(NGSIConstants.JSON_LD_TYPE)))) {
 					return true;
 				}
 			}
@@ -960,8 +973,8 @@ public class RegistrySubscriptionService {
 	}
 
 	@SuppressWarnings("unchecked")
-	private boolean checkRegForIdPatternTypeAttrs(String idPattern, String type, Set<String> attributeNames,
-			List<Map<String, Object>> information) {
+	private boolean checkRegForIdPatternTypeAttrs(String idPattern, TypeQueryTerm typeQueryTerm,
+			Set<String> attributeNames, List<Map<String, Object>> information) {
 		for (Map<String, Object> entry : information) {
 			if (!entry.containsKey(NGSIConstants.NGSI_LD_ENTITIES)) {
 				if (entry.containsKey(NGSIConstants.NGSI_LD_RELATIONSHIPS)) {
@@ -994,8 +1007,8 @@ public class RegistrySubscriptionService {
 							|| (entity.containsKey(NGSIConstants.NGSI_LD_ID_PATTERN)
 									&& ((List<Map<String, String>>) entity.get(NGSIConstants.NGSI_LD_ID_PATTERN)).get(0)
 											.get(NGSIConstants.JSON_LD_VALUE).equals(idPattern)))
-							&& (!entity.containsKey(NGSIConstants.JSON_LD_TYPE)
-									|| ((List<String>) entity.get(NGSIConstants.JSON_LD_TYPE)).contains(type))) {
+							&& (!entity.containsKey(NGSIConstants.JSON_LD_TYPE) || typeQueryTerm
+									.calculate((List<String>) entity.get(NGSIConstants.JSON_LD_TYPE)))) {
 						return true;
 					}
 				}
@@ -1012,7 +1025,8 @@ public class RegistrySubscriptionService {
 									&& ((List<Map<String, String>>) entity.get(NGSIConstants.NGSI_LD_ID_PATTERN)).get(0)
 											.get(NGSIConstants.JSON_LD_VALUE).equals(idPattern)))
 							&& (!entity.containsKey(NGSIConstants.JSON_LD_TYPE)
-									|| ((List<String>) entity.get(NGSIConstants.JSON_LD_TYPE)).contains(type))) {
+									|| ((List<String>) entity.get(NGSIConstants.JSON_LD_TYPE))
+											.contains(typeQueryTerm))) {
 						idPatternAndTypeFound = true;
 						break;
 					}
@@ -1045,7 +1059,7 @@ public class RegistrySubscriptionService {
 	}
 
 	@SuppressWarnings("unchecked")
-	private boolean checkRegForIdTypeAttrs(URI id, String type, Set<String> attributeNames,
+	private boolean checkRegForIdTypeAttrs(URI id, TypeQueryTerm type, Set<String> attributeNames,
 			List<Map<String, Object>> information) {
 		for (Map<String, Object> entry : information) {
 			if (!entry.containsKey(NGSIConstants.NGSI_LD_ENTITIES)) {
@@ -1075,7 +1089,8 @@ public class RegistrySubscriptionService {
 					if ((!entity.containsKey(NGSIConstants.JSON_LD_ID)
 							|| entity.get(NGSIConstants.JSON_LD_ID).equals(id.toString()))
 							&& (!entity.containsKey(NGSIConstants.JSON_LD_TYPE)
-									|| ((List<String>) entity.get(NGSIConstants.JSON_LD_TYPE)).contains(type))) {
+									|| type.calculate((List<String>) entity.get(NGSIConstants.JSON_LD_TYPE)))) {
+
 						return true;
 					}
 				}
@@ -1163,9 +1178,13 @@ public class RegistrySubscriptionService {
 				});
 				return SubscriptionTools.generateCsourceNotification(message, data,
 						AppConstants.INTERNAL_NOTIFICATION_REQUEST, ldService).onItem().transformToUni(noti -> {
-							MicroServiceUtils.serializeAndSplitObjectAndEmit(
-									new InternalNotification(message.getTenant(), message.getId(), noti), messageSize,
-									internalNotificationSender, objectMapper);
+//							try {
+//								MicroServiceUtils.serializeAndSplitObjectAndEmit(
+//										new InternalNotification(message.getTenant(), message.getId(), noti),
+//										messageSize, internalNotificationSender, objectMapper);
+//							} catch (ResponseException e) {
+//								logger.error("Failed to serialize notification", e);
+//							}
 							return Uni.createFrom().voidItem();
 						});
 

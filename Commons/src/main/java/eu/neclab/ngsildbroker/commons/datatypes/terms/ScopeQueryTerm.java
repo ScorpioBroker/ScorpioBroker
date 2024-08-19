@@ -25,7 +25,8 @@ public class ScopeQueryTerm implements Serializable {
 	private boolean nextAnd = true;
 	private ScopeQueryTerm firstChild = null;
 	private ScopeQueryTerm parent = null;
-
+	private String scopeQueryString;
+	
 	public ScopeQueryTerm() {
 		// for serialization
 	}
@@ -243,5 +244,15 @@ public class ScopeQueryTerm implements Serializable {
 	public boolean calculateEntity(Map<String, Object> entity) {
 		return calculate(EntityTools.getScopes(entity));
 	}
+
+	public String getScopeQueryString() {
+		return scopeQueryString;
+	}
+
+	public void setScopeQueryString(String scopeQueryString) {
+		this.scopeQueryString = scopeQueryString;
+	}
+	
+	
 
 }

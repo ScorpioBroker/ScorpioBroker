@@ -946,9 +946,9 @@ public final class HttpUtils {
 		// TODO Cases remaining for upsert(determine created or updated)
 		// and noLongerMatching due to update or delete attr
 		return switch (triggerReason) {
-		case AppConstants.CREATE_REQUEST -> "newlyMatching";
-		case AppConstants.UPDATE_REQUEST, AppConstants.APPEND_REQUEST -> "updated";
-		case AppConstants.DELETE_REQUEST -> "noLongerMatching";
+		case AppConstants.CREATE_REQUEST -> NGSIConstants.SUBSCRIPTION_NEWLY_MATCHING;
+		case AppConstants.UPDATE_REQUEST, AppConstants.APPEND_REQUEST ->  NGSIConstants.SUBSCRIPTION_UPDATED_MATCHING;
+		case AppConstants.DELETE_REQUEST -> NGSIConstants.SUBSCRIPTION_NO_LONGER_MATCHING;
 		default -> null;
 		};
 	}

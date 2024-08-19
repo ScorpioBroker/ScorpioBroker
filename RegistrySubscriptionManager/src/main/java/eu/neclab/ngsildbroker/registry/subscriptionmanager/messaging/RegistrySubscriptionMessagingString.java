@@ -6,7 +6,6 @@ import org.eclipse.microprofile.reactive.messaging.Incoming;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import io.quarkus.arc.profile.IfBuildProfile;
-import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
 import jakarta.inject.Singleton;
 
@@ -20,14 +19,4 @@ public class RegistrySubscriptionMessagingString extends RegistrySubscriptionMes
 		return handleCsourceRaw(byteMessage);
 	}
 
-	@Incoming(AppConstants.INTERNAL_RETRIEVE_SUBS_CHANNEL)
-	@Acknowledgment(Strategy.PRE_PROCESSING)
-	public Uni<Void> handleSubscription(String byteMessage) {
-		return handleSubscriptionRaw(byteMessage);
-	}
-
-	@Scheduled(every = "20s", delayed = "5s")
-	void purge() {
-		super.purge();
-	}
 }

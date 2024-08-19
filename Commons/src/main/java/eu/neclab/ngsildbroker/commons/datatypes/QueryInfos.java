@@ -169,7 +169,11 @@ public class QueryInfos {
 
 		}
 		if (geo != null && geoQuery != null) {
-			geoQuery.addToRequestParams(result, geo, geoQuery.getGeorel());
+			Map<String, Object> tmp = Maps.newHashMap();
+			geoQuery.addToRequestParams(tmp , geo, geoQuery.getGeorel());
+			tmp.entrySet().forEach(entry -> {
+				result.put(entry.getKey(), (String) entry.getValue());
+			});
 
 		}
 

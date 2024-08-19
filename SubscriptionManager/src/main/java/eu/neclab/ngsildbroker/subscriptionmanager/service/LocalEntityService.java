@@ -30,7 +30,9 @@ public interface LocalEntityService {
 	@GET
 	@Path("/")
 	Uni<List<Map<String, Object>>> getAllByIds(@HeaderParam(NGSIConstants.TENANT_HEADER) String tenant,
-			@QueryParam("id") String ids, @QueryParam("doNotCompact") boolean doNotCompact, @QueryParam("localOnly") boolean localOnly);
+			@QueryParam("id") String ids, @QueryParam("doNotCompact") boolean doNotCompact,
+			@QueryParam("localOnly") boolean localOnly, @QueryParam("join") String join,
+			@QueryParam("joinLevel") int joinLevel);
 
 	@GET
 	@Path("/")

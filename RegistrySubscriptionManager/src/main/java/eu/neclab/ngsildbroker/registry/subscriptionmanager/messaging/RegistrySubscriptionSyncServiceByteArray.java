@@ -26,8 +26,8 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.AliveAnnouncement;
 import eu.neclab.ngsildbroker.commons.datatypes.SyncMessage;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
-import eu.neclab.ngsildbroker.commons.serialization.messaging.CollectMessageListener;
-import eu.neclab.ngsildbroker.commons.serialization.messaging.MessageCollector;
+import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.registry.subscriptionmanager.service.RegistrySubscriptionService;
 import io.netty.channel.EventLoopGroup;
@@ -53,8 +53,6 @@ public class RegistrySubscriptionSyncServiceByteArray implements SyncService {
 
 	private Set<String> lastInstances = Sets.newHashSet();
 
-	private MessageCollector collector = new MessageCollector(this.getClass().getName());
-
 	@Inject
 	@Channel(AppConstants.SUB_ALIVE_CHANNEL)
 	MutinyEmitter<String> aliveEmitter;
@@ -72,59 +70,6 @@ public class RegistrySubscriptionSyncServiceByteArray implements SyncService {
 
 	private EventLoopGroup executor;
 
-	CollectMessageListener collectListenerSubs = new CollectMessageListener() {
-
-		@Override
-		public void collected(String byteMessage) {
-			SyncMessage message;
-			try {
-				message = objectMapper.readValue(byteMessage, SyncMessage.class);
-			} catch (IOException e) {
-				logger.error("failed to read sync message", e);
-				return;
-			}
-			String key = message.getSyncId();
-			SubscriptionRequest sub = message.getRequest();
-			if (key.equals(SYNC_ID) || message.getSubType() == SyncMessage.NORMAL_SUB) {
-				return;
-			}
-			switch (sub.getRequestType()) {
-			case AppConstants.DELETE_REQUEST:
-				subService.syncDeleteSubscription(sub).runSubscriptionOn(executor).subscribe()
-						.with(v -> logger.debug("done handling delete"));
-				break;
-			case AppConstants.UPDATE_REQUEST:
-				subService.syncUpdateSubscription(sub).runSubscriptionOn(executor).subscribe()
-						.with(v -> logger.debug("done handling update"));
-				break;
-			case AppConstants.CREATE_REQUEST:
-				subService.syncCreateSubscription(sub).runSubscriptionOn(executor).subscribe()
-						.with(v -> logger.debug("done handling create"));
-				break;
-			default:
-				return;
-			}
-
-		}
-	};
-	CollectMessageListener collectListenerAlive = new CollectMessageListener() {
-
-		@Override
-		public void collected(String byteMessage) {
-			AliveAnnouncement message;
-			try {
-				message = objectMapper.readValue(byteMessage, AliveAnnouncement.class);
-			} catch (IOException e) {
-				logger.error("failed to read sync id", e);
-				return;
-			}
-			if (message.getId().equals(SYNC_ID) || message.getSubType() == SyncMessage.NORMAL_SUB) {
-				return;
-			}
-			currentInstances.add(message.getId());
-		}
-	};
-
 	@ConfigProperty(name = "scorpio.messaging.maxSize")
 	int messageSize;
 
@@ -138,7 +83,11 @@ public class RegistrySubscriptionSyncServiceByteArray implements SyncService {
 
 	@Scheduled(every = "${scorpio.sync.announcement-time}", delayed = "${scorpio.startupdelay}")
 	Uni<Void> syncTask() {
-		MicroServiceUtils.serializeAndSplitObjectAndEmit(INSTANCE_ID, messageSize, aliveEmitter, objectMapper);
+		try {
+			MicroServiceUtils.serializeAndSplitObjectAndEmit(INSTANCE_ID, messageSize, aliveEmitter, objectMapper);
+		} catch (ResponseException e) {
+			logger.error("Failed to serialize sync message", e);
+		}
 		return Uni.createFrom().voidItem();
 	}
 
@@ -156,14 +105,51 @@ public class RegistrySubscriptionSyncServiceByteArray implements SyncService {
 	@Incoming(AppConstants.SUB_SYNC_RETRIEVE_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
 	Uni<Void> listenForSubs(byte[] byteMessage) {
-		collector.collect(new String(byteMessage), collectListenerSubs);
+		SyncMessage message;
+		try {
+			message = objectMapper.readValue(byteMessage, SyncMessage.class);
+		} catch (IOException e) {
+			logger.error("failed to read sync message", e);
+			return Uni.createFrom().voidItem();
+		}
+		String key = message.getSyncId();
+		SubscriptionRequest sub = message.getRequest();
+		if (key.equals(SYNC_ID) || message.getSubType() == SyncMessage.NORMAL_SUB) {
+			return Uni.createFrom().voidItem();
+		}
+		switch (sub.getRequestType()) {
+		case AppConstants.DELETE_REQUEST:
+			subService.syncDeleteSubscription(sub).runSubscriptionOn(executor).subscribe()
+					.with(v -> logger.debug("done handling delete"));
+			break;
+		case AppConstants.UPDATE_REQUEST:
+			subService.syncUpdateSubscription(sub).runSubscriptionOn(executor).subscribe()
+					.with(v -> logger.debug("done handling update"));
+			break;
+		case AppConstants.CREATE_REQUEST:
+			subService.syncCreateSubscription(sub).runSubscriptionOn(executor).subscribe()
+					.with(v -> logger.debug("done handling create"));
+			break;
+		default:
+			break;
+		}
 		return Uni.createFrom().voidItem();
 	}
 
 	@Incoming(AppConstants.SUB_ALIVE_RETRIEVE_CHANNEL)
 	@Acknowledgment(Strategy.PRE_PROCESSING)
 	Uni<Void> listenForAlive(byte[] byteMessage) {
-		collector.collect(new String(byteMessage), collectListenerAlive);
+		AliveAnnouncement message;
+		try {
+			message = objectMapper.readValue(byteMessage, AliveAnnouncement.class);
+		} catch (IOException e) {
+			logger.error("failed to read sync id", e);
+			return Uni.createFrom().voidItem();
+		}
+		if (message.getId().equals(SYNC_ID) || message.getSubType() == SyncMessage.NORMAL_SUB) {
+			return Uni.createFrom().voidItem();
+		}
+		currentInstances.add(message.getId());
 		return Uni.createFrom().voidItem();
 	}
 
@@ -186,8 +172,12 @@ public class RegistrySubscriptionSyncServiceByteArray implements SyncService {
 	}
 
 	public Uni<Void> sync(SubscriptionRequest request) {
-		MicroServiceUtils.serializeAndSplitObjectAndEmit(new SyncMessage(SYNC_ID, request, SyncMessage.REG_SUB), messageSize, syncEmitter,
-				objectMapper);
+		try {
+			MicroServiceUtils.serializeAndSplitObjectAndEmit(new SyncMessage(SYNC_ID, request, SyncMessage.REG_SUB),
+					messageSize, syncEmitter, objectMapper);
+		} catch (ResponseException e) {
+			logger.error("Failed to serialize sync message", e);
+		}
 		return Uni.createFrom().voidItem();
 	}
 

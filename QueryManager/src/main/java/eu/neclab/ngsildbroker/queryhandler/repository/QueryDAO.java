@@ -24,7 +24,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLDService;
 import com.github.jsonldjava.utils.JsonUtils;
-import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -1122,11 +1121,11 @@ public class QueryDAO {
 					queryToStoreWherePart.append('(');
 
 					if (typeQuery != null) {
-						if ((!regEmptyOrNoRegEntryAndNoLinkedQuery || !noRootLevelRegEntryAndLinkedQuery)
-								&& splitEntities) {
-							dollar = typeQuery.toBroadSql(query, queryToStoreWherePart, tuple, dollar);
-						} else {
+						if (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery
+								|| !splitEntities) {
 							dollar = typeQuery.toSql(query, queryToStoreWherePart, tuple, dollar);
+						} else {
+							dollar = typeQuery.toBroadSql(query, queryToStoreWherePart, tuple, dollar);
 						}
 
 						tSqlAdded = true;

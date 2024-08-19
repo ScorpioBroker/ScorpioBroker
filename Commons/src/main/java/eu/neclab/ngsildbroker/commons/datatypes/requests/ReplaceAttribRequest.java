@@ -5,7 +5,7 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 
 import java.util.Map;
 
-public class ReplaceAttribRequest extends EntityRequest {
+public class ReplaceAttribRequest extends BaseRequest {
 
 	/**
 	 * 
@@ -21,9 +21,9 @@ public class ReplaceAttribRequest extends EntityRequest {
 
 	}
 
-	public ReplaceAttribRequest(String tenant, Map<String, Object> resolved  ,String entityId,String attrId) {
+	public ReplaceAttribRequest(String tenant, Map<String, Object> resolved  ,String entityId,String attrId, boolean zipped) {
 		super(tenant,entityId, resolved,
-				AppConstants.REPLACE_ATTRIBUTE_REQUEST);
+				AppConstants.REPLACE_ATTRIBUTE_REQUEST, zipped);
 		this.attribName=attrId;
    }
 

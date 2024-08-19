@@ -1,128 +1,21 @@
 package eu.neclab.ngsildbroker.commons.datatypes.requests;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
-
-import com.github.jsonldjava.core.Context;
-
-import com.github.jsonldjava.core.JsonLdConsts;
-import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import java.util.Set;
 
 public class BatchRequest extends BaseRequest {
-
-	@Override
-	public String toString() {
-		return "BatchRequest [tenant=" + tenant + ", requestPayload=" + requestPayload + ", contexts=" + contexts
-				+ ", entityIds=" + entityIds + ", requestType=" + requestType + ", sendTimestamp=" + sendTimestamp
-				+ ", noOverwrite=" + noOverwrite + "]";
-	}
 
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = -3640664052782539124L;
-	private String tenant;
-	private List<Map<String, Object>> requestPayload;
 
-	private List<Context> contexts;
-	private List<String> entityIds;
-	private int requestType;
-	private long sendTimestamp = System.currentTimeMillis();
-	private boolean noOverwrite;
-
-	public BatchRequest(String tenant, List<Map<String, Object>> requestPayload, List<Context> contexts,
-			int requestType) {
-		this.tenant = tenant;
-		this.requestPayload = requestPayload;
-		payload.put(JsonLdConsts.GRAPH, requestPayload);
-		bestCompleteResult = requestPayload;
-		this.contexts = contexts;
-		this.requestType = requestType;
-		if (requestPayload != null) {
-			List<String> ids = new ArrayList<>();
-			for (Map<String, Object> entity : requestPayload) {
-				ids.add((String) entity.get(NGSIConstants.JSON_LD_ID));
-			}
-			setEntityIds(ids);
-		}
+	public BatchRequest(String tenant, Set<String> ids, Map<String, List<Map<String, Object>>> payload, int requestType,
+			boolean zipped) {
+		super(tenant, ids, payload, requestType, zipped);
 	}
 
-	public int getRequestType() {
-		return requestType;
-	}
+	
 
-	public List<String> getEntityIds() {
-		return entityIds;
-	}
-
-	public String getId() {
-		return String.join(",", entityIds);
-	}
-
-	public void setEntityIds(List<String> entityIds) {
-		this.entityIds = entityIds;
-	}
-
-	public String getTenant() {
-		return tenant;
-	}
-
-	public void setTenant(String tenant) {
-		this.tenant = tenant;
-	}
-
-	public List<Map<String, Object>> getRequestPayload() {
-		return requestPayload;
-	}
-
-	public Map<String, Object> getPayload() {
-		if (requestPayload == null || requestPayload.isEmpty()) {
-			return null;
-		}
-		Map<String, Object> payload = new HashMap<>();
-		payload.put(JsonLdConsts.GRAPH, requestPayload);
-		return payload;
-	}
-
-	public List<Context> getContexts() {
-		return contexts;
-	}
-
-	public void removeFromPayloadAndContext(String entityId) {
-
-		ListIterator<Map<String, Object>> it = requestPayload.listIterator();
-		ListIterator<Context> it2 = contexts.listIterator();
-		ListIterator<String> it3 = entityIds.listIterator();
-		while (it.hasNext()) {
-			Map<String, Object> tmp = it.next();
-			@SuppressWarnings("unused")
-			Context tmp2 = it2.next();
-			@SuppressWarnings("unused")
-			String tmp3 = it3.next();
-			if (tmp.get(NGSIConstants.JSON_LD_ID).equals(entityId)) {
-				it.remove();
-				it2.remove();
-				it3.remove();
-				break;
-			}
-		}
-		payload.put(JsonLdConsts.GRAPH, requestPayload);
-		bestCompleteResult = requestPayload;
-
-	}
-
-	public long getSendTimestamp() {
-		return sendTimestamp;
-	}
-
-	public boolean isNoOverwrite() {
-		return noOverwrite;
-	}
-
-	public void setNoOverwrite(boolean noOverwrite) {
-		this.noOverwrite = noOverwrite;
-	}
 }
