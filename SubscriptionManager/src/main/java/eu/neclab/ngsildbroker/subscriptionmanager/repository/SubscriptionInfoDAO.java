@@ -126,11 +126,11 @@ public class SubscriptionInfoDAO {
 				rows.forEach(row -> {
 					unis.add(clientManager.getClient(row.getString(0), false).onItem()
 							.transformToUni(tenantClient -> tenantClient.preparedQuery("SELECT '" + row.getString(0)
-									+ "', subscriptions.subscription, context as contextId, contexts.body as contextBody FROM subscriptions LEFT JOIN contexts ON contextId = contexts.id")
+									+ "', subscriptions.subscription, context as contextId, contexts.body as contextBody FROM subscriptions LEFT JOIN contexts ON subscriptions.context = contexts.id")
 									.execute()));
 				});
 				unis.add(client.preparedQuery("SELECT '" + AppConstants.INTERNAL_NULL_KEY
-						+ "', subscriptions.subscription, context as contextId, contexts.body as contextBody FROM subscriptions LEFT JOIN contexts ON contextId = contexts.id")
+						+ "', subscriptions.subscription, context as contextId, contexts.body as contextBody FROM subscriptions LEFT JOIN contexts ON subscriptions.context = contexts.id")
 						.execute());
 
 				return Uni.combine().all().unis(unis).combinedWith(list -> {
@@ -163,7 +163,7 @@ public class SubscriptionInfoDAO {
 	public Uni<Tuple3<Map<String, Object>, String, Map<String, Object>>> loadSubscription(String tenant, String id) {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
 			return client.preparedQuery(
-					"SELECT subscription, context as contextId, contexts.body as contextBody FROM subscriptions LEFT JOIN contexts ON contextId = contexts.id WHERE subscription_id=$1")
+					"SELECT subscription, context as contextId, contexts.body as contextBody FROM subscriptions LEFT JOIN contexts ON subscriptions.context = contexts.id WHERE subscription_id=$1")
 					.execute(Tuple.of(id)).onItem().transform(rows -> {
 						if (rows.size() == 0) {
 							Tuple3<Map<String, Object>, String, Map<String, Object>> r = Tuple3.of(null, null, null);

@@ -279,7 +279,7 @@ public class SubscriptionService {
 		subDAO.loadSubscriptions().onItem().transformToUni(subs -> {
 			List<Uni<Tuple4<String, Map<String, Object>, String, Context>>> unis = Lists.newArrayList();
 			subs.forEach(tuple -> {
-				unis.add(ldService.parsePure(tuple.getItem4()).onItem().transform(ctx -> {
+				unis.add(ldService.parsePure(tuple.getItem4().get(NGSIConstants.JSON_LD_CONTEXT)).onItem().transform(ctx -> {
 					return Tuple4.of(tuple.getItem1(), tuple.getItem2(), tuple.getItem3(), ctx);
 				}));
 			});
@@ -1363,7 +1363,7 @@ public class SubscriptionService {
 
 	public void reloadSubscription(String tenant, String id) {
 		subDAO.loadSubscription(tenant, id).onItem().transformToUni(t -> {
-			return ldService.parsePure(t.getItem3()).onItem().transformToUni(ctx -> {
+			return ldService.parsePure(t.getItem3().get(NGSIConstants.JSON_LD_CONTEXT)).onItem().transformToUni(ctx -> {
 				SubscriptionRequest request;
 				try {
 					request = new SubscriptionRequest(tenant, t.getItem1(), ctx);
