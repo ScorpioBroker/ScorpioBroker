@@ -49,6 +49,8 @@ public class SubscriptionRequest implements Serializable {
 
 	protected long sendTimestamp;
 
+	private String contextId;
+
 	public SubscriptionRequest() {
 		// default constructor for serialization
 	}
@@ -235,7 +237,7 @@ public class SubscriptionRequest implements Serializable {
 		return subscription.getNotification().getJoin() != null || subscription.getNotification().getJoinLevel() > 0;
 	}
 
-	public Map<String, Object> getAsQueryBody(Set<String> idsTbu) {
+	public Map<String, Object> getAsQueryBody(Set<String> idsTbu, String atContextUrl) {
 		Map<String, Object> result = Maps.newHashMap();
 		result.put(NGSIConstants.TYPE, NGSIConstants.QUERY_TYPE);
 
@@ -243,28 +245,27 @@ public class SubscriptionRequest implements Serializable {
 		if (entities != null && !entities.isEmpty()) {
 			List<Map<String, String>> entitiesEntry = new ArrayList<>(entities.size());
 			for (EntityInfo entityInfo : entities) {
-				Map<String, String> entityEntry = Maps.newHashMap(); 
-				
+				Map<String, String> entityEntry = Maps.newHashMap();
+
 				TypeQueryTerm typeQuery = entityInfo.getTypeTerm();
 				if (typeQuery != null) {
 					StringBuilder typeQueryBuilder = new StringBuilder();
 					typeQuery.toRequestString(typeQueryBuilder, context);
-					entityEntry.put(NGSIConstants.TYPE, typeQuery.toString());
+					entityEntry.put(NGSIConstants.TYPE, typeQueryBuilder.toString());
 				}
-				if(idsTbu == null) {
-					if(entityInfo.getId() != null) {
-						entityEntry.put(NGSIConstants.ID, entityInfo.getId().toString());	
-					}else if(entityInfo.getIdPattern() != null) {
+				if (idsTbu == null) {
+					if (entityInfo.getId() != null) {
+						entityEntry.put(NGSIConstants.ID, entityInfo.getId().toString());
+					} else if (entityInfo.getIdPattern() != null) {
 						entityEntry.put(NGSIConstants.QUERY_PARAMETER_IDPATTERN, entityInfo.getIdPattern());
 					}
-				}else {
+				} else {
 					entityEntry.put(NGSIConstants.ID, StringUtils.join(idsTbu, ','));
 				}
 				entitiesEntry.add(entityEntry);
 			}
 			result.put(NGSIConstants.NGSI_LD_ENTITIES_SHORT, entitiesEntry);
 		}
-
 
 		GeoQueryTerm geoQ = subscription.getLdGeoQuery();
 		if (geoQ != null) {
@@ -288,7 +289,7 @@ public class SubscriptionRequest implements Serializable {
 		}
 		AttrsQueryTerm attrs = subscription.getNotification().getAttrs();
 		if (attrs != null) {
-			result.put(NGSIConstants.QUERY_PARAMETER_ATTRS, attrs.toQueryParam(context));
+			result.put(NGSIConstants.QUERY_PARAMETER_ATTRS, attrs.toQueryBodyEntry(context));
 		}
 		DataSetIdTerm datasetId = subscription.getDatasetIdTerm();
 		if (datasetId != null) {
@@ -300,7 +301,16 @@ public class SubscriptionRequest implements Serializable {
 			result.put(NGSIConstants.QUERY_PARAMETER_JOIN, join);
 			result.put(NGSIConstants.QUERY_PARAMETER_JOINLEVEL, joinLevel + "");
 		}
+		result.put(NGSIConstants.JSON_LD_CONTEXT, atContextUrl + "/" + NGSIConstants.JSONLD_CONTEXTS + contextId);
 		return result;
+	}
+
+	public String getContextId() {
+		return contextId;
+	}
+
+	public void setContextId(String contextId) {
+		this.contextId = contextId;
 	}
 
 }

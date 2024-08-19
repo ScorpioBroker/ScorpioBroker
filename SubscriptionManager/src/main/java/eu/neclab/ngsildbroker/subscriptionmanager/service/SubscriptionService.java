@@ -67,6 +67,8 @@ import io.quarkus.runtime.StartupEvent;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
+import io.smallrye.mutiny.tuples.Tuple3;
+import io.smallrye.mutiny.tuples.Tuple4;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mqtt.MqttClientOptions;
@@ -134,6 +136,8 @@ public class SubscriptionService {
 
 	private Map<String, MqttClient> host2MqttClient = Maps.newHashMap();
 	private SyncService subscriptionSyncService = null;
+	@ConfigProperty(name = "scorpio.at-context-server", defaultValue = "http://localhost:9090")
+	private String atContextUrl;
 
 	private static Map<String, Object> compareMaps(Map<String, Object> oldMap, Map<String, Object> newMap) {
 		if (oldMap == null || oldMap.isEmpty()) {
@@ -273,23 +277,22 @@ public class SubscriptionService {
 		this.webClient = WebClient.create(vertx);
 		ALL_TYPES_SUB = NGSIConstants.NGSI_LD_DEFAULT_PREFIX + allTypeSubType;
 		subDAO.loadSubscriptions().onItem().transformToUni(subs -> {
-			List<Uni<Tuple2<Tuple2<String, Map<String, Object>>, Context>>> unis = Lists.newArrayList();
+			List<Uni<Tuple4<String, Map<String, Object>, String, Context>>> unis = Lists.newArrayList();
 			subs.forEach(tuple -> {
-				unis.add(ldService.parsePure(tuple.getItem3().get(NGSIConstants.JSON_LD_CONTEXT)).onItem()
-						.transform(ctx -> {
-							return Tuple2.of(Tuple2.of(tuple.getItem1(), tuple.getItem2()), ctx);
-						}));
+				unis.add(ldService.parsePure(tuple.getItem4()).onItem().transform(ctx -> {
+					return Tuple4.of(tuple.getItem1(), tuple.getItem2(), tuple.getItem3(), ctx);
+				}));
 			});
 			if (unis.isEmpty()) {
 				return Uni.createFrom().voidItem();
 			}
 			return Uni.combine().all().unis(unis).combinedWith(list -> {
 				for (Object obj : list) {
-					Tuple2<Tuple2<String, Map<String, Object>>, Context> tuple = (Tuple2<Tuple2<String, Map<String, Object>>, Context>) obj;
+					Tuple4<String, Map<String, Object>, String, Context> tuple = (Tuple4<String, Map<String, Object>, String, Context>) obj;
 					SubscriptionRequest request;
 					try {
-						request = new SubscriptionRequest(tuple.getItem1().getItem1(), tuple.getItem1().getItem2(),
-								tuple.getItem2());
+						request = new SubscriptionRequest(tuple.getItem1(), tuple.getItem2(), tuple.getItem4());
+						request.setContextId(tuple.getItem3());
 						request.getSubscription().addOtherHead(NGSIConstants.LINK_HEADER,
 								"<%s>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\""
 										.formatted(request.getSubscription().getJsonldContext()));
@@ -332,6 +335,7 @@ public class SubscriptionService {
 		SubscriptionTools.setInitTimesSentAndFailed(request);
 		Map<String, Object> tmp = request.getContext().serialize();
 		return localContextService.createImplicitly(tenant, tmp).onItem().transformToUni(contextId -> {
+			request.setContextId(contextId);
 			return subDAO.createSubscription(request, contextId).onItem().transformToUni(t -> {
 				if (isIntervalSub(request)) {
 					this.tenant2subscriptionId2IntervalSubscription.put(request.getTenant(), request.getId(), request);
@@ -378,6 +382,7 @@ public class SubscriptionService {
 		UpdateSubscriptionRequest request = new UpdateSubscriptionRequest(tenant, subscriptionId, update, context);
 		return localContextService.createImplicitly(tenant, request.getContext().serialize()).onItem()
 				.transformToUni(contextId -> {
+					request.setContextId(contextId);
 					return subDAO.updateSubscription(request, contextId).onItem().transformToUni(tup -> {
 						if (tup.size() == 0) {
 							return Uni.createFrom()
@@ -1108,8 +1113,7 @@ public class SubscriptionService {
 	private Uni<List<Map<String, Object>>> queryFromSubscription(SubscriptionRequest request, String tenant,
 			Set<String> idsTBU, Map<String, List<Map<String, Object>>> prevPayloadToUse) {
 		HttpRequest<Buffer> req = webClient.postAbs(entityServiceUrl + NGSIConstants.ENDPOINT_BATCH_QUERY);
-		Map<String, Object> queryBody = request.getAsQueryBody(idsTBU);
-		queryBody.put(NGSIConstants.JSON_LD_CONTEXT, request.getContext().getOriginalAtContext());
+		Map<String, Object> queryBody = request.getAsQueryBody(idsTBU, atContextUrl);
 
 		req = req.addQueryParam(NGSIConstants.QUERY_PARAMETER_DO_NOT_COMPACT, "true");
 		req = req.addQueryParam(NGSIConstants.QUERY_PARAMETER_LIMIT, "1000");
@@ -1359,7 +1363,7 @@ public class SubscriptionService {
 
 	public void reloadSubscription(String tenant, String id) {
 		subDAO.loadSubscription(tenant, id).onItem().transformToUni(t -> {
-			return ldService.parsePure(t.getItem2().get(NGSIConstants.JSON_LD_CONTEXT)).onItem().transformToUni(ctx -> {
+			return ldService.parsePure(t.getItem3()).onItem().transformToUni(ctx -> {
 				SubscriptionRequest request;
 				try {
 					request = new SubscriptionRequest(tenant, t.getItem1(), ctx);
@@ -1368,6 +1372,7 @@ public class SubscriptionService {
 					return Uni.createFrom().voidItem();
 				}
 				request.setSendTimestamp(-1);
+				request.setContextId(t.getItem2());
 				if (isIntervalSub(request)) {
 					this.tenant2subscriptionId2IntervalSubscription.put(request.getTenant(), request.getId(), request);
 				} else {

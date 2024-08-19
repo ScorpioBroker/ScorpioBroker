@@ -1,6 +1,7 @@
 package eu.neclab.ngsildbroker.commons.datatypes.terms;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -353,6 +354,14 @@ public class AttrsQueryTerm implements Serializable {
 		});
 		builder.setLength(builder.length() - 1);
 		return builder.toString();
+	}
+	public List<String> toQueryBodyEntry(Context context) {
+		List<String> result = new ArrayList<>(attrs.size());
+		
+		attrs.forEach(attr -> {
+			result.add(context.compactIri(attr));
+		});
+		return result;
 	}
 
 }
