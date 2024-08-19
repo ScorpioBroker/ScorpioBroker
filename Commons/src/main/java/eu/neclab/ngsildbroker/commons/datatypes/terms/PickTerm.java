@@ -16,6 +16,11 @@ import io.vertx.mutiny.sqlclient.Tuple;
 @RegisterForReflection
 public class PickTerm extends ProjectionTerm {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 2109841972843886186L;
+
 	@Override
 	protected ProjectionTerm getInstance() {
 		return new PickTerm();

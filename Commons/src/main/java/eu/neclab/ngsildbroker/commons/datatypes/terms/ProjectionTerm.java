@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.commons.datatypes.terms;
 
+import java.io.Serializable;
 import java.util.Map;
 import java.util.Set;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
@@ -13,7 +14,11 @@ import io.vertx.mutiny.sqlclient.Tuple;
 
 @RegisterForReflection
 @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
-public abstract class ProjectionTerm {
+public abstract class ProjectionTerm implements Serializable {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -1491388601852326391L;
 	@JsonIgnore
 	private static int idCount = 0;
 

@@ -11,8 +11,10 @@ This will avoid the initial gathering of the entitymap in query. The ids might b
 It is not possible to change the query of an entitymap for a user. 
 If you are dealing with a very dynamic scenario you will not want to use the entity map header at all to always capture updated results.
 If you have a static scenario with a large number of entities using the entity map header will greatly improve your query time in a federated setup.
+all new attributes for query and subscription support (please check the spec for details)
+
    
- 
+Complete overhaul of the internal messaging: 
 Removed the need for various Topics in the message bus. left over topics are 
  - scorpio.topics.registry
  - scorpio.topics.entity
@@ -22,6 +24,10 @@ Removed the need for various Topics in the message bus. left over topics are
 
 Added support for compression in the message busses for entity messages. Is off by default can be turned on with the property
  scorpio.topics.entity.zip/SCORPIO_TOPICS_ENTITY_ZIP
+this should be useful for people who have a limited size on the messagebus.
+
+Build change to build linux native images using the build image from quarkus instead of a native build on a ubuntu machine.
+this also results in a new docker tag "linux=amd64"
 
 RELEASE NOTES SCORPIO 4.1.15
 
