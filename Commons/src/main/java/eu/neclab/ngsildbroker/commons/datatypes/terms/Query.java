@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.commons.datatypes.terms;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Set;
 
@@ -11,7 +12,11 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.smallrye.mutiny.tuples.Tuple3;
 
 @RegisterForReflection
-public class Query {
+public class Query implements Serializable{
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -2701115329280593771L;
 	List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeAndIdPattern;
 	ScopeQueryTerm scopeQueryTerm;
 	QQueryTerm qQueryTerm;

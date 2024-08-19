@@ -1,5 +1,7 @@
 package com.github.jsonldjava.core;
 
+import java.io.Serializable;
+
 import com.github.jsonldjava.core.JsonLdConsts.Embed;
 
 /**
@@ -10,7 +12,12 @@ import com.github.jsonldjava.core.JsonLdConsts.Embed;
  * @author tristan
  *
  */
-public class JsonLdOptions {
+public class JsonLdOptions implements Serializable {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -4215876939686967717L;
 
 	public static final String JSON_LD_1_0 = "json-ld-1.0";
 
