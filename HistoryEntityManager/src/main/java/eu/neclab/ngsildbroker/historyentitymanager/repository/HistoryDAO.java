@@ -230,7 +230,7 @@ public class HistoryDAO {
 			typeSql += "RETURNING (modifiedat = createdat)";
 			List<Uni<RowSet<Row>>> tmpList = new ArrayList<>(2);
 			if (!batchType.isEmpty()) {
-				logger.debug("batch type" + typeSql);
+				logger.debug("batch type " + typeSql);
 				tmpList.add(client.preparedQuery(typeSql).executeBatch(batchType));
 			}
 			if (!batchNoType.isEmpty()) {

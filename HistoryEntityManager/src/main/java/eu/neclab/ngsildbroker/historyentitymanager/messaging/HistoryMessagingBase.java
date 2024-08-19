@@ -79,13 +79,13 @@ public abstract class HistoryMessagingBase {
 	}
 
 	public Uni<Void> baseHandleEntity(BaseRequest message) {
-		logger.info("retrieving " + message.toString());
+		logger.debug("retrieving " + message.getFirstId());
 		if (!autoRecording || (instancesNr > 1 && message.hashCode() % instancesNr != myInstancePos)) {
-			logger.info("discarding " + message.toString());
-			logger.info("auto recording: " + autoRecording);
-			logger.info("instancesNr: " + instancesNr);
-			logger.info("myInstancePos: " + myInstancePos);
-			logger.info("message.hashCode() % instancesNr: " + (message.hashCode() % instancesNr));
+			logger.debug("debug " + message.getFirstId());
+			logger.debug("auto recording: " + autoRecording);
+			logger.debug("instancesNr: " + instancesNr);
+			logger.debug("myInstancePos: " + myInstancePos);
+			logger.debug("message.hashCode() % instancesNr: " + (message.hashCode() % instancesNr));
 
 			return Uni.createFrom().voidItem();
 		}
@@ -102,49 +102,40 @@ public abstract class HistoryMessagingBase {
 	}
 
 	public Uni<Void> baseHandleBatch(BaseRequest message) {
-		logger.info("retrieving message with id" + message.getIds());
+		logger.debug("retrieving message with id" + message.getIds());
 		if (!autoRecording || (instancesNr > 1 && message.hashCode() % instancesNr != myInstancePos)) {
-			logger.info("discarding " + message.toString());
-			logger.info("auto recording: " + autoRecording);
-			logger.info("instancesNr: " + instancesNr);
-			logger.info("myInstancePos: " + myInstancePos);
-			logger.info("message.hashCode() % instancesNr: " + (message.hashCode() % instancesNr));
+			logger.debug("discarding " + message.getIds());
+			logger.debug("auto recording: " + autoRecording);
+			logger.debug("instancesNr: " + instancesNr);
+			logger.debug("myInstancePos: " + myInstancePos);
+			logger.debug("message.hashCode() % instancesNr: " + (message.hashCode() % instancesNr));
 
 			return Uni.createFrom().voidItem();
 		}
-		logger.debug("history manager batch handling got called: with ids: " + message.getIds());
+
 		if (message.getRequestType() != AppConstants.DELETE_REQUEST
 				&& (message.getPayload() == null || message.getPayload().isEmpty())) {
 			logger.debug("discarding because of none delete request and empty body");
 			return Uni.createFrom().voidItem();
 		}
 		String tenant = message.getTenant();
-		logger.info("attempting to access tenant2Buffer with " + tenant);
+
 		ConcurrentLinkedQueue<BaseRequest> buffer = tenant2Buffer.get(tenant);
 		// logger.info("got buffer " + buffer);
 		if (buffer == null) {
 			buffer = new ConcurrentLinkedQueue<>();
-			logger.info("attempting to create new buffer in tenant2Buffer with " + tenant);
 			tenant2Buffer.put(tenant, buffer);
-			logger.info("created buffer " + buffer);
 		}
-		logger.info("attempting to store time in tenant2LastReceived");
 		tenant2LastReceived.put(tenant, System.currentTimeMillis());
-		logger.info("stored time in tenant2LastReceived");
 		if (message.getRequestType() == AppConstants.DELETE_REQUEST) {
 			for (String entry : message.getIds()) {
-				logger.info("adding entry in buffer");
 				buffer.add(new DeleteEntityRequest(tenant, entry, false));
-				logger.info("added entry");
 			}
 		} else {
 			for (List<Map<String, Object>> entry : message.getPayload().values()) {
-				logger.info("adding entry in buffer");
 				for (Map<String, Object> value : entry) {
 					buffer.add(new UpsertEntityRequest(tenant, value, false));
 				}
-
-				logger.info("added entry");
 			}
 		}
 		return Uni.createFrom().voidItem();
