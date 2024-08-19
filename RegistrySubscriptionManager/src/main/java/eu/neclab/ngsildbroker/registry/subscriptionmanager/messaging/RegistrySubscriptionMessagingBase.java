@@ -40,19 +40,6 @@ public abstract class RegistrySubscriptionMessagingBase {
 		return baseHandleCsource(message);
 	}
 
-	public Uni<Void> handleSubscriptionRaw(String byteMessage) {
-//		SubscriptionRequest message;
-//		try {
-//			message = objectMapper.readValue(byteMessage, SubscriptionRequest.class);
-//		} catch (IOException e) {
-//			logger.error(byteMessage);
-//			logger.error("failed to read internal subscription", e);
-//			return Uni.createFrom().voidItem();
-//		}
-//		return baseHandleSubscription(message);
-		return Uni.createFrom().voidItem();
-
-	}
 
 	public Uni<Void> baseHandleCsource(CSourceBaseRequest message) {
 		logger.debug("CSource sub manager got called for csource: " + message.getId());

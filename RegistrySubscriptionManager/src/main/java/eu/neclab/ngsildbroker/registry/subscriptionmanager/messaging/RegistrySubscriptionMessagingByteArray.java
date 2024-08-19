@@ -19,10 +19,5 @@ public class RegistrySubscriptionMessagingByteArray extends RegistrySubscription
 		return handleCsourceRaw(new String(byteMessage));
 	}
 
-	@Incoming(AppConstants.INTERNAL_RETRIEVE_SUBS_CHANNEL)
-	@Acknowledgment(Strategy.PRE_PROCESSING)
-	public Uni<Void> handleSubscription(byte[] byteMessage) {
-		return handleSubscriptionRaw(new String(byteMessage));
-	}
 
 }

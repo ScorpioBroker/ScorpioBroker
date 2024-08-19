@@ -19,9 +19,4 @@ public class RegistrySubscriptionMessagingInMemory extends RegistrySubscriptionM
 		return handleCsourceRaw(byteMessage);
 	}
 
-	@Incoming(AppConstants.INTERNAL_SUBS_CHANNEL)
-	@Acknowledgment(Strategy.PRE_PROCESSING)
-	public Uni<Void> handleSubscription(String byteMessage) {
-		return handleSubscriptionRaw(byteMessage);
-	}
 }
