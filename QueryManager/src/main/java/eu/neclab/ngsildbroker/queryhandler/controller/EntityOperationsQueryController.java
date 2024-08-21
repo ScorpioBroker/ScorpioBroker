@@ -168,6 +168,11 @@ public class EntityOperationsQueryController {
 				Object csf = body.get(NGSIConstants.QUERY_PARAMETER_CSF);
 				Object omit = body.get(NGSIConstants.QUERY_PARAMETER_OMIT);
 				Object pick = body.get(NGSIConstants.QUERY_PARAMETER_PICK);
+				if ((pick != null && omit != null) || (pick != null && attrs != null)
+						|| (attrs != null && omit != null)) {
+					return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData,
+							"Omit, pick and attrs are mutually exclusive"));
+				}
 				Object georel = null;
 				String coordinates = null;
 				Object geoproperty = null;
@@ -175,7 +180,14 @@ public class EntityOperationsQueryController {
 				ViaHeaders viaHeaders = new ViaHeaders(request.headers().getAll(HttpHeaders.VIA), this.selfViaHeader);
 
 				if (attrs != null) {
-					attrsQuery = QueryParser.parseAttrs(String.join(",", (ArrayList<String>) attrs), context);
+					if (attrs instanceof List<?>) {
+						attrsQuery = QueryParser.parseAttrs(String.join(",", (ArrayList<String>) attrs), context);
+					} else if (attrs instanceof String) {
+						attrsQuery = QueryParser.parseAttrs((String) attrs, context);
+					} else {
+						return Uni.createFrom()
+								.failure(new ResponseException(ErrorType.InvalidRequest, "Unable to parse attrs."));
+					}
 				}
 				if (q != null) {
 					qQueryTerm = QueryParser.parseQuery((String) q, context);
@@ -203,11 +215,28 @@ public class EntityOperationsQueryController {
 				}
 				if (pick != null) {
 					pickTerm = new PickTerm();
-					QueryParser.parseProjectionTerm(pickTerm, (String) pick, context);
+					if (pick instanceof List<?>) {
+						QueryParser.parseProjectionTerm(pickTerm, String.join(",", (ArrayList<String>) pick), context);
+					} else if (pick instanceof String) {
+						QueryParser.parseProjectionTerm(pickTerm, (String) pick, context);
+					} else {
+						return Uni.createFrom()
+								.failure(new ResponseException(ErrorType.InvalidRequest, "Unable to parse pick."));
+					}
+					
+					
 				}
 				if (omit != null) {
 					omitTerm = OmitTerm.getNewRootInstance();
-					QueryParser.parseProjectionTerm(omitTerm, (String) omit, context);
+					if (omit instanceof List<?>) {
+						QueryParser.parseProjectionTerm(pickTerm, String.join(",", (ArrayList<String>) omit), context);
+					} else if (omit instanceof String) {
+						QueryParser.parseProjectionTerm(omitTerm, (String) omit, context);
+					} else {
+						return Uni.createFrom()
+								.failure(new ResponseException(ErrorType.InvalidRequest, "Unable to parse omit."));
+					}
+					
 				}
 				String tenant = HttpUtils.getTenant(request);
 				String token;

@@ -279,9 +279,10 @@ public class SubscriptionService {
 		subDAO.loadSubscriptions().onItem().transformToUni(subs -> {
 			List<Uni<Tuple4<String, Map<String, Object>, String, Context>>> unis = Lists.newArrayList();
 			subs.forEach(tuple -> {
-				unis.add(ldService.parsePure(tuple.getItem4().get(NGSIConstants.JSON_LD_CONTEXT)).onItem().transform(ctx -> {
-					return Tuple4.of(tuple.getItem1(), tuple.getItem2(), tuple.getItem3(), ctx);
-				}));
+				unis.add(ldService.parsePure(tuple.getItem4().get(NGSIConstants.JSON_LD_CONTEXT)).onItem()
+						.transform(ctx -> {
+							return Tuple4.of(tuple.getItem1(), tuple.getItem2(), tuple.getItem3(), ctx);
+						}));
 			});
 			if (unis.isEmpty()) {
 				return Uni.createFrom().voidItem();
@@ -1090,7 +1091,7 @@ public class SubscriptionService {
 				sub.getNotification().setLastNotification(now);
 				unis.add(queryFromSubscription(request, request.getTenant(), null, Maps.newHashMap()).onItem()
 						.transformToUni(queryResult -> {
-							if (queryResult.isEmpty()) {
+							if (queryResult == null || queryResult.isEmpty()) {
 								return Uni.createFrom().voidItem();
 							}
 							try {
@@ -1157,6 +1158,9 @@ public class SubscriptionService {
 				}
 				return dataToNotify;
 			}
+
+			logger.error("unexpected result from subscription based query" + resp);
+
 			return null;
 		});
 

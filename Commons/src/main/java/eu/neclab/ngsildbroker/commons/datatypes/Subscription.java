@@ -35,6 +35,7 @@ import eu.neclab.ngsildbroker.commons.enums.Format;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.QueryParser;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.impl.headers.HeadersMultiMap;
 
 /**
@@ -352,6 +353,12 @@ public class Subscription implements Serializable {
 	}
 
 	private static void validateSub(Subscription subscription, boolean update) throws ResponseException {
+		NotificationParam notifi = subscription.getNotification();
+		if ((notifi.getPick() != null && notifi.getOmit() != null)
+				|| (notifi.getPick() != null && notifi.getAttrs() != null)
+				|| (notifi.getAttrs() != null && notifi.getOmit() != null)) {
+			throw new ResponseException(ErrorType.BadRequestData, "Omit, pick and attrs are mutually exclusive");
+		}
 		if (subscription.getThrottling() > 0 && subscription.getTimeInterval() > 0) {
 			throw new ResponseException(ErrorType.BadRequestData, "throttling  and timeInterval cannot both be set");
 		}
