@@ -131,7 +131,7 @@ public abstract class ProjectionTerm implements Serializable {
 		if (next != null) {
 			result += "," + next.toQueryParam(context);
 		}
-		return result;
+		return result + ",id";
 	}
 
 	protected abstract ProjectionTerm getInstance();

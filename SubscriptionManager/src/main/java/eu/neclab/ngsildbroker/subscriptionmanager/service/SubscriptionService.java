@@ -53,8 +53,11 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.UpdateSubs
 import eu.neclab.ngsildbroker.commons.datatypes.results.CRUDSuccess;
 import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.OmitTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.PickTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
@@ -753,13 +756,19 @@ public class SubscriptionService {
 			String attribName = entry.getKey();
 			switch (attribName) {
 			case NGSIConstants.JSON_LD_ID:
-				continue;
+				result.put(attribName, entry.getValue());
+				break;
 			case NGSIConstants.JSON_LD_TYPE:
-				List<String> mergedTypes = Stream
-						.concat(((List<String>) result.get(NGSIConstants.JSON_LD_TYPE)).stream(),
-								((List<String>) entry.getValue()).stream())
-						.distinct().collect(Collectors.toList());
-				result.put(attribName, mergedTypes);
+				List<String> oldTypes = (List<String>) result.get(NGSIConstants.JSON_LD_TYPE);
+				if(oldTypes == null) {
+					result.put(attribName, entry.getValue());
+				}else {
+					List<String> mergedTypes = Stream
+							.concat((oldTypes).stream(),
+									((List<String>) entry.getValue()).stream())
+							.distinct().collect(Collectors.toList());
+					result.put(attribName, mergedTypes);	
+				}
 				break;
 			case NGSIConstants.NGSI_LD_SCOPE:
 			case NGSIConstants.NGSI_LD_MODIFIED_AT:
@@ -1153,11 +1162,33 @@ public class SubscriptionService {
 								mergePrevIntoQueryResult(payload, dupl);
 							}
 
+						}else {
+							payloadToUse.put(entityId, Lists.newArrayList(entity));
 						}
 					}
 				});
 				List<Map<String, Object>> dataToNotify = mergePrevAndNew(payloadToUse, prevPayloadToUse,
 						request.getSubscription().getNotification().getShowChanges());
+				PickTerm pick = request.getSubscription().getNotification().getPick();
+				if(pick != null) {
+					Iterator<Map<String, Object>> it = dataToNotify.iterator();
+					while(it.hasNext()) {
+						Map<String, Object> entity = it.next();
+						if(!pick.calculateEntity(entity, false, null, null, true)) {
+							it.remove();
+						}
+					}
+				}
+				OmitTerm omit = request.getSubscription().getNotification().getOmit();
+				if(omit != null) {
+					Iterator<Map<String, Object>> it = dataToNotify.iterator();
+					while(it.hasNext()) {
+						Map<String, Object> entity = it.next();
+						if(!omit.calculateEntity(entity, false, null, null, true)) {
+							it.remove();
+						}
+					}
+				}
 				return dataToNotify;
 			}
 
