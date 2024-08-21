@@ -137,9 +137,11 @@ public class HistoryDAO {
 			List<Tuple> batchType = Lists.newArrayList();
 			List<Tuple> batchAttribs = Lists.newArrayList();
 			List<Tuple> batchAttribsWtihLocation = Lists.newArrayList();
-			for (List<Map<String, Object>> payloadList : request.getPayload().values()) {
+			for (Entry<String, List<Map<String, Object>>> payloadListEntry : request.getPayload().entrySet()) {
+				String entityId = payloadListEntry.getKey();
+				List<Map<String, Object>> payloadList = payloadListEntry.getValue();
 				for (Map<String, Object> payload : payloadList) {
-					String entityId = (String) payload.remove(NGSIConstants.JSON_LD_ID);
+					payload.remove(NGSIConstants.JSON_LD_ID);
 					Object location = payload.get(NGSIConstants.NGSI_LD_LOCATION);
 					JsonObject geoLocation = null;
 
