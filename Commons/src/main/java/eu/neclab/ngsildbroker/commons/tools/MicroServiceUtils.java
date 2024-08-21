@@ -540,7 +540,7 @@ public class MicroServiceUtils {
 							}
 							logger.debug("finalizing message");
 							current = current.substring(0, current.length() - 1) + "]}";
-							logger.debug("finale messagesize: " + current.length());
+							logger.debug("finale messagesize: " + current.getBytes().length);
 							toSend.add(current);
 							current = base + "\"" + id + "\",";
 							if (zip) {
@@ -563,7 +563,7 @@ public class MicroServiceUtils {
 						} else if (messageLength == maxMessageSize) {
 							logger.debug("finalizing message");
 							current = current.substring(0, current.length() - 1) + "]}";
-							logger.debug("finale messagesize: " + current.length());
+							logger.debug("finale messagesize: " + current.getBytes().length);
 							toSend.add(current);
 							current = base;
 							first = true;
@@ -592,7 +592,7 @@ public class MicroServiceUtils {
 				if (current.length() != base.length()) {
 					logger.debug("finalizing message");
 					current = current.substring(0, current.length() - 1) + "]}";
-					logger.debug("finale messagesize: " + current.length());
+					logger.debug("finale messagesize: " + current.getBytes().length);
 					toSend.add(current);
 					current = base;
 				}
@@ -632,7 +632,7 @@ public class MicroServiceUtils {
 							}
 							logger.debug("finalizing message only prevpayload");
 							current = current.substring(0, current.length() - 1) + "]}";
-							logger.debug("finale messagesize only prevpayload: " + current.length());
+							logger.debug("finale messagesize only prevpayload: " + current.getBytes().length);
 							toSend.add(current);
 							current = base + "\"" + id + "\",";
 							if (zip) {
@@ -655,7 +655,7 @@ public class MicroServiceUtils {
 						} else if (messageLength == maxMessageSize) {
 							logger.debug("finalizing message only prevpayload");
 							current = current.substring(0, current.length() - 1) + "]}";
-							logger.debug("finale messagesize only prevpayload: " + current.length());
+							logger.debug("finale messagesize only prevpayload: " + current.getBytes().length);
 							toSend.add(current);
 							current = base;
 							first = true;
@@ -684,7 +684,7 @@ public class MicroServiceUtils {
 				if (current.length() != base.length()) {
 					logger.debug("finalizing message only prevpayload");
 					current = current.substring(0, current.length() - 1) + "]}";
-					logger.debug("finale messagesize only prevpayload: " + current.length());
+					logger.debug("finale messagesize only prevpayload: " + current.getBytes().length);
 					toSend.add(current);
 					current = base;
 				}
@@ -717,7 +717,7 @@ public class MicroServiceUtils {
 						}
 						logger.debug("finalizing message only ids");
 						current = current.substring(0, current.length() - 1) + "]}";
-						logger.debug("finale messagesize only ids: " + current.length());
+						logger.debug("finale messagesize only ids: " + current.getBytes().length);
 						toSend.add(current);
 						current = base + "\"" + id + "\",";
 						if (zip) {
@@ -740,7 +740,7 @@ public class MicroServiceUtils {
 					} else if (messageLength == maxMessageSize) {
 						logger.debug("finalizing message only ids");
 						current = current.substring(0, current.length() - 1) + "]}";
-						logger.debug("finale messagesize only ids: " + current.length());
+						logger.debug("finale messagesize only ids: " + current.getBytes().length);
 						toSend.add(current);
 						current = base;
 						first = true;
@@ -768,7 +768,7 @@ public class MicroServiceUtils {
 				if (current.length() != base.length()) {
 					logger.debug("finalizing message only ids");
 					current = current.substring(0, current.length() - 1) + "]}";
-					logger.debug("finale messagesize only ids: " + current.length());
+					logger.debug("finale messagesize only ids: " + current.getBytes().length);
 					toSend.add(current);
 					current = base;
 				}
@@ -776,7 +776,7 @@ public class MicroServiceUtils {
 				throw new ResponseException(ErrorType.InternalError, "Failed to compress prevpayload");
 			}
 			toSend.forEach(entry -> {
-				logger.debug("sending entry of size: " + entry.length());
+				logger.debug("sending entry of size: " + entry.getBytes().length);
 				emitter.sendAndForget(entry);
 			});
 
