@@ -338,8 +338,8 @@ public class QQueryTerm implements Serializable {
 		} else {
 			switch (operator) {
 			case "==":
-				if (value instanceof List) {
-					return listContains((List) value, operant);
+				if (value instanceof List<?> l) {
+					return listContains(l, operant);
 				}
 				if (operant.equals(value.toString())) {
 					return true;
@@ -347,8 +347,8 @@ public class QQueryTerm implements Serializable {
 				break;
 			case "!=":
 				finalReturnValue = true;
-				if (value instanceof List) {
-					return !listContains((List) value, operant);
+				if (value instanceof List<?> l) {
+					return !listContains(l, operant);
 				}
 				if (operant.equals(value.toString())) {
 					return false;
@@ -598,7 +598,7 @@ public class QQueryTerm implements Serializable {
 	}
 
 	private int compare(String operant, Object value, String operator) {
-		if (value instanceof List l1) {
+		if (value instanceof List<?> l1) {
 			int r = -1;
 			for (Object obj : l1) {
 				r = compare(operant, obj, operator);
@@ -737,14 +737,11 @@ public class QQueryTerm implements Serializable {
 		return getCompoundValue(potentialResult, Arrays.copyOfRange(compound, 1, compound.length));
 	}
 
-	@SuppressWarnings("rawtypes") // Intentional usage of raw type here.
+	
 	private Object getValue(BaseEntry myEntry) {
 		Object value = null;
 		if (myEntry instanceof PropertyEntry) {
 			value = ((PropertyEntry) myEntry).getValue();
-//			if (value instanceof List) {
-//				value = ((List) value).get(0);
-//			}
 		} else if (myEntry instanceof RelationshipEntry) {
 			value = ((RelationshipEntry) myEntry).getObject();
 		}
@@ -2448,11 +2445,11 @@ public class QQueryTerm implements Serializable {
 	private boolean calculateLinkedEntity(Map<String, Object> entity, EntityCache updatedEntityCache,
 			Set<String> jsonKeys, boolean localOnly) {
 		Object attrObj = entity.get(this.linkedAttrName);
-		if (attrObj != null && attrObj instanceof List attrList) {
+		if (attrObj != null && attrObj instanceof List<?> attrList) {
 			for (Object listAttrObj : attrList) {
 				if (listAttrObj instanceof Map listAttrMap) {
 					Object typeObj = listAttrMap.get(NGSIConstants.JSON_LD_TYPE);
-					if (typeObj != null && typeObj instanceof List typeList) {
+					if (typeObj != null && typeObj instanceof List<?> typeList) {
 						if (typeList.contains(NGSIConstants.NGSI_LD_RELATIONSHIP)) {
 							List<Map<String, String>> hasObject = (List<Map<String, String>>) listAttrMap
 									.get(NGSIConstants.NGSI_LD_HAS_OBJECT);
@@ -2472,7 +2469,7 @@ public class QQueryTerm implements Serializable {
 									}
 
 								} else {
-									if (objectTypeObj != null && objectTypeObj instanceof List objectTypes) {
+									if (objectTypeObj != null && objectTypeObj instanceof List<?> objectTypes) {
 										for (Object objectTypeEntry : objectTypes) {
 											if (objectTypeEntry instanceof Map objectType) {
 												String type = (String) objectType.get(NGSIConstants.JSON_LD_ID);
@@ -2523,7 +2520,7 @@ public class QQueryTerm implements Serializable {
 											}
 
 										} else {
-											if (objectTypeObj != null && objectTypeObj instanceof List objectTypes) {
+											if (objectTypeObj != null && objectTypeObj instanceof List<?> objectTypes) {
 												for (Object objectTypeEntry : objectTypes) {
 													if (objectTypeEntry instanceof Map objectType) {
 														String type = (String) objectType.get(NGSIConstants.JSON_LD_ID);

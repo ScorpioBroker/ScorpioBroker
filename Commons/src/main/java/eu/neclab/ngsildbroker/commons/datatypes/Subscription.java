@@ -35,7 +35,6 @@ import eu.neclab.ngsildbroker.commons.enums.Format;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.QueryParser;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
-import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.impl.headers.HeadersMultiMap;
 
 /**

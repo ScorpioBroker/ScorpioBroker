@@ -9,10 +9,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CSourceBaseRequest;
 import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
-import io.netty.channel.EventLoopGroup;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Vertx;
-import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 
 public abstract class EntityMessagingBase {

@@ -1025,8 +1025,8 @@ public class RegistrySubscriptionService {
 									&& ((List<Map<String, String>>) entity.get(NGSIConstants.NGSI_LD_ID_PATTERN)).get(0)
 											.get(NGSIConstants.JSON_LD_VALUE).equals(idPattern)))
 							&& (!entity.containsKey(NGSIConstants.JSON_LD_TYPE)
-									|| ((List<String>) entity.get(NGSIConstants.JSON_LD_TYPE))
-											.contains(typeQueryTerm))) {
+									|| ((List<String>) entity.get(NGSIConstants.JSON_LD_TYPE)).stream()
+											.anyMatch(typeEntry -> typeQueryTerm.getAllTypes().contains(typeEntry)))) {
 						idPatternAndTypeFound = true;
 						break;
 					}
@@ -1102,7 +1102,8 @@ public class RegistrySubscriptionService {
 					if ((!entity.containsKey(NGSIConstants.JSON_LD_ID)
 							|| entity.get(NGSIConstants.JSON_LD_ID).equals(id.toString()))
 							&& (!entity.containsKey(NGSIConstants.JSON_LD_TYPE)
-									|| ((List<String>) entity.get(NGSIConstants.JSON_LD_TYPE)).contains(type))) {
+									|| ((List<String>) entity.get(NGSIConstants.JSON_LD_TYPE)).stream()
+									.anyMatch(typeEntry -> type.getAllTypes().contains(typeEntry)))) {
 						idAndTypeFound = true;
 						break;
 					}
@@ -1361,7 +1362,7 @@ public class RegistrySubscriptionService {
 							return handleInternalSubscription(request);
 						});
 			}).subscribe().with(i -> {
-				logger.info("Reloaded subscription: " + id);
+				logger.debug("Reloaded subscription: " + id);
 			});
 		} else {
 			regDAO.loadRegSubscription(tenant, id).onItem().transformToUni(t -> {
@@ -1385,7 +1386,7 @@ public class RegistrySubscriptionService {
 							return Uni.createFrom().voidItem();
 						});
 			}).subscribe().with(i -> {
-				logger.info("Reloaded subscription: " + id);
+				logger.debug("Reloaded subscription: " + id);
 			});
 		}
 	}

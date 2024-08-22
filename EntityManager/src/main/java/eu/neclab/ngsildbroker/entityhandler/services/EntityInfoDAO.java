@@ -2,7 +2,6 @@ package eu.neclab.ngsildbroker.entityhandler.services;
 
 import com.github.jsonldjava.core.JsonLDService;
 import com.github.jsonldjava.core.JsonLdConsts;
-import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Table;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
@@ -38,9 +37,7 @@ import org.slf4j.LoggerFactory;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -539,12 +536,6 @@ public class EntityInfoDAO {
 				entities.addAll(entityList);
 			});
 			Tuple tuple = Tuple.of(new JsonArray(entities));
-			try {
-				System.out.println(JsonUtils.toPrettyString(entities));
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
 			return client.preparedQuery("SELECT * FROM MERGE_JSON_BATCH($1)").execute(tuple).onItem()
 					.transform(rows -> {
 						return rows.iterator().next().getJsonObject(0).getMap();

@@ -48,15 +48,15 @@ public class LanguageQueryTerm implements Serializable {
 		for (Map<String, Object> entity : queryResult) {
 			for (Entry<String, Object> attrib : entity.entrySet()) {
 				Object attribValueObj = attrib.getValue();
-				if (attribValueObj instanceof List list) {
+				if (attribValueObj instanceof List<?> list) {
 					for (Object entry : list) {
 						if (entry instanceof Map map) {
 							Object types = map.get(NGSIConstants.JSON_LD_TYPE);
-							if (types != null && types instanceof List typeList
+							if (types != null && types instanceof List<?> typeList
 									&& typeList.contains(NGSIConstants.LANGUAGE_PROPERTY)) {
 								Object hasLanguageMap = map.get(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP);
-								if (hasLanguageMap != null && hasLanguageMap instanceof List languageMapEntries) {
-									Iterator it = languageMapEntries.iterator();
+								if (hasLanguageMap != null && hasLanguageMap instanceof List<?> languageMapEntries) {
+									Iterator<?> it = languageMapEntries.iterator();
 									float bestFound = 0;
 									while (it.hasNext()) {
 										Object next = it.next();
@@ -100,15 +100,15 @@ public class LanguageQueryTerm implements Serializable {
 	public boolean calculateEntity(Map<String, Object> entity) {
 		for (Entry<String, Object> attrib : entity.entrySet()) {
 			Object attribValueObj = attrib.getValue();
-			if (attribValueObj instanceof List list) {
+			if (attribValueObj instanceof List<?> list) {
 				for (Object entry : list) {
 					if (entry instanceof Map map) {
 						Object types = map.get(NGSIConstants.JSON_LD_TYPE);
-						if (types != null && types instanceof List typeList
+						if (types != null && types instanceof List<?> typeList
 								&& typeList.contains(NGSIConstants.LANGUAGE_PROPERTY)) {
 							Object hasLanguageMap = map.get(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP);
-							if (hasLanguageMap != null && hasLanguageMap instanceof List languageMapEntries) {
-								Iterator it = languageMapEntries.iterator();
+							if (hasLanguageMap != null && hasLanguageMap instanceof List<?> languageMapEntries) {
+								Iterator<?> it = languageMapEntries.iterator();
 								float bestFound = 0;
 								while (it.hasNext()) {
 									Object next = it.next();

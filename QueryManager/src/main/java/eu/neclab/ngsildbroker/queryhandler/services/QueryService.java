@@ -471,7 +471,7 @@ public class QueryService {
 		for (Entry<QueryRemoteHost, Set<String>> entry : remoteHost2Ids.entrySet()) {
 			QueryRemoteHost host = entry.getKey();
 			Map<String, String> queryParams = host.getQueryParam();
-			queryParams.put("id", StringUtils.join(entry.getValue(), ','));
+			queryParams.put(NGSIConstants.ID, StringUtils.join(entry.getValue(), ','));
 
 			unis.add(EntityTools.getRemoteEntities(host, webClient, timeout, ldService).onItem()
 					.transform(entities -> Tuple2.of(entities, host)));

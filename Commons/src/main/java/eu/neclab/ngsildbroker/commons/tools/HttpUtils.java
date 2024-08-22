@@ -431,7 +431,7 @@ public final class HttpUtils {
 				return RestResponse.noContent();
 			}
 		}
-		return new RestResponseBuilderImpl().status(207).entity(new JsonObject(updateResult.getJson())).build();
+		return new RestResponseBuilderImpl<Object>().status(207).entity(new JsonObject(updateResult.getJson())).build();
 
 	}
 

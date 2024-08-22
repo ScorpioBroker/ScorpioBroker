@@ -108,8 +108,6 @@ public abstract class HistoryMessagingBase {
 			logger.debug("auto recording: " + autoRecording);
 			logger.debug("instancesNr: " + instancesNr);
 			logger.debug("myInstancePos: " + myInstancePos);
-			logger.debug("message.hashCode() % instancesNr: " + (message.hashCode() % instancesNr));
-
 			return Uni.createFrom().voidItem();
 		}
 
@@ -121,7 +119,6 @@ public abstract class HistoryMessagingBase {
 		String tenant = message.getTenant();
 
 		ConcurrentLinkedQueue<BaseRequest> buffer = tenant2Buffer.get(tenant);
-		// logger.info("got buffer " + buffer);
 		if (buffer == null) {
 			buffer = new ConcurrentLinkedQueue<>();
 			tenant2Buffer.put(tenant, buffer);

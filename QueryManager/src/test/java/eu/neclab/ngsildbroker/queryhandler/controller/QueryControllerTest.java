@@ -28,7 +28,8 @@ import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.queryhandler.services.QueryService;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
-import io.quarkus.test.junit.mockito.InjectMock;
+
+import io.quarkus.test.junit.mockito.MockitoConfig;
 import io.restassured.RestAssured;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
@@ -44,7 +45,7 @@ public class QueryControllerTest {
 	private List<String> entities;
 	private String payloadContext = "";
 
-	@InjectMock
+	@MockitoConfig
 	QueryService queryService;
 
 	@BeforeEach

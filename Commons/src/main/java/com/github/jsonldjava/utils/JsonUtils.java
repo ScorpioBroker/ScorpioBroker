@@ -49,6 +49,7 @@ import io.vertx.mutiny.ext.web.client.WebClient;
  * @author tristan
  *
  */
+@SuppressWarnings("deprecation")
 public class JsonUtils {
 	/**
 	 * An HTTP Accept header that prefers JSONLD.
