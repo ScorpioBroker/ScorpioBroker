@@ -53,8 +53,11 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.UpdateSubs
 import eu.neclab.ngsildbroker.commons.datatypes.results.CRUDSuccess;
 import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.OmitTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.PickTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
@@ -555,42 +558,45 @@ public class SubscriptionService {
 				} else {
 					idsTbu = message.getIds();
 				}
-				unis.add(queryFromSubscription(potentialSub, message.getTenant(), idsTbu, prevPayloadToUse).onItem()
-						.transformToUni(tbs -> {
-							List<Map<String, Object>> toAddLater = Lists.newArrayList();
-							Iterator<Map<String, Object>> it = tbs.iterator();
-							while (it.hasNext()) {
-								Map<String, Object> entity = it.next();
-								String entityId = (String) entity.get(NGSIConstants.JSON_LD_ID);
-								List<Map<String, Object>> payload = payloadToUse.get(entityId);
-								if (payload != null) {
-									if (payload.size() == 1) {
-										entity.putAll(payload.get(0));
-										if (potentialSub.getSubscription().getNotification().getShowChanges()) {
-											it.remove();
-											toAddLater.add(compareMaps(prevPayloadToUse.get(entityId).get(0), entity));
-										}
-									} else {
-										it.remove();
-										for (int i = 0; i < payload.size(); i++) {
-											Map<String, Object> pEntry = payload.get(0);
-											Map<String, Object> dupl = MicroServiceUtils.deepCopyMap(entity);
-											dupl.putAll(pEntry);
-											if (potentialSub.getSubscription().getNotification().getShowChanges()) {
-												List<Map<String, Object>> prev = prevPayloadToUse.get(entityId);
-												if (prev != null && i < prev.size()) {
-													dupl = compareMaps(prev.get(i), dupl);
+				unis.add(
+						queryFromSubscription(potentialSub, message.getTenant(), idsTbu, prevPayloadToUse, payloadToUse)
+								.onItem().transformToUni(tbs -> {
+									List<Map<String, Object>> toAddLater = Lists.newArrayList();
+									Iterator<Map<String, Object>> it = tbs.iterator();
+									while (it.hasNext()) {
+										Map<String, Object> entity = it.next();
+										String entityId = (String) entity.get(NGSIConstants.JSON_LD_ID);
+										List<Map<String, Object>> payload = payloadToUse.get(entityId);
+										if (payload != null) {
+											if (payload.size() == 1) {
+												entity.putAll(payload.get(0));
+												if (potentialSub.getSubscription().getNotification().getShowChanges()) {
+													it.remove();
+													toAddLater.add(
+															compareMaps(prevPayloadToUse.get(entityId).get(0), entity));
 												}
+											} else {
+												it.remove();
+												for (int i = 0; i < payload.size(); i++) {
+													Map<String, Object> pEntry = payload.get(0);
+													Map<String, Object> dupl = MicroServiceUtils.deepCopyMap(entity);
+													dupl.putAll(pEntry);
+													if (potentialSub.getSubscription().getNotification()
+															.getShowChanges()) {
+														List<Map<String, Object>> prev = prevPayloadToUse.get(entityId);
+														if (prev != null && i < prev.size()) {
+															dupl = compareMaps(prev.get(i), dupl);
+														}
 
+													}
+													toAddLater.add(dupl);
+												}
 											}
-											toAddLater.add(dupl);
 										}
 									}
-								}
-							}
-							tbs.addAll(toAddLater);
-							return sendNotification(potentialSub, tbs);
-						}));
+									tbs.addAll(toAddLater);
+									return sendNotification(potentialSub, tbs);
+								}));
 
 			} else {
 				switch (message.getRequestType()) {
@@ -750,13 +756,19 @@ public class SubscriptionService {
 			String attribName = entry.getKey();
 			switch (attribName) {
 			case NGSIConstants.JSON_LD_ID:
-				continue;
+				result.put(attribName, entry.getValue());
+				break;
 			case NGSIConstants.JSON_LD_TYPE:
-				List<String> mergedTypes = Stream
-						.concat(((List<String>) result.get(NGSIConstants.JSON_LD_TYPE)).stream(),
-								((List<String>) entry.getValue()).stream())
-						.distinct().collect(Collectors.toList());
-				result.put(attribName, mergedTypes);
+				List<String> oldTypes = (List<String>) result.get(NGSIConstants.JSON_LD_TYPE);
+				if(oldTypes == null) {
+					result.put(attribName, entry.getValue());
+				}else {
+					List<String> mergedTypes = Stream
+							.concat((oldTypes).stream(),
+									((List<String>) entry.getValue()).stream())
+							.distinct().collect(Collectors.toList());
+					result.put(attribName, mergedTypes);	
+				}
 				break;
 			case NGSIConstants.NGSI_LD_SCOPE:
 			case NGSIConstants.NGSI_LD_MODIFIED_AT:
@@ -1089,8 +1101,8 @@ public class SubscriptionService {
 			long now = System.currentTimeMillis();
 			if (sub.getNotification().getLastNotification() + sub.getTimeInterval() * 1000 < now) {
 				sub.getNotification().setLastNotification(now);
-				unis.add(queryFromSubscription(request, request.getTenant(), null, Maps.newHashMap()).onItem()
-						.transformToUni(queryResult -> {
+				unis.add(queryFromSubscription(request, request.getTenant(), null, Maps.newHashMap(), Maps.newHashMap())
+						.onItem().transformToUni(queryResult -> {
 							if (queryResult == null || queryResult.isEmpty()) {
 								return Uni.createFrom().voidItem();
 							}
@@ -1112,7 +1124,8 @@ public class SubscriptionService {
 	}
 
 	private Uni<List<Map<String, Object>>> queryFromSubscription(SubscriptionRequest request, String tenant,
-			Set<String> idsTBU, Map<String, List<Map<String, Object>>> prevPayloadToUse) {
+			Set<String> idsTBU, Map<String, List<Map<String, Object>>> prevPayloadToUse,
+			Map<String, List<Map<String, Object>>> payloadToUse) {
 		HttpRequest<Buffer> req = webClient.postAbs(entityServiceUrl + NGSIConstants.ENDPOINT_BATCH_QUERY);
 		Map<String, Object> queryBody = request.getAsQueryBody(idsTBU, atContextUrl);
 
@@ -1130,31 +1143,51 @@ public class SubscriptionService {
 		}
 		return req.sendBuffer(Buffer.buffer(batchString)).onItem().transform(resp -> {
 			if (resp != null && resp.statusCode() == 200) {
-				System.out.println(resp.bodyAsString());
 				JsonArray jsonArray = resp.bodyAsJsonArray();
-				List<Map<String, Object>> dataToNotify = new ArrayList<>(jsonArray.size());
-
-				if (jsonArray.isEmpty()) {
-					prevPayloadToUse.forEach((id, entities) -> {
-						entities.forEach(entity -> {
+				jsonArray.forEach(entityObj -> {
+					Map<String, Object> entity = ((JsonObject) entityObj).getMap();
+					String entityId = (String) entity.get(NGSIConstants.JSON_LD_ID);
+					List<Map<String, Object>> prevPayloadList = prevPayloadToUse.get(entityId);
+					if (prevPayloadList != null) {
+						List<Map<String, Object>> newPrevPayloadList = Lists.newArrayList();
+						for (Map<String, Object> prevPayload : prevPayloadList) {
 							Map<String, Object> dupl = MicroServiceUtils.deepCopyMap(entity);
-							dataToNotify.add(compareMaps(null, dupl));
-						});
-					});
-				} else {
-					jsonArray.forEach(entityObj -> {
-						Map<String, Object> entity = ((JsonObject) entityObj).getMap();
-						String entityId = (String) entity.get(NGSIConstants.JSON_LD_ID);
-						Map<String, Object> prev;
-						List<Map<String, Object>> entitiesPrev = prevPayloadToUse.get(entityId);
-						if (entitiesPrev != null && !entitiesPrev.isEmpty()) {
-							prev = entitiesPrev.get(0);
-						} else {
-							prev = null;
+							mergePrevIntoQueryResult(prevPayload, dupl);
 						}
+					} else {
+						List<Map<String, Object>> payloadList = payloadToUse.get(entityId);
+						if (payloadList != null) {
+							for (Map<String, Object> payload : payloadList) {
+								Map<String, Object> dupl = MicroServiceUtils.deepCopyMap(entity);
+								mergePrevIntoQueryResult(payload, dupl);
+							}
 
-						dataToNotify.add(compareMaps(prev, entity));
-					});
+						}else {
+							payloadToUse.put(entityId, Lists.newArrayList(entity));
+						}
+					}
+				});
+				List<Map<String, Object>> dataToNotify = mergePrevAndNew(payloadToUse, prevPayloadToUse,
+						request.getSubscription().getNotification().getShowChanges());
+				PickTerm pick = request.getSubscription().getNotification().getPick();
+				if(pick != null) {
+					Iterator<Map<String, Object>> it = dataToNotify.iterator();
+					while(it.hasNext()) {
+						Map<String, Object> entity = it.next();
+						if(!pick.calculateEntity(entity, false, null, null, true)) {
+							it.remove();
+						}
+					}
+				}
+				OmitTerm omit = request.getSubscription().getNotification().getOmit();
+				if(omit != null) {
+					Iterator<Map<String, Object>> it = dataToNotify.iterator();
+					while(it.hasNext()) {
+						Map<String, Object> entity = it.next();
+						if(!omit.calculateEntity(entity, false, null, null, true)) {
+							it.remove();
+						}
+					}
 				}
 				return dataToNotify;
 			}
@@ -1163,6 +1196,46 @@ public class SubscriptionService {
 
 			return null;
 		});
+
+	}
+
+	private void mergePrevIntoQueryResult(Map<String, Object> prevPayload, Map<String, Object> dupl) {
+		for (Entry<String, Object> entry : prevPayload.entrySet()) {
+			String attribName = entry.getKey();
+			if (attribName.equals(NGSIConstants.JSON_LD_ID) || attribName.equals(NGSIConstants.JSON_LD_TYPE)
+					|| attribName.equals(NGSIConstants.SCOPE)) {
+				continue;
+			}
+			if (attribName.equals(NGSIConstants.NGSI_LD_MODIFIED_AT) || attribName.equals(NGSIConstants.CREATEDAT)
+					|| attribName.equals(NGSIConstants.NGSI_LD_DELETED_AT)) {
+				dupl.put(attribName, entry.getValue());
+				continue;
+			}
+			mergeInPrevAttribIn(dupl, attribName, entry.getValue());
+
+		}
+
+	}
+
+	private void mergeInPrevAttribIn(Map<String, Object> dupl, String attribName, Object value) {
+		List<Map<String, Object>> newAttribValueList = (List<Map<String, Object>>) dupl.get(attribName);
+		List<Map<String, Object>> prevAttribValueList = (List<Map<String, Object>>) value;
+		for (Map<String, Object> prevAttribValue : prevAttribValueList) {
+			Object prevDataSetId = prevAttribValue.get(NGSIConstants.NGSI_LD_DATA_SET_ID);
+			Iterator<Map<String, Object>> it = newAttribValueList.iterator();
+			List<Map<String, Object>> toAdd = Lists.newArrayList();
+			while (it.hasNext()) {
+				Map<String, Object> newAttrib = it.next();
+				Object newDataSetId = newAttrib.get(NGSIConstants.NGSI_LD_DATA_SET_ID);
+				if ((newDataSetId == null && prevDataSetId == null)
+						|| (newDataSetId != null && prevDataSetId != null && newDataSetId.equals(prevDataSetId))) {
+					it.remove();
+					toAdd.add(newAttrib);
+				}
+
+			}
+			newAttribValueList.addAll(toAdd);
+		}
 
 	}
 
