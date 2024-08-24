@@ -2,6 +2,7 @@ package eu.neclab.ngsildbroker.entityhandler.services;
 
 import com.github.jsonldjava.core.JsonLDService;
 import com.github.jsonldjava.core.JsonLdConsts;
+import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Table;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
@@ -37,6 +38,7 @@ import org.slf4j.LoggerFactory;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -423,8 +425,16 @@ public class EntityInfoDAO {
 			}
 			String sql = "SELECT * FROM MERGE_JSON($1,$2);";
 			Tuple tuple = Tuple.of(request.getFirstId(), new JsonObject(payload));
+			System.out.println(request.getFirstId());
+			try {
+				System.out.println(JsonUtils.toPrettyString(payload));
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
 			return client.preparedQuery(sql).execute(tuple).onFailure().recoverWithUni(e -> {
 				if (e instanceof PgException pge) {
+					pge.printStackTrace();
 					if (pge.getSqlState().equals(AppConstants.SQL_NOT_FOUND)) {
 						return Uni.createFrom().failure(
 								new ResponseException(ErrorType.NotFound, request.getFirstId() + " not found"));
