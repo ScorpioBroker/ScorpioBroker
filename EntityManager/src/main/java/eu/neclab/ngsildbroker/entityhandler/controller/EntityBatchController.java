@@ -67,7 +67,12 @@ public class EntityBatchController {
 			return  Uni.createFrom().item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData)));
 		}
 		for (Map<String, Object> compactedEntity : compactedEntities) {
-			noConcise(compactedEntity);
+			try {
+				noConcise(compactedEntity);
+			} catch (ResponseException e) {
+				unis.add(Uni.createFrom().item(Tuple2.of((String) compactedEntity.get("id"), (Object) e)));
+				continue;
+			}
 			unis.add(HttpUtils.expandBody(request, compactedEntity, AppConstants.CREATE_REQUEST, ldService).onItem()
 					.transform(i -> Tuple2.of((String) compactedEntity.get("id"), (Object) i)).onFailure()
 					.recoverWithItem(e -> Tuple2.of((String) compactedEntity.get("id"), (Object) e)));
@@ -131,7 +136,12 @@ public class EntityBatchController {
 		}
 		List<Uni<Tuple2<String, Object>>> unis = Lists.newArrayList();
 		for (Map<String, Object> compactedEntity : compactedEntities) {
-			noConcise(compactedEntity);
+			try {
+				noConcise(compactedEntity);
+			} catch (ResponseException e) {
+				unis.add(Uni.createFrom().item(Tuple2.of((String) compactedEntity.get("id"), (Object) e)));
+				continue;
+			};
 			unis.add(HttpUtils.expandBody(request, compactedEntity, AppConstants.CREATE_REQUEST, ldService).onItem()
 					.transform(i -> Tuple2.of((String) compactedEntity.get("id"), (Object) i)).onFailure()
 					.recoverWithItem(e -> Tuple2.of((String) compactedEntity.get("id"), (Object) e)));
@@ -192,7 +202,12 @@ public class EntityBatchController {
 		boolean isNoOverwrite = options != null && options.contains(NGSIConstants.NO_OVERWRITE_OPTION);
 		List<Uni<Tuple2<String, Object>>> unis = Lists.newArrayList();
 		for (Map<String, Object> compactedEntity : compactedEntities) {
-			noConcise(compactedEntity);
+			try {
+				noConcise(compactedEntity);
+			} catch (ResponseException e) {
+				unis.add(Uni.createFrom().item(Tuple2.of((String) compactedEntity.get("id"), (Object) e)));
+				continue;
+			};
 			unis.add(HttpUtils.expandBody(request, compactedEntity, AppConstants.APPEND_REQUEST, ldService).onItem()
 					.transform(i -> Tuple2.of((String) compactedEntity.get("id"), (Object) i)).onFailure()
 					.recoverWithItem(e -> Tuple2.of((String) compactedEntity.get("id"), (Object) e)));
@@ -258,7 +273,12 @@ public class EntityBatchController {
 		boolean isNoOverwrite = options != null && options.contains(NGSIConstants.NO_OVERWRITE_OPTION);
 		List<Uni<Tuple2<String, Object>>> unis = Lists.newArrayList();
 		for (Map<String, Object> compactedEntity : compactedEntities) {
-			noConcise(compactedEntity);
+			try {
+				noConcise(compactedEntity);
+			} catch (ResponseException e) {
+				unis.add(Uni.createFrom().item(Tuple2.of((String) compactedEntity.get("id"), (Object) e)));
+				continue;
+			};
 			unis.add(HttpUtils.expandBody(request, compactedEntity, AppConstants.MERGE_PATCH_REQUEST, ldService).onItem()
 					.transform(i -> Tuple2.of((String) compactedEntity.get("id"), (Object) i)).onFailure()
 					.recoverWithItem(e -> Tuple2.of((String) compactedEntity.get("id"), (Object) e)));

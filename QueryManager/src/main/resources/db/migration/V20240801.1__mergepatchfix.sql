@@ -8,7 +8,7 @@ AS $BODY$
 DECLARE
 BEGIN
 	if not geo_json_entry ? '@list' or jsonb_array_length(geo_json_entry #> '{@list}') != 2  then
-		RAISE EXCEPTION 'Invalid update for geo json' USING ERRCODE = 'SB006';
+		RAISE EXCEPTION 'Invalid geo point for geo json' USING ERRCODE = 'SB006';
 	end if;
 RETURN;
 END;
@@ -24,7 +24,7 @@ BEGIN
 		PERFORM validate_geo_point(geo_json_entry #> '{https://purl.org/geojson/vocab#coordinates,0}');
 	elsif geo_type = 'https://purl.org/geojson/vocab#LineString' then
 		if not geo_json_entry #> '{https://purl.org/geojson/vocab#coordinates,0}' ? '@list' then
-			RAISE EXCEPTION 'Invalid update for geo json' USING ERRCODE = 'SB006';
+			RAISE EXCEPTION 'Invalid line string update for geo json' USING ERRCODE = 'SB006';
 		end if;
 		for value in select * from jsonb_array_elements(geo_json_entry #> '{https://purl.org/geojson/vocab#coordinates,0,@list}') loop
 			PERFORM validate_geo_point(value);
@@ -32,7 +32,7 @@ BEGIN
 
 	elsif geo_type = 'https://purl.org/geojson/vocab#Polygon' then
 		if not geo_json_entry #> '{https://purl.org/geojson/vocab#coordinates,0}' ? '@list' or not geo_json_entry #> '{https://purl.org/geojson/vocab#coordinates,0,@list,0}' ? '@list' then
-			RAISE EXCEPTION 'Invalid update for geo json' USING ERRCODE = 'SB006';
+			RAISE EXCEPTION 'Invalid polygon update for geo json' USING ERRCODE = 'SB006';
 		end if;
 		for value in select * from jsonb_array_elements(geo_json_entry #> '{https://purl.org/geojson/vocab#coordinates,0,@list,0,@list}') loop
 			PERFORM validate_geo_point(value);
@@ -74,7 +74,7 @@ BEGIN
 	elsif json_type = 'object' then
 		result = '{}';
 		for key, value in Select * from jsonb_each(json_entry) loop
-			if value::text != 'urn:ngsi-ld:null' then
+			if value::text != '"urn:ngsi-ld:null"' then
 				result = jsonb_set(result, '{key}', value);
 			end if;
 		end loop;
@@ -83,7 +83,7 @@ BEGIN
 		end if;
 		return result;
 	else
-		if json_entry::text = 'urn:ngsi-ld:null' then
+		if json_entry::text = '"urn:ngsi-ld:null"' then
 			return null;
 		end if;
 		return json_entry;
@@ -113,7 +113,7 @@ BEGIN
 	new_type = jsonb_typeof(new_attrib);
 	old_type = jsonb_typeof(old_attrib);
 	if old_attrib is null or new_type != old_type then
-		return clean_ngsi_ld_null(new_attrib);
+		old_attrib := new_attrib;
 	end if;
 	todelete = '[]'::jsonb;
 	if new_type = 'array' then
@@ -135,9 +135,10 @@ BEGIN
 		index = 0;
 		deleted = 0;
 		for value in select * from jsonb_array_elements(new_attrib) loop
-			if value::text = 'urn:ngsi-ld:null' then
+			if value::text = '"urn:ngsi-ld:null"' then
 				old_attrib = old_attrib - (index - deleted);
 				deleted = deleted + 1;
+				index := index + 1;
 				continue;
 			end if;
 			value2 = old_attrib[index - deleted];
@@ -148,6 +149,7 @@ BEGIN
 			else
 				old_attrib = jsonb_set(old_attrib, ARRAY[(index - deleted)]::text[], merged_json);
 			end if;
+			index := index + 1;
 		end loop;
 		if jsonb_array_length(old_attrib) = 0 then
 			return null;
@@ -155,7 +157,7 @@ BEGIN
 		return old_attrib;
 	elsif new_type = 'object' then
 		for key, value in Select * from jsonb_each(new_attrib) loop
-			if value::text = 'urn:ngsi-ld:null' then
+			if value::text = '"urn:ngsi-ld:null"' then
 				old_attrib = old_attrib - key;
 				continue;
 			end if;
@@ -164,14 +166,14 @@ BEGIN
 				old_attrib = old_attrib - key;
 				continue;
 			end if;
-			old_attrib = jsonb_set(old_attrib, '{key}', merged_json);
+			old_attrib = jsonb_set(old_attrib, ARRAY[key]::text[], merged_json);
 		end loop;
 		if old_attrib::text = '{}' then
 			return null;
 		end if;
 		return old_attrib;
 	else
-		if new_attrib::text = 'urn:ngsi-ld:null' then
+		if new_attrib::text = '"urn:ngsi-ld:null"' then
 			return null;
 		end if;
 		return new_attrib;
@@ -205,7 +207,7 @@ BEGIN
 		for value in select * from jsonb_array_elements(new_attrib) loop
 			for key, value2 in select * from jsonb_each(value) loop
 				if key = '@id' then
-					if value2::text = 'urn:ngsi-ld:null' then
+					if value2::text = '"urn:ngsi-ld:null"' then
 						old_attrib = old_attrib - (index - removed);
 						removed := removed + 1;
 					else
@@ -235,31 +237,35 @@ AS $BODY$
 DECLARE
 	value jsonb;
 	index integer;
-	delete boolean;
+	remove boolean;
 	value2 jsonb;
+	ln_found boolean;
 BEGIN
+	if old_attrib is null then
+		old_attrib := new_attrib;
+	end if;
 	for value in Select * from jsonb_array_elements(new_attrib) loop
 		if value ->> '@language' = '@none' and value ->> '@value' = 'urn:ngsi-ld:null' then
 			return null;
 		else
 			index = 0;
-			found = false;
-			delete = false;
-			for value2 in Select * from jsonb_array_elements(new_attrib) loop
+			ln_found = false;
+			remove = false;
+			for value2 in Select * from jsonb_array_elements(old_attrib) loop
 				if value2 ->> '@language' = value->> '@language' then
-					found = true;
+					ln_found = true;
 					if value ->> '@value' = 'urn:ngsi-ld:null' then
-						delete = true;
+						remove = true;
 					end if;
 					exit;
 				end if;
 				index = index + 1;
 			end loop;
-			if found then
-				if delete then
+			if ln_found then
+				if remove then
 					old_attrib = old_attrib - index;	
 				else
-					old_attrib = jsonb_set(old_attrib, '{index,@value}', value->'@value');
+					old_attrib = jsonb_set(old_attrib, ARRAY[index,'@value']::text[], value->'@value');
 				end if;
 			else
 				old_attrib = old_attrib || value;
@@ -311,8 +317,8 @@ BEGIN
 				else
 					RAISE EXCEPTION 'Unknown type of an attribute for geojson' USING ERRCODE = 'SB003';
 				end if;
-				PERFORM validate_geo_json(old_attrib[(index - removed)]);
 			end loop;
+			PERFORM validate_geo_json(old_attrib[(index - removed)]);
 			index := index + 1;
 		end loop;
 		if jsonb_array_length(old_attrib) = 0 then
@@ -340,8 +346,11 @@ DECLARE
 	value2 jsonb;
 	merged_json jsonb;
 BEGIN
-	new_value_list = new_attrib -> '@list';
-	old_value_list = old_attrib -> '@list';
+	new_value_list = new_attrib #> '{0,@list}';
+	if old_attrib is null then
+		old_attrib = new_attrib;
+	end if;
+	old_value_list = old_attrib #> '{0,@list}';
 	if jsonb_array_length(new_value_list) != jsonb_array_length(old_value_list) then
 		if new_value_list #>> '{0,@id}' = 'urn:ngsi-ld:null' then
 			return null;
@@ -356,10 +365,10 @@ BEGIN
 				if key = 'https://uri.etsi.org/ngsi-ld/hasObject' then
 					merged_json = merge_has_object(value2, old_value_list[index - removed] -> key);
 					if merged_json is null then
-						old_attrib = jsonb_set(old_attrib, ARRAY['@list',(index-removed)]::text[], (old_attrib #> ARRAY['@list',(index-removed)]::text[]) - key);
+						old_attrib = jsonb_set(old_attrib, ARRAY[0,'@list',(index-removed)]::text[], (old_attrib #> ARRAY[0,'@list',(index-removed)]::text[]) - key);
 						removed := removed + 1;
 					else
-						old_attrib = jsonb_set(old_attrib, ARRAY['@list',(index-removed),key]::text[], merged_json);
+						old_attrib = jsonb_set(old_attrib, ARRAY[0,'@list',(index-removed),key]::text[], merged_json);
 					end if;
 				else
 					RAISE EXCEPTION 'Unknown type of an attribute for relationship' USING ERRCODE = 'SB004';
@@ -367,7 +376,7 @@ BEGIN
 			end loop;
 			index := index + 1;
 		end loop;
-		if jsonb_array_length(old_attrib) = 0 then
+		if jsonb_array_length(old_value_list) = 0 then
 			return null;
 		end if;
 		return old_attrib;
@@ -402,7 +411,7 @@ BEGIN
 		for value in select * from jsonb_array_elements(new_attrib) loop
 			for key, value2 in select * from jsonb_each(value) loop
 				if key = '@id' then
-					if value2::text = 'urn:ngsi-ld:null' then
+					if value2::text = '"urn:ngsi-ld:null"' then
 						old_attrib = old_attrib - (index - removed);
 						removed := removed + 1;
 					else
@@ -440,6 +449,9 @@ DECLARE
 	merged_json jsonb;
 BEGIN
 	new_value_list = new_attrib -> '@list';
+	if old_attrib is null then
+		old_attrib := new_attrib;
+	end if;
 	old_value_list = old_attrib -> '@list';
 	if jsonb_array_length(new_value_list) != jsonb_array_length(old_value_list) then
 		if new_value_list #>> '{0,@value}' = 'urn:ngsi-ld:null' then
@@ -453,8 +465,8 @@ BEGIN
 		for value in select * from jsonb_array_elements(new_value_list) loop
 			for key, value2 in select * from jsonb_each(value) loop
 				if key = '@value' then
-					if value2::text = 'urn:ngsi-ld:null' then
-						old_attrib = jsonb_set(old_attrib, ARRAY['@list',(index-removed)], (old_attrib #> ARRAY['@list',(index-removed)]::text[]) - key);
+					if value2::text = '"urn:ngsi-ld:null"' then
+						old_attrib = jsonb_set(old_attrib, ARRAY['@list']::text[], (old_attrib #> ARRAY['@list']::text[]) - (index-removed));
 						removed := removed + 1;
 					else
 						old_attrib = jsonb_set(old_attrib, ARRAY['@list',(index-removed),key]::text[], value2);
@@ -462,7 +474,7 @@ BEGIN
 				elsif key = '@list' then
 					merged_json = merge_has_value_list(value, old_value_list[index - removed]);
 					if merged_json is null then
-						old_attrib = jsonb_set(old_attrib, ARRAY['@list',(index-removed)]::text[], (old_attrib #> ARRAY['@list',(index-removed)]::text[]) - key);
+						old_attrib = jsonb_set(old_attrib, ARRAY['@list']::text[], (old_attrib #> ARRAY['@list']::text[]) - (index-removed));
 						removed := removed + 1;
 					else
 						old_attrib = jsonb_set(old_attrib, ARRAY['@list',(index-removed),key]::text[], merged_json);
@@ -471,7 +483,7 @@ BEGIN
 				else
 					merged_json = merge_has_value(value2, old_value_list[index - removed] -> key);
 					if merged_json is null then
-						old_attrib = jsonb_set(old_attrib, ARRAY['@list',(index-removed)]::text[], (old_attrib #> ARRAY['@list',(index-removed)]::text[]) - key);
+						old_attrib = jsonb_set(old_attrib, ARRAY['@list']::text[], (old_attrib #> ARRAY['@list']::text[]) - (index-removed));
 						removed := removed + 1;
 					else
 						old_attrib = jsonb_set(old_attrib, ARRAY['@list',(index-removed),key]::text[], merged_json);
@@ -480,7 +492,7 @@ BEGIN
 			end loop;
 			index := index + 1;
 		end loop;
-		if jsonb_array_length(old_attrib) = 0 then
+		if jsonb_array_length(old_value_list) = 0 then
 			return null;
 		end if;
 		return old_attrib;
@@ -504,6 +516,9 @@ DECLARE
 	arr_idx integer;
 	key text;
 BEGIN
+	if old_attrib is null then
+		old_attrib := new_attrib;
+	end if;
 	if jsonb_array_length(new_attrib) != jsonb_array_length(old_attrib) then
 		if new_attrib #>> '{0,@value}' = 'urn:ngsi-ld:null' then
 			return null;
@@ -517,7 +532,7 @@ BEGIN
 			for key, value2 in select * from jsonb_each(value) loop
 				if key = '@value' then
 					arr_idx := index - removed;
-					if value2::text = 'urn:ngsi-ld:null' then
+					if value2::text = '"urn:ngsi-ld:null"' then
 						old_attrib = old_attrib - arr_idx;
 						removed := removed + 1;
 					else
@@ -557,8 +572,7 @@ DECLARE
   key text;
 BEGIN
 	if old_attrib is null then
-		PERFORM validate_attrib(new_attrib);
-		return new_attrib;
+		old_attrib := new_attrib;
 	end if;
 	new_attrib := new_attrib - 'https://uri.etsi.org/ngsi-ld/createdAt';
 	attrib_type := old_attrib #>> '{@type,0}';
@@ -596,7 +610,7 @@ BEGIN
 		for key, value in SELECT * FROM JSONB_EACH(new_attrib) loop
 			if key = '@type' or key = 'https://uri.etsi.org/ngsi-ld/datasetId' then
 				continue;
-			elsif key = 'https://uri.etsi.org/ngsi-ld/objectType' then
+			elsif key = 'https://uri.etsi.org/ngsi-ld/hasObjectType' then
 				if value #>> '{0,@id}' = 'urn:ngsi-ld:null' then
 					old_attrib = old_attrib - key;
 				else
@@ -650,7 +664,7 @@ BEGIN
 		for key, value in SELECT * FROM JSONB_EACH(new_attrib) loop
 			if key = '@type' or key = 'https://uri.etsi.org/ngsi-ld/datasetId' then
 				continue;
-			elsif key = 'https://uri.etsi.org/ngsi-ld/objectType' then
+			elsif key = 'https://uri.etsi.org/ngsi-ld/hasObjectType' then
 				if value #>> '{0,@id}' = 'urn:ngsi-ld:null' then
 					old_attrib = old_attrib - key;
 				else
@@ -741,11 +755,11 @@ BEGIN
 			if key = '@type' or key = 'https://uri.etsi.org/ngsi-ld/datasetId' then
 				continue;
 			elsif key = 'https://uri.etsi.org/ngsi-ld/hasJSON' then
-				merged_json = merge_has_json(value #> '{0,@value}', old_attrib #> '{key,0,@value}');
+				merged_json = merge_has_json(value #> ARRAY[0,'@value']::text[], old_attrib #> ARRAY[key,0,'@value']::text[]);
 				if merged_json is null then
 					return null;
 				end if;
-				old_attrib = jsonb_set(old_attrib, ARRAY[key]::text[], merged_json);
+				old_attrib = jsonb_set(old_attrib, ARRAY[key,0,'@value']::text[], merged_json);
 			elsif key = 'https://uri.etsi.org/ngsi-ld/modifiedAt' or key = 'https://uri.etsi.org/ngsi-ld/observedAt' then
 				old_attrib = jsonb_set(old_attrib, ARRAY[key]::text[], value);
 			else
@@ -758,7 +772,7 @@ BEGIN
 			end if;
 		end loop;
 	else
-		RAISE EXCEPTION 'Unknown type of an attribute' USING ERRCODE = 'SB002';
+		RAISE EXCEPTION 'Unknown type of an attribute %, %, %', attrib_type, old_attrib, new_attrib USING ERRCODE = 'SB002';
 	end if;
 	return old_attrib;
 END;
@@ -785,8 +799,7 @@ BEGIN
 		RAISE EXCEPTION 'Cannot invalid structure' USING ERRCODE = 'SB002';
 	end if;
 	if old_attrib is null then
-		PERFORM validate_attrib(new_attrib);
-		return new_attrib;
+		old_attrib := new_attrib;
 	end if;
 	for value in select * from jsonb_array_elements(new_attrib) loop
 		new_dataset_id = value #>> '{https://uri.etsi.org/ngsi-ld/datasetId,0,@id}';
@@ -824,11 +837,11 @@ DECLARE
   ret JSONB;
 BEGIN
 
-previous_entity := (Select entity from entity where id =a);
+Select entity into previous_entity from entity where id =a;
 if previous_entity is null then
 	RAISE EXCEPTION 'Entity not found.' USING ERRCODE = '02000';
 end if;
-merged_json := (Select entity from entity where id =a);
+Select entity into merged_json from entity where id =a;
 
 -- Iterate through keys in JSON B
 FOR key, value IN SELECT * FROM JSONB_EACH(b)
@@ -850,7 +863,7 @@ LOOP
 		if merged_json ? key then
 			value2 = merged_json -> key;
 			value2 = merge_attrib(value, value2);
-			if value2 is null then
+			if value2 is null or jsonb_array_length(value2) = 0 then
 				merged_json = merged_json - key;
 			else
 				merged_json = jsonb_set(merged_json, ARRAY[key]::text[], value2);
