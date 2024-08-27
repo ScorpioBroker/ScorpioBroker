@@ -443,12 +443,12 @@ public class EntityInfoDAO {
 					return Uni.createFrom()
 							.failure(new ResponseException(ErrorType.NotFound, request.getFirstId() + " not found"));
 				Row first = rows.iterator().next();
-				JsonArray jsonArray = first.getJsonArray(0);
-				if (jsonArray.getJsonObject(0) == null) {
+				JsonObject result = first.getJsonObject(0);
+				if (result == null) {
 					return Uni.createFrom()
 							.failure(new ResponseException(ErrorType.NotFound, request.getFirstId() + " not found"));
 				}
-				return Uni.createFrom().item(jsonArray.getJsonObject(0).getMap());
+				return Uni.createFrom().item(result.getMap());
 			});
 		});
 	}

@@ -794,7 +794,12 @@ DECLARE
   old_dataset_id TEXT;
   index INTEGER;
   found boolean;
+  deleted jsonb;
+  updated jsonb;
+  tmp jsonb;
 BEGIN
+	deleted := '[]'::jsonb;
+	updated := '[]'::jsonb;
 	if jsonb_typeof(new_attrib) != 'array' then
 		RAISE EXCEPTION 'Cannot invalid structure' USING ERRCODE = 'SB002';
 	end if;
@@ -818,12 +823,31 @@ BEGIN
 			old_attrib = old_attrib - index;
 			if merged_json is not null then
 				old_attrib = old_attrib || merged_json;
+				if new_dataset_id is null then
+					updated := updated || 'null';
+				else
+					updated := updated || new_dataset_id;
+				end if;
+			else
+				if new_dataset_id is null then
+					deleted := deleted || 'null';
+				else
+					deleted := deleted || new_dataset_id;
+				end if;
 			end if;
 		else
+			if new_dataset_id is null then
+				updated := updated || 'null';
+			else
+				updated := updated || new_dataset_id;
+			end if;
 			old_attrib = old_attrib || value;
 		end if;
 	end loop;
-RETURN old_attrib;
+	if jsonb_array_length(old_attrib) = 0 then
+		return jsonb_build_object('result', 'null', 'deleted', deleted, 'updated', updated);
+	end if;
+return jsonb_build_object('result', old_attrib, 'deleted', deleted, 'updated', updated);
 END;
 $BODY$;
 
@@ -834,7 +858,8 @@ DECLARE
   value JSONB;
   value2 JSONB;
   previous_entity JSONB;
-  ret JSONB;
+  deleted JSONB;
+  updated JSONB;
 BEGIN
 
 Select entity into previous_entity from entity where id =a;
@@ -842,7 +867,8 @@ if previous_entity is null then
 	RAISE EXCEPTION 'Entity not found.' USING ERRCODE = '02000';
 end if;
 Select entity into merged_json from entity where id =a;
-
+deleted := '{}';
+updated := '{}';
 -- Iterate through keys in JSON B
 FOR key, value IN SELECT * FROM JSONB_EACH(b)
 LOOP
@@ -859,23 +885,38 @@ LOOP
 		merged_json = jsonb_set(merged_json, ARRAY[key]::text[], value2);
 	elsif key = 'https://uri.etsi.org/ngsi-ld/modifiedAt' then
 		merged_json = jsonb_set(merged_json, ARRAY[key]::text[], value);
-	else
-		if merged_json ? key then
-			value2 = merged_json -> key;
-			value2 = merge_attrib(value, value2);
-			if value2 is null or jsonb_array_length(value2) = 0 then
-				merged_json = merged_json - key;
-			else
-				merged_json = jsonb_set(merged_json, ARRAY[key]::text[], value2);
-			end if;
+	else		
+		value2 = merged_json -> key;
+		value2 = merge_attrib(value, value2);
+		if value2 ->'result' = 'null'::jsonb or jsonb_array_length(value2 ->'result') = 0 then
+			merged_json = merged_json - key;
+			deleted = jsonb_set(deleted, ARRAY[key]::text[], ARRAY['@all']);
 		else
-			merged_json = jsonb_set(merged_json, ARRAY[key]::text[], value);
+			merged_json = jsonb_set(merged_json, ARRAY[key]::text[], value2 -> 'result');
+			if jsonb_array_length(value2 -> 'deleted') != 0 then
+				if deleted ? key then
+					deleted = jsonb_set(deleted, ARRAY[key], ((deleted -> key) || (value2 -> 'deleted')));
+				else
+					deleted = jsonb_set(deleted, ARRAY[key], ((value2 -> 'deleted')));
+				end if;
+			end if;
+			
+			if jsonb_array_length(value2 -> 'updated') != 0 then
+				if updated ? key then
+					updated = jsonb_set(updated, ARRAY[key], ((updated -> key) || (value2 -> 'updated')));
+				else
+					updated = jsonb_set(updated, ARRAY[key], ((value2 -> 'updated')));
+				end if;
+			end if;
+			
 		end if;
+		
+		
 	end if;
 END LOOP;
 update entity set entity = merged_json, e_types = ARRAY(SELECT jsonb_array_elements_text(merged_json->'@type')) where id = a;
-ret := jsonb_build_array(previous_entity, merged_json);
-RETURN ret;
+
+RETURN jsonb_build_object('old', previous_entity, 'new', merged_json, 'deleted', deleted, 'updated', updated);
 END;
 $BODY$;
 
@@ -908,7 +949,7 @@ BEGIN
 	else
 		BEGIN
 			ret := MERGE_JSON(entityId, newentity);
-			resultObj = jsonb_set(resultObj, '{success}', resultObj -> 'success' || jsonb_build_object('id', entityId, 'old', ret[0], 'new', ret[1])::jsonb);
+			resultObj = jsonb_set(resultObj, '{success}', resultObj -> 'success' || jsonb_build_object('id', entityId, 'old', ret -> 'old', 'new', ret -> 'new', 'deleted', ret -> 'deleted', 'updated', ret -> 'updated')::jsonb);
 		EXCEPTION 
 		WHEN OTHERS THEN
 			RAISE NOTICE '%, %', SQLSTATE, SQLERRM;
