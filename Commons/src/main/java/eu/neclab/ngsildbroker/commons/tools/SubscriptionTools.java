@@ -228,21 +228,32 @@ public class SubscriptionTools {
 						switch (acceptHeader) {
 						case 1:
 							data.forEach(entry -> entry.remove(NGSIConstants.JSON_LD_CONTEXT));
+							notification.put(NGSIConstants.NGSI_LD_DATA_SHORT, data);
 							break;
 						case 2:
 							// ld+
 							data.forEach(entry -> entry.put(NGSIConstants.JSON_LD_CONTEXT,
 									Collections.singletonList(potentialSub.getSubscription().getJsonldContext())));
+							notification.put(NGSIConstants.NGSI_LD_DATA_SHORT, data);
 							break;
 						case 3:
 							break;
 						case 4:// geo+json
+							List<String> atCtx = context.getOriginalAtContext();
+							if(atCtx == null || atCtx.isEmpty()) {
+								atCtx = List.of(NGSIConstants.CURRENT_CORE_CONTEXT);
+							}
+							try {
+								notification.put(NGSIConstants.NGSI_LD_DATA_SHORT, HttpUtils.generateGeoJson(data, null, atCtx));
+							} catch (ResponseException e) {
+								logger.error("Failed to generate geo+json for subscription");
+							}
 							break;
 						default:
 							break;
 						}
 
-						notification.put(NGSIConstants.NGSI_LD_DATA_SHORT, data);
+						
 
 						return notification;
 					});
