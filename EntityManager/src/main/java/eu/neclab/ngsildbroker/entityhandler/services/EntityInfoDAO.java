@@ -426,6 +426,7 @@ public class EntityInfoDAO {
 			String sql = "SELECT * FROM MERGE_JSON($1,$2);";
 			Tuple tuple = Tuple.of(request.getFirstId(), new JsonObject(payload));
 			return client.preparedQuery(sql).execute(tuple).onFailure().recoverWithUni(e -> {
+				
 				if (e instanceof PgException pge) {
 					pge.printStackTrace();
 					if (pge.getSqlState().equals(AppConstants.SQL_NOT_FOUND)) {
@@ -437,6 +438,7 @@ public class EntityInfoDAO {
 								.failure(new ResponseException(ErrorType.BadRequestData, pge.getErrorMessage()));
 					}
 				}
+				logger.debug("database exception" , e);
 				return Uni.createFrom().failure(e);
 			}).onItem().transformToUni(rows -> {
 				if (rows.size() == 0)
