@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "9cfe3e26-d810-46c2-b38d-5c568de1dcde",
+		"_postman_id": "58e62b63-6792-4c93-bb4f-e796c7d78f8d",
 		"name": "fed-test",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
@@ -152,13 +152,15 @@
 															"});\r",
 															"pm.test(\"Validate content\", function () {\r",
 															"    var jsonData = pm.response.json();\r",
-															"    console.log(\"Expected: \" + expected);\r",
-															"    console.log(\"Received: \" + jsonData);\r",
+															"    jsonData = new Map([jsonData.entries()].sort());\r",
+															"    expected = new Map([expected.entries()].sort());\r",
+															"\r",
+															"    console.log(\"Expected: \" + JSON.stringify(expected, null, 2));\r",
+															"    console.log(\"Received: \" + JSON.stringify(jsonData, null, 2));\r",
 															"    pm.expect(jsonData).to.eql(expected);\r",
 															"});"
 														],
-														"type": "text/javascript",
-														"packages": {}
+														"type": "text/javascript"
 													}
 												}
 											],
@@ -400,13 +402,15 @@
 															"});\r",
 															"pm.test(\"Validate content\", function () {\r",
 															"    var jsonData = pm.response.json()[0];\r",
-															"    console.log(\"Expected: \" + JSON.stringify(expected));\r",
-															"    console.log(\"Received: \" + JSON.stringify(jsonData));\r",
+															"jsonData = new Map([jsonData.entries()].sort());\r",
+															"    expected = new Map([expected.entries()].sort());\r",
+															"\r",
+															"    console.log(\"Expected: \" + JSON.stringify(expected, null, 2));\r",
+															"    console.log(\"Received: \" + JSON.stringify(jsonData, null, 2));\r",
 															"    pm.expect(jsonData).to.eql(expected);\r",
 															"});"
 														],
-														"type": "text/javascript",
-														"packages": {}
+														"type": "text/javascript"
 													}
 												}
 											],
@@ -659,7 +663,12 @@
 															"});\r",
 															"pm.test(\"Validate content\", function () {\r",
 															"    var jsonData = pm.response.json();\r",
-															"    pm.expect(jsonData[0]).to.eql(expected);\r",
+															"    jsonData = new Map([jsonData[0].entries()].sort());\r",
+															"    expected = new Map([expected.entries()].sort());\r",
+															"\r",
+															"    console.log(\"Expected: \" + JSON.stringify(expected, null, 2));\r",
+															"    console.log(\"Received: \" + JSON.stringify(jsonData, null, 2));\r",
+															"    pm.expect(jsonData).to.eql(expected);\r",
 															"});\r",
 															"pm.test(\"Validate Link header\", function () {\r",
 															"    var headers = pm.response.headers.all();\r",
@@ -674,8 +683,7 @@
 															"    pm.expect(links).to.include(expectedLink);\r",
 															"});"
 														],
-														"type": "text/javascript",
-														"packages": {}
+														"type": "text/javascript"
 													}
 												}
 											],
@@ -995,13 +1003,17 @@
 															"});\r",
 															"pm.test(\"Validate content\", function () {\r",
 															"    var jsonData = pm.response.json();\r",
+															"    jsonData = new Map([jsonData.entries()].sort());\r",
+															"    expected = new Map([expected.entries()].sort());\r",
+															"\r",
+															"    console.log(\"Expected: \" + JSON.stringify(expected, null, 2));\r",
+															"    console.log(\"Received: \" + JSON.stringify(jsonData, null, 2));\r",
 															"    console.log(\"Expected: \" + expected);\r",
 															"    console.log(\"Received: \" + jsonData);\r",
 															"    pm.expect(jsonData).to.eql(expected);\r",
 															"});"
 														],
-														"type": "text/javascript",
-														"packages": {}
+														"type": "text/javascript"
 													}
 												}
 											],
