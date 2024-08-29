@@ -1689,7 +1689,7 @@ public class EntityService {
 			}
 		}
 		if (!updated.isEmpty()) {
-			for (Entry<String, List<String>> attrEntry : deleted.entrySet()) {
+			for (Entry<String, List<String>> attrEntry : updated.entrySet()) {
 				String attr = attrEntry.getKey();
 
 				

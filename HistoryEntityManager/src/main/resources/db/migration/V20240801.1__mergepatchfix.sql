@@ -845,7 +845,7 @@ BEGIN
 		end if;
 	end loop;
 	if jsonb_array_length(old_attrib) = 0 then
-		return jsonb_build_object('result', 'null', 'deleted', deleted, 'updated', updated);
+		return jsonb_build_object('result', 'null'::jsonb, 'deleted', deleted, 'updated', updated);
 	end if;
 return jsonb_build_object('result', old_attrib, 'deleted', deleted, 'updated', updated);
 END;
@@ -890,7 +890,7 @@ LOOP
 		value2 = merge_attrib(value, value2);
 		if value2 ->'result' = 'null'::jsonb or jsonb_array_length(value2 ->'result') = 0 then
 			merged_json = merged_json - key;
-			deleted = jsonb_set(deleted, ARRAY[key]::text[], ARRAY['@all']);
+			deleted = jsonb_set(deleted, ARRAY[key]::text[], '["@all"]'::jsonb);
 		else
 			merged_json = jsonb_set(merged_json, ARRAY[key]::text[], value2 -> 'result');
 			if jsonb_array_length(value2 -> 'deleted') != 0 then
