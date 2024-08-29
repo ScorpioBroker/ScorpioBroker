@@ -70,7 +70,7 @@ public abstract class HistoryMessagingBase {
 			logger.error("failed to serialize message " + byteMessage, e);
 			return Uni.createFrom().voidItem();
 		}
-		if (baseRequest.getRequestType() > 30) {
+		if (baseRequest.getRequestType() >= 30) {
 			return baseHandleBatch(baseRequest);
 		} else {
 			return baseHandleEntity(baseRequest);

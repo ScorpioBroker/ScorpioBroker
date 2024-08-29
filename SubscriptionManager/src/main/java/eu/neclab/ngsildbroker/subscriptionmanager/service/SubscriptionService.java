@@ -621,10 +621,12 @@ public class SubscriptionService {
 							payloads.forEach(payload -> {
 								List<Map<String, Object>> attribs = (List<Map<String, Object>>) payload
 										.get(message.getAttribName());
-								for (Map<String, Object> attrib : attribs) {
-									putOldAttribFromDelete(attrib, message.getSendTimestamp());
+								if (attribs != null) {
+									for (Map<String, Object> attrib : attribs) {
+										putOldAttribFromDelete(attrib, message.getSendTimestamp());
+									}
+									tmp.add(payload);
 								}
-								tmp.add(payload);
 							});
 						});
 					} else {
@@ -755,14 +757,13 @@ public class SubscriptionService {
 				break;
 			case NGSIConstants.JSON_LD_TYPE:
 				List<String> oldTypes = (List<String>) result.get(NGSIConstants.JSON_LD_TYPE);
-				if(oldTypes == null) {
+				if (oldTypes == null) {
 					result.put(attribName, entry.getValue());
-				}else {
+				} else {
 					List<String> mergedTypes = Stream
-							.concat((oldTypes).stream(),
-									((List<String>) entry.getValue()).stream())
-							.distinct().collect(Collectors.toList());
-					result.put(attribName, mergedTypes);	
+							.concat((oldTypes).stream(), ((List<String>) entry.getValue()).stream()).distinct()
+							.collect(Collectors.toList());
+					result.put(attribName, mergedTypes);
 				}
 				break;
 			case NGSIConstants.NGSI_LD_SCOPE:
@@ -1157,7 +1158,7 @@ public class SubscriptionService {
 								mergePrevIntoQueryResult(payload, dupl);
 							}
 
-						}else {
+						} else {
 							payloadToUse.put(entityId, Lists.newArrayList(entity));
 						}
 					}
@@ -1165,21 +1166,21 @@ public class SubscriptionService {
 				List<Map<String, Object>> dataToNotify = mergePrevAndNew(payloadToUse, prevPayloadToUse,
 						request.getSubscription().getNotification().getShowChanges());
 				PickTerm pick = request.getSubscription().getNotification().getPick();
-				if(pick != null) {
+				if (pick != null) {
 					Iterator<Map<String, Object>> it = dataToNotify.iterator();
-					while(it.hasNext()) {
+					while (it.hasNext()) {
 						Map<String, Object> entity = it.next();
-						if(!pick.calculateEntity(entity, false, null, null, true)) {
+						if (!pick.calculateEntity(entity, false, null, null, true)) {
 							it.remove();
 						}
 					}
 				}
 				OmitTerm omit = request.getSubscription().getNotification().getOmit();
-				if(omit != null) {
+				if (omit != null) {
 					Iterator<Map<String, Object>> it = dataToNotify.iterator();
-					while(it.hasNext()) {
+					while (it.hasNext()) {
 						Map<String, Object> entity = it.next();
-						if(!omit.calculateEntity(entity, false, null, null, true)) {
+						if (!omit.calculateEntity(entity, false, null, null, true)) {
 							it.remove();
 						}
 					}

@@ -42,6 +42,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
+import io.smallrye.mutiny.tuples.Tuple3;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.ext.web.client.WebClient;
@@ -165,8 +166,8 @@ public class EntityServiceTest {
 	@Order(3)
 	public void appendEntryTest() {
 
-		Uni<Tuple2<Map<String, Object>, Set<String>>> appendEntityRes = Uni.createFrom()
-				.item(Tuple2.of(new HashMap<>(0), new HashSet<>(0)));
+		Uni<Tuple3<Map<String, Object>, Map<String, Object>, Set<String>>> appendEntityRes = Uni.createFrom()
+				.item(Tuple3.of(new HashMap<>(0), new HashMap<>(0), new HashSet<>(0)));
 		when(entityDAO.appendToEntity2(any(), anyBoolean())).thenReturn(appendEntityRes);
 
 		Uni<Void> emitterResponse = Uni.createFrom().nullItem();

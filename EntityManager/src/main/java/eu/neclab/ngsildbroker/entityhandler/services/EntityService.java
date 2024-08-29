@@ -969,12 +969,13 @@ public class EntityService {
 		return entityDAO.appendToEntity2(request, noOverwrite).onItem().transformToUni(resultAndNotAppended -> {
 			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.APPEND_REQUEST, entityId);
 			Set<Attrib> failedToAdd = Sets.newHashSet();
-			Set<String> notAppended = resultAndNotAppended.getItem2();
+			Set<String> notAppended = resultAndNotAppended.getItem3();
 			Map<String, Object> payload = request.getPayload().get(entityId).get(0);
 			for (String entry : notAppended) {
 				payload.remove(entry);
 				failedToAdd.add(new Attrib(context.compactIri(entry), null));
 			}
+			request.setPrevPayloadFromSingle(entityId, resultAndNotAppended.getItem1());
 			localResult.addSuccess(new CRUDSuccess(null, null, null, payload, context));
 			if (!failedToAdd.isEmpty())
 				localResult.addFailure(new ResponseException(ErrorType.None, "Not added", failedToAdd));
@@ -1707,7 +1708,10 @@ public class EntityService {
 						}
 					}
 					if(searchedInstance != null) {
-						AppendEntityRequest append = new AppendEntityRequest(tenant, entityId, searchedInstance, zip);
+						Map<String, Object> tmp = Maps.newHashMap();
+						tmp.put(attr, Lists.newArrayList(searchedInstance));
+						AppendEntityRequest append = new AppendEntityRequest(tenant, entityId, tmp, zip);
+						append.setPrevPayloadFromSingle(entityId, prev);
 						try {
 							MicroServiceUtils.serializeAndSplitObjectAndEmit(append, messageSize, entityEmitter,
 									objectMapper);
