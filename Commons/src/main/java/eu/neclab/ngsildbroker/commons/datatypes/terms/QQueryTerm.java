@@ -1404,8 +1404,8 @@ public class QQueryTerm implements Serializable {
 		case NGSIConstants.QUERY_EQUAL:
 			if (finalOperant.matches(LIST)) {
 				if (operator.equals(NGSIConstants.QUERY_UNEQUAL)) {
-					attributeFilterProperty.append(" not");
-					followUp.append(" not");
+					//attributeFilterProperty.append(" not");
+					//followUp.append(" not");
 				}
 				attributeFilterProperty.append(" in (");
 				for (String listItem : finalOperant.split(",")) {
@@ -1425,8 +1425,8 @@ public class QQueryTerm implements Serializable {
 			} else if (finalOperant.matches(RANGE)) {
 				String[] myRange = finalOperant.split("\\.\\.");
 				if (operator.equals(NGSIConstants.QUERY_UNEQUAL)) {
-					attributeFilterProperty.append(" not");
-					followUp.append(" not");
+					//attributeFilterProperty.append(" not");
+					//followUp.append(" not");
 				}
 				attributeFilterProperty.append(" between ");
 
