@@ -661,8 +661,8 @@
 															"    //expected = new Map([expected.entries()].sort());\r",
 															"\r",
 															"    console.log(\"Expected: \" + JSON.stringify(expected));\r",
-															"    console.log(\"Received: \" + JSON.stringify(jsonData));\r",
-															"    pm.expect(jsonData).to.eql(expected);\r",
+															"    console.log(\"Received: \" + JSON.stringify(jsonData[0]));\r",
+															"    pm.expect(jsonData[0]).to.eql(expected);\r",
 															"});\r",
 															"pm.test(\"Validate Link header\", function () {\r",
 															"    var headers = pm.response.headers.all();\r",
@@ -3237,6 +3237,10 @@
 		},
 		{
 			"key": "entityId",
+			"value": ""
+		},
+		{
+			"key": "link",
 			"value": ""
 		}
 	]
