@@ -1161,10 +1161,17 @@ public class QQueryTerm implements Serializable {
 				dollarCount++;
 				tuple.addString(operant);
 			} else {
-				result.append(" AND EXISTS (SELECT TRUE FROM JSONB_ARRAY_ELEMENTS(ENTITY -> $");
+				followUp.append(" AND ");
+				result.append(" AND ");
+				if (operator.equals(NGSIConstants.QUERY_UNEQUAL)) {
+					result.append("NOT ");
+					followUp.append("NOT ");
+				}
+				result.append("EXISTS (SELECT TRUE FROM JSONB_ARRAY_ELEMENTS(ENTITY -> $");
+				followUp.append("EXISTS (SELECT TRUE FROM JSONB_ARRAY_ELEMENTS(ENTITY -> ''' || $");
 				result.append(dollarCount);
 
-				followUp.append(" AND EXISTS (SELECT TRUE FROM JSONB_ARRAY_ELEMENTS(ENTITY -> ''' || $");
+				
 				followUp.append(dollarCount);
 				followUp.append(" || '''");
 				dollarCount++;
@@ -1397,8 +1404,8 @@ public class QQueryTerm implements Serializable {
 		case NGSIConstants.QUERY_EQUAL:
 			if (finalOperant.matches(LIST)) {
 				if (operator.equals(NGSIConstants.QUERY_UNEQUAL)) {
-					attributeFilterProperty.append(" not");
-					followUp.append(" not");
+					//attributeFilterProperty.append(" not");
+					//followUp.append(" not");
 				}
 				attributeFilterProperty.append(" in (");
 				for (String listItem : finalOperant.split(",")) {
@@ -1418,8 +1425,8 @@ public class QQueryTerm implements Serializable {
 			} else if (finalOperant.matches(RANGE)) {
 				String[] myRange = finalOperant.split("\\.\\.");
 				if (operator.equals(NGSIConstants.QUERY_UNEQUAL)) {
-					attributeFilterProperty.append(" not");
-					followUp.append(" not");
+					//attributeFilterProperty.append(" not");
+					//followUp.append(" not");
 				}
 				attributeFilterProperty.append(" between ");
 
@@ -1439,8 +1446,8 @@ public class QQueryTerm implements Serializable {
 				followUp.append("::" + typecast);
 			} else {
 				if (operator.equals(NGSIConstants.QUERY_UNEQUAL)) {
-					attributeFilterProperty.append(" != ");
-					followUp.append(" != ");
+					attributeFilterProperty.append(" = ");
+					followUp.append(" = ");
 				} else {
 					attributeFilterProperty.append(" = ");
 					followUp.append(" = ");
