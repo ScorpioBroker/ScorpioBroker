@@ -82,10 +82,11 @@ public class QueryParser {
 	private static String queryTerm = "(" + queryTermCompare + ")|(" + queryTermEqual + ")|(" + queryTermUnequal + ")|("
 			+ queryTermPattern + ")|(" + queryTermNotPattern + ")";
 	private static String queryTermAssoc = "\\((" + queryTerm + "((" + logicalOp + ")(" + queryTerm + "))*)\\)";
+	@SuppressWarnings("unused")
 	private static String query = "((" + queryTerm + ")|(" + queryTermAssoc + "))" + "((" + logicalOp + ")(("
 			+ queryTerm + ")|(" + queryTermAssoc + ")))*";
 
-	@SuppressWarnings("unused")
+	
 	// TODO validate queries still not working ... rework regex ???
 	// private static Pattern p = Pattern.compile(query);
 

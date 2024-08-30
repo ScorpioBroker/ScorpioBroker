@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "9cfe3e26-d810-46c2-b38d-5c568de1dcde",
+		"_postman_id": "58e62b63-6792-4c93-bb4f-e796c7d78f8d",
 		"name": "fed-test",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
@@ -88,8 +88,7 @@
 															"\r",
 															""
 														],
-														"type": "text/javascript",
-														"packages": {}
+														"type": "text/javascript"
 													}
 												},
 												{
@@ -98,8 +97,7 @@
 														"exec": [
 															""
 														],
-														"type": "text/javascript",
-														"packages": {}
+														"type": "text/javascript"
 													}
 												}
 											],
@@ -118,7 +116,7 @@
 												],
 												"body": {
 													"mode": "raw",
-													"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n    \"listproperty\": {\"type\": \"ListProperty\", \"valueList\": [100,200,300]},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"passenger\": {\r\n       \"type\": \"ListRelationship\",\r\n       \"objectType\": \"Person\",\r\n       \"objectList\": [\r\n           \"urn:ngsi-ld:Person:Alice\",\r\n           \"urn:ngsi-ld:Person:Bob\"\r\n       ]\r\n   },\r\n    \"street\": {\r\n        \"type\": \"LanguageProperty\",\r\n        \"languageMap\": {\r\n            \"fr\": \"Grand Place\",\r\n            \"nl\": \"Grote Markt\"\r\n        }\r\n    },\r\n    \"testjsonproperty\": {\r\n         \"type\": \"JsonProperty\",\r\n         \"json\": {\r\n             \"id\": \"85a6cc52-0589-45f9\",\r\n            \"value\": \"Overstay 60 minutes\"\r\n      }\r\n  }\r\n\r\n}",
+													"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n    \"listproperty\": {\"type\": \"ListProperty\", \"valueList\": [100,200,300]},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"passenger\": {\r\n       \"type\": \"ListRelationship\",\r\n       \"objectType\": \"Person\",\r\n       \"objectList\": [\r\n           {\"object\": \"urn:ngsi-ld:Person:Alice\"},\r\n           {\"object\": \"urn:ngsi-ld:Person:Bob\"}\r\n       ]\r\n   },\r\n    \"street\": {\r\n        \"type\": \"LanguageProperty\",\r\n        \"languageMap\": {\r\n            \"fr\": \"Grand Place\",\r\n            \"nl\": \"Grote Markt\"\r\n        }\r\n    },\r\n    \"testjsonproperty\": {\r\n         \"type\": \"JsonProperty\",\r\n         \"json\": {\r\n             \"id\": \"85a6cc52-0589-45f9\",\r\n            \"value\": \"Overstay 60 minutes\"\r\n      }\r\n  }\r\n\r\n}",
 													"options": {
 														"raw": {
 															"language": "json"
@@ -152,13 +150,15 @@
 															"});\r",
 															"pm.test(\"Validate content\", function () {\r",
 															"    var jsonData = pm.response.json();\r",
-															"    console.log(\"Expected: \" + expected);\r",
-															"    console.log(\"Received: \" + jsonData);\r",
+															"    //jsonData = new Map([jsonData.entries()].sort());\r",
+															"    //expected = new Map([expected.entries()].sort());\r",
+															"\r",
+															"    console.log(\"Expected: \" + JSON.stringify(expected));\r",
+															"    console.log(\"Received: \" + JSON.stringify(jsonData));\r",
 															"    pm.expect(jsonData).to.eql(expected);\r",
 															"});"
 														],
-														"type": "text/javascript",
-														"packages": {}
+														"type": "text/javascript"
 													}
 												}
 											],
@@ -336,8 +336,7 @@
 															"\r",
 															""
 														],
-														"type": "text/javascript",
-														"packages": {}
+														"type": "text/javascript"
 													}
 												},
 												{
@@ -346,8 +345,7 @@
 														"exec": [
 															""
 														],
-														"type": "text/javascript",
-														"packages": {}
+														"type": "text/javascript"
 													}
 												}
 											],
@@ -366,7 +364,7 @@
 												],
 												"body": {
 													"mode": "raw",
-													"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n     \"listproperty\": {\"type\": \"ListProperty\", \"valueList\": [100,200,300]},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"passenger\": {\r\n       \"type\": \"ListRelationship\",\r\n       \"objectType\": \"Person\",\r\n       \"objectList\": [\r\n           \"urn:ngsi-ld:Person:Alice\",\r\n           \"urn:ngsi-ld:Person:Bob\"\r\n       ]\r\n   },\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
+													"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n     \"listproperty\": {\"type\": \"ListProperty\", \"valueList\": [100,200,300]},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"passenger\": {\r\n       \"type\": \"ListRelationship\",\r\n       \"objectType\": \"Person\",\r\n       \"objectList\": [\r\n           {\"object\": \"urn:ngsi-ld:Person:Alice\"},\r\n           {\"object\": \"urn:ngsi-ld:Person:Bob\"}\r\n       ]\r\n   },\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
 													"options": {
 														"raw": {
 															"language": "json"
@@ -400,13 +398,15 @@
 															"});\r",
 															"pm.test(\"Validate content\", function () {\r",
 															"    var jsonData = pm.response.json()[0];\r",
+															"//jsonData = new Map([jsonData.entries()].sort());\r",
+															"    //expected = new Map([expected.entries()].sort());\r",
+															"\r",
 															"    console.log(\"Expected: \" + JSON.stringify(expected));\r",
 															"    console.log(\"Received: \" + JSON.stringify(jsonData));\r",
 															"    pm.expect(jsonData).to.eql(expected);\r",
 															"});"
 														],
-														"type": "text/javascript",
-														"packages": {}
+														"type": "text/javascript"
 													}
 												}
 											],
@@ -579,8 +579,7 @@
 														"exec": [
 															""
 														],
-														"type": "text/javascript",
-														"packages": {}
+														"type": "text/javascript"
 													}
 												},
 												{
@@ -605,8 +604,7 @@
 															"\r",
 															""
 														],
-														"type": "text/javascript",
-														"packages": {}
+														"type": "text/javascript"
 													}
 												}
 											],
@@ -624,7 +622,7 @@
 												],
 												"body": {
 													"mode": "raw",
-													"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n    \"listproperty\": {\"type\": \"ListProperty\", \"valueList\": [100,200,300]},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"passenger\": {\r\n       \"type\": \"ListRelationship\",\r\n       \"objectType\": \"Person\",\r\n       \"objectList\": [\r\n           \"urn:ngsi-ld:Person:Alice\",\r\n           \"urn:ngsi-ld:Person:Bob\"\r\n       ]\r\n   }\r\n}",
+													"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n    \"listproperty\": {\"type\": \"ListProperty\", \"valueList\": [100,200,300]},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"passenger\": {\r\n       \"type\": \"ListRelationship\",\r\n       \"objectType\": \"Person\",\r\n       \"objectList\": [\r\n           {\"object\": \"urn:ngsi-ld:Person:Alice\"},\r\n           {\"object\": \"urn:ngsi-ld:Person:Bob\"}\r\n       ]\r\n   }\r\n}",
 													"options": {
 														"raw": {
 															"language": "json"
@@ -659,6 +657,11 @@
 															"});\r",
 															"pm.test(\"Validate content\", function () {\r",
 															"    var jsonData = pm.response.json();\r",
+															"//jsonData = new Map([jsonData.entries()].sort());\r",
+															"    //expected = new Map([expected.entries()].sort());\r",
+															"\r",
+															"    console.log(\"Expected: \" + JSON.stringify(expected));\r",
+															"    console.log(\"Received: \" + JSON.stringify(jsonData[0]));\r",
 															"    pm.expect(jsonData[0]).to.eql(expected);\r",
 															"});\r",
 															"pm.test(\"Validate Link header\", function () {\r",
@@ -674,8 +677,7 @@
 															"    pm.expect(links).to.include(expectedLink);\r",
 															"});"
 														],
-														"type": "text/javascript",
-														"packages": {}
+														"type": "text/javascript"
 													}
 												}
 											],
@@ -995,13 +997,15 @@
 															"});\r",
 															"pm.test(\"Validate content\", function () {\r",
 															"    var jsonData = pm.response.json();\r",
-															"    console.log(\"Expected: \" + expected);\r",
-															"    console.log(\"Received: \" + jsonData);\r",
+															"//jsonData = new Map([jsonData.entries()].sort());\r",
+															"    //expected = new Map([expected.entries()].sort());\r",
+															"\r",
+															"    console.log(\"Expected: \" + JSON.stringify(expected));\r",
+															"    console.log(\"Received: \" + JSON.stringify(jsonData));\r",
 															"    pm.expect(jsonData).to.eql(expected);\r",
 															"});"
 														],
-														"type": "text/javascript",
-														"packages": {}
+														"type": "text/javascript"
 													}
 												}
 											],
@@ -1396,8 +1400,7 @@
 															"\r",
 															""
 														],
-														"type": "text/javascript",
-														"packages": {}
+														"type": "text/javascript"
 													}
 												},
 												{
@@ -1406,8 +1409,7 @@
 														"exec": [
 															""
 														],
-														"type": "text/javascript",
-														"packages": {}
+														"type": "text/javascript"
 													}
 												}
 											],
@@ -1426,7 +1428,7 @@
 												],
 												"body": {
 													"mode": "raw",
-													"raw": "{\r\n    \"id\": \"urn:test:testentity:remone\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n    \"listproperty\": {\"type\": \"ListProperty\", \"valueList\": [100,200,300]},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"passenger\": {\r\n       \"type\": \"ListRelationship\",\r\n       \"objectType\": \"Person\",\r\n       \"objectList\": [\r\n           \"urn:ngsi-ld:Person:Alice\",\r\n           \"urn:ngsi-ld:Person:Bob\"\r\n       ]\r\n   },\r\n    \"street\": {\r\n        \"type\": \"LanguageProperty\",\r\n        \"languageMap\": {\r\n            \"fr\": \"Grand Place\",\r\n            \"nl\": \"Grote Markt\"\r\n        }\r\n    },\r\n    \"testjsonproperty\": {\r\n         \"type\": \"JsonProperty\",\r\n         \"json\": {\r\n             \"id\": \"85a6cc52-0589-45f9\",\r\n            \"value\": \"Overstay 60 minutes\"\r\n      }\r\n  }\r\n\r\n}",
+													"raw": "{\r\n    \"id\": \"urn:test:testentity:remone\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n    \"listproperty\": {\"type\": \"ListProperty\", \"valueList\": [100,200,300]},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"passenger\": {\r\n       \"type\": \"ListRelationship\",\r\n       \"objectType\": \"Person\",\r\n       \"objectList\": [\r\n           {\"object\": \"urn:ngsi-ld:Person:Alice\"},\r\n           {\"object\": \"urn:ngsi-ld:Person:Bob\"}\r\n       ]\r\n   },\r\n    \"street\": {\r\n        \"type\": \"LanguageProperty\",\r\n        \"languageMap\": {\r\n            \"fr\": \"Grand Place\",\r\n            \"nl\": \"Grote Markt\"\r\n        }\r\n    },\r\n    \"testjsonproperty\": {\r\n         \"type\": \"JsonProperty\",\r\n         \"json\": {\r\n             \"id\": \"85a6cc52-0589-45f9\",\r\n            \"value\": \"Overstay 60 minutes\"\r\n      }\r\n  }\r\n\r\n}",
 													"options": {
 														"raw": {
 															"language": "json"
@@ -1470,8 +1472,7 @@
 															"\r",
 															""
 														],
-														"type": "text/javascript",
-														"packages": {}
+														"type": "text/javascript"
 													}
 												},
 												{
@@ -1480,8 +1481,7 @@
 														"exec": [
 															""
 														],
-														"type": "text/javascript",
-														"packages": {}
+														"type": "text/javascript"
 													}
 												}
 											],
@@ -1500,7 +1500,7 @@
 												],
 												"body": {
 													"mode": "raw",
-													"raw": "{\r\n    \"id\": \"urn:test:testentity:remtwo\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n    \"listproperty\": {\"type\": \"ListProperty\", \"valueList\": [100,200,300]},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"passenger\": {\r\n       \"type\": \"ListRelationship\",\r\n       \"objectType\": \"Person\",\r\n       \"objectList\": [\r\n           \"urn:ngsi-ld:Person:Alice\",\r\n           \"urn:ngsi-ld:Person:Bob\"\r\n       ]\r\n   },\r\n    \"street\": {\r\n        \"type\": \"LanguageProperty\",\r\n        \"languageMap\": {\r\n            \"fr\": \"Grand Place\",\r\n            \"nl\": \"Grote Markt\"\r\n        }\r\n    },\r\n    \"testjsonproperty\": {\r\n         \"type\": \"JsonProperty\",\r\n         \"json\": {\r\n             \"id\": \"85a6cc52-0589-45f9\",\r\n            \"value\": \"Overstay 60 minutes\"\r\n      }\r\n  }\r\n\r\n}",
+													"raw": "{\r\n    \"id\": \"urn:test:testentity:remtwo\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n    \"listproperty\": {\"type\": \"ListProperty\", \"valueList\": [100,200,300]},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"passenger\": {\r\n       \"type\": \"ListRelationship\",\r\n       \"objectType\": \"Person\",\r\n       \"objectList\": [\r\n           {\"object\": \"urn:ngsi-ld:Person:Alice\"},\r\n           {\"object\": \"urn:ngsi-ld:Person:Bob\"}\r\n       ]\r\n   },\r\n    \"street\": {\r\n        \"type\": \"LanguageProperty\",\r\n        \"languageMap\": {\r\n            \"fr\": \"Grand Place\",\r\n            \"nl\": \"Grote Markt\"\r\n        }\r\n    },\r\n    \"testjsonproperty\": {\r\n         \"type\": \"JsonProperty\",\r\n         \"json\": {\r\n             \"id\": \"85a6cc52-0589-45f9\",\r\n            \"value\": \"Overstay 60 minutes\"\r\n      }\r\n  }\r\n\r\n}",
 													"options": {
 														"raw": {
 															"language": "json"
@@ -1848,8 +1848,7 @@
 															"\r",
 															""
 														],
-														"type": "text/javascript",
-														"packages": {}
+														"type": "text/javascript"
 													}
 												},
 												{
@@ -1858,8 +1857,7 @@
 														"exec": [
 															""
 														],
-														"type": "text/javascript",
-														"packages": {}
+														"type": "text/javascript"
 													}
 												}
 											],
@@ -1878,7 +1876,7 @@
 												],
 												"body": {
 													"mode": "raw",
-													"raw": "{\r\n    \"id\": \"urn:test:testentity:remone\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n     \"listproperty\": {\"type\": \"ListProperty\", \"valueList\": [100,200,300]},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"passenger\": {\r\n       \"type\": \"ListRelationship\",\r\n       \"objectType\": \"Person\",\r\n       \"objectList\": [\r\n           \"urn:ngsi-ld:Person:Alice\",\r\n           \"urn:ngsi-ld:Person:Bob\"\r\n       ]\r\n   },\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
+													"raw": "{\r\n    \"id\": \"urn:test:testentity:remone\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n     \"listproperty\": {\"type\": \"ListProperty\", \"valueList\": [100,200,300]},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"passenger\": {\r\n       \"type\": \"ListRelationship\",\r\n       \"objectType\": \"Person\",\r\n       \"objectList\": [\r\n           {\"object\": \"urn:ngsi-ld:Person:Alice\"},\r\n           {\"object\": \"urn:ngsi-ld:Person:Bob\"}\r\n       ]\r\n   },\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
 													"options": {
 														"raw": {
 															"language": "json"
@@ -1923,8 +1921,7 @@
 															"\r",
 															""
 														],
-														"type": "text/javascript",
-														"packages": {}
+														"type": "text/javascript"
 													}
 												},
 												{
@@ -1933,8 +1930,7 @@
 														"exec": [
 															""
 														],
-														"type": "text/javascript",
-														"packages": {}
+														"type": "text/javascript"
 													}
 												}
 											],
@@ -1953,7 +1949,7 @@
 												],
 												"body": {
 													"mode": "raw",
-													"raw": "{\r\n    \"id\": \"urn:test:testentity:remtwo\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n     \"listproperty\": {\"type\": \"ListProperty\", \"valueList\": [100,200,300]},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"passenger\": {\r\n       \"type\": \"ListRelationship\",\r\n       \"objectType\": \"Person\",\r\n       \"objectList\": [\r\n           \"urn:ngsi-ld:Person:Alice\",\r\n           \"urn:ngsi-ld:Person:Bob\"\r\n       ]\r\n   },\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
+													"raw": "{\r\n    \"id\": \"urn:test:testentity:remtwo\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n     \"listproperty\": {\"type\": \"ListProperty\", \"valueList\": [100,200,300]},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"passenger\": {\r\n       \"type\": \"ListRelationship\",\r\n       \"objectType\": \"Person\",\r\n       \"objectList\": [\r\n           {\"object\": \"urn:ngsi-ld:Person:Alice\"},\r\n           {\"object\": \"urn:ngsi-ld:Person:Bob\"}\r\n       ]\r\n   },\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
 													"options": {
 														"raw": {
 															"language": "json"
@@ -2290,8 +2286,7 @@
 														"exec": [
 															""
 														],
-														"type": "text/javascript",
-														"packages": {}
+														"type": "text/javascript"
 													}
 												},
 												{
@@ -2316,8 +2311,7 @@
 															"\r",
 															""
 														],
-														"type": "text/javascript",
-														"packages": {}
+														"type": "text/javascript"
 													}
 												}
 											],
@@ -2335,7 +2329,7 @@
 												],
 												"body": {
 													"mode": "raw",
-													"raw": "{\r\n    \"id\": \"urn:test:testentity:remone\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n    \"listproperty\": {\"type\": \"ListProperty\", \"valueList\": [100,200,300]},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"passenger\": {\r\n       \"type\": \"ListRelationship\",\r\n       \"objectType\": \"Person\",\r\n       \"objectList\": [\r\n           \"urn:ngsi-ld:Person:Alice\",\r\n           \"urn:ngsi-ld:Person:Bob\"\r\n       ]\r\n   }\r\n}",
+													"raw": "{\r\n    \"id\": \"urn:test:testentity:remone\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n    \"listproperty\": {\"type\": \"ListProperty\", \"valueList\": [100,200,300]},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"passenger\": {\r\n       \"type\": \"ListRelationship\",\r\n       \"objectType\": \"Person\",\r\n       \"objectList\": [\r\n           {\"object\": \"urn:ngsi-ld:Person:Alice\"},\r\n           {\"object\": \"urn:ngsi-ld:Person:Bob\"}\r\n       ]\r\n   }\r\n}",
 													"options": {
 														"raw": {
 															"language": "json"
@@ -2365,8 +2359,7 @@
 														"exec": [
 															""
 														],
-														"type": "text/javascript",
-														"packages": {}
+														"type": "text/javascript"
 													}
 												},
 												{
@@ -2391,8 +2384,7 @@
 															"\r",
 															""
 														],
-														"type": "text/javascript",
-														"packages": {}
+														"type": "text/javascript"
 													}
 												}
 											],
@@ -2410,7 +2402,7 @@
 												],
 												"body": {
 													"mode": "raw",
-													"raw": "{\r\n    \"id\": \"urn:test:testentity:remtwo\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n    \"listproperty\": {\"type\": \"ListProperty\", \"valueList\": [100,200,300]},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"passenger\": {\r\n       \"type\": \"ListRelationship\",\r\n       \"objectType\": \"Person\",\r\n       \"objectList\": [\r\n           \"urn:ngsi-ld:Person:Alice\",\r\n           \"urn:ngsi-ld:Person:Bob\"\r\n       ]\r\n   }\r\n}",
+													"raw": "{\r\n    \"id\": \"urn:test:testentity:remtwo\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n    \"listproperty\": {\"type\": \"ListProperty\", \"valueList\": [100,200,300]},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"passenger\": {\r\n       \"type\": \"ListRelationship\",\r\n       \"objectType\": \"Person\",\r\n       \"objectList\": [\r\n           {\"object\": \"urn:ngsi-ld:Person:Alice\"},\r\n           {\"object\": \"urn:ngsi-ld:Person:Bob\"}\r\n       ]\r\n   }\r\n}",
 													"options": {
 														"raw": {
 															"language": "json"
@@ -3245,6 +3237,10 @@
 		},
 		{
 			"key": "entityId",
+			"value": ""
+		},
+		{
+			"key": "link",
 			"value": ""
 		}
 	]

@@ -204,7 +204,7 @@ public final class HttpUtils {
 	}
 
 	@SuppressWarnings("unchecked")
-	private static Object generateGeoJson(Object result, String geometry, Object context) throws ResponseException {
+	public static Object generateGeoJson(Object result, String geometry, Object context) throws ResponseException {
 		Map<String, Object> resultMap = Maps.newLinkedHashMap();
 		if (result instanceof List) {
 			resultMap.put(NGSIConstants.TYPE, NGSIConstants.FEATURE_COLLECTION);
@@ -231,8 +231,6 @@ public final class HttpUtils {
 			Object geometryEntry = entryMap.get(geometry);
 			if (geometryEntry != null) {
 				resultMap.put(NGSIConstants.GEOMETRY, ((Map<String, Object>) geometryEntry).get(NGSIConstants.VALUE));
-			} else {
-				throw new ResponseException(ErrorType.NotAcceptable, "Geo json not support for this request");
 			}
 			entryMap.remove(NGSIConstants.JSON_LD_CONTEXT);
 			resultMap.put(NGSIConstants.PROPERTIES, entryMap);
@@ -431,7 +429,7 @@ public final class HttpUtils {
 				return RestResponse.noContent();
 			}
 		}
-		return new RestResponseBuilderImpl().status(207).entity(new JsonObject(updateResult.getJson())).build();
+		return new RestResponseBuilderImpl<Object>().status(207).entity(new JsonObject(updateResult.getJson())).build();
 
 	}
 

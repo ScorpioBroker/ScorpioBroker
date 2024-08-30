@@ -256,11 +256,13 @@ public class EntityOperationsQueryController {
 				List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeQueryAndIdPattern;
 
 				if (entities != null) {
-					if (!(entities instanceof List)) {
+					int listSize = -1;
+					if (entities instanceof List<?> l) {
+						listSize = l.size();
+					}else {
 						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(new ResponseException(
 								ErrorType.BadRequestData, "entities needs to be an array with an entry")));
 					}
-					int listSize = ((List) entities).size();
 					if (listSize <= 0) {
 						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(new ResponseException(
 								ErrorType.BadRequestData, "entities needs to be an array with an entry")));

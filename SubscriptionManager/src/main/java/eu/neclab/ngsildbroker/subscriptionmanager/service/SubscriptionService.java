@@ -23,7 +23,6 @@ import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
-import org.apache.commons.lang3.StringUtils;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.slf4j.Logger;
@@ -57,20 +56,16 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.OmitTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.PickTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import eu.neclab.ngsildbroker.commons.tools.SubscriptionTools;
 import eu.neclab.ngsildbroker.subscriptionmanager.messaging.SyncService;
 import eu.neclab.ngsildbroker.subscriptionmanager.repository.SubscriptionInfoDAO;
-import io.netty.handler.codec.http.HttpConstants;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.tuples.Tuple2;
-import io.smallrye.mutiny.tuples.Tuple3;
 import io.smallrye.mutiny.tuples.Tuple4;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -349,10 +344,10 @@ public class SubscriptionService {
 				subscriptionId2RequestGlobal.put(request.getId(), request);
 				Uni<Void> syncService;
 				if (subscriptionSyncService != null) {
-					logger.info("sync service");
+					logger.debug("sync service");
 					syncService = subscriptionSyncService.sync(request);
 				} else {
-					logger.info("No sync service");
+					logger.debug("No sync service");
 					syncService = Uni.createFrom().voidItem();
 				}
 				return syncService.onItem().transform(v2 -> {
@@ -369,7 +364,7 @@ public class SubscriptionService {
 
 				});
 			}).onFailure().recoverWithUni(e -> {
-				if (e instanceof PgException && ((PgException) e).getCode().equals(AppConstants.SQL_ALREADY_EXISTS)) {
+				if (e instanceof PgException pge && pge.getSqlState().equals(AppConstants.SQL_ALREADY_EXISTS)) {
 					return Uni.createFrom().failure(new ResponseException(ErrorType.AlreadyExists,
 							"Subscription with id " + request.getId() + " exists"));
 				} else {
@@ -626,10 +621,12 @@ public class SubscriptionService {
 							payloads.forEach(payload -> {
 								List<Map<String, Object>> attribs = (List<Map<String, Object>>) payload
 										.get(message.getAttribName());
-								for (Map<String, Object> attrib : attribs) {
-									putOldAttribFromDelete(attrib, message.getSendTimestamp());
+								if (attribs != null) {
+									for (Map<String, Object> attrib : attribs) {
+										putOldAttribFromDelete(attrib, message.getSendTimestamp());
+									}
+									tmp.add(payload);
 								}
-								tmp.add(payload);
 							});
 						});
 					} else {
@@ -760,14 +757,13 @@ public class SubscriptionService {
 				break;
 			case NGSIConstants.JSON_LD_TYPE:
 				List<String> oldTypes = (List<String>) result.get(NGSIConstants.JSON_LD_TYPE);
-				if(oldTypes == null) {
+				if (oldTypes == null) {
 					result.put(attribName, entry.getValue());
-				}else {
+				} else {
 					List<String> mergedTypes = Stream
-							.concat((oldTypes).stream(),
-									((List<String>) entry.getValue()).stream())
-							.distinct().collect(Collectors.toList());
-					result.put(attribName, mergedTypes);	
+							.concat((oldTypes).stream(), ((List<String>) entry.getValue()).stream()).distinct()
+							.collect(Collectors.toList());
+					result.put(attribName, mergedTypes);
 				}
 				break;
 			case NGSIConstants.NGSI_LD_SCOPE:
@@ -1162,7 +1158,7 @@ public class SubscriptionService {
 								mergePrevIntoQueryResult(payload, dupl);
 							}
 
-						}else {
+						} else {
 							payloadToUse.put(entityId, Lists.newArrayList(entity));
 						}
 					}
@@ -1170,21 +1166,21 @@ public class SubscriptionService {
 				List<Map<String, Object>> dataToNotify = mergePrevAndNew(payloadToUse, prevPayloadToUse,
 						request.getSubscription().getNotification().getShowChanges());
 				PickTerm pick = request.getSubscription().getNotification().getPick();
-				if(pick != null) {
+				if (pick != null) {
 					Iterator<Map<String, Object>> it = dataToNotify.iterator();
-					while(it.hasNext()) {
+					while (it.hasNext()) {
 						Map<String, Object> entity = it.next();
-						if(!pick.calculateEntity(entity, false, null, null, true)) {
+						if (!pick.calculateEntity(entity, false, null, null, true)) {
 							it.remove();
 						}
 					}
 				}
 				OmitTerm omit = request.getSubscription().getNotification().getOmit();
-				if(omit != null) {
+				if (omit != null) {
 					Iterator<Map<String, Object>> it = dataToNotify.iterator();
-					while(it.hasNext()) {
+					while (it.hasNext()) {
 						Map<String, Object> entity = it.next();
-						if(!omit.calculateEntity(entity, false, null, null, true)) {
+						if (!omit.calculateEntity(entity, false, null, null, true)) {
 							it.remove();
 						}
 					}
@@ -1459,7 +1455,7 @@ public class SubscriptionService {
 				return Uni.createFrom().voidItem();
 			});
 		}).subscribe().with(i -> {
-			logger.info("Reloaded subscription: " + id);
+			logger.debug("Reloaded subscription: " + id);
 		});
 	}
 

@@ -16,7 +16,8 @@ import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
 import eu.neclab.ngsildbroker.historyentitymanager.service.HistoryEntityService;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
-import io.quarkus.test.junit.mockito.InjectMock;
+
+import io.quarkus.test.junit.mockito.MockitoConfig;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
 import io.smallrye.mutiny.Uni;
@@ -32,7 +33,7 @@ public class HistoryControllerTest {
     private String addAttrsPayload;
     private String payload;
 
-    @InjectMock
+    @MockitoConfig
     private HistoryEntityService historyEntityService;
 
     @BeforeEach

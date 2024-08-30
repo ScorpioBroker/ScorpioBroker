@@ -8,7 +8,7 @@ public class DeleteAttrHistoryEntityRequest extends BaseRequest {
 	 * 
 	 */
 	private static final long serialVersionUID = -5546291614045250694L;
-	private boolean deleteAll;
+	
 
 	public DeleteAttrHistoryEntityRequest(String tenant, String entityId, String attribName, String datasetId,
 			boolean deleteAll, boolean zipped) {

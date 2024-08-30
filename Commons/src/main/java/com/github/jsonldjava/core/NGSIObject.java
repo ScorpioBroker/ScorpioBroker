@@ -606,7 +606,7 @@ class NGSIObject {
 
 			}
 			if (expandedProperty.equals(NGSIConstants.NGSI_LD_WATCHED_ATTRIBUTES)) {
-				if (!(this.element instanceof List) || ((List) this.element).isEmpty()) {
+				if (!(this.element instanceof List<?> l) || l.isEmpty()) {
 					throw new ResponseException(ErrorType.BadRequestData,
 							"watchedAttributes has to be either a String or an array of Strings.");
 				}
@@ -729,7 +729,7 @@ class NGSIObject {
 				return;
 			}
 			if (!isProperty && !isRelationship && !isGeoProperty && !isDateTime && !isLanguageProperty
-					&& !isVocabProperty && !isListProperty && !isListRelationship && !isLocalOnly && !isJsonProperty) {
+					&& !isVocabProperty && !isListProperty && !isListRelationship && !isLocalOnly && !isJsonProperty && !hasObject) {
 				throw new ResponseException(ErrorType.BadRequestData,
 						"The key " + activeProperty + " is an invalid entry.");
 			}

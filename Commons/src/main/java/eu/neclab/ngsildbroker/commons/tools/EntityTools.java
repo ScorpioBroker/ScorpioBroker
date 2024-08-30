@@ -49,6 +49,8 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.PickTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
+import eu.neclab.ngsildbroker.commons.enums.ErrorType;
+import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple3;
 import io.vertx.mutiny.core.buffer.Buffer;
@@ -472,11 +474,11 @@ public final class EntityTools {
 		return tmp;
 	}
 
-	public static void noConcise(Object object) {
+	public static void noConcise(Object object) throws ResponseException {
 		noConcise(object, null, null, 0);
 	}
 
-	private static void noConcise(Object object, Map<String, Object> parentMap, String keyOfObject, int level) {
+	private static void noConcise(Object object, Map<String, Object> parentMap, String keyOfObject, int level) throws ResponseException {
 		// Object is Map
 		if (object instanceof Map<?, ?> map) {
 			// Map have object but not type
@@ -484,6 +486,33 @@ public final class EntityTools {
 				((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.RELATIONSHIP);
 			} else if (map.containsKey(NGSIConstants.OBJECT_LIST)) {
 				((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.LISTRELATIONSHIP);
+				Object objList = ((Map<String, Object>) map).get(NGSIConstants.OBJECT_LIST);
+				if(objList instanceof List<?> l) {
+					List<Map<String, String>> tmpList = new ArrayList<>(l.size());
+					for(Object entry: l) {
+						if(entry instanceof Map<?,?> m) {
+							if(m.size() != 1) {
+								throw new ResponseException(ErrorType.BadRequestData, "Unkown format for object list entry.");
+							}
+							Object relId = m.get(NGSIConstants.OBJECT);
+							if(relId == null || !(relId instanceof String)) {
+								throw new ResponseException(ErrorType.BadRequestData, "Unkown format for object list entry.");
+							}
+							HttpUtils.validateUri((String) relId);
+							tmpList.add((Map<String, String>) m);
+						}else if(entry instanceof String s) {
+							HttpUtils.validateUri(s);
+							Map<String, String> tmpMap = new HashMap<>(1);
+							tmpMap.put(NGSIConstants.OBJECT, s);
+							tmpList.add(tmpMap);
+						}else {
+							throw new ResponseException(ErrorType.BadRequestData, "Unkown format for object list entry.");		
+						}
+					}
+					((Map<String, Object>) map).put(NGSIConstants.OBJECT_LIST, tmpList);
+				}else {
+					throw new ResponseException(ErrorType.BadRequestData, "Unkown format for object list entry.");
+				}
 			} else if (map.containsKey(NGSIConstants.VALUE_LIST)) {
 				((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.LISTPROPERTY);
 			}

@@ -23,6 +23,7 @@ import eu.neclab.ngsildbroker.commons.storage.ClientManager;
 import eu.neclab.ngsildbroker.commons.tools.DBUtil;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
+import io.smallrye.mutiny.tuples.Tuple3;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.sqlclient.Row;
@@ -40,7 +41,6 @@ import jakarta.inject.Singleton;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -352,43 +352,42 @@ public class EntityInfoDAO {
 	 * @param noOverwrite
 	 * @return the not added attribs
 	 */
-	public Uni<Tuple2<Map<String, Object>, Set<String>>> appendToEntity2(AppendEntityRequest request,
+	public Uni<Tuple3<Map<String, Object>, Map<String, Object>, Set<String>>> appendToEntity2(AppendEntityRequest request,
 			boolean noOverwrite) {
 		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
 			Map<String, Object> payload = request.getFirstPayload();
 			payload.remove(NGSIConstants.JSON_LD_ID);
 			Object types = payload.remove(NGSIConstants.JSON_LD_TYPE);
-			int dollar = 2;
+			
 			Tuple tuple = Tuple.tuple();
-
+			tuple.addString(request.getFirstId());
 			String sql;
-
-			sql = "UPDATE ENTITY SET ";
+			sql = "WITH a as(SELECT entity FROM entity WHERE id =$1), b as (UPDATE ENTITY SET ";
 			if (types != null) {
-				sql += "e_types = ARRAY(SELECT DISTINCT UNNEST(e_types || $1)), ";
+				sql += "e_types = ARRAY(SELECT DISTINCT UNNEST(e_types || $2)), ";
 				if (noOverwrite) {
-					sql += "ENTITY = (($2::jsonb - 'https://uri.etsi.org/ngsi-ld/createdAt') || jsonb_set(ENTITY, '{@type}', array_to_json(Array(SELECT DISTINCT UNNEST(e_types || $1))) ::jsonb))";
+					sql += "ENTITY = (($3::jsonb - 'https://uri.etsi.org/ngsi-ld/createdAt') || jsonb_set(ENTITY, '{@type}', array_to_json(Array(SELECT DISTINCT UNNEST(e_types || $2))) ::jsonb))";
 				} else {
-					sql += "ENTITY = (jsonb_set(ENTITY, '{@type}', array_to_json(Array(SELECT DISTINCT UNNEST(e_types || $1))) ::jsonb) || ($2::jsonb - 'https://uri.etsi.org/ngsi-ld/createdAt'))";
+					sql += "ENTITY = (jsonb_set(ENTITY, '{@type}', array_to_json(Array(SELECT DISTINCT UNNEST(e_types || $2))) ::jsonb) || ($3::jsonb - 'https://uri.etsi.org/ngsi-ld/createdAt'))";
 				}
 
-				dollar = 3;
 				tuple.addArrayOfString(((List<String>) types).toArray(new String[0]));
 				tuple.addJsonObject(new JsonObject(payload));
 			} else {
 				if (noOverwrite) {
-					sql += " ENTITY = (($1::jsonb - 'https://uri.etsi.org/ngsi-ld/createdAt') || ENTITY) ";
+					sql += " ENTITY = (($2::jsonb - 'https://uri.etsi.org/ngsi-ld/createdAt') || ENTITY) ";
 				} else {
-					sql += " ENTITY = (ENTITY || ($1::jsonb - 'https://uri.etsi.org/ngsi-ld/createdAt')) ";
+					sql += " ENTITY = (ENTITY || ($2::jsonb - 'https://uri.etsi.org/ngsi-ld/createdAt')) ";
 				}
 				tuple.addJsonObject(new JsonObject(payload));
 			}
 
-			sql += "WHERE ID = $" + dollar;
+			sql += "WHERE ID = $1";
 			// if (noOverwrite) {
-			sql += " RETURNING ENTITY";
+			sql += " RETURNING ENTITY) SELECT a.entity as old, b.entity as new FROM a, b;";
 			// }
-			tuple.addString(request.getFirstId());
+			logger.debug(sql);
+			
 			return client.preparedQuery(sql).execute(tuple).onItem().transformToUni(rows -> {
 				if (rows.size() == 0) {
 					return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
@@ -396,9 +395,9 @@ public class EntityInfoDAO {
 				Row first = rows.iterator().next();
 				if (noOverwrite) {
 					// TODO return the not added stuff from noOverwrite
-					return Uni.createFrom().item(Tuple2.of(first.getJsonObject(0).getMap(), new HashSet<>(0)));
+					return Uni.createFrom().item(Tuple3.of(first.getJsonObject(0).getMap(), first.getJsonObject(1).getMap(), new HashSet<>(0)));
 				} else {
-					return Uni.createFrom().item(Tuple2.of(first.getJsonObject(0).getMap(), new HashSet<>(0)));
+					return Uni.createFrom().item(Tuple3.of(first.getJsonObject(0).getMap(), first.getJsonObject(1).getMap(), new HashSet<>(0)));
 				}
 			});
 		});
@@ -425,26 +424,40 @@ public class EntityInfoDAO {
 				payload.remove(JsonLdConsts.TYPE);
 			}
 			String sql = "SELECT * FROM MERGE_JSON($1,$2);";
+			System.out.println(request.getFirstId());
+			try {
+				System.out.println(JsonUtils.toPrettyString(payload));
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
 			Tuple tuple = Tuple.of(request.getFirstId(), new JsonObject(payload));
 			return client.preparedQuery(sql).execute(tuple).onFailure().recoverWithUni(e -> {
+				
 				if (e instanceof PgException pge) {
+					pge.printStackTrace();
 					if (pge.getSqlState().equals(AppConstants.SQL_NOT_FOUND)) {
 						return Uni.createFrom().failure(
 								new ResponseException(ErrorType.NotFound, request.getFirstId() + " not found"));
 					}
+					if (pge.getSqlState().startsWith("SB")) {
+						return Uni.createFrom()
+								.failure(new ResponseException(ErrorType.BadRequestData, pge.getErrorMessage()));
+					}
 				}
+				logger.debug("database exception" , e);
 				return Uni.createFrom().failure(e);
 			}).onItem().transformToUni(rows -> {
 				if (rows.size() == 0)
 					return Uni.createFrom()
 							.failure(new ResponseException(ErrorType.NotFound, request.getFirstId() + " not found"));
 				Row first = rows.iterator().next();
-				JsonArray jsonArray = first.getJsonArray(0);
-				if (jsonArray.getJsonObject(0) == null) {
+				JsonObject result = first.getJsonObject(0);
+				if (result == null) {
 					return Uni.createFrom()
 							.failure(new ResponseException(ErrorType.NotFound, request.getFirstId() + " not found"));
 				}
-				return Uni.createFrom().item(jsonArray.getJsonObject(0).getMap());
+				return Uni.createFrom().item(result.getMap());
 			});
 		});
 	}
@@ -539,12 +552,6 @@ public class EntityInfoDAO {
 				entities.addAll(entityList);
 			});
 			Tuple tuple = Tuple.of(new JsonArray(entities));
-			try {
-				System.out.println(JsonUtils.toPrettyString(entities));
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
 			return client.preparedQuery("SELECT * FROM MERGE_JSON_BATCH($1)").execute(tuple).onItem()
 					.transform(rows -> {
 						return rows.iterator().next().getJsonObject(0).getMap();

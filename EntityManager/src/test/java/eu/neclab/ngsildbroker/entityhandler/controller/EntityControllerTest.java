@@ -7,7 +7,8 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
-import io.quarkus.test.junit.mockito.InjectMock;
+
+import io.quarkus.test.junit.mockito.MockitoConfig;
 import io.restassured.RestAssured;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
@@ -39,7 +40,7 @@ public class EntityControllerTest {
     private String partialUpdateDefaultCasePayload;
     private String incorrectPayload;
 
-    @InjectMock
+    @MockitoConfig
     EntityService entityService;
 
     @BeforeEach

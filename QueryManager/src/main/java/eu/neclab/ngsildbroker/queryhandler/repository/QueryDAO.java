@@ -132,7 +132,7 @@ public class QueryDAO {
 			StringBuilder query = new StringBuilder();
 			int dollar = 1;
 			Tuple tuple = Tuple.tuple();
-			String entitySelect = "D0";
+			
 			query.append("with D0 as(");
 			if (count && limit == 0 && dataSetIdTerm == null) {
 				query.append("SELECT COUNT(ENTITY)");
@@ -286,7 +286,6 @@ public class QueryDAO {
 				}
 				query.setLength(query.length() - " UNION ALL ".length());
 				query.append(") as xyz group by id, entity, parent");
-				entitySelect = "xyz";
 			}
 
 			if (dataSetIdTerm != null) {
@@ -1407,7 +1406,7 @@ public class QueryDAO {
 		});
 	}
 
-	private Tuple2<EntityCache, EntityMap> putQueryResultIntoMapAndCache(RowSet rows, String qToken) {
+	private Tuple2<EntityCache, EntityMap> putQueryResultIntoMapAndCache(RowSet<Row> rows, String qToken) {
 		EntityCache resultEntities = new EntityCache();
 
 		RowIterator<Row> it = rows.iterator();
@@ -1422,7 +1421,7 @@ public class QueryDAO {
 			id = row.getString(0);
 			entityObj = row.getJsonObject(1);
 			parent = row.getBoolean(2);
-			String[] types = row.getArrayOfStrings(3);
+			//String[] types = row.getArrayOfStrings(3);
 
 			if (entityObj != null) {
 				Map<String, Object> entity = entityObj.getMap();

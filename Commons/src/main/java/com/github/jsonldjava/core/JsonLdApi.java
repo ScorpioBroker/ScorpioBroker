@@ -1248,7 +1248,7 @@ public class JsonLdApi {
 					case AppConstants.TEMP_ENTITY_CREATE_PAYLOAD:
 					case AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD:
 					case AppConstants.TEMP_ENTITY_RETRIEVED_PAYLOAD:
-						if (NGSIConstants.NGSI_LD_HAS_VALUE.equals(expandedProperty)) {
+						if (NGSIConstants.NGSI_LD_HAS_VALUE.equals(expandedProperty) || NGSIConstants.NGSI_LD_HAS_LIST.equals(expandedProperty)) {
 							ngsiElement.setHasAtValue(true);
 						} else if (NGSIConstants.NGSI_LD_HAS_VOCAB.equals(expandedProperty)) {
 							ngsiElement.setHasVocab(true);
