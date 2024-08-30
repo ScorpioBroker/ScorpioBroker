@@ -112,6 +112,7 @@ public abstract class HistoryMessagingBase {
 		}
 
 		if (message.getRequestType() != AppConstants.DELETE_REQUEST
+				&& message.getRequestType() != AppConstants.BATCH_DELETE_REQUEST
 				&& (message.getPayload() == null || message.getPayload().isEmpty())) {
 			logger.debug("discarding because of none delete request and empty body");
 			return Uni.createFrom().voidItem();
@@ -124,7 +125,8 @@ public abstract class HistoryMessagingBase {
 			tenant2Buffer.put(tenant, buffer);
 		}
 		tenant2LastReceived.put(tenant, System.currentTimeMillis());
-		if (message.getRequestType() == AppConstants.DELETE_REQUEST) {
+		if (message.getRequestType() == AppConstants.DELETE_REQUEST
+				|| message.getRequestType() == AppConstants.BATCH_DELETE_REQUEST) {
 			for (String entry : message.getIds()) {
 				buffer.add(new DeleteEntityRequest(tenant, entry, false));
 			}
@@ -154,6 +156,9 @@ public abstract class HistoryMessagingBase {
 			String tenant = tenant2BufferEntry.getKey();
 
 			Long lastReceived = tenant2LastReceived.get(tenant);
+			if(lastReceived == null) {
+				lastReceived = -1l;
+			}
 
 			if (buffer.size() >= maxSize || (lastReceived < System.currentTimeMillis() - 1000 && !buffer.isEmpty())) {
 				Map<Integer, Map<String, List<Map<String, Object>>>> opType2Payload = Maps.newHashMap();
@@ -173,6 +178,9 @@ public abstract class HistoryMessagingBase {
 					int regTypeToUse;
 
 					switch (request.getRequestType()) {
+					case AppConstants.UPSERT_REQUEST:
+						regTypeToUse = AppConstants.BATCH_UPSERT_REQUEST;
+						break;
 					case AppConstants.CREATE_REQUEST:
 						regTypeToUse = AppConstants.BATCH_CREATE_REQUEST;
 						break;
@@ -197,7 +205,7 @@ public abstract class HistoryMessagingBase {
 					Map<String, List<Map<String, Object>>> payloads = opType2Payload.get(regTypeToUse);
 					if (payloads == null) {
 						payloads = Maps.newHashMap();
-						opType2Payload.put(request.getRequestType(), payloads);
+						opType2Payload.put(regTypeToUse, payloads);
 					}
 					if (regTypeToUse == AppConstants.BATCH_DELETE_REQUEST) {
 						for (String id : request.getIds()) {

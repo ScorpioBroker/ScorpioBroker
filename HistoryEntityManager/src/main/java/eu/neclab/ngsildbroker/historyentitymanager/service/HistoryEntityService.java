@@ -517,11 +517,15 @@ public class HistoryEntityService {
 		case AppConstants.APPEND_REQUEST:
 		case AppConstants.UPDATE_REQUEST:
 		case AppConstants.UPSERT_REQUEST:
+		case AppConstants.BATCH_CREATE_REQUEST:
+		case AppConstants.BATCH_UPSERT_REQUEST:
+		case AppConstants.BATCH_UPDATE_REQUEST:
 			return historyDAO.batchUpsertHistoryEntity(request).onFailure().recoverWithUni(e -> {
 				logger.debug("Failed to record create", e);
 				return Uni.createFrom().voidItem();
 			});
 		case AppConstants.DELETE_REQUEST:
+		case AppConstants.BATCH_DELETE_REQUEST:
 			return historyDAO.setDeletedBatchHistoryEntity(request).onFailure().recoverWithUni(e -> {
 				logger.debug("Failed to record delete", e);
 				return Uni.createFrom().voidItem();

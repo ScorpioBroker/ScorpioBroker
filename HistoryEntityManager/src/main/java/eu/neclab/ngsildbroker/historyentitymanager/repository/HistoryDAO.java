@@ -174,7 +174,7 @@ public class HistoryDAO {
 						} else {
 							tuple.addJsonArray(null);
 						}
-						logger.debug("batch no type" + tuple.deepToString());
+						logger.debug("batch type" + tuple.deepToString());
 						batchType.add(tuple);
 
 					} else {

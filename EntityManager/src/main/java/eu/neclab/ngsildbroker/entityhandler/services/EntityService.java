@@ -1690,6 +1690,9 @@ public class EntityService {
 			}
 		}
 		if (!updated.isEmpty()) {
+			Object type = updatedEntity.get(NGSIConstants.JSON_LD_TYPE);
+			Object createdAt = updatedEntity.get(NGSIConstants.NGSI_LD_CREATED_AT);
+			Object modifiedAt = updatedEntity.get(NGSIConstants.NGSI_LD_MODIFIED_AT);
 			for (Entry<String, List<String>> attrEntry : updated.entrySet()) {
 				String attr = attrEntry.getKey();
 
@@ -1710,6 +1713,9 @@ public class EntityService {
 					if(searchedInstance != null) {
 						Map<String, Object> tmp = Maps.newHashMap();
 						tmp.put(attr, Lists.newArrayList(searchedInstance));
+						tmp.put(NGSIConstants.JSON_LD_TYPE, type);
+						tmp.put(NGSIConstants.NGSI_LD_CREATED_AT, createdAt);
+						tmp.put(NGSIConstants.NGSI_LD_MODIFIED_AT, modifiedAt);
 						AppendEntityRequest append = new AppendEntityRequest(tenant, entityId, tmp, zip);
 						append.setPrevPayloadFromSingle(entityId, prev);
 						try {

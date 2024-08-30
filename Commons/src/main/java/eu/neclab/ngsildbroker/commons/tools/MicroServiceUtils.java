@@ -75,8 +75,6 @@ public class MicroServiceUtils {
 		tmp.add(local);
 	}
 
-
-
 	public static void serializeAndSplitObjectAndEmit(Object obj, int maxMessageSize, MutinyEmitter<String> emitter,
 			ObjectMapper objectMapper) throws ResponseException {
 		if (obj instanceof BaseRequest br) {
@@ -97,6 +95,7 @@ public class MicroServiceUtils {
 			List<String> toSend = Lists.newArrayList();
 			if (payload != null) {
 				boolean first = true;
+				int lastSend = 0;
 				for (Entry<String, List<Map<String, Object>>> entry : payload.entrySet()) {
 					String serializedPayload;
 					String serializedPrevpayload;
@@ -143,9 +142,9 @@ public class MicroServiceUtils {
 								throw new ResponseException(ErrorType.InternalError, "Failed to compress prevpayload");
 							}
 						}
-						int messageLength = current.getBytes().length + id.getBytes().length + serializedPayload.getBytes().length
-								+ serializedPrevpayload.getBytes().length + 18;
-						logger.debug("message size after adding payload would be " + maxMessageSize);
+						int messageLength = current.getBytes().length + id.getBytes().length
+								+ serializedPayload.getBytes().length + serializedPrevpayload.getBytes().length + 18;
+						logger.debug("message size after adding payload would be " + messageLength);
 						if (messageLength > maxMessageSize) {
 							if (first) {
 								throw new ResponseException(ErrorType.RequestEntityTooLarge);
@@ -153,6 +152,10 @@ public class MicroServiceUtils {
 							logger.debug("finalizing message");
 							current = current.substring(0, current.length() - 1) + "]}";
 							logger.debug("finale messagesize: " + current.getBytes().length);
+							if (current.getBytes().length > maxMessageSize) {
+								logger.error("ALERT MESSAGE TO BIG");
+							}
+
 							toSend.add(current);
 							current = base + "\"" + id + "\",";
 							if (zip) {
@@ -174,8 +177,27 @@ public class MicroServiceUtils {
 							first = true;
 						} else if (messageLength == maxMessageSize) {
 							logger.debug("finalizing message");
-							current = current.substring(0, current.length() - 1) + "]}";
+							current += "\"" + id + "\",";
+							if (zip) {
+								current += "\"";
+							}
+							current += serializedPayload;
+							if (zip) {
+								current += "\"";
+							}
+							current += ",";
+							if (zip) {
+								current += "\"";
+							}
+							current += serializedPrevpayload;
+							if (zip) {
+								current += "\"";
+							}
+							current += "]}";
 							logger.debug("finale messagesize: " + current.getBytes().length);
+							if (current.getBytes().length > maxMessageSize) {
+								logger.error("ALERT MESSAGE TO BIG");
+							}
 							toSend.add(current);
 							current = base;
 							first = true;
@@ -205,6 +227,9 @@ public class MicroServiceUtils {
 					logger.debug("finalizing message");
 					current = current.substring(0, current.length() - 1) + "]}";
 					logger.debug("finale messagesize: " + current.getBytes().length);
+					if (current.getBytes().length > maxMessageSize) {
+						logger.error("ALERT MESSAGE TO BIG");
+					}
 					toSend.add(current);
 					current = base;
 				}
@@ -235,8 +260,8 @@ public class MicroServiceUtils {
 								throw new ResponseException(ErrorType.InternalError, "Failed to compress prevpayload");
 							}
 						}
-						int messageLength = current.getBytes().length + id.getBytes().length + serializedPayload.getBytes().length
-								+ serializedPrevpayload.getBytes().length + 18;
+						int messageLength = current.getBytes().length + id.getBytes().length
+								+ serializedPayload.getBytes().length + serializedPrevpayload.getBytes().length + 18;
 						logger.debug("message size after adding payload would be " + maxMessageSize);
 						if (messageLength > maxMessageSize) {
 							if (first) {
@@ -320,8 +345,8 @@ public class MicroServiceUtils {
 							throw new ResponseException(ErrorType.InternalError, "Failed to compress prevpayload");
 						}
 					}
-					int messageLength = current.getBytes().length + id.getBytes().length + serializedPayload.getBytes().length
-							+ serializedPrevpayload.getBytes().length + 18;
+					int messageLength = current.getBytes().length + id.getBytes().length
+							+ serializedPayload.getBytes().length + serializedPrevpayload.getBytes().length + 18;
 					logger.debug("message size after adding payload would be " + maxMessageSize);
 					if (messageLength > maxMessageSize) {
 						if (first) {
