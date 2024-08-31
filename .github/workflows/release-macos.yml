@@ -25,8 +25,8 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-macos-with-kafka
         run: |
-          find . -name "pom.xml" -exec sed -i 's/${{steps.get-id.outputs.id}}-SNAPSHOT/${{steps.get-id.outputs.id}}/g' {} +
-          mvn clean package -DskipTests -Dkafka -Pkafka -Dnative -Dos=macos -Dquarkus.profile=kafka
+          find . -name "pom.xml" -exec sed -i '' 's/${{steps.get-id.outputs.id}}-SNAPSHOT/${{steps.get-id.outputs.id}}/g' {} +
+          mvn clean package -DskipTests -Dkafka -Pkafka -Dnative -Dnativedocker -Dquarkus.profile=kafka -Dquarkus.docker.buildx.platform=linux/arm64
       - name: Create Release ${{steps.get-id.outputs.id}}-macos-kafka
         id: create_release
         uses: actions/create-release@v1
@@ -141,8 +141,8 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-macos-with-sqs
         run: |
-          find . -name "pom.xml" -exec sed -i 's/${{steps.get-id.outputs.id}}-SNAPSHOT/${{steps.get-id.outputs.id}}/g' {} +
-          mvn clean package -DskipTests -Dsqs -Psqs -Dnative -Dos=macos -Dquarkus.profile=sqs
+          find . -name "pom.xml" -exec sed -i '' 's/${{steps.get-id.outputs.id}}-SNAPSHOT/${{steps.get-id.outputs.id}}/g' {} +
+          mvn clean package -DskipTests -Dsqs -Psqs -Dnative -Dnativedocker -Dquarkus.profile=sqs -Dquarkus.docker.buildx.platform=linux/arm64
       - name: Create Release ${{steps.get-id.outputs.id}}-macos-sqs
         id: create_release
         uses: actions/create-release@v1
@@ -257,8 +257,8 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-macos-with-mqtt
         run: |
-          find . -name "pom.xml" -exec sed -i 's/${{steps.get-id.outputs.id}}-SNAPSHOT/${{steps.get-id.outputs.id}}/g' {} +
-          mvn clean package -DskipTests -Dmqtt -Pmqtt -Dnative -Dos=macos -Dquarkus.profile=mqtt
+          find . -name "pom.xml" -exec sed -i '' 's/${{steps.get-id.outputs.id}}-SNAPSHOT/${{steps.get-id.outputs.id}}/g' {} +
+          mvn clean package -DskipTests -Dmqtt -Pmqtt -Dnative -Dnativedocker -Dquarkus.profile=mqtt -Dquarkus.docker.buildx.platform=linux/arm64
       - name: Create Release ${{steps.get-id.outputs.id}}-macos-mqtt
         id: create_release
         uses: actions/create-release@v1
@@ -373,8 +373,8 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-macos-with-rabbitmq
         run: |
-          find . -name "pom.xml" -exec sed -i 's/${{steps.get-id.outputs.id}}-SNAPSHOT/${{steps.get-id.outputs.id}}/g' {} +
-          mvn clean package -DskipTests -Drabbitmq -Prabbitmq -Dnative -Dos=macos -Dquarkus.profile=rabbitmq
+          find . -name "pom.xml" -exec sed -i '' 's/${{steps.get-id.outputs.id}}-SNAPSHOT/${{steps.get-id.outputs.id}}/g' {} +
+          mvn clean package -DskipTests -Drabbitmq -Prabbitmq -Dnative -Dnativedocker -Dquarkus.profile=rabbitmq -Dquarkus.docker.buildx.platform=linux/arm64
       - name: Create Release ${{steps.get-id.outputs.id}}-macos-rabbitmq
         id: create_release
         uses: actions/create-release@v1
@@ -489,8 +489,8 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-macos
         run: |
-          find . -name "pom.xml" -exec sed -i 's/${{steps.get-id.outputs.id}}-SNAPSHOT/${{steps.get-id.outputs.id}}/g' {} +
-          mvn clean package -DskipTests -Din-memory -Pin-memory -Dnative -Dos=macos -Dquarkus.profile=in-memory
+          find . -name "pom.xml" -exec sed -i '' 's/${{steps.get-id.outputs.id}}-SNAPSHOT/${{steps.get-id.outputs.id}}/g' {} +
+          mvn clean package -DskipTests -Din-memory -Pin-memory -Dnative -Dnativedocker -Dquarkus.profile=in-memory -Dquarkus.docker.buildx.platform=linux/arm64
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1

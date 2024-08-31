@@ -34,7 +34,7 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-windows-with-kafka
         run: |
-          mvn clean package -DskipTests -Dkafka -Pkafka -Dnative -Dos=windows -D"quarkus.profile=kafka"
+          mvn clean package -DskipTests -Dkafka -Pkafka -Dnative -Dquarkus.native.container-build=false -Dos=windows -D"quarkus.profile=kafka"
       - name: Create Release ${{steps.get-id.outputs.id}}-windows-kafka
         id: create_release
         uses: actions/create-release@v1
@@ -158,7 +158,7 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-windows-with-sqs
         run: |
-          mvn clean package -DskipTests -Dsqs -Psqs -Dnative -Dos=windows -D"quarkus.profile=sqs"
+          mvn clean package -DskipTests -Dsqs -Psqs -Dnative -Dquarkus.native.container-build=false -Dos=windows -D"quarkus.profile=sqs"
       - name: Create Release ${{steps.get-id.outputs.id}}-windows-sqs
         id: create_release
         uses: actions/create-release@v1
@@ -282,7 +282,7 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-windows-with-mqtt
         run: |
-          mvn clean package -DskipTests -Dmqtt -Pmqtt -Dnative -Dos=windows -D"quarkus.profile=mqtt"
+          mvn clean package -DskipTests -Dmqtt -Pmqtt -Dnative -Dquarkus.native.container-build=false -Dos=windows -D"quarkus.profile=mqtt"
       - name: Create Release ${{steps.get-id.outputs.id}}-windows-mqtt
         id: create_release
         uses: actions/create-release@v1
@@ -406,7 +406,7 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-windows-with-rabbitmq
         run: |
-          mvn clean package -DskipTests -Drabbitmq -Prabbitmq -Dnative -Dos=windows -D"quarkus.profile=rabbitmq"
+          mvn clean package -DskipTests -Drabbitmq -Prabbitmq -Dnative -Dquarkus.native.container-build=false -Dos=windows -D"quarkus.profile=rabbitmq"
       - name: Create Release ${{steps.get-id.outputs.id}}-windows-rabbitmq
         id: create_release
         uses: actions/create-release@v1
@@ -530,7 +530,7 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-windows
         run: |
-          mvn clean package -DskipTests -Din-memory -Pin-memory -Dnative -Dos=windows -D"quarkus.profile=in-memory"
+          mvn clean package -DskipTests -Din-memory -Pin-memory -Dnative -Dquarkus.native.container-build=false -Dos=windows -D"quarkus.profile=in-memory"
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
