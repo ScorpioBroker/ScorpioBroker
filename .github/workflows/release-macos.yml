@@ -1,7 +1,8 @@
 name: Release macos version
-on: 
-  push:
-    branches: "quarkus-release/**"
+on: [push,pull_request]
+#on: 
+#  push:
+#    branches: "quarkus-release/**"
 jobs:
   build-macos-kafka:
     runs-on: macos-latest
