@@ -82,10 +82,9 @@ public class SubscriptionInfoDAO {
 	}
 
 	public Uni<RowSet<Row>> getSubscription(String tenant, String subscriptionId) {
-		return clientManager.getClient(tenant, false).onItem()
-				.transformToUni(client -> client
-						.preparedQuery("SELECT subscription FROM subscriptions WHERE subscription_id=$1")
-						.execute(Tuple.of(subscriptionId)).onFailure().retry().atMost(3));
+		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> client.preparedQuery(
+				"SELECT subscription, contexts.body as contextBody, contexts.id FROM subscriptions LEFT JOIN contexts ON subscriptions.context = contexts.id WHERE subscription_id=$1")
+				.execute(Tuple.of(subscriptionId)).onFailure().retry().atMost(3));
 	}
 
 	public Uni<Void> updateNotificationSuccess(String tenant, String id, String date) {
