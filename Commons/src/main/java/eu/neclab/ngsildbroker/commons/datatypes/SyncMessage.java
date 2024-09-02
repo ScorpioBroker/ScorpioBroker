@@ -7,10 +7,14 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
 
+/**
+ * @author hebgen
+ *
+ */
 @JsonSerialize
 @JsonDeserialize
 public class SyncMessage implements Serializable {
-	
+
 	public static final int NORMAL_SUB = 0;
 	public static final int REG_SUB = 1;
 
@@ -19,14 +23,18 @@ public class SyncMessage implements Serializable {
 	 */
 	private static final long serialVersionUID = 1572704886071996626L;
 	private String syncId;
-	private SubscriptionRequest request;
+	private String subId;
+	private String tenant;
 	private int subType;
+	private int requestType;
 
-	public SyncMessage(String syncId, SubscriptionRequest request, int subType) {
+	public SyncMessage(String syncId, String subId, String tenant, int requestType, int subType) {
 		super();
 		this.syncId = syncId;
-		this.request = request;
+		this.subId = subId;
+		this.tenant = tenant;
 		this.subType = subType;
+		this.requestType = requestType;
 	}
 
 	SyncMessage() {
@@ -49,19 +57,34 @@ public class SyncMessage implements Serializable {
 		this.syncId = syncId;
 	}
 
-	public SubscriptionRequest getRequest() {
-		return request;
+	public String getSubId() {
+		return subId;
 	}
 
-	public void setRequest(SubscriptionRequest request) {
-		this.request = request;
+	public void setSubId(String subId) {
+		this.subId = subId;
+	}
+
+	public String getTenant() {
+		return tenant;
+	}
+
+	public void setTenant(String tenant) {
+		this.tenant = tenant;
+	}
+
+	public int getRequestType() {
+		return requestType;
+	}
+
+	public void setRequestType(int requestType) {
+		this.requestType = requestType;
 	}
 
 	@Override
 	public String toString() {
-		return "SyncMessage [syncId=" + syncId + ", request=" + request + ", subType=" + subType + "]";
+		return "SyncMessage [syncId=" + syncId + ", subId=" + subId + ", tenant=" + tenant + ", subType=" + subType
+				+ ", requestType=" + requestType + "]";
 	}
-	
-	
 
 }

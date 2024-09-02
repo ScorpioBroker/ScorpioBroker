@@ -41,7 +41,7 @@ import io.vertx.mutiny.core.Vertx;
 @Singleton
 @IfBuildProfile(anyOf = { "mqtt", "rabbitmq" })
 @IfBuildProperty(enableIfMissing = true, name = "scorpio.subsync.enabled", stringValue = "true")
-public class RegistrySubscriptionSyncServiceByteArray implements SyncService {
+public class RegistrySubscriptionSyncServiceByteArray extends RegistrySubscriptionSyncServiceBase {
 
 	public static final String SYNC_ID = UUID.randomUUID().toString();
 
@@ -112,28 +112,7 @@ public class RegistrySubscriptionSyncServiceByteArray implements SyncService {
 			logger.error("failed to read sync message", e);
 			return Uni.createFrom().voidItem();
 		}
-		String key = message.getSyncId();
-		SubscriptionRequest sub = message.getRequest();
-		if (key.equals(SYNC_ID) || message.getSubType() == SyncMessage.NORMAL_SUB) {
-			return Uni.createFrom().voidItem();
-		}
-		switch (sub.getRequestType()) {
-		case AppConstants.DELETE_REQUEST:
-			subService.syncDeleteSubscription(sub).runSubscriptionOn(executor).subscribe()
-					.with(v -> logger.debug("done handling delete"));
-			break;
-		case AppConstants.UPDATE_REQUEST:
-			subService.syncUpdateSubscription(sub).runSubscriptionOn(executor).subscribe()
-					.with(v -> logger.debug("done handling update"));
-			break;
-		case AppConstants.CREATE_REQUEST:
-			subService.syncCreateSubscription(sub).runSubscriptionOn(executor).subscribe()
-					.with(v -> logger.debug("done handling create"));
-			break;
-		default:
-			break;
-		}
-		return Uni.createFrom().voidItem();
+		return baseHandleSync(message, SYNC_ID, subService, executor);
 	}
 
 	@Incoming(AppConstants.SUB_ALIVE_RETRIEVE_CHANNEL)
@@ -173,8 +152,9 @@ public class RegistrySubscriptionSyncServiceByteArray implements SyncService {
 
 	public Uni<Void> sync(SubscriptionRequest request) {
 		try {
-			MicroServiceUtils.serializeAndSplitObjectAndEmit(new SyncMessage(SYNC_ID, request, SyncMessage.REG_SUB),
-					messageSize, syncEmitter, objectMapper);
+			MicroServiceUtils.serializeAndSplitObjectAndEmit(new SyncMessage(SYNC_ID, request.getId(),
+					request.getTenant(), request.getRequestType(), SyncMessage.REG_SUB), messageSize, syncEmitter,
+					objectMapper);
 		} catch (ResponseException e) {
 			logger.error("Failed to serialize sync message", e);
 		}

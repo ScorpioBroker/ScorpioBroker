@@ -42,7 +42,7 @@ import io.vertx.mutiny.core.Vertx;
 @Singleton
 @IfBuildProfile(anyOf = { "kafka" })
 @IfBuildProperty(enableIfMissing = true, name = "scorpio.subsync.enabled", stringValue = "true")
-public class SubscriptionSyncServiceString implements SyncService {
+public class SubscriptionSyncServiceString extends SubscriptionSyncServiceBase {
 
 	public static final String SYNC_ID = UUID.randomUUID().toString();
 
@@ -124,30 +124,7 @@ public class SubscriptionSyncServiceString implements SyncService {
 			logger.error("failed to read sub sync", e);
 			return Uni.createFrom().voidItem();
 		}
-		String key = message.getSyncId();
-		SubscriptionRequest sub = message.getRequest();
-		if (key.equals(SYNC_ID) || message.getSubType() == SyncMessage.REG_SUB) {
-			return Uni.createFrom().voidItem();
-		}
-		switch (sub.getRequestType()) {
-		case AppConstants.DELETE_SUBSCRIPTION_REQUEST:
-			subService.syncDeleteSubscription(sub).runSubscriptionOn(executor).subscribe()
-					.with(v -> logger.debug("done handling delete"));
-			break;
-		case AppConstants.UPDATE_SUBSCRIPTION_REQUEST:
-			subService.syncUpdateSubscription(sub).runSubscriptionOn(executor).subscribe()
-					.with(v -> logger.debug("done handling update"));
-			break;
-		case AppConstants.CREATE_SUBSCRIPTION_REQUEST:
-			subService.syncCreateSubscription(sub).runSubscriptionOn(executor).subscribe()
-					.with(v -> logger.debug("done handling create"));
-			break;
-		default:
-			logger.debug("default");
-			break;
-		}
-
-		return Uni.createFrom().voidItem();
+		return baseHandleSync(message, SYNC_ID, subService, executor);
 	}
 
 	@Incoming(AppConstants.SUB_ALIVE_RETRIEVE_CHANNEL)
@@ -193,8 +170,9 @@ public class SubscriptionSyncServiceString implements SyncService {
 		logger.debug(request.getRequestType() + "");
 		logger.debug(request.getId());
 		try {
-			MicroServiceUtils.serializeAndSplitObjectAndEmit(new SyncMessage(SYNC_ID, request, SyncMessage.NORMAL_SUB),
-					messageSize, syncEmitter, objectMapper);
+			MicroServiceUtils.serializeAndSplitObjectAndEmit(new SyncMessage(SYNC_ID, request.getId(),
+					request.getTenant(), request.getRequestType(), SyncMessage.NORMAL_SUB), messageSize, syncEmitter,
+					objectMapper);
 		} catch (ResponseException e) {
 			logger.error("Failed to serialize sync message", e);
 		}

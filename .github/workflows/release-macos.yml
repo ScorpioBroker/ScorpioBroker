@@ -1,7 +1,8 @@
 name: Release macos version
-on: 
-  push:
-    branches: "quarkus-release/**"
+on: [push,pull_request]
+#on: 
+#  push:
+#    branches: "quarkus-release/**"
 jobs:
   build-macos-kafka:
     runs-on: macos-latest
@@ -26,7 +27,7 @@ jobs:
       - name: build-macos-with-kafka
         run: |
           find . -name "pom.xml" -exec sed -i '' 's/${{steps.get-id.outputs.id}}-SNAPSHOT/${{steps.get-id.outputs.id}}/g' {} +
-          mvn clean package -DskipTests -Dkafka -Pkafka -Dnative -Dquarkus.native.container-build=false-Dquarkus.profile=kafka
+          mvn clean package -DskipTests -Dmacos -Dkafka -Pkafka -Dnative -Dquarkus.native.container-build=false -Dquarkus.profile=kafka
       - name: Create Release ${{steps.get-id.outputs.id}}-macos-kafka
         id: create_release
         uses: actions/create-release@v1
@@ -142,7 +143,7 @@ jobs:
       - name: build-macos-with-sqs
         run: |
           find . -name "pom.xml" -exec sed -i '' 's/${{steps.get-id.outputs.id}}-SNAPSHOT/${{steps.get-id.outputs.id}}/g' {} +
-          mvn clean package -DskipTests -Dsqs -Psqs -Dnative -Dquarkus.native.container-build=false-Dquarkus.profile=sqs
+          mvn clean package -DskipTests -Dmacos -Dsqs -Psqs -Dnative -Dquarkus.native.container-build=false -Dquarkus.profile=sqs
       - name: Create Release ${{steps.get-id.outputs.id}}-macos-sqs
         id: create_release
         uses: actions/create-release@v1
@@ -258,7 +259,7 @@ jobs:
       - name: build-macos-with-mqtt
         run: |
           find . -name "pom.xml" -exec sed -i '' 's/${{steps.get-id.outputs.id}}-SNAPSHOT/${{steps.get-id.outputs.id}}/g' {} +
-          mvn clean package -DskipTests -Dmqtt -Pmqtt -Dnative -Dquarkus.native.container-build=false-Dquarkus.profile=mqtt
+          mvn clean package -DskipTests -Dmacos -Dmqtt -Pmqtt -Dnative -Dquarkus.native.container-build=false -Dquarkus.profile=mqtt
       - name: Create Release ${{steps.get-id.outputs.id}}-macos-mqtt
         id: create_release
         uses: actions/create-release@v1
@@ -374,7 +375,7 @@ jobs:
       - name: build-macos-with-rabbitmq
         run: |
           find . -name "pom.xml" -exec sed -i '' 's/${{steps.get-id.outputs.id}}-SNAPSHOT/${{steps.get-id.outputs.id}}/g' {} +
-          mvn clean package -DskipTests -Drabbitmq -Prabbitmq -Dnative -Dquarkus.native.container-build=false-Dquarkus.profile=rabbitmq
+          mvn clean package -DskipTests -Dmacos -Drabbitmq -Prabbitmq -Dnative -Dquarkus.native.container-build=false -Dquarkus.profile=rabbitmq
       - name: Create Release ${{steps.get-id.outputs.id}}-macos-rabbitmq
         id: create_release
         uses: actions/create-release@v1
@@ -490,7 +491,7 @@ jobs:
       - name: build-macos
         run: |
           find . -name "pom.xml" -exec sed -i '' 's/${{steps.get-id.outputs.id}}-SNAPSHOT/${{steps.get-id.outputs.id}}/g' {} +
-          mvn clean package -DskipTests -Din-memory -Pin-memory -Dnative -Dquarkus.native.container-build=false-Dquarkus.profile=in-memory
+          mvn clean package -DskipTests -Dmacos -Din-memory -Pin-memory -Dnative -Dquarkus.native.container-build=false -Dquarkus.profile=in-memory
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1

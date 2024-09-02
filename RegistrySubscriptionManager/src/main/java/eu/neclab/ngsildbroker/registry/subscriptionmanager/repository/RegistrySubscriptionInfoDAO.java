@@ -110,7 +110,8 @@ public class RegistrySubscriptionInfoDAO {
 
 	public Uni<RowSet<Row>> getSubscription(String tenant, String subscriptionId) {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
-			return client.preparedQuery("SELECT subscription FROM registry_subscriptions WHERE subscription_id=$1")
+			return client.preparedQuery(
+					"SELECT subscription, contexts.body as contextBody, contexts.id FROM registry_subscriptions LEFT JOIN contexts ON registry_subscriptions.context = contexts.id WHERE subscription_id=$1")
 					.execute(Tuple.of(subscriptionId)).onFailure().retry().atMost(3);
 		});
 	}
@@ -242,10 +243,10 @@ public class RegistrySubscriptionInfoDAO {
 					}
 				}
 				if (entityInformation.getTypeTerm() != null) {
-					//dollar = entityInformation.getTypeTerm().toSql(sql, tuple, dollar);
+					// dollar = entityInformation.getTypeTerm().toSql(sql, tuple, dollar);
 					Set<String> types = entityInformation.getTypeTerm().getAllTypes();
 					sql.append("e_type IN (");
-					for(String type: types) {
+					for (String type : types) {
 						sql.append('$');
 						sql.append(dollar);
 						sql.append(',');
