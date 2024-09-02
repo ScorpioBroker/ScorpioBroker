@@ -27,7 +27,7 @@ author = 'NECTI + NLE'
 version = '1.0'
 # The full version, including alpha/beta/rc tags
 release = ''
-
+language = 'en'
 
 # -- General configuration ---------------------------------------------------
 
@@ -97,8 +97,8 @@ pygments_style = 'sphinx'
 #
 # html_sidebars = {}
 def setup(app):
-    app.add_stylesheet('css/fiware_readthedocs.css')
-    app.add_stylesheet('css/fiware_readthedocs_core.css')
+    app.add_css_file('css/fiware_readthedocs.css')
+    app.add_css_file('css/fiware_readthedocs_core.css')
 
 # -- Options for HTMLHelp output ---------------------------------------------
 
