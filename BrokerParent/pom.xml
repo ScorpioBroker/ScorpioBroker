@@ -224,6 +224,23 @@
 	</dependencies>
 	<profiles>
 		<profile>
+			<id>macos</id>
+			<activation>
+				<property>
+					<name>macos</name>
+				</property>
+			</activation>
+			<dependencies>
+				<!-- https://mvnrepository.com/artifact/io.netty/netty-resolver-dns-native-macos -->
+				<dependency>
+					<groupId>io.netty</groupId>
+					<artifactId>netty-resolver-dns-native-macos</artifactId>
+					<version>4.1.112.Final</version>
+					<scope>runtime</scope>
+				</dependency>
+			</dependencies>
+		</profile>
+		<profile>
 			<id>in-memory</id>
 			<activation>
 				<property>
