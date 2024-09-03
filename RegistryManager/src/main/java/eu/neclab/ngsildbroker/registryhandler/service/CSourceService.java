@@ -51,6 +51,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 
 @Singleton
@@ -88,7 +89,7 @@ public class CSourceService {
 
 	@Inject
 	Vertx vertx;
-	
+
 	@Inject
 	ObjectMapper objectMapper;
 
@@ -111,15 +112,21 @@ public class CSourceService {
 		if (scorpioFedList == null)
 			return;
 		for (int i = 0; i < scorpioFedList.size(); i++) {
-			Map<String, String> details = new HashMap<>();
-			details.put("url", ConfigProvider.getConfig().getValue("scorpio.federation[" + i + "].url", String.class));
-			details.put("sourcetenant",
-					ConfigProvider.getConfig().getValue("scorpio.federation[" + i + "].sourcetenant", String.class));
-			details.put("targettenant",
-					ConfigProvider.getConfig().getValue("scorpio.federation[" + i + "].targettenant", String.class));
-			details.put("regtype",
-					ConfigProvider.getConfig().getValue("scorpio.federation[" + i + "].regtype", String.class));
-			fedMap.put(scorpioFedList.get(i), details);
+			try {
+				Map<String, String> details = new HashMap<>();
+				details.put("url",
+						ConfigProvider.getConfig().getValue("scorpio.federation[" + i + "].url", String.class));
+				details.put("sourcetenant", ConfigProvider.getConfig()
+						.getValue("scorpio.federation[" + i + "].sourcetenant", String.class));
+				details.put("targettenant", ConfigProvider.getConfig()
+						.getValue("scorpio.federation[" + i + "].targettenant", String.class));
+				details.put("regtype",
+						ConfigProvider.getConfig().getValue("scorpio.federation[" + i + "].regtype", String.class));
+				fedMap.put(scorpioFedList.get(i), details);
+			} catch (NoSuchElementException e) {
+				// do nothing
+			}
+			
 		}
 
 	}
@@ -238,13 +245,12 @@ public class CSourceService {
 	}
 
 	public Uni<QueryResult> queryRegistrations(String tenant, Set<String> ids, TypeQueryTerm typeQuery,
-											   String idPattern, AttrsQueryTerm attrsQuery, CSFQueryTerm csf, GeoQueryTerm geoQuery,
-											   ScopeQueryTerm scopeQuery, QQueryTerm qQueryTerm, int limit, int offset, boolean count) {
-		return cSourceInfoDAO
-				.query(tenant, ids, typeQuery, idPattern, attrsQuery, csf, geoQuery, scopeQuery,qQueryTerm, limit, offset, count)
-				.onItem().transform(rows -> {
+			String idPattern, AttrsQueryTerm attrsQuery, CSFQueryTerm csf, GeoQueryTerm geoQuery,
+			ScopeQueryTerm scopeQuery, QQueryTerm qQueryTerm, int limit, int offset, boolean count) {
+		return cSourceInfoDAO.query(tenant, ids, typeQuery, idPattern, attrsQuery, csf, geoQuery, scopeQuery,
+				qQueryTerm, limit, offset, count).onItem().transform(rows -> {
 					QueryResult result = new QueryResult();
-					if(rows.size()==0){
+					if (rows.size() == 0) {
 						result.setData(new ArrayList<>());
 						return result;
 					}
@@ -261,7 +267,7 @@ public class CSourceService {
 					}
 					long leftAfter = countLong - (offset + limit);
 					leftAfter = (leftAfter < 0) ? 0 : leftAfter;
-                    result.setResultsLeftAfter(leftAfter);
+					result.setResultsLeftAfter(leftAfter);
 					result.setResultsLeftBefore((long) offset);
 					result.setLimit(limit);
 					result.setOffset(offset);
