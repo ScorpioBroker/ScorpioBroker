@@ -66,6 +66,7 @@ public abstract class HistorySync {
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	Uni<Void> handleAnnouncement(String byteMessage) {
 		Map<String, Object> announcement;
 		try {

@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Path("/ngsi-ld/v1/jsonldContexts/")
+@SuppressWarnings("unchecked")
 public class ContextController {
 
 	@Inject

@@ -241,6 +241,7 @@ public class PickTerm extends ProjectionTerm {
 	}
 
 	@Override
+	@SuppressWarnings({ "unchecked", "unused" })
 	public boolean calculateEntity(Map<String, Object> entity, boolean flatJoin,
 			Map<String, Map<String, Object>> flatEntities, Set<String> pickForFlat, boolean calculateLinked) {
 		ProjectionTerm current = this;

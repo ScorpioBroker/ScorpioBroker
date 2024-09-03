@@ -76,6 +76,7 @@ public class SubscriptionServiceTest {
 	String tenant = "test";
 	HeadersMultiMap link = new HeadersMultiMap();
 
+	@SuppressWarnings("unchecked")
 	@BeforeEach
 	public void setUp() throws Exception {
 		MockitoAnnotations.openMocks(this);
@@ -93,7 +94,7 @@ public class SubscriptionServiceTest {
 	@Test
 	public void createSubscriptionTest() {
 
-		RowSet<Row> rowSetMock = mock(RowSet.class);
+		
 
 		when(subDAO.createSubscription(any(), any())).thenReturn(Uni.createFrom().voidItem());
 
@@ -127,6 +128,7 @@ public class SubscriptionServiceTest {
 
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	public void updateSubscriptionNotFoundTest() {
 
@@ -152,6 +154,7 @@ public class SubscriptionServiceTest {
 
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	public void deleteSubscriptionTest() {
 
@@ -169,6 +172,7 @@ public class SubscriptionServiceTest {
 		verify(subDAO, times(1)).deleteSubscription(any(DeleteSubscriptionRequest.class));
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	public void getSubscriptionTest() {
 
@@ -192,6 +196,7 @@ public class SubscriptionServiceTest {
 
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	public void getSubscriptionNotFoundTest() {
 
@@ -211,6 +216,7 @@ public class SubscriptionServiceTest {
 
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	public void getAllSubscriptionsTest() {
 
@@ -235,6 +241,7 @@ public class SubscriptionServiceTest {
 
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	public void getAllSubscriptionsEmptyResultTest() {
 

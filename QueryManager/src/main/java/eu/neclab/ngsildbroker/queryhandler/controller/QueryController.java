@@ -276,8 +276,7 @@ public class QueryController {
 			return queryService.getAttrib(HttpUtils.getTenant(request),
 					context.expandIri(attribute, false, true, null, null), localOnly,request.headers()).onItem().transformToUni(map -> {
 						if (map.isEmpty()) {
-							return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound) {
-							});
+							return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
 						} else {
 							return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, map, null, null,
 									null, ldService, null, null);
@@ -343,6 +342,7 @@ public class QueryController {
 			@PathParam("entityMapId") String entityMapId) {
 
 		return JsonUtils.fromString(bodyStr).onItem().transformToUni(obj -> {
+			@SuppressWarnings("unchecked")
 			Map<String, Object> body = (Map<String, Object>) obj;
 			String expiresAt = (String) body.get(NGSIConstants.EXPIRES_AT);
 

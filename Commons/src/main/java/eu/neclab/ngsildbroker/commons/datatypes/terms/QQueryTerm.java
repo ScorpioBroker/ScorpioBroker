@@ -50,7 +50,7 @@ public class QQueryTerm implements Serializable {
 	private static final String LIST = ".+(,.+)+";
 	private static final String URI = "\\w+:(\\/?\\/?)[^\\s^;]+";
 	private static final String DATETIME = "\\d\\d\\d\\d-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d([,.]\\d{1,6})?Z";
-	private static final String DATE = "\\d\\d\\d\\d-\\d\\d-\\d\\d";
+	//private static final String DATE = "\\d\\d\\d\\d-\\d\\d-\\d\\d";
 	private static final String TIME = "\\d\\d:\\d\\d:\\d\\d(,\\d\\d\\d\\d\\d\\d)?Z";
 	private static final List<String> TIME_PROPS = Arrays.asList(NGSIConstants.NGSI_LD_OBSERVED_AT,
 			NGSIConstants.NGSI_LD_CREATED_AT, NGSIConstants.NGSI_LD_MODIFIED_AT);
@@ -175,7 +175,7 @@ public class QQueryTerm implements Serializable {
 
 		return result;
 	}
-
+	@SuppressWarnings("unchecked")
 	private Object getElemByPath(Object entity, String[] path, int index, String operant) {
 		if (entity == null || index >= path.length) {
 			if (entity instanceof List<?> list && list.get(0) instanceof Map<?, ?> map) {
@@ -1232,37 +1232,37 @@ public class QQueryTerm implements Serializable {
 		return dollarCount;
 	}
 
-	private ArrayList<String> getAttribPathArray(String attribute) {
-		ArrayList<String> attribPath = new ArrayList<String>();
-		if (attribute.contains("[") && attribute.contains(".")) {
-			if (attribute.contains(".")) {
-				for (String subPart : attribute.split("\\.")) {
-					if (subPart.contains("[")) {
-						for (String subParts : subPart.split("\\[")) {
-							// subParts = subParts.replaceAll("\\]", "");
-							attribPath.add(expandAttributeName(subParts));
-						}
-					} else {
-						attribPath.add(expandAttributeName(subPart));
-					}
-				}
-			}
-		} else if (attribute.contains("[")) {
-			for (String subPart : attribute.split("\\[")) {
-				subPart = subPart.replaceAll("\\]", "");
-				attribPath.addAll(getAttribPathArray(subPart));
-			}
-		} else if (attribute.matches(URI)) {
-			attribPath.add(expandAttributeName(attribute));
-		} else if (attribute.contains(".")) {
-			for (String subPart : attribute.split("\\.")) {
-				attribPath.addAll(getAttribPathArray(subPart));
-			}
-		} else {
-			attribPath.add(expandAttributeName(attribute));
-		}
-		return attribPath;
-	}
+//	private ArrayList<String> getAttribPathArray(String attribute) {
+//		ArrayList<String> attribPath = new ArrayList<String>();
+//		if (attribute.contains("[") && attribute.contains(".")) {
+//			if (attribute.contains(".")) {
+//				for (String subPart : attribute.split("\\.")) {
+//					if (subPart.contains("[")) {
+//						for (String subParts : subPart.split("\\[")) {
+//							// subParts = subParts.replaceAll("\\]", "");
+//							attribPath.add(expandAttributeName(subParts));
+//						}
+//					} else {
+//						attribPath.add(expandAttributeName(subPart));
+//					}
+//				}
+//			}
+//		} else if (attribute.contains("[")) {
+//			for (String subPart : attribute.split("\\[")) {
+//				subPart = subPart.replaceAll("\\]", "");
+//				attribPath.addAll(getAttribPathArray(subPart));
+//			}
+//		} else if (attribute.matches(URI)) {
+//			attribPath.add(expandAttributeName(attribute));
+//		} else if (attribute.contains(".")) {
+//			for (String subPart : attribute.split("\\.")) {
+//				attribPath.addAll(getAttribPathArray(subPart));
+//			}
+//		} else {
+//			attribPath.add(expandAttributeName(attribute));
+//		}
+//		return attribPath;
+//	}
 
 	private int applyOperator(StringBuilder attributeFilterProperty, int dollarCount, Tuple tuple,
 			Boolean needExpanded) {
@@ -2449,12 +2449,13 @@ public class QQueryTerm implements Serializable {
 
 	}
 
+	@SuppressWarnings("unchecked")
 	private boolean calculateLinkedEntity(Map<String, Object> entity, EntityCache updatedEntityCache,
 			Set<String> jsonKeys, boolean localOnly) {
 		Object attrObj = entity.get(this.linkedAttrName);
 		if (attrObj != null && attrObj instanceof List<?> attrList) {
 			for (Object listAttrObj : attrList) {
-				if (listAttrObj instanceof Map listAttrMap) {
+				if (listAttrObj instanceof Map<?,?> listAttrMap) {
 					Object typeObj = listAttrMap.get(NGSIConstants.JSON_LD_TYPE);
 					if (typeObj != null && typeObj instanceof List<?> typeList) {
 						if (typeList.contains(NGSIConstants.NGSI_LD_RELATIONSHIP)) {
@@ -2478,7 +2479,7 @@ public class QQueryTerm implements Serializable {
 								} else {
 									if (objectTypeObj != null && objectTypeObj instanceof List<?> objectTypes) {
 										for (Object objectTypeEntry : objectTypes) {
-											if (objectTypeEntry instanceof Map objectType) {
+											if (objectTypeEntry instanceof Map<?,?> objectType) {
 												String type = (String) objectType.get(NGSIConstants.JSON_LD_ID);
 												if (linkedEntityTypes.isEmpty() || linkedEntityTypes.contains(type)) {
 													Tuple2<Map<String, Object>, Set<String>> entity2CsourceIds = updatedEntityCache
@@ -2486,8 +2487,8 @@ public class QQueryTerm implements Serializable {
 													if (entity2CsourceIds != null) {
 														Map<String, Object> linkedEntity = entity2CsourceIds.getItem1();
 														if (linkedEntity != null) {
-															List<String> linkedEntityType = (List<String>) linkedEntity
-																	.get(NGSIConstants.JSON_LD_TYPE);
+//															List<String> linkedEntityType = (List<String>) linkedEntity
+//																	.get(NGSIConstants.JSON_LD_TYPE);
 
 															if (linkedQ.calculateEntity(linkedEntity,
 																	updatedEntityCache, jsonKeys, localOnly)) {
@@ -2529,7 +2530,7 @@ public class QQueryTerm implements Serializable {
 										} else {
 											if (objectTypeObj != null && objectTypeObj instanceof List<?> objectTypes) {
 												for (Object objectTypeEntry : objectTypes) {
-													if (objectTypeEntry instanceof Map objectType) {
+													if (objectTypeEntry instanceof Map<?,?> objectType) {
 														String type = (String) objectType.get(NGSIConstants.JSON_LD_ID);
 														if (linkedEntityTypes.isEmpty()
 																|| linkedEntityTypes.contains(type)) {
@@ -2539,8 +2540,8 @@ public class QQueryTerm implements Serializable {
 																Map<String, Object> linkedEntity = entity2CsourceIds
 																		.getItem1();
 																if (linkedEntity != null) {
-																	List<String> linkedEntityType = (List<String>) linkedEntity
-																			.get(NGSIConstants.JSON_LD_TYPE);
+//																	List<String> linkedEntityType = (List<String>) linkedEntity
+//																			.get(NGSIConstants.JSON_LD_TYPE);
 
 																	if (linkedQ.calculateEntity(linkedEntity,
 																			updatedEntityCache, jsonKeys, localOnly)) {

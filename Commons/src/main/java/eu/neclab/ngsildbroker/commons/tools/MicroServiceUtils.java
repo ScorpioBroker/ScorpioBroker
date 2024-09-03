@@ -503,6 +503,7 @@ public class MicroServiceUtils {
 		return result;
 	}
 
+	@SuppressWarnings("unchecked")
 	public static Map<String, Object> deepCopyMap(Map<String, Object> original) {
 		if (original == null) {
 			return null;
@@ -511,10 +512,10 @@ public class MicroServiceUtils {
 		for (Entry<String, Object> entry : original.entrySet()) {
 			Object copiedValue;
 			Object originalValue = entry.getValue();
-			if (originalValue instanceof List) {
-				copiedValue = deppCopyList((List<Object>) originalValue);
-			} else if (originalValue instanceof Map) {
-				copiedValue = deepCopyMap((Map<String, Object>) originalValue);
+			if (originalValue instanceof List<?> l) {
+				copiedValue = deppCopyList(l);
+			} else if (originalValue instanceof Map<?, ?> m) {
+				copiedValue = deepCopyMap((Map<String, Object>) m);
 			} else if (originalValue instanceof Integer) {
 				copiedValue = ((Integer) originalValue).intValue();
 			} else if (originalValue instanceof Long) {
@@ -536,17 +537,18 @@ public class MicroServiceUtils {
 		return result;
 	}
 
-	private static List<Object> deppCopyList(List<Object> original) {
-		if (original == null) {
+	@SuppressWarnings("unchecked")
+	private static List<Object> deppCopyList(List<?> l) {
+		if (l == null) {
 			return null;
 		}
 		List<Object> result = Lists.newArrayList();
-		for (Object originalValue : original) {
+		for (Object originalValue : l) {
 			Object copiedValue;
-			if (originalValue instanceof List) {
-				copiedValue = deppCopyList((List<Object>) originalValue);
-			} else if (originalValue instanceof Map) {
-				copiedValue = deepCopyMap((Map<String, Object>) originalValue);
+			if (originalValue instanceof List<?> l1) {
+				copiedValue = deppCopyList(l1);
+			} else if (originalValue instanceof Map<?,?> m) {
+				copiedValue = deepCopyMap((Map<String, Object>) m);
 			} else if (originalValue instanceof Integer) {
 				copiedValue = ((Integer) originalValue).intValue();
 			} else if (originalValue instanceof Double) {

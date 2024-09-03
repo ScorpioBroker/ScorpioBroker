@@ -132,9 +132,10 @@ public class SubscriptionInfoDAO {
 						+ "', subscriptions.subscription, context as contextId, contexts.body as contextBody FROM subscriptions LEFT JOIN contexts ON subscriptions.context = contexts.id")
 						.execute());
 
-				return Uni.combine().all().unis(unis).combinedWith(list -> {
+				return Uni.combine().all().unis(unis).with(list -> {
 					List<Tuple4<String, Map<String, Object>, String, Map<String, Object>>> result = new ArrayList<>();
 					for (Object obj : list) {
+						@SuppressWarnings("unchecked")
 						RowSet<Row> rowset = (RowSet<Row>) obj;
 						rowset.forEach(row -> {
 							String tenant = row.getString(0);

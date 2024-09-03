@@ -1,12 +1,13 @@
 package eu.neclab.ngsildbroker.subscriptionmanager.messaging;
 
+import java.util.concurrent.Executor;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.SyncMessage;
 import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
-import io.netty.channel.EventLoopGroup;
 import io.smallrye.mutiny.Uni;
 
 public abstract class SubscriptionSyncServiceBase implements SyncService {
@@ -14,7 +15,7 @@ public abstract class SubscriptionSyncServiceBase implements SyncService {
 	protected static final Logger logger = LoggerFactory.getLogger(SubscriptionSyncServiceBase.class);
 
 	protected Uni<Void> baseHandleSync(SyncMessage message, String syncId, SubscriptionService subService,
-			EventLoopGroup executor) {
+			Executor executor) {
 		String key = message.getSyncId();
 
 		if (key.equals(syncId) || message.getSubType() == SyncMessage.REG_SUB) {

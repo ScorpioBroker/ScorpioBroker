@@ -33,7 +33,7 @@ import eu.neclab.ngsildbroker.commons.tools.SubscriptionTools;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.vertx.mutiny.core.MultiMap;
-
+@SuppressWarnings("unchecked")
 public record RegistrationEntry(String cId, String eId, String eIdp, String type, String eProp, String eRel,
 		Shape location, String[] scopes, long expiresAt, int regMode, boolean createEntity, boolean updateEntity,
 		boolean appendAttrs, boolean updateAttrs, boolean deleteAttrs, boolean deleteEntity, boolean createBatch,

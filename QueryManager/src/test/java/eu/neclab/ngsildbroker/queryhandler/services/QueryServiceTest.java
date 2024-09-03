@@ -49,6 +49,7 @@ public class QueryServiceTest {
 	Map<String, Object> resolved = null;
 	String jsonLdObject;
 
+	@SuppressWarnings("unchecked")
 	@BeforeEach
 	public void setUp() throws Exception {
 		MockitoAnnotations.openMocks(this);

@@ -10,7 +10,6 @@ import com.google.common.collect.Maps;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.NotificationParam;
-import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.InternalNotification;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
@@ -44,12 +43,13 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
 
+@SuppressWarnings("unchecked")
 public class SubscriptionTools {
 	public static JtsShapeFactory shapeFactory = JtsSpatialContext.GEO.getShapeFactory();
 
 	private final static Logger logger = LoggerFactory.getLogger(SubscriptionTools.class);
 
-	@SuppressWarnings("unchecked")
+	
 	public static boolean evaluateGeoQuery(GeoQueryTerm geoQuery, List<Map<String, Object>> locationsGeoProps) {
 		if (geoQuery == null) {
 			return true;
@@ -63,8 +63,8 @@ public class SubscriptionTools {
 					.get(NGSIConstants.NGSI_LD_HAS_VALUE);
 			for (Map<String, Object> location : locations) {
 				String relation = geoQuery.getGeorel();
-				String regCoordinatesAsString = Subscription
-						.getCoordinates((List<Map<String, Object>>) location.get(NGSIConstants.NGSI_LD_COORDINATES));
+//				String regCoordinatesAsString = Subscription
+//						.getCoordinates((List<Map<String, Object>>) location.get(NGSIConstants.NGSI_LD_COORDINATES));
 
 				Shape queryShape;
 				List<List<Number>> tmp;
@@ -574,7 +574,7 @@ public class SubscriptionTools {
 		}
 		// id, idpattern, type, attribname combo
 		for (Tuple4<String, String, String, String> subTuple : subTuples) {
-			Tuple4<String, String, String, String> bestFit;
+//			Tuple4<String, String, String, String> bestFit;
 			for (Tuple4<String, String, String, String> regTuple : regTuples) {
 				String id;//, idpattern, type, attribname;
 

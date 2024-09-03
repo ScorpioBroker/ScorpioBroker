@@ -157,6 +157,7 @@ public class RegistrySubscriptionInfoDAO {
 		});
 	}
 
+	@SuppressWarnings("unchecked")
 	public Uni<List<Tuple3<String, Map<String, Object>, Map<String, Object>>>> loadSubscriptions() {
 		return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
 			return client.preparedQuery("select tenant_id from tenant").execute().onItem().transformToUni(rows -> {
@@ -174,7 +175,7 @@ public class RegistrySubscriptionInfoDAO {
 									+ "', subscription, context FROM registry_subscriptions").execute();
 						}));
 
-				return Uni.combine().all().unis(unis).combinedWith(list -> {
+				return Uni.combine().all().unis(unis).with(list -> {
 					List<Tuple3<String, Map<String, Object>, Map<String, Object>>> result = Lists.newArrayList();
 //					for (Object obj : list) {
 //						@SuppressWarnings("unchecked")
@@ -197,7 +198,6 @@ public class RegistrySubscriptionInfoDAO {
 											else
 												return result;
 											for (Object obj : list) {
-												@SuppressWarnings("unchecked")
 												RowSet<Row> rowset = (RowSet<Row>) obj;
 												rowset.forEach(row -> result.add(Tuple3.of(row.getString(0),
 														row.getJsonObject(1).getMap(),

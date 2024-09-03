@@ -174,10 +174,11 @@ public class DBUtil {
 												tenantReg -> Tuple2.of(AppConstants.INTERNAL_NULL_KEY, tenantReg));
 									}));
 						}
-						return Uni.combine().all().unis(unis).combinedWith(list -> {
+						return Uni.combine().all().unis(unis).with(list -> {
 							Table<String, String, List<RegistrationEntry>> result = HashBasedTable.create();
 							List<Uni<Void>> regEntries = Lists.newArrayList();
 							for (Object obj : list) {
+								@SuppressWarnings("unchecked")
 								Tuple2<String, RowSet<Row>> tuple = (Tuple2<String, RowSet<Row>>) obj;
 								String tenant = tuple.getItem1();
 								RowIterator<Row> it2 = tuple.getItem2().iterator();
@@ -206,7 +207,7 @@ public class DBUtil {
 							if (tpl.getItem2().isEmpty()) {
 								return Uni.createFrom().item(tpl.getItem1());
 							}
-							return Uni.combine().all().unis(tpl.getItem2()).combinedWith(v -> tpl.getItem1());
+							return Uni.combine().all().unis(tpl.getItem2()).with(v -> tpl.getItem1());
 						});
 					});
 		});

@@ -81,6 +81,13 @@
 				<scope>import</scope>
 			</dependency>
 			<dependency>
+				<groupId>${quarkus.platform.group-id}</groupId>
+				<artifactId>quarkus-camel-bom</artifactId>
+				<version>${quarkus.platform.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+			<dependency>
 				<groupId>eu.neclab.ngsildbroker</groupId>
 				<artifactId>commons</artifactId>
 				<version>${project.version}</version>
@@ -149,7 +156,7 @@
 		</dependency>
 		<dependency>
 			<groupId>io.quarkus</groupId>
-			<artifactId>quarkus-resteasy-reactive</artifactId>
+			<artifactId>quarkus-rest</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>io.quarkus</groupId>
@@ -172,7 +179,7 @@
 		</dependency>
 		<dependency>
 			<groupId>io.quarkus</groupId>
-			<artifactId>quarkus-resteasy-reactive-jackson</artifactId>
+			<artifactId>quarkus-rest-jackson</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>io.quarkus</groupId>
@@ -185,7 +192,7 @@
 		<dependency>
 			<groupId>io.quarkiverse.loggingmanager</groupId>
 			<artifactId>quarkus-logging-manager</artifactId>
-			<version>3.0.0</version>
+			<version>3.1.2</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.commons</groupId>
@@ -197,12 +204,11 @@
 		</dependency>
 		<dependency>
 			<groupId>io.quarkus</groupId>
-			<artifactId>quarkus-smallrye-reactive-messaging</artifactId>
+			<artifactId>quarkus-messaging</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.camel.quarkus</groupId>
 			<artifactId>camel-quarkus-smallrye-reactive-messaging</artifactId>
-			<version>3.2.0</version>
 		</dependency>
 		<dependency>
 			<groupId>io.smallrye.reactive</groupId>
@@ -210,7 +216,7 @@
 		</dependency>
 		<dependency>
 			<groupId>io.quarkus</groupId>
-			<artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>
+			<artifactId>quarkus-messaging-kafka</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>io.quarkus</groupId>
@@ -219,7 +225,7 @@
 		<dependency>
 			<groupId>io.quarkiverse.systemd.notify</groupId>
 			<artifactId>quarkus-systemd-notify</artifactId>
-			<version>1.0.1</version>
+			<version>1.0.2</version>
 		</dependency>
 	</dependencies>
 	<profiles>
@@ -264,7 +270,7 @@
 			<dependencies>
 				<dependency>
 					<groupId>io.quarkus</groupId>
-					<artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>
+					<artifactId>quarkus-messaging-kafka</artifactId>
 				</dependency>
 				<dependency>
 					<groupId>io.strimzi</groupId>

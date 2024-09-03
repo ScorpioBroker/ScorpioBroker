@@ -2,7 +2,12 @@ package eu.neclab.ngsildbroker.commons.exceptions;
 
 public class LdContextException extends Exception {
 
-    public LdContextException() {
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = 756693170539690404L;
+
+	public LdContextException() {
         super("LDContext is not available.");
     }
 

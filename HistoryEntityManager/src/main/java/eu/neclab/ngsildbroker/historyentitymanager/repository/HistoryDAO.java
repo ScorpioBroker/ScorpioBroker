@@ -48,6 +48,7 @@ import io.vertx.mutiny.sqlclient.Tuple;
 import io.vertx.pgclient.PgException;
 
 @Singleton
+@SuppressWarnings("unchecked")
 public class HistoryDAO {
 
 	private static Logger logger = LoggerFactory.getLogger(HistoryDAO.class);
@@ -105,7 +106,6 @@ public class HistoryDAO {
 							+ " (temporalentity_id, attributeid, data) VALUES ($1, $2, $3::jsonb)";
 				}
 				for (Entry<String, Object> entry : payload.entrySet()) {
-					@SuppressWarnings("unchecked")
 					List<Map<String, Object>> entries = (List<Map<String, Object>>) entry.getValue();
 					for (Map<String, Object> attribEntry : entries) {
 						attribEntry.put(NGSIConstants.NGSI_LD_INSTANCE_ID, List
@@ -199,7 +199,6 @@ public class HistoryDAO {
 						attribsToFill = batchAttribsWtihLocation;
 					}
 					for (Entry<String, Object> entry : payload.entrySet()) {
-						@SuppressWarnings("unchecked")
 						List<Map<String, Object>> entries = (List<Map<String, Object>>) entry.getValue();
 						for (Map<String, Object> attribEntry : entries) {
 							attribEntry.put(NGSIConstants.NGSI_LD_INSTANCE_ID, List.of(
@@ -241,7 +240,7 @@ public class HistoryDAO {
 				logger.debug(noTypeSql);
 				tmpList.add(client.preparedQuery(noTypeSql).executeBatch(batchNoType));
 			}
-			return Uni.combine().all().unis(tmpList).combinedWith(l -> l).onItem().transformToUni(l -> {
+			return Uni.combine().all().unis(tmpList).with(l -> l).onItem().transformToUni(l -> {
 				List<Uni<RowSet<Row>>> attribList = Lists.newArrayList();
 				String sql;
 				if (!batchAttribs.isEmpty()) {
@@ -256,7 +255,7 @@ public class HistoryDAO {
 					logger.debug("batch location " + sql);
 					attribList.add(client.preparedQuery(sql).executeBatch(batchAttribsWtihLocation));
 				}
-				return Uni.combine().all().unis(attribList).combinedWith(l2 -> l2).onItem().transform(l1 -> l1);
+				return Uni.combine().all().unis(attribList).with(l2 -> l2).onItem().transform(l1 -> l1);
 
 			}).onItem().transformToUni(t -> Uni.createFrom().voidItem());
 		});
@@ -302,7 +301,6 @@ public class HistoryDAO {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
 			Map<String, Object> payload = request.getFirstPayload();
 			// return client.getConnection().onItem().transformToUni(conn -> {
-			Uni<RowSet<Row>> query1;
 			Tuple tuple = Tuple.tuple();
 			tuple.addString(((List<Map<String, String>>) payload.remove(NGSIConstants.NGSI_LD_MODIFIED_AT)).get(0)
 					.get(NGSIConstants.JSON_LD_VALUE));
@@ -337,7 +335,6 @@ public class HistoryDAO {
 				List<Tuple> batch = Lists.newArrayList();
 				Object createdAt = payload.remove(NGSIConstants.NGSI_LD_CREATED_AT);
 				for (Entry<String, Object> entry : payload.entrySet()) {
-					@SuppressWarnings("unchecked")
 					List<Map<String, Object>> entries = (List<Map<String, Object>>) entry.getValue();
 					for (Map<String, Object> attribEntry : entries) {
 						if (createdAt != null) {

@@ -14,23 +14,6 @@
 			<url>https://repo.osgeo.org/repository/release/</url>
 		</repository>
 	</repositories>
-	<build>
-		<plugins>
-			<plugin>
-				<groupId>io.smallrye</groupId>
-				<artifactId>jandex-maven-plugin</artifactId>
-				<version>3.1.2</version>
-				<executions>
-					<execution>
-						<id>make-index</id>
-						<goals>
-							<goal>jandex</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-		</plugins>
-	</build>
 	<dependencies>
 		<dependency>
 			<groupId>org.locationtech.spatial4j</groupId>

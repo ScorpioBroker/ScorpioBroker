@@ -123,7 +123,7 @@ public class NGSILDOperationResult {
 	public static NGSILDOperationResult getFromUpdateResult() {
 		return null;
 	}
-
+	@SuppressWarnings("unchecked")
 	public static NGSILDOperationResult getFromPayload(Map<String, Object> payload) throws ResponseException {
 		// TODO some more content checks and error throwing if there is an unexpected
 		// result
@@ -146,7 +146,7 @@ public class NGSILDOperationResult {
 		}
 		return result;
 	}
-
+	@SuppressWarnings("unchecked")
 	public static Set<Attrib> getAttribs(Map<String, Object> entityAdded, Context context) {
 		Set<Attrib> result = Sets.newHashSet();
 		for (Entry<String, Object> entry : entityAdded.entrySet()) {

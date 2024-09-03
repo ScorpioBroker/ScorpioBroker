@@ -58,6 +58,7 @@ import io.vertx.mutiny.ext.web.client.HttpRequest;
 import io.vertx.mutiny.ext.web.client.HttpResponse;
 import io.vertx.mutiny.ext.web.client.WebClient;
 
+@SuppressWarnings("unchecked")
 public final class EntityTools {
 
 	private EntityTools() {
@@ -112,7 +113,7 @@ public final class EntityTools {
 				new ArrayList<Object>(context), data.get(0).getHeaders());
 	}
 
-	@SuppressWarnings("unchecked")
+
 	public static GeoProperty getLocation(Map<String, Object> fullEntry, LDGeoQuery ldGeoQuery) {
 		String locationName = NGSIConstants.NGSI_LD_LOCATION;
 		if (ldGeoQuery != null) {
@@ -127,7 +128,6 @@ public final class EntityTools {
 
 	
 
-	@SuppressWarnings("unchecked")
 	public static Set<String> getRegisteredTypes(Map<String, Object> cSourceRegistration) {
 		List<Map<String, Object>> entities = (List<Map<String, Object>>) ((List<Map<String, Object>>) cSourceRegistration
 				.get(NGSIConstants.NGSI_LD_INFORMATION)).get(0).get(NGSIConstants.NGSI_LD_ENTITIES);
@@ -145,7 +145,6 @@ public final class EntityTools {
 		return key;
 	}
 
-	@SuppressWarnings("unchecked")
 	public static List<BaseProperty> getBaseProperties(Map<String, Object> fullEntry) {
 		ArrayList<BaseProperty> result = new ArrayList<BaseProperty>();
 		for (Entry<String, Object> entry : fullEntry.entrySet()) {
@@ -218,7 +217,6 @@ public final class EntityTools {
 //		return new HashSet<String>(temp);
 //	}
 
-	@SuppressWarnings("unchecked")
 	public static String getInstanceId(Map<String, Object> jsonElement) {
 		Object instanceId = jsonElement.get(NGSIConstants.NGSI_LD_INSTANCE_ID);
 		if (instanceId == null) {
@@ -227,7 +225,6 @@ public final class EntityTools {
 		return ((List<Map<String, String>>) instanceId).get(0).get(NGSIConstants.JSON_LD_ID);
 	}
 
-	@SuppressWarnings("unchecked")
 	public static List<String[]> getScopes(Map<String, Object> fullEntry) {
 		ArrayList<String[]> result = new ArrayList<String[]>();
 		Object scopes = fullEntry.get(NGSIConstants.NGSI_LD_SCOPE);
@@ -391,7 +388,7 @@ public final class EntityTools {
 		return resolved;
 	}
 
-	@SuppressWarnings({ "rawtypes", "unchecked" })
+	@SuppressWarnings({ "rawtypes"})
 	protected static void setTemporalProperties(Object jsonNode, String createdAt, String modifiedAt,
 			boolean rootOnly) {
 		if (!(jsonNode instanceof Map)) {
@@ -478,6 +475,7 @@ public final class EntityTools {
 		noConcise(object, null, null, 0);
 	}
 
+	
 	private static void noConcise(Object object, Map<String, Object> parentMap, String keyOfObject, int level) throws ResponseException {
 		// Object is Map
 		if (object instanceof Map<?, ?> map) {
@@ -852,7 +850,7 @@ public final class EntityTools {
 		if (unis.isEmpty()) {
 			return Uni.createFrom().item(Lists.newArrayList());
 		}
-		return Uni.combine().all().unis(unis).combinedWith(l -> {
+		return Uni.combine().all().unis(unis).with(l -> {
 			List<Map<String, Object>> result = Lists.newArrayList();
 			for (Object obj : l) {
 				List<Object> entities = (List<Object>) obj;

@@ -73,7 +73,7 @@ public class SubscriptionSyncSQS implements SyncService {
 		pgSubscriber.channel("subscriptionchannel").handler(notice -> {
 			logger.debug("notice received: " + notice);
 			String[] noticeSplitted = notice.split(seperator);
-			int requestType = Integer.parseInt(noticeSplitted[2]);
+			//int requestType = Integer.parseInt(noticeSplitted[2]);
 			String syncId = noticeSplitted[3];
 			if (syncId.equals(SYNC_ID)) {
 				logger.debug("Discarding own announcement");

@@ -177,6 +177,7 @@ public class SubscriptionRequest implements Serializable {
 		return false;
 	}
 
+	@SuppressWarnings("unchecked")
 	public boolean fullEntityCheckToSendOut(String entityId, Map<String, Object> payload, String allTypesSub,
 			Set<String> jsonKeys) {
 		Subscription sub = getSubscription();

@@ -246,7 +246,7 @@ public abstract class HistoryMessagingBase {
 			return Uni.createFrom().voidItem();
 		}
 
-		return Uni.combine().all().unis(unis).combinedWith(list -> null).onItem().transformToUni(list -> {
+		return Uni.combine().all().unis(unis).with(list -> null).onItem().transformToUni(list -> {
 			return Uni.createFrom().voidItem();
 		});
 	}

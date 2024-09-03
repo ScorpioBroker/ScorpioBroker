@@ -80,6 +80,7 @@ import io.vertx.mutiny.sqlclient.RowIterator;
 import io.vertx.pgclient.PgException;
 
 @Singleton
+@SuppressWarnings("unchecked")
 public class SubscriptionService {
 
 	private final static Logger logger = LoggerFactory.getLogger(SubscriptionService.class);
@@ -136,7 +137,7 @@ public class SubscriptionService {
 	private SyncService subscriptionSyncService = null;
 	@ConfigProperty(name = "scorpio.at-context-server", defaultValue = "http://localhost:9090")
 	private String atContextUrl;
-
+	
 	private static Map<String, Object> compareMaps(Map<String, Object> oldMap, Map<String, Object> newMap) {
 		if (oldMap == null || oldMap.isEmpty()) {
 			return newMap;
@@ -180,6 +181,7 @@ public class SubscriptionService {
 		return obj1.equals(obj2);
 	}
 
+	
 	private static void addProperty(Map<String, Object> resultMap, String key, Object oldValue, Object newValue) {
 		Map<String, Object> propertyMap = new HashMap<>();
 		List<Object> valueList = List.of(propertyMap);
@@ -285,7 +287,7 @@ public class SubscriptionService {
 			if (unis.isEmpty()) {
 				return Uni.createFrom().voidItem();
 			}
-			return Uni.combine().all().unis(unis).combinedWith(list -> {
+			return Uni.combine().all().unis(unis).with(list -> {
 				for (Object obj : list) {
 					Tuple4<String, Map<String, Object>, String, Context> tuple = (Tuple4<String, Map<String, Object>, String, Context>) obj;
 					SubscriptionRequest request;
@@ -499,6 +501,7 @@ public class SubscriptionService {
 		});
 	}
 
+	
 	public Uni<Void> checkSubscriptions(BaseRequest message) {
 		Collection<SubscriptionRequest> potentialSubs = tenant2subscriptionId2Subscription.row(message.getTenant())
 				.values();
@@ -1115,7 +1118,7 @@ public class SubscriptionService {
 		if (unis.isEmpty()) {
 			return Uni.createFrom().voidItem();
 		}
-		return Uni.combine().all().unis(unis).combinedWith(list -> list).onItem()
+		return Uni.combine().all().unis(unis).with(list -> list).onItem()
 				.transformToUni(list -> Uni.createFrom().voidItem());
 	}
 
@@ -1145,7 +1148,6 @@ public class SubscriptionService {
 					String entityId = (String) entity.get(NGSIConstants.JSON_LD_ID);
 					List<Map<String, Object>> prevPayloadList = prevPayloadToUse.get(entityId);
 					if (prevPayloadList != null) {
-						List<Map<String, Object>> newPrevPayloadList = Lists.newArrayList();
 						for (Map<String, Object> prevPayload : prevPayloadList) {
 							Map<String, Object> dupl = MicroServiceUtils.deepCopyMap(entity);
 							mergePrevIntoQueryResult(prevPayload, dupl);
@@ -1463,8 +1465,6 @@ public class SubscriptionService {
 						return SubscriptionTools.generateCsourceNotification(potentialSub,
 								rows.iterator().next().getJsonObject(0).getMap(), message.getRequestType(), ldService)
 								.onItem().transformToUni(notification -> {
-									NotificationParam notificationParam = potentialSub.getSubscription()
-											.getNotification();
 									return handleRegistryNotification(new InternalNotification(potentialSub.getTenant(),
 											potentialSub.getId(), notification));
 								});
@@ -1475,7 +1475,6 @@ public class SubscriptionService {
 			case AppConstants.DELETE_REQUEST:
 				unis.add(SubscriptionTools.generateCsourceNotification(potentialSub, message.getPayload(),
 						message.getRequestType(), ldService).onItem().transformToUni(notification -> {
-							NotificationParam notificationParam = potentialSub.getSubscription().getNotification();
 							return handleRegistryNotification(new InternalNotification(potentialSub.getTenant(),
 									potentialSub.getId(), notification));
 						}));
@@ -1497,7 +1496,6 @@ public class SubscriptionService {
 			return true;
 		}
 		if (entry.containsKey(NGSIConstants.NGSI_LD_INFORMATION)) {
-			@SuppressWarnings("unchecked")
 			List<Map<String, Object>> information = (List<Map<String, Object>>) entry
 					.get(NGSIConstants.NGSI_LD_INFORMATION);
 			for (Map<String, Object> informationEntry : information) {
@@ -1507,7 +1505,6 @@ public class SubscriptionService {
 					return true;
 				}
 				if (relationshipNames != null) {
-					@SuppressWarnings("unchecked")
 					List<Map<String, String>> list = (List<Map<String, String>>) relationshipNames;
 					for (Map<String, String> relationshipEntry : list) {
 						if (attribs.contains(relationshipEntry.get(NGSIConstants.JSON_LD_ID))) {
@@ -1516,7 +1513,6 @@ public class SubscriptionService {
 					}
 				}
 				if (propertyNames != null) {
-					@SuppressWarnings("unchecked")
 					List<Map<String, String>> list = (List<Map<String, String>>) propertyNames;
 					for (Map<String, String> propertyEntry : list) {
 						if (attribs.contains(propertyEntry.get(NGSIConstants.JSON_LD_ID))) {

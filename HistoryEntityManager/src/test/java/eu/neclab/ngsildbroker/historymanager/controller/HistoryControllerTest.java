@@ -31,7 +31,7 @@ public class HistoryControllerTest {
     private String temporalPayloadBad;
     private String temporalPayload;
     private String addAttrsPayload;
-    private String payload;
+    
 
     @MockitoConfig
     private HistoryEntityService historyEntityService;
@@ -61,7 +61,7 @@ public class HistoryControllerTest {
                 + "            \"instanceId\": \"urn:ngsi-ld:0afa5d4c-3ca7-4d2e-96c9-99a437a849dc\"\r\n"
                 + "        }\r\n" + "    ]\r\n" + "}";
 
-        payload = "";
+        
 
         addAttrsPayload = "{\r\n" + "    \"airQualityLevel1\": [\r\n" + "        {\r\n"
                 + "            \"type\": \"Property\",\r\n" + "            \"value\": \"good\",\r\n"
@@ -72,7 +72,7 @@ public class HistoryControllerTest {
     @AfterEach
     public void tearDown() {
         temporalPayload = null;
-        payload = null;
+        
         temporalPayloadBad = null;
         addAttrsPayload = null;
     }

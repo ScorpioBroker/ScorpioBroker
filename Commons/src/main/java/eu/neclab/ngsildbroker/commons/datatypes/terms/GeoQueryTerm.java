@@ -37,6 +37,7 @@ import eu.neclab.ngsildbroker.commons.tools.SubscriptionTools;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.vertx.mutiny.sqlclient.Tuple;
 
+@SuppressWarnings("unchecked")
 public class GeoQueryTerm implements Serializable {
 	/**
 	 * 

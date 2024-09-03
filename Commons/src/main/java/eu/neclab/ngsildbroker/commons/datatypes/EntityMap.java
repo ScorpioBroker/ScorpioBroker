@@ -57,6 +57,7 @@ public class EntityMap {
 		this.noRootLevelRegEntryAndLinkedQuery = noRootLevelRegEntryAndLinkedQuery;
 	}
 
+	@SuppressWarnings("unchecked")
 	public static EntityMap fromJson(String id, JsonObject json, ObjectMapper objectMapper) {
 		boolean splitEntities = json.getBoolean("splitEntities");
 		boolean regEmptyOrNoRegEntryAndNoLinkedQuery = json.getBoolean("regEmptyOrNoRegEntryAndNoLinkedQuery");

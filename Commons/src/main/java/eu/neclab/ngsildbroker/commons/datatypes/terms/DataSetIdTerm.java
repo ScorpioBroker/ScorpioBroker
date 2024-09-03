@@ -35,6 +35,7 @@ public class DataSetIdTerm implements Serializable {
 		this.ids = ids;
 	}
 
+	@SuppressWarnings("unchecked")
 	public void calculate(List<Map<String, Object>> queryResult) {
 		for (Map<String, Object> entity : queryResult) {
 			Iterator<Entry<String, Object>> it = entity.entrySet().iterator();
@@ -330,6 +331,7 @@ public class DataSetIdTerm implements Serializable {
 		return dollar;
 	}
 
+	@SuppressWarnings("unchecked")
 	public boolean calculateEntity(Map<String, Object> entity) {
 		Iterator<Entry<String, Object>> it = entity.entrySet().iterator();
 		while (it.hasNext()) {

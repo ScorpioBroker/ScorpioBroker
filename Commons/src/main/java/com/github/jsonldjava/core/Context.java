@@ -347,7 +347,7 @@ public class Context extends LinkedHashMap<String, Object> {
 			return Uni.createFrom().item(result);
 		} else {
 			Context finalResult = result;
-			return Uni.combine().all().unis(rds).combinedWith(list -> list).onItem().transformToUni(list -> {
+			return Uni.combine().all().unis(rds).with(list -> list).onItem().transformToUni(list -> {
 				
 				Uni<Context> resultUni = Uni.createFrom().item(finalResult);
 				for (Object obj : list) {
@@ -1308,8 +1308,8 @@ public class Context extends LinkedHashMap<String, Object> {
 //				ctx.put(term, defn);
 //			}
 			Object entry = termDefinitions.get(term);
-			if (entry instanceof Map) {
-				((Map) entry).remove(JsonLdConsts.REVERSE);
+			if (entry instanceof Map<?,?> m) {
+				m.remove(JsonLdConsts.REVERSE);
 			}
 			ctx.put(term, entry);
 		}

@@ -5,6 +5,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import jakarta.annotation.PostConstruct;
@@ -30,7 +32,6 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.registry.subscriptionmanager.service.RegistrySubscriptionService;
-import io.netty.channel.EventLoopGroup;
 import io.quarkus.arc.profile.IfBuildProfile;
 import io.quarkus.arc.properties.IfBuildProperty;
 import io.quarkus.scheduler.Scheduled;
@@ -68,7 +69,7 @@ public class RegistrySubscriptionSyncServiceByteArray extends RegistrySubscripti
 	@Inject
 	Vertx vertx;
 
-	private EventLoopGroup executor;
+	private Executor executor;
 
 	@ConfigProperty(name = "scorpio.messaging.maxSize")
 	int messageSize;
@@ -78,7 +79,8 @@ public class RegistrySubscriptionSyncServiceByteArray extends RegistrySubscripti
 		INSTANCE_ID = new AliveAnnouncement(SYNC_ID);
 		INSTANCE_ID.setSubType(AliveAnnouncement.REG_SUB);
 		subService.addSyncService(this);
-		this.executor = vertx.getDelegate().nettyEventLoopGroup();
+		this.executor = Executors.newFixedThreadPool(2);
+		
 	}
 
 	@Scheduled(every = "${scorpio.sync.announcement-time}", delayed = "${scorpio.startupdelay}")

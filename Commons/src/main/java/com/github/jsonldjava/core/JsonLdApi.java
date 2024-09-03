@@ -770,7 +770,7 @@ public class JsonLdApi {
 			if(unis.isEmpty()) {
 				return Uni.createFrom().item(ngsiElement);
 			}
-			return Uni.combine().all().unis(unis).combinedWith(list -> list).onItem().transformToUni(list -> {
+			return Uni.combine().all().unis(unis).with(list -> list).onItem().transformToUni(list -> {
 				final List<Object> result = new ArrayList<Object>();
 				// 3.2)
 				NGSIObject resultElement = new NGSIObject(null, ngsiElement);

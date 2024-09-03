@@ -126,8 +126,9 @@ public class RegistrySubscriptionService {
 			if (unis.isEmpty()) {
 				return Uni.createFrom().voidItem();
 			}
-			return Uni.combine().all().unis(unis).combinedWith(list -> {
+			return Uni.combine().all().unis(unis).with(list -> {
 				for (Object obj : list) {
+					@SuppressWarnings("unchecked")
 					Tuple2<Tuple2<String, Map<String, Object>>, Context> tuple = (Tuple2<Tuple2<String, Map<String, Object>>, Context>) obj;
 					SubscriptionRequest request;
 					try {

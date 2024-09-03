@@ -119,7 +119,8 @@ public class ContextCache {
         List<Object> list = new ArrayList<>();
         set.forEach(key -> {
             try {
-                Map<String, Object> cachedItem = (Map<String, Object>) cache.as(CaffeineCache.class).getIfPresent(key)
+                @SuppressWarnings("unchecked")
+				Map<String, Object> cachedItem = (Map<String, Object>) cache.as(CaffeineCache.class).getIfPresent(key)
                         .get();
                 if (details) {
                     list.add(cachedItem);
