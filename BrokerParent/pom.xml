@@ -247,6 +247,21 @@
 			</dependencies>
 		</profile>
 		<profile>
+			<id>jfr</id>
+			<activation>
+				<property>
+					<name>jfr</name>
+				</property>
+			</activation>
+			<dependencies>
+				<!-- https://mvnrepository.com/artifact/io.netty/netty-resolver-dns-native-macos -->
+				<dependency>
+					<groupId>io.quarkus</groupId>
+					<artifactId>quarkus-jfr</artifactId>
+				</dependency>
+			</dependencies>
+		</profile>
+		<profile>
 			<id>in-memory</id>
 			<activation>
 				<property>
