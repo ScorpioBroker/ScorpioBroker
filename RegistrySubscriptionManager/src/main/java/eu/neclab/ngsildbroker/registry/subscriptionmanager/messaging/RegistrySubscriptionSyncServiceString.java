@@ -35,6 +35,7 @@ import io.quarkus.arc.profile.IfBuildProfile;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
+import io.smallrye.reactive.messaging.annotations.Broadcast;
 import io.vertx.mutiny.core.Vertx;
 
 @Singleton
@@ -53,10 +54,12 @@ public class RegistrySubscriptionSyncServiceString extends RegistrySubscriptionS
 
 	@Inject
 	@Channel(AppConstants.SUB_ALIVE_CHANNEL)
+	@Broadcast
 	MutinyEmitter<String> aliveEmitter;
 
 	@Inject
 	@Channel(AppConstants.SUB_SYNC_CHANNEL)
+	@Broadcast
 	MutinyEmitter<String> syncEmitter;
 
 	@Inject
