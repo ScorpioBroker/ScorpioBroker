@@ -1,3 +1,9 @@
+RELEASE NOTES 5.0.1
+
+Updating to Quarkus version 3.14.
+Test releases for distroless image
+
+
 RELEASE NOTES 5.0.0
 
 Scorpio adds general NGSI-LD 1.8.1 compliance.
