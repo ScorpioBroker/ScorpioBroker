@@ -44,13 +44,14 @@ public class LanguageQueryTerm implements Serializable {
 		});
 	}
 
+	@SuppressWarnings("unchecked")
 	public void calculateQuery(List<Map<String, Object>> queryResult) {
 		for (Map<String, Object> entity : queryResult) {
 			for (Entry<String, Object> attrib : entity.entrySet()) {
 				Object attribValueObj = attrib.getValue();
 				if (attribValueObj instanceof List<?> list) {
 					for (Object entry : list) {
-						if (entry instanceof Map map) {
+						if (entry instanceof Map<?,?> map) {
 							Object types = map.get(NGSIConstants.JSON_LD_TYPE);
 							if (types != null && types instanceof List<?> typeList
 									&& typeList.contains(NGSIConstants.LANGUAGE_PROPERTY)) {
@@ -97,12 +98,13 @@ public class LanguageQueryTerm implements Serializable {
 		return result.toString();
 	}
 
+	@SuppressWarnings("unchecked")
 	public boolean calculateEntity(Map<String, Object> entity) {
 		for (Entry<String, Object> attrib : entity.entrySet()) {
 			Object attribValueObj = attrib.getValue();
 			if (attribValueObj instanceof List<?> list) {
 				for (Object entry : list) {
-					if (entry instanceof Map map) {
+					if (entry instanceof Map<?,?> map) {
 						Object types = map.get(NGSIConstants.JSON_LD_TYPE);
 						if (types != null && types instanceof List<?> typeList
 								&& typeList.contains(NGSIConstants.LANGUAGE_PROPERTY)) {

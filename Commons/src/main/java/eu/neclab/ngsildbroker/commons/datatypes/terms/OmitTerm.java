@@ -13,6 +13,7 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.vertx.mutiny.sqlclient.Tuple;
 
 @RegisterForReflection
+@SuppressWarnings("unchecked")
 public class OmitTerm extends ProjectionTerm {
 
 	/**
@@ -264,6 +265,7 @@ public class OmitTerm extends ProjectionTerm {
 		return dollar;
 	}
 
+	
 	@Override
 	public boolean calculateEntity(Map<String, Object> entity, boolean flatJoin,
 			Map<String, Map<String, Object>> flatEntities, Set<String> pickForFlat, boolean calculateLinked) {

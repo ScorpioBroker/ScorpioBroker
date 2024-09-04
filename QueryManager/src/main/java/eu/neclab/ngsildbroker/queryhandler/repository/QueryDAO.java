@@ -361,6 +361,7 @@ public class QueryDAO {
 						List<Map<String, Object>> result = new ArrayList<>(rows.size());
 						rows.forEach(row -> {
 							String attrib = row.getString(0);
+							@SuppressWarnings("unchecked")
 							List<Map<String, Object>> types = row.getJsonArray(1).getList();
 							Map<String, Object> tmp = Maps.newHashMap();
 							tmp.put(NGSIConstants.JSON_LD_ID, attrib);
@@ -391,8 +392,8 @@ public class QueryDAO {
 						if (count == 0) {
 							return Uni.createFrom().item(new HashMap<>(0));
 						}
-						List types = row.getJsonArray(1).getList();
-						List attribTypes = row.getJsonArray(0).getList();
+						List<?> types = row.getJsonArray(1).getList();
+						List<?> attribTypes = row.getJsonArray(0).getList();
 
 						Map<String, Object> result = Maps.newHashMap();
 						result.put(NGSIConstants.JSON_LD_ID, attribId);
@@ -1414,13 +1415,13 @@ public class QueryDAO {
 		EntityMap resultEntityMap = EntityMap.fromJson(qToken, first.getJsonObject(4), objectMapper);
 		Row row;
 		String id;
-		Boolean parent;
+		
 		JsonObject entityObj;
 		while (it.hasNext()) {
 			row = it.next();
 			id = row.getString(0);
 			entityObj = row.getJsonObject(1);
-			parent = row.getBoolean(2);
+			
 			//String[] types = row.getArrayOfStrings(3);
 
 			if (entityObj != null) {

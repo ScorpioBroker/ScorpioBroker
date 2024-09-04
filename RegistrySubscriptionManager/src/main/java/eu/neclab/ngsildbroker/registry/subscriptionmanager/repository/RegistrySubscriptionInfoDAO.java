@@ -110,7 +110,8 @@ public class RegistrySubscriptionInfoDAO {
 
 	public Uni<RowSet<Row>> getSubscription(String tenant, String subscriptionId) {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
-			return client.preparedQuery("SELECT subscription FROM registry_subscriptions WHERE subscription_id=$1")
+			return client.preparedQuery(
+					"SELECT subscription, contexts.body as contextBody, contexts.id FROM registry_subscriptions LEFT JOIN contexts ON registry_subscriptions.context = contexts.id WHERE subscription_id=$1")
 					.execute(Tuple.of(subscriptionId)).onFailure().retry().atMost(3);
 		});
 	}
@@ -156,6 +157,7 @@ public class RegistrySubscriptionInfoDAO {
 		});
 	}
 
+	@SuppressWarnings("unchecked")
 	public Uni<List<Tuple3<String, Map<String, Object>, Map<String, Object>>>> loadSubscriptions() {
 		return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
 			return client.preparedQuery("select tenant_id from tenant").execute().onItem().transformToUni(rows -> {
@@ -173,7 +175,7 @@ public class RegistrySubscriptionInfoDAO {
 									+ "', subscription, context FROM registry_subscriptions").execute();
 						}));
 
-				return Uni.combine().all().unis(unis).combinedWith(list -> {
+				return Uni.combine().all().unis(unis).with(list -> {
 					List<Tuple3<String, Map<String, Object>, Map<String, Object>>> result = Lists.newArrayList();
 //					for (Object obj : list) {
 //						@SuppressWarnings("unchecked")
@@ -196,7 +198,6 @@ public class RegistrySubscriptionInfoDAO {
 											else
 												return result;
 											for (Object obj : list) {
-												@SuppressWarnings("unchecked")
 												RowSet<Row> rowset = (RowSet<Row>) obj;
 												rowset.forEach(row -> result.add(Tuple3.of(row.getString(0),
 														row.getJsonObject(1).getMap(),
@@ -242,10 +243,10 @@ public class RegistrySubscriptionInfoDAO {
 					}
 				}
 				if (entityInformation.getTypeTerm() != null) {
-					//dollar = entityInformation.getTypeTerm().toSql(sql, tuple, dollar);
+					// dollar = entityInformation.getTypeTerm().toSql(sql, tuple, dollar);
 					Set<String> types = entityInformation.getTypeTerm().getAllTypes();
 					sql.append("e_type IN (");
-					for(String type: types) {
+					for (String type : types) {
 						sql.append('$');
 						sql.append(dollar);
 						sql.append(',');

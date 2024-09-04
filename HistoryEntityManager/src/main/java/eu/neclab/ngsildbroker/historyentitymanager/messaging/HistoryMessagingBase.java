@@ -5,6 +5,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
@@ -25,6 +27,7 @@ import eu.neclab.ngsildbroker.historyentitymanager.service.HistoryEntityService;
 //import eu.neclab.ngsildbroker.historyentitymanager.service.HistoryEntityService;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Vertx;
+import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 
 public abstract class HistoryMessagingBase {
@@ -38,6 +41,10 @@ public abstract class HistoryMessagingBase {
 
 	@ConfigProperty(name = "scorpio.history.autorecording", defaultValue = "true")
 	boolean autoRecording;
+	
+	@ConfigProperty(name = "scorpio.history.autorecordingthreadpoolsize", defaultValue = "1")
+	int histRecordingThreadPooolSzie;
+	
 	@ConfigProperty(name = "scorpio.history.autorecordingbuffersize", defaultValue = "50000")
 	int maxSize;
 
@@ -49,6 +56,17 @@ public abstract class HistoryMessagingBase {
 
 	@Inject
 	ObjectMapper objectMapper;
+	
+	
+	Executor histRecordingExecutor;
+	
+	@PostConstruct
+	public void setup() {
+		if(autoRecording) {
+			histRecordingExecutor = Executors.newScheduledThreadPool(histRecordingThreadPooolSzie);
+		}
+	}
+	
 
 	public Uni<Void> handleCsourceRaw(String byteMessage) {
 		CSourceBaseRequest baseRequest;
@@ -145,9 +163,9 @@ public abstract class HistoryMessagingBase {
 		return historyService.handleRegistryChange(message);
 	}
 
-	Uni<Void> checkBuffer() {
+	void checkBuffer() {
 		if (!autoRecording) {
-			return Uni.createFrom().voidItem();
+			return;
 		}
 		List<Uni<Void>> unis = Lists.newArrayList();
 
@@ -243,11 +261,13 @@ public abstract class HistoryMessagingBase {
 		}
 
 		if (unis.isEmpty()) {
-			return Uni.createFrom().voidItem();
+			return;
 		}
 
-		return Uni.combine().all().unis(unis).combinedWith(list -> null).onItem().transformToUni(list -> {
+		Uni.combine().all().unis(unis).with(list -> null).onItem().transformToUni(list -> {
 			return Uni.createFrom().voidItem();
+		}).runSubscriptionOn(histRecordingExecutor).subscribe().with(v -> {
+			logger.debug("running hist recording on threadpool");
 		});
 	}
 

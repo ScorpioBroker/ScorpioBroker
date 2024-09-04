@@ -71,6 +71,7 @@ import jakarta.ws.rs.core.MediaType;
  *
  */
 
+@SuppressWarnings("unchecked")
 public final class HttpUtils {
 
 	private static final Logger logger = LoggerFactory.getLogger(HttpUtils.class);
@@ -80,7 +81,7 @@ public final class HttpUtils {
 				new ResponseException(ErrorType.NotAcceptable, "Provided accept types are not supported")));
 	}
 
-	private static final String CORE_CONTEXT_URL_LINK = null;;
+//	private static final String CORE_CONTEXT_URL_LINK = null;;
 	/** Timeout for all requests to respond. */
 
 	private static Pattern headerPattern = Pattern.compile(
@@ -203,7 +204,7 @@ public final class HttpUtils {
 
 	}
 
-	@SuppressWarnings("unchecked")
+
 	public static Object generateGeoJson(Object result, String geometry, Object context) throws ResponseException {
 		Map<String, Object> resultMap = Maps.newLinkedHashMap();
 		if (result instanceof List) {
@@ -356,7 +357,6 @@ public final class HttpUtils {
 		return uri;
 	}
 
-	@SuppressWarnings("unchecked")
 	public static Uni<MultiMap> getAdditionalHeaders(Map<String, Object> registration, List<Object> context,
 			List<String> accept, JsonLDService ldService) {
 		MultiMap result = HeadersMultiMap.headers();
@@ -869,6 +869,7 @@ public final class HttpUtils {
 		}
 		try {
 			if (originalPayload.get(NGSIConstants.SCOPE) instanceof List) {
+				@SuppressWarnings("unused")
 				String scope = ((List<String>) originalPayload.get(NGSIConstants.SCOPE)).get(0);
 			}
 		} catch (Exception e) {

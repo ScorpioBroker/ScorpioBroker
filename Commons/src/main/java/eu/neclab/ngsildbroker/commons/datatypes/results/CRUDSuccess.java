@@ -48,6 +48,7 @@ public class CRUDSuccess {
 		return json;
 	}
 
+	@SuppressWarnings("unchecked")
 	public static CRUDSuccess fromPayload(Map<String, Object> entry) throws ResponseException {
 		return new CRUDSuccess((String) entry.get(NGSIConstants.ERROR_DETAIL_ENDPOINT), null,
 				(String) entry.get(NGSIConstants.ERROR_DETAIL_CSOURCE_ID),

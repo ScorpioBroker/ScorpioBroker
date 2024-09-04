@@ -126,8 +126,9 @@ public class RegistrySubscriptionService {
 			if (unis.isEmpty()) {
 				return Uni.createFrom().voidItem();
 			}
-			return Uni.combine().all().unis(unis).combinedWith(list -> {
+			return Uni.combine().all().unis(unis).with(list -> {
 				for (Object obj : list) {
+					@SuppressWarnings("unchecked")
 					Tuple2<Tuple2<String, Map<String, Object>>, Context> tuple = (Tuple2<Tuple2<String, Map<String, Object>>, Context>) obj;
 					SubscriptionRequest request;
 					try {
@@ -1103,7 +1104,7 @@ public class RegistrySubscriptionService {
 							|| entity.get(NGSIConstants.JSON_LD_ID).equals(id.toString()))
 							&& (!entity.containsKey(NGSIConstants.JSON_LD_TYPE)
 									|| ((List<String>) entity.get(NGSIConstants.JSON_LD_TYPE)).stream()
-									.anyMatch(typeEntry -> type.getAllTypes().contains(typeEntry)))) {
+											.anyMatch(typeEntry -> type.getAllTypes().contains(typeEntry)))) {
 						idAndTypeFound = true;
 						break;
 					}
@@ -1264,56 +1265,44 @@ public class RegistrySubscriptionService {
 		return Uni.combine().all().unis(unis).discardItems();
 	}
 
-	public Uni<Void> syncCreateSubscription(SubscriptionRequest sub) {
-		sub.getSubscription().setActive(false);
-		if (isIntervalSub(sub)) {
-			tenant2subscriptionId2IntervalSubscription.put(sub.getTenant(), sub.getId(), sub);
-		} else {
-			tenant2subscriptionId2Subscription.put(sub.getTenant(), sub.getId(), sub);
-		}
+	public Uni<Void> syncDeleteSubscription(String tenant, String subId) {
+		tenant2subscriptionId2IntervalSubscription.remove(tenant, subId);
+		tenant2subscriptionId2Subscription.remove(tenant, subId);
 		return Uni.createFrom().voidItem();
 	}
 
-	public Uni<Void> syncDeleteSubscription(SubscriptionRequest sub) {
-		sub.getSubscription().setActive(false);
-		if (isIntervalSub(sub)) {
-			tenant2subscriptionId2IntervalSubscription.remove(sub.getTenant(), sub.getId());
-		} else {
-			tenant2subscriptionId2Subscription.remove(sub.getTenant(), sub.getId());
-		}
-		return Uni.createFrom().voidItem();
-	}
-
-	public Uni<Void> syncUpdateSubscription(SubscriptionRequest sub) {
-		return regDAO.getSubscription(sub.getTenant(), sub.getId()).onFailure().recoverWithItem(e -> {
-			if (isIntervalSub(sub)) {
-				tenant2subscriptionId2IntervalSubscription.remove(sub.getTenant(), sub.getId());
-			} else {
-				tenant2subscriptionId2Subscription.remove(sub.getTenant(), sub.getId());
-			}
+	public Uni<Void> syncUpdateSubscription(String tenant, String subId) {
+		return regDAO.getSubscription(tenant, subId).onFailure().recoverWithItem(e -> {
+				tenant2subscriptionId2IntervalSubscription.remove(tenant, subId);
+				tenant2subscriptionId2Subscription.remove(tenant, subId);
 			return null;
 		}).onItem().transformToUni(rows -> {
 			if (rows == null || rows.size() == 0) {
 				return Uni.createFrom().voidItem();
 			}
-			String tenant = sub.getTenant();
-			SubscriptionRequest updatedRequest;
-			try {
-				updatedRequest = new SubscriptionRequest(tenant, rows.iterator().next().getJsonObject(0).getMap(),
-						sub.getContext());
-			} catch (Exception e) {
+			Row first = rows.iterator().next();
+			return ldService.parsePure(first.getJsonObject(1).getMap()).onItem().transformToUni(ctx -> {
+				SubscriptionRequest request;
+				try {
+					request = new SubscriptionRequest(tenant, first.getJsonObject(0).getMap(), ctx);
+					request.setContextId(first.getString(2));
+					request.getSubscription().addOtherHead(NGSIConstants.LINK_HEADER,
+							"<%s>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\""
+									.formatted(request.getSubscription().getJsonldContext()));
+					request.getSubscription().addOtherHead(NGSIConstants.TENANT_HEADER, request.getTenant());
+					request.setSendTimestamp(-1);
+					if (isIntervalSub(request)) {
+						tenant2subscriptionId2IntervalSubscription.put(request.getTenant(), request.getId(), request);
+						tenant2subscriptionId2Subscription.remove(tenant, request.getId());
+					} else {
+						tenant2subscriptionId2Subscription.put(request.getTenant(), request.getId(), request);
+						tenant2subscriptionId2IntervalSubscription.remove(tenant, request.getId());
+					}
+				} catch (Exception e) {
+					logger.error("Failed to load stored subscription " + subId);
+				}
 				return Uni.createFrom().voidItem();
-			}
-			updatedRequest.getSubscription().setActive(false);
-			if (isIntervalSub(updatedRequest)) {
-				tenant2subscriptionId2IntervalSubscription.put(tenant, updatedRequest.getId(), updatedRequest);
-				tenant2subscriptionId2Subscription.remove(tenant, updatedRequest.getId());
-			} else {
-				tenant2subscriptionId2Subscription.put(tenant, updatedRequest.getId(), updatedRequest);
-				tenant2subscriptionId2IntervalSubscription.remove(tenant, updatedRequest.getId());
-			}
-
-			return Uni.createFrom().voidItem();
+			});
 		});
 	}
 

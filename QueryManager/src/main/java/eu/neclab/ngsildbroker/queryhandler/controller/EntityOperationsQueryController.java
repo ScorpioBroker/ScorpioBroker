@@ -48,6 +48,7 @@ import io.vertx.core.http.HttpServerRequest;
 
 @Singleton
 @Path("/ngsi-ld/v1/entityOperations")
+@SuppressWarnings("unchecked")
 public class EntityOperationsQueryController {
 	@Inject
 	QueryService queryService;

@@ -22,7 +22,6 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.storage.ClientManager;
 import eu.neclab.ngsildbroker.commons.tools.DBUtil;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple3;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -213,6 +212,7 @@ public class EntityInfoDAO {
 		});
 	}
 
+	@SuppressWarnings("unchecked")
 	public Uni<Void> createEntity(CreateEntityRequest request) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
 			String[] types = ((List<String>) request.getFirstPayload().get(NGSIConstants.JSON_LD_TYPE))
@@ -250,6 +250,7 @@ public class EntityInfoDAO {
 
 	}
 
+	@SuppressWarnings("unchecked")
 	public Uni<Map<String, Object>> updateEntity(UpdateEntityRequest request) {
 		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
 			Map<String, Object> payload = request.getFirstPayload();
@@ -318,13 +319,14 @@ public class EntityInfoDAO {
 		while (it.hasNext()) {
 			Entry<String, Object> entry = it.next();
 			Object obj = entry.getValue();
-			if (obj instanceof List) {
-				List<Object> list = ((List<Object>) obj);
-				Iterator<Object> it2 = list.iterator();
+			if (obj instanceof List<?> list) {
+				
+				Iterator<?> it2 = list.iterator();
 				Object tmp;
 				while (it2.hasNext()) {
 					tmp = it2.next();
 					if (tmp instanceof Map) {
+						@SuppressWarnings("unchecked")
 						Map<String, Object> map = (Map<String, Object>) tmp;
 						if (map.containsKey(NGSIConstants.JSON_LD_TYPE)) {
 							if ((map.get(NGSIConstants.JSON_LD_TYPE) instanceof List<?> types
@@ -352,6 +354,7 @@ public class EntityInfoDAO {
 	 * @param noOverwrite
 	 * @return the not added attribs
 	 */
+	@SuppressWarnings("unchecked")
 	public Uni<Tuple3<Map<String, Object>, Map<String, Object>, Set<String>>> appendToEntity2(AppendEntityRequest request,
 			boolean noOverwrite) {
 		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
@@ -468,6 +471,7 @@ public class EntityInfoDAO {
 	 * @return old version of the entity
 	 */
 	public Uni<Map<String, Object>> replaceEntity(ReplaceEntityRequest request) {
+		@SuppressWarnings("unchecked")
 		String[] types = ((List<String>) request.getFirstPayload().get(NGSIConstants.JSON_LD_TYPE))
 				.toArray(new String[0]);
 		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {

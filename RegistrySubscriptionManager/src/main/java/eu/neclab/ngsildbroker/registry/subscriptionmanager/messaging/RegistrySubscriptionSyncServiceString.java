@@ -5,6 +5,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import jakarta.annotation.PostConstruct;
@@ -29,16 +31,16 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.Subscripti
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.registry.subscriptionmanager.service.RegistrySubscriptionService;
-import io.netty.channel.EventLoopGroup;
 import io.quarkus.arc.profile.IfBuildProfile;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
+import io.smallrye.reactive.messaging.annotations.Broadcast;
 import io.vertx.mutiny.core.Vertx;
 
 @Singleton
 @IfBuildProfile(anyOf = { "kafka" })
-public class RegistrySubscriptionSyncServiceString implements SyncService {
+public class RegistrySubscriptionSyncServiceString extends RegistrySubscriptionSyncServiceBase {
 
 	public static final String SYNC_ID = UUID.randomUUID().toString();
 
@@ -52,10 +54,12 @@ public class RegistrySubscriptionSyncServiceString implements SyncService {
 
 	@Inject
 	@Channel(AppConstants.SUB_ALIVE_CHANNEL)
+	@Broadcast
 	MutinyEmitter<String> aliveEmitter;
 
 	@Inject
 	@Channel(AppConstants.SUB_SYNC_CHANNEL)
+	@Broadcast
 	MutinyEmitter<String> syncEmitter;
 
 	@Inject
@@ -65,8 +69,7 @@ public class RegistrySubscriptionSyncServiceString implements SyncService {
 	@Inject
 	Vertx vertx;
 
-	private EventLoopGroup executor;
-
+	private Executor executor;
 
 	@ConfigProperty(name = "scorpio.messaging.maxSize")
 	int messageSize;
@@ -76,7 +79,7 @@ public class RegistrySubscriptionSyncServiceString implements SyncService {
 		INSTANCE_ID = new AliveAnnouncement(SYNC_ID);
 		INSTANCE_ID.setSubType(AliveAnnouncement.REG_SUB);
 		subService.addSyncService(this);
-		this.executor = vertx.getDelegate().nettyEventLoopGroup();
+		this.executor = Executors.newFixedThreadPool(2);
 	}
 
 	@Scheduled(every = "${scorpio.sync.announcement-time}", delayed = "${scorpio.startupdelay}")
@@ -111,29 +114,7 @@ public class RegistrySubscriptionSyncServiceString implements SyncService {
 			logger.error("failed to read reg sync message", e);
 			return Uni.createFrom().voidItem();
 		}
-		String key = message.getSyncId();
-		SubscriptionRequest sub = message.getRequest();
-		if (key.equals(SYNC_ID) || message.getSubType() == SyncMessage.NORMAL_SUB) {
-			return Uni.createFrom().voidItem();
-		}
-		switch (sub.getRequestType()) {
-		case AppConstants.DELETE_REQUEST:
-			subService.syncDeleteSubscription(sub).runSubscriptionOn(executor).subscribe()
-					.with(v -> logger.debug("done handling delete"));
-			break;
-		case AppConstants.UPDATE_REQUEST:
-			subService.syncUpdateSubscription(sub).runSubscriptionOn(executor).subscribe()
-					.with(v -> logger.debug("done handling update"));
-			break;
-		case AppConstants.CREATE_REQUEST:
-			subService.syncCreateSubscription(sub).runSubscriptionOn(executor).subscribe()
-					.with(v -> logger.debug("done handling create"));
-			break;
-		default:
-			break;
-		}
-
-		return Uni.createFrom().voidItem();
+		return baseHandleSync(message, SYNC_ID, subService, executor);
 	}
 
 	@Incoming(AppConstants.SUB_ALIVE_RETRIEVE_CHANNEL)
@@ -173,8 +154,9 @@ public class RegistrySubscriptionSyncServiceString implements SyncService {
 
 	public Uni<Void> sync(SubscriptionRequest request) {
 		try {
-			MicroServiceUtils.serializeAndSplitObjectAndEmit(new SyncMessage(SYNC_ID, request, SyncMessage.REG_SUB),
-					messageSize, syncEmitter, objectMapper);
+			MicroServiceUtils.serializeAndSplitObjectAndEmit(new SyncMessage(SYNC_ID, request.getId(),
+					request.getTenant(), request.getRequestType(), SyncMessage.REG_SUB), messageSize, syncEmitter,
+					objectMapper);
 		} catch (ResponseException e) {
 			logger.error("Failed to serialize sync message", e);
 		}

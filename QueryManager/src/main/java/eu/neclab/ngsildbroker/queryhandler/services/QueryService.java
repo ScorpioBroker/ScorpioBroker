@@ -5,7 +5,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -33,10 +32,8 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityCache;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityMap;
-import eu.neclab.ngsildbroker.commons.datatypes.QueryInfos;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryRemoteHost;
 import eu.neclab.ngsildbroker.commons.datatypes.RegistrationEntry;
-import eu.neclab.ngsildbroker.commons.datatypes.RemoteHost;
 import eu.neclab.ngsildbroker.commons.datatypes.ViaHeaders;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CSourceBaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
@@ -77,6 +74,7 @@ import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 
 @ApplicationScoped
+@SuppressWarnings("unchecked")
 public class QueryService {
 
 	private static Logger logger = LoggerFactory.getLogger(QueryService.class);
@@ -174,7 +172,7 @@ public class QueryService {
 						OmitTerm omitTermTBU = omitTerm;
 
 						if (entityMap.isRegEmptyOrNoRegEntryAndNoLinkedQuery()) {
-							return handleEntityMap(t.getItem2(), t.getItem1(), tenant, idsAndTypeQueryAndIdPattern,
+							return handleEntityMap(t.getItem2(), t.getItem1(), tenant, idsAndTypeQueryAndIdPatternTBU,
 									attrsQuery, qQuery, geoQuery, scopeQuery, langQuery, limit, offSet, count,
 									dataSetIdTerm, join, joinLevel, context, jsonKeys, headersFromReq, pickTerm,
 									omitTerm, viaHeaders);
@@ -209,7 +207,7 @@ public class QueryService {
 								omitTermTBU = storedQuery.getOmitTerm();
 							}
 						}
-						return handleEntityMap(t.getItem2(), t.getItem1(), tenant, idsAndTypeQueryAndIdPattern,
+						return handleEntityMap(t.getItem2(), t.getItem1(), tenant, idsAndTypeQueryAndIdPatternTBU,
 								attrsQueryTBU, qQueryTBU, geoQueryTBU, scopeQueryTBU, langQueryTBU, limit, offSet,
 								count, dataSetIdTermTBU, joinTBU, joinLevelTBU, context, jsonKeysTBU, headersFromReq,
 								pickTermTBU, omitTermTBU, viaHeaders);
@@ -255,7 +253,7 @@ public class QueryService {
 		if (entityMap.isRegEmptyOrNoRegEntryAndNoLinkedQuery()) {
 
 			subMap.forEach(id2Hosts -> {
-				String id = id2Hosts.getKey();
+				//String id = id2Hosts.getKey();
 				if (isFlatJoin) {
 					resultData.add(entityCache.remove(id2Hosts.getKey()).getItem1());
 				} else {
@@ -482,13 +480,13 @@ public class QueryService {
 		if (unis.isEmpty()) {
 			return Uni.createFrom().item(entityCache);
 		}
-		return Uni.combine().all().unis(unis).combinedWith(l -> {
+		return Uni.combine().all().unis(unis).with(l -> {
 			mergeMultipleQueryResults(l, entityCache, null);
 			return entityCache;
 		});
 	}
 
-	private Collection<Map<String, Object>> mergeMultipleQueryResults(List l, EntityCache entityCache,
+	private Collection<Map<String, Object>> mergeMultipleQueryResults(List<?> l, EntityCache entityCache,
 			EntityMap entityMap) {
 		Map<String, Set<String>> entityId2Types = Maps.newHashMap();
 		Map<String, Set<String>> entityId2Scopes = Maps.newHashMap();
@@ -501,7 +499,6 @@ public class QueryService {
 		String id;
 		Map<String, Map<String, Object>> id2Entity = Maps.newHashMap();
 		for (Object o : l) {
-			@SuppressWarnings("unchecked")
 			Tuple2<List<Map<String, Object>>, QueryRemoteHost> t = (Tuple2<List<Map<String, Object>>, QueryRemoteHost>) o;
 			List<Map<String, Object>> entities = t.getItem1();
 			QueryRemoteHost remoteHost = t.getItem2();
@@ -622,7 +619,6 @@ public class QueryService {
 
 	}
 
-	@SuppressWarnings("unchecked")
 	private void flatAddAttrib(Object attribObj, EntityCache entityCache, int currentJoinLevel, int joinLevel,
 			Map<String, Map<String, Object>> toAdd, boolean localOnly) {
 		if (attribObj instanceof Map<?, ?> attribMap) {
@@ -843,6 +839,7 @@ public class QueryService {
 
 	}
 
+	
 	private void addTypes2IdsFromAttr(Object attrValueListObj, Map<Set<String>, Set<String>> result,
 			Set<String> typeFilter) {
 		if (attrValueListObj != null && attrValueListObj instanceof List<?> l) {
@@ -917,7 +914,7 @@ public class QueryService {
 				continue;
 			}
 			Object attribObj = entity.get(attribName);
-			if (attribObj instanceof List list) {
+			if (attribObj instanceof List<?> list) {
 				for (Object entry : list) {
 					inlineAttrib(entry, entityCache, currentJoinLevel, joinLevel, localOnly);
 				}
@@ -931,9 +928,9 @@ public class QueryService {
 
 	private void inlineAttrib(Object attribObj, EntityCache entityCache, int currentJoinLevel, int joinLevel,
 			boolean localOnly) {
-		if (attribObj instanceof Map attribMap) {
+		if (attribObj instanceof @SuppressWarnings("rawtypes") Map attribMap) {
 			Object typeObj = attribMap.get(NGSIConstants.JSON_LD_TYPE);
-			if (typeObj != null && typeObj instanceof List typeList) {
+			if (typeObj != null && typeObj instanceof List<?> typeList) {
 				if (typeList.contains(NGSIConstants.NGSI_LD_RELATIONSHIP)) {
 					List<Map<String, String>> hasObject = (List<Map<String, String>>) attribMap
 							.get(NGSIConstants.NGSI_LD_HAS_OBJECT);
@@ -959,7 +956,7 @@ public class QueryService {
 						List<Object> linkedTypes = (List<Object>) attribMap.get(NGSIConstants.NGSI_LD_OBJECT_TYPE);
 						Set<String> tmpTypeSet = new HashSet<>(linkedTypes.size());
 						for (Object linkedTypeObj : linkedTypes) {
-							if (linkedTypeObj instanceof Map linkedTypeMap
+							if (linkedTypeObj instanceof Map<?, ?> linkedTypeMap
 									&& linkedTypeMap.containsKey(NGSIConstants.JSON_LD_ID)) {
 								tmpTypeSet.add((String) linkedTypeMap.get(NGSIConstants.JSON_LD_ID));
 							}
@@ -1021,7 +1018,7 @@ public class QueryService {
 						List<Object> linkedTypes = (List<Object>) attribMap.get(NGSIConstants.NGSI_LD_OBJECT_TYPE);
 						Set<String> tmpTypeSet = new HashSet<>(linkedTypes.size());
 						for (Object linkedTypeObj : linkedTypes) {
-							if (linkedTypeObj instanceof Map linkedTypeMap
+							if (linkedTypeObj instanceof Map<?, ?> linkedTypeMap
 									&& linkedTypeMap.containsKey(NGSIConstants.JSON_LD_ID)) {
 								tmpTypeSet.add((String) linkedTypeMap.get(NGSIConstants.JSON_LD_ID));
 							}
@@ -1208,9 +1205,9 @@ public class QueryService {
 					if (rows.size() > 0) {
 						List<Uni<List<Object>>> unis = getRemoteCalls(rows,
 								NGSIConstants.NGSI_LD_TYPES_ENDPOINT + "?details=true", headersFromReq);
-						return Uni.combine().all().unis(unis).combinedWith(list -> {
+						return Uni.combine().all().unis(unis).with(list -> {
 							for (Object entry : list) {
-								if (((List) entry).isEmpty()) {
+								if (((List<?>) entry).isEmpty()) {
 									continue;
 								}
 								List<Map<String, Object>> typeList = (List<Map<String, Object>>) entry;
@@ -1290,9 +1287,9 @@ public class QueryService {
 					if (rows.size() > 0) {
 						List<Uni<List<Object>>> unis = getRemoteCalls(rows, NGSIConstants.NGSI_LD_TYPES_ENDPOINT,
 								headersFromReq);
-						return Uni.combine().all().unis(unis).combinedWith(list -> {
+						return Uni.combine().all().unis(unis).with(list -> {
 							for (Object entry : list) {
-								if (!((List) entry).isEmpty()) {
+								if (!((List<?>) entry).isEmpty()) {
 									Map<String, Object> typeMap = ((List<Map<String, Object>>) entry).get(0);
 									mergeTypeList(typeMap.get(NGSIConstants.NGSI_LD_TYPE_LIST), currentTypes);
 								}
@@ -1350,10 +1347,10 @@ public class QueryService {
 					if (rows.size() > 0) {
 						List<Uni<List<Object>>> remoteResults = getRemoteCalls(rows,
 								NGSIConstants.NGSI_LD_TYPES_ENDPOINT + "/" + type, headersFromReq);
-						return Uni.combine().all().unis(remoteResults).combinedWith(list -> {
+						return Uni.combine().all().unis(remoteResults).with(list -> {
 							long count = 0;
 							for (Object obj : list) {
-								if (!((List) obj).isEmpty()) {
+								if (!((List<?>) obj).isEmpty()) {
 									Map<String, Object> typeInfo = ((List<Map<String, Object>>) obj).get(0);
 									count += ((List<Map<String, Long>>) typeInfo
 											.get(NGSIConstants.NGSI_LD_ENTITY_COUNT)).get(0)
@@ -1445,9 +1442,9 @@ public class QueryService {
 					if (rows.size() > 0) {
 						List<Uni<List<Object>>> remoteResults = getRemoteCalls(rows,
 								NGSIConstants.NGSI_LD_ATTRIBUTES_ENDPOINT + "?details=true", headersFromReq);
-						return Uni.combine().all().unis(remoteResults).combinedWith(list -> {
+						return Uni.combine().all().unis(remoteResults).with(list -> {
 							for (Object obj : list) {
-								if (((List) obj).isEmpty()) {
+								if (((List<?>) obj).isEmpty()) {
 									continue;
 								}
 								List<Map<String, Object>> attribList = ((List<Map<String, Object>>) obj);
@@ -1522,9 +1519,9 @@ public class QueryService {
 					if (rows.size() > 0) {
 						List<Uni<List<Object>>> remoteResults = getRemoteCalls(rows,
 								NGSIConstants.NGSI_LD_ATTRIBUTES_ENDPOINT, headersFromReq);
-						return Uni.combine().all().unis(remoteResults).combinedWith(list -> {
+						return Uni.combine().all().unis(remoteResults).with(list -> {
 							for (Object obj : list) {
-								if (((List) obj).isEmpty()) {
+								if (((List<?>) obj).isEmpty()) {
 									continue;
 								}
 								Map<String, Object> payload = ((List<Map<String, Object>>) obj).get(0);
@@ -1579,10 +1576,10 @@ public class QueryService {
 					if (rows.size() > 0) {
 						List<Uni<List<Object>>> remoteResults = getRemoteCalls(rows,
 								NGSIConstants.NGSI_LD_ATTRIBUTES_ENDPOINT + "/" + attrib, headersFromReq);
-						return Uni.combine().all().unis(remoteResults).combinedWith(list -> {
+						return Uni.combine().all().unis(remoteResults).with(list -> {
 							long count = 0;
 							for (Object obj : list) {
-								if (((List) obj).isEmpty()) {
+								if (((List<?>) obj).isEmpty()) {
 									continue;
 								}
 								Map<String, Object> payload = ((List<Map<String, Object>>) obj).get(0);
@@ -1741,43 +1738,6 @@ public class QueryService {
 
 	}
 
-	private List<QueryRemoteHost> getRemoteHostsForRetrieve(String tenant, String entityId, AttrsQueryTerm attrsQuery,
-			Context context) {
-		Iterator<List<RegistrationEntry>> regEntries = tenant2CId2RegEntries.row(tenant).values().iterator();
-
-		Map<RemoteHost, QueryInfos> host2QueryInfo = Maps.newHashMap();
-		List<QueryRemoteHost> result = Lists.newArrayList();
-
-		while (regEntries.hasNext()) {
-			Iterator<RegistrationEntry> it = regEntries.next().iterator();
-			while (it.hasNext()) {
-				RegistrationEntry regEntry = it.next();
-				if (!regEntry.retrieveEntity()) {
-					continue;
-				}
-				QueryInfos tmp = regEntry.matches(new String[] { entityId }, null, null, attrsQuery, null, null, null);
-				if (tmp == null) {
-					continue;
-				}
-				QueryInfos resultQueryInfo = host2QueryInfo.get(regEntry.host());
-				if (resultQueryInfo == null) {
-					resultQueryInfo = tmp;
-					host2QueryInfo.put(regEntry.host(), tmp);
-				} else {
-					resultQueryInfo.merge(tmp);
-				}
-
-			}
-		}
-		for (Entry<RemoteHost, QueryInfos> entry : host2QueryInfo.entrySet()) {
-			RemoteHost remoteHost = entry.getKey();
-//			result.add(QueryRemoteHost.fromRemoteHost(remoteHost,
-//					entry.getValue().toQueryString(context, null, null, lang, true, null, null),
-//					remoteHost.canDoEntityId(), remoteHost.canDoZip(), null));
-		}
-		return result;
-	}
-
 	public Uni<Void> handleRegistryChange(CSourceBaseRequest req) {
 		return RegistrationEntry.fromRegPayload(req.getPayload(), ldService).onItem().transformToUni(regs -> {
 			List<RegistrationEntry> newRegs = Lists.newArrayList();
@@ -1802,9 +1762,9 @@ public class QueryService {
 			OmitTerm omitTerm, String queryCechksum, ViaHeaders viaHeaders) {
 
 		if (tenant2CId2RegEntries.isEmpty()) {
-			return queryDAO.createEntityMapAndFillEntityCache(tenant, idsAndTypeQueryAndIdPattern, attrsQuery,
-					qQuery, geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel, qToken,
-					pickTerm, omitTerm, queryCechksum, splitEntities, true, false);
+			return queryDAO.createEntityMapAndFillEntityCache(tenant, idsAndTypeQueryAndIdPattern, attrsQuery, qQuery,
+					geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel, qToken, pickTerm,
+					omitTerm, queryCechksum, splitEntities, true, false);
 		} else {
 			EntityCache fullEntityCache = new EntityCache();
 			Collection<QueryRemoteHost> remoteHost2Query = EntityTools.getRemoteQueries(tenant,
@@ -1812,13 +1772,13 @@ public class QueryService {
 					tenant2CId2RegEntries, context, fullEntityCache, splitEntities, viaHeaders);
 			if (remoteHost2Query.isEmpty()) {
 				if ((join == null || joinLevel <= 0) && (qQuery == null || !qQuery.hasLinkedQ())) {
-					return queryDAO.createEntityMapAndFillEntityCache(tenant, idsAndTypeQueryAndIdPattern,
-							attrsQuery, qQuery, geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join,
-							joinLevel, qToken, pickTerm, omitTerm, queryCechksum, splitEntities, true, false);
+					return queryDAO.createEntityMapAndFillEntityCache(tenant, idsAndTypeQueryAndIdPattern, attrsQuery,
+							qQuery, geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel,
+							qToken, pickTerm, omitTerm, queryCechksum, splitEntities, true, false);
 				} else {
-					return queryDAO.createEntityMapAndFillEntityCache(tenant, idsAndTypeQueryAndIdPattern,
-							attrsQuery, qQuery, geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join,
-							joinLevel, qToken, pickTerm, omitTerm, queryCechksum, splitEntities, false, true);
+					return queryDAO.createEntityMapAndFillEntityCache(tenant, idsAndTypeQueryAndIdPattern, attrsQuery,
+							qQuery, geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel,
+							qToken, pickTerm, omitTerm, queryCechksum, splitEntities, false, true);
 				}
 			} else {
 				Uni<Tuple2<EntityCache, EntityMap>> localEntityCacheAndEntityMap = queryDAO
@@ -1889,20 +1849,20 @@ public class QueryService {
 						}
 					} else {
 						unisForEntityRetrieval
-								.add(EntityTools.getRemoteEntities(remoteHost, webClient, timeout, ldService)
-										.onItem().transform(entities -> Tuple2.of(entities, remoteHost)));
+								.add(EntityTools.getRemoteEntities(remoteHost, webClient, timeout, ldService).onItem()
+										.transform(entities -> Tuple2.of(entities, remoteHost)));
 					}
 				}
 				Uni<List<?>> combinedMaps;
 				Uni<List<?>> combinedRemoteEntities;
 				if (!unisForEntityMapRetrieval.isEmpty()) {
-					combinedMaps = Uni.combine().all().unis(unisForEntityMapRetrieval).combinedWith(l -> l);
+					combinedMaps = Uni.combine().all().unis(unisForEntityMapRetrieval).with(l -> l);
 				} else {
 					combinedMaps = Uni.createFrom().nullItem();
 				}
 
 				if (!unisForEntityRetrieval.isEmpty()) {
-					combinedRemoteEntities = Uni.combine().all().unis(unisForEntityRetrieval).combinedWith(l -> l);
+					combinedRemoteEntities = Uni.combine().all().unis(unisForEntityRetrieval).with(l -> l);
 				} else {
 					combinedRemoteEntities = Uni.createFrom().nullItem();
 				}
@@ -1922,9 +1882,9 @@ public class QueryService {
 									QueryRemoteHost rHost = mapT.getItem2();
 									Map<String, Object> rMap = mapT.getItem1();
 									if (rMap == null) {
-										recoverEntityMapFail.add(EntityTools
-												.getRemoteEntities(rHost, webClient, timeout, ldService)
-												.onItem().transform(entities -> Tuple2.of(entities, rHost)));
+										recoverEntityMapFail
+												.add(EntityTools.getRemoteEntities(rHost, webClient, timeout, ldService)
+														.onItem().transform(entities -> Tuple2.of(entities, rHost)));
 										continue;
 									}
 									String cSourceId = rHost.cSourceId();
@@ -1939,7 +1899,8 @@ public class QueryService {
 								}
 							}
 							if (!recoverEntityMapFail.isEmpty()) {
-								return Uni.combine().all().unis(recoverEntityMapFail).combinedWith(l -> {
+								return Uni.combine().all().unis(recoverEntityMapFail).with(l -> {
+									@SuppressWarnings("rawtypes")
 									List tmpList = l;
 									if (remoteEntities != null) {
 										tmpList.addAll(remoteEntities);
@@ -2048,7 +2009,7 @@ public class QueryService {
 		if (unis.isEmpty()) {
 			return Uni.createFrom().item(Tuple2.of(fullEntityCache, Lists.newArrayList()));
 		}
-		return Uni.combine().all().unis(unis).combinedWith(l -> {
+		return Uni.combine().all().unis(unis).with(l -> {
 			Collection<Map<String, Object>> result = mergeMultipleQueryResults(l, fullEntityCache, null);
 			return Tuple2.of(fullEntityCache, result);
 		});

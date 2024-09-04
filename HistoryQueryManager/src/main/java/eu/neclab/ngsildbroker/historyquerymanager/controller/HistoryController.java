@@ -23,9 +23,6 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.RestResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import jakarta.ws.rs.GET;
@@ -41,7 +38,7 @@ import java.util.List;
 @Path("/ngsi-ld/v1/temporal/entities")
 public class HistoryController {
 
-	private final static Logger logger = LoggerFactory.getLogger(HistoryController.class);
+	//private final static Logger logger = LoggerFactory.getLogger(HistoryController.class);
 
 	@Inject
 	MicroServiceUtils microServiceUtils;

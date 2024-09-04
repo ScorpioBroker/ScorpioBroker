@@ -22,9 +22,6 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.RestResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +29,7 @@ import java.util.Map;
 @Path("/ngsi-ld/v1/subscriptions")
 public class SubscriptionController {
 
-	private final static Logger logger = LoggerFactory.getLogger(SubscriptionController.class);
+	//private final static Logger logger = LoggerFactory.getLogger(SubscriptionController.class);
 
 	@Inject
 	SubscriptionService subService;
@@ -51,6 +48,7 @@ public class SubscriptionController {
 	@Inject
 	JsonLDService ldService;
 
+	@SuppressWarnings("unchecked")
 	@POST
 	public Uni<RestResponse<Object>> subscribe(HttpServerRequest request, Map<String, Object> map) {
 		try {
@@ -168,6 +166,7 @@ public class SubscriptionController {
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
 		}
+		@SuppressWarnings("unchecked")
 		List<String> contexts = (List<String>) map.get("@context");
 		List<String> finalContexts = new ArrayList<>();
 		if (contexts != null) {

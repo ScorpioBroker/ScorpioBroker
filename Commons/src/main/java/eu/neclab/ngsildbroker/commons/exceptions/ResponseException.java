@@ -139,6 +139,7 @@ public class ResponseException extends Exception {
 		return json;
 	}
 
+	@SuppressWarnings("unchecked")
 	public static ResponseException fromPayload(Map<String, Object> entry) {
 		Set<Attrib> attribs = null;
 		Map<String, Object> entryDetail = (Map<String, Object>) entry.get(NGSIConstants.ERROR_DETAIL);

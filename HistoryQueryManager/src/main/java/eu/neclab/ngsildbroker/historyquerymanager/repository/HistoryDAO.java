@@ -136,6 +136,7 @@ public class HistoryDAO {
 				logger);
 	}
 
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public Uni<QueryResult> query(String tenant, String[] entityIds, TypeQueryTerm typeQuery, String idPattern,
 			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, TemporalQueryTerm tempQuery, AggrTerm aggrQuery,
 			GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, int lastN, int limit, int offset, boolean count) {

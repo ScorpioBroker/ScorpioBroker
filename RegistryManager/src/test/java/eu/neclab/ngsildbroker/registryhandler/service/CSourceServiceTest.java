@@ -45,6 +45,7 @@ import io.vertx.pgclient.PgException;
 
 @QuarkusTest
 @TestProfile(CustomProfile.class)
+@SuppressWarnings("unchecked")
 public class CSourceServiceTest {
 
 	@InjectMocks

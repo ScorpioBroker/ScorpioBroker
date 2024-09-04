@@ -6,7 +6,7 @@
 	<parent>
 		<groupId>eu.neclab.ngsildbroker</groupId>
 		<artifactId>broker-parent</artifactId>
-		<version>5.0.0-SNAPSHOT</version>
+		<version>5.0.1-SNAPSHOT</version>
 		<relativePath>../BrokerParent</relativePath>
 	</parent>
 	<profiles>
@@ -183,7 +183,7 @@
 		</dependency>
 		<dependency>
 			<groupId>io.quarkus</groupId>
-			<artifactId>quarkus-rest-client-reactive-jackson</artifactId>
+			<artifactId>quarkus-rest-client-jackson</artifactId>
 		</dependency>
 	</dependencies>
 </project>

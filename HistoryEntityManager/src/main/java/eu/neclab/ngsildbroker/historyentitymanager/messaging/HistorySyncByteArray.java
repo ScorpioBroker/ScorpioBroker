@@ -7,7 +7,6 @@ import org.eclipse.microprofile.reactive.messaging.Acknowledgment.Strategy;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import io.quarkus.arc.profile.IfBuildProfile;
 import io.quarkus.scheduler.Scheduled;
-import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.smallrye.mutiny.Uni;
 import jakarta.inject.Singleton;
 
@@ -22,7 +21,6 @@ public class HistorySyncByteArray extends HistorySync {
 	}
 
 	@Scheduled(every = "${scorpio.sync.check-time}", delayed = "${scorpio.startupdelay}")
-	@RunOnVirtualThread
 	void checkInstances() {
 		super.checkInstances();
 	}

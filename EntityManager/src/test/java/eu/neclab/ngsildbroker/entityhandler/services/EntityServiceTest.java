@@ -41,7 +41,6 @@ import eu.neclab.ngsildbroker.entityhandler.controller.CustomProfile;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple3;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.vertx.mutiny.core.Vertx;
@@ -83,6 +82,7 @@ public class EntityServiceTest {
 	Map<String, Object> resolved = null;
 	ObjectMapper objectMapper = new ObjectMapper();
 
+	@SuppressWarnings("unchecked")
 	@BeforeEach
 	public void setUp() throws Exception {
 
