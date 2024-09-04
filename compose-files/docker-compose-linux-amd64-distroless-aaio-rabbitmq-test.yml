@@ -1,0 +1,33 @@
+version: '3'
+
+services:
+  testserver:
+    image: testserver
+    ports:
+     - "8080:8080"
+  rabbitmq:
+    image: rabbitmq:management
+    ports:
+     - "5672:5672"
+  postgres:
+    image: postgis/postgis
+    ports:
+      - "5432"
+    environment:
+      POSTGRES_USER: ngb
+      POSTGRES_PASSWORD: ngb
+      POSTGRES_DB: ngb
+    depends_on:
+      - rabbitmq
+  scorpio:
+    image: scorpiobroker/all-in-one-runner:linux-amd64-rabbitmq-latest
+    ports:
+      - "9090:9090"
+    environment:
+      DBHOST: postgres
+      CAMEL_COMPONENT_RABBITMQ_HOSTNAME: rabbitmq
+      CAMEL_COMPONENT_RABBITMQ_PORT_NUMBER: 5672
+    restart: on-failure
+    depends_on:
+      - postgres
+      - rabbitmq

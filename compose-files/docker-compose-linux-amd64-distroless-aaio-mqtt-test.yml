@@ -1,0 +1,34 @@
+version: '3'
+
+services:
+  testserver:
+    image: testserver
+    ports:
+     - "8080:8080"
+  zookeeper:
+    image: zookeeper
+    ports:
+      - "2181"
+  emqx:
+    image: emqx
+    ports:
+     - "1883:1883"
+  postgres:
+    image: postgis/postgis
+    ports:
+      - "5432"
+    environment:
+      POSTGRES_USER: ngb
+      POSTGRES_PASSWORD: ngb
+      POSTGRES_DB: ngb
+  scorpio:
+    image: scorpiobroker/all-in-one-runner:linux-amd64-mqtt-latest
+    ports:
+      - "9090:9090"
+    environment:
+      DBHOST: postgres
+      BUSHOST: emqx
+    restart: on-failure
+    depends_on:
+      - postgres
+      - emqx
