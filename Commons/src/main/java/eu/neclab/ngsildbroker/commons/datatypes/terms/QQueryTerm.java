@@ -50,7 +50,7 @@ public class QQueryTerm implements Serializable {
 	private static final String LIST = ".+(,.+)+";
 	private static final String URI = "\\w+:(\\/?\\/?)[^\\s^;]+";
 	private static final String DATETIME = "\\d\\d\\d\\d-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d([,.]\\d{1,6})?Z";
-	//private static final String DATE = "\\d\\d\\d\\d-\\d\\d-\\d\\d";
+	// private static final String DATE = "\\d\\d\\d\\d-\\d\\d-\\d\\d";
 	private static final String TIME = "\\d\\d:\\d\\d:\\d\\d(,\\d\\d\\d\\d\\d\\d)?Z";
 	private static final List<String> TIME_PROPS = Arrays.asList(NGSIConstants.NGSI_LD_OBSERVED_AT,
 			NGSIConstants.NGSI_LD_CREATED_AT, NGSIConstants.NGSI_LD_MODIFIED_AT);
@@ -175,6 +175,7 @@ public class QQueryTerm implements Serializable {
 
 		return result;
 	}
+
 	@SuppressWarnings("unchecked")
 	private Object getElemByPath(Object entity, String[] path, int index, String operant) {
 		if (entity == null || index >= path.length) {
@@ -737,7 +738,6 @@ public class QQueryTerm implements Serializable {
 		return getCompoundValue(potentialResult, Arrays.copyOfRange(compound, 1, compound.length));
 	}
 
-	
 	private Object getValue(BaseEntry myEntry) {
 		Object value = null;
 		if (myEntry instanceof PropertyEntry) {
@@ -1171,7 +1171,6 @@ public class QQueryTerm implements Serializable {
 				followUp.append("EXISTS (SELECT TRUE FROM JSONB_ARRAY_ELEMENTS(ENTITY -> ''' || $");
 				result.append(dollarCount);
 
-				
 				followUp.append(dollarCount);
 				followUp.append(" || '''");
 				dollarCount++;
@@ -1383,6 +1382,57 @@ public class QQueryTerm implements Serializable {
 		return dollarCount;
 	}
 
+	private int addItemToTupelForRange(Tuple tuple, String listItem, StringBuilder sql, StringBuilder followUp,
+			int dollarCount) {
+		try {
+			double tmp = Double.parseDouble(listItem);
+			sql.append("TO_JSONB($");
+			sql.append(dollarCount);
+			sql.append(")");
+
+			followUp.append("TO_JSONB( ' || $");
+			followUp.append(dollarCount);
+			followUp.append(" || ')");
+
+			tuple.addDouble(tmp);
+			dollarCount++;
+		} catch (NumberFormatException e) {
+			if (listItem.equalsIgnoreCase("true") || listItem.equalsIgnoreCase("false")) {
+
+				sql.append("$");
+				sql.append(dollarCount);
+				sql.append("::jsonb");
+				followUp.append("' || $");
+				followUp.append(dollarCount);
+				followUp.append(" || '::jsonb");
+				dollarCount++;
+				tuple.addBoolean(Boolean.parseBoolean(listItem));
+			} else {
+				sql.append("$");
+				sql.append(dollarCount);
+
+				followUp.append("''' || $");
+				followUp.append(dollarCount);
+				followUp.append(" || '''");
+				dollarCount++;
+
+				// if (!listItem.matches(DATETIME)) {
+				if (listItem.charAt(0) != '"' || listItem.charAt(listItem.length() - 1) != '"') {
+					listItem = '"' + listItem + '"';
+				}
+
+				sql.append("::text::jsonb");
+				followUp.append("::text::jsonb");
+
+				// }
+
+				tuple.addString(listItem);
+			}
+		}
+		return dollarCount;
+
+	}
+
 	private int applyOperator(StringBuilder attributeFilterProperty, StringBuilder followUp, int dollarCount,
 			Tuple tuple, Boolean needExpanded) {
 		String finalOperant;
@@ -1404,19 +1454,16 @@ public class QQueryTerm implements Serializable {
 		case NGSIConstants.QUERY_EQUAL:
 			if (finalOperant.matches(LIST)) {
 				if (operator.equals(NGSIConstants.QUERY_UNEQUAL)) {
-					//attributeFilterProperty.append(" not");
-					//followUp.append(" not");
+					// attributeFilterProperty.append(" not");
+					// followUp.append(" not");
 				}
 				attributeFilterProperty.append(" in (");
 				for (String listItem : finalOperant.split(",")) {
 					dollarCount++;
-					dollarCount = addItemToTupel(tuple, listItem, attributeFilterProperty, followUp, dollarCount);
-					attributeFilterProperty.append("::");
-					attributeFilterProperty.append(typecast);
+					dollarCount = addItemToTupelForRange(tuple, listItem, attributeFilterProperty, followUp,
+							dollarCount);
 					attributeFilterProperty.append(',');
 
-					followUp.append("::");
-					followUp.append(typecast);
 					followUp.append(',');
 
 				}
@@ -1425,23 +1472,18 @@ public class QQueryTerm implements Serializable {
 			} else if (finalOperant.matches(RANGE)) {
 				String[] myRange = finalOperant.split("\\.\\.");
 				if (operator.equals(NGSIConstants.QUERY_UNEQUAL)) {
-					//attributeFilterProperty.append(" not");
-					//followUp.append(" not");
+					// attributeFilterProperty.append(" not");
+					// followUp.append(" not");
 				}
 				attributeFilterProperty.append(" between ");
 
 				followUp.append(" between ");
 
-				dollarCount = addItemToTupel(tuple, myRange[0], attributeFilterProperty, followUp, dollarCount);
-				attributeFilterProperty.append("::");
-				attributeFilterProperty.append(typecast);
+				dollarCount = addItemToTupelForRange(tuple, myRange[0], attributeFilterProperty, followUp, dollarCount);
 				attributeFilterProperty.append(" and ");
-
-				followUp.append("::");
-				followUp.append(typecast);
 				followUp.append(" and ");
 
-				dollarCount = addItemToTupel(tuple, myRange[1], attributeFilterProperty, followUp, dollarCount);
+				dollarCount = addItemToTupelForRange(tuple, myRange[1], attributeFilterProperty, followUp, dollarCount);
 				attributeFilterProperty.append("::" + typecast);
 				followUp.append("::" + typecast);
 			} else {
@@ -1454,8 +1496,6 @@ public class QQueryTerm implements Serializable {
 				}
 
 				dollarCount = addItemToTupel(tuple, finalOperant, attributeFilterProperty, followUp, dollarCount);
-				attributeFilterProperty.append("::" + typecast);
-				followUp.append("::" + typecast);
 
 			}
 
@@ -1466,39 +1506,23 @@ public class QQueryTerm implements Serializable {
 			followUp.append(" >= ");
 
 			dollarCount = addItemToTupel(tuple, finalOperant, attributeFilterProperty, followUp, dollarCount);
-			attributeFilterProperty.append("::");
-			attributeFilterProperty.append(typecast);
-			followUp.append("::");
-			followUp.append(typecast);
 
 			break;
 		case NGSIConstants.QUERY_LESSEQ:
 			attributeFilterProperty.append(" <= ");
 			followUp.append(" <= ");
 			dollarCount = addItemToTupel(tuple, finalOperant, attributeFilterProperty, followUp, dollarCount);
-			attributeFilterProperty.append("::");
-			attributeFilterProperty.append(typecast);
-			followUp.append("::");
-			followUp.append(typecast);
 
 			break;
 		case NGSIConstants.QUERY_GREATER:
 			attributeFilterProperty.append(" > ");
 			followUp.append(" > ");
 			dollarCount = addItemToTupel(tuple, finalOperant, attributeFilterProperty, followUp, dollarCount);
-			attributeFilterProperty.append("::");
-			attributeFilterProperty.append(typecast);
-			followUp.append("::");
-			followUp.append(typecast);
 			break;
 		case NGSIConstants.QUERY_LESS:
 			attributeFilterProperty.append(" < ");
 			followUp.append(" < ");
 			dollarCount = addItemToTupel(tuple, finalOperant, attributeFilterProperty, followUp, dollarCount);
-			attributeFilterProperty.append("::");
-			attributeFilterProperty.append(typecast);
-			followUp.append("::");
-			followUp.append(typecast);
 			break;
 		case NGSIConstants.QUERY_PATTERNOP:
 			attributeFilterProperty.append("::text ~ $");
@@ -1551,6 +1575,13 @@ public class QQueryTerm implements Serializable {
 
 	private int addItemToTupel(Tuple tuple, String listItem, StringBuilder sql, StringBuilder followUp,
 			int dollarCount) {
+		String strTBU;
+		if (listItem.charAt(0) != '"' || listItem.charAt(listItem.length() - 1) != '"') {
+			strTBU = '"' + listItem + '"';
+		} else {
+			strTBU = listItem;
+		}
+		sql.append("ANY(ARRAY[");
 		try {
 			double tmp = Double.parseDouble(listItem);
 			sql.append("TO_JSONB($");
@@ -1563,6 +1594,17 @@ public class QQueryTerm implements Serializable {
 
 			tuple.addDouble(tmp);
 			dollarCount++;
+
+			sql.append(",$");
+			sql.append(dollarCount);
+			sql.append("::text::jsonb");
+
+			followUp.append(",' || $");
+			followUp.append(dollarCount);
+			followUp.append(" || '::text::jsonb");
+
+			dollarCount++;
+			tuple.addString(strTBU);
 		} catch (NumberFormatException e) {
 			if (listItem.equalsIgnoreCase("true") || listItem.equalsIgnoreCase("false")) {
 
@@ -1574,6 +1616,17 @@ public class QQueryTerm implements Serializable {
 				followUp.append(" || '");
 				dollarCount++;
 				tuple.addBoolean(Boolean.parseBoolean(listItem));
+
+				sql.append(",$");
+				sql.append(dollarCount);
+				sql.append("::text::jsonb");
+
+				followUp.append(",' || $");
+				followUp.append(dollarCount);
+				followUp.append(" || '::text::jsonb");
+
+				dollarCount++;
+				tuple.addString(strTBU);
 			} else {
 				sql.append("$");
 				sql.append(dollarCount);
@@ -1584,18 +1637,16 @@ public class QQueryTerm implements Serializable {
 				dollarCount++;
 
 				// if (!listItem.matches(DATETIME)) {
-				if (listItem.charAt(0) != '"' || listItem.charAt(listItem.length() - 1) != '"') {
-					listItem = '"' + listItem + '"';
-				}
 
-				sql.append("::text");
-				followUp.append("::text");
+				sql.append("::text::jsonb");
+				followUp.append("::text::jsonb");
 
 				// }
 
-				tuple.addString(listItem);
+				tuple.addString(strTBU);
 			}
 		}
+		sql.append("])");
 		return dollarCount;
 
 	}
@@ -2455,7 +2506,7 @@ public class QQueryTerm implements Serializable {
 		Object attrObj = entity.get(this.linkedAttrName);
 		if (attrObj != null && attrObj instanceof List<?> attrList) {
 			for (Object listAttrObj : attrList) {
-				if (listAttrObj instanceof Map<?,?> listAttrMap) {
+				if (listAttrObj instanceof Map<?, ?> listAttrMap) {
 					Object typeObj = listAttrMap.get(NGSIConstants.JSON_LD_TYPE);
 					if (typeObj != null && typeObj instanceof List<?> typeList) {
 						if (typeList.contains(NGSIConstants.NGSI_LD_RELATIONSHIP)) {
@@ -2479,7 +2530,7 @@ public class QQueryTerm implements Serializable {
 								} else {
 									if (objectTypeObj != null && objectTypeObj instanceof List<?> objectTypes) {
 										for (Object objectTypeEntry : objectTypes) {
-											if (objectTypeEntry instanceof Map<?,?> objectType) {
+											if (objectTypeEntry instanceof Map<?, ?> objectType) {
 												String type = (String) objectType.get(NGSIConstants.JSON_LD_ID);
 												if (linkedEntityTypes.isEmpty() || linkedEntityTypes.contains(type)) {
 													Tuple2<Map<String, Object>, Set<String>> entity2CsourceIds = updatedEntityCache
@@ -2530,7 +2581,7 @@ public class QQueryTerm implements Serializable {
 										} else {
 											if (objectTypeObj != null && objectTypeObj instanceof List<?> objectTypes) {
 												for (Object objectTypeEntry : objectTypes) {
-													if (objectTypeEntry instanceof Map<?,?> objectType) {
+													if (objectTypeEntry instanceof Map<?, ?> objectType) {
 														String type = (String) objectType.get(NGSIConstants.JSON_LD_ID);
 														if (linkedEntityTypes.isEmpty()
 																|| linkedEntityTypes.contains(type)) {
@@ -2580,9 +2631,9 @@ public class QQueryTerm implements Serializable {
 		} else {
 			result = URLEncoder.encode(context.compactIri(attribute), StandardCharsets.UTF_8);
 			if (isLinkedQ) {
-				
-			}else {
-				
+
+			} else {
+
 			}
 			if (operant != null && operator != null) {
 				result += operator + operant;
