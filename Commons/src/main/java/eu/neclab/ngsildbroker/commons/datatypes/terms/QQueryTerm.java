@@ -1382,7 +1382,7 @@ public class QQueryTerm implements Serializable {
 		return dollarCount;
 	}
 
-	private int addItemToTupelForRange(Tuple tuple, String listItem, StringBuilder sql, StringBuilder followUp,
+	private int addItemToTupel(Tuple tuple, String listItem, StringBuilder sql, StringBuilder followUp,
 			int dollarCount) {
 		try {
 			double tmp = Double.parseDouble(listItem);
@@ -1460,7 +1460,7 @@ public class QQueryTerm implements Serializable {
 				attributeFilterProperty.append(" in (");
 				for (String listItem : finalOperant.split(",")) {
 					dollarCount++;
-					dollarCount = addItemToTupelForRange(tuple, listItem, attributeFilterProperty, followUp,
+					dollarCount = addItemToTupel(tuple, listItem, attributeFilterProperty, followUp,
 							dollarCount);
 					attributeFilterProperty.append(',');
 
@@ -1479,11 +1479,11 @@ public class QQueryTerm implements Serializable {
 
 				followUp.append(" between ");
 
-				dollarCount = addItemToTupelForRange(tuple, myRange[0], attributeFilterProperty, followUp, dollarCount);
+				dollarCount = addItemToTupel(tuple, myRange[0], attributeFilterProperty, followUp, dollarCount);
 				attributeFilterProperty.append(" and ");
 				followUp.append(" and ");
 
-				dollarCount = addItemToTupelForRange(tuple, myRange[1], attributeFilterProperty, followUp, dollarCount);
+				dollarCount = addItemToTupel(tuple, myRange[1], attributeFilterProperty, followUp, dollarCount);
 				attributeFilterProperty.append("::" + typecast);
 				followUp.append("::" + typecast);
 			} else {
@@ -1495,7 +1495,7 @@ public class QQueryTerm implements Serializable {
 					followUp.append(" = ");
 				}
 
-				dollarCount = addItemToTupel(tuple, finalOperant, attributeFilterProperty, followUp, dollarCount);
+				dollarCount = addItemToTupelForEqualAndUnequal(tuple, finalOperant, attributeFilterProperty, followUp, dollarCount);
 
 			}
 
@@ -1573,7 +1573,7 @@ public class QQueryTerm implements Serializable {
 
 	}
 
-	private int addItemToTupel(Tuple tuple, String listItem, StringBuilder sql, StringBuilder followUp,
+	private int addItemToTupelForEqualAndUnequal(Tuple tuple, String listItem, StringBuilder sql, StringBuilder followUp,
 			int dollarCount) {
 		String strTBU;
 		if (listItem.charAt(0) != '"' || listItem.charAt(listItem.length() - 1) != '"') {
@@ -1582,13 +1582,14 @@ public class QQueryTerm implements Serializable {
 			strTBU = listItem;
 		}
 		sql.append("ANY(ARRAY[");
+		followUp.append("ANY(ARRAY[");
 		try {
 			double tmp = Double.parseDouble(listItem);
 			sql.append("TO_JSONB($");
 			sql.append(dollarCount);
 			sql.append(")");
 
-			followUp.append("TO_JSONB( ' || $");
+			followUp.append("TO_JSONB(' || $");
 			followUp.append(dollarCount);
 			followUp.append(" || ')");
 
@@ -1599,9 +1600,9 @@ public class QQueryTerm implements Serializable {
 			sql.append(dollarCount);
 			sql.append("::text::jsonb");
 
-			followUp.append(",' || $");
+			followUp.append(",''' || $");
 			followUp.append(dollarCount);
-			followUp.append(" || '::text::jsonb");
+			followUp.append(" || '''::text::jsonb");
 
 			dollarCount++;
 			tuple.addString(strTBU);
@@ -1647,6 +1648,7 @@ public class QQueryTerm implements Serializable {
 			}
 		}
 		sql.append("])");
+		followUp.append("])");
 		return dollarCount;
 
 	}
