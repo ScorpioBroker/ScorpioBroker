@@ -1,0 +1,582 @@
+name: Release linux-amd64-distroless version
+on: 
+  push:
+    branches: "quarkus-release/**"
+jobs:
+  build-linux-amd64-distroless-kafka:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2     
+      - name: Set up JDK 1.22
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin' # See 'Supported distributions' for available options
+          java-version: '17'
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.ECR_ID }}
+          aws-secret-access-key: ${{ secrets.ECR_TOKEN }}
+          aws-region: us-east-1
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+        with:
+          registry-type: public
+      - name: Build testserver
+        run: |
+          cd testserver
+          docker build -t testserver .
+      - name: Get release number
+        id: get-id
+        run: |
+          id=$(echo ${{github.ref_name}} | cut -d/ -f2)
+          echo "::set-output name=id::$id"
+      - name: Get build number
+        id: get-build-id
+        run: |
+          cd BrokerParent
+          id=$(mvn help:evaluate -Dexpression="project.version" -q -DforceStdout)
+          echo "::set-output name=id::$id"
+      - name: build-linux-amd64-distroless-with-kafka
+        run: |
+          find . -name "pom.xml" -exec sed -i 's/${{steps.get-id.outputs.id}}-SNAPSHOT/${{steps.get-id.outputs.id}}/g' {} +
+          mvn clean package -DskipTests -Dkafka -Pkafka -Dnative -Ddocker -Dquarkus.container-image.dockerfile=src/main/docker/Dockerfile.native.distroless  -Dnativedocker -Ddocker -Dquarkus.container-image.dockerfile=src/main/docker/Dockerfile.native.distroless -tag=linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}} -Dquarkus.profile=kafka -Dquarkus.docker.buildx.platform=linux/amd64
+      - name: docker tag 
+        run: |
+          docker tag scorpiobroker/at-context-server:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}} scorpiobroker/at-context-server:linux-amd64-distroless-kafka-latest
+          docker tag scorpiobroker/history-entity-manager:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}} scorpiobroker/history-entity-manager:linux-amd64-distroless-kafka-latest
+          docker tag scorpiobroker/history-query-manager:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}} scorpiobroker/history-query-manager:linux-amd64-distroless-kafka-latest
+          docker tag scorpiobroker/registry-subscription-manager:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}} scorpiobroker/registry-subscription-manager:linux-amd64-distroless-kafka-latest
+          docker tag scorpiobroker/registry-manager:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}} scorpiobroker/registry-manager:linux-amd64-distroless-kafka-latest
+          docker tag scorpiobroker/subscription-manager:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}} scorpiobroker/subscription-manager:linux-amd64-distroless-kafka-latest
+          docker tag scorpiobroker/query-manager:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}} scorpiobroker/query-manager:linux-amd64-distroless-kafka-latest
+          docker tag scorpiobroker/entity-manager:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}} scorpiobroker/entity-manager:linux-amd64-distroless-kafka-latest
+          docker tag scorpiobroker/all-in-one-runner:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:linux-amd64-distroless-kafka-latest
+          docker tag scorpiobroker/at-context-server:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/at-context-server:linux-amd64-distroless-kafka-latest
+          docker tag scorpiobroker/history-entity-manager:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-entity-manager:linux-amd64-distroless-kafka-latest
+          docker tag scorpiobroker/history-query-manager:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-query-manager:linux-amd64-distroless-kafka-latest
+          docker tag scorpiobroker/registry-subscription-manager:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-subscription-manager:linux-amd64-distroless-kafka-latest
+          docker tag scorpiobroker/registry-manager:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-manager:linux-amd64-distroless-kafka-latest
+          docker tag scorpiobroker/subscription-manager:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/subscription-manager:linux-amd64-distroless-kafka-latest
+          docker tag scorpiobroker/query-manager:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/query-manager:linux-amd64-distroless-kafka-latest
+          docker tag scorpiobroker/entity-manager:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/entity-manager:linux-amd64-distroless-kafka-latest
+          docker tag scorpiobroker/all-in-one-runner:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:linux-amd64-distroless-kafka-latest
+          docker tag scorpiobroker/at-context-server:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/at-context-server:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/history-entity-manager:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-entity-manager:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/history-query-manager:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-query-manager:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/registry-subscription-manager:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-subscription-manager:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/registry-manager:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-manager:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/subscription-manager:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/subscription-manager:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/query-manager:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/query-manager:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/entity-manager:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/entity-manager:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/all-in-one-runner:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}}
+      - name: start docker aaio 
+        run: |
+          docker compose -f ./compose-files/docker-compose-linux-amd64-distroless-aaio-kafka-test.yml up &
+          sleep 120
+      - name: newman action
+        uses: matt-ball/newman-action@master
+        with:
+          collection: api-test.json
+          environment: api-test-aaio-environment.json
+      - name: Stopping Scorpio 
+        run: docker compose -f ./compose-files/docker-compose-linux-amd64-distroless-aaio-kafka-test.yml down
+#      - name: start docker dist 
+#        run: |
+#          docker compose -f ./compose-files/docker-compose-linux-amd64-distroless-dist-kafka-test.yml up &
+#          sleep 120
+#      - name: newman action
+#        uses: matt-ball/newman-action@master
+#        with:
+#          collection: api-test.json
+#          environment: api-test-dist-environment.json
+#      - name: Stopping Scorpio 
+#        run: docker compose -f ./compose-files/docker-compose-linux-amd64-distroless-dist-kafka-test.yml down
+      - name: docker-login
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+      - name: docker tag and push
+        run: |
+          docker push scorpiobroker/at-context-server:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/history-entity-manager:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/history-query-manager:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/registry-subscription-manager:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/registry-manager:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/subscription-manager:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/query-manager:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/entity-manager:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/all-in-one-runner:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/at-context-server:linux-amd64-distroless-kafka-latest
+          docker push scorpiobroker/history-entity-manager:linux-amd64-distroless-kafka-latest
+          docker push scorpiobroker/history-query-manager:linux-amd64-distroless-kafka-latest
+          docker push scorpiobroker/registry-subscription-manager:linux-amd64-distroless-kafka-latest
+          docker push scorpiobroker/registry-manager:linux-amd64-distroless-kafka-latest
+          docker push scorpiobroker/subscription-manager:linux-amd64-distroless-kafka-latest
+          docker push scorpiobroker/query-manager:linux-amd64-distroless-kafka-latest
+          docker push scorpiobroker/entity-manager:linux-amd64-distroless-kafka-latest
+          docker push scorpiobroker/all-in-one-runner:linux-amd64-distroless-kafka-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/at-context-server:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-entity-manager:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-query-manager:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-subscription-manager:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-manager:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/subscription-manager:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/query-manager:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/entity-manager:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/at-context-server:linux-amd64-distroless-kafka-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-entity-manager:linux-amd64-distroless-kafka-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-query-manager:linux-amd64-distroless-kafka-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-subscription-manager:linux-amd64-distroless-kafka-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-manager:linux-amd64-distroless-kafka-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/subscription-manager:linux-amd64-distroless-kafka-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/query-manager:linux-amd64-distroless-kafka-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/entity-manager:linux-amd64-distroless-kafka-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:linux-amd64-distroless-kafka-latest
+  build-linux-amd64-distroless-sqs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2     
+      - name: Set up JDK 1.22
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin' # See 'Supported distributions' for available options
+          java-version: '17'
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.ECR_ID }}
+          aws-secret-access-key: ${{ secrets.ECR_TOKEN }}
+          aws-region: us-east-1
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+        with:
+          registry-type: public
+      - name: Build testserver
+        run: |
+          cd testserver
+          docker build -t testserver .
+      - name: Get release number
+        id: get-id
+        run: |
+          id=$(echo ${{github.ref_name}} | cut -d/ -f2)
+          echo "::set-output name=id::$id"
+      - name: Get build number
+        id: get-build-id
+        run: |
+          cd BrokerParent
+          id=$(mvn help:evaluate -Dexpression="project.version" -q -DforceStdout)
+          echo "::set-output name=id::$id"
+      - name: build-linux-amd64-distroless-with-sqs
+        run: |
+          find . -name "pom.xml" -exec sed -i 's/${{steps.get-id.outputs.id}}-SNAPSHOT/${{steps.get-id.outputs.id}}/g' {} +
+          mvn clean package -DskipTests -Dsqs -Psqs -Dnative -Ddocker -Dquarkus.container-image.dockerfile=src/main/docker/Dockerfile.native.distroless  -Dnativedocker -Ddocker -Dquarkus.container-image.dockerfile=src/main/docker/Dockerfile.native.distroless -tag=linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}} -Dquarkus.profile=sqs -Dquarkus.docker.buildx.platform=linux/amd64
+      - name: docker tag 
+        run: |
+          docker tag scorpiobroker/at-context-server:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}} scorpiobroker/at-context-server:linux-amd64-distroless-sqs-latest
+          docker tag scorpiobroker/history-entity-manager:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}} scorpiobroker/history-entity-manager:linux-amd64-distroless-sqs-latest
+          docker tag scorpiobroker/history-query-manager:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}} scorpiobroker/history-query-manager:linux-amd64-distroless-sqs-latest
+          docker tag scorpiobroker/registry-subscription-manager:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}} scorpiobroker/registry-subscription-manager:linux-amd64-distroless-sqs-latest
+          docker tag scorpiobroker/registry-manager:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}} scorpiobroker/registry-manager:linux-amd64-distroless-sqs-latest
+          docker tag scorpiobroker/subscription-manager:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}} scorpiobroker/subscription-manager:linux-amd64-distroless-sqs-latest
+          docker tag scorpiobroker/query-manager:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}} scorpiobroker/query-manager:linux-amd64-distroless-sqs-latest
+          docker tag scorpiobroker/entity-manager:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}} scorpiobroker/entity-manager:linux-amd64-distroless-sqs-latest
+          docker tag scorpiobroker/all-in-one-runner:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:linux-amd64-distroless-sqs-latest
+          docker tag scorpiobroker/at-context-server:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/at-context-server:linux-amd64-distroless-sqs-latest
+          docker tag scorpiobroker/history-entity-manager:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-entity-manager:linux-amd64-distroless-sqs-latest
+          docker tag scorpiobroker/history-query-manager:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-query-manager:linux-amd64-distroless-sqs-latest
+          docker tag scorpiobroker/registry-subscription-manager:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-subscription-manager:linux-amd64-distroless-sqs-latest
+          docker tag scorpiobroker/registry-manager:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-manager:linux-amd64-distroless-sqs-latest
+          docker tag scorpiobroker/subscription-manager:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/subscription-manager:linux-amd64-distroless-sqs-latest
+          docker tag scorpiobroker/query-manager:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/query-manager:linux-amd64-distroless-sqs-latest
+          docker tag scorpiobroker/entity-manager:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/entity-manager:linux-amd64-distroless-sqs-latest
+          docker tag scorpiobroker/all-in-one-runner:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:linux-amd64-distroless-sqs-latest
+          docker tag scorpiobroker/at-context-server:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/at-context-server:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/history-entity-manager:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-entity-manager:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/history-query-manager:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-query-manager:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/registry-subscription-manager:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-subscription-manager:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/registry-manager:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-manager:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/subscription-manager:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/subscription-manager:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/query-manager:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/query-manager:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/entity-manager:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/entity-manager:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/all-in-one-runner:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}}
+      - name: docker-login
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+      - name: docker tag and push
+        run: |
+          docker push scorpiobroker/at-context-server:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/history-entity-manager:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/history-query-manager:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/registry-subscription-manager:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/registry-manager:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/subscription-manager:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/query-manager:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/entity-manager:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/all-in-one-runner:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/at-context-server:linux-amd64-distroless-sqs-latest
+          docker push scorpiobroker/history-entity-manager:linux-amd64-distroless-sqs-latest
+          docker push scorpiobroker/history-query-manager:linux-amd64-distroless-sqs-latest
+          docker push scorpiobroker/registry-subscription-manager:linux-amd64-distroless-sqs-latest
+          docker push scorpiobroker/registry-manager:linux-amd64-distroless-sqs-latest
+          docker push scorpiobroker/subscription-manager:linux-amd64-distroless-sqs-latest
+          docker push scorpiobroker/query-manager:linux-amd64-distroless-sqs-latest
+          docker push scorpiobroker/entity-manager:linux-amd64-distroless-sqs-latest
+          docker push scorpiobroker/all-in-one-runner:linux-amd64-distroless-sqs-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/at-context-server:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-entity-manager:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-query-manager:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-subscription-manager:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-manager:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/subscription-manager:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/query-manager:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/entity-manager:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/at-context-server:linux-amd64-distroless-sqs-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-entity-manager:linux-amd64-distroless-sqs-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-query-manager:linux-amd64-distroless-sqs-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-subscription-manager:linux-amd64-distroless-sqs-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-manager:linux-amd64-distroless-sqs-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/subscription-manager:linux-amd64-distroless-sqs-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/query-manager:linux-amd64-distroless-sqs-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/entity-manager:linux-amd64-distroless-sqs-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:linux-amd64-distroless-sqs-latest
+  build-linux-amd64-distroless-rabbitmq:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2     
+      - name: Set up JDK 1.22
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin' # See 'Supported distributions' for available options
+          java-version: '17'
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.ECR_ID }}
+          aws-secret-access-key: ${{ secrets.ECR_TOKEN }}
+          aws-region: us-east-1
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+        with:
+          registry-type: public
+      - name: Build testserver
+        run: |
+          cd testserver
+          docker build -t testserver .
+      - name: Get release number
+        id: get-id
+        run: |
+          id=$(echo ${{github.ref_name}} | cut -d/ -f2)
+          echo "::set-output name=id::$id"
+      - name: Get build number
+        id: get-build-id
+        run: |
+          cd BrokerParent
+          id=$(mvn help:evaluate -Dexpression="project.version" -q -DforceStdout)
+          echo "::set-output name=id::$id"
+      - name: build-linux-amd64-distroless-with-rabbitmq
+        run: |
+          find . -name "pom.xml" -exec sed -i 's/${{steps.get-id.outputs.id}}-SNAPSHOT/${{steps.get-id.outputs.id}}/g' {} +
+          mvn clean package -DskipTests -Drabbitmq -Prabbitmq -Dnative -Ddocker -Dquarkus.container-image.dockerfile=src/main/docker/Dockerfile.native.distroless  -Dnativedocker -Ddocker -Dquarkus.container-image.dockerfile=src/main/docker/Dockerfile.native.distroless -tag=linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}} -Dquarkus.profile=rabbitmq -Dquarkus.docker.buildx.platform=linux/amd64
+      - name: docker tag 
+        run: |
+          docker tag scorpiobroker/at-context-server:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/at-context-server:linux-amd64-distroless-rabbitmq-latest
+          docker tag scorpiobroker/history-entity-manager:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/history-entity-manager:linux-amd64-distroless-rabbitmq-latest
+          docker tag scorpiobroker/history-query-manager:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/history-query-manager:linux-amd64-distroless-rabbitmq-latest
+          docker tag scorpiobroker/registry-subscription-manager:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/registry-subscription-manager:linux-amd64-distroless-rabbitmq-latest
+          docker tag scorpiobroker/registry-manager:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/registry-manager:linux-amd64-distroless-rabbitmq-latest
+          docker tag scorpiobroker/subscription-manager:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/subscription-manager:linux-amd64-distroless-rabbitmq-latest
+          docker tag scorpiobroker/query-manager:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/query-manager:linux-amd64-distroless-rabbitmq-latest
+          docker tag scorpiobroker/entity-manager:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/entity-manager:linux-amd64-distroless-rabbitmq-latest
+          docker tag scorpiobroker/all-in-one-runner:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:linux-amd64-distroless-rabbitmq-latest
+          docker tag scorpiobroker/at-context-server:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/at-context-server:linux-amd64-distroless-rabbitmq-latest
+          docker tag scorpiobroker/history-entity-manager:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-entity-manager:linux-amd64-distroless-rabbitmq-latest
+          docker tag scorpiobroker/history-query-manager:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-query-manager:linux-amd64-distroless-rabbitmq-latest
+          docker tag scorpiobroker/registry-subscription-manager:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-subscription-manager:linux-amd64-distroless-rabbitmq-latest
+          docker tag scorpiobroker/registry-manager:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-manager:linux-amd64-distroless-rabbitmq-latest
+          docker tag scorpiobroker/subscription-manager:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/subscription-manager:linux-amd64-distroless-rabbitmq-latest
+          docker tag scorpiobroker/query-manager:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/query-manager:linux-amd64-distroless-rabbitmq-latest
+          docker tag scorpiobroker/entity-manager:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/entity-manager:linux-amd64-distroless-rabbitmq-latest
+          docker tag scorpiobroker/all-in-one-runner:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:linux-amd64-distroless-rabbitmq-latest
+          docker tag scorpiobroker/at-context-server:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/at-context-server:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/history-entity-manager:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-entity-manager:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/history-query-manager:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-query-manager:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/registry-subscription-manager:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-subscription-manager:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/registry-manager:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-manager:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/subscription-manager:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/subscription-manager:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/query-manager:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/query-manager:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/entity-manager:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/entity-manager:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/all-in-one-runner:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}}
+      - name: start docker aaio 
+        run: |
+          docker compose -f ./compose-files/docker-compose-linux-amd64-distroless-aaio-rabbitmq-test.yml up &
+          sleep 120
+      - name: newman action
+        uses: matt-ball/newman-action@master
+        with:
+          collection: api-test.json
+          environment: api-test-aaio-environment.json
+      - name: Stopping Scorpio 
+        run: docker compose -f ./compose-files/docker-compose-linux-amd64-distroless-aaio-rabbitmq-test.yml down
+#      - name: start docker dist 
+#        run: |
+#          docker compose -f ./compose-files/docker-compose-linux-amd64-distroless-dist-rabbitmq-test.yml up &
+#          sleep 120
+#      - name: newman action
+#        uses: matt-ball/newman-action@master
+#        with:
+#          collection: api-test.json
+#          environment: api-test-dist-environment.json
+#      - name: Stopping Scorpio 
+#        run: docker compose -f ./compose-files/docker-compose-linux-amd64-distroless-dist-rabbitmq-test.yml down
+      - name: docker-login
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+      - name: docker tag and push
+        run: |
+          docker push scorpiobroker/at-context-server:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/history-entity-manager:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/history-query-manager:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/registry-subscription-manager:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/registry-manager:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/subscription-manager:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/query-manager:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/entity-manager:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/all-in-one-runner:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/at-context-server:linux-amd64-distroless-rabbitmq-latest
+          docker push scorpiobroker/history-entity-manager:linux-amd64-distroless-rabbitmq-latest
+          docker push scorpiobroker/history-query-manager:linux-amd64-distroless-rabbitmq-latest
+          docker push scorpiobroker/registry-subscription-manager:linux-amd64-distroless-rabbitmq-latest
+          docker push scorpiobroker/registry-manager:linux-amd64-distroless-rabbitmq-latest
+          docker push scorpiobroker/subscription-manager:linux-amd64-distroless-rabbitmq-latest
+          docker push scorpiobroker/query-manager:linux-amd64-distroless-rabbitmq-latest
+          docker push scorpiobroker/entity-manager:linux-amd64-distroless-rabbitmq-latest
+          docker push scorpiobroker/all-in-one-runner:linux-amd64-distroless-rabbitmq-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/at-context-server:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-entity-manager:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-query-manager:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-subscription-manager:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-manager:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/subscription-manager:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/query-manager:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/entity-manager:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/at-context-server:linux-amd64-distroless-rabbitmq-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-entity-manager:linux-amd64-distroless-rabbitmq-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-query-manager:linux-amd64-distroless-rabbitmq-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-subscription-manager:linux-amd64-distroless-rabbitmq-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-manager:linux-amd64-distroless-rabbitmq-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/subscription-manager:linux-amd64-distroless-rabbitmq-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/query-manager:linux-amd64-distroless-rabbitmq-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/entity-manager:linux-amd64-distroless-rabbitmq-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:linux-amd64-distroless-rabbitmq-latest
+  build-linux-amd64-distroless-mqtt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2     
+      - name: Set up JDK 1.22
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin' # See 'Supported distributions' for available options
+          java-version: '17'
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.ECR_ID }}
+          aws-secret-access-key: ${{ secrets.ECR_TOKEN }}
+          aws-region: us-east-1
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+        with:
+          registry-type: public
+      - name: Build testserver
+        run: |
+          cd testserver
+          docker build -t testserver .
+      - name: Get release number
+        id: get-id
+        run: |
+          id=$(echo ${{github.ref_name}} | cut -d/ -f2)
+          echo "::set-output name=id::$id"
+      - name: Get build number
+        id: get-build-id
+        run: |
+          cd BrokerParent
+          id=$(mvn help:evaluate -Dexpression="project.version" -q -DforceStdout)
+          echo "::set-output name=id::$id"
+      - name: build-linux-amd64-distroless-with-mqtt
+        run: |
+          find . -name "pom.xml" -exec sed -i 's/${{steps.get-id.outputs.id}}-SNAPSHOT/${{steps.get-id.outputs.id}}/g' {} +
+          mvn clean package -DskipTests -Dmqtt -Pmqtt -Dnative -Ddocker -Dquarkus.container-image.dockerfile=src/main/docker/Dockerfile.native.distroless  -Dnativedocker -Ddocker -Dquarkus.container-image.dockerfile=src/main/docker/Dockerfile.native.distroless -tag=linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}} -Dquarkus.profile=mqtt -Dquarkus.docker.buildx.platform=linux/amd64
+      - name: docker tag 
+        run: |
+          docker tag scorpiobroker/at-context-server:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/at-context-server:linux-amd64-distroless-mqtt-latest
+          docker tag scorpiobroker/history-entity-manager:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/history-entity-manager:linux-amd64-distroless-mqtt-latest
+          docker tag scorpiobroker/history-query-manager:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/history-query-manager:linux-amd64-distroless-mqtt-latest
+          docker tag scorpiobroker/registry-subscription-manager:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/registry-subscription-manager:linux-amd64-distroless-mqtt-latest
+          docker tag scorpiobroker/registry-manager:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/registry-manager:linux-amd64-distroless-mqtt-latest
+          docker tag scorpiobroker/subscription-manager:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/subscription-manager:linux-amd64-distroless-mqtt-latest
+          docker tag scorpiobroker/query-manager:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/query-manager:linux-amd64-distroless-mqtt-latest
+          docker tag scorpiobroker/entity-manager:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/entity-manager:linux-amd64-distroless-mqtt-latest
+          docker tag scorpiobroker/all-in-one-runner:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:linux-amd64-distroless-mqtt-latest
+          docker tag scorpiobroker/at-context-server:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/at-context-server:linux-amd64-distroless-mqtt-latest
+          docker tag scorpiobroker/history-entity-manager:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-entity-manager:linux-amd64-distroless-mqtt-latest
+          docker tag scorpiobroker/history-query-manager:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-query-manager:linux-amd64-distroless-mqtt-latest
+          docker tag scorpiobroker/registry-subscription-manager:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-subscription-manager:linux-amd64-distroless-mqtt-latest
+          docker tag scorpiobroker/registry-manager:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-manager:linux-amd64-distroless-mqtt-latest
+          docker tag scorpiobroker/subscription-manager:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/subscription-manager:linux-amd64-distroless-mqtt-latest
+          docker tag scorpiobroker/query-manager:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/query-manager:linux-amd64-distroless-mqtt-latest
+          docker tag scorpiobroker/entity-manager:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/entity-manager:linux-amd64-distroless-mqtt-latest
+          docker tag scorpiobroker/all-in-one-runner:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:linux-amd64-distroless-mqtt-latest
+          docker tag scorpiobroker/at-context-server:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/at-context-server:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/history-entity-manager:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-entity-manager:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/history-query-manager:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-query-manager:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/registry-subscription-manager:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-subscription-manager:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/registry-manager:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-manager:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/subscription-manager:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/subscription-manager:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/query-manager:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/query-manager:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/entity-manager:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/entity-manager:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/all-in-one-runner:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}}
+      - name: start docker aaio 
+        run: |
+          docker compose -f ./compose-files/docker-compose-linux-amd64-distroless-aaio-mqtt-test.yml up &
+          sleep 120
+#      - name: newman action
+#        uses: matt-ball/newman-action@master
+#        with:
+#          collection: api-test.json
+#          environment: api-test-aaio-environment.json
+      - name: Stopping Scorpio 
+        run: docker compose -f ./compose-files/docker-compose-linux-amd64-distroless-aaio-mqtt-test.yml down
+#      - name: start docker dist 
+#        run: |
+#          docker compose -f ./compose-files/docker-compose-linux-amd64-distroless-dist-mqtt-test.yml up &
+#          sleep 120
+#      - name: newman action
+#        uses: matt-ball/newman-action@master
+#        with:
+#          collection: api-test.json
+#          environment: api-test-dist-environment.json
+#      - name: Stopping Scorpio 
+#        run: docker compose -f ./compose-files/docker-compose-linux-amd64-distroless-dist-mqtt-test.yml down
+      - name: docker-login
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+      - name: docker tag and push
+        run: |
+          docker push scorpiobroker/at-context-server:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/history-entity-manager:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/history-query-manager:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/registry-subscription-manager:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/registry-manager:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/subscription-manager:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/query-manager:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/entity-manager:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/all-in-one-runner:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/at-context-server:linux-amd64-distroless-mqtt-latest
+          docker push scorpiobroker/history-entity-manager:linux-amd64-distroless-mqtt-latest
+          docker push scorpiobroker/history-query-manager:linux-amd64-distroless-mqtt-latest
+          docker push scorpiobroker/registry-subscription-manager:linux-amd64-distroless-mqtt-latest
+          docker push scorpiobroker/registry-manager:linux-amd64-distroless-mqtt-latest
+          docker push scorpiobroker/subscription-manager:linux-amd64-distroless-mqtt-latest
+          docker push scorpiobroker/query-manager:linux-amd64-distroless-mqtt-latest
+          docker push scorpiobroker/entity-manager:linux-amd64-distroless-mqtt-latest
+          docker push scorpiobroker/all-in-one-runner:linux-amd64-distroless-mqtt-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/at-context-server:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-entity-manager:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-query-manager:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-subscription-manager:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-manager:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/subscription-manager:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/query-manager:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/entity-manager:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/at-context-server:linux-amd64-distroless-mqtt-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-entity-manager:linux-amd64-distroless-mqtt-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-query-manager:linux-amd64-distroless-mqtt-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-subscription-manager:linux-amd64-distroless-mqtt-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-manager:linux-amd64-distroless-mqtt-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/subscription-manager:linux-amd64-distroless-mqtt-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/query-manager:linux-amd64-distroless-mqtt-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/entity-manager:linux-amd64-distroless-mqtt-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:linux-amd64-distroless-mqtt-latest
+  build-linux-amd64-distroless-aaio:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2     
+      - name: Set up JDK 1.22
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin' # See 'Supported distributions' for available options
+          java-version: '17'
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.ECR_ID }}
+          aws-secret-access-key: ${{ secrets.ECR_TOKEN }}
+          aws-region: us-east-1
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+        with:
+          registry-type: public
+
+      - name: Build testserver
+        run: |
+          cd testserver
+          docker build -t testserver .
+      - name: Get release number
+        id: get-id
+        run: |
+          id=$(echo ${{github.ref_name}} | cut -d/ -f2)
+          echo "::set-output name=id::$id"
+      - name: Get build number
+        id: get-build-id
+        run: |
+          cd BrokerParent
+          id=$(mvn help:evaluate -Dexpression="project.version" -q -DforceStdout)
+          echo "::set-output name=id::$id"
+      - name: build-linux-amd64-distroless
+        run: |
+          find . -name "pom.xml" -exec sed -i 's/${{steps.get-id.outputs.id}}-SNAPSHOT/${{steps.get-id.outputs.id}}/g' {} +
+          mvn clean package -DskipTests -Din-memory -Pin-memory -Dnative -Ddocker -Dquarkus.container-image.dockerfile=src/main/docker/Dockerfile.native.distroless  -Dnativedocker -Ddocker -Dquarkus.container-image.dockerfile=src/main/docker/Dockerfile.native.distroless -tag=linux-amd64-distroless-${{steps.get-id.outputs.id}} -Dquarkus.profile=in-memory -Dquarkus.docker.buildx.platform=linux/amd64
+      - name: docker tag
+        run: |
+          docker tag scorpiobroker/all-in-one-runner:linux-amd64-distroless-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:linux-amd64-distroless-latest
+          docker tag scorpiobroker/all-in-one-runner:linux-amd64-distroless-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:linux-amd64-distroless-latest
+          docker tag scorpiobroker/all-in-one-runner:linux-amd64-distroless-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:linux-amd64-distroless-${{steps.get-id.outputs.id}}
+      - name: start docker aaio 
+        run: |
+          docker compose -f ./compose-files/docker-compose-linux-amd64-distroless-aaio-test.yml up &
+          sleep 120
+      - name: newman action
+        uses: matt-ball/newman-action@master
+        with:
+          collection: api-test.json
+          environment: api-test-aaio-environment.json
+      - name: Stopping Scorpio 
+        run: docker compose -f ./compose-files/docker-compose-linux-amd64-distroless-aaio-test.yml down 
+      - name: docker-login
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+      - name: docker push
+        run: |
+          docker push scorpiobroker/all-in-one-runner:linux-amd64-distroless-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/all-in-one-runner:linux-amd64-distroless-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:linux-amd64-distroless-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:linux-amd64-distroless-${{steps.get-id.outputs.id}}
