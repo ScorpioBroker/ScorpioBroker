@@ -305,27 +305,27 @@
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-smallrye-reactive-messaging</artifactId>
-					<version>3.2.0</version>
+					
 				</dependency>
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-paho-mqtt5</artifactId>
-					<version>3.2.0</version>
+					
 				</dependency>
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-log</artifactId>
-					<version>3.2.0</version>
+					
 				</dependency>
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-jackson</artifactId>
-					<version>3.2.0</version>
+					
 				</dependency>
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-dataformat</artifactId>
-					<version>3.2.0</version>
+					
 				</dependency>
 			</dependencies>
 		</profile>
@@ -340,17 +340,17 @@
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-smallrye-reactive-messaging</artifactId>
-					<version>3.2.0</version>
+					
 				</dependency>
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-log</artifactId>
-					<version>3.2.0</version>
+					
 				</dependency>
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-aws2-kinesis</artifactId>
-					<version>3.2.0</version>
+					
 				</dependency>
 			</dependencies>
 		</profile>
@@ -365,17 +365,17 @@
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-smallrye-reactive-messaging</artifactId>
-					<version>3.2.0</version>
+					
 				</dependency>
 				<dependency>
 					<groupId>org.ap/ache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-jackson</artifactId>
-					<version>3.2.0</version>
+					
 				</dependency>
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-amqp</artifactId>
-					<version>3.2.0</version>
+					
 				</dependency>
 			</dependencies>
 		</profile>
@@ -390,17 +390,17 @@
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-smallrye-reactive-messaging</artifactId>
-					<version>3.2.0</version>
+					
 				</dependency>
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-activemq</artifactId>
-					<version>3.2.0</version>
+					
 				</dependency>
 				<dependency>
 					<groupId>org.apache.camel</groupId>
 					<artifactId>camel-jms</artifactId>
-					<version>3.2.0</version>
+					
 				</dependency>
 				<!--<dependency>
 					<groupId>org.apache.activemq</groupId>
@@ -410,17 +410,17 @@
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-log</artifactId>
-					<version>3.2.0</version>
+					
 				</dependency>
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-jackson</artifactId>
-					<version>3.2.0</version>
+					
 				</dependency>
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-dataformat</artifactId>
-					<version>3.2.0</version>
+					
 				</dependency>
 			</dependencies>
 		</profile>
@@ -435,12 +435,12 @@
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-smallrye-reactive-messaging</artifactId>
-					<version>3.2.0</version>
+					
 				</dependency>
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-azure-eventhubs</artifactId>
-					<version>3.2.0</version>
+					
 				</dependency>
 			</dependencies>
 		</profile>
@@ -455,29 +455,29 @@
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-smallrye-reactive-messaging</artifactId>
-					<version>3.2.0</version>
+					
 				</dependency>
 
 
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-google-pubsub</artifactId>
-					<version>3.2.0</version>
+					
 				</dependency>
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-log</artifactId>
-					<version>3.2.0</version>
+					
 				</dependency>
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-jackson</artifactId>
-					<version>3.2.0</version>
+					
 				</dependency>
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-dataformat</artifactId>
-					<version>3.2.0</version>
+					
 				</dependency>
 			</dependencies>
 		</profile>
@@ -492,12 +492,12 @@
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-smallrye-reactive-messaging</artifactId>
-					<version>3.2.0</version>
+					
 				</dependency>
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-log</artifactId>
-					<version>3.2.0</version>
+					
 				</dependency>
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
@@ -507,12 +507,12 @@
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-jackson</artifactId>
-					<version>3.2.0</version>
+					
 				</dependency>
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-dataformat</artifactId>
-					<version>3.2.0</version>
+					
 				</dependency>
 			</dependencies>
 		</profile>
