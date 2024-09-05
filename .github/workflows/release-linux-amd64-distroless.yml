@@ -41,7 +41,7 @@ jobs:
       - name: build-linux-amd64-distroless-with-kafka
         run: |
           find . -name "pom.xml" -exec sed -i 's/${{steps.get-id.outputs.id}}-SNAPSHOT/${{steps.get-id.outputs.id}}/g' {} +
-          mvn clean package -DskipTests -Dkafka -Pkafka -Dnative -Ddocker -Dquarkus.container-image.dockerfile=src/main/docker/Dockerfile.native.distroless -Dnativedocker -Ddocker-tag=linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}} -Dquarkus.profile=kafka -Dquarkus.docker.buildx.platform=linux/amd64
+          mvn clean package -DskipTests -Dkafka -Pkafka -Dnative -Ddocker -Dquarkus.docker.dockerfile-native-path=src/main/docker/Dockerfile.native.distroless -Dnativedocker -Ddocker-tag=linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}} -Dquarkus.profile=kafka -Dquarkus.docker.buildx.platform=linux/amd64
       - name: docker tag 
         run: |
           docker tag scorpiobroker/at-context-server:linux-amd64-distroless-kafka-${{steps.get-id.outputs.id}} scorpiobroker/at-context-server:linux-amd64-distroless-kafka-latest
@@ -174,7 +174,7 @@ jobs:
       - name: build-linux-amd64-distroless-with-sqs
         run: |
           find . -name "pom.xml" -exec sed -i 's/${{steps.get-id.outputs.id}}-SNAPSHOT/${{steps.get-id.outputs.id}}/g' {} +
-          mvn clean package -DskipTests -Dsqs -Psqs -Dnative -Ddocker -Dquarkus.container-image.dockerfile=src/main/docker/Dockerfile.native.distroless -Dnativedocker -Ddocker-tag=linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}} -Dquarkus.profile=sqs -Dquarkus.docker.buildx.platform=linux/amd64
+          mvn clean package -DskipTests -Dsqs -Psqs -Dnative -Ddocker -Dquarkus.docker.dockerfile-native-path=src/main/docker/Dockerfile.native.distroless -Dnativedocker -Ddocker-tag=linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}} -Dquarkus.profile=sqs -Dquarkus.docker.buildx.platform=linux/amd64
       - name: docker tag 
         run: |
           docker tag scorpiobroker/at-context-server:linux-amd64-distroless-sqs-${{steps.get-id.outputs.id}} scorpiobroker/at-context-server:linux-amd64-distroless-sqs-latest
@@ -285,7 +285,7 @@ jobs:
       - name: build-linux-amd64-distroless-with-rabbitmq
         run: |
           find . -name "pom.xml" -exec sed -i 's/${{steps.get-id.outputs.id}}-SNAPSHOT/${{steps.get-id.outputs.id}}/g' {} +
-          mvn clean package -DskipTests -Drabbitmq -Prabbitmq -Dnative -Ddocker -Dquarkus.container-image.dockerfile=src/main/docker/Dockerfile.native.distroless -Dnativedocker -Ddocker-tag=linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}} -Dquarkus.profile=rabbitmq -Dquarkus.docker.buildx.platform=linux/amd64
+          mvn clean package -DskipTests -Drabbitmq -Prabbitmq -Dnative -Ddocker -Dquarkus.docker.dockerfile-native-path=src/main/docker/Dockerfile.native.distroless -Dnativedocker -Ddocker-tag=linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}} -Dquarkus.profile=rabbitmq -Dquarkus.docker.buildx.platform=linux/amd64
       - name: docker tag 
         run: |
           docker tag scorpiobroker/at-context-server:linux-amd64-distroless-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/at-context-server:linux-amd64-distroless-rabbitmq-latest
@@ -418,7 +418,7 @@ jobs:
       - name: build-linux-amd64-distroless-with-mqtt
         run: |
           find . -name "pom.xml" -exec sed -i 's/${{steps.get-id.outputs.id}}-SNAPSHOT/${{steps.get-id.outputs.id}}/g' {} +
-          mvn clean package -DskipTests -Dmqtt -Pmqtt -Dnative -Ddocker -Dquarkus.container-image.dockerfile=src/main/docker/Dockerfile.native.distroless -Dnativedocker -Ddocker-tag=linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}} -Dquarkus.profile=mqtt -Dquarkus.docker.buildx.platform=linux/amd64
+          mvn clean package -DskipTests -Dmqtt -Pmqtt -Dnative -Ddocker -Dquarkus.docker.dockerfile-native-path=src/main/docker/Dockerfile.native.distroless -Dnativedocker -Ddocker-tag=linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}} -Dquarkus.profile=mqtt -Dquarkus.docker.buildx.platform=linux/amd64
       - name: docker tag 
         run: |
           docker tag scorpiobroker/at-context-server:linux-amd64-distroless-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/at-context-server:linux-amd64-distroless-mqtt-latest
@@ -552,7 +552,7 @@ jobs:
       - name: build-linux-amd64-distroless
         run: |
           find . -name "pom.xml" -exec sed -i 's/${{steps.get-id.outputs.id}}-SNAPSHOT/${{steps.get-id.outputs.id}}/g' {} +
-          mvn clean package -DskipTests -Din-memory -Pin-memory -Dnative -Ddocker -Dquarkus.container-image.dockerfile=src/main/docker/Dockerfile.native.distroless -Dnativedocker -Ddocker-tag=linux-amd64-distroless-${{steps.get-id.outputs.id}} -Dquarkus.profile=in-memory -Dquarkus.docker.buildx.platform=linux/amd64
+          mvn clean package -DskipTests -Din-memory -Pin-memory -Dnative -Ddocker -Dquarkus.docker.dockerfile-native-path=src/main/docker/Dockerfile.native.distroless -Dnativedocker -Ddocker-tag=linux-amd64-distroless-${{steps.get-id.outputs.id}} -Dquarkus.profile=in-memory -Dquarkus.docker.buildx.platform=linux/amd64
       - name: docker tag
         run: |
           docker tag scorpiobroker/all-in-one-runner:linux-amd64-distroless-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:linux-amd64-distroless-latest
