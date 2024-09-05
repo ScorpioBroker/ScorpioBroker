@@ -5,13 +5,13 @@ on:
     branches: "quarkus-release/**"
 jobs:
   build-macos-kafka:
-    runs-on: macos-latest
+    runs-on: macos-13
     steps:
       - uses: actions/checkout@v2     
       - name: Setup GraalVM
         uses: graalvm/setup-graalvm@v1
         with:
-          java-version: '17' # for a specific JDK 17; or '17' for the latest JDK 17
+          java-version: '21' # for a specific JDK 17; or '17' for the latest JDK 17
           distribution: 'graalvm'
       - name: Get release number
         id: get-id
@@ -121,7 +121,7 @@ jobs:
           asset_name: entity-manager-macos-kafka-${{steps.get-id.outputs.id}}-macos-kafka
           asset_content_type: application/octet-stream
   build-macos-sqs:
-    runs-on: macos-latest
+    runs-on: macos-13
     steps:
       - uses: actions/checkout@v2     
       - name: Setup GraalVM
@@ -237,7 +237,7 @@ jobs:
           asset_name: entity-manager-macos-sqs-${{steps.get-id.outputs.id}}-macos-sqs
           asset_content_type: application/octet-stream
   build-macos-mqtt:
-    runs-on: macos-latest
+    runs-on: macos-13
     steps:
       - uses: actions/checkout@v2     
       - name: Setup GraalVM
@@ -353,7 +353,7 @@ jobs:
           asset_name: entity-manager-macos-mqtt-${{steps.get-id.outputs.id}}-macos-mqtt
           asset_content_type: application/octet-stream
   build-macos-rabbitmq:
-    runs-on: macos-latest
+    runs-on: macos-13
     steps:
       - uses: actions/checkout@v2     
       - name: Setup GraalVM
@@ -469,7 +469,7 @@ jobs:
           asset_name: entity-manager-macos-rabbitmq-${{steps.get-id.outputs.id}}-macos-rabbitmq
           asset_content_type: application/octet-stream
   build-macos-aaio:
-    runs-on: macos-latest
+    runs-on: macos-13
     steps:
       - uses: actions/checkout@v2     
       - name: Setup GraalVM

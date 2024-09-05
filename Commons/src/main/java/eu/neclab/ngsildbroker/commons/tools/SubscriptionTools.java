@@ -27,6 +27,9 @@ import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
 import org.locationtech.spatial4j.distance.DistanceUtils;
 import org.locationtech.spatial4j.shape.Shape;
 import org.locationtech.spatial4j.shape.ShapeFactory.LineStringBuilder;
+import org.locationtech.spatial4j.shape.ShapeFactory.MultiLineStringBuilder;
+import org.locationtech.spatial4j.shape.ShapeFactory.MultiPointBuilder;
+import org.locationtech.spatial4j.shape.ShapeFactory.MultiPolygonBuilder;
 import org.locationtech.spatial4j.shape.ShapeFactory.PolygonBuilder;
 import org.locationtech.spatial4j.shape.jts.JtsShapeFactory;
 import org.slf4j.Logger;
@@ -49,7 +52,6 @@ public class SubscriptionTools {
 
 	private final static Logger logger = LoggerFactory.getLogger(SubscriptionTools.class);
 
-	
 	public static boolean evaluateGeoQuery(GeoQueryTerm geoQuery, List<Map<String, Object>> locationsGeoProps) {
 		if (geoQuery == null) {
 			return true;
@@ -91,6 +93,43 @@ public class SubscriptionTools {
 					queryShape = polygonBuilder.build();
 					break;
 				case NGSIConstants.GEO_TYPE_MULTI_POLYGON:
+					MultiPolygonBuilder multiPolyBuilder = shapeFactory.multiPolygon();
+					List<List<List<Number>>> coordList = ((List<List<List<Number>>>) geoQuery.getCoordinatesAsList()
+							.get(0));
+					for (List<List<Number>> tmp1 : coordList) {
+						PolygonBuilder polygonBuilder1 = shapeFactory.polygon();
+						for (List<Number> point : tmp1) {
+							polygonBuilder1.pointXY(point.get(0).doubleValue(), point.get(1).doubleValue());
+						}
+						multiPolyBuilder.add(polygonBuilder1);
+
+					}
+					queryShape = multiPolyBuilder.build();
+					break;
+				case NGSIConstants.GEO_TYPE_MULTI_POINT:
+					MultiPointBuilder multiPointBuilder = shapeFactory.multiPoint();
+					List<Object> pointList = geoQuery.getCoordinatesAsList();
+					for (Object pointObj : pointList) {
+						List<Number> point = (List<Number>) pointObj;
+						multiPointBuilder.pointXY(point.get(0).doubleValue(), point.get(1).doubleValue());
+					}
+					queryShape = multiPointBuilder.build();
+					break;
+				case NGSIConstants.GEO_TYPE_MULTI_LINESTRING:
+					MultiLineStringBuilder multiLineStringBuilder = shapeFactory.multiLineString();
+					List<Object> multiLineList = geoQuery.getCoordinatesAsList();
+					for (Object lineObj : multiLineList) {
+
+						LineStringBuilder lineStringBuilder1 = shapeFactory.lineString();
+						List<Object> lineList1 = (List<Object>) lineObj;
+						for (Object pointObj : lineList1) {
+							List<Number> point = (List<Number>) pointObj;
+							lineStringBuilder1.pointXY(point.get(0).doubleValue(), point.get(1).doubleValue());
+						}
+						multiLineStringBuilder.add(lineStringBuilder1);
+					}
+					queryShape = multiLineStringBuilder.build();
+					break;
 				default:
 					logger.error(
 							"Unsupported GeoJson type. Currently Point, Polygon and Linestring are supported but was "
@@ -138,7 +177,61 @@ public class SubscriptionTools {
 					}
 					entityShape = polygonBuilder.build();
 					break;
-				case NGSIConstants.GEO_TYPE_MULTI_POLYGON:
+				case NGSIConstants.NGSI_LD_MULTI_POINT:
+					MultiPointBuilder multiPointBuilder = shapeFactory.multiPoint();
+					List<Map<String, List<Map<String, List<Map<String, Number>>>>>> multiPointCoordinates = ((List<Map<String, List<Map<String, List<Map<String, Number>>>>>>) location
+							.get(NGSIConstants.NGSI_LD_COORDINATES));
+					for (Map<String, List<Map<String, Number>>> point : multiPointCoordinates.get(0)
+							.get(NGSIConstants.JSON_LD_LIST)) {
+						multiPointBuilder.pointXY(
+								point.get(NGSIConstants.JSON_LD_LIST).get(0).get(NGSIConstants.JSON_LD_VALUE)
+										.doubleValue(),
+								point.get(NGSIConstants.JSON_LD_LIST).get(1).get(NGSIConstants.JSON_LD_VALUE)
+										.doubleValue());
+					}
+					entityShape = multiPointBuilder.build();
+					break;
+				case NGSIConstants.NGSI_LD_MULTI_LINESTRING:
+					MultiLineStringBuilder multiLineStringBuilder = shapeFactory.multiLineString();
+					List<Map<String, List<Map<String, List<Map<String, List<Map<String, Number>>>>>>>> multiLineCoordinates = (List<Map<String, List<Map<String, List<Map<String, List<Map<String, Number>>>>>>>>) location
+							.get(NGSIConstants.NGSI_LD_COORDINATES);
+					for (Map<String, List<Map<String, List<Map<String, Number>>>>> lineCoordinatesMap : multiLineCoordinates
+							.get(0).get(NGSIConstants.JSON_LD_LIST)) {
+						List<Map<String, List<Map<String, Number>>>> linecoordinates1 = lineCoordinatesMap
+								.get(NGSIConstants.JSON_LD_LIST);
+						LineStringBuilder lineStringBuilder1 = shapeFactory.lineString();
+						for (Map<String, List<Map<String, Number>>> point : linecoordinates1) {
+							lineStringBuilder1.pointXY(
+									point.get(NGSIConstants.JSON_LD_LIST).get(0).get(NGSIConstants.JSON_LD_VALUE)
+											.doubleValue(),
+									point.get(NGSIConstants.JSON_LD_LIST).get(1).get(NGSIConstants.JSON_LD_VALUE)
+											.doubleValue());
+						}
+						multiLineStringBuilder.add(lineStringBuilder1);
+					}
+					entityShape = multiLineStringBuilder.build();
+					break;
+				case NGSIConstants.NGSI_LD_MULTI_POLYGON:
+					MultiPolygonBuilder multiPolygonBuilder = shapeFactory.multiPolygon();
+					List<Map<String, List<Map<String, List<Map<String, List<Map<String, List<Map<String, Number>>>>>>>>>> multiPolyogonCoordinates = (List<Map<String, List<Map<String, List<Map<String, List<Map<String, List<Map<String, Number>>>>>>>>>>) location
+							.get(NGSIConstants.NGSI_LD_COORDINATES);
+					for (Map<String, List<Map<String, List<Map<String, List<Map<String, Number>>>>>>> polyMap : multiPolyogonCoordinates
+							.get(0).get(NGSIConstants.JSON_LD_LIST)) {
+						PolygonBuilder polygonBuilder1 = shapeFactory.polygon();
+						List<Map<String, List<Map<String, List<Map<String, Number>>>>>> polyogonCoordinates1 = polyMap
+								.get(NGSIConstants.JSON_LD_LIST);
+						for (Map<String, List<Map<String, Number>>> point : polyogonCoordinates1.get(0)
+								.get(NGSIConstants.JSON_LD_LIST)) {
+							polygonBuilder1.pointXY(
+									point.get(NGSIConstants.JSON_LD_LIST).get(0).get(NGSIConstants.JSON_LD_VALUE)
+											.doubleValue(),
+									point.get(NGSIConstants.JSON_LD_LIST).get(1).get(NGSIConstants.JSON_LD_VALUE)
+											.doubleValue());
+						}
+						multiPolygonBuilder.add(polygonBuilder1);
+					}
+					entityShape = multiPolygonBuilder.build();
+					break;
 				default:
 					logger.error(
 							"Unsupported GeoJson type. Currently Point, Polygon and Linestring are supported but was "
@@ -240,11 +333,12 @@ public class SubscriptionTools {
 							break;
 						case 4:// geo+json
 							List<String> atCtx = context.getOriginalAtContext();
-							if(atCtx == null || atCtx.isEmpty()) {
+							if (atCtx == null || atCtx.isEmpty()) {
 								atCtx = List.of(NGSIConstants.CURRENT_CORE_CONTEXT);
 							}
 							try {
-								notification.put(NGSIConstants.NGSI_LD_DATA_SHORT, HttpUtils.generateGeoJson(data, null, atCtx));
+								notification.put(NGSIConstants.NGSI_LD_DATA_SHORT,
+										HttpUtils.generateGeoJson(data, null, atCtx));
 							} catch (ResponseException e) {
 								logger.error("Failed to generate geo+json for subscription");
 							}
@@ -252,8 +346,6 @@ public class SubscriptionTools {
 						default:
 							break;
 						}
-
-						
 
 						return notification;
 					});
@@ -562,7 +654,7 @@ public class SubscriptionTools {
 					for (Map<String, String> attrib : watchedAttribs) {
 						subTuples.add(Tuple4.of(id, idPattern, type, attrib.get(NGSIConstants.JSON_LD_ID)));
 					}
-				} else { 
+				} else {
 					subTuples.add(Tuple4.of(id, idPattern, type, null));
 				}
 			}
@@ -576,7 +668,7 @@ public class SubscriptionTools {
 		for (Tuple4<String, String, String, String> subTuple : subTuples) {
 //			Tuple4<String, String, String, String> bestFit;
 			for (Tuple4<String, String, String, String> regTuple : regTuples) {
-				String id;//, idpattern, type, attribname;
+				String id;// , idpattern, type, attribname;
 
 				if (regTuple.getItem1() == null || (regTuple.getItem1() != null && subTuple.getItem1() == null)
 						&& regTuple.getItem1().equals(subTuple.getItem1())) {
@@ -584,5 +676,43 @@ public class SubscriptionTools {
 				} // else if(subTuple.getItem1())
 			}
 		}
+	}
+
+	public static void main(String[] args) {
+		String test = "[\r\n" + "  {\r\n" + "    \"@id\": \"urn:test:testentity1\",\r\n"
+				+ "    \"https://uri.etsi.org/ngsi-ld/location\": [\r\n" + "      {\r\n" + "        \"@type\": [\r\n"
+				+ "          \"https://uri.etsi.org/ngsi-ld/GeoProperty\"\r\n" + "        ],\r\n"
+				+ "        \"https://uri.etsi.org/ngsi-ld/hasValue\": [\r\n" + "          {\r\n"
+				+ "            \"https://purl.org/geojson/vocab#coordinates\": [\r\n" + "              {\r\n"
+				+ "                \"@list\": [\r\n" + "                  {\r\n"
+				+ "                    \"@list\": [\r\n" + "                      {\r\n"
+				+ "                        \"@list\": [\r\n" + "                          {\r\n"
+				+ "                            \"@value\": 100\r\n" + "                          },\r\n"
+				+ "                          {\r\n" + "                            \"@value\": 0\r\n"
+				+ "                          }\r\n" + "                        ]\r\n" + "                      },\r\n"
+				+ "                      {\r\n" + "                        \"@list\": [\r\n"
+				+ "                          {\r\n" + "                            \"@value\": 101\r\n"
+				+ "                          },\r\n" + "                          {\r\n"
+				+ "                            \"@value\": 1\r\n" + "                          }\r\n"
+				+ "                        ]\r\n" + "                      }\r\n" + "                    ]\r\n"
+				+ "                  },\r\n" + "                  {\r\n" + "                    \"@list\": [\r\n"
+				+ "                      {\r\n" + "                        \"@list\": [\r\n"
+				+ "                          {\r\n" + "                            \"@value\": 102\r\n"
+				+ "                          },\r\n" + "                          {\r\n"
+				+ "                            \"@value\": 2\r\n" + "                          }\r\n"
+				+ "                        ]\r\n" + "                      },\r\n" + "                      {\r\n"
+				+ "                        \"@list\": [\r\n" + "                          {\r\n"
+				+ "                            \"@value\": 103\r\n" + "                          },\r\n"
+				+ "                          {\r\n" + "                            \"@value\": 3\r\n"
+				+ "                          }\r\n" + "                        ]\r\n" + "                      }\r\n"
+				+ "                    ]\r\n" + "                  }\r\n" + "                ]\r\n"
+				+ "              }\r\n" + "            ],\r\n" + "            \"@type\": [\r\n"
+				+ "              \"https://purl.org/geojson/vocab#MultiLineString\"\r\n" + "            ]\r\n"
+				+ "          }\r\n" + "        ]\r\n" + "      }\r\n" + "    ],\r\n" + "    \"@type\": [\r\n"
+				+ "      \"https://uri.etsi.org/ngsi-ld/default-context/TestType\"\r\n" + "    ]\r\n" + "  }\r\n" + "]";
+
+		List<Map<String, Object>> obj = (List<Map<String, Object>>) JsonUtils.fromString(test).await().indefinitely();
+
+		System.out.println();
 	}
 }
