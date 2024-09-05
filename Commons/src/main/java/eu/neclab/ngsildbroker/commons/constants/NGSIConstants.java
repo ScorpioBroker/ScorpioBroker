@@ -25,6 +25,7 @@ public interface NGSIConstants {
 	public final static String GEO_TYPE_LINESTRING = "LineString";
 	public final static String GEO_TYPE_MULTI_LINESTRING = "MultiLineString";
 	public final static String GEO_TYPE_MULTI_POLYGON = "MultiPolygon";
+	public final static String GEO_TYPE_MULTI_POINT = "MultiPoint";
 
 	public final static String TIME_REL_BEFORE = "before";
 	public final static String TIME_REL_AFTER = "after";
@@ -112,8 +113,11 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_TIMESTAMP_START = "https://uri.etsi.org/ngsi-ld/startAt";
 	public final static String NGSI_LD_TIMESTAMP_END = "https://uri.etsi.org/ngsi-ld/endAt";
 	public final static String NGSI_LD_POLYGON = "https://purl.org/geojson/vocab#Polygon";
+	public final static String NGSI_LD_MULTI_POLYGON = "https://purl.org/geojson/vocab#MultiPolygon";
 	public final static String NGSI_LD_POINT = "https://purl.org/geojson/vocab#Point";
+	public final static String NGSI_LD_MULTI_POINT = "https://purl.org/geojson/vocab#MultiPoint";
 	public final static String NGSI_LD_LINESTRING = "https://purl.org/geojson/vocab#LineString";
+	public final static String NGSI_LD_MULTI_LINESTRING = "https://purl.org/geojson/vocab#MultiLineString";
 	public final static String NGSI_LD_SUBSCRIPTION_ID = "https://uri.etsi.org/ngsi-ld/subscriptionId";
 	public final static String NGSI_LD_NOTIFIED_AT = "https://uri.etsi.org/ngsi-ld/notifiedAt";
 	public final static String NGSI_LD_DATA = "https://uri.etsi.org/ngsi-ld/data";

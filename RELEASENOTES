@@ -1,3 +1,7 @@
+RELEASE NOTES 5.0.2
+
+addresses an issue with multi polygon, multi linestring and multi point
+
 RELEASE NOTES 5.0.1
 
 Updating to Quarkus version 3.14.

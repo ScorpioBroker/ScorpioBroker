@@ -729,7 +729,8 @@ class NGSIObject {
 				return;
 			}
 			if (!isProperty && !isRelationship && !isGeoProperty && !isDateTime && !isLanguageProperty
-					&& !isVocabProperty && !isListProperty && !isListRelationship && !isLocalOnly && !isJsonProperty && !hasObject) {
+					&& !isVocabProperty && !isListProperty && !isListRelationship && !isLocalOnly && !isJsonProperty
+					&& !hasObject) {
 				throw new ResponseException(ErrorType.BadRequestData,
 						"The key " + activeProperty + " is an invalid entry.");
 			}
@@ -855,6 +856,12 @@ class NGSIObject {
 					validateLineString(coordinatesMap);
 				} else if (NGSIConstants.NGSI_LD_POLYGON.equals(geoType)) {
 					validatePolygon(coordinatesMap);
+				} else if (NGSIConstants.NGSI_LD_MULTI_POLYGON.equals(geoType)) {
+					validateMultiPolygon(coordinatesMap);
+				} else if (NGSIConstants.NGSI_LD_MULTI_LINESTRING.equals(geoType)) {
+					validateMultiLineString(coordinatesMap);
+				} else if (NGSIConstants.NGSI_LD_MULTI_POINT.equals(geoType)) {
+					validateMultiPoint(coordinatesMap);
 				} else {
 					throw new ResponseException(ErrorType.BadRequestData,
 							"Invalid value for GeoProperty. Unknown type.");
@@ -877,10 +884,46 @@ class NGSIObject {
 		this.hasVocab = hasVocab;
 	}
 
-	private void validatePolygon(Map<?,?> coordinates) throws ResponseException {
+	private void validateMultiPolygon(Map<?, ?> coordinates) throws ResponseException {
+		Object atList = coordinates.get(NGSIConstants.JSON_LD_LIST);
+		if (atList != null && atList instanceof List<?> l1) {
+			for (Object obj1 : l1) {
+				if (obj1 != null && obj1 instanceof Map<?, ?> m1) {
+					Object atList1 = m1.get(NGSIConstants.JSON_LD_LIST);
+					if (atList1 != null && atList1 instanceof List<?> l) {
+						for (Object obj : l) {
+							if (obj != null && obj instanceof Map<?, ?> m) {
+								Object atList2 = m.get(NGSIConstants.JSON_LD_LIST);
+								if (atList2 != null && atList2 instanceof List<?> l2) {
+									for (Object obj2 : l2) {
+										if (obj2 instanceof Map<?, ?> m2) {
+											validatePoint(m2);
+										} else {
+											throw new ResponseException(ErrorType.BadRequestData,
+													"Invalid multi polygon definition");
+										}
+									}
+								} else {
+									throw new ResponseException(ErrorType.BadRequestData,
+											"Invalid multi polygon definition");
+								}
+							} else {
+								throw new ResponseException(ErrorType.BadRequestData,
+										"Invalid multi polygon definition");
+							}
+						}
+					}
+				}
+			}
+		} else {
+			throw new ResponseException(ErrorType.BadRequestData, "Invalid multi polygon definition");
+		}
+	}
+
+	private void validateMultiLineString(Map<?, ?> coordinates) throws ResponseException {
 		Object atList = coordinates.get(NGSIConstants.JSON_LD_LIST);
 		if (atList != null && atList instanceof List<?> l) {
-			Object obj = l.get(0);
+			for (Object obj : l) {
 				if (obj != null && obj instanceof Map<?, ?> m) {
 					Object atList2 = m.get(NGSIConstants.JSON_LD_LIST);
 					if (atList2 != null && atList2 instanceof List<?> l2) {
@@ -888,18 +931,61 @@ class NGSIObject {
 							if (obj2 instanceof Map<?, ?> m2) {
 								validatePoint(m2);
 							} else {
-								throw new ResponseException(ErrorType.BadRequestData, "Invalid line string definition");
+								throw new ResponseException(ErrorType.BadRequestData,
+										"Invalid multi line string definition");
 							}
-						}			
-					}else {
-						throw new ResponseException(ErrorType.BadRequestData, "Invalid line string definition");	
+						}
+					} else {
+						throw new ResponseException(ErrorType.BadRequestData, "Invalid multi line string definition");
 					}
 				} else {
-					throw new ResponseException(ErrorType.BadRequestData, "Invalid line string definition");
+					throw new ResponseException(ErrorType.BadRequestData, "Invalid multi line string definition");
 				}
-			
+			}
 		} else {
-			throw new ResponseException(ErrorType.BadRequestData, "Invalid line string definition");
+			throw new ResponseException(ErrorType.BadRequestData, "Invalid multi line string definition");
+		}
+
+	}
+
+	private void validateMultiPoint(Map<?, ?> coordinates) throws ResponseException {
+		Object atList = coordinates.get(NGSIConstants.JSON_LD_LIST);
+		if (atList != null && atList instanceof List<?> l) {
+			for (Object obj : l) {
+				if (obj instanceof Map<?, ?> m) {
+					validatePoint(m);
+				} else {
+					throw new ResponseException(ErrorType.BadRequestData, "Invalid multi point definition");
+				}
+			}
+		} else {
+			throw new ResponseException(ErrorType.BadRequestData, "Invalid multi point definition");
+		}
+	}
+
+	private void validatePolygon(Map<?, ?> coordinates) throws ResponseException {
+		Object atList = coordinates.get(NGSIConstants.JSON_LD_LIST);
+		if (atList != null && atList instanceof List<?> l) {
+			Object obj = l.get(0);
+			if (obj != null && obj instanceof Map<?, ?> m) {
+				Object atList2 = m.get(NGSIConstants.JSON_LD_LIST);
+				if (atList2 != null && atList2 instanceof List<?> l2) {
+					for (Object obj2 : l2) {
+						if (obj2 instanceof Map<?, ?> m2) {
+							validatePoint(m2);
+						} else {
+							throw new ResponseException(ErrorType.BadRequestData, "Invalid polygon definition");
+						}
+					}
+				} else {
+					throw new ResponseException(ErrorType.BadRequestData, "Invalid polygon definition");
+				}
+			} else {
+				throw new ResponseException(ErrorType.BadRequestData, "Invalid polygon definition");
+			}
+
+		} else {
+			throw new ResponseException(ErrorType.BadRequestData, "Invalid polygon definition");
 		}
 	}
 
