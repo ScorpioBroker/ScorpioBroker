@@ -145,26 +145,33 @@ Assuming a fresh start we have an empty Scorpio Broker.
 First, we are going to create house2:smartrooms:room1. Let's assume that at entity creation time, temperature is 23 ?C and it is part of smartcity:houses:house2.
 ::
 
-	curl localhost:9090/ngsi-ld/v1/entities -s -S -H 'Content-Type: application/ld+json' -d @- <<EOF
-		{
-	  "id": "house2:smartrooms:room1",
-	  "type": "Room",
-	  "temperature": {
-		"value": 23,
-		"unitCode": "CEL",
-		"type": "Property",
-		"providedBy": {
-			"type": "Relationship",
-			"object": "smartbuilding:house2:sensor0815"
-		 }
-	   },
-	  "isPartOf": {
-		"type": "Relationship",
-		"object": "smartcity:houses:house2"
-	  },
-	  "@context": [{"Room": "urn:mytypes:room", "temperature": "myuniqueuri:temperature", "isPartOf": "myuniqueuri:isPartOf"},"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld"]
-	}
-	EOF
+        curl --location 'localhost:9090/ngsi-ld/v1/entities' \
+    --header 'Content-Type: application/ld+json' \
+    --data-raw '{
+        "id": "house2:smartrooms:room1",
+        "type": "Room",
+        "temperature": {
+            "value": 23,
+            "unitCode": "CEL",
+            "type": "Property",
+            "providedBy": {
+                "type": "Relationship",
+                "object": "smartbuilding:house2:sensor0815"
+            }
+        },
+        "isPartOf": {
+            "type": "Relationship",
+            "object": "smartcity:houses:house2"
+        },
+        "@context": [
+            {
+                "Room": "urn:mytypes:room",
+                "temperature": "myuniqueuri:temperature",
+                "isPartOf": "myuniqueuri:isPartOf"
+            },
+            "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld"
+        ]
+    }'
 
 Apart from the id and type fields (that define the ID and type of the entity), the payload contains a set of attributes. As you can see, there are two types of attributes. Properties and Relationships. Properties directly provide a value of an attribute. Additionally there is an optional parameter unitCode which can be used to better describe the value using unit codes described in UN/CEFACT Common Codes for Units of Measurement. 
 UnitCodes should be seen as an aditional metadata provided by the producer. They are not restrictive. There is no validation on the value field.
@@ -176,61 +183,102 @@ Upon receipt of this request, Scorpio creates the entity in its internal databas
 Next, let's create house2:smartrooms:room2 in a similar way.
 ::
 
-	curl localhost:9090/ngsi-ld/v1/entities -s -S -H 'Content-Type: application/ld+json' -d @- <<EOF
-	{
-	  "id": "house2:smartrooms:room2",
-	  "type": "Room",
-	  "temperature": {
-		"value": 21,
-		"unitCode": "CEL",
-		"type": "Property",
-		"providedBy": {
-			"type": "Relationship",
-			"object": "smartbuilding:house2:sensor4711"
-		}
-	  },
-	  "isPartOf": {
-		"type": "Relationship",
-		"object": "smartcity:houses:house2"
-	  },
-	  "@context": [{"Room": "urn:mytypes:room", "temperature": "myuniqueuri:temperature", "isPartOf": "myuniqueuri:isPartOf"},"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld"]
-	}
-	EOF
+        curl --location 'localhost:9090/ngsi-ld/v1/entities' \
+    --header 'Content-Type: application/ld+json' \
+    --data-raw '{
+        "id": "house2:smartrooms:room2",
+        "type": "Room",
+        "temperature": {
+            "value": 21,
+            "unitCode": "CEL",
+            "type": "Property",
+            "providedBy": {
+                "type": "Relationship",
+                "object": "smartbuilding:house2:sensor4711"
+            }
+        },
+        "isPartOf": {
+            "type": "Relationship",
+            "object": "smartcity:houses:house2"
+        },
+        "@context": [
+            {
+                "Room": "urn:mytypes:room",
+                "temperature": "myuniqueuri:temperature",
+                "isPartOf": "myuniqueuri:isPartOf"
+            },
+            "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld"
+        ]
+    }'
 
 Now to complete this setup we are creating an Entity describing our house with the id smartcity:houses:house2.
 ::
 
-	curl localhost:9090/ngsi-ld/v1/entities -s -S -H 'Content-Type: application/ld+json' -d @- <<EOF
-	{
-		"id": "smartcity:houses:house2",
-		"type": "House",
-		"hasRoom": [{
-			"type": "Relationship",
-			"object": "house2:smartrooms:room1",
-			"datasetId": "somethingunique1"
-		},
-		{
-			"type": "Relationship",
-			"object": "house2:smartrooms:room2",
-			"datasetId": "somethingunique2"
-		}],
-		"location": {
-			"type": "GeoProperty",
-			"value": {
-				"type": "Polygon",
-				"coordinates": [[[-8.5, 41.2], [-8.5000001, 41.2], [-8.5000001, 41.2000001], [-8.5, 41.2000001], [-8.5, 41.2]]]
-			}
-		},
-		"entrance": {
-			"type": "GeoProperty",
-			"value": {
-				"type": "Point",
-				"coordinates": [-8.50000005, 41.2]
-			}
-		},
-		"@context": [{"House": "urn:mytypes:house", "hasRoom": "myuniqueuri:hasRoom"},"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld"]
-	}
-	EOF
+        curl --location 'localhost:9090/ngsi-ld/v1/entities' \
+    --header 'Content-Type: application/ld+json' \
+    --data-raw '{
+        "id": "smartcity:houses:house2",
+        "type": "House",
+        "hasRoom": [
+            {
+                "type": "Relationship",
+                "object": "house2:smartrooms:room1",
+                "datasetId": "urn:somethingunique1"
+            },
+            {
+                "type": "Relationship",
+                "object": "house2:smartrooms:room2",
+                "datasetId": "urn:somethingunique2"
+            }
+        ],
+        "location": {
+            "type": "GeoProperty",
+            "value": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [
+                            -8.5,
+                            41.2
+                        ],
+                        [
+                            -8.5000001,
+                            41.2
+                        ],
+                        [
+                            -8.5000001,
+                            41.2000001
+                        ],
+                        [
+                            -8.5,
+                            41.2000001
+                        ],
+                        [
+                            -8.5,
+                            41.2
+                        ]
+                    ]
+                ]
+            }
+        },
+        "entrance": {
+            "type": "GeoProperty",
+            "value": {
+                "type": "Point",
+                "coordinates": [
+                    -8.50000005,
+                    41.2
+                ]
+            }
+        },
+        "@context": [
+            {
+                "House": "urn:mytypes:house",
+                "hasRoom": "myuniqueuri:hasRoom"
+            },
+            "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld"
+        ]
+    }'
 
 Even though you can of course model this differently, for this scenario we model the relationships of houses with rooms with a hasRoom entry as a multi-relationship. To uniquely identify the entries they have a datasetId, which is also used when updating this specific relationship. There can be at most one relationship instance per relationship without a datasetId, which is considered to be the "default" instance. In the case of properties, multi-properties are represented in the same way. 
 Additionally we are using a third type of attribute here the GeoProperty. GeoProperty values are  GeoJSON values, allowing the description of various shapes and forms using longitude and latitude. Here we add to entries location, describing the outline of the house, and entrance, pointing to the entrance door.
@@ -372,26 +420,26 @@ The second way to retrieve information is the NGSI-LD query.
 For this example we first add a new Room which belongs to another house.
 ::
 
-	curl localhost:9090/ngsi-ld/v1/entities -s -S -H 'Content-Type: application/ld+json' -d @- <<EOF
-	{
-	  "id": "house99:smartrooms:room42",
-	  "type": "Room",
-	  "temperature": {
-		"value": 21,
-		"unitCode": "CEL",
-		"type": "Property",
-		"providedBy": {
-			"type": "Relationship",
-			"object": "smartbuilding:house99:sensor36"
-		}
-	  },
-	  "isPartOf": {
-		"type": "Relationship",
-		"object": "smartcity:houses:house99"
-	  },
-	  "@context": [{"Room": "urn:mytypes:room", "temperature": "myuniqueuri:temperature", "isPartOf": "myuniqueuri:isPartOf"},"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld"]
-	}
-	EOF
+        curl --location 'localhost:9090/ngsi-ld/v1/entities' \
+    --header 'Content-Type: application/ld+json' \
+    --data-raw '{
+          "id": "house99:smartrooms:room42",
+          "type": "Room",
+          "temperature": {
+            "value": 21,
+            "unitCode": "CEL",
+            "type": "Property",
+            "providedBy": {
+                "type": "Relationship",
+                "object": "smartbuilding:house99:sensor36"
+            }
+          },
+          "isPartOf": {
+            "type": "Relationship",
+            "object": "smartcity:houses:house99"
+          },
+          "@context": [{"Room": "urn:mytypes:room", "temperature": "myuniqueuri:temperature", "isPartOf": "myuniqueuri:isPartOf"},"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld"]
+        }'
 
 Let's assume we want to retrieve all the rooms in Scorpio. To do that we do a GET request like this
 ::
@@ -465,7 +513,9 @@ Since we are only interested in our smartcity:houses:house2, we are using the 'q
 (URL encoding "smartcity:houses:house2" becomes %22smartcity%3Ahouses%3Ahouse2%22)
 ::
 
-	curl localhost:9090/ngsi-ld/v1/entities/?type=Room&q=isPartOf==%22smartcity%3Ahouses%3Ahouse2%22 -s -S -H 'Accept: application/json' -H 'Link: <https://pastebin.com/raw/Mgxv2ykn>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"'
+        curl --location 'localhost:9090/ngsi-ld/v1/entities/?type=Room&q=isPartOf%3D%3D%22smartcity%3Ahouses%3Ahouse2%22' \
+    --header 'Accept:  application/json' \
+    --header 'Link:  <https://pastebin.com/raw/Mgxv2ykn>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json'
 
 The results now looks like this.
 ::
@@ -511,8 +561,9 @@ The results now looks like this.
 Now an alternative way to get the same result would be using the idPattern parameter, which allows you to use regular expressions. This is possible in this case since we structured our IDs for the rooms.
 ::
 
-	curl localhost:9090/ngsi-ld/v1/entities/?type=Room&idPattern=house2%3Asmartrooms%3Aroom.%2A -s -S -H 'Accept: application/json' -H 'Link: <https://pastebin.com/raw/Mgxv2ykn>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"'
-	(house2%3Asmartrooms%3Aroom.%2A == house2:smartrooms:room.*)
+        curl --location 'localhost:9090/ngsi-ld/v1/entities/?type=Room&idPattern=house2%3Asmartrooms%3Aroom.%2A' \
+    --header 'Accept:  application/json' \
+    --header 'Link:  <https://pastebin.com/raw/Mgxv2ykn>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"'
 
 Limit the attributes
 ####################
@@ -520,7 +571,9 @@ Limit the attributes
 Additionally we now want to limit the result to only give us the temperature. This is done by using the attrs parameter. Attrs takes a comma seperated list. In our case since it's only one entry it looks like this.
 ::
 
-	curl localhost:9090/ngsi-ld/v1/entities/?type=Room&q=isPartOf==%22smartcity%3Ahouses%3Ahouse2%22&attrs=temperature -s -S -H 'Accept: application/json' -H 'Link: <https://pastebin.com/raw/Mgxv2ykn>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"'
+    curl --location 'localhost:9090/ngsi-ld/v1/entities/?type=Room&q=isPartOf%3D%3D%22smartcity%3Ahouses%3Ahouse2%22&attrs=temperature' \
+    --header 'Accept:  application/json' \
+    --header 'Link:  <https://pastebin.com/raw/Mgxv2ykn>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"'
 
 ::
 
@@ -560,7 +613,9 @@ KeyValues results
 Now assuming we want to limit the payload of the request even more since we are really only interested in the value of temperature and don't care about any meta information. This can be done using the keyValues option. KeyValues will return a condenced version of the Entity providing only top level attribute and their respective value or object.
 ::
 
-	curl localhost:9090/ngsi-ld/v1/entities/?type=Room&q=isPartOf==%22smartcity%3Ahouses%3Ahouse2%22&attrs=temperature&options=keyValues -s -S -H 'Accept: application/json' -H 'Link: <https://pastebin.com/raw/Mgxv2ykn>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"'
+    curl --location 'localhost:9090/ngsi-ld/v1/entities/?type=Room&q=isPartOf%3D%3D%22smartcity%3Ahouses%3Ahouse2%22&attrs=temperature&options=keyValues' \
+    --header 'Accept:  application/json' \
+    --header 'Link:  <https://pastebin.com/raw/Mgxv2ykn>; rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"'
 
 Response:
 ::
@@ -598,23 +653,24 @@ You can basically update every part of an entity with two exceptions. The type a
 To update our room1 we will do an HTTP POST like this.
 ::
 
-	curl localhost:9090/ngsi-ld/v1/entities/house2%3Asmartrooms%3Aroom1 -s -S -H 'Content-Type: application/json' -H 'Link: https://pastebin.com/raw/Mgxv2ykn' -d @- <<EOF
-	{
-		"temperature": {
-		"value": 25,
-		"unitCode": "CEL",
-		"type": "Property",
-		"providedBy": {
-			"type": "Relationship",
-			"object": "smartbuilding:house2:sensor0815"
-		}
-	  },
-	  "isPartOf": {
-		"type": "Relationship",
-		"object": "smartcity:houses:house2"
-	  }
-	}
-	EOF
+        curl --location 'localhost:9090/ngsi-ld/v1/entities/house2%3Asmartrooms%3Aroom1/attrs' \
+    --header 'Content-Type: application/json' \
+    --header 'Link: https://pastebin.com/raw/Mgxv2ykn' \
+    --data '{
+            "temperature": {
+            "value": 25,
+            "unitCode": "CEL",
+            "type": "Property",
+            "providedBy": {
+                "type": "Relationship",
+                "object": "smartbuilding:house2:sensor0815"
+            }
+          },
+          "isPartOf": {
+            "type": "Relationship",
+            "object": "smartcity:houses:house2"
+          }
+        }'
 	
 Now this is a bit much payload to update one value and there is a risk that you might accidently delete something and we would only recommend this entity update if you really want to update a bigger part of an entity.
 
@@ -625,17 +681,18 @@ To take care of a single attribute update NGSI-LD provides a partial update. Thi
 In order to update the temperature we do a POST like this 
 ::
 
-	curl localhost:9090/ngsi-ld/v1/entities/house2%3Asmartrooms%3Aroom1/attrs/temperature -s -S -H 'Content-Type: application/json' -H 'Link: https://pastebin.com/raw/Mgxv2ykn' -d @- <<EOF
-	{
-		"value": 26,
-		"unitCode": "CEL",
-		"type": "Property",
-		"providedBy": {
-			"type": "Relationship",
-			"object": "smartbuilding:house2:sensor0815"
-		}
-	}
-	EOF
+        curl --location --request PATCH 'localhost:9090/ngsi-ld/v1/entities/house2%3Asmartrooms%3Aroom1/attrs/temperature' \
+    --header 'Content-Type: application/json' \
+    --header 'Link: https://pastebin.com/raw/Mgxv2ykn' \
+    --data '{
+            "value": 26,
+            "unitCode": "CEL",
+            "type": "Property",
+            "providedBy": {
+                "type": "Relationship",
+                "object": "smartbuilding:house2:sensor0815"
+            }
+        }'
 	
 Append attribute
 ################
@@ -644,18 +701,20 @@ In order to append a new attribute to an entity you execute an HTTP POST command
 Append in NGSI-LD by default will overwrite an existing entry. If this is not desired you can add the option parameter with noOverwrite to the URL like this /entities/<entityId>/attrs?options=noOverwrite. Now if we want to add an additional entry for the humidity in room1 we do an HTTP PATCH like this. 
 ::
 
-	curl localhost:9090/ngsi-ld/v1/entities/house2%3Asmartrooms%3Aroom1/attrs -s -S -X PATCH -H 'Content-Type: application/json' -H 'Link: https://pastebin.com/raw/Mgxv2ykn' -d @- <<EOF
-	{
-		"humidity": {
-		"value": 34,
-		"unitCode": "PER",
-		"type": "Property",
-		"providedBy": {
-			"type": "Relationship",
-			"object": "smartbuilding:house2:sensor2222"
-		}
-	  }
-	}
+            curl --location 'localhost:9090/ngsi-ld/v1/entities/house2%3Asmartrooms%3Aroom1/attrs' \
+    --header 'Content-Type: application/json' \
+    --header 'Link: https://pastebin.com/raw/Mgxv2ykn' \
+    --data '{
+            "humidity": {
+            "value": 34,
+            "unitCode": "PER",
+            "type": "Property",
+            "providedBy": {
+                "type": "Relationship",
+                "object": "smartbuilding:house2:sensor2222"
+            }
+          }
+        }'
 	
 Add a multivalue attribute
 ##########################
@@ -663,18 +722,21 @@ Add a multivalue attribute
 NGSI-LD also allows us to add new multi value entries. We will do this by adding a unique datesetId. If a datasetId is provided in an append it will only affect the entry with the given datasetId. Adding the temperature in Fahrenheit we do a PATCH call like this.
 ::
 
-	curl localhost:9090/ngsi-ld/v1/entities/house2%3Asmartrooms%3Aroom1/attrs/temperature -s -S -H 'Content-Type: application/json' -H 'Link: https://pastebin.com/raw/Mgxv2ykn' -d @- <<EOF
-	{
-		"value": 78,8,
-		"unitCode": "FAH",
-		"type": "Property",
-		"providedBy": {
-			"type": "Relationship",
-			"object": "smartbuilding:house2:sensor0815"
-		}
-		"datasetId": "urn:fahrenheitentry:0815"
-	}
-	EOF
+        curl --location 'localhost:9090/ngsi-ld/v1/entities/house2%3Asmartrooms%3Aroom1/attrs/' \
+    --header 'Content-Type: application/json' \
+    --header 'Link: https://pastebin.com/raw/Mgxv2ykn' \
+    --data '{
+        "temperature": {
+            "value": 78.8,
+            "unitCode": "FAH",
+            "type": "Property",
+            "providedBy": {
+                "type": "Relationship",
+                "object": "smartbuilding:house2:sensor0815"
+            },
+            "datasetId": "urn:fahrenheitentry:0815"
+        }
+    }'
 
 *************
 Subscriptions
