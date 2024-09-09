@@ -427,13 +427,6 @@ public class EntityInfoDAO {
 				payload.remove(JsonLdConsts.TYPE);
 			}
 			String sql = "SELECT * FROM MERGE_JSON($1,$2);";
-			System.out.println(request.getFirstId());
-			try {
-				System.out.println(JsonUtils.toPrettyString(payload));
-			} catch (IOException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			}
 			Tuple tuple = Tuple.of(request.getFirstId(), new JsonObject(payload));
 			return client.preparedQuery(sql).execute(tuple).onFailure().recoverWithUni(e -> {
 				
