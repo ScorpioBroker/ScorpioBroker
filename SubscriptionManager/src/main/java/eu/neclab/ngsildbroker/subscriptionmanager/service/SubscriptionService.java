@@ -137,7 +137,7 @@ public class SubscriptionService {
 	private SyncService subscriptionSyncService = null;
 	@ConfigProperty(name = "scorpio.at-context-server", defaultValue = "http://localhost:9090")
 	private String atContextUrl;
-	
+
 	private static Map<String, Object> compareMaps(Map<String, Object> oldMap, Map<String, Object> newMap) {
 		if (oldMap == null || oldMap.isEmpty()) {
 			return newMap;
@@ -181,7 +181,6 @@ public class SubscriptionService {
 		return obj1.equals(obj2);
 	}
 
-	
 	private static void addProperty(Map<String, Object> resultMap, String key, Object oldValue, Object newValue) {
 		Map<String, Object> propertyMap = new HashMap<>();
 		List<Object> valueList = List.of(propertyMap);
@@ -501,7 +500,6 @@ public class SubscriptionService {
 		});
 	}
 
-	
 	public Uni<Void> checkSubscriptions(BaseRequest message) {
 		Collection<SubscriptionRequest> potentialSubs = tenant2subscriptionId2Subscription.row(message.getTenant())
 				.values();
@@ -844,6 +842,7 @@ public class SubscriptionService {
 	}
 
 	private void mergeAttrib(Map<String, Object> newEntry, Map<String, Object> oldEntry) {
+		newEntry.put(NGSIConstants.NGSI_LD_CREATED_AT, oldEntry.get(NGSIConstants.NGSI_LD_CREATED_AT));
 		if (oldEntry.containsKey(NGSIConstants.NGSI_LD_HAS_VALUE)) {
 			newEntry.put(NGSIConstants.PREVIOUS_VALUE, oldEntry.get(NGSIConstants.NGSI_LD_HAS_VALUE));
 		} else if (oldEntry.containsKey(NGSIConstants.NGSI_LD_HAS_OBJECT)) {
@@ -1353,8 +1352,6 @@ public class SubscriptionService {
 			Uni.combine().all().unis(unis).discardItems().await().atMost(Duration.ofSeconds(30));
 		}
 	}
-
-	
 
 	public Uni<Void> syncDeleteSubscription(String tenant, String subId) {
 		tenant2subscriptionId2IntervalSubscription.remove(tenant, subId);
