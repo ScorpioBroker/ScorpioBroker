@@ -240,7 +240,7 @@ public class Subscription implements Serializable {
 					subscription.setNotification(notification);
 				} catch (Exception e) {
 					throw new ResponseException(ErrorType.BadRequestData,
-							"Failed to parse notification parameter.\n" + e.getMessage());
+							"Failed to parse notification parameter." + e.getMessage());
 				}
 				break;
 			case NGSIConstants.NGSI_LD_QUERY:
