@@ -3,9 +3,12 @@ package eu.neclab.ngsildbroker.subscriptionmanager.repository;
 import com.google.common.collect.Lists;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.EntityInfo;
+import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.DeleteSubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.UpdateSubscriptionRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.storage.ClientManager;
@@ -21,8 +24,10 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +47,119 @@ public class SubscriptionInfoDAO {
 							"INSERT INTO subscriptions(subscription_id, subscription, context) VALUES ($1, $2, $3)")
 					.execute(Tuple.of(request.getId(), new JsonObject(request.getPayload()), contextId)).onItem()
 					.transformToUni(rows -> Uni.createFrom().voidItem());
+		});
+	}
+
+	public Uni<RowSet<Row>> getInitialNotificationData(SubscriptionRequest subscriptionRequest) {
+		return clientManager.getClient(subscriptionRequest.getTenant(), false).onItem().transformToUni(client -> {
+
+			Tuple tuple = Tuple.tuple();
+			StringBuilder sql = new StringBuilder("with a as (select cs_id from csourceinformation WHERE ");
+			boolean sqlAdded = false;
+			int dollar = 1;
+			Subscription subscription = subscriptionRequest.getSubscription();
+			Iterator<EntityInfo> it = subscription.getEntities().iterator();
+			while (it.hasNext()) {
+				EntityInfo entityInformation = it.next();
+				sql.append("(");
+				if (entityInformation.getId() != null) {
+					sql.append("((e_id is null or e_id  = $" + dollar + ") and (e_id_p is null or e_id_p ~ $" + dollar
+							+ "))");
+					dollar++;
+
+					tuple.addString(entityInformation.getId().toString());
+					if (entityInformation.getTypeTerm() != null) {
+						sql.append(" and ");
+					}
+				} else if (entityInformation.getIdPattern() != null) {
+					sql.append("((e_id is null or $" + dollar + " ~ e_id) and (e_id_p is null or e_id_p = $" + dollar
+							+ "))");
+					dollar++;
+					tuple.addString(entityInformation.getIdPattern());
+					if (entityInformation.getTypeTerm() != null) {
+						sql.append(" and ");
+					}
+				}
+				if (entityInformation.getTypeTerm() != null) {
+					// dollar = entityInformation.getTypeTerm().toSql(sql, tuple, dollar);
+					Set<String> types = entityInformation.getTypeTerm().getAllTypes();
+					sql.append("e_type IN (");
+					for (String type : types) {
+						sql.append('$');
+						sql.append(dollar);
+						sql.append(',');
+						dollar++;
+						tuple.addString(type);
+					}
+					sql.setCharAt(sql.length() - 1, ')');
+
+				}
+				sql.append(")");
+				if (it.hasNext()) {
+					sql.append(" and ");
+				}
+				sqlAdded = true;
+			}
+
+			if (subscription.getAttributeNames() != null) {
+				if (sqlAdded) {
+					sql.append(" and ");
+				}
+				sql.append("(e_prop is null or e_prop = any($" + dollar + ")) and (e_rel is null or e_rel = any($"
+						+ dollar + "))");
+				tuple.addArrayOfString(subscription.getAttributeNames().toArray(new String[0]));
+				dollar++;
+				sqlAdded = true;
+			}
+
+			if (subscription.getLdGeoQuery() != null) {
+				if (sqlAdded) {
+					sql.append(" and ");
+				}
+				try {
+					Tuple2<StringBuilder, Integer> tmp = subscription.getLdGeoQuery().getGeoSQLQuery(tuple, dollar,
+							"i_location");
+					sql.append(tmp.getItem1().toString());
+					dollar = tmp.getItem2();
+					sqlAdded = true;
+				} catch (ResponseException e) {
+					return Uni.createFrom().failure(e);
+				}
+			}
+
+			if (subscription.getScopeQuery() != null) {
+				if (sqlAdded) {
+					sql.append(" and ");
+				}
+				sql.append("(scopes IS NULL OR ");
+				ScopeQueryTerm current = subscription.getScopeQuery();
+				while (current != null) {
+					sql.append(" matchscope(scopes, " + current.getSQLScopeQuery() + ")");
+
+					if (current.hasNext()) {
+						if (current.isNextAnd()) {
+							sql.append(" and ");
+						} else {
+							sql.append(" or ");
+						}
+					}
+					current = current.getNext();
+				}
+				sql.append(")");
+
+			}
+
+			sql.append(") select csource.reg from a left join csource on a.cs_id = csource.id");
+			if (subscription.getCsf() != null) {
+				// if (sqlAdded) {
+				// sql += " and ";
+				// }
+				// dollar++;
+			}
+
+			logger.debug("SQL I noti: " + sql);
+			logger.debug("Tuple I noti: " + tuple.deepToString());
+			return client.preparedQuery(sql.toString()).execute(tuple).onFailure().retry().atMost(3);
 		});
 	}
 

@@ -287,9 +287,11 @@ public class SubscriptionService {
 				return Uni.createFrom().voidItem();
 			}
 			return Uni.combine().all().unis(unis).with(list -> {
+				List<Uni<Void>> regUnis = Lists.newArrayList();
 				for (Object obj : list) {
 					Tuple4<String, Map<String, Object>, String, Context> tuple = (Tuple4<String, Map<String, Object>, String, Context>) obj;
 					SubscriptionRequest request;
+					
 					try {
 						request = new SubscriptionRequest(tuple.getItem1(), tuple.getItem2(), tuple.getItem4());
 						request.setContextId(tuple.getItem3());
@@ -301,16 +303,33 @@ public class SubscriptionService {
 						if (isIntervalSub(request)) {
 							this.tenant2subscriptionId2IntervalSubscription.put(request.getTenant(), request.getId(),
 									request);
+
 						} else {
 							this.tenant2subscriptionId2Subscription.put(request.getTenant(), request.getId(), request);
+							regUnis.add(subDAO.getInitialNotificationData(request).onItem().transformToUni(rows -> {
+								List<Map<String, Object>> data = Lists.newArrayList();
+								rows.forEach(row -> {
+									data.add(row.getJsonObject(0).getMap());
+								});
+								return SubscriptionTools
+										.generateCsourceNotification(request, data,
+												AppConstants.INTERNAL_NOTIFICATION_REQUEST, ldService)
+										.onItem().transformToUni(noti -> {
+											return handleRegistryNotification(new InternalNotification(
+													request.getTenant(), request.getId(), noti));
+										});
+
+							}));
 						}
 						subscriptionId2RequestGlobal.put(request.getId(), request);
 					} catch (Exception e) {
 						logger.error("Failed to load stored subscription " + tuple.getItem1());
 					}
 				}
-				return null;
+				return regUnis;
 
+			}).onItem().transform(rU -> {
+				return Uni.combine().all().unis(rU).with(l1 -> {return null;});
 			});
 		}).await().indefinitely();
 	}
@@ -334,11 +353,13 @@ public class SubscriptionService {
 		}
 		SubscriptionTools.setInitTimesSentAndFailed(request);
 		Map<String, Object> tmp = request.getContext().serialize();
+
 		return localContextService.createImplicitly(tenant, tmp).onItem().transformToUni(contextId -> {
 			request.setContextId(contextId);
 			return subDAO.createSubscription(request, contextId).onItem().transformToUni(t -> {
 				if (isIntervalSub(request)) {
 					this.tenant2subscriptionId2IntervalSubscription.put(request.getTenant(), request.getId(), request);
+
 				} else {
 					tenant2subscriptionId2Subscription.put(tenant, request.getId(), request);
 				}
@@ -351,17 +372,25 @@ public class SubscriptionService {
 					logger.debug("No sync service");
 					syncService = Uni.createFrom().voidItem();
 				}
-				return syncService.onItem().transform(v2 -> {
-//					try {
-//						MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, internalSubEmitter,
-//								objectMapper);
-//					} catch (ResponseException e) {
-//						logger.error("Failed to serialize subscription message", e);
-//					}
-					NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.CREATE_SUBSCRIPTION_REQUEST,
-							request.getId());
-					result.addSuccess(new CRUDSuccess(null, null, request.getId(), Sets.newHashSet()));
-					return result;
+
+				return syncService.onItem().transformToUni(v2 -> {
+					return subDAO.getInitialNotificationData(request).onItem().transformToUni(rows -> {
+						List<Map<String, Object>> data = Lists.newArrayList();
+						rows.forEach(row -> {
+							data.add(row.getJsonObject(0).getMap());
+						});
+						return SubscriptionTools.generateCsourceNotification(request, data,
+								AppConstants.INTERNAL_NOTIFICATION_REQUEST, ldService).onItem().transformToUni(noti -> {
+									return handleRegistryNotification(
+											new InternalNotification(request.getTenant(), request.getId(), noti));
+								}).onItem().transform(v3 -> {
+									NGSILDOperationResult result = new NGSILDOperationResult(
+											AppConstants.CREATE_SUBSCRIPTION_REQUEST, request.getId());
+									result.addSuccess(new CRUDSuccess(null, null, request.getId(), Sets.newHashSet()));
+									return result;
+								});
+
+					});
 
 				});
 			}).onFailure().recoverWithUni(e -> {
