@@ -42,6 +42,7 @@ import com.google.common.net.HttpHeaders;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.NotificationParam;
+import eu.neclab.ngsildbroker.commons.datatypes.RegistrationEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CSourceBaseRequest;
@@ -124,6 +125,9 @@ public class SubscriptionService {
 
 	private String ALL_TYPES_SUB;
 
+	private Table<String, String, List<RegistrationEntry>> queryTenant2CId2RegEntries = HashBasedTable.create();
+	private Table<String, String, List<RegistrationEntry>> subscriptionTenant2CId2RegEntries = HashBasedTable.create();
+
 	private Table<String, String, SubscriptionRequest> tenant2subscriptionId2Subscription = HashBasedTable.create();
 	private Table<String, String, SubscriptionRequest> tenant2subscriptionId2IntervalSubscription = HashBasedTable
 			.create();
@@ -137,6 +141,28 @@ public class SubscriptionService {
 	private SyncService subscriptionSyncService = null;
 	@ConfigProperty(name = "scorpio.at-context-server", defaultValue = "http://localhost:9090")
 	private String atContextUrl;
+
+	public Uni<Void> handleRegistryChange(CSourceBaseRequest req) {
+		return RegistrationEntry.fromRegPayload(req.getPayload(), ldService).onItem().transformToUni(regs -> {
+			List<RegistrationEntry> queryNewRegs = Lists.newArrayList();
+			List<RegistrationEntry> subscriptionNewRegs = Lists.newArrayList();
+			queryTenant2CId2RegEntries.remove(req.getTenant(), req.getId());
+			subscriptionTenant2CId2RegEntries.remove(req.getTenant(), req.getId());
+			if (req.getRequestType() != AppConstants.DELETE_REQUEST) {
+				for (RegistrationEntry regEntry : regs) {
+					if (regEntry.retrieveEntity() || regEntry.queryEntity() || regEntry.queryBatch()) {
+						queryNewRegs.add(regEntry);
+					}
+					if (regEntry.createSubscription()) {
+						subscriptionNewRegs.add(regEntry);
+					}
+				}
+				queryTenant2CId2RegEntries.put(req.getTenant(), req.getId(), queryNewRegs);
+				subscriptionTenant2CId2RegEntries.put(req.getTenant(), req.getId(), subscriptionNewRegs);
+			}
+			return Uni.createFrom().voidItem();
+		});
+	}
 
 	private static Map<String, Object> compareMaps(Map<String, Object> oldMap, Map<String, Object> newMap) {
 		if (oldMap == null || oldMap.isEmpty()) {
@@ -275,7 +301,7 @@ public class SubscriptionService {
 	void setup() {
 		this.webClient = WebClient.create(vertx);
 		ALL_TYPES_SUB = NGSIConstants.NGSI_LD_DEFAULT_PREFIX + allTypeSubType;
-		subDAO.loadSubscriptions().onItem().transformToUni(subs -> {
+		Uni<Void> loadSubs = subDAO.loadSubscriptions().onItem().transformToUni(subs -> {
 			List<Uni<Tuple4<String, Map<String, Object>, String, Context>>> unis = Lists.newArrayList();
 			subs.forEach(tuple -> {
 				unis.add(ldService.parsePure(tuple.getItem4().get(NGSIConstants.JSON_LD_CONTEXT)).onItem()
@@ -287,11 +313,10 @@ public class SubscriptionService {
 				return Uni.createFrom().voidItem();
 			}
 			return Uni.combine().all().unis(unis).with(list -> {
-				List<Uni<Void>> regUnis = Lists.newArrayList();
 				for (Object obj : list) {
 					Tuple4<String, Map<String, Object>, String, Context> tuple = (Tuple4<String, Map<String, Object>, String, Context>) obj;
 					SubscriptionRequest request;
-					
+
 					try {
 						request = new SubscriptionRequest(tuple.getItem1(), tuple.getItem2(), tuple.getItem4());
 						request.setContextId(tuple.getItem3());
@@ -306,32 +331,44 @@ public class SubscriptionService {
 
 						} else {
 							this.tenant2subscriptionId2Subscription.put(request.getTenant(), request.getId(), request);
-							regUnis.add(subDAO.getInitialNotificationData(request).onItem().transformToUni(rows -> {
-								List<Map<String, Object>> data = Lists.newArrayList();
-								rows.forEach(row -> {
-									data.add(row.getJsonObject(0).getMap());
-								});
-								return SubscriptionTools
-										.generateCsourceNotification(request, data,
-												AppConstants.INTERNAL_NOTIFICATION_REQUEST, ldService)
-										.onItem().transformToUni(noti -> {
-											return handleRegistryNotification(new InternalNotification(
-													request.getTenant(), request.getId(), noti));
-										});
-
-							}));
 						}
 						subscriptionId2RequestGlobal.put(request.getId(), request);
 					} catch (Exception e) {
 						logger.error("Failed to load stored subscription " + tuple.getItem1());
 					}
 				}
-				return regUnis;
+				return null;
 
-			}).onItem().transform(rU -> {
-				return Uni.combine().all().unis(rU).with(l1 -> {return null;});
 			});
-		}).await().indefinitely();
+
+		});
+
+		Uni<Void> loadRegs = subDAO.getAllRegistries().onItem().transformToUni(regs -> {
+			regs.cellSet().forEach(cell -> {
+				List<RegistrationEntry> value = cell.getValue();
+				String rowKey = cell.getRowKey();
+				String columnKey = cell.getColumnKey();
+				List<RegistrationEntry> tmpQuery = new ArrayList<>(value.size());
+				List<RegistrationEntry> tmpSub = new ArrayList<>(value.size());
+				value.forEach(regEntry -> {
+					if (regEntry.retrieveEntity() || regEntry.queryBatch() || regEntry.queryEntity()) {
+						tmpQuery.add(regEntry);
+					}
+					if (regEntry.createSubscription()) {
+						tmpSub.add(regEntry);
+					}
+				});
+				if (!tmpQuery.isEmpty()) {
+					queryTenant2CId2RegEntries.put(rowKey, columnKey, tmpQuery);
+				}
+				if (!tmpSub.isEmpty()) {
+					subscriptionTenant2CId2RegEntries.put(rowKey, columnKey, tmpSub);
+				}
+			});
+			return Uni.createFrom().voidItem();
+		});
+		Uni.combine().all().unis(loadSubs, loadRegs).with(l -> l).await().indefinitely();
+
 	}
 
 	private boolean isIntervalSub(SubscriptionRequest request) {

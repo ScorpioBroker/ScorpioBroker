@@ -1,9 +1,13 @@
 package eu.neclab.ngsildbroker.subscriptionmanager.repository;
 
+import com.github.jsonldjava.core.JsonLDService;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Table;
+
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityInfo;
+import eu.neclab.ngsildbroker.commons.datatypes.RegistrationEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.DeleteSubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
@@ -12,6 +16,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.storage.ClientManager;
+import eu.neclab.ngsildbroker.commons.tools.DBUtil;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple3;
@@ -39,6 +44,9 @@ public class SubscriptionInfoDAO {
 
 	@Inject
 	ClientManager clientManager;
+	
+	@Inject
+	JsonLDService ldService;
 
 	public Uni<Void> createSubscription(SubscriptionRequest request, String contextId) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
@@ -309,6 +317,13 @@ public class SubscriptionInfoDAO {
 			return client.preparedQuery("SELECT reg FROM csource WHERE id = $1").execute(Tuple.of(id)).onFailure()
 					.retry().atMost(3);
 		});
+	}
+	
+	public Uni<Table<String, String, List<RegistrationEntry>>> getAllRegistries() {
+		return DBUtil.getAllRegistries(clientManager, ldService,
+				"SELECT cs_id, c_id, e_id, e_id_p, e_type, e_prop, e_rel, ST_AsGeoJSON(i_location), scopes, EXTRACT(MILLISECONDS FROM expires), endpoint, tenant_id, headers, reg_mode, createEntity, updateEntity, appendAttrs, updateAttrs, deleteAttrs, deleteEntity, createBatch, upsertBatch, updateBatch, deleteBatch, upsertTemporal, appendAttrsTemporal, deleteAttrsTemporal, updateAttrsTemporal, deleteAttrInstanceTemporal, deleteTemporal, mergeEntity, replaceEntity, replaceAttrs, mergeBatch, retrieveEntity, queryEntity, queryBatch, retrieveTemporal, queryTemporal, retrieveEntityTypes, retrieveEntityTypeDetails, retrieveEntityTypeInfo, retrieveAttrTypes, retrieveAttrTypeDetails, retrieveAttrTypeInfo, createSubscription, updateSubscription, retrieveSubscription, querySubscription, deleteSubscription, queryEntityMap, createEntityMap, updateEntityMap, deleteEntityMap, retrieveEntityMap FROM csourceinformation WHERE queryentity OR querybatch OR retrieveentity OR createSubscription",
+				logger);
+
 	}
 
 }

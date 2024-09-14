@@ -1054,7 +1054,8 @@ public class QQueryTerm implements Serializable {
 		String attribName = linkHeaders.expandIri(attribPath[0], false, true, null, null);
 
 		if (isLinkedQ) {
-			tuple.addString(linkedAttrName);
+			String linkedAttrExpanded = linkHeaders.expandIri(linkedAttrName, false, true, null, null);
+			tuple.addString(linkedAttrExpanded);
 			dollarCount++;
 			if (!isDist || localOnly) {
 				result.append(" AND EXISTS (SELECT TRUE FROM JSONB_ARRAY_ELEMENTS(ENTITY -> $");
@@ -1062,11 +1063,11 @@ public class QQueryTerm implements Serializable {
 				followUp.append(" AND EXISTS (SELECT TRUE FROM JSONB_ARRAY_ELEMENTS(ENTITY -> ''' || $");
 				followUp.append(dollarCount);
 				followUp.append("|| '''");
-				tuple.addString(linkedAttrName);
+				tuple.addString(linkedAttrExpanded);
 				result.append(
-						" ) as rel, JSONB_ARRAY_ELEMENTS(rel -> 'https://uri.etsi.org/ngsi-ld/hasObject') as obj left join entity toplevel on obj->>'@id'=toplevel.id WHERE rel.value #>> '{@type,0}' = 'https://uri.etsi.org/ngsi-ld/Relationship'");
+						" ) as rel, JSONB_ARRAY_ELEMENTS(rel -> 'https://uri.etsi.org/ngsi-ld/hasObject') as obj left join entity on obj->>'@id'=entity.id WHERE rel.value #>> '{@type,0}' = 'https://uri.etsi.org/ngsi-ld/Relationship'");
 				followUp.append(
-						" ) as rel, JSONB_ARRAY_ELEMENTS(rel -> ''https://uri.etsi.org/ngsi-ld/hasObject'') as obj left join entity toplevel on obj->>''@id''=toplevel.id WHERE rel.value #>> ''{@type,0}'' = ''https://uri.etsi.org/ngsi-ld/Relationship''");
+						" ) as rel, JSONB_ARRAY_ELEMENTS(rel -> ''https://uri.etsi.org/ngsi-ld/hasObject'') as obj left join entity on obj->>''@id''=entity.id WHERE rel.value #>> ''{@type,0}'' = ''https://uri.etsi.org/ngsi-ld/Relationship''");
 				dollarCount++;
 				if (!localOnly) {
 					result.append(" AND rel.value ? 'https://uri.etsi.org/ngsi-ld/hasObjectType'");
@@ -1090,8 +1091,8 @@ public class QQueryTerm implements Serializable {
 						result.setCharAt(result.length() - 1, ')');
 						followUp.setLength(followUp.length() - 8);
 						followUp.append(')');
-						result.append(" AND toplevel.e_types && ARRAY[");
-						followUp.append(" AND toplevel.e_types && ARRAY[''' || ");
+						result.append(" AND entity.e_types && ARRAY[");
+						followUp.append(" AND entity.e_types && ARRAY[''' || ");
 						for (String linkedEntityType : linkedEntityTypes) {
 							result.append('$');
 							result.append(dollarCount);
@@ -1111,8 +1112,8 @@ public class QQueryTerm implements Serializable {
 					}
 
 				} else if (!linkedEntityTypes.isEmpty()) {
-					result.append(" AND toplevel.e_types && ARRAY[");
-					followUp.append(" AND toplevel.e_types && ARRAY[''' ||");
+					result.append(" AND entity.e_types && ARRAY[");
+					followUp.append(" AND entity.e_types && ARRAY[''' ||");
 					for (String linkedEntityType : linkedEntityTypes) {
 						result.append('$');
 						result.append(dollarCount);
@@ -1129,18 +1130,26 @@ public class QQueryTerm implements Serializable {
 					followUp.append("]");
 				}
 
-				result.append(')');
-				followUp.append(")");
+			}
+			if (firstChild != null) {
+				result.append(" AND ");
+				followUp.append(" AND ");
+				try {
+					firstChild.setOperant(operant);
+				} catch (ResponseException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				firstChild.setOperator(operator);
+				firstChild.setExpandedOpt(expandedOpt);
+				dollarCount = firstChild.toSql(result, followUp, dollarCount, tuple, isDist, localOnly);
+				
+			}
+			result.append(')');
+			followUp.append(")");
+//			result.append(')');
+//			followUp.append(')');
 
-			}
-			if ((operator != null && !operator.isEmpty()) || attribPath.length > 1
-					|| (subAttribPath != null && subAttribPath.length > 0)) {
-				dollarCount = commonWherePart(attribPath, subAttribPath, "toplevel", dollarCount, tuple, result,
-						followUp, this);
-			} else {
-				result.append(')');
-				followUp.append(')');
-			}
 		} else {
 			if (attribName.equals("@id")) {
 				result.append(" AND entity ->> $");
@@ -1213,7 +1222,7 @@ public class QQueryTerm implements Serializable {
 
 	public int toSql(StringBuilder result, StringBuilder followUp, int dollarCount, Tuple tuple, boolean isDist,
 			boolean localOnly) {
-		if (firstChild != null) {
+		if (firstChild != null && !isLinkedQ) {
 			result.append("(");
 			dollarCount = firstChild.toSql(result, followUp, dollarCount, tuple, isDist, localOnly);
 			result.append(")");
@@ -1460,8 +1469,7 @@ public class QQueryTerm implements Serializable {
 				attributeFilterProperty.append(" in (");
 				for (String listItem : finalOperant.split(",")) {
 					dollarCount++;
-					dollarCount = addItemToTupel(tuple, listItem, attributeFilterProperty, followUp,
-							dollarCount);
+					dollarCount = addItemToTupel(tuple, listItem, attributeFilterProperty, followUp, dollarCount);
 					attributeFilterProperty.append(',');
 
 					followUp.append(',');
@@ -1495,7 +1503,8 @@ public class QQueryTerm implements Serializable {
 					followUp.append(" = ");
 				}
 
-				dollarCount = addItemToTupelForEqualAndUnequal(tuple, finalOperant, attributeFilterProperty, followUp, dollarCount);
+				dollarCount = addItemToTupelForEqualAndUnequal(tuple, finalOperant, attributeFilterProperty, followUp,
+						dollarCount);
 
 			}
 
@@ -1573,8 +1582,8 @@ public class QQueryTerm implements Serializable {
 
 	}
 
-	private int addItemToTupelForEqualAndUnequal(Tuple tuple, String listItem, StringBuilder sql, StringBuilder followUp,
-			int dollarCount) {
+	private int addItemToTupelForEqualAndUnequal(Tuple tuple, String listItem, StringBuilder sql,
+			StringBuilder followUp, int dollarCount) {
 		String strTBU;
 		if (listItem.charAt(0) != '"' || listItem.charAt(listItem.length() - 1) != '"') {
 			strTBU = '"' + listItem + '"';
