@@ -952,13 +952,6 @@ public class Subscription implements Serializable {
 				+ scopeQuery + "]";
 	}
 
-	public List<Tuple3<String[], TypeQueryTerm, String>> getEntitiesAsTuple() {
-		List<Tuple3<String[], TypeQueryTerm, String>> result = new ArrayList<>(entities.size());
-		entities.forEach(entityInfo -> {
-			entityInfo.getId()
-		});
 
-		return result;
-	}
 
 }
