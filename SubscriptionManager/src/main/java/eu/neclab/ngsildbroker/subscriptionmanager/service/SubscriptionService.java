@@ -44,6 +44,7 @@ import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.NotificationParam;
 import eu.neclab.ngsildbroker.commons.datatypes.RegistrationEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
+import eu.neclab.ngsildbroker.commons.datatypes.ViaHeaders;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CSourceBaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.DeleteSubscriptionRequest;
@@ -376,7 +377,7 @@ public class SubscriptionService {
 	}
 
 	public Uni<NGSILDOperationResult> createSubscription(HeadersMultiMap linkHead, String tenant,
-			Map<String, Object> subscription, Context contextLink) {
+			Map<String, Object> subscription, Context contextLink, ViaHeaders viaHeaders) {
 		SubscriptionRequest request;
 		if (!subscription.containsKey(NGSIConstants.JSON_LD_ID)) {
 			String id = "urn:" + UUID.randomUUID();
@@ -411,7 +412,7 @@ public class SubscriptionService {
 				}
 
 				return syncService.onItem().transformToUni(v2 -> {
-					return updateRemoteSubs(request).onItem().transform(v3 -> {
+					return updateRemoteSubs(request, viaHeaders).onItem().transform(v3 -> {
 						NGSILDOperationResult result = new NGSILDOperationResult(
 								AppConstants.CREATE_SUBSCRIPTION_REQUEST, request.getId());
 						result.addSuccess(new CRUDSuccess(null, null, request.getId(), Sets.newHashSet()));
@@ -432,8 +433,12 @@ public class SubscriptionService {
 
 	}
 
-	private Uni<Void> updateRemoteSubs(SubscriptionRequest request) {
-		// TODO Auto-generated method stub
+	private Uni<Void> updateRemoteSubs(SubscriptionRequest request, ViaHeaders viaHeaders) {
+		Subscription sub = request.getSubscription();
+
+		SubscriptionTools.getRemoteSubscriptions(sub.getEntities(), sub.getNotification().getAttrs(), sub.getLdQuery(),
+				sub.getLdGeoQuery(), sub.getScopeQuery(), sub.getLanguageQuery(),
+				subscriptionTenant2CId2RegEntries.row(request.getTenant()).values(), request.getContext(), viaHeaders);
 		return null;
 	}
 

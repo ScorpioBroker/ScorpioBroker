@@ -101,7 +101,7 @@ public class SubscriptionServiceTest {
 		Uni<Void> uniEmiiterResponse = Uni.createFrom().nullItem();
 		when(internalSubEmitter.send(any(SubscriptionRequest.class))).thenReturn(uniEmiiterResponse);
 
-		Uni<NGSILDOperationResult> uniResult = subscriptionService.createSubscription(link,tenant, resolved, context);
+		Uni<NGSILDOperationResult> uniResult = subscriptionService.createSubscription(link,tenant, resolved, context, null);
 		NGSILDOperationResult result = uniResult.await().indefinitely();
 
 		assertEquals(subscriptionId, result.getEntityId());
@@ -117,7 +117,7 @@ public class SubscriptionServiceTest {
 		PgException sqlException = new PgException("duplicate key value violates unique constraint", "", "23505", "");
 		when(subDAO.createSubscription(any(), any())).thenReturn(Uni.createFrom().failure(sqlException));
 
-		Uni<NGSILDOperationResult> uniResult = subscriptionService.createSubscription(link,tenant, resolved, context);
+		Uni<NGSILDOperationResult> uniResult = subscriptionService.createSubscription(link,tenant, resolved, context, null);
 
 		Throwable throwable = assertThrows(CompletionException.class, () -> uniResult.await().indefinitely());
 		ResponseException responseException = (ResponseException) throwable.getCause();

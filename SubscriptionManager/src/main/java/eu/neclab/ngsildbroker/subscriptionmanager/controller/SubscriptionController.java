@@ -2,8 +2,11 @@ package eu.neclab.ngsildbroker.subscriptionmanager.controller;
 
 import com.github.jsonldjava.core.JsonLDService;
 import com.github.jsonldjava.core.JsonLdConsts;
+import com.google.common.net.HttpHeaders;
+
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.ViaHeaders;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
@@ -12,6 +15,7 @@ import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.impl.headers.HeadersMultiMap;
+import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
@@ -22,6 +26,8 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.RestResponse;
+
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +35,8 @@ import java.util.Map;
 @Path("/ngsi-ld/v1/subscriptions")
 public class SubscriptionController {
 
-	//private final static Logger logger = LoggerFactory.getLogger(SubscriptionController.class);
+	// private final static Logger logger =
+	// LoggerFactory.getLogger(SubscriptionController.class);
 
 	@Inject
 	SubscriptionService subService;
@@ -47,6 +54,14 @@ public class SubscriptionController {
 
 	@Inject
 	JsonLDService ldService;
+
+	private String selfViaHeader;
+
+	@PostConstruct
+	public void setup() {
+		URI gateway = microServiceUtils.getGatewayURL();
+		this.selfViaHeader = gateway.getScheme().toUpperCase() + "/1.1 " + gateway.getAuthority();
+	}
 
 	@SuppressWarnings("unchecked")
 	@POST
@@ -76,6 +91,7 @@ public class SubscriptionController {
 		if (request.headers().contains(NGSIConstants.TENANT_HEADER)) {
 			otherHead.add(NGSIConstants.TENANT_HEADER, request.headers().get(NGSIConstants.TENANT_HEADER));
 		}
+		ViaHeaders viaHeaders = new ViaHeaders(request.headers().getAll(HttpHeaders.VIA), this.selfViaHeader);
 		otherHead.add(NGSIConstants.LINK_HEADER,
 				"<%s>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\""
 						.formatted(map.get(NGSIConstants.JSONLD_CONTEXT)));
@@ -83,7 +99,7 @@ public class SubscriptionController {
 				.transformToUni(tuple -> {
 					return subService
 							.createSubscription(otherHead, HttpUtils.getTenant(request), tuple.getItem2(),
-									tuple.getItem1())
+									tuple.getItem1(), viaHeaders)
 							.onItem().transform(t -> HttpUtils.generateSubscriptionResult(t, tuple.getItem1()));
 				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 	}

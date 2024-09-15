@@ -12,6 +12,7 @@ import com.google.common.collect.Sets;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityCache;
+import eu.neclab.ngsildbroker.commons.datatypes.EntityInfo;
 import eu.neclab.ngsildbroker.commons.datatypes.NotificationParam;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryInfos;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryRemoteHost;
@@ -452,24 +453,23 @@ public class SubscriptionTools {
 		request.getPayload().put(NGSIConstants.NGSI_LD_TIMES_FAILED, timeValue);
 	}
 	public static Collection<QueryRemoteHost> getRemoteSubscriptions(
-			List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeQueryAndIdPattern, AttrsQueryTerm attrsQuery,
+			List<EntityInfo> idsAndTypeQueryAndIdPattern, AttrsQueryTerm attrsQuery,
 			QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery,
-			Collection<List<RegistrationEntry>> regEntries, Context context, EntityCache fullEntityCache,
-			ViaHeaders viaHeaders, boolean isDist) {
+			Collection<List<RegistrationEntry>> regEntries, Context context, ViaHeaders viaHeaders) {
 
 		// ids, types, attrs, geo, scope
 		List<Map<QueryRemoteHost, QueryInfos>> remoteHost2QueryInfos = Lists.newArrayList();
 		if (idsAndTypeQueryAndIdPattern == null) {
 			idsAndTypeQueryAndIdPattern = Lists.newArrayList();
-			idsAndTypeQueryAndIdPattern.add(Tuple3.of(null, null, null));
+			idsAndTypeQueryAndIdPattern.add(new EntityInfo());
 		}
-		for (Tuple3<String[], TypeQueryTerm, String> t : idsAndTypeQueryAndIdPattern) {
+		for (EntityInfo t : idsAndTypeQueryAndIdPattern) {
 			Map<QueryRemoteHost, QueryInfos> remoteHost2QueryInfo = Maps.newHashMap();
 			remoteHost2QueryInfos.add(remoteHost2QueryInfo);
 			Iterator<List<RegistrationEntry>> it = regEntries.iterator();
-			String[] id = t.getItem1();
-			TypeQueryTerm typeQuery = t.getItem2();
-			String idPattern = t.getItem3();
+			String[] id = t.getId();
+			TypeQueryTerm typeQuery = t.getTypeTerm();
+			String idPattern = t.getIdPattern();
 			while (it.hasNext()) {
 				Iterator<RegistrationEntry> tenantRegs = it.next().iterator();
 				while (tenantRegs.hasNext()) {
@@ -559,7 +559,7 @@ public class SubscriptionTools {
 					finalHost.setContext(context);
 					contextToUse = context;
 				}
-				Map<String, String> queryParams = entry.getValue().toQueryParams(context, false, fullEntityCache,
+				Map<String, String> queryParams = entry.getValue().toQueryParams(context, false, null,
 						finalHost);
 				finalHost.addIdsAndTypesAndIdPattern(
 						Tuple3.of(queryParams.remove(NGSIConstants.ID), queryParams.remove(NGSIConstants.TYPE),

@@ -952,6 +952,11 @@ public class Subscription implements Serializable {
 				+ scopeQuery + "]";
 	}
 
+	public LanguageQueryTerm getLanguageQuery() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 
 
 }
