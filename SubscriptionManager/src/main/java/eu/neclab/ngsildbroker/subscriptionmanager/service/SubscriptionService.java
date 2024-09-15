@@ -411,22 +411,11 @@ public class SubscriptionService {
 				}
 
 				return syncService.onItem().transformToUni(v2 -> {
-					return subDAO.getInitialNotificationData(request).onItem().transformToUni(rows -> {
-						List<Map<String, Object>> data = Lists.newArrayList();
-						rows.forEach(row -> {
-							data.add(row.getJsonObject(0).getMap());
-						});
-						return SubscriptionTools.generateCsourceNotification(request, data,
-								AppConstants.INTERNAL_NOTIFICATION_REQUEST, ldService).onItem().transformToUni(noti -> {
-									return handleRegistryNotification(
-											new InternalNotification(request.getTenant(), request.getId(), noti));
-								}).onItem().transform(v3 -> {
-									NGSILDOperationResult result = new NGSILDOperationResult(
-											AppConstants.CREATE_SUBSCRIPTION_REQUEST, request.getId());
-									result.addSuccess(new CRUDSuccess(null, null, request.getId(), Sets.newHashSet()));
-									return result;
-								});
-
+					return updateRemoteSubs(request).onItem().transform(v3 -> {
+						NGSILDOperationResult result = new NGSILDOperationResult(
+								AppConstants.CREATE_SUBSCRIPTION_REQUEST, request.getId());
+						result.addSuccess(new CRUDSuccess(null, null, request.getId(), Sets.newHashSet()));
+						return result;
 					});
 
 				});
@@ -441,6 +430,11 @@ public class SubscriptionService {
 			});
 		});
 
+	}
+
+	private Uni<Void> updateRemoteSubs(SubscriptionRequest request) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 	public Uni<NGSILDOperationResult> updateSubscription(String tenant, String subscriptionId,

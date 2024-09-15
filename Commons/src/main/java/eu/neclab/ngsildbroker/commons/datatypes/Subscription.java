@@ -30,11 +30,14 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.PickTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TemporalQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.enums.Format;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.QueryParser;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
+import io.smallrye.mutiny.tuples.Tuple3;
 import io.vertx.core.http.impl.headers.HeadersMultiMap;
 
 /**
@@ -195,10 +198,9 @@ public class Subscription implements Serializable {
 					for (Entry<String, Object> entitiesEntry : entry.entrySet()) {
 						switch (entitiesEntry.getKey()) {
 						case NGSIConstants.JSON_LD_ID:
-							try {
-								entityInfo.setId(new URI((String) entitiesEntry.getValue()));
-							} catch (URISyntaxException e) {
-								// Left empty intentionally is already checked
+							entityInfo.setId(((String) entitiesEntry.getValue()).split(","));
+							for (String tmpId : entityInfo.getId()) {
+								HttpUtils.validateUri(tmpId);
 							}
 							break;
 						case NGSIConstants.JSON_LD_TYPE:
@@ -948,6 +950,15 @@ public class Subscription implements Serializable {
 				+ scopeQueryString + ", csfQueryString=" + csfQueryString + ", ldGeoQuery=" + ldGeoQuery
 				+ ", ldTempQuery=" + ldTempQuery + ", ldQuery=" + ldQuery + ", csfQuery=" + csfQuery + ", scopeQuery="
 				+ scopeQuery + "]";
+	}
+
+	public List<Tuple3<String[], TypeQueryTerm, String>> getEntitiesAsTuple() {
+		List<Tuple3<String[], TypeQueryTerm, String>> result = new ArrayList<>(entities.size());
+		entities.forEach(entityInfo -> {
+			entityInfo.getId()
+		});
+
+		return result;
 	}
 
 }

@@ -16,7 +16,7 @@ public class EntityInfo implements Serializable {
 	 *
 	 */
 	private static final long serialVersionUID = -1589924178919349697L;
-	private URI id;
+	private String[] id;
 	private String idPattern;
 	private TypeQueryTerm typeTerm;
 
@@ -24,18 +24,18 @@ public class EntityInfo implements Serializable {
 
 	}
 
-	public EntityInfo(URI id, String idPattern, TypeQueryTerm typeTerm) {
+	public EntityInfo(String[] id, String idPattern, TypeQueryTerm typeTerm) {
 		super();
 		this.id = id;
 		this.idPattern = idPattern;
 		this.typeTerm = typeTerm;
 	}
 
-	public URI getId() {
+	public String[] getId() {
 		return id;
 	}
 
-	public void setId(URI id) {
+	public void setId(String[] id) {
 		this.id = id;
 	}
 
