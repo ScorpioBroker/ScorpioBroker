@@ -18,6 +18,8 @@ import eu.neclab.ngsildbroker.commons.datatypes.QueryInfos;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryRemoteHost;
 import eu.neclab.ngsildbroker.commons.datatypes.RegistrationEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.RemoteHost;
+import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
+import eu.neclab.ngsildbroker.commons.datatypes.SubscriptionRemoteHost;
 import eu.neclab.ngsildbroker.commons.datatypes.ViaHeaders;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.InternalNotification;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
@@ -34,7 +36,9 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple3;
 import io.smallrye.mutiny.tuples.Tuple4;
 import io.vertx.core.http.impl.headers.HeadersMultiMap;
+import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.MultiMap;
+import io.vertx.mutiny.ext.web.client.WebClient;
 import jakarta.ws.rs.core.HttpHeaders;
 
 import org.locationtech.spatial4j.SpatialPredicate;
@@ -52,6 +56,7 @@ import org.slf4j.LoggerFactory;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -452,19 +457,20 @@ public class SubscriptionTools {
 		request.getPayload().put(NGSIConstants.NGSI_LD_TIMES_SENT, timeValue);
 		request.getPayload().put(NGSIConstants.NGSI_LD_TIMES_FAILED, timeValue);
 	}
-	public static Collection<QueryRemoteHost> getRemoteSubscriptions(
-			List<EntityInfo> idsAndTypeQueryAndIdPattern, AttrsQueryTerm attrsQuery,
-			QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery,
+
+	public static Collection<SubscriptionRemoteHost> getRemoteSubscriptions(Subscription sub,
+			List<EntityInfo> idsAndTypeQueryAndIdPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery,
+			GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery,
 			Collection<List<RegistrationEntry>> regEntries, Context context, ViaHeaders viaHeaders) {
 
 		// ids, types, attrs, geo, scope
-		List<Map<QueryRemoteHost, QueryInfos>> remoteHost2QueryInfos = Lists.newArrayList();
+		List<Map<SubscriptionRemoteHost, QueryInfos>> remoteHost2QueryInfos = Lists.newArrayList();
 		if (idsAndTypeQueryAndIdPattern == null) {
 			idsAndTypeQueryAndIdPattern = Lists.newArrayList();
 			idsAndTypeQueryAndIdPattern.add(new EntityInfo());
 		}
 		for (EntityInfo t : idsAndTypeQueryAndIdPattern) {
-			Map<QueryRemoteHost, QueryInfos> remoteHost2QueryInfo = Maps.newHashMap();
+			Map<SubscriptionRemoteHost, QueryInfos> remoteHost2QueryInfo = Maps.newHashMap();
 			remoteHost2QueryInfos.add(remoteHost2QueryInfo);
 			Iterator<List<RegistrationEntry>> it = regEntries.iterator();
 			String[] id = t.getId();
@@ -479,9 +485,6 @@ public class SubscriptionTools {
 						it.remove();
 						continue;
 					}
-					if (!regEntry.queryBatch() && !regEntry.queryEntity()) {
-						continue;
-					}
 
 					if (regEntry.matches(id, idPattern, typeQuery, attrsQuery, qQuery, geoQuery, scopeQuery) == null) {
 						continue;
@@ -492,7 +495,8 @@ public class SubscriptionTools {
 						continue;
 					}
 
-					QueryRemoteHost hostToQuery = QueryRemoteHost.fromRegEntry(regEntry);
+					SubscriptionRemoteHost hostToQuery = SubscriptionRemoteHost
+							.fromQueryRemoteHost(QueryRemoteHost.fromRegEntry(regEntry));
 					QueryInfos queryInfos = remoteHost2QueryInfo.get(hostToQuery);
 					if (queryInfos == null) {
 						queryInfos = new QueryInfos();
@@ -541,12 +545,12 @@ public class SubscriptionTools {
 
 			}
 		}
-		Map<String, QueryRemoteHost> cSourceId2QueryRemoteHost = Maps.newHashMap();
+		Map<String, SubscriptionRemoteHost> cSourceId2QueryRemoteHost = Maps.newHashMap();
 
-		for (Map<QueryRemoteHost, QueryInfos> remoteHost2QueryInfo : remoteHost2QueryInfos) {
-			for (Entry<QueryRemoteHost, QueryInfos> entry : remoteHost2QueryInfo.entrySet()) {
-				QueryRemoteHost tmpHost = entry.getKey();
-				QueryRemoteHost finalHost = cSourceId2QueryRemoteHost.get(tmpHost.cSourceId());
+		for (Map<SubscriptionRemoteHost, QueryInfos> remoteHost2QueryInfo : remoteHost2QueryInfos) {
+			for (Entry<SubscriptionRemoteHost, QueryInfos> entry : remoteHost2QueryInfo.entrySet()) {
+				SubscriptionRemoteHost tmpHost = entry.getKey();
+				SubscriptionRemoteHost finalHost = cSourceId2QueryRemoteHost.get(tmpHost.cSourceId());
 				if (finalHost == null) {
 					finalHost = tmpHost;
 					viaHeaders.addViaHeader(tmpHost.host());
@@ -559,12 +563,49 @@ public class SubscriptionTools {
 					finalHost.setContext(context);
 					contextToUse = context;
 				}
-				Map<String, String> queryParams = entry.getValue().toQueryParams(context, false, null,
-						finalHost);
-				finalHost.addIdsAndTypesAndIdPattern(
-						Tuple3.of(queryParams.remove(NGSIConstants.ID), queryParams.remove(NGSIConstants.TYPE),
-								queryParams.remove(NGSIConstants.QUERY_PARAMETER_IDPATTERN)));
-				finalHost.setQueryParam(queryParams);
+				Map<String, Object> queryParams = Maps
+						.newHashMap(entry.getValue().toQueryParams(context, false, null, finalHost));
+				Map<String, String> entities = Maps.newHashMap();
+				queryParams.put(NGSIConstants.NGSI_LD_ENTITIES_SHORT, entities);
+				if (queryParams.containsKey(NGSIConstants.ID)) {
+					entities.put(NGSIConstants.ID, (String) queryParams.remove(NGSIConstants.ID));
+				}
+				if (queryParams.containsKey(NGSIConstants.TYPE)) {
+					entities.put(NGSIConstants.TYPE, (String) queryParams.remove(NGSIConstants.TYPE));
+				}
+				if (queryParams.containsKey(NGSIConstants.QUERY_PARAMETER_IDPATTERN)) {
+					entities.put(NGSIConstants.QUERY_PARAMETER_IDPATTERN,
+							(String) queryParams.remove(NGSIConstants.QUERY_PARAMETER_IDPATTERN));
+				}
+
+				Set<String> watchedAttribs = sub.getAttributeNames();
+				if (watchedAttribs != null && !watchedAttribs.isEmpty()) {
+					List<String> compactedWatched = new ArrayList<>(watchedAttribs.size());
+					watchedAttribs.forEach(attrib -> {
+						compactedWatched.add(context.compactIri(attrib));
+					});
+					queryParams.put(NGSIConstants.NGSI_LD_WATCHED_ATTRIBUTES_SHORT, compactedWatched);
+				}
+
+				Set<String> notificationTrigger = sub.getNotificationTrigger();
+				if (notificationTrigger != null && !notificationTrigger.isEmpty()) {
+					queryParams.put(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_SHORT, notificationTrigger);
+				}
+				Set<String> datasetIds = sub.getDatasetIdTerm().getIds();
+				if (datasetIds != null && !datasetIds.isEmpty()) {
+					queryParams.put(NGSIConstants.NGSI_LD_DATA_SET_ID_SHORT, datasetIds);
+				}
+				Map<String, Object> notificationParam = Maps.newHashMap();
+				queryParams.put(NGSIConstants.NGSI_LD_NOTIFICATION_SHORT, notificationParam);
+				Object attrs = queryParams.remove(NGSIConstants.QUERY_PARAMETER_ATTRS);
+				if (attrs != null && attrs instanceof String s) {
+					// nothing for now
+				}
+				notificationParam.put(NGSIConstants.QUERY_PARAMETER_OPTIONS_SYSATTRS, true);
+				notificationParam.put(NGSIConstants.NGSI_LD_SHOWCHANGES_SHORT, true);
+				notificationParam.put(NGSIConstants.NGSI_LD_FORMAT_SHORT, "normalized");
+
+				finalHost.setSubParam(queryParams);
 
 			}
 		}
@@ -812,6 +853,29 @@ public class SubscriptionTools {
 				} // else if(subTuple.getItem1())
 			}
 		}
+	}
+
+	public static Uni<Void> subsribeRemote(SubscriptionRemoteHost sub, WebClient webClient, String endpointUri) {
+		Map<String, Object> endPoint = Maps.newHashMap();
+		((Map<String, Object>) sub.getSubParam().get(NGSIConstants.NGSI_LD_NOTIFICATION_SHORT))
+				.put(NGSIConstants.NGSI_LD_ENDPOINT_SHORT, endPoint);
+		endPoint.put(NGSIConstants.NGSI_LD_URI_SHORT, endpointUri);
+		endPoint.put(NGSIConstants.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD);
+		return webClient.postAbs(sub.host() + NGSIConstants.NGSI_LD_SUB_ENDPOINT + "/")
+				.putHeader(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD)
+				.sendJsonObject(new JsonObject(sub.getSubParam())).onFailure().retry().atMost(3).onItem()
+				.transformToUni(resp -> {
+					if (resp.statusCode() == 201) {
+						String locationHeader = resp.headers().get(HttpHeaders.LOCATION);
+						sub.setSubscriptionId(locationHeader.substring(locationHeader.lastIndexOf('/') + 1));
+					}
+					return Uni.createFrom().voidItem();
+				});
+	}
+
+	public static Uni<Void> unsubsribeRemote(SubscriptionRemoteHost sub, WebClient webClient) {
+		return webClient.deleteAbs(sub.host() + NGSIConstants.NGSI_LD_SUB_ENDPOINT + "/" + sub.getSubscriptionId())
+				.send().onFailure().retry().atMost(3).onItem().transformToUni(resp -> Uni.createFrom().voidItem());
 	}
 
 	public static void main(String[] args) {

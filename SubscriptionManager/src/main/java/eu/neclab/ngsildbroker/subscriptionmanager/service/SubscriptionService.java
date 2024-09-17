@@ -42,8 +42,10 @@ import com.google.common.net.HttpHeaders;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.NotificationParam;
+import eu.neclab.ngsildbroker.commons.datatypes.QueryRemoteHost;
 import eu.neclab.ngsildbroker.commons.datatypes.RegistrationEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
+import eu.neclab.ngsildbroker.commons.datatypes.SubscriptionRemoteHost;
 import eu.neclab.ngsildbroker.commons.datatypes.ViaHeaders;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CSourceBaseRequest;
@@ -68,6 +70,7 @@ import io.netty.handler.codec.mqtt.MqttQoS;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple4;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -126,6 +129,10 @@ public class SubscriptionService {
 
 	private String ALL_TYPES_SUB;
 
+	private Table<String, SubscriptionRemoteHost, Set<String>> tenant2RemoteHost2SubIds = HashBasedTable.create();
+
+	private Table<String, String, Set<SubscriptionRemoteHost>> tenant2SubIds2RemoteHosts = HashBasedTable.create();
+
 	private Table<String, String, List<RegistrationEntry>> queryTenant2CId2RegEntries = HashBasedTable.create();
 	private Table<String, String, List<RegistrationEntry>> subscriptionTenant2CId2RegEntries = HashBasedTable.create();
 
@@ -133,9 +140,9 @@ public class SubscriptionService {
 	private Table<String, String, SubscriptionRequest> tenant2subscriptionId2IntervalSubscription = HashBasedTable
 			.create();
 	private Map<String, SubscriptionRequest> subscriptionId2RequestGlobal = Maps.newHashMap();
-	private HashMap<String, SubscriptionRequest> remoteNotifyCallbackId2InternalSub = new HashMap<String, SubscriptionRequest>();
-	private HashMap<String, String> internalSubId2RemoteNotifyCallbackId2 = new HashMap<String, String>();
-	private HashMap<String, String> internalSubId2ExternalEndpoint = new HashMap<String, String>();
+	private HashMap<String, List<SubscriptionRequest>> remoteNotifyCallbackId2SubRequest = new HashMap<String, List<SubscriptionRequest>>();
+	private HashMap<SubscriptionRemoteHost, String> subRemoteRequest2RemoteNotifyCallbackId = new HashMap<SubscriptionRemoteHost, String>();
+
 	private WebClient webClient;
 
 	private Map<String, MqttClient> host2MqttClient = Maps.newHashMap();
@@ -436,10 +443,82 @@ public class SubscriptionService {
 	private Uni<Void> updateRemoteSubs(SubscriptionRequest request, ViaHeaders viaHeaders) {
 		Subscription sub = request.getSubscription();
 
-		SubscriptionTools.getRemoteSubscriptions(sub.getEntities(), sub.getNotification().getAttrs(), sub.getLdQuery(),
-				sub.getLdGeoQuery(), sub.getScopeQuery(), sub.getLanguageQuery(),
+		Collection<SubscriptionRemoteHost> remoteHosts = SubscriptionTools.getRemoteSubscriptions(sub,
+				sub.getEntities(), sub.getNotification().getAttrs(), sub.getLdQuery(), sub.getLdGeoQuery(),
+				sub.getScopeQuery(), sub.getLanguageQuery(),
 				subscriptionTenant2CId2RegEntries.row(request.getTenant()).values(), request.getContext(), viaHeaders);
-		return null;
+		if (remoteHosts.isEmpty()) {
+			return Uni.createFrom().voidItem();
+		}
+		String tenant = request.getTenant();
+		String subId = request.getSubscription().getId();
+		Set<SubscriptionRemoteHost> toStore = Sets.newHashSet();
+		remoteHosts.forEach(remoteHost -> {
+			Set<String> existingSubIds = tenant2RemoteHost2SubIds.get(tenant, remoteHosts);
+			Set<SubscriptionRemoteHost> existingRemoteHosts = tenant2SubIds2RemoteHosts.get(tenant, subId);
+
+			if (existingSubIds == null) {
+				existingSubIds = Sets.newHashSet();
+				tenant2RemoteHost2SubIds.put(tenant, remoteHost, existingSubIds);
+			}
+			if (existingRemoteHosts == null) {
+				existingRemoteHosts = Sets.newHashSet();
+				tenant2SubIds2RemoteHosts.put(tenant, subId, existingRemoteHosts);
+			}
+			if (!existingSubIds.contains(subId)) {
+				existingSubIds.add(subId);
+				toStore.add(remoteHost);
+			}
+			existingRemoteHosts.remove(remoteHost);
+		});
+		List<Uni<Void>> unis = Lists.newArrayList();
+		unis.add(unsubsribeRemote(tenant2SubIds2RemoteHosts.get(tenant, subId), subId));
+		unis.add(subscribeRemote(toStore, request));
+
+		return Uni.combine().all().unis(unis).withUni(l -> {
+			tenant2SubIds2RemoteHosts.get(tenant, subId).addAll(toStore);
+			return Uni.createFrom().voidItem();
+		});
+	}
+
+	private Uni<Void> subscribeRemote(Set<SubscriptionRemoteHost> subs, SubscriptionRequest req) {
+		if (subs.isEmpty()) {
+			return Uni.createFrom().voidItem();
+		}
+		List<Uni<Void>> unis = new ArrayList<>(subs.size());
+		String gateway = microServiceUtils.getGatewayURL().toString() + "/remotenotify/";
+		subs.forEach(sub -> {
+			String endpoint = prepareNotificationServlet(req, sub);
+			unis.add(SubscriptionTools.subsribeRemote(sub, webClient, gateway + endpoint));
+
+		});
+		return Uni.combine().all().unis(unis).withUni(l -> Uni.createFrom().voidItem());
+	}
+
+	private String prepareNotificationServlet(SubscriptionRequest req, SubscriptionRemoteHost remoteHost) {
+		String uuid = Long.toString(UUID.randomUUID().getLeastSignificantBits());
+		List<SubscriptionRequest> reqList = Lists.newArrayList(req);
+		remoteNotifyCallbackId2SubRequest.put(uuid, reqList);
+		subRemoteRequest2RemoteNotifyCallbackId.put(remoteHost, uuid);
+		return uuid;
+
+	}
+
+	private Uni<Void> unsubsribeRemote(Set<SubscriptionRemoteHost> subs, String subId) {
+		if (subs.isEmpty()) {
+			return Uni.createFrom().voidItem();
+		}
+		List<Uni<Void>> unis = new ArrayList<>(subs.size());
+		subs.forEach(sub -> {
+			String tenant = sub.tenant();
+			Set<String> activeSubsForRemote = tenant2RemoteHost2SubIds.get(tenant, subId);
+			activeSubsForRemote.remove(subId);
+			if (activeSubsForRemote.isEmpty()) {
+				tenant2RemoteHost2SubIds.remove(tenant, subId);
+				unis.add(SubscriptionTools.unsubsribeRemote(sub, webClient));
+			}
+		});
+		return Uni.combine().all().unis(unis).withUni(l -> Uni.createFrom().voidItem());
 	}
 
 	public Uni<NGSILDOperationResult> updateSubscription(String tenant, String subscriptionId,
@@ -568,6 +647,11 @@ public class SubscriptionService {
 	public Uni<Void> checkSubscriptions(BaseRequest message) {
 		Collection<SubscriptionRequest> potentialSubs = tenant2subscriptionId2Subscription.row(message.getTenant())
 				.values();
+		return checkSubscriptions(message, potentialSubs);
+	}
+
+	public Uni<Void> checkSubscriptions(BaseRequest message, Collection<SubscriptionRequest> potentialSubs) {
+
 		List<Uni<Void>> unis = Lists.newArrayList();
 		logger.debug("checking subscriptions");
 
@@ -673,10 +757,14 @@ public class SubscriptionService {
 				case AppConstants.UPDATE_REQUEST:
 				case AppConstants.BATCH_MERGE_REQUEST:
 				case AppConstants.REPLACE_ATTRIBUTE_REQUEST:
-				case AppConstants.REPLACE_ENTITY_REQUEST:
 				case AppConstants.MERGE_PATCH_REQUEST:
 				case AppConstants.PARTIAL_UPDATE_REQUEST: {
 					dataToSend = mergePrevAndNew(payloadToUse, prevPayloadToUse,
+							potentialSub.getSubscription().getNotification().getShowChanges());
+					break;
+				}
+				case AppConstants.REPLACE_ENTITY_REQUEST: {
+					dataToSend = mergePrevAndNewReplace(payloadToUse, prevPayloadToUse,
 							potentialSub.getSubscription().getNotification().getShowChanges());
 					break;
 				}
@@ -743,6 +831,40 @@ public class SubscriptionService {
 	}
 
 	private List<Map<String, Object>> mergePrevAndNew(Map<String, List<Map<String, Object>>> payloadToUse,
+			Map<String, List<Map<String, Object>>> prevPayloadToUse, Boolean showChanges) {
+		List<Map<String, Object>> result = Lists.newArrayList();
+		for (Entry<String, List<Map<String, Object>>> entry : payloadToUse.entrySet()) {
+			String entityId = entry.getKey();
+			List<Map<String, Object>> newValues = entry.getValue();
+			if (prevPayloadToUse == null) {
+				addNoOldValues(result, newValues, showChanges);
+
+			} else {
+				List<Map<String, Object>> oldValues = prevPayloadToUse.get(entityId);
+				if (oldValues == null) {
+					result.addAll(newValues);
+				} else {
+					for (int i = 0; i < newValues.size(); i++) {
+						Map<String, Object> newValue = newValues.get(i);
+						if (i >= oldValues.size()) {
+							addNoOldValue(result, newValue, showChanges);
+						} else {
+							Map<String, Object> oldValue = oldValues.get(i);
+							if (oldValue == null) {
+								addNoOldValue(result, newValue, showChanges);
+							} else {
+								result.add(mergePrevAndNewEntity(oldValue, newValue, showChanges));
+							}
+						}
+
+					}
+				}
+			}
+		}
+		return result;
+	}
+
+	private List<Map<String, Object>> mergePrevAndNewReplace(Map<String, List<Map<String, Object>>> payloadToUse,
 			Map<String, List<Map<String, Object>>> prevPayloadToUse, Boolean showChanges) {
 		List<Map<String, Object>> result = Lists.newArrayList();
 		for (Entry<String, List<Map<String, Object>>> entry : payloadToUse.entrySet()) {
@@ -1301,117 +1423,168 @@ public class SubscriptionService {
 
 	}
 
-	public Uni<Void> handleRegistryNotification(InternalNotification message) {
-		if (NGSIConstants.SUBSCRIPTION_NO_LONGER_MATCHING
-				.equals(message.getPayload().get(NGSIConstants.NGSI_LD_TRIGGER_REASON_SHORT))) {
-			// entry was deleted
-			return unsubscribeRemote(message.getId(), message.getTenant());
-		} else {
-			SubscriptionRequest subscriptionRequest = subscriptionId2RequestGlobal.get(message.getId());
-			if (subscriptionRequest == null) {
-				// this can happen when sub is already deleted but a notification for it still
-				// arrives.
-				return Uni.createFrom().voidItem();
-			}
-			SubscriptionRequest remoteRequest;
-			try {
-				remoteRequest = SubscriptionTools.generateRemoteSubscription(subscriptionRequest, message);
-			} catch (ResponseException e) {
-				logger.error("failed to generate a remote subscription", e);
-				return Uni.createFrom().voidItem();
-			}
-
-			return ldService.compact(remoteRequest.getPayload(), null, remoteRequest.getContext(), HttpUtils.opts, -1)
-					.onItem().transformToUni(compacted -> {
-						prepareNotificationServlet(remoteRequest);
-						if (message.getPayload().get(NGSIConstants.NGSI_LD_ENDPOINT) != null) {
-							String remoteEndpoint = ((List<Map<String, String>>) message.getPayload()
-									.get(NGSIConstants.NGSI_LD_ENDPOINT)).get(0).get(NGSIConstants.JSON_LD_VALUE);
-
-							StringBuilder temp = new StringBuilder(remoteEndpoint);
-							if (remoteEndpoint.endsWith("/")) {
-								temp.deleteCharAt(remoteEndpoint.length() - 1);
-							}
-							temp.append(AppConstants.SUBSCRIPTIONS_URL);
-							return webClient.post(temp.toString())
-									.putHeaders(SubscriptionTools.getHeaders(
-											remoteRequest.getSubscription().getNotification(),
-											remoteRequest.getSubscription().getOtherHead()))
-									.sendJsonObject(new JsonObject(compacted)).onFailure().retry().atMost(3).onItem()
-									.transformToUni(response -> {
-										if (response.statusCode() >= 200 && response.statusCode() < 300) {
-											String locationHeader = response.headers().get(HttpHeaders.LOCATION);
-											// check if it's a relative path
-											if (locationHeader.charAt(0) == '/') {
-												locationHeader = remoteEndpoint + locationHeader;
-											}
-											internalSubId2ExternalEndpoint
-													.put(subscriptionRequest.getSubscription().getId(), locationHeader);
-										}
-										return Uni.createFrom().voidItem();
-									}).onFailure().recoverWithUni(t -> {
-										logger.error("Failed to subscribe to remote host " + temp.toString(), t);
-										return Uni.createFrom().voidItem();
-									});
-						} else {
-							return Uni.createFrom().voidItem();
-						}
-					});
-		}
-	}
-
 	public Uni<Void> remoteNotify(String notificationEndpoint, Map<String, Object> notification, Context context) {
-		SubscriptionRequest subscription = remoteNotifyCallbackId2InternalSub.get(notificationEndpoint);
-		if (subscription == null) {
+		List<SubscriptionRequest> subscriptions = remoteNotifyCallbackId2SubRequest.get(notificationEndpoint);
+		if (subscriptions == null) {
 			return Uni.createFrom().voidItem();
 		}
 		List<Map<String, Object>> data = (List<Map<String, Object>>) notification.get(NGSIConstants.NGSI_LD_DATA);
 
 		List<Uni<Void>> unis = Lists.newArrayList();
+		Map<String, List<Map<String, Object>>> prevValues = Maps.newHashMap();
+		Map<String, List<Map<String, Object>>> newValues = Maps.newHashMap();
+		Map<String, List<Map<String, Object>>> deletedEntities = Maps.newHashMap();
+
+		Map<String, List<Map<String, Object>>> deletedPrevValues = Maps.newHashMap();
+		Map<String, List<Map<String, Object>>> deletedNewValues = Maps.newHashMap();
+
+		Set<String> ids = Sets.newHashSet();
+
 		for (Map<String, Object> entry : data) {
-			if (shouldFire(entry.keySet(), subscription)) {
-				unis.add(localEntityService
-						.getEntityById(subscription.getTenant(), (String) entry.get(NGSIConstants.JSON_LD_ID), true)
-						.onItem().transformToUni(entity -> {
-							return sendNotification(subscription, List.of(entity));
-						}));
+			String id = (String) entry.get(NGSIConstants.JSON_LD_ID);
+			ids.add(id);
+			if (entry.containsKey(NGSIConstants.NGSI_LD_DELETED_AT)) {
+				List<Map<String, Object>> tmp = deletedEntities.get(id);
+				if (tmp == null) {
+					tmp = Lists.newArrayList();
+					deletedEntities.put(id, tmp);
+				}
+				tmp.add(entry);
+				continue;
 			}
-		}
+			Map<String, Object> prevValue = new HashMap<>(entry.size());
+			Iterator<Entry<String, Object>> it = prevValue.entrySet().iterator();
+			while (it.hasNext()) {
+				Entry<String, Object> attribEntry = it.next();
+				Tuple2<Boolean, Object> prevT = createPreviousVariant(attribEntry);
+				Object prev = prevT.getItem2();
+				if (prev != null) {
+					if(prevT.getItem1()) {
+						//
+					}
+					prevValue.put(attribEntry.getKey(), prev);
+				}
+				if (attribEntry.getValue() instanceof List<?> l && l.isEmpty()) {
+					it.remove();
+				}
+			}
+			List<Map<String, Object>> tmp = prevValues.get(id);
+			if (tmp == null) {
+				tmp = Lists.newArrayList();
+			}
+			tmp.add(prevValue);
 
-		return Uni.combine().all().unis(unis).discardItems();
+			tmp = newValues.get(id);
+			if (tmp == null) {
+				tmp = Lists.newArrayList();
+			}
+			tmp.add(entry);
+
+		}
+		BaseRequest baseReq = new BaseRequest();
+		baseReq.setPrevPayload(prevValues);
+		baseReq.setPayload(newValues);
+
+		baseReq.setIds(ids);
+		baseReq.setRequestType(AppConstants.UPDATE_REQUEST);
+		baseReq.setDistributed(true);
+		return checkSubscriptions(baseReq, subscriptions);
 	}
 
-	private String prepareNotificationServlet(SubscriptionRequest subToCheck) {
 
-		String uuid = Long.toString(UUID.randomUUID().getLeastSignificantBits());
-		remoteNotifyCallbackId2InternalSub.put(uuid, subToCheck);
-		internalSubId2RemoteNotifyCallbackId2.put(subToCheck.getId(), uuid);
-		StringBuilder url = new StringBuilder(microServiceUtils.getGatewayURL().toString()).append("/remotenotify/")
-				.append(uuid);
 
-		return url.toString();
-
-	}
-
-	private Uni<Void> unsubscribeRemote(String subscriptionId, String tenant) {
-		String endpoint = internalSubId2ExternalEndpoint.remove(subscriptionId);
-		if (endpoint != null) {
-			remoteNotifyCallbackId2InternalSub.remove(internalSubId2RemoteNotifyCallbackId2.remove(subscriptionId));
-			if (tenant != AppConstants.INTERNAL_NULL_KEY) {
-				return webClient.deleteAbs(endpoint).putHeader(NGSIConstants.TENANT_HEADER, tenant).send().onItem()
-						.transformToUni(t -> Uni.createFrom().voidItem());
+	private Tuple2<Boolean, Object> createPreviousVariant(Entry<String, Object> attribEntry) {
+		switch (attribEntry.getKey()) {
+		case NGSIConstants.JSON_LD_ID:
+		case NGSIConstants.JSON_LD_TYPE:
+		case NGSIConstants.NGSI_LD_CREATED_AT:
+		case NGSIConstants.NGSI_LD_MODIFIED_AT:
+			return Tuple2.of(false, attribEntry.getValue());
+		default: {
+			if (attribEntry.getValue() instanceof List<?> l) {
+				List<Map<String, Object>> result = new ArrayList<>(l.size());
+				Iterator<?> it = l.iterator();
+				boolean onlyDeletedAt = true;
+				while (it.hasNext()) {
+					Object obj = it.next();
+					if (obj instanceof Map<?, ?> m) {
+						boolean keep = m.remove(NGSIConstants.NGSI_LD_DELETED_AT) == null;
+						onlyDeletedAt = onlyDeletedAt && !keep;
+						Object prevValue = m.remove(NGSIConstants.PREVIOUS_VALUE);
+						Map<String, Object> oldEntry = null;
+						if (prevValue != null) {
+							keep = keep && true;
+							oldEntry = MicroServiceUtils.deepCopyMap((Map<String, Object>) m);
+							oldEntry.put(NGSIConstants.NGSI_LD_HAS_VALUE, prevValue);
+						} else {
+							prevValue = m.remove(NGSIConstants.PREVIOUS_OBJECT);
+							if (prevValue != null) {
+								keep = keep && true;
+								oldEntry = MicroServiceUtils.deepCopyMap((Map<String, Object>) m);
+								oldEntry.put(NGSIConstants.NGSI_LD_HAS_OBJECT, prevValue);
+							} else {
+								prevValue = m.remove(NGSIConstants.PREVIOUS_JSON);
+								if (prevValue != null) {
+									keep = keep && true;
+									oldEntry = MicroServiceUtils.deepCopyMap((Map<String, Object>) m);
+									oldEntry.put(NGSIConstants.NGSI_LD_HAS_JSON, prevValue);
+								} else {
+									prevValue = m.remove(NGSIConstants.PREVIOUS_LANGUAGE_MAP);
+									if (prevValue != null) {
+										keep = keep && true;
+										oldEntry = MicroServiceUtils.deepCopyMap((Map<String, Object>) m);
+										oldEntry.put(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP, prevValue);
+									} else {
+										prevValue = m.remove(NGSIConstants.PREVIOUS_OJBECT_LIST);
+										if (prevValue != null) {
+											keep = keep && true;
+											oldEntry = MicroServiceUtils.deepCopyMap((Map<String, Object>) m);
+											oldEntry.put(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST, prevValue);
+										} else {
+											prevValue = m.remove(NGSIConstants.PREVIOUS_VALUE_LIST);
+											if (prevValue != null) {
+												keep = keep && true;
+												oldEntry = MicroServiceUtils.deepCopyMap((Map<String, Object>) m);
+												oldEntry.put(NGSIConstants.NGSI_LD_HAS_LIST, prevValue);
+											} else {
+												prevValue = m.remove(NGSIConstants.PREVIOUS_VOCAB);
+												if (prevValue != null) {
+													keep = keep && true;
+													oldEntry = MicroServiceUtils.deepCopyMap((Map<String, Object>) m);
+													oldEntry.put(NGSIConstants.NGSI_LD_HAS_VOCAB, prevValue);
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+						if (!keep) {
+							it.remove();
+						}
+						if (oldEntry != null) {
+							result.add(oldEntry);
+						}
+					}
+				}
+				if (result.isEmpty()) {
+					return Tuple2.of(onlyDeletedAt, null);
+				} else {
+					return Tuple2.of(onlyDeletedAt, result);
+				}
 			}
-			return webClient.deleteAbs(endpoint).send().onItem().transformToUni(t -> Uni.createFrom().voidItem());
+			return Tuple2.of(false, attribEntry.getValue());
 		}
-		return Uni.createFrom().voidItem();
+		}
+
 	}
 
 	@PreDestroy
 	public void unsubscribeToAllRemote() {
-		List<Uni<Void>> unis = new ArrayList<>(internalSubId2ExternalEndpoint.values().size());
-		for (String entry : internalSubId2ExternalEndpoint.values()) {
+		List<Uni<Void>> unis = new ArrayList<>(subRemoteRequest2RemoteNotifyCallbackId.size());
+		for (SubscriptionRemoteHost entry : subRemoteRequest2RemoteNotifyCallbackId.keySet()) {
 			logger.debug("Unsubscribing to remote host " + entry + " before shutdown");
-			unis.add(webClient.deleteAbs(entry).send().onItem().transformToUni(t -> Uni.createFrom().voidItem()));
+			unis.add(SubscriptionTools.unsubsribeRemote(entry, webClient));
 		}
 		if (!unis.isEmpty()) {
 			Uni.combine().all().unis(unis).discardItems().await().atMost(Duration.ofSeconds(30));
@@ -1512,43 +1685,6 @@ public class SubscriptionService {
 		}).subscribe().with(i -> {
 			logger.debug("Reloaded subscription: " + id);
 		});
-	}
-
-	public Uni<Void> checkSubscriptionsForCSource(CSourceBaseRequest message) {
-		Collection<SubscriptionRequest> potentialSubs = tenant2subscriptionId2Subscription.column(message.getTenant())
-				.values();
-		List<Uni<Void>> unis = Lists.newArrayList();
-		for (SubscriptionRequest potentialSub : potentialSubs) {
-			switch (message.getRequestType()) {
-			case AppConstants.UPDATE_REQUEST:
-				if (shouldFireReg(message.getPayload(), potentialSub)) {
-					unis.add(subDAO.getRegById(message.getTenant(), message.getId()).onItem().transformToUni(rows -> {
-
-						return SubscriptionTools.generateCsourceNotification(potentialSub,
-								rows.iterator().next().getJsonObject(0).getMap(), message.getRequestType(), ldService)
-								.onItem().transformToUni(notification -> {
-									return handleRegistryNotification(new InternalNotification(potentialSub.getTenant(),
-											potentialSub.getId(), notification));
-								});
-					}));
-				}
-				break;
-			case AppConstants.CREATE_REQUEST:
-			case AppConstants.DELETE_REQUEST:
-				unis.add(SubscriptionTools.generateCsourceNotification(potentialSub, message.getPayload(),
-						message.getRequestType(), ldService).onItem().transformToUni(notification -> {
-							return handleRegistryNotification(new InternalNotification(potentialSub.getTenant(),
-									potentialSub.getId(), notification));
-						}));
-			default:
-				break;
-			}
-
-		}
-		if (unis.isEmpty()) {
-			return Uni.createFrom().voidItem();
-		}
-		return Uni.combine().all().unis(unis).discardItems();
 	}
 
 	protected boolean shouldFireReg(Map<String, Object> entry, SubscriptionRequest subscription) {

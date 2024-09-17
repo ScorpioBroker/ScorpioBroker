@@ -541,5 +541,12 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_OMIT = "https://uri.etsi.org/ngsi-ld/omit";
 	public static final String NGSI_LD_JSON_KEYS = "https://uri.etsi.org/ngsi-ld/jsonKeys";
 	public static final String QUERY_PARAMETER_DO_NOT_COMPACT = "doNotCompact";
+	public static final String NGSI_LD_NOTIFICATION_TRIGGER_SHORT = "notificationTrigger";
+	public static final String NGSI_LD_DATA_SET_ID_SHORT = "datasetId";
+	public static final String NGSI_LD_NOTIFICATION_SHORT = "notification";
+	public static final String NGSI_LD_FORMAT_SHORT = "format";
+	public static final String NGSI_LD_SHOWCHANGES_SHORT = "showChanges";
+	public static final String NGSI_LD_ENDPOINT_SHORT = "endpoint";
+	public static final String NGSI_LD_URI_SHORT = "short";
 
 }

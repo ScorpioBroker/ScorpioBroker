@@ -52,10 +52,7 @@ public abstract class SubscriptionMessagingBase {
 		}
 	}
 
-	public Uni<Void> baseHandleInternalNotification(InternalNotification message) {
-		return subscriptionService.handleRegistryNotification(message);
-	}
-
+	
 	@Inject
 	Vertx vertx;
 

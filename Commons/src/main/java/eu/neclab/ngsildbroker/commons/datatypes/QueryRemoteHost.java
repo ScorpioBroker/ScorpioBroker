@@ -25,7 +25,7 @@ public class QueryRemoteHost {
 	boolean canDoZip;
 	String entityMapToken;
 	Context context;
-	private ViaHeaders viaHeaders;
+	ViaHeaders viaHeaders;
 
 	public QueryRemoteHost(String host, String tenant, MultiMap headers, String cSourceId, boolean canDoQuery,
 			boolean canDoBatchQuery, boolean canDoRetrieve, int regMode,
