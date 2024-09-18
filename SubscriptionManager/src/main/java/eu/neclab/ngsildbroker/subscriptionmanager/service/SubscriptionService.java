@@ -677,7 +677,9 @@ public class SubscriptionService {
 				unis.add(SubscriptionTools.unsubsribeRemote(remoteHost, webClient));
 			});
 		}
-
+		if(unis.isEmpty()) {
+			return Uni.createFrom().voidItem();
+		}
 		return Uni.combine().all().unis(unis).withUni(l -> Uni.createFrom().voidItem());
 	}
 
