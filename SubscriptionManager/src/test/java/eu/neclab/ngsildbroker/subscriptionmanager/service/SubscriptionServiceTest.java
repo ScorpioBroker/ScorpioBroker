@@ -143,7 +143,7 @@ public class SubscriptionServiceTest {
 		when(internalSubEmitter.send(any(SubscriptionRequest.class))).thenReturn(uniEmiiterResponse);
 
 		Uni<NGSILDOperationResult> uniResult = subscriptionService.updateSubscription(tenant, subscriptionId, resolved,
-				context);
+				context, null);
 
 		Throwable throwable = assertThrows(CompletionException.class, () -> uniResult.await().indefinitely());
 		ResponseException responseException = (ResponseException) throwable.getCause();

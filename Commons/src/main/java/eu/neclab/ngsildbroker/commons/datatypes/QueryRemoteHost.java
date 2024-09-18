@@ -3,6 +3,8 @@ package eu.neclab.ngsildbroker.commons.datatypes;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+
 import com.github.jsonldjava.core.Context;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -233,6 +235,31 @@ public class QueryRemoteHost {
 				+ canDoRetrieve + ", regMode=" + regMode + ", idsAndTypesAndIdPattern=" + idsAndTypesAndIdPattern
 				+ ", queryParams=" + queryParams + ", canDoEntityMap=" + canDoEntityMap + ", canDoZip=" + canDoZip
 				+ ", entityMapToken=" + entityMapToken + ", context=" + context + ", viaHeaders=" + viaHeaders + "]";
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(cSourceId, canDoBatchQuery, canDoEntityMap, canDoQuery, canDoRetrieve, canDoZip, context,
+				entityMapToken, headers, host, idsAndTypesAndIdPattern, queryParams, regMode, tenant, viaHeaders);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		QueryRemoteHost other = (QueryRemoteHost) obj;
+		return Objects.equals(cSourceId, other.cSourceId) && canDoBatchQuery == other.canDoBatchQuery
+				&& canDoEntityMap == other.canDoEntityMap && canDoQuery == other.canDoQuery
+				&& canDoRetrieve == other.canDoRetrieve && canDoZip == other.canDoZip
+				&& Objects.equals(context, other.context) && Objects.equals(entityMapToken, other.entityMapToken)
+				&& Objects.equals(headers, other.headers) && Objects.equals(host, other.host)
+				&& Objects.equals(idsAndTypesAndIdPattern, other.idsAndTypesAndIdPattern)
+				&& Objects.equals(queryParams, other.queryParams) && regMode == other.regMode
+				&& Objects.equals(tenant, other.tenant) && Objects.equals(viaHeaders, other.viaHeaders);
 	}
 	
 	

@@ -192,10 +192,12 @@ public class SubscriptionController {
 			}
 			map.put("@context", finalContexts);
 		}
+		ViaHeaders viaHeaders = new ViaHeaders(request.headers().getAll(HttpHeaders.VIA), this.selfViaHeader);
 		return HttpUtils.expandBody(request, map, AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD, ldService).onItem()
 				.transformToUni(tuple -> {
 					return subService
-							.updateSubscription(HttpUtils.getTenant(request), id, tuple.getItem2(), tuple.getItem1())
+							.updateSubscription(HttpUtils.getTenant(request), id, tuple.getItem2(), tuple.getItem1(),
+									viaHeaders)
 							.onItem().transform(t -> HttpUtils.generateSubscriptionResult(t, tuple.getItem1()));
 				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
 

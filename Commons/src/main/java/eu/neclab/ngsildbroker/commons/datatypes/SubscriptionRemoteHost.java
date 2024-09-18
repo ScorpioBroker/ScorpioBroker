@@ -2,6 +2,7 @@ package eu.neclab.ngsildbroker.commons.datatypes;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import io.smallrye.mutiny.tuples.Tuple3;
 import io.vertx.mutiny.core.MultiMap;
@@ -40,6 +41,23 @@ public class SubscriptionRemoteHost extends QueryRemoteHost {
 
 	public Map<String, Object> getSubParam() {
 		return subParam;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(subParam);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		SubscriptionRemoteHost other = (SubscriptionRemoteHost) obj;
+		return Objects.equals(subParam, other.subParam);
 	}
 	
 
