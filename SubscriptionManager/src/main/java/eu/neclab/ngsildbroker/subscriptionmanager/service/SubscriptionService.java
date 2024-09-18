@@ -623,7 +623,7 @@ public class SubscriptionService {
 //								} catch (ResponseException e) {
 //									logger.error("Failed to serialize subscription message", e);
 //								}
-								return updateRemoteSubs(request, viaHeaders).onItem().transform(v3 -> {
+								return updateRemoteSubs(updatedRequest, viaHeaders).onItem().transform(v3 -> {
 									return new NGSILDOperationResult(AppConstants.UPDATE_SUBSCRIPTION_REQUEST,
 											request.getId());
 								});
