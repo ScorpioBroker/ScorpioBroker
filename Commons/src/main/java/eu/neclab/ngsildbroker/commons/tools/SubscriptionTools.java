@@ -24,6 +24,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.ViaHeaders;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.InternalNotification;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.DataSetIdTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
@@ -591,9 +592,12 @@ public class SubscriptionTools {
 				if (notificationTrigger != null && !notificationTrigger.isEmpty()) {
 					queryParams.put(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_SHORT, notificationTrigger);
 				}
-				Set<String> datasetIds = sub.getDatasetIdTerm().getIds();
-				if (datasetIds != null && !datasetIds.isEmpty()) {
-					queryParams.put(NGSIConstants.NGSI_LD_DATA_SET_ID_SHORT, datasetIds);
+				DataSetIdTerm datasetIdTerm = sub.getDatasetIdTerm();
+				if (datasetIdTerm != null) {
+					Set<String> datasetIds = sub.getDatasetIdTerm().getIds();
+					if (datasetIds != null && !datasetIds.isEmpty()) {
+						queryParams.put(NGSIConstants.NGSI_LD_DATA_SET_ID_SHORT, datasetIds);
+					}
 				}
 				Map<String, Object> notificationParam = Maps.newHashMap();
 				queryParams.put(NGSIConstants.NGSI_LD_NOTIFICATION_SHORT, notificationParam);
@@ -870,12 +874,19 @@ public class SubscriptionTools {
 						sub.setSubscriptionId(locationHeader.substring(locationHeader.lastIndexOf('/') + 1));
 					}
 					return Uni.createFrom().voidItem();
+				}).onFailure().recoverWithUni(e -> {
+					logger.error("Failed to remote unsubscribe to " + sub);
+					return Uni.createFrom().voidItem();
 				});
 	}
 
 	public static Uni<Void> unsubsribeRemote(SubscriptionRemoteHost sub, WebClient webClient) {
 		return webClient.deleteAbs(sub.host() + NGSIConstants.NGSI_LD_SUB_ENDPOINT + "/" + sub.getSubscriptionId())
-				.send().onFailure().retry().atMost(3).onItem().transformToUni(resp -> Uni.createFrom().voidItem());
+				.send().onFailure().retry().atMost(3).onItem().transformToUni(resp -> Uni.createFrom().voidItem())
+				.onFailure().recoverWithUni(e -> {
+					logger.error("Failed to remote unsubscribe to " + sub);
+					return Uni.createFrom().voidItem();
+				});
 	}
 
 	public static void main(String[] args) {
