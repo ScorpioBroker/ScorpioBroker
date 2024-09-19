@@ -22,6 +22,7 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       DBHOST: postgres
+      QUARKUS_LOG_LEVEL: DEBUG
     ports:
       - "9090:9090"
     depends_on:
@@ -41,6 +42,7 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       DBHOST: postgresone
+      QUARKUS_LOG_LEVEL: DEBUG
     ports:
       - "9080:9090"
     depends_on:
@@ -59,6 +61,7 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       DBHOST: postgrestwo
+      QUARKUS_LOG_LEVEL: DEBUG
     ports:
       - "9070:9090"
     depends_on:
