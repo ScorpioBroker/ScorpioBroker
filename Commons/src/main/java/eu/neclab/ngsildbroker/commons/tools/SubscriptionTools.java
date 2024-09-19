@@ -611,8 +611,9 @@ public class SubscriptionTools {
 				notificationParam.put(NGSIConstants.QUERY_PARAMETER_OPTIONS_SYSATTRS, true);
 				notificationParam.put(NGSIConstants.NGSI_LD_SHOWCHANGES_SHORT, true);
 				notificationParam.put(NGSIConstants.NGSI_LD_FORMAT_SHORT, "normalized");
-
+				queryParams.put(NGSIConstants.JSON_LD_CONTEXT, context.getOriginalAtContext());
 				finalHost.setSubParam(queryParams);
+				
 
 			}
 		}
