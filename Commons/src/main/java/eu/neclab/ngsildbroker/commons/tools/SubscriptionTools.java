@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.commons.tools;
 
+import com.fasterxml.jackson.core.JsonGenerationException;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLDService;
 import com.github.jsonldjava.core.JsonLdConsts;
@@ -54,6 +55,8 @@ import org.locationtech.spatial4j.shape.ShapeFactory.PolygonBuilder;
 import org.locationtech.spatial4j.shape.jts.JtsShapeFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -865,6 +868,15 @@ public class SubscriptionTools {
 				.put(NGSIConstants.NGSI_LD_ENDPOINT_SHORT, endPoint);
 		endPoint.put(NGSIConstants.NGSI_LD_URI_SHORT, endpointUri);
 		endPoint.put(NGSIConstants.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD);
+		try {
+			System.out.println(JsonUtils.toPrettyString(sub.getSubParam()));
+		} catch (JsonGenerationException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
 		return webClient.postAbs(sub.host() + NGSIConstants.NGSI_LD_SUB_ENDPOINT + "/")
 				.putHeader(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD)
 				.sendJsonObject(new JsonObject(sub.getSubParam())).onFailure().retry().atMost(3).onItem()
