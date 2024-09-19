@@ -574,10 +574,7 @@ public class SubscriptionService {
 			activeSubsForRemote.remove(subId);
 			if (activeSubsForRemote.isEmpty()) {
 				tenant2RemoteHost2SubIds.remove(tenant, subId);
-				unis.add(SubscriptionTools.unsubsribeRemote(sub, webClient).onFailure().recoverWithUni(e -> {
-					logger.error("Failed to remote unsubscribe to " + sub);
-					return Uni.createFrom().voidItem();
-				}));
+				unis.add(SubscriptionTools.unsubsribeRemote(sub, webClient));
 			}
 		});
 		return Uni.combine().all().unis(unis).withUni(l -> Uni.createFrom().voidItem());
