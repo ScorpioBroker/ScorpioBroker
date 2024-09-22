@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.subscriptionmanager.service;
 
+import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
@@ -27,6 +28,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLDService;
@@ -1165,6 +1168,18 @@ public class SubscriptionService {
 				.transformToUni(notification -> {
 					NotificationParam notificationParam = potentialSub.getSubscription().getNotification();
 					Uni<Void> toSend;
+					
+					try {
+						System.out.println("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB");
+						System.out.println(notificationParam.getEndPoint().getUri());
+						System.out.println(JsonUtils.toString(notification));
+					} catch (JsonGenerationException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					} catch (IOException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
 					switch (notificationParam.getEndPoint().getUri().getScheme()) {
 					case "mqtt", "mqtts" -> {
 						try {

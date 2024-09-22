@@ -1,7 +1,9 @@
 package eu.neclab.ngsildbroker.subscriptionmanager.controller;
 
+import com.fasterxml.jackson.core.JsonGenerationException;
 import com.github.jsonldjava.core.JsonLDService;
 import com.github.jsonldjava.core.JsonLdConsts;
+import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.net.HttpHeaders;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
@@ -27,6 +29,7 @@ import jakarta.ws.rs.QueryParam;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.RestResponse;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -91,6 +94,18 @@ public class SubscriptionController {
 		if (request.headers().contains(NGSIConstants.TENANT_HEADER)) {
 			otherHead.add(NGSIConstants.TENANT_HEADER, request.headers().get(NGSIConstants.TENANT_HEADER));
 		}
+		try {
+			System.out.println("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+			System.out.println(JsonUtils.toString(map));
+			System.out.println("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+		} catch (JsonGenerationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 		ViaHeaders viaHeaders = new ViaHeaders(request.headers().getAll(HttpHeaders.VIA), this.selfViaHeader);
 		otherHead.add(NGSIConstants.LINK_HEADER,
 				"<%s>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\""
