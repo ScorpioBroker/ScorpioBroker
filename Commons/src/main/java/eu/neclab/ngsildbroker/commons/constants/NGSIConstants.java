@@ -547,6 +547,6 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_FORMAT_SHORT = "format";
 	public static final String NGSI_LD_SHOWCHANGES_SHORT = "showChanges";
 	public static final String NGSI_LD_ENDPOINT_SHORT = "endpoint";
-	public static final String NGSI_LD_URI_SHORT = "short";
+	public static final String NGSI_LD_URI_SHORT = "uri";
 
 }

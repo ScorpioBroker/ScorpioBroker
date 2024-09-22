@@ -23,6 +23,7 @@ services:
     environment:
       DBHOST: postgres
       QUARKUS_LOG_LEVEL: DEBUG
+      SCORPIO_GATEWAYURL: http://scorpio:9090
     ports:
       - "9090:9090"
     depends_on:
