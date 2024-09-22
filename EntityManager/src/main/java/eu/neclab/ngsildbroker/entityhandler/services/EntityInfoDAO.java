@@ -21,6 +21,7 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.storage.ClientManager;
 import eu.neclab.ngsildbroker.commons.tools.DBUtil;
+import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple3;
 import io.vertx.core.json.JsonArray;
@@ -431,7 +432,8 @@ public class EntityInfoDAO {
 			return client.preparedQuery(sql).execute(tuple).onFailure().recoverWithUni(e -> {
 				
 				if (e instanceof PgException pge) {
-					pge.printStackTrace();
+					
+					MicroServiceUtils.logPGE(pge, logger);
 					if (pge.getSqlState().equals(AppConstants.SQL_NOT_FOUND)) {
 						return Uni.createFrom().failure(
 								new ResponseException(ErrorType.NotFound, request.getFirstId() + " not found"));

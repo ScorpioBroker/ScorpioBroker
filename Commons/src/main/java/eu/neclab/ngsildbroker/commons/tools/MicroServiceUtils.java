@@ -11,6 +11,8 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.Subscripti
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import io.vertx.core.http.impl.headers.HeadersMultiMap;
+import io.vertx.pgclient.PgException;
+
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -605,5 +607,22 @@ public class MicroServiceUtils {
 			throw new RuntimeException(e);
 		}
 
+	}
+
+	public static void logPGE(PgException pge, Logger logger) {
+		logger.debug(pge.getSqlState());
+		logger.debug(pge.getDetail());
+		logger.debug(pge.getErrorMessage());
+		logger.debug(pge.getErrorCode() + "");
+		logger.debug(pge.getDataType());
+		logger.debug(pge.getFile());
+		logger.debug(pge.getHint());
+		logger.debug(pge.getInternalPosition());
+		logger.debug(pge.getInternalQuery());
+		logger.debug(pge.getPosition());
+		logger.debug(pge.getWhere());
+		logger.debug(pge.getTable());
+		logger.debug(pge.getRoutine());
+		
 	}
 }

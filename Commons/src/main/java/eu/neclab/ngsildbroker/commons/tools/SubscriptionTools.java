@@ -613,7 +613,6 @@ public class SubscriptionTools {
 				notificationParam.put(NGSIConstants.NGSI_LD_FORMAT_SHORT, "normalized");
 				queryParams.put(NGSIConstants.JSON_LD_CONTEXT, context.getOriginalAtContext());
 				finalHost.setSubParam(queryParams);
-				
 
 			}
 		}
@@ -885,6 +884,10 @@ public class SubscriptionTools {
 					if (resp.statusCode() == 201) {
 						String locationHeader = resp.headers().get(HttpHeaders.LOCATION);
 						sub.setSubscriptionId(locationHeader.substring(locationHeader.lastIndexOf('/') + 1));
+					} else {
+						logger.debug(resp.statusCode() + resp.statusMessage());
+						logger.debug(resp.bodyAsString());
+						logger.debug(resp.headers().toString());
 					}
 					return Uni.createFrom().voidItem();
 				}).onFailure().recoverWithUni(e -> {
