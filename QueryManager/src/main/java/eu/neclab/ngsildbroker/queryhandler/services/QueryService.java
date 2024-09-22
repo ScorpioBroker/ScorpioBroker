@@ -1804,7 +1804,7 @@ public class QueryService {
 							String type = tpl.getItem2();
 							String idPattern = tpl.getItem3();
 							HttpRequest<Buffer> req = webClient
-									.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITY_MAP_ENDPOINT);
+									.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITY_MAP_ENDPOINT).timeout(5000);
 							if (id != null) {
 								req = req.setQueryParam(NGSIConstants.ID, id);
 							}

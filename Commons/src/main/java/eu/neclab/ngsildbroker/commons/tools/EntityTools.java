@@ -676,7 +676,7 @@ public final class EntityTools {
 			if (queryParams != null) {
 				batchBody.putAll(queryParams);
 			}
-			HttpRequest<Buffer> req = webClient.postAbs(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_QUERY);
+			HttpRequest<Buffer> req = webClient.postAbs(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_QUERY).timeout(5000);
 			req = req.setQueryParam("limit", "1000");
 			req = req.setQueryParam("options", "sysAttrs");
 			req = req.putHeader(HttpHeaders.VIA, remoteHost.getViaHeaders().getViaHeaders());

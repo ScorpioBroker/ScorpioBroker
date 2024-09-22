@@ -570,7 +570,7 @@ public class SubscriptionTools {
 				Map<String, Object> queryParams = Maps
 						.newHashMap(entry.getValue().toQueryParams(context, false, null, finalHost));
 				Map<String, String> entities = Maps.newHashMap();
-				queryParams.put(NGSIConstants.NGSI_LD_ENTITIES_SHORT, entities);
+				queryParams.put(NGSIConstants.NGSI_LD_ENTITIES_SHORT, Lists.newArrayList(entities));
 				if (queryParams.containsKey(NGSIConstants.ID)) {
 					entities.put(NGSIConstants.ID, (String) queryParams.remove(NGSIConstants.ID));
 				}
