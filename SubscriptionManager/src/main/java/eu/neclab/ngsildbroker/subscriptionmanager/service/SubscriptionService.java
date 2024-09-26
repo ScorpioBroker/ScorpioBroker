@@ -669,18 +669,20 @@ public class SubscriptionService {
 		if (remoteHosts != null) {
 			remoteHosts.forEach(remoteHost -> {
 				Set<String> tmp = tenant2RemoteHost2SubIds.get(tenant, remoteHost);
-				tmp.remove(subscriptionId);
-				if (tmp.isEmpty()) {
-					tenant2RemoteHost2SubIds.remove(tenant, remoteHost);
-				}
-				String callbackId = subRemoteRequest2RemoteNotifyCallbackId.remove(remoteHost);
-				if (callbackId != null) {
-					remoteNotifyCallbackId2SubRequest.remove(callbackId);
+				if (tmp != null) {
+					tmp.remove(subscriptionId);
+					if (tmp.isEmpty()) {
+						tenant2RemoteHost2SubIds.remove(tenant, remoteHost);
+					}
+					String callbackId = subRemoteRequest2RemoteNotifyCallbackId.remove(remoteHost);
+					if (callbackId != null) {
+						remoteNotifyCallbackId2SubRequest.remove(callbackId);
+					}
 				}
 				unis.add(SubscriptionTools.unsubsribeRemote(remoteHost, webClient));
 			});
 		}
-		if(unis.isEmpty()) {
+		if (unis.isEmpty()) {
 			return Uni.createFrom().voidItem();
 		}
 		return Uni.combine().all().unis(unis).withUni(l -> Uni.createFrom().voidItem());
@@ -1168,7 +1170,7 @@ public class SubscriptionService {
 				.transformToUni(notification -> {
 					NotificationParam notificationParam = potentialSub.getSubscription().getNotification();
 					Uni<Void> toSend;
-					
+
 					try {
 						System.out.println("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB");
 						System.out.println(notificationParam.getEndPoint().getUri());
