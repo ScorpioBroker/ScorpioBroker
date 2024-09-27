@@ -1257,6 +1257,8 @@ public class SubscriptionService {
 											logger.error("failed to send notification for subscription "
 													+ potentialSub.getId() + " with status code " + statusCode
 													+ ". Remember there is no redirect following for post due to security considerations");
+											logger.debug(result.statusMessage());
+											logger.debug(result.bodyAsString());
 											potentialSub.getSubscription().getNotification()
 													.setLastFailedNotification(now);
 											potentialSub.getSubscription().getNotification().setLastNotification(now);
