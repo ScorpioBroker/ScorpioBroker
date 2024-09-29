@@ -1580,12 +1580,14 @@ public class SubscriptionService {
 			List<Map<String, Object>> tmp = prevValues.get(id);
 			if (tmp == null) {
 				tmp = Lists.newArrayList();
+				prevValues.put(id, tmp);
 			}
 			tmp.add(prevValue);
 
 			tmp = newValues.get(id);
 			if (tmp == null) {
 				tmp = Lists.newArrayList();
+				newValues.put(id, tmp);
 			}
 			tmp.add(entry);
 
