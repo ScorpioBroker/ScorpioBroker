@@ -869,7 +869,7 @@ public class SubscriptionTools {
 		((Map<String, Object>) sub.getSubParam().get(NGSIConstants.NGSI_LD_NOTIFICATION_SHORT))
 				.put(NGSIConstants.NGSI_LD_ENDPOINT_SHORT, endPoint);
 		endPoint.put(NGSIConstants.NGSI_LD_URI_SHORT, endpointUri);
-		endPoint.put(NGSIConstants.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD);
+		endPoint.put(NGSIConstants.ACCEPT, AppConstants.NGB_APPLICATION_JSON);
 		try {
 			System.out.println(JsonUtils.toPrettyString(sub.getSubParam()));
 		} catch (JsonGenerationException e1) {
