@@ -746,8 +746,11 @@ public class SubscriptionService {
 
 		List<Uni<Void>> unis = Lists.newArrayList();
 		logger.debug("checking subscriptions");
+		logger.debug(message.toString());
 
 		for (SubscriptionRequest potentialSub : potentialSubs) {
+			logger.debug("Potential Sub");
+			logger.debug(potentialSub.toString());
 			List<Map<String, Object>> dataToSend = Lists.newArrayList();
 
 			if ((potentialSub.getSendTimestamp() != -1 && potentialSub.getSendTimestamp() > message.getSendTimestamp())
