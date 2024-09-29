@@ -37,7 +37,7 @@ public class NotificationController {
 			@PathParam(value = NGSIConstants.QUERY_PARAMETER_ID) String id) {
 		System.out.println("Notification payload");
 		System.out.println(payload);
-		return HttpUtils.expandBody(request, payload, AppConstants.NOTIFICAITION_RECEIVED, ldService).onItem()
+		return HttpUtils.expandBody(request, payload, -1, ldService).onItem()
 				.transformToUni(tuple -> {
 					return subscriptionManager.remoteNotify(id, tuple.getItem2(), tuple.getItem1()).onItem()
 							.transform(v -> RestResponse.ok());
