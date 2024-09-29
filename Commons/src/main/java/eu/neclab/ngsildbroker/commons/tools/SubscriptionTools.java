@@ -880,7 +880,7 @@ public class SubscriptionTools {
 			e1.printStackTrace();
 		}
 		return webClient.postAbs(sub.host() + NGSIConstants.NGSI_LD_SUB_ENDPOINT + "/")
-				.putHeader(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD)
+				.putHeader(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
 				.sendJsonObject(new JsonObject(sub.getSubParam())).onFailure().retry().atMost(3).onItem()
 				.transformToUni(resp -> {
 					if (resp.statusCode() == 201) {
