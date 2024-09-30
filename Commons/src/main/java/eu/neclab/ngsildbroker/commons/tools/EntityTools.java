@@ -676,7 +676,7 @@ public final class EntityTools {
 			if (queryParams != null) {
 				batchBody.putAll(queryParams);
 			}
-			HttpRequest<Buffer> req = webClient.postAbs(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_QUERY).timeout(5000);
+			HttpRequest<Buffer> req = webClient.postAbs(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_QUERY).timeout(timeout);
 			req = req.setQueryParam("limit", "1000");
 			req = req.setQueryParam("options", "sysAttrs");
 			req = req.putHeader(HttpHeaders.VIA, remoteHost.getViaHeaders().getViaHeaders());
@@ -693,7 +693,7 @@ public final class EntityTools {
 				req = req.putHeader(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSON);
 			}
 			
-			unis.add(req.putHeaders(remoteHost.headers()).timeout(timeout).sendBuffer(Buffer.buffer(batchString))
+			unis.add(req.putHeaders(remoteHost.headers()).sendBuffer(Buffer.buffer(batchString))
 					.onItem().transformToUni(response -> {
 						if (response != null) {
 							switch (response.statusCode()) {
