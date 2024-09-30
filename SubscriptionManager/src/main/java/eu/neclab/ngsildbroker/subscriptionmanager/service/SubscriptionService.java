@@ -1562,7 +1562,7 @@ public class SubscriptionService {
 				continue;
 			}
 			Map<String, Object> prevValue = new HashMap<>(entry.size());
-			Iterator<Entry<String, Object>> it = prevValue.entrySet().iterator();
+			Iterator<Entry<String, Object>> it = entry.entrySet().iterator();
 			while (it.hasNext()) {
 				Entry<String, Object> attribEntry = it.next();
 				Tuple2<Boolean, Object> prevT = createPreviousVariant(attribEntry);
@@ -1571,6 +1571,7 @@ public class SubscriptionService {
 					if (prevT.getItem1()) {
 						//
 					}
+					
 					prevValue.put(attribEntry.getKey(), prev);
 				}
 				if (attribEntry.getValue() instanceof List<?> l && l.isEmpty()) {
