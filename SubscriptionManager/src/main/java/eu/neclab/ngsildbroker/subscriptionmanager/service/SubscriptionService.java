@@ -1100,25 +1100,25 @@ public class SubscriptionService {
 	private void mergeAttribToNone(Map<String, Object> newEntry) {
 		if (newEntry.containsKey(NGSIConstants.NGSI_LD_HAS_VALUE)) {
 			newEntry.put(NGSIConstants.PREVIOUS_VALUE,
-					List.of(Map.of(NGSIConstants.JSON_LD_VALUE, NGSIConstants.JSON_LD_NONE)));
+					List.of(Map.of(NGSIConstants.JSON_LD_VALUE, NGSIConstants.NGSI_LD_NULL)));
 		} else if (newEntry.containsKey(NGSIConstants.NGSI_LD_HAS_OBJECT)) {
 			newEntry.put(NGSIConstants.PREVIOUS_OBJECT,
-					List.of(Map.of(NGSIConstants.JSON_LD_ID, NGSIConstants.JSON_LD_NONE)));
+					List.of(Map.of(NGSIConstants.JSON_LD_ID, NGSIConstants.NGSI_LD_NULL)));
 		} else if (newEntry.containsKey(NGSIConstants.NGSI_LD_HAS_JSON)) {
 			newEntry.put(NGSIConstants.PREVIOUS_JSON, List.of(Map.of(NGSIConstants.JSON_LD_TYPE,
-					NGSIConstants.JSON_LD_JSON, NGSIConstants.JSON_LD_VALUE, NGSIConstants.JSON_LD_NONE)));
+					NGSIConstants.JSON_LD_JSON, NGSIConstants.JSON_LD_VALUE, NGSIConstants.NGSI_LD_NULL)));
 		} else if (newEntry.containsKey(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP)) {
 			newEntry.put(NGSIConstants.PREVIOUS_LANGUAGE_MAP,
-					List.of(Map.of(NGSIConstants.JSON_LD_VALUE, NGSIConstants.JSON_LD_NONE)));
+					List.of(Map.of(NGSIConstants.JSON_LD_VALUE, NGSIConstants.NGSI_LD_NULL)));
 		} else if (newEntry.containsKey(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST)) {
 			newEntry.put(NGSIConstants.PREVIOUS_OJBECT_LIST,
-					List.of(Map.of(NGSIConstants.JSON_LD_LIST, NGSIConstants.JSON_LD_NONE)));
+					List.of(Map.of(NGSIConstants.JSON_LD_LIST, NGSIConstants.NGSI_LD_NULL)));
 		} else if (newEntry.containsKey(NGSIConstants.NGSI_LD_HAS_LIST)) {
 			newEntry.put(NGSIConstants.PREVIOUS_VALUE_LIST,
-					List.of(Map.of(NGSIConstants.JSON_LD_LIST, NGSIConstants.JSON_LD_NONE)));
+					List.of(Map.of(NGSIConstants.JSON_LD_LIST, NGSIConstants.NGSI_LD_NULL)));
 		} else if (newEntry.containsKey(NGSIConstants.NGSI_LD_HAS_VOCAB)) {
 			newEntry.put(NGSIConstants.PREVIOUS_VOCAB,
-					List.of(Map.of(NGSIConstants.JSON_LD_ID, NGSIConstants.JSON_LD_NONE)));
+					List.of(Map.of(NGSIConstants.JSON_LD_ID, NGSIConstants.NGSI_LD_NULL)));
 		}
 
 	}
