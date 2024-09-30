@@ -870,15 +870,6 @@ public class SubscriptionTools {
 				.put(NGSIConstants.NGSI_LD_ENDPOINT_SHORT, endPoint);
 		endPoint.put(NGSIConstants.NGSI_LD_URI_SHORT, endpointUri);
 		endPoint.put(NGSIConstants.ACCEPT, AppConstants.NGB_APPLICATION_JSON);
-		try {
-			System.out.println(JsonUtils.toPrettyString(sub.getSubParam()));
-		} catch (JsonGenerationException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		} catch (IOException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
 		return webClient.postAbs(sub.host() + NGSIConstants.NGSI_LD_SUB_ENDPOINT + "/")
 				.putHeader(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD)
 				.sendJsonObject(new JsonObject(sub.getSubParam())).onFailure().retry().atMost(3).onItem()

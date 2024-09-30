@@ -1173,18 +1173,6 @@ public class SubscriptionService {
 				.transformToUni(notification -> {
 					NotificationParam notificationParam = potentialSub.getSubscription().getNotification();
 					Uni<Void> toSend;
-
-					try {
-						System.out.println("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB");
-						System.out.println(notificationParam.getEndPoint().getUri());
-						System.out.println(JsonUtils.toString(notification));
-					} catch (JsonGenerationException e1) {
-						// TODO Auto-generated catch block
-						e1.printStackTrace();
-					} catch (IOException e1) {
-						// TODO Auto-generated catch block
-						e1.printStackTrace();
-					}
 					switch (notificationParam.getEndPoint().getUri().getScheme()) {
 					case "mqtt", "mqtts" -> {
 						try {
