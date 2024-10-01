@@ -1,3 +1,11 @@
+RELEASE NOTES 5.0.3
+
+Addresses 
+ - an issue with linked pick and omits
+ - an issue with federated subscriptions
+ - an issue with datasetIds in merge patch operations
+ - an issue with linked q 
+
 RELEASE NOTES 5.0.2
 
 addresses an issue with multi polygon, multi linestring and multi point
