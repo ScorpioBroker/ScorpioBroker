@@ -1258,7 +1258,7 @@ public class QueryDAO {
 						queryToStoreWherePart.append(" AND ");
 					}
 					queryParams.setqQueryTerm(qQuery);
-					dollar = qQuery.toSql(query, queryToStoreWherePart, dollar, tuple, splitEntities, false);
+					dollar = qQuery.toSql(query, queryToStoreWherePart, dollar, tuple, !regEmptyOrNoRegEntryAndNoLinkedQuery && splitEntities, false);
 					sqlAdded = true;
 				}
 				if (dataSetIdTerm != null) {

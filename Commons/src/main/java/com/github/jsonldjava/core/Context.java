@@ -377,6 +377,9 @@ public class Context extends LinkedHashMap<String, Object> {
 		this.originalAtContext = originalAtContext;
 	}
 	public List<String> getOriginalAtContext() {
+		if(originalAtContext.isEmpty()) {
+			return List.of(NGSIConstants.CURRENT_CORE_CONTEXT);
+		}
 		return originalAtContext;
 	}
 

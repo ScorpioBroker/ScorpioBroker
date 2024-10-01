@@ -52,10 +52,7 @@ public abstract class SubscriptionMessagingBase {
 		}
 	}
 
-	public Uni<Void> baseHandleInternalNotification(InternalNotification message) {
-		return subscriptionService.handleRegistryNotification(message);
-	}
-
+	
 	@Inject
 	Vertx vertx;
 
@@ -87,7 +84,7 @@ public abstract class SubscriptionMessagingBase {
 
 	public Uni<Void> baseHandleCsource(CSourceBaseRequest message) {
 		logger.debug("CSource sub manager got called for csource: " + message.getId());
-		return subscriptionService.checkSubscriptionsForCSource(message).onFailure().recoverWithUni(e -> {
+		return subscriptionService.handleRegistryChange(message).onFailure().recoverWithUni(e -> {
 			logger.debug("failed to handle registry entry", e);
 			return Uni.createFrom().voidItem();
 		});

@@ -4,6 +4,8 @@ services:
     image: testserver
     ports:
       - "8080:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
   dumprequest:
     image: dumprequest
     ports:
@@ -22,6 +24,8 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       DBHOST: postgres
+      QUARKUS_LOG_LEVEL: DEBUG
+      SCORPIO_GATEWAYURL: http://host.docker.internal:9090
     ports:
       - "9090:9090"
     depends_on:
@@ -41,6 +45,7 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       DBHOST: postgresone
+      QUARKUS_LOG_LEVEL: DEBUG
     ports:
       - "9080:9090"
     depends_on:
@@ -59,6 +64,7 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       DBHOST: postgrestwo
+      QUARKUS_LOG_LEVEL: DEBUG
     ports:
       - "9070:9090"
     depends_on:

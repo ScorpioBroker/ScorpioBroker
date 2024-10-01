@@ -18,6 +18,7 @@ import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -602,7 +603,7 @@ public class RegistrySubscriptionService {
 	}
 
 	@SuppressWarnings("unchecked")
-	private boolean checkRegForId(URI id, List<Map<String, Object>> information) {
+	private boolean checkRegForId(String[] id, List<Map<String, Object>> information) {
 		for (Map<String, Object> entry : information) {
 			if (!entry.containsKey(NGSIConstants.NGSI_LD_ENTITIES)) {
 				return true;
@@ -612,7 +613,8 @@ public class RegistrySubscriptionService {
 				if (!entity.containsKey(NGSIConstants.JSON_LD_ID)) {
 					return true;
 				}
-				if (entity.get(NGSIConstants.JSON_LD_ID).equals(id.toString())) {
+
+				if (ArrayUtils.contains(id, entity.get(NGSIConstants.JSON_LD_ID))) {
 					return true;
 				}
 			}
@@ -853,7 +855,7 @@ public class RegistrySubscriptionService {
 	}
 
 	@SuppressWarnings("unchecked")
-	private boolean checkRegForIdAttrs(URI id, Set<String> attributeNames, List<Map<String, Object>> information) {
+	private boolean checkRegForIdAttrs(String[] id, Set<String> attributeNames, List<Map<String, Object>> information) {
 		for (Map<String, Object> entry : information) {
 			if (!entry.containsKey(NGSIConstants.NGSI_LD_ENTITIES)) {
 				if (entry.containsKey(NGSIConstants.NGSI_LD_RELATIONSHIPS)) {
@@ -882,7 +884,7 @@ public class RegistrySubscriptionService {
 					if (!entity.containsKey(NGSIConstants.JSON_LD_ID)) {
 						return true;
 					}
-					if (entity.get(NGSIConstants.JSON_LD_ID).equals(id.toString())) {
+					if (ArrayUtils.contains(id, entity.get(NGSIConstants.JSON_LD_ID))) {
 						return true;
 					}
 				}
@@ -955,7 +957,7 @@ public class RegistrySubscriptionService {
 	}
 
 	@SuppressWarnings("unchecked")
-	private boolean checkRegForIdType(URI id, TypeQueryTerm typeQueryTerm, List<Map<String, Object>> information) {
+	private boolean checkRegForIdType(String[] id, TypeQueryTerm typeQueryTerm, List<Map<String, Object>> information) {
 		for (Map<String, Object> entry : information) {
 			if (!entry.containsKey(NGSIConstants.NGSI_LD_ENTITIES)) {
 				return true;
@@ -963,7 +965,7 @@ public class RegistrySubscriptionService {
 			List<Map<String, Object>> entities = (List<Map<String, Object>>) entry.get(NGSIConstants.NGSI_LD_ENTITIES);
 			for (Map<String, Object> entity : entities) {
 				if ((!entity.containsKey(NGSIConstants.JSON_LD_ID)
-						|| entity.get(NGSIConstants.JSON_LD_ID).equals(id.toString()))
+						|| ArrayUtils.contains(id, entity.get(NGSIConstants.JSON_LD_ID)))
 						&& (!entity.containsKey(NGSIConstants.JSON_LD_TYPE)
 								|| typeQueryTerm.calculate((List<String>) entity.get(NGSIConstants.JSON_LD_TYPE)))) {
 					return true;
@@ -1060,7 +1062,7 @@ public class RegistrySubscriptionService {
 	}
 
 	@SuppressWarnings("unchecked")
-	private boolean checkRegForIdTypeAttrs(URI id, TypeQueryTerm type, Set<String> attributeNames,
+	private boolean checkRegForIdTypeAttrs(String[] id, TypeQueryTerm type, Set<String> attributeNames,
 			List<Map<String, Object>> information) {
 		for (Map<String, Object> entry : information) {
 			if (!entry.containsKey(NGSIConstants.NGSI_LD_ENTITIES)) {
@@ -1088,7 +1090,7 @@ public class RegistrySubscriptionService {
 						.get(NGSIConstants.NGSI_LD_ENTITIES);
 				for (Map<String, Object> entity : entities) {
 					if ((!entity.containsKey(NGSIConstants.JSON_LD_ID)
-							|| entity.get(NGSIConstants.JSON_LD_ID).equals(id.toString()))
+							|| ArrayUtils.contains(id, entity.get(NGSIConstants.JSON_LD_ID)))
 							&& (!entity.containsKey(NGSIConstants.JSON_LD_TYPE)
 									|| type.calculate((List<String>) entity.get(NGSIConstants.JSON_LD_TYPE)))) {
 
@@ -1273,8 +1275,8 @@ public class RegistrySubscriptionService {
 
 	public Uni<Void> syncUpdateSubscription(String tenant, String subId) {
 		return regDAO.getSubscription(tenant, subId).onFailure().recoverWithItem(e -> {
-				tenant2subscriptionId2IntervalSubscription.remove(tenant, subId);
-				tenant2subscriptionId2Subscription.remove(tenant, subId);
+			tenant2subscriptionId2IntervalSubscription.remove(tenant, subId);
+			tenant2subscriptionId2Subscription.remove(tenant, subId);
 			return null;
 		}).onItem().transformToUni(rows -> {
 			if (rows == null || rows.size() == 0) {

@@ -290,7 +290,7 @@
 												],
 												"body": {
 													"mode": "raw",
-													"raw": "{\r\n    \"id\":\"urn:regtest1\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{scorpioone}}\",\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
+													"raw": "{\r\n    \"id\":\"urn:regtest1\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{scorpioone}}\",\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.8.jsonld\"]\r\n}",
 													"options": {
 														"raw": {
 															"language": "json"
@@ -364,7 +364,7 @@
 												],
 												"body": {
 													"mode": "raw",
-													"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n     \"listproperty\": {\"type\": \"ListProperty\", \"valueList\": [100,200,300]},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"passenger\": {\r\n       \"type\": \"ListRelationship\",\r\n       \"objectType\": \"Person\",\r\n       \"objectList\": [\r\n           {\"object\": \"urn:ngsi-ld:Person:Alice\"},\r\n           {\"object\": \"urn:ngsi-ld:Person:Bob\"}\r\n       ]\r\n   },\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
+													"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n     \"listproperty\": {\"type\": \"ListProperty\", \"valueList\": [100,200,300]},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"passenger\": {\r\n       \"type\": \"ListRelationship\",\r\n       \"objectType\": \"Person\",\r\n       \"objectList\": [\r\n           {\"object\": \"urn:ngsi-ld:Person:Alice\"},\r\n           {\"object\": \"urn:ngsi-ld:Person:Bob\"}\r\n       ]\r\n   },\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.8.jsonld\"]\r\n}",
 													"options": {
 														"raw": {
 															"language": "json"
@@ -548,7 +548,7 @@
 												],
 												"body": {
 													"mode": "raw",
-													"raw": "{\r\n    \"id\":\"urn:regtest1\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{scorpioone}}\",\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
+													"raw": "{\r\n    \"id\":\"urn:regtest1\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{scorpioone}}\",\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.8.jsonld\"]\r\n}",
 													"options": {
 														"raw": {
 															"language": "json"
@@ -1754,7 +1754,7 @@
 												],
 												"body": {
 													"mode": "raw",
-													"raw": "{\r\n    \"id\":\"urn:regtest1\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{scorpioone}}\",\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
+													"raw": "{\r\n    \"id\":\"urn:regtest1\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{scorpioone}}\",\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.8.jsonld\"]\r\n}",
 													"options": {
 														"raw": {
 															"language": "json"
@@ -1802,7 +1802,7 @@
 												],
 												"body": {
 													"mode": "raw",
-													"raw": "{\r\n    \"id\":\"urn:regtest2\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{scorpiotwo}}\",\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
+													"raw": "{\r\n    \"id\":\"urn:regtest2\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{scorpiotwo}}\",\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.8.jsonld\"]\r\n}",
 													"options": {
 														"raw": {
 															"language": "json"
@@ -1876,7 +1876,7 @@
 												],
 												"body": {
 													"mode": "raw",
-													"raw": "{\r\n    \"id\": \"urn:test:testentity:remone\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n     \"listproperty\": {\"type\": \"ListProperty\", \"valueList\": [100,200,300]},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"passenger\": {\r\n       \"type\": \"ListRelationship\",\r\n       \"objectType\": \"Person\",\r\n       \"objectList\": [\r\n           {\"object\": \"urn:ngsi-ld:Person:Alice\"},\r\n           {\"object\": \"urn:ngsi-ld:Person:Bob\"}\r\n       ]\r\n   },\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
+													"raw": "{\r\n    \"id\": \"urn:test:testentity:remone\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n     \"listproperty\": {\"type\": \"ListProperty\", \"valueList\": [100,200,300]},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"passenger\": {\r\n       \"type\": \"ListRelationship\",\r\n       \"objectType\": \"Person\",\r\n       \"objectList\": [\r\n           {\"object\": \"urn:ngsi-ld:Person:Alice\"},\r\n           {\"object\": \"urn:ngsi-ld:Person:Bob\"}\r\n       ]\r\n   },\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.8.jsonld\"]\r\n}",
 													"options": {
 														"raw": {
 															"language": "json"
@@ -1949,7 +1949,7 @@
 												],
 												"body": {
 													"mode": "raw",
-													"raw": "{\r\n    \"id\": \"urn:test:testentity:remtwo\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n     \"listproperty\": {\"type\": \"ListProperty\", \"valueList\": [100,200,300]},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"passenger\": {\r\n       \"type\": \"ListRelationship\",\r\n       \"objectType\": \"Person\",\r\n       \"objectList\": [\r\n           {\"object\": \"urn:ngsi-ld:Person:Alice\"},\r\n           {\"object\": \"urn:ngsi-ld:Person:Bob\"}\r\n       ]\r\n   },\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
+													"raw": "{\r\n    \"id\": \"urn:test:testentity:remtwo\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"x\"},\r\n     \"listproperty\": {\"type\": \"ListProperty\", \"valueList\": [100,200,300]},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"},\r\n    \"passenger\": {\r\n       \"type\": \"ListRelationship\",\r\n       \"objectType\": \"Person\",\r\n       \"objectList\": [\r\n           {\"object\": \"urn:ngsi-ld:Person:Alice\"},\r\n           {\"object\": \"urn:ngsi-ld:Person:Bob\"}\r\n       ]\r\n   },\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.8.jsonld\"]\r\n}",
 													"options": {
 														"raw": {
 															"language": "json"
@@ -2207,7 +2207,7 @@
 												],
 												"body": {
 													"mode": "raw",
-													"raw": "{\r\n    \"id\":\"urn:regtest1\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{scorpioone}}\",\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
+													"raw": "{\r\n    \"id\":\"urn:regtest1\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{scorpioone}}\",\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.8.jsonld\"]\r\n}",
 													"options": {
 														"raw": {
 															"language": "json"
@@ -2255,7 +2255,7 @@
 												],
 												"body": {
 													"mode": "raw",
-													"raw": "{\r\n    \"id\":\"urn:regtest2\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{scorpiotwo}}\",\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld\"]\r\n}",
+													"raw": "{\r\n    \"id\":\"urn:regtest2\",\r\n    \"type\": \"ContextSourceRegistration\",\r\n    \"information\": [\r\n        {\r\n            \"entities\": [\r\n                {\r\n                    \"type\": \"TestType\"\r\n                }\r\n            ]\r\n        }\r\n    ],\r\n    \"mode\": \"inclusive\",\r\n    \"operations\": [\r\n        \"federationOps\"\r\n    ],\r\n    \"endpoint\": \"{{scorpiotwo}}\",\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.8.jsonld\"]\r\n}",
 													"options": {
 														"raw": {
 															"language": "json"
@@ -3426,6 +3426,39 @@
 								}
 							},
 							"response": []
+						},
+						{
+							"name": "Delete subscription",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"pm.test(\"Status code is 204\", function () {\r",
+											"    pm.response.to.have.status(204);\r",
+											"});"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions/{{subId}}",
+									"host": [
+										"{{subscription-manager}}"
+									],
+									"path": [
+										"ngsi-ld",
+										"v1",
+										"subscriptions",
+										"{{subId}}"
+									]
+								}
+							},
+							"response": []
 						}
 					]
 				}
@@ -3443,6 +3476,10 @@
 		},
 		{
 			"key": "link",
+			"value": ""
+		},
+		{
+			"key": "subId",
 			"value": ""
 		}
 	]

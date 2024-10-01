@@ -49,7 +49,7 @@ public class ContextController {
 		return JsonUtils.fromString(payload).onItem().transformToUni(json -> {
 			Map<String, Object> payloadMap = new HashMap<>();
 			try {
-				Map<String, Object> contextBody = (Map<String, Object>) ((Map<String, Object>) json)
+				Object contextBody =  ((Map<String, Object>) json)
 						.get(NGSIConstants.JSON_LD_CONTEXT);
 				if (contextBody == null)
 					throw new Exception("Bad Request");

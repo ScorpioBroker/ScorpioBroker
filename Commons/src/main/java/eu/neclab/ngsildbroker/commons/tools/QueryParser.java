@@ -86,7 +86,6 @@ public class QueryParser {
 	private static String query = "((" + queryTerm + ")|(" + queryTermAssoc + "))" + "((" + logicalOp + ")(("
 			+ queryTerm + ")|(" + queryTermAssoc + ")))*";
 
-	
 	// TODO validate queries still not working ... rework regex ???
 	// private static Pattern p = Pattern.compile(query);
 
@@ -157,7 +156,7 @@ public class QueryParser {
 				readingOperant = false;
 				operant = "";
 
-			} else if (b == ')' || b == '}') {
+			} else if (b == ')') {
 				current.setOperant(operant);
 				String expandedOpt = context.expandIri(operant.replaceAll("\"", ""), false, true, null, null);
 				current.setExpandedOpt(expandedOpt);
@@ -165,11 +164,14 @@ public class QueryParser {
 				readingAttrib = true;
 				readingOperant = false;
 				operant = "";
-				if (b == '}') {
-					currentJoinLevel--;
-					readingLinkedQ = false;
-				}
-
+			} else if (b == '}') {
+				current.setAttribute(attribName);
+				attribName = "";
+				current = current.getParent();
+				readingAttrib = true;
+				readingOperant = false;
+				currentJoinLevel--;
+				readingLinkedQ = false;
 			} else if ((b == '!' || b == '=' || b == '<' || b == '>' || b == '~') && !readingOperant) {
 				operator.append(b);
 				readingAttrib = false;
@@ -201,20 +203,21 @@ public class QueryParser {
 							root.addJoinLevel2AttribAndTypes(currentJoinLevel, current.getParent().getLinkedAttrName(),
 									current.getParent().getLinkedEntityTypes());
 						}
+						continue;
 					}
 
-				} else {
-					if (readingAttrib) {
-						attribName += (char) b;
-					} else {
-						if (!operator.toString().isEmpty()) {
-							current.setOperator(operator.toString());
-							operator = new StringBuilder();
-						}
-						readingOperant = true;
-						operant += (char) b;
-					}
 				}
+				if (readingAttrib) {
+					attribName += (char) b;
+				} else {
+					if (!operator.toString().isEmpty()) {
+						current.setOperator(operator.toString());
+						operator = new StringBuilder();
+					}
+					readingOperant = true;
+					operant += (char) b;
+				}
+
 			}
 
 		}
@@ -613,8 +616,10 @@ public class QueryParser {
 				attribName.setLength(0);
 				current = next;
 			} else if (b == '}') {
-				expanded = context.expandIri(attribName.toString(), false, true, null, null);
-				current.setAttrib(expanded);
+				if (attribName.length() > 0) {
+					expanded = context.expandIri(attribName.toString(), false, true, null, null);
+					current.setAttrib(expanded);
+				}
 				attribName.setLength(0);
 				current = current.getParent();
 			} else {

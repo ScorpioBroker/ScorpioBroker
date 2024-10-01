@@ -1,6 +1,7 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import com.google.common.collect.Lists;
@@ -70,6 +71,23 @@ public class ViaHeaders {
 	@Override
 	public String toString() {
 		return "ViaHeaders [viaHeaders=" + viaHeaders + ", hostUrls=" + hostUrls + "]";
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(hostUrls, viaHeaders);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		ViaHeaders other = (ViaHeaders) obj;
+		return Objects.equals(hostUrls, other.hostUrls) && Objects.equals(viaHeaders, other.viaHeaders);
 	}
 	
 	
