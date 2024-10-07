@@ -22,7 +22,7 @@ public class ViaHeaders {
 					String protocolPart = parts[0];
 					int versionSplitPos = protocolPart.indexOf('/');
 					String protocol;
-					if (versionSplitPos != -1) {
+					if (versionSplitPos == -1) {
 						protocol = "http";
 					} else {
 						protocol = protocolPart.substring(0, versionSplitPos).toLowerCase();
