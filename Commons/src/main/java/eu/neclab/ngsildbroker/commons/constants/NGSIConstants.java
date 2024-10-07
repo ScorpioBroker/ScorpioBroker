@@ -548,5 +548,6 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_SHOWCHANGES_SHORT = "showChanges";
 	public static final String NGSI_LD_ENDPOINT_SHORT = "endpoint";
 	public static final String NGSI_LD_URI_SHORT = "uri";
+	public static final String GEOPROPERTY = "GeoProperty";
 
 }
