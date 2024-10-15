@@ -1038,12 +1038,6 @@ public class QQueryTerm implements Serializable {
 
 	private int getAttribQuery(StringBuilder result, StringBuilder followUp, int dollarCount, Tuple tuple,
 			boolean isDist, boolean localOnly) {
-		result.append("ENTITY ? $");
-		result.append(dollarCount);
-
-		followUp.append("ENTITY ? ''' || $");
-		followUp.append(dollarCount);
-		followUp.append("|| '''");
 
 		String[] splitted = getAttribute().split("\\[");
 		if (splitted.length > 1) {
@@ -1052,7 +1046,16 @@ public class QQueryTerm implements Serializable {
 		String[] subAttribPath = splitted.length == 1 ? null : splitted[1].split("\\.");
 		String[] attribPath = splitted[0].split("\\.");
 		String attribName = linkHeaders.expandIri(attribPath[0], false, true, null, null);
+		boolean wildcardUse = NGSIConstants.NGSI_LD_STAR.equals(attribName);
 
+		if (!wildcardUse) {
+			result.append("ENTITY ? $");
+			result.append(dollarCount);
+
+			followUp.append("ENTITY ? ''' || $");
+			followUp.append(dollarCount);
+			followUp.append("|| '''");
+		}
 		if (isLinkedQ) {
 			String linkedAttrExpanded = linkHeaders.expandIri(linkedAttrName, false, true, null, null);
 			tuple.addString(linkedAttrExpanded);
@@ -1143,7 +1146,7 @@ public class QQueryTerm implements Serializable {
 				firstChild.setOperator(operator);
 				firstChild.setExpandedOpt(expandedOpt);
 				dollarCount = firstChild.toSql(result, followUp, dollarCount, tuple, isDist, localOnly);
-				
+
 			}
 			result.append(')');
 			followUp.append(")");
@@ -1170,26 +1173,59 @@ public class QQueryTerm implements Serializable {
 				dollarCount++;
 				tuple.addString(operant);
 			} else {
-				followUp.append(" AND ");
-				result.append(" AND ");
+				if (!wildcardUse) {
+					followUp.append(" AND ");
+					result.append(" AND ");
+				}
 				if (operator.equals(NGSIConstants.QUERY_UNEQUAL)) {
 					result.append("NOT ");
 					followUp.append("NOT ");
 				}
-				result.append("EXISTS (SELECT TRUE FROM JSONB_ARRAY_ELEMENTS(ENTITY -> $");
-				followUp.append("EXISTS (SELECT TRUE FROM JSONB_ARRAY_ELEMENTS(ENTITY -> ''' || $");
-				result.append(dollarCount);
 
-				followUp.append(dollarCount);
-				followUp.append(" || '''");
-				dollarCount++;
-				tuple.addString(attribName);
-				result.append(") AS toplevel ");
-				followUp.append(") AS toplevel ");
+				if (wildcardUse) {
+					result.append(
+							"EXISTS (SELECT TRUE FROM JSONB_OBJECT_KEYS(ENTITY) AS ATTRKEY, JSONB_ARRAY_ELEMENTS(ENTITY -> ATTRKEY) AS toplevel WHERE ATTRKEY NOT IN ('");
+					result.append(NGSIConstants.JSON_LD_ID);
+					result.append("','");
+					result.append(NGSIConstants.JSON_LD_TYPE);
+					result.append("','");
+					result.append(NGSIConstants.NGSI_LD_MODIFIED_AT);
+					result.append("','");
+					result.append(NGSIConstants.NGSI_LD_CREATED_AT);
+					result.append("') ");
+
+					followUp.append(
+							"EXISTS (SELECT TRUE FROM JSONB_OBJECT_KEYS(ENTITY) AS ATTRKEY, JSONB_ARRAY_ELEMENTS(ENTITY -> ATTRKEY) AS toplevel WHERE ATTRKEY NOT IN (''");
+					followUp.append(NGSIConstants.JSON_LD_ID);
+					followUp.append("'',''");
+					followUp.append(NGSIConstants.JSON_LD_TYPE);
+					followUp.append("'',''");
+					followUp.append(NGSIConstants.NGSI_LD_MODIFIED_AT);
+					followUp.append("'',''");
+					followUp.append(NGSIConstants.NGSI_LD_CREATED_AT);
+					followUp.append("'') ");
+
+				} else {
+					result.append("EXISTS (SELECT TRUE FROM JSONB_ARRAY_ELEMENTS(ENTITY -> $");
+					followUp.append("EXISTS (SELECT TRUE FROM JSONB_ARRAY_ELEMENTS(ENTITY -> ''' || $");
+					result.append(dollarCount);
+					followUp.append(dollarCount);
+					followUp.append(" || '''");
+					dollarCount++;
+					tuple.addString(attribName);
+					result.append(") AS toplevel ");
+					followUp.append(") AS toplevel ");
+				}
+
 				if ((operator != null && !operator.isEmpty()) || attribPath.length > 1
 						|| (subAttribPath != null && subAttribPath.length > 0)) {
-					result.append("WHERE ");
-					followUp.append("WHERE ");
+					if (wildcardUse) {
+						result.append("AND ");
+						followUp.append("AND ");
+					}else {
+						result.append("WHERE ");
+						followUp.append("WHERE ");
+					}
 					dollarCount = commonWherePart(attribPath, subAttribPath, "toplevel", dollarCount, tuple, result,
 							followUp, this);
 				} else {
