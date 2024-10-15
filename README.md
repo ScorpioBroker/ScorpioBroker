@@ -11,7 +11,7 @@
 [![Documentation badge](https://img.shields.io/readthedocs/scorpio.svg)](https://scorpio.readthedocs.io/en/latest/?badge=latest) 
 ![Status](https://nexus.lab.fiware.org/static/badges/statuses/full.svg) 
 ![NGSI-LD Test Suite Java](https://github.com/scorpiobroker/scorpiobroker/actions/workflows/api-test.yml/badge.svg) 
-![NGSI-LD Test Suite Ubuntu](https://github.com/scorpiobroker/scorpiobroker/actions/workflows/api-test-ubuntu.yml/badge.svg) 
+![NGSI-LD Test Suite Native Linux](https://github.com/scorpiobroker/scorpiobroker/actions/workflows/api-test-linux-amd64.yml/badge.svg) 
 ![PMD](https://github.com/scorpiobroker/scorpiobroker/actions/workflows/pmd.yml/badge.svg) 
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/4781/badge)](https://bestpractices.coreinfrastructure.org/projects/4781)
 
