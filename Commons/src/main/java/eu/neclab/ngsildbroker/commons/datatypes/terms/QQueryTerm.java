@@ -1046,32 +1046,47 @@ public class QQueryTerm implements Serializable {
 		String[] subAttribPath = splitted.length == 1 ? null : splitted[1].split("\\.");
 		String[] attribPath = splitted[0].split("\\.");
 		String attribName = linkHeaders.expandIri(attribPath[0], false, true, null, null);
-		boolean wildcardUse = NGSIConstants.NGSI_LD_STAR.equals(attribName);
+		boolean wildcardUse;
 
-		if (!wildcardUse) {
-			result.append("ENTITY ? $");
-			result.append(dollarCount);
-
-			followUp.append("ENTITY ? ''' || $");
-			followUp.append(dollarCount);
-			followUp.append("|| '''");
-		}
 		if (isLinkedQ) {
 			String linkedAttrExpanded = linkHeaders.expandIri(linkedAttrName, false, true, null, null);
-			tuple.addString(linkedAttrExpanded);
-			dollarCount++;
-			if (!isDist || localOnly) {
-				result.append(" AND EXISTS (SELECT TRUE FROM JSONB_ARRAY_ELEMENTS(ENTITY -> $");
+			wildcardUse = NGSIConstants.NGSI_LD_STAR.equals(attribName);
+			if (!wildcardUse) {
+				result.append("ENTITY ? $");
 				result.append(dollarCount);
-				followUp.append(" AND EXISTS (SELECT TRUE FROM JSONB_ARRAY_ELEMENTS(ENTITY -> ''' || $");
+
+				followUp.append("ENTITY ? ''' || $");
 				followUp.append(dollarCount);
 				followUp.append("|| '''");
 				tuple.addString(linkedAttrExpanded);
-				result.append(
-						" ) as rel, JSONB_ARRAY_ELEMENTS(rel -> 'https://uri.etsi.org/ngsi-ld/hasObject') as obj left join entity on obj->>'@id'=entity.id WHERE rel.value #>> '{@type,0}' = 'https://uri.etsi.org/ngsi-ld/Relationship'");
-				followUp.append(
-						" ) as rel, JSONB_ARRAY_ELEMENTS(rel -> ''https://uri.etsi.org/ngsi-ld/hasObject'') as obj left join entity on obj->>''@id''=entity.id WHERE rel.value #>> ''{@type,0}'' = ''https://uri.etsi.org/ngsi-ld/Relationship''");
 				dollarCount++;
+			}
+			if (!isDist || localOnly) {
+				if (wildcardUse) {
+					result.append(
+							"AND EXISTS (SELECT TRUE FROM JSONB_OBJECT_KEYS(ENTITY) AS ATTRKEY, JSONB_ARRAY_ELEMENTS(ENTITY -> ATTRKEY) AS rel");
+					
+
+					followUp.append(
+							"AND EXISTS (SELECT TRUE FROM JSONB_OBJECT_KEYS(ENTITY) AS ATTRKEY, JSONB_ARRAY_ELEMENTS(ENTITY -> ATTRKEY) AS rel");
+					
+
+				}else {
+					result.append(" AND EXISTS (SELECT TRUE FROM JSONB_ARRAY_ELEMENTS(ENTITY -> $");
+					result.append(dollarCount);
+					result.append(") as rel");
+					followUp.append(" AND EXISTS (SELECT TRUE FROM JSONB_ARRAY_ELEMENTS(ENTITY -> ''' || $");
+					followUp.append(dollarCount);
+					followUp.append("|| ''') as rel");
+					tuple.addString(linkedAttrExpanded);
+					dollarCount++;
+				}
+				result.append(
+						", JSONB_ARRAY_ELEMENTS(rel -> 'https://uri.etsi.org/ngsi-ld/hasObject') as obj left join entity on obj->>'@id'=entity.id WHERE rel.value #>> '{@type,0}' = 'https://uri.etsi.org/ngsi-ld/Relationship'");
+				followUp.append(
+						", JSONB_ARRAY_ELEMENTS(rel -> ''https://uri.etsi.org/ngsi-ld/hasObject'') as obj left join entity on obj->>''@id''=entity.id WHERE rel.value #>> ''{@type,0}'' = ''https://uri.etsi.org/ngsi-ld/Relationship''");
+				
+				
 				if (!localOnly) {
 					result.append(" AND rel.value ? 'https://uri.etsi.org/ngsi-ld/hasObjectType'");
 					if (!linkedEntityTypes.isEmpty()) {
@@ -1154,6 +1169,15 @@ public class QQueryTerm implements Serializable {
 //			followUp.append(')');
 
 		} else {
+			wildcardUse = NGSIConstants.NGSI_LD_STAR.equals(attribName);
+			if (!wildcardUse) {
+				result.append("ENTITY ? $");
+				result.append(dollarCount);
+
+				followUp.append("ENTITY ? ''' || $");
+				followUp.append(dollarCount);
+				followUp.append("|| '''");
+			}
 			if (attribName.equals("@id")) {
 				result.append(" AND entity ->> $");
 				result.append(dollarCount);
@@ -1222,7 +1246,7 @@ public class QQueryTerm implements Serializable {
 					if (wildcardUse) {
 						result.append("AND ");
 						followUp.append("AND ");
-					}else {
+					} else {
 						result.append("WHERE ");
 						followUp.append("WHERE ");
 					}
