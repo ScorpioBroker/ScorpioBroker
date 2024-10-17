@@ -32,6 +32,8 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import io.smallrye.mutiny.tuples.Tuple2;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class QueryParser {
 	// Query = (QueryTerm / QueryTermAssoc) *(logicalOp (QueryTerm /
@@ -40,7 +42,7 @@ public class QueryParser {
 	private QueryParser() {
 
 	}
-
+	private static Logger logger = LoggerFactory.getLogger(QueryParser.class);
 	private static String andOp = ";";
 	private static String orOp = "\\|";
 	private static String logicalOp = "((" + andOp + ")|(" + orOp + "))";
@@ -106,11 +108,13 @@ public class QueryParser {
 		StringBuilder operator = new StringBuilder();
 		String operant = "";
 		input = URLDecoder.decode(input, StandardCharsets.UTF_8);
-		OfInt it = input.chars().iterator();
+//		OfInt it = input.chars().iterator();
 		int currentJoinLevel = 0;
 		Tuple2<String, Set<String>> joinTuple;
-		while (it.hasNext()) {
-			char b = (char) it.next().intValue();
+		char[] charArr = input.toCharArray();
+		for(int i=0;i<charArr.length;i++){
+//		while (it.hasNext()) {
+			char b = charArr[i];
 			if (b == '(') {
 				QQueryTerm child = new QQueryTerm(context);
 				current.setFirstChild(child);
@@ -179,6 +183,20 @@ public class QueryParser {
 					current.setAttribute(attribName);
 					root.addAttrib(attribName);
 					attribName = "";
+				}
+				String match="";
+				try{
+					match = "" +charArr[i+1] + charArr[i +2] +charArr[i +3];
+				}
+				catch (IndexOutOfBoundsException iobe){
+					logger.debug(match);
+				}
+
+				if(operator.toString().contains("~=") && (match.equals(".*(") || match.startsWith(".(") || match.startsWith("*(") ||match.startsWith("*.(")|| match.startsWith("("))){
+					String split = input.substring(i-2).split("~=")[1];
+					operant = split.substring(0,split.indexOf(")")+1);
+					i = i + operant.length();
+					current.setOperator(String.valueOf(operator));
 				}
 			} else if (b == '{') {
 				currentJoinLevel++;
