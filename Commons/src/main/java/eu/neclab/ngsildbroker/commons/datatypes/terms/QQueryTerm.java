@@ -1594,7 +1594,7 @@ public class QQueryTerm implements Serializable {
 			dollarCount = addItemToTupel(tuple, finalOperant, attributeFilterProperty, followUp, dollarCount);
 			break;
 		case NGSIConstants.QUERY_PATTERNOP:
-			attributeFilterProperty.append("::text ~ $");
+			attributeFilterProperty.append("->>0 ~ $");
 			attributeFilterProperty.append(dollarCount);
 			followUp.append("::text ~ ''' || $");
 			followUp.append(dollarCount);
