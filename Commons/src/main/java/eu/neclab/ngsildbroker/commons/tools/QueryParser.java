@@ -108,12 +108,10 @@ public class QueryParser {
 		StringBuilder operator = new StringBuilder();
 		String operant = "";
 		input = URLDecoder.decode(input, StandardCharsets.UTF_8);
-//		OfInt it = input.chars().iterator();
 		int currentJoinLevel = 0;
 		Tuple2<String, Set<String>> joinTuple;
 		char[] charArr = input.toCharArray();
 		for(int i=0;i<charArr.length;i++){
-//		while (it.hasNext()) {
 			char b = charArr[i];
 			if (b == '(') {
 				QQueryTerm child = new QQueryTerm(context);
@@ -184,17 +182,13 @@ public class QueryParser {
 					root.addAttrib(attribName);
 					attribName = "";
 				}
-				String match="";
-				try{
-					match = "" +charArr[i+1] + charArr[i +2] +charArr[i +3];
+				String match = "";
+				if (i + 3 < charArr.length) {
+					match = "" + charArr[i + 1] + charArr[i + 2] + charArr[i + 3];
 				}
-				catch (IndexOutOfBoundsException iobe){
-					logger.debug(match);
-				}
-
-				if(operator.toString().contains("~=") && (match.equals(".*(") || match.startsWith(".(") || match.startsWith("*(") ||match.startsWith("*.(")|| match.startsWith("("))){
+				if(operator.toString().contains("~=") && ( match.equals(".*(") || match.startsWith(".(") || match.startsWith("*(") || match.startsWith("*.(") || match.startsWith("(") ) ){
 					String split = input.substring(i-2).split("~=")[1];
-					operant = split.substring(0,split.indexOf(")")+1);
+					operant = split.substring(0, split.indexOf(")") + 1);
 					i = i + operant.length();
 					current.setOperator(String.valueOf(operator));
 				}
