@@ -23,6 +23,7 @@ import eu.neclab.ngsildbroker.commons.tools.DBUtil;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple3;
+import io.smallrye.mutiny.tuples.Tuples;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.sqlclient.Row;
@@ -151,11 +152,10 @@ public class EntityInfoDAO {
 				sql.append("EXCLUDED.entity ");
 			} else {
 				sql.append(
-						"jsonb_set((EXCLUDED.entity || entity.entity), '{@type}', (SELECT jsonb_agg(DISTINCT x) FROM UNNEST(entity.e_types || EXCLUDED.e_types) as x)) ");
+						"jsonb_set((entity.entity || EXCLUDED.entity), '{@type}', (SELECT jsonb_agg(DISTINCT x) FROM UNNEST(entity.e_types || EXCLUDED.e_types) as x)) ");
 			}
 			sql.append(
 					"RETURNING id, entity, (xmax = 0) AS inserted) select c.id, c.inserted, c.entity, b.old_entity from c left join b on c.id = b.id;");
-
 			return client.preparedQuery(sql.toString()).execute(tuple).onItem().transform(rows -> {
 				Map<String, Object> result = new HashMap<>(2);
 				ArrayList<Map<String, Object>> success = new ArrayList<>(rows.size());
