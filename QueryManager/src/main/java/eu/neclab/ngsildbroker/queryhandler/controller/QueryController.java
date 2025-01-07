@@ -109,7 +109,7 @@ public class QueryController {
 			@QueryParam(value = "localOnly") boolean localOnly, @PathParam("entityId") String entityId,
 			@QueryParam(value = "doNotCompact") boolean doNotCompact,
 			@QueryParam("containedBy") @DefaultValue("") String containedBy, @QueryParam("join") String join,
-			@QueryParam("joinLevel") @DefaultValue("0") int joinLevel, @QueryParam("pick") String pick,
+			@QueryParam("joinLevel") Integer joinLevel, @QueryParam("pick") String pick,
 			@QueryParam("omit") String omit, @QueryParam("format") String format,
 			@QueryParam("entityMap") boolean entityMap, @QueryParam("datasetId") String datasetId,
 			@QueryParam("splitEntities") @DefaultValue("true") boolean distEntities,
@@ -153,7 +153,7 @@ public class QueryController {
 			@QueryParam("scopeQ") String scopeQ, @QueryParam("localOnly") boolean localOnly,
 			@QueryParam("options") String options, @QueryParam("limit") Integer limit, @QueryParam("offset") int offset,
 			@QueryParam("count") boolean count, @QueryParam("containedBy") @DefaultValue("") String containedBy,
-			@QueryParam("join") String join, @QueryParam("joinLevel") @DefaultValue("0") int joinLevel,
+			@QueryParam("join") String join, @QueryParam("joinLevel") Integer joinLevel,
 			@QueryParam("doNotCompact") boolean doNotCompact, @HeaderParam("NGSILD-EntityMap") String entityMapToken,
 			@QueryParam("entityMap") boolean entityMapRetrieve, @QueryParam("maxDistance") String maxDistance,
 			@QueryParam("minDistance") String minDistance, @QueryParam("pick") String pick,
@@ -360,9 +360,19 @@ public class QueryController {
 			String id, String typeQuery, String idPattern, String attrs, String qInput, String csf, String geometry,
 			String georelInput, String coordinates, String geoproperty, String geometryProperty, String lang,
 			String scopeQ, boolean localOnly, String options, Integer limit, int offset, boolean count,
-			String containedBy, String join, int joinLevel, boolean doNotCompact, String entityMapToken,
+			String containedBy, String join, Integer joinLevelInput, boolean doNotCompact, String entityMapToken,
 			boolean entityMapRetrieve, String maxDistance, String minDistance, String pick, String omit, String format,
 			String jsonKeysQP, String datasetId, boolean distEntities) {
+		int joinLevel;
+		if (joinLevelInput == null) {
+			if (join == null) {
+				joinLevel = 0;
+			} else {
+				joinLevel = 1;
+			}
+		} else {
+			joinLevel = joinLevelInput;
+		}
 		return getQueryParam(request, id, typeQuery, idPattern, attrs, qInput, csf, geometry, georelInput, coordinates,
 				geoproperty, geometryProperty, lang, scopeQ, localOnly, options, limit, offset, count, containedBy,
 				join, joinLevel, doNotCompact, entityMapToken, entityMapRetrieve, maxDistance, minDistance, pick, omit,
