@@ -193,6 +193,8 @@ public class JsonLdApi {
 					|| !options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_SYSATTRS);
 			boolean keyValue = options != null && (options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_KEYVALUES)
 					|| options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_SIMPLIFIED));
+			
+					
 			boolean concise = options != null && (options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_KEYVALUES)
 					|| options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_SIMPLIFIED));
 			// 4
