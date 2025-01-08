@@ -205,6 +205,13 @@ public class AppConstants {
 	public static final byte BYTE_NOOVERWRITE_SERIALIZATION_CHAR = 'k';
 	public static final byte BYTE_INSTANCEID_SERIALIZATION_CHAR = 'l';
 	public static final byte BYTE_ZIPPED_SERIALIZATION_CHAR = 'm';
+	public static final String PROTOCOL_MQTTS = "mqtts";
+	public static final String PROTOCOL_MQTT = "mqtt";
+	public static final String PROTOCOL_HTTP = "http";
+	public static final String PROTOCOL_HTTPS = "https";
+	public static final String SSL_KEY = "key";
+	public static final String SSL_CERT = "cert";
+	public static final String SSL_TRUST_ALL = "trustAll";
 
 
 

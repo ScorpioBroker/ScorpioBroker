@@ -1353,26 +1353,31 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 				String[] usrPass = host.getUserInfo().split(":");
 				options.setUsername(usrPass[0]).setPassword(usrPass[1]);
 			}
-			if (host.getScheme().equals("mqtts")) {
+			if (host.getScheme().equals(AppConstants.PROTOCOL_MQTTS)) {
 				options.setSsl(true);
 			}
 			Map<String, Collection<String>> recieverInfo = notificationParam.getEndPoint().getReceiverInfoMap();
 			PemKeyCertOptions certOptions = null;
-			if (recieverInfo.containsKey("key")) {
+			if (recieverInfo.containsKey(AppConstants.SSL_KEY)) {
 				certOptions = new PemKeyCertOptions();
-				Collection<String> keys = recieverInfo.get("key");
+				Collection<String> keys = recieverInfo.get(AppConstants.SSL_KEY);
 				for (String key : keys) {
 					certOptions.addKeyValue(io.vertx.core.buffer.Buffer.buffer(key));
 				}
 			}
 
-			if (recieverInfo.containsKey("cert")) {
+			if (recieverInfo.containsKey(AppConstants.SSL_CERT)) {
 				if (certOptions == null) {
 					certOptions = new PemKeyCertOptions();
 				}
-				Collection<String> certs = recieverInfo.get("cert");
+				Collection<String> certs = recieverInfo.get(AppConstants.SSL_CERT);
 				for (String cert : certs) {
 					certOptions.addCertValue(io.vertx.core.buffer.Buffer.buffer(cert));
+				}
+			}
+			if (recieverInfo.containsKey(AppConstants.SSL_TRUST_ALL)) {
+				if (recieverInfo.get(AppConstants.SSL_TRUST_ALL).iterator().next().equals("true")) {
+					options.setTrustAll(true);
 				}
 			}
 			if (certOptions != null) {
