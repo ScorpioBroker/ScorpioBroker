@@ -1,6 +1,8 @@
 package eu.neclab.ngsildbroker.subscriptionmanager.service;
 
+import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -17,12 +19,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import io.vertx.core.http.impl.headers.HeadersMultiMap;
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
-import jakarta.enterprise.event.Observes;
-import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.slf4j.Logger;
@@ -40,6 +36,7 @@ import com.google.common.collect.Sets;
 import com.google.common.collect.Table;
 import com.google.common.collect.Table.Cell;
 import com.google.common.net.HttpHeaders;
+
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.NotificationParam;
@@ -72,8 +69,10 @@ import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple4;
+import io.vertx.core.http.impl.headers.HeadersMultiMap;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.net.PemKeyCertOptions;
 import io.vertx.mqtt.MqttClientOptions;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.buffer.Buffer;
@@ -83,6 +82,11 @@ import io.vertx.mutiny.mqtt.MqttClient;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowIterator;
 import io.vertx.pgclient.PgException;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 @Singleton
 @SuppressWarnings("unchecked")
@@ -744,7 +748,7 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 
 		List<Uni<Void>> unis = Lists.newArrayList();
 		logger.debug("checking subscriptions");
-		//logger.debug(message.toString());
+		// logger.debug(message.toString());
 
 		for (SubscriptionRequest potentialSub : potentialSubs) {
 			logger.debug("Potential Sub");
@@ -1330,18 +1334,52 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 
 	}
 
+	public static void main(String[] args) throws MalformedURLException, URISyntaxException {
+		URI url = new URI("mqtts://bla.com/basd");
+
+		System.out.println(url.getAuthority());
+		System.out.println(url.getScheme());
+		System.out.println(url.getSchemeSpecificPart());
+	}
+
 	private Uni<MqttClient> getMqttClient(NotificationParam notificationParam) {
 		URI host = notificationParam.getEndPoint().getUri();
 		String hostString = host.getUserInfo() + host.getHost() + host.getPort();
 		MqttClient client;
+
 		if (!host2MqttClient.containsKey(hostString)) {
+			MqttClientOptions options = new MqttClientOptions();
 			if (host.getUserInfo() != null) {
 				String[] usrPass = host.getUserInfo().split(":");
-				client = MqttClient.create(vertx,
-						new MqttClientOptions().setUsername(usrPass[0]).setPassword(usrPass[1]));
-			} else {
-				client = MqttClient.create(vertx, new MqttClientOptions());
+				options.setUsername(usrPass[0]).setPassword(usrPass[1]);
 			}
+			if (host.getScheme().equals("mqtts")) {
+				options.setSsl(true);
+			}
+			Map<String, Collection<String>> recieverInfo = notificationParam.getEndPoint().getReceiverInfoMap();
+			PemKeyCertOptions certOptions = null;
+			if (recieverInfo.containsKey("key")) {
+				certOptions = new PemKeyCertOptions();
+				Collection<String> keys = recieverInfo.get("key");
+				for (String key : keys) {
+					certOptions.addKeyValue(io.vertx.core.buffer.Buffer.buffer(key));
+				}
+			}
+
+			if (recieverInfo.containsKey("cert")) {
+				if (certOptions == null) {
+					certOptions = new PemKeyCertOptions();
+				}
+				Collection<String> certs = recieverInfo.get("cert");
+				for (String cert : certs) {
+					certOptions.addCertValue(io.vertx.core.buffer.Buffer.buffer(cert));
+				}
+			}
+			if (certOptions != null) {
+				options.setPemKeyCertOptions(certOptions);
+			}
+
+			client = MqttClient.create(vertx, options);
 			return client.connect(host.getPort(), host.getHost()).onItem().transform(t -> {
 				host2MqttClient.put(hostString, client);
 				return client;
@@ -1557,7 +1595,7 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 					if (prevT.getItem1()) {
 						//
 					}
-					
+
 					prevValue.put(attribEntry.getKey(), prev);
 				}
 				if (attribEntry.getValue() instanceof List<?> l && l.isEmpty()) {
@@ -1819,6 +1857,5 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 		// TODO add aditional changes on what could fire in a csource reg
 		return false;
 	}
-
 
 }
