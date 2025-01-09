@@ -60969,7 +60969,7 @@
 																			"            console.log(notificationServer + \"/\" + subId)\r",
 																			"            console.log(value);\r",
 																			"            pm.expect(value.length).to.eql(3);\r",
-																			"            notification = value[3].body;\r",
+																			"            notification = value[2].body;\r",
 																			"            headers = value[1].headers;\r",
 																			"            pm.expect(notification.type).to.eql(\"Notification\");\r",
 																			"            pm.expect(notification).to.have.property(\"id\");\r",
