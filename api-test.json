@@ -56489,13 +56489,10 @@
 																	"pm.collectionVariables.set(\"entityId\", entityId);\r",
 																	"var subId = pm.collectionVariables.get(\"subId\");\r",
 																	"\r",
-																	"pm.test(\"Status code is 201\", function () {\r",
-																	"    pm.response.to.have.status(201);\r",
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
 																	"});\r",
-																	"pm.test(\"Check location header\", function () {\r",
-																	"    pm.response.to.have.header(\"Location\");\r",
-																	"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
-																	"});\r",
+																	"\r",
 																	"setTimeout(function(){\r",
 																	"    var notificationServer = pm.environment.get(\"notificationserver-external\");\r",
 																	"    pm.sendRequest(notificationServer + \"/\" + subId, function (err, response) {\r",
@@ -56619,7 +56616,7 @@
 														"method": "DELETE",
 														"header": [],
 														"url": {
-															"raw": "{{entity-manager}}/ngsi-ld/v1/entities/test:testentity1",
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities/testid:testentity1",
 															"host": [
 																"{{entity-manager}}"
 															],
@@ -56627,7 +56624,7 @@
 																"ngsi-ld",
 																"v1",
 																"entities",
-																"test:testentity1"
+																"testid:testentity1"
 															]
 														}
 													},
