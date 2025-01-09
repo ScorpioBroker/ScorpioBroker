@@ -1,3 +1,12 @@
+RELEASE NOTES 5.0.6
+
+fix for id subscriptions 
+mergepatch fix to not generate one notification per attrib 
+added support for temppralValues option
+adding support for keys and certs in mqtt notifications
+default joinLevel to 1 when join is set
+fixed options=update on upsert
+
 RELEASE NOTES 5.0.5
 
 Hotfix release for the upsert change
