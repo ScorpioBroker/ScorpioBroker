@@ -60968,7 +60968,7 @@
 																			"            console.log(\"Retrieving notifications from testserver\")\r",
 																			"            console.log(notificationServer + \"/\" + subId)\r",
 																			"            console.log(value);\r",
-																			"            pm.expect(value.length).to.eql(5);\r",
+																			"            pm.expect(value.length).to.eql(3);\r",
 																			"            notification = value[3].body;\r",
 																			"            headers = value[1].headers;\r",
 																			"            pm.expect(notification.type).to.eql(\"Notification\");\r",
