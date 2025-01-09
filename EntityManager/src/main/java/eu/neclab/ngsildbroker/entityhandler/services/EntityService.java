@@ -88,7 +88,6 @@ public class EntityService implements CSourceHandler {
 	@Broadcast
 	@OnOverflow(value = Strategy.UNBOUNDED_BUFFER)
 	MutinyEmitter<String> entityEmitter;
-	
 
 //	@Inject
 //	@Channel(AppConstants.ENTITY_BATCH_CHANNEL)
@@ -106,7 +105,7 @@ public class EntityService implements CSourceHandler {
 
 	@Inject
 	JsonLDService jsonLdService;
-	
+
 	@Inject
 	MicroServiceUtils microServiceUtils;
 
@@ -1394,7 +1393,7 @@ public class EntityService implements CSourceHandler {
 
 					}
 					if (!request.getPayload().isEmpty()) {
-						//logger.debug("Upsert batch request sending to kafka " + request.getIds());
+						// logger.debug("Upsert batch request sending to kafka " + request.getIds());
 						try {
 							microServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter,
 									objectMapper);
@@ -1701,6 +1700,11 @@ public class EntityService implements CSourceHandler {
 			Object type = updatedEntity.get(NGSIConstants.JSON_LD_TYPE);
 			Object createdAt = updatedEntity.get(NGSIConstants.NGSI_LD_CREATED_AT);
 			Object modifiedAt = updatedEntity.get(NGSIConstants.NGSI_LD_MODIFIED_AT);
+			Map<String, Object> tmp = Maps.newHashMap();
+
+			tmp.put(NGSIConstants.JSON_LD_TYPE, type);
+			tmp.put(NGSIConstants.NGSI_LD_CREATED_AT, createdAt);
+			tmp.put(NGSIConstants.NGSI_LD_MODIFIED_AT, modifiedAt);
 			for (Entry<String, List<String>> attrEntry : updated.entrySet()) {
 				String attr = attrEntry.getKey();
 
@@ -1717,22 +1721,21 @@ public class EntityService implements CSourceHandler {
 						}
 					}
 					if (searchedInstance != null) {
-						Map<String, Object> tmp = Maps.newHashMap();
-						tmp.put(attr, Lists.newArrayList(searchedInstance));
-						tmp.put(NGSIConstants.JSON_LD_TYPE, type);
-						tmp.put(NGSIConstants.NGSI_LD_CREATED_AT, createdAt);
-						tmp.put(NGSIConstants.NGSI_LD_MODIFIED_AT, modifiedAt);
-						AppendEntityRequest append = new AppendEntityRequest(tenant, entityId, tmp, zip);
-						append.setPrevPayloadFromSingle(entityId, prev);
-						try {
-							microServiceUtils.serializeAndSplitObjectAndEmit(append, messageSize, entityEmitter,
-									objectMapper);
-						} catch (ResponseException e) {
-							collectedFails.add(e);
+						Object attrList = tmp.get(attr);
+						if (attrList == null) {
+							attrList = Lists.newArrayList();
+							tmp.put(attr, attrList);
 						}
+						((List) attrList).add(searchedInstance);
 					}
 				}
-
+			}
+			AppendEntityRequest append = new AppendEntityRequest(tenant, entityId, tmp, zip);
+			append.setPrevPayloadFromSingle(entityId, prev);
+			try {
+				microServiceUtils.serializeAndSplitObjectAndEmit(append, messageSize, entityEmitter, objectMapper);
+			} catch (ResponseException e) {
+				collectedFails.add(e);
 			}
 		}
 		return collectedFails;
