@@ -1,3 +1,24 @@
+RELEASE NOTES 5.0.6
+
+fix for id subscriptions 
+mergepatch fix to not generate one notification per attrib 
+added support for temppralValues option
+adding support for keys and certs in mqtt notifications
+default joinLevel to 1 when join is set
+fixed options=update on upsert
+
+RELEASE NOTES 5.0.5
+
+Hotfix release for the upsert change
+
+RELEASE NOTES 5.0.4
+
+this release mainly address a performance and memory issue in the serialization and an issue with the upsert operation.
+Upsert was very slow compared to other methods and got an optimization to drastically improve performance and bring it more inline with the other methods.
+In general serialization for communication between microservices was very heavy on memory and has been fully rewritten.
+Memory usage in general should reduce by an order of magnitude.
+
+
 RELEASE NOTES 5.0.3
 
 Addresses 

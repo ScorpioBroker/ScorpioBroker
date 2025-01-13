@@ -2,7 +2,7 @@ package eu.neclab.ngsildbroker.subscriptionmanager.messaging;
 
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CSourceBaseRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.InternalNotification;
+
 import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Vertx;
@@ -33,13 +33,14 @@ public abstract class SubscriptionMessagingBase {
 
 	long lastMessage = System.currentTimeMillis();
 	long lastSent = System.currentTimeMillis();
+	
 
 	ArrayList<BaseRequest> requestStore = new ArrayList<>();
 
 	public Uni<Void> baseHandleEntity(BaseRequest message) {
 		if (collectInterval == -1) {
 			logger.debug("Subscription sub manager got called for entity: " + message.getIds());
-			return subscriptionService.checkSubscriptions(message).onFailure().recoverWithUni(t -> {
+			return subscriptionService.handleBaseRequest(message).onFailure().recoverWithUni(t -> {
 				logger.debug("Exception Occurred in checkSubscriptions: " + t);
 				t.printStackTrace();
 				logger.debug(t.getStackTrace().toString());
@@ -67,6 +68,7 @@ public abstract class SubscriptionMessagingBase {
 			logger.error("failed to serialize message " + byteMessage, e);
 			return Uni.createFrom().voidItem();
 		}
+		
 		return baseHandleEntity(baseRequest);
 
 	}

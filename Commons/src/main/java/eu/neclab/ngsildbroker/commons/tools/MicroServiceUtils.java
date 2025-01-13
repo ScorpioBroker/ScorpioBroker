@@ -7,15 +7,21 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.CSourceBaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.interfaces.BaseRequestHandler;
+import eu.neclab.ngsildbroker.commons.interfaces.CSourceHandler;
+import eu.neclab.ngsildbroker.commons.serialization.messaging.MyByteArrayBuilder;
 import io.vertx.core.http.impl.headers.HeadersMultiMap;
 import io.vertx.pgclient.PgException;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import io.quarkus.runtime.configuration.ConfigUtils;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Singleton;
@@ -26,11 +32,6 @@ import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
-import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
-import java.nio.charset.Charset;
-import java.nio.charset.CharsetEncoder;
-import java.nio.charset.CoderResult;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Base64.Encoder;
@@ -38,11 +39,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.zip.DeflaterOutputStream;
+import java.util.zip.InflaterOutputStream;
 
 @Singleton
 public class MicroServiceUtils {
 	private final static Logger logger = LoggerFactory.getLogger(MicroServiceUtils.class);
+
+	//private final static Charset UTF8_CHARSET = Charset.forName("UTF-8");
 
 	@ConfigProperty(name = "scorpio.gatewayurl")
 	String gatewayUrl;
@@ -52,7 +57,21 @@ public class MicroServiceUtils {
 	@ConfigProperty(name = "atcontext.url", defaultValue = "http://localhost:9090/ngsi-ld/v1/jsonldContexts/")
 	String contextServerUrl;
 
+	private boolean inMemoryActive = ConfigUtils.isProfileActive("in-memory");
+	
+
+	List<CSourceHandler> csourceReceivers = Lists.newArrayList();
+	
+	List<BaseRequestHandler> baseRequestReceivers = Lists.newArrayList();
+	
+	
 	private static final Encoder base64Encoder = Base64.getEncoder();
+	public static final byte[] NULL_ARRAY = "null".getBytes();
+	private static byte[] ZIPPED_NULL_ARRAY;
+
+	private static final byte[] BASE_APPENDIX = (",\"" + AppConstants.PAYLOAD_SERIALIZATION_CHAR + "\":[").getBytes();
+	private static final byte[] FINALIZER = "]}".getBytes();
+	private static final int FINALIZER_lENGTH = FINALIZER.length - 1;
 
 	@PostConstruct
 	void setup() {
@@ -65,6 +84,7 @@ public class MicroServiceUtils {
 				contextServerUrl = contextServerUrl + "ngsi-ld/v1/jsonldContexts/";
 			}
 		}
+
 	}
 
 	public static void putIntoIdMap(Map<String, List<Map<String, Object>>> localEntities, String id,
@@ -77,346 +97,243 @@ public class MicroServiceUtils {
 		tmp.add(local);
 	}
 
-	public static void serializeAndSplitObjectAndEmit(Object obj, int maxMessageSize, MutinyEmitter<String> emitter,
+	public void serializeAndSplitObjectAndEmit(Object obj, int maxMessageSize, MutinyEmitter<String> emitter,
 			ObjectMapper objectMapper) throws ResponseException {
+		if(inMemoryActive) {
+			sendObjectInMemory(obj);
+			return;
+		}
 		if (obj instanceof BaseRequest br) {
-			String base;
+			Map<String, List<Map<String, Object>>> payload = br.getPayload();
+			Map<String, List<Map<String, Object>>> prevPayload = br.getPrevPayload();
+			Set<String> ids = br.getIds();
+			int initialLength;
+			int entrySize;
+			if ((payload == null || payload.isEmpty()) && (prevPayload == null || prevPayload.isEmpty())) {
+				entrySize = ids.size();
+				initialLength = entrySize * 500 + 150;
+			} else if ((prevPayload == null || prevPayload.isEmpty())) {
+				entrySize = payload.values().size();
+				initialLength = entrySize * 3500 + 150;
+			} else if ((payload == null || payload.isEmpty())) {
+				entrySize = prevPayload.values().size();
+				initialLength = entrySize * 8500 + 150;
+			} else {
+				entrySize = payload.values().size();
+				initialLength = entrySize * 17000 + 150;
+			}
+			if (initialLength > maxMessageSize) {
+				initialLength = maxMessageSize;
+			}
+			MyByteArrayBuilder current = new MyByteArrayBuilder(initialLength, entrySize, maxMessageSize);
+
 			try {
-				base = objectMapper.writeValueAsString(br);
-			} catch (JsonProcessingException e) {
+				objectMapper.writeValue(current, br);
+			} catch (Exception e) {
 				logger.error("Failed to serialize object", e);
 				throw new ResponseException(ErrorType.InternalError, "Failed to serialize object");
 			}
-			logger.debug("attempting to send request with max message size " + maxMessageSize);
-			base = base.substring(0, base.length() - 1);
-			base += ",\"" + AppConstants.PAYLOAD_SERIALIZATION_CHAR + "\":[";
-			String current = base;
-			Map<String, List<Map<String, Object>>> payload = br.getPayload();
-			Map<String, List<Map<String, Object>>> prevPayload = br.getPrevPayload();
+			current.reduceByOne();
+			// logger.debug("attempting to send request with max message size " +
+			// maxMessageSize);
+
+			current.write(BASE_APPENDIX);
+			int baseLength = current.size();
+			current.setBaseRollback();
+
 			boolean zip = br.isZipped();
-			List<String> toSend = Lists.newArrayList();
+			List<byte[]> toSend = Lists.newArrayList();
 			if (payload != null) {
 				boolean first = true;
-				int lastSend = 0;
+
 				for (Entry<String, List<Map<String, Object>>> entry : payload.entrySet()) {
-					String serializedPayload;
-					String serializedPrevpayload;
+
 					String id = entry.getKey();
+					byte[] idBytes = id.getBytes();
 					for (int i = 0; i < entry.getValue().size(); i++) {
+						current.nextItem();
+						current.write('"');
+						current.write(idBytes);
+						current.write('"');
+						current.write(',');
 						try {
-							serializedPayload = objectMapper.writeValueAsString(entry.getValue().get(i));
-						} catch (JsonProcessingException e) {
+							if (zip) {
+								current.write('"');
+								current.write(base64Encoder
+										.encode(zip(objectMapper.writeValueAsBytes(entry.getValue().get(i)))));
+								current.write('"');
+							} else {
+								objectMapper.writeValue(current, entry.getValue().get(i));
+							}
+						} catch (Exception e) {
 							logger.error("Failed to serialize object", e);
 							throw new ResponseException(ErrorType.InternalError, "Failed to serialize object");
 						}
+						current.write(',');
 						if (prevPayload != null) {
 							List<Map<String, Object>> prev = prevPayload.get(id);
 							if (prev != null) {
 								if (i < prev.size()) {
 									Map<String, Object> prevValue = prev.get(i);
 									try {
-										serializedPrevpayload = objectMapper.writeValueAsString(prevValue);
-									} catch (JsonProcessingException e) {
+										if (zip) {
+											current.write('"');
+											current.write(base64Encoder
+													.encode(zip(objectMapper.writeValueAsBytes(prevValue))));
+											current.write('"');
+										} else {
+											objectMapper.writeValue(current, prevValue);
+										}
+
+									} catch (Exception e) {
 										logger.error("Failed to serialize object", e);
 										throw new ResponseException(ErrorType.InternalError,
 												"Failed to serialize object");
 									}
 								} else {
-									serializedPrevpayload = "null";
+									if (zip) {
+										current.write(getZippedNullArray());
+									} else {
+										current.write(NULL_ARRAY);
+									}
 								}
 							} else {
-								serializedPrevpayload = "null";
+								if (zip) {
+									current.write(getZippedNullArray());
+								} else {
+									current.write(NULL_ARRAY);
+								}
 							}
 						} else {
-							serializedPrevpayload = "null";
-						}
-
-						if (zip) {
-
-							try {
-								serializedPayload = base64Encoder.encodeToString(zip(serializedPayload));
-							} catch (IOException e) {
-								throw new ResponseException(ErrorType.InternalError, "Failed to compress prevpayload");
-							}
-							try {
-								serializedPrevpayload = base64Encoder.encodeToString(zip(serializedPrevpayload));
-							} catch (IOException e) {
-								throw new ResponseException(ErrorType.InternalError, "Failed to compress prevpayload");
+							if (zip) {
+								current.write(getZippedNullArray());
+							} else {
+								current.write(NULL_ARRAY);
 							}
 						}
-						int messageLength = current.getBytes().length + id.getBytes().length
-								+ serializedPayload.getBytes().length + serializedPrevpayload.getBytes().length + 18;
-						logger.debug("message size after adding payload would be " + messageLength);
+						current.write(',');
+						int currentSize = current.size();
+						int messageLength = currentSize + FINALIZER_lENGTH;
+						// logger.debug("message size after adding payload would be " + messageLength);
 						if (messageLength > maxMessageSize) {
 							if (first) {
 								throw new ResponseException(ErrorType.RequestEntityTooLarge);
 							}
-							logger.debug("finalizing message");
-							current = current.substring(0, current.length() - 1) + "]}";
-							logger.debug("finale messagesize: " + current.getBytes().length);
-							if (current.getBytes().length > maxMessageSize) {
-								logger.error("ALERT MESSAGE TO BIG");
-							}
+							// logger.debug("finalizing message");
+							toSend.add(current.rollback());
+							// current = current.substring(0, current.length() - 1) + "]}";
 
-							toSend.add(current);
-							current = base + "\"" + id + "\",";
-							if (zip) {
-								current += "\"";
-							}
-							current += serializedPayload;
-							if (zip) {
-								current += "\"";
-							}
-							current += ",";
-							if (zip) {
-								current += "\"";
-							}
-							current += serializedPrevpayload;
-							if (zip) {
-								current += "\"";
-							}
-							current += ",";
-							first = true;
 						} else if (messageLength == maxMessageSize) {
-							logger.debug("finalizing message");
-							current += "\"" + id + "\",";
-							if (zip) {
-								current += "\"";
-							}
-							current += serializedPayload;
-							if (zip) {
-								current += "\"";
-							}
-							current += ",";
-							if (zip) {
-								current += "\"";
-							}
-							current += serializedPrevpayload;
-							if (zip) {
-								current += "\"";
-							}
-							current += "]}";
-							logger.debug("finale messagesize: " + current.getBytes().length);
-							if (current.getBytes().length > maxMessageSize) {
-								logger.error("ALERT MESSAGE TO BIG");
-							}
-							toSend.add(current);
-							current = base;
-							first = true;
-						} else {
-							current += "\"" + id + "\",";
-							if (zip) {
-								current += "\"";
-							}
-							current += serializedPayload;
-							if (zip) {
-								current += "\"";
-							}
-							current += ",";
-							if (zip) {
-								current += "\"";
-							}
-							current += serializedPrevpayload;
-							if (zip) {
-								current += "\"";
-							}
-							current += ",";
+							toSend.add(current.finalizeMessage());
+							// logger.debug("finalizing message");
 						}
 					}
 					first = false;
 				}
-				if (current.length() != base.length()) {
-					logger.debug("finalizing message");
-					current = current.substring(0, current.length() - 1) + "]}";
-					logger.debug("finale messagesize: " + current.getBytes().length);
-					if (current.getBytes().length > maxMessageSize) {
-						logger.error("ALERT MESSAGE TO BIG");
-					}
-					toSend.add(current);
-					current = base;
+				if (current.size() != baseLength) {
+					toSend.add(current.finalizeMessage());
 				}
 			} else if (prevPayload != null) {
 				boolean first = true;
+
 				for (Entry<String, List<Map<String, Object>>> entry : prevPayload.entrySet()) {
-					String serializedPayload = "null";
-					String serializedPrevpayload;
+
 					String id = entry.getKey();
+					byte[] idBytes = id.getBytes();
 					for (Map<String, Object> mapEntry : entry.getValue()) {
+						current.nextItem();
+						current.write('"');
+						current.write(idBytes);
+						current.write('"');
+						current.write(',');
+						if (zip) {
+							current.write(getZippedNullArray());
+						} else {
+							current.write(NULL_ARRAY);
+						}
+						current.write(',');
 						try {
-							serializedPrevpayload = objectMapper.writeValueAsString(mapEntry);
-						} catch (JsonProcessingException e) {
+							if (zip) {
+								current.write('"');
+								current.write(base64Encoder.encode(zip(objectMapper.writeValueAsBytes(mapEntry))));
+								current.write('"');
+							} else {
+								objectMapper.writeValue(current, mapEntry);
+							}
+						} catch (Exception e) {
 							logger.error("Failed to serialize object", e);
 							throw new ResponseException(ErrorType.InternalError, "Failed to serialize object");
 						}
-
-						if (zip) {
-
-							try {
-								serializedPayload = base64Encoder.encodeToString(zip(serializedPayload));
-							} catch (IOException e) {
-								throw new ResponseException(ErrorType.InternalError, "Failed to compress prevpayload");
-							}
-							try {
-								serializedPrevpayload = base64Encoder.encodeToString(zip(serializedPrevpayload));
-							} catch (IOException e) {
-								throw new ResponseException(ErrorType.InternalError, "Failed to compress prevpayload");
-							}
-						}
-						int messageLength = current.getBytes().length + id.getBytes().length
-								+ serializedPayload.getBytes().length + serializedPrevpayload.getBytes().length + 18;
-						logger.debug("message size after adding payload would be " + maxMessageSize);
+						current.write(',');
+						int currentSize = current.size();
+						int messageLength = currentSize + FINALIZER_lENGTH;
+						// logger.debug("message size after adding payload would be " + messageLength);
 						if (messageLength > maxMessageSize) {
 							if (first) {
 								throw new ResponseException(ErrorType.RequestEntityTooLarge);
 							}
-							logger.debug("finalizing message only prevpayload");
-							current = current.substring(0, current.length() - 1) + "]}";
-							logger.debug("finale messagesize only prevpayload: " + current.getBytes().length);
-							toSend.add(current);
-							current = base + "\"" + id + "\",";
-							if (zip) {
-								current += "\"";
-							}
-							current += serializedPayload;
-							if (zip) {
-								current += "\"";
-							}
-							current += ",";
-							if (zip) {
-								current += "\"";
-							}
-							current += serializedPrevpayload;
-							if (zip) {
-								current += "\"";
-							}
-							current += ",";
-							first = true;
+							// logger.debug("finalizing message");
+							toSend.add(current.rollback());
+							// current = current.substring(0, current.length() - 1) + "]}";
+
 						} else if (messageLength == maxMessageSize) {
-							logger.debug("finalizing message only prevpayload");
-							current = current.substring(0, current.length() - 1) + "]}";
-							logger.debug("finale messagesize only prevpayload: " + current.getBytes().length);
-							toSend.add(current);
-							current = base;
-							first = true;
-						} else {
-							current += "\"" + id + "\",";
-							if (zip) {
-								current += "\"";
-							}
-							current += serializedPayload;
-							if (zip) {
-								current += "\"";
-							}
-							current += ",";
-							if (zip) {
-								current += "\"";
-							}
-							current += serializedPrevpayload;
-							if (zip) {
-								current += "\"";
-							}
-							current += ",";
+							toSend.add(current.finalizeMessage());
+							// logger.debug("finalizing message");
 						}
 					}
 					first = false;
 				}
-				if (current.length() != base.length()) {
-					logger.debug("finalizing message only prevpayload");
-					current = current.substring(0, current.length() - 1) + "]}";
-					logger.debug("finale messagesize only prevpayload: " + current.getBytes().length);
-					toSend.add(current);
-					current = base;
+				if (current.size() != baseLength) {
+					toSend.add(current.finalizeMessage());
 				}
-			} else if (br.getIds() != null) {
+			} else if (ids != null) {
 				boolean first = true;
-				for (String entry : br.getIds()) {
-					String serializedPayload = "null";
-					String serializedPrevpayload = "null";
-					String id = entry;
+				for (String entry : ids) {
 
+					byte[] id = entry.getBytes();
+					current.nextItem();
+					current.write('"');
+					current.write(id);
+					current.write('"');
+					current.write(',');
 					if (zip) {
-
-						try {
-							serializedPayload = base64Encoder.encodeToString(zip(serializedPayload));
-						} catch (IOException e) {
-							throw new ResponseException(ErrorType.InternalError, "Failed to compress prevpayload");
-						}
-						try {
-							serializedPrevpayload = base64Encoder.encodeToString(zip(serializedPrevpayload));
-						} catch (IOException e) {
-							throw new ResponseException(ErrorType.InternalError, "Failed to compress prevpayload");
-						}
+						current.write(getZippedNullArray());
+						current.write(',');
+						current.write(getZippedNullArray());
+					} else {
+						current.write(NULL_ARRAY);
+						current.write(',');
+						current.write(NULL_ARRAY);
 					}
-					int messageLength = current.getBytes().length + id.getBytes().length
-							+ serializedPayload.getBytes().length + serializedPrevpayload.getBytes().length + 18;
-					logger.debug("message size after adding payload would be " + maxMessageSize);
+					current.write(',');
+					// logger.debug("message size after adding payload would be " + maxMessageSize);
+					int currentSize = current.size();
+					int messageLength = currentSize + FINALIZER_lENGTH;
+					// logger.debug("message size after adding payload would be " + messageLength);
 					if (messageLength > maxMessageSize) {
 						if (first) {
 							throw new ResponseException(ErrorType.RequestEntityTooLarge);
 						}
-						logger.debug("finalizing message only ids");
-						current = current.substring(0, current.length() - 1) + "]}";
-						logger.debug("finale messagesize only ids: " + current.getBytes().length);
-						toSend.add(current);
-						current = base + "\"" + id + "\",";
-						if (zip) {
-							current += "\"";
-						}
-						current += serializedPayload;
-						if (zip) {
-							current += "\"";
-						}
-						current += ",";
-						if (zip) {
-							current += "\"";
-						}
-						current += serializedPrevpayload;
-						if (zip) {
-							current += "\"";
-						}
-						current += ",";
-						first = true;
+						// logger.debug("finalizing message");
+						toSend.add(current.rollback());
+						// current = current.substring(0, current.length() - 1) + "]}";
+
 					} else if (messageLength == maxMessageSize) {
-						logger.debug("finalizing message only ids");
-						current = current.substring(0, current.length() - 1) + "]}";
-						logger.debug("finale messagesize only ids: " + current.getBytes().length);
-						toSend.add(current);
-						current = base;
-						first = true;
-					} else {
-						current += "\"" + id + "\",";
-						if (zip) {
-							current += "\"";
-						}
-						current += serializedPayload;
-						if (zip) {
-							current += "\"";
-						}
-						current += ",";
-						if (zip) {
-							current += "\"";
-						}
-						current += serializedPrevpayload;
-						if (zip) {
-							current += "\"";
-						}
-						current += ",";
+						toSend.add(current.finalizeMessage());
+						// logger.debug("finalizing message");
 					}
+
 					first = false;
 				}
-				if (current.length() != base.length()) {
-					logger.debug("finalizing message only ids");
-					current = current.substring(0, current.length() - 1) + "]}";
-					logger.debug("finale messagesize only ids: " + current.getBytes().length);
-					toSend.add(current);
-					current = base;
+				if (current.size() != baseLength) {
+					toSend.add(current.finalizeMessage());
 				}
 			} else {
 				throw new ResponseException(ErrorType.InternalError, "Failed to compress prevpayload");
 			}
 			toSend.forEach(entry -> {
-				logger.debug("sending entry of size: " + entry.getBytes().length);
-				emitter.sendAndForget(entry);
+				// logger.debug("sending entry of size: " + entry.getBytes().length);
+				emitter.sendAndForget(new String(entry));
 			});
 
 		} else {
@@ -431,10 +348,43 @@ public class MicroServiceUtils {
 
 	}
 
-	private static byte[] zip(String data) throws IOException {
+	private void sendObjectInMemory(Object obj) {
+		
+		if(obj instanceof BaseRequest br) {
+			baseRequestReceivers.get(0).handleBaseRequest(br).subscribe().with(x -> {});
+			for(int i = 1; i < baseRequestReceivers.size(); i++) {
+				baseRequestReceivers.get(1).handleBaseRequest(br.copy()).subscribe().with(x -> {});
+			}
+		}else if(obj instanceof CSourceBaseRequest cr) {
+			csourceReceivers.get(0).handleRegistryChange(cr).subscribe().with(x -> {});
+			for(int i = 1; i < csourceReceivers.size(); i++) {
+				csourceReceivers.get(i).handleRegistryChange(cr).subscribe().with(x -> {});
+			}
+		}
+		
+	}
+
+	
+
+	public static byte[] getZippedNullArray() {
+		if (ZIPPED_NULL_ARRAY == null) {
+			try {
+				byte[] tmp = base64Encoder.encode(zip("null".getBytes()));
+				ZIPPED_NULL_ARRAY = new byte[tmp.length + 2];
+				ZIPPED_NULL_ARRAY[0] = '"';
+				System.arraycopy(tmp, 0, ZIPPED_NULL_ARRAY, 1, tmp.length);
+				ZIPPED_NULL_ARRAY[ZIPPED_NULL_ARRAY.length - 1] = '"';
+			} catch (IOException e) {
+				// left empty intentionally this should never happen
+			}
+		}
+		return ZIPPED_NULL_ARRAY;
+	}
+
+	private static byte[] zip(byte[] data) throws IOException {
 		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 		DeflaterOutputStream deflateOut = new DeflaterOutputStream(byteArrayOutputStream);
-		deflateOut.write(data.getBytes());
+		deflateOut.write(data);
 		deflateOut.flush();
 		deflateOut.close();
 		byte[] tmp = byteArrayOutputStream.toByteArray();
@@ -442,35 +392,7 @@ public class MicroServiceUtils {
 		return tmp;
 	}
 
-	public static List<String> splitStringByByteLength(String src, int maxsize) {
-		String id = String.format("%020d", src.hashCode() * System.currentTimeMillis());
-		logger.debug("Splitting into size " + maxsize);
-		logger.debug(src);
-		Charset cs = Charset.forName("UTF-16");
-		CharsetEncoder coder = cs.newEncoder();
-		ByteBuffer out = ByteBuffer.allocate(maxsize); // output buffer of required size
-		CharBuffer in = CharBuffer.wrap(src);
-		List<String> result = new ArrayList<>(); // a list to store the chunks
-		int pos = 0;
-		int i = 0;
-		while (true) {
-			CoderResult cr = coder.encode(in, out, true); // try to encode as much as possible
-			int newpos = src.length() - in.length();
-			String posS = String.format("%011d", i);
-			String s = "$" + id + posS + src.substring(pos, newpos);
-			i++;
-			result.add(s); // add what has been encoded to the list
-			pos = newpos; // store new input position
-			out.rewind(); // and rewind output buffer
-			if (!cr.isOverflow()) {
-				break; // everything has been encoded
-			}
-		}
-		result.set(0, "#" + id + String.format("%011d", i) + result.get(0).substring(32));
-		result.set(result.size() - 1, "%" + result.get(result.size() - 1).substring(1));
-		return result;
-	}
-
+	
 	public URI getGatewayURL() {
 		logger.trace("getGatewayURL() :: started");
 		String url = null;
@@ -540,7 +462,7 @@ public class MicroServiceUtils {
 	}
 
 	@SuppressWarnings("unchecked")
-	private static List<Object> deppCopyList(List<?> l) {
+	public static List<Object> deppCopyList(List<?> l) {
 		if (l == null) {
 			return null;
 		}
@@ -549,7 +471,7 @@ public class MicroServiceUtils {
 			Object copiedValue;
 			if (originalValue instanceof List<?> l1) {
 				copiedValue = deppCopyList(l1);
-			} else if (originalValue instanceof Map<?,?> m) {
+			} else if (originalValue instanceof Map<?, ?> m) {
 				copiedValue = deepCopyMap((Map<String, Object>) m);
 			} else if (originalValue instanceof Integer) {
 				copiedValue = ((Integer) originalValue).intValue();
@@ -623,6 +545,32 @@ public class MicroServiceUtils {
 		logger.debug(pge.getWhere());
 		logger.debug(pge.getTable());
 		logger.debug(pge.getRoutine());
-		
+
 	}
+
+	public static int getZippedNullArrayLength() {
+		return getZippedNullArray().length;
+	}
+
+	public static byte[] unzip(byte[] zippedData) throws IOException {
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		InflaterOutputStream inflater = new InflaterOutputStream(baos);
+		inflater.write(zippedData);
+		inflater.flush();
+		inflater.close();
+		baos.flush();
+		byte[] payloadBytes = baos.toByteArray();
+		baos.close();
+		return payloadBytes;
+
+	}
+	
+	public void registerCSourceReceiver(CSourceHandler handler) {
+		csourceReceivers.add(handler);
+	}
+	
+	public void registerBaseRequestReceiver(BaseRequestHandler handler) {
+		baseRequestReceivers.add(handler);
+	}
+
 }

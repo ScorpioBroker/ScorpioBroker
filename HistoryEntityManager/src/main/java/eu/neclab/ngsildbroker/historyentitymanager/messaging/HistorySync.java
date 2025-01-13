@@ -39,7 +39,10 @@ public abstract class HistorySync {
 
 	@Inject
 	HistoryMessagingBase historyMessaging;
-
+	
+	@Inject
+	MicroServiceUtils microServiceUtils;
+	
 	@ConfigProperty(name = "scorpio.history.syncchecktime", defaultValue = "5000")
 	private long syncCheckTime;
 
@@ -50,7 +53,7 @@ public abstract class HistorySync {
 
 	void syncTask() {
 		try {
-			MicroServiceUtils.serializeAndSplitObjectAndEmit(announcement, Integer.MAX_VALUE, syncEmitter, objectMapper);
+			microServiceUtils.serializeAndSplitObjectAndEmit(announcement, Integer.MAX_VALUE, syncEmitter, objectMapper);
 		} catch (ResponseException e) {
 			logger.error("Failed to serialize sync message.", e);
 		}
@@ -59,7 +62,7 @@ public abstract class HistorySync {
 	@PreDestroy
 	void shutdown() {
 		try {
-			MicroServiceUtils.serializeAndSplitObjectAndEmit(Map.of("instanceId", myInstanceId, "upOrDown", false),
+			microServiceUtils.serializeAndSplitObjectAndEmit(Map.of("instanceId", myInstanceId, "upOrDown", false),
 					Integer.MAX_VALUE, syncEmitter, objectMapper);
 		} catch (ResponseException e) {
 			logger.error("Failed to serialize sync message.", e);

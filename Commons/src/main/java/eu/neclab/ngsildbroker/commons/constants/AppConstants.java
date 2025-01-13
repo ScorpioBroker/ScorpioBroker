@@ -191,6 +191,27 @@ public class AppConstants {
 	public static final String NOOVERWRITE_SERIALIZATION_CHAR = "k";
 	public static final String INSTANCEID_SERIALIZATION_CHAR = "l";
 	public static final String ZIPPED_SERIALIZATION_CHAR = "m";
+	
+	public static final byte BYTE_TENANT_SERIALIZATION_CHAR = 'a';
+	public static final byte BYTE_PAYLOAD_SERIALIZATION_CHAR = 'b';
+	public static final byte BYTE_PREVPAYLOAD_SERIALIZATION_CHAR = 'c';
+	public static final byte BYTE_REQUESTTYPE_SERIALIZATION_CHAR = 'd';
+	public static final byte BYTE_SENDTIMESTAMP_SERIALIZATION_CHAR = 'e';
+	public static final byte BYTE_IDS_SERIALIZATION_CHAR = 'f';
+	public static final byte BYTE_ATTRIBNAME_SERIALIZATION_CHAR = 'g';
+	public static final byte BYTE_DATASETID_SERIALIZATION_CHAR = 'h';
+	public static final byte BYTE_DELETEALL_SERIALIZATION_CHAR = 'i';
+	public static final byte BYTE_DISTRIBUTED_SERIALIZATION_CHAR = 'j';
+	public static final byte BYTE_NOOVERWRITE_SERIALIZATION_CHAR = 'k';
+	public static final byte BYTE_INSTANCEID_SERIALIZATION_CHAR = 'l';
+	public static final byte BYTE_ZIPPED_SERIALIZATION_CHAR = 'm';
+	public static final String PROTOCOL_MQTTS = "mqtts";
+	public static final String PROTOCOL_MQTT = "mqtt";
+	public static final String PROTOCOL_HTTP = "http";
+	public static final String PROTOCOL_HTTPS = "https";
+	public static final String SSL_KEY = "key";
+	public static final String SSL_CERT = "cert";
+	public static final String SSL_TRUST_ALL = "trustAll";
 
 
 

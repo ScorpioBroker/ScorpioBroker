@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -261,23 +262,61 @@ public class BaseRequest implements Serializable {
 		duplicate.zipped = this.zipped;
 		return duplicate;
 	}
-	
+
 	public void addToPayload(String id, Map<String, Object> payloadToAdd) {
 		List<Map<String, Object>> tmp = payload.get(id);
-		if(tmp == null) {
+		if (tmp == null) {
 			tmp = Lists.newArrayList();
 			payload.put(id, tmp);
 		}
 		tmp.add(payloadToAdd);
 	}
-	
+
 	public void addToPrevPayload(String id, Map<String, Object> payloadToAdd) {
 		List<Map<String, Object>> tmp = prevPayload.get(id);
-		if(tmp == null) {
+		if (tmp == null) {
 			tmp = Lists.newArrayList();
 			prevPayload.put(id, tmp);
 		}
 		tmp.add(payloadToAdd);
+	}
+
+	public BaseRequest copy() {
+		return new BaseRequest(this);
+	}
+
+	private BaseRequest(BaseRequest original) {
+		this.tenant = original.tenant;
+
+		this.payload = deepCopyPayload(original.payload);
+		this.prevPayload = deepCopyPayload(original.prevPayload);
+
+		this.firstId = original.firstId;
+		this.requestType = original.requestType;
+		this.sendTimestamp = original.sendTimestamp;
+		this.ids = new HashSet<>(original.ids);
+		this.attribName = original.attribName;
+		this.datasetId = original.datasetId;
+		this.deleteAll = original.deleteAll;
+		this.distributed = original.distributed;
+		this.noOverwrite = original.noOverwrite;
+		this.instanceId = original.instanceId;
+		this.zipped = original.zipped;
+	}
+
+	private Map<String, List<Map<String, Object>>> deepCopyPayload(Map<String, List<Map<String, Object>>> payload) {
+		if (payload == null) {
+			return null;
+		}
+		Map<String, List<Map<String, Object>>> result = new HashMap<>(payload.size());
+		for (Entry<String, List<Map<String, Object>>> entry : payload.entrySet()) {
+			List<Map<String, Object>> tmp = new ArrayList<>(entry.getValue().size());
+			for (int i = 0; i < entry.getValue().size(); i++) {
+				tmp.add(MicroServiceUtils.deepCopyMap(entry.getValue().get(i)));
+			}
+			result.put(entry.getKey(), tmp);
+		}
+		return result;
 	}
 
 }

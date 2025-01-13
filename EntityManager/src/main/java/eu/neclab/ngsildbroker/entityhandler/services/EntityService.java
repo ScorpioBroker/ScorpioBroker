@@ -51,6 +51,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.results.CRUDSuccess;
 import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.interfaces.CSourceHandler;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
@@ -73,7 +74,7 @@ import jakarta.inject.Inject;
 
 @ApplicationScoped
 @SuppressWarnings("unchecked")
-public class EntityService {
+public class EntityService implements CSourceHandler {
 
 	private final static Logger logger = LoggerFactory.getLogger(EntityService.class);
 	public static boolean checkEntity = false;
@@ -106,6 +107,9 @@ public class EntityService {
 	JsonLDService jsonLdService;
 
 	@Inject
+	MicroServiceUtils microServiceUtils;
+
+	@Inject
 	ObjectMapper objectMapper;
 
 	@ConfigProperty(name = "scorpio.messaging.maxSize")
@@ -122,6 +126,7 @@ public class EntityService {
 			tenant2CId2QueryRegEntries = t;
 			return null;
 		}).await().indefinitely();
+		this.microServiceUtils.registerCSourceReceiver(this);
 	}
 
 	// This is needed so that @postconstruct runs on the startup thread and not on a
@@ -388,7 +393,7 @@ public class EntityService {
 		return entityDAO.deleteAttribute(request).onItem().transformToUni(resultEntity -> {
 			request.setPrevPayloadFromSingle(entityId, resultEntity);
 			try {
-				MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
+				microServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
 			} catch (ResponseException e) {
 				return Uni.createFrom().failure(e);
 			}
@@ -477,7 +482,7 @@ public class EntityService {
 			// request.setPayload(deleted);
 			request.setPrevPayloadFromSingle(entityId, deleted);
 			try {
-				MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
+				microServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
 			} catch (ResponseException e) {
 				return Uni.createFrom().failure(e);
 			}
@@ -644,7 +649,7 @@ public class EntityService {
 
 			request.setPrevPayloadFromSingle(entityId, previousAndNewEntity);
 			try {
-				MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
+				microServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
 			} catch (ResponseException e) {
 				return Uni.createFrom().failure(e);
 			}
@@ -731,7 +736,7 @@ public class EntityService {
 			Context context) {
 		return entityDAO.createEntity(request).onItem().transformToUni(v -> {
 			try {
-				MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
+				microServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
 			} catch (ResponseException e) {
 				return Uni.createFrom().failure(e);
 			}
@@ -750,7 +755,7 @@ public class EntityService {
 			request.setPrevPayloadFromSingle(entityId, v);
 
 			try {
-				MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
+				microServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
 			} catch (ResponseException e) {
 				return Uni.createFrom().failure(e);
 			}
@@ -982,7 +987,7 @@ public class EntityService {
 			if (!failedToAdd.isEmpty())
 				localResult.addFailure(new ResponseException(ErrorType.None, "Not added", failedToAdd));
 			try {
-				MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
+				microServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
 			} catch (ResponseException e) {
 				return Uni.createFrom().failure(e);
 			}
@@ -1130,7 +1135,7 @@ public class EntityService {
 				if (!reqPayload.isEmpty()) {
 					logger.debug("Create batch request sending to kafka " + request.getIds());
 					try {
-						MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter,
+						microServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter,
 								objectMapper);
 					} catch (ResponseException e) {
 						return Uni.createFrom().failure(e);
@@ -1279,7 +1284,7 @@ public class EntityService {
 						if (!request.getPayload().isEmpty()) {
 							logger.debug("Append batch request sending to kafka " + request.getIds());
 							try {
-								MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter,
+								microServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter,
 										objectMapper);
 							} catch (ResponseException e) {
 								return Uni.createFrom().failure(e);
@@ -1388,9 +1393,9 @@ public class EntityService {
 
 					}
 					if (!request.getPayload().isEmpty()) {
-						logger.debug("Upsert batch request sending to kafka " + request.getIds());
+						// logger.debug("Upsert batch request sending to kafka " + request.getIds());
 						try {
-							MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter,
+							microServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter,
 									objectMapper);
 						} catch (ResponseException e) {
 							return Uni.createFrom().failure(e);
@@ -1556,7 +1561,7 @@ public class EntityService {
 					if (!request.getIds().isEmpty()) {
 						logger.debug("Delete batch request sending to kafka " + request.getIds());
 						try {
-							MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter,
+							microServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter,
 									objectMapper);
 						} catch (ResponseException e) {
 							return Uni.createFrom().failure(e);
@@ -1643,7 +1648,7 @@ public class EntityService {
 	private Uni<NGSILDOperationResult> localMergePatch(MergePatchRequest request, String entityId, Context context) {
 		return entityDAO.mergePatch(request).onItem().transformToUni(result -> {
 			List<ResponseException> collectedFails = handleMergePatchDBResult(result, request.getTenant(), entityId);
-			if(!collectedFails.isEmpty()) {
+			if (!collectedFails.isEmpty()) {
 				collectedFails.forEach(e -> {
 					logger.error("Failed to send on of the messages", e);
 				});
@@ -1656,12 +1661,13 @@ public class EntityService {
 		});
 	}
 
-	private List<ResponseException> handleMergePatchDBResult(Map<String, Object> result, String tenant, String entityId) {
+	private List<ResponseException> handleMergePatchDBResult(Map<String, Object> result, String tenant,
+			String entityId) {
 		Map<String, List<String>> updated = (Map<String, List<String>>) result.get("updated");
 		Map<String, List<String>> deleted = (Map<String, List<String>>) result.get("deleted");
 		Map<String, Object> prev = (Map<String, Object>) result.get("old");
 		Map<String, Object> updatedEntity = (Map<String, Object>) result.get("new");
-		
+
 		List<ResponseException> collectedFails = Lists.newArrayList();
 		if (!deleted.isEmpty()) {
 			for (Entry<String, List<String>> attrEntry : deleted.entrySet()) {
@@ -1671,18 +1677,17 @@ public class EntityService {
 					deleteReq = new DeleteAttributeRequest(tenant, entityId, attr, null, true, zip);
 					deleteReq.setPrevPayloadFromSingle(entityId, prev);
 					try {
-						MicroServiceUtils.serializeAndSplitObjectAndEmit(deleteReq, messageSize, entityEmitter,
+						microServiceUtils.serializeAndSplitObjectAndEmit(deleteReq, messageSize, entityEmitter,
 								objectMapper);
 					} catch (ResponseException e) {
 						collectedFails.add(e);
 					}
 				} else {
 					for (String datasetId : attrEntry.getValue()) {
-						deleteReq = new DeleteAttributeRequest(tenant, entityId, attr, datasetId,
-								false, zip);
+						deleteReq = new DeleteAttributeRequest(tenant, entityId, attr, datasetId, false, zip);
 						deleteReq.setPrevPayloadFromSingle(entityId, prev);
 						try {
-							MicroServiceUtils.serializeAndSplitObjectAndEmit(deleteReq, messageSize, entityEmitter,
+							microServiceUtils.serializeAndSplitObjectAndEmit(deleteReq, messageSize, entityEmitter,
 									objectMapper);
 						} catch (ResponseException e) {
 							collectedFails.add(e);
@@ -1695,40 +1700,42 @@ public class EntityService {
 			Object type = updatedEntity.get(NGSIConstants.JSON_LD_TYPE);
 			Object createdAt = updatedEntity.get(NGSIConstants.NGSI_LD_CREATED_AT);
 			Object modifiedAt = updatedEntity.get(NGSIConstants.NGSI_LD_MODIFIED_AT);
+			Map<String, Object> tmp = Maps.newHashMap();
+
+			tmp.put(NGSIConstants.JSON_LD_TYPE, type);
+			tmp.put(NGSIConstants.NGSI_LD_CREATED_AT, createdAt);
+			tmp.put(NGSIConstants.NGSI_LD_MODIFIED_AT, modifiedAt);
 			for (Entry<String, List<String>> attrEntry : updated.entrySet()) {
 				String attr = attrEntry.getKey();
 
-				
 				List<Map<String, Object>> attrib = (List<Map<String, Object>>) updatedEntity.get(attr);
 				for (String datasetId : attrEntry.getValue()) {
 					Map<String, Object> searchedInstance = null;
 					for (Map<String, Object> attrInstance : attrib) {
 						Object datasetIdObj = attrInstance.get(NGSIConstants.NGSI_LD_DATA_SET_ID);
-						if ((datasetId == null && datasetIdObj == null)
-								|| (datasetId != null && datasetIdObj != null
-										&& datasetId.equals(((List<Map<String, String>>) datasetIdObj).get(0)
-												.get(NGSIConstants.JSON_LD_ID)))) {
+						if ((datasetId == null && datasetIdObj == null) || (datasetId != null && datasetIdObj != null
+								&& datasetId.equals(((List<Map<String, String>>) datasetIdObj).get(0)
+										.get(NGSIConstants.JSON_LD_ID)))) {
 							searchedInstance = attrInstance;
 							break;
 						}
 					}
-					if(searchedInstance != null) {
-						Map<String, Object> tmp = Maps.newHashMap();
-						tmp.put(attr, Lists.newArrayList(searchedInstance));
-						tmp.put(NGSIConstants.JSON_LD_TYPE, type);
-						tmp.put(NGSIConstants.NGSI_LD_CREATED_AT, createdAt);
-						tmp.put(NGSIConstants.NGSI_LD_MODIFIED_AT, modifiedAt);
-						AppendEntityRequest append = new AppendEntityRequest(tenant, entityId, tmp, zip);
-						append.setPrevPayloadFromSingle(entityId, prev);
-						try {
-							MicroServiceUtils.serializeAndSplitObjectAndEmit(append, messageSize, entityEmitter,
-									objectMapper);
-						} catch (ResponseException e) {
-							collectedFails.add(e);
+					if (searchedInstance != null) {
+						Object attrList = tmp.get(attr);
+						if (attrList == null) {
+							attrList = Lists.newArrayList();
+							tmp.put(attr, attrList);
 						}
+						((List) attrList).add(searchedInstance);
 					}
 				}
-
+			}
+			AppendEntityRequest append = new AppendEntityRequest(tenant, entityId, tmp, zip);
+			append.setPrevPayloadFromSingle(entityId, prev);
+			try {
+				microServiceUtils.serializeAndSplitObjectAndEmit(append, messageSize, entityEmitter, objectMapper);
+			} catch (ResponseException e) {
+				collectedFails.add(e);
 			}
 		}
 		return collectedFails;
@@ -1796,7 +1803,7 @@ public class EntityService {
 		return entityDAO.replaceEntity(request).onItem().transformToUni(v -> {
 			request.setPrevPayloadFromSingle(entityId, v);
 			try {
-				MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
+				microServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
 			} catch (ResponseException e) {
 				return Uni.createFrom().failure(e);
 			}
@@ -1878,7 +1885,7 @@ public class EntityService {
 		return entityDAO.replaceAttrib(request).onItem().transformToUni(v -> {
 			request.setPrevPayloadFromSingle(entityId, v);
 			try {
-				MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
+				microServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter, objectMapper);
 			} catch (ResponseException e) {
 				return Uni.createFrom().failure(e);
 			}
@@ -2024,7 +2031,8 @@ public class EntityService {
 						for (Map<String, Object> success : successes) {
 							String entityId = (String) success.get("id");
 							Map<String, Object> old = (Map<String, Object>) success.get("old");
-							handleMergePatchDBResult(Map.of("old", old, "new", success.get("new"), "deleted", success.get("deleted"), "updated", success.get("updated")), tenant, entityId);
+							handleMergePatchDBResult(Map.of("old", old, "new", success.get("new"), "deleted",
+									success.get("deleted"), "updated", success.get("updated")), tenant, entityId);
 							MicroServiceUtils.putIntoIdMap(oldEntities, entityId, old);
 							NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.MERGE_PATCH_REQUEST,
 									entityId);
@@ -2051,7 +2059,7 @@ public class EntityService {
 //						if (!request.getPayload().isEmpty()) {
 //							
 //							try {
-//								MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter,
+//								microServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter,
 //										objectMapper);
 //							} catch (ResponseException e) {
 //								return Uni.createFrom().failure(e);
@@ -2072,6 +2080,11 @@ public class EntityService {
 			});
 			return result;
 		});
+	}
+
+	public Uni<Void> updateValueField(String tenant, String id, String type, String attribId, String datasetId,
+			Map<String, Object> expandedValue) {
+		return entityDAO.updateValueField(tenant, id, attribId, datasetId, expandedValue);
 	}
 
 }

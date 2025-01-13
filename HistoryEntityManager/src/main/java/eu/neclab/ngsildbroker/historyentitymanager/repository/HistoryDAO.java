@@ -70,28 +70,33 @@ public class HistoryDAO {
 							.get(NGSIConstants.JSON_LD_VALUE),
 					((List<Map<String, String>>) payload.remove(NGSIConstants.NGSI_LD_MODIFIED_AT)).get(0)
 							.get(NGSIConstants.JSON_LD_VALUE));
-			String sql = "INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY + " (id, e_types, createdat, modifiedat";
+			StringBuilder sql = new StringBuilder("INSERT INTO ");
+			sql.append(DBConstants.DBTABLE_TEMPORALENTITY);
+			sql.append(" (id, e_types, createdat, modifiedat");
 			Object scope = payload.remove(NGSIConstants.NGSI_LD_SCOPE);
 			if (scope == null) {
-				sql += ") VALUES($1, $2, $3::text::timestamp, $4::text::timestamp) ";
+				sql.append(") VALUES($1, $2, $3::text::timestamp, $4::text::timestamp) ");
 			} else {
-				sql += ", scopes) VALUES($1, $2, $3::text::timestamp, $4::text::timestamp, getScopes($5::jsonb)) ";
+				sql.append(", scopes) VALUES($1, $2, $3::text::timestamp, $4::text::timestamp, getScopes($5::jsonb)) ");
 			}
 
-			sql += "ON CONFLICT(id) DO UPDATE SET e_types = ARRAY(SELECT DISTINCT UNNEST("
-					+ DBConstants.DBTABLE_TEMPORALENTITY
-					+ ".e_types || EXCLUDED.e_types)), modifiedat = EXCLUDED.modifiedat ";
+			sql.append("ON CONFLICT(id) DO UPDATE SET e_types = ARRAY(SELECT DISTINCT UNNEST(");
+			sql.append(DBConstants.DBTABLE_TEMPORALENTITY);
+			sql.append(".e_types || EXCLUDED.e_types)), modifiedat = EXCLUDED.modifiedat ");
 			if (scope == null) {
-				sql += ", scopes = null ";
+				sql.append(", scopes = null ");
 			} else {
-				sql += ", scopes = getScopes($5::jsonb) ";
+				sql.append(", scopes = getScopes($5::jsonb) ");
 			}
 
-			sql += "RETURNING (" + DBConstants.DBTABLE_TEMPORALENTITY + ".modifiedat = "
-					+ DBConstants.DBTABLE_TEMPORALENTITY + ".createdat)";
-			logger.debug(sql);
-			logger.debug(tuple.deepToString());
-			return client.preparedQuery(sql).execute(tuple).onItem().transformToUni(rows -> {
+			sql.append("RETURNING (");
+			sql.append(DBConstants.DBTABLE_TEMPORALENTITY);
+			sql.append(".modifiedat = ");
+			sql.append(DBConstants.DBTABLE_TEMPORALENTITY);
+			sql.append(".createdat)");
+
+			// logger.debug(tuple.deepToString());
+			return client.preparedQuery(sql.toString()).execute(tuple).onItem().transformToUni(rows -> {
 				List<Tuple> batch = Lists.newArrayList();
 				Object location = payload.get(NGSIConstants.NGSI_LD_LOCATION);
 				JsonObject geoLocation = null;
@@ -117,10 +122,6 @@ public class HistoryDAO {
 							batch.add(Tuple.of(request.getFirstId(), entry.getKey(), new JsonObject(attribEntry)));
 						}
 					}
-				}
-				logger.debug(insertSql);
-				for (Tuple entry : batch) {
-					logger.debug(entry.deepToString());
 				}
 				return client.preparedQuery(insertSql).executeBatch(batch).onItem()
 						.transform(rows1 -> !rows.iterator().next().getBoolean(0));
@@ -174,7 +175,7 @@ public class HistoryDAO {
 						} else {
 							tuple.addJsonArray(null);
 						}
-						logger.debug("batch type" + tuple.deepToString());
+						// logger.debug("batch type" + tuple.deepToString());
 						batchType.add(tuple);
 
 					} else {
@@ -189,7 +190,7 @@ public class HistoryDAO {
 							tuple.addJsonArray(null);
 						}
 						tuple.addString(entityId);
-						logger.debug("batch no type" + tuple.deepToString());
+						// logger.debug("batch no type" + tuple.deepToString());
 						batchNoType.add(tuple);
 					}
 					List<Tuple> attribsToFill;
@@ -211,28 +212,30 @@ public class HistoryDAO {
 								tuple = Tuple.of(entityId, entry.getKey(), new JsonObject(attribEntry));
 								attribsToFill.add(tuple);
 							}
-							logger.debug("attrib tuple " + tuple.deepToString());
+							// logger.debug("attrib tuple " + tuple.deepToString());
 
 						}
 					}
 				}
 			}
-			String typeSql = "INSERT INTO " + DBConstants.DBTABLE_TEMPORALENTITY
-					+ " (id, e_types, createdat, modifiedat, scopes) VALUES($1, $2, $3::text::timestamp, $4::text::timestamp, getScopes($5::jsonb)) "
-					+ "ON CONFLICT(id) DO UPDATE SET e_types = ARRAY(SELECT DISTINCT UNNEST("
-					+ DBConstants.DBTABLE_TEMPORALENTITY
-					+ ".e_types || EXCLUDED.e_types)), modifiedat = EXCLUDED.modifiedat, ";
+			StringBuilder typeSql = new StringBuilder("INSERT INTO ");
+			typeSql.append(DBConstants.DBTABLE_TEMPORALENTITY);
+			typeSql.append(
+					" (id, e_types, createdat, modifiedat, scopes) VALUES($1, $2, $3::text::timestamp, $4::text::timestamp, getScopes($5::jsonb)) ON CONFLICT(id) DO UPDATE SET e_types = ARRAY(SELECT DISTINCT UNNEST(");
+			typeSql.append(DBConstants.DBTABLE_TEMPORALENTITY);
+			typeSql.append(".e_types || EXCLUDED.e_types)), modifiedat = EXCLUDED.modifiedat, ");
 			if (request.getRequestType() == AppConstants.APPEND_REQUEST) {
-				typeSql += "scopes = CASE WHEN EXCLUDED.scopes IS NULL THEN temporalentity.scopes ELSE EXCLUDED.scopes END ";
+				typeSql.append(
+						"scopes = CASE WHEN EXCLUDED.scopes IS NULL THEN temporalentity.scopes ELSE EXCLUDED.scopes END ");
 			} else {
-				typeSql += "scopes = EXCLUDED.scopes ";
+				typeSql.append("scopes = EXCLUDED.scopes ");
 			}
 
-			typeSql += "RETURNING (modifiedat = createdat)";
+			typeSql.append("RETURNING (modifiedat = createdat)");
 			List<Uni<RowSet<Row>>> tmpList = new ArrayList<>(2);
 			if (!batchType.isEmpty()) {
-				logger.debug("batch type " + typeSql);
-				tmpList.add(client.preparedQuery(typeSql).executeBatch(batchType));
+
+				tmpList.add(client.preparedQuery(typeSql.toString()).executeBatch(batchType));
 			}
 			if (!batchNoType.isEmpty()) {
 				String noTypeSql = "UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY
@@ -305,25 +308,30 @@ public class HistoryDAO {
 			tuple.addString(((List<Map<String, String>>) payload.remove(NGSIConstants.NGSI_LD_MODIFIED_AT)).get(0)
 					.get(NGSIConstants.JSON_LD_VALUE));
 
-			String sql = "UPDATE " + DBConstants.DBTABLE_TEMPORALENTITY + " SET modifiedat = $1::text::timestamp";
+			StringBuilder sql = new StringBuilder("UPDATE ");
+			sql.append(DBConstants.DBTABLE_TEMPORALENTITY);
+			sql.append(" SET modifiedat = $1::text::timestamp");
 			int dollarCount = 2;
 			if (payload.containsKey(NGSIConstants.JSON_LD_TYPE) && payload.get(NGSIConstants.JSON_LD_TYPE) != null) {
-				sql += ",e_types = ARRAY(SELECT DISTINCT UNNEST(e_types || $" + dollarCount + "))";
+				sql.append(",e_types = ARRAY(SELECT DISTINCT UNNEST(e_types || $" + dollarCount + "))");
 				tuple.addArrayOfString(
 						((List<String>) payload.remove(NGSIConstants.JSON_LD_TYPE)).toArray(new String[0]));
 				dollarCount++;
 			}
 			if (payload.containsKey(NGSIConstants.NGSI_LD_SCOPE)) {
-				sql += ", SET scopes = getScopes($" + dollarCount + "::jsonb)";
+				sql.append(", SET scopes = getScopes($");
+				sql.append(dollarCount);
+				sql.append("::jsonb)");
 				dollarCount++;
 				tuple.addJsonArray(
 						new JsonArray((List<Map<String, String>>) payload.remove(NGSIConstants.NGSI_LD_SCOPE)));
 			}
-			sql += " WHERE id=$" + dollarCount;
+			sql.append(" WHERE id=$");
+			sql.append(dollarCount);
 			tuple.addString(request.getFirstId());
 			payload.remove(NGSIConstants.JSON_LD_TYPE);
 			payload.remove(NGSIConstants.JSON_LD_ID);
-			return client.preparedQuery(sql).execute(tuple).onFailure().recoverWithUni(e -> {
+			return client.preparedQuery(sql.toString()).execute(tuple).onFailure().recoverWithUni(e -> {
 				if (e instanceof PgException pge) {
 					if (pge.getSqlState().equals(AppConstants.SQL_NOT_FOUND)) {
 						return Uni.createFrom().failure(

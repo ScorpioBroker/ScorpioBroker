@@ -146,7 +146,7 @@ public class CSourceService {
 		}
 		return cSourceInfoDAO.createRegistration(request).onItem().transformToUni(rowset -> {
 			try {
-				MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, emitter, objectMapper);
+				microServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, emitter, objectMapper);
 			} catch (ResponseException e) {
 				return Uni.createFrom().failure(e);
 			}
@@ -176,7 +176,7 @@ public class CSourceService {
 				// no need to query regs again they are not distributed
 				// request.setPayload(rowset.iterator().next().getJsonObject(0).getMap());
 				try {
-					MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, emitter, objectMapper);
+					microServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, emitter, objectMapper);
 				} catch (ResponseException e) {
 					return Uni.createFrom().failure(e);
 				}
@@ -221,7 +221,7 @@ public class CSourceService {
 				// add the deleted entry
 				request.setPayload(rowset.iterator().next().getJsonObject(0).getMap());
 				try {
-					MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, emitter, objectMapper);
+					microServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, emitter, objectMapper);
 				} catch (ResponseException e) {
 					return Uni.createFrom().failure(e);
 				}

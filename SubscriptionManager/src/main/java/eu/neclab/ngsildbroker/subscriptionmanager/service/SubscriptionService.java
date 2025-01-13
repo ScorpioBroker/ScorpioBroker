@@ -1,7 +1,8 @@
 package eu.neclab.ngsildbroker.subscriptionmanager.service;
 
-import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -18,18 +19,11 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import io.vertx.core.http.impl.headers.HeadersMultiMap;
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
-import jakarta.enterprise.event.Observes;
-import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLDService;
@@ -42,10 +36,10 @@ import com.google.common.collect.Sets;
 import com.google.common.collect.Table;
 import com.google.common.collect.Table.Cell;
 import com.google.common.net.HttpHeaders;
+
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.NotificationParam;
-import eu.neclab.ngsildbroker.commons.datatypes.QueryRemoteHost;
 import eu.neclab.ngsildbroker.commons.datatypes.RegistrationEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.Subscription;
 import eu.neclab.ngsildbroker.commons.datatypes.SubscriptionRemoteHost;
@@ -53,7 +47,6 @@ import eu.neclab.ngsildbroker.commons.datatypes.ViaHeaders;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CSourceBaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.DeleteSubscriptionRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.InternalNotification;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.UpdateSubscriptionRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.results.CRUDSuccess;
@@ -63,7 +56,8 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.OmitTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.PickTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import eu.neclab.ngsildbroker.commons.interfaces.BaseRequestHandler;
+import eu.neclab.ngsildbroker.commons.interfaces.CSourceHandler;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import eu.neclab.ngsildbroker.commons.tools.SubscriptionTools;
@@ -75,8 +69,10 @@ import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple4;
+import io.vertx.core.http.impl.headers.HeadersMultiMap;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.net.PemKeyCertOptions;
 import io.vertx.mqtt.MqttClientOptions;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.buffer.Buffer;
@@ -86,10 +82,15 @@ import io.vertx.mutiny.mqtt.MqttClient;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowIterator;
 import io.vertx.pgclient.PgException;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 @Singleton
 @SuppressWarnings("unchecked")
-public class SubscriptionService {
+public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 
 	private final static Logger logger = LoggerFactory.getLogger(SubscriptionService.class);
 
@@ -426,7 +427,8 @@ public class SubscriptionService {
 			return Uni.createFrom().voidItem();
 		});
 		Uni.combine().all().unis(loadSubs, loadRegs).with(l -> l).await().indefinitely();
-
+		this.microServiceUtils.registerBaseRequestReceiver(this);
+		this.microServiceUtils.registerCSourceReceiver(this);
 	}
 
 	private boolean isIntervalSub(SubscriptionRequest request) {
@@ -736,7 +738,7 @@ public class SubscriptionService {
 		});
 	}
 
-	public Uni<Void> checkSubscriptions(BaseRequest message) {
+	public Uni<Void> handleBaseRequest(BaseRequest message) {
 		Collection<SubscriptionRequest> potentialSubs = tenant2subscriptionId2Subscription.row(message.getTenant())
 				.values();
 		return checkSubscriptions(message, potentialSubs);
@@ -746,7 +748,7 @@ public class SubscriptionService {
 
 		List<Uni<Void>> unis = Lists.newArrayList();
 		logger.debug("checking subscriptions");
-		logger.debug(message.toString());
+		// logger.debug(message.toString());
 
 		for (SubscriptionRequest potentialSub : potentialSubs) {
 			logger.debug("Potential Sub");
@@ -1332,18 +1334,57 @@ public class SubscriptionService {
 
 	}
 
+	public static void main(String[] args) throws MalformedURLException, URISyntaxException {
+		URI url = new URI("mqtts://bla.com/basd");
+
+		System.out.println(url.getAuthority());
+		System.out.println(url.getScheme());
+		System.out.println(url.getSchemeSpecificPart());
+	}
+
 	private Uni<MqttClient> getMqttClient(NotificationParam notificationParam) {
 		URI host = notificationParam.getEndPoint().getUri();
 		String hostString = host.getUserInfo() + host.getHost() + host.getPort();
 		MqttClient client;
+
 		if (!host2MqttClient.containsKey(hostString)) {
+			MqttClientOptions options = new MqttClientOptions();
 			if (host.getUserInfo() != null) {
 				String[] usrPass = host.getUserInfo().split(":");
-				client = MqttClient.create(vertx,
-						new MqttClientOptions().setUsername(usrPass[0]).setPassword(usrPass[1]));
-			} else {
-				client = MqttClient.create(vertx, new MqttClientOptions());
+				options.setUsername(usrPass[0]).setPassword(usrPass[1]);
 			}
+			if (host.getScheme().equals(AppConstants.PROTOCOL_MQTTS)) {
+				options.setSsl(true);
+			}
+			Map<String, Collection<String>> recieverInfo = notificationParam.getEndPoint().getReceiverInfoMap();
+			PemKeyCertOptions certOptions = null;
+			if (recieverInfo.containsKey(AppConstants.SSL_KEY)) {
+				certOptions = new PemKeyCertOptions();
+				Collection<String> keys = recieverInfo.get(AppConstants.SSL_KEY);
+				for (String key : keys) {
+					certOptions.addKeyValue(io.vertx.core.buffer.Buffer.buffer(key));
+				}
+			}
+
+			if (recieverInfo.containsKey(AppConstants.SSL_CERT)) {
+				if (certOptions == null) {
+					certOptions = new PemKeyCertOptions();
+				}
+				Collection<String> certs = recieverInfo.get(AppConstants.SSL_CERT);
+				for (String cert : certs) {
+					certOptions.addCertValue(io.vertx.core.buffer.Buffer.buffer(cert));
+				}
+			}
+			if (recieverInfo.containsKey(AppConstants.SSL_TRUST_ALL)) {
+				if (recieverInfo.get(AppConstants.SSL_TRUST_ALL).iterator().next().equals("true")) {
+					options.setTrustAll(true);
+				}
+			}
+			if (certOptions != null) {
+				options.setPemKeyCertOptions(certOptions);
+			}
+
+			client = MqttClient.create(vertx, options);
 			return client.connect(host.getPort(), host.getHost()).onItem().transform(t -> {
 				host2MqttClient.put(hostString, client);
 				return client;
@@ -1559,7 +1600,7 @@ public class SubscriptionService {
 					if (prevT.getItem1()) {
 						//
 					}
-					
+
 					prevValue.put(attribEntry.getKey(), prev);
 				}
 				if (attribEntry.getValue() instanceof List<?> l && l.isEmpty()) {

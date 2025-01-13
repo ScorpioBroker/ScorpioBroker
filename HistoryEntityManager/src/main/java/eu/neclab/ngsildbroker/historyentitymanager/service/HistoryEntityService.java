@@ -46,6 +46,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.UpdateAttrHistoryEntity
 import eu.neclab.ngsildbroker.commons.datatypes.results.Attrib;
 import eu.neclab.ngsildbroker.commons.datatypes.results.CRUDSuccess;
 import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
+import eu.neclab.ngsildbroker.commons.interfaces.CSourceHandler;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
@@ -58,7 +59,7 @@ import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.ext.web.client.WebClient;
 
 @ApplicationScoped
-public class HistoryEntityService {
+public class HistoryEntityService implements CSourceHandler  {
 
 	private final static Logger logger = LoggerFactory.getLogger(HistoryEntityService.class);
 
@@ -85,6 +86,9 @@ public class HistoryEntityService {
 	JsonLDService ldService;
 
 	WebClient webClient;
+	
+	@Inject
+	MicroServiceUtils microServiceUtils;
 
 	private Table<String, String, List<RegistrationEntry>> tenant2CId2RegEntries = HashBasedTable.create();
 
@@ -100,6 +104,7 @@ public class HistoryEntityService {
 			return null;
 		}).await().indefinitely();
 		webClient = WebClient.create(vertx);
+		this.microServiceUtils.registerCSourceReceiver(this);
 	}
 
 	public Uni<NGSILDOperationResult> createEntry(String tenant, Map<String, Object> resolved, Context originalContext,
@@ -714,5 +719,7 @@ public class HistoryEntityService {
 			return Uni.createFrom().voidItem();
 		});
 	}
+
+	
 
 }

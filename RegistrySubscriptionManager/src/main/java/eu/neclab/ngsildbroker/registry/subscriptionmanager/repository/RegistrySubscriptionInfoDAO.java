@@ -319,8 +319,8 @@ public class RegistrySubscriptionInfoDAO {
 				// dollar++;
 			}
 
-			logger.debug("SQL I noti: " + sql);
-			logger.debug("Tuple I noti: " + tuple.deepToString());
+//			logger.debug("SQL I noti: " + sql);
+//			logger.debug("Tuple I noti: " + tuple.deepToString());
 			return client.preparedQuery(sql.toString()).execute(tuple).onFailure().retry().atMost(3);
 		});
 	}

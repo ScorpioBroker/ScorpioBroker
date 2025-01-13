@@ -45,7 +45,6 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityMap;
 import eu.neclab.ngsildbroker.commons.datatypes.RemoteHost;
-import eu.neclab.ngsildbroker.commons.datatypes.SubscriptionRemoteHost;
 import eu.neclab.ngsildbroker.commons.datatypes.results.Attrib;
 import eu.neclab.ngsildbroker.commons.datatypes.results.CRUDSuccess;
 import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
@@ -204,7 +203,6 @@ public final class HttpUtils {
 		return Uni.createFrom().item(parseLinkHeaderNoUni(rawLinks, headerRelLdcontext));
 
 	}
-
 
 	public static Object generateGeoJson(Object result, String geometry, Object context) throws ResponseException {
 		Map<String, Object> resultMap = Maps.newLinkedHashMap();
@@ -565,8 +563,12 @@ public final class HttpUtils {
 						if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)) {
 							makeConcise(finalCompacted);
 						}
+
 						if (forceAttributeList) {
 							enforceAttributeList(finalCompacted);
+						}
+						if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_TEMPORALVALUES)) {
+							makeTemporalValues(finalCompacted);
 						}
 						if (forceArray && !(finalCompacted instanceof List)) {
 							finalCompacted = List.of(finalCompacted);
@@ -607,6 +609,9 @@ public final class HttpUtils {
 						}
 						if (forceAttributeList) {
 							enforceAttributeList(finalCompacted);
+						}
+						if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_TEMPORALVALUES)) {
+							makeTemporalValues(finalCompacted);
 						}
 						if (forceArray && !(finalCompacted instanceof List)) {
 							finalCompacted = List.of(finalCompacted);
@@ -682,6 +687,128 @@ public final class HttpUtils {
 
 			return Tuple2.of(result, headers);
 		});
+	}
+
+	private static void makeTemporalValues(Object finalCompacted) {
+		if (finalCompacted instanceof Map entityMap) {
+			for (Object key : entityMap.keySet()) {
+				if (NGSIConstants.ENTITY_BASE_PROPS_SHORT.contains(key)) {
+					continue;
+				}
+				Object valueObj = entityMap.get(key);
+				if (valueObj instanceof List<?> l) {
+
+					String type = null;
+					List<List<Object>> valuesWithDate = new ArrayList<>(l.size());
+					for (Object obj : l) {
+						if (obj instanceof Map<?, ?> m) {
+							type = (String) m.get(NGSIConstants.TYPE);
+
+							String date;
+							if (m.containsKey(NGSIConstants.QUERY_PARAMETER_OBSERVED_AT)) {
+								date = (String) m.get(NGSIConstants.QUERY_PARAMETER_OBSERVED_AT);
+							} else if (m.containsKey(NGSIConstants.QUERY_PARAMETER_MODIFIED_AT)) {
+								date = (String) m.get(NGSIConstants.QUERY_PARAMETER_MODIFIED_AT);
+							} else {
+								date = null;
+							}
+							List<Object> valueEntry = null;
+							switch (type) {
+							case NGSIConstants.PROPERTY: {
+								valueEntry = new ArrayList<Object>(2);
+								valueEntry.add(m.get(NGSIConstants.VALUE));
+								break;
+							}
+							case NGSIConstants.RELATIONSHIP: {
+								valueEntry = new ArrayList<Object>(2);
+								valueEntry.add(m.get(NGSIConstants.OBJECT));
+								break;
+							}
+							case NGSIConstants.LISTPROPERTY: {
+								valueEntry = new ArrayList<Object>(2);
+								valueEntry.add(m.get(NGSIConstants.VALUE_LIST));
+								break;
+							}
+							case NGSIConstants.LISTRELATIONSHIP: {
+								valueEntry = new ArrayList<Object>(2);
+								valueEntry.add(m.get(NGSIConstants.OBJECT_LIST));
+								break;
+							}
+							case NGSIConstants.GEOPROPERTY: {
+								valueEntry = new ArrayList<Object>(2);
+								valueEntry.add(m.get(NGSIConstants.VALUE));
+								break;
+							}
+							case NGSIConstants.LANGUAGE_PROPERTY: {
+								valueEntry = new ArrayList<Object>(2);
+								valueEntry.add(m.get(NGSIConstants.LANGUAGE_MAP));
+								break;
+							}
+							case NGSIConstants.VOCABPROPERTY: {
+								valueEntry = new ArrayList<Object>(2);
+								valueEntry.add(m.get(NGSIConstants.VOCAB));
+								break;
+							}
+							case NGSIConstants.JSONPROPERTY: {
+								valueEntry = new ArrayList<Object>(2);
+								valueEntry.add(m.get(NGSIConstants.JSON));
+								break;
+							}
+							}
+							if(valueEntry != null) {
+								if(date != null) {
+									valueEntry.add(date);
+								}
+								valuesWithDate.add(valueEntry);
+							}
+						}
+					}
+					if(!valuesWithDate.isEmpty() && type != null) {
+						Map<String, Object> tmp = Maps.newLinkedHashMap();
+						tmp.put(NGSIConstants.TYPE, type);
+						switch (type) {
+						case NGSIConstants.PROPERTY: {
+							tmp.put(NGSIConstants.VALUES, valuesWithDate);
+							entityMap.put(key, tmp);
+							break;
+						}
+						case NGSIConstants.RELATIONSHIP: {
+							tmp.put(NGSIConstants.OBJECTS, valuesWithDate);
+							break;
+						}
+						case NGSIConstants.LISTPROPERTY: {
+							tmp.put(NGSIConstants.VALUELISTS, valuesWithDate);
+							break;
+						}
+						case NGSIConstants.LISTRELATIONSHIP: {
+							tmp.put(NGSIConstants.OBJECTSLISTS, valuesWithDate);
+							break;
+						}
+						case NGSIConstants.GEOPROPERTY: {
+							tmp.put(NGSIConstants.VALUES, valuesWithDate);
+							break;
+						}
+						case NGSIConstants.LANGUAGE_PROPERTY: {
+							tmp.put(NGSIConstants.LANGUAGEMAPS, valuesWithDate);
+							break;
+						}
+						case NGSIConstants.VOCABPROPERTY: {
+							tmp.put(NGSIConstants.VOCABS, valuesWithDate);
+							break;
+						}
+						case NGSIConstants.JSONPROPERTY: {
+							tmp.put(NGSIConstants.JSONS, valuesWithDate);
+							break;
+						}
+						}
+					}
+				}
+
+			}
+		} else if (finalCompacted instanceof List<?> list) {
+			list.forEach(entry -> makeTemporalValues(entry));
+		}
+
 	}
 
 	private static void enforceAttributeList(Object finalCompacted) {
@@ -861,7 +988,8 @@ public final class HttpUtils {
 		}
 		if (originalPayload.toString().contains(NGSIConstants.VALUE + "=null")
 				|| originalPayload.toString().contains(NGSIConstants.TYPE + "=null")) {
-			return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData, "null values are not allowed in NGSI-LD"));
+			return Uni.createFrom()
+					.failure(new ResponseException(ErrorType.BadRequestData, "null values are not allowed in NGSI-LD"));
 		}
 		if (originalPayload.containsKey(NGSIConstants.SCOPE)
 				&& !(originalPayload.get(NGSIConstants.SCOPE) instanceof String
@@ -947,7 +1075,7 @@ public final class HttpUtils {
 		// and noLongerMatching due to update or delete attr
 		return switch (triggerReason) {
 		case AppConstants.CREATE_REQUEST -> NGSIConstants.SUBSCRIPTION_NEWLY_MATCHING;
-		case AppConstants.UPDATE_REQUEST, AppConstants.APPEND_REQUEST ->  NGSIConstants.SUBSCRIPTION_UPDATED_MATCHING;
+		case AppConstants.UPDATE_REQUEST, AppConstants.APPEND_REQUEST -> NGSIConstants.SUBSCRIPTION_UPDATED_MATCHING;
 		case AppConstants.DELETE_REQUEST -> NGSIConstants.SUBSCRIPTION_NO_LONGER_MATCHING;
 		default -> null;
 		};

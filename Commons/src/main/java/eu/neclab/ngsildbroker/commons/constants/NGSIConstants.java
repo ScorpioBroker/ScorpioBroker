@@ -423,6 +423,7 @@ public interface NGSIConstants {
 	public final static String LISTRELATIONSHIP = "ListRelationship";
 	public final static String PROPERTY = "Property";
 	public final static String VOCAB = "vocab";
+	public final static String VOCABS = "vocabs";
 	public final static String INSTANCE_ID = "instanceId";
 	public final static String QUERY_PARAMETER_CONCISE_VALUE = "concise";
 	public final static String QUERY_PARAMETER_CONCISE = "option";
@@ -548,5 +549,12 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_SHOWCHANGES_SHORT = "showChanges";
 	public static final String NGSI_LD_ENDPOINT_SHORT = "endpoint";
 	public static final String NGSI_LD_URI_SHORT = "uri";
+	public static final String GEOPROPERTY = "GeoProperty";
+	public static final String VALUES = "values";
+	public static final String OBJECTS = "objects";
+	public static final String VALUELISTS = "valueLists";
+	public static final String OBJECTSLISTS = "objectsLists";
+	public static final String LANGUAGEMAPS = "languageMaps";
+	public static final String JSONS = "jsons";
 
 }

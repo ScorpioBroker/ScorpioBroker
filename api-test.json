@@ -1,5 +1,6 @@
 {
 	"info": {
+		"_postman_id": "bf09a3b3-17d3-4c9f-87cf-65774766ab33",
 		"_postman_id": "90796251-95dd-48f2-90fc-391e546b0edb",
 		"name": "API Test",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
@@ -6975,6 +6976,395 @@
 											]
 										},
 										{
+											"name": "Query for Multitype",
+											"item": [
+												{
+													"name": "Create Simple Entity to be found",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"console.log(payloadBody.id);\r",
+																	"var entityId = payloadBody.id;\r",
+																	"pm.collectionVariables.set(\"createdTBF\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"entityIdTBF\", entityId);\r",
+																	"pm.collectionVariables.set(\"entityTypeTBF\", payloadBody.type);\r",
+																	"pm.test(\"Status code is 201\", function () {\r",
+																	"    pm.response.to.have.status(201);\r",
+																	"});\r",
+																	"pm.test(\"Check location header\", function () {\r",
+																	"    pm.response.to.have.header(\"Location\");\r",
+																	"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+																	"});\r",
+																	"\r",
+																	"\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity1\",\r\n    \"type\": [\"TestType\", \"TestType1\"],\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Create Simple Entity to be not found",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"console.log(payloadBody.id);\r",
+																	"var entityId = payloadBody.id;\r",
+																	"pm.collectionVariables.set(\"createdTBNF\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"entityIdTBNF\", entityId);\r",
+																	"pm.test(\"Status code is 201\", function () {\r",
+																	"    pm.response.to.have.status(201);\r",
+																	"});\r",
+																	"pm.test(\"Check location header\", function () {\r",
+																	"    pm.response.to.have.header(\"Location\");\r",
+																	"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+																	"});\r",
+																	"\r",
+																	"\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n    \"id\": \"urn:test:testentity2\",\r\n    \"type\": [\"TestType\", \"TestType2\"],\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Query for 2 entities",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 200\", function () {\r",
+																	"    pm.response.to.have.status(200);\r",
+																	"});\r",
+																	"\r",
+																	"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
+																	"    var jsonData = pm.response.json();\r",
+																	"    pm.expect(jsonData.length).to.eql(2);\r",
+																	"    //pm.expect(jsonData[0]).to.eql(pm.collectionVariables.get(\"createdTBF\"));\r",
+																	"    //pm.expect(jsonData[0]).to.not.eql(pm.collectionVariables.get(\"createdTBNF\"));\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default"
+															}
+														],
+														"url": {
+															"raw": "{{query-manager}}/ngsi-ld/v1/entities?type=TestType",
+															"host": [
+																"{{query-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities"
+															],
+															"query": [
+																{
+																	"key": "",
+																	"value": "",
+																	"disabled": true
+																},
+																{
+																	"key": "type",
+																	"value": "TestType"
+																}
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Query for 1 entities with two types",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 200\", function () {\r",
+																	"    pm.response.to.have.status(200);\r",
+																	"});\r",
+																	"\r",
+																	"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
+																	"    var jsonData = pm.response.json();\r",
+																	"    pm.expect(jsonData.length).to.eql(1);\r",
+																	"    //pm.expect(jsonData[0]).to.eql(pm.collectionVariables.get(\"createdTBF\"));\r",
+																	"    //pm.expect(jsonData[0]).to.not.eql(pm.collectionVariables.get(\"createdTBNF\"));\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default"
+															}
+														],
+														"url": {
+															"raw": "{{query-manager}}/ngsi-ld/v1/entities?type=TestType;TestType1",
+															"host": [
+																"{{query-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities"
+															],
+															"query": [
+																{
+																	"key": "",
+																	"value": "",
+																	"disabled": true
+																},
+																{
+																	"key": "type",
+																	"value": "TestType;TestType1"
+																}
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Query for 1 entities with two types encoded ;",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 200\", function () {\r",
+																	"    pm.response.to.have.status(200);\r",
+																	"});\r",
+																	"\r",
+																	"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
+																	"    var jsonData = pm.response.json();\r",
+																	"    pm.expect(jsonData.length).to.eql(1);\r",
+																	"    //pm.expect(jsonData[0]).to.eql(pm.collectionVariables.get(\"createdTBF\"));\r",
+																	"    //pm.expect(jsonData[0]).to.not.eql(pm.collectionVariables.get(\"createdTBNF\"));\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "GET",
+														"header": [
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default"
+															}
+														],
+														"url": {
+															"raw": "{{query-manager}}/ngsi-ld/v1/entities?type=TestType%3BTestType1",
+															"host": [
+																"{{query-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities"
+															],
+															"query": [
+																{
+																	"key": "",
+																	"value": "",
+																	"disabled": true
+																},
+																{
+																	"key": "type",
+																	"value": "TestType%3BTestType1"
+																}
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Delete Entity TBF",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "DELETE",
+														"header": [],
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities/{{entityIdTBF}}",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities",
+																"{{entityIdTBF}}"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Delete Entity TBNF",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});\r",
+																	"pm.collectionVariables.clear();"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "DELETE",
+														"header": [],
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities/{{entityIdTBNF}}",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities",
+																"{{entityIdTBNF}}"
+															]
+														}
+													},
+													"response": []
+												}
+											]
+										},
+										{
 											"name": "Query for Type and Id",
 											"item": [
 												{
@@ -12277,1535 +12667,6 @@
 																		"v1",
 																		"entities",
 																		"{{entityIdTBNF}}"
-																	]
-																}
-															},
-															"response": []
-														},
-														{
-															"name": "Create batch entity with no @context",
-															"event": [
-																{
-																	"listen": "test",
-																	"script": {
-																		"exec": [
-																			"\r",
-																			"\r",
-																			"  \r",
-																			"   \r",
-																			" \r",
-																			""
-																		],
-																		"type": "text/javascript",
-																		"packages": {}
-																	}
-																}
-															],
-															"request": {
-																"method": "POST",
-																"header": [
-																	{
-																		"key": "Content-Type",
-																		"value": "application/json",
-																		"type": "default"
-																	}
-																],
-																"body": {
-																	"mode": "raw",
-																	"raw": "[\r\n    {\r\n        \"id\": \"urn:ngsi-ld:Animal:cow001\",\r\n        \"type\": \"Animal\",\r\n        \"name\": \"Beany the Bull\"\r\n    },\r\n    {\r\n        \"id\": \"urn:ngsi-ld:Animal:cow002\",\r\n        \"type\": \"Animal\",\r\n        \"name\": \"Trotter\"\r\n    },\r\n    {\r\n        \"id\": \"urn:ngsi-ld:Animal:cow003\",\r\n        \"type\": \"Animal\",\r\n        \"name\": \"Petal\"\r\n    },\r\n    {\r\n        \"id\": \"urn:ngsi-ld:Animal:cow004\",\r\n        \"type\": \"Animal\",\r\n        \"name\": \"River\"\r\n    }\r\n]"
-																},
-																"url": {
-																	"raw": "{{entity-manager}}/ngsi-ld/v1/entityOperations/create",
-																	"host": [
-																		"{{entity-manager}}"
-																	],
-																	"path": [
-																		"ngsi-ld",
-																		"v1",
-																		"entityOperations",
-																		"create"
-																	]
-																}
-															},
-															"response": []
-														},
-														{
-															"name": "Pattern Query for name 1",
-															"event": [
-																{
-																	"listen": "test",
-																	"script": {
-																		"exec": [
-																			"pm.test(\"Status code is 200\", function () {\r",
-																			"    pm.response.to.have.status(200);\r",
-																			"});\r",
-																			"\r",
-																			"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
-																			"    var jsonData = pm.response.json();\r",
-																			"    pm.expect(jsonData.length).to.eql(1);\r",
-																			"    pm.expect(jsonData).to.eql([\r",
-																			"    {\r",
-																			"        \"id\": \"urn:ngsi-ld:Animal:cow001\",\r",
-																			"        \"type\": \"Animal\",\r",
-																			"        \"name\": {\r",
-																			"            \"type\": \"Property\",\r",
-																			"            \"value\": \"Beany the Bull\"\r",
-																			"        }\r",
-																			"    }\r",
-																			"]);\r",
-																			"\r",
-																			"});\r",
-																			""
-																		],
-																		"type": "text/javascript",
-																		"packages": {}
-																	}
-																}
-															],
-															"request": {
-																"method": "GET",
-																"header": [
-																	{
-																		"key": "Accept",
-																		"value": "application/json",
-																		"type": "default"
-																	}
-																],
-																"url": {
-																	"raw": "{{query-manager}}/ngsi-ld/v1/entities?type=Animal&q=name~=Bull$",
-																	"host": [
-																		"{{query-manager}}"
-																	],
-																	"path": [
-																		"ngsi-ld",
-																		"v1",
-																		"entities"
-																	],
-																	"query": [
-																		{
-																			"key": "type",
-																			"value": "Animal"
-																		},
-																		{
-																			"key": "q",
-																			"value": "name~=Bull$"
-																		}
-																	]
-																}
-															},
-															"response": []
-														},
-														{
-															"name": "Pattern Query for name 2",
-															"event": [
-																{
-																	"listen": "test",
-																	"script": {
-																		"exec": [
-																			"pm.test(\"Status code is 200\", function () {\r",
-																			"    pm.response.to.have.status(200);\r",
-																			"});\r",
-																			"\r",
-																			"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
-																			"    var jsonData = pm.response.json();\r",
-																			"    pm.expect(jsonData.length).to.eql(1);\r",
-																			"    pm.expect(jsonData).to.eql([\r",
-																			"    {\r",
-																			"        \"id\": \"urn:ngsi-ld:Animal:cow001\",\r",
-																			"        \"type\": \"Animal\",\r",
-																			"        \"name\": {\r",
-																			"            \"type\": \"Property\",\r",
-																			"            \"value\": \"Beany the Bull\"\r",
-																			"        }\r",
-																			"    }\r",
-																			"]);\r",
-																			"    \r",
-																			"});\r",
-																			""
-																		],
-																		"type": "text/javascript",
-																		"packages": {}
-																	}
-																}
-															],
-															"request": {
-																"method": "GET",
-																"header": [
-																	{
-																		"key": "Accept",
-																		"value": "application/json",
-																		"type": "default"
-																	}
-																],
-																"url": {
-																	"raw": "{{query-manager}}/ngsi-ld/v1/entities?type=Animal&q=name~=Bull",
-																	"host": [
-																		"{{query-manager}}"
-																	],
-																	"path": [
-																		"ngsi-ld",
-																		"v1",
-																		"entities"
-																	],
-																	"query": [
-																		{
-																			"key": "type",
-																			"value": "Animal"
-																		},
-																		{
-																			"key": "q",
-																			"value": "name~=Bull"
-																		}
-																	]
-																}
-															},
-															"response": []
-														},
-														{
-															"name": "Pattern Query for name 3",
-															"event": [
-																{
-																	"listen": "test",
-																	"script": {
-																		"exec": [
-																			"pm.test(\"Status code is 200\", function () {\r",
-																			"    pm.response.to.have.status(200);\r",
-																			"});\r",
-																			"\r",
-																			"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
-																			"    var jsonData = pm.response.json();\r",
-																			"    pm.expect(jsonData.length).to.eql(1);\r",
-																			"    pm.expect(jsonData).to.eql([\r",
-																			"    {\r",
-																			"        \"id\": \"urn:ngsi-ld:Animal:cow001\",\r",
-																			"        \"type\": \"Animal\",\r",
-																			"        \"name\": {\r",
-																			"            \"type\": \"Property\",\r",
-																			"            \"value\": \"Beany the Bull\"\r",
-																			"        }\r",
-																			"    }\r",
-																			"]);\r",
-																			"\r",
-																			"});\r",
-																			""
-																		],
-																		"type": "text/javascript",
-																		"packages": {}
-																	}
-																}
-															],
-															"request": {
-																"method": "GET",
-																"header": [
-																	{
-																		"key": "Accept",
-																		"value": "application/json",
-																		"type": "default"
-																	}
-																],
-																"url": {
-																	"raw": "{{query-manager}}/ngsi-ld/v1/entities?type=Animal&q=name~=\"Bull\"",
-																	"host": [
-																		"{{query-manager}}"
-																	],
-																	"path": [
-																		"ngsi-ld",
-																		"v1",
-																		"entities"
-																	],
-																	"query": [
-																		{
-																			"key": "type",
-																			"value": "Animal"
-																		},
-																		{
-																			"key": "q",
-																			"value": "name~=\"Bull\""
-																		}
-																	]
-																}
-															},
-															"response": []
-														},
-														{
-															"name": "Pattern Query for name 4",
-															"event": [
-																{
-																	"listen": "test",
-																	"script": {
-																		"exec": [
-																			"pm.test(\"Status code is 200\", function () {\r",
-																			"    pm.response.to.have.status(200);\r",
-																			"});\r",
-																			"\r",
-																			"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
-																			"    var jsonData = pm.response.json();\r",
-																			"    pm.expect(jsonData.length).to.eql(1);\r",
-																			"    pm.expect(jsonData).to.eql([\r",
-																			"    {\r",
-																			"        \"id\": \"urn:ngsi-ld:Animal:cow001\",\r",
-																			"        \"type\": \"Animal\",\r",
-																			"        \"name\": {\r",
-																			"            \"type\": \"Property\",\r",
-																			"            \"value\": \"Beany the Bull\"\r",
-																			"        }\r",
-																			"    }\r",
-																			"]);\r",
-																			"   \r",
-																			"});\r",
-																			""
-																		],
-																		"type": "text/javascript",
-																		"packages": {}
-																	}
-																}
-															],
-															"request": {
-																"method": "GET",
-																"header": [
-																	{
-																		"key": "Accept",
-																		"value": "application/json",
-																		"type": "default"
-																	}
-																],
-																"url": {
-																	"raw": "{{query-manager}}/ngsi-ld/v1/entities?type=Animal&q=name~=\"Bull$\"",
-																	"host": [
-																		"{{query-manager}}"
-																	],
-																	"path": [
-																		"ngsi-ld",
-																		"v1",
-																		"entities"
-																	],
-																	"query": [
-																		{
-																			"key": "type",
-																			"value": "Animal"
-																		},
-																		{
-																			"key": "q",
-																			"value": "name~=\"Bull$\""
-																		}
-																	]
-																}
-															},
-															"response": []
-														},
-														{
-															"name": "Pattern Query for name 5",
-															"event": [
-																{
-																	"listen": "test",
-																	"script": {
-																		"exec": [
-																			"pm.test(\"Status code is 200\", function () {\r",
-																			"    pm.response.to.have.status(200);\r",
-																			"});\r",
-																			"\r",
-																			"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
-																			"    var jsonData = pm.response.json();\r",
-																			"    pm.expect(jsonData.length).to.eql(1);\r",
-																			"    pm.expect(jsonData).to.eql([\r",
-																			"    {\r",
-																			"        \"id\": \"urn:ngsi-ld:Animal:cow001\",\r",
-																			"        \"type\": \"Animal\",\r",
-																			"        \"name\": {\r",
-																			"            \"type\": \"Property\",\r",
-																			"            \"value\": \"Beany the Bull\"\r",
-																			"        }\r",
-																			"    }\r",
-																			"]);\r",
-																			"\r",
-																			"});\r",
-																			""
-																		],
-																		"type": "text/javascript",
-																		"packages": {}
-																	}
-																}
-															],
-															"request": {
-																"method": "GET",
-																"header": [
-																	{
-																		"key": "Accept",
-																		"value": "application/json",
-																		"type": "default"
-																	}
-																],
-																"url": {
-																	"raw": "{{query-manager}}/ngsi-ld/v1/entities?type=Animal&q=name~=\"Bull\"",
-																	"host": [
-																		"{{query-manager}}"
-																	],
-																	"path": [
-																		"ngsi-ld",
-																		"v1",
-																		"entities"
-																	],
-																	"query": [
-																		{
-																			"key": "type",
-																			"value": "Animal"
-																		},
-																		{
-																			"key": "q",
-																			"value": "name~=\"Bull\""
-																		}
-																	]
-																}
-															},
-															"response": []
-														},
-														{
-															"name": "Pattern Query for name 6",
-															"event": [
-																{
-																	"listen": "test",
-																	"script": {
-																		"exec": [
-																			"pm.test(\"Status code is 200\", function () {\r",
-																			"    pm.response.to.have.status(200);\r",
-																			"});\r",
-																			"\r",
-																			"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
-																			"    var jsonData = pm.response.json();\r",
-																			"    pm.expect(jsonData.length).to.eql(1);\r",
-																			"    pm.expect(jsonData).to.eql([\r",
-																			"    {\r",
-																			"        \"id\": \"urn:ngsi-ld:Animal:cow001\",\r",
-																			"        \"type\": \"Animal\",\r",
-																			"        \"name\": {\r",
-																			"            \"type\": \"Property\",\r",
-																			"            \"value\": \"Beany the Bull\"\r",
-																			"        }\r",
-																			"    }\r",
-																			"]);\r",
-																			"    \r",
-																			"});\r",
-																			""
-																		],
-																		"type": "text/javascript",
-																		"packages": {}
-																	}
-																}
-															],
-															"request": {
-																"method": "GET",
-																"header": [
-																	{
-																		"key": "Accept",
-																		"value": "application/json",
-																		"type": "default"
-																	}
-																],
-																"url": {
-																	"raw": "{{query-manager}}/ngsi-ld/v1/entities?type=Animal&q=name~=.*Bull",
-																	"host": [
-																		"{{query-manager}}"
-																	],
-																	"path": [
-																		"ngsi-ld",
-																		"v1",
-																		"entities"
-																	],
-																	"query": [
-																		{
-																			"key": "type",
-																			"value": "Animal"
-																		},
-																		{
-																			"key": "q",
-																			"value": "name~=.*Bull"
-																		}
-																	]
-																}
-															},
-															"response": []
-														},
-														{
-															"name": "Pattern Query for name 7",
-															"event": [
-																{
-																	"listen": "test",
-																	"script": {
-																		"exec": [
-																			"pm.test(\"Status code is 200\", function () {\r",
-																			"    pm.response.to.have.status(200);\r",
-																			"});\r",
-																			"\r",
-																			"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
-																			"    var jsonData = pm.response.json();\r",
-																			"    pm.expect(jsonData.length).to.eql(1);\r",
-																			"    pm.expect(jsonData).to.eql([\r",
-																			"    {\r",
-																			"        \"id\": \"urn:ngsi-ld:Animal:cow001\",\r",
-																			"        \"type\": \"Animal\",\r",
-																			"        \"name\": {\r",
-																			"            \"type\": \"Property\",\r",
-																			"            \"value\": \"Beany the Bull\"\r",
-																			"        }\r",
-																			"    }\r",
-																			"]);\r",
-																			"});\r",
-																			""
-																		],
-																		"type": "text/javascript",
-																		"packages": {}
-																	}
-																}
-															],
-															"request": {
-																"method": "GET",
-																"header": [
-																	{
-																		"key": "Accept",
-																		"value": "application/json",
-																		"type": "default"
-																	}
-																],
-																"url": {
-																	"raw": "{{query-manager}}/ngsi-ld/v1/entities?type=Animal&q=name~=.the.",
-																	"host": [
-																		"{{query-manager}}"
-																	],
-																	"path": [
-																		"ngsi-ld",
-																		"v1",
-																		"entities"
-																	],
-																	"query": [
-																		{
-																			"key": "type",
-																			"value": "Animal"
-																		},
-																		{
-																			"key": "q",
-																			"value": "name~=.the."
-																		}
-																	]
-																}
-															},
-															"response": []
-														},
-														{
-															"name": "Pattern Query for name 8",
-															"event": [
-																{
-																	"listen": "test",
-																	"script": {
-																		"exec": [
-																			"pm.test(\"Status code is 200\", function () {\r",
-																			"    pm.response.to.have.status(200);\r",
-																			"});\r",
-																			"\r",
-																			"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
-																			"    var jsonData = pm.response.json();\r",
-																			"    pm.expect(jsonData.length).to.eql(1);\r",
-																			"    pm.expect(jsonData).to.eql([\r",
-																			"    {\r",
-																			"        \"id\": \"urn:ngsi-ld:Animal:cow001\",\r",
-																			"        \"type\": \"Animal\",\r",
-																			"        \"name\": {\r",
-																			"            \"type\": \"Property\",\r",
-																			"            \"value\": \"Beany the Bull\"\r",
-																			"        }\r",
-																			"    }\r",
-																			"]);\r",
-																			"});\r",
-																			""
-																		],
-																		"type": "text/javascript",
-																		"packages": {}
-																	}
-																}
-															],
-															"request": {
-																"method": "GET",
-																"header": [
-																	{
-																		"key": "Accept",
-																		"value": "application/json",
-																		"type": "default"
-																	}
-																],
-																"url": {
-																	"raw": "{{query-manager}}/ngsi-ld/v1/entities?type=Animal&q=name~=%5CsBull",
-																	"host": [
-																		"{{query-manager}}"
-																	],
-																	"path": [
-																		"ngsi-ld",
-																		"v1",
-																		"entities"
-																	],
-																	"query": [
-																		{
-																			"key": "type",
-																			"value": "Animal"
-																		},
-																		{
-																			"key": "q",
-																			"value": "name~=%5CsBull"
-																		}
-																	]
-																}
-															},
-															"response": []
-														},
-														{
-															"name": "Pattern Query for name 9",
-															"event": [
-																{
-																	"listen": "test",
-																	"script": {
-																		"exec": [
-																			"pm.test(\"Status code is 200\", function () {\r",
-																			"    pm.response.to.have.status(200);\r",
-																			"});\r",
-																			"\r",
-																			"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
-																			"    var jsonData = pm.response.json();\r",
-																			"    pm.expect(jsonData.length).to.eql(1);\r",
-																			"    pm.expect(jsonData).to.eql([\r",
-																			"    {\r",
-																			"        \"id\": \"urn:ngsi-ld:Animal:cow001\",\r",
-																			"        \"type\": \"Animal\",\r",
-																			"        \"name\": {\r",
-																			"            \"type\": \"Property\",\r",
-																			"            \"value\": \"Beany the Bull\"\r",
-																			"        }\r",
-																			"    }\r",
-																			"]);\r",
-																			"});\r",
-																			""
-																		],
-																		"type": "text/javascript",
-																		"packages": {}
-																	}
-																}
-															],
-															"request": {
-																"method": "GET",
-																"header": [
-																	{
-																		"key": "Accept",
-																		"value": "application/json",
-																		"type": "default"
-																	}
-																],
-																"url": {
-																	"raw": "{{query-manager}}/ngsi-ld/v1/entities?type=Animal&q=name~=the Bull",
-																	"host": [
-																		"{{query-manager}}"
-																	],
-																	"path": [
-																		"ngsi-ld",
-																		"v1",
-																		"entities"
-																	],
-																	"query": [
-																		{
-																			"key": "type",
-																			"value": "Animal"
-																		},
-																		{
-																			"key": "q",
-																			"value": "name~=the Bull"
-																		}
-																	]
-																}
-															},
-															"response": []
-														},
-														{
-															"name": "Pattern Query for name 10",
-															"event": [
-																{
-																	"listen": "test",
-																	"script": {
-																		"exec": [
-																			"pm.test(\"Status code is 200\", function () {\r",
-																			"    pm.response.to.have.status(200);\r",
-																			"});\r",
-																			"\r",
-																			"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
-																			"    var jsonData = pm.response.json();\r",
-																			"    pm.expect(jsonData.length).to.eql(3);\r",
-																			"    pm.expect(jsonData.sort(sortById)).to.eql([\r",
-																			"    {\r",
-																			"        \"id\": \"urn:ngsi-ld:Animal:cow001\",\r",
-																			"        \"type\": \"Animal\",\r",
-																			"        \"name\": {\r",
-																			"            \"type\": \"Property\",\r",
-																			"            \"value\": \"Beany the Bull\"\r",
-																			"        }\r",
-																			"    },\r",
-																			"    {\r",
-																			"        \"id\": \"urn:ngsi-ld:Animal:cow004\",\r",
-																			"        \"type\": \"Animal\",\r",
-																			"        \"name\": {\r",
-																			"            \"type\": \"Property\",\r",
-																			"            \"value\": \"River\"\r",
-																			"        }\r",
-																			"    },\r",
-																			"    {\r",
-																			"        \"id\": \"urn:ngsi-ld:Animal:cow002\",\r",
-																			"        \"type\": \"Animal\",\r",
-																			"        \"name\": {\r",
-																			"            \"type\": \"Property\",\r",
-																			"            \"value\": \"Trotter\"\r",
-																			"        }\r",
-																			"    }\r",
-																			"].sort(sortById));\r",
-																			"});\r",
-																			"function sortById(a, b) {\r",
-																			"    return a.id.localeCompare(b.id);\r",
-																			"}"
-																		],
-																		"type": "text/javascript",
-																		"packages": {}
-																	}
-																}
-															],
-															"request": {
-																"method": "GET",
-																"header": [
-																	{
-																		"key": "Accept",
-																		"value": "application/json",
-																		"type": "default"
-																	}
-																],
-																"url": {
-																	"raw": "{{query-manager}}/ngsi-ld/v1/entities?type=Animal&q=name~=(er%7CBull)",
-																	"host": [
-																		"{{query-manager}}"
-																	],
-																	"path": [
-																		"ngsi-ld",
-																		"v1",
-																		"entities"
-																	],
-																	"query": [
-																		{
-																			"key": "type",
-																			"value": "Animal"
-																		},
-																		{
-																			"key": "q",
-																			"value": "name~=(er%7CBull)"
-																		}
-																	]
-																}
-															},
-															"response": []
-														},
-														{
-															"name": "Pattern Query for name 11",
-															"event": [
-																{
-																	"listen": "test",
-																	"script": {
-																		"exec": [
-																			"pm.test(\"Status code is 200\", function () {\r",
-																			"    pm.response.to.have.status(200);\r",
-																			"});\r",
-																			"\r",
-																			"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
-																			"    var jsonData = pm.response.json();\r",
-																			"    pm.expect(jsonData.length).to.eql(3);\r",
-																			"    pm.expect(jsonData.sort(sortById)).to.eql([\r",
-																			"    {\r",
-																			"        \"id\": \"urn:ngsi-ld:Animal:cow001\",\r",
-																			"        \"type\": \"Animal\",\r",
-																			"        \"name\": {\r",
-																			"            \"type\": \"Property\",\r",
-																			"            \"value\": \"Beany the Bull\"\r",
-																			"        }\r",
-																			"    },\r",
-																			"    {\r",
-																			"        \"id\": \"urn:ngsi-ld:Animal:cow004\",\r",
-																			"        \"type\": \"Animal\",\r",
-																			"        \"name\": {\r",
-																			"            \"type\": \"Property\",\r",
-																			"            \"value\": \"River\"\r",
-																			"        }\r",
-																			"    },\r",
-																			"    {\r",
-																			"        \"id\": \"urn:ngsi-ld:Animal:cow002\",\r",
-																			"        \"type\": \"Animal\",\r",
-																			"        \"name\": {\r",
-																			"            \"type\": \"Property\",\r",
-																			"            \"value\": \"Trotter\"\r",
-																			"        }\r",
-																			"    }\r",
-																			"].sort(sortById));\r",
-																			"});\r",
-																			"function sortById(a, b) {\r",
-																			"    return a.id.localeCompare(b.id);\r",
-																			"}"
-																		],
-																		"type": "text/javascript",
-																		"packages": {}
-																	}
-																}
-															],
-															"request": {
-																"method": "GET",
-																"header": [
-																	{
-																		"key": "Accept",
-																		"value": "application/json",
-																		"type": "default"
-																	}
-																],
-																"url": {
-																	"raw": "{{query-manager}}/ngsi-ld/v1/entities?type=Animal&q=name~=.*(er%7CBull)",
-																	"host": [
-																		"{{query-manager}}"
-																	],
-																	"path": [
-																		"ngsi-ld",
-																		"v1",
-																		"entities"
-																	],
-																	"query": [
-																		{
-																			"key": "type",
-																			"value": "Animal"
-																		},
-																		{
-																			"key": "q",
-																			"value": "name~=.*(er%7CBull)"
-																		}
-																	]
-																}
-															},
-															"response": []
-														},
-														{
-															"name": "Pattern Query for name 12",
-															"event": [
-																{
-																	"listen": "test",
-																	"script": {
-																		"exec": [
-																			"pm.test(\"Status code is 200\", function () {\r",
-																			"    pm.response.to.have.status(200);\r",
-																			"});\r",
-																			"\r",
-																			"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
-																			"    var jsonData = pm.response.json();\r",
-																			"    pm.expect(jsonData.length).to.eql(3);\r",
-																			"    pm.expect(jsonData.sort(sortById)).to.eql([\r",
-																			"    {\r",
-																			"        \"id\": \"urn:ngsi-ld:Animal:cow001\",\r",
-																			"        \"type\": \"Animal\",\r",
-																			"        \"name\": {\r",
-																			"            \"type\": \"Property\",\r",
-																			"            \"value\": \"Beany the Bull\"\r",
-																			"        }\r",
-																			"    },\r",
-																			"    {\r",
-																			"        \"id\": \"urn:ngsi-ld:Animal:cow004\",\r",
-																			"        \"type\": \"Animal\",\r",
-																			"        \"name\": {\r",
-																			"            \"type\": \"Property\",\r",
-																			"            \"value\": \"River\"\r",
-																			"        }\r",
-																			"    },\r",
-																			"    {\r",
-																			"        \"id\": \"urn:ngsi-ld:Animal:cow002\",\r",
-																			"        \"type\": \"Animal\",\r",
-																			"        \"name\": {\r",
-																			"            \"type\": \"Property\",\r",
-																			"            \"value\": \"Trotter\"\r",
-																			"        }\r",
-																			"    }\r",
-																			"].sort(sortById));\r",
-																			"});\r",
-																			"function sortById(a, b) {\r",
-																			"    return a.id.localeCompare(b.id);\r",
-																			"}"
-																		],
-																		"type": "text/javascript",
-																		"packages": {}
-																	}
-																}
-															],
-															"request": {
-																"method": "GET",
-																"header": [
-																	{
-																		"key": "Accept",
-																		"value": "application/json",
-																		"type": "default"
-																	}
-																],
-																"url": {
-																	"raw": "{{query-manager}}/ngsi-ld/v1/entities?type=Animal&q=name~=.*(er%7CBull)$",
-																	"host": [
-																		"{{query-manager}}"
-																	],
-																	"path": [
-																		"ngsi-ld",
-																		"v1",
-																		"entities"
-																	],
-																	"query": [
-																		{
-																			"key": "type",
-																			"value": "Animal"
-																		},
-																		{
-																			"key": "q",
-																			"value": "name~=.*(er%7CBull)$"
-																		}
-																	]
-																}
-															},
-															"response": []
-														},
-														{
-															"name": "Pattern Query for name 13",
-															"event": [
-																{
-																	"listen": "test",
-																	"script": {
-																		"exec": [
-																			"pm.test(\"Status code is 200\", function () {\r",
-																			"    pm.response.to.have.status(200);\r",
-																			"});\r",
-																			"\r",
-																			"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
-																			"    var jsonData = pm.response.json();\r",
-																			"    pm.expect(jsonData.length).to.eql(3);\r",
-																			"    pm.expect(jsonData.sort(sortById)).to.eql([\r",
-																			"    {\r",
-																			"        \"id\": \"urn:ngsi-ld:Animal:cow001\",\r",
-																			"        \"type\": \"Animal\",\r",
-																			"        \"name\": {\r",
-																			"            \"type\": \"Property\",\r",
-																			"            \"value\": \"Beany the Bull\"\r",
-																			"        }\r",
-																			"    },\r",
-																			"    {\r",
-																			"        \"id\": \"urn:ngsi-ld:Animal:cow004\",\r",
-																			"        \"type\": \"Animal\",\r",
-																			"        \"name\": {\r",
-																			"            \"type\": \"Property\",\r",
-																			"            \"value\": \"River\"\r",
-																			"        }\r",
-																			"    },\r",
-																			"    {\r",
-																			"        \"id\": \"urn:ngsi-ld:Animal:cow002\",\r",
-																			"        \"type\": \"Animal\",\r",
-																			"        \"name\": {\r",
-																			"            \"type\": \"Property\",\r",
-																			"            \"value\": \"Trotter\"\r",
-																			"        }\r",
-																			"    }\r",
-																			"].sort(sortById));\r",
-																			"\r",
-																			"});\r",
-																			"function sortById(a, b) {\r",
-																			"    return a.id.localeCompare(b.id);\r",
-																			"}"
-																		],
-																		"type": "text/javascript",
-																		"packages": {}
-																	}
-																}
-															],
-															"request": {
-																"method": "GET",
-																"header": [
-																	{
-																		"key": "Accept",
-																		"value": "application/json",
-																		"type": "default"
-																	}
-																],
-																"url": {
-																	"raw": "{{query-manager}}/ngsi-ld/v1/entities?type=Animal&q=name~=.*er%7Cname~=.*Bull",
-																	"host": [
-																		"{{query-manager}}"
-																	],
-																	"path": [
-																		"ngsi-ld",
-																		"v1",
-																		"entities"
-																	],
-																	"query": [
-																		{
-																			"key": "type",
-																			"value": "Animal"
-																		},
-																		{
-																			"key": "q",
-																			"value": "name~=.*er%7Cname~=.*Bull"
-																		}
-																	]
-																}
-															},
-															"response": []
-														},
-														{
-															"name": "Pattern Query for name 14",
-															"event": [
-																{
-																	"listen": "test",
-																	"script": {
-																		"exec": [
-																			"pm.test(\"Status code is 200\", function () {\r",
-																			"    pm.response.to.have.status(200);\r",
-																			"});\r",
-																			"\r",
-																			"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
-																			"    var jsonData = pm.response.json();\r",
-																			"    pm.expect(jsonData.length).to.eql(1);\r",
-																			"    pm.expect(jsonData).to.eql([\r",
-																			"    {\r",
-																			"        \"id\": \"urn:ngsi-ld:Animal:cow001\",\r",
-																			"        \"type\": \"Animal\",\r",
-																			"        \"name\": {\r",
-																			"            \"type\": \"Property\",\r",
-																			"            \"value\": \"Beany the Bull\"\r",
-																			"        }\r",
-																			"    }\r",
-																			"]);\r",
-																			"});\r",
-																			""
-																		],
-																		"type": "text/javascript",
-																		"packages": {}
-																	}
-																}
-															],
-															"request": {
-																"method": "GET",
-																"header": [
-																	{
-																		"key": "Accept",
-																		"value": "application/json",
-																		"type": "default"
-																	}
-																],
-																"url": {
-																	"raw": "{{query-manager}}/ngsi-ld/v1/entities?type=Animal&q=name~=\"the Bull\"",
-																	"host": [
-																		"{{query-manager}}"
-																	],
-																	"path": [
-																		"ngsi-ld",
-																		"v1",
-																		"entities"
-																	],
-																	"query": [
-																		{
-																			"key": "type",
-																			"value": "Animal"
-																		},
-																		{
-																			"key": "q",
-																			"value": "name~=\"the Bull\""
-																		}
-																	]
-																}
-															},
-															"response": []
-														},
-														{
-															"name": "Pattern Query for name 15",
-															"event": [
-																{
-																	"listen": "test",
-																	"script": {
-																		"exec": [
-																			"pm.test(\"Status code is 200\", function () {\r",
-																			"    pm.response.to.have.status(200);\r",
-																			"});\r",
-																			"\r",
-																			"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
-																			"    var jsonData = pm.response.json();\r",
-																			"    pm.expect(jsonData.length).to.eql(1);\r",
-																			"    pm.expect(jsonData).to.eql([\r",
-																			"    {\r",
-																			"        \"id\": \"urn:ngsi-ld:Animal:cow001\",\r",
-																			"        \"type\": \"Animal\",\r",
-																			"        \"name\": {\r",
-																			"            \"type\": \"Property\",\r",
-																			"            \"value\": \"Beany the Bull\"\r",
-																			"        }\r",
-																			"    }\r",
-																			"]);\r",
-																			"\r",
-																			"});\r",
-																			""
-																		],
-																		"type": "text/javascript",
-																		"packages": {}
-																	}
-																}
-															],
-															"request": {
-																"method": "GET",
-																"header": [
-																	{
-																		"key": "Accept",
-																		"value": "application/json",
-																		"type": "default"
-																	}
-																],
-																"url": {
-																	"raw": "{{query-manager}}/ngsi-ld/v1/entities?type=Animal&q=name~=the Bull",
-																	"host": [
-																		"{{query-manager}}"
-																	],
-																	"path": [
-																		"ngsi-ld",
-																		"v1",
-																		"entities"
-																	],
-																	"query": [
-																		{
-																			"key": "type",
-																			"value": "Animal"
-																		},
-																		{
-																			"key": "q",
-																			"value": "name~=the Bull"
-																		}
-																	]
-																}
-															},
-															"response": []
-														},
-														{
-															"name": "Pattern Query for name 16",
-															"event": [
-																{
-																	"listen": "test",
-																	"script": {
-																		"exec": [
-																			"pm.test(\"Status code is 200\", function () {\r",
-																			"    pm.response.to.have.status(200);\r",
-																			"});\r",
-																			"\r",
-																			"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
-																			"    var jsonData = pm.response.json();\r",
-																			"    pm.expect(jsonData.length).to.eql(1);\r",
-																			"    pm.expect(jsonData).to.eql([\r",
-																			"    {\r",
-																			"        \"id\": \"urn:ngsi-ld:Animal:cow001\",\r",
-																			"        \"type\": \"Animal\",\r",
-																			"        \"name\": {\r",
-																			"            \"type\": \"Property\",\r",
-																			"            \"value\": \"Beany the Bull\"\r",
-																			"        }\r",
-																			"    }\r",
-																			"]);\r",
-																			"   \r",
-																			"});\r",
-																			""
-																		],
-																		"type": "text/javascript",
-																		"packages": {}
-																	}
-																}
-															],
-															"request": {
-																"method": "GET",
-																"header": [
-																	{
-																		"key": "Accept",
-																		"value": "application/json",
-																		"type": "default"
-																	}
-																],
-																"url": {
-																	"raw": "{{query-manager}}/ngsi-ld/v1/entities?type=Animal&q=name~=\"B?ll\"",
-																	"host": [
-																		"{{query-manager}}"
-																	],
-																	"path": [
-																		"ngsi-ld",
-																		"v1",
-																		"entities"
-																	],
-																	"query": [
-																		{
-																			"key": "type",
-																			"value": "Animal"
-																		},
-																		{
-																			"key": "q",
-																			"value": "name~=\"B?ll\""
-																		}
-																	]
-																}
-															},
-															"response": []
-														},
-														{
-															"name": "Pattern Query for name 17",
-															"event": [
-																{
-																	"listen": "test",
-																	"script": {
-																		"exec": [
-																			"pm.test(\"Status code is 200\", function () {\r",
-																			"    pm.response.to.have.status(200);\r",
-																			"});\r",
-																			"\r",
-																			"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
-																			"    var jsonData = pm.response.json();\r",
-																			"    pm.expect(jsonData.length).to.eql(1);\r",
-																			"    pm.expect(jsonData).to.eql([\r",
-																			"    {\r",
-																			"        \"id\": \"urn:ngsi-ld:Animal:cow001\",\r",
-																			"        \"type\": \"Animal\",\r",
-																			"        \"name\": {\r",
-																			"            \"type\": \"Property\",\r",
-																			"            \"value\": \"Beany the Bull\"\r",
-																			"        }\r",
-																			"    }\r",
-																			"]);\r",
-																			"    \r",
-																			"});\r",
-																			""
-																		],
-																		"type": "text/javascript",
-																		"packages": {}
-																	}
-																}
-															],
-															"request": {
-																"method": "GET",
-																"header": [
-																	{
-																		"key": "Accept",
-																		"value": "application/json",
-																		"type": "default"
-																	}
-																],
-																"url": {
-																	"raw": "{{query-manager}}/ngsi-ld/v1/entities?type=Animal&q=name~=B?ll",
-																	"host": [
-																		"{{query-manager}}"
-																	],
-																	"path": [
-																		"ngsi-ld",
-																		"v1",
-																		"entities"
-																	],
-																	"query": [
-																		{
-																			"key": "type",
-																			"value": "Animal"
-																		},
-																		{
-																			"key": "q",
-																			"value": "name~=B?ll"
-																		}
-																	]
-																}
-															},
-															"response": []
-														},
-														{
-															"name": "Pattern Query for name 18",
-															"event": [
-																{
-																	"listen": "test",
-																	"script": {
-																		"exec": [
-																			"pm.test(\"Status code is 200\", function () {\r",
-																			"    pm.response.to.have.status(200);\r",
-																			"});\r",
-																			"\r",
-																			"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
-																			"    var jsonData = pm.response.json();\r",
-																			"    pm.expect(jsonData.length).to.eql(4);\r",
-																			"    pm.expect(jsonData.sort(sortById)).to.eql([\r",
-																			"    {\r",
-																			"        \"id\": \"urn:ngsi-ld:Animal:cow001\",\r",
-																			"        \"type\": \"Animal\",\r",
-																			"        \"name\": {\r",
-																			"            \"type\": \"Property\",\r",
-																			"            \"value\": \"Beany the Bull\"\r",
-																			"        }\r",
-																			"    },\r",
-																			"    {\r",
-																			"        \"id\": \"urn:ngsi-ld:Animal:cow004\",\r",
-																			"        \"type\": \"Animal\",\r",
-																			"        \"name\": {\r",
-																			"            \"type\": \"Property\",\r",
-																			"            \"value\": \"River\"\r",
-																			"        }\r",
-																			"    },\r",
-																			"    {\r",
-																			"        \"id\": \"urn:ngsi-ld:Animal:cow003\",\r",
-																			"        \"type\": \"Animal\",\r",
-																			"        \"name\": {\r",
-																			"            \"type\": \"Property\",\r",
-																			"            \"value\": \"Petal\"\r",
-																			"        }\r",
-																			"    },\r",
-																			"    {\r",
-																			"        \"id\": \"urn:ngsi-ld:Animal:cow002\",\r",
-																			"        \"type\": \"Animal\",\r",
-																			"        \"name\": {\r",
-																			"            \"type\": \"Property\",\r",
-																			"            \"value\": \"Trotter\"\r",
-																			"        }\r",
-																			"    }\r",
-																			"].sort(sortById));\r",
-																			"\r",
-																			"});\r",
-																			"function sortById(a, b) {\r",
-																			"    return a.id.localeCompare(b.id);\r",
-																			"}"
-																		],
-																		"type": "text/javascript",
-																		"packages": {}
-																	}
-																}
-															],
-															"request": {
-																"method": "GET",
-																"header": [
-																	{
-																		"key": "Accept",
-																		"value": "application/json",
-																		"type": "default"
-																	}
-																],
-																"url": {
-																	"raw": "{{query-manager}}/ngsi-ld/v1/entities?type=Animal&q=name~=.*",
-																	"host": [
-																		"{{query-manager}}"
-																	],
-																	"path": [
-																		"ngsi-ld",
-																		"v1",
-																		"entities"
-																	],
-																	"query": [
-																		{
-																			"key": "type",
-																			"value": "Animal"
-																		},
-																		{
-																			"key": "q",
-																			"value": "name~=.*"
-																		}
-																	]
-																}
-															},
-															"response": []
-														},
-														{
-															"name": "Pattern Query for name 19",
-															"event": [
-																{
-																	"listen": "test",
-																	"script": {
-																		"exec": [
-																			"pm.test(\"Status code is 200\", function () {\r",
-																			"    pm.response.to.have.status(200);\r",
-																			"});\r",
-																			"\r",
-																			"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
-																			"    var jsonData = pm.response.json();\r",
-																			"    pm.expect(jsonData.length).to.eql(1);\r",
-																			"    pm.expect(jsonData).to.eql([\r",
-																			"    {\r",
-																			"        \"id\": \"urn:ngsi-ld:Animal:cow001\",\r",
-																			"        \"type\": \"Animal\",\r",
-																			"        \"name\": {\r",
-																			"            \"type\": \"Property\",\r",
-																			"            \"value\": \"Beany the Bull\"\r",
-																			"        }\r",
-																			"    }\r",
-																			"]);\r",
-																			"});\r",
-																			"function sortById(a, b) {\r",
-																			"    return a.id.localeCompare(b.id);\r",
-																			"}"
-																		],
-																		"type": "text/javascript",
-																		"packages": {}
-																	}
-																}
-															],
-															"request": {
-																"method": "GET",
-																"header": [
-																	{
-																		"key": "Accept",
-																		"value": "application/json",
-																		"type": "default"
-																	}
-																],
-																"url": {
-																	"raw": "{{query-manager}}/ngsi-ld/v1/entities?type=Animal&q=name~=%5Cs",
-																	"host": [
-																		"{{query-manager}}"
-																	],
-																	"path": [
-																		"ngsi-ld",
-																		"v1",
-																		"entities"
-																	],
-																	"query": [
-																		{
-																			"key": "type",
-																			"value": "Animal"
-																		},
-																		{
-																			"key": "q",
-																			"value": "name~=%5Cs"
-																		}
-																	]
-																}
-															},
-															"response": []
-														},
-														{
-															"name": "Pattern Query for name 20",
-															"event": [
-																{
-																	"listen": "test",
-																	"script": {
-																		"exec": [
-																			"pm.test(\"Status code is 200\", function () {\r",
-																			"    pm.response.to.have.status(200);\r",
-																			"});\r",
-																			"\r",
-																			"pm.test(\"Validate that result on contains entity to be found\", function () {\r",
-																			"    var jsonData = pm.response.json();\r",
-																			"    pm.expect(jsonData.length).to.eql(4);\r",
-																			"    pm.expect(jsonData.sort(sortById)).to.eql([\r",
-																			"    {\r",
-																			"        \"id\": \"urn:ngsi-ld:Animal:cow001\",\r",
-																			"        \"type\": \"Animal\",\r",
-																			"        \"name\": {\r",
-																			"            \"type\": \"Property\",\r",
-																			"            \"value\": \"Beany the Bull\"\r",
-																			"        }\r",
-																			"    },\r",
-																			"    {\r",
-																			"        \"id\": \"urn:ngsi-ld:Animal:cow004\",\r",
-																			"        \"type\": \"Animal\",\r",
-																			"        \"name\": {\r",
-																			"            \"type\": \"Property\",\r",
-																			"            \"value\": \"River\"\r",
-																			"        }\r",
-																			"    },\r",
-																			"    {\r",
-																			"        \"id\": \"urn:ngsi-ld:Animal:cow003\",\r",
-																			"        \"type\": \"Animal\",\r",
-																			"        \"name\": {\r",
-																			"            \"type\": \"Property\",\r",
-																			"            \"value\": \"Petal\"\r",
-																			"        }\r",
-																			"    },\r",
-																			"    {\r",
-																			"        \"id\": \"urn:ngsi-ld:Animal:cow002\",\r",
-																			"        \"type\": \"Animal\",\r",
-																			"        \"name\": {\r",
-																			"            \"type\": \"Property\",\r",
-																			"            \"value\": \"Trotter\"\r",
-																			"        }\r",
-																			"    }\r",
-																			"].sort(sortById));\r",
-																			"});\r",
-																			"function sortById(a, b) {\r",
-																			"    return a.id.localeCompare(b.id);\r",
-																			"}"
-																		],
-																		"type": "text/javascript",
-																		"packages": {}
-																	}
-																}
-															],
-															"request": {
-																"method": "GET",
-																"header": [
-																	{
-																		"key": "Accept",
-																		"value": "application/json",
-																		"type": "default"
-																	}
-																],
-																"url": {
-																	"raw": "{{query-manager}}/ngsi-ld/v1/entities?type=Animal&q=name~=%5Cw",
-																	"host": [
-																		"{{query-manager}}"
-																	],
-																	"path": [
-																		"ngsi-ld",
-																		"v1",
-																		"entities"
-																	],
-																	"query": [
-																		{
-																			"key": "type",
-																			"value": "Animal"
-																		},
-																		{
-																			"key": "q",
-																			"value": "name~=%5Cw"
-																		}
-																	]
-																}
-															},
-															"response": []
-														},
-														{
-															"name": "delete batch entity with no @context",
-															"event": [
-																{
-																	"listen": "test",
-																	"script": {
-																		"exec": [
-																			"pm.test(\"Status code is 204\", function () {\r",
-																			"    pm.response.to.have.status(204);\r",
-																			"});\r",
-																			"pm.collectionVariables.clear();"
-																		],
-																		"type": "text/javascript",
-																		"packages": {}
-																	}
-																}
-															],
-															"request": {
-																"method": "POST",
-																"header": [
-																	{
-																		"key": "Content-Type",
-																		"value": "application/json",
-																		"type": "default"
-																	}
-																],
-																"body": {
-																	"mode": "raw",
-																	"raw": "[\r\n    \"urn:ngsi-ld:Animal:cow001\",\r\n    \"urn:ngsi-ld:Animal:cow002\",\r\n    \"urn:ngsi-ld:Animal:cow003\",\r\n    \"urn:ngsi-ld:Animal:cow004\"\r\n\r\n]"
-																},
-																"url": {
-																	"raw": "{{entity-manager}}/ngsi-ld/v1/entityOperations/delete",
-																	"host": [
-																		"{{entity-manager}}"
-																	],
-																	"path": [
-																		"ngsi-ld",
-																		"v1",
-																		"entityOperations",
-																		"delete"
 																	]
 																}
 															},
@@ -57476,6 +56337,304 @@
 											]
 										},
 										{
+											"name": "Trigger Type Id Subscription",
+											"item": [
+												{
+													"name": "Create Subscription With Id No Context",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"var subId = payloadBody.id;\r",
+																	"pm.collectionVariables.set(\"subId\", subId);\r",
+																	"pm.test(\"Status code is 201\", function () {\r",
+																	"    pm.response.to.have.status(201);\r",
+																	"});\r",
+																	"\r",
+																	"pm.test(\"Check location header\", function () {\r",
+																	"    pm.response.to.have.header(\"Location\");\r",
+																	"    pm.expect(pm.response.headers.get(\"Location\")).to.include(subId);\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:Subscription:myidtest1888\",\r\n   \t\"type\": \"Subscription\",\r\n   \t\"entities\": [\r\n\t\t{\r\n\t\t\t\"type\": \"TestTypeIdTest\",\r\n            \"id\": \"testid:testentity1\"\r\n   \t\t}\r\n\t],\r\n    \"notification\": {\r\n       \t\"format\": \"normalized\",\r\n       \t\"endpoint\": {\r\n          \t\"uri\": \"{{notificationserver}}\",\r\n          \t\"accept\": \"application/json\"\r\n       \t}\r\n    }\r\n}\r\n\r\n"
+														},
+														"url": {
+															"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions",
+															"host": [
+																"{{subscription-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"subscriptions"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Create Simple Entity No Context Trigger",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"console.log(payloadBody.id);\r",
+																	"var entityId = payloadBody.id;\r",
+																	"pm.collectionVariables.set(\"entityId\", entityId);\r",
+																	"var subId = pm.collectionVariables.get(\"subId\");\r",
+																	"\r",
+																	"pm.test(\"Status code is 201\", function () {\r",
+																	"    pm.response.to.have.status(201);\r",
+																	"});\r",
+																	"pm.test(\"Check location header\", function () {\r",
+																	"    pm.response.to.have.header(\"Location\");\r",
+																	"    pm.expect(pm.response.headers.get(\"Location\")).to.include(entityId);\r",
+																	"});\r",
+																	"setTimeout(function(){\r",
+																	"    var notificationServer = pm.environment.get(\"notificationserver-external\");\r",
+																	"    pm.sendRequest(notificationServer + \"/\" + subId, function (err, response) {\r",
+																	"            pm.test(\"Check for notification\", function () {\r",
+																	"            var value = response.json();\r",
+																	"            console.log(\"Retrieving notifications from testserver\")\r",
+																	"            console.log(notificationServer + \"/\" + subId)\r",
+																	"            console.log(value);\r",
+																	"            pm.expect(value.length).to.eql(1);\r",
+																	"            });\r",
+																	"        });\r",
+																	"        //pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
+																	"}, 3000);\r",
+																	"    \r",
+																	"\r",
+																	"\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n    \"id\": \"testid:testentity1\",\r\n    \"type\": \"TestTypeIdTest\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Update Simple Entity No Context",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"console.log(payloadBody.id);\r",
+																	"var entityId = payloadBody.id;\r",
+																	"pm.collectionVariables.set(\"entityId\", entityId);\r",
+																	"var subId = pm.collectionVariables.get(\"subId\");\r",
+																	"\r",
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});\r",
+																	"\r",
+																	"setTimeout(function(){\r",
+																	"    var notificationServer = pm.environment.get(\"notificationserver-external\");\r",
+																	"    pm.sendRequest(notificationServer + \"/\" + subId, function (err, response) {\r",
+																	"            pm.test(\"Check for notification\", function () {\r",
+																	"            var value = response.json();\r",
+																	"            console.log(\"Retrieving notifications from testserver\")\r",
+																	"            console.log(notificationServer + \"/\" + subId)\r",
+																	"            console.log(value);\r",
+																	"            pm.expect(value.length).to.eql(2);\r",
+																	"            });\r",
+																	"        });\r",
+																	"        //pm.sendRequest(notificationServer + \"/deleteAll\", function(err, response){});\r",
+																	"}, 3000);\r",
+																	"    \r",
+																	"\r",
+																	"\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														},
+														{
+															"listen": "prerequest",
+															"script": {
+																"exec": [
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "PATCH",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															},
+															{
+																"key": "Accept",
+																"value": "application/json",
+																"type": "default",
+																"disabled": true
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n    \"id\": \"testid:testentity1\",\r\n    \"type\": \"TestTypeIdTest\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"teststring2\"},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": 123},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": 123.456},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": {\"some\": {\"more\": \"values\"}}},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:testref1\"}\r\n}",
+															"options": {
+																"raw": {
+																	"language": "json"
+																}
+															}
+														},
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities/testid:testentity1",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities",
+																"testid:testentity1"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Delete Subcription",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "DELETE",
+														"header": [],
+														"url": {
+															"raw": "{{subscription-manager}}/ngsi-ld/v1/subscriptions/{{subId}}",
+															"host": [
+																"{{subscription-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"subscriptions",
+																"{{subId}}"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "Delete Entity Copy",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});\r",
+																	"pm.collectionVariables.clear();"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "DELETE",
+														"header": [],
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities/testid:testentity1",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entities",
+																"testid:testentity1"
+															]
+														}
+													},
+													"response": []
+												}
+											]
+										},
+										{
 											"name": "Trigger Type Subscription with batch upsert",
 											"item": [
 												{
@@ -94832,6 +93991,16 @@
 					]
 				}
 			]
+		}
+	],
+	"variable": [
+		{
+			"key": "subId",
+			"value": ""
+		},
+		{
+			"key": "entityId",
+			"value": ""
 		}
 	]
 }

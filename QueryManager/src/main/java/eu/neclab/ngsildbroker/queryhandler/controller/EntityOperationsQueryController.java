@@ -292,7 +292,7 @@ public class EntityOperationsQueryController {
 				return queryService.query(tenant, token, tokenProvided, idsAndTypeQueryAndIdPattern, attrsQuery,
 						qQueryTerm, csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset, count,
 						localOnly, context, request.headers(), false, null, null, join, joinLevel, entityDist, pickTerm,
-						omitTerm, checkSum, viaHeaders).onItem().transformToUni(queryResult -> {
+						omitTerm, checkSum, viaHeaders, null).onItem().transformToUni(queryResult -> {
 							if (doNotCompact) {
 								return Uni.createFrom().item(RestResponse.ok((Object) queryResult.getData()));
 							}

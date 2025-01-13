@@ -48,8 +48,10 @@ import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.interfaces.CSourceHandler;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import eu.neclab.ngsildbroker.commons.tools.SubscriptionTools;
 
@@ -69,7 +71,7 @@ import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowIterator;
 
 @Singleton
-public class RegistrySubscriptionService {
+public class RegistrySubscriptionService implements CSourceHandler{
 
 	private final static Logger logger = LoggerFactory.getLogger(RegistrySubscriptionService.class);
 
@@ -107,6 +109,8 @@ public class RegistrySubscriptionService {
 	@ConfigProperty(name = "scorpio.alltypesub.type", defaultValue = "*")
 	private String allTypeSubType;
 
+	@Inject
+	MicroServiceUtils microServiceUtils;
 	private String ALL_TYPES_SUB;
 
 	void startup(@Observes StartupEvent event) {
@@ -148,6 +152,7 @@ public class RegistrySubscriptionService {
 				return null;
 			});
 		}).await().indefinitely();
+		this.microServiceUtils.registerCSourceReceiver(this);
 
 	}
 
@@ -309,7 +314,7 @@ public class RegistrySubscriptionService {
 		});
 	}
 
-	public Uni<Void> checkSubscriptions(CSourceBaseRequest message) {
+	public Uni<Void> handleRegistryChange(CSourceBaseRequest message) {
 		Collection<SubscriptionRequest> potentialSubs = tenant2subscriptionId2Subscription.column(message.getTenant())
 				.values();
 		List<Uni<Void>> unis = Lists.newArrayList();

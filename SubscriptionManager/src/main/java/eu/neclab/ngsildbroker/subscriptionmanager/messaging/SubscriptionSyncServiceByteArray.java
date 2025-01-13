@@ -75,6 +75,9 @@ public class SubscriptionSyncServiceByteArray extends SubscriptionSyncServiceBas
 
 	@Inject
 	Vertx vertx;
+	
+	@Inject
+	MicroServiceUtils microServiceUtils;
 
 	private Executor executor;
 
@@ -89,7 +92,7 @@ public class SubscriptionSyncServiceByteArray extends SubscriptionSyncServiceBas
 	@Scheduled(every = "${scorpio.sync.announcement-time}", delayed = "${scorpio.startupdelay}")
 	Uni<Void> syncTask() {
 		try {
-			MicroServiceUtils.serializeAndSplitObjectAndEmit(INSTANCE_ID, messageSize, aliveEmitter, objectMapper);
+			microServiceUtils.serializeAndSplitObjectAndEmit(INSTANCE_ID, messageSize, aliveEmitter, objectMapper);
 		} catch (ResponseException e) {
 			logger.error("Failed to serialize sync message", e);
 		}
@@ -157,7 +160,7 @@ public class SubscriptionSyncServiceByteArray extends SubscriptionSyncServiceBas
 
 	public Uni<Void> sync(SubscriptionRequest request) {
 		try {
-			MicroServiceUtils.serializeAndSplitObjectAndEmit(new SyncMessage(SYNC_ID, request.getId(),
+			microServiceUtils.serializeAndSplitObjectAndEmit(new SyncMessage(SYNC_ID, request.getId(),
 					request.getTenant(), request.getRequestType(), SyncMessage.NORMAL_SUB), messageSize, syncEmitter,
 					objectMapper);
 		} catch (ResponseException e) {

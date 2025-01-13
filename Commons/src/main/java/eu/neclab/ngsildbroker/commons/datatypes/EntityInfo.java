@@ -1,8 +1,6 @@
 package eu.neclab.ngsildbroker.commons.datatypes;
 
 import java.io.Serializable;
-import java.net.URI;
-
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 
 /**

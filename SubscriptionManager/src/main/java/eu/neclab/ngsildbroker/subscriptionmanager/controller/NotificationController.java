@@ -11,7 +11,6 @@ import org.jboss.resteasy.reactive.RestResponse;
 
 import com.github.jsonldjava.core.JsonLDService;
 
-import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;

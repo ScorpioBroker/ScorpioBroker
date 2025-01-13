@@ -50,6 +50,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.interfaces.CSourceHandler;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
@@ -66,7 +67,6 @@ import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
 import io.vertx.mutiny.ext.web.client.WebClient;
 import io.vertx.mutiny.sqlclient.Row;
-import io.vertx.mutiny.sqlclient.RowIterator;
 import io.vertx.mutiny.sqlclient.RowSet;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -75,7 +75,7 @@ import jakarta.inject.Inject;
 
 @ApplicationScoped
 @SuppressWarnings("unchecked")
-public class QueryService {
+public class QueryService implements CSourceHandler {
 
 	private static Logger logger = LoggerFactory.getLogger(QueryService.class);
 
@@ -99,6 +99,8 @@ public class QueryService {
 
 	@ConfigProperty(name = "scorpio.fed.timeout", defaultValue = "20000")
 	int timeout;
+	@Inject
+	MicroServiceUtils microServiceUtils;
 
 	@PostConstruct
 	void setup() {
@@ -107,6 +109,7 @@ public class QueryService {
 			tenant2CId2RegEntries = t;
 			return null;
 		}).await().indefinitely();
+		this.microServiceUtils.registerCSourceReceiver(this);
 	}
 
 	// This is needed so that @postconstruct runs on the startup thread and not on a
@@ -120,15 +123,11 @@ public class QueryService {
 			LanguageQueryTerm langQuery, int limit, int offSet, boolean count, boolean localOnly, Context context,
 			io.vertx.core.MultiMap headersFromReq, boolean doNotCompact, Set<String> jsonKeys,
 			DataSetIdTerm dataSetIdTerm, String join, int joinLevel, boolean entityDist, PickTerm pickTerm,
-			OmitTerm omitTerm, String checkSum, ViaHeaders viaHeaders) {
-		if (localOnly) {
-			return localQuery(tenant, idsAndTypeQueryAndIdPattern, attrsQuery, qQuery, geoQuery, scopeQuery, langQuery,
-					limit, offSet, count, dataSetIdTerm, join, joinLevel, pickTerm, omitTerm);
-		}
+			OmitTerm omitTerm, String checkSum, ViaHeaders viaHeaders, String typePattern) {
 		if (!tokenProvided) {
 			return getAndStoreEntityMap(tenant, qToken, idsAndTypeQueryAndIdPattern, attrsQuery, geoQuery, qQuery,
 					scopeQuery, langQuery, limit, offSet, context, headersFromReq, doNotCompact, dataSetIdTerm, join,
-					joinLevel, entityDist, pickTerm, omitTerm, checkSum, viaHeaders).onItem().transformToUni(t -> {
+					joinLevel, entityDist, pickTerm, omitTerm, checkSum, viaHeaders, typePattern, localOnly).onItem().transformToUni(t -> {
 						return handleEntityMap(t.getItem2(), t.getItem1(), tenant, idsAndTypeQueryAndIdPattern,
 								attrsQuery, qQuery, geoQuery, scopeQuery, langQuery, limit, offSet, count,
 								dataSetIdTerm, join, joinLevel, context, jsonKeys, headersFromReq, pickTerm, omitTerm,
@@ -149,7 +148,7 @@ public class QueryService {
 							return getAndStoreEntityMap(tenant, qToken, idsAndTypeQueryAndIdPattern, attrsQuery,
 									geoQuery, qQuery, scopeQuery, langQuery, limit, offSet, context, headersFromReq,
 									doNotCompact, dataSetIdTerm, join, joinLevel, entityDist, pickTerm, omitTerm,
-									checkSum, viaHeaders).onItem().transformToUni(t2 -> {
+									checkSum, viaHeaders, typePattern, localOnly).onItem().transformToUni(t2 -> {
 										return handleEntityMap(t2.getItem2(), t2.getItem1(), tenant,
 												idsAndTypeQueryAndIdPattern, attrsQuery, qQuery, geoQuery, scopeQuery,
 												langQuery, limit, offSet, count, dataSetIdTerm, join, joinLevel,
@@ -1138,58 +1137,7 @@ public class QueryService {
 
 	}
 
-	private Uni<QueryResult> localQuery(String tenant,
-			List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeQueryAndIdPattern, AttrsQueryTerm attrsQuery,
-			QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, int limit,
-			int offSet, boolean count, DataSetIdTerm dataSetIdTerm, String join, int joinLevel, PickTerm pickTerm,
-			OmitTerm omitTerm) {
-		return queryDAO
-				.queryLocalOnly(tenant, idsAndTypeQueryAndIdPattern, attrsQuery, qQuery, geoQuery, scopeQuery,
-						langQuery, limit, offSet, count, dataSetIdTerm, join, joinLevel, pickTerm, omitTerm)
-				.onItem().transform(rows -> {
-					QueryResult result = new QueryResult();
-					if (limit == 0 && count) {
-						result.setCount(rows.iterator().next().getLong(0));
-					} else {
-						RowIterator<Row> it = rows.iterator();
-						Row next = null;
-
-						List<Map<String, Object>> resultData = new ArrayList<Map<String, Object>>(rows.size());
-						Map<String, Object> entity;
-						while (it.hasNext()) {
-							next = it.next();
-							entity = next.getJsonObject(0).getMap();
-							resultData.add(entity);
-
-						}
-						if (count) {
-							Long resultCount = next.getLong(1);
-							result.setCount(resultCount);
-							long leftAfter = resultCount - (offSet + limit);
-							if (leftAfter < 0) {
-								leftAfter = 0;
-							}
-							result.setResultsLeftAfter(leftAfter);
-						} else {
-							if (resultData.size() < limit) {
-								result.setResultsLeftAfter(0l);
-							} else {
-								result.setResultsLeftAfter((long) limit);
-							}
-
-						}
-						long leftBefore = offSet;
-
-						result.setResultsLeftBefore(leftBefore);
-						result.setLimit(limit);
-						result.setOffset(offSet);
-						result.setData(resultData);
-					}
-
-					return result;
-				});
-	}
-
+	
 	public Uni<List<Map<String, Object>>> getTypesWithDetail(String tenant, boolean localOnly,
 			io.vertx.core.MultiMap headersFromReq) {
 		Uni<List<Map<String, Object>>> local = queryDAO.getTypesWithDetails(tenant);
@@ -1759,12 +1707,12 @@ public class QueryService {
 			GeoQueryTerm geoQuery, QQueryTerm qQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, int limit,
 			int offset, Context context, io.vertx.core.MultiMap headersFromReq, boolean doNotCompact,
 			DataSetIdTerm dataSetIdTerm, String join, int joinLevel, boolean splitEntities, PickTerm pickTerm,
-			OmitTerm omitTerm, String queryCechksum, ViaHeaders viaHeaders) {
+			OmitTerm omitTerm, String queryCechksum, ViaHeaders viaHeaders, String typePattern, boolean localOnly) {
 
 		if (tenant2CId2RegEntries.isEmpty()) {
 			return queryDAO.createEntityMapAndFillEntityCache(tenant, idsAndTypeQueryAndIdPattern, attrsQuery, qQuery,
 					geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel, qToken, pickTerm,
-					omitTerm, queryCechksum, splitEntities, true, false);
+					omitTerm, queryCechksum, splitEntities, true, false, typePattern, localOnly);
 		} else {
 			EntityCache fullEntityCache = new EntityCache();
 			Collection<QueryRemoteHost> remoteHost2Query = EntityTools.getRemoteQueries(tenant,
@@ -1774,17 +1722,17 @@ public class QueryService {
 				if ((join == null || joinLevel <= 0) && (qQuery == null || !qQuery.hasLinkedQ())) {
 					return queryDAO.createEntityMapAndFillEntityCache(tenant, idsAndTypeQueryAndIdPattern, attrsQuery,
 							qQuery, geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel,
-							qToken, pickTerm, omitTerm, queryCechksum, splitEntities, true, false);
+							qToken, pickTerm, omitTerm, queryCechksum, splitEntities, true, false, typePattern, localOnly);
 				} else {
 					return queryDAO.createEntityMapAndFillEntityCache(tenant, idsAndTypeQueryAndIdPattern, attrsQuery,
 							qQuery, geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel,
-							qToken, pickTerm, omitTerm, queryCechksum, splitEntities, false, true);
+							qToken, pickTerm, omitTerm, queryCechksum, splitEntities, false, true, typePattern, localOnly);
 				}
 			} else {
 				Uni<Tuple2<EntityCache, EntityMap>> localEntityCacheAndEntityMap = queryDAO
 						.createEntityMapAndFillEntityCache(tenant, idsAndTypeQueryAndIdPattern, attrsQuery, qQuery,
 								geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel, qToken,
-								pickTerm, omitTerm, queryCechksum, splitEntities, false, false);
+								pickTerm, omitTerm, queryCechksum, splitEntities, false, false, typePattern, localOnly);
 				List<Uni<Tuple2<List<Map<String, Object>>, QueryRemoteHost>>> unisForEntityRetrieval = Lists
 						.newArrayList();
 				List<Uni<Tuple2<Map<String, Object>, QueryRemoteHost>>> unisForEntityMapRetrieval = Lists

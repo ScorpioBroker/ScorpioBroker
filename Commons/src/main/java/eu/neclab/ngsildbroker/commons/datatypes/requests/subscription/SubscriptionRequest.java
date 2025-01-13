@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import com.fasterxml.jackson.annotation.JsonSetter;
@@ -167,7 +168,7 @@ public class SubscriptionRequest implements Serializable {
 
 		for (EntityInfo entityInfo : sub.getEntities()) {
 			if (entityInfo.getTypeTerm().getAllTypes().contains(allTypesSub)
-					|| (entityInfo.getId() != null && entityInfo.getId().toString().equals(entityId))
+					|| (entityInfo.getId() != null && ArrayUtils.contains(entityInfo.getId(), entityId))
 					|| (entityInfo.getIdPattern() != null && entityId.matches(entityInfo.getIdPattern()))
 					|| (entityInfo.getIdPattern() == null && entityInfo.getId() == null)) {
 				return true;
@@ -192,7 +193,7 @@ public class SubscriptionRequest implements Serializable {
 				typeQueryResult = typeTerm.calculate((List<String>) payload.get(NGSIConstants.JSON_LD_TYPE));
 				if (typeQueryResult) {
 					if (entityInfo.getId() != null) {
-						if (entityInfo.getId().toString().equals(entityId)) {
+						if (ArrayUtils.contains(entityInfo.getId(), entityId)) {
 							break;
 						} else {
 							typeQueryResult = false;

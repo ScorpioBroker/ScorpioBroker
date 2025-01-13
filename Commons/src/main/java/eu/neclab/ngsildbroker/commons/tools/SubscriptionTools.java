@@ -1,6 +1,5 @@
 package eu.neclab.ngsildbroker.commons.tools;
 
-import com.fasterxml.jackson.core.JsonGenerationException;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLDService;
 import com.github.jsonldjava.core.JsonLdConsts;
@@ -12,7 +11,6 @@ import com.google.common.collect.Sets;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.EntityCache;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityInfo;
 import eu.neclab.ngsildbroker.commons.datatypes.NotificationParam;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryInfos;
@@ -35,7 +33,6 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.enums.Format;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.tuples.Tuple3;
 import io.smallrye.mutiny.tuples.Tuple4;
 import io.vertx.core.http.impl.headers.HeadersMultiMap;
 import io.vertx.core.json.JsonObject;
@@ -56,7 +53,6 @@ import org.locationtech.spatial4j.shape.jts.JtsShapeFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -569,7 +565,7 @@ public class SubscriptionTools {
 				}
 				Map<String, Object> queryParams = Maps
 						.newHashMap(entry.getValue().toQueryParams(context, false, null, finalHost));
-				
+
 				Map<String, String> entities = Maps.newHashMap();
 				queryParams.put(NGSIConstants.NGSI_LD_ENTITIES_SHORT, Lists.newArrayList(entities));
 				if (queryParams.containsKey(NGSIConstants.ID)) {
@@ -898,41 +894,4 @@ public class SubscriptionTools {
 				});
 	}
 
-	public static void main(String[] args) {
-		String test = "[\r\n" + "  {\r\n" + "    \"@id\": \"urn:test:testentity1\",\r\n"
-				+ "    \"https://uri.etsi.org/ngsi-ld/location\": [\r\n" + "      {\r\n" + "        \"@type\": [\r\n"
-				+ "          \"https://uri.etsi.org/ngsi-ld/GeoProperty\"\r\n" + "        ],\r\n"
-				+ "        \"https://uri.etsi.org/ngsi-ld/hasValue\": [\r\n" + "          {\r\n"
-				+ "            \"https://purl.org/geojson/vocab#coordinates\": [\r\n" + "              {\r\n"
-				+ "                \"@list\": [\r\n" + "                  {\r\n"
-				+ "                    \"@list\": [\r\n" + "                      {\r\n"
-				+ "                        \"@list\": [\r\n" + "                          {\r\n"
-				+ "                            \"@value\": 100\r\n" + "                          },\r\n"
-				+ "                          {\r\n" + "                            \"@value\": 0\r\n"
-				+ "                          }\r\n" + "                        ]\r\n" + "                      },\r\n"
-				+ "                      {\r\n" + "                        \"@list\": [\r\n"
-				+ "                          {\r\n" + "                            \"@value\": 101\r\n"
-				+ "                          },\r\n" + "                          {\r\n"
-				+ "                            \"@value\": 1\r\n" + "                          }\r\n"
-				+ "                        ]\r\n" + "                      }\r\n" + "                    ]\r\n"
-				+ "                  },\r\n" + "                  {\r\n" + "                    \"@list\": [\r\n"
-				+ "                      {\r\n" + "                        \"@list\": [\r\n"
-				+ "                          {\r\n" + "                            \"@value\": 102\r\n"
-				+ "                          },\r\n" + "                          {\r\n"
-				+ "                            \"@value\": 2\r\n" + "                          }\r\n"
-				+ "                        ]\r\n" + "                      },\r\n" + "                      {\r\n"
-				+ "                        \"@list\": [\r\n" + "                          {\r\n"
-				+ "                            \"@value\": 103\r\n" + "                          },\r\n"
-				+ "                          {\r\n" + "                            \"@value\": 3\r\n"
-				+ "                          }\r\n" + "                        ]\r\n" + "                      }\r\n"
-				+ "                    ]\r\n" + "                  }\r\n" + "                ]\r\n"
-				+ "              }\r\n" + "            ],\r\n" + "            \"@type\": [\r\n"
-				+ "              \"https://purl.org/geojson/vocab#MultiLineString\"\r\n" + "            ]\r\n"
-				+ "          }\r\n" + "        ]\r\n" + "      }\r\n" + "    ],\r\n" + "    \"@type\": [\r\n"
-				+ "      \"https://uri.etsi.org/ngsi-ld/default-context/TestType\"\r\n" + "    ]\r\n" + "  }\r\n" + "]";
-
-		List<Map<String, Object>> obj = (List<Map<String, Object>>) JsonUtils.fromString(test).await().indefinitely();
-
-		System.out.println();
-	}
 }

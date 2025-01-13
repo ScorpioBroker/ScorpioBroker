@@ -69,6 +69,8 @@ public class RegistrySubscriptionSyncServiceString extends RegistrySubscriptionS
 	@Inject
 	Vertx vertx;
 
+	@Inject
+	MicroServiceUtils microServiceUtils;
 	private Executor executor;
 
 	@ConfigProperty(name = "scorpio.messaging.maxSize")
@@ -85,7 +87,7 @@ public class RegistrySubscriptionSyncServiceString extends RegistrySubscriptionS
 	@Scheduled(every = "${scorpio.sync.announcement-time}", delayed = "${scorpio.startupdelay}")
 	Uni<Void> syncTask() {
 		try {
-			MicroServiceUtils.serializeAndSplitObjectAndEmit(INSTANCE_ID, messageSize, aliveEmitter, objectMapper);
+			microServiceUtils.serializeAndSplitObjectAndEmit(INSTANCE_ID, messageSize, aliveEmitter, objectMapper);
 		} catch (ResponseException e) {
 			logger.error("Failed to serialize sync message", e);
 		}
@@ -154,7 +156,7 @@ public class RegistrySubscriptionSyncServiceString extends RegistrySubscriptionS
 
 	public Uni<Void> sync(SubscriptionRequest request) {
 		try {
-			MicroServiceUtils.serializeAndSplitObjectAndEmit(new SyncMessage(SYNC_ID, request.getId(),
+			microServiceUtils.serializeAndSplitObjectAndEmit(new SyncMessage(SYNC_ID, request.getId(),
 					request.getTenant(), request.getRequestType(), SyncMessage.REG_SUB), messageSize, syncEmitter,
 					objectMapper);
 		} catch (ResponseException e) {

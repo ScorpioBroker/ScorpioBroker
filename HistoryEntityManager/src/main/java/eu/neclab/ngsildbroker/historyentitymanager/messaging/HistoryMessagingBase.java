@@ -23,6 +23,8 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.BatchRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CSourceBaseRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.DeleteEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.UpsertEntityRequest;
+import eu.neclab.ngsildbroker.commons.interfaces.BaseRequestHandler;
+import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.historyentitymanager.service.HistoryEntityService;
 //import eu.neclab.ngsildbroker.historyentitymanager.service.HistoryEntityService;
 import io.smallrye.mutiny.Uni;
@@ -30,7 +32,7 @@ import io.vertx.mutiny.core.Vertx;
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 
-public abstract class HistoryMessagingBase {
+public abstract class HistoryMessagingBase implements BaseRequestHandler {
 
 	protected static Logger logger = LoggerFactory.getLogger(HistoryMessagingBase.class);
 	private ConcurrentHashMap<String, ConcurrentLinkedQueue<BaseRequest>> tenant2Buffer = new ConcurrentHashMap<>();
@@ -57,6 +59,8 @@ public abstract class HistoryMessagingBase {
 	@Inject
 	ObjectMapper objectMapper;
 	
+	@Inject
+	MicroServiceUtils microServiceUtils;
 	
 	Executor histRecordingExecutor;
 	
@@ -65,6 +69,7 @@ public abstract class HistoryMessagingBase {
 		if(autoRecording) {
 			histRecordingExecutor = Executors.newScheduledThreadPool(histRecordingThreadPooolSzie);
 		}
+		this.microServiceUtils.registerBaseRequestReceiver(this);
 	}
 	
 
@@ -88,8 +93,9 @@ public abstract class HistoryMessagingBase {
 			logger.error("failed to serialize message " + byteMessage, e);
 			return Uni.createFrom().voidItem();
 		}
+		
 		if (baseRequest.getRequestType() >= 30) {
-			return baseHandleBatch(baseRequest);
+			return handleBaseRequest(baseRequest);
 		} else {
 			return baseHandleEntity(baseRequest);
 		}
@@ -119,7 +125,7 @@ public abstract class HistoryMessagingBase {
 		return Uni.createFrom().voidItem();
 	}
 
-	public Uni<Void> baseHandleBatch(BaseRequest message) {
+	public Uni<Void> handleBaseRequest(BaseRequest message) {
 		logger.debug("retrieving message with id" + message.getIds());
 		if (!autoRecording || (instancesNr > 1 && message.hashCode() % instancesNr != myInstancePos)) {
 			logger.debug("discarding " + message.getIds());
