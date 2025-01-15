@@ -1,10 +1,9 @@
 {
 	"info": {
-		"_postman_id": "bf09a3b3-17d3-4c9f-87cf-65774766ab33",
-		"_postman_id": "90796251-95dd-48f2-90fc-391e546b0edb",
+		"_postman_id": "a7755290-f14b-4c5a-8410-b763393e688d",
 		"name": "API Test",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "27293663"
+		"_exporter_id": "23420048"
 	},
 	"item": [
 		{
@@ -60970,8 +60969,8 @@
 																			"            console.log(\"Retrieving notifications from testserver\")\r",
 																			"            console.log(notificationServer + \"/\" + subId)\r",
 																			"            console.log(value);\r",
-																			"            pm.expect(value.length).to.eql(5);\r",
-																			"            notification = value[3].body;\r",
+																			"            pm.expect(value.length).to.eql(3);\r",
+																			"            notification = value[2].body;\r",
 																			"            headers = value[1].headers;\r",
 																			"            pm.expect(notification.type).to.eql(\"Notification\");\r",
 																			"            pm.expect(notification).to.have.property(\"id\");\r",
@@ -60986,7 +60985,8 @@
 																			"\r",
 																			""
 																		],
-																		"type": "text/javascript"
+																		"type": "text/javascript",
+																		"packages": {}
 																	}
 																}
 															],
@@ -93995,11 +93995,7 @@
 	],
 	"variable": [
 		{
-			"key": "subId",
-			"value": ""
-		},
-		{
-			"key": "entityId",
+			"key": "expiresAt",
 			"value": ""
 		}
 	]
