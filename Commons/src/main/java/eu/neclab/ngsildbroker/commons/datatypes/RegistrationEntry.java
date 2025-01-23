@@ -337,7 +337,15 @@ public record RegistrationEntry(String cId, String eId, String eIdp, String type
 				if (infoEntry.containsKey(NGSIConstants.NGSI_LD_ENTITIES)) {
 					for (Map<String, Object> entitiesEntry : (List<Map<String, Object>>) infoEntry
 							.get(NGSIConstants.NGSI_LD_ENTITIES)) {
-						for (String entityType : (List<String>) entitiesEntry.get(NGSIConstants.JSON_LD_TYPE)) {
+						Object typesObj = entitiesEntry.get(NGSIConstants.JSON_LD_TYPE);
+						List<String> types;
+						if(typesObj != null) {
+							types = (List<String>) typesObj;
+						}else {
+							types = Lists.newArrayList();
+							types.add(null);
+						}
+						for (String entityType : types ) {
 							String tmpEId = null;
 							String tmpEIdp = null;
 							if (entitiesEntry.containsKey(NGSIConstants.JSON_LD_ID)) {
