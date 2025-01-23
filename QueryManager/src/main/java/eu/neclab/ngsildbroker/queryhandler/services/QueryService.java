@@ -1718,8 +1718,8 @@ public class QueryService implements CSourceHandler {
 			Collection<QueryRemoteHost> remoteHost2Query = EntityTools.getRemoteQueries(tenant,
 					idsAndTypeQueryAndIdPattern, attrsQuery, qQuery, geoQuery, scopeQuery, langQuery,
 					tenant2CId2RegEntries, context, fullEntityCache, splitEntities, viaHeaders);
-			if (remoteHost2Query.isEmpty()) {
-				if ((join == null || joinLevel <= 0) && (qQuery == null || !qQuery.hasLinkedQ())) {
+			if (remoteHost2Query.isEmpty() || localOnly) {
+				if ((join == null || joinLevel <= 0) && (qQuery == null || !qQuery.hasLinkedQ()) && !localOnly) {
 					return queryDAO.createEntityMapAndFillEntityCache(tenant, idsAndTypeQueryAndIdPattern, attrsQuery,
 							qQuery, geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel,
 							qToken, pickTerm, omitTerm, queryCechksum, splitEntities, true, false, typePattern, localOnly);
