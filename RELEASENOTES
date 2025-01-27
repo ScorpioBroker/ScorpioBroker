@@ -1,3 +1,8 @@
+RELEASE NOTES 5.0.7
+
+fixed an issue where in certain circumstances ID based registrations would not work
+fixed an issue where localOnly was not respected in certain query 
+
 RELEASE NOTES 5.0.6
 
 fix for id subscriptions 

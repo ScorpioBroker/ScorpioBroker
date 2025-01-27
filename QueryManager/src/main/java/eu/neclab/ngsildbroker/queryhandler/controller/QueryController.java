@@ -106,7 +106,7 @@ public class QueryController {
 	public Uni<RestResponse<Object>> getEntity(HttpServerRequest request, @QueryParam(value = "attrs") String attrs,
 			@QueryParam(value = "options") String options, @QueryParam(value = "lang") String lang,
 			@QueryParam(value = "geometryProperty") String geometryProperty,
-			@QueryParam(value = "localOnly") boolean localOnly, @PathParam("entityId") String entityId,
+			@QueryParam(value = "local") boolean localOnly, @PathParam("entityId") String entityId,
 			@QueryParam(value = "doNotCompact") boolean doNotCompact,
 			@QueryParam("containedBy") @DefaultValue("") String containedBy, @QueryParam("join") String join,
 			@QueryParam("joinLevel") Integer joinLevel, @QueryParam("pick") String pick,
@@ -150,7 +150,7 @@ public class QueryController {
 			@QueryParam("geometry") String geometry, @QueryParam("georel") String georelInput,
 			@QueryParam("coordinates") String coordinates, @QueryParam("geoproperty") String geoproperty,
 			@QueryParam("geometryProperty") String geometryProperty, @QueryParam("lang") String lang,
-			@QueryParam("scopeQ") String scopeQ, @QueryParam("localOnly") boolean localOnly,
+			@QueryParam("scopeQ") String scopeQ, @QueryParam("local") boolean localOnly,
 			@QueryParam("options") String options, @QueryParam("limit") Integer limit, @QueryParam("offset") int offset,
 			@QueryParam("count") boolean count, @QueryParam("containedBy") @DefaultValue("") String containedBy,
 			@QueryParam("join") String join, @QueryParam("joinLevel") Integer joinLevel,
@@ -186,7 +186,7 @@ public class QueryController {
 	@Path("/types")
 	@GET
 	public Uni<RestResponse<Object>> getAllTypes(HttpServerRequest request,
-			@QueryParam(value = "details") boolean details, @QueryParam(value = "localOnly") boolean localOnly) {
+			@QueryParam(value = "details") boolean details, @QueryParam(value = "local") boolean localOnly) {
 
 		HttpUtils.getAtContext(request);
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll(HttpHeaders.ACCEPT));
@@ -215,7 +215,7 @@ public class QueryController {
 	@Path("/types/{entityType}")
 	@GET
 	public Uni<RestResponse<Object>> getType(HttpServerRequest request, @PathParam("entityType") String type,
-			@QueryParam(value = "localOnly") boolean localOnly) {
+			@QueryParam(value = "local") boolean localOnly) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll(HttpHeaders.ACCEPT));
 		if (acceptHeader == -1) {
 			return HttpUtils.getInvalidHeader();
@@ -238,7 +238,7 @@ public class QueryController {
 	@Path("/attributes")
 	@GET
 	public Uni<RestResponse<Object>> getAllAttributes(HttpServerRequest request,
-			@QueryParam(value = "details") boolean details, @QueryParam(value = "localOnly") boolean localOnly) {
+			@QueryParam(value = "details") boolean details, @QueryParam(value = "local") boolean localOnly) {
 
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll(HttpHeaders.ACCEPT));
 		if (acceptHeader == -1) {
@@ -266,7 +266,7 @@ public class QueryController {
 	@Path("/attributes/{attribute}")
 	@GET
 	public Uni<RestResponse<Object>> getAttribute(HttpServerRequest request, @PathParam("attribute") String attribute,
-			@QueryParam(value = "details") boolean details, @QueryParam(value = "localOnly") boolean localOnly) {
+			@QueryParam(value = "details") boolean details, @QueryParam(value = "local") boolean localOnly) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll(HttpHeaders.ACCEPT));
 		if (acceptHeader == -1) {
 			return HttpUtils.getInvalidHeader();

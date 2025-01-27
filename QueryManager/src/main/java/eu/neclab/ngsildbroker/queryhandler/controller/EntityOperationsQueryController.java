@@ -81,7 +81,7 @@ public class EntityOperationsQueryController {
 	public Uni<RestResponse<Object>> postQuery(HttpServerRequest request, String bodyStr,
 			@QueryParam(value = "limit") Integer limit, @QueryParam(value = "offset") int offset,
 			@QueryParam(value = "options") String options, @QueryParam(value = "count") boolean count,
-			@QueryParam(value = "localOnly") boolean localOnly,
+			@QueryParam(value = "local") boolean localOnly,
 			@QueryParam(value = "geometryProperty") String geometryProperty,
 			@HeaderParam("NGSILD-EntityMap") String entityMapToken, @QueryParam("entityMap") boolean retrieveEntityMap,
 			@QueryParam(value = "doNotCompact") boolean doNotCompact) {
