@@ -381,7 +381,7 @@ public class QueryController {
 							.query(HttpUtils.getTenant(request), qP.getEntityMapToken(), qP.isTokenProvided(),
 									qP.getIdsAndTypeAndIdPattern(), qP.getAttrsQueryTerm(), qP.getqQueryTerm(),
 									qP.getCsfQueryTerm(), qP.getGeoQueryTerm(), qP.getScopeQueryTerm(),
-									qP.getLanguageQueryTerm(), qP.getLimit(), offset, count, localOnly, qP.getContext(),
+									qP.getLanguageQueryTerm(), qP.getLimit(), offset, count, qP.isLocalOnly(), qP.getContext(),
 									request.headers(), doNotCompact, qP.getJsonKeys(), qP.getDataSetIdTerm(), join,
 									joinLevel, distEntities, qP.getPickTerm(), qP.getOmitTerm(), qP.getCheckSum(),
 									qP.getViaHeaders(), null)
@@ -407,6 +407,7 @@ public class QueryController {
 		String q;
 		String georel;
 		String typeQuery;
+		
 		if (format != null && !format.isEmpty()) {
 			options += "," + format;
 		}
@@ -435,6 +436,7 @@ public class QueryController {
 		} else {
 			typeQuery = null;
 		}
+		
 		if (maxDistance != null) {
 			georel = georelInput + ";maxDistance=" + maxDistance;
 		} else if (minDistance != null) {
@@ -484,6 +486,7 @@ public class QueryController {
 			DataSetIdTerm dataSetIdTerm;
 			OmitTerm omitTerm = null;
 			PickTerm pickTerm = null;
+			Query result = new Query();
 			try {
 				if (pick != null) {
 					pickTerm = new PickTerm();
@@ -497,6 +500,13 @@ public class QueryController {
 				attrsQuery = QueryParser.parseAttrs(attrs, context);
 				dataSetIdTerm = QueryParser.parseDataSetId(datasetId);
 				typeQueryTerm = QueryParser.parseTypeQuery(typeQuery, context);
+				
+				if(typeQueryTerm != null && typeQueryTerm.getAllTypes().contains(NGSIConstants.NGSI_LD_STAR)) {
+					result.setLocalOnly(true);
+					typeQueryTerm = null;
+				}else {
+					result.setLocalOnly(localOnly);
+				}
 				qQueryTerm = QueryParser.parseQuery(q, context);
 				csfQueryTerm = QueryParser.parseCSFQuery(csf, context);
 				geoQueryTerm = QueryParser.parseGeoQuery(georel, coordinates, geometry, geoproperty, context);
@@ -564,13 +574,13 @@ public class QueryController {
 			}
 			ViaHeaders viaHeaders = new ViaHeaders(request.headers().getAll(HttpHeaders.VIA), this.selfViaHeader);
 			List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeQueryAndIdPattern;
-			if (typeQuery != null || ids != null || idPattern != null) {
+			if (typeQueryTerm != null || ids != null || idPattern != null) {
 				idsAndTypeQueryAndIdPattern = new ArrayList<>(1);
 				idsAndTypeQueryAndIdPattern.add(Tuple3.of(ids, typeQueryTerm, idPattern));
 			} else {
 				idsAndTypeQueryAndIdPattern = null;
 			}
-			Query result = new Query();
+			
 
 			result.setEntityMapToken(token);
 			result.setTokenProvided(tokenProvided);

@@ -172,6 +172,7 @@ public class AppConstants {
 	public static final String INVALID_GEO_QUERY = "XX000";
 
 	public static JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
+	public static char[] CHAR_ARRAY_WHERE = new char[]{'W','H','E','R','E',' '};
 
 	public static final QueryRemoteHost DB_REMOTE_HOST = new QueryRemoteHost(INTERNAL_NULL_KEY, null, null, null, true,
 			true, true, -1, null, null, false, false, null, null);

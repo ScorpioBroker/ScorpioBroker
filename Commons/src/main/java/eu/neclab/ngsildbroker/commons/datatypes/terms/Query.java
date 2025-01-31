@@ -40,6 +40,8 @@ public class Query implements Serializable{
 	private int limit;
 	private String finalOptions;
 	private int acceptHeader;
+	private boolean localOnly;
+	
 	public Query() {
 		// for serializer
 	}
@@ -222,5 +224,14 @@ public class Query implements Serializable{
 	public int getAcceptHeader() {
 		return acceptHeader;
 	}
+	
+	public boolean isLocalOnly() {
+		return localOnly;
+	}
+
+	public void setLocalOnly(boolean localOnly) {
+		this.localOnly = localOnly;
+	}
+
 
 }

@@ -2,6 +2,7 @@ package eu.neclab.ngsildbroker.queryhandler.repository;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -1306,7 +1307,11 @@ public class QueryDAO {
 					scopeQuery.toSql(query, queryToStoreWherePart);
 				}
 			}
-
+			char[] checkArray = new char[AppConstants.CHAR_ARRAY_WHERE.length];
+			query.getChars(query.length() - checkArray.length, query.length(), checkArray, 0);
+			if(Arrays.equals(checkArray, AppConstants.CHAR_ARRAY_WHERE)) {
+				query.setLength(query.length() - checkArray.length);
+			}
 			query.append(" ORDER BY createdAt), b as (SELECT a.ID FROM a limit $");
 			query.append(dollar);
 			tuple.addInteger(limit);
@@ -1414,8 +1419,8 @@ public class QueryDAO {
 			}
 
 			String queryString = query.toString();
-//			logger.debug("SQL REQUEST: " + queryString);
-//			logger.debug("SQL TUPLE: " + tuple.deepToString());
+			//logger.debug("SQL REQUEST: " + queryString);
+			//logger.debug("SQL TUPLE: " + tuple.deepToString());
 			return client.preparedQuery(queryString).execute(tuple).onItem()
 					.transform(rows -> putQueryResultIntoMapAndCache(rows, qToken));
 		}).onFailure().recoverWithUni(e -> {

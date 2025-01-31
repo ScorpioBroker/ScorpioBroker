@@ -147,7 +147,7 @@ public class EntityOperationsQueryController {
 				ScopeQueryTerm scopeQueryTerm = null;
 				OmitTerm omitTerm = null;
 				PickTerm pickTerm = null;
-
+				boolean localOnlyTBU = localOnly;
 				LanguageQueryTerm langQuery;
 				Object entities = body.get(NGSIConstants.NGSI_LD_ENTITIES_SHORT);
 				Object attrs = body.get(NGSIConstants.QUERY_PARAMETER_ATTRS);
@@ -274,6 +274,10 @@ public class EntityOperationsQueryController {
 						String idPattern = entityEntry.get(NGSIConstants.QUERY_PARAMETER_IDPATTERN);
 						String typeQuery = entityEntry.get(NGSIConstants.QUERY_PARAMETER_TYPE);
 						typeQueryTerm = QueryParser.parseTypeQuery(typeQuery, context);
+						if(typeQueryTerm != null && typeQueryTerm.getAllTypes().contains(NGSIConstants.NGSI_LD_STAR)) {
+							localOnlyTBU = true;
+							typeQueryTerm = null;
+						}
 						String[] ids = id == null ? null : id.split(",");
 						idsAndTypeQueryAndIdPattern.add(Tuple3.of(ids, typeQueryTerm, idPattern));
 					}
@@ -291,7 +295,7 @@ public class EntityOperationsQueryController {
 				}
 				return queryService.query(tenant, token, tokenProvided, idsAndTypeQueryAndIdPattern, attrsQuery,
 						qQueryTerm, csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset, count,
-						localOnly, context, request.headers(), false, null, null, join, joinLevel, entityDist, pickTerm,
+						localOnlyTBU, context, request.headers(), false, null, null, join, joinLevel, entityDist, pickTerm,
 						omitTerm, checkSum, viaHeaders, null).onItem().transformToUni(queryResult -> {
 							if (doNotCompact) {
 								return Uni.createFrom().item(RestResponse.ok((Object) queryResult.getData()));
