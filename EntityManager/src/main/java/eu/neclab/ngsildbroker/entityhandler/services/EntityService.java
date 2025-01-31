@@ -953,11 +953,11 @@ public class EntityService implements CSourceHandler {
 				List<RegistrationEntry> newRegs = Lists.newArrayList();
 				List<RegistrationEntry> newQueryRegs = Lists.newArrayList();
 				for (RegistrationEntry regEntry : regs) {
-					if (regEntry.createEntity() || regEntry.appendAttrs() || regEntry.createBatch()
+					if ((regEntry.createEntity() || regEntry.appendAttrs() || regEntry.createBatch()
 							|| regEntry.deleteAttrs() || regEntry.deleteBatch() || regEntry.deleteEntity()
 							|| regEntry.mergeBatch() || regEntry.mergeEntity() || regEntry.replaceAttrs()
 							|| regEntry.replaceEntity() || regEntry.updateAttrs() || regEntry.updateBatch()
-							|| regEntry.updateEntity() || regEntry.upsertBatch()) {
+							|| regEntry.updateEntity() || regEntry.upsertBatch()) && regEntry.regMode() != 0) {
 						newRegs.add(regEntry);
 					}
 					if (regEntry.queryBatch() || regEntry.queryEntity() || regEntry.retrieveEntity()) {
