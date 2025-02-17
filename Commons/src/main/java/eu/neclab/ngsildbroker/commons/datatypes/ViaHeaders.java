@@ -89,10 +89,5 @@ public class ViaHeaders {
 		ViaHeaders other = (ViaHeaders) obj;
 		return Objects.equals(hostUrls, other.hostUrls) && Objects.equals(viaHeaders, other.viaHeaders);
 	}
-	
-	public static void main(String[] args) {
-		ViaHeaders headers =new ViaHeaders(List.of("1.1 tux:9999"), ""); 
-	}
-	
 
 }
