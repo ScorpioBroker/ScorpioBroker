@@ -473,7 +473,7 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 				return syncService.onItem().transformToUni(v2 -> {
 					return updateRemoteSubs(request, viaHeaders).onItem().transform(v3 -> {
 						NGSILDOperationResult result = new NGSILDOperationResult(
-								AppConstants.CREATE_SUBSCRIPTION_REQUEST, request.getId());
+								AppConstants.CREATE_SUBSCRIPTION_REQUEST, request.getId(), tenant);
 						result.addSuccess(new CRUDSuccess(null, null, request.getId(), Sets.newHashSet()));
 						return result;
 					});
@@ -630,7 +630,7 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 //								}
 								return updateRemoteSubs(updatedRequest, viaHeaders).onItem().transform(v3 -> {
 									return new NGSILDOperationResult(AppConstants.UPDATE_SUBSCRIPTION_REQUEST,
-											request.getId());
+											request.getId(), tenant);
 								});
 							});
 						});
@@ -658,7 +658,7 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 //				} catch (ResponseException e) {
 //					logger.error("Failed to serialize subscription message", e);
 //				}
-					return new NGSILDOperationResult(AppConstants.DELETE_SUBSCRIPTION_REQUEST, request.getId());
+					return new NGSILDOperationResult(AppConstants.DELETE_SUBSCRIPTION_REQUEST, request.getId(), tenant);
 				});
 			});
 		});
@@ -692,7 +692,7 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 
 	public Uni<QueryResult> getAllSubscriptions(String tenant, int limit, int offset) {
 		return subDAO.getAllSubscriptions(tenant, limit, offset).onItem().transform(rows -> {
-			QueryResult result = new QueryResult();
+			QueryResult result = new QueryResult(tenant);
 			Row next = null;
 			RowIterator<Row> it = rows.iterator();
 			List<Map<String, Object>> resultData = new ArrayList<>(rows.size());

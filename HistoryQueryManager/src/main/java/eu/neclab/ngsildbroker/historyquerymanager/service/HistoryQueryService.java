@@ -154,7 +154,7 @@ public class HistoryQueryService implements CSourceHandler {
 							List<Object> responseEntity = response.bodyAsJsonArray().getList();
 							return ldService.expand(contextLinks, responseEntity, HttpUtils.opts, -1, false).onItem()
 									.transform(expanded -> {
-										QueryResult result = new QueryResult();
+										QueryResult result = new QueryResult(tenant);
 										List<Map<String, Object>> resultList = new ArrayList<>(expanded.size());
 										for (Object entry2 : expanded) {
 											Map<String, Object> tmp = (Map<String, Object>) entry2;
@@ -174,7 +174,7 @@ public class HistoryQueryService implements CSourceHandler {
 		}
 		remoteCalls.add(0, local);
 		return Uni.combine().all().unis(remoteCalls).with(list -> {
-			QueryResult result = new QueryResult();
+			QueryResult result = new QueryResult(tenant);
 			Map<String, Map<String, Object>> entityId2Entity = Maps.newHashMap();
 			long rCount = 0;
 			for (Object entry : list) {

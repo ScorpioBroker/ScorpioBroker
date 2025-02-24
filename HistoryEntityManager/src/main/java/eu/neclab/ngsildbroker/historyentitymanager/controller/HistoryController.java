@@ -48,7 +48,7 @@ public class HistoryController {
 							.onItem().transform(opResult -> {
 								return HttpUtils.generateCreateResult(opResult, AppConstants.HISTORY_URL);
 							});
-				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+				}).onFailure().recoverWithItem( e-> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 	}
 
 	@Path("/{entityId}")
@@ -58,14 +58,14 @@ public class HistoryController {
 		try {
 			HttpUtils.validateUri(entityId);
 		} catch (Exception e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
 		return ldService.parse(HttpUtils.getAtContext(request)).onItem().transformToUni(ctx -> {
 			return historyService.deleteEntry(HttpUtils.getTenant(request), entityId, ctx,request.headers()).onItem()
 					.transform(result -> {
 						return HttpUtils.generateDeleteResult(result);
 					});
-		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+		}).onFailure().recoverWithItem(e-> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 	}
 
 	@Path("/{entityId}/attrs")
@@ -75,7 +75,7 @@ public class HistoryController {
 		try {
 			HttpUtils.validateUri(entityId);
 		} catch (Exception e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
 		return HttpUtils.expandBody(request, payload, AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD, ldService).onItem()
 				.transformToUni(tuple -> {
@@ -84,7 +84,7 @@ public class HistoryController {
 							.onItem().transform(opResult -> {
 								return HttpUtils.generateUpdateResultResponse(opResult);
 							});
-				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+				}).onFailure().recoverWithItem(e-> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 	}
 
 	@Path("/{entityId}/attrs/{attrId}")
@@ -95,7 +95,7 @@ public class HistoryController {
 		try {
 			HttpUtils.validateUri(entityId);
 		} catch (Exception e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
 		return ldService.parse(HttpUtils.getAtContext(request)).onItem().transformToUni(context -> {
 			return historyService
@@ -104,7 +104,7 @@ public class HistoryController {
 					.onItem().transform(opResult -> {
 						return HttpUtils.generateDeleteResult(opResult);
 					});
-		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+		}).onFailure().recoverWithItem(e-> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 
 	}
 
@@ -116,7 +116,7 @@ public class HistoryController {
 		try {
 			HttpUtils.validateUri(entityId);
 		} catch (Exception e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
 
 		return HttpUtils.expandBody(request, payload, AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD, ldService).onItem()
@@ -126,7 +126,7 @@ public class HistoryController {
 							tuple.getItem1(),request.headers()).onItem().transform(opResult -> {
 								return HttpUtils.generateUpdateResultResponse(opResult);
 							});
-				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+				}).onFailure().recoverWithItem(e-> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 
 	}
 
@@ -138,7 +138,7 @@ public class HistoryController {
 		try {
 			HttpUtils.validateUri(entityId);
 		} catch (Exception e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
 		return ldService.parse(HttpUtils.getAtContext(request)).onItem().transformToUni(context -> {
 			return historyService
@@ -147,6 +147,6 @@ public class HistoryController {
 					.onItem().transform(opResult -> {
 						return HttpUtils.generateDeleteResult(opResult);
 					});
-		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+		}).onFailure().recoverWithItem(e-> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 	}
 }

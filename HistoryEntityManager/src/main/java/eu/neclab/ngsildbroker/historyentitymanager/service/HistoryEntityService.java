@@ -119,7 +119,7 @@ public class HistoryEntityService implements CSourceHandler  {
 		request.setPayloadFromSingle(entityId, localEntity);
 		Uni<NGSILDOperationResult> local = historyDAO.createHistoryEntity(request).onItem().transform(updated -> {
 			NGSILDOperationResult result;
-			result = new NGSILDOperationResult(AppConstants.CREATE_TEMPORAL_REQUEST, entityId);
+			result = new NGSILDOperationResult(AppConstants.CREATE_TEMPORAL_REQUEST, entityId, tenant);
 			result.setWasUpdated(updated);
 			result.addSuccess(new CRUDSuccess(null, null, null, resolved, originalContext));
 			return result;
@@ -151,7 +151,7 @@ public class HistoryEntityService implements CSourceHandler  {
 
 		}
 		return Uni.combine().all().unis(unis).with(list -> {
-			NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.CREATE_TEMPORAL_REQUEST, entityId);
+			NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.CREATE_TEMPORAL_REQUEST, entityId, tenant);
 			list.forEach(obj -> {
 				NGSILDOperationResult opResult = (NGSILDOperationResult) obj;
 				if (opResult.isWasUpdated()) {
@@ -176,7 +176,7 @@ public class HistoryEntityService implements CSourceHandler  {
 		request.setPayloadFromSingle(entityId, localEntity);
 		Uni<NGSILDOperationResult> local = historyDAO.appendToHistoryEntity(request).onItem().transform(v -> {
 			NGSILDOperationResult result;
-			result = new NGSILDOperationResult(AppConstants.APPEND_TEMPORAL_REQUEST, entityId);
+			result = new NGSILDOperationResult(AppConstants.APPEND_TEMPORAL_REQUEST, entityId, tenant);
 			result.addSuccess(new CRUDSuccess(null, null, null, appendEntry, originalContext));
 			return result;
 		});
@@ -204,7 +204,7 @@ public class HistoryEntityService implements CSourceHandler  {
 		}
 		return Uni.combine().all().unis(unis).with(list -> {
 			NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.APPEND_TEMPORAL_REQUEST,
-					entityId);
+					entityId, tenant);
 			list.forEach(obj -> {
 				NGSILDOperationResult opResult = (NGSILDOperationResult) obj;
 				result.getSuccesses().addAll(opResult.getSuccesses());
@@ -229,7 +229,7 @@ public class HistoryEntityService implements CSourceHandler  {
 		Uni<NGSILDOperationResult> local = historyDAO.updateAttrInstanceInHistoryEntity(request).onItem()
 				.transform(v -> {
 					NGSILDOperationResult result;
-					result = new NGSILDOperationResult(AppConstants.UPDATE_TEMPORAL_INSTANCE_REQUEST, entityId);
+					result = new NGSILDOperationResult(AppConstants.UPDATE_TEMPORAL_INSTANCE_REQUEST, entityId, tenant);
 					result.addSuccess(new CRUDSuccess(null, null, null, payload, originalContext));
 					return result;
 				});
@@ -259,7 +259,7 @@ public class HistoryEntityService implements CSourceHandler  {
 		}
 		return Uni.combine().all().unis(unis).with(list -> {
 			NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.UPDATE_TEMPORAL_INSTANCE_REQUEST,
-					entityId);
+					entityId, tenant);
 			list.forEach(obj -> {
 				NGSILDOperationResult opResult = (NGSILDOperationResult) obj;
 				result.getSuccesses().addAll(opResult.getSuccesses());
@@ -276,7 +276,7 @@ public class HistoryEntityService implements CSourceHandler  {
 		DeleteHistoryEntityRequest request = new DeleteHistoryEntityRequest(tenant, entityId, false);
 		Uni<NGSILDOperationResult> local = historyDAO.deleteHistoryEntity(request).onItem().transform(v -> {
 			NGSILDOperationResult result;
-			result = new NGSILDOperationResult(AppConstants.DELETE_TEMPORAL_REQUEST, entityId);
+			result = new NGSILDOperationResult(AppConstants.DELETE_TEMPORAL_REQUEST, entityId, tenant);
 			result.addSuccess(new CRUDSuccess(null, null, null, Sets.newHashSet()));
 			return result;
 		});
@@ -304,7 +304,7 @@ public class HistoryEntityService implements CSourceHandler  {
 		unis.add(0, local);
 		return Uni.combine().all().unis(unis).with(list -> {
 			NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.DELETE_TEMPORAL_REQUEST,
-					entityId);
+					entityId, tenant);
 			list.forEach(obj -> {
 				NGSILDOperationResult opResult = (NGSILDOperationResult) obj;
 				result.getSuccesses().addAll(opResult.getSuccesses());
@@ -321,7 +321,7 @@ public class HistoryEntityService implements CSourceHandler  {
 				deleteAll,false);
 		Uni<NGSILDOperationResult> local = historyDAO.deleteAttrFromHistoryEntity(request).onItem().transform(v -> {
 			NGSILDOperationResult result;
-			result = new NGSILDOperationResult(AppConstants.DELETE_TEMPORAL_ATTRIBUTE_REQUEST, entityId);
+			result = new NGSILDOperationResult(AppConstants.DELETE_TEMPORAL_ATTRIBUTE_REQUEST, entityId, tenant);
 			result.addSuccess(new CRUDSuccess(null, null, null, Sets.newHashSet(new Attrib(attrId, datasetId))));
 			return result;
 		});
@@ -354,7 +354,7 @@ public class HistoryEntityService implements CSourceHandler  {
 		unis.add(0, local);
 		return Uni.combine().all().unis(unis).with(list -> {
 			NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.DELETE_TEMPORAL_ATTRIBUTE_REQUEST,
-					entityId);
+					entityId, tenant);
 			list.forEach(obj -> {
 				NGSILDOperationResult opResult = (NGSILDOperationResult) obj;
 				result.getSuccesses().addAll(opResult.getSuccesses());
@@ -374,7 +374,7 @@ public class HistoryEntityService implements CSourceHandler  {
 				.transform(v -> {
 					NGSILDOperationResult result;
 					result = new NGSILDOperationResult(AppConstants.DELETE_TEMPORAL_ATTRIBUTE_INSTANCE_REQUEST,
-							entityId);
+							entityId, tenant);
 					result.addSuccess(
 							new CRUDSuccess(null, null, null, Sets.newHashSet(new Attrib(attribId, instanceId))));
 					return result;
@@ -404,7 +404,7 @@ public class HistoryEntityService implements CSourceHandler  {
 		unis.add(0, local);
 		return Uni.combine().all().unis(unis).with(list -> {
 			NGSILDOperationResult result = new NGSILDOperationResult(
-					AppConstants.DELETE_TEMPORAL_ATTRIBUTE_INSTANCE_REQUEST, entityId);
+					AppConstants.DELETE_TEMPORAL_ATTRIBUTE_INSTANCE_REQUEST, entityId, tenant);
 			list.forEach(obj -> {
 				NGSILDOperationResult opResult = (NGSILDOperationResult) obj;
 				result.getSuccesses().addAll(opResult.getSuccesses());

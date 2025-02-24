@@ -78,7 +78,7 @@ public final class HttpUtils {
 
 	public static final Uni<RestResponse<Object>> getInvalidHeader() {
 		return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
-				new ResponseException(ErrorType.NotAcceptable, "Provided accept types are not supported")));
+				new ResponseException(ErrorType.NotAcceptable, "Provided accept types are not supported"), AppConstants.INTERNAL_NULL_KEY));
 	}
 
 //	private static final String CORE_CONTEXT_URL_LINK = null;;
@@ -268,7 +268,7 @@ public final class HttpUtils {
 	public static String generateFollowUpLinkHeader(MultiMap params, int offset, int limit, String token, String rel,
 			String baseUrl, String ngsiLdEndpoint) {
 		StringBuilder builder = new StringBuilder("<");
-		builder.append(baseUrl);
+		// builder.append(baseUrl);
 		builder.append(ngsiLdEndpoint);
 		builder.append("?");
 
@@ -305,39 +305,41 @@ public final class HttpUtils {
 		return generateFollowUpLinkHeader(params, offset, limit, qResult.getqToken(), "prev", baseUrl, ngsiLdEndpoint);
 	}
 
-	public static RestResponse<Object> handleControllerExceptions(Throwable e) {
+	public static RestResponse<Object> handleControllerExceptions(Throwable e, String tenant) {
+		ResponseBuilder<Object> myBuilder;
 		if (e instanceof ResponseException responseException) {
 			logger.debug("Exception :: ", responseException);
-			return RestResponseBuilderImpl.create(responseException.getErrorCode())
+			myBuilder = RestResponseBuilderImpl.create(responseException.getErrorCode())
 					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-					.entity(responseException.getJson()).build();
-		}
-		if (e instanceof LdContextException ldContextException) {
+					.entity(responseException.getJson());
+		} else if (e instanceof LdContextException ldContextException) {
 			logger.debug("Exception :: ", ldContextException);
-			return RestResponseBuilderImpl.create(ErrorType.LdContextNotAvailable.getCode())
+			myBuilder = RestResponseBuilderImpl.create(ErrorType.LdContextNotAvailable.getCode())
 					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-					.entity(new ResponseException(ErrorType.LdContextNotAvailable).getJson()).build();
-		}
-		if (e instanceof DateTimeParseException) {
+					.entity(new ResponseException(ErrorType.LdContextNotAvailable).getJson());
+		} else if (e instanceof DateTimeParseException) {
 			logger.debug("Exception :: ", e);
-			return RestResponseBuilderImpl.create(HttpStatus.SC_BAD_REQUEST)
+			myBuilder = RestResponseBuilderImpl.create(HttpStatus.SC_BAD_REQUEST)
 					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
 					.entity(new ResponseException(ErrorType.BadRequestData, "Failed to parse provided datetime field.")
-							.getJson())
-					.build();
-		}
-		if (e instanceof JsonProcessingException || e instanceof JsonLdError || e instanceof DecodeException) {
+							.getJson());
+		} else if (e instanceof JsonProcessingException || e instanceof JsonLdError || e instanceof DecodeException) {
 			logger.debug("Exception :: ", e);
-			return RestResponseBuilderImpl.create(HttpStatus.SC_BAD_REQUEST)
+			myBuilder = RestResponseBuilderImpl.create(HttpStatus.SC_BAD_REQUEST)
 					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
 					.entity(new ResponseException(ErrorType.InvalidRequest,
-							"There is an error in the provided json document").getJson())
-					.build();
+							"There is an error in the provided json document").getJson());
+		} else {
+			logger.error("Exception :: ", e);
+			myBuilder = RestResponseBuilderImpl.create(HttpStatus.SC_INTERNAL_SERVER_ERROR)
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+					.entity(new ResponseException(ErrorType.InternalError, e.getMessage()).getJson());
 		}
-		logger.error("Exception :: ", e);
-		return RestResponseBuilderImpl.create(HttpStatus.SC_INTERNAL_SERVER_ERROR)
-				.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-				.entity(new ResponseException(ErrorType.InternalError, e.getMessage()).getJson()).build();
+		if (!tenant.equals(AppConstants.INTERNAL_NULL_KEY)) {
+			myBuilder = myBuilder.header(NGSIConstants.TENANT_HEADER, tenant);
+		}
+		return myBuilder.build();
+
 	}
 
 	public static URI validateUri(String uri) throws ResponseException {
@@ -409,12 +411,16 @@ public final class HttpUtils {
 
 	public static RestResponse<Object> generateUpdateResultResponse(NGSILDOperationResult updateResult) {
 		if (updateResult.getFailures().isEmpty()) {
-			return RestResponse.noContent();
+			ResponseBuilder<Object> builder = new RestResponseBuilderImpl<Object>().status(201);
+			if (!updateResult.getTenant().equals(AppConstants.INTERNAL_NULL_KEY)) {
+				builder = builder.header(NGSIConstants.TENANT_HEADER, updateResult.getTenant());
+			}
+			return builder.build();
 		}
 		if (updateResult.getSuccesses().isEmpty()) {
 			if (updateResult.getFailures().size() == 1) {
 				ResponseException failure = updateResult.getFailures().get(0);
-				return handleControllerExceptions(failure);
+				return handleControllerExceptions(failure, updateResult.getTenant());
 			}
 		} else {
 			boolean only404 = true;
@@ -425,11 +431,19 @@ public final class HttpUtils {
 				}
 			}
 			if (only404) {
-				return RestResponse.noContent();
+				ResponseBuilder<Object> builder = new RestResponseBuilderImpl<Object>().status(404);
+				if (!updateResult.getTenant().equals(AppConstants.INTERNAL_NULL_KEY)) {
+					builder = builder.header(NGSIConstants.TENANT_HEADER, updateResult.getTenant());
+				}
+				return builder.build();
 			}
 		}
-		return new RestResponseBuilderImpl<Object>().status(207).entity(new JsonObject(updateResult.getJson())).build();
-
+		ResponseBuilder<Object> builder = new RestResponseBuilderImpl<Object>().status(207)
+				.entity(new JsonObject(updateResult.getJson()));
+		if (!updateResult.getTenant().equals(AppConstants.INTERNAL_NULL_KEY)) {
+			builder = builder.header(NGSIConstants.TENANT_HEADER, updateResult.getTenant());
+		}
+		return builder.build();
 	}
 
 	public static MultiMap getHeadersForRemoteCall(JsonArray headerFromReg, String tenant) {
@@ -755,15 +769,15 @@ public final class HttpUtils {
 								break;
 							}
 							}
-							if(valueEntry != null) {
-								if(date != null) {
+							if (valueEntry != null) {
+								if (date != null) {
 									valueEntry.add(date);
 								}
 								valuesWithDate.add(valueEntry);
 							}
 						}
 					}
-					if(!valuesWithDate.isEmpty() && type != null) {
+					if (!valuesWithDate.isEmpty() && type != null) {
 						Map<String, Object> tmp = Maps.newLinkedHashMap();
 						tmp.put(NGSIConstants.TYPE, type);
 						switch (type) {
@@ -904,19 +918,24 @@ public final class HttpUtils {
 		}
 		if (isHavingError && !isHavingSuccess) {
 			result.remove("success");
+			ResponseBuilder<Object> builder;
 			if (opType.equalsIgnoreCase("Delete") || opType.equalsIgnoreCase("Append")) {
-				return new RestResponseBuilderImpl<>().status(404).type(AppConstants.NGB_APPLICATION_JSON)
-						.entity(result).build();
+				builder = new RestResponseBuilderImpl<>().status(404).type(AppConstants.NGB_APPLICATION_JSON)
+						.entity(result);
 			} else if (errors.toString().contains("503")) {
-				return new RestResponseBuilderImpl<>().status(503).type(AppConstants.NGB_APPLICATION_JSON)
-						.entity(result).build();
+				builder = new RestResponseBuilderImpl<>().status(503).type(AppConstants.NGB_APPLICATION_JSON)
+						.entity(result);
 			} else if (allConflict) {
-				return new RestResponseBuilderImpl<>().status(409).type(AppConstants.NGB_APPLICATION_JSON)
-						.entity(result).build();
+				builder = new RestResponseBuilderImpl<>().status(409).type(AppConstants.NGB_APPLICATION_JSON)
+						.entity(result);
 			} else {
-				return new RestResponseBuilderImpl<>().status(400).type(AppConstants.NGB_APPLICATION_JSON)
-						.entity(result).build();
+				builder = new RestResponseBuilderImpl<>().status(400).type(AppConstants.NGB_APPLICATION_JSON)
+						.entity(result);
 			}
+			if (!t.get(0).getTenant().equals(AppConstants.INTERNAL_NULL_KEY)) {
+				builder.header(NGSIConstants.TENANT_HEADER, t.get(0).getTenant());
+			}
+			return builder.build();
 		}
 		if (!isHavingError && isHavingSuccess) {
 			if ((opType.equalsIgnoreCase("Upsert") && wasUpdated) || opType.equalsIgnoreCase("Merge")
@@ -956,8 +975,11 @@ public final class HttpUtils {
 	}
 
 	public static RestResponse<Object> generateDeleteResult(NGSILDOperationResult result) {
-		// TODO Auto-generated method stub
-		return null;
+		ResponseBuilder<Object> builder = new RestResponseBuilderImpl<Object>().status(200);
+		if (!result.getTenant().equals(AppConstants.INTERNAL_NULL_KEY)) {
+			builder = builder.header(NGSIConstants.TENANT_HEADER, result.getTenant());
+		}
+		return builder.build();
 	}
 
 	public static Uni<Tuple2<Context, Map<String, Object>>> expandBody(HttpServerRequest request, String payload,
@@ -1028,23 +1050,22 @@ public final class HttpUtils {
 		RestResponse<Object> response;
 		successes.removeIf(crudSuccess -> crudSuccess.getAttribs().isEmpty());
 		if (fails.isEmpty()) {
-			if (!operationResult.isWasUpdated()) {
-				try {
-					response = RestResponse.created(new URI(baseUrl + operationResult.getEntityId()));
-				} catch (URISyntaxException e) {
-					response = HttpUtils.handleControllerExceptions(e);
-				}
-			} else {
-				response = RestResponse.noContent();
+			ResponseBuilder<Object> builder = new RestResponseBuilderImpl<Object>().status(201)
+					.header(jakarta.ws.rs.core.HttpHeaders.LOCATION, baseUrl + operationResult.getEntityId());
+			if (!operationResult.getTenant().equals(AppConstants.INTERNAL_NULL_KEY)) {
+				builder.header(NGSIConstants.TENANT_HEADER, operationResult.getTenant());
 			}
+			response = builder.build();
+
 		} else if (successes.isEmpty() && fails.size() == 1) {
-			response = HttpUtils.handleControllerExceptions(fails.get(0));
+			response = HttpUtils.handleControllerExceptions(fails.get(0), operationResult.getTenant());
 		} else {
 			try {
 				response = new RestResponseBuilderImpl<Object>().status(207).type(AppConstants.NGB_APPLICATION_JSON)
+						.header(jakarta.ws.rs.core.HttpHeaders.LOCATION, baseUrl + operationResult.getEntityId())
 						.entity(JsonUtils.toPrettyString(operationResult.getJson())).build();
 			} catch (Exception e) {
-				response = HttpUtils.handleControllerExceptions(e);
+				response = HttpUtils.handleControllerExceptions(e, operationResult.getTenant());
 			}
 		}
 		logger.debug("sending restresponse");
@@ -1065,8 +1086,11 @@ public final class HttpUtils {
 
 	public static RestResponse<Object> generateSubscriptionResult(NGSILDOperationResult t, Context context) {
 		// TODO Auto-generated method stub
-		if (!t.getSuccesses().isEmpty())
-			return RestResponse.created(URI.create(AppConstants.SUBSCRIPTIONS_URL + t.getEntityId()));
+		if (!t.getSuccesses().isEmpty()) {
+			return new RestResponseBuilderImpl<Object>().status(201)
+					.header(jakarta.ws.rs.core.HttpHeaders.LOCATION, AppConstants.SUBSCRIPTIONS_URL + t.getEntityId())
+					.build();
+		}
 		return null;
 	}
 
@@ -1134,6 +1158,9 @@ public final class HttpUtils {
 					for (Tuple2<String, String> entry : headers) {
 						myBuilder = myBuilder.header(entry.getItem1(), entry.getItem2());
 					}
+					if (!queryResult.getTenant().equals(AppConstants.INTERNAL_NULL_KEY)) {
+						myBuilder.header(NGSIConstants.TENANT_HEADER, queryResult.getTenant());
+					}
 					Object result = resultAndHeaders.getItem1();
 					return myBuilder.entity(result).build();
 				});
@@ -1169,7 +1196,7 @@ public final class HttpUtils {
 	public static NGSILDOperationResult handleWebResponse(HttpResponse<Buffer> response, Throwable failure,
 			Integer[] integers, RemoteHost remoteHost, int operationType, String entityId, Set<Attrib> attrs) {
 
-		NGSILDOperationResult result = new NGSILDOperationResult(operationType, entityId);
+		NGSILDOperationResult result = new NGSILDOperationResult(operationType, entityId, remoteHost.tenant());
 		if (failure != null) {
 			result.addFailure(new ResponseException(ErrorType.UnprocessableContextSourceRegistration,
 					failure.getMessage(), remoteHost, attrs));
@@ -1182,7 +1209,7 @@ public final class HttpUtils {
 				if (jsonObj != null) {
 					NGSILDOperationResult remoteResult;
 					try {
-						remoteResult = NGSILDOperationResult.getFromPayload(jsonObj.getMap());
+						remoteResult = NGSILDOperationResult.getFromPayload(jsonObj.getMap(), remoteHost.tenant());
 					} catch (ResponseException e) {
 						result.addFailure(e);
 						return result;

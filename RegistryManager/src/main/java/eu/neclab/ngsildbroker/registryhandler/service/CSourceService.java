@@ -151,7 +151,7 @@ public class CSourceService {
 				return Uni.createFrom().failure(e);
 			}
 			NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.OPERATION_CREATE_REGISTRATION,
-					(String) registration.get(NGSIConstants.JSON_LD_ID));
+					(String) registration.get(NGSIConstants.JSON_LD_ID), tenant);
 			result.addSuccess(new CRUDSuccess(null, null, request.getId(), Sets.newHashSet()));
 			return Uni.createFrom().item(result);
 		}).onFailure().recoverWithUni(e -> {
@@ -181,7 +181,7 @@ public class CSourceService {
 					return Uni.createFrom().failure(e);
 				}
 				NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.OPERATION_UPDATE_REGISTRATION,
-						registrationId);
+						registrationId, tenant);
 				result.addSuccess(new CRUDSuccess(null, null, request.getId(), Sets.newHashSet()));
 				return Uni.createFrom().item(result);
 			} else {
@@ -226,7 +226,7 @@ public class CSourceService {
 					return Uni.createFrom().failure(e);
 				}
 				NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.OPERATION_DELETE_REGISTRATION,
-						registrationId);
+						registrationId, tenant);
 				result.addSuccess(new CRUDSuccess(null, null, request.getId(), Sets.newHashSet()));
 				return Uni.createFrom().item(result);
 
@@ -249,7 +249,7 @@ public class CSourceService {
 			ScopeQueryTerm scopeQuery, QQueryTerm qQueryTerm, int limit, int offset, boolean count) {
 		return cSourceInfoDAO.query(tenant, ids, typeQuery, idPattern, attrsQuery, csf, geoQuery, scopeQuery,
 				qQueryTerm, limit, offset, count).onItem().transform(rows -> {
-					QueryResult result = new QueryResult();
+					QueryResult result = new QueryResult(tenant);
 					if (rows.size() == 0) {
 						result.setData(new ArrayList<>());
 						return result;

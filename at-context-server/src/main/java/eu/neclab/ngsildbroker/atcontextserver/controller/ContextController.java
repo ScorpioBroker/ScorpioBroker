@@ -2,6 +2,7 @@ package eu.neclab.ngsildbroker.atcontextserver.controller;
 
 import com.github.jsonldjava.utils.JsonUtils;
 import eu.neclab.ngsildbroker.atcontextserver.service.ContextService;
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
@@ -33,14 +34,18 @@ public class ContextController {
 	public Uni<RestResponse<Object>> getContextById(@PathParam("contextId") String id,
 			@QueryParam("details") boolean details) {
 		return contextService.getContextById(id, details).onFailure()
-				.recoverWithItem(HttpUtils::handleControllerExceptions);
+				.recoverWithItem(e -> {
+					return HttpUtils.handleControllerExceptions(e, AppConstants.INTERNAL_NULL_KEY);
+				});
 	}
 
 	@GET
 	public Uni<RestResponse<Object>> getContexts(@QueryParam("kind") String kind,
 			@QueryParam("details") boolean details) {
 		return contextService.getContexts(kind, details).onFailure()
-				.recoverWithItem(HttpUtils::handleControllerExceptions);
+				.recoverWithItem(e -> {
+					return HttpUtils.handleControllerExceptions(e, AppConstants.INTERNAL_NULL_KEY);
+				});
 	}
 
 	@POST
@@ -57,10 +62,12 @@ public class ContextController {
 					payloadMap.put(NGSIConstants.JSON_LD_CONTEXT, contextBody);
 			} catch (Exception e) {
 				return Uni.createFrom()
-						.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData)));
+						.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData), AppConstants.INTERNAL_NULL_KEY));
 			}
 			return contextService.createContextHosted(payloadMap).onFailure()
-					.recoverWithItem(HttpUtils::handleControllerExceptions);
+					.recoverWithItem(e -> {
+						return HttpUtils.handleControllerExceptions(e, AppConstants.INTERNAL_NULL_KEY);
+					});
 		});
 	}
 
@@ -68,7 +75,9 @@ public class ContextController {
 	@Path("{contextId}")
 	public Uni<RestResponse<Object>> deleteContextById(@PathParam("contextId") String id,
 			@QueryParam("reload") boolean reload) {
-		return contextService.deleteById(id, reload).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+		return contextService.deleteById(id, reload).onFailure().recoverWithItem(e -> {
+			return HttpUtils.handleControllerExceptions(e, AppConstants.INTERNAL_NULL_KEY);
+		});
 	}
 
 	@GET
@@ -90,7 +99,7 @@ public class ContextController {
 					payloadMap.put(NGSIConstants.JSON_LD_CONTEXT, contextBody);
 			} catch (Exception e) {
 				return Uni.createFrom()
-						.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData)));
+						.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData), AppConstants.INTERNAL_NULL_KEY));
 			}
 			return contextService.createImplicitly(payloadMap);
 		});

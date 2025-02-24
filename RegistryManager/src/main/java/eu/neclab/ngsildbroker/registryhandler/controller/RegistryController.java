@@ -83,18 +83,18 @@ public class RegistryController {
 			actualLimit = limit;
 		}
 		if (actualLimit > maxLimit) {
-			return Uni.createFrom()
-					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.TooManyResults)));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
+					new ResponseException(ErrorType.TooManyResults), HttpUtils.getTenant(request)));
 		}
 		if (ids == null && type == null && attrs == null && geometry == null && q == null) {
-			return Uni.createFrom()
-					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData)));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
+					new ResponseException(ErrorType.BadRequestData), HttpUtils.getTenant(request)));
 		}
 		if (ids != null) {
 			try {
 				HttpUtils.validateUri(ids);
 			} catch (Exception e) {
-				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 			}
 		}
 
@@ -115,11 +115,11 @@ public class RegistryController {
 				geoQueryTerm = QueryParser.parseGeoQuery(georel, coordinates, geometry, geoproperty, context);
 				scopeQueryTerm = QueryParser.parseScopeQuery(scopeQ);
 			} catch (Exception e) {
-				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 			}
 			if (qQueryTerm != null && qQueryTerm.getOperator().isEmpty()) {
-				return Uni.createFrom()
-						.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData)));
+				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
+						new ResponseException(ErrorType.BadRequestData), HttpUtils.getTenant(request)));
 			}
 			return csourceService
 					.queryRegistrations(HttpUtils.getTenant(request),
@@ -130,17 +130,22 @@ public class RegistryController {
 								acceptHeader, count, actualLimit, null, context, ldService, false,
 								microServiceUtils.getGatewayURL().toString(), NGSIConstants.NGSI_LD_REGISTRY_ENDPOINT);
 					});
-		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+		}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 	}
 
 	@POST
 	public Uni<RestResponse<Object>> registerCSource(HttpServerRequest request, String payload) {
 		JsonObject jsonObject = new JsonObject(payload);
-		if(jsonObject.containsKey(NGSIConstants.CONTEXT_SOURCE_INFO)){
-			for(Object obj : jsonObject.getJsonArray(NGSIConstants.CONTEXT_SOURCE_INFO)){
+		if (jsonObject.containsKey(NGSIConstants.CONTEXT_SOURCE_INFO)) {
+			for (Object obj : jsonObject.getJsonArray(NGSIConstants.CONTEXT_SOURCE_INFO)) {
 				JsonObject jsonObject1 = (JsonObject) obj;
-				if(jsonObject1.getString("key").equalsIgnoreCase("Accept") && !List.of("application/json","application/ld+json").contains(jsonObject1.getString("value"))){
-					return Uni.createFrom().item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.NotAcceptable,"Accept should be application/json or application/ld+json")));
+				if (jsonObject1.getString("key").equalsIgnoreCase("Accept") && !List
+						.of("application/json", "application/ld+json").contains(jsonObject1.getString("value"))) {
+					return Uni.createFrom()
+							.item(HttpUtils.handleControllerExceptions(
+									new ResponseException(ErrorType.NotAcceptable,
+											"Accept should be application/json or application/ld+json"),
+									HttpUtils.getTenant(request)));
 				}
 			}
 		}
@@ -150,7 +155,8 @@ public class RegistryController {
 							.transform(opResult -> {
 								return HttpUtils.generateCreateResult(opResult, AppConstants.CSOURCE_URL);
 							});
-				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+				}).onFailure()
+				.recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 
 	}
 
@@ -167,7 +173,7 @@ public class RegistryController {
 		try {
 			HttpUtils.validateUri(registrationId);
 		} catch (Exception e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
 		List<Object> headerContext = HttpUtils.getAtContext(request);
 		return ldService.parse(headerContext).onItem().transformToUni(context -> {
@@ -176,7 +182,7 @@ public class RegistryController {
 						return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, entity, null, null,
 								null, ldService, null, null);
 					});
-		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+		}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 	}
 
 	@Path("/{registrationId}")
@@ -190,7 +196,8 @@ public class RegistryController {
 							.transform(opResult -> {
 								return HttpUtils.generateUpdateResultResponse(opResult);
 							});
-				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+				}).onFailure()
+				.recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 	}
 
 	@Path("/{registrationId}")
@@ -204,12 +211,13 @@ public class RegistryController {
 		try {
 			HttpUtils.validateUri(registrationId);
 		} catch (Exception e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
 		return csourceService.deleteRegistration(HttpUtils.getTenant(request), registrationId).onItem()
 				.transform(opResult -> {
 					return HttpUtils.generateDeleteResult(opResult);
-				}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e));
+				}).onFailure()
+				.recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 	}
 
 }

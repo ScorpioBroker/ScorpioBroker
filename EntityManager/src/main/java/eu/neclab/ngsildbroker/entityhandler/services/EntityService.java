@@ -141,7 +141,7 @@ public class EntityService implements CSourceHandler {
 
 			for (Map<String, Object> entity : remoteEntities) {
 				NGSILDOperationResult tmp = new NGSILDOperationResult(AppConstants.CREATE_REQUEST,
-						entity.get("id") == null ? "no entityId" : (String) entity.get("id"));
+						entity.get("id") == null ? "no entityId" : (String) entity.get("id"), host.tenant());
 				tmp.addFailure(new ResponseException(ErrorType.InternalError, failure.getMessage(), host,
 						HttpUtils.getAttribsFromCompactedPayload(entity)));
 				result.add(tmp);
@@ -151,7 +151,7 @@ public class EntityService implements CSourceHandler {
 			if (ArrayUtils.contains(successCodes, statusCode)) {
 				for (Map<String, Object> entity : remoteEntities) {
 					NGSILDOperationResult tmp = new NGSILDOperationResult(AppConstants.CREATE_REQUEST,
-							entity.get("id") == null ? "no entityId" : (String) entity.get("id"));
+							entity.get("id") == null ? "no entityId" : (String) entity.get("id"), host.tenant());
 					tmp.addSuccess(new CRUDSuccess(host, HttpUtils.getAttribsFromCompactedPayload(entity)));
 					result.add(tmp);
 				}
@@ -162,11 +162,11 @@ public class EntityService implements CSourceHandler {
 						JsonObject jsonObj = (JsonObject) i;
 						NGSILDOperationResult remoteResult;
 						try {
-							remoteResult = NGSILDOperationResult.getFromPayload(jsonObj.getMap());
+							remoteResult = NGSILDOperationResult.getFromPayload(jsonObj.getMap(), host.tenant());
 						} catch (ResponseException e) {
 							remoteResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST,
 									jsonObj.getMap().get("id") == null ? "no entityId"
-											: (String) jsonObj.getMap().get("id"));
+											: (String) jsonObj.getMap().get("id"), host.tenant());
 							remoteResult.addFailure(e);
 						}
 						result.add(remoteResult);
@@ -176,7 +176,7 @@ public class EntityService implements CSourceHandler {
 			} else {
 				for (Map<String, Object> entity : remoteEntities) {
 					NGSILDOperationResult tmp = new NGSILDOperationResult(AppConstants.CREATE_REQUEST,
-							entity.get("id") == null ? "no entityId" : (String) entity.get("id"));
+							entity.get("id") == null ? "no entityId" : (String) entity.get("id"), host.tenant());
 
 					JsonObject responseBody = response.bodyAsJsonObject();
 
@@ -221,7 +221,7 @@ public class EntityService implements CSourceHandler {
 				if (jsonObj != null) {
 					NGSILDOperationResult remoteResult;
 					try {
-						remoteResult = NGSILDOperationResult.getFromPayload(jsonObj.getMap());
+						remoteResult = NGSILDOperationResult.getFromPayload(jsonObj.getMap(), host.tenant());
 					} catch (ResponseException e) {
 						result.addFailure(e);
 						return Uni.createFrom().voidItem();
@@ -318,7 +318,7 @@ public class EntityService implements CSourceHandler {
 			request.setPayloadFromSingle(entityId, localEntity);
 			unis.add(partialUpdateLocalEntity(request, entityId, context).onFailure().recoverWithItem(e -> {
 				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.PARTIAL_UPDATE_REQUEST,
-						entityId);
+						entityId, tenant);
 				if (e instanceof ResponseException) {
 					localResult.addFailure((ResponseException) e);
 				} else {
@@ -397,7 +397,7 @@ public class EntityService implements CSourceHandler {
 			} catch (ResponseException e) {
 				return Uni.createFrom().failure(e);
 			}
-			NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.DELETE_ATTRIBUTE_REQUEST, entityId);
+			NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.DELETE_ATTRIBUTE_REQUEST, entityId, request.getTenant());
 			result.addSuccess(new CRUDSuccess(null, null, null,
 					Set.of(new Attrib(request.getAttribName(), request.getDatasetId()))));
 			return Uni.createFrom().item(result);
@@ -486,7 +486,7 @@ public class EntityService implements CSourceHandler {
 			} catch (ResponseException e) {
 				return Uni.createFrom().failure(e);
 			}
-			NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.DELETE_REQUEST, entityId);
+			NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.DELETE_REQUEST, entityId, request.getTenant());
 			result.addSuccess(new CRUDSuccess(null, null, null, deleted, context));
 			return Uni.createFrom().item(result);
 		});
@@ -562,7 +562,7 @@ public class EntityService implements CSourceHandler {
 			}
 			request.setPayloadFromSingle(entityId, localEntity);
 			unis.add(appendLocal(request, entityId, noOverwrite, context).onFailure().recoverWithItem(e -> {
-				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, entityId);
+				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, entityId, tenant);
 				if (e instanceof ResponseException) {
 					localResult.addFailure((ResponseException) e);
 				} else {
@@ -616,7 +616,7 @@ public class EntityService implements CSourceHandler {
 			}
 			request.setPayloadFromSingle(entityId, localEntity);
 			unis.add(updateLocalEntity(request, entityId, context).onFailure().recoverWithItem(e -> {
-				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.UPDATE_REQUEST, entityId);
+				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.UPDATE_REQUEST, entityId, tenant);
 				if (e instanceof ResponseException) {
 					localResult.addFailure((ResponseException) e);
 				} else {
@@ -654,7 +654,7 @@ public class EntityService implements CSourceHandler {
 				return Uni.createFrom().failure(e);
 			}
 
-			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.UPDATE_REQUEST, entityId);
+			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.UPDATE_REQUEST, entityId, request.getTenant());
 			localResult.addSuccess(new CRUDSuccess(null, null, null, request.getFirstPayload(), context));
 			return Uni.createFrom().item(localResult);
 		});
@@ -708,7 +708,7 @@ public class EntityService implements CSourceHandler {
 			}
 			request.setPayloadFromSingle(entityId, localEntity);
 			unis.add(0, createLocalEntity(request, entityId, context).onFailure().recoverWithItem(e -> {
-				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, entityId);
+				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, entityId, tenant);
 				if (e instanceof ResponseException) {
 					localResult.addFailure((ResponseException) e);
 				} else {
@@ -740,7 +740,7 @@ public class EntityService implements CSourceHandler {
 			} catch (ResponseException e) {
 				return Uni.createFrom().failure(e);
 			}
-			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, entityId);
+			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, entityId, request.getTenant());
 			localResult
 					.addSuccess(new CRUDSuccess(null, null, null, request.getPayload().get(entityId).get(0), context));
 			return Uni.createFrom().item(localResult);
@@ -751,7 +751,7 @@ public class EntityService implements CSourceHandler {
 			Context context) {
 		return entityDAO.partialUpdateAttribute(request).onItem().transformToUni(v -> {
 			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.PARTIAL_UPDATE_REQUEST,
-					entityId);
+					entityId, request.getTenant());
 			request.setPrevPayloadFromSingle(entityId, v);
 
 			try {
@@ -974,7 +974,7 @@ public class EntityService implements CSourceHandler {
 	private Uni<NGSILDOperationResult> appendLocal(AppendEntityRequest request, String entityId, boolean noOverwrite,
 			Context context) {
 		return entityDAO.appendToEntity2(request, noOverwrite).onItem().transformToUni(resultAndNotAppended -> {
-			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.APPEND_REQUEST, entityId);
+			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.APPEND_REQUEST, entityId, request.getTenant());
 			Set<Attrib> failedToAdd = Sets.newHashSet();
 			Set<String> notAppended = resultAndNotAppended.getItem3();
 			Map<String, Object> payload = request.getPayload().get(entityId).get(0);
@@ -1110,7 +1110,7 @@ public class EntityService implements CSourceHandler {
 				List<Map<String, String>> fails = (List<Map<String, String>>) dbResult.get("failure");
 
 				for (String entityId : successes) {
-					NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, entityId);
+					NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, entityId, tenant);
 					opResult.addSuccess(new CRUDSuccess(null, null, null, Sets.newHashSet()));
 					result.add(opResult);
 				}
@@ -1121,7 +1121,7 @@ public class EntityService implements CSourceHandler {
 						String sqlstate = entry.getValue();
 						reqPayload.remove(entityId);
 						NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST,
-								entityId);
+								entityId, tenant);
 						if (sqlstate.equals(AppConstants.SQL_ALREADY_EXISTS)) {
 							opResult.addFailure(new ResponseException(ErrorType.AlreadyExists, entityId));
 						} else {
@@ -1257,7 +1257,7 @@ public class EntityService implements CSourceHandler {
 						for (Map<String, Object> success : successes) {
 							String entityId = (String) success.get("id");
 							NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.APPEND_REQUEST,
-									entityId);
+									entityId, tenant);
 							opResult.addSuccess(new CRUDSuccess(null, null, null, Sets.newHashSet()));
 							result.add(opResult);
 							Map<String, Object> old = (Map<String, Object>) success.get("old");
@@ -1271,7 +1271,7 @@ public class EntityService implements CSourceHandler {
 								String sqlstate = entry.getValue();
 								request.getPayload().remove(entityId);
 								NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.APPEND_REQUEST,
-										entityId);
+										entityId, tenant);
 								if (sqlstate.equals(AppConstants.SQL_NOT_FOUND)) {
 									opResult.addFailure(new ResponseException(ErrorType.NotFound, entityId));
 								} else {
@@ -1372,7 +1372,7 @@ public class EntityService implements CSourceHandler {
 						MicroServiceUtils.putIntoIdMap(olds, entityId, old);
 
 						NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.UPSERT_REQUEST,
-								entityId);
+								entityId, tenant);
 						opResult.setWasUpdated(updated);
 						opResult.addSuccess(new CRUDSuccess(null, null, null, Sets.newHashSet()));
 						result.add(opResult);
@@ -1386,7 +1386,7 @@ public class EntityService implements CSourceHandler {
 							request.getPayload().remove(entityId);
 							request.getPrevPayload().remove(entityId);
 							NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.UPSERT_REQUEST,
-									entityId);
+									entityId, tenant);
 							opResult.addFailure(new ResponseException(ErrorType.InvalidRequest, sqlstate));
 							result.add(opResult);
 						});
@@ -1540,7 +1540,7 @@ public class EntityService implements CSourceHandler {
 						successEntityIds.add(entityId);
 						MicroServiceUtils.putIntoIdMap(deleted, entityId, (Map<String, Object>) entry.get("old"));
 						NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.DELETE_REQUEST,
-								entityId);
+								entityId, tenant);
 						opResult.addSuccess(new CRUDSuccess(null, null, null, Sets.newHashSet()));
 						result.add(opResult);
 					}
@@ -1549,7 +1549,7 @@ public class EntityService implements CSourceHandler {
 							String entityId = entry.getKey();
 							String sqlstate = entry.getValue();
 							NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.DELETE_REQUEST,
-									entityId);
+									entityId, tenant);
 							opResult.addFailure(new ResponseException(ErrorType.NotFound, sqlstate));
 							result.add(opResult);
 						});
@@ -1629,7 +1629,7 @@ public class EntityService implements CSourceHandler {
 			}
 			request.setPayloadFromSingle(entityId, localEntity);
 			unis.add(localMergePatch(request, entityId, context).onFailure().recoverWithItem(e -> {
-				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, entityId);
+				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, entityId, tenant);
 				if (e instanceof ResponseException) {
 					localResult.addFailure((ResponseException) e);
 				} else {
@@ -1654,7 +1654,7 @@ public class EntityService implements CSourceHandler {
 				});
 				return Uni.createFrom().failure(collectedFails.get(0));
 			}
-			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.MERGE_PATCH_REQUEST, entityId);
+			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.MERGE_PATCH_REQUEST, entityId, request.getTenant());
 			localResult
 					.addSuccess(new CRUDSuccess(null, null, null, request.getPayload().get(entityId).get(0), context));
 			return Uni.createFrom().item(localResult);
@@ -1782,7 +1782,7 @@ public class EntityService implements CSourceHandler {
 
 			request.setPayloadFromSingle(entityId, localEntity);
 			unis.add(replaceLocalEntity(request, entityId, context).onFailure().recoverWithItem(e -> {
-				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, entityId);
+				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, entityId, tenant);
 				if (e instanceof ResponseException) {
 					localResult.addFailure((ResponseException) e);
 				} else {
@@ -1808,7 +1808,7 @@ public class EntityService implements CSourceHandler {
 				return Uni.createFrom().failure(e);
 			}
 			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.REPLACE_ENTITY_REQUEST,
-					entityId);
+					entityId, request.getTenant());
 			localResult
 					.addSuccess(new CRUDSuccess(null, null, null, request.getPayload().get(entityId).get(0), context));
 			return Uni.createFrom().item(localResult);
@@ -1864,7 +1864,7 @@ public class EntityService implements CSourceHandler {
 			}
 			request.setPayloadFromSingle(entityId, localEntity);
 			unis.add(replaceLocalAttrib(request, entityId, context).onFailure().recoverWithItem(e -> {
-				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, entityId);
+				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, entityId, tenant);
 				if (e instanceof ResponseException) {
 					localResult.addFailure((ResponseException) e);
 				} else {
@@ -1890,7 +1890,7 @@ public class EntityService implements CSourceHandler {
 				return Uni.createFrom().failure(e);
 			}
 			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.REPLACE_ENTITY_REQUEST,
-					entityId);
+					entityId, request.getTenant());
 			localResult
 					.addSuccess(new CRUDSuccess(null, null, null, request.getPayload().get(entityId).get(0), context));
 			return Uni.createFrom().item(localResult);
@@ -2035,7 +2035,7 @@ public class EntityService implements CSourceHandler {
 									success.get("deleted"), "updated", success.get("updated")), tenant, entityId);
 							MicroServiceUtils.putIntoIdMap(oldEntities, entityId, old);
 							NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.MERGE_PATCH_REQUEST,
-									entityId);
+									entityId, tenant);
 							opResult.addSuccess(new CRUDSuccess(null, null, null, Sets.newHashSet()));
 							result.add(opResult);
 						}
@@ -2046,7 +2046,7 @@ public class EntityService implements CSourceHandler {
 								String sqlstate = entry.getValue();
 								request.getPayload().remove(entityId);
 								NGSILDOperationResult opResult = new NGSILDOperationResult(
-										AppConstants.MERGE_PATCH_REQUEST, entityId);
+										AppConstants.MERGE_PATCH_REQUEST, entityId, tenant);
 								if (sqlstate.equals(AppConstants.SQL_NOT_FOUND)) {
 									opResult.addFailure(new ResponseException(ErrorType.NotFound, entityId));
 								} else {

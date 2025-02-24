@@ -151,7 +151,7 @@ public class HistoryDAO {
 		Tuple tuple = t.getItem2();
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
 			return client.preparedQuery(sqlString).execute(tuple).onItem().transform(rows -> {
-				QueryResult result = new QueryResult();
+				QueryResult result = new QueryResult(tenant);
 				if (limit == 0 && count) {
 					result.setCount(rows.iterator().next().getLong(0));
 				} else {

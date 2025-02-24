@@ -84,7 +84,7 @@ public class HistoryControllerTest {
     public void createTemporalEntityTest() throws Exception {
 
         Mockito.when(historyEntityService.createEntry(any(), any(), any(), any()))
-                .thenReturn(Uni.createFrom().item(new NGSILDOperationResult(AppConstants.CREATE_REQUEST, "urn:test:testentity1")));
+                .thenReturn(Uni.createFrom().item(new NGSILDOperationResult(AppConstants.CREATE_REQUEST, "urn:test:testentity1", AppConstants.INTERNAL_NULL_KEY)));
         ExtractableResponse<Response> response = given().body(temporalPayload)
                 .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
                 .header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
@@ -102,7 +102,7 @@ public class HistoryControllerTest {
     public void createTemporalEntityBadRequestTest() throws Exception {
 
         Mockito.when(historyEntityService.createEntry(any(), any(), any(), any()))
-                .thenReturn(Uni.createFrom().item(new NGSILDOperationResult(AppConstants.CREATE_REQUEST, "urn:test:testentity1")));
+                .thenReturn(Uni.createFrom().item(new NGSILDOperationResult(AppConstants.CREATE_REQUEST, "urn:test:testentity1", AppConstants.INTERNAL_NULL_KEY)));
         ExtractableResponse<Response> response = given().body(temporalPayloadBad)
                 .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
                 .header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
@@ -121,7 +121,7 @@ public class HistoryControllerTest {
     @Test
     public void deleteTemporalEntityTest() throws Exception {
         Mockito.when(historyEntityService.deleteEntry(any(), any(), any(), any()))
-                .thenReturn(Uni.createFrom().item(new NGSILDOperationResult(AppConstants.DELETE_REQUEST, "urn:ngsi-ld:testunit:a0a")));
+                .thenReturn(Uni.createFrom().item(new NGSILDOperationResult(AppConstants.DELETE_REQUEST, "urn:ngsi-ld:testunit:a0a", AppConstants.INTERNAL_NULL_KEY)));
 
         ExtractableResponse<Response> response = given()
                 .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
@@ -139,7 +139,7 @@ public class HistoryControllerTest {
     @Test
     public void deleteTemporalEntityBadRequestTest() throws Exception {
         Mockito.when(historyEntityService.deleteEntry(any(), any(), any(), any()))
-                .thenReturn(Uni.createFrom().item(new NGSILDOperationResult(AppConstants.DELETE_REQUEST, "urn:ngsi-ld:testunit:a0a")));
+                .thenReturn(Uni.createFrom().item(new NGSILDOperationResult(AppConstants.DELETE_REQUEST, "urn:ngsi-ld:testunit:a0a", AppConstants.INTERNAL_NULL_KEY)));
 
         ExtractableResponse<Response> response = given()
                 .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
@@ -157,7 +157,7 @@ public class HistoryControllerTest {
     @Test
     public void deleteTemporalEntityByAttrTest() throws Exception {
         Mockito.when(historyEntityService.appendToEntry(any(), any(), any(), any(), any()))
-                .thenReturn(Uni.createFrom().item(new NGSILDOperationResult(AppConstants.DELETE_REQUEST, "urn:ngsi-ld:testunit:a0a")));
+                .thenReturn(Uni.createFrom().item(new NGSILDOperationResult(AppConstants.DELETE_REQUEST, "urn:ngsi-ld:testunit:a0a", AppConstants.INTERNAL_NULL_KEY)));
 
         ExtractableResponse<Response> response = given()
                 .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
@@ -175,7 +175,7 @@ public class HistoryControllerTest {
     @Test
     public void deleteTemporalEntityByAttrBadRequestTest() {
         Mockito.when(historyEntityService.appendToEntry(any(), any(), any(), any(), any()))
-                .thenReturn(Uni.createFrom().item(new NGSILDOperationResult(AppConstants.DELETE_REQUEST, "urn:ngsi-ld:testunit:a0a")));
+                .thenReturn(Uni.createFrom().item(new NGSILDOperationResult(AppConstants.DELETE_REQUEST, "urn:ngsi-ld:testunit:a0a", AppConstants.INTERNAL_NULL_KEY)));
 
         ExtractableResponse<Response> response = given()
                 .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
@@ -194,7 +194,7 @@ public class HistoryControllerTest {
     @Test
     public void addAttrib2TemopralEntityTest() throws Exception {
         Mockito.when(historyEntityService.appendToEntry(any(), any(), any(), any(), any()))
-                .thenReturn(Uni.createFrom().item(new NGSILDOperationResult(AppConstants.DELETE_REQUEST, "urn:ngsi-ld:testunit:a0a")));
+                .thenReturn(Uni.createFrom().item(new NGSILDOperationResult(AppConstants.DELETE_REQUEST, "urn:ngsi-ld:testunit:a0a", AppConstants.INTERNAL_NULL_KEY)));
 
         ExtractableResponse<Response> response = given()
                 .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
@@ -214,7 +214,7 @@ public class HistoryControllerTest {
     @Test
     public void addAttrib2TemopralEntityBadRequestTest() {
         Mockito.when(historyEntityService.appendToEntry(any(), any(), any(), any(), any()))
-                .thenReturn(Uni.createFrom().item(new NGSILDOperationResult(AppConstants.DELETE_REQUEST, "urn:ngsi-ld:testunit:a0a")));
+                .thenReturn(Uni.createFrom().item(new NGSILDOperationResult(AppConstants.DELETE_REQUEST, "urn:ngsi-ld:testunit:a0a", AppConstants.INTERNAL_NULL_KEY)));
 
         ExtractableResponse<Response> response = given()
                 .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
@@ -236,7 +236,7 @@ public class HistoryControllerTest {
     @Order(17)
     public void modifyAttribInstanceTemporalEntityTest() throws Exception {
         Mockito.when(historyEntityService.updateInstanceOfAttr(any(), any(), any(), any(), any(), any(), any()))
-                .thenReturn(Uni.createFrom().item(new NGSILDOperationResult(AppConstants.DELETE_REQUEST, "urn:ngsi-ld:testunit:a0a")));
+                .thenReturn(Uni.createFrom().item(new NGSILDOperationResult(AppConstants.DELETE_REQUEST, "urn:ngsi-ld:testunit:a0a", AppConstants.INTERNAL_NULL_KEY)));
 
         ExtractableResponse<Response> response = given()
                 .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
@@ -256,7 +256,7 @@ public class HistoryControllerTest {
     @Test
     public void modifyAttribInstanceTemporalEntityBadRequestTest() throws Exception {
         Mockito.when(historyEntityService.updateInstanceOfAttr(any(), any(), any(), any(), any(), any(), any()))
-                .thenReturn(Uni.createFrom().item(new NGSILDOperationResult(AppConstants.DELETE_REQUEST, "urn:ngsi-ld:testunit:a0a")));
+                .thenReturn(Uni.createFrom().item(new NGSILDOperationResult(AppConstants.DELETE_REQUEST, "urn:ngsi-ld:testunit:a0a", AppConstants.INTERNAL_NULL_KEY)));
 
         ExtractableResponse<Response> response = given()
                 .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
@@ -276,7 +276,7 @@ public class HistoryControllerTest {
     @Test
     public void deleteAtrribInstanceTemporalEntityTest() throws Exception {
         Mockito.when(historyEntityService.deleteInstanceOfAttr(any(), any(), any(), any(), any(), any()))
-                .thenReturn(Uni.createFrom().item(new NGSILDOperationResult(AppConstants.DELETE_REQUEST, "urn:ngsi-ld:testunit:a0a")));
+                .thenReturn(Uni.createFrom().item(new NGSILDOperationResult(AppConstants.DELETE_REQUEST, "urn:ngsi-ld:testunit:a0a", AppConstants.INTERNAL_NULL_KEY)));
 
         ExtractableResponse<Response> response = given()
                 .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
@@ -295,7 +295,7 @@ public class HistoryControllerTest {
     @Test
     public void deleteAtrribInstanceTemporalEntityBadRequestTest() throws Exception {
         Mockito.when(historyEntityService.deleteInstanceOfAttr(any(), any(), any(), any(), any(), any()))
-                .thenReturn(Uni.createFrom().item(new NGSILDOperationResult(AppConstants.DELETE_REQUEST, "urn:ngsi-ld:testunit:a0a")));
+                .thenReturn(Uni.createFrom().item(new NGSILDOperationResult(AppConstants.DELETE_REQUEST, "urn:ngsi-ld:testunit:a0a", AppConstants.INTERNAL_NULL_KEY)));
 
         ExtractableResponse<Response> response = given()
                 .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)

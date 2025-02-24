@@ -111,7 +111,7 @@ public class EntityControllerTest {
     public void createEntityTest() {
 
         Mockito.when(entityService.createEntity(any(), any(), any(), any()))
-                .thenReturn(Uni.createFrom().item(new NGSILDOperationResult(AppConstants.CREATE_REQUEST, "urn:test:testentity1")));
+                .thenReturn(Uni.createFrom().item(new NGSILDOperationResult(AppConstants.CREATE_REQUEST, "urn:test:testentity1", AppConstants.INTERNAL_NULL_KEY)));
 
         ExtractableResponse<Response> response = RestAssured.given()
                 .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
@@ -174,7 +174,7 @@ public class EntityControllerTest {
     public void updateEntityTest() {
         Mockito.when(entityService.updateEntity(any(), any(), any(), any(), any()))
                 .thenReturn(Uni.createFrom()
-                        .item(new NGSILDOperationResult(AppConstants.ENTITY_UPDATE_PAYLOAD, "urn:test:testentity")));
+                        .item(new NGSILDOperationResult(AppConstants.ENTITY_UPDATE_PAYLOAD, "urn:test:testentity", AppConstants.INTERNAL_NULL_KEY)));
         String entityId = "urn:test:testentity";
         ExtractableResponse<Response> response = RestAssured.given()
                 .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
@@ -195,7 +195,7 @@ public class EntityControllerTest {
     public void updateEntityBadRequestTest() {
         Mockito.when(entityService.updateEntity(any(), any(), any(), any(), any()))
                 .thenReturn(Uni.createFrom()
-                        .item(new NGSILDOperationResult(AppConstants.ENTITY_UPDATE_PAYLOAD, "urn:test:testentity")));
+                        .item(new NGSILDOperationResult(AppConstants.ENTITY_UPDATE_PAYLOAD, "urn:test:testentity", AppConstants.INTERNAL_NULL_KEY)));
         String entityId = "urn:test:testentity1";
         ExtractableResponse<Response> response = RestAssured.given()
                 .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
@@ -214,11 +214,11 @@ public class EntityControllerTest {
     public void appendEntityTest() {
         Mockito.when(entityService.appendToEntity(any(), any(), any(), anyBoolean(), any(), any()))
                 .thenReturn(Uni.createFrom()
-                        .item(new NGSILDOperationResult(AppConstants.ENTITY_UPDATE_PAYLOAD, "urn:test:testentity1")));
+                        .item(new NGSILDOperationResult(AppConstants.ENTITY_UPDATE_PAYLOAD, "urn:test:testentity1", AppConstants.INTERNAL_NULL_KEY)));
         ExtractableResponse<Response> response = RestAssured.given()
                 .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
                 .header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).body(appendPayload).when()
-                .post("/ngsi-ld/v1/entities/{entityId}/attrs", "urn:test:testentity1").then()
+                .post("/ngsi-ld/v1/entities/{entityId}/attrs", "urn:test:testentity1", AppConstants.INTERNAL_NULL_KEY).then()
                 .statusCode(204).extract();
         int statusCode = response.statusCode();
         assertEquals(204, statusCode);
@@ -234,11 +234,11 @@ public class EntityControllerTest {
     public void appendEntityBadRequestTest() {
         Mockito.when(entityService.appendToEntity(any(), any(), any(), anyBoolean(), any(), any()))
                 .thenReturn(Uni.createFrom()
-                        .item(new NGSILDOperationResult(AppConstants.ENTITY_UPDATE_PAYLOAD, "urn:test:testentity1")));
+                        .item(new NGSILDOperationResult(AppConstants.ENTITY_UPDATE_PAYLOAD, "urn:test:testentity1", AppConstants.INTERNAL_NULL_KEY)));
         ExtractableResponse<Response> response = RestAssured.given()
                 .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
                 .header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).body(invalidAppendPayload).when()
-                .post("/ngsi-ld/v1/entities/{entityId}/attrs", "urn:test:testentity1").then()
+                .post("/ngsi-ld/v1/entities/{entityId}/attrs", "urn:test:testentity1", AppConstants.INTERNAL_NULL_KEY).then()
                 .statusCode(400).extract();
         int statusCode = response.statusCode();
         assertEquals(400, statusCode);
@@ -253,7 +253,7 @@ public class EntityControllerTest {
     public void appendEntityTestQueryParam() {
         Mockito.when(entityService.appendToEntity(any(), any(), any(), anyBoolean(), any(), any()))
                 .thenReturn(Uni.createFrom()
-                        .item(new NGSILDOperationResult(AppConstants.ENTITY_UPDATE_PAYLOAD, "urn:test:testentity1")));
+                        .item(new NGSILDOperationResult(AppConstants.ENTITY_UPDATE_PAYLOAD, "urn:test:testentity1", AppConstants.INTERNAL_NULL_KEY)));
         String options = "noOverwrite";
         ExtractableResponse<Response> response = RestAssured.given()
                 .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
@@ -261,7 +261,7 @@ public class EntityControllerTest {
                 .body(appendPayload)
                 .queryParam("options", options)
                 .when()
-                .post("/ngsi-ld/v1/entities/{entityId}/attrs", "urn:test:testentity1").then()
+                .post("/ngsi-ld/v1/entities/{entityId}/attrs", "urn:test:testentity1", AppConstants.INTERNAL_NULL_KEY).then()
                 .statusCode(204).extract();
         int statusCode = response.statusCode();
         assertEquals(204, statusCode);
@@ -278,7 +278,7 @@ public class EntityControllerTest {
 
         Mockito.when(entityService.partialUpdateAttribute(any(), any(), any(), any(), any(), any()))
                 .thenReturn(Uni.createFrom()
-                        .item(new NGSILDOperationResult(AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, "urn:ngsi-ld:Vehicle:A101")));
+                        .item(new NGSILDOperationResult(AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, "urn:ngsi-ld:Vehicle:A101", AppConstants.INTERNAL_NULL_KEY)));
 
         ExtractableResponse<Response> response = RestAssured.given()
                 .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
@@ -299,7 +299,7 @@ public class EntityControllerTest {
 
         Mockito.when(entityService.partialUpdateAttribute(any(), any(), any(), any(), any(), any()))
                 .thenReturn(Uni.createFrom()
-                        .item(new NGSILDOperationResult(AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, "urn:ngsi-ld:Vehicle:A101")));
+                        .item(new NGSILDOperationResult(AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, "urn:ngsi-ld:Vehicle:A101", AppConstants.INTERNAL_NULL_KEY)));
 
         ExtractableResponse<Response> response = RestAssured.given()
                 .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
@@ -322,7 +322,7 @@ public class EntityControllerTest {
     public void partialUpdateAttributeNotExistTest() {
         Mockito.when(entityService.partialUpdateAttribute(any(), any(), any(), any(), any(), any()))
                 .thenReturn(Uni.createFrom()
-                        .item(new NGSILDOperationResult(AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, "urn:ngsi-ld:Vehicle:A101")));
+                        .item(new NGSILDOperationResult(AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, "urn:ngsi-ld:Vehicle:A101", AppConstants.INTERNAL_NULL_KEY)));
 
         ExtractableResponse<Response> response = RestAssured.given()
                 .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
@@ -343,7 +343,7 @@ public class EntityControllerTest {
     public void partialUpdateAttributeDefaultDatasetIdCaseTest() {
         Mockito.when(entityService.partialUpdateAttribute(any(), any(), any(), any(), any(), any()))
                 .thenReturn(Uni.createFrom()
-                        .item(new NGSILDOperationResult(AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, "urn:ngsi-ld:Vehicle:A101")));
+                        .item(new NGSILDOperationResult(AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, "urn:ngsi-ld:Vehicle:A101", AppConstants.INTERNAL_NULL_KEY)));
 
         ExtractableResponse<Response> response = RestAssured.given()
                 .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
@@ -361,7 +361,7 @@ public class EntityControllerTest {
     public void deleteAttributeTest() {
         Mockito.when(entityService.deleteAttribute(any(), any(), any(), any(), anyBoolean(), any(), any()))
                 .thenReturn(Uni.createFrom()
-                        .item(new NGSILDOperationResult(AppConstants.DELETE_REQUEST, "urn:test:testentity1")));
+                        .item(new NGSILDOperationResult(AppConstants.DELETE_REQUEST, "urn:test:testentity1", AppConstants.INTERNAL_NULL_KEY)));
 
         ExtractableResponse<Response> response = RestAssured.given()
                 .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
@@ -379,7 +379,7 @@ public class EntityControllerTest {
     public void deleteAttributeBadRequestTest() {
         Mockito.when(entityService.deleteAttribute(any(), any(), any(), any(), anyBoolean(), any(), any()))
                 .thenReturn(Uni.createFrom()
-                        .item(new NGSILDOperationResult(AppConstants.DELETE_REQUEST, "urn:test:testentity1")));
+                        .item(new NGSILDOperationResult(AppConstants.DELETE_REQUEST, "urn:test:testentity1", AppConstants.INTERNAL_NULL_KEY)));
 
         ExtractableResponse<Response> response = RestAssured.given()
                 .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
@@ -402,10 +402,10 @@ public class EntityControllerTest {
     public void deleteEntityTest() {
         Mockito.when(entityService.deleteAttribute(any(), any(), any(), any(), anyBoolean(), any(), any()))
                 .thenReturn(Uni.createFrom()
-                        .item(new NGSILDOperationResult(AppConstants.DELETE_REQUEST, "urn:test:testentity1")));
+                        .item(new NGSILDOperationResult(AppConstants.DELETE_REQUEST, "urn:test:testentity1", AppConstants.INTERNAL_NULL_KEY)));
         ExtractableResponse<Response> response = RestAssured.given().accept(AppConstants.NGB_APPLICATION_JSONLD).request()
                 .contentType(AppConstants.NGB_APPLICATION_JSON).when()
-                .delete("/ngsi-ld/v1/entities/{entityId}", "urn:test:testentity1")
+                .delete("/ngsi-ld/v1/entities/{entityId}", "urn:test:testentity1", AppConstants.INTERNAL_NULL_KEY)
                 .then().statusCode(204).extract();
         int statusCode = response.statusCode();
         assertEquals(204, statusCode);
@@ -416,7 +416,7 @@ public class EntityControllerTest {
     public void deleteEntityBadRequestTest() {
         Mockito.when(entityService.deleteAttribute(any(), any(), any(), any(), anyBoolean(), any(), any()))
                 .thenReturn(Uni.createFrom()
-                        .item(new NGSILDOperationResult(AppConstants.DELETE_REQUEST, "urn:test:testentity1")));
+                        .item(new NGSILDOperationResult(AppConstants.DELETE_REQUEST, "urn:test:testentity1", AppConstants.INTERNAL_NULL_KEY)));
         ExtractableResponse<Response> response = RestAssured.given().accept(AppConstants.NGB_APPLICATION_JSONLD).request()
                 .contentType(AppConstants.NGB_APPLICATION_JSON).when()
                 .delete("/ngsi-ld/v1/entities/{entityId}", " :ngsi-ld:Vehicle:A101")

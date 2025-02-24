@@ -228,7 +228,7 @@ public class QueryService implements CSourceHandler {
 			int offSet, boolean count, DataSetIdTerm dataSetIdTerm, String join, int joinLevel, Context context,
 			Set<String> jsonKeys, io.vertx.core.MultiMap headersFromReq, PickTerm pickTerm, OmitTerm omitTerm,
 			ViaHeaders viaHeaders) {
-		QueryResult result = new QueryResult();
+		QueryResult result = new QueryResult(tenant);
 
 		List<Map<String, Object>> resultData = Lists.newArrayList();
 		result.setData(resultData);
@@ -750,7 +750,7 @@ public class QueryService implements CSourceHandler {
 			Set<String> jsonKeys, io.vertx.core.MultiMap headersFromReq, PickTerm pickTerm, OmitTerm omitTerm,
 			ViaHeaders viaHeaders) {
 		if (entityMap.removeEntries(deleted.keySet())) {
-			QueryResult result = new QueryResult();
+			QueryResult result = new QueryResult(tenant);
 			List<Map<String, Object>> resultData = Lists.newArrayList();
 			result.setData(resultData);
 			result.setCount((long) entityMap.size());

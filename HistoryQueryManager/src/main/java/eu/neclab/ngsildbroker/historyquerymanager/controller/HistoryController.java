@@ -38,7 +38,8 @@ import java.util.List;
 @Path("/ngsi-ld/v1/temporal/entities")
 public class HistoryController {
 
-	//private final static Logger logger = LoggerFactory.getLogger(HistoryController.class);
+	// private final static Logger logger =
+	// LoggerFactory.getLogger(HistoryController.class);
 
 	@Inject
 	MicroServiceUtils microServiceUtils;
@@ -82,8 +83,10 @@ public class HistoryController {
 			try {
 				q = URLDecoder.decode(request.absoluteURI().split("q=")[1].split("&")[0], "UTF-8");
 			} catch (UnsupportedEncodingException e) {
-				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
-						new ResponseException(ErrorType.BadRequestData, "failed to decode q query")));
+				return Uni.createFrom()
+						.item(HttpUtils.handleControllerExceptions(
+								new ResponseException(ErrorType.BadRequestData, "failed to decode q query"),
+								HttpUtils.getTenant(request)));
 			}
 		} else {
 			q = null;
@@ -104,12 +107,12 @@ public class HistoryController {
 			actualLimit = limit;
 		}
 		if (actualLimit > maxLimit) {
-			return Uni.createFrom()
-					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.TooManyResults)));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
+					new ResponseException(ErrorType.TooManyResults), HttpUtils.getTenant(request)));
 		}
 		if (!localOnly && typeQuery == null && attrs == null && geometry == null && q == null) {
-			return Uni.createFrom()
-					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.InvalidRequest)));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
+					new ResponseException(ErrorType.InvalidRequest), HttpUtils.getTenant(request)));
 		}
 		int lastNTBU;
 		if (lastN == null) {
@@ -140,7 +143,7 @@ public class HistoryController {
 				aggrTerm = QueryParser.parseAggrTerm(aggrMethods, aggrPeriodDuration);
 				languageQueryTerm = QueryParser.parseLangQuery(lang);
 			} catch (Exception e) {
-				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 			}
 			return historyQueryService
 					.query(HttpUtils.getTenant(request), idList, typeQueryTerm, idPattern, attrsQueryTerm, qQueryTerm,
@@ -152,7 +155,7 @@ public class HistoryController {
 								false, microServiceUtils.getGatewayURL().toString(),
 								NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT);
 					});
-		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+		}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 	}
 
 	@Path("/{entityId}")
@@ -196,14 +199,15 @@ public class HistoryController {
 				aggrQuery = QueryParser.parseAggrTerm(aggrMethods, aggrPeriodDuration);
 				tempQuery = QueryParser.parseTempQuery(timeProperty, timeRel, timeAt, endTimeAt);
 			} catch (Exception e) {
-				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 			}
 			return historyQueryService.retrieveEntity(HttpUtils.getTenant(request), entityId, attrsQuery, aggrQuery,
-					tempQuery, lang, lastNTBU, localOnly, context,request.headers()).onItem().transformToUni(entity -> {
+					tempQuery, lang, lastNTBU, localOnly, context, request.headers()).onItem()
+					.transformToUni(entity -> {
 						return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, entity,
 								geometryProperty, finalOptionsString, null, ldService, null, null, true);
 					});
-		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+		}).onFailure().recoverWithItem(e-> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 
 	}
 

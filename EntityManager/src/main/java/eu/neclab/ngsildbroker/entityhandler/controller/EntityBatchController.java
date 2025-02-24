@@ -65,7 +65,7 @@ public class EntityBatchController {
 			List<Map<String, Object>> compactedEntities, @QueryParam("localOnly") boolean localOnly) {
 		List<Uni<Tuple2<String, Object>>> unis = Lists.newArrayList();
 		if(compactedEntities==null || compactedEntities.isEmpty()){
-			return  Uni.createFrom().item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData)));
+			return  Uni.createFrom().item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData), HttpUtils.getTenant(request)));
 		}
 		for (Map<String, Object> compactedEntity : compactedEntities) {
 			try {
@@ -88,7 +88,7 @@ public class EntityBatchController {
 				Object obj2 = tuple.getItem2();
 				if (obj2 instanceof Exception) {
 					NGSILDOperationResult failureResults = new NGSILDOperationResult(AppConstants.CREATE_REQUEST,
-							entityId);
+							entityId, HttpUtils.getTenant(request));
 					if (obj2 instanceof ResponseException) {
 						failureResults.addFailure((ResponseException) obj2);
 					} else if (obj2 instanceof IOException) {
@@ -119,7 +119,9 @@ public class EntityBatchController {
 						opResults.addAll(fails);
 						return HttpUtils.generateBatchResult(opResults);
 					});
-		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+		}).onFailure().recoverWithItem(e -> {
+			return HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request));
+		});
 
 	}
 
@@ -157,7 +159,7 @@ public class EntityBatchController {
 				Object obj2 = tuple.getItem2();
 				if (obj2 instanceof Exception) {
 					NGSILDOperationResult failureResults = new NGSILDOperationResult(AppConstants.UPSERT_REQUEST,
-							entityId);
+							entityId, HttpUtils.getTenant(request));
 					if (obj2 instanceof ResponseException) {
 						failureResults.addFailure((ResponseException) obj2);
 					} else {
@@ -182,7 +184,9 @@ public class EntityBatchController {
 						opResults.addAll(fails);
 						return HttpUtils.generateBatchResult(opResults);
 					});
-		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+		}).onFailure().recoverWithItem(e -> {
+			return HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request));
+		});
 
 	}
 
@@ -223,7 +227,7 @@ public class EntityBatchController {
 				Object obj2 = tuple.getItem2();
 				if (obj2 instanceof Exception) {
 					NGSILDOperationResult failureResults = new NGSILDOperationResult(AppConstants.APPEND_REQUEST,
-							entityId);
+							entityId, HttpUtils.getTenant(request));
 					if (obj2 instanceof ResponseException) {
 						failureResults.addFailure((ResponseException) obj2);
 					} else {
@@ -248,7 +252,9 @@ public class EntityBatchController {
 						opResults.addAll(fails);
 						return HttpUtils.generateBatchResult(opResults);
 					});
-		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+		}).onFailure().recoverWithItem(e -> {
+			return HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request));
+		});
 	}
 
 	@POST
@@ -259,12 +265,14 @@ public class EntityBatchController {
 		try {
 		  	entityIds = new JsonArray(entityIdsStr).getList();
 		}catch (DecodeException e){
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
 		return entityService.deleteBatch(HttpUtils.getTenant(request), entityIds, localOnly,request.headers()).onItem()
 				.transform(opResults -> {
 					return HttpUtils.generateBatchResult(opResults);
-				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+				}).onFailure().recoverWithItem(e -> {
+					return HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request));
+				});
 	}
 	@POST
 	@Path("/merge")
@@ -294,7 +302,7 @@ public class EntityBatchController {
 				Object obj2 = tuple.getItem2();
 				if (obj2 instanceof Exception) {
 					NGSILDOperationResult failureResults = new NGSILDOperationResult(AppConstants.APPEND_REQUEST,
-							entityId);
+							entityId, HttpUtils.getTenant(request));
 					if (obj2 instanceof ResponseException) {
 						failureResults.addFailure((ResponseException) obj2);
 					} else {
@@ -319,7 +327,9 @@ public class EntityBatchController {
 						opResults.addAll(fails);
 						return HttpUtils.generateBatchResult(opResults);
 					});
-		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+		}).onFailure().recoverWithItem(e -> {
+			return HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request));
+		});
 	}
 
 }

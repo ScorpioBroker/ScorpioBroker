@@ -64,12 +64,12 @@ public class EntityController {// implements EntityHandlerInterface {
 		try {
 			body = new JsonObject(bodyStr).getMap();
 		} catch (DecodeException e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(req)));
 		}
 		try {
 			noConcise(body);
 		} catch (ResponseException e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(req)));
 		}
 		return HttpUtils.expandBody(req, body, AppConstants.ENTITY_CREATE_PAYLOAD, ldService).onItem()
 				.transformToUni(tuple -> {
@@ -80,7 +80,9 @@ public class EntityController {// implements EntityHandlerInterface {
 								logger.debug("Done creating entity");
 								return HttpUtils.generateCreateResult(opResult, AppConstants.ENTITES_URL);
 							});
-				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+				}).onFailure().recoverWithItem(e -> {
+					return HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(req));
+				});
 
 	}
 
@@ -101,12 +103,12 @@ public class EntityController {// implements EntityHandlerInterface {
 			HttpUtils.validateUri(entityId);
 			body = new JsonObject(bodyStr).getMap();
 		} catch (Exception e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(req)));
 		}
 		try {
 			noConcise(body);
 		} catch (ResponseException e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(req)));
 		}
 		;
 		return HttpUtils.expandBody(req, body, AppConstants.ENTITY_UPDATE_PAYLOAD, ldService).onItem()
@@ -115,7 +117,9 @@ public class EntityController {// implements EntityHandlerInterface {
 					return entityService.updateEntity(HttpUtils.getTenant(req), entityId, tuple.getItem2(),
 							tuple.getItem1(), req.headers()).onItem()
 							.transform(HttpUtils::generateUpdateResultResponse);
-				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+				}).onFailure().recoverWithItem(e -> {
+					return HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(req));
+				});
 	}
 
 	/**
@@ -135,12 +139,12 @@ public class EntityController {// implements EntityHandlerInterface {
 			HttpUtils.validateUri(entityId);
 			body = new JsonObject(bodyStr).getMap();
 		} catch (Exception e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(req)));
 		}
 		try {
 			noConcise(body);
 		} catch (ResponseException e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(req)));
 		}
 		boolean noOverwrite = options != null && options.contains(NGSIConstants.NO_OVERWRITE_OPTION);
 		return HttpUtils.expandBody(req, body, AppConstants.ENTITY_UPDATE_PAYLOAD, ldService).onItem()
@@ -150,7 +154,9 @@ public class EntityController {// implements EntityHandlerInterface {
 							.appendToEntity(HttpUtils.getTenant(req), entityId, tuple.getItem2(), noOverwrite,
 									tuple.getItem1(), req.headers())
 							.onItem().transform(HttpUtils::generateUpdateResultResponse);
-				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+				}).onFailure().recoverWithItem(e -> {
+					return HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(req));
+				});
 
 	}
 
@@ -171,12 +177,12 @@ public class EntityController {// implements EntityHandlerInterface {
 			HttpUtils.validateUri(entityId);
 			body = new JsonObject(bodyStr).getMap();
 		} catch (Exception e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(req)));
 		}
 		try {
 			noConcise(body);
 		} catch (ResponseException e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(req)));
 		}
 
 		return HttpUtils.expandBody(req, body, AppConstants.ENTITY_UPDATE_PAYLOAD, ldService).onItem()
@@ -193,9 +199,11 @@ public class EntityController {// implements EntityHandlerInterface {
 							if (isEndPointExist)
 								return RestResponse.noContent();
 							else {
-								return HttpUtils.handleControllerExceptions(t);
+								return HttpUtils.handleControllerExceptions(t, HttpUtils.getTenant(req));
 							}
-						}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions));
+						}).onFailure().recoverWithItem(e -> {
+							return HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(req));
+						}));
 	}
 
 	/**
@@ -215,7 +223,7 @@ public class EntityController {// implements EntityHandlerInterface {
 		try {
 			HttpUtils.validateUri(entityId);
 		} catch (Exception e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
 		return ldService.parse(HttpUtils.getAtContext(request)).onItem().transformToUni(context -> {
 			String finalAttrId = context.expandIri(attrId, false, true, null, null);
@@ -226,7 +234,9 @@ public class EntityController {// implements EntityHandlerInterface {
 						return HttpUtils.generateDeleteResult(opResult);
 
 					});
-		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+		}).onFailure().recoverWithItem(e -> {
+			return HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request));
+		});
 
 	}
 
@@ -242,12 +252,14 @@ public class EntityController {// implements EntityHandlerInterface {
 		try {
 			HttpUtils.validateUri(entityId);
 		} catch (Exception e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
 		return ldService.parse(HttpUtils.getAtContext(request)).onItem().transformToUni(context -> {
 			return entityService.deleteEntity(HttpUtils.getTenant(request), entityId, context, request.headers())
 					.onItem().transform(HttpUtils::generateDeleteResult);
-		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+		}).onFailure().recoverWithItem(e -> {
+			return HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request));
+		});
 
 	}
 
@@ -260,23 +272,25 @@ public class EntityController {// implements EntityHandlerInterface {
 			HttpUtils.validateUri(entityId);
 			body = new JsonObject(bodyStr).getMap();
 		} catch (Exception e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
 		if (!entityId.equals(body.get(NGSIConstants.ID)) && body.get(NGSIConstants.ID) != null) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
-					new ResponseException(ErrorType.BadRequestData, "Id can not be updated")));
+					new ResponseException(ErrorType.BadRequestData, "Id can not be updated"), HttpUtils.getTenant(request)));
 		}
 		try {
 			noConcise(body);
 		} catch (ResponseException e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
 		return HttpUtils.expandBody(request, body, AppConstants.MERGE_PATCH_REQUEST, ldService).onItem()
 				.transformToUni(tuple -> {
 					return entityService.mergePatch(HttpUtils.getTenant(request), entityId, tuple.getItem2(),
 							tuple.getItem1(), request.headers()).onItem()
 							.transform(HttpUtils::generateUpdateResultResponse);
-				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+				}).onFailure().recoverWithItem(e -> {
+					return HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request));
+				});
 
 	}
 
@@ -290,17 +304,17 @@ public class EntityController {// implements EntityHandlerInterface {
 			HttpUtils.validateUri(entityId);
 			body = new JsonObject(bodyStr).getMap();
 		} catch (Exception e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
 		try {
 			noConcise(body);
 		} catch (ResponseException e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
 		body.put(NGSIConstants.ID, entityId);
 		if (!body.containsKey(NGSIConstants.TYPE)) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
-					new ResponseException(ErrorType.BadRequestData, "Type can not be null")));
+					new ResponseException(ErrorType.BadRequestData, "Type can not be null"), HttpUtils.getTenant(request)));
 		}
 		return HttpUtils.expandBody(request, body, AppConstants.REPLACE_ENTITY_PAYLOAD, ldService).onItem()
 				.transformToUni(tuple -> {
@@ -310,7 +324,9 @@ public class EntityController {// implements EntityHandlerInterface {
 
 								logger.debug("Done replacing entity");
 								return HttpUtils.generateUpdateResultResponse(opResult);
-							}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+							}).onFailure().recoverWithItem(e -> {
+								return HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request));
+							});
 				});
 	}
 
@@ -324,12 +340,12 @@ public class EntityController {// implements EntityHandlerInterface {
 			HttpUtils.validateUri(entityId);
 			body = new JsonObject(bodyStr).getMap();
 		} catch (Exception e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
 		try {
 			noConcise(body);
 		} catch (ResponseException e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
 		return HttpUtils.expandBody(request, body, AppConstants.PARTIAL_UPDATE_REQUEST, ldService).onItem()
 				.transformToUni(tuple -> {
@@ -338,7 +354,9 @@ public class EntityController {// implements EntityHandlerInterface {
 							tuple.getItem1(), entityId, finalAttrId, request.headers()).onItem().transform(opResult -> {
 								logger.debug("Done replacing attribute");
 								return HttpUtils.generateUpdateResultResponse(opResult);
-							}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+							}).onFailure().recoverWithItem(e -> {
+								return HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request));
+							});
 				});
 	}
 }

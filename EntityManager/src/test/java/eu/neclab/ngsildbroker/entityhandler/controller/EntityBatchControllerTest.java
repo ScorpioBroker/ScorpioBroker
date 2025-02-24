@@ -120,7 +120,7 @@ public class EntityBatchControllerTest {
 
 		List<NGSILDOperationResult> NGSILDOperationResultList = new ArrayList<>();
 
-		NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, "urn:test:testentity1");
+		NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, "urn:test:testentity1", AppConstants.INTERNAL_NULL_KEY);
 		opResult.addSuccess(new CRUDSuccess(null, null, null, Sets.newHashSet()));
 		NGSILDOperationResultList.add(opResult);
 
@@ -153,7 +153,7 @@ public class EntityBatchControllerTest {
 		try {
 
 			Mockito.when(entityService.createEntity(any(), any(), any(), any())).thenReturn(Uni.createFrom()
-					.item(new NGSILDOperationResult(AppConstants.CREATE_REQUEST, "urn:test:testentity1")));
+					.item(new NGSILDOperationResult(AppConstants.CREATE_REQUEST, "urn:test:testentity1", AppConstants.INTERNAL_NULL_KEY)));
 
 			ExtractableResponse<Response> response = RestAssured.given().body(badRequestPayload)
 					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
@@ -178,7 +178,7 @@ public class EntityBatchControllerTest {
 
 		List<NGSILDOperationResult> NGSILDOperationResultList = new ArrayList<>();
 
-		NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.UPSERT_REQUEST, "urn:test:testentity1");
+		NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.UPSERT_REQUEST, "urn:test:testentity1", AppConstants.INTERNAL_NULL_KEY);
 		opResult.addSuccess(new CRUDSuccess(null, null, null, Sets.newHashSet()));
 		opResult.setWasUpdated(true);
 		NGSILDOperationResultList.add(opResult);
@@ -234,7 +234,7 @@ public class EntityBatchControllerTest {
 
 		List<NGSILDOperationResult> NGSILDOperationResultList = new ArrayList<>();
 
-		NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.UPSERT_REQUEST, "urn:test:testentity1");
+		NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.UPSERT_REQUEST, "urn:test:testentity1", AppConstants.INTERNAL_NULL_KEY);
 		opResult.addSuccess(new CRUDSuccess(null, null, null, Sets.newHashSet()));
 		opResult.setWasUpdated(true);
 		NGSILDOperationResultList.add(opResult);
@@ -289,7 +289,7 @@ public class EntityBatchControllerTest {
 
 		List<NGSILDOperationResult> NGSILDOperationResultList = new ArrayList<>();
 
-		NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.DELETE_REQUEST, "urn:test:testentity1");
+		NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.DELETE_REQUEST, "urn:test:testentity1", AppConstants.INTERNAL_NULL_KEY);
 		opResult.addSuccess(new CRUDSuccess(null, null, null, Sets.newHashSet()));
 		opResult.setWasUpdated(true);
 		NGSILDOperationResultList.add(opResult);
@@ -324,7 +324,7 @@ public class EntityBatchControllerTest {
 
 			List<NGSILDOperationResult> NGSILDOperationResultList = new ArrayList<>();
 			NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.DELETE_REQUEST,
-					"urn:test:testentity1");
+					"urn:test:testentity1", AppConstants.INTERNAL_NULL_KEY);
 			opResult.addFailure(new ResponseException(ErrorType.InvalidRequest, ""));
 			NGSILDOperationResultList.add(opResult);
 

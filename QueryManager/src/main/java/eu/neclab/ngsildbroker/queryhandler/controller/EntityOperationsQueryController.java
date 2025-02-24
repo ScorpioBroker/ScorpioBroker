@@ -99,12 +99,12 @@ public class EntityOperationsQueryController {
 		}
 		if (actualLimit > maxLimit) {
 			return Uni.createFrom()
-					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.TooManyResults)));
+					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.TooManyResults), HttpUtils.getTenant(request)));
 		}
 		try {
 			body = new JsonObject(bodyStr).getMap();
 		} catch (Exception e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
 		// we are not expanding the complete payload here because there is some
 		// weirdness in postquery payload. expanding item by item through the parsers is
@@ -117,7 +117,7 @@ public class EntityOperationsQueryController {
 			if (body.containsKey(NGSIConstants.JSON_LD_CONTEXT)) {
 				return Uni.createFrom()
 						.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData,
-								"@context is not allowed in content-type application/json")));
+								"@context is not allowed in content-type application/json"), HttpUtils.getTenant(request)));
 
 			} else {
 				ctxUni = ldService.parse(HttpUtils.getAtContext(request));
@@ -129,13 +129,13 @@ public class EntityOperationsQueryController {
 				break;
 			} else {
 				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
-						new ResponseException(ErrorType.BadRequestData, "@context entry missing")));
+						new ResponseException(ErrorType.BadRequestData, "@context entry missing"), HttpUtils.getTenant(request)));
 			}
 		default:
 			return Uni.createFrom()
 					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.InvalidRequest,
 							"Only Content-Type " + AppConstants.NGB_APPLICATION_JSON + " and "
-									+ AppConstants.NGB_APPLICATION_JSONLD + " are allowed")));
+									+ AppConstants.NGB_APPLICATION_JSONLD + " are allowed"), HttpUtils.getTenant(request)));
 		}
 		return ctxUni.onItem().transformToUni(context -> {
 			try {
@@ -161,7 +161,7 @@ public class EntityOperationsQueryController {
 				if (entities == null && attrs == null && q == null && geoQ == null) {
 					return Uni.createFrom()
 							.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData,
-									"At least one of these entries is required: entities, attrs, q, geoQ")));
+									"At least one of these entries is required: entities, attrs, q, geoQ"), HttpUtils.getTenant(request)));
 				}
 
 				Object lang = body.get(NGSIConstants.QUERY_PARAMETER_LANG);
@@ -246,7 +246,7 @@ public class EntityOperationsQueryController {
 					try {
 						HttpUtils.validateUri(entityMapToken);
 					} catch (ResponseException e) {
-						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
 					}
 					token = entityMapToken;
 					tokenProvided = true;
@@ -262,11 +262,11 @@ public class EntityOperationsQueryController {
 						listSize = l.size();
 					}else {
 						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(new ResponseException(
-								ErrorType.BadRequestData, "entities needs to be an array with an entry")));
+								ErrorType.BadRequestData, "entities needs to be an array with an entry"), tenant));
 					}
 					if (listSize <= 0) {
 						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(new ResponseException(
-								ErrorType.BadRequestData, "entities needs to be an array with an entry")));
+								ErrorType.BadRequestData, "entities needs to be an array with an entry"), tenant));
 					}
 					idsAndTypeQueryAndIdPattern = new ArrayList<>(listSize);
 					for (Map<String, String> entityEntry : (List<Map<String, String>>) entities) {
@@ -304,12 +304,12 @@ public class EntityOperationsQueryController {
 									acceptHeader, count, actualLimit, langQuery, context, ldService, retrieveEntityMap,
 									microServiceUtils.getGatewayURL().toString(),
 									NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT);
-						}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e));
+						}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, tenant));
 
 			} catch (Exception e) {
-				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 			}
-		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+		}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 
 	}
 }

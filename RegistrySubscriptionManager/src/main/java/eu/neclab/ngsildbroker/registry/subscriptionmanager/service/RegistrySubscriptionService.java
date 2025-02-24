@@ -202,7 +202,7 @@ public class RegistrySubscriptionService implements CSourceHandler{
 											return Uni.createFrom().failure(e);
 										}).onItem().transform(v -> {
 											NGSILDOperationResult result = new NGSILDOperationResult(
-													AppConstants.CREATE_SUBSCRIPTION_REQUEST, request.getId());
+													AppConstants.CREATE_SUBSCRIPTION_REQUEST, request.getId(), tenant);
 											result.addSuccess(
 													new CRUDSuccess(null, null, request.getId(), Sets.newHashSet()));
 											return result;
@@ -250,7 +250,7 @@ public class RegistrySubscriptionService implements CSourceHandler{
 				}
 				return syncService.onItem().transformToUni(v2 -> {
 					return Uni.createFrom()
-							.item(new NGSILDOperationResult(AppConstants.UPDATE_SUBSCRIPTION_REQUEST, subscriptionId));
+							.item(new NGSILDOperationResult(AppConstants.UPDATE_SUBSCRIPTION_REQUEST, subscriptionId, tenant));
 				});
 			});
 		});
@@ -268,14 +268,14 @@ public class RegistrySubscriptionService implements CSourceHandler{
 				syncService = Uni.createFrom().voidItem();
 			}
 			return syncService.onItem().transform(v2 -> {
-				return new NGSILDOperationResult(AppConstants.DELETE_SUBSCRIPTION_REQUEST, subscriptionId);
+				return new NGSILDOperationResult(AppConstants.DELETE_SUBSCRIPTION_REQUEST, subscriptionId, tenant);
 			});
 		});
 	}
 
 	public Uni<QueryResult> getAllSubscriptions(String tenant, int limit, int offset) {
 		return regDAO.getAllSubscriptions(tenant, limit, offset).onItem().transform(rows -> {
-			QueryResult result = new QueryResult();
+			QueryResult result = new QueryResult(tenant);
 			Row next = null;
 			RowIterator<Row> it = rows.iterator();
 			List<Map<String, Object>> resultData = new ArrayList<Map<String, Object>>(rows.size());

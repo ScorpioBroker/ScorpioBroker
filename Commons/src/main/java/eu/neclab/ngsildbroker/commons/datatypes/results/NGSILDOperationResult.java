@@ -15,16 +15,17 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 public class NGSILDOperationResult {
 	private int operationType;
 	private String entityId;
-
+	private String tenant;
 	private boolean wasUpdated = false;
 
 	private List<CRUDSuccess> successes = Lists.newArrayList();
 	private List<ResponseException> failures = Lists.newArrayList();
 
-	public NGSILDOperationResult(int operationType, String entityId) {
+	public NGSILDOperationResult(int operationType, String entityId, String tenant) {
 		super();
 		this.operationType = operationType;
 		this.entityId = entityId;
+		this.tenant = tenant;
 	}
 
 	public List<CRUDSuccess> getSuccesses() {
@@ -124,12 +125,12 @@ public class NGSILDOperationResult {
 		return null;
 	}
 	@SuppressWarnings("unchecked")
-	public static NGSILDOperationResult getFromPayload(Map<String, Object> payload) throws ResponseException {
+	public static NGSILDOperationResult getFromPayload(Map<String, Object> payload, String tenant) throws ResponseException {
 		// TODO some more content checks and error throwing if there is an unexpected
 		// result
 		String entityId = (String) payload.get(NGSIConstants.QUERY_PARAMETER_ID);
 		int type = getOperationCode((String) payload.get(NGSIConstants.ERROR_TYPE));
-		NGSILDOperationResult result = new NGSILDOperationResult(type, entityId);
+		NGSILDOperationResult result = new NGSILDOperationResult(type, entityId, tenant);
 		Object tmp = payload.get("success");
 		if (tmp != null && tmp instanceof List) {
 			List<Map<String, Object>> successList = (List<Map<String, Object>>) tmp;
@@ -186,5 +187,15 @@ public class NGSILDOperationResult {
 	public void setWasUpdated(boolean wasUpdated) {
 		this.wasUpdated = wasUpdated;
 	}
+
+	public String getTenant() {
+		return tenant;
+	}
+
+	public void setTenant(String tenant) {
+		this.tenant = tenant;
+	}
+	
+	
 
 }

@@ -84,14 +84,14 @@ public class SubscriptionController {
 				map.put(NGSIConstants.JSONLD_CONTEXT, contextLink);
 			}
 		} catch (Exception e) {
-			return Uni.createFrom()
-					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData)));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
+					new ResponseException(ErrorType.BadRequestData), HttpUtils.getTenant(request)));
 		}
 		HeadersMultiMap otherHead = new HeadersMultiMap();
 		if (request.headers().contains(NGSIConstants.TENANT_HEADER)) {
 			otherHead.add(NGSIConstants.TENANT_HEADER, request.headers().get(NGSIConstants.TENANT_HEADER));
 		}
-		
+
 		ViaHeaders viaHeaders = new ViaHeaders(request.headers().getAll(HttpHeaders.VIA), this.selfViaHeader);
 		otherHead.add(NGSIConstants.LINK_HEADER,
 				"<%s>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\""
@@ -102,7 +102,9 @@ public class SubscriptionController {
 							.createSubscription(otherHead, HttpUtils.getTenant(request), tuple.getItem2(),
 									tuple.getItem1(), viaHeaders)
 							.onItem().transform(t -> HttpUtils.generateSubscriptionResult(t, tuple.getItem1()));
-				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+				}).onFailure().recoverWithItem(e -> {
+					return HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request));
+				});
 	}
 
 	@GET
@@ -119,12 +121,12 @@ public class SubscriptionController {
 			actualLimit = limit;
 		}
 		if (actualLimit > maxLimit) {
-			return Uni.createFrom()
-					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.TooManyResults)));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
+					new ResponseException(ErrorType.TooManyResults), HttpUtils.getTenant(request)));
 		}
 		if (offset < 0) {
-			return Uni.createFrom().item(HttpUtils
-					.handleControllerExceptions(new ResponseException(ErrorType.InvalidRequest, "invalid offset")));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
+					new ResponseException(ErrorType.InvalidRequest, "invalid offset"), HttpUtils.getTenant(request)));
 		}
 		return ldService.parse(HttpUtils.getAtContext(request)).onItem().transformToUni(ctx -> {
 			return subService.getAllSubscriptions(HttpUtils.getTenant(request), actualLimit, offset).onItem()
@@ -133,7 +135,9 @@ public class SubscriptionController {
 								actualLimit, null, ctx, ldService, false, microServiceUtils.getGatewayURL().toString(),
 								NGSIConstants.NGSI_LD_SUB_ENDPOINT);
 					});
-		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+		}).onFailure().recoverWithItem(e -> {
+			return HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request));
+		});
 
 	}
 
@@ -148,7 +152,7 @@ public class SubscriptionController {
 		try {
 			HttpUtils.validateUri(subscriptionId);
 		} catch (Exception e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
 		List<Object> contextHeader = HttpUtils.getAtContext(request);
 		return ldService.parse(contextHeader).onItem().transformToUni(context -> {
@@ -157,7 +161,9 @@ public class SubscriptionController {
 						return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, subscription, null,
 								options, null, ldService, null, null);
 					});
-		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+		}).onFailure().recoverWithItem(e -> {
+			return HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request));
+		});
 	}
 
 	@Path("/{id}")
@@ -166,11 +172,12 @@ public class SubscriptionController {
 		try {
 			HttpUtils.validateUri(id);
 		} catch (Exception e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
 		return subService.deleteSubscription(HttpUtils.getTenant(request), id).onItem()
-				.transform(t -> HttpUtils.generateDeleteResult(t)).onFailure()
-				.recoverWithItem(HttpUtils::handleControllerExceptions);
+				.transform(t -> HttpUtils.generateDeleteResult(t)).onFailure().recoverWithItem(e -> {
+					return HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request));
+				});
 
 	}
 
@@ -181,7 +188,7 @@ public class SubscriptionController {
 		try {
 			HttpUtils.validateUri(id);
 		} catch (Exception e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
 		@SuppressWarnings("unchecked")
 		List<String> contexts = (List<String>) map.get("@context");
@@ -200,7 +207,9 @@ public class SubscriptionController {
 							.updateSubscription(HttpUtils.getTenant(request), id, tuple.getItem2(), tuple.getItem1(),
 									viaHeaders)
 							.onItem().transform(t -> HttpUtils.generateSubscriptionResult(t, tuple.getItem1()));
-				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+				}).onFailure().recoverWithItem(e -> {
+					return HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request));
+				});
 
 	}
 }

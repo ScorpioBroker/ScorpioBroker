@@ -130,7 +130,7 @@ public class QueryController {
 							t.getItem3(), false, t.getItem4(), queryResult.getLanguageQueryTerm(), t.getItem5(),
 							ldService, false, false, entityMap, microServiceUtils.getGatewayURL().toString(),
 							NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT);
-				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+				}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 
 	}
 
@@ -180,7 +180,7 @@ public class QueryController {
 							acceptHeader, count, actualLimit, queryResult.getLanguageQueryTerm(), context, ldService,
 							entityMapRetrieve, microServiceUtils.getGatewayURL().toString(),
 							NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT);
-				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+				}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 	}
 
 	@Path("/types")
@@ -208,7 +208,7 @@ public class QueryController {
 									null, null, ldService, null, null);
 						});
 			}
-		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+		}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 
 	}
 
@@ -231,7 +231,7 @@ public class QueryController {
 									null, ldService, null, null);
 						}
 					});
-		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+		}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 
 	}
 
@@ -259,7 +259,7 @@ public class QueryController {
 									null, null, ldService, null, null);
 						});
 			}
-		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+		}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 
 	}
 
@@ -284,7 +284,7 @@ public class QueryController {
 									null, ldService, null, null);
 						}
 					});
-		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+		}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 
 	}
 
@@ -314,7 +314,7 @@ public class QueryController {
 									params.getOmitTerm(), params.getCheckSum(), params.getViaHeaders(), null, false)
 							.onItem().transform(t -> {
 								return HttpUtils.generateEntityMapResult(t.getItem2());
-							}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+							}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 				});
 
 	}
@@ -325,7 +325,7 @@ public class QueryController {
 			@PathParam("entityMapId") String entityMapId) {
 		return queryService.getEntityMap(HttpUtils.getTenant(request), entityMapId).onItem()
 				.transform(entityMap -> HttpUtils.generateEntityMapResult(entityMap)).onFailure()
-				.recoverWithItem(HttpUtils::handleControllerExceptions);
+				.recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 
 	}
 
@@ -350,7 +350,7 @@ public class QueryController {
 
 			return queryService.updateEntityMap(HttpUtils.getTenant(request), entityMapId, expiresAt).onItem()
 					.transform(v -> RestResponse.status(204)).onFailure()
-					.recoverWithItem(HttpUtils::handleControllerExceptions);
+					.recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 
 		});
 

@@ -22,9 +22,11 @@ public class QueryResult {
 	private LanguageQueryTerm languageQueryTerm;
 	private Map<String, Map<String, Object>> flatJoin;
 	private boolean isFlatJoin;
+	private String tenant;
 	
 
-	public QueryResult() {
+	public QueryResult(String tenant) {
+		this.tenant = tenant;
 	}
 
 	public Long getResultsLeftBefore() {
@@ -105,6 +107,14 @@ public class QueryResult {
 
 	public void setIsFlatJoin(boolean isFlatJoin) {
 		this.isFlatJoin = isFlatJoin;
+	}
+
+	public String getTenant() {
+		return tenant;
+	}
+
+	public void setTenant(String tenant) {
+		this.tenant = tenant;
 	}
 
 	

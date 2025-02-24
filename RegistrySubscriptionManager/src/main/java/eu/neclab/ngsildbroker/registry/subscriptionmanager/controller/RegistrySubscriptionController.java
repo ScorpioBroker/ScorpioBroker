@@ -33,7 +33,7 @@ public class RegistrySubscriptionController {
 
 	@Inject
 	MicroServiceUtils microServiceUtils;
-	
+
 	@Inject
 	RegistrySubscriptionService subService;
 
@@ -55,7 +55,8 @@ public class RegistrySubscriptionController {
 					return subService
 							.createSubscription(HttpUtils.getTenant(request), tuple.getItem2(), tuple.getItem1())
 							.onItem().transform(t -> HttpUtils.generateSubscriptionResult(t, tuple.getItem1()));
-				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+				}).onFailure()
+				.recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 	}
 
 	@GET
@@ -72,22 +73,26 @@ public class RegistrySubscriptionController {
 			limitTBU = limit;
 		}
 		if (limitTBU > maxLimit) {
-			return Uni.createFrom()
-					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.TooManyResults)));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
+					new ResponseException(ErrorType.TooManyResults), HttpUtils.getTenant(request)));
 		}
 
 		if (offset < 0 || limitTBU < 1) {
-			return Uni.createFrom().item(HttpUtils
-					.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData, "invalid offset/limit")));
+			return Uni.createFrom()
+					.item(HttpUtils.handleControllerExceptions(
+							new ResponseException(ErrorType.BadRequestData, "invalid offset/limit"),
+							HttpUtils.getTenant(request)));
 		}
 		return ldService.parse(HttpUtils.getAtContext(request)).onItem().transformToUni(ctx -> {
 			return subService.getAllSubscriptions(HttpUtils.getTenant(request), limitTBU, offset).onItem()
 					.transformToUni(subscriptions -> {
 						return HttpUtils.generateQueryResult(request, subscriptions, options, null, acceptHeader, false,
-								acceptHeader, null, ctx, ldService, false, microServiceUtils.getGatewayURL().toString(), NGSIConstants.NGSI_LD_REGISTRY_SUB_ENDPOINT);
-					}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+								acceptHeader, null, ctx, ldService, false, microServiceUtils.getGatewayURL().toString(),
+								NGSIConstants.NGSI_LD_REGISTRY_SUB_ENDPOINT);
+					}).onFailure()
+					.recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 
-		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+		}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 
 	}
 
@@ -102,16 +107,16 @@ public class RegistrySubscriptionController {
 		try {
 			HttpUtils.validateUri(subscriptionId);
 		} catch (Exception e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
 		List<Object> contextHeader = HttpUtils.getAtContext(request);
 		return ldService.parse(contextHeader).onItem().transformToUni(context -> {
 			return subService.getSubscription(HttpUtils.getTenant(request), subscriptionId).onItem()
 					.transformToUni(subscription -> {
 						return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, subscription, null,
-								options, null, ldService,null,null);
+								options, null, ldService, null, null);
 					});
-		}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+		}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 
 	}
 
@@ -121,11 +126,11 @@ public class RegistrySubscriptionController {
 		try {
 			HttpUtils.validateUri(id);
 		} catch (Exception e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
 		return subService.deleteSubscription(HttpUtils.getTenant(request), id).onItem()
 				.transform(t -> HttpUtils.generateDeleteResult(t)).onFailure()
-				.recoverWithItem(HttpUtils::handleControllerExceptions);
+				.recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 
 	}
 
@@ -136,14 +141,15 @@ public class RegistrySubscriptionController {
 		try {
 			HttpUtils.validateUri(id);
 		} catch (Exception e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
 		return HttpUtils.expandBody(request, payload, AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD, ldService).onItem()
 				.transformToUni(tuple -> {
 					return subService
 							.updateSubscription(HttpUtils.getTenant(request), id, tuple.getItem2(), tuple.getItem1())
 							.onItem().transform(t -> HttpUtils.generateSubscriptionResult(t, tuple.getItem1()));
-				}).onFailure().recoverWithItem(HttpUtils::handleControllerExceptions);
+				}).onFailure()
+				.recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 
 	}
 
