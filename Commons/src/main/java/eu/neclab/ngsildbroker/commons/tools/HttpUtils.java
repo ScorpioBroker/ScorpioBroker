@@ -411,7 +411,7 @@ public final class HttpUtils {
 
 	public static RestResponse<Object> generateUpdateResultResponse(NGSILDOperationResult updateResult) {
 		if (updateResult.getFailures().isEmpty()) {
-			ResponseBuilder<Object> builder = new RestResponseBuilderImpl<Object>().status(201);
+			ResponseBuilder<Object> builder = new RestResponseBuilderImpl<Object>().status(204);
 			if (!updateResult.getTenant().equals(AppConstants.INTERNAL_NULL_KEY)) {
 				builder = builder.header(NGSIConstants.TENANT_HEADER, updateResult.getTenant());
 			}
