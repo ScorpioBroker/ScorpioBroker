@@ -975,7 +975,7 @@ public final class HttpUtils {
 	}
 
 	public static RestResponse<Object> generateDeleteResult(NGSILDOperationResult result) {
-		ResponseBuilder<Object> builder = new RestResponseBuilderImpl<Object>().status(200);
+		ResponseBuilder<Object> builder = new RestResponseBuilderImpl<Object>().status(204);
 		if (!result.getTenant().equals(AppConstants.INTERNAL_NULL_KEY)) {
 			builder = builder.header(NGSIConstants.TENANT_HEADER, result.getTenant());
 		}
