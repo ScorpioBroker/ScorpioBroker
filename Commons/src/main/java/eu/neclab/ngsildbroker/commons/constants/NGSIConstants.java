@@ -556,5 +556,6 @@ public interface NGSIConstants {
 	public static final String OBJECTSLISTS = "objectsLists";
 	public static final String LANGUAGEMAPS = "languageMaps";
 	public static final String JSONS = "jsons";
+	public static final String ENTITY_ID = "entityId";
 
 }

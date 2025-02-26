@@ -288,7 +288,9 @@ public final class HttpUtils {
 		builder.append("offset=" + offset);
 		builder.append("&limit=" + limit);
 		// builder.append("&entityMap=" + token);
-		builder.append(">;rel=\"" + rel + "\"");
+		builder.append(">;rel=\"");
+		builder.append(rel);
+		builder.append("\";type=\"application/ld+json\"");
 		return builder.toString();
 	}
 
@@ -901,7 +903,7 @@ public final class HttpUtils {
 			if (!r.getFailures().isEmpty()) {
 				Map<String, Object> error = r.getJson();
 				Map<String, Object> failure = ((List<Map<String, Object>>) error.get("failure")).get(0);
-				error.put("ProblemDetails", failure);
+				error.put("error", failure);
 				error.remove("failure");
 				errors.add(error);
 				allConflict = allConflict && failure.get(NGSIConstants.STATUS).equals(409);
@@ -1159,7 +1161,7 @@ public final class HttpUtils {
 						myBuilder = myBuilder.header(entry.getItem1(), entry.getItem2());
 					}
 					if (!queryResult.getTenant().equals(AppConstants.INTERNAL_NULL_KEY)) {
-						myBuilder.header(NGSIConstants.TENANT_HEADER, queryResult.getTenant());
+						myBuilder = myBuilder.header(NGSIConstants.TENANT_HEADER, queryResult.getTenant());
 					}
 					Object result = resultAndHeaders.getItem1();
 					return myBuilder.entity(result).build();

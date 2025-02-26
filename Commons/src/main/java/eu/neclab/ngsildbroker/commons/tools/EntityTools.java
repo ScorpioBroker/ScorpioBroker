@@ -663,7 +663,7 @@ public final class EntityTools {
 					if (type != null) {
 						tmp.put(NGSIConstants.TYPE, type);
 					}
-					if (id != null) {
+					if (idPattern != null) {
 						tmp.put(NGSIConstants.QUERY_PARAMETER_IDPATTERN, idPattern);
 					}
 					entities.add(tmp);
@@ -677,7 +677,7 @@ public final class EntityTools {
 				batchBody.putAll(queryParams);
 			}
 			HttpRequest<Buffer> req = webClient.postAbs(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_QUERY).timeout(timeout);
-			req = req.setQueryParam("limit", "1000");
+			req = req.setQueryParam("limit", "100");
 			req = req.setQueryParam("options", "sysAttrs");
 			req = req.putHeader(HttpHeaders.VIA, remoteHost.getViaHeaders().getViaHeaders());
 			String batchString;
@@ -738,7 +738,7 @@ public final class EntityTools {
 				for (Entry<String, String> param : remoteHost.getQueryParam().entrySet()) {
 					req = req.setQueryParam(param.getKey(), (String) param.getValue());
 				}
-				req = req.setQueryParam("limit", "1000");
+				req = req.setQueryParam("limit", "100");
 				req = req.setQueryParam("options", "sysAttrs");
 				req = req.putHeader(HttpHeaders.VIA, remoteHost.getViaHeaders().getViaHeaders());
 				// <https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json>;

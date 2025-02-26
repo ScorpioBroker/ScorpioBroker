@@ -147,10 +147,14 @@ public class QueryInfos {
 		if (idPattern != null) {
 			result.put("idPattern", idPattern);
 		}
-		if (!types.isEmpty() && typeQuery != null) {
-			StringBuilder tmp = new StringBuilder();
-			typeQuery.toRequestString(tmp, context);
-			result.put("type", tmp.toString());
+		if (!types.isEmpty() || typeQuery != null) {
+			if (typeQuery != null) {
+				StringBuilder tmp = new StringBuilder();
+				typeQuery.toRequestString(tmp, context);
+				result.put("type", tmp.toString());
+			} else {
+				result.put("type", String.join(",", types));
+			}
 		}
 		if (!attrs.isEmpty()) {
 			StringBuilder tmp = new StringBuilder();
@@ -170,7 +174,7 @@ public class QueryInfos {
 		}
 		if (geo != null && geoQuery != null) {
 			Map<String, Object> tmp = Maps.newHashMap();
-			geoQuery.addToRequestParams(tmp , geo, geoQuery.getGeorel());
+			geoQuery.addToRequestParams(tmp, geo, geoQuery.getGeorel());
 			tmp.entrySet().forEach(entry -> {
 				result.put(entry.getKey(), (String) entry.getValue());
 			});
