@@ -661,7 +661,7 @@ public final class EntityTools {
 						tmp.put(NGSIConstants.ID, id);
 					}
 					if (type != null) {
-						tmp.put(NGSIConstants.TYPE, type);
+						tmp.put(NGSIConstants.TYPE, remoteHost.context().compactIri(type));
 					}
 					if (idPattern != null) {
 						tmp.put(NGSIConstants.QUERY_PARAMETER_IDPATTERN, idPattern);
@@ -732,7 +732,7 @@ public final class EntityTools {
 					req = req.setQueryParam(NGSIConstants.ID, id);
 				}
 				if (type != null) {
-					req = req.setQueryParam(NGSIConstants.TYPE, type);
+					req = req.setQueryParam(NGSIConstants.TYPE, remoteHost.context().compactIri(type));
 				}
 				if (idPattern != null) {
 					req = req.setQueryParam(NGSIConstants.QUERY_PARAMETER_IDPATTERN, idPattern);
