@@ -829,6 +829,9 @@ class NGSIObject {
 			if (!(atValue instanceof String)) {
 				throw new ResponseException(ErrorType.BadRequestData, "Invalid value for GeoProperty");
 			}
+			if(atValue.equals(NGSIConstants.NGSI_LD_NULL)) {
+				return;
+			}
 			ObjectMapper mapper = new ObjectMapper();
 
 			try {
