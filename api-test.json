@@ -37552,7 +37552,7 @@
 															"script": {
 																"exec": [
 																	"let nextLink = pm.response.headers.filter(header => header.key === \"Link\")[0][\"value\"];\r",
-																	"nextLink = nextLink.substring(1, nextLink.length -12);\r",
+																	"nextLink = nextLink.substring(1, nextLink.length -39);\r",
 																	"\r",
 																	"console.log(nextLink);\r",
 																	"pm.collectionVariables.set(\"nextLink\", nextLink);\r",
@@ -37720,7 +37720,7 @@
 															"script": {
 																"exec": [
 																	"let nextLink = pm.response.headers.filter(header => header.key === \"Link\")[0][\"value\"];\r",
-																	"nextLink = nextLink.substring(1, nextLink.length -12);\r",
+																	"nextLink = nextLink.substring(1, nextLink.length -39);\r",
 																	"\r",
 																	"console.log(nextLink);\r",
 																	"pm.collectionVariables.set(\"nextLink\", nextLink);\r",
@@ -37839,7 +37839,7 @@
 															"script": {
 																"exec": [
 																	"let nextLink = pm.response.headers.filter(header => header.key === \"Link\")[0][\"value\"];\r",
-																	"nextLink = nextLink.substring(1, nextLink.length -12);\r",
+																	"nextLink = nextLink.substring(1, nextLink.length -39);\r",
 																	"\r",
 																	"console.log(nextLink);\r",
 																	"pm.collectionVariables.set(\"nextLink\", nextLink);\r",
@@ -37970,7 +37970,7 @@
 															"script": {
 																"exec": [
 																	"let nextLink = pm.response.headers.filter(header => header.key === \"Link\")[0][\"value\"];\r",
-																	"nextLink = nextLink.substring(1, nextLink.length -12);\r",
+																	"nextLink = nextLink.substring(1, nextLink.length -39);\r",
 																	"\r",
 																	"console.log(nextLink);\r",
 																	"pm.collectionVariables.set(\"nextLink\", nextLink);\r",
@@ -38089,7 +38089,7 @@
 															"script": {
 																"exec": [
 																	"let nextLink = pm.response.headers.filter(header => header.key === \"Link\")[0][\"value\"];\r",
-																	"nextLink = nextLink.substring(1, nextLink.length -12);\r",
+																	"nextLink = nextLink.substring(1, nextLink.length -39);\r",
 																	"\r",
 																	"console.log(nextLink);\r",
 																	"pm.collectionVariables.set(\"nextLink\", nextLink);\r",
@@ -38208,7 +38208,7 @@
 															"script": {
 																"exec": [
 																	"let nextLink = pm.response.headers.filter(header => header.key === \"Link\")[0][\"value\"];\r",
-																	"nextLink = nextLink.substring(1, nextLink.length -12);\r",
+																	"nextLink = nextLink.substring(1, nextLink.length -39);\r",
 																	"\r",
 																	"console.log(nextLink);\r",
 																	"pm.collectionVariables.set(\"nextLink\", nextLink);\r",
@@ -38331,7 +38331,7 @@
 															"script": {
 																"exec": [
 																	"let nextLink = pm.response.headers.filter(header => header.key === \"Link\")[0][\"value\"];\r",
-																	"nextLink = nextLink.substring(1, nextLink.length -12);\r",
+																	"nextLink = nextLink.substring(1, nextLink.length -39);\r",
 																	"\r",
 																	"console.log(nextLink);\r",
 																	"pm.collectionVariables.set(\"nextLink\", nextLink);\r",
@@ -38474,7 +38474,7 @@
 															"script": {
 																"exec": [
 																	"let nextLink = pm.response.headers.filter(header => header.key === \"Link\")[0][\"value\"];\r",
-																	"nextLink = nextLink.substring(1, nextLink.length -12);\r",
+																	"nextLink = nextLink.substring(1, nextLink.length -39);\r",
 																	"\r",
 																	"console.log(nextLink);\r",
 																	"pm.collectionVariables.set(\"nextLink\", nextLink);\r",
@@ -38593,7 +38593,7 @@
 															"script": {
 																"exec": [
 																	"let nextLink = pm.response.headers.filter(header => header.key === \"Link\")[0][\"value\"];\r",
-																	"nextLink = nextLink.substring(1, nextLink.length -12);\r",
+																	"nextLink = nextLink.substring(1, nextLink.length -39);\r",
 																	"\r",
 																	"console.log(nextLink);\r",
 																	"pm.collectionVariables.set(\"nextLink\", nextLink);\r",
@@ -52499,7 +52499,7 @@
 															"script": {
 																"exec": [
 																	"let nextLink = pm.response.headers.filter(header => header.key === \"Link\")[0][\"value\"];\r",
-																	"nextLink = nextLink.substring(1, nextLink.length -12);\r",
+																	"nextLink = nextLink.substring(1, nextLink.length -39);\r",
 																	"\r",
 																	"console.log(nextLink);\r",
 																	"pm.collectionVariables.set(\"nextLink\", nextLink);\r",
@@ -52667,7 +52667,7 @@
 															"script": {
 																"exec": [
 																	"let nextLink = pm.response.headers.filter(header => header.key === \"Link\")[0][\"value\"];\r",
-																	"nextLink = nextLink.substring(1, nextLink.length -12);\r",
+																	"nextLink = nextLink.substring(1, nextLink.length -39);\r",
 																	"\r",
 																	"console.log(nextLink);\r",
 																	"pm.collectionVariables.set(\"nextLink\", nextLink);\r",
@@ -52786,7 +52786,7 @@
 															"script": {
 																"exec": [
 																	"let nextLink = pm.response.headers.filter(header => header.key === \"Link\")[0][\"value\"];\r",
-																	"nextLink = nextLink.substring(1, nextLink.length -12);\r",
+																	"nextLink = nextLink.substring(1, nextLink.length -39);\r",
 																	"\r",
 																	"console.log(nextLink);\r",
 																	"pm.collectionVariables.set(\"nextLink\", nextLink);\r",
@@ -52917,7 +52917,7 @@
 															"script": {
 																"exec": [
 																	"let nextLink = pm.response.headers.filter(header => header.key === \"Link\")[0][\"value\"];\r",
-																	"nextLink = nextLink.substring(1, nextLink.length -12);\r",
+																	"nextLink = nextLink.substring(1, nextLink.length -39);\r",
 																	"\r",
 																	"console.log(nextLink);\r",
 																	"pm.collectionVariables.set(\"nextLink\", nextLink);\r",
@@ -53036,7 +53036,7 @@
 															"script": {
 																"exec": [
 																	"let nextLink = pm.response.headers.filter(header => header.key === \"Link\")[0][\"value\"];\r",
-																	"nextLink = nextLink.substring(1, nextLink.length -12);\r",
+																	"nextLink = nextLink.substring(1, nextLink.length -39);\r",
 																	"\r",
 																	"console.log(nextLink);\r",
 																	"pm.collectionVariables.set(\"nextLink\", nextLink);\r",
@@ -53155,7 +53155,7 @@
 															"script": {
 																"exec": [
 																	"let nextLink = pm.response.headers.filter(header => header.key === \"Link\")[0][\"value\"];\r",
-																	"nextLink = nextLink.substring(1, nextLink.length -12);\r",
+																	"nextLink = nextLink.substring(1, nextLink.length -39);\r",
 																	"\r",
 																	"console.log(nextLink);\r",
 																	"pm.collectionVariables.set(\"nextLink\", nextLink);\r",
@@ -53278,7 +53278,7 @@
 															"script": {
 																"exec": [
 																	"let nextLink = pm.response.headers.filter(header => header.key === \"Link\")[0][\"value\"];\r",
-																	"nextLink = nextLink.substring(1, nextLink.length -12);\r",
+																	"nextLink = nextLink.substring(1, nextLink.length -39);\r",
 																	"\r",
 																	"console.log(nextLink);\r",
 																	"pm.collectionVariables.set(\"nextLink\", nextLink);\r",
@@ -53421,7 +53421,7 @@
 															"script": {
 																"exec": [
 																	"let nextLink = pm.response.headers.filter(header => header.key === \"Link\")[0][\"value\"];\r",
-																	"nextLink = nextLink.substring(1, nextLink.length -12);\r",
+																	"nextLink = nextLink.substring(1, nextLink.length -39);\r",
 																	"\r",
 																	"console.log(nextLink);\r",
 																	"pm.collectionVariables.set(\"nextLink\", nextLink);\r",
@@ -53540,7 +53540,7 @@
 															"script": {
 																"exec": [
 																	"let nextLink = pm.response.headers.filter(header => header.key === \"Link\")[0][\"value\"];\r",
-																	"nextLink = nextLink.substring(1, nextLink.length -12);\r",
+																	"nextLink = nextLink.substring(1, nextLink.length -39);\r",
 																	"\r",
 																	"console.log(nextLink);\r",
 																	"pm.collectionVariables.set(\"nextLink\", nextLink);\r",
@@ -94321,6 +94321,18 @@
 		},
 		{
 			"key": "entityId",
+			"value": ""
+		},
+		{
+			"key": "nextLink",
+			"value": ""
+		},
+		{
+			"key": "entityMapHeader",
+			"value": ""
+		},
+		{
+			"key": "nextlink",
 			"value": ""
 		}
 	]
