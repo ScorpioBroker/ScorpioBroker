@@ -692,10 +692,13 @@ public final class EntityTools {
 			if(!remoteHost.headers().contains(HttpHeaders.ACCEPT)) {
 				req = req.putHeader(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSON);
 			}
-			
+			logger.debug("calling batch query on " + remoteHost.host());
+			logger.debug(batchString);
 			unis.add(req.putHeaders(remoteHost.headers()).sendBuffer(Buffer.buffer(batchString))
 					.onItem().transformToUni(response -> {
 						if (response != null) {
+							logger.debug(response.statusCode() + "");
+							logger.debug(response.bodyAsString());
 							switch (response.statusCode()) {
 							case 200: {
 								return handle200(webClient, remoteHost, response, ldService, timeout);
@@ -755,10 +758,15 @@ public final class EntityTools {
 				if(!remoteHost.headers().contains(HttpHeaders.ACCEPT)) {
 					req = req.putHeader(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSON);
 				}
+				logger.debug("calling query on " + remoteHost.host());
+				logger.debug(req.queryParams().toString());
+				
 				unis.add(req.putHeaders(remoteHost.headers()).timeout(timeout).send().onItem()
 						.transformToUni(response -> {
-
+							
 							if (response != null) {
+								logger.debug(response.statusCode() + "");
+								logger.debug(response.bodyAsString());
 								switch (response.statusCode()) {
 								case 200: {
 									return handle200(webClient, remoteHost, response, ldService, timeout);
