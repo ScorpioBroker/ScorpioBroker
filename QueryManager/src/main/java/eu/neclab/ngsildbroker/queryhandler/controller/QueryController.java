@@ -311,7 +311,7 @@ public class QueryController {
 									params.getGeoQueryTerm(), params.getqQueryTerm(), params.getScopeQueryTerm(),
 									params.getLanguageQueryTerm(), 1, 0, params.getContext(), request.headers(), false,
 									params.getDataSetIdTerm(), null, -1, distEntities, params.getPickTerm(),
-									params.getOmitTerm(), params.getCheckSum(), params.getViaHeaders(), null, false)
+									params.getOmitTerm(), params.getCheckSum(), params.getViaHeaders(), null, false, true)
 							.onItem().transform(t -> {
 								return HttpUtils.generateEntityMapResult(t.getItem2());
 							}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));

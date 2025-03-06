@@ -1108,7 +1108,7 @@ public class QueryDAO {
 			DataSetIdTerm dataSetIdTerm, String join, int joinLevel, String qToken, PickTerm pickTerm,
 			OmitTerm omitTerm, String queryChecksum, boolean splitEntities,
 			boolean regEmptyOrNoRegEntryAndNoLinkedQuery, boolean noRootLevelRegEntryAndLinkedQuery, String typePattern,
-			boolean localOnly) {
+			boolean localOnly, boolean forceEntitymapCreation) {
 
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
 			StringBuilder query = new StringBuilder();
@@ -1123,7 +1123,7 @@ public class QueryDAO {
 
 			boolean doJoin = (join != null && joinLevel > 0);
 			query.append("WITH a as (SELECT ID");
-			if (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery || localOnly) {
+			if (!forceEntitymapCreation && (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery || localOnly)) {
 				query.append(", count(*) over() as list_size");
 			}
 			query.append(" FROM ENTITY WHERE ");
@@ -1316,7 +1316,7 @@ public class QueryDAO {
 			}
 			query.append(" ORDER BY createdAt");
 			char sourceForEntities;
-			if (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery || localOnly) {
+			if (!forceEntitymapCreation && (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery || localOnly)) {
 				query.append(" limit $");
 				query.append(dollar);
 				tuple.addInteger(limit);
@@ -1391,7 +1391,7 @@ public class QueryDAO {
 				queryToStoreFinalSelectPart.append(" UNION ALL (SELECT * FROM JOINENTITIES)");
 			}
 			String qTokenTBU;
-			if (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery || localOnly) {
+			if (!forceEntitymapCreation && (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery || localOnly)) {
 				query.append(
 						", c as (SELECT jsonb_build_object('entityMap', jsonb_agg(jsonb_build_object(id, jsonb_build_array('");
 				query.append(NGSIConstants.JSON_LD_NONE);
@@ -1487,7 +1487,9 @@ public class QueryDAO {
 
 	private Tuple2<EntityCache, EntityMap> putQueryResultIntoMapAndCache(RowSet<Row> rows, String qToken) {
 		EntityCache resultEntities = new EntityCache();
-
+		if(rows.size() == 0) {
+			return Tuple2.of(resultEntities, new EntityMap(null, false, false, false));
+		}
 		RowIterator<Row> it = rows.iterator();
 		Row first = it.next();
 		EntityMap resultEntityMap = EntityMap.fromJson(qToken, first.getJsonObject(4), objectMapper);
