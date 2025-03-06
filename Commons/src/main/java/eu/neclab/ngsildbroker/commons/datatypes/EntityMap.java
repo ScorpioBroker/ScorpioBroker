@@ -286,7 +286,7 @@ public class EntityMap {
 		return expiresAt;
 	}
 	
-	public void getExpiresAt(long expiresAt) {
+	public void setExpiresAt(long expiresAt) {
 		this.expiresAt = expiresAt;
 	}
 

@@ -124,10 +124,11 @@ public class QueryService implements CSourceHandler {
 			io.vertx.core.MultiMap headersFromReq, boolean doNotCompact, Set<String> jsonKeys,
 			DataSetIdTerm dataSetIdTerm, String join, int joinLevel, boolean entityDist, PickTerm pickTerm,
 			OmitTerm omitTerm, String checkSum, ViaHeaders viaHeaders, String typePattern) {
-		if (!tokenProvided) {
+		if (!tokenProvided || AppConstants.ENTITYMAP_IGNORE.equals(qToken)) {
 			return getAndStoreEntityMap(tenant, qToken, idsAndTypeQueryAndIdPattern, attrsQuery, geoQuery, qQuery,
 					scopeQuery, langQuery, limit, offSet, context, headersFromReq, doNotCompact, dataSetIdTerm, join,
-					joinLevel, entityDist, pickTerm, omitTerm, checkSum, viaHeaders, typePattern, localOnly).onItem().transformToUni(t -> {
+					joinLevel, entityDist, pickTerm, omitTerm, checkSum, viaHeaders, typePattern, localOnly).onItem()
+					.transformToUni(t -> {
 						return handleEntityMap(t.getItem2(), t.getItem1(), tenant, idsAndTypeQueryAndIdPattern,
 								attrsQuery, qQuery, geoQuery, scopeQuery, langQuery, limit, offSet, count,
 								dataSetIdTerm, join, joinLevel, context, jsonKeys, headersFromReq, pickTerm, omitTerm,
@@ -243,8 +244,12 @@ public class QueryService implements CSourceHandler {
 		}
 		result.setResultsLeftAfter(leftAfter);
 		result.setResultsLeftBefore((long) offSet);
-		Stream<Entry<String, Set<String>>> subMap = entityMap.getEntityId2CSourceIds().entrySet().stream().skip(offSet)
-				.limit(limit);
+		Stream<Entry<String, Set<String>>> subMap;
+		if (AppConstants.ENTITYMAP_IGNORE.equals(entityMap.getId())) {
+			subMap = entityMap.getEntityId2CSourceIds().entrySet().stream();
+		} else {
+			subMap = entityMap.getEntityId2CSourceIds().entrySet().stream().skip(offSet).limit(limit);
+		}
 
 		// no registry entries just push out the result
 		boolean isFlatJoin = NGSIConstants.FLAT.equals(join);
@@ -252,7 +257,7 @@ public class QueryService implements CSourceHandler {
 		if (entityMap.isRegEmptyOrNoRegEntryAndNoLinkedQuery()) {
 
 			subMap.forEach(id2Hosts -> {
-				//String id = id2Hosts.getKey();
+				// String id = id2Hosts.getKey();
 				if (isFlatJoin) {
 					resultData.add(entityCache.remove(id2Hosts.getKey()).getItem1());
 				} else {
@@ -838,7 +843,6 @@ public class QueryService implements CSourceHandler {
 
 	}
 
-	
 	private void addTypes2IdsFromAttr(Object attrValueListObj, Map<Set<String>, Set<String>> result,
 			Set<String> typeFilter) {
 		if (attrValueListObj != null && attrValueListObj instanceof List<?> l) {
@@ -1137,7 +1141,6 @@ public class QueryService implements CSourceHandler {
 
 	}
 
-	
 	public Uni<List<Map<String, Object>>> getTypesWithDetail(String tenant, boolean localOnly,
 			io.vertx.core.MultiMap headersFromReq) {
 		Uni<List<Map<String, Object>>> local = queryDAO.getTypesWithDetails(tenant);
@@ -1722,11 +1725,13 @@ public class QueryService implements CSourceHandler {
 				if ((join == null || joinLevel <= 0) && (qQuery == null || !qQuery.hasLinkedQ()) && !localOnly) {
 					return queryDAO.createEntityMapAndFillEntityCache(tenant, idsAndTypeQueryAndIdPattern, attrsQuery,
 							qQuery, geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel,
-							qToken, pickTerm, omitTerm, queryCechksum, splitEntities, true, false, typePattern, localOnly);
+							qToken, pickTerm, omitTerm, queryCechksum, splitEntities, true, false, typePattern,
+							localOnly);
 				} else {
 					return queryDAO.createEntityMapAndFillEntityCache(tenant, idsAndTypeQueryAndIdPattern, attrsQuery,
 							qQuery, geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel,
-							qToken, pickTerm, omitTerm, queryCechksum, splitEntities, false, true, typePattern, localOnly);
+							qToken, pickTerm, omitTerm, queryCechksum, splitEntities, false, true, typePattern,
+							localOnly);
 				}
 			} else {
 				Uni<Tuple2<EntityCache, EntityMap>> localEntityCacheAndEntityMap = queryDAO
@@ -1752,7 +1757,8 @@ public class QueryService implements CSourceHandler {
 							String type = tpl.getItem2();
 							String idPattern = tpl.getItem3();
 							HttpRequest<Buffer> req = webClient
-									.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITY_MAP_ENDPOINT).timeout(timeout);
+									.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITY_MAP_ENDPOINT)
+									.timeout(timeout);
 							if (id != null) {
 								req = req.setQueryParam(NGSIConstants.ID, id);
 							}

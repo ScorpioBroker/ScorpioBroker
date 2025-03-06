@@ -213,6 +213,7 @@ public class AppConstants {
 	public static final String SSL_KEY = "key";
 	public static final String SSL_CERT = "cert";
 	public static final String SSL_TRUST_ALL = "trustAll";
+	public static final String ENTITYMAP_IGNORE = "ngsi-ld:scorpio:ignore";
 
 
 

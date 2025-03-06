@@ -741,8 +741,8 @@ public class QueryDAO {
 			dollarCount = qQuery.toSql(query, dollarCount, tuple, false, true);
 		}
 		String sql = query.toString();
-		//logger.debug("SQL Request: " + sql);
-		//logger.debug("Tuple: " + tuple.deepToString());
+		// logger.debug("SQL Request: " + sql);
+		// logger.debug("Tuple: " + tuple.deepToString());
 		try {
 			logger.debug(JsonUtils.toPrettyString(types2EntityIds));
 		} catch (JsonGenerationException e) {
@@ -934,7 +934,7 @@ public class QueryDAO {
 				query.append(", ARRAY_AGG(E_TYPES ->> '");
 				query.append(NGSIConstants.JSON_LD_ID);
 				query.append("') AS ET");
-			}else {
+			} else {
 				query.append(", null AS ET");
 			}
 			query.append(" FROM B");
@@ -957,9 +957,9 @@ public class QueryDAO {
 			query.append(NGSIConstants.JSON_LD_LIST);
 			query.append("}' ELSE null END) AS Z");
 //			if (!localOnly) {
-				query.append(", JSONB_ARRAY_ELEMENTS(Y -> '");
-				query.append(NGSIConstants.NGSI_LD_OBJECT_TYPE);
-				query.append("') AS E_TYPES");
+			query.append(", JSONB_ARRAY_ELEMENTS(Y -> '");
+			query.append(NGSIConstants.NGSI_LD_OBJECT_TYPE);
+			query.append("') AS E_TYPES");
 //			} else {
 //				query.append(", null AS E_TYPES");
 //			}
@@ -1020,10 +1020,10 @@ public class QueryDAO {
 			followUp.append(",0,");
 			followUp.append(NGSIConstants.JSON_LD_ID);
 			followUp.append("}'' ELSE NULL END) AS LINK");
-			//if (!localOnly) {
-				followUp.append(", ARRAY_AGG(E_TYPES ->> ''");
-				followUp.append(NGSIConstants.JSON_LD_ID);
-				followUp.append("'') AS ET");
+			// if (!localOnly) {
+			followUp.append(", ARRAY_AGG(E_TYPES ->> ''");
+			followUp.append(NGSIConstants.JSON_LD_ID);
+			followUp.append("'') AS ET");
 //			} else {
 //				followUp.append(", null AS ET");
 //			}
@@ -1309,18 +1309,34 @@ public class QueryDAO {
 			}
 			char[] checkArray = new char[AppConstants.CHAR_ARRAY_WHERE.length];
 			query.getChars(query.length() - checkArray.length, query.length(), checkArray, 0);
-			if(Arrays.equals(checkArray, AppConstants.CHAR_ARRAY_WHERE)) {
+			if (Arrays.equals(checkArray, AppConstants.CHAR_ARRAY_WHERE)) {
 				query.setLength(query.length() - checkArray.length);
 			}
-			query.append(" ORDER BY createdAt), b as (SELECT a.ID FROM a limit $");
-			query.append(dollar);
-			tuple.addInteger(limit);
-			dollar++;
-			query.append(" offset $");
-			query.append(dollar);
-			tuple.addInteger(offset);
-			dollar++;
-			query.append("), ");
+			query.append(" ORDER BY createdAt");
+			char sourceForEntities;
+			if (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery || localOnly) {
+				query.append(" limit $");
+				query.append(dollar);
+				tuple.addInteger(limit);
+				dollar++;
+				query.append(" offset $");
+				query.append(dollar);
+				tuple.addInteger(offset);
+				dollar++;
+				query.append("), ");
+				sourceForEntities = 'a';
+			} else {
+				query.append("), b as (SELECT a.ID FROM a limit $");
+				query.append(dollar);
+				tuple.addInteger(limit);
+				dollar++;
+				query.append(" offset $");
+				query.append(dollar);
+				tuple.addInteger(offset);
+				dollar++;
+				query.append("), ");
+				sourceForEntities = 'b';
+			}
 
 			query.append("D0 as (SELECT ENTITY.ID, ");
 			queryToStoreSelectPart.append("D0 as (SELECT ENTITY.ID, ");
@@ -1345,8 +1361,12 @@ public class QueryDAO {
 				query.append("ENTITY.ENTITY");
 				queryToStoreSelectPart.append("ENTITY.ENTITY");
 			}
-			query.append(
-					" as ENTITY, TRUE as PARENT, ENTITY.E_TYPES AS E_TYPES, null::jsonb FROM b left join ENTITY on b.ID = ENTITY.ID");
+			query.append(" as ENTITY, TRUE as PARENT, ENTITY.E_TYPES AS E_TYPES, null::jsonb FROM ");
+			query.append(sourceForEntities);
+			query.append(" left join ENTITY on ");
+			query.append(sourceForEntities);
+			query.append(".ID = ENTITY.ID");
+
 			queryToStoreSelectPart.append(" as ENTITY, TRUE as PARENT, ENTITY.E_TYPES AS E_TYPES, null::jsonb");
 			if (regEmptyOrNoRegEntryAndNoLinkedQuery) {
 				queryToStoreSelectPart.append(", a.ordinality");
@@ -1368,49 +1388,59 @@ public class QueryDAO {
 			if (doJoin) {
 				queryToStoreFinalSelectPart.append(" UNION ALL (SELECT * FROM JOINENTITIES)");
 			}
-			query.append(", c as (INSERT INTO entitymap (SELECT $");
-			query.append(dollar);
-			dollar++;
-			tuple.addString(qToken);
-			query.append(", now() + interval '");
-			query.append(entityMapTTL);
+			String qTokenTBU;
+			if (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery || localOnly) {
+				query.append(
+						", c as (SELECT jsonb_build_object('entityMap', jsonb_agg(jsonb_build_object(id, jsonb_build_array('");
+				query.append(NGSIConstants.JSON_LD_NONE);
+				query.append("'))) from a)");
+				qTokenTBU = AppConstants.ENTITYMAP_IGNORE;
+			} else {
+				qTokenTBU = qToken;
+				query.append(", c as (INSERT INTO entitymap (SELECT $");
+				query.append(dollar);
+				dollar++;
+				tuple.addString(qToken);
+				query.append(", now() + interval '");
+				query.append(entityMapTTL);
 
-			query.append(
-					"',now(), jsonb_build_object('entityMap', jsonb_agg(jsonb_build_object(id, jsonb_build_array('");
-			query.append(NGSIConstants.JSON_LD_NONE);
-			query.append("'))), 'splitEntities', $");
-			query.append(dollar);
-			dollar++;
-			tuple.addBoolean(splitEntities);
-			query.append("::boolean, 'regEmptyOrNoRegEntryAndNoLinkedQuery', $");
-			query.append(dollar);
-			dollar++;
-			tuple.addBoolean(regEmptyOrNoRegEntryAndNoLinkedQuery);
-			query.append("::boolean, 'noRootLevelRegEntryAndLinkedQuery', $");
-			query.append(dollar);
-			dollar++;
-			tuple.addBoolean(noRootLevelRegEntryAndLinkedQuery);
-			query.append("::boolean, 'checkSum', $");
+				query.append(
+						"',now(), jsonb_build_object('entityMap', jsonb_agg(jsonb_build_object(id, jsonb_build_array('");
+				query.append(NGSIConstants.JSON_LD_NONE);
+				query.append("'))), 'splitEntities', $");
+				query.append(dollar);
+				dollar++;
+				tuple.addBoolean(splitEntities);
+				query.append("::boolean, 'regEmptyOrNoRegEntryAndNoLinkedQuery', $");
+				query.append(dollar);
+				dollar++;
+				tuple.addBoolean(regEmptyOrNoRegEntryAndNoLinkedQuery);
+				query.append("::boolean, 'noRootLevelRegEntryAndLinkedQuery', $");
+				query.append(dollar);
+				dollar++;
+				tuple.addBoolean(noRootLevelRegEntryAndLinkedQuery);
+				query.append("::boolean, 'checkSum', $");
 
-			query.append(dollar);
-			dollar++;
-			tuple.addString(queryChecksum);
-			query.append("::text, 'wherePart', '");
-			query.append(queryToStoreWherePart.toString());
-			query.append("', 'selectPart', '");
-			query.append(queryToStoreSelectPart.toString());
-			query.append("', 'finalselect', '");
-			query.append(queryToStoreFinalSelectPart.toString());
-			query.append("', 'queryParams', '");
-			try {
-				query.append(objectMapper.writeValueAsString(queryParams));
-			} catch (Exception e1) {
-				logger.error("Failed to serialize query.", e1);
-				query.append("{}");
-				logger.warn("follow up restoring will not work on this query");
+				query.append(dollar);
+				dollar++;
+				tuple.addString(queryChecksum);
+				query.append("::text, 'wherePart', '");
+				query.append(queryToStoreWherePart.toString());
+				query.append("', 'selectPart', '");
+				query.append(queryToStoreSelectPart.toString());
+				query.append("', 'finalselect', '");
+				query.append(queryToStoreFinalSelectPart.toString());
+				query.append("', 'queryParams', '");
+				try {
+					query.append(objectMapper.writeValueAsString(queryParams));
+				} catch (Exception e1) {
+					logger.error("Failed to serialize query.", e1);
+					query.append("{}");
+					logger.warn("follow up restoring will not work on this query");
+				}
+
+				query.append("'::jsonb) FROM a) RETURNING entity_map) ");
 			}
-
-			query.append("'::jsonb) FROM a) RETURNING entity_map) ");
 			query.append(
 					" SELECT null::text, null::jsonb, null::boolean, null::text[], entity_map FROM c UNION ALL SELECT D0.ID, D0.ENTITY, D0.parent, D0.E_TYPES, null FROM D0");
 
@@ -1419,10 +1449,10 @@ public class QueryDAO {
 			}
 
 			String queryString = query.toString();
-			//logger.debug("SQL REQUEST: " + queryString);
-			//logger.debug("SQL TUPLE: " + tuple.deepToString());
+			// logger.debug("SQL REQUEST: " + queryString);
+			// logger.debug("SQL TUPLE: " + tuple.deepToString());
 			return client.preparedQuery(queryString).execute(tuple).onItem()
-					.transform(rows -> putQueryResultIntoMapAndCache(rows, qToken));
+					.transform(rows -> putQueryResultIntoMapAndCache(rows, qTokenTBU));
 		}).onFailure().recoverWithUni(e -> {
 			if (e instanceof PgException pge) {
 				logger.debug(pge.getPosition());
@@ -1461,7 +1491,7 @@ public class QueryDAO {
 				resultEntities.setEntityIntoEntityCache(id, entity, NGSIConstants.JSON_LD_NONE);
 			}
 		}
-		resultEntityMap.getExpiresAt(System.currentTimeMillis() + 300000);
+		resultEntityMap.setExpiresAt(System.currentTimeMillis() + 300000);
 		return Tuple2.of(resultEntities, resultEntityMap);
 	}
 
