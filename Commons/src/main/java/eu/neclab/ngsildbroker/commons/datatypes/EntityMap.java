@@ -49,6 +49,8 @@ public class EntityMap {
 
 	private long expiresAt;
 
+	private int manualSize = -1;
+
 	public EntityMap(String id, boolean distEntities, boolean regEmptyOrNoRegEntryAndNoLinkedQuery,
 			boolean noRootLevelRegEntryAndLinkedQuery) {
 		this.id = id;
@@ -92,7 +94,9 @@ public class EntityMap {
 				}
 			});
 		}
-
+		if(json.containsKey("list_size")) {
+			result.setManualSize(json.getInteger("list_size"));
+		}
 		result.setSelectPart(json.getString("selectPart"));
 		result.setWherePart(json.getString("wherePart"));
 		result.setFinalSelectPart(json.getString("finalselect"));
@@ -181,7 +185,7 @@ public class EntityMap {
 		JsonObject result = new JsonObject();
 		result.put("id", id);
 		JsonArray entityMap = new JsonArray();
-		for(Entry<String, Set<String>> entry: entityId2CSourceIds.entrySet()) {
+		for (Entry<String, Set<String>> entry : entityId2CSourceIds.entrySet()) {
 			entityMap.add(new JsonObject().put(entry.getKey(), entry.getValue()));
 		}
 		result.put("entityMap", entityMap);
@@ -219,7 +223,7 @@ public class EntityMap {
 	}
 
 	public int size() {
-		return entityId2CSourceIds.size();
+		return manualSize != -1 ? manualSize : entityId2CSourceIds.size();
 	}
 
 	public Query getQuery() {
@@ -285,9 +289,19 @@ public class EntityMap {
 	public long getExpiresAt() {
 		return expiresAt;
 	}
-	
+
 	public void setExpiresAt(long expiresAt) {
 		this.expiresAt = expiresAt;
 	}
+
+	public int getManualSize() {
+		return manualSize;
+	}
+
+	public void setManualSize(int manualSize) {
+		this.manualSize = manualSize;
+	}
+	
+	
 
 }

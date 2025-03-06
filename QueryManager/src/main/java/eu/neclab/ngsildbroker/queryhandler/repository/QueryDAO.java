@@ -1123,7 +1123,9 @@ public class QueryDAO {
 
 			boolean doJoin = (join != null && joinLevel > 0);
 			query.append("WITH a as (SELECT ID");
-
+			if (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery || localOnly) {
+				query.append(", count(*) over() as list_size");
+			}
 			query.append(" FROM ENTITY WHERE ");
 			if (typePattern != null) {
 				query.append("EXISTS (SELECT TRUE FROM UNNEST(E_TYPES) AS E_TYPE WHERE E_TYPE ~ $");
@@ -1393,7 +1395,21 @@ public class QueryDAO {
 				query.append(
 						", c as (SELECT jsonb_build_object('entityMap', jsonb_agg(jsonb_build_object(id, jsonb_build_array('");
 				query.append(NGSIConstants.JSON_LD_NONE);
-				query.append("'))) from a)");
+				query.append("'))), 'splitEntities', $");
+				query.append(dollar);
+				dollar++;
+				tuple.addBoolean(splitEntities);
+				query.append("::boolean, 'regEmptyOrNoRegEntryAndNoLinkedQuery', $");
+				query.append(dollar);
+				dollar++;
+				tuple.addBoolean(regEmptyOrNoRegEntryAndNoLinkedQuery);
+				query.append("::boolean, 'noRootLevelRegEntryAndLinkedQuery', $");
+				query.append(dollar);
+				dollar++;
+				tuple.addBoolean(noRootLevelRegEntryAndLinkedQuery);
+				query.append(
+						"::boolean, 'list_size', a.list_size, 'checkSum', null::text, 'wherePart', null::text, 'selectPart', null::text, 'finalselect', null::text, 'queryParams', null::jsonb) as entity_map from a group by a.list_size)");
+
 				qTokenTBU = AppConstants.ENTITYMAP_IGNORE;
 			} else {
 				qTokenTBU = qToken;
@@ -1449,8 +1465,8 @@ public class QueryDAO {
 			}
 
 			String queryString = query.toString();
-			// logger.debug("SQL REQUEST: " + queryString);
-			// logger.debug("SQL TUPLE: " + tuple.deepToString());
+			logger.debug("SQL REQUEST: " + queryString);
+			logger.debug("SQL TUPLE: " + tuple.deepToString());
 			return client.preparedQuery(queryString).execute(tuple).onItem()
 					.transform(rows -> putQueryResultIntoMapAndCache(rows, qTokenTBU));
 		}).onFailure().recoverWithUni(e -> {
