@@ -27,6 +27,7 @@ jobs:
           cd ..
           git clone https://forge.etsi.org/rep/cim/ngsi-ld-test-suite.git
           cd ngsi-ld-test-suite/scripts
+          chmod 777 ./configure.sh
           ./configure.sh
       - name: config etsi testsuite
         run: |
