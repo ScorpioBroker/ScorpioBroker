@@ -26,16 +26,11 @@ jobs:
         run: |
           cd ..
           git clone https://forge.etsi.org/rep/cim/ngsi-ld-test-suite.git
-        continue-on-error: true
       - name: config etsi testsuite
         run: |
           cd ..
           cd ngsi-ld-test-suite/resources/
           echo -e "url = 'http://localhost:9090/ngsi-ld/v1'\ntemporal_api_url = 'http://localhost:9090/ngsi-ld/v1'\n$(tail -n +3 variables.py)" > variables.py
-      - name: start testsuite
-        run: |
-          cd ..
-          pwd
       - name: start testsuite
         run: |
           cd ..
