@@ -52,13 +52,15 @@ jobs:
         run: |
           cd ..
           source ./ngsi-ld-test-suite/scripts/ngsi-ld-test-suite/.venv/bin/activate
+          cd ngsi-ld-test-suite
+          pip install -r requirements.txt
           robot --outputdir ./results .
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: generated-files
-          path: ../ngsi-ld-test-suite/results/
+          path: /home/runner/work/ScorpioBroker/ngsi-ld-test-suite/results/
       - name: stop postgis for unit tests
         run: |
           docker compose -f ./compose-files/docker-compose-postgis.yml down
