@@ -1,4 +1,4 @@
-name: API test against Java version
+name: ETSI Testsuite
 on: [push,pull_request]
 jobs:
   etsi-test:
@@ -47,6 +47,8 @@ jobs:
       - name: start testsuite
         run: |
           cd ..
+          find -name ".venv"
+          cwd
           cd ngsi-ld-test-suite/scripts
           source .venv/bin/activate
           cd ..
