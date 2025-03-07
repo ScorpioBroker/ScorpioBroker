@@ -10,6 +10,18 @@ jobs:
         with:
           distribution: 'temurin' # See 'Supported distributions' for available options
           java-version: '17'
+      - name: build-java
+        run: |
+          mvn clean package -DskipTests -Din-memory -Pin-memory -Dquarkus.profile=in-memory
+      - name: start postgis 
+        run: |
+          docker compose -f ./compose-files/docker-compose-postgis.yml up &
+          sleep 5
+      - name: start scorpio
+        run: |
+          cd AllInOneRunner/target/quarkus-app
+          java -jar quarkus-run.jar &
+          sleep 15
       - name: get etsi testsuite
         run: |
           cd ..
@@ -20,7 +32,6 @@ jobs:
           cd ..
           cd ngsi-ld-test-suite/resources/
           echo -e "url = 'http://localhost:9090/ngsi-ld/v1'\ntemporal_api_url = 'http://localhost:9090/ngsi-ld/v1'\n$(tail -n +3 variables.py)" > variables.py
-
       - name: start testsuite
         run: |
           cd ..
