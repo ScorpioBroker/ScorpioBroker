@@ -29,7 +29,6 @@ jobs:
           cd ngsi-ld-test-suite/scripts
           chmod 777 ./configure.sh
           ./configure.sh
-          ls -la
         continue-on-error: true
       - name: config etsi testsuite
         run: |
@@ -48,11 +47,11 @@ jobs:
       - name: start testsuite
         run: |
           cd ..
-          find -name ".venv"
-          cwd
-          cd ngsi-ld-test-suite/scripts
-          source .venv/bin/activate
+          pwd
+      - name: start testsuite
+        run: |
           cd ..
+          source ./ngsi-ld-test-suite/scripts/ngsi-ld-test-suite/.venv/bin/activate
           robot --outputdir ./results .
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
