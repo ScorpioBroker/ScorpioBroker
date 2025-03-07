@@ -1,7 +1,7 @@
 name: API test against Java version
 on: [push,pull_request]
 jobs:
-  build-java-aaio:
+  etsi-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2     
@@ -29,6 +29,7 @@ jobs:
           cd ngsi-ld-test-suite/scripts
           chmod 777 ./configure.sh
           ./configure.sh
+        continue-on-error: true
       - name: config etsi testsuite
         run: |
           cd ..
