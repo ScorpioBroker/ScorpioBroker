@@ -26,9 +26,6 @@ jobs:
         run: |
           cd ..
           git clone https://forge.etsi.org/rep/cim/ngsi-ld-test-suite.git
-          cd ngsi-ld-test-suite/scripts
-          chmod 777 ./configure.sh
-          ./configure.sh
         continue-on-error: true
       - name: config etsi testsuite
         run: |
@@ -51,8 +48,10 @@ jobs:
       - name: start testsuite
         run: |
           cd ..
-          source ./ngsi-ld-test-suite/scripts/ngsi-ld-test-suite/.venv/bin/activate
           cd ngsi-ld-test-suite
+          apt-get update -y -qq
+          apt-get install -y -qq python3-virtualenv
+          virtualenv .venv 
           pip install -r requirements.txt
           robot --outputdir ./results .
       - name: Upload artifacts
