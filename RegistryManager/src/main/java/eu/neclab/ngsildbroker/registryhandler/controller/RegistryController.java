@@ -2,6 +2,7 @@ package eu.neclab.ngsildbroker.registryhandler.controller;
 
 import java.util.List;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import io.vertx.core.json.DecodeException;
 import io.vertx.core.json.JsonObject;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
@@ -135,7 +136,13 @@ public class RegistryController {
 
 	@POST
 	public Uni<RestResponse<Object>> registerCSource(HttpServerRequest request, String payload) {
-		JsonObject jsonObject = new JsonObject(payload);
+		JsonObject jsonObject;
+		try {
+			jsonObject = new JsonObject(payload);
+		} catch (DecodeException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+		}
+		
 		if (jsonObject.containsKey(NGSIConstants.CONTEXT_SOURCE_INFO)) {
 			for (Object obj : jsonObject.getJsonArray(NGSIConstants.CONTEXT_SOURCE_INFO)) {
 				JsonObject jsonObject1 = (JsonObject) obj;
