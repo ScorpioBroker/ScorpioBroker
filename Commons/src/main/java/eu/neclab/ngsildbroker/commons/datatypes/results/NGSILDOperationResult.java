@@ -77,7 +77,7 @@ public class NGSILDOperationResult {
 		return result;
 	}
 
-	private String getOperationType() {
+	public String getOperationType() {
 		switch (operationType) {
 			case AppConstants.CREATE_REQUEST:
 				return "Create";

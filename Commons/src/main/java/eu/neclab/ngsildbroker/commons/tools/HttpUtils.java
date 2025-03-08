@@ -892,7 +892,7 @@ public final class HttpUtils {
 		boolean isHavingSuccess = false;
 		boolean wasUpdated = true;
 		boolean allConflict = true;
-		String opType = (String) t.get(0).getJson().get("type");
+		String opType = t.get(0).getOperationType();
 		List<String> createdIds = new ArrayList<>();
 		List<String> successes = new ArrayList<>();
 		List<Map<String, Object>> errors = new ArrayList<>();
