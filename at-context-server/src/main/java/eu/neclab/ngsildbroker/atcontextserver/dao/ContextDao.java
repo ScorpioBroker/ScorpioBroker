@@ -19,6 +19,8 @@ import jakarta.inject.Inject;
 
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.jaxrs.RestResponseBuilderImpl;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
@@ -37,30 +39,36 @@ public class ContextDao {
 
 	@Inject
 	MicroServiceUtils microServiceUtils;
+
+	Logger logger = LoggerFactory.getLogger(ContextDao.class);
+
 	@PostConstruct
 	void setup() {
-		atContextUrl = microServiceUtils.getGatewayURL().toString()+"/ngsi-ld/v1/jsonldContexts/";
+		atContextUrl = microServiceUtils.getGatewayURL().toString() + "/ngsi-ld/v1/jsonldContexts/";
 	}
+
 	String atContextUrl;
+
 	public Uni<RestResponse<Object>> getById(String id, Boolean details) {
 		String sql = """
-                with a as(select * from contexts WHERE id=$1)
-                update contexts set lastusage = now(), numberofhits = numberofhits+1 WHERE id=$1 returning (select to_jsonb(a) from a)""";
+				with a as(select * from contexts WHERE id=$1)
+				update contexts set lastusage = now(), numberofhits = numberofhits+1 WHERE id=$1 returning (select to_jsonb(a) from a)""";
 		return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
 			return client.preparedQuery(sql).execute(Tuple.of(id)).onItem().transformToUni(rows -> {
 				if (rows.size() > 0) {
 					Row row = rows.iterator().next();
-					Map<String,Object> rawData = row.getJsonObject(0).getMap();
+					Map<String, Object> rawData = row.getJsonObject(0).getMap();
 					Map<String, Object> result = new HashMap<>();
 					if (details) {
 						result.put(NGSIConstants.LOCAL_ID, rawData.get(NGSIConstants.ID));
 						result.put(NGSIConstants.KIND, rawData.get(NGSIConstants.KIND));
-						result.put(NGSIConstants.NUMBER_OF_HITS, rawData.get(NGSIConstants.NUMBER_OF_HITS.toLowerCase()));
+						result.put(NGSIConstants.NUMBER_OF_HITS,
+								rawData.get(NGSIConstants.NUMBER_OF_HITS.toLowerCase()));
 						result.put(NGSIConstants.LAST_USAGE, rawData.get(NGSIConstants.LAST_USAGE.toLowerCase()));
 						result.put(NGSIConstants.URL, atContextUrl
 								+ URLEncoder.encode(rawData.get(NGSIConstants.ID).toString(), StandardCharsets.UTF_8));
-						result.put(NGSIConstants.BODY,rawData.get(NGSIConstants.BODY));
-						result.put(NGSIConstants.CREATEDAT,rawData.get(NGSIConstants.CREATEDAT.toLowerCase()));
+						result.put(NGSIConstants.BODY, rawData.get(NGSIConstants.BODY));
+						result.put(NGSIConstants.CREATEDAT, rawData.get(NGSIConstants.CREATEDAT.toLowerCase()));
 						return Uni.createFrom().item(RestResponse.ok(result));
 					} else
 						return Uni.createFrom().item(RestResponse.ok(rawData.get(NGSIConstants.BODY)));
@@ -71,23 +79,34 @@ public class ContextDao {
 		});
 	}
 
-	public Uni<RestResponse<Object>> hostContext(Map<String, Object> payload) {
+	public Uni<String> hostContext(Map<String, Object> payload) {
 		String sql = "INSERT INTO public.contexts (id, body, kind) values($1, $2, 'Hosted') returning id";
+		String id = "urn:" + UUID.randomUUID();
 		return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
-			return client.preparedQuery(sql).execute(Tuple.of("urn:" + UUID.randomUUID(), new JsonObject(payload)))
-					.onItem().transformToUni(rows -> {
+			return client.preparedQuery(sql).execute(Tuple.of(id, new JsonObject(payload))).onFailure()
+					.recoverWithUni(e -> {
+
+						if (e instanceof PgException pge) {
+
+							MicroServiceUtils.logPGE(pge, logger);
+							if (pge.getSqlState().equals(AppConstants.SQL_NOT_FOUND)) {
+								return Uni.createFrom()
+										.failure(new ResponseException(ErrorType.NotFound, id + " not found"));
+							}
+							if (pge.getSqlState().startsWith("SB")) {
+								return Uni.createFrom().failure(
+										new ResponseException(ErrorType.BadRequestData, pge.getErrorMessage()));
+							}
+						}
+						logger.debug("database exception", e);
+						return Uni.createFrom().failure(e);
+					}).onItem().transformToUni(rows -> {
 						if (rows.size() > 0) {
-                            try {
-                                return Uni.createFrom()
-                                        .item(RestResponseBuilderImpl.create(201)
-                                                .location(new URI(atContextUrl
-                                                        + rows.iterator().next().getString(0)))
-                                                .build());
-                            } catch (URISyntaxException e) {
-                                throw new RuntimeException(e);
-                            }
-                        } else
-							return Uni.createFrom().failure(new Throwable("Server Error"));
+							return Uni.createFrom().item(rows.iterator().next().getString(0));
+						} else {
+							return Uni.createFrom().failure(
+									new ResponseException(ErrorType.InternalError, "An unexcpected error happened"));
+						}
 					});
 		});
 
@@ -119,17 +138,19 @@ public class ContextDao {
 
 					if (details) {
 						result.put(NGSIConstants.LOCAL_ID, row.getValue(NGSIConstants.ID));
-						result.put(NGSIConstants.NUMBER_OF_HITS, row.getValue(NGSIConstants.NUMBER_OF_HITS.toLowerCase()));
+						result.put(NGSIConstants.NUMBER_OF_HITS,
+								row.getValue(NGSIConstants.NUMBER_OF_HITS.toLowerCase()));
 						result.put(NGSIConstants.LAST_USAGE, row.getValue(NGSIConstants.LAST_USAGE.toLowerCase()));
 						result.put(NGSIConstants.KIND, row.getValue(NGSIConstants.KIND));
-						result.put(NGSIConstants.BODY,((JsonObject)row.getJson(NGSIConstants.BODY)).getMap());
-						result.put(NGSIConstants.CREATEDAT,row.getLocalDateTime(NGSIConstants.CREATEDAT.toLowerCase()));
+						result.put(NGSIConstants.BODY, ((JsonObject) row.getJson(NGSIConstants.BODY)).getMap());
+						result.put(NGSIConstants.CREATEDAT,
+								row.getLocalDateTime(NGSIConstants.CREATEDAT.toLowerCase()));
 						result.put(NGSIConstants.URL, atContextUrl
 								+ URLEncoder.encode(row.getValue(NGSIConstants.ID).toString(), StandardCharsets.UTF_8));
 						contexts.add(result);
 					} else {
 						contexts.add(atContextUrl
-								+ URLEncoder.encode(row.getValue( NGSIConstants.ID).toString(), StandardCharsets.UTF_8));
+								+ URLEncoder.encode(row.getValue(NGSIConstants.ID).toString(), StandardCharsets.UTF_8));
 					}
 
 				});
@@ -157,7 +178,8 @@ public class ContextDao {
 			return client.preparedQuery(sql).execute(Tuple.of(id, new JsonObject(payload))).onItemOrFailure()
 					.transform((rows, failure) -> {
 						if (failure != null) {
-							if (failure instanceof PgException && ((PgException) failure).getSqlState().equals("23505")) {//already exists
+							if (failure instanceof PgException
+									&& ((PgException) failure).getSqlState().equals("23505")) {// already exists
 								return RestResponse.ok(id);
 							} else {
 								return RestResponse.status(RestResponse.Status.INTERNAL_SERVER_ERROR,

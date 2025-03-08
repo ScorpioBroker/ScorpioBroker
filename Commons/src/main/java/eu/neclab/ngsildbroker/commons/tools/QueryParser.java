@@ -313,7 +313,7 @@ public class QueryParser {
 				current.setNextAnd(true);
 				current = next;
 				scopeLevels.clear();
-			} else if (b == '|') {
+			} else if (b == '|' || b == ',') {
 				ScopeQueryTerm next = new ScopeQueryTerm();
 				if (!scopeLevel.isEmpty()) {
 					scopeLevels.add(scopeLevel.toString());

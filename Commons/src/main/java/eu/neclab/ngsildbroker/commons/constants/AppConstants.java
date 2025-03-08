@@ -20,6 +20,7 @@ public class AppConstants {
 	public static final String REG_MODE_KEY = "!@#$%";
 	// entities URL for
 	public final static String ENTITES_URL = "/ngsi-ld/v1/entities/";
+	public final static String CONTEXTS_URL = "/ngsi-ld/v1/jsonldContexts/";
 	public final static int ENTITIES_URL_ID = 0;
 	// csource URL
 	public final static String CSOURCE_URL = "/ngsi-ld/v1/csourceRegistrations/";

@@ -58,7 +58,7 @@ public class NGSILDOperationResult {
 
 	public Map<String, Object> getJson() {
 		Map<String, Object> result = Maps.newHashMap();
-		result.put(NGSIConstants.ERROR_TYPE, getOperationType());
+		//result.put(NGSIConstants.ERROR_TYPE, getOperationType());
 		result.put(NGSIConstants.ENTITY_ID, entityId);
 		if (!successes.isEmpty()) {
 			List<Object> temp = Lists.newArrayList();

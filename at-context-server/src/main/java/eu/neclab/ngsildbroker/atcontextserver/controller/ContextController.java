@@ -33,19 +33,17 @@ public class ContextController {
 	@Path("{contextId}")
 	public Uni<RestResponse<Object>> getContextById(@PathParam("contextId") String id,
 			@QueryParam("details") boolean details) {
-		return contextService.getContextById(id, details).onFailure()
-				.recoverWithItem(e -> {
-					return HttpUtils.handleControllerExceptions(e, AppConstants.INTERNAL_NULL_KEY);
-				});
+		return contextService.getContextById(id, details).onFailure().recoverWithItem(e -> {
+			return HttpUtils.handleControllerExceptions(e, AppConstants.INTERNAL_NULL_KEY);
+		});
 	}
 
 	@GET
 	public Uni<RestResponse<Object>> getContexts(@QueryParam("kind") String kind,
 			@QueryParam("details") boolean details) {
-		return contextService.getContexts(kind, details).onFailure()
-				.recoverWithItem(e -> {
-					return HttpUtils.handleControllerExceptions(e, AppConstants.INTERNAL_NULL_KEY);
-				});
+		return contextService.getContexts(kind, details).onFailure().recoverWithItem(e -> {
+			return HttpUtils.handleControllerExceptions(e, AppConstants.INTERNAL_NULL_KEY);
+		});
 	}
 
 	@POST
@@ -54,17 +52,17 @@ public class ContextController {
 		return JsonUtils.fromString(payload).onItem().transformToUni(json -> {
 			Map<String, Object> payloadMap = new HashMap<>();
 			try {
-				Object contextBody =  ((Map<String, Object>) json)
-						.get(NGSIConstants.JSON_LD_CONTEXT);
+				Object contextBody = ((Map<String, Object>) json).get(NGSIConstants.JSON_LD_CONTEXT);
 				if (contextBody == null)
 					throw new Exception("Bad Request");
 				else
 					payloadMap.put(NGSIConstants.JSON_LD_CONTEXT, contextBody);
 			} catch (Exception e) {
-				return Uni.createFrom()
-						.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData), AppConstants.INTERNAL_NULL_KEY));
+				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
+						new ResponseException(ErrorType.BadRequestData), AppConstants.INTERNAL_NULL_KEY));
 			}
-			return contextService.createContextHosted(payloadMap).onFailure()
+			return contextService.createContextHosted(payloadMap).onItem()
+					.transform(r -> HttpUtils.generateCreateResult(r, AppConstants.CONTEXTS_URL)).onFailure()
 					.recoverWithItem(e -> {
 						return HttpUtils.handleControllerExceptions(e, AppConstants.INTERNAL_NULL_KEY);
 					});
@@ -98,8 +96,8 @@ public class ContextController {
 				else
 					payloadMap.put(NGSIConstants.JSON_LD_CONTEXT, contextBody);
 			} catch (Exception e) {
-				return Uni.createFrom()
-						.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData), AppConstants.INTERNAL_NULL_KEY));
+				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
+						new ResponseException(ErrorType.BadRequestData), AppConstants.INTERNAL_NULL_KEY));
 			}
 			return contextService.createImplicitly(payloadMap);
 		});

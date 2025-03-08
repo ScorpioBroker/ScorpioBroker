@@ -3,7 +3,9 @@ package eu.neclab.ngsildbroker.atcontextserver.service;
 import com.github.jsonldjava.core.JsonLdOptions;
 import eu.neclab.ngsildbroker.atcontextserver.cache.ContextCache;
 import eu.neclab.ngsildbroker.atcontextserver.dao.ContextDao;
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import io.smallrye.mutiny.Uni;
@@ -52,8 +54,11 @@ public class ContextService {
         });
     }
 
-    public Uni<RestResponse<Object>> createContextHosted(Map<String, Object> payload) {
-        return dao.hostContext(payload);
+    public Uni<NGSILDOperationResult> createContextHosted(Map<String, Object> payload) {
+        return dao.hostContext(payload).onItem().transform(id -> {
+        	NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, id, AppConstants.INTERNAL_NULL_KEY);
+        	return result;
+        });
     }
 
     public Uni<RestResponse<Object>> deleteById(String id, Boolean reload) {
