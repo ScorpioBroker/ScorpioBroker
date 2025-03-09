@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "b4c9fb57-44ef-4ed3-a93c-6cd93b09910f",
+		"_postman_id": "e1bdeb2f-cb27-44af-8229-75eec76b09b8",
 		"name": "API Test",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
@@ -23680,7 +23680,7 @@
 													},
 													{
 														"key": "Link",
-														"value": "<{{urlOne}}>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
+														"value": "<{{query-manager}}{{urlOne}}>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
 														"type": "text"
 													}
 												],
@@ -23731,7 +23731,7 @@
 													},
 													{
 														"key": "Link",
-														"value": "<{{urlTwo}}>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
+														"value": "<{{query-manager}}{{urlTwo}}>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"",
 														"type": "text"
 													}
 												],
@@ -23804,9 +23804,9 @@
 												"method": "DELETE",
 												"header": [],
 												"url": {
-													"raw": "{{urlOne}}",
+													"raw": "{{query-manager}}{{urlOne}}",
 													"host": [
-														"{{urlOne}}"
+														"{{query-manager}}{{urlOne}}"
 													]
 												}
 											},
@@ -23832,9 +23832,9 @@
 												"method": "DELETE",
 												"header": [],
 												"url": {
-													"raw": "{{urlTwo}}",
+													"raw": "{{query-manager}}{{urlTwo}}",
 													"host": [
-														"{{urlTwo}}"
+														"{{query-manager}}{{urlTwo}}"
 													]
 												}
 											},
