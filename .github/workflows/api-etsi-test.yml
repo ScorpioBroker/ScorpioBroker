@@ -1,7 +1,7 @@
 name: ETSI Testsuite
 on: [push,pull_request]
 jobs:
-  etsi-test common behaviour:
+  etsi-test-common-behaviour:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2     
@@ -49,7 +49,7 @@ jobs:
       - name: stop postgis for unit tests
         run: |
           docker compose -f ./compose-files/docker-compose-postgis.yml down
-  etsi-test ContextInformation/Consumption/Discovery:
+  etsi-test-ContextInformation-Consumption-Discovery:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2     
@@ -97,7 +97,7 @@ jobs:
       - name: stop postgis for unit tests
         run: |
           docker compose -f ./compose-files/docker-compose-postgis.yml down
-  etsi-test ContextInformation/Consumption/Entity:
+  etsi-test-ContextInformation-Consumption-Entity:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2     
@@ -145,7 +145,7 @@ jobs:
       - name: stop postgis for unit tests
         run: |
           docker compose -f ./compose-files/docker-compose-postgis.yml down
-  etsi-test ContextInformation/Consumption/TemporalEntity:
+  etsi-test-ContextInformation-Consumption-TemporalEntity:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2     
@@ -193,7 +193,7 @@ jobs:
       - name: stop postgis for unit tests
         run: |
           docker compose -f ./compose-files/docker-compose-postgis.yml down
-  etsi-test /ContextInformation/Provision/BatchEntities:
+  etsi-test-ContextInformation-Provision-BatchEntities:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2     
@@ -241,7 +241,7 @@ jobs:
       - name: stop postgis for unit tests
         run: |
           docker compose -f ./compose-files/docker-compose-postgis.yml down
-  etsi-test /ContextInformation/Provision/Entities:
+  etsi-test-ContextInformation-Provision-Entities:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2     
@@ -289,7 +289,7 @@ jobs:
       - name: stop postgis for unit tests
         run: |
           docker compose -f ./compose-files/docker-compose-postgis.yml down
-  etsi-test /ContextInformation/Provision/EntityAttributes:
+  etsi-test-ContextInformation-Provision-EntityAttributes:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2     
@@ -337,7 +337,7 @@ jobs:
       - name: stop postgis for unit tests
         run: |
           docker compose -f ./compose-files/docker-compose-postgis.yml down
-  etsi-test /ContextInformation/Provision/TemporalEntity:
+  etsi-test-ContextInformation-Provision-TemporalEntity:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2     
@@ -385,7 +385,7 @@ jobs:
       - name: stop postgis for unit tests
         run: |
           docker compose -f ./compose-files/docker-compose-postgis.yml down
-  etsi-test /ContextInformation/Provision/TemporalEntityAttributes:
+  etsi-test-ContextInformation-Provision-TemporalEntityAttributes:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2     
@@ -433,7 +433,7 @@ jobs:
       - name: stop postgis for unit tests
         run: |
           docker compose -f ./compose-files/docker-compose-postgis.yml down
-  etsi-test /ContextInformation/Subscription:
+  etsi-test-ContextInformation-Subscription:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2     
@@ -481,7 +481,7 @@ jobs:
       - name: stop postgis for unit tests
         run: |
           docker compose -f ./compose-files/docker-compose-postgis.yml down
-  etsi-test /ContextSource:
+  etsi-test-ContextSource:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2     
@@ -529,7 +529,7 @@ jobs:
       - name: stop postgis for unit tests
         run: |
           docker compose -f ./compose-files/docker-compose-postgis.yml down
-  etsi-test /DistributedOperations:
+  etsi-test-DistributedOperations:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2     
@@ -577,7 +577,7 @@ jobs:
       - name: stop postgis for unit tests
         run: |
           docker compose -f ./compose-files/docker-compose-postgis.yml down
-  etsi-test /jsonldContext:
+  etsi-test-jsonldContext:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2     
