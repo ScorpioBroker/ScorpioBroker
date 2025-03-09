@@ -44,7 +44,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: generated-files
+          name: CommonBehaviours
           path: /home/runner/work/ScorpioBroker/ngsi-ld-test-suite/results/
       - name: stop postgis for unit tests
         run: |
@@ -92,7 +92,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: generated-files
+          name: ContextInformation-Consumption-Discovery
           path: /home/runner/work/ScorpioBroker/ngsi-ld-test-suite/results/
       - name: stop postgis for unit tests
         run: |
@@ -140,7 +140,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: generated-files
+          name: ContextInformation-Consumption-Entity
           path: /home/runner/work/ScorpioBroker/ngsi-ld-test-suite/results/
       - name: stop postgis for unit tests
         run: |
@@ -188,7 +188,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: generated-files
+          name: ContextInformation-Consumption-TemporalEntity
           path: /home/runner/work/ScorpioBroker/ngsi-ld-test-suite/results/
       - name: stop postgis for unit tests
         run: |
@@ -236,7 +236,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: generated-files
+          name: ContextInformation-Provision-BatchEntities
           path: /home/runner/work/ScorpioBroker/ngsi-ld-test-suite/results/
       - name: stop postgis for unit tests
         run: |
@@ -284,7 +284,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: generated-files
+          name: ContextInformation-Provision-Entities
           path: /home/runner/work/ScorpioBroker/ngsi-ld-test-suite/results/
       - name: stop postgis for unit tests
         run: |
@@ -332,7 +332,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: generated-files
+          name: ContextInformation-Provision-EntityAttributes
           path: /home/runner/work/ScorpioBroker/ngsi-ld-test-suite/results/
       - name: stop postgis for unit tests
         run: |
@@ -380,7 +380,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: generated-files
+          name: ContextInformation-Provision-TemporalEntity
           path: /home/runner/work/ScorpioBroker/ngsi-ld-test-suite/results/
       - name: stop postgis for unit tests
         run: |
@@ -428,7 +428,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: generated-files
+          name: ContextInformation-Provision-TemporalEntityAttributes
           path: /home/runner/work/ScorpioBroker/ngsi-ld-test-suite/results/
       - name: stop postgis for unit tests
         run: |
@@ -476,7 +476,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: generated-files
+          name: ContextInformation-Subscription
           path: /home/runner/work/ScorpioBroker/ngsi-ld-test-suite/results/
       - name: stop postgis for unit tests
         run: |
@@ -524,7 +524,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: generated-files
+          name: ContextSource
           path: /home/runner/work/ScorpioBroker/ngsi-ld-test-suite/results/
       - name: stop postgis for unit tests
         run: |
@@ -572,7 +572,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: generated-files
+          name: DistributedOperations
           path: /home/runner/work/ScorpioBroker/ngsi-ld-test-suite/results/
       - name: stop postgis for unit tests
         run: |
@@ -620,7 +620,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: generated-files
+          name: jsonldContext
           path: /home/runner/work/ScorpioBroker/ngsi-ld-test-suite/results/
       - name: stop postgis for unit tests
         run: |
