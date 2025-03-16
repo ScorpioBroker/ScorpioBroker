@@ -135,28 +135,19 @@ public class EntityInfoDAO {
 	public Uni<Map<String, Object>> batchUpsertEntity(BatchRequest request, boolean doReplace) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
 
-
-			
 			List<Map<String, Object>> entities = Lists.newArrayList();
 			request.getPayload().values().forEach(entityList -> {
 				entities.add(mergeAllEntities(entityList));
 			});
-			Tuple tuple = Tuple.of(new JsonArray(entities));
-			StringBuilder sql = new StringBuilder(
-					"""
+			Tuple tuple = Tuple.of(new JsonArray(entities), doReplace);
+			String sql = """
 							with a as (SELECT jsonb_array_elements($1) as entity),
 							b as (SELECT a.entity->>'@id' as id, a.entity as entity, entity.entity as old_entity from a left join entity on a.entity->>'@id' = entity.id),
-							c as (insert into entity(id, e_types, entity) select b.id, ARRAY(SELECT jsonb_array_elements_text(b.entity->'@type')), b.entity from b ON CONFLICT (id) DO UPDATE SET id = EXCLUDED.id,e_types = ARRAY(SELECT DISTINCT UNNEST(entity.e_types || EXCLUDED.e_types)),entity =
-							""");
-			if (doReplace) {
-				sql.append("EXCLUDED.entity ");
-			} else {
-				sql.append(
-						"jsonb_set((entity.entity || EXCLUDED.entity), '{@type}', (SELECT jsonb_agg(DISTINCT x) FROM UNNEST(entity.e_types || EXCLUDED.e_types) as x)) ");
-			}
-			sql.append(
-					"RETURNING id, entity, (xmax = 0) AS inserted) select c.id, c.inserted, c.entity, b.old_entity from c left join b on c.id = b.id;");
-			return client.preparedQuery(sql.toString()).execute(tuple).onItem().transform(rows -> {
+							c as (insert into entity(id, e_types, entity) select b.id, ARRAY(SELECT jsonb_array_elements_text(b.entity->'@type')), b.entity from b ON CONFLICT (id) DO UPDATE SET id = EXCLUDED.id,e_types = ARRAY(SELECT DISTINCT UNNEST(entity.e_types || EXCLUDED.e_types)),entity = ngsild_update_entity(EXCLUDED.entity, entity.entity, $2)
+							RETURNING id, entity, (xmax = 0) AS inserted) select c.id, c.inserted, c.entity, b.old_entity from c left join b on c.id = b.id;
+					""";
+
+			return client.preparedQuery(sql).execute(tuple).onItem().transform(rows -> {
 				Map<String, Object> result = new HashMap<>(2);
 				ArrayList<Map<String, Object>> success = new ArrayList<>(rows.size());
 				result.put("success", success);
@@ -180,13 +171,13 @@ public class EntityInfoDAO {
 	}
 
 	private Map<String, Object> mergeAllEntities(List<Map<String, Object>> entityList) {
-		if(entityList.size() == 1) {
+		if (entityList.size() == 1) {
 			return entityList.get(0);
 		}
 		Map<String, Object> first = new HashMap<>();
 		for (int i = 0; i < entityList.size(); i++) {
 			first.putAll(entityList.get(i));
-			
+
 		}
 		return first;
 	}
