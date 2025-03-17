@@ -13,6 +13,7 @@ DECLARE
 	attrInstance jsonb;
 	oldAttrValue jsonb;
 	oldAttrInstance jsonb;
+	newTypes jsonb;
 	delete boolean;
 	counter int;
 	found boolean;
@@ -21,7 +22,8 @@ BEGIN
 		IF attrKey = '@id' OR attrKey = 'https://uri.etsi.org/ngsi-ld/createdAt' THEN
 			CONTINUE;
 		ELSIF attrKey = '@type' THEN
-			old_entity:= jsonb_set(old_entity, ARRAY[attrKey], jsonb_agg(distinct jsonb_array_elements(attrValue || old_entity -> '@type')));
+			SELECT jsonb_agg(distinct e_types) INTO newTypes FROM jsonb_array_elements(attrValue || old_entity -> '@type') as e_types;
+			old_entity:= jsonb_set(old_entity, ARRAY[attrKey], newTypes);
 		ELSIF attrKey = 'https://uri.etsi.org/ngsi-ld/modifiedAt' THEN
 			old_entity:= jsonb_set(old_entity, ARRAY[attrKey], attrValue);
 		ELSE

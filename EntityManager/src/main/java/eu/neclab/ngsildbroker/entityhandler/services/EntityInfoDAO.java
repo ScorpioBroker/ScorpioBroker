@@ -141,12 +141,20 @@ public class EntityInfoDAO {
 			});
 			Tuple tuple = Tuple.of(new JsonArray(entities), doReplace);
 			String sql = """
-							with a as (SELECT jsonb_array_elements($1) as entity),
-							b as (SELECT a.entity->>'@id' as id, a.entity as entity, entity.entity as old_entity from a left join entity on a.entity->>'@id' = entity.id),
-							c as (insert into entity(id, e_types, entity) select b.id, ARRAY(SELECT jsonb_array_elements_text(b.entity->'@type')), b.entity from b ON CONFLICT (id) DO UPDATE SET id = EXCLUDED.id,e_types = ARRAY(SELECT DISTINCT UNNEST(entity.e_types || EXCLUDED.e_types)),entity = ngsild_update_entity(EXCLUDED.entity, entity.entity, $2)
-							RETURNING id, entity, (xmax = 0) AS inserted) select c.id, c.inserted, c.entity, b.old_entity from c left join b on c.id = b.id;
+					with a as (SELECT jsonb_array_elements($1) as entity),
+					b as (SELECT a.entity->>'@id' as id, a.entity as entity, entity.entity as old_entity from a left join entity on a.entity->>'@id' = entity.id),
+					c as (insert into entity(id, e_types, entity) select b.id, ARRAY(SELECT jsonb_array_elements_text(b.entity->'@type')), b.entity from b ON CONFLICT (id) DO UPDATE SET id = EXCLUDED.id,e_types = ARRAY(SELECT DISTINCT UNNEST(entity.e_types || EXCLUDED.e_types)),entity =
 					""";
+			if (doReplace) {
+				sql += "EXCLUDED.entity ";
+			} else {
+				sql += "ngsild_update_entity(EXCLUDED.entity, entity.entity, true) ";
+			}
 
+			sql += "RETURNING id, entity, (xmax = 0) AS inserted) select c.id, c.inserted, c.entity, b.old_entity from c left join b on c.id = b.id";
+
+			logger.debug(sql);
+			logger.debug(tuple.deepToString());
 			return client.preparedQuery(sql).execute(tuple).onItem().transform(rows -> {
 				Map<String, Object> result = new HashMap<>(2);
 				ArrayList<Map<String, Object>> success = new ArrayList<>(rows.size());
