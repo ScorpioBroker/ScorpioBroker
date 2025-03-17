@@ -90,8 +90,15 @@ BEGIN
 					END IF;
 					IF NOT delete THEN
 						oldAttrValue := oldAttrValue || attrInstance;
+						old_entity := jsonb_set(old_entity, ARRAY[attrKey], oldAttrValue);
+					ELSE
+						IF jsonb_array_length(oldAttribValue) > 0 THEN
+							old_entity := jsonb_set(old_entity, ARRAY[attrKey], oldAttrValue);
+						ELSE
+							old_entity := old_entity - attrKey;	
+						END IF;
 					END IF;
-					old_entity := jsonb_set(old_entity, ARRAY[attrKey], oldAttrValue);
+					
 				END LOOP;
 			END IF;
 		END IF;
