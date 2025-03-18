@@ -108,3 +108,52 @@ BEGIN
 	RETURN old_entity;
 END;
 $BODY$;
+
+
+CREATE OR REPLACE FUNCTION public.ngsild_appendbatch(IN entities jsonb,IN nooverwrite boolean)
+    RETURNS jsonb
+    LANGUAGE 'plpgsql'
+    VOLATILE
+    PARALLEL UNSAFE
+    COST 100
+    
+AS $BODY$
+DECLARE
+    resultObj jsonb;
+    resultEntry jsonb;
+    new_entity jsonb;
+    prev_entity jsonb;
+    updated_entity jsonb;
+    not_overwriting boolean;
+    to_update jsonb;
+    to_append jsonb;
+BEGIN
+    resultObj := '{"success": [], "failure": []}'::jsonb;
+
+    FOR new_entity IN SELECT jsonb_array_elements FROM jsonb_array_elements(ENTITIES) LOOP
+        prev_entity := NULL;
+		not_overwriting := false;
+        BEGIN
+            SELECT ENTITY FROM ENTITY WHERE ID = new_entity->>'@id' INTO prev_entity;
+			updated_entity := ngsild_update_entity(prev_entity, newentity, not nooverwrite);
+			IF (prev_entity = updated_entity AND nooverwrite) THEN
+				not_overwriting := true;
+			END IF;
+            IF not_overwriting THEN
+				resultObj = jsonb_set(resultObj, '{failure}', resultObj -> 'failure' || jsonb_build_object(newentity->>'@id', 'Not Overwriting'));
+            ELSIF NOT FOUND THEN
+				resultObj = jsonb_set(resultObj, '{failure}', resultObj -> 'failure' || jsonb_build_object(newentity->>'@id', 'Not Found'));
+            ELSE
+				resultObj = jsonb_set(resultObj, '{success}', resultObj -> 'success' || jsonb_build_object('id', newentity->'@id', 'old', prev_entity, 'new', updated_entity)::jsonb);
+            END IF;
+
+        EXCEPTION
+            WHEN OTHERS THEN
+                RAISE NOTICE '%', SQLERRM;
+				resultObj = jsonb_set(resultObj, '{failure}', resultObj -> 'failure' || jsonb_build_object(newentity->>'@id', SQLSTATE));
+        END;
+    END LOOP;
+
+    RETURN resultObj;
+END;
+$BODY$;
