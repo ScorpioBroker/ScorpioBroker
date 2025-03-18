@@ -125,8 +125,6 @@ DECLARE
     prev_entity jsonb;
     updated_entity jsonb;
     not_overwriting boolean;
-    to_update jsonb;
-    to_append jsonb;
 BEGIN
     resultObj := '{"success": [], "failure": []}'::jsonb;
 
@@ -140,17 +138,17 @@ BEGIN
 				not_overwriting := true;
 			END IF;
             IF not_overwriting THEN
-				resultObj = jsonb_set(resultObj, '{failure}', resultObj -> 'failure' || jsonb_build_object(newentity->>'@id', 'Not Overwriting'));
+				resultObj = jsonb_set(resultObj, '{failure}', resultObj -> 'failure' || jsonb_build_object(new_entity->>'@id', 'Not Overwriting'));
             ELSIF NOT FOUND THEN
-				resultObj = jsonb_set(resultObj, '{failure}', resultObj -> 'failure' || jsonb_build_object(newentity->>'@id', 'Not Found'));
+				resultObj = jsonb_set(resultObj, '{failure}', resultObj -> 'failure' || jsonb_build_object(new_entity->>'@id', 'Not Found'));
             ELSE
-				resultObj = jsonb_set(resultObj, '{success}', resultObj -> 'success' || jsonb_build_object('id', newentity->'@id', 'old', prev_entity, 'new', updated_entity)::jsonb);
+				resultObj = jsonb_set(resultObj, '{success}', resultObj -> 'success' || jsonb_build_object('id', new_entity->'@id', 'old', prev_entity, 'new', updated_entity)::jsonb);
             END IF;
 
         EXCEPTION
             WHEN OTHERS THEN
                 RAISE NOTICE '%', SQLERRM;
-				resultObj = jsonb_set(resultObj, '{failure}', resultObj -> 'failure' || jsonb_build_object(newentity->>'@id', SQLSTATE));
+				resultObj = jsonb_set(resultObj, '{failure}', resultObj -> 'failure' || jsonb_build_object(new_entity->>'@id', SQLSTATE));
         END;
     END LOOP;
 
