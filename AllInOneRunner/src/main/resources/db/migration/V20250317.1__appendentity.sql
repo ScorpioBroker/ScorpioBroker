@@ -144,7 +144,7 @@ BEGIN
             ELSE
 				resultObj = jsonb_set(resultObj, '{success}', resultObj -> 'success' || jsonb_build_object('id', new_entity->'@id', 'old', prev_entity, 'new', updated_entity)::jsonb);
             END IF;
-
+			UPDATE entity SET entiity = updated_entity WHERE id = updated_entity->>'@id';
         EXCEPTION
             WHEN OTHERS THEN
                 RAISE NOTICE '%', SQLERRM;

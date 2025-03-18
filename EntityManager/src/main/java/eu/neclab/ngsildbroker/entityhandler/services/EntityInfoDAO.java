@@ -349,59 +349,18 @@ public class EntityInfoDAO {
 	@SuppressWarnings("unchecked")
 	public Uni<Map<String, Object>> updateEntity(UpdateEntityRequest request) {
 		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
-			Map<String, Object> payload = request.getFirstPayload();
-			payload.remove(NGSIConstants.JSON_LD_ID);
-			Object types = payload.remove(NGSIConstants.JSON_LD_TYPE);
-
-			List<String> toBeRemoved = removeAtNoneEntries(payload);
-			int dollar = 2;
-			Tuple tuple = Tuple.tuple();
-
-			StringBuilder sql = new StringBuilder("""
-					WITH old_entity AS (
+			String sql = """
+					WITH a AS (
 					    SELECT ENTITY
 					    FROM ENTITY
-					    WHERE ID = '%s'
-					)""".formatted(request.getFirstId()));
-			sql.append(
-					"""
-							,json_data AS (
-							    SELECT jsonb_strip_nulls(jsonb_object_agg(
-							               key,
-							               CASE
-							                   WHEN jsonb_typeof(value->0) = 'object' and (value->0)?'https://uri.etsi.org/ngsi-ld/createdAt' THEN
-							                       jsonb_set(value, '{0,https://uri.etsi.org/ngsi-ld/createdAt}', old_entity.entity->key->0->'https://uri.etsi.org/ngsi-ld/createdAt', true)
-							                   ELSE
-							                       value
-							               END
-							           )) AS modified_data
-							    FROM JSONB_EACH($1::jsonb)
-							    CROSS JOIN old_entity
-							)""");
-			tuple.addJsonObject(new JsonObject(payload));
-			sql.append(" UPDATE ENTITY SET ");
-			if (types != null) {
-				sql.append(
-						"e_types = ARRAY(SELECT DISTINCT UNNEST(e_types || $2)), ENTITY = (jsonb_set(ENTITY, '{@type}', array_to_json(Array(SELECT DISTINCT UNNEST(e_types || $2))) ::jsonb) || ((select * from json_data)-'https://uri.etsi.org/ngsi-ld/createdAt')::jsonb)");
-				dollar = 3;
-				tuple.addArrayOfString(((List<String>) types).toArray(new String[0]));
-			} else {
-				sql.append(" ENTITY = (ENTITY || (select * from json_data)-'https://uri.etsi.org/ngsi-ld/createdAt') ");
-			}
-			if (!toBeRemoved.isEmpty()) {
-				for (String remove : toBeRemoved) {
-					sql.append(" - '$");
-					sql.append(dollar);
-					sql.append('\'');
-					dollar++;
-					tuple.addString(remove);
-				}
-			}
-			sql.append("WHERE ID = $");
-			sql.append(dollar);
-			tuple.addString(request.getFirstId());
-			sql.append(" RETURNING (SELECT ENTITY FROM old_entity) AS old_entity;");
-			return client.preparedQuery(sql.toString()).execute(tuple).onFailure().recoverWithUni(e -> {
+					    WHERE ID = $1
+					)
+					UPDATE ENTITY SET entity = ngsild_update_entity(entity, $2, $3) WHERE ID = $1 RETURNING (SELECT ENTITY FROM old_entity) AS old_entity, ENTITY.entity as new_entity;
+					""";
+
+			Tuple tuple = Tuple.of(request.getFirstId(), new JsonObject(request.getFirstPayload()),
+					!request.isNoOverwrite());
+			return client.preparedQuery(sql).execute(tuple).onFailure().recoverWithUni(e -> {
 				return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
 			}).onItem().transformToUni(rows -> {
 				if (rows.rowCount() == 0) {
@@ -414,41 +373,6 @@ public class EntityInfoDAO {
 
 	}
 
-	private List<String> removeAtNoneEntries(Map<String, Object> payload) {
-		Iterator<Entry<String, Object>> it = payload.entrySet().iterator();
-		List<String> result = new ArrayList<>();
-		while (it.hasNext()) {
-			Entry<String, Object> entry = it.next();
-			Object obj = entry.getValue();
-			if (obj instanceof List<?> list) {
-
-				Iterator<?> it2 = list.iterator();
-				Object tmp;
-				while (it2.hasNext()) {
-					tmp = it2.next();
-					if (tmp instanceof Map) {
-						@SuppressWarnings("unchecked")
-						Map<String, Object> map = (Map<String, Object>) tmp;
-						if (map.containsKey(NGSIConstants.JSON_LD_TYPE)) {
-							if ((map.get(NGSIConstants.JSON_LD_TYPE) instanceof List<?> types
-									&& types.get(0).equals(NGSIConstants.JSON_LD_NONE))
-									|| map.get(NGSIConstants.JSON_LD_TYPE).equals(NGSIConstants.JSON_LD_NONE)) {
-								it2.remove();
-							}
-						} else {
-							removeAtNoneEntries(map);
-						}
-					}
-				}
-				if (list.isEmpty()) {
-					it.remove();
-					result.add(entry.getKey());
-				}
-			}
-		}
-		return result;
-	}
-
 	/**
 	 * 
 	 * @param request
@@ -459,42 +383,21 @@ public class EntityInfoDAO {
 	public Uni<Tuple3<Map<String, Object>, Map<String, Object>, Set<String>>> appendToEntity2(
 			AppendEntityRequest request, boolean noOverwrite) {
 		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
-			Map<String, Object> payload = request.getFirstPayload();
-			payload.remove(NGSIConstants.JSON_LD_ID);
-			Object types = payload.remove(NGSIConstants.JSON_LD_TYPE);
+			String sql = """
+					WITH a AS (
+					    SELECT ENTITY
+					    FROM ENTITY
+					    WHERE ID = $1
+					)
+					UPDATE ENTITY SET entity = ngsild_update_entity(entity, $2, $3) WHERE ID = $1 RETURNING (SELECT ENTITY FROM old_entity) AS old_entity, ENTITY.entity as new_entity;
+					""";
 
-			Tuple tuple = Tuple.tuple();
-			tuple.addString(request.getFirstId());
-			StringBuilder sql = new StringBuilder(
-					"WITH a as(SELECT entity FROM entity WHERE id =$1), b as (UPDATE ENTITY SET ");
-			if (types != null) {
-				sql.append("e_types = ARRAY(SELECT DISTINCT UNNEST(e_types || $2)), ");
-				if (noOverwrite) {
-					sql.append(
-							"ENTITY = (($3::jsonb - 'https://uri.etsi.org/ngsi-ld/createdAt') || jsonb_set(ENTITY, '{@type}', array_to_json(Array(SELECT DISTINCT UNNEST(e_types || $2))) ::jsonb))");
-				} else {
-					sql.append(
-							"ENTITY = (jsonb_set(ENTITY, '{@type}', array_to_json(Array(SELECT DISTINCT UNNEST(e_types || $2))) ::jsonb) || ($3::jsonb - 'https://uri.etsi.org/ngsi-ld/createdAt'))");
-				}
-
-				tuple.addArrayOfString(((List<String>) types).toArray(new String[0]));
-				tuple.addJsonObject(new JsonObject(payload));
-			} else {
-				if (noOverwrite) {
-					sql.append(" ENTITY = (($2::jsonb - 'https://uri.etsi.org/ngsi-ld/createdAt') || ENTITY) ");
-				} else {
-					sql.append(" ENTITY = (ENTITY || ($2::jsonb - 'https://uri.etsi.org/ngsi-ld/createdAt')) ");
-				}
-				tuple.addJsonObject(new JsonObject(payload));
-			}
-
-			sql.append("WHERE ID = $1");
-			// if (noOverwrite) {
-			sql.append(" RETURNING ENTITY) SELECT a.entity as old, b.entity as new FROM a, b;");
-			// }
-
-			return client.preparedQuery(sql.toString()).execute(tuple).onItem().transformToUni(rows -> {
-				if (rows.size() == 0) {
+			Tuple tuple = Tuple.of(request.getFirstId(), new JsonObject(request.getFirstPayload()),
+					!request.isNoOverwrite());
+			return client.preparedQuery(sql).execute(tuple).onFailure().recoverWithUni(e -> {
+				return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
+			}).onItem().transformToUni(rows -> {
+				if (rows.rowCount() == 0) {
 					return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
 				}
 				Row first = rows.iterator().next();
@@ -507,6 +410,7 @@ public class EntityInfoDAO {
 							first.getJsonObject(1).getMap(), new HashSet<>(0)));
 				}
 			});
+
 		});
 
 	}
