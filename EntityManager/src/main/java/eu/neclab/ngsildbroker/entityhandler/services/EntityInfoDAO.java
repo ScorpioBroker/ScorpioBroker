@@ -139,7 +139,7 @@ public class EntityInfoDAO {
 			request.getPayload().values().forEach(entityList -> {
 				entities.add(mergeAllEntities(entityList));
 			});
-			Tuple tuple = Tuple.of(new JsonArray(entities), doReplace);
+			Tuple tuple = Tuple.of(new JsonArray(entities));
 			String sql = """
 					with a as (SELECT jsonb_array_elements($1) as entity),
 					b as (SELECT a.entity->>'@id' as id, a.entity as entity, entity.entity as old_entity from a left join entity on a.entity->>'@id' = entity.id),
