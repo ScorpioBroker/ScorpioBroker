@@ -1,6 +1,54 @@
 name: ETSI Testsuite
 on: [push,pull_request]
 jobs:
+  etsi-complete-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2     
+      - name: Set up JDK 1.22
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin' # See 'Supported distributions' for available options
+          java-version: '17'
+      - name: build-java
+        run: |
+          mvn clean package -DskipTests -Din-memory -Pin-memory -Dquarkus.profile=in-memory
+      - name: start postgis 
+        run: |
+          docker compose -f ./compose-files/docker-compose-postgis.yml up &
+          sleep 5
+      - name: start scorpio
+        run: |
+          cd AllInOneRunner/target/quarkus-app
+          java -jar quarkus-run.jar &
+          sleep 15
+      - name: get etsi testsuite
+        run: |
+          cd ..
+          git clone https://forge.etsi.org/rep/cim/ngsi-ld-test-suite.git
+      - name: config etsi testsuite
+        run: |
+          cd ..
+          cd ngsi-ld-test-suite/resources/
+          echo -e "url = 'http://localhost:9090/ngsi-ld/v1'\ntemporal_api_url = 'http://localhost:9090/ngsi-ld/v1'\n$(tail -n +3 variables.py)" > variables.py
+      - name: start testsuite
+        run: |
+          cd ..
+          cd ngsi-ld-test-suite
+          sudo apt-get update -y -qq
+          sudo apt-get install -y -qq python3-virtualenv
+          virtualenv .venv 
+          pip install -r requirements.txt
+          robot --outputdir ./results .
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: FullTest
+          path: /home/runner/work/ScorpioBroker/ngsi-ld-test-suite/results/
+      - name: stop postgis for unit tests
+        run: |
+          docker compose -f ./compose-files/docker-compose-postgis.yml down
   etsi-test-common-behaviour:
     runs-on: ubuntu-latest
     steps:
