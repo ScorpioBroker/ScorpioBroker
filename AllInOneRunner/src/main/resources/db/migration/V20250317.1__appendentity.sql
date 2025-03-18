@@ -135,7 +135,7 @@ BEGIN
 		not_overwriting := false;
         BEGIN
             SELECT ENTITY FROM ENTITY WHERE ID = new_entity->>'@id' INTO prev_entity;
-			updated_entity := ngsild_update_entity(prev_entity, newentity, not nooverwrite);
+			updated_entity := ngsild_update_entity(prev_entity, new_entity, not nooverwrite);
 			IF (prev_entity = updated_entity AND nooverwrite) THEN
 				not_overwriting := true;
 			END IF;
