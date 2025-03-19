@@ -1,3 +1,10 @@
+RELEASE NOTES 5.0.8
+
+improved performance on non federated cases for the query
+addressed an issue where ngsi-null was not properly handled 
+improved some error messages. 
+
+
 RELEASE NOTES 5.0.7
 
 fixed an issue where in certain circumstances ID based registrations would not work
