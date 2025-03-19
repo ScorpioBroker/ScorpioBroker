@@ -27,13 +27,10 @@ BEGIN
 		ELSIF attrKey = 'https://uri.etsi.org/ngsi-ld/modifiedAt' THEN
 			old_entity:= jsonb_set(old_entity, ARRAY[attrKey], attrValue);
 		ELSE
-			IF NOT old_entity ? attrKey THEN
-				old_entity:= jsonb_set(old_entity, ARRAY[attrKey], attrValue);
-			ELSE
 				FOR attrInstance IN SELECT * FROM JSONB_ARRAY_ELEMENTS(attrValue) LOOP
 					delete := FALSE;
 					IF attrInstance ? 'https://uri.etsi.org/ngsi-ld/datasetId' THEN
-						datasetId := attrInstance #>> '{https://uri.etsi.org/ngsi-ld/datasetId,0,@value}';
+						datasetId := attrInstance #>> '{https://uri.etsi.org/ngsi-ld/datasetId,0,@id}';
 					ELSE
 						datasetId := null;
 					END IF;
@@ -52,15 +49,15 @@ BEGIN
 								delete := TRUE;
 							END IF;
 						WHEN 'https://uri.etsi.org/ngsi-ld/ListRelationship' THEN
-							IF attrInstance @> '{"https://uri.etsi.org/ngsi-ld/hasObjectList":[{"@list":[{"@value": "urn:ngsi-ld:null"}]}]}' THEN
+							IF attrInstance @> '{"https://uri.etsi.org/ngsi-ld/hasObjectList":[{"@list":[{"https://uri.etsi.org/ngsi-ld/hasObject":[{"@id":"urn:ngsi-ld:null"}]}]}]}' THEN
 								delete := TRUE;
 							END IF;
 						WHEN 'https://uri.etsi.org/ngsi-ld/JsonProperty' THEN
-							IF attrInstance @> '{"https://uri.etsi.org/ngsi-ld/hasJSON":[{"@type": "@json","@value": ["urn:ngsi-ld:null"]}]}' THEN
+							IF attrInstance @> '{"https://uri.etsi.org/ngsi-ld/hasJSON":[{"@type":"@json","@value":"urn:ngsi-ld:null"}]}' THEN
 								delete := TRUE;
 							END IF;
 						WHEN 'https://uri.etsi.org/ngsi-ld/VocabProperty' THEN
-							IF attrInstance @> '{"https://uri.etsi.org/ngsi-ld/hasVocabs":[{"@list":[{"@value": "urn:ngsi-ld:null"}]}]}' THEN
+							IF attrInstance @> '{"https://uri.etsi.org/ngsi-ld/hasVocab":[{"@id":"urn:ngsi-ld:null"}]}' THEN
 								delete := TRUE;
 							END IF;
 						WHEN 'https://uri.etsi.org/ngsi-ld/LanguageProperty' THEN
@@ -78,7 +75,7 @@ BEGIN
 					found := FALSE;
 					oldAttrValue := old_entity -> attrKey;
 					FOR oldAttrInstance IN  SELECT * FROM JSONB_ARRAY_ELEMENTS(oldAttrValue) LOOP
-						IF (datasetId IS NULL AND NOT oldAttrInstance ? 'https://uri.etsi.org/ngsi-ld/datasetId') OR (oldAttrInstance ? 'https://uri.etsi.org/ngsi-ld/datasetId' AND oldAttrInstance #>> '{https://uri.etsi.org/ngsi-ld/datasetId,0,@value}' = datasetId) THEN
+						IF (datasetId IS NULL AND NOT oldAttrInstance ? 'https://uri.etsi.org/ngsi-ld/datasetId') OR (oldAttrInstance ? 'https://uri.etsi.org/ngsi-ld/datasetId' AND oldAttrInstance #>> '{https://uri.etsi.org/ngsi-ld/datasetId,0,@id}' = datasetId) THEN
 							found := TRUE;
 							EXIT;
 						END IF;
@@ -91,10 +88,14 @@ BEGIN
 						oldAttrValue := oldAttrValue - counter;
 					END IF;
 					IF NOT delete THEN
-						oldAttrValue := oldAttrValue || attrInstance;
+						IF oldAttrValue IS NULL THEN
+							oldAttrValue := jsonb_build_array(attrInstance);
+						ELSE
+							oldAttrValue := oldAttrValue || attrInstance;
+						END IF;
 						old_entity := jsonb_set(old_entity, ARRAY[attrKey], oldAttrValue);
 					ELSE
-						IF jsonb_array_length(oldAttribValue) > 0 THEN
+						IF jsonb_array_length(oldAttrValue) > 0 THEN
 							old_entity := jsonb_set(old_entity, ARRAY[attrKey], oldAttrValue);
 						ELSE
 							old_entity := old_entity - attrKey;	
@@ -102,7 +103,7 @@ BEGIN
 					END IF;
 					
 				END LOOP;
-			END IF;
+			
 		END IF;
 	END LOOP;
 	RETURN old_entity;

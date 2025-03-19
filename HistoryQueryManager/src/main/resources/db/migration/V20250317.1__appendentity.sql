@@ -27,13 +27,10 @@ BEGIN
 		ELSIF attrKey = 'https://uri.etsi.org/ngsi-ld/modifiedAt' THEN
 			old_entity:= jsonb_set(old_entity, ARRAY[attrKey], attrValue);
 		ELSE
-			IF NOT old_entity ? attrKey THEN
-				old_entity:= jsonb_set(old_entity, ARRAY[attrKey], attrValue);
-			ELSE
 				FOR attrInstance IN SELECT * FROM JSONB_ARRAY_ELEMENTS(attrValue) LOOP
 					delete := FALSE;
 					IF attrInstance ? 'https://uri.etsi.org/ngsi-ld/datasetId' THEN
-						datasetId := attrInstance #>> '{https://uri.etsi.org/ngsi-ld/datasetId,0,@value}';
+						datasetId := attrInstance #>> '{https://uri.etsi.org/ngsi-ld/datasetId,0,@id}';
 					ELSE
 						datasetId := null;
 					END IF;
@@ -52,15 +49,15 @@ BEGIN
 								delete := TRUE;
 							END IF;
 						WHEN 'https://uri.etsi.org/ngsi-ld/ListRelationship' THEN
-							IF attrInstance @> '{"https://uri.etsi.org/ngsi-ld/hasObjectList":[{"@list":[{"@value": "urn:ngsi-ld:null"}]}]}' THEN
+							IF attrInstance @> '{"https://uri.etsi.org/ngsi-ld/hasObjectList":[{"@list":[{"https://uri.etsi.org/ngsi-ld/hasObject":[{"@id":"urn:ngsi-ld:null"}]}]}]}' THEN
 								delete := TRUE;
 							END IF;
 						WHEN 'https://uri.etsi.org/ngsi-ld/JsonProperty' THEN
-							IF attrInstance @> '{"https://uri.etsi.org/ngsi-ld/hasJSON":[{"@type": "@json","@value": ["urn:ngsi-ld:null"]}]}' THEN
+							IF attrInstance @> '{"https://uri.etsi.org/ngsi-ld/hasJSON":[{"@type":"@json","@value":"urn:ngsi-ld:null"}]}' THEN
 								delete := TRUE;
 							END IF;
 						WHEN 'https://uri.etsi.org/ngsi-ld/VocabProperty' THEN
-							IF attrInstance @> '{"https://uri.etsi.org/ngsi-ld/hasVocabs":[{"@list":[{"@value": "urn:ngsi-ld:null"}]}]}' THEN
+							IF attrInstance @> '{"https://uri.etsi.org/ngsi-ld/hasVocab":[{"@id":"urn:ngsi-ld:null"}]}' THEN
 								delete := TRUE;
 							END IF;
 						WHEN 'https://uri.etsi.org/ngsi-ld/LanguageProperty' THEN
@@ -78,7 +75,7 @@ BEGIN
 					found := FALSE;
 					oldAttrValue := old_entity -> attrKey;
 					FOR oldAttrInstance IN  SELECT * FROM JSONB_ARRAY_ELEMENTS(oldAttrValue) LOOP
-						IF (datasetId IS NULL AND NOT oldAttrInstance ? 'https://uri.etsi.org/ngsi-ld/datasetId') OR (oldAttrInstance ? 'https://uri.etsi.org/ngsi-ld/datasetId' AND oldAttrInstance #>> '{https://uri.etsi.org/ngsi-ld/datasetId,0,@value}' = datasetId) THEN
+						IF (datasetId IS NULL AND NOT oldAttrInstance ? 'https://uri.etsi.org/ngsi-ld/datasetId') OR (oldAttrInstance ? 'https://uri.etsi.org/ngsi-ld/datasetId' AND oldAttrInstance #>> '{https://uri.etsi.org/ngsi-ld/datasetId,0,@id}' = datasetId) THEN
 							found := TRUE;
 							EXIT;
 						END IF;
@@ -91,10 +88,14 @@ BEGIN
 						oldAttrValue := oldAttrValue - counter;
 					END IF;
 					IF NOT delete THEN
-						oldAttrValue := oldAttrValue || attrInstance;
+						IF oldAttrValue IS NULL THEN
+							oldAttrValue := jsonb_build_array(attrInstance);
+						ELSE
+							oldAttrValue := oldAttrValue || attrInstance;
+						END IF;
 						old_entity := jsonb_set(old_entity, ARRAY[attrKey], oldAttrValue);
 					ELSE
-						IF jsonb_array_length(oldAttribValue) > 0 THEN
+						IF jsonb_array_length(oldAttrValue) > 0 THEN
 							old_entity := jsonb_set(old_entity, ARRAY[attrKey], oldAttrValue);
 						ELSE
 							old_entity := old_entity - attrKey;	
@@ -102,7 +103,7 @@ BEGIN
 					END IF;
 					
 				END LOOP;
-			END IF;
+			
 		END IF;
 	END LOOP;
 	RETURN old_entity;
@@ -125,8 +126,6 @@ DECLARE
     prev_entity jsonb;
     updated_entity jsonb;
     not_overwriting boolean;
-    to_update jsonb;
-    to_append jsonb;
 BEGIN
     resultObj := '{"success": [], "failure": []}'::jsonb;
 
@@ -135,22 +134,23 @@ BEGIN
 		not_overwriting := false;
         BEGIN
             SELECT ENTITY FROM ENTITY WHERE ID = new_entity->>'@id' INTO prev_entity;
-			updated_entity := ngsild_update_entity(prev_entity, newentity, not nooverwrite);
+			updated_entity := ngsild_update_entity(prev_entity, new_entity, not nooverwrite);
 			IF (prev_entity = updated_entity AND nooverwrite) THEN
 				not_overwriting := true;
 			END IF;
             IF not_overwriting THEN
-				resultObj = jsonb_set(resultObj, '{failure}', resultObj -> 'failure' || jsonb_build_object(newentity->>'@id', 'Not Overwriting'));
+				resultObj = jsonb_set(resultObj, '{failure}', resultObj -> 'failure' || jsonb_build_object(new_entity->>'@id', 'Not Overwriting'));
             ELSIF NOT FOUND THEN
-				resultObj = jsonb_set(resultObj, '{failure}', resultObj -> 'failure' || jsonb_build_object(newentity->>'@id', 'Not Found'));
+				resultObj = jsonb_set(resultObj, '{failure}', resultObj -> 'failure' || jsonb_build_object(new_entity->>'@id', 'Not Found'));
             ELSE
-				resultObj = jsonb_set(resultObj, '{success}', resultObj -> 'success' || jsonb_build_object('id', newentity->'@id', 'old', prev_entity, 'new', updated_entity)::jsonb);
+            	UPDATE entity SET entity = updated_entity WHERE id = updated_entity->>'@id';
+				resultObj = jsonb_set(resultObj, '{success}', resultObj -> 'success' || jsonb_build_object('id', new_entity->'@id', 'old', prev_entity, 'new', updated_entity)::jsonb);
             END IF;
-
+			
         EXCEPTION
             WHEN OTHERS THEN
                 RAISE NOTICE '%', SQLERRM;
-				resultObj = jsonb_set(resultObj, '{failure}', resultObj -> 'failure' || jsonb_build_object(newentity->>'@id', SQLSTATE));
+				resultObj = jsonb_set(resultObj, '{failure}', resultObj -> 'failure' || jsonb_build_object(new_entity->>'@id', SQLSTATE));
         END;
     END LOOP;
 
