@@ -142,9 +142,10 @@ BEGIN
             ELSIF NOT FOUND THEN
 				resultObj = jsonb_set(resultObj, '{failure}', resultObj -> 'failure' || jsonb_build_object(new_entity->>'@id', 'Not Found'));
             ELSE
+            	UPDATE entity SET entity = updated_entity WHERE id = updated_entity->>'@id';
 				resultObj = jsonb_set(resultObj, '{success}', resultObj -> 'success' || jsonb_build_object('id', new_entity->'@id', 'old', prev_entity, 'new', updated_entity)::jsonb);
             END IF;
-			UPDATE entity SET entiity = updated_entity WHERE id = updated_entity->>'@id';
+			
         EXCEPTION
             WHEN OTHERS THEN
                 RAISE NOTICE '%', SQLERRM;
