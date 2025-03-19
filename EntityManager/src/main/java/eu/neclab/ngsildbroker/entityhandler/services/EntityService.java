@@ -749,7 +749,7 @@ public class EntityService implements CSourceHandler {
 
 	private Uni<NGSILDOperationResult> partialUpdateLocalEntity(UpdateEntityRequest request, String entityId,
 			Context context) {
-		return entityDAO.partialUpdateAttribute(request).onItem().transformToUni(v -> {
+		return entityDAO.updateEntity(request).onItem().transformToUni(v -> {
 			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.PARTIAL_UPDATE_REQUEST,
 					entityId, request.getTenant());
 			request.setPrevPayloadFromSingle(entityId, v);

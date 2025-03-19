@@ -355,11 +355,13 @@ public class EntityInfoDAO {
 					    FROM ENTITY
 					    WHERE ID = $1
 					)
-					UPDATE ENTITY SET entity = ngsild_update_entity(entity, $2, $3) WHERE ID = $1 RETURNING (SELECT ENTITY FROM old_entity) AS old_entity, ENTITY.entity as new_entity;
+					UPDATE ENTITY SET entity = ngsild_update_entity(entity, $2, $3) WHERE ID = $1 RETURNING (SELECT ENTITY FROM a) AS old_entity, ENTITY.entity as new_entity;
 					""";
 
 			Tuple tuple = Tuple.of(request.getFirstId(), new JsonObject(request.getFirstPayload()),
 					!request.isNoOverwrite());
+			logger.debug(sql);
+			logger.debug(tuple.deepToString());
 			return client.preparedQuery(sql).execute(tuple).onFailure().recoverWithUni(e -> {
 				return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
 			}).onItem().transformToUni(rows -> {
@@ -389,11 +391,13 @@ public class EntityInfoDAO {
 					    FROM ENTITY
 					    WHERE ID = $1
 					)
-					UPDATE ENTITY SET entity = ngsild_update_entity(entity, $2, $3) WHERE ID = $1 RETURNING (SELECT ENTITY FROM old_entity) AS old_entity, ENTITY.entity as new_entity;
+					UPDATE ENTITY SET entity = ngsild_update_entity(entity, $2, $3) WHERE ID = $1 RETURNING (SELECT ENTITY FROM a) AS old_entity, ENTITY.entity as new_entity;
 					""";
 
 			Tuple tuple = Tuple.of(request.getFirstId(), new JsonObject(request.getFirstPayload()),
 					!request.isNoOverwrite());
+			logger.debug(sql);
+			logger.debug(tuple.deepToString());
 			return client.preparedQuery(sql).execute(tuple).onFailure().recoverWithUni(e -> {
 				return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
 			}).onItem().transformToUni(rows -> {
