@@ -1,7 +1,7 @@
 RELEASE NOTES 5.0.8
 
 improved performance on non federated cases for the query
-addressed an issue where ngsi-null was not properly handled 
+addressed an issue where ngsi-null was not properly handled in various operations
 improved some error messages. 
 
 
