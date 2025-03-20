@@ -1095,7 +1095,7 @@ public final class EntityTools {
 				for (Object listEntry : l) {
 					if (listEntry instanceof Map<?, ?> m) {
 						Object types = m.get(NGSIConstants.JSON_LD_TYPE);
-						
+
 						if (types != null && types instanceof List<?> typeList) {
 							String type = (String) typeList.get(0);
 							switch (type) {
@@ -1103,7 +1103,8 @@ public final class EntityTools {
 							case NGSIConstants.NGSI_LD_PROPERTY: {
 								List<Map<String, Object>> hasValue = (List<Map<String, Object>>) m
 										.get(NGSIConstants.NGSI_LD_HAS_VALUE);
-								if (hasValue != null && NGSIConstants.NGSI_LD_NULL
+
+								if (hasValue != null && !hasValue.isEmpty() && NGSIConstants.NGSI_LD_NULL
 										.equals(hasValue.get(0).get(NGSIConstants.JSON_LD_VALUE))) {
 									changed = true;
 								} else {
@@ -1114,7 +1115,7 @@ public final class EntityTools {
 							case NGSIConstants.NGSI_LD_RELATIONSHIP: {
 								List<Map<String, Object>> hasObject = (List<Map<String, Object>>) m
 										.get(NGSIConstants.NGSI_LD_HAS_OBJECT);
-								if (hasObject != null && NGSIConstants.NGSI_LD_NULL
+								if (hasObject != null && !hasObject.isEmpty() && NGSIConstants.NGSI_LD_NULL
 										.equals(hasObject.get(0).get(NGSIConstants.JSON_LD_ID))) {
 									changed = true;
 								} else {
@@ -1156,7 +1157,7 @@ public final class EntityTools {
 							case NGSIConstants.NGSI_LD_JSON_PROPERTY: {
 								List<Map<String, Object>> hasJson = (List<Map<String, Object>>) m
 										.get(NGSIConstants.NGSI_LD_HAS_JSON);
-								if (hasJson != null && NGSIConstants.NGSI_LD_NULL
+								if (hasJson != null && !hasJson.isEmpty() && NGSIConstants.NGSI_LD_NULL
 										.equals(hasJson.get(0).get(NGSIConstants.JSON_LD_VALUE))) {
 									changed = true;
 								} else {
@@ -1167,7 +1168,7 @@ public final class EntityTools {
 							case NGSIConstants.NGSI_LD_VocabProperty: {
 								List<Map<String, Object>> hasVocab = (List<Map<String, Object>>) m
 										.get(NGSIConstants.NGSI_LD_HAS_VOCAB);
-								if (hasVocab != null && NGSIConstants.NGSI_LD_NULL
+								if (hasVocab != null && !hasVocab.isEmpty() && NGSIConstants.NGSI_LD_NULL
 										.equals(hasVocab.get(0).get(NGSIConstants.JSON_LD_ID))) {
 									changed = true;
 								} else {
@@ -1178,7 +1179,7 @@ public final class EntityTools {
 							case NGSIConstants.NGSI_LD_LANGPROPERTY: {
 								List<Map<String, Object>> hasLanguageMap = (List<Map<String, Object>>) m
 										.get(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP);
-								if (hasLanguageMap != null && NGSIConstants.NGSI_LD_NULL
+								if (hasLanguageMap != null && !hasLanguageMap.isEmpty() && NGSIConstants.NGSI_LD_NULL
 										.equals(hasLanguageMap.get(0).get(NGSIConstants.JSON_LD_VALUE))) {
 									changed = true;
 								} else {
