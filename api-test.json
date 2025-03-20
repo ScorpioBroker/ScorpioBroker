@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "c49cb930-11b4-4d0c-a9d0-64e9ff005e97",
+		"_postman_id": "8091ff08-4220-42dd-861d-d4f170fe1a0d",
 		"name": "API Test",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
@@ -69320,6 +69320,178 @@
 											]
 										},
 										{
+											"name": "no @context test ngsi-ld null",
+											"item": [
+												{
+													"name": "upsert batch entity with no  @context",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"var payloadBody = JSON.parse(pm.request.body.raw);\r",
+																	"console.log(payloadBody[0].id);\r",
+																	"console.log(payloadBody[1].id);\r",
+																	"var entityId1 = payloadBody[0].id;\r",
+																	"var entityId2 = payloadBody[1].id;\r",
+																	"pm.collectionVariables.set(\"created\", payloadBody);\r",
+																	"pm.collectionVariables.set(\"entityId1\", entityId1);\r",
+																	"pm.collectionVariables.set(\"entityId2\", entityId2);\r",
+																	"\r",
+																	"pm.test(\"Successful POST request\", function () {\r",
+																	"    pm.expect(pm.response.code).to.be.oneOf([201, 207,204]);\r",
+																	"});\r",
+																	"\r",
+																	" \r",
+																	" "
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "[\r\n  {\r\n    \"id\": \"urn:test:testbatchentity1005\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"urn:ngsi-ld:null\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"urn:ngsi-ld:null\"},\r\n    \"listproperty\": {\"type\": \"ListProperty\", \"valueList\": [\"urn:ngsi-ld:null\"]},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": \"urn:ngsi-ld:null\"},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": \"urn:ngsi-ld:null\"},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": \"urn:ngsi-ld:null\"},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:ngsi-ld:null\"}, \r\n    \"passenger\": {\r\n       \"type\": \"ListRelationship\",\r\n       \"objectType\": \"Person\",\r\n       \"objectList\": [\"urn:ngsi-ld:null\"]\r\n   },\r\n    \"testjsonpropery\": {\r\n        \"type\": \"JsonProperty\",\r\n        \"json\": \"urn:ngsi-ld:null\"\r\n    }\r\n    \r\n  },\r\n  {\r\n    \"id\": \"urn:test:testbatchentity1007\",\r\n    \"type\": \"TestType\",\r\n    \"stringproperty\": {\"type\": \"Property\", \"value\": \"urn:ngsi-ld:null\"},\r\n    \"vocabproperty\": {\"type\": \"VocabProperty\", \"vocab\": \"urn:ngsi-ld:null\"},\r\n    \"listproperty\": {\"type\": \"ListProperty\", \"valueList\": [\"urn:ngsi-ld:null\"]},\r\n    \"intproperty\": {\"type\": \"Property\", \"value\": \"urn:ngsi-ld:null\"},\r\n    \"floatproperty\": {\"type\": \"Property\", \"value\": \"urn:ngsi-ld:null\"},\r\n    \"complexproperty\": {\"type\": \"Property\", \"value\": \"urn:ngsi-ld:null\"},\r\n    \"testrelationship\": {\"type\": \"Relationship\", \"object\": \"urn:ngsi-ld:null\"}, \r\n    \"passenger\": {\r\n       \"type\": \"ListRelationship\",\r\n       \"objectType\": \"Person\",\r\n       \"objectList\": [\"urn:ngsi-ld:null\"]\r\n   },\r\n    \"testjsonpropery\": {\r\n        \"type\": \"JsonProperty\",\r\n        \"json\": \"urn:ngsi-ld:null\"\r\n    }\r\n  }\r\n]"
+														},
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entityOperations/upsert",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entityOperations",
+																"upsert"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "get batch entity with no @context",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"   var expected = pm.collectionVariables.get(\"created\");\r",
+																	"pm.test(\"Status code is 200\", function () {\r",
+																	"    pm.response.to.have.status(200);\r",
+																	"});\r",
+																	"pm.test(\"Content-Type is present\", function () {\r",
+																	"    pm.response.to.have.header(\"Content-Type\");\r",
+																	"});\r",
+																	"\r",
+																	"var expected = [\r",
+																	"    {\r",
+																	"        \"id\": \"urn:test:testbatchentity1005\",\r",
+																	"        \"type\": \"TestType\"\r",
+																	"    },\r",
+																	"    {\r",
+																	"        \"id\": \"urn:test:testbatchentity1007\",\r",
+																	"        \"type\": \"TestType\"\r",
+																	"    }\r",
+																	"];\r",
+																	"\r",
+																	"pm.test(\"Validate content\", function () {\r",
+																	"    var jsonData = pm.response.json();\r",
+																	"    pm.expect(jsonData).to.eql(expected);\r",
+																	"});\r",
+																	"\r",
+																	"\r",
+																	"\r",
+																	"\r",
+																	""
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "{\r\n    \"type\": \"Query\",\r\n    \"entities\": [\r\n        {\r\n            \"id\": \"urn:test:testbatchentity1005\",\r\n            \"type\": \"TestType\"\r\n        },\r\n        {\r\n            \"id\": \"urn:test:testbatchentity1006\",\r\n            \"type\": \"TestType\"\r\n        },\r\n        {\r\n            \"id\": \"urn:test:testbatchentity1007\",\r\n            \"type\": \"TestType\"\r\n        }\r\n    ]\r\n}"
+														},
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entityOperations/query",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entityOperations",
+																"query"
+															]
+														}
+													},
+													"response": []
+												},
+												{
+													"name": "delete batch entity with no @context Copy",
+													"event": [
+														{
+															"listen": "test",
+															"script": {
+																"exec": [
+																	"pm.test(\"Status code is 204\", function () {\r",
+																	"    pm.response.to.have.status(204);\r",
+																	"});\r",
+																	"pm.collectionVariables.clear();"
+																],
+																"type": "text/javascript"
+															}
+														}
+													],
+													"request": {
+														"method": "POST",
+														"header": [
+															{
+																"key": "Content-Type",
+																"value": "application/json",
+																"type": "default"
+															}
+														],
+														"body": {
+															"mode": "raw",
+															"raw": "[\r\n    \"urn:test:testbatchentity1005\",\r\n    \"urn:test:testbatchentity1007\"\r\n]"
+														},
+														"url": {
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entityOperations/delete",
+															"host": [
+																"{{entity-manager}}"
+															],
+															"path": [
+																"ngsi-ld",
+																"v1",
+																"entityOperations",
+																"delete"
+															]
+														}
+													},
+													"response": []
+												}
+											]
+										},
+										{
 											"name": "@context in body",
 											"item": [
 												{
@@ -94722,20 +94894,6 @@
 					]
 				}
 			]
-		}
-	],
-	"variable": [
-		{
-			"key": "created",
-			"value": ""
-		},
-		{
-			"key": "entityId",
-			"value": ""
-		},
-		{
-			"key": "updated",
-			"value": ""
 		}
 	]
 }

@@ -1,3 +1,7 @@
+RELEASE NOTES 5.0.9
+
+addressed an issue where upsert operations where able to create attributes with the value urn:ngsi-ld:null 
+
 RELEASE NOTES 5.0.8
 
 improved performance on non federated cases for the query

@@ -113,7 +113,6 @@ public final class EntityTools {
 				new ArrayList<Object>(context), data.get(0).getHeaders());
 	}
 
-
 	public static GeoProperty getLocation(Map<String, Object> fullEntry, LDGeoQuery ldGeoQuery) {
 		String locationName = NGSIConstants.NGSI_LD_LOCATION;
 		if (ldGeoQuery != null) {
@@ -125,8 +124,6 @@ public final class EntityTools {
 		}
 		return SerializationTools.parseGeoProperty((List<Map<String, Object>>) obj, locationName);
 	}
-
-	
 
 	public static Set<String> getRegisteredTypes(Map<String, Object> cSourceRegistration) {
 		List<Map<String, Object>> entities = (List<Map<String, Object>>) ((List<Map<String, Object>>) cSourceRegistration
@@ -388,7 +385,7 @@ public final class EntityTools {
 		return resolved;
 	}
 
-	@SuppressWarnings({ "rawtypes"})
+	@SuppressWarnings({ "rawtypes" })
 	protected static void setTemporalProperties(Object jsonNode, String createdAt, String modifiedAt,
 			boolean rootOnly) {
 		if (!(jsonNode instanceof Map)) {
@@ -475,8 +472,8 @@ public final class EntityTools {
 		noConcise(object, null, null, 0);
 	}
 
-	
-	private static void noConcise(Object object, Map<String, Object> parentMap, String keyOfObject, int level) throws ResponseException {
+	private static void noConcise(Object object, Map<String, Object> parentMap, String keyOfObject, int level)
+			throws ResponseException {
 		// Object is Map
 		if (object instanceof Map<?, ?> map) {
 			// Map have object but not type
@@ -485,30 +482,33 @@ public final class EntityTools {
 			} else if (map.containsKey(NGSIConstants.OBJECT_LIST)) {
 				((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.LISTRELATIONSHIP);
 				Object objList = ((Map<String, Object>) map).get(NGSIConstants.OBJECT_LIST);
-				if(objList instanceof List<?> l) {
+				if (objList instanceof List<?> l) {
 					List<Map<String, String>> tmpList = new ArrayList<>(l.size());
-					for(Object entry: l) {
-						if(entry instanceof Map<?,?> m) {
-							if(m.size() != 1) {
-								throw new ResponseException(ErrorType.BadRequestData, "Unkown format for object list entry.");
+					for (Object entry : l) {
+						if (entry instanceof Map<?, ?> m) {
+							if (m.size() != 1) {
+								throw new ResponseException(ErrorType.BadRequestData,
+										"Unkown format for object list entry.");
 							}
 							Object relId = m.get(NGSIConstants.OBJECT);
-							if(relId == null || !(relId instanceof String)) {
-								throw new ResponseException(ErrorType.BadRequestData, "Unkown format for object list entry.");
+							if (relId == null || !(relId instanceof String)) {
+								throw new ResponseException(ErrorType.BadRequestData,
+										"Unkown format for object list entry.");
 							}
 							HttpUtils.validateUri((String) relId);
 							tmpList.add((Map<String, String>) m);
-						}else if(entry instanceof String s) {
+						} else if (entry instanceof String s) {
 							HttpUtils.validateUri(s);
 							Map<String, String> tmpMap = new HashMap<>(1);
 							tmpMap.put(NGSIConstants.OBJECT, s);
 							tmpList.add(tmpMap);
-						}else {
-							throw new ResponseException(ErrorType.BadRequestData, "Unkown format for object list entry.");		
+						} else {
+							throw new ResponseException(ErrorType.BadRequestData,
+									"Unkown format for object list entry.");
 						}
 					}
 					((Map<String, Object>) map).put(NGSIConstants.OBJECT_LIST, tmpList);
-				}else {
+				} else {
 					throw new ResponseException(ErrorType.BadRequestData, "Unkown format for object list entry.");
 				}
 			} else if (map.containsKey(NGSIConstants.VALUE_LIST)) {
@@ -676,7 +676,8 @@ public final class EntityTools {
 			if (queryParams != null) {
 				batchBody.putAll(queryParams);
 			}
-			HttpRequest<Buffer> req = webClient.postAbs(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_QUERY).timeout(timeout);
+			HttpRequest<Buffer> req = webClient.postAbs(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_QUERY)
+					.timeout(timeout);
 			req = req.setQueryParam("limit", "100");
 			req = req.setQueryParam("options", "sysAttrs");
 			req = req.putHeader(HttpHeaders.VIA, remoteHost.getViaHeaders().getViaHeaders());
@@ -689,13 +690,13 @@ public final class EntityTools {
 				logger.warn("failed to serialize batch request");
 				return Uni.createFrom().item(Lists.newArrayList());
 			}
-			if(!remoteHost.headers().contains(HttpHeaders.ACCEPT)) {
+			if (!remoteHost.headers().contains(HttpHeaders.ACCEPT)) {
 				req = req.putHeader(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSON);
 			}
 			logger.debug("calling batch query on " + remoteHost.host());
 			logger.debug(batchString);
-			unis.add(req.putHeaders(remoteHost.headers()).sendBuffer(Buffer.buffer(batchString))
-					.onItem().transformToUni(response -> {
+			unis.add(req.putHeaders(remoteHost.headers()).sendBuffer(Buffer.buffer(batchString)).onItem()
+					.transformToUni(response -> {
 						if (response != null) {
 							logger.debug(response.statusCode() + "");
 							logger.debug(response.bodyAsString());
@@ -755,15 +756,15 @@ public final class EntityTools {
 										+ AppConstants.NGB_APPLICATION_JSONLD + "\"");
 					}
 				}
-				if(!remoteHost.headers().contains(HttpHeaders.ACCEPT)) {
+				if (!remoteHost.headers().contains(HttpHeaders.ACCEPT)) {
 					req = req.putHeader(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSON);
 				}
 				logger.debug("calling query on " + remoteHost.host());
 				logger.debug(req.queryParams().toString());
-				
+
 				unis.add(req.putHeaders(remoteHost.headers()).timeout(timeout).send().onItem()
 						.transformToUni(response -> {
-							
+
 							if (response != null) {
 								logger.debug(response.statusCode() + "");
 								logger.debug(response.bodyAsString());
@@ -823,7 +824,7 @@ public final class EntityTools {
 								}
 							}
 							req = req.setQueryParam("options", "sysAttrs");
-							if(!remoteHost.headers().contains(HttpHeaders.ACCEPT)) {
+							if (!remoteHost.headers().contains(HttpHeaders.ACCEPT)) {
 								req = req.putHeader(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSON);
 							}
 							unis.add(req.putHeaders(remoteHost.headers()).timeout(timeout).send().onItem()
@@ -1063,6 +1064,151 @@ public final class EntityTools {
 			}
 		}
 		return deleted;
+	}
+
+	public static List<Map<String, Object>> removeNGSILDNull(List<Map<String, Object>> entities) {
+		List<Map<String, Object>> result = new ArrayList<>(entities.size());
+		boolean changed = false;
+		for (Map<String, Object> entity : entities) {
+			Map<String, Object> tmp = removeNGSILDNull(entity);
+			if (tmp == null) {
+				result.add(entity);
+			} else {
+				changed = true;
+				result.add(tmp);
+			}
+		}
+		if (changed) {
+			return result;
+		}
+		return null;
+	}
+
+	private static Map<String, Object> removeNGSILDNull(Map<String, Object> entity) {
+		Map<String, Object> result = new HashMap<>(entity.size());
+		boolean changed = false;
+		for (Entry<String, Object> entry : entity.entrySet()) {
+			if (entry.getValue() instanceof List<?> l) {
+				List<Object> toAdd = new ArrayList<Object>(l.size());
+				boolean stopped = false;
+
+				for (Object listEntry : l) {
+					if (listEntry instanceof Map<?, ?> m) {
+						Object types = m.get(NGSIConstants.JSON_LD_TYPE);
+						
+						if (types != null && types instanceof List<?> typeList) {
+							String type = (String) typeList.get(0);
+							switch (type) {
+							case NGSIConstants.NGSI_LD_GEOPROPERTY:
+							case NGSIConstants.NGSI_LD_PROPERTY: {
+								List<Map<String, Object>> hasValue = (List<Map<String, Object>>) m
+										.get(NGSIConstants.NGSI_LD_HAS_VALUE);
+								if (hasValue != null && NGSIConstants.NGSI_LD_NULL
+										.equals(hasValue.get(0).get(NGSIConstants.JSON_LD_VALUE))) {
+									changed = true;
+								} else {
+									toAdd.add(m);
+								}
+								break;
+							}
+							case NGSIConstants.NGSI_LD_RELATIONSHIP: {
+								List<Map<String, Object>> hasObject = (List<Map<String, Object>>) m
+										.get(NGSIConstants.NGSI_LD_HAS_OBJECT);
+								if (hasObject != null && NGSIConstants.NGSI_LD_NULL
+										.equals(hasObject.get(0).get(NGSIConstants.JSON_LD_ID))) {
+									changed = true;
+								} else {
+									toAdd.add(m);
+								}
+								break;
+							}
+							case NGSIConstants.NGSI_LD_ListProperty: {
+								List<Map<String, Object>> hasValueList = (List<Map<String, Object>>) m
+										.get(NGSIConstants.NGSI_LD_HAS_LIST);
+								if (hasValueList != null && hasValueList.size() > 0
+										&& hasValueList.get(0).get(NGSIConstants.JSON_LD_LIST) instanceof List<?> l2
+										&& l2.size() > 0 && l2.get(0) instanceof Map<?, ?> m2
+										&& NGSIConstants.NGSI_LD_NULL.equals(m2.get(NGSIConstants.JSON_LD_VALUE))
+
+								) {
+									changed = true;
+								} else {
+									toAdd.add(m);
+								}
+								break;
+							}
+							case NGSIConstants.NGSI_LD_LISTRELATIONSHIP: {
+								List<Map<String, Object>> hasObjectList = (List<Map<String, Object>>) m
+										.get(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST);
+								if (hasObjectList != null && hasObjectList.size() > 0
+										&& hasObjectList.get(0).containsKey(NGSIConstants.JSON_LD_LIST)
+										&& NGSIConstants.NGSI_LD_NULL.equals(
+												((List<Map<String, String>>) ((List<Map<String, Object>>) hasObjectList
+														.get(0).get(NGSIConstants.JSON_LD_LIST)).get(0)
+														.get(NGSIConstants.NGSI_LD_HAS_OBJECT)).get(0)
+														.get(NGSIConstants.JSON_LD_ID))) {
+									changed = true;
+								} else {
+									toAdd.add(m);
+								}
+								break;
+							}
+							case NGSIConstants.NGSI_LD_JSON_PROPERTY: {
+								List<Map<String, Object>> hasJson = (List<Map<String, Object>>) m
+										.get(NGSIConstants.NGSI_LD_HAS_JSON);
+								if (hasJson != null && NGSIConstants.NGSI_LD_NULL
+										.equals(hasJson.get(0).get(NGSIConstants.JSON_LD_VALUE))) {
+									changed = true;
+								} else {
+									toAdd.add(m);
+								}
+								break;
+							}
+							case NGSIConstants.NGSI_LD_VocabProperty: {
+								List<Map<String, Object>> hasVocab = (List<Map<String, Object>>) m
+										.get(NGSIConstants.NGSI_LD_HAS_VOCAB);
+								if (hasVocab != null && NGSIConstants.NGSI_LD_NULL
+										.equals(hasVocab.get(0).get(NGSIConstants.JSON_LD_ID))) {
+									changed = true;
+								} else {
+									toAdd.add(m);
+								}
+								break;
+							}
+							case NGSIConstants.NGSI_LD_LANGPROPERTY: {
+								List<Map<String, Object>> hasLanguageMap = (List<Map<String, Object>>) m
+										.get(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP);
+								if (hasLanguageMap != null && NGSIConstants.NGSI_LD_NULL
+										.equals(hasLanguageMap.get(0).get(NGSIConstants.JSON_LD_VALUE))) {
+									changed = true;
+								} else {
+									toAdd.add(m);
+								}
+								break;
+							}
+							default:
+								toAdd.add(m);
+							}
+						} else {
+							toAdd.add(m);
+						}
+					} else {
+						result.put(entry.getKey(), entry.getValue());
+						stopped = true;
+						break;
+					}
+				}
+				if (!stopped && !toAdd.isEmpty()) {
+					result.put(entry.getKey(), toAdd);
+				}
+			} else {
+				result.put(entry.getKey(), entry.getValue());
+			}
+		}
+		if (changed) {
+			return result;
+		}
+		return null;
 	}
 
 }

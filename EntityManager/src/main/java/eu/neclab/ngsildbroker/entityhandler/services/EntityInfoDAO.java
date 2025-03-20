@@ -20,6 +20,7 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.storage.ClientManager;
 import eu.neclab.ngsildbroker.commons.tools.DBUtil;
+import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple3;
@@ -30,6 +31,8 @@ import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
 import io.vertx.pgclient.PgException;
+
+import org.apache.http.util.EntityUtils;
 import org.locationtech.spatial4j.context.SpatialContextFactory;
 import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
 import org.locationtech.spatial4j.io.GeoJSONReader;
@@ -139,23 +142,37 @@ public class EntityInfoDAO {
 			request.getPayload().values().forEach(entityList -> {
 				entities.add(mergeAllEntities(entityList));
 			});
-			Tuple tuple = Tuple.of(new JsonArray(entities));
-			String sql = """
-					with a as (SELECT jsonb_array_elements($1) as entity),
-					b as (SELECT a.entity->>'@id' as id, a.entity as entity, entity.entity as old_entity from a left join entity on a.entity->>'@id' = entity.id),
-					c as (insert into entity(id, e_types, entity) select b.id, ARRAY(SELECT jsonb_array_elements_text(b.entity->'@type')), b.entity from b ON CONFLICT (id) DO UPDATE SET id = EXCLUDED.id,e_types = ARRAY(SELECT DISTINCT UNNEST(entity.e_types || EXCLUDED.e_types)),entity =
-					""";
-			if (doReplace) {
-				sql += "EXCLUDED.entity ";
+			List<Map<String, Object>> cleanedEntities = EntityTools.removeNGSILDNull(entities);
+			Tuple tuple;
+			StringBuilder sql;
+			if (cleanedEntities == null) {
+
+				tuple = Tuple.of(new JsonArray(entities));
+				sql = new StringBuilder(
+						"""
+								with a as (SELECT jsonb_array_elements($1) as entity),
+								b as (SELECT a.entity->>'@id' as id, a.entity as entity, entity.entity as old_entity from a left join entity on a.entity->>'@id' = entity.id),
+								c as (insert into entity(id, e_types, entity) select b.id, ARRAY(SELECT jsonb_array_elements_text(b.entity->'@type')), b.entity from b ON CONFLICT (id) DO UPDATE SET id = EXCLUDED.id,e_types = ARRAY(SELECT DISTINCT UNNEST(entity.e_types || EXCLUDED.e_types)),entity =
+								""");
 			} else {
-				sql += "ngsild_update_entity(EXCLUDED.entity, entity.entity, true) ";
+				tuple = Tuple.of(new JsonArray(entities), new JsonArray(cleanedEntities));
+				sql = new StringBuilder(
+						"""
+								with a as (SELECT entity, cleaned_entity FROM jsonb_array_elements($1) WITH ORDINALITY AS t1(entity, idx1), jsonb_array_elements($2) WITH ORDINALITY AS t2(cleaned_entity, idx2) WHERE idx1 = idx2),
+								b as (SELECT a.entity->>'@id' as id, a.entity as entity, entity.entity as old_entity, a.cleaned_entity as cleaned_entity from a left join entity on a.entity->>'@id' = entity.id),
+								c as (insert into entity(id, e_types, entity) select b.id, ARRAY(SELECT jsonb_array_elements_text(b.entity->'@type')), b.cleaned_entity from b ON CONFLICT (id) DO UPDATE SET id = EXCLUDED.id,e_types = ARRAY(SELECT DISTINCT UNNEST(entity.e_types || EXCLUDED.e_types)),entity =
+								""");
 			}
-
-			sql += "RETURNING id, entity, (xmax = 0) AS inserted) select c.id, c.inserted, c.entity, b.old_entity from c left join b on c.id = b.id";
-
-			logger.debug(sql);
+			if (doReplace) {
+				sql.append("EXCLUDED.entity ");
+			} else {
+				sql.append("ngsild_update_entity(b.old_entity, b.entity, true) ");
+			}
+			sql.append(
+					"RETURNING id, entity, (xmax = 0) AS inserted) select c.id, c.inserted, c.entity, b.old_entity from c left join b on c.id = b.id");
+			logger.debug(sql.toString());
 			logger.debug(tuple.deepToString());
-			return client.preparedQuery(sql).execute(tuple).onItem().transform(rows -> {
+			return client.preparedQuery(sql.toString()).execute(tuple).onItem().transform(rows -> {
 				Map<String, Object> result = new HashMap<>(2);
 				ArrayList<Map<String, Object>> success = new ArrayList<>(rows.size());
 				result.put("success", success);
