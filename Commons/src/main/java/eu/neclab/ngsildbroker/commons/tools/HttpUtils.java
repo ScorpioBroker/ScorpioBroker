@@ -77,8 +77,10 @@ public final class HttpUtils {
 	private static final Logger logger = LoggerFactory.getLogger(HttpUtils.class);
 
 	public static final Uni<RestResponse<Object>> getInvalidHeader() {
-		return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
-				new ResponseException(ErrorType.NotAcceptable, "Provided accept types are not supported"), AppConstants.INTERNAL_NULL_KEY));
+		return Uni.createFrom()
+				.item(HttpUtils.handleControllerExceptions(
+						new ResponseException(ErrorType.NotAcceptable, "Provided accept types are not supported"),
+						AppConstants.INTERNAL_NULL_KEY));
 	}
 
 //	private static final String CORE_CONTEXT_URL_LINK = null;;
@@ -573,7 +575,11 @@ public final class HttpUtils {
 						Object bodyContext = compacted.remove(NGSIConstants.JSON_LD_CONTEXT);
 						Object finalCompacted;
 						if (contextHeader.isEmpty()) {
-							contextHeader.add(((List<Object>) bodyContext).get(0));
+							if (bodyContext != null) {
+								contextHeader.add(((List<Object>) bodyContext).get(0));
+							} else if (context != null) {
+								contextHeader.add(context.getOriginalAtContext().get(0));
+							}
 						}
 						finalCompacted = compacted.getOrDefault(JsonLdConsts.GRAPH, compacted);
 						if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)) {

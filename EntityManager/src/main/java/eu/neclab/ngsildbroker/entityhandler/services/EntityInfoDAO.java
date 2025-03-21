@@ -23,8 +23,9 @@ import eu.neclab.ngsildbroker.commons.tools.DBUtil;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple3;
-import io.smallrye.mutiny.tuples.Tuples;
+
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.sqlclient.Row;
@@ -32,10 +33,6 @@ import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
 import io.vertx.pgclient.PgException;
 
-import org.apache.http.util.EntityUtils;
-import org.locationtech.spatial4j.context.SpatialContextFactory;
-import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
-import org.locationtech.spatial4j.io.GeoJSONReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,8 +58,6 @@ public class EntityInfoDAO {
 
 	@Inject
 	JsonLDService ldService;
-
-	GeoJSONReader geoReader = new GeoJSONReader(JtsSpatialContext.GEO, new SpatialContextFactory());
 
 	public Uni<Map<String, Object>> newbatchCreateEntity(BatchRequest request) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
@@ -135,7 +130,7 @@ public class EntityInfoDAO {
 		});
 	}
 
-	public Uni<Map<String, Object>> batchUpsertEntity(BatchRequest request, boolean doReplace) {
+	public Uni<Map<String, Object>> batchUpsertEntity2(BatchRequest request, boolean doReplace) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
 
 			List<Map<String, Object>> entities = Lists.newArrayList();
@@ -152,26 +147,32 @@ public class EntityInfoDAO {
 						"""
 								with a as (SELECT jsonb_array_elements($1) as entity),
 								b as (SELECT a.entity->>'@id' as id, a.entity as entity, entity.entity as old_entity from a left join entity on a.entity->>'@id' = entity.id),
-								c as (insert into entity(id, e_types, entity) select b.id, ARRAY(SELECT jsonb_array_elements_text(b.entity->'@type')), b.entity from b ON CONFLICT (id) DO UPDATE SET id = EXCLUDED.id,e_types = ARRAY(SELECT DISTINCT UNNEST(entity.e_types || EXCLUDED.e_types)),entity =
+								c as (insert into entity(id, e_types, entity) select b.id, ARRAY(SELECT jsonb_array_elements_text(b.entity->'@type')), b.entity from b ON CONFLICT (id) DO UPDATE SET e_types = ARRAY(SELECT DISTINCT UNNEST(entity.e_types || EXCLUDED.e_types)),entity =
 								""");
+				if (doReplace) {
+					sql.append("EXCLUDED.entity ");
+				} else {
+					sql.append("ngsild_update_entity(entity.entity, excluded.entity, true) ");
+				}
 			} else {
 				tuple = Tuple.of(new JsonArray(entities), new JsonArray(cleanedEntities));
 				sql = new StringBuilder(
 						"""
 								with a as (SELECT entity, cleaned_entity FROM jsonb_array_elements($1) WITH ORDINALITY AS t1(entity, idx1), jsonb_array_elements($2) WITH ORDINALITY AS t2(cleaned_entity, idx2) WHERE idx1 = idx2),
 								b as (SELECT a.entity->>'@id' as id, a.entity as entity, entity.entity as old_entity, a.cleaned_entity as cleaned_entity from a left join entity on a.entity->>'@id' = entity.id),
-								c as (insert into entity(id, e_types, entity) select b.id, ARRAY(SELECT jsonb_array_elements_text(b.entity->'@type')), b.cleaned_entity from b ON CONFLICT (id) DO UPDATE SET id = EXCLUDED.id,e_types = ARRAY(SELECT DISTINCT UNNEST(entity.e_types || EXCLUDED.e_types)),entity =
+								c as (insert into entity(id, e_types, entity) select b.id, ARRAY(SELECT jsonb_array_elements_text(b.entity->'@type')), b.cleaned_entity from b ON CONFLICT (id) DO UPDATE SET e_types = ARRAY(SELECT DISTINCT UNNEST(entity.e_types || EXCLUDED.e_types)),entity =
 								""");
+				if (doReplace) {
+					sql.append("EXCLUDED.entity ");
+				} else {
+					sql.append(
+							"ngsild_update_entity(entity.entity, (SELECT cleaned_entity FROM b WHERE b.id = excluded.id), true) ");
+				}
 			}
-			if (doReplace) {
-				sql.append("EXCLUDED.entity ");
-			} else {
-				sql.append("ngsild_update_entity(b.old_entity, b.entity, true) ");
-			}
+
 			sql.append(
 					"RETURNING id, entity, (xmax = 0) AS inserted) select c.id, c.inserted, c.entity, b.old_entity from c left join b on c.id = b.id");
-			logger.debug(sql.toString());
-			logger.debug(tuple.deepToString());
+
 			return client.preparedQuery(sql.toString()).execute(tuple).onItem().transform(rows -> {
 				Map<String, Object> result = new HashMap<>(2);
 				ArrayList<Map<String, Object>> success = new ArrayList<>(rows.size());
@@ -192,6 +193,61 @@ public class EntityInfoDAO {
 				});
 				return result;
 			});
+		});
+	}
+
+	public Uni<Map<String, Object>> batchUpsertEntity(BatchRequest request, boolean doReplace) {
+		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
+
+			List<Map<String, Object>> entities = Lists.newArrayList();
+			request.getPayload().values().forEach(entityList -> {
+				entities.add(mergeAllEntities(entityList));
+			});
+			Tuple2<Boolean, List<Tuple>> nullFoundAndTuple = EntityTools.removeNGSILDNullToTuples(entities);
+			StringBuilder sql = new StringBuilder(
+					"""
+							with a as (SELECT ID AS ID, ENTITY AS OLD_ENTITY FROM ENTITY WHERE ID = $1),
+							b as(INSERT INTO ENTITY(ID, E_TYPES, ENTITY) VALUES ($1, $2, $3::jsonb) ON CONFLICT (id) DO UPDATE SET e_types = ARRAY(SELECT DISTINCT UNNEST(entity.e_types || EXCLUDED.e_types)),entity =
+									""");
+
+			if (doReplace) {
+				sql.append("EXCLUDED.entity ");
+			} else {
+				if (nullFoundAndTuple.getItem1()) {
+					sql.append("ngsild_update_entity(entity.entity, $4, true) ");
+				} else {
+					sql.append("ngsild_update_entity(entity.entity, excluded.entity, true) ");
+				}
+			}
+
+			sql.append(
+					"RETURNING id, entity, (xmax = 0) AS inserted) select b.id, b.inserted, b.entity, a.old_entity from b LEFT JOIN a ON b.id = a.id;");
+			logger.debug(sql.toString());
+			return client.preparedQuery(sql.toString()).executeBatch(nullFoundAndTuple.getItem2()).onItem()
+					.transform(rows -> {
+						Map<String, Object> result = new HashMap<>(2);
+						ArrayList<Map<String, Object>> success = new ArrayList<>(rows.size());
+						result.put("success", success);
+						result.put("failure", new ArrayList<Map<String, Object>>(0));
+						while (rows != null) {
+							rows.forEach(row -> {
+
+								Map<String, Object> tmp = new HashMap<>(4);
+								tmp.put("id", row.getString(0));
+								tmp.put("updated", !row.getBoolean(1));
+								JsonObject tmpObj = row.getJsonObject(3);
+								if (tmpObj != null) {
+									tmp.put("old", tmpObj.getMap());
+								} else {
+									tmp.put("old", null);
+								}
+								tmp.put("new", row.getJsonObject(2).getMap());
+								success.add(tmp);
+							});
+							rows = rows.next();
+						}
+						return result;
+					});
 		});
 	}
 

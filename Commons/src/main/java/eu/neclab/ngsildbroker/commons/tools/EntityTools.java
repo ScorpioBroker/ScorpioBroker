@@ -22,6 +22,7 @@ import com.google.common.net.HttpHeaders;
 import java.util.Set;
 import java.util.UUID;
 
+import io.vertx.core.json.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,11 +53,13 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple3;
 import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
 import io.vertx.mutiny.ext.web.client.HttpResponse;
 import io.vertx.mutiny.ext.web.client.WebClient;
+import io.vertx.mutiny.sqlclient.Tuple;
 
 @SuppressWarnings("unchecked")
 public final class EntityTools {
@@ -1082,6 +1085,29 @@ public final class EntityTools {
 			return result;
 		}
 		return null;
+	}
+	public static Tuple2<Boolean, List<Tuple>> removeNGSILDNullToTuples(List<Map<String, Object>> entities) {
+		List<Tuple> result = new ArrayList<>(entities.size());
+		List<Tuple> cleanedResult = new ArrayList<>(entities.size());
+		boolean changed = false;
+		for (Map<String, Object> entity : entities) {
+			Map<String, Object> tmp = removeNGSILDNull(entity);
+			String[] types = ((List<String>)entity.get(NGSIConstants.JSON_LD_TYPE)).toArray(new String[0]);
+			Object id = entity.get(NGSIConstants.JSON_LD_ID);
+			JsonObject entityJsonObj = new JsonObject(entity);
+			if (tmp == null) {
+				result.add(Tuple.of(id, types, entityJsonObj));
+				cleanedResult.add(Tuple.of(id, types, entityJsonObj, entityJsonObj));
+			} else {
+				changed = true;
+				result.add(Tuple.of(id, types, entityJsonObj));
+				cleanedResult.add(Tuple.of(id, types, new JsonObject(tmp), entityJsonObj));
+			}
+		}
+		if (changed) {
+			return Tuple2.of(changed, cleanedResult);
+		}
+		return Tuple2.of(changed, result);
 	}
 
 	private static Map<String, Object> removeNGSILDNull(Map<String, Object> entity) {
