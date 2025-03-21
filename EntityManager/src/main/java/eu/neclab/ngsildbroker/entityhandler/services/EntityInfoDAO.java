@@ -59,44 +59,7 @@ public class EntityInfoDAO {
 	@Inject
 	JsonLDService ldService;
 
-	public Uni<Map<String, Object>> newbatchCreateEntity(BatchRequest request) {
-		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
-			List<Map<String, Object>> entities = Lists.newArrayList();
-			request.getPayload().values().forEach(entityList -> {
-				entities.addAll(entityList);
-			});
-			Tuple tuple = Tuple.of(new JsonArray(entities));
-			String sql = """
-					with a as (SELECT entity, entity->'@id' as id, ARRAY(SELECT jsonb_array_elements_text(entity->'@type')) as e_types FROM jsonb_array_elements($1) as entity)
-					insert into entity(id, e_types, entity) select a.id, a.e_types, a.entity from a ON CONFLICT(id) DO NOTHING RETURNING id, (xmax = 0) AS inserted;
-					""";
-
-			return client.preparedQuery(sql).execute(tuple).onItem().transform(rows -> {
-				Map<String, Object> result = new HashMap<>(2);
-				ArrayList<String> success = new ArrayList<>();
-				ArrayList<Map<String, Object>> fails = new ArrayList<>();
-				result.put("success", success);
-				result.put("failure", fails);
-				rows.forEach(row -> {
-					if (row.getBoolean(1)) {
-						success.add(row.getString(0));
-					} else {
-						Map<String, String> map = new HashMap<>(1);
-						map.put(row.getString(0), AppConstants.SQL_ALREADY_EXISTS);
-					}
-				});
-				return result;
-			}).onFailure().recoverWithUni(e -> {
-				if (e instanceof PgException pge) {
-					logger.error(pge.getDetail());
-				}
-				logger.error("Failed to store entities in batch create.", e);
-				return Uni.createFrom().failure(e);
-			});
-		});
-	}
-
-	public Uni<Map<String, Object>> batchCreateEntity(BatchRequest request) {
+	public Uni<Map<String, Object>> batchCreateEntity2(BatchRequest request) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
 			List<Map<String, Object>> entities = Lists.newArrayList();
 			request.getPayload().values().forEach(entityList -> {
@@ -116,83 +79,43 @@ public class EntityInfoDAO {
 		});
 	}
 
-	public Uni<Map<String, Object>> oldbatchUpsertEntity(BatchRequest request, boolean doReplace) {
+	public Uni<Map<String, Object>> batchCreateEntity(BatchRequest request) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
 			List<Map<String, Object>> entities = Lists.newArrayList();
 			request.getPayload().values().forEach(entityList -> {
 				entities.addAll(entityList);
 			});
-			Tuple tuple = Tuple.of(new JsonArray(entities), doReplace);
-			return client.preparedQuery("SELECT * FROM NGSILD_UPSERTBATCH($1, $2)").execute(tuple).onItem()
-					.transform(rows -> {
-						return rows.iterator().next().getJsonObject(0).getMap();
+			Tuple3<Boolean, List<Tuple>, Set<String>> nullFoundAndTuple = EntityTools
+					.removeNGSILDNullToTuplesWithIdSet(entities, true);
+
+			return client.preparedQuery(
+					"INSERT INTO ENTITY (id, e_types, entity) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING RETURNING id, true;")
+					.executeBatch(nullFoundAndTuple.getItem2()).onItem().transform(rows -> {
+						Set<String> ids = nullFoundAndTuple.getItem3();
+						Map<String, Object> result = new HashMap<>(2);
+						ArrayList<String> success = new ArrayList<>();
+						ArrayList<Map<String, String>> failure = new ArrayList<>();
+						result.put("success", success);
+						result.put("failure", failure);
+						while (rows != null) {
+							rows.forEach(row -> {
+								String id = row.getString(0);
+								ids.remove(id);
+								success.add(id);
+							});
+							rows = rows.next();
+						}
+						ids.forEach(id -> {
+							failure.add(Map.of(id, AppConstants.SQL_ALREADY_EXISTS));
+						});
+						return result;
+					}).onFailure().recoverWithUni(e -> {
+						if (e instanceof PgException pge) {
+							logger.error(pge.getDetail());
+						}
+						logger.error("Failed to store entities in batch create.", e);
+						return Uni.createFrom().failure(e);
 					});
-		});
-	}
-
-	public Uni<Map<String, Object>> batchUpsertEntity2(BatchRequest request, boolean doReplace) {
-		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
-
-			List<Map<String, Object>> entities = Lists.newArrayList();
-			request.getPayload().values().forEach(entityList -> {
-				entities.add(mergeAllEntities(entityList));
-			});
-			List<Map<String, Object>> cleanedEntities = EntityTools.removeNGSILDNull(entities);
-			Tuple tuple;
-			StringBuilder sql;
-			if (cleanedEntities == null) {
-
-				tuple = Tuple.of(new JsonArray(entities));
-				sql = new StringBuilder(
-						"""
-								with a as (SELECT jsonb_array_elements($1) as entity),
-								b as (SELECT a.entity->>'@id' as id, a.entity as entity, entity.entity as old_entity from a left join entity on a.entity->>'@id' = entity.id),
-								c as (insert into entity(id, e_types, entity) select b.id, ARRAY(SELECT jsonb_array_elements_text(b.entity->'@type')), b.entity from b ON CONFLICT (id) DO UPDATE SET e_types = ARRAY(SELECT DISTINCT UNNEST(entity.e_types || EXCLUDED.e_types)),entity =
-								""");
-				if (doReplace) {
-					sql.append("EXCLUDED.entity ");
-				} else {
-					sql.append("ngsild_update_entity(entity.entity, excluded.entity, true) ");
-				}
-			} else {
-				tuple = Tuple.of(new JsonArray(entities), new JsonArray(cleanedEntities));
-				sql = new StringBuilder(
-						"""
-								with a as (SELECT entity, cleaned_entity FROM jsonb_array_elements($1) WITH ORDINALITY AS t1(entity, idx1), jsonb_array_elements($2) WITH ORDINALITY AS t2(cleaned_entity, idx2) WHERE idx1 = idx2),
-								b as (SELECT a.entity->>'@id' as id, a.entity as entity, entity.entity as old_entity, a.cleaned_entity as cleaned_entity from a left join entity on a.entity->>'@id' = entity.id),
-								c as (insert into entity(id, e_types, entity) select b.id, ARRAY(SELECT jsonb_array_elements_text(b.entity->'@type')), b.cleaned_entity from b ON CONFLICT (id) DO UPDATE SET e_types = ARRAY(SELECT DISTINCT UNNEST(entity.e_types || EXCLUDED.e_types)),entity =
-								""");
-				if (doReplace) {
-					sql.append("EXCLUDED.entity ");
-				} else {
-					sql.append(
-							"ngsild_update_entity(entity.entity, (SELECT cleaned_entity FROM b WHERE b.id = excluded.id), true) ");
-				}
-			}
-
-			sql.append(
-					"RETURNING id, entity, (xmax = 0) AS inserted) select c.id, c.inserted, c.entity, b.old_entity from c left join b on c.id = b.id");
-
-			return client.preparedQuery(sql.toString()).execute(tuple).onItem().transform(rows -> {
-				Map<String, Object> result = new HashMap<>(2);
-				ArrayList<Map<String, Object>> success = new ArrayList<>(rows.size());
-				result.put("success", success);
-				result.put("failure", new ArrayList<Map<String, Object>>(0));
-				rows.forEach(row -> {
-					Map<String, Object> tmp = new HashMap<>(4);
-					tmp.put("id", row.getString(0));
-					tmp.put("updated", !row.getBoolean(1));
-					JsonObject tmpObj = row.getJsonObject(3);
-					if (tmpObj != null) {
-						tmp.put("old", tmpObj.getMap());
-					} else {
-						tmp.put("old", null);
-					}
-					tmp.put("new", row.getJsonObject(2).getMap());
-					success.add(tmp);
-				});
-				return result;
-			});
 		});
 	}
 
@@ -262,6 +185,45 @@ public class EntityInfoDAO {
 		}
 		return first;
 	}
+
+//	public Uni<Map<String, Object>> batchAppendEntity(BatchRequest request) {
+//		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
+//			List<Tuple> entities = Lists.newArrayList();
+//			request.getPayload().values().forEach(entityList -> {
+//				entityList.forEach(entity -> entities.add(Tuple.of(entity)));
+//			});
+//			
+//
+//			return client.preparedQuery(
+//					"UPDATE ENTITY (id, e_types, entity) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING RETURNING id, true;")
+//					.executeBatch(nullFoundAndTuple.getItem2()).onItem().transform(rows -> {
+//						Set<String> ids = nullFoundAndTuple.getItem3();
+//						Map<String, Object> result = new HashMap<>(2);
+//						ArrayList<String> success = new ArrayList<>();
+//						ArrayList<Map<String, String>> failure = new ArrayList<>();
+//						result.put("success", success);
+//						result.put("failure", failure);
+//						while (rows != null) {
+//							rows.forEach(row -> {
+//								String id = row.getString(0);
+//								ids.remove(id);
+//								success.add(id);
+//							});
+//							rows = rows.next();
+//						}
+//						ids.forEach(id -> {
+//							failure.add(Map.of(id, AppConstants.SQL_ALREADY_EXISTS));
+//						});
+//						return result;
+//					}).onFailure().recoverWithUni(e -> {
+//						if (e instanceof PgException pge) {
+//							logger.error(pge.getDetail());
+//						}
+//						logger.error("Failed to store entities in batch create.", e);
+//						return Uni.createFrom().failure(e);
+//					});
+//		});
+//	}
 
 	public Uni<Map<String, Object>> batchAppendEntity(BatchRequest request) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {

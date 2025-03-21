@@ -1118,6 +1118,41 @@ public final class EntityTools {
 		}
 		return Tuple2.of(changed, result);
 	}
+	
+	public static Tuple3<Boolean, List<Tuple>, Set<String>> removeNGSILDNullToTuplesWithIdSet(List<Map<String, Object>> entities, boolean doReplace) {
+		List<Tuple> result = new ArrayList<>(entities.size());
+		List<Tuple> cleanedResult = new ArrayList<>(entities.size());
+		Set<String> ids = new HashSet<String>(entities.size());
+		boolean changed = false;
+		for (Map<String, Object> entity : entities) {
+			Map<String, Object> tmp = removeNGSILDNull(entity);
+			String[] types = ((List<String>)entity.get(NGSIConstants.JSON_LD_TYPE)).toArray(new String[0]);
+			Object id = entity.get(NGSIConstants.JSON_LD_ID);
+			JsonObject entityJsonObj = new JsonObject(entity);
+			ids.add((String) id);
+			if (tmp == null) {
+				result.add(Tuple.of(id, types, entityJsonObj));
+				if(doReplace) {
+					cleanedResult.add(Tuple.of(id, types, entityJsonObj));
+				}else {
+					cleanedResult.add(Tuple.of(id, types, entityJsonObj, entityJsonObj));	
+				}
+				
+			} else {
+				changed = true;
+				result.add(Tuple.of(id, types, entityJsonObj));
+				if(doReplace) {
+					cleanedResult.add(Tuple.of(id, types, new JsonObject(tmp)));
+				}else {
+					cleanedResult.add(Tuple.of(id, types, new JsonObject(tmp), entityJsonObj));	
+				}
+			}
+		}
+		if (changed) {
+			return Tuple3.of(changed, cleanedResult, ids);
+		}
+		return Tuple3.of(changed, result, ids);
+	}
 
 	private static Map<String, Object> removeNGSILDNull(Map<String, Object> entity) {
 		Map<String, Object> result = new HashMap<>(entity.size());
