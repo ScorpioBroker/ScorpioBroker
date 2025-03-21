@@ -1086,7 +1086,7 @@ public final class EntityTools {
 		}
 		return null;
 	}
-	public static Tuple2<Boolean, List<Tuple>> removeNGSILDNullToTuples(List<Map<String, Object>> entities) {
+	public static Tuple2<Boolean, List<Tuple>> removeNGSILDNullToTuples(List<Map<String, Object>> entities, boolean doReplace) {
 		List<Tuple> result = new ArrayList<>(entities.size());
 		List<Tuple> cleanedResult = new ArrayList<>(entities.size());
 		boolean changed = false;
@@ -1097,11 +1097,20 @@ public final class EntityTools {
 			JsonObject entityJsonObj = new JsonObject(entity);
 			if (tmp == null) {
 				result.add(Tuple.of(id, types, entityJsonObj));
-				cleanedResult.add(Tuple.of(id, types, entityJsonObj, entityJsonObj));
+				if(doReplace) {
+					cleanedResult.add(Tuple.of(id, types, entityJsonObj));
+				}else {
+					cleanedResult.add(Tuple.of(id, types, entityJsonObj, entityJsonObj));	
+				}
+				
 			} else {
 				changed = true;
 				result.add(Tuple.of(id, types, entityJsonObj));
-				cleanedResult.add(Tuple.of(id, types, new JsonObject(tmp), entityJsonObj));
+				if(doReplace) {
+					cleanedResult.add(Tuple.of(id, types, new JsonObject(tmp)));
+				}else {
+					cleanedResult.add(Tuple.of(id, types, new JsonObject(tmp), entityJsonObj));	
+				}
 			}
 		}
 		if (changed) {

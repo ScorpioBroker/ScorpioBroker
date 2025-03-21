@@ -203,7 +203,7 @@ public class EntityInfoDAO {
 			request.getPayload().values().forEach(entityList -> {
 				entities.add(mergeAllEntities(entityList));
 			});
-			Tuple2<Boolean, List<Tuple>> nullFoundAndTuple = EntityTools.removeNGSILDNullToTuples(entities);
+			Tuple2<Boolean, List<Tuple>> nullFoundAndTuple = EntityTools.removeNGSILDNullToTuples(entities, doReplace);
 			StringBuilder sql = new StringBuilder(
 					"""
 							with a as (SELECT ID AS ID, ENTITY AS OLD_ENTITY FROM ENTITY WHERE ID = $1),
