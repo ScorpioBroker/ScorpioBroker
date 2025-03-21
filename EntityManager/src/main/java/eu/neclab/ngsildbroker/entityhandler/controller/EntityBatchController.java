@@ -267,6 +267,9 @@ public class EntityBatchController {
 		}catch (DecodeException e){
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
+		if(entityIds.isEmpty()) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData, "Empty ID arrays are not allowed"), HttpUtils.getTenant(request)));
+		}
 		return entityService.deleteBatch(HttpUtils.getTenant(request), entityIds, localOnly,request.headers()).onItem()
 				.transform(opResults -> {
 					return HttpUtils.generateBatchResult(opResults);
