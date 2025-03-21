@@ -295,7 +295,7 @@ public class TypeQueryTerm implements Serializable {
 				if (current.firstChild != null) {
 					result.append("]::text[]");
 					followUp.append("]::text[]");
-					if (current.prev.nextAnd) {
+					if (current.prev != null && current.prev.nextAnd) {
 						result.append(" AND (");
 						followUp.append(" AND (");
 					} else {
