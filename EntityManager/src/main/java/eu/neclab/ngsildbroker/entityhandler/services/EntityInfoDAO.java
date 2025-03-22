@@ -126,6 +126,12 @@ public class EntityInfoDAO {
 			request.getPayload().values().forEach(entityList -> {
 				entities.add(mergeAllEntities(entityList));
 			});
+			if(entities.isEmpty()) {
+				Map<String, Object> result = new HashMap<>(2);
+				result.put("success", new ArrayList<Map<String, Object>>(0));
+				result.put("failure", new ArrayList<Map<String, Object>>(0));
+				return Uni.createFrom().item(result);
+			}
 			Tuple2<Boolean, List<Tuple>> nullFoundAndTuple = EntityTools.removeNGSILDNullToTuples(entities, doReplace);
 			StringBuilder sql = new StringBuilder(
 					"""
@@ -145,7 +151,7 @@ public class EntityInfoDAO {
 
 			sql.append(
 					"RETURNING id, entity, (xmax = 0) AS inserted) select b.id, b.inserted, b.entity, a.old_entity from b LEFT JOIN a ON b.id = a.id;");
-			logger.debug(sql.toString());
+			//logger.debug(sql.toString());
 			return client.preparedQuery(sql.toString()).executeBatch(nullFoundAndTuple.getItem2()).onItem()
 					.transform(rows -> {
 						Map<String, Object> result = new HashMap<>(2);

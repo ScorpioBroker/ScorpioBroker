@@ -47,7 +47,7 @@ import java.util.zip.InflaterOutputStream;
 public class MicroServiceUtils {
 	private final static Logger logger = LoggerFactory.getLogger(MicroServiceUtils.class);
 
-	//private final static Charset UTF8_CHARSET = Charset.forName("UTF-8");
+	// private final static Charset UTF8_CHARSET = Charset.forName("UTF-8");
 
 	@ConfigProperty(name = "scorpio.gatewayurl")
 	String gatewayUrl;
@@ -58,13 +58,11 @@ public class MicroServiceUtils {
 	String contextServerUrl;
 
 	private boolean inMemoryActive = ConfigUtils.isProfileActive("in-memory");
-	
 
 	List<CSourceHandler> csourceReceivers = Lists.newArrayList();
-	
+
 	List<BaseRequestHandler> baseRequestReceivers = Lists.newArrayList();
-	
-	
+
 	private static final Encoder base64Encoder = Base64.getEncoder();
 	public static final byte[] NULL_ARRAY = "null".getBytes();
 	private static byte[] ZIPPED_NULL_ARRAY;
@@ -99,7 +97,7 @@ public class MicroServiceUtils {
 
 	public void serializeAndSplitObjectAndEmit(Object obj, int maxMessageSize, MutinyEmitter<String> emitter,
 			ObjectMapper objectMapper) throws ResponseException {
-		if(inMemoryActive) {
+		if (inMemoryActive) {
 			sendObjectInMemory(obj);
 			return;
 		}
@@ -349,22 +347,24 @@ public class MicroServiceUtils {
 	}
 
 	private void sendObjectInMemory(Object obj) {
-		
-		if(obj instanceof BaseRequest br) {
-			baseRequestReceivers.get(0).handleBaseRequest(br).subscribe().with(x -> {});
-			for(int i = 1; i < baseRequestReceivers.size(); i++) {
-				baseRequestReceivers.get(1).handleBaseRequest(br.copy()).subscribe().with(x -> {});
+
+		if (obj instanceof BaseRequest br) {
+			baseRequestReceivers.get(0).handleBaseRequest(br).subscribe().with(x -> {
+			});
+			for (int i = 1; i < baseRequestReceivers.size(); i++) {
+				baseRequestReceivers.get(1).handleBaseRequest(br.copy()).subscribe().with(x -> {
+				});
 			}
-		}else if(obj instanceof CSourceBaseRequest cr) {
-			csourceReceivers.get(0).handleRegistryChange(cr).subscribe().with(x -> {});
-			for(int i = 1; i < csourceReceivers.size(); i++) {
-				csourceReceivers.get(i).handleRegistryChange(cr).subscribe().with(x -> {});
+		} else if (obj instanceof CSourceBaseRequest cr) {
+			csourceReceivers.get(0).handleRegistryChange(cr).subscribe().with(x -> {
+			});
+			for (int i = 1; i < csourceReceivers.size(); i++) {
+				csourceReceivers.get(i).handleRegistryChange(cr).subscribe().with(x -> {
+				});
 			}
 		}
-		
-	}
 
-	
+	}
 
 	public static byte[] getZippedNullArray() {
 		if (ZIPPED_NULL_ARRAY == null) {
@@ -392,7 +392,6 @@ public class MicroServiceUtils {
 		return tmp;
 	}
 
-	
 	public URI getGatewayURL() {
 		logger.trace("getGatewayURL() :: started");
 		String url = null;
@@ -482,7 +481,11 @@ public class MicroServiceUtils {
 			} else if (originalValue instanceof Boolean) {
 				copiedValue = ((Boolean) originalValue).booleanValue();
 			} else {
-				copiedValue = originalValue.toString();
+				if (originalValue == null) {
+					copiedValue = null;
+				} else {
+					copiedValue = originalValue.toString();
+				}
 			}
 			result.add(copiedValue);
 		}
@@ -564,11 +567,11 @@ public class MicroServiceUtils {
 		return payloadBytes;
 
 	}
-	
+
 	public void registerCSourceReceiver(CSourceHandler handler) {
 		csourceReceivers.add(handler);
 	}
-	
+
 	public void registerBaseRequestReceiver(BaseRequestHandler handler) {
 		baseRequestReceivers.add(handler);
 	}
