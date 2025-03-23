@@ -1251,11 +1251,13 @@ public class JsonLdApi {
 					case AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD:
 					case AppConstants.TEMP_ENTITY_RETRIEVED_PAYLOAD:
 						NGSIObject parent = ngsiElement.getParent();
-						if ((parent == null || parent.isGeoProperty() || parent.isRelationship() || parent.isProperty()
-								|| parent.isJsonProperty() || parent.isListProperty() || parent.isListRelationship()
-								|| parent.isVocabProperty())
-								&& !NGSIConstants.ENTITY_BASE_PROPS.contains(expandedProperty)
-								&& !ngsiElement.isFromHasValue()) {
+						if (!ngsiElement.isFromHasValue()
+								&& ((parent == null && !NGSIConstants.ENTITY_BASE_PROPS.contains(expandedProperty))
+										|| ((parent.isGeoProperty() || parent.isRelationship() || parent.isProperty()
+												|| parent.isJsonProperty() || parent.isListProperty()
+												|| parent.isListRelationship() || parent.isVocabProperty())
+												&& !NGSIConstants.ATTR_BASE_PROPS.contains(expandedProperty)))) {
+
 							value = noConcise(value);
 						}
 
