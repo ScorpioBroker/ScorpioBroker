@@ -125,6 +125,15 @@ public class EntityController {// implements EntityHandlerInterface {
 		
 		return HttpUtils.expandBody(req, body, AppConstants.ENTITY_UPDATE_PAYLOAD, ldService).onItem()
 				.transformToUni(tuple -> {
+					try {
+						logger.debug(JsonUtils.toPrettyString(tuple.getItem2()));
+					} catch (JsonGenerationException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
 					logger.debug("patch attrs");
 					return entityService.updateEntity(HttpUtils.getTenant(req), entityId, tuple.getItem2(),
 							tuple.getItem1(), req.headers()).onItem()

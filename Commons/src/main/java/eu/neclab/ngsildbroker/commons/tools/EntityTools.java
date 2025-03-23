@@ -1086,30 +1086,32 @@ public final class EntityTools {
 		}
 		return null;
 	}
-	public static Tuple2<Boolean, List<Tuple>> removeNGSILDNullToTuples(List<Map<String, Object>> entities, boolean doReplace) {
+
+	public static Tuple2<Boolean, List<Tuple>> removeNGSILDNullToTuples(List<Map<String, Object>> entities,
+			boolean doReplace) {
 		List<Tuple> result = new ArrayList<>(entities.size());
 		List<Tuple> cleanedResult = new ArrayList<>(entities.size());
 		boolean changed = false;
 		for (Map<String, Object> entity : entities) {
 			Map<String, Object> tmp = removeNGSILDNull(entity);
-			String[] types = ((List<String>)entity.get(NGSIConstants.JSON_LD_TYPE)).toArray(new String[0]);
+			String[] types = ((List<String>) entity.get(NGSIConstants.JSON_LD_TYPE)).toArray(new String[0]);
 			Object id = entity.get(NGSIConstants.JSON_LD_ID);
 			JsonObject entityJsonObj = new JsonObject(entity);
 			if (tmp == null) {
 				result.add(Tuple.of(id, types, entityJsonObj));
-				if(doReplace) {
+				if (doReplace) {
 					cleanedResult.add(Tuple.of(id, types, entityJsonObj));
-				}else {
-					cleanedResult.add(Tuple.of(id, types, entityJsonObj, entityJsonObj));	
+				} else {
+					cleanedResult.add(Tuple.of(id, types, entityJsonObj, entityJsonObj));
 				}
-				
+
 			} else {
 				changed = true;
 				result.add(Tuple.of(id, types, entityJsonObj));
-				if(doReplace) {
+				if (doReplace) {
 					cleanedResult.add(Tuple.of(id, types, new JsonObject(tmp)));
-				}else {
-					cleanedResult.add(Tuple.of(id, types, new JsonObject(tmp), entityJsonObj));	
+				} else {
+					cleanedResult.add(Tuple.of(id, types, new JsonObject(tmp), entityJsonObj));
 				}
 			}
 		}
@@ -1118,33 +1120,34 @@ public final class EntityTools {
 		}
 		return Tuple2.of(changed, result);
 	}
-	
-	public static Tuple3<Boolean, List<Tuple>, Set<String>> removeNGSILDNullToTuplesWithIdSet(List<Map<String, Object>> entities, boolean doReplace) {
+
+	public static Tuple3<Boolean, List<Tuple>, Set<String>> removeNGSILDNullToTuplesWithIdSet(
+			List<Map<String, Object>> entities, boolean doReplace) {
 		List<Tuple> result = new ArrayList<>(entities.size());
 		List<Tuple> cleanedResult = new ArrayList<>(entities.size());
 		Set<String> ids = new HashSet<String>(entities.size());
 		boolean changed = false;
 		for (Map<String, Object> entity : entities) {
 			Map<String, Object> tmp = removeNGSILDNull(entity);
-			String[] types = ((List<String>)entity.get(NGSIConstants.JSON_LD_TYPE)).toArray(new String[0]);
+			String[] types = ((List<String>) entity.get(NGSIConstants.JSON_LD_TYPE)).toArray(new String[0]);
 			Object id = entity.get(NGSIConstants.JSON_LD_ID);
 			JsonObject entityJsonObj = new JsonObject(entity);
 			ids.add((String) id);
 			if (tmp == null) {
 				result.add(Tuple.of(id, types, entityJsonObj));
-				if(doReplace) {
+				if (doReplace) {
 					cleanedResult.add(Tuple.of(id, types, entityJsonObj));
-				}else {
-					cleanedResult.add(Tuple.of(id, types, entityJsonObj, entityJsonObj));	
+				} else {
+					cleanedResult.add(Tuple.of(id, types, entityJsonObj, entityJsonObj));
 				}
-				
+
 			} else {
 				changed = true;
 				result.add(Tuple.of(id, types, entityJsonObj));
-				if(doReplace) {
+				if (doReplace) {
 					cleanedResult.add(Tuple.of(id, types, new JsonObject(tmp)));
-				}else {
-					cleanedResult.add(Tuple.of(id, types, new JsonObject(tmp), entityJsonObj));	
+				} else {
+					cleanedResult.add(Tuple.of(id, types, new JsonObject(tmp), entityJsonObj));
 				}
 			}
 		}
@@ -1213,11 +1216,15 @@ public final class EntityTools {
 										.get(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST);
 								if (hasObjectList != null && hasObjectList.size() > 0
 										&& hasObjectList.get(0).containsKey(NGSIConstants.JSON_LD_LIST)
-										&& NGSIConstants.NGSI_LD_NULL.equals(
+										&& (NGSIConstants.NGSI_LD_NULL.equals(
 												((List<Map<String, String>>) ((List<Map<String, Object>>) hasObjectList
 														.get(0).get(NGSIConstants.JSON_LD_LIST)).get(0)
 														.get(NGSIConstants.NGSI_LD_HAS_OBJECT)).get(0)
-														.get(NGSIConstants.JSON_LD_ID))) {
+														.get(NGSIConstants.JSON_LD_ID))
+												|| NGSIConstants.NGSI_LD_NULL
+														.equals(((List<Map<String, Object>>) hasObjectList.get(0)
+																.get(NGSIConstants.JSON_LD_LIST)).get(0)
+																.get(NGSIConstants.JSON_LD_VALUE)))) {
 									changed = true;
 								} else {
 									toAdd.add(m);
