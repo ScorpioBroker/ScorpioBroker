@@ -1,7 +1,8 @@
 package eu.neclab.ngsildbroker.entityhandler.controller;
 
-import static eu.neclab.ngsildbroker.commons.tools.EntityTools.noConcise;
 
+
+import java.io.IOException;
 import java.util.Map;
 
 import io.vertx.core.json.DecodeException;
@@ -11,7 +12,9 @@ import org.jboss.resteasy.reactive.RestResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.core.JsonGenerationException;
 import com.github.jsonldjava.core.JsonLDService;
+import com.github.jsonldjava.utils.JsonUtils;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -66,14 +69,23 @@ public class EntityController {// implements EntityHandlerInterface {
 		} catch (DecodeException e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(req)));
 		}
-		try {
-			noConcise(body);
-		} catch (ResponseException e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(req)));
-		}
+//		try {
+//			noConcise(body);
+//		} catch (ResponseException e) {
+//			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(req)));
+//		}
 		return HttpUtils.expandBody(req, body, AppConstants.ENTITY_CREATE_PAYLOAD, ldService).onItem()
 				.transformToUni(tuple -> {
 					logger.debug("creating entity");
+					try {
+						logger.debug(JsonUtils.toPrettyString(tuple.getItem2()));
+					} catch (JsonGenerationException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
 					return entityService
 							.createEntity(HttpUtils.getTenant(req), tuple.getItem2(), tuple.getItem1(), req.headers())
 							.onItem().transform(opResult -> {
@@ -105,12 +117,12 @@ public class EntityController {// implements EntityHandlerInterface {
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(req)));
 		}
-		try {
-			noConcise(body);
-		} catch (ResponseException e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(req)));
-		}
-		;
+//		try {
+//			noConcise(body);
+//		} catch (ResponseException e) {
+//			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(req)));
+//		}
+		
 		return HttpUtils.expandBody(req, body, AppConstants.ENTITY_UPDATE_PAYLOAD, ldService).onItem()
 				.transformToUni(tuple -> {
 					logger.debug("patch attrs");
@@ -141,11 +153,11 @@ public class EntityController {// implements EntityHandlerInterface {
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(req)));
 		}
-		try {
-			noConcise(body);
-		} catch (ResponseException e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(req)));
-		}
+//		try {
+//			noConcise(body);
+//		} catch (ResponseException e) {
+//			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(req)));
+//		}
 		boolean noOverwrite = options != null && options.contains(NGSIConstants.NO_OVERWRITE_OPTION);
 		return HttpUtils.expandBody(req, body, AppConstants.ENTITY_UPDATE_PAYLOAD, ldService).onItem()
 				.transformToUni(tuple -> {
@@ -179,11 +191,11 @@ public class EntityController {// implements EntityHandlerInterface {
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(req)));
 		}
-		try {
-			noConcise(body);
-		} catch (ResponseException e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(req)));
-		}
+//		try {
+//			noConcise(body);
+//		} catch (ResponseException e) {
+//			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(req)));
+//		}
 
 		return HttpUtils.expandBody(req, body, AppConstants.ENTITY_UPDATE_PAYLOAD, ldService).onItem()
 				.transformToUni(tuple -> {
@@ -278,11 +290,11 @@ public class EntityController {// implements EntityHandlerInterface {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
 					new ResponseException(ErrorType.BadRequestData, "Id can not be updated"), HttpUtils.getTenant(request)));
 		}
-		try {
-			noConcise(body);
-		} catch (ResponseException e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
-		}
+//		try {
+//			noConcise(body);
+//		} catch (ResponseException e) {
+//			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+//		}
 		return HttpUtils.expandBody(request, body, AppConstants.MERGE_PATCH_REQUEST, ldService).onItem()
 				.transformToUni(tuple -> {
 					return entityService.mergePatch(HttpUtils.getTenant(request), entityId, tuple.getItem2(),
@@ -306,11 +318,11 @@ public class EntityController {// implements EntityHandlerInterface {
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
-		try {
-			noConcise(body);
-		} catch (ResponseException e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
-		}
+//		try {
+//			noConcise(body);
+//		} catch (ResponseException e) {
+//			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+//		}
 		body.put(NGSIConstants.ID, entityId);
 		if (!body.containsKey(NGSIConstants.TYPE)) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
@@ -342,11 +354,11 @@ public class EntityController {// implements EntityHandlerInterface {
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
-		try {
-			noConcise(body);
-		} catch (ResponseException e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
-		}
+//		try {
+//			noConcise(body);
+//		} catch (ResponseException e) {
+//			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+//		}
 		return HttpUtils.expandBody(request, body, AppConstants.PARTIAL_UPDATE_REQUEST, ldService).onItem()
 				.transformToUni(tuple -> {
 					String finalAttrId = tuple.getItem1().expandIri(attrId, false, true, null, null);

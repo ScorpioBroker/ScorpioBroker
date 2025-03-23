@@ -7,6 +7,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 
+import org.checkerframework.checker.nullness.qual.Nullable;
+
 public interface NGSIConstants {
 	public final static String GEO_REL_TYPE = "type";
 	public final static String GEO_REL_REL = "rel";
@@ -299,8 +301,9 @@ public interface NGSIConstants {
 	public static final Integer[] VALID_QOS = { 0, 1, 2 };
 	public static final String COUNT_HEADER_RESULT = "NGSILD-Results-Count";
 	public static final Set<String> NGSI_LD_ATTR_TYPES = Sets.newHashSet(NGSI_LD_PROPERTY, NGSI_LD_RELATIONSHIP,
-			NGSI_LD_GEOPROPERTY, NGSI_LD_LANGPROPERTY, NGSI_LD_VocabProperty, NGSI_LD_ListProperty, NGSI_LD_LOCALONLY,
+			NGSI_LD_GEOPROPERTY, NGSI_LD_LANGPROPERTY, NGSI_LD_VocabProperty, NGSI_LD_ListProperty, NGSI_LD_LISTRELATIONSHIP,
 			NGSI_LD_JSON_PROPERTY);
+	
 
 	public final static String NOTIFICATION = "Notification";
 
@@ -557,5 +560,8 @@ public interface NGSIConstants {
 	public static final String LANGUAGEMAPS = "languageMaps";
 	public static final String JSONS = "jsons";
 	public static final String ENTITY_ID = "entityId";
-
+	public static final String JSON_PROPERTY = "JsonProperty";
+	public static final Set<String> NGSI_LD_ATTR_SHORT_TYPES = Sets.newHashSet(PROPERTY, RELATIONSHIP,
+			NGSI_LD_GEOPROPERTY_SHORT, LANGUAGE_PROPERTY, VOCABPROPERTY, LISTPROPERTY, LISTRELATIONSHIP,
+			JSON_PROPERTY);
 }

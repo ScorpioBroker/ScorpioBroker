@@ -1157,4 +1157,10 @@ class NGSIObject {
 		this.atContextRequired = atContextRequired;
 	}
 
+	public NGSIObject getParent() {
+		return parent;
+	}
+	
+	
+
 }

@@ -24,12 +24,14 @@ import com.github.jsonldjava.core.JsonLdConsts.Embed;
 import com.github.jsonldjava.core.JsonLdError.Error;
 import com.github.jsonldjava.utils.Obj;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.vertx.mutiny.ext.web.client.WebClient;
@@ -193,8 +195,7 @@ public class JsonLdApi {
 					|| !options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_SYSATTRS);
 			boolean keyValue = options != null && (options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_KEYVALUES)
 					|| options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_SIMPLIFIED));
-			
-					
+
 			boolean concise = options != null && (options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_KEYVALUES)
 					|| options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_SIMPLIFIED));
 			// 4
@@ -222,7 +223,7 @@ public class JsonLdApi {
 			boolean isGeoProperty = false;
 			boolean isProperty = false;
 			boolean isRelationship = false;
-			boolean isListRelationship=false;
+			boolean isListRelationship = false;
 			boolean isLanguageProperty = false;
 			boolean isVocabProperty = false;
 			boolean isListProperty = false;
@@ -266,35 +267,35 @@ public class JsonLdApi {
 					}
 					if ((keyValue || concise || langQuery != null) && JsonLdConsts.TYPE.equals(expandedProperty)) {
 						switch (((List<String>) expandedValue).get(0)) {
-							case NGSIConstants.NGSI_LD_PROPERTY:
-								isProperty = true;
+						case NGSIConstants.NGSI_LD_PROPERTY:
+							isProperty = true;
 
-							case NGSIConstants.NGSI_LD_GEOPROPERTY:
-								isGeoProperty = true;
-								break;
-							case NGSIConstants.NGSI_LD_LANGPROPERTY:
-								isLanguageProperty = true;
-								break;
-							case NGSIConstants.NGSI_LD_JSON_PROPERTY:
-								isJsonProperty = true;
-								break;
-							case NGSIConstants.NGSI_LD_RELATIONSHIP:
-								isRelationship = true;
-								break;
-							case NGSIConstants.NGSI_LD_LISTRELATIONSHIP:
-								isListRelationship = true;
-								break;
-							case NGSIConstants.NGSI_LD_VocabProperty:
-								isVocabProperty = true;
-								break;
-							case NGSIConstants.NGSI_LD_ListProperty:
-								isListProperty = true;
-								break;
-							case NGSIConstants.NGSI_LD_LOCALONLY:
-								isLocalOnly = true;
-								break;
+						case NGSIConstants.NGSI_LD_GEOPROPERTY:
+							isGeoProperty = true;
+							break;
+						case NGSIConstants.NGSI_LD_LANGPROPERTY:
+							isLanguageProperty = true;
+							break;
+						case NGSIConstants.NGSI_LD_JSON_PROPERTY:
+							isJsonProperty = true;
+							break;
+						case NGSIConstants.NGSI_LD_RELATIONSHIP:
+							isRelationship = true;
+							break;
+						case NGSIConstants.NGSI_LD_LISTRELATIONSHIP:
+							isListRelationship = true;
+							break;
+						case NGSIConstants.NGSI_LD_VocabProperty:
+							isVocabProperty = true;
+							break;
+						case NGSIConstants.NGSI_LD_ListProperty:
+							isListProperty = true;
+							break;
+						case NGSIConstants.NGSI_LD_LOCALONLY:
+							isLocalOnly = true;
+							break;
 						}
-						if (!alias.equals(NGSIConstants.TYPE) && (keyValue || concise) ) {
+						if (!alias.equals(NGSIConstants.TYPE) && (keyValue || concise)) {
 							continue;
 						}
 
@@ -357,7 +358,7 @@ public class JsonLdApi {
 					if (!found) {
 						expandedValue = defaultLang;
 						if (expandedValue == null) {
-							result.put("lang",tmp.get(0).get(JsonLdConsts.LANGUAGE));
+							result.put("lang", tmp.get(0).get(JsonLdConsts.LANGUAGE));
 							expandedValue = List.of(Map.of(JsonLdConsts.VALUE, tmp.get(0).get(JsonLdConsts.VALUE)));
 						}
 					}
@@ -373,35 +374,34 @@ public class JsonLdApi {
 						} else {
 							continue;
 						}
-					}
-					else if(expandedValue instanceof List<?> ls && ls.get(0) instanceof Map<?,?> map
+					} else if (expandedValue instanceof List<?> ls && ls.get(0) instanceof Map<?, ?> map
 							&& map.containsKey(NGSIConstants.JSON_LD_TYPE)
-							&& (map.get(NGSIConstants.JSON_LD_TYPE).toString().contains(NGSIConstants.NGSI_LD_VocabProperty)
-							|| map.get(NGSIConstants.JSON_LD_TYPE).toString().contains(NGSIConstants.NGSI_LD_LANGPROPERTY)
-							|| map.get(NGSIConstants.JSON_LD_TYPE).toString().contains(NGSIConstants.NGSI_LD_JSON_PROPERTY))){
-							map.remove(NGSIConstants.JSON_LD_TYPE);
-					}
-					else if(isListProperty && expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_LIST)){
+							&& (map.get(NGSIConstants.JSON_LD_TYPE).toString()
+									.contains(NGSIConstants.NGSI_LD_VocabProperty)
+									|| map.get(NGSIConstants.JSON_LD_TYPE).toString()
+											.contains(NGSIConstants.NGSI_LD_LANGPROPERTY)
+									|| map.get(NGSIConstants.JSON_LD_TYPE).toString()
+											.contains(NGSIConstants.NGSI_LD_JSON_PROPERTY))) {
+						map.remove(NGSIConstants.JSON_LD_TYPE);
+					} else if (isListProperty && expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_LIST)) {
 						return compact(activeCtx, NGSIConstants.LIST, expandedValue, compactArrays, endPoint, null,
 								null);
-					}
-					else if (isRelationship) {
+					} else if (isRelationship) {
 						if (expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_OBJECT)) {
 							List<String> ids = new ArrayList<>();
-							if(expandedValue instanceof List<?> lsIdsMap){
-								lsIdsMap.forEach(idMap->{
-									if(idMap instanceof Map<?,?> map) {
+							if (expandedValue instanceof List<?> lsIdsMap) {
+								lsIdsMap.forEach(idMap -> {
+									if (idMap instanceof Map<?, ?> map) {
 										ids.add((String) map.get(JsonLdConsts.ID));
 									}
 								});
 							}
-							return compact(activeCtx, activeProperty, ids/*expandedValue*/, compactArrays, endPoint, null,
-									null);
+							return compact(activeCtx, activeProperty, ids/* expandedValue */, compactArrays, endPoint,
+									null, null);
 						} else {
 							continue;
 						}
-					}
-					else if (isListRelationship) {
+					} else if (isListRelationship) {
 //						expanded value for ListRelationship
 //						"https://uri.etsi.org/ngsi-ld/hasObjectList": [
 //						{
@@ -417,17 +417,17 @@ public class JsonLdApi {
 //					]
 						if (expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST)) {
 							List<String> ids = new ArrayList<>();
-							if(expandedValue instanceof List<?> lsIdsMap){
-								lsIdsMap.forEach(listMap->{
-									if(listMap instanceof Map<?,?> map) {
-										((List<Map<String,String>>)map.get(JsonLdConsts.LIST)).forEach(valueMap ->{
+							if (expandedValue instanceof List<?> lsIdsMap) {
+								lsIdsMap.forEach(listMap -> {
+									if (listMap instanceof Map<?, ?> map) {
+										((List<Map<String, String>>) map.get(JsonLdConsts.LIST)).forEach(valueMap -> {
 											ids.add(valueMap.get(JsonLdConsts.VALUE));
 										});
 									}
 								});
 							}
-							return compact(activeCtx, activeProperty, ids/*expandedValue*/, compactArrays, endPoint, null,
-									null);
+							return compact(activeCtx, activeProperty, ids/* expandedValue */, compactArrays, endPoint,
+									null, null);
 						} else {
 							continue;
 						}
@@ -747,7 +747,7 @@ public class JsonLdApi {
 	 */
 
 	public Uni<NGSIObject> expand(Context activeCtx, String activeProperty, NGSIObject ngsiElement, int payloadType,
-			boolean atContextAllowed, WebClient webClient,String atContextUrl) {
+			boolean atContextAllowed, WebClient webClient, String atContextUrl) {
 		final boolean frameExpansion = this.opts.getFrameExpansion();
 		// 1)
 		if (ngsiElement.getElement() == null) {
@@ -767,9 +767,9 @@ public class JsonLdApi {
 				unis.add(expand(activeCtx, activeProperty,
 						new NGSIObject(item, ngsiElement)
 								.setFromHasValue(ngsiElement.isHasAtValue() || ngsiElement.isFromHasValue()),
-						payloadType, atContextAllowed, webClient,atContextUrl));
+						payloadType, atContextAllowed, webClient, atContextUrl));
 			}
-			if(unis.isEmpty()) {
+			if (unis.isEmpty()) {
 				return Uni.createFrom().item(ngsiElement);
 			}
 			return Uni.combine().all().unis(unis).with(list -> list).onItem().transformToUni(list -> {
@@ -842,7 +842,7 @@ public class JsonLdApi {
 					return Uni.createFrom().failure(
 							new ResponseException(ErrorType.BadRequestData, "@context entry in body is not allowed"));
 				}
-				ctxUni = activeCtx.parse(bodyContext, true, webClient,atContextUrl);
+				ctxUni = activeCtx.parse(bodyContext, true, webClient, atContextUrl);
 			} else {
 				ctxUni = Uni.createFrom().item(activeCtx);
 			}
@@ -972,7 +972,7 @@ public class JsonLdApi {
 			// GK: 1.1 made the following loop somewhat recursive, due to nesting, so might
 			// want to extract into a method.
 			for (final String key : keys) {
-				final Object value = elem.get(key);
+				Object value = elem.get(key);
 				// 7.1)
 				if (key.equals(JsonLdConsts.CONTEXT)) {
 					continue;
@@ -1048,13 +1048,13 @@ public class JsonLdApi {
 							expandedValue = new ArrayList<String>();
 							for (final Object v : (List) value) {
 //								if (!ngsiElement.isFromHasValue()) {
-									if (!(v instanceof String)) {
-										throw new JsonLdError(Error.INVALID_TYPE_VALUE,
-												"@type value must be a string or array of strings");
-									}
-									String type = activeCtx.expandIri((String) v, true, true, null, null);
-									((List<String>) expandedValue).add(type);
-									ngsiElement.addType(type);
+								if (!(v instanceof String)) {
+									throw new JsonLdError(Error.INVALID_TYPE_VALUE,
+											"@type value must be a string or array of strings");
+								}
+								String type = activeCtx.expandIri((String) v, true, true, null, null);
+								((List<String>) expandedValue).add(type);
+								ngsiElement.addType(type);
 //								}
 							}
 						} else if (value instanceof String) {
@@ -1250,18 +1250,27 @@ public class JsonLdApi {
 					case AppConstants.TEMP_ENTITY_CREATE_PAYLOAD:
 					case AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD:
 					case AppConstants.TEMP_ENTITY_RETRIEVED_PAYLOAD:
-						if (NGSIConstants.NGSI_LD_HAS_VALUE.equals(expandedProperty) || NGSIConstants.NGSI_LD_HAS_LIST.equals(expandedProperty)) {
+						NGSIObject parent = ngsiElement.getParent();
+						if ((parent == null || parent.isGeoProperty() || parent.isRelationship() || parent.isProperty()
+								|| parent.isJsonProperty() || parent.isListProperty() || parent.isListRelationship()
+								|| parent.isVocabProperty())
+								&& !NGSIConstants.ENTITY_BASE_PROPS.contains(expandedProperty)
+								&& !ngsiElement.isFromHasValue()) {
+							value = noConcise(value);
+						}
+
+						if (NGSIConstants.NGSI_LD_HAS_VALUE.equals(expandedProperty)
+								|| NGSIConstants.NGSI_LD_HAS_LIST.equals(expandedProperty)) {
 							ngsiElement.setHasAtValue(true);
 						} else if (NGSIConstants.NGSI_LD_HAS_VOCAB.equals(expandedProperty)) {
 							ngsiElement.setHasVocab(true);
-						}else if (NGSIConstants.NGSI_LD_HAS_JSON.equals(expandedProperty)) {
-								ngsiElement.setHasJson(true);
+						} else if (NGSIConstants.NGSI_LD_HAS_JSON.equals(expandedProperty)) {
+							ngsiElement.setHasJson(true);
 						} else if (NGSIConstants.NGSI_LD_HAS_OBJECT.equals(expandedProperty)) {
 							ngsiElement.setHasAtObject(true);
-						}else if (NGSIConstants.NGSI_LD_HAS_OBJECT_LIST.equals(expandedProperty)) {
+						} else if (NGSIConstants.NGSI_LD_HAS_OBJECT_LIST.equals(expandedProperty)) {
 							ngsiElement.setHasListObject(true);
-						}
-						else if (NGSIConstants.NGSI_LD_DATE_TIME.equals(expandedProperty)) {
+						} else if (NGSIConstants.NGSI_LD_DATE_TIME.equals(expandedProperty)) {
 							ngsiElement.setDateTime(true);
 						}
 						break;
@@ -1540,6 +1549,104 @@ public class JsonLdApi {
 		}
 	}
 
+	private Object noConcise(Object value) throws ResponseException {
+		if (value instanceof Map m) {
+			if (m.containsKey(NGSIConstants.TYPE)
+					&& NGSIConstants.NGSI_LD_ATTR_SHORT_TYPES.contains(m.get(NGSIConstants.TYPE))) {
+				return value;
+			}
+
+			if (m.containsKey(NGSIConstants.VALUE)) {
+				if (m.get(NGSIConstants.VALUE) instanceof Map<?, ?> nestedMap
+						&& (NGSIConstants.GEO_KEYWORDS.contains(nestedMap.get(NGSIConstants.TYPE)))) {
+					m.put(NGSIConstants.TYPE, NGSIConstants.NGSI_LD_GEOPROPERTY_SHORT);
+				} else
+					m.put(NGSIConstants.TYPE, NGSIConstants.PROPERTY);
+			} else if (m.containsKey(NGSIConstants.OBJECT)) {
+				m.put(NGSIConstants.TYPE, NGSIConstants.RELATIONSHIP);
+			} else if (m.containsKey(NGSIConstants.TYPE)
+					&& (NGSIConstants.GEO_KEYWORDS.contains(m.get(NGSIConstants.TYPE)))) {
+				Map<String, Object> newMap = new HashMap<>();
+				newMap.put(NGSIConstants.TYPE, NGSIConstants.NGSI_LD_GEOPROPERTY_SHORT);
+				newMap.put(NGSIConstants.VALUE, m);
+				value = newMap;
+			} else if (m.containsKey(NGSIConstants.LANGUAGE_MAP)) {
+				m.put(NGSIConstants.TYPE, NGSIConstants.LANGUAGE_PROPERTY);
+			} else if (m.containsKey(NGSIConstants.JSON)) {
+				m.put(NGSIConstants.TYPE, NGSIConstants.JSONPROPERTY);
+			} else if (m.containsKey(NGSIConstants.OBJECT_LIST)) {
+				m.put(NGSIConstants.TYPE, NGSIConstants.LISTRELATIONSHIP);
+				Object objList = m.get(NGSIConstants.OBJECT_LIST);
+				if (objList instanceof List<?> l) {
+					List<Map<String, String>> tmpList = new ArrayList<>(l.size());
+					for (Object entry : l) {
+						if (entry instanceof Map<?, ?> m1) {
+							if (m1.size() != 1) {
+								throw new ResponseException(ErrorType.BadRequestData,
+										"Unkown format for object list entry.");
+							}
+							Object relId = m1.get(NGSIConstants.OBJECT);
+							if (relId == null || !(relId instanceof String)) {
+								throw new ResponseException(ErrorType.BadRequestData,
+										"Unkown format for object list entry.");
+							}
+							HttpUtils.validateUri((String) relId);
+							tmpList.add((Map<String, String>) m1);
+						} else if (entry instanceof String s) {
+							HttpUtils.validateUri(s);
+							Map<String, String> tmpMap = new HashMap<>(1);
+							tmpMap.put(NGSIConstants.OBJECT, s);
+							tmpList.add(tmpMap);
+						} else {
+							throw new ResponseException(ErrorType.BadRequestData,
+									"Unkown format for object list entry.");
+						}
+					}
+					m.put(NGSIConstants.OBJECT_LIST, tmpList);
+				} else {
+					throw new ResponseException(ErrorType.BadRequestData, "Unkown format for object list entry.");
+				}
+			} else if (m.containsKey(NGSIConstants.VALUE_LIST)) {
+				m.put(NGSIConstants.TYPE, NGSIConstants.LISTPROPERTY);
+			} else if (m.containsKey(NGSIConstants.VOCAB)) {
+				m.put(NGSIConstants.TYPE, NGSIConstants.VOCABPROPERTY);
+			} else {
+				Map<String, Object> tmp = new HashMap<String, Object>(2);
+				tmp.put(NGSIConstants.TYPE, NGSIConstants.PROPERTY);
+				tmp.put(NGSIConstants.VALUE, m);
+				value = tmp;
+			}
+
+		} else if (value instanceof List<?> l) {
+			boolean putType = true;
+			for (Object obj : l) {
+				if (obj instanceof Map<?, ?> map && map.containsKey(NGSIConstants.NGSI_LD_DATA_SET_ID_SHORT)) {
+					putType = false;
+					break;
+				}
+			}
+			if (putType) {
+				Map<String, Object> tmp = new HashMap<String, Object>(2);
+				tmp.put(NGSIConstants.TYPE, NGSIConstants.PROPERTY);
+				tmp.put(NGSIConstants.VALUE, l);
+				value = tmp;
+			} else {
+				List<Object> tmp = new ArrayList<Object>(l.size());
+				for (Object o : l) {
+					tmp.add(noConcise(o));
+				}
+				value = tmp;
+			}
+		} else {
+			Map<String, Object> result = Maps.newHashMap();
+			result.put(NGSIConstants.TYPE, NGSIConstants.PROPERTY);
+			result.put(NGSIConstants.VALUE, value);
+			value = result;
+		}
+		return value;
+
+	}
+
 	/**
 	 * Expansion Algorithm
 	 *
@@ -1553,8 +1660,8 @@ public class JsonLdApi {
 	 */
 	public Uni<Object> expand(Context activeCtx, Object element, int payloadType, boolean atContextAllowed,
 			WebClient webClient, String atContextUrl) {
-		return expand(activeCtx, null, new NGSIObject(element, null), payloadType, atContextAllowed, webClient,atContextUrl).onItem()
-				.transform(ngsiElem -> ngsiElem.getElement());
+		return expand(activeCtx, null, new NGSIObject(element, null), payloadType, atContextAllowed, webClient,
+				atContextUrl).onItem().transform(ngsiElem -> ngsiElem.getElement());
 	}
 
 	/***
