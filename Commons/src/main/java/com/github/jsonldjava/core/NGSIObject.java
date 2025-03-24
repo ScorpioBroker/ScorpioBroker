@@ -1160,6 +1160,10 @@ class NGSIObject {
 	public NGSIObject getParent() {
 		return parent;
 	}
+
+	public boolean isLanguageProperty() {
+		return isLanguageProperty;
+	}
 	
 	
 

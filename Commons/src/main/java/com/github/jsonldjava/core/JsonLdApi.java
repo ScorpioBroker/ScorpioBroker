@@ -12,6 +12,7 @@ import java.lang.System.Logger;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -965,7 +966,26 @@ public class JsonLdApi {
 			Map<String, Object> result = newMap();
 			// 7)
 			final List<String> keys = new ArrayList<String>(elem.keySet());
-			Collections.sort(keys);
+			Collections.sort(keys, new Comparator<String>() {
+
+				@Override
+				public int compare(String o1, String o2) {
+					if (NGSIConstants.TYPE.equals(o1)) {
+						return -1;
+					}
+					if (NGSIConstants.TYPE.equals(o2)) {
+						return 1;
+					}
+					if (o1 == null) {
+						if (o2 == null) {
+							return 0;
+						}
+						return -1;
+					}
+					return o1.compareTo(o2);
+				}
+			});
+
 			// GK: This is the place to check for a type-scoped context by checking any key
 			// that expands to `@type` to see the current context has a term that equals
 			// that key where the term definition includes `@context`, updating the
@@ -1255,18 +1275,6 @@ public class JsonLdApi {
 //								|| NGSIConstants.NGSI_LD_MODIFIED_AT.equals(expandedProperty)) {
 //							throw new ResponseException(ErrorType.BadRequestData, "createdAt and modifiedAt cannot be provided by the user and will be system generated");
 //						}
-						NGSIObject parent = ngsiElement.getParent();
-						
-						if (!ngsiElement.isFromHasValue()
-								&& ((parent == null && !NGSIConstants.ENTITY_BASE_PROPS.contains(expandedProperty))
-										|| (parent != null && (parent.isGeoProperty() || parent.isRelationship() || parent.isProperty()
-												|| parent.isJsonProperty() || parent.isListProperty()
-												|| parent.isListRelationship() || parent.isVocabProperty())
-												&& !NGSIConstants.ATTR_BASE_PROPS.contains(expandedProperty)))) {
-
-							value = noConcise(value);
-						}
-
 						if (NGSIConstants.NGSI_LD_HAS_VALUE.equals(expandedProperty)
 								|| NGSIConstants.NGSI_LD_HAS_LIST.equals(expandedProperty)) {
 							ngsiElement.setHasAtValue(true);
@@ -1280,7 +1288,17 @@ public class JsonLdApi {
 							ngsiElement.setHasListObject(true);
 						} else if (NGSIConstants.NGSI_LD_DATE_TIME.equals(expandedProperty)) {
 							ngsiElement.setDateTime(true);
+						} else if (!ngsiElement.isFromHasValue() && ((ngsiElement.getParent() == null
+								&& !NGSIConstants.ENTITY_BASE_PROPS.contains(expandedProperty))
+								|| ((ngsiElement.isGeoProperty() || ngsiElement.isRelationship()
+										|| ngsiElement.isProperty() || ngsiElement.isJsonProperty()
+										|| ngsiElement.isListProperty() || ngsiElement.isListRelationship()
+										|| ngsiElement.isVocabProperty() || ngsiElement.isLanguageProperty())
+										&& !NGSIConstants.ATTR_BASE_PROPS.contains(expandedProperty)))) {
+
+							value = noConcise(value);
 						}
+
 						break;
 					case AppConstants.SUBSCRIPTION_CREATE_PAYLOAD:
 					case AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD:
