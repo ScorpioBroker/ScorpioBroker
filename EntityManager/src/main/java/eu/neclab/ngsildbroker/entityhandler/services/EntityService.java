@@ -270,14 +270,9 @@ public class EntityService implements CSourceHandler {
 	public Uni<NGSILDOperationResult> partialUpdateAttribute(String tenant, String entityId, String attribName,
 			Map<String, Object> payload, Context context, io.vertx.core.MultiMap headersFromReq) {
 		logger.trace("updateMessage() :: started");
-		Map<String, Object> effectivePayload;
-		if (payload.containsKey(attribName)) {
-			effectivePayload = payload;
-		} else {
-			effectivePayload = Maps.newHashMap();
-			effectivePayload.put(attribName, Lists.newArrayList(payload));
-		}
-		UpdateEntityRequest request = new UpdateEntityRequest(tenant, entityId, effectivePayload, attribName, zip);
+		
+		
+		UpdateEntityRequest request = new UpdateEntityRequest(tenant, entityId, payload, attribName, zip);
 		request.setRequestType(AppConstants.PARTIAL_UPDATE_REQUEST);
 		Tuple2<Map<String, Object>, Collection<Tuple2<RemoteHost, Map<String, Object>>>> splitted = splitEntity(request,
 				entityId);

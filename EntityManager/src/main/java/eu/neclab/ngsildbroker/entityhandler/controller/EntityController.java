@@ -1,8 +1,7 @@
 package eu.neclab.ngsildbroker.entityhandler.controller;
 
-
-
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 
 import io.vertx.core.json.DecodeException;
@@ -15,6 +14,8 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.github.jsonldjava.core.JsonLDService;
 import com.github.jsonldjava.utils.JsonUtils;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -122,7 +123,7 @@ public class EntityController {// implements EntityHandlerInterface {
 //		} catch (ResponseException e) {
 //			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(req)));
 //		}
-		
+
 		return HttpUtils.expandBody(req, body, AppConstants.ENTITY_UPDATE_PAYLOAD, ldService).onItem()
 				.transformToUni(tuple -> {
 					try {
@@ -196,7 +197,20 @@ public class EntityController {// implements EntityHandlerInterface {
 		Map<String, Object> body;
 		try {
 			HttpUtils.validateUri(entityId);
-			body = new JsonObject(bodyStr).getMap();
+			Map<String, Object> tmp = new JsonObject(bodyStr).getMap();
+			if (!tmp.containsKey(attrib)) {
+				Map<String, Object> tmp2;
+				if (tmp.containsKey(NGSIConstants.JSON_LD_CONTEXT)) {
+					tmp2 = new HashMap<String, Object>(2);
+					tmp2.put(NGSIConstants.JSON_LD_CONTEXT, tmp.remove(NGSIConstants.JSON_LD_CONTEXT));
+				} else {
+					tmp2 = new HashMap<String, Object>(1);
+				}
+				tmp2.put(attrib, tmp);
+				body = tmp2;
+			}else {
+				body = tmp;
+			}
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(req)));
 		}
@@ -205,11 +219,20 @@ public class EntityController {// implements EntityHandlerInterface {
 //		} catch (ResponseException e) {
 //			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(req)));
 //		}
-
+		
 		return HttpUtils.expandBody(req, body, AppConstants.ENTITY_UPDATE_PAYLOAD, ldService).onItem()
 				.transformToUni(tuple -> {
 					String expAttrib = tuple.getItem1().expandIri(attrib, false, true, null, null);
 					logger.debug("update entry :: started");
+					try {
+						logger.debug(JsonUtils.toPrettyString(tuple.getItem2()));
+					} catch (JsonGenerationException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
 					return entityService.partialUpdateAttribute(HttpUtils.getTenant(req), entityId, expAttrib,
 							tuple.getItem2(), tuple.getItem1(), req.headers()).onItem().transform(updateResult -> {
 								logger.trace("update entry :: completed");
@@ -296,8 +319,10 @@ public class EntityController {// implements EntityHandlerInterface {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
 		if (!entityId.equals(body.get(NGSIConstants.ID)) && body.get(NGSIConstants.ID) != null) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
-					new ResponseException(ErrorType.BadRequestData, "Id can not be updated"), HttpUtils.getTenant(request)));
+			return Uni.createFrom()
+					.item(HttpUtils.handleControllerExceptions(
+							new ResponseException(ErrorType.BadRequestData, "Id can not be updated"),
+							HttpUtils.getTenant(request)));
 		}
 //		try {
 //			noConcise(body);
@@ -334,8 +359,10 @@ public class EntityController {// implements EntityHandlerInterface {
 //		}
 		body.put(NGSIConstants.ID, entityId);
 		if (!body.containsKey(NGSIConstants.TYPE)) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
-					new ResponseException(ErrorType.BadRequestData, "Type can not be null"), HttpUtils.getTenant(request)));
+			return Uni.createFrom()
+					.item(HttpUtils.handleControllerExceptions(
+							new ResponseException(ErrorType.BadRequestData, "Type can not be null"),
+							HttpUtils.getTenant(request)));
 		}
 		return HttpUtils.expandBody(request, body, AppConstants.REPLACE_ENTITY_PAYLOAD, ldService).onItem()
 				.transformToUni(tuple -> {
