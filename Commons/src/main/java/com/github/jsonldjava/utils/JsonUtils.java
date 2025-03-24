@@ -358,7 +358,7 @@ public class JsonUtils {
 						logger.debug("cache uri - " + url.toExternalForm());
 						logger.debug("request uri - " + finalUrl);
 						logger.debug("response code: " + status);
-						logger.debug("response body: " + result.bodyAsString());
+						//logger.debug("response body: " + result.bodyAsString());
 						return Uni.createFrom()
 								.failure(new LdContextException("Can't retrieve " + finalUrl + ", status code: " + status));
 					}

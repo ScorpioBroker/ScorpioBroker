@@ -444,8 +444,8 @@ public class HistoryDAO {
 		dollarCount++;
 
 		String sqlString = sql.toString();
-		logger.debug("SQL QUERY: " + sqlString);
-		logger.debug("SQL TUPLE: " + tuple.deepToString());
+//		logger.debug("SQL QUERY: " + sqlString);
+//		logger.debug("SQL TUPLE: " + tuple.deepToString());
 		return Tuple2.of(sqlString, tuple);
 
 	}

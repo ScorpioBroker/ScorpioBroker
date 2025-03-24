@@ -702,7 +702,7 @@ public final class EntityTools {
 					.transformToUni(response -> {
 						if (response != null) {
 							logger.debug(response.statusCode() + "");
-							logger.debug(response.bodyAsString());
+							//logger.debug(response.bodyAsString());
 							switch (response.statusCode()) {
 							case 200: {
 								return handle200(webClient, remoteHost, response, ldService, timeout);
@@ -763,14 +763,14 @@ public final class EntityTools {
 					req = req.putHeader(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSON);
 				}
 				logger.debug("calling query on " + remoteHost.host());
-				logger.debug(req.queryParams().toString());
+				//logger.debug(req.queryParams().toString());
 
 				unis.add(req.putHeaders(remoteHost.headers()).timeout(timeout).send().onItem()
 						.transformToUni(response -> {
 
 							if (response != null) {
 								logger.debug(response.statusCode() + "");
-								logger.debug(response.bodyAsString());
+								//logger.debug(response.bodyAsString());
 								switch (response.statusCode()) {
 								case 200: {
 									return handle200(webClient, remoteHost, response, ldService, timeout);
