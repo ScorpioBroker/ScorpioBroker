@@ -8,6 +8,7 @@ import static com.github.jsonldjava.core.JsonLdConsts.RDF_TYPE;
 import static com.github.jsonldjava.core.JsonLdUtils.isKeyword;
 import static com.github.jsonldjava.utils.Obj.newMap;
 
+import java.lang.System.Logger;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -1250,10 +1251,15 @@ public class JsonLdApi {
 					case AppConstants.TEMP_ENTITY_CREATE_PAYLOAD:
 					case AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD:
 					case AppConstants.TEMP_ENTITY_RETRIEVED_PAYLOAD:
+//						if (NGSIConstants.NGSI_LD_CREATED_AT.equals(expandedProperty)
+//								|| NGSIConstants.NGSI_LD_MODIFIED_AT.equals(expandedProperty)) {
+//							throw new ResponseException(ErrorType.BadRequestData, "createdAt and modifiedAt cannot be provided by the user and will be system generated");
+//						}
 						NGSIObject parent = ngsiElement.getParent();
+						
 						if (!ngsiElement.isFromHasValue()
 								&& ((parent == null && !NGSIConstants.ENTITY_BASE_PROPS.contains(expandedProperty))
-										|| ((parent.isGeoProperty() || parent.isRelationship() || parent.isProperty()
+										|| (parent != null && (parent.isGeoProperty() || parent.isRelationship() || parent.isProperty()
 												|| parent.isJsonProperty() || parent.isListProperty()
 												|| parent.isListRelationship() || parent.isVocabProperty())
 												&& !NGSIConstants.ATTR_BASE_PROPS.contains(expandedProperty)))) {

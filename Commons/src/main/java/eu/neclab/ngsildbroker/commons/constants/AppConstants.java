@@ -83,6 +83,7 @@ public class AppConstants {
 	public static final int TEMP_ENTITY_UPDATE_PAYLOAD = 7;
 	public static final int TEMP_ENTITY_RETRIEVED_PAYLOAD = 8;
 	public static final int ENTITY_ATTRS_UPDATE_PAYLOAD = 9;
+	public static final int INTERNAL_NO_CHECK_PAYLOAD = -1;
 
 	public static final Pattern DATE_TIME_MATCHER = Pattern.compile(
 			"\\d\\d\\d\\d-(0[1-9]|1[0-2])-(0[0-9]|[1-2][0-9]|3[0-1])T([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\\.\\d{1,6})?Z");

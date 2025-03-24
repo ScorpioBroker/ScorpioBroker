@@ -498,7 +498,7 @@ public interface NGSIConstants {
 	public static final String LANGUAGE_PROPERTY = "LanguageProperty";
 	public static final String LANGUAGE_MAP = "languageMap";
 	public static final Set<String> ENTITY_BASE_PROPS = Sets.newHashSet(JSON_LD_ID, JSON_LD_TYPE, NGSI_LD_CREATED_AT,
-			NGSI_LD_MODIFIED_AT, NGSI_LD_SCOPE);
+			NGSI_LD_MODIFIED_AT, NGSI_LD_OBSERVED_AT, NGSI_LD_SCOPE);
 	public static final Set<String> ATTR_BASE_PROPS = Sets.newHashSet(JSON_LD_TYPE, NGSI_LD_CREATED_AT,
 			NGSI_LD_MODIFIED_AT, NGSI_LD_OBSERVED_AT, NGSI_LD_OBJECT_TYPE, NGSI_LD_DATA_SET_ID);
 	public static final Set<String> ENTITY_BASE_PROPS_SHORT = Sets.newHashSet(ID, TYPE, QUERY_PARAMETER_CREATED_AT,
