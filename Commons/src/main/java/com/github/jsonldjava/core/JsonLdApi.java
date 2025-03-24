@@ -1579,17 +1579,31 @@ public class JsonLdApi {
 
 	private Object noConcise(Object value) throws ResponseException {
 		if (value instanceof Map m) {
-			if (m.containsKey(NGSIConstants.TYPE)
-					&& NGSIConstants.NGSI_LD_ATTR_SHORT_TYPES.contains(m.get(NGSIConstants.TYPE))) {
-				return value;
+			if (m.containsKey(NGSIConstants.TYPE)) {
+
+				Object type = m.get(NGSIConstants.TYPE);
+				if (NGSIConstants.NGSI_LD_ATTR_SHORT_TYPES.contains(type)) {
+					return value;
+				}
+				if (NGSIConstants.LISTRELATIONSHIP.equals(type)) {
+					Object objList = m.get(NGSIConstants.OBJECT_LIST);
+					if (objList instanceof List<?> l) {
+						List<Map<String, String>> tmpList = noConciseListRelationship(l);
+						m.put(NGSIConstants.OBJECT_LIST, tmpList);
+					} else {
+						throw new ResponseException(ErrorType.BadRequestData, "Unkown format for object list entry.");
+					}
+					return value;
+				}
 			}
 
 			if (m.containsKey(NGSIConstants.VALUE)) {
 				if (m.get(NGSIConstants.VALUE) instanceof Map<?, ?> nestedMap
 						&& (NGSIConstants.GEO_KEYWORDS.contains(nestedMap.get(NGSIConstants.TYPE)))) {
 					m.put(NGSIConstants.TYPE, NGSIConstants.NGSI_LD_GEOPROPERTY_SHORT);
-				} else
+				} else {
 					m.put(NGSIConstants.TYPE, NGSIConstants.PROPERTY);
+				}
 			} else if (m.containsKey(NGSIConstants.OBJECT)) {
 				m.put(NGSIConstants.TYPE, NGSIConstants.RELATIONSHIP);
 			} else if (m.containsKey(NGSIConstants.TYPE)
@@ -1606,30 +1620,7 @@ public class JsonLdApi {
 				m.put(NGSIConstants.TYPE, NGSIConstants.LISTRELATIONSHIP);
 				Object objList = m.get(NGSIConstants.OBJECT_LIST);
 				if (objList instanceof List<?> l) {
-					List<Map<String, String>> tmpList = new ArrayList<>(l.size());
-					for (Object entry : l) {
-						if (entry instanceof Map<?, ?> m1) {
-							if (m1.size() != 1) {
-								throw new ResponseException(ErrorType.BadRequestData,
-										"Unkown format for object list entry.");
-							}
-							Object relId = m1.get(NGSIConstants.OBJECT);
-							if (relId == null || !(relId instanceof String)) {
-								throw new ResponseException(ErrorType.BadRequestData,
-										"Unkown format for object list entry.");
-							}
-							HttpUtils.validateUri((String) relId);
-							tmpList.add((Map<String, String>) m1);
-						} else if (entry instanceof String s) {
-							HttpUtils.validateUri(s);
-							Map<String, String> tmpMap = new HashMap<>(1);
-							tmpMap.put(NGSIConstants.OBJECT, s);
-							tmpList.add(tmpMap);
-						} else {
-							throw new ResponseException(ErrorType.BadRequestData,
-									"Unkown format for object list entry.");
-						}
-					}
+					List<Map<String, String>> tmpList = noConciseListRelationship(l);
 					m.put(NGSIConstants.OBJECT_LIST, tmpList);
 				} else {
 					throw new ResponseException(ErrorType.BadRequestData, "Unkown format for object list entry.");
@@ -1648,7 +1639,8 @@ public class JsonLdApi {
 		} else if (value instanceof List<?> l) {
 			boolean putType = true;
 			for (Object obj : l) {
-				if (obj instanceof Map<?, ?> map && map.containsKey(NGSIConstants.NGSI_LD_DATA_SET_ID_SHORT)) {
+				if (obj instanceof Map<?, ?> map
+						&& NGSIConstants.NGSI_LD_ATTR_SHORT_TYPES.contains(map.get(NGSIConstants.TYPE))) {
 					putType = false;
 					break;
 				}
@@ -1673,6 +1665,34 @@ public class JsonLdApi {
 		}
 		return value;
 
+	}
+
+	private List<Map<String, String>> noConciseListRelationship(List<?> l) throws ResponseException {
+		if (l == null) {
+			return null;
+		}
+		List<Map<String, String>> tmpList = new ArrayList<>(l.size());
+		for (Object entry : l) {
+			if (entry instanceof Map<?, ?> m1) {
+				if (m1.size() != 1) {
+					throw new ResponseException(ErrorType.BadRequestData, "Unkown format for object list entry.");
+				}
+				Object relId = m1.get(NGSIConstants.OBJECT);
+				if (relId == null || !(relId instanceof String)) {
+					throw new ResponseException(ErrorType.BadRequestData, "Unkown format for object list entry.");
+				}
+				HttpUtils.validateUri((String) relId);
+				tmpList.add((Map<String, String>) m1);
+			} else if (entry instanceof String s) {
+				HttpUtils.validateUri(s);
+				Map<String, String> tmpMap = new HashMap<>(1);
+				tmpMap.put(NGSIConstants.OBJECT, s);
+				tmpList.add(tmpMap);
+			} else {
+				throw new ResponseException(ErrorType.BadRequestData, "Unkown format for object list entry.");
+			}
+		}
+		return tmpList;
 	}
 
 	/**
