@@ -1288,6 +1288,8 @@ public class JsonLdApi {
 							ngsiElement.setHasListObject(true);
 						} else if (NGSIConstants.NGSI_LD_DATE_TIME.equals(expandedProperty)) {
 							ngsiElement.setDateTime(true);
+						} else if (NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP.equals(expandedProperty)) {
+							ngsiElement.setLanguageProperty(true);
 						} else if (!ngsiElement.isFromHasValue() && ((ngsiElement.getParent() == null
 								&& !NGSIConstants.ENTITY_BASE_PROPS.contains(expandedProperty))
 								|| ((ngsiElement.isGeoProperty() || ngsiElement.isRelationship()

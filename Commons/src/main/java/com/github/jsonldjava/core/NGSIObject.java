@@ -1164,6 +1164,10 @@ class NGSIObject {
 	public boolean isLanguageProperty() {
 		return isLanguageProperty;
 	}
+
+	public void setLanguageProperty(boolean isLanguageProperty) {
+		this.isLanguageProperty = isLanguageProperty;
+	}
 	
 	
 
