@@ -417,11 +417,11 @@ public class SubscriptionTools {
 		if (accept == null) {
 			accept = AppConstants.NGB_APPLICATION_JSON;
 		}
-		if (accept.equals(AppConstants.NGB_APPLICATION_JSON)) {
-			result.addAll(otherHead);
-		} else {
-			result.addAll(otherHead);
+		if (!accept.equals(AppConstants.NGB_APPLICATION_JSON)) {
 			result.remove(NGSIConstants.LINK_HEADER);
+		}
+		if(otherHead != null) { 
+			result.addAll(otherHead);
 		}
 		result.set(HttpHeaders.ACCEPT, accept);
 		result.set(HttpHeaders.CONTENT_TYPE, accept);

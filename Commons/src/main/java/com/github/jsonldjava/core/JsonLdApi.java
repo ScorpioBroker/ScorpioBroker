@@ -1579,9 +1579,12 @@ public class JsonLdApi {
 
 	private Object noConcise(Object value) throws ResponseException {
 		if (value instanceof Map m) {
-			if (m.containsKey(NGSIConstants.TYPE)) {
+			if (m.containsKey(NGSIConstants.TYPE) || m.containsKey(NGSIConstants.JSON_LD_TYPE)) {
 
 				Object type = m.get(NGSIConstants.TYPE);
+				if(type == null) {
+					type = m.get(NGSIConstants.JSON_LD_TYPE);
+				}
 				if (NGSIConstants.NGSI_LD_ATTR_SHORT_TYPES.contains(type)) {
 					return value;
 				}

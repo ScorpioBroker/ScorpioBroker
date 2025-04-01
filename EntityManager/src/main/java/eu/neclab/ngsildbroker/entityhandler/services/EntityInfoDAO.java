@@ -602,7 +602,8 @@ public class EntityInfoDAO {
 			Tuple t = Tuple.tuple();
 
 			StringBuilder sql = new StringBuilder(
-					"WITH JSON_DATA AS	(SELECT JSONB_ARRAY_ELEMENTS(ENTITY -> $1) WITH ORDINALITY AS ELEM FROM ENTITY WHERE ID=$2), ELEMENTS AS (SELECT ELEM.ELEM, ELEM.ORDINALITY - 1 AS INDEX FROM JSON_DATA ELEM WHERE ELEM.ELEM ->> '");
+					"WITH JSON_DATA AS(SELECT VALUE, ORDINALITY FROM ENTITY, JSONB_ARRAY_ELEMENTS(ENTITY -> $1) WITH ORDINALITY WHERE ID=$2), "
+					+ "ELEMENTS AS (SELECT VALUE, ORDINALITY - 1 AS INDEX FROM JSON_DATA WHERE VALUE ->> '");
 			sql.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
 			sql.append("' ");
 
@@ -650,6 +651,7 @@ public class EntityInfoDAO {
 			sql.append(NGSIConstants.NGSI_LD_HAS_VALUE);
 			sql.append("']::text[],$4,false)" + "ELSE ENTITY end FROM ELEMENTS WHERE ENTITY.ID=$2");
 			t.addJsonObject(new JsonObject(value));
+
 			return client.preparedQuery(sql.toString()).execute(t).onItem().transformToUni(result -> {
 
 				return Uni.createFrom().voidItem();

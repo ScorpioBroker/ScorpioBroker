@@ -87,7 +87,9 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_DATE = "https://uri.etsi.org/ngsi-ld/Date";
 	public final static String NGSI_LD_INFORMATION = "https://uri.etsi.org/ngsi-ld/information";
 	public final static String NGSI_LD_RELATIONSHIPS = "https://uri.etsi.org/ngsi-ld/relationshipNames";
+	public final static String NGSI_LD_RELATIONSHIPS_SHORT = "relationshipNames";
 	public final static String NGSI_LD_PROPERTIES = "https://uri.etsi.org/ngsi-ld/propertyNames";
+	public final static String NGSI_LD_PROPERTIES_SHORT = "propertyNames";
 	public final static String NGSI_LD_INSTANCE_ID = "https://uri.etsi.org/ngsi-ld/instanceId";
 
 	public final static String NGSI_LD_ID_PATTERN = "https://uri.etsi.org/ngsi-ld/idPattern";
@@ -444,6 +446,7 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_REG_MODE_EXC = "exclusive";
 	public static final String NGSI_LD_REG_MODE_RED = "redirect";
 	public static final String NGSI_LD_REG_OPERATIONS = "https://uri.etsi.org/ngsi-ld/operations";
+	public static final String NGSI_LD_REG_OPERATIONS_SHORT = "operations";
 	public static final String NGSI_LD_REG_OPERATION_FEDERATION_OPS = "federationOps";
 	public static final String NGSI_LD_REG_OPERATION_UPDATE_OPS = "updateOps";
 	public static final String NGSI_LD_REG_OPERATION_RETRIEVE_OPS = "retrieveOps";
