@@ -1142,7 +1142,7 @@ public final class HttpUtils {
 			return Uni.createFrom().item(builder.build());
 		}
 		List<Object> atContext = request == null ? Lists.newArrayList() : getAtContext(request);
-		boolean addAtContext = NGSIConstants.PREFER_JSON_HEADER.equals(request.headers().get(NGSIConstants.PREFER_HEADER));
+		boolean addAtContext = !NGSIConstants.PREFER_JSON_HEADER.equals(request.headers().get(NGSIConstants.PREFER_HEADER));
 		
 		return generateCompactedResult(atContext, context, acceptHeader, queryResult.getData(), geometryProperty,
 				options, lang, forceList, forceAttributeList, ldService, addAtContext).onItem().transform(resultAndHeaders -> {
