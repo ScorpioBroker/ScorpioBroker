@@ -359,8 +359,9 @@ public class SubscriptionTools {
 								atCtx = List.of(NGSIConstants.CURRENT_CORE_CONTEXT);
 							}
 							try {
+								
 								notification.put(NGSIConstants.NGSI_LD_DATA_SHORT,
-										HttpUtils.generateGeoJson(data, null, atCtx));
+										HttpUtils.generateGeoJson(data, null, atCtx, true));
 							} catch (ResponseException e) {
 								logger.error("Failed to generate geo+json for subscription");
 							}

@@ -206,14 +206,15 @@ public final class HttpUtils {
 
 	}
 
-	public static Object generateGeoJson(Object result, String geometry, Object context) throws ResponseException {
+	public static Object generateGeoJson(Object result, String geometry, Object context, boolean addAtContext)
+			throws ResponseException {
 		Map<String, Object> resultMap = Maps.newLinkedHashMap();
 		if (result instanceof List) {
 			resultMap.put(NGSIConstants.TYPE, NGSIConstants.FEATURE_COLLECTION);
 			ArrayList<Object> value = new ArrayList<Object>();
 			try {
 				for (Object entry : (List<Object>) result) {
-					Object valueEntry = generateGeoJson(entry, geometry, context);
+					Object valueEntry = generateGeoJson(entry, geometry, context, false);
 					((Map<String, Object>) valueEntry).remove(NGSIConstants.JSON_LD_CONTEXT);
 					value.add(valueEntry);
 				}
@@ -222,7 +223,10 @@ public final class HttpUtils {
 			}
 
 			resultMap.put(NGSIConstants.FEATURES, value);
-			resultMap.put(NGSIConstants.JSON_LD_CONTEXT, context);
+			if (addAtContext) {
+				resultMap.put(NGSIConstants.JSON_LD_CONTEXT, context);
+			}
+
 		} else {
 			Map<String, Object> entryMap = (Map<String, Object>) result;
 			resultMap.put(NGSIConstants.QUERY_PARAMETER_ID, entryMap.remove(NGSIConstants.QUERY_PARAMETER_ID));
@@ -236,7 +240,9 @@ public final class HttpUtils {
 			}
 			entryMap.remove(NGSIConstants.JSON_LD_CONTEXT);
 			resultMap.put(NGSIConstants.PROPERTIES, entryMap);
-			resultMap.put(NGSIConstants.JSON_LD_CONTEXT, context);
+			if (addAtContext) {
+				resultMap.put(NGSIConstants.JSON_LD_CONTEXT, context);
+			}
 		}
 		return resultMap;
 	}
@@ -503,16 +509,16 @@ public final class HttpUtils {
 	public static Uni<RestResponse<Object>> generateEntityResult(List<Object> contextHeader, Context context,
 
 			int acceptHeader, Object entity, String geometryProperty, String options, LanguageQueryTerm langQuery,
-			JsonLDService ldService, List<String> omitList, List<String> pickList) {
+			JsonLDService ldService, List<String> omitList, List<String> pickList, boolean addAtContext) {
 		return generateEntityResult(contextHeader, context, acceptHeader, entity, geometryProperty, options, langQuery,
-				ldService, omitList, pickList, false);
+				ldService, omitList, pickList, false, addAtContext);
 	}
 
 	public static Uni<RestResponse<Object>> generateEntityResult(List<Object> contextHeader, Context context,
 			int acceptHeader, Object entity, String geometryProperty, String options, LanguageQueryTerm langQuery,
-			JsonLDService ldService, List<String> omitList, List<String> pickList, boolean forceList) {
+			JsonLDService ldService, List<String> omitList, List<String> pickList, boolean forceList, boolean addAtContext) {
 		return generateCompactedResult(contextHeader, context, acceptHeader, entity, geometryProperty, options,
-				langQuery, false, false, ldService).onItem().transform(resultBodyAndHeaders -> {
+				langQuery, false, false, ldService, addAtContext).onItem().transform(resultBodyAndHeaders -> {
 					ResponseBuilder<Object> resp = RestResponseBuilderImpl.ok();
 					List<Tuple2<String, String>> headers = resultBodyAndHeaders.getItem2();
 					for (Tuple2<String, String> entry : headers) {
@@ -558,7 +564,7 @@ public final class HttpUtils {
 
 	public static Uni<Tuple2<Object, List<Tuple2<String, String>>>> generateCompactedResult(List<Object> contextHeader,
 			Context context, int acceptHeader, Object entity, String geometryProperty, String options,
-			LanguageQueryTerm langQuery, boolean forceArray, boolean forceAttributeList, JsonLDService ldService) {
+			LanguageQueryTerm langQuery, boolean forceArray, boolean forceAttributeList, JsonLDService ldService, boolean addAtContext) {
 
 		Set<String> optionSet = null;
 		if (options != null) {
@@ -681,7 +687,7 @@ public final class HttpUtils {
 							return Uni.createFrom()
 									.item(Tuple3.of(
 											JsonUtils.toPrettyString(
-													generateGeoJson(finalCompacted, geometryProperty, contextHeader)),
+													generateGeoJson(finalCompacted, geometryProperty, contextHeader, addAtContext)),
 											AppConstants.NGB_APPLICATION_GEO_JSON, null));
 						} catch (Exception e) {
 							return Uni.createFrom().failure(e);
@@ -1136,8 +1142,10 @@ public final class HttpUtils {
 			return Uni.createFrom().item(builder.build());
 		}
 		List<Object> atContext = request == null ? Lists.newArrayList() : getAtContext(request);
+		boolean addAtContext = NGSIConstants.PREFER_JSON_HEADER.equals(request.headers().get(NGSIConstants.PREFER_HEADER));
+		
 		return generateCompactedResult(atContext, context, acceptHeader, queryResult.getData(), geometryProperty,
-				options, lang, forceList, forceAttributeList, ldService).onItem().transform(resultAndHeaders -> {
+				options, lang, forceList, forceAttributeList, ldService, addAtContext).onItem().transform(resultAndHeaders -> {
 					String nextLink;
 					String prevLink;
 					if (request != null) {

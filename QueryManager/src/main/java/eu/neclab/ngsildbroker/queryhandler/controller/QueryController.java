@@ -199,13 +199,13 @@ public class QueryController {
 				return queryService.getTypesWithDetail(HttpUtils.getTenant(request), localOnly, request.headers())
 						.onItem().transformToUni(types -> {
 							return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, types, null,
-									null, null, ldService, null, null);
+									null, null, ldService, null, null, true);
 						});
 			} else {
 				return queryService.getTypes(HttpUtils.getTenant(request), localOnly, request.headers()).onItem()
 						.transformToUni(types -> {
 							return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, types, null,
-									null, null, ldService, null, null);
+									null, null, ldService, null, null, true);
 						});
 			}
 		}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
@@ -228,7 +228,7 @@ public class QueryController {
 							return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
 						} else {
 							return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, map, null, null,
-									null, ldService, null, null);
+									null, ldService, null, null, true);
 						}
 					});
 		}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
@@ -250,13 +250,13 @@ public class QueryController {
 				return queryService.getAttribs(HttpUtils.getTenant(request), localOnly, request.headers()).onItem()
 						.transformToUni(map -> {
 							return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, map, null, null,
-									null, ldService, null, null);
+									null, ldService, null, null, true);
 						});
 			} else {
 				return queryService.getAttribsWithDetails(HttpUtils.getTenant(request), localOnly, request.headers())
 						.onItem().transformToUni(list -> {
 							return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, list, null,
-									null, null, ldService, null, null);
+									null, null, ldService, null, null, true);
 						});
 			}
 		}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
@@ -281,7 +281,7 @@ public class QueryController {
 							return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
 						} else {
 							return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, map, null, null,
-									null, ldService, null, null);
+									null, ldService, null, null, true);
 						}
 					});
 		}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));

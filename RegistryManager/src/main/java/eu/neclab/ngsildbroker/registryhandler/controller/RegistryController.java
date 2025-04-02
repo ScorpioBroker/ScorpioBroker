@@ -187,7 +187,7 @@ public class RegistryController {
 			return csourceService.retrieveRegistration(HttpUtils.getTenant(request), registrationId).onItem()
 					.transformToUni(entity -> {
 						return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, entity, null, null,
-								null, ldService, null, null);
+								null, ldService, null, null, true);
 					});
 		}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 	}

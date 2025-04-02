@@ -159,7 +159,7 @@ public class SubscriptionController {
 			return subService.getSubscription(HttpUtils.getTenant(request), subscriptionId).onItem()
 					.transformToUni(subscription -> {
 						return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, subscription, null,
-								options, null, ldService, null, null);
+								options, null, ldService, null, null, true);
 					});
 		}).onFailure().recoverWithItem(e -> {
 			return HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request));

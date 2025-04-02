@@ -569,4 +569,6 @@ public interface NGSIConstants {
 	public static final Set<String> NGSI_LD_ATTR_SHORT_TYPES = Sets.newHashSet(PROPERTY, RELATIONSHIP,
 			NGSI_LD_GEOPROPERTY_SHORT, LANGUAGE_PROPERTY, VOCABPROPERTY, LISTPROPERTY,
 			JSON_PROPERTY);
+	public static final String PREFER_HEADER = "Prefer";
+	public static final String PREFER_JSON_HEADER = "body=json";
 }

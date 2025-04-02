@@ -126,7 +126,7 @@ public class EntityInfoDAO {
 			request.getPayload().values().forEach(entityList -> {
 				entities.add(mergeAllEntities(entityList));
 			});
-			if(entities.isEmpty()) {
+			if (entities.isEmpty()) {
 				Map<String, Object> result = new HashMap<>(2);
 				result.put("success", new ArrayList<Map<String, Object>>(0));
 				result.put("failure", new ArrayList<Map<String, Object>>(0));
@@ -151,7 +151,7 @@ public class EntityInfoDAO {
 
 			sql.append(
 					"RETURNING id, entity, (xmax = 0) AS inserted) select b.id, b.inserted, b.entity, a.old_entity from b LEFT JOIN a ON b.id = a.id;");
-			//logger.debug(sql.toString());
+			// logger.debug(sql.toString());
 			return client.preparedQuery(sql.toString()).executeBatch(nullFoundAndTuple.getItem2()).onItem()
 					.transform(rows -> {
 						Map<String, Object> result = new HashMap<>(2);
@@ -404,6 +404,7 @@ public class EntityInfoDAO {
 //			logger.debug(sql);
 //			logger.debug(tuple.deepToString());
 			return client.preparedQuery(sql).execute(tuple).onFailure().recoverWithUni(e -> {
+				e.printStackTrace();
 				return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
 			}).onItem().transformToUni(rows -> {
 				if (rows.rowCount() == 0) {
@@ -603,16 +604,19 @@ public class EntityInfoDAO {
 
 			StringBuilder sql = new StringBuilder(
 					"WITH JSON_DATA AS(SELECT VALUE, ORDINALITY FROM ENTITY, JSONB_ARRAY_ELEMENTS(ENTITY -> $1) WITH ORDINALITY WHERE ID=$2), "
-					+ "ELEMENTS AS (SELECT VALUE, ORDINALITY - 1 AS INDEX FROM JSON_DATA WHERE VALUE ->> '");
+							+ "ELEMENTS AS (SELECT VALUE, ORDINALITY - 1 AS INDEX FROM JSON_DATA WHERE VALUE ->> '");
 			sql.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
 			sql.append("' ");
 
 			t.addString(attribId);
 			t.addString(id);
+			int dollar;
 			if (datasetId == null) {
 				sql.append("IS NULL");
+				dollar = 3;
 			} else {
 				sql.append("= $3");
+				dollar = 4;
 				t.addString(datasetId);
 			}
 
@@ -620,36 +624,56 @@ public class EntityInfoDAO {
 			sql.append(NGSIConstants.NGSI_LD_PROPERTY);
 			sql.append("' THEN JSONB_SET(ENTITY, ARRAY[$1,ELEMENTS.INDEX, '");
 			sql.append(NGSIConstants.NGSI_LD_HAS_VALUE);
-			sql.append("']::text[],$4,false) " + "WHEN entity#>>'{$1,@type,0}' = '");
+			sql.append("']::text[],$");
+			sql.append(dollar);
+			sql.append(",false) " + "WHEN entity#>>'{$1,@type,0}' = '");
 			sql.append(NGSIConstants.NGSI_LD_RELATIONSHIP);
 			sql.append("' THEN JSONB_SET(ENTITY, ARRAY[$1,ELEMENTS.INDEX, '");
 			sql.append(NGSIConstants.NGSI_LD_HAS_OBJECT);
-			sql.append("']::text[],$4,false)" + "WHEN entity#>>'{$1,@type,0}' = '");
+			sql.append("']::text[],$");
+			sql.append(dollar);
+			sql.append(",false)" + "WHEN entity#>>'{$1,$");
+			sql.append(dollar);
+			sql.append("ype,0}' = '");
 			sql.append(NGSIConstants.NGSI_LD_LISTRELATIONSHIP);
 			sql.append("' THEN JSONB_SET(ENTITY, ARRAY[$1,ELEMENTS.INDEX, '");
 			sql.append(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST);
-			sql.append("']::text[],$4,false)");
+			sql.append("']::text[],$");
+			sql.append(dollar);
+			sql.append(",false)");
 			sql.append("WHEN entity#>>'{$1,@type,0}' = '");
 			sql.append(NGSIConstants.NGSI_LD_ListProperty);
 			sql.append("' THEN JSONB_SET(ENTITY, ARRAY[$1,ELEMENTS.INDEX, '");
 			sql.append(NGSIConstants.NGSI_LD_HAS_LIST);
-			sql.append("']::text[],$4,false)" + "WHEN entity#>>'{$1,@type,0}' = '");
+			sql.append("']::text[],$");
+			sql.append(dollar);
+			sql.append(",false)" + "WHEN entity#>>'{$1,@type,0}' = '");
 			sql.append(NGSIConstants.NGSI_LD_LANGPROPERTY);
 			sql.append("' THEN JSONB_SET(ENTITY, ARRAY[$1,ELEMENTS.INDEX, '");
 			sql.append(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP);
-			sql.append("']::text[],$4,false)" + "WHEN entity#>>'{$1,@type,0}' = '");
+			sql.append("']::text[],$");
+			sql.append(dollar);
+			sql.append(",false)" + "WHEN entity#>>'{$1,@type,0}' = '");
 			sql.append(NGSIConstants.NGSI_LD_VocabProperty);
 			sql.append("' THEN JSONB_SET(ENTITY, ARRAY[$1,ELEMENTS.INDEX, '");
 			sql.append(NGSIConstants.NGSI_LD_HAS_VOCAB);
-			sql.append("']::text[],$4,false)" + "WHEN entity#>>'{$1,@type,0}' = '");
+			sql.append("']::text[],$");
+			sql.append(dollar);
+			sql.append(",false)" + "WHEN entity#>>'{$1,@type,0}' = '");
 			sql.append(NGSIConstants.NGSI_LD_JSON_PROPERTY);
 			sql.append("' THEN JSONB_SET(ENTITY, ARRAY[$1,ELEMENTS.INDEX, '");
 			sql.append(NGSIConstants.NGSI_LD_HAS_JSON);
-			sql.append("']::text[],$4,false)" + "WHEN entity#>>'{$1,@type,0}' = '");
+			sql.append("']::text[],$");
+			sql.append(dollar);
+			sql.append(",false)" + "WHEN entity#>>'{$1,$");
+			sql.append(dollar);
+			sql.append(",@type,0}' = '");
 			sql.append(NGSIConstants.NGSI_LD_GEOPROPERTY);
 			sql.append("' THEN JSONB_SET(ENTITY, ARRAY[$1,ELEMENTS.INDEX, '");
 			sql.append(NGSIConstants.NGSI_LD_HAS_VALUE);
-			sql.append("']::text[],$4,false)" + "ELSE ENTITY end FROM ELEMENTS WHERE ENTITY.ID=$2");
+			sql.append("']::text[],$");
+			sql.append(dollar);
+			sql.append(",false)" + "ELSE ENTITY end FROM ELEMENTS WHERE ENTITY.ID=$2");
 			t.addJsonObject(new JsonObject(value));
 
 			return client.preparedQuery(sql.toString()).execute(t).onItem().transformToUni(result -> {
