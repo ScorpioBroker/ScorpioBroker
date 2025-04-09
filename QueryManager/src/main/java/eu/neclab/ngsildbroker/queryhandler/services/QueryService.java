@@ -1142,8 +1142,8 @@ public class QueryService implements CSourceHandler {
 	}
 
 	public Uni<List<Map<String, Object>>> getTypesWithDetail(String tenant, boolean localOnly,
-			io.vertx.core.MultiMap headersFromReq) {
-		Uni<List<Map<String, Object>>> local = queryDAO.getTypesWithDetails(tenant);
+			io.vertx.core.MultiMap headersFromReq, boolean bbox) {
+		Uni<List<Map<String, Object>>> local = queryDAO.getTypesWithDetails(tenant, bbox);
 		if (localOnly) {
 			return local;
 		}
@@ -1283,8 +1283,8 @@ public class QueryService implements CSourceHandler {
 	}
 
 	public Uni<Map<String, Object>> getType(String tenant, String type, boolean localOnly,
-			io.vertx.core.MultiMap headersFromReq) {
-		Uni<Map<String, Object>> local = queryDAO.getType(tenant, type);
+			io.vertx.core.MultiMap headersFromReq, boolean bbox) {
+		Uni<Map<String, Object>> local = queryDAO.getType(tenant, type, bbox);
 		if (localOnly) {
 			return local;
 		}

@@ -224,46 +224,85 @@ public class QueryDAO {
 		});
 	}
 
-	public Uni<List<Map<String, Object>>> getTypesWithDetails(String tenantId) {
+	public Uni<List<Map<String, Object>>> getTypesWithDetails(String tenantId, boolean bbox) {
 		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
-			return client.preparedQuery("SELECT DISTINCT myTypes, jsonb_agg(jsonb_build_object('"
-					+ NGSIConstants.JSON_LD_ID
-					+ "', myAttr)) from entity, jsonb_array_elements(ENTITY -> '@type') as myTypes, jsonb_object_keys((ENTITY - ARRAY['"
-					+ NGSIConstants.JSON_LD_TYPE + "', '" + NGSIConstants.JSON_LD_ID + "', '"
-					+ NGSIConstants.NGSI_LD_CREATED_AT + "','" + NGSIConstants.NGSI_LD_MODIFIED_AT
-					+ "'])) as myAttr group by myTypes").execute().onItem().transform(rows -> {
-						List<Map<String, Object>> result = Lists.newArrayList();
-						rows.forEach(row -> {
-							Map<String, Object> resultEntry = Maps.newHashMap();
-							resultEntry.put(NGSIConstants.JSON_LD_ID, row.getString(0));
-							resultEntry.put(NGSIConstants.JSON_LD_TYPE,
-									Lists.newArrayList(NGSIConstants.NGSI_LD_ENTITY_TYPE));
-							Map<String, String> tmp = Maps.newHashMap();
-							tmp.put(NGSIConstants.JSON_LD_ID, row.getString(0));
-							resultEntry.put(NGSIConstants.NGSI_LD_TYPE_NAME, Lists.newArrayList(tmp));
-							resultEntry.put(NGSIConstants.NGSI_LD_ATTRIBUTE_NAMES,
-									row.getJsonArray(1).getList().stream().distinct().toList());
-							result.add(resultEntry);
-						});
-						return result;
-					});
+			String sql;
+			if (!bbox) {
+				sql = "SELECT DISTINCT myTypes, jsonb_agg(jsonb_build_object('" + NGSIConstants.JSON_LD_ID
+						+ "', myAttr)) from entity, jsonb_array_elements(ENTITY -> '@type') as myTypes, jsonb_object_keys((ENTITY - ARRAY['"
+						+ NGSIConstants.JSON_LD_TYPE + "', '" + NGSIConstants.JSON_LD_ID + "', '"
+						+ NGSIConstants.NGSI_LD_CREATED_AT + "','" + NGSIConstants.NGSI_LD_MODIFIED_AT
+						+ "'])) as myAttr group by myTypes";
+			} else {
+				sql = "SELECT DISTINCT myTypes, jsonb_agg(jsonb_build_object('" + NGSIConstants.JSON_LD_ID
+						+ "', myAttr)), ST_XMin(ST_SetSRID(ST_Extent(ENTITY.LOCATION), 4326)) AS xmin,"
+						+ "ST_XMax(ST_SetSRID(ST_Extent(ENTITY.LOCATION), 4326)) AS xmax,"
+						+ "ST_YMin(ST_SetSRID(ST_Extent(ENTITY.LOCATION), 4326)) AS ymin,"
+						+ "ST_YMax(ST_SetSRID(ST_Extent(ENTITY.LOCATION), 4326)) AS ymax from entity, jsonb_array_elements(ENTITY -> '@type') as myTypes, jsonb_object_keys((ENTITY - ARRAY['"
+						+ NGSIConstants.JSON_LD_TYPE + "', '" + NGSIConstants.JSON_LD_ID + "', '"
+						+ NGSIConstants.NGSI_LD_CREATED_AT + "','" + NGSIConstants.NGSI_LD_MODIFIED_AT
+						+ "'])) as myAttr group by myTypes";
+			}
+			return client.preparedQuery(sql).execute().onItem().transform(rows -> {
+				List<Map<String, Object>> result = Lists.newArrayList();
+				rows.forEach(row -> {
+					Map<String, Object> resultEntry = Maps.newHashMap();
+					resultEntry.put(NGSIConstants.JSON_LD_ID, row.getString(0));
+					resultEntry.put(NGSIConstants.JSON_LD_TYPE, Lists.newArrayList(NGSIConstants.NGSI_LD_ENTITY_TYPE));
+					Map<String, String> tmp = Maps.newHashMap();
+					tmp.put(NGSIConstants.JSON_LD_ID, row.getString(0));
+					resultEntry.put(NGSIConstants.NGSI_LD_TYPE_NAME, Lists.newArrayList(tmp));
+					resultEntry.put(NGSIConstants.NGSI_LD_ATTRIBUTE_NAMES,
+							row.getJsonArray(1).getList().stream().distinct().toList());
+					if (bbox) {
+						Double xmin = row.getDouble(2);
+						Double xmax = row.getDouble(3);
+						Double ymin = row.getDouble(4);
+						Double ymax = row.getDouble(5);
+						if (xmin != null && xmax != null && ymax != null && ymin != null) {
+							List<Map<String, List<Map<String, Double>>>> bboxEntry = List
+									.of(Map.of(NGSIConstants.JSON_LD_LIST,
+											List.of(Map.of(NGSIConstants.JSON_LD_VALUE, xmin),
+													Map.of(NGSIConstants.JSON_LD_VALUE, ymin),
+													Map.of(NGSIConstants.JSON_LD_VALUE, xmax),
+													Map.of(NGSIConstants.JSON_LD_VALUE, ymax))));
+							resultEntry.put(NGSIConstants.BBOX, bboxEntry);
+
+						}
+					}
+					result.add(resultEntry);
+				});
+				return result;
+			});
 		});
 	}
 
-	public Uni<Map<String, Object>> getType(String tenantId, String type) {
+	public Uni<Map<String, Object>> getType(String tenantId, String type, boolean bbox) {
 		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
 			Tuple tuple = Tuple.tuple();
 			tuple.addArrayOfString(new String[] { type });
-			return client.preparedQuery(
-					"with a as (select x as id, entity -> x as data from entity, jsonb_object_keys(entity.entity) as x where e_types && $1::text[] and x not in ('"
-							+ NGSIConstants.JSON_LD_ID + "', '" + NGSIConstants.JSON_LD_TYPE + "', '"
-							+ NGSIConstants.NGSI_LD_CREATED_AT + "', '" + NGSIConstants.NGSI_LD_MODIFIED_AT
-							+ "')), b as (SELECT count(entity.id) as mycount FROM entity where e_types && $1::text[]) "
-							+ "select b.mycount, a.id, jsonb_agg(distinct jsonb_build_object('"
-							+ NGSIConstants.JSON_LD_ID + "', x#>'{" + NGSIConstants.JSON_LD_TYPE
-							+ ",0}')) from b, a, jsonb_array_elements(a.data) as x group by a.id, b.mycount;"
-
-			).execute(tuple).onItem().transform(rows -> {
+			String sql;
+			if (bbox) {
+				sql = "with a as (select x as id, entity -> x as data from entity, jsonb_object_keys(entity.entity) as x where e_types && $1::text[] and x not in ('"
+						+ NGSIConstants.JSON_LD_ID + "', '" + NGSIConstants.JSON_LD_TYPE + "', '"
+						+ NGSIConstants.NGSI_LD_CREATED_AT + "', '" + NGSIConstants.NGSI_LD_MODIFIED_AT
+						+ "')), b as (SELECT count(entity.id) as mycount, ST_XMin(ST_SetSRID(ST_Extent(ENTITY.LOCATION), 4326)) AS xmin,"
+						+ "ST_XMax(ST_SetSRID(ST_Extent(ENTITY.LOCATION), 4326)) AS xmax,"
+						+ "ST_YMin(ST_SetSRID(ST_Extent(ENTITY.LOCATION), 4326)) AS ymin,"
+						+ "ST_YMax(ST_SetSRID(ST_Extent(ENTITY.LOCATION), 4326)) AS ymax FROM entity where e_types && $1::text[]) "
+						+ "select b.mycount, a.id, jsonb_agg(distinct jsonb_build_object('" + NGSIConstants.JSON_LD_ID
+						+ "', x#>'{" + NGSIConstants.JSON_LD_TYPE
+						+ ",0}')), b.xmin, b.xmax, b.ymin, b.ymax from b, a, jsonb_array_elements(a.data) as x group by a.id, b.mycount, b.xmin, b.xmax, b.ymin, b.ymax;";
+			} else {
+				sql = "with a as (select x as id, entity -> x as data from entity, jsonb_object_keys(entity.entity) as x where e_types && $1::text[] and x not in ('"
+						+ NGSIConstants.JSON_LD_ID + "', '" + NGSIConstants.JSON_LD_TYPE + "', '"
+						+ NGSIConstants.NGSI_LD_CREATED_AT + "', '" + NGSIConstants.NGSI_LD_MODIFIED_AT
+						+ "')), b as (SELECT count(entity.id) as mycount FROM entity where e_types && $1::text[]) "
+						+ "select b.mycount, a.id, jsonb_agg(distinct jsonb_build_object('" + NGSIConstants.JSON_LD_ID
+						+ "', x#>'{" + NGSIConstants.JSON_LD_TYPE
+						+ ",0}')) from b, a, jsonb_array_elements(a.data) as x group by a.id, b.mycount;";
+			}
+			return client.preparedQuery(sql).execute(tuple).onItem().transform(rows -> {
 				Map<String, Object> result = Maps.newHashMap();
 				if (rows.size() == 0) {
 					return result;
@@ -271,9 +310,19 @@ public class QueryDAO {
 				long count = 0;
 				RowIterator<Row> it = rows.iterator();
 				List<Map<String, Object>> attrDetails = Lists.newArrayList();
+				Double xmin = null;
+				Double xmax = null;
+				Double ymin = null;
+				Double ymax = null;
 				while (it.hasNext()) {
 					Row row = it.next();
 					count = row.getLong(0);
+					if (bbox) {
+						xmin = row.getDouble(3);
+						xmax = row.getDouble(4);
+						ymin = row.getDouble(5);
+						ymax = row.getDouble(6);
+					}
 					Map<String, Object> attribDetail = Maps.newHashMap();
 					Map<String, String> tmp = Maps.newHashMap();
 					tmp.put(NGSIConstants.JSON_LD_ID, row.getString(1));
@@ -292,6 +341,18 @@ public class QueryDAO {
 				Map<String, String> tmp = Maps.newHashMap();
 				tmp.put(NGSIConstants.JSON_LD_ID, type);
 				result.put(NGSIConstants.NGSI_LD_TYPE_NAME, Lists.newArrayList(tmp));
+				if (bbox) {
+					if (xmin != null && xmax != null && ymax != null && ymin != null) {
+						List<Map<String, List<Map<String, Double>>>> bboxEntry = List
+								.of(Map.of(NGSIConstants.JSON_LD_LIST,
+										List.of(Map.of(NGSIConstants.JSON_LD_VALUE, xmin),
+												Map.of(NGSIConstants.JSON_LD_VALUE, ymin),
+												Map.of(NGSIConstants.JSON_LD_VALUE, xmax),
+												Map.of(NGSIConstants.JSON_LD_VALUE, ymax))));
+						result.put(NGSIConstants.BBOX, bboxEntry);
+
+					}
+				}
 				return result;
 			});
 		});
@@ -1123,7 +1184,8 @@ public class QueryDAO {
 
 			boolean doJoin = (join != null && joinLevel > 0);
 			query.append("WITH a as (SELECT ID");
-			if (!forceEntitymapCreation && (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery || localOnly)) {
+			if (!forceEntitymapCreation
+					&& (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery || localOnly)) {
 				query.append(", count(*) over() as list_size");
 			}
 			query.append(" FROM ENTITY WHERE ");
@@ -1316,7 +1378,8 @@ public class QueryDAO {
 			}
 			query.append(" ORDER BY createdAt");
 			char sourceForEntities;
-			if (!forceEntitymapCreation && (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery || localOnly)) {
+			if (!forceEntitymapCreation
+					&& (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery || localOnly)) {
 				query.append(" limit $");
 				query.append(dollar);
 				tuple.addInteger(limit);
@@ -1391,7 +1454,8 @@ public class QueryDAO {
 				queryToStoreFinalSelectPart.append(" UNION ALL (SELECT * FROM JOINENTITIES)");
 			}
 			String qTokenTBU;
-			if (!forceEntitymapCreation && (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery || localOnly)) {
+			if (!forceEntitymapCreation
+					&& (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery || localOnly)) {
 				query.append(
 						", c as (SELECT jsonb_build_object('entityMap', jsonb_agg(jsonb_build_object(id, jsonb_build_array('");
 				query.append(NGSIConstants.JSON_LD_NONE);
@@ -1487,7 +1551,7 @@ public class QueryDAO {
 
 	private Tuple2<EntityCache, EntityMap> putQueryResultIntoMapAndCache(RowSet<Row> rows, String qToken) {
 		EntityCache resultEntities = new EntityCache();
-		if(rows.size() == 0) {
+		if (rows.size() == 0) {
 			return Tuple2.of(resultEntities, new EntityMap(null, false, false, false));
 		}
 		RowIterator<Row> it = rows.iterator();

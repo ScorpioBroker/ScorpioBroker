@@ -571,4 +571,5 @@ public interface NGSIConstants {
 			JSON_PROPERTY);
 	public static final String PREFER_HEADER = "Prefer";
 	public static final String PREFER_JSON_HEADER = "body=json";
+	public static final String BBOX = "https://purl.org/geojson/vocab#bbox";
 }
