@@ -315,8 +315,9 @@ public class JsonLdApi {
 					// do language stuff
 					result.put("type", "Property");
 					boolean found = false;
-					Object defaultLang = null;
+					
 					List<Map<String, Object>> tmp = (List<Map<String, Object>>) expandedValue;
+					Object atNoneEntry = null;
 					for (Tuple2<Set<String>, Float> tuple : langQuery.getEntries()) {
 //						[
 //				          {
@@ -328,27 +329,34 @@ public class JsonLdApi {
 //				            "@language": "nl"
 //				          }
 //				        ]
-						Object atLang = null;
+						
+						
 						for (String lang : tuple.getItem1()) {
 							for (Map<String, Object> entry : tmp) {
-								atLang = entry.get(JsonLdConsts.LANGUAGE);
-								if (atLang == null) {
-									defaultLang = atLang;
-								}
-								if ((lang.equals("*") && atLang == null) || lang.equals(atLang)) {
-									expandedValue = List.of(Map.of(JsonLdConsts.VALUE, entry.get(JsonLdConsts.VALUE)));
+								Object atLang = entry.get(JsonLdConsts.LANGUAGE);
+								if (lang.equals(atLang)) {
+									entry.remove(JsonLdConsts.LANGUAGE);
+									expandedValue = List.of(entry);
+									result.put("lang", atLang);
 									found = true;
 									break;
 								}
-							}
-							if (found) {
-								if (atLang != null) {
-									result.put("lang", atLang);
+								if(NGSIConstants.JSON_LD_NONE.equals(atLang)) {
+									entry.remove(JsonLdConsts.LANGUAGE);
+									atNoneEntry = List.of(entry);
+									if("*".equals(lang)) {
+										result.put("lang", atLang);
+										found = true;
+										break;
+									}
 								}
-								break;
 							}
-							if (lang.equals("*") && !found) {
-								expandedValue = List.of(Map.of(JsonLdConsts.VALUE, tmp.get(0).get(JsonLdConsts.VALUE)));
+							
+							if ("*".equals(lang) && !found) {
+								Map<String, Object> entry = tmp.get(0);
+								Object atLang = entry.remove(JsonLdConsts.LANGUAGE);
+								expandedValue = List.of(entry);
+								result.put("lang", atLang);
 								found = true;
 								break;
 							}
@@ -358,10 +366,14 @@ public class JsonLdApi {
 						}
 					}
 					if (!found) {
-						expandedValue = defaultLang;
-						if (expandedValue == null) {
-							result.put("lang", tmp.get(0).get(JsonLdConsts.LANGUAGE));
-							expandedValue = List.of(Map.of(JsonLdConsts.VALUE, tmp.get(0).get(JsonLdConsts.VALUE)));
+						if(atNoneEntry != null) {
+							result.put("lang", NGSIConstants.JSON_LD_NONE);
+							expandedValue = atNoneEntry;
+						}else {
+							Map<String, Object> entry = tmp.get(0);
+							Object atLang = entry.remove(JsonLdConsts.LANGUAGE);
+							expandedValue = List.of(entry);
+							result.put("lang", atLang);
 						}
 					}
 					expandedProperty = NGSIConstants.NGSI_LD_HAS_VALUE;
