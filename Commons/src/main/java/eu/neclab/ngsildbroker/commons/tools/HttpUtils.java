@@ -235,8 +235,14 @@ public final class HttpUtils {
 				geometry = NGSIConstants.NGSI_LD_LOCATION_SHORT;
 			}
 			Object geometryEntry = entryMap.get(geometry);
-			if (geometryEntry != null) {
-				resultMap.put(NGSIConstants.GEOMETRY, ((Map<String, Object>) geometryEntry).get(NGSIConstants.VALUE));
+			if (geometryEntry != null && geometryEntry instanceof Map<?, ?> m) {
+				if (m.containsKey(NGSIConstants.VALUE)) {
+					resultMap.put(NGSIConstants.GEOMETRY, m.get(NGSIConstants.VALUE));
+				} else if (m.containsKey(NGSIConstants.TYPE) && m.containsKey(NGSIConstants.GEO_JSON_COORDINATES)) {
+					resultMap.put(NGSIConstants.GEOMETRY, m);
+				}
+			} else {
+				resultMap.put(NGSIConstants.GEOMETRY, null);
 			}
 			entryMap.remove(NGSIConstants.JSON_LD_CONTEXT);
 			resultMap.put(NGSIConstants.PROPERTIES, entryMap);
@@ -516,7 +522,8 @@ public final class HttpUtils {
 
 	public static Uni<RestResponse<Object>> generateEntityResult(List<Object> contextHeader, Context context,
 			int acceptHeader, Object entity, String geometryProperty, String options, LanguageQueryTerm langQuery,
-			JsonLDService ldService, List<String> omitList, List<String> pickList, boolean forceList, boolean addAtContext) {
+			JsonLDService ldService, List<String> omitList, List<String> pickList, boolean forceList,
+			boolean addAtContext) {
 		return generateCompactedResult(contextHeader, context, acceptHeader, entity, geometryProperty, options,
 				langQuery, false, false, ldService, addAtContext).onItem().transform(resultBodyAndHeaders -> {
 					ResponseBuilder<Object> resp = RestResponseBuilderImpl.ok();
@@ -564,7 +571,8 @@ public final class HttpUtils {
 
 	public static Uni<Tuple2<Object, List<Tuple2<String, String>>>> generateCompactedResult(List<Object> contextHeader,
 			Context context, int acceptHeader, Object entity, String geometryProperty, String options,
-			LanguageQueryTerm langQuery, boolean forceArray, boolean forceAttributeList, JsonLDService ldService, boolean addAtContext) {
+			LanguageQueryTerm langQuery, boolean forceArray, boolean forceAttributeList, JsonLDService ldService,
+			boolean addAtContext) {
 
 		Set<String> optionSet = null;
 		if (options != null) {
@@ -686,8 +694,8 @@ public final class HttpUtils {
 						try {
 							return Uni.createFrom()
 									.item(Tuple3.of(
-											JsonUtils.toPrettyString(
-													generateGeoJson(finalCompacted, geometryProperty, contextHeader, addAtContext)),
+											JsonUtils.toPrettyString(generateGeoJson(finalCompacted, geometryProperty,
+													contextHeader, addAtContext)),
 											AppConstants.NGB_APPLICATION_GEO_JSON, null));
 						} catch (Exception e) {
 							return Uni.createFrom().failure(e);
@@ -1142,10 +1150,12 @@ public final class HttpUtils {
 			return Uni.createFrom().item(builder.build());
 		}
 		List<Object> atContext = request == null ? Lists.newArrayList() : getAtContext(request);
-		boolean addAtContext = !NGSIConstants.PREFER_JSON_HEADER.equals(request.headers().get(NGSIConstants.PREFER_HEADER));
-		
+		boolean addAtContext = !NGSIConstants.PREFER_JSON_HEADER
+				.equals(request.headers().get(NGSIConstants.PREFER_HEADER));
+
 		return generateCompactedResult(atContext, context, acceptHeader, queryResult.getData(), geometryProperty,
-				options, lang, forceList, forceAttributeList, ldService, addAtContext).onItem().transform(resultAndHeaders -> {
+				options, lang, forceList, forceAttributeList, ldService, addAtContext).onItem()
+				.transform(resultAndHeaders -> {
 					String nextLink;
 					String prevLink;
 					if (request != null) {
