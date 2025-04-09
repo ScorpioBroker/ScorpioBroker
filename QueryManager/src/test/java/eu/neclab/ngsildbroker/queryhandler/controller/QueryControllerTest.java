@@ -162,7 +162,7 @@ public class QueryControllerTest {
 		Map<String, Object> map = new HashMap<>();
 		map.put("id", entity);
 		list.add(map);
-		Mockito.when(queryService.getTypesWithDetail(any(), anyBoolean(),any())).thenReturn(Uni.createFrom().item(list));
+		Mockito.when(queryService.getTypesWithDetail(any(), anyBoolean(),any(), false)).thenReturn(Uni.createFrom().item(list));
 		Boolean details = true;
 
 		ExtractableResponse<Response> response = given().accept(AppConstants.NGB_APPLICATION_JSONLD).request()
@@ -179,7 +179,7 @@ public class QueryControllerTest {
 		Map<String, Object> map = new HashMap<>();
 		map.put("id", entity);
 		list.add(map);
-		Mockito.when(queryService.getTypesWithDetail(any(), anyBoolean(),any())).thenReturn(Uni.createFrom().item(list));
+		Mockito.when(queryService.getTypesWithDetail(any(), anyBoolean(),any(), false)).thenReturn(Uni.createFrom().item(list));
 		Mockito.when(queryService.getTypes(any(), anyBoolean(),any())).thenReturn(Uni.createFrom().item(map));
 		Boolean details = false;
 
@@ -196,7 +196,7 @@ public class QueryControllerTest {
 		Map<String, Object> map = new HashMap<>();
 		map.put("id", entity);
 
-		Mockito.when(queryService.getType(any(), any(), anyBoolean(),any())).thenReturn(Uni.createFrom().item(map));
+		Mockito.when(queryService.getType(any(), any(), anyBoolean(),any(), false)).thenReturn(Uni.createFrom().item(map));
 		Boolean details = false;
 
 		ExtractableResponse<Response> response = given().accept(AppConstants.NGB_APPLICATION_JSONLD).request()
