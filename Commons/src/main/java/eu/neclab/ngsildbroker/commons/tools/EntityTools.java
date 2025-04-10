@@ -22,6 +22,7 @@ import com.google.common.net.HttpHeaders;
 import java.util.Set;
 import java.util.UUID;
 
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -878,8 +879,15 @@ public final class EntityTools {
 
 	private static Uni<List<Object>> handle200(WebClient webClient, QueryRemoteHost remoteHost,
 			HttpResponse<Buffer> response, JsonLDService ldService, int timeout) {
-		List<Map<String, Object>> tmpList = response.bodyAsJsonArray().getList();
-		return ldService.expand(remoteHost.context(), tmpList, AppConstants.opts, -1, false).onItem()
+		String tmp = response.bodyAsString().trim();
+		List<Map<String, Object>> tmpList;
+		if(tmp.charAt(0) == '[') {
+			tmpList = new JsonArray(tmp).getList();
+		}else {
+			tmpList = Lists.newArrayList(new JsonObject(tmp).getMap());
+		}
+		
+		return ldService.expand(remoteHost.context(), tmpList, AppConstants.opts, -1, true).onItem()
 				.transformToUni(expanded -> {
 					if (response.headers().contains("Next")) {
 						remoteHost.setParamsFromNext(response.headers().get("Next"));
@@ -895,6 +903,9 @@ public final class EntityTools {
 
 					}
 					return Uni.createFrom().item(expanded);
+				}).onFailure().recoverWithUni(e -> {
+					logger.debug("Failed to expand", e);
+					return Uni.createFrom().failure(e);
 				});
 	}
 
