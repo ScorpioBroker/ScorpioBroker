@@ -8,10 +8,11 @@ import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
 
 @Provider
-public class JsonParseExceptionMapper implements ExceptionMapper<JsonParseException> {
+public class JsonParseExceptionMapper implements ExceptionMapper<Exception> {
 
+	
 	@Override
-	public Response toResponse(JsonParseException exception) {
+	public Response toResponse(Exception exception) {
 		return Response.status(Response.Status.BAD_REQUEST)
 				.entity(new ResponseException(ErrorType.InvalidRequest,
 						"There is an error in the provided json document").getJson())

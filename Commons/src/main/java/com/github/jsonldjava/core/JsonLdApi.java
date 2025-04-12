@@ -319,18 +319,6 @@ public class JsonLdApi {
 					List<Map<String, Object>> tmp = (List<Map<String, Object>>) expandedValue;
 					Object atNoneEntry = null;
 					for (Tuple2<Set<String>, Float> tuple : langQuery.getEntries()) {
-//						[
-//				          {
-//				            "@value": "Grand Place",
-//				            "@language": "fr"
-//				          },
-//				          {
-//				            "@value": "Grote Markt",
-//				            "@language": "nl"
-//				          }
-//				        ]
-						
-						
 						for (String lang : tuple.getItem1()) {
 							for (Map<String, Object> entry : tmp) {
 								Object atLang = entry.get(JsonLdConsts.LANGUAGE);
@@ -396,7 +384,58 @@ public class JsonLdApi {
 											.contains(NGSIConstants.NGSI_LD_LANGPROPERTY)
 									|| map.get(NGSIConstants.JSON_LD_TYPE).toString()
 											.contains(NGSIConstants.NGSI_LD_JSON_PROPERTY))) {
-						map.remove(NGSIConstants.JSON_LD_TYPE);
+						String propType = map.remove(NGSIConstants.JSON_LD_TYPE).toString();
+						if(langQuery != null && propType.contains(NGSIConstants.NGSI_LD_LANGPROPERTY)) {
+							boolean found = false;
+							List<Map<String, Object>> tmp = ((List<Map<String, List<Map<String, Object>>>>) expandedValue).get(0).get(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP);
+							Object atNoneEntry = null;
+							for (Tuple2<Set<String>, Float> tuple : langQuery.getEntries()) {
+								for (String lang : tuple.getItem1()) {
+									for (Map<String, Object> entry : tmp) {
+										Object atLang = entry.get(JsonLdConsts.LANGUAGE);
+										if (lang.equals(atLang)) {
+											entry.remove(JsonLdConsts.LANGUAGE);
+											expandedValue = List.of(entry);
+											found = true;
+											break;
+										}
+										if(NGSIConstants.JSON_LD_NONE.equals(atLang)) {
+											entry.remove(JsonLdConsts.LANGUAGE);
+											atNoneEntry = List.of(entry);
+											if("*".equals(lang)) {
+												found = true;
+												break;
+											}
+										}
+									}
+									
+									if ("*".equals(lang) && !found) {
+										Map<String, Object> entry = tmp.get(0);
+										entry.remove(JsonLdConsts.LANGUAGE);
+										expandedValue = List.of(entry);
+										found = true;
+										break;
+									}
+								}
+								if (found) {
+									break;
+								}
+							}
+							if (!found) {
+								if(atNoneEntry != null) {
+									expandedValue = atNoneEntry;
+								}else {
+									Map<String, Object> entry = tmp.get(0);
+									Object atLang = entry.remove(JsonLdConsts.LANGUAGE);
+									expandedValue = List.of(entry);
+									
+								}
+							}
+							isProperty = true;
+							isLanguageProperty = false;
+ 
+						}
+						
 					} else if (isListProperty && expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_LIST)) {
 						return compact(activeCtx, NGSIConstants.LIST, expandedValue, compactArrays, endPoint, null,
 								null);
