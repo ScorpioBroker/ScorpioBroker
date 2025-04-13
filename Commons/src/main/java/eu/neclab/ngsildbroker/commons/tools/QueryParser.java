@@ -354,6 +354,7 @@ public class QueryParser {
 		}
 		return result;
 	}
+	private Set<Character> allowedTypeOperationChars = Set.of('(',')',',','|',';'); 
 
 	public static TypeQueryTerm parseTypeQuery(String input, Context context) throws ResponseException {
 		if (input == null) {
@@ -369,6 +370,7 @@ public class QueryParser {
 			throw new ResponseException(ErrorType.InternalError, e.getMessage());
 		}
 		OfInt it = input.chars().iterator();
+		
 		while (it.hasNext()) {
 			char b = (char) it.next().intValue();
 			if (b == '(') {
@@ -404,6 +406,9 @@ public class QueryParser {
 				type.setLength(0);
 
 			} else {
+				if(!Character.isLetter(b) && !Character.isDigit(b) && b != ':'&& b != '_' && b != '-') {
+					throw new ResponseException(ErrorType.BadRequestData, "Invalid character in type: " + (char)b);
+				}
 				type.append((char) b);
 			}
 
