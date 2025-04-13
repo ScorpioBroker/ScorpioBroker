@@ -406,9 +406,9 @@ public class QueryParser {
 				type.setLength(0);
 
 			} else {
-				if(!Character.isLetter(b) && !Character.isDigit(b) && b != ':'&& b != '_' && b != '-') {
-					throw new ResponseException(ErrorType.BadRequestData, "Invalid character in type: " + (char)b);
-				}
+//				if(!Character.isLetter(b) && !Character.isDigit(b) && b != ':'&& b != '_' && b != '-') {
+//					throw new ResponseException(ErrorType.BadRequestData, "Invalid character in type: " + (char)b);
+//				}
 				type.append((char) b);
 			}
 
