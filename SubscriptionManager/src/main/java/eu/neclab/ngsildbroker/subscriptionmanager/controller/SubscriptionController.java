@@ -15,6 +15,9 @@ import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.impl.headers.HeadersMultiMap;
+import io.vertx.core.json.DecodeException;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.DELETE;
@@ -65,7 +68,14 @@ public class SubscriptionController {
 
 	@SuppressWarnings("unchecked")
 	@POST
-	public Uni<RestResponse<Object>> subscribe(HttpServerRequest request, Map<String, Object> map) {
+	public Uni<RestResponse<Object>> subscribe(HttpServerRequest request, String body) {
+		Map<String, Object> map;
+
+		try {
+			map = new JsonObject(body).getMap();
+		} catch (DecodeException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+		}
 		try {
 			if (!map.containsKey(NGSIConstants.JSONLD_CONTEXT)) {
 				String contextLink;
@@ -184,7 +194,14 @@ public class SubscriptionController {
 	@Path("/{id}")
 	@PATCH
 	public Uni<RestResponse<Object>> updateSubscription(HttpServerRequest request, @PathParam(value = "id") String id,
-			Map<String, Object> map) {
+			String body) {
+		Map<String, Object> map;
+
+		try {
+			map = new JsonObject(body).getMap();
+		} catch (DecodeException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+		}
 		try {
 			HttpUtils.validateUri(id);
 		} catch (Exception e) {

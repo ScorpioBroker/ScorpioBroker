@@ -3,7 +3,8 @@ package eu.neclab.ngsildbroker.commons.exceptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.core.JsonParseException;
+
+import com.fasterxml.jackson.databind.JsonMappingException;
 
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import jakarta.ws.rs.core.Response;
@@ -11,12 +12,12 @@ import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
 
 @Provider
-public class JsonParseExceptionMapper implements ExceptionMapper<JsonParseException> {
+public class JsonMappingExceptionMapper implements ExceptionMapper<JsonMappingException> {
 
-	private static Logger logger = LoggerFactory.getLogger(JsonParseExceptionMapper.class);
+	private static Logger logger = LoggerFactory.getLogger(JsonMappingExceptionMapper.class);
 	
 	@Override
-	public Response toResponse(JsonParseException exception) {
+	public Response toResponse(JsonMappingException exception) {
 		logger.debug("failed to process JSON.", exception);
 		return Response.status(Response.Status.BAD_REQUEST)
 				.entity(new ResponseException(ErrorType.InvalidRequest,

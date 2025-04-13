@@ -100,24 +100,24 @@ public final class HttpUtils {
 	public static boolean doPreflightCheck(HttpServerRequest req, List<Object> atContextLinks)
 			throws ResponseException {
 		String contentType = req.getHeader(HttpHeaders.CONTENT_TYPE);
-		if (contentType == null) {
-			throw new ResponseException(ErrorType.UnsupportedMediaType, "No content type header provided");
+		switch (contentType) {
+		case AppConstants.NGB_APPLICATION_JSON_PATCH:
+		case AppConstants.NGB_APPLICATION_JSON: {
+			return false;
 		}
-		if (contentType.toLowerCase().contains("application/ld+json")) {
+
+		case AppConstants.NGB_APPLICATION_JSONLD: {
 			if (!atContextLinks.isEmpty()) {
 				throw new ResponseException(ErrorType.BadRequestData,
 						"You can not have a Link to a context is content-type application/ld+json");
 			}
 			return true;
 		}
-		if (!contentType.toLowerCase().contains("application/json")
-				&& !contentType.toLowerCase().contains("application/merge-patch+json")) {
+		default: {
 			throw new ResponseException(ErrorType.UnsupportedMediaType,
-					"Unsupported content type. Allowed are application/json and application/ld+json. You provided "
-							+ contentType);
+					"Invalid content type header provided: " + contentType);
 		}
-		return false;
-
+		}
 	}
 
 	public static int parseAcceptHeader(List<String> acceptHeaders) {
@@ -912,7 +912,9 @@ public final class HttpUtils {
 		boolean isHavingSuccess = false;
 		boolean wasUpdated = true;
 		boolean allConflict = true;
+		boolean sameError = true;
 		String opType = t.get(0).getOperationType();
+		int lastErrorCode = -1;
 		List<String> createdIds = new ArrayList<>();
 		List<String> successes = new ArrayList<>();
 		List<Map<String, Object>> errors = new ArrayList<>();
@@ -926,7 +928,14 @@ public final class HttpUtils {
 				error.put("error", failure);
 				error.remove("failure");
 				errors.add(error);
-				allConflict = allConflict && failure.get(NGSIConstants.STATUS).equals(409);
+				Object status = failure.get(NGSIConstants.STATUS);
+				if (status != null) {
+					allConflict = allConflict && status.equals(409);
+					if (lastErrorCode != -1 && !status.equals(lastErrorCode)) {
+						sameError = false;
+					}
+					lastErrorCode = (Integer) status;
+				}
 				isHavingError = true;
 			}
 			if (!r.getSuccesses().isEmpty()) {
@@ -941,15 +950,14 @@ public final class HttpUtils {
 		if (isHavingError && !isHavingSuccess) {
 			result.remove("success");
 			ResponseBuilder<Object> builder;
-			if (opType.equalsIgnoreCase("Delete") || opType.equalsIgnoreCase("Append")) {
-				builder = new RestResponseBuilderImpl<>().status(404).type(AppConstants.NGB_APPLICATION_JSON)
-						.entity(result);
-			} else if (errors.toString().contains("503")) {
-				builder = new RestResponseBuilderImpl<>().status(503).type(AppConstants.NGB_APPLICATION_JSON)
-						.entity(result);
-			} else if (allConflict) {
-				builder = new RestResponseBuilderImpl<>().status(409).type(AppConstants.NGB_APPLICATION_JSON)
-						.entity(result);
+			if (sameError) {
+				if (lastErrorCode == 415) {
+					builder = new RestResponseBuilderImpl<>().status(lastErrorCode)
+							.type(AppConstants.NGB_APPLICATION_JSON).entity(errors.get(0).get("error"));
+				} else {
+					builder = new RestResponseBuilderImpl<>().status(lastErrorCode)
+							.type(AppConstants.NGB_APPLICATION_JSON).entity(result);
+				}
 			} else {
 				builder = new RestResponseBuilderImpl<>().status(400).type(AppConstants.NGB_APPLICATION_JSON)
 						.entity(result);

@@ -9,6 +9,7 @@ import java.util.Random;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import io.vertx.core.json.DecodeException;
 import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import jakarta.ws.rs.POST;
@@ -18,8 +19,11 @@ import jakarta.ws.rs.QueryParam;
 import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.RestResponse;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLDService;
+import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.Lists;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
@@ -59,13 +63,24 @@ public class EntityBatchController {
 	@Inject
 	JsonLDService ldService;
 
+	@Inject
+	ObjectMapper objectMapper;
+
 	@POST
 	@Path("/create")
-	public Uni<RestResponse<Object>> createMultiple(HttpServerRequest request,
-			List<Map<String, Object>> compactedEntities, @QueryParam("localOnly") boolean localOnly) {
+	public Uni<RestResponse<Object>> createMultiple(HttpServerRequest request, String body,
+			@QueryParam("localOnly") boolean localOnly) {
 		List<Uni<Tuple2<String, Object>>> unis = Lists.newArrayList();
-		if(compactedEntities==null || compactedEntities.isEmpty()){
-			return  Uni.createFrom().item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData), HttpUtils.getTenant(request)));
+		List<Map<String, Object>> compactedEntities;
+
+		try {
+			compactedEntities = new JsonArray(body).getList();
+		} catch (DecodeException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+		}
+		if (compactedEntities == null || compactedEntities.isEmpty()) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
+					new ResponseException(ErrorType.BadRequestData), HttpUtils.getTenant(request)));
 		}
 		for (Map<String, Object> compactedEntity : compactedEntities) {
 //			try {
@@ -111,10 +126,11 @@ public class EntityBatchController {
 			List<NGSILDOperationResult> fails = tuple.getItem1();
 			List<Map<String, Object>> expandedEntities = tuple.getItem2();
 			List<Context> contexts = tuple.getItem3();
-			if(expandedEntities.isEmpty()){
+			if (expandedEntities.isEmpty()) {
 				return Uni.createFrom().item(fails).onItem().transform(HttpUtils::generateBatchResult);
 			}
-			return entityService.createBatch(HttpUtils.getTenant(request), expandedEntities, contexts, localOnly,request.headers())
+			return entityService
+					.createBatch(HttpUtils.getTenant(request), expandedEntities, contexts, localOnly, request.headers())
 					.onItem().transform(opResults -> {
 						opResults.addAll(fails);
 						return HttpUtils.generateBatchResult(opResults);
@@ -128,8 +144,15 @@ public class EntityBatchController {
 	@POST
 	@Path("/upsert")
 	public Uni<RestResponse<Object>> upsertMultiple(HttpServerRequest request,
-			List<Map<String, Object>> compactedEntities, @QueryParam(value = "options") String options,
+			String body, @QueryParam(value = "options") String options,
 			@QueryParam("localOnly") boolean localOnly) {
+		List<Map<String, Object>> compactedEntities;
+
+		try {
+			compactedEntities = new JsonArray(body).getList();
+		} catch (DecodeException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+		}
 		boolean doReplace;
 		if (options != null && !options.isEmpty()) {
 			List<String> optionsList = Arrays.asList(options.split(","));
@@ -179,8 +202,8 @@ public class EntityBatchController {
 			List<NGSILDOperationResult> fails = tuple.getItem1();
 			List<Map<String, Object>> expandedEntities = tuple.getItem2();
 			List<Context> contexts = tuple.getItem3();
-			return entityService.upsertBatch(HttpUtils.getTenant(request), expandedEntities, contexts, localOnly, doReplace,request.headers())
-					.onItem().transform(opResults -> {
+			return entityService.upsertBatch(HttpUtils.getTenant(request), expandedEntities, contexts, localOnly,
+					doReplace, request.headers()).onItem().transform(opResults -> {
 						opResults.addAll(fails);
 						return HttpUtils.generateBatchResult(opResults);
 					});
@@ -202,8 +225,15 @@ public class EntityBatchController {
 	@POST
 	@Path("/update")
 	public Uni<RestResponse<Object>> appendMultiple(HttpServerRequest request,
-			List<Map<String, Object>> compactedEntities, @QueryParam(value = "options") String options,
+			String body, @QueryParam(value = "options") String options,
 			@QueryParam("localOnly") boolean localOnly) {
+		List<Map<String, Object>> compactedEntities;
+
+		try {
+			compactedEntities = new JsonArray(body).getList();
+		} catch (DecodeException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+		}
 		boolean isNoOverwrite = options != null && options.contains(NGSIConstants.NO_OVERWRITE_OPTION);
 		List<Uni<Tuple2<String, Object>>> unis = Lists.newArrayList();
 		for (Map<String, Object> compactedEntity : compactedEntities) {
@@ -247,8 +277,8 @@ public class EntityBatchController {
 			List<NGSILDOperationResult> fails = tuple.getItem1();
 			List<Map<String, Object>> expandedEntities = tuple.getItem2();
 			List<Context> contexts = tuple.getItem3();
-			return entityService.appendBatch(HttpUtils.getTenant(request), expandedEntities, contexts, localOnly,isNoOverwrite,request.headers())
-					.onItem().transform(opResults -> {
+			return entityService.appendBatch(HttpUtils.getTenant(request), expandedEntities, contexts, localOnly,
+					isNoOverwrite, request.headers()).onItem().transform(opResults -> {
 						opResults.addAll(fails);
 						return HttpUtils.generateBatchResult(opResults);
 					});
@@ -263,25 +293,36 @@ public class EntityBatchController {
 			@QueryParam("localOnly") boolean localOnly) {
 		List<String> entityIds;
 		try {
-		  	entityIds = new JsonArray(entityIdsStr).getList();
-		}catch (DecodeException e){
+			entityIds = new JsonArray(entityIdsStr).getList();
+		} catch (DecodeException e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
-		if(entityIds.isEmpty()) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData, "Empty ID arrays are not allowed"), HttpUtils.getTenant(request)));
+		if (entityIds.isEmpty()) {
+			return Uni.createFrom()
+					.item(HttpUtils.handleControllerExceptions(
+							new ResponseException(ErrorType.BadRequestData, "Empty ID arrays are not allowed"),
+							HttpUtils.getTenant(request)));
 		}
-		return entityService.deleteBatch(HttpUtils.getTenant(request), entityIds, localOnly,request.headers()).onItem()
+		return entityService.deleteBatch(HttpUtils.getTenant(request), entityIds, localOnly, request.headers()).onItem()
 				.transform(opResults -> {
 					return HttpUtils.generateBatchResult(opResults);
 				}).onFailure().recoverWithItem(e -> {
 					return HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request));
 				});
 	}
+
 	@POST
 	@Path("/merge")
 	public Uni<RestResponse<Object>> mergeMultiple(HttpServerRequest request,
-													List<Map<String, Object>> compactedEntities, @QueryParam(value = "options") String options,
-													@QueryParam("localOnly") boolean localOnly) {
+			String body, @QueryParam(value = "options") String options,
+			@QueryParam("localOnly") boolean localOnly) {
+		List<Map<String, Object>> compactedEntities;
+
+		try {
+			compactedEntities = new JsonArray(body).getList();
+		} catch (DecodeException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+		}
 		boolean isNoOverwrite = options != null && options.contains(NGSIConstants.NO_OVERWRITE_OPTION);
 		List<Uni<Tuple2<String, Object>>> unis = Lists.newArrayList();
 		for (Map<String, Object> compactedEntity : compactedEntities) {
@@ -291,8 +332,8 @@ public class EntityBatchController {
 //				unis.add(Uni.createFrom().item(Tuple2.of((String) compactedEntity.get("id"), (Object) e)));
 //				continue;
 //			};
-			unis.add(HttpUtils.expandBody(request, compactedEntity, AppConstants.MERGE_PATCH_REQUEST, ldService).onItem()
-					.transform(i -> Tuple2.of((String) compactedEntity.get("id"), (Object) i)).onFailure()
+			unis.add(HttpUtils.expandBody(request, compactedEntity, AppConstants.MERGE_PATCH_REQUEST, ldService)
+					.onItem().transform(i -> Tuple2.of((String) compactedEntity.get("id"), (Object) i)).onFailure()
 					.recoverWithItem(e -> Tuple2.of((String) compactedEntity.get("id"), (Object) e)));
 		}
 		return Uni.combine().all().unis(unis).collectFailures().with(list -> {
@@ -325,8 +366,8 @@ public class EntityBatchController {
 			List<NGSILDOperationResult> fails = tuple.getItem1();
 			List<Map<String, Object>> expandedEntities = tuple.getItem2();
 			List<Context> contexts = tuple.getItem3();
-			return entityService.mergeBatch(HttpUtils.getTenant(request), expandedEntities, contexts, localOnly,isNoOverwrite,request.headers())
-					.onItem().transform(opResults -> {
+			return entityService.mergeBatch(HttpUtils.getTenant(request), expandedEntities, contexts, localOnly,
+					isNoOverwrite, request.headers()).onItem().transform(opResults -> {
 						opResults.addAll(fails);
 						return HttpUtils.generateBatchResult(opResults);
 					});

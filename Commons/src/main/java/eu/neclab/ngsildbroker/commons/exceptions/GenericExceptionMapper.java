@@ -11,16 +11,16 @@ import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
 
 @Provider
-public class JsonParseExceptionMapper implements ExceptionMapper<JsonParseException> {
+public class GenericExceptionMapper implements ExceptionMapper<Exception> {
 
-	private static Logger logger = LoggerFactory.getLogger(JsonParseExceptionMapper.class);
+	private static Logger logger = LoggerFactory.getLogger(GenericExceptionMapper.class);
 	
 	@Override
-	public Response toResponse(JsonParseException exception) {
+	public Response toResponse(Exception exception) {
 		logger.debug("failed to process JSON.", exception);
-		return Response.status(Response.Status.BAD_REQUEST)
-				.entity(new ResponseException(ErrorType.InvalidRequest,
-						"There is an error in the provided json document").getJson())
+		return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+				.entity(new ResponseException(ErrorType.InternalError,
+						"Something unforseen went wrong check the logs.").getJson())
 				.header("Content-Type", "application/json").build();
 	}
 
