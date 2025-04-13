@@ -8,6 +8,7 @@ package eu.neclab.ngsildbroker.commons.enums;
 public enum ErrorType {
 
 	None(200, "none", "none"),
+	MethodNotAllowed(405, "https://uri.etsi.org/ngsi-ld/errors/MethodNotAllowed", "Method not supported on this endpoint."),
 	NotAcceptable(406, "https://uri.etsi.org/ngsi-ld/errors/NotAcceptable", "Not an acceptable request."),
 	InvalidRequest(400, "https://uri.etsi.org/ngsi-ld/errors/InvalidRequest", "Invalid request."),
 	BadRequestData(400, "https://uri.etsi.org/ngsi-ld/errors/BadRequestData", "Bad Request Data."),

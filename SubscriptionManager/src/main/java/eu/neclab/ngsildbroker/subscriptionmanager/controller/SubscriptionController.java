@@ -2,6 +2,7 @@ package eu.neclab.ngsildbroker.subscriptionmanager.controller;
 
 import com.github.jsonldjava.core.JsonLDService;
 import com.github.jsonldjava.core.JsonLdConsts;
+import com.google.common.collect.Lists;
 import com.google.common.net.HttpHeaders;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
@@ -208,7 +209,15 @@ public class SubscriptionController {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
 		@SuppressWarnings("unchecked")
-		List<String> contexts = (List<String>) map.get("@context");
+		List<String> contexts;
+		Object ctxObj = map.get("@context");
+		if (ctxObj instanceof List) {
+			contexts = (List<String>) ctxObj;
+		} else if (ctxObj instanceof String s) {
+			contexts = Lists.newArrayList(s);
+		} else {
+			contexts = Lists.newArrayList();
+		}
 		List<String> finalContexts = new ArrayList<>();
 		if (contexts != null) {
 			for (String url : contexts) {
