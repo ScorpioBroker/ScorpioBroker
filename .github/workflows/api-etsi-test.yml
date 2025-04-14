@@ -20,7 +20,7 @@ jobs:
       - name: start scorpio
         run: |
           cd AllInOneRunner/target/quarkus-app
-          java -jar quarkus-run.jar &
+          java -jar quarkus-run.jar > scorpio.log &
           sleep 15
       - name: get etsi testsuite
         run: |
@@ -49,6 +49,10 @@ jobs:
       - name: stop postgis for unit tests
         run: |
           docker compose -f ./compose-files/docker-compose-postgis.yml down
+      - name: print log
+        if: always()
+        run: |
+          cat scorpio.log
   etsi-test-common-behaviour:
     runs-on: ubuntu-latest
     steps:
