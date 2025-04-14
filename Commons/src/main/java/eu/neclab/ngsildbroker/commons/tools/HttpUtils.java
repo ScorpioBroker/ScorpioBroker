@@ -299,8 +299,9 @@ public final class HttpUtils {
 			}
 			builder.append(key + "=" + entry.getValue() + "&");
 		}
-		builder.append("offset=" + offset);
-		builder.append("&limit=" + limit);
+		builder.append("limit=" + limit);
+		builder.append("&offset=" + offset);
+		
 		// builder.append("&entityMap=" + token);
 		builder.append(">;rel=\"");
 		builder.append(rel);

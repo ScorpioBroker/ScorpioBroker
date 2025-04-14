@@ -203,7 +203,7 @@ public class SubscriptionInfoDAO {
 
 	public Uni<RowSet<Row>> getAllSubscriptions(String tenant, int limit, int offset) {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(
-				client -> client.preparedQuery("SELECT subscription FROM subscriptions LIMIT $1 OFFSET $2")
+				client -> client.preparedQuery("SELECT subscription, count(*) over() FROM subscriptions LIMIT $1 OFFSET $2")
 						.execute(Tuple.of(limit, offset)).onFailure().retry().atMost(3));
 	}
 

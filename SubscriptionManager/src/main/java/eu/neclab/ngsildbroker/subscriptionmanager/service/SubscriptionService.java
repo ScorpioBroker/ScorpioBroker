@@ -705,14 +705,14 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 					subscriptionData.put(NGSIConstants.STATUS, subscriptionRequest.getSubscription().getStatus());
 				}
 				resultData.add(subscriptionData);
+				result.setCount(next.getLong(1));
 				// resultData.add(next.getJsonObject(0).getMap());
 			}
 			result.setData(resultData);
 			if (next == null) {
 				return result;
 			}
-			long resultCount = rows.size();
-			result.setCount(resultCount);
+			long resultCount = result.getCount();
 			long leftAfter = resultCount - (offset + limit);
 			if (leftAfter < 0) {
 				leftAfter = 0;
