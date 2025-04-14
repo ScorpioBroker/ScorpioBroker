@@ -216,7 +216,7 @@ public class SubscriptionController {
 		} else if (ctxObj instanceof String s) {
 			contexts = Lists.newArrayList(s);
 		} else {
-			contexts = Lists.newArrayList();
+			contexts = null;
 		}
 		List<String> finalContexts = new ArrayList<>();
 		if (contexts != null) {
