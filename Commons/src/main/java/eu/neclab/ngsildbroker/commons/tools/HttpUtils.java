@@ -301,7 +301,7 @@ public final class HttpUtils {
 		}
 		builder.append("limit=" + limit);
 		builder.append("&offset=" + offset);
-		
+
 		// builder.append("&entityMap=" + token);
 		builder.append(">;rel=\"");
 		builder.append(rel);
@@ -952,7 +952,9 @@ public final class HttpUtils {
 			result.remove("success");
 			ResponseBuilder<Object> builder;
 			if (sameError) {
-				if (lastErrorCode == 415) {
+				if (lastErrorCode == 415 || (lastErrorCode == 400
+						&& "You can not have a Link to a context is content-type application/ld+json"
+								.equals(errors.get(0).get("detail")))) {
 					builder = new RestResponseBuilderImpl<>().status(lastErrorCode)
 							.type(AppConstants.NGB_APPLICATION_JSON).entity(errors.get(0).get("error"));
 				} else {

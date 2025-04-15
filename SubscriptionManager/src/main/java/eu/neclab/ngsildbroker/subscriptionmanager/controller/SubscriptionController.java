@@ -2,6 +2,7 @@ package eu.neclab.ngsildbroker.subscriptionmanager.controller;
 
 import com.github.jsonldjava.core.JsonLDService;
 import com.github.jsonldjava.core.JsonLdConsts;
+import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.Lists;
 import com.google.common.net.HttpHeaders;
 
@@ -31,6 +32,7 @@ import jakarta.ws.rs.QueryParam;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.RestResponse;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -156,16 +158,17 @@ public class SubscriptionController {
 	}
 
 	private void fixSub(Map<String, Object> sub) {
-		Map<String, Object> notificationParam = (Map<String, Object>) sub.get(NGSIConstants.NGSI_LD_NOTIFICATION_SHORT);
-		notificationParam.put(NGSIConstants.NGSI_LD_TIMES_SENT_SHORT,
-				sub.remove(NGSIConstants.NGSI_LD_TIMES_SENT_SHORT));
-		notificationParam.put(NGSIConstants.NGSI_LD_TIMES_FAILED_SHORT,
-				sub.remove(NGSIConstants.NGSI_LD_TIMES_FAILED_SHORT));
-		Object lastNotification = sub.remove(NGSIConstants.NGSI_LD_LAST_NOTIFICATION_SHORT);
-		Object lastSuccess = sub.remove(NGSIConstants.NGSI_LD_LAST_SUCCESS_SHORT);
-		Object lastFailure = sub.remove(NGSIConstants.NGSI_LD_LAST_FAILURE_SHORT);
+		
+		Map<String, Object> notificationParam = ((List<Map<String, Object>>) sub.get(NGSIConstants.NGSI_LD_NOTIFICATION)).get(0);
+		notificationParam.put(NGSIConstants.NGSI_LD_TIMES_SENT,
+				sub.remove(NGSIConstants.NGSI_LD_TIMES_SENT));
+		notificationParam.put(NGSIConstants.NGSI_LD_TIMES_FAILED,
+				sub.remove(NGSIConstants.NGSI_LD_TIMES_FAILED));
+		Object lastNotification = sub.remove(NGSIConstants.NGSI_LD_LAST_NOTIFICATION);
+		Object lastSuccess = sub.remove(NGSIConstants.NGSI_LD_LAST_SUCCESS);
+		Object lastFailure = sub.remove(NGSIConstants.NGSI_LD_LAST_FAILURE);
 		if (lastNotification != null) {
-			notificationParam.put(NGSIConstants.NGSI_LD_LAST_NOTIFICATION_SHORT, lastNotification);
+			notificationParam.put(NGSIConstants.NGSI_LD_LAST_NOTIFICATION, lastNotification);
 			if (lastSuccess != null) {
 				if (lastSuccess.equals(lastNotification)) {
 					notificationParam.put(NGSIConstants.STATUS, "ok");
@@ -176,7 +179,7 @@ public class SubscriptionController {
 				if (lastFailure.equals(lastNotification)) {
 					notificationParam.put(NGSIConstants.STATUS, "failed");
 				}
-				notificationParam.put(NGSIConstants.NGSI_LD_LAST_FAILURE_SHORT, lastFailure);
+				notificationParam.put(NGSIConstants.NGSI_LD_LAST_FAILURE, lastFailure);
 			}
 		} else {
 			notificationParam.put(NGSIConstants.STATUS, "ok");
