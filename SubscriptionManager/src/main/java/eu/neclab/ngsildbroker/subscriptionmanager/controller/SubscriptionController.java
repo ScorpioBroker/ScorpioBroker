@@ -142,6 +142,9 @@ public class SubscriptionController {
 		return ldService.parse(HttpUtils.getAtContext(request)).onItem().transformToUni(ctx -> {
 			return subService.getAllSubscriptions(HttpUtils.getTenant(request), actualLimit, offset).onItem()
 					.transformToUni(subscriptions -> {
+						subscriptions.getData().forEach(sub -> {
+							fixSub(sub);
+						});
 						return HttpUtils.generateQueryResult(request, subscriptions, options, null, acceptHeader, false,
 								actualLimit, null, ctx, ldService, false, microServiceUtils.getGatewayURL().toString(),
 								NGSIConstants.NGSI_LD_SUB_ENDPOINT);
@@ -149,6 +152,35 @@ public class SubscriptionController {
 		}).onFailure().recoverWithItem(e -> {
 			return HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request));
 		});
+
+	}
+
+	private void fixSub(Map<String, Object> sub) {
+		Map<String, Object> notificationParam = (Map<String, Object>) sub.get(NGSIConstants.NGSI_LD_NOTIFICATION_SHORT);
+		notificationParam.put(NGSIConstants.NGSI_LD_TIMES_SENT_SHORT,
+				sub.remove(NGSIConstants.NGSI_LD_TIMES_SENT_SHORT));
+		notificationParam.put(NGSIConstants.NGSI_LD_TIMES_FAILED_SHORT,
+				sub.remove(NGSIConstants.NGSI_LD_TIMES_FAILED_SHORT));
+		Object lastNotification = sub.remove(NGSIConstants.NGSI_LD_LAST_NOTIFICATION_SHORT);
+		Object lastSuccess = sub.remove(NGSIConstants.NGSI_LD_LAST_SUCCESS_SHORT);
+		Object lastFailure = sub.remove(NGSIConstants.NGSI_LD_LAST_FAILURE_SHORT);
+		if (lastNotification != null) {
+			notificationParam.put(NGSIConstants.NGSI_LD_LAST_NOTIFICATION_SHORT, lastNotification);
+			if (lastSuccess != null) {
+				if (lastSuccess.equals(lastNotification)) {
+					notificationParam.put(NGSIConstants.STATUS, "ok");
+				}
+				notificationParam.put(NGSIConstants.NGSI_LD_LAST_SUCCESS, lastSuccess);
+			}
+			if (lastFailure != null) {
+				if (lastFailure.equals(lastNotification)) {
+					notificationParam.put(NGSIConstants.STATUS, "failed");
+				}
+				notificationParam.put(NGSIConstants.NGSI_LD_LAST_FAILURE_SHORT, lastFailure);
+			}
+		} else {
+			notificationParam.put(NGSIConstants.STATUS, "ok");
+		}
 
 	}
 
@@ -169,6 +201,7 @@ public class SubscriptionController {
 		return ldService.parse(contextHeader).onItem().transformToUni(context -> {
 			return subService.getSubscription(HttpUtils.getTenant(request), subscriptionId).onItem()
 					.transformToUni(subscription -> {
+						fixSub(subscription);
 						return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, subscription, null,
 								options, null, ldService, null, null, true);
 					});

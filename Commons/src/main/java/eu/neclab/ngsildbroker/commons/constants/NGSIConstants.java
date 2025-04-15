@@ -572,4 +572,9 @@ public interface NGSIConstants {
 	public static final String PREFER_HEADER = "Prefer";
 	public static final String PREFER_JSON_HEADER = "body=json";
 	public static final String BBOX = "https://purl.org/geojson/vocab#bbox";
+	public static final String NGSI_LD_TIMES_SENT_SHORT = "timesSent";
+	public static final String NGSI_LD_TIMES_FAILED_SHORT = "timesFailed";
+	public final static String NGSI_LD_LAST_NOTIFICATION_SHORT = "lastNotification";
+	public final static String NGSI_LD_LAST_FAILURE_SHORT = "lastFailure ";
+	public final static String NGSI_LD_LAST_SUCCESS_SHORT = "lastSuccess";
 }

@@ -414,6 +414,9 @@ public class SubscriptionTools {
 				result.add(entry.getKey(), entry.getValue());
 			}
 		}
+		if(otherHead != null) { 
+			result.addAll(otherHead);
+		}
 		String accept = notificationParam.getEndPoint().getAccept();
 		if (accept == null) {
 			accept = AppConstants.NGB_APPLICATION_JSON;
@@ -421,9 +424,7 @@ public class SubscriptionTools {
 		if (!accept.equals(AppConstants.NGB_APPLICATION_JSON)) {
 			result.remove(NGSIConstants.LINK_HEADER);
 		}
-		if(otherHead != null) { 
-			result.addAll(otherHead);
-		}
+		
 		result.set(HttpHeaders.ACCEPT, accept);
 		result.set(HttpHeaders.CONTENT_TYPE, accept);
 		return new MultiMap(result);
