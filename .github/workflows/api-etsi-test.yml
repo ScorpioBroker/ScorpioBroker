@@ -52,6 +52,7 @@ jobs:
       - name: print log
         if: always()
         run: |
+          cd AllInOneRunner/target/quarkus-app
           cat scorpio.log
   etsi-test-common-behaviour:
     runs-on: ubuntu-latest
