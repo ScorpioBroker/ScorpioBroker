@@ -1,6 +1,8 @@
 package eu.neclab.ngsildbroker.atcontextserver.controller;
 
 import com.github.jsonldjava.utils.JsonUtils;
+import com.google.common.collect.Sets;
+
 import eu.neclab.ngsildbroker.atcontextserver.service.ContextService;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -8,6 +10,8 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import io.smallrye.mutiny.Uni;
+
+import org.apache.commons.lang3.StringUtils;
 import org.jboss.resteasy.reactive.RestResponse;
 
 import jakarta.inject.Inject;
@@ -21,6 +25,7 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 @Path("/ngsi-ld/v1/jsonldContexts/")
 @SuppressWarnings("unchecked")
@@ -28,6 +33,8 @@ public class ContextController {
 
 	@Inject
 	ContextService contextService;
+
+	private Set<String> allowedKinds = Sets.newHashSet("Cached", "Hosted", "ImplicitlyCreated");
 
 	@GET
 	@Path("{contextId}")
@@ -41,6 +48,15 @@ public class ContextController {
 	@GET
 	public Uni<RestResponse<Object>> getContexts(@QueryParam("kind") String kind,
 			@QueryParam("details") boolean details) {
+		if (kind != null && !allowedKinds.contains(kind)) {
+			return Uni.createFrom()
+					.item(HttpUtils
+							.handleControllerExceptions(
+									new ResponseException(ErrorType.BadRequestData,
+											"Allowed values for parameter kind are: "
+													+ StringUtils.join(allowedKinds, ",") + ". You provided " + kind),
+									AppConstants.INTERNAL_NULL_KEY));
+		}
 		return contextService.getContexts(kind, details).onFailure().recoverWithItem(e -> {
 			return HttpUtils.handleControllerExceptions(e, AppConstants.INTERNAL_NULL_KEY);
 		});
