@@ -131,7 +131,7 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_SUBSCRIPTION = "https://uri.etsi.org/ngsi-ld/Subscription";
 	public final static String NGSI_LD_SUBSCRIPTION_SHORT = "Subscription";
 	public final static String NGSI_LD_LAST_NOTIFICATION = "https://uri.etsi.org/ngsi-ld/lastNotification";
-	public final static String NGSI_LD_LAST_FAILURE = "https://uri.etsi.org/ngsi-ld/lastFailure ";
+	public final static String NGSI_LD_LAST_FAILURE = "https://uri.etsi.org/ngsi-ld/lastFailure";
 	public final static String NGSI_LD_LAST_SUCCESS = "https://uri.etsi.org/ngsi-ld/lastSuccess";
 	public final static String NGSI_LD_TIMES_SENT = "https://uri.etsi.org/ngsi-ld/timesSent";
 	public final static String NGSI_LD_TIMES_FAILED = "https://uri.etsi.org/ngsi-ld/timesFailed";
