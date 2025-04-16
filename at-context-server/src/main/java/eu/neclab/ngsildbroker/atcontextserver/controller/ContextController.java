@@ -89,6 +89,12 @@ public class ContextController {
 	@Path("{contextId}")
 	public Uni<RestResponse<Object>> deleteContextById(@PathParam("contextId") String id,
 			@QueryParam("reload") boolean reload) {
+		if (id.equals(AppConstants.INTERNAL_NULL_KEY)) {
+			return Uni.createFrom()
+					.item(HttpUtils.handleControllerExceptions(
+							new ResponseException(ErrorType.NotAcceptable, "You cannot delete scorpios core context"),
+							AppConstants.INTERNAL_NULL_KEY));
+		}
 		return contextService.deleteById(id, reload).onFailure().recoverWithItem(e -> {
 			return HttpUtils.handleControllerExceptions(e, AppConstants.INTERNAL_NULL_KEY);
 		});
