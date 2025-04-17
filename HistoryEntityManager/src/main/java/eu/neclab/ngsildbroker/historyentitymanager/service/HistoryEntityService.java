@@ -2,6 +2,7 @@ package eu.neclab.ngsildbroker.historyentitymanager.service;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -217,8 +218,22 @@ public class HistoryEntityService implements CSourceHandler  {
 	}
 
 	public Uni<NGSILDOperationResult> updateInstanceOfAttr(String tenant, String entityId, String attribId,
-			String instanceId, Map<String, Object> payload, Context originalContext,
+			String instanceId, Map<String, Object> payloadInput, Context originalContext,
 			io.vertx.core.MultiMap headersFromReq) {
+		Object attribEntry = payloadInput.get(attribId);
+		Map<String, Object> payload;
+		if(attribEntry != null) {
+			if(attribEntry instanceof Map<?,?>) {
+				attribEntry = Lists.newArrayList(attribEntry);
+				payloadInput.put(attribId, attribEntry);
+			}
+			payload = payloadInput;
+		}else {
+			Map<String, Object> tmp = Maps.newHashMap();
+			tmp.put(attribId, Lists.newArrayList(payloadInput));
+			payload = tmp;
+			
+		}
 		UpdateAttrHistoryEntityRequest request = new UpdateAttrHistoryEntityRequest(tenant, entityId, attribId,
 				instanceId, payload, false);
 		Tuple2<Map<String, Object>, Collection<Tuple2<RemoteHost, Map<String, Object>>>> splitted = splitEntity(

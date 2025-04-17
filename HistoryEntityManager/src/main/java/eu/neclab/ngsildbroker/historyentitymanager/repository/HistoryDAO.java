@@ -421,9 +421,9 @@ public class HistoryDAO {
 			} else {
 				query1 = client
 						.preparedQuery("DELETE FROM " + DBConstants.DBTABLE_TEMPORALENTITY_ATTRIBUTEINSTANCE
-								+ " WHERE attributeid=$1 AND temporalentity_id=$2 AND '"
-								+ NGSIConstants.NGSI_LD_DATA_SET_ID + "' ? data AND data@>>'{"
-								+ NGSIConstants.NGSI_LD_DATA_SET_ID + ",0," + NGSIConstants.JSON_LD_ID + "}'=$3")
+								+ " WHERE attributeid=$1 AND temporalentity_id=$2 AND data ? '"
+								+ NGSIConstants.NGSI_LD_DATA_SET_ID + "' AND data #>> '{"
+								+ NGSIConstants.NGSI_LD_DATA_SET_ID + ",0," + NGSIConstants.JSON_LD_ID + "}' = $3")
 						.execute(Tuple.of(request.getAttribName(), request.getFirstId(), request.getDatasetId()));
 			}
 
