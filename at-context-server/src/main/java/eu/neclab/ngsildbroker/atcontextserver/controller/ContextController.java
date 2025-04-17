@@ -78,8 +78,7 @@ public class ContextController {
 				else
 					payloadMap.put(NGSIConstants.JSON_LD_CONTEXT, contextBody);
 			} catch (Exception e) {
-				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
-						new ResponseException(ErrorType.BadRequestData), AppConstants.INTERNAL_NULL_KEY));
+				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, AppConstants.INTERNAL_NULL_KEY));
 			}
 			return contextService.createContextHosted(payloadMap).onItem()
 					.transform(r -> HttpUtils.generateCreateResult(r, AppConstants.CONTEXTS_URL)).onFailure()
@@ -124,8 +123,7 @@ public class ContextController {
 				else
 					payloadMap.put(NGSIConstants.JSON_LD_CONTEXT, contextBody);
 			} catch (Exception e) {
-				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
-						new ResponseException(ErrorType.BadRequestData), AppConstants.INTERNAL_NULL_KEY));
+				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, AppConstants.INTERNAL_NULL_KEY));
 			}
 			return contextService.createImplicitly(payloadMap);
 		});
