@@ -85,13 +85,13 @@ public class EntityInfoDAO {
 			request.getPayload().values().forEach(entityList -> {
 				entities.addAll(entityList);
 			});
-			Tuple3<Boolean, List<Tuple>, Set<String>> nullFoundAndTuple = EntityTools
+			Tuple3<Boolean, List<Tuple>, List<String>> nullFoundAndTuple = EntityTools
 					.removeNGSILDNullToTuplesWithIdSet(entities, true);
 
 			return client.preparedQuery(
 					"INSERT INTO ENTITY (id, e_types, entity) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING RETURNING id, true;")
 					.executeBatch(nullFoundAndTuple.getItem2()).onItem().transform(rows -> {
-						Set<String> ids = nullFoundAndTuple.getItem3();
+						List<String> ids = nullFoundAndTuple.getItem3();
 						Map<String, Object> result = new HashMap<>(2);
 						ArrayList<String> success = new ArrayList<>();
 						ArrayList<Map<String, String>> failure = new ArrayList<>();

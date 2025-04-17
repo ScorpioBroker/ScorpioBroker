@@ -1132,11 +1132,11 @@ public final class EntityTools {
 		return Tuple2.of(changed, result);
 	}
 
-	public static Tuple3<Boolean, List<Tuple>, Set<String>> removeNGSILDNullToTuplesWithIdSet(
+	public static Tuple3<Boolean, List<Tuple>, List<String>> removeNGSILDNullToTuplesWithIdSet(
 			List<Map<String, Object>> entities, boolean doReplace) {
 		List<Tuple> result = new ArrayList<>(entities.size());
 		List<Tuple> cleanedResult = new ArrayList<>(entities.size());
-		Set<String> ids = new HashSet<String>(entities.size());
+		List<String> ids = new ArrayList<String>(entities.size());
 		boolean changed = false;
 		for (Map<String, Object> entity : entities) {
 			Map<String, Object> tmp = removeNGSILDNull(entity);
