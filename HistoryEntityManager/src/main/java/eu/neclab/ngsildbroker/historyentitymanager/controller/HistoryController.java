@@ -21,6 +21,7 @@ import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.historyentitymanager.service.HistoryEntityService;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.json.JsonObject;
 
 @Singleton
 @Path("/ngsi-ld/v1/temporal/entities")
@@ -41,14 +42,24 @@ public class HistoryController {
 	JsonLDService ldService;
 
 	@POST
-	public Uni<RestResponse<Object>> createTemporalEntity(HttpServerRequest request, Map<String, Object> payload) {
+	public Uni<RestResponse<Object>> createTemporalEntity(HttpServerRequest request, String body) {
+		Map<String, Object> payload;
+		try {
+			payload = new JsonObject(body).getMap();
+		} catch (Exception e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+		}
 		return HttpUtils.expandBody(request, payload, AppConstants.TEMP_ENTITY_CREATE_PAYLOAD, ldService).onItem()
 				.transformToUni(tuple -> {
-					return historyService.createEntry(HttpUtils.getTenant(request), tuple.getItem2(), tuple.getItem1(),request.headers())
-							.onItem().transform(opResult -> {
+					return historyService.createEntry(HttpUtils.getTenant(request), tuple.getItem2(), tuple.getItem1(),
+							request.headers()).onItem().transform(opResult -> {
+								if(opResult.isWasUpdated()) {
+									return HttpUtils.generateUpdateResultResponse(opResult);
+								}
 								return HttpUtils.generateCreateResult(opResult, AppConstants.HISTORY_URL);
 							});
-				}).onFailure().recoverWithItem( e-> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+				}).onFailure()
+				.recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 	}
 
 	@Path("/{entityId}")
@@ -61,30 +72,33 @@ public class HistoryController {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
 		return ldService.parse(HttpUtils.getAtContext(request)).onItem().transformToUni(ctx -> {
-			return historyService.deleteEntry(HttpUtils.getTenant(request), entityId, ctx,request.headers()).onItem()
+			return historyService.deleteEntry(HttpUtils.getTenant(request), entityId, ctx, request.headers()).onItem()
 					.transform(result -> {
 						return HttpUtils.generateDeleteResult(result);
 					});
-		}).onFailure().recoverWithItem(e-> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+		}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 	}
 
 	@Path("/{entityId}/attrs")
 	@POST
 	public Uni<RestResponse<Object>> addAttrib2TemopralEntity(HttpServerRequest request,
-			@PathParam("entityId") String entityId, Map<String, Object> payload) {
+			@PathParam("entityId") String entityId, String body) {
+		Map<String, Object> payload;
+
 		try {
+			payload = new JsonObject(body).getMap();
 			HttpUtils.validateUri(entityId);
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
 		return HttpUtils.expandBody(request, payload, AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD, ldService).onItem()
 				.transformToUni(tuple -> {
-					return historyService
-							.appendToEntry(HttpUtils.getTenant(request), entityId, tuple.getItem2(), tuple.getItem1(),request.headers())
-							.onItem().transform(opResult -> {
+					return historyService.appendToEntry(HttpUtils.getTenant(request), entityId, tuple.getItem2(),
+							tuple.getItem1(), request.headers()).onItem().transform(opResult -> {
 								return HttpUtils.generateUpdateResultResponse(opResult);
 							});
-				}).onFailure().recoverWithItem(e-> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+				}).onFailure()
+				.recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 	}
 
 	@Path("/{entityId}/attrs/{attrId}")
@@ -98,13 +112,12 @@ public class HistoryController {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
 		return ldService.parse(HttpUtils.getAtContext(request)).onItem().transformToUni(context -> {
-			return historyService
-					.deleteAttrFromEntry(HttpUtils.getTenant(request), entityId,
-							context.expandIri(attrId, false, true, null, null), datasetId, deleteAll, context,request.headers())
-					.onItem().transform(opResult -> {
+			return historyService.deleteAttrFromEntry(HttpUtils.getTenant(request), entityId,
+					context.expandIri(attrId, false, true, null, null), datasetId, deleteAll, context,
+					request.headers()).onItem().transform(opResult -> {
 						return HttpUtils.generateDeleteResult(opResult);
 					});
-		}).onFailure().recoverWithItem(e-> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+		}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 
 	}
 
@@ -112,8 +125,10 @@ public class HistoryController {
 	@PATCH
 	public Uni<RestResponse<Object>> modifyAttribInstanceTemporalEntity(HttpServerRequest request,
 			@PathParam("entityId") String entityId, @PathParam("attrId") String attrId,
-			@PathParam("instanceId") String instanceId, Map<String, Object> payload) {
+			@PathParam("instanceId") String instanceId, String body) {
+		Map<String, Object> payload;
 		try {
+			payload = new JsonObject(body).getMap();
 			HttpUtils.validateUri(entityId);
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
@@ -121,12 +136,15 @@ public class HistoryController {
 
 		return HttpUtils.expandBody(request, payload, AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD, ldService).onItem()
 				.transformToUni(tuple -> {
-					return historyService.updateInstanceOfAttr(HttpUtils.getTenant(request), entityId,
-							tuple.getItem1().expandIri(attrId, false, true, null, null), instanceId, tuple.getItem2(),
-							tuple.getItem1(),request.headers()).onItem().transform(opResult -> {
+					return historyService
+							.updateInstanceOfAttr(HttpUtils.getTenant(request), entityId,
+									tuple.getItem1().expandIri(attrId, false, true, null, null), instanceId,
+									tuple.getItem2(), tuple.getItem1(), request.headers())
+							.onItem().transform(opResult -> {
 								return HttpUtils.generateUpdateResultResponse(opResult);
 							});
-				}).onFailure().recoverWithItem(e-> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+				}).onFailure()
+				.recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 
 	}
 
@@ -143,10 +161,10 @@ public class HistoryController {
 		return ldService.parse(HttpUtils.getAtContext(request)).onItem().transformToUni(context -> {
 			return historyService
 					.deleteInstanceOfAttr(HttpUtils.getTenant(request), entityId,
-							context.expandIri(attrId, false, true, null, null), instanceId, context,request.headers())
+							context.expandIri(attrId, false, true, null, null), instanceId, context, request.headers())
 					.onItem().transform(opResult -> {
 						return HttpUtils.generateDeleteResult(opResult);
 					});
-		}).onFailure().recoverWithItem(e-> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+		}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 	}
 }

@@ -159,6 +159,8 @@ public class AppConstants {
 	public static final int BATCH_ERROR_REQUEST = 99;
 	public static final String SQL_ALREADY_EXISTS = "23505";
 	public static final String SQL_NOT_FOUND = "02000";
+	public static final String SQL_FOREIGN_KEY_VIOLATION = "23503";
+	
 	public static final String SQL_INVALID_OPERATOR = "42804";
 	public static final String SQL_INVALID_INTERVAL = "22007";
 

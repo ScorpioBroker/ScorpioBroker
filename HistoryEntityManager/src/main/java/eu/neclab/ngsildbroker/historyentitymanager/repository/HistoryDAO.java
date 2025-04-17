@@ -78,6 +78,7 @@ public class HistoryDAO {
 				sql.append(") VALUES($1, $2, $3::text::timestamp, $4::text::timestamp) ");
 			} else {
 				sql.append(", scopes) VALUES($1, $2, $3::text::timestamp, $4::text::timestamp, getScopes($5::jsonb)) ");
+				tuple.addJsonArray(new JsonArray((List<Object>) scope));
 			}
 
 			sql.append("ON CONFLICT(id) DO UPDATE SET e_types = ARRAY(SELECT DISTINCT UNNEST(");
@@ -359,6 +360,13 @@ public class HistoryDAO {
 						.executeBatch(batch);
 			}).onItem().transformToUni(t -> Uni.createFrom().voidItem());
 
+		}).onFailure().recoverWithUni(e -> {
+			if (e instanceof PgException pge) {
+				if (pge.getSqlState().equals(AppConstants.SQL_FOREIGN_KEY_VIOLATION)) {
+					return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
+				}
+			}
+			return Uni.createFrom().failure(e);
 		});
 		// });
 	}
