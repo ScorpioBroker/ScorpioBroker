@@ -49,7 +49,7 @@ public class ContextDao {
 
 	String atContextUrl;
 
-	public Uni<RestResponse<Object>> getById(String id, Boolean details) {
+	public Uni<Map<String, Object>> getById(String id, Boolean details) {
 		String sql = """
 				with a as(select * from contexts WHERE id=$1)
 				update contexts set lastusage = now(), numberofhits = numberofhits+1 WHERE id=$1 returning (select to_jsonb(a) from a)""";
@@ -69,12 +69,13 @@ public class ContextDao {
 								+ URLEncoder.encode(rawData.get(NGSIConstants.ID).toString(), StandardCharsets.UTF_8));
 						result.put(NGSIConstants.BODY, rawData.get(NGSIConstants.BODY));
 						result.put(NGSIConstants.CREATEDAT, rawData.get(NGSIConstants.CREATEDAT.toLowerCase()));
-						return Uni.createFrom().item(RestResponse.ok(result));
+						return Uni.createFrom().item(result);
 					} else
-						return Uni.createFrom().item(RestResponse.ok(rawData.get(NGSIConstants.BODY)));
+						return Uni.createFrom().item((Map<String, Object>) rawData.get(NGSIConstants.BODY));
 
 				} else
-					return Uni.createFrom().item(RestResponse.notFound());
+					return Uni.createFrom()
+							.failure(new ResponseException(ErrorType.NotFound, "The context was not found"));
 			});
 		});
 	}
@@ -112,14 +113,15 @@ public class ContextDao {
 
 	}
 
-	public Uni<RestResponse<Object>> deleteById(String id) {
+	public Uni<Void> deleteById(String id) {
 		String sql = "DELETE FROM public.contexts WHERE id=$1 RETURNING id";
 		return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
 			return client.preparedQuery(sql).execute(Tuple.of(id)).onItem().transformToUni(rows -> {
-				if (rows.size() > 0)
-					return Uni.createFrom().item(RestResponseBuilderImpl.noContent().build());
-				else
+				if (rows.size() > 0) {
+					return Uni.createFrom().voidItem();
+				} else {
 					return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
+				}
 			});
 		});
 	}

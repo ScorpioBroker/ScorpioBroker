@@ -13,6 +13,7 @@ import io.smallrye.mutiny.Uni;
 
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.resteasy.reactive.RestResponse;
+import org.jboss.resteasy.reactive.RestResponse.ResponseBuilder;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
@@ -40,9 +41,11 @@ public class ContextController {
 	@Path("{contextId}")
 	public Uni<RestResponse<Object>> getContextById(@PathParam("contextId") String id,
 			@QueryParam("details") boolean details) {
-		return contextService.getContextById(id, details).onFailure().recoverWithItem(e -> {
-			return HttpUtils.handleControllerExceptions(e, AppConstants.INTERNAL_NULL_KEY);
-		});
+		return contextService.getContextById(id, details).onItem().transform(
+				context -> ResponseBuilder.ok().entity(context).header("Content-Type", "application/json").build())
+				.onFailure().recoverWithItem(e -> {
+					return HttpUtils.handleControllerExceptions(e, AppConstants.INTERNAL_NULL_KEY);
+				});
 	}
 
 	@GET
@@ -57,13 +60,14 @@ public class ContextController {
 													+ StringUtils.join(allowedKinds, ",") + ". You provided " + kind),
 									AppConstants.INTERNAL_NULL_KEY));
 		}
-		return contextService.getContexts(kind, details).onFailure().recoverWithItem(e -> {
-			return HttpUtils.handleControllerExceptions(e, AppConstants.INTERNAL_NULL_KEY);
-		});
+		return contextService.getContexts(kind, details).onItem().transform(
+				context -> ResponseBuilder.ok().entity(context).header("Content-Type", "application/json").build())
+				.onFailure().recoverWithItem(e -> {
+					return HttpUtils.handleControllerExceptions(e, AppConstants.INTERNAL_NULL_KEY);
+				});
 	}
 
 	@POST
-	@Consumes(MediaType.APPLICATION_JSON)
 	public Uni<RestResponse<Object>> createContext(String payload) {
 		return JsonUtils.fromString(payload).onItem().transformToUni(json -> {
 			Map<String, Object> payloadMap = new HashMap<>();
@@ -95,15 +99,17 @@ public class ContextController {
 							new ResponseException(ErrorType.NotAcceptable, "You cannot delete scorpios core context"),
 							AppConstants.INTERNAL_NULL_KEY));
 		}
-		return contextService.deleteById(id, reload).onFailure().recoverWithItem(e -> {
-			return HttpUtils.handleControllerExceptions(e, AppConstants.INTERNAL_NULL_KEY);
-		});
+		return contextService.deleteById(id, reload).onItem().transform(v -> RestResponse.ok()).onFailure()
+				.recoverWithItem(e -> {
+					return HttpUtils.handleControllerExceptions(e, AppConstants.INTERNAL_NULL_KEY);
+				});
 	}
 
 	@GET
 	@Path("/createcache/{url}")
 	public Uni<RestResponse<Object>> loadCache(@PathParam("url") String url) {
-		return contextService.createOrGetCache(url);
+		return contextService.createOrGetCache(url).onItem().transform(
+				context -> ResponseBuilder.ok().entity(context).header("Content-Type", "application/json").build());
 	}
 
 	@POST
