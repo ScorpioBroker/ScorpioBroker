@@ -954,7 +954,7 @@ public final class HttpUtils {
 			if (sameError) {
 				if (lastErrorCode == 415 || (lastErrorCode == 400
 						&& "You can not have a Link to a context is content-type application/ld+json"
-								.equals(errors.get(0).get("detail")))) {
+								.equals(((Map<String, Object>) errors.get(0).get("error")).get("detail")))) {
 					builder = new RestResponseBuilderImpl<>().status(lastErrorCode)
 							.type(AppConstants.NGB_APPLICATION_JSON).entity(errors.get(0).get("error"));
 				} else {

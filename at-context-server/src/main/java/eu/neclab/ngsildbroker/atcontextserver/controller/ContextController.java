@@ -98,7 +98,7 @@ public class ContextController {
 							new ResponseException(ErrorType.NotAcceptable, "You cannot delete scorpios core context"),
 							AppConstants.INTERNAL_NULL_KEY));
 		}
-		return contextService.deleteById(id, reload).onItem().transform(v -> RestResponse.ok()).onFailure()
+		return contextService.deleteById(id, reload).onItem().transform(v -> RestResponse.noContent()).onFailure()
 				.recoverWithItem(e -> {
 					return HttpUtils.handleControllerExceptions(e, AppConstants.INTERNAL_NULL_KEY);
 				});
