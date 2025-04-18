@@ -164,9 +164,9 @@ public class CSourceServiceTest {
 		Uni<Void> kafkaResponse = Uni.createFrom().nullItem();
 		when(kafkaSenderInterface.send(any(String.class))).thenReturn(kafkaResponse);
 
-		RowSet<Row> rowSetMock = mock(RowSet.class);
-		when(rowSetMock.rowCount()).thenReturn(1);
-		Uni<RowSet<Row>> uniRowsetMock = Uni.createFrom().item(rowSetMock);
+		Map<String, Object> rowSetMock = mock(Map.class);
+		//when(rowSetMock.rowCount()).thenReturn(1);
+		Uni<Map<String, Object>> uniRowsetMock = Uni.createFrom().item(rowSetMock);
 		when(cSourceInfoDAO.updateRegistration(any())).thenReturn(uniRowsetMock);
 
 		Uni<NGSILDOperationResult> resultUni = CSourceService.updateRegistration(tenant, csorceRegistrationId,
@@ -186,9 +186,9 @@ public class CSourceServiceTest {
 		Uni<Void> kafkaResponse = Uni.createFrom().nullItem();
 		when(kafkaSenderInterface.send(any(String.class))).thenReturn(kafkaResponse);
 
-		RowSet<Row> rowSetMock = mock(RowSet.class);
-		when(rowSetMock.rowCount()).thenReturn(0);
-		Uni<RowSet<Row>> uniRowsetMock = Uni.createFrom().item(rowSetMock);
+		Map<String, Object> rowSetMock = mock(Map.class);
+		//when(rowSetMock.rowCount()).thenReturn(0);
+		Uni<Map<String, Object>> uniRowsetMock = Uni.createFrom().item(rowSetMock);
 		when(cSourceInfoDAO.updateRegistration(any())).thenReturn(uniRowsetMock);
 
 		Uni<NGSILDOperationResult> resultUni = CSourceService.updateRegistration(tenant, csorceRegistrationId,
