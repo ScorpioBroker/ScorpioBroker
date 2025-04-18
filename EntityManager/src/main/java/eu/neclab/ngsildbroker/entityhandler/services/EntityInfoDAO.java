@@ -22,6 +22,7 @@ import eu.neclab.ngsildbroker.commons.storage.ClientManager;
 import eu.neclab.ngsildbroker.commons.tools.DBUtil;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
+import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple3;
@@ -330,10 +331,14 @@ public class EntityInfoDAO {
 				tuple = Tuple.of(request.getAttribName(), request.getFirstId());
 			}
 			sql.append(" RETURNING (SELECT ENTITY FROM old_entity) AS old_entity;");
+			Log.debug(sql.toString());
+			Log.debug(tuple.deepToString());
 			return client.preparedQuery(sql.toString()).execute(tuple).onFailure().retry().atMost(3).onItem()
 					.transformToUni(rows -> {
 						if (rows.size() == 0) {
-							return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
+							return Uni.createFrom().failure(
+									new ResponseException(ErrorType.NotFound, "Attribute " + request.getAttribName()
+											+ " on Entity " + request.getFirstId() + " was not found."));
 						}
 						Row first = rows.iterator().next();
 						return Uni.createFrom().item(first.getJsonObject(0).getMap());

@@ -347,21 +347,24 @@ public class MicroServiceUtils {
 	}
 
 	private void sendObjectInMemory(Object obj) {
-
-		if (obj instanceof BaseRequest br) {
-			baseRequestReceivers.get(0).handleBaseRequest(br).subscribe().with(x -> {
-			});
-			for (int i = 1; i < baseRequestReceivers.size(); i++) {
-				baseRequestReceivers.get(1).handleBaseRequest(br.copy()).subscribe().with(x -> {
+		try {
+			if (obj instanceof BaseRequest br) {
+				baseRequestReceivers.get(0).handleBaseRequest(br).subscribe().with(x -> {
 				});
-			}
-		} else if (obj instanceof CSourceBaseRequest cr) {
-			csourceReceivers.get(0).handleRegistryChange(cr).subscribe().with(x -> {
-			});
-			for (int i = 1; i < csourceReceivers.size(); i++) {
-				csourceReceivers.get(i).handleRegistryChange(cr).subscribe().with(x -> {
+				for (int i = 1; i < baseRequestReceivers.size(); i++) {
+					baseRequestReceivers.get(1).handleBaseRequest(br.copy()).subscribe().with(x -> {
+					});
+				}
+			} else if (obj instanceof CSourceBaseRequest cr) {
+				csourceReceivers.get(0).handleRegistryChange(cr).subscribe().with(x -> {
 				});
+				for (int i = 1; i < csourceReceivers.size(); i++) {
+					csourceReceivers.get(i).handleRegistryChange(cr).subscribe().with(x -> {
+					});
+				}
 			}
+		} catch (Exception e) {
+			logger.debug("Something wrong happened during sending a payload to other components", e);
 		}
 
 	}

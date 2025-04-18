@@ -11,6 +11,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
+import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.storage.ClientManager;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
@@ -23,12 +24,14 @@ import io.vertx.mutiny.sqlclient.Tuple;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Singleton
 public class CSourceDAO {
 
-	//private final static Logger logger = LoggerFactory.getLogger(CSourceDAO.class);
+	// private final static Logger logger =
+	// LoggerFactory.getLogger(CSourceDAO.class);
 	@Inject
 	ClientManager clientManager;
 
@@ -142,11 +145,16 @@ public class CSourceDAO {
 		});
 	}
 
-	public Uni<RowSet<Row>> updateRegistration(AppendCSourceRequest request) {
+	public Uni<Map<String, Object>> updateRegistration(AppendCSourceRequest request) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
 			return client.preparedQuery("UPDATE csource SET reg=reg || $1 where c_id=$2 RETURNING reg")
-					.execute(Tuple.of(new JsonObject(request.getPayload()), request.getId())).onFailure().retry()
-					.atMost(3);
+					.execute(Tuple.of(new JsonObject(request.getPayload()), request.getId())).onItem()
+					.transformToUni(rows -> {
+						if(rows.size() == 0) {
+							return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound, "Context entry was not found"));
+						}
+						return Uni.createFrom().item(rows.iterator().next().getJsonObject(0).getMap()); 
+					});
 		});
 	}
 
@@ -268,9 +276,9 @@ public class CSourceDAO {
 				// }
 				// dollar++;
 			}
-			//String sqlString = sql.toString();
-			//logger.debug("SQL: " + sqlString);
-			//logger.debug("Tuple: " + tuple.deepToString());
+			// String sqlString = sql.toString();
+			// logger.debug("SQL: " + sqlString);
+			// logger.debug("Tuple: " + tuple.deepToString());
 			return client.preparedQuery(sql.toString()).execute(tuple).onFailure().retry().atMost(3);
 		});
 

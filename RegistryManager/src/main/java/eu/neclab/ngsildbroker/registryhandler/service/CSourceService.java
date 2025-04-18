@@ -126,7 +126,7 @@ public class CSourceService {
 			} catch (NoSuchElementException e) {
 				// do nothing
 			}
-			
+
 		}
 
 	}
@@ -171,31 +171,19 @@ public class CSourceService {
 	public Uni<NGSILDOperationResult> updateRegistration(String tenant, String registrationId,
 			Map<String, Object> entry) {
 		AppendCSourceRequest request = new AppendCSourceRequest(tenant, registrationId, entry);
-		return cSourceInfoDAO.updateRegistration(request).onItem().transformToUni(rowset -> {
-			if (rowset.rowCount() > 0) {
-				// no need to query regs again they are not distributed
-				// request.setPayload(rowset.iterator().next().getJsonObject(0).getMap());
-				try {
-					microServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, emitter, objectMapper);
-				} catch (ResponseException e) {
-					return Uni.createFrom().failure(e);
-				}
-				NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.OPERATION_UPDATE_REGISTRATION,
-						registrationId, tenant);
-				result.addSuccess(new CRUDSuccess(null, null, request.getId(), Sets.newHashSet()));
-				return Uni.createFrom().item(result);
-			} else {
-				return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound, "Registration not found"));
+		return cSourceInfoDAO.updateRegistration(request).onItem().transformToUni(updatedReg -> {
+			request.setPayload(updatedReg);
+			try {
+				microServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, emitter, objectMapper);
+			} catch (ResponseException e) {
+				return Uni.createFrom().failure(e);
 			}
-		}).onFailure().recoverWithUni(
-				// TODO do some proper error handling depending on the sql code
-				e -> {
-					if (e instanceof ResponseException) {
-						return Uni.createFrom().failure((ResponseException) e);
-					} else {
-						return Uni.createFrom().failure(new ResponseException(ErrorType.InternalError, e.getMessage()));
-					}
-				});
+			NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.OPERATION_UPDATE_REGISTRATION,
+					registrationId, tenant);
+			result.addSuccess(new CRUDSuccess(null, null, request.getId(), Sets.newHashSet()));
+			return Uni.createFrom().item(result);
+
+		});
 	}
 
 	public Uni<Map<String, Object>> retrieveRegistration(String tenant, String registrationId) {
