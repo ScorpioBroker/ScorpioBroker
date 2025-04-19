@@ -442,9 +442,9 @@ public class EntityInfoDAO {
 					""";
 
 			Tuple tuple = Tuple.of(request.getFirstId(), new JsonObject(request.getFirstPayload()),
-					!request.isNoOverwrite());
+					!noOverwrite);
 //			logger.debug(sql);
-//			logger.debug(tuple.deepToString());
+			logger.debug(tuple.deepToString());
 			return client.preparedQuery(sql).execute(tuple).onFailure().recoverWithUni(e -> {
 				return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
 			}).onItem().transformToUni(rows -> {
@@ -532,19 +532,12 @@ public class EntityInfoDAO {
 					.preparedQuery(
 							"""
 									WITH old_entity AS (
-									SELECT ENTITY
+									SELECT ENTITY, ENTITY -> 'https://uri.etsi.org/ngsi-ld/createdAt' as createdAt, ENTITY -> 'https://uri.etsi.org/ngsi-ld/modifiedAt' as modifiedAt
 									FROM ENTITY
-									WHERE id = $3),
-									json_data AS (
-									 SELECT jsonb_strip_nulls(jsonb_object_agg(
-									 key,
-									 CASE WHEN jsonb_typeof(value->0) = 'object' and (value->0)?'https://uri.etsi.org/ngsi-ld/createdAt' THEN
-									 jsonb_set(value, '{0,https://uri.etsi.org/ngsi-ld/createdAt}', old_entity.entity->key->0->'https://uri.etsi.org/ngsi-ld/createdAt', true)
-									 ELSE value
-									 END )) FROM JSONB_EACH($1::jsonb) CROSS JOIN old_entity )
-									update entity set entity = (select * from json_data) || jsonb_build_object('https://uri.etsi.org/ngsi-ld/createdAt' , entity->'https://uri.etsi.org/ngsi-ld/createdAt') , e_types = $2 where id = $3
+									WHERE id = $1)
+									UPDATE ENTITY SET ENTITY = jsonb_set($2,'{https://uri.etsi.org/ngsi-ld/createdAt}', olde.createdAt), E_TYPES = $3 FROM (SELECT * FROM old_entity) as olde WHERE id = $1 
 									RETURNING (SELECT ENTITY FROM old_entity) AS old_entity;""")
-					.execute(Tuple.of(new JsonObject(request.getFirstPayload()), types, request.getFirstId())).onItem()
+					.execute(Tuple.of(request.getFirstId(), new JsonObject(request.getFirstPayload()), types)).onItem()
 					.transformToUni(rows -> {
 						if (rows.rowCount() == 0) {
 							return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
