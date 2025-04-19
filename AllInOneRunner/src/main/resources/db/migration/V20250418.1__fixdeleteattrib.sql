@@ -406,12 +406,17 @@ BEGIN
 					end if;
 				elsif key = '@type' then
 					old_attrib = jsonb_set(old_attrib, ARRAY[(index - removed),key]::text[], value2);
+				elsif key = '@value' and value2 #>> '{}' = 'urn:ngsi-ld:null' then
+					old_attrib = old_attrib - (index - removed);
+					removed := removed + 1;
 				else
-					RAISE EXCEPTION 'Unknown type of an attribute for geojson' USING ERRCODE = 'SB003';
+					RAISE EXCEPTION 'Unknown type of an attribute for geojson %', value2 USING ERRCODE = 'SB003';
 				end if;
 			end loop;
-			PERFORM validate_geo_json(old_attrib[(index - removed)]);
-			index := index + 1;
+			if jsonb_array_length(old_attrib) > 0  then
+				PERFORM validate_geo_json(old_attrib[(index - removed)]);
+				index := index + 1;
+			end if;
 		end loop;
 		if jsonb_array_length(old_attrib) = 0 then
 			return null;
