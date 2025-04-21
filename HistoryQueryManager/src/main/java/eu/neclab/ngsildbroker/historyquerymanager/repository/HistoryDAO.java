@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import com.github.jsonldjava.core.JsonLDService;
 import com.github.jsonldjava.core.JsonLdConsts;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Table;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.RegistrationEntry;
@@ -31,6 +32,7 @@ import eu.neclab.ngsildbroker.commons.storage.ClientManager;
 import eu.neclab.ngsildbroker.commons.tools.DBUtil;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
+import io.smallrye.mutiny.tuples.Tuple3;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowIterator;
@@ -64,7 +66,10 @@ public class HistoryDAO {
 			AggrTerm aggrQuery, TemporalQueryTerm tempQuery, String lang, int lastN) {
 		Tuple2<String, Tuple> t;
 		try {
-			t = getSqlInput(new String[] { entityId }, null, null, attrsQuery, null, tempQuery, aggrQuery, null, null,
+			Tuple3<String[], TypeQueryTerm, String> tmp2 = Tuple3.of(new String[] { entityId }, null, null);
+			List<Tuple3<String[], TypeQueryTerm, String>> tmp = new ArrayList<Tuple3<String[],TypeQueryTerm,String>>(1);
+			tmp.add(tmp2);
+			t = getSqlInput(tmp, attrsQuery, null, tempQuery, aggrQuery, null, null,
 					lastN, 1, 0, false);
 		} catch (ResponseException e) {
 			return Uni.createFrom().failure(e);
@@ -137,13 +142,14 @@ public class HistoryDAO {
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public Uni<QueryResult> query(String tenant, String[] entityIds, TypeQueryTerm typeQuery, String idPattern,
-			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, TemporalQueryTerm tempQuery, AggrTerm aggrQuery,
-			GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, int lastN, int limit, int offset, boolean count) {
+	public Uni<QueryResult> query(String tenant,
+			List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeQueryAndIdPattern, AttrsQueryTerm attrsQuery,
+			QQueryTerm qQuery, TemporalQueryTerm tempQuery, AggrTerm aggrQuery, GeoQueryTerm geoQuery,
+			ScopeQueryTerm scopeQuery, int lastN, int limit, int offset, boolean count) {
 		Tuple2<String, Tuple> t;
 		try {
-			t = getSqlInput(entityIds, typeQuery, idPattern, attrsQuery, qQuery, tempQuery, aggrQuery, geoQuery,
-					scopeQuery, lastN, limit, offset, count);
+			t = getSqlInput(idsAndTypeQueryAndIdPattern, attrsQuery, qQuery, tempQuery, aggrQuery, geoQuery, scopeQuery,
+					lastN, limit, offset, count);
 		} catch (ResponseException e) {
 			return Uni.createFrom().failure(e);
 		}
@@ -246,7 +252,7 @@ public class HistoryDAO {
 		});
 	}
 
-	private Tuple2<String, Tuple> getSqlInput(String[] entityIds, TypeQueryTerm typeQuery, String idPattern,
+	private Tuple2<String, Tuple> getSqlInput(List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeQueryAndIdPattern,
 			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, TemporalQueryTerm tempQuery, AggrTerm aggrQuery,
 			GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, int lastN, int limit, int offset, boolean count)
 			throws ResponseException {
@@ -263,27 +269,39 @@ public class HistoryDAO {
 				+ "))) as r_modifiedat, case when deletedat is null then null else jsonb_build_array(jsonb_build_object('@type', '"
 				+ NGSIConstants.NGSI_LD_DATE_TIME + "', '@value', to_char(temporalentity.deletedat, " + TIMESTAMP_FORMAT
 				+ ")))  end as r_deletedat from temporalentity where 1=1");
-		if (typeQuery != null) {
-			sql.append(" AND ");
-			dollarCount = typeQuery.toSql(sql, tuple, dollarCount);
-		}
-		if (entityIds != null) {
-			sql.append(" AND id IN (");
-			for (String id : entityIds) {
-				sql.append('$');
-				sql.append(dollarCount);
-				sql.append(',');
-				tuple.addString(id);
-				dollarCount++;
+		if (idsAndTypeQueryAndIdPattern != null && idsAndTypeQueryAndIdPattern.size() > 0) {
+			for (Tuple3<String[], TypeQueryTerm, String> t : idsAndTypeQueryAndIdPattern) {
+				TypeQueryTerm typeQuery = t.getItem2();
+				String[] entityIds = t.getItem1();
+				String idPattern = t.getItem3();
+				sql.append('(');
+
+				if (typeQuery != null) {
+					sql.append(" AND ");
+					dollarCount = typeQuery.toSql(sql, tuple, dollarCount);
+				}
+				if (entityIds != null) {
+					sql.append(" AND id IN (");
+					for (String id : entityIds) {
+						sql.append('$');
+						sql.append(dollarCount);
+						sql.append(',');
+						tuple.addString(id);
+						dollarCount++;
+					}
+					sql.setCharAt(sql.length() - 1, ')');
+				}
+				if (idPattern != null) {
+					sql.append(" AND id ~ $");
+					sql.append(dollarCount);
+					dollarCount++;
+					tuple.addString(idPattern);
+				}
+				sql.append(") OR ");
 			}
-			sql.setCharAt(sql.length() - 1, ')');
+			sql.setLength(sql.length() - 3);
 		}
-		if (idPattern != null) {
-			sql.append(" AND id ~ $");
-			sql.append(dollarCount);
-			dollarCount++;
-			tuple.addString(idPattern);
-		}
+
 		if (scopeQuery != null) {
 			scopeQuery.toSql(sql);
 		}

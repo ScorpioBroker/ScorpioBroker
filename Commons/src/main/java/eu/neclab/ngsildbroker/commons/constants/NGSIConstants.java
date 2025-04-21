@@ -165,6 +165,7 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_TYPE_NAMES = "https://uri.etsi.org/ngsi-ld/typeNames";
 	public final static String NGSI_LD_ATTRIBUTE_COUNT = "https://uri.etsi.org/ngsi-ld/attributeCount";
 	public final static String NGSI_LD_TEMPORAL_QUERY = "https://uri.etsi.org/ngsi-ld/temporalQ";
+	public final static String NGSI_LD_TEMPORAL_QUERY_SHORT = "temporalQ";
 	public final static String NGSI_LD_MANAGEMENTINTERVAL = "https://uri.etsi.org/ngsi-ld/managementInterval";
 	public static final String NGSI_LD_GEOREL = "https://uri.etsi.org/ngsi-ld/georel";
 	public static final String NGSI_LD_SHOWCHANGES = "https://uri.etsi.org/ngsi-ld/showChanges";
@@ -577,4 +578,7 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_LAST_NOTIFICATION_SHORT = "lastNotification";
 	public final static String NGSI_LD_LAST_FAILURE_SHORT = "lastFailure ";
 	public final static String NGSI_LD_LAST_SUCCESS_SHORT = "lastSuccess";
+	public static final String NGSI_LD_AGGR_QUERY_SHORT = "aggrQ";
+	public static final String NGSI_LD_AGGR_METHODS_SHORT = "aggrMethods";
+	public static final String NGSI_LD_AGGR_PERIOD_DURATION_SHORT = "aggrPeriodDuration";
 }

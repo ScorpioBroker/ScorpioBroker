@@ -55,6 +55,7 @@ import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.historyquerymanager.repository.HistoryDAO;
 import io.quarkus.runtime.StartupEvent;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.tuples.Tuple3;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.ext.web.client.WebClient;
 import io.vertx.pgclient.PgException;
@@ -101,13 +102,13 @@ public class HistoryQueryService implements CSourceHandler {
 	void startup(@Observes StartupEvent event) {
 	}
 
-	public Uni<QueryResult> query(String tenant, String[] entityIds, TypeQueryTerm typeQuery, String idPattern,
+	public Uni<QueryResult> query(String tenant, List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeQueryAndIdPattern,
 			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, CSFQueryTerm csf, GeoQueryTerm geoQuery,
 			ScopeQueryTerm scopeQuery, TemporalQueryTerm tempQuery, AggrTerm aggrQuery, LanguageQueryTerm langQuery,
 			Integer lastN, Integer limit, Integer offSet, Boolean count, Boolean localOnly, Context context,
 			HttpServerRequest request) {
 
-		Uni<QueryResult> local = historyDAO.query(tenant, entityIds, typeQuery, idPattern, attrsQuery, qQuery,
+		Uni<QueryResult> local = historyDAO.query(tenant, idsAndTypeQueryAndIdPattern, attrsQuery, qQuery,
 				tempQuery, aggrQuery, geoQuery, scopeQuery, lastN, limit, offSet, count).onFailure()
 				.recoverWithUni(e -> {
 					if (e instanceof PgException) {

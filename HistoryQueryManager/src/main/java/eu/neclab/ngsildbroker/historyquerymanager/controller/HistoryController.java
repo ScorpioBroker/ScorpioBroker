@@ -20,6 +20,7 @@ import eu.neclab.ngsildbroker.commons.tools.QueryParser;
 import eu.neclab.ngsildbroker.historyquerymanager.service.HistoryQueryService;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.tuples.Tuple3;
 import io.vertx.core.http.HttpServerRequest;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.RestResponse;
@@ -32,6 +33,7 @@ import jakarta.ws.rs.QueryParam;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
+import java.util.ArrayList;
 import java.util.List;
 
 @Singleton
@@ -53,8 +55,6 @@ public class HistoryController {
 	int defaultLastN;
 	@ConfigProperty(name = "scorpio.history.maxLastN", defaultValue = "1000")
 	int maxLastN;
-	@ConfigProperty(name = "ngsild.corecontext", defaultValue = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld")
-	String coreContext;
 
 	@Inject
 	JsonLDService ldService;
@@ -145,11 +145,12 @@ public class HistoryController {
 			} catch (Exception e) {
 				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 			}
-			return historyQueryService
-					.query(HttpUtils.getTenant(request), idList, typeQueryTerm, idPattern, attrsQueryTerm, qQueryTerm,
-							csfQueryTerm, geoQueryTerm, scopeQueryTerm, temporalQueryTerm, aggrTerm, languageQueryTerm,
-							lastNTBU, actualLimit, offset, count, localOnly, context, request)
-					.onItem().transformToUni(queryResult -> {
+			List<Tuple3<String[], TypeQueryTerm, String>> tmp = new ArrayList<>(1);
+			tmp.add(Tuple3.of(idList, typeQueryTerm, idPattern));
+			return historyQueryService.query(HttpUtils.getTenant(request), tmp, attrsQueryTerm, qQueryTerm,
+					csfQueryTerm, geoQueryTerm, scopeQueryTerm, temporalQueryTerm, aggrTerm, languageQueryTerm,
+					lastNTBU, actualLimit, offset, count, localOnly, context, request).onItem()
+					.transformToUni(queryResult -> {
 						return HttpUtils.generateQueryResult(request, queryResult, finalOptions, geoproperty,
 								acceptHeader, count, actualLimit, languageQueryTerm, context, ldService, true, true,
 								false, microServiceUtils.getGatewayURL().toString(),
@@ -160,7 +161,6 @@ public class HistoryController {
 
 	@Path("/{entityId}")
 	@GET
-
 	public Uni<RestResponse<Object>> retrieveTemporalEntity(HttpServerRequest request,
 			@PathParam("entityId") String entityId, @QueryParam("attrs") String attrs,
 			@QueryParam("aggrMethods") String aggrMethods, @QueryParam("aggrPeriodDuration") String aggrPeriodDuration,
@@ -207,7 +207,7 @@ public class HistoryController {
 						return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, entity,
 								geometryProperty, finalOptionsString, null, ldService, null, null, true);
 					});
-		}).onFailure().recoverWithItem(e-> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+		}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 
 	}
 

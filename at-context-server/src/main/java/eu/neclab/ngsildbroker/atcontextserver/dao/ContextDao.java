@@ -120,7 +120,7 @@ public class ContextDao {
 				if (rows.size() > 0) {
 					return Uni.createFrom().voidItem();
 				} else {
-					return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
+					return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound, "@Context was not found"));
 				}
 			});
 		});
