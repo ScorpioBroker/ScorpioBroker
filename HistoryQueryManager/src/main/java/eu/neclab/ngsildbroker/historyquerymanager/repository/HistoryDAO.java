@@ -268,13 +268,14 @@ public class HistoryDAO {
 				+ TIMESTAMP_FORMAT
 				+ "))) as r_modifiedat, case when deletedat is null then null else jsonb_build_array(jsonb_build_object('@type', '"
 				+ NGSIConstants.NGSI_LD_DATE_TIME + "', '@value', to_char(temporalentity.deletedat, " + TIMESTAMP_FORMAT
-				+ ")))  end as r_deletedat from temporalentity where 1=1");
+				+ ")))  end as r_deletedat from temporalentity where ");
 		if (idsAndTypeQueryAndIdPattern != null && idsAndTypeQueryAndIdPattern.size() > 0) {
+			sql.append('(');
 			for (Tuple3<String[], TypeQueryTerm, String> t : idsAndTypeQueryAndIdPattern) {
 				TypeQueryTerm typeQuery = t.getItem2();
 				String[] entityIds = t.getItem1();
 				String idPattern = t.getItem3();
-				sql.append('(');
+				sql.append(" (1=1");
 
 				if (typeQuery != null) {
 					sql.append(" AND ");
@@ -300,6 +301,7 @@ public class HistoryDAO {
 				sql.append(") OR ");
 			}
 			sql.setLength(sql.length() - 3);
+			sql.append(')');
 		}
 
 		if (scopeQuery != null) {

@@ -107,7 +107,7 @@ public class ContextController {
 
 			return Uni.createFrom()
 					.item(HttpUtils.handleControllerExceptions(
-							new ResponseException(ErrorType.NotAcceptable, "You cannot delete scorpios core context"),
+							new ResponseException(ErrorType.BadRequestData, "You cannot delete scorpios core context"),
 							AppConstants.INTERNAL_NULL_KEY));
 		}
 		return contextService.deleteById(id, reload).onItem().transform(v -> RestResponse.noContent()).onFailure()
