@@ -46,7 +46,7 @@ public class ContextService {
 	public Uni<Map<String, Object>> getContextById(String id, boolean details) {
 		return cache.createOrGetCache(id, details, false).onFailure().recoverWithUni(e -> {
 			return dao.getById(id, details);
-		});
+		}); 
 	}
 
 	public Uni<NGSILDOperationResult> createContextHosted(Map<String, Object> payload) {

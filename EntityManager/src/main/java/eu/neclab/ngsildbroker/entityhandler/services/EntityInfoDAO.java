@@ -321,9 +321,9 @@ public class EntityInfoDAO {
 				sql.append("ENTITY - $1 WHERE id=$2 AND ENTITY ? $1");
 				tuple = Tuple.of(request.getAttribName(), request.getFirstId());
 			} else if (request.getDatasetId() != null) {
-				sql.append("NGSILD_DELETEATTRIB(ENTITY, $1, $2) WHERE id=$3 AND ENTITY @> '{\"$1\": [{\""
-						+ NGSIConstants.NGSI_LD_DATA_SET_ID + "\": \"$2\"}]}'");
-				tuple = Tuple.of(request.getAttribName(), request.getDatasetId(), request.getFirstId());
+				sql.append("NGSILD_DELETEATTRIB(ENTITY, $1, $3) WHERE id=$2 AND ENTITY @> '{\"$1\": [{\""
+						+ NGSIConstants.NGSI_LD_DATA_SET_ID + "\": [{\"@id\":\"$3\"}]}]}'");
+				tuple = Tuple.of(request.getAttribName(), request.getFirstId(), request.getDatasetId());
 			} else {
 				sql.append(
 						"NGSILD_DELETEATTRIB(ENTITY, $1, null) WHERE id=$2 AND ENTITY ? $1 AND EXISTS (SELECT jsonb_array_elements FROM jsonb_array_elements(ENTITY->$1) WHERE NOT jsonb_array_elements ? '"
@@ -336,9 +336,17 @@ public class EntityInfoDAO {
 			return client.preparedQuery(sql.toString()).execute(tuple).onFailure().retry().atMost(3).onItem()
 					.transformToUni(rows -> {
 						if (rows.size() == 0) {
-							return Uni.createFrom().failure(
-									new ResponseException(ErrorType.NotFound, "Attribute " + request.getAttribName()
-											+ " on Entity " + request.getFirstId() + " was not found."));
+							if (request.getDatasetId() == null) {
+								return Uni.createFrom().failure(
+										new ResponseException(ErrorType.NotFound, "Attribute " + request.getAttribName()
+												+ " on Entity " + request.getFirstId() + " was not found."));
+							} else {
+								return Uni.createFrom()
+										.failure(new ResponseException(ErrorType.NotFound,
+												"Attribute " + request.getAttribName() + " with datasetId "
+														+ request.getDatasetId() + " on Entity " + request.getFirstId()
+														+ " was not found."));
+							}
 						}
 						Row first = rows.iterator().next();
 						return Uni.createFrom().item(first.getJsonObject(0).getMap());
@@ -441,8 +449,7 @@ public class EntityInfoDAO {
 					UPDATE ENTITY SET entity = ngsild_update_entity(entity, $2, $3) WHERE ID = $1 RETURNING (SELECT ENTITY FROM a) AS old_entity, ENTITY.entity as new_entity;
 					""";
 
-			Tuple tuple = Tuple.of(request.getFirstId(), new JsonObject(request.getFirstPayload()),
-					!noOverwrite);
+			Tuple tuple = Tuple.of(request.getFirstId(), new JsonObject(request.getFirstPayload()), !noOverwrite);
 //			logger.debug(sql);
 			logger.debug(tuple.deepToString());
 			return client.preparedQuery(sql).execute(tuple).onFailure().recoverWithUni(e -> {
@@ -535,7 +542,7 @@ public class EntityInfoDAO {
 									SELECT ENTITY, ENTITY -> 'https://uri.etsi.org/ngsi-ld/createdAt' as createdAt, ENTITY -> 'https://uri.etsi.org/ngsi-ld/modifiedAt' as modifiedAt
 									FROM ENTITY
 									WHERE id = $1)
-									UPDATE ENTITY SET ENTITY = jsonb_set($2,'{https://uri.etsi.org/ngsi-ld/createdAt}', olde.createdAt), E_TYPES = $3 FROM (SELECT * FROM old_entity) as olde WHERE id = $1 
+									UPDATE ENTITY SET ENTITY = jsonb_set($2,'{https://uri.etsi.org/ngsi-ld/createdAt}', olde.createdAt), E_TYPES = $3 FROM (SELECT * FROM old_entity) as olde WHERE id = $1
 									RETURNING (SELECT ENTITY FROM old_entity) AS old_entity;""")
 					.execute(Tuple.of(request.getFirstId(), new JsonObject(request.getFirstPayload()), types)).onItem()
 					.transformToUni(rows -> {
