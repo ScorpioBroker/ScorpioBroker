@@ -10,6 +10,7 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.json.JsonObject;
 
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.resteasy.reactive.RestResponse;
@@ -41,6 +42,9 @@ public class ContextController {
 	@Path("{contextId}")
 	public Uni<RestResponse<Object>> getContextById(@PathParam("contextId") String id,
 			@QueryParam("details") boolean details) {
+		if (NGSIConstants.CORE_CONTEXT_URLS.contains(id)) {
+			id = AppConstants.INTERNAL_NULL_KEY;
+		}
 		return contextService.getContextById(id, details).onItem().transform(
 				context -> ResponseBuilder.ok().entity(context).header("Content-Type", "application/json").build())
 				.onFailure().recoverWithItem(e -> {
@@ -68,31 +72,39 @@ public class ContextController {
 	}
 
 	@POST
-	public Uni<RestResponse<Object>> createContext(String payload) {
-		return JsonUtils.fromString(payload).onItem().transformToUni(json -> {
-			Map<String, Object> payloadMap = new HashMap<>();
-			try {
-				Object contextBody = ((Map<String, Object>) json).get(NGSIConstants.JSON_LD_CONTEXT);
-				if (contextBody == null)
-					throw new Exception("Bad Request");
-				else
-					payloadMap.put(NGSIConstants.JSON_LD_CONTEXT, contextBody);
-			} catch (Exception e) {
-				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, AppConstants.INTERNAL_NULL_KEY));
-			}
-			return contextService.createContextHosted(payloadMap).onItem()
-					.transform(r -> HttpUtils.generateCreateResult(r, AppConstants.CONTEXTS_URL)).onFailure()
-					.recoverWithItem(e -> {
-						return HttpUtils.handleControllerExceptions(e, AppConstants.INTERNAL_NULL_KEY);
-					});
-		});
+	public Uni<RestResponse<Object>> createContext(String body) {
+
+		Map<String, Object> context;
+		try {
+			context = new JsonObject(body).getMap();
+		} catch (Exception e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, AppConstants.INTERNAL_NULL_KEY));
+		}
+		if (!context.containsKey(NGSIConstants.JSON_LD_CONTEXT)) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
+					new ResponseException(ErrorType.InvalidRequest, "A Map with an @Context entry is required."),
+					AppConstants.INTERNAL_NULL_KEY));
+		}
+		return contextService.createContextHosted(context).onItem()
+				.transform(r -> HttpUtils.generateCreateResult(r, AppConstants.CONTEXTS_URL)).onFailure()
+				.recoverWithItem(e -> {
+					return HttpUtils.handleControllerExceptions(e, AppConstants.INTERNAL_NULL_KEY);
+				});
+
 	}
 
 	@DELETE
 	@Path("{contextId}")
 	public Uni<RestResponse<Object>> deleteContextById(@PathParam("contextId") String id,
 			@QueryParam("reload") boolean reload) {
+		if (NGSIConstants.CORE_CONTEXT_URLS.contains(id)) {
+			id = AppConstants.INTERNAL_NULL_KEY;
+		}
 		if (id.equals(AppConstants.INTERNAL_NULL_KEY)) {
+			if (reload) {
+				return Uni.createFrom().item(RestResponse.noContent());
+			}
+
 			return Uni.createFrom()
 					.item(HttpUtils.handleControllerExceptions(
 							new ResponseException(ErrorType.NotAcceptable, "You cannot delete scorpios core context"),
@@ -107,6 +119,9 @@ public class ContextController {
 	@GET
 	@Path("/createcache/{url}")
 	public Uni<RestResponse<Object>> loadCache(@PathParam("url") String url) {
+		if (NGSIConstants.CORE_CONTEXT_URLS.contains(url)) {
+			url = AppConstants.INTERNAL_NULL_KEY;
+		}
 		return contextService.createOrGetCache(url).onItem().transform(
 				context -> ResponseBuilder.ok().entity(context).header("Content-Type", "application/json").build());
 	}
