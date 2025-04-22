@@ -79,27 +79,23 @@ public class SubscriptionController {
 		} catch (DecodeException e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
-		try {
-			if (!map.containsKey(NGSIConstants.JSONLD_CONTEXT)) {
-				String contextLink;
-				if (request.getHeader(NGSIConstants.LINK_HEADER) != null) {
-					contextLink = request.getHeader(NGSIConstants.LINK_HEADER).split(";")[0].replace("<", "")
-							.replace(">", "");
-				} else if (map.containsKey(JsonLdConsts.CONTEXT)) {
-					if (map.get(JsonLdConsts.CONTEXT) instanceof List<?>) {
-						contextLink = ((List<String>) map.get(JsonLdConsts.CONTEXT)).get(0);
-					} else {
-						contextLink = map.get(JsonLdConsts.CONTEXT).toString();
-					}
-				} else {
-					contextLink = coreContext;
-				}
-				map.put(NGSIConstants.JSONLD_CONTEXT, contextLink);
-			}
-		} catch (Exception e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
-					new ResponseException(ErrorType.BadRequestData), HttpUtils.getTenant(request)));
-		}
+//		try {
+//			if (!map.containsKey(NGSIConstants.JSONLD_CONTEXT)) {
+//				Object contextLink;
+//				if (request.getHeader(NGSIConstants.LINK_HEADER) != null) {
+//					contextLink = request.getHeader(NGSIConstants.LINK_HEADER).split(";")[0].replace("<", "")
+//							.replace(">", "");
+//				} else if (map.containsKey(JsonLdConsts.CONTEXT)) {
+//					contextLink = map.get(JsonLdConsts.CONTEXT);
+//				} else {
+//					contextLink = coreContext;
+//				}
+//				map.put(NGSIConstants.JSONLD_CONTEXT, contextLink);
+//			}
+//		} catch (Exception e) {
+//			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
+//					new ResponseException(ErrorType.BadRequestData), HttpUtils.getTenant(request)));
+//		}
 		HeadersMultiMap otherHead = new HeadersMultiMap();
 		if (request.headers().contains(NGSIConstants.TENANT_HEADER)) {
 			otherHead.add(NGSIConstants.TENANT_HEADER, request.headers().get(NGSIConstants.TENANT_HEADER));
@@ -158,12 +154,11 @@ public class SubscriptionController {
 	}
 
 	private void fixSub(Map<String, Object> sub) {
-		
-		Map<String, Object> notificationParam = ((List<Map<String, Object>>) sub.get(NGSIConstants.NGSI_LD_NOTIFICATION)).get(0);
-		notificationParam.put(NGSIConstants.NGSI_LD_TIMES_SENT,
-				sub.remove(NGSIConstants.NGSI_LD_TIMES_SENT));
-		notificationParam.put(NGSIConstants.NGSI_LD_TIMES_FAILED,
-				sub.remove(NGSIConstants.NGSI_LD_TIMES_FAILED));
+
+		Map<String, Object> notificationParam = ((List<Map<String, Object>>) sub
+				.get(NGSIConstants.NGSI_LD_NOTIFICATION)).get(0);
+		notificationParam.put(NGSIConstants.NGSI_LD_TIMES_SENT, sub.remove(NGSIConstants.NGSI_LD_TIMES_SENT));
+		notificationParam.put(NGSIConstants.NGSI_LD_TIMES_FAILED, sub.remove(NGSIConstants.NGSI_LD_TIMES_FAILED));
 		Object lastNotification = sub.remove(NGSIConstants.NGSI_LD_LAST_NOTIFICATION);
 		Object lastSuccess = sub.remove(NGSIConstants.NGSI_LD_LAST_SUCCESS);
 		Object lastFailure = sub.remove(NGSIConstants.NGSI_LD_LAST_FAILURE);

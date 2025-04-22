@@ -315,7 +315,7 @@ public class JsonLdApi {
 					// do language stuff
 					result.put("type", "Property");
 					boolean found = false;
-					
+
 					List<Map<String, Object>> tmp = (List<Map<String, Object>>) expandedValue;
 					Object atNoneEntry = null;
 					for (Tuple2<Set<String>, Float> tuple : langQuery.getEntries()) {
@@ -329,17 +329,17 @@ public class JsonLdApi {
 									found = true;
 									break;
 								}
-								if(NGSIConstants.JSON_LD_NONE.equals(atLang)) {
+								if (NGSIConstants.JSON_LD_NONE.equals(atLang)) {
 									entry.remove(JsonLdConsts.LANGUAGE);
 									atNoneEntry = List.of(entry);
-									if("*".equals(lang)) {
+									if ("*".equals(lang)) {
 										result.put("lang", atLang);
 										found = true;
 										break;
 									}
 								}
 							}
-							
+
 							if ("*".equals(lang) && !found) {
 								Map<String, Object> entry = tmp.get(0);
 								Object atLang = entry.remove(JsonLdConsts.LANGUAGE);
@@ -354,10 +354,10 @@ public class JsonLdApi {
 						}
 					}
 					if (!found) {
-						if(atNoneEntry != null) {
+						if (atNoneEntry != null) {
 							result.put("lang", NGSIConstants.JSON_LD_NONE);
 							expandedValue = atNoneEntry;
-						}else {
+						} else {
 							Map<String, Object> entry = tmp.get(0);
 							Object atLang = entry.remove(JsonLdConsts.LANGUAGE);
 							expandedValue = List.of(entry);
@@ -385,9 +385,10 @@ public class JsonLdApi {
 									|| map.get(NGSIConstants.JSON_LD_TYPE).toString()
 											.contains(NGSIConstants.NGSI_LD_JSON_PROPERTY))) {
 						String propType = map.remove(NGSIConstants.JSON_LD_TYPE).toString();
-						if(langQuery != null && propType.contains(NGSIConstants.NGSI_LD_LANGPROPERTY)) {
+						if (langQuery != null && propType.contains(NGSIConstants.NGSI_LD_LANGPROPERTY)) {
 							boolean found = false;
-							List<Map<String, Object>> tmp = ((List<Map<String, List<Map<String, Object>>>>) expandedValue).get(0).get(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP);
+							List<Map<String, Object>> tmp = ((List<Map<String, List<Map<String, Object>>>>) expandedValue)
+									.get(0).get(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP);
 							Object atNoneEntry = null;
 							for (Tuple2<Set<String>, Float> tuple : langQuery.getEntries()) {
 								for (String lang : tuple.getItem1()) {
@@ -399,16 +400,16 @@ public class JsonLdApi {
 											found = true;
 											break;
 										}
-										if(NGSIConstants.JSON_LD_NONE.equals(atLang)) {
+										if (NGSIConstants.JSON_LD_NONE.equals(atLang)) {
 											entry.remove(JsonLdConsts.LANGUAGE);
 											atNoneEntry = List.of(entry);
-											if("*".equals(lang)) {
+											if ("*".equals(lang)) {
 												found = true;
 												break;
 											}
 										}
 									}
-									
+
 									if ("*".equals(lang) && !found) {
 										Map<String, Object> entry = tmp.get(0);
 										entry.remove(JsonLdConsts.LANGUAGE);
@@ -422,20 +423,20 @@ public class JsonLdApi {
 								}
 							}
 							if (!found) {
-								if(atNoneEntry != null) {
+								if (atNoneEntry != null) {
 									expandedValue = atNoneEntry;
-								}else {
+								} else {
 									Map<String, Object> entry = tmp.get(0);
 									Object atLang = entry.remove(JsonLdConsts.LANGUAGE);
 									expandedValue = List.of(entry);
-									
+
 								}
 							}
 							isProperty = true;
 							isLanguageProperty = false;
- 
+
 						}
-						
+
 					} else if (isListProperty && expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_LIST)) {
 						return compact(activeCtx, NGSIConstants.LIST, expandedValue, compactArrays, endPoint, null,
 								null);
@@ -1348,8 +1349,10 @@ public class JsonLdApi {
 										|| ngsiElement.isListProperty() || ngsiElement.isListRelationship()
 										|| ngsiElement.isVocabProperty() || ngsiElement.isLanguageProperty())
 										&& !NGSIConstants.ATTR_BASE_PROPS.contains(expandedProperty)))) {
-
-							value = noConcise(value);
+							if (payloadType != AppConstants.MERGE_PATCH_PAYLOAD
+									&& payloadType != AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD) {
+								value = noConcise(value);
+							}
 						}
 
 						break;
@@ -1633,7 +1636,7 @@ public class JsonLdApi {
 			if (m.containsKey(NGSIConstants.TYPE) || m.containsKey(NGSIConstants.JSON_LD_TYPE)) {
 
 				Object type = m.get(NGSIConstants.TYPE);
-				if(type == null) {
+				if (type == null) {
 					type = m.get(NGSIConstants.JSON_LD_TYPE);
 				}
 				if (NGSIConstants.NGSI_LD_ATTR_SHORT_TYPES.contains(type)) {

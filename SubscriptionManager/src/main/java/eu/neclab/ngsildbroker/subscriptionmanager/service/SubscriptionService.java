@@ -453,6 +453,12 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 
 		return localContextService.createImplicitly(tenant, tmp).onItem().transformToUni(contextId -> {
 			request.setContextId(contextId);
+			List<Map<String, Object>> contextList = new ArrayList<>(1);
+			Map<String, Object> contextEntry = new HashMap<>(1);
+			contextEntry.put(NGSIConstants.JSON_LD_VALUE,
+					microServiceUtils.getContextServerURL().toString() + contextId);
+			contextList.add(contextEntry);
+			request.getPayload().put(NGSIConstants.NGSI_LD_JSONLD_CONTEXT, contextList);
 			return subDAO.createSubscription(request, contextId).onItem().transformToUni(t -> {
 				if (isIntervalSub(request)) {
 					this.tenant2subscriptionId2IntervalSubscription.put(request.getTenant(), request.getId(), request);

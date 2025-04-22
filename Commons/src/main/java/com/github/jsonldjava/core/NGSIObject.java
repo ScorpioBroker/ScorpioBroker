@@ -341,7 +341,7 @@ class NGSIObject {
 				}
 
 			} else {
-				validateSubscription(expandedProperty, activeProperty, api, payloadType);
+				//validateSubscription(expandedProperty, activeProperty, api, payloadType);
 			}
 			break;
 		case AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD:
@@ -453,12 +453,12 @@ class NGSIObject {
 							"The key " + activeProperty + " is an invalid entry.");
 				}
 			}
-			case NGSIConstants.NGSI_LD_JSONLD_CONTEXT -> {
-				if (!(this.element instanceof Map<?, ?> map && map.get(JsonLdConsts.VALUE) instanceof String)) {
-					throw new ResponseException(ErrorType.BadRequestData,
-							"The key " + activeProperty + " is an invalid entry.");
-				}
-			}
+//			case NGSIConstants.NGSI_LD_JSONLD_CONTEXT -> {
+//				if (!(this.element instanceof Map<?, ?> map && map.get(JsonLdConsts.VALUE) instanceof String)) {
+//					throw new ResponseException(ErrorType.BadRequestData,
+//							"The key " + activeProperty + " is an invalid entry.");
+//				}
+//			}
 			case NGSIConstants.NGSI_LD_TIME_INTERVAL -> {
 				if (!(this.element instanceof Map) || !(((Map<String, Object>) this.element)
 						.get(NGSIConstants.JSON_LD_VALUE) instanceof Integer)) {

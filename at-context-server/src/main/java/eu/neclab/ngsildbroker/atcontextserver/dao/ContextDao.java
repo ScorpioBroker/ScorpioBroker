@@ -40,38 +40,46 @@ public class ContextDao {
 	@Inject
 	MicroServiceUtils microServiceUtils;
 
-	Logger logger = LoggerFactory.getLogger(ContextDao.class);
+	private static Logger logger = LoggerFactory.getLogger(ContextDao.class);
+
+	String atContextUrl;
 
 	@PostConstruct
 	void setup() {
 		atContextUrl = microServiceUtils.getGatewayURL().toString() + "/ngsi-ld/v1/jsonldContexts/";
 	}
 
-	String atContextUrl;
-
 	public Uni<Map<String, Object>> getById(String id, Boolean details) {
 		String sql = """
-				with a as(select * from contexts WHERE id=$1)
-				update contexts set lastusage = now(), numberofhits = numberofhits+1 WHERE id=$1 returning (select to_jsonb(a) from a)""";
+				with a as(select * from contexts WHERE id=$1),
+				b as (update contexts set lastusage = now(), numberofhits = numberofhits+1 WHERE id=$1)
+				select * from a""";
+		logger.debug(sql);
+		logger.debug(id);
 		return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
 			return client.preparedQuery(sql).execute(Tuple.of(id)).onItem().transformToUni(rows -> {
 				if (rows.size() > 0) {
 					Row row = rows.iterator().next();
-					Map<String, Object> rawData = row.getJsonObject(0).getMap();
+
 					Map<String, Object> result = new HashMap<>();
 					if (details) {
-						result.put(NGSIConstants.LOCAL_ID, rawData.get(NGSIConstants.ID));
-						result.put(NGSIConstants.KIND, rawData.get(NGSIConstants.KIND));
+						String localId = row.getString(NGSIConstants.ID);
+						result.put(NGSIConstants.LOCAL_ID, localId);
+						result.put(NGSIConstants.KIND, row.getString(NGSIConstants.KIND));
 						result.put(NGSIConstants.NUMBER_OF_HITS,
-								rawData.get(NGSIConstants.NUMBER_OF_HITS.toLowerCase()));
-						result.put(NGSIConstants.LAST_USAGE, rawData.get(NGSIConstants.LAST_USAGE.toLowerCase()));
-						result.put(NGSIConstants.URL, atContextUrl
-								+ URLEncoder.encode(rawData.get(NGSIConstants.ID).toString(), StandardCharsets.UTF_8));
-						result.put(NGSIConstants.BODY, rawData.get(NGSIConstants.BODY));
-						result.put(NGSIConstants.CREATEDAT, rawData.get(NGSIConstants.CREATEDAT.toLowerCase()));
+								row.getLong(NGSIConstants.NUMBER_OF_HITS.toLowerCase()));
+						String lastUsage = row.getString(NGSIConstants.LAST_USAGE.toLowerCase());
+						String createdAt = row.getString(NGSIConstants.CREATEDAT.toLowerCase());
+						if (lastUsage != null) {
+							result.put(NGSIConstants.LAST_USAGE, lastUsage + 'Z');
+						}
+						result.put(NGSIConstants.URL,
+								atContextUrl + URLEncoder.encode(localId, StandardCharsets.UTF_8));
+						result.put(NGSIConstants.BODY, row.getJsonObject(NGSIConstants.BODY).getMap());
+						result.put(NGSIConstants.CREATEDAT, createdAt + 'Z');
 						return Uni.createFrom().item(result);
 					} else
-						return Uni.createFrom().item((Map<String, Object>) rawData.get(NGSIConstants.BODY));
+						return Uni.createFrom().item(row.getJsonObject(NGSIConstants.BODY).getMap());
 
 				} else
 					return Uni.createFrom()
@@ -81,7 +89,7 @@ public class ContextDao {
 	}
 
 	public Uni<String> hostContext(Map<String, Object> payload) {
-		String sql = "INSERT INTO public.contexts (id, body, kind) values($1, $2, 'Hosted') returning id";
+		String sql = "INSERT INTO contexts (id, body, kind) values($1, $2, 'Hosted') returning id";
 		String id = "urn:" + UUID.randomUUID();
 		return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
 			return client.preparedQuery(sql).execute(Tuple.of(id, new JsonObject(payload))).onFailure()
@@ -114,13 +122,14 @@ public class ContextDao {
 	}
 
 	public Uni<Void> deleteById(String id) {
-		String sql = "DELETE FROM public.contexts WHERE id=$1 RETURNING id";
+		String sql = "DELETE FROM contexts WHERE id=$1 RETURNING id";
 		return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
 			return client.preparedQuery(sql).execute(Tuple.of(id)).onItem().transformToUni(rows -> {
 				if (rows.size() > 0) {
 					return Uni.createFrom().voidItem();
 				} else {
-					return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound, "@Context was not found"));
+					return Uni.createFrom()
+							.failure(new ResponseException(ErrorType.NotFound, "@Context was not found"));
 				}
 			});
 		});
@@ -128,11 +137,12 @@ public class ContextDao {
 
 	public Uni<List<Object>> getAllContexts(String kind, Boolean details) {
 		StringBuilder sql = new StringBuilder();
-		sql.append("Select * from public.contexts ");
+		sql.append("Select * from contexts ");
 		if (kind != null) {
-			sql.append("where kind='%s'".formatted(kind.toLowerCase()));
+			sql.append("where kind='%s'".formatted(kind));
 		}
 		List<Object> contexts = new ArrayList<>();
+		logger.debug(sql.toString());
 		return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
 			return client.preparedQuery(sql.toString()).execute().onItem().transform(rows -> {
 				rows.forEach(row -> {
