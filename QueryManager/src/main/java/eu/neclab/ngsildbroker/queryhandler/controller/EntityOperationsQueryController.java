@@ -62,8 +62,6 @@ public class EntityOperationsQueryController {
 	@ConfigProperty(name = "scorpio.entity.max-limit", defaultValue = "1000")
 	int maxLimit;
 
-	
-
 	@Inject
 	JsonLDService ldService;
 
@@ -79,12 +77,22 @@ public class EntityOperationsQueryController {
 	@POST
 	public Uni<RestResponse<Object>> postQuery(HttpServerRequest request, String bodyStr,
 			@QueryParam(value = "limit") Integer limit, @QueryParam(value = "offset") int offset,
-			@QueryParam(value = "options") String options, @QueryParam(value = "count") boolean count,
-			@QueryParam(value = "local") boolean localOnly,
+			@QueryParam(value = "options") String options, @QueryParam(value = "count") String countS,
+			@QueryParam(value = "local") String localOnlyS,
 			@QueryParam(value = "geometryProperty") String geometryProperty,
-			@HeaderParam("NGSILD-EntityMap") String entityMapToken, @QueryParam("entityMap") boolean retrieveEntityMap,
+			@HeaderParam("NGSILD-EntityMap") String entityMapToken, @QueryParam("entityMap") String retrieveEntityMapS,
 			@QueryParam(value = "doNotCompact") boolean doNotCompact) {
+		boolean localOnly;
+		boolean count;
+		boolean retrieveEntityMap;
 
+		try {
+			localOnly = HttpUtils.parseBoolean(localOnlyS);
+			count = HttpUtils.parseBoolean(countS);
+			retrieveEntityMap = HttpUtils.parseBoolean(retrieveEntityMapS);
+		} catch (ResponseException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+		}
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		Map<String, Object> body;
 		if (acceptHeader == -1) {
@@ -97,8 +105,8 @@ public class EntityOperationsQueryController {
 			actualLimit = limit;
 		}
 		if (actualLimit > maxLimit) {
-			return Uni.createFrom()
-					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.TooManyResults), HttpUtils.getTenant(request)));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
+					new ResponseException(ErrorType.TooManyResults), HttpUtils.getTenant(request)));
 		}
 		try {
 			body = new JsonObject(bodyStr).getMap();
@@ -115,8 +123,10 @@ public class EntityOperationsQueryController {
 		case AppConstants.NGB_APPLICATION_JSON:
 			if (body.containsKey(NGSIConstants.JSON_LD_CONTEXT)) {
 				return Uni.createFrom()
-						.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData,
-								"@context is not allowed in content-type application/json"), HttpUtils.getTenant(request)));
+						.item(HttpUtils.handleControllerExceptions(
+								new ResponseException(ErrorType.BadRequestData,
+										"@context is not allowed in content-type application/json"),
+								HttpUtils.getTenant(request)));
 
 			} else {
 				ctxUni = ldService.parse(HttpUtils.getAtContext(request));
@@ -127,14 +137,18 @@ public class EntityOperationsQueryController {
 				ctxUni = ldService.parse(body.get(NGSIConstants.JSON_LD_CONTEXT));
 				break;
 			} else {
-				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
-						new ResponseException(ErrorType.BadRequestData, "@context entry missing"), HttpUtils.getTenant(request)));
+				return Uni.createFrom()
+						.item(HttpUtils.handleControllerExceptions(
+								new ResponseException(ErrorType.BadRequestData, "@context entry missing"),
+								HttpUtils.getTenant(request)));
 			}
 		default:
 			return Uni.createFrom()
-					.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.InvalidRequest,
-							"Only Content-Type " + AppConstants.NGB_APPLICATION_JSON + " and "
-									+ AppConstants.NGB_APPLICATION_JSONLD + " are allowed"), HttpUtils.getTenant(request)));
+					.item(HttpUtils.handleControllerExceptions(
+							new ResponseException(ErrorType.InvalidRequest,
+									"Only Content-Type " + AppConstants.NGB_APPLICATION_JSON + " and "
+											+ AppConstants.NGB_APPLICATION_JSONLD + " are allowed"),
+							HttpUtils.getTenant(request)));
 		}
 		return ctxUni.onItem().transformToUni(context -> {
 			try {
@@ -159,8 +173,10 @@ public class EntityOperationsQueryController {
 				boolean entityDist = (boolean) body.getOrDefault(NGSIConstants.QUERY_PARAMETER_ENTITY_DIST, false);
 				if (entities == null && attrs == null && q == null && geoQ == null) {
 					return Uni.createFrom()
-							.item(HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData,
-									"At least one of these entries is required: entities, attrs, q, geoQ"), HttpUtils.getTenant(request)));
+							.item(HttpUtils.handleControllerExceptions(
+									new ResponseException(ErrorType.BadRequestData,
+											"At least one of these entries is required: entities, attrs, q, geoQ"),
+									HttpUtils.getTenant(request)));
 				}
 
 				Object lang = body.get(NGSIConstants.QUERY_PARAMETER_LANG);
@@ -223,8 +239,7 @@ public class EntityOperationsQueryController {
 						return Uni.createFrom()
 								.failure(new ResponseException(ErrorType.InvalidRequest, "Unable to parse pick."));
 					}
-					
-					
+
 				}
 				if (omit != null) {
 					omitTerm = OmitTerm.getNewRootInstance();
@@ -236,7 +251,7 @@ public class EntityOperationsQueryController {
 						return Uni.createFrom()
 								.failure(new ResponseException(ErrorType.InvalidRequest, "Unable to parse omit."));
 					}
-					
+
 				}
 				String tenant = HttpUtils.getTenant(request);
 				String token;
@@ -259,7 +274,7 @@ public class EntityOperationsQueryController {
 					int listSize = -1;
 					if (entities instanceof List<?> l) {
 						listSize = l.size();
-					}else {
+					} else {
 						return Uni.createFrom().item(HttpUtils.handleControllerExceptions(new ResponseException(
 								ErrorType.BadRequestData, "entities needs to be an array with an entry"), tenant));
 					}
@@ -273,7 +288,7 @@ public class EntityOperationsQueryController {
 						String idPattern = entityEntry.get(NGSIConstants.QUERY_PARAMETER_IDPATTERN);
 						String typeQuery = entityEntry.get(NGSIConstants.QUERY_PARAMETER_TYPE);
 						typeQueryTerm = QueryParser.parseTypeQuery(typeQuery, context);
-						if(typeQueryTerm != null && typeQueryTerm.getAllTypes().contains(NGSIConstants.NGSI_LD_STAR)) {
+						if (typeQueryTerm != null && typeQueryTerm.getAllTypes().contains(NGSIConstants.NGSI_LD_STAR)) {
 							localOnlyTBU = true;
 							typeQueryTerm = null;
 						}
@@ -292,10 +307,12 @@ public class EntityOperationsQueryController {
 					checkSum = String.valueOf(Objects.hashCode(idsAndTypeQueryAndIdPattern, attrs, q, csf, geometry,
 							georel, coordinates, geoproperty, geometryProperty, scopeQ, pick, omit));
 				}
-				return queryService.query(tenant, token, tokenProvided, idsAndTypeQueryAndIdPattern, attrsQuery,
-						qQueryTerm, csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset, count,
-						localOnlyTBU, context, request.headers(), false, null, null, join, joinLevel, entityDist, pickTerm,
-						omitTerm, checkSum, viaHeaders, null).onItem().transformToUni(queryResult -> {
+				return queryService
+						.query(tenant, token, tokenProvided, idsAndTypeQueryAndIdPattern, attrsQuery, qQueryTerm,
+								csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset, count,
+								localOnlyTBU, context, request.headers(), false, null, null, join, joinLevel,
+								entityDist, pickTerm, omitTerm, checkSum, viaHeaders, null)
+						.onItem().transformToUni(queryResult -> {
 							if (doNotCompact) {
 								return Uni.createFrom().item(RestResponse.ok((Object) queryResult.getData()));
 							}

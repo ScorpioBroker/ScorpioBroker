@@ -1349,12 +1349,14 @@ public final class HttpUtils {
 	}
 
 	public static boolean parseBoolean(String value) throws ResponseException {
-		if (value == null || value.isEmpty()) {
-			return true;
+		if (value == null) {
+			return false;
 		}
+		
 		value = value.toLowerCase();
 		switch (value) {
 		case "true":
+		case "":
 			return true;
 		case "false":
 			return false;

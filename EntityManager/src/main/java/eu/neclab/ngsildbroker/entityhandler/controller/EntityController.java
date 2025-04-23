@@ -239,8 +239,10 @@ public class EntityController {// implements EntityHandlerInterface {
 	@Path("/entities/{entityId}/attrs/{attrId}")
 	public Uni<RestResponse<Object>> deleteAttribute(HttpServerRequest request, @PathParam("entityId") String entityId,
 			@PathParam("attrId") String attrId, @QueryParam("datasetId") String datasetId,
-			@QueryParam("deleteAll") boolean deleteAll) {
+			@QueryParam("deleteAll") String deleteAllS) {
+		boolean deleteAll;
 		try {
+			deleteAll = HttpUtils.parseBoolean(deleteAllS);
 			HttpUtils.validateUri(entityId);
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));

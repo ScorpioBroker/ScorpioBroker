@@ -82,10 +82,10 @@ public class HistoryOperationsController {
 	public Uni<RestResponse<Object>> postQuery(HttpServerRequest request, String bodyStr,
 			@QueryParam(value = "limit") Integer limit, @QueryParam(value = "offset") int offset,
 			@QueryParam("lastN") Integer lastN, @QueryParam(value = "options") String options,
-			@QueryParam(value = "count") boolean count, @QueryParam(value = "local") boolean localOnly,
+			@QueryParam(value = "count") String countS, @QueryParam(value = "local") String localOnlyS,
 			@QueryParam(value = "geometryProperty") String geometryProperty,
-			@HeaderParam("NGSILD-EntityMap") String entityMapToken, @QueryParam("entityMap") boolean retrieveEntityMap,
-			@QueryParam(value = "doNotCompact") boolean doNotCompact) {
+			@HeaderParam("NGSILD-EntityMap") String entityMapToken, @QueryParam("entityMap") String retrieveEntityMapS,
+			@QueryParam(value = "doNotCompact") String doNotCompactS) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		Map<String, Object> body;
 		if (acceptHeader == -1) {
@@ -101,7 +101,15 @@ public class HistoryOperationsController {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
 					new ResponseException(ErrorType.TooManyResults), HttpUtils.getTenant(request)));
 		}
+		boolean retrieveEntityMap;
+		boolean doNotCompact;
+		boolean localOnly;
+		boolean count;
 		try {
+			retrieveEntityMap = HttpUtils.parseBoolean(retrieveEntityMapS);
+			doNotCompact = HttpUtils.parseBoolean(doNotCompactS);
+			localOnly = HttpUtils.parseBoolean(localOnlyS);
+			count = HttpUtils.parseBoolean(countS);
 			body = new JsonObject(bodyStr).getMap();
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
