@@ -524,7 +524,9 @@ public class EntityInfoDAO {
 			});
 		});
 	}
-
+public static void main(String[] args) {
+	System.out.println( Boolean.parseBoolean("true"));
+}
 	/**
 	 * 
 	 * @param request

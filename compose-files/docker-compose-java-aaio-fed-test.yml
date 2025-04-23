@@ -46,6 +46,7 @@ services:
     environment:
       DBHOST: postgresone
       QUARKUS_LOG_LEVEL: DEBUG
+      SCORPIO_GATEWAYURL: http://host.docker.internal:9080
     ports:
       - "9080:9090"
     depends_on:
@@ -65,6 +66,7 @@ services:
     environment:
       DBHOST: postgrestwo
       QUARKUS_LOG_LEVEL: DEBUG
+      SCORPIO_GATEWAYURL: http://host.docker.internal:9070
     ports:
       - "9070:9090"
     depends_on:

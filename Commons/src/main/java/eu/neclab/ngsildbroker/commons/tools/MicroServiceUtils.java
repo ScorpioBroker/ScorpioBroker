@@ -579,4 +579,8 @@ public class MicroServiceUtils {
 		baseRequestReceivers.add(handler);
 	}
 
+	public String getExternalContextServerURL() {
+		return getGatewayURL().toString() + "/ngsi-ld/v1/jsonldContexts/";
+	}
+
 }

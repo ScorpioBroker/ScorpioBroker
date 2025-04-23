@@ -149,20 +149,23 @@ public class ContextDao {
 					Map<String, Object> result = new HashMap<>();
 
 					if (details) {
-						result.put(NGSIConstants.LOCAL_ID, row.getValue(NGSIConstants.ID));
+						result.put(NGSIConstants.LOCAL_ID, row.getString(NGSIConstants.ID));
 						result.put(NGSIConstants.NUMBER_OF_HITS,
-								row.getValue(NGSIConstants.NUMBER_OF_HITS.toLowerCase()));
-						result.put(NGSIConstants.LAST_USAGE, row.getValue(NGSIConstants.LAST_USAGE.toLowerCase()));
-						result.put(NGSIConstants.KIND, row.getValue(NGSIConstants.KIND));
-						result.put(NGSIConstants.BODY, ((JsonObject) row.getJson(NGSIConstants.BODY)).getMap());
-						result.put(NGSIConstants.CREATEDAT,
-								row.getLocalDateTime(NGSIConstants.CREATEDAT.toLowerCase()));
+								row.getLong(NGSIConstants.NUMBER_OF_HITS.toLowerCase()));
+						String lastUsage = row.getString(NGSIConstants.LAST_USAGE.toLowerCase());
+						if (lastUsage != null) {
+							result.put(NGSIConstants.LAST_USAGE, lastUsage + 'Z');
+						}
+
+						result.put(NGSIConstants.KIND, row.getString(NGSIConstants.KIND));
+						result.put(NGSIConstants.BODY, row.getJsonObject(NGSIConstants.BODY).getMap());
+						result.put(NGSIConstants.CREATEDAT, row.getString(NGSIConstants.CREATEDAT.toLowerCase()) + 'Z');
 						result.put(NGSIConstants.URL, atContextUrl
-								+ URLEncoder.encode(row.getValue(NGSIConstants.ID).toString(), StandardCharsets.UTF_8));
+								+ URLEncoder.encode(row.getString(NGSIConstants.ID), StandardCharsets.UTF_8));
 						contexts.add(result);
 					} else {
 						contexts.add(atContextUrl
-								+ URLEncoder.encode(row.getValue(NGSIConstants.ID).toString(), StandardCharsets.UTF_8));
+								+ URLEncoder.encode(row.getString(NGSIConstants.ID), StandardCharsets.UTF_8));
 					}
 
 				});
