@@ -5,6 +5,8 @@ import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -12,6 +14,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -68,15 +71,15 @@ public class ContextDao {
 						result.put(NGSIConstants.KIND, row.getString(NGSIConstants.KIND));
 						result.put(NGSIConstants.NUMBER_OF_HITS,
 								row.getLong(NGSIConstants.NUMBER_OF_HITS.toLowerCase()));
-						String lastUsage = row.getString(NGSIConstants.LAST_USAGE.toLowerCase());
-						String createdAt = row.getString(NGSIConstants.CREATEDAT.toLowerCase());
+						LocalDateTime lastUsage = row.getLocalDateTime(NGSIConstants.LAST_USAGE.toLowerCase());
+						LocalDateTime createdAt = row.getLocalDateTime(NGSIConstants.CREATEDAT.toLowerCase());
 						if (lastUsage != null) {
-							result.put(NGSIConstants.LAST_USAGE, lastUsage + 'Z');
+							result.put(NGSIConstants.LAST_USAGE, lastUsage.toString() + 'Z');
 						}
 						result.put(NGSIConstants.URL,
 								atContextUrl + URLEncoder.encode(localId, StandardCharsets.UTF_8));
 						result.put(NGSIConstants.BODY, row.getJsonObject(NGSIConstants.BODY).getMap());
-						result.put(NGSIConstants.CREATEDAT, createdAt + 'Z');
+						result.put(NGSIConstants.CREATEDAT, createdAt.toString() + 'Z');
 						return Uni.createFrom().item(result);
 					} else
 						return Uni.createFrom().item(row.getJsonObject(NGSIConstants.BODY).getMap());
@@ -152,14 +155,15 @@ public class ContextDao {
 						result.put(NGSIConstants.LOCAL_ID, row.getString(NGSIConstants.ID));
 						result.put(NGSIConstants.NUMBER_OF_HITS,
 								row.getLong(NGSIConstants.NUMBER_OF_HITS.toLowerCase()));
-						String lastUsage = row.getString(NGSIConstants.LAST_USAGE.toLowerCase());
+						LocalDateTime lastUsage = row.getLocalDateTime(NGSIConstants.LAST_USAGE.toLowerCase());
+						
 						if (lastUsage != null) {
-							result.put(NGSIConstants.LAST_USAGE, lastUsage + 'Z');
+							result.put(NGSIConstants.LAST_USAGE, lastUsage.toString() + 'Z');
 						}
 
 						result.put(NGSIConstants.KIND, row.getString(NGSIConstants.KIND));
 						result.put(NGSIConstants.BODY, row.getJsonObject(NGSIConstants.BODY).getMap());
-						result.put(NGSIConstants.CREATEDAT, row.getString(NGSIConstants.CREATEDAT.toLowerCase()) + 'Z');
+						result.put(NGSIConstants.CREATEDAT, row.getLocalDateTime(NGSIConstants.CREATEDAT.toLowerCase()).toString() + 'Z');
 						result.put(NGSIConstants.URL, atContextUrl
 								+ URLEncoder.encode(row.getString(NGSIConstants.ID), StandardCharsets.UTF_8));
 						contexts.add(result);

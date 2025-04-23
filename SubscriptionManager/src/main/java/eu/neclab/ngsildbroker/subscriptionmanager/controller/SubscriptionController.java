@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.subscriptionmanager.controller;
 
+import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLDService;
 import com.github.jsonldjava.core.JsonLdConsts;
 import com.github.jsonldjava.utils.JsonUtils;
@@ -79,6 +80,7 @@ public class SubscriptionController {
 		} catch (DecodeException e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
+
 //		try {
 //			if (!map.containsKey(NGSIConstants.JSONLD_CONTEXT)) {
 //				Object contextLink;
@@ -102,15 +104,21 @@ public class SubscriptionController {
 		}
 
 		ViaHeaders viaHeaders = new ViaHeaders(request.headers().getAll(HttpHeaders.VIA), this.selfViaHeader);
-		otherHead.add(NGSIConstants.LINK_HEADER,
-				"<%s>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\""
-						.formatted(map.get(NGSIConstants.JSONLD_CONTEXT)));
+		
 		return HttpUtils.expandBody(request, map, AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, ldService).onItem()
 				.transformToUni(tuple -> {
-					return subService
-							.createSubscription(otherHead, HttpUtils.getTenant(request), tuple.getItem2(),
-									tuple.getItem1(), viaHeaders)
-							.onItem().transform(t -> HttpUtils.generateSubscriptionResult(t, tuple.getItem1()));
+					Uni<Context> contextLink;
+					if (map.containsKey(NGSIConstants.JSONLD_CONTEXT)) {
+						contextLink = ldService.parse(map.get(NGSIConstants.JSONLD_CONTEXT));
+					} else {
+						contextLink = Uni.createFrom().item(tuple.getItem1());
+					}
+					return contextLink.onItem().transformToUni(ctx -> {
+						return subService
+								.createSubscription(otherHead, HttpUtils.getTenant(request), tuple.getItem2(),
+										ctx, viaHeaders)
+								.onItem().transform(t -> HttpUtils.generateSubscriptionResult(t, tuple.getItem1()));
+					});
 				}).onFailure().recoverWithItem(e -> {
 					return HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request));
 				});
