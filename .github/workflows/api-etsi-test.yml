@@ -33,7 +33,6 @@ jobs:
           echo -e "url = 'http://localhost:9090/ngsi-ld/v1'\ntemporal_api_url = 'http://localhost:9090/ngsi-ld/v1'\n$(tail -n +3 variables.py)" > variables.py
           sed -i -e 's/0.0.0.0/localhost/g' variables.py
           sed -i -e 's/127.0.0.1/localhost/g' variables.py
-          cat variables.py
       - name: start testsuite
         run: |
           cd ..
@@ -87,8 +86,8 @@ jobs:
           cd ..
           cd ngsi-ld-test-suite/resources/
           echo -e "url = 'http://localhost:9090/ngsi-ld/v1'\ntemporal_api_url = 'http://localhost:9090/ngsi-ld/v1'\n$(tail -n +3 variables.py)" > variables.py
-          sed -e 's/0.0.0.0/localhost/g' -e 's/127.0.0.1/localhost/g' variables.py > variables.py
-          cat variables.py
+          sed -i -e 's/0.0.0.0/localhost/g' variables.py
+          sed -i -e 's/127.0.0.1/localhost/g' variables.py
       - name: start testsuite
         run: |
           cd ..
@@ -137,6 +136,8 @@ jobs:
           cd ..
           cd ngsi-ld-test-suite/resources/
           echo -e "url = 'http://localhost:9090/ngsi-ld/v1'\ntemporal_api_url = 'http://localhost:9090/ngsi-ld/v1'\n$(tail -n +3 variables.py)" > variables.py
+          sed -i -e 's/0.0.0.0/localhost/g' variables.py
+          sed -i -e 's/127.0.0.1/localhost/g' variables.py
       - name: start testsuite
         run: |
           cd ..
@@ -185,6 +186,8 @@ jobs:
           cd ..
           cd ngsi-ld-test-suite/resources/
           echo -e "url = 'http://localhost:9090/ngsi-ld/v1'\ntemporal_api_url = 'http://localhost:9090/ngsi-ld/v1'\n$(tail -n +3 variables.py)" > variables.py
+          sed -i -e 's/0.0.0.0/localhost/g' variables.py
+          sed -i -e 's/127.0.0.1/localhost/g' variables.py
       - name: start testsuite
         run: |
           cd ..
@@ -233,6 +236,8 @@ jobs:
           cd ..
           cd ngsi-ld-test-suite/resources/
           echo -e "url = 'http://localhost:9090/ngsi-ld/v1'\ntemporal_api_url = 'http://localhost:9090/ngsi-ld/v1'\n$(tail -n +3 variables.py)" > variables.py
+          sed -i -e 's/0.0.0.0/localhost/g' variables.py
+          sed -i -e 's/127.0.0.1/localhost/g' variables.py
       - name: start testsuite
         run: |
           cd ..
@@ -281,6 +286,8 @@ jobs:
           cd ..
           cd ngsi-ld-test-suite/resources/
           echo -e "url = 'http://localhost:9090/ngsi-ld/v1'\ntemporal_api_url = 'http://localhost:9090/ngsi-ld/v1'\n$(tail -n +3 variables.py)" > variables.py
+          sed -i -e 's/0.0.0.0/localhost/g' variables.py
+          sed -i -e 's/127.0.0.1/localhost/g' variables.py
       - name: start testsuite
         run: |
           cd ..
@@ -329,6 +336,8 @@ jobs:
           cd ..
           cd ngsi-ld-test-suite/resources/
           echo -e "url = 'http://localhost:9090/ngsi-ld/v1'\ntemporal_api_url = 'http://localhost:9090/ngsi-ld/v1'\n$(tail -n +3 variables.py)" > variables.py
+          sed -i -e 's/0.0.0.0/localhost/g' variables.py
+          sed -i -e 's/127.0.0.1/localhost/g' variables.py
       - name: start testsuite
         run: |
           cd ..
@@ -377,6 +386,8 @@ jobs:
           cd ..
           cd ngsi-ld-test-suite/resources/
           echo -e "url = 'http://localhost:9090/ngsi-ld/v1'\ntemporal_api_url = 'http://localhost:9090/ngsi-ld/v1'\n$(tail -n +3 variables.py)" > variables.py
+          sed -i -e 's/0.0.0.0/localhost/g' variables.py
+          sed -i -e 's/127.0.0.1/localhost/g' variables.py
       - name: start testsuite
         run: |
           cd ..
@@ -425,6 +436,8 @@ jobs:
           cd ..
           cd ngsi-ld-test-suite/resources/
           echo -e "url = 'http://localhost:9090/ngsi-ld/v1'\ntemporal_api_url = 'http://localhost:9090/ngsi-ld/v1'\n$(tail -n +3 variables.py)" > variables.py
+          sed -i -e 's/0.0.0.0/localhost/g' variables.py
+          sed -i -e 's/127.0.0.1/localhost/g' variables.py
       - name: start testsuite
         run: |
           cd ..
@@ -473,6 +486,8 @@ jobs:
           cd ..
           cd ngsi-ld-test-suite/resources/
           echo -e "url = 'http://localhost:9090/ngsi-ld/v1'\ntemporal_api_url = 'http://localhost:9090/ngsi-ld/v1'\n$(tail -n +3 variables.py)" > variables.py
+          sed -i -e 's/0.0.0.0/localhost/g' variables.py
+          sed -i -e 's/127.0.0.1/localhost/g' variables.py
       - name: start testsuite
         run: |
           cd ..
@@ -521,6 +536,8 @@ jobs:
           cd ..
           cd ngsi-ld-test-suite/resources/
           echo -e "url = 'http://localhost:9090/ngsi-ld/v1'\ntemporal_api_url = 'http://localhost:9090/ngsi-ld/v1'\n$(tail -n +3 variables.py)" > variables.py
+          sed -i -e 's/0.0.0.0/localhost/g' variables.py
+          sed -i -e 's/127.0.0.1/localhost/g' variables.py
       - name: start testsuite
         run: |
           cd ..
@@ -569,6 +586,8 @@ jobs:
           cd ..
           cd ngsi-ld-test-suite/resources/
           echo -e "url = 'http://localhost:9090/ngsi-ld/v1'\ntemporal_api_url = 'http://localhost:9090/ngsi-ld/v1'\n$(tail -n +3 variables.py)" > variables.py
+          sed -i -e 's/0.0.0.0/localhost/g' variables.py
+          sed -i -e 's/127.0.0.1/localhost/g' variables.py
       - name: start testsuite
         run: |
           cd ..
@@ -617,6 +636,8 @@ jobs:
           cd ..
           cd ngsi-ld-test-suite/resources/
           echo -e "url = 'http://localhost:9090/ngsi-ld/v1'\ntemporal_api_url = 'http://localhost:9090/ngsi-ld/v1'\n$(tail -n +3 variables.py)" > variables.py
+          sed -i -e 's/0.0.0.0/localhost/g' variables.py
+          sed -i -e 's/127.0.0.1/localhost/g' variables.py
       - name: start testsuite
         run: |
           cd ..
@@ -660,11 +681,15 @@ jobs:
         run: |
           cd ..
           git clone https://forge.etsi.org/rep/cim/ngsi-ld-test-suite.git
+          cd ngsi-ld-test-suite
+          git checkout fix/hostcontext
       - name: config etsi testsuite
         run: |
           cd ..
           cd ngsi-ld-test-suite/resources/
           echo -e "url = 'http://localhost:9090/ngsi-ld/v1'\ntemporal_api_url = 'http://localhost:9090/ngsi-ld/v1'\n$(tail -n +3 variables.py)" > variables.py
+          sed -i -e 's/0.0.0.0/localhost/g' variables.py
+          sed -i -e 's/127.0.0.1/localhost/g' variables.py
       - name: start testsuite
         run: |
           cd ..
