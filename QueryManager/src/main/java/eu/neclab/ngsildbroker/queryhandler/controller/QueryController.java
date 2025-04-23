@@ -106,14 +106,26 @@ public class QueryController {
 	public Uni<RestResponse<Object>> getEntity(HttpServerRequest request, @QueryParam(value = "attrs") String attrs,
 			@QueryParam(value = "options") String options, @QueryParam(value = "lang") String lang,
 			@QueryParam(value = "geometryProperty") String geometryProperty,
-			@QueryParam(value = "local") boolean localOnly, @PathParam("entityId") String entityId,
-			@QueryParam(value = "doNotCompact") boolean doNotCompact,
+			@QueryParam(value = "local") String localOnlyS, @PathParam("entityId") String entityId,
+			@QueryParam(value = "doNotCompact") String doNotCompactS,
 			@QueryParam("containedBy") @DefaultValue("") String containedBy, @QueryParam("join") String join,
 			@QueryParam("joinLevel") Integer joinLevel, @QueryParam("pick") String pick,
 			@QueryParam("omit") String omit, @QueryParam("format") String format,
-			@QueryParam("entityMap") boolean entityMap, @QueryParam("datasetId") String datasetId,
-			@QueryParam("splitEntities") @DefaultValue("true") boolean distEntities,
+			@QueryParam("entityMap") String entityMapS, @QueryParam("datasetId") String datasetId,
+			@QueryParam("splitEntities") @DefaultValue("true") String distEntitiesS,
 			@HeaderParam("NGSILD-EntityMap") String entityMapToken) {
+		boolean localOnly;
+		boolean doNotCompact;
+		boolean entityMap;
+		boolean distEntities;
+		try {
+			localOnly = HttpUtils.parseBoolean(localOnlyS);
+			doNotCompact = HttpUtils.parseBoolean(doNotCompactS);
+			entityMap = HttpUtils.parseBoolean(entityMapS);
+			distEntities = HttpUtils.parseBoolean(distEntitiesS);
+		} catch (ResponseException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+		}
 		return queryForQueryResult(request, entityId, null, null, attrs, null, null, null, null, null, null,
 				geometryProperty, lang, null, localOnly, options, 1, 0, false, containedBy, join, joinLevel,
 				doNotCompact, entityMapToken, entityMap, null, null, pick, omit, format, null, datasetId, distEntities)
@@ -151,16 +163,16 @@ public class QueryController {
 			@QueryParam("geometry") String geometry, @QueryParam("georel") String georelInput,
 			@QueryParam("coordinates") String coordinates, @QueryParam("geoproperty") String geoproperty,
 			@QueryParam("geometryProperty") String geometryProperty, @QueryParam("lang") String lang,
-			@QueryParam("scopeQ") String scopeQ, @QueryParam("local") boolean localOnly,
+			@QueryParam("scopeQ") String scopeQ, @QueryParam("local") String localOnly,
 			@QueryParam("options") String options, @QueryParam("limit") Integer limit, @QueryParam("offset") int offset,
-			@QueryParam("count") boolean count, @QueryParam("containedBy") @DefaultValue("") String containedBy,
+			@QueryParam("count") String count, @QueryParam("containedBy") @DefaultValue("") String containedBy,
 			@QueryParam("join") String join, @QueryParam("joinLevel") Integer joinLevel,
-			@QueryParam("doNotCompact") boolean doNotCompact, @HeaderParam("NGSILD-EntityMap") String entityMapToken,
-			@QueryParam("entityMap") boolean entityMapRetrieve, @QueryParam("maxDistance") String maxDistance,
+			@QueryParam("doNotCompact") String doNotCompact, @HeaderParam("NGSILD-EntityMap") String entityMapToken,
+			@QueryParam("entityMap") String entityMapRetrieve, @QueryParam("maxDistance") String maxDistance,
 			@QueryParam("minDistance") String minDistance, @QueryParam("pick") String pick,
 			@QueryParam("omit") String omit, @QueryParam("format") String format,
 			@QueryParam("jsonKeys") String jsonKeysQP, @QueryParam("datasetId") String datasetId,
-			@QueryParam("splitEntities") @DefaultValue("true") boolean distEntities) {
+			@QueryParam("splitEntities") @DefaultValue("true") String distEntities) {
 		request.params().set(HttpHeaders.ACCEPT, "application/geo+json");
 		return query(request, id, typeQuery, idPattern, attrs, qInput, csf, geometry, georelInput, coordinates,
 				geoproperty, geometryProperty, lang, scopeQ, localOnly, options, limit, offset, count, containedBy,
@@ -176,16 +188,30 @@ public class QueryController {
 			@QueryParam("geometry") String geometry, @QueryParam("georel") String georelInput,
 			@QueryParam("coordinates") String coordinates, @QueryParam("geoproperty") String geoproperty,
 			@QueryParam("geometryProperty") String geometryProperty, @QueryParam("lang") String lang,
-			@QueryParam("scopeQ") String scopeQ, @QueryParam("local") boolean localOnly,
+			@QueryParam("scopeQ") String scopeQ, @QueryParam("local") String localOnlyS,
 			@QueryParam("options") String options, @QueryParam("limit") Integer limit, @QueryParam("offset") int offset,
-			@QueryParam("count") boolean count, @QueryParam("containedBy") @DefaultValue("") String containedBy,
+			@QueryParam("count") String countS, @QueryParam("containedBy") @DefaultValue("") String containedBy,
 			@QueryParam("join") String join, @QueryParam("joinLevel") Integer joinLevel,
-			@QueryParam("doNotCompact") boolean doNotCompact, @HeaderParam("NGSILD-EntityMap") String entityMapToken,
-			@QueryParam("entityMap") boolean entityMapRetrieve, @QueryParam("maxDistance") String maxDistance,
+			@QueryParam("doNotCompact") String doNotCompactS, @HeaderParam("NGSILD-EntityMap") String entityMapToken,
+			@QueryParam("entityMap") String entityMapRetrieveS, @QueryParam("maxDistance") String maxDistance,
 			@QueryParam("minDistance") String minDistance, @QueryParam("pick") String pick,
 			@QueryParam("omit") String omit, @QueryParam("format") String format,
 			@QueryParam("jsonKeys") String jsonKeysQP, @QueryParam("datasetId") String datasetId,
-			@QueryParam("splitEntities") @DefaultValue("true") boolean distEntities) {
+			@QueryParam("splitEntities") @DefaultValue("true") String distEntitiesS) {
+		boolean localOnly;
+		boolean doNotCompact;
+		boolean entityMapRetrieve;
+		boolean distEntities;
+		boolean count;
+		try {
+			localOnly = HttpUtils.parseBoolean(localOnlyS);
+			doNotCompact = HttpUtils.parseBoolean(doNotCompactS);
+			entityMapRetrieve = HttpUtils.parseBoolean(entityMapRetrieveS);
+			distEntities = HttpUtils.parseBoolean(distEntitiesS);
+			count = HttpUtils.parseBoolean(countS);
+		} catch (ResponseException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+		}
 		return queryForQueryResult(request, id, typeQuery, idPattern, attrs, qInput, csf, geometry, georelInput,
 				coordinates, geoproperty, geometryProperty, lang, scopeQ, localOnly, options, limit, offset, count,
 				containedBy, join, joinLevel, doNotCompact, entityMapToken, entityMapRetrieve, maxDistance, minDistance,
@@ -213,9 +239,18 @@ public class QueryController {
 	@Path("/types")
 	@GET
 	public Uni<RestResponse<Object>> getAllTypes(HttpServerRequest request,
-			@QueryParam(value = "details") boolean details, @QueryParam(value = "local") boolean localOnly,
-			@QueryParam(value = "bbox") @DefaultValue("false") boolean bbox) {
-
+			@QueryParam(value = "details") String detailsS, @QueryParam(value = "local") String localOnlyS,
+			@QueryParam(value = "bbox") @DefaultValue("false") String bboxS) {
+		boolean details;
+		boolean localOnly;
+		boolean bbox;
+		try {
+			details = HttpUtils.parseBoolean(detailsS);
+			localOnly = HttpUtils.parseBoolean(localOnlyS);
+			bbox = HttpUtils.parseBoolean(bboxS);
+		} catch (ResponseException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+		}
 		HttpUtils.getAtContext(request);
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll(HttpHeaders.ACCEPT));
 		if (acceptHeader == -1) {
@@ -243,7 +278,13 @@ public class QueryController {
 	@Path("/types/{entityType}")
 	@GET
 	public Uni<RestResponse<Object>> getType(HttpServerRequest request, @PathParam("entityType") String type,
-			@QueryParam(value = "local") boolean localOnly) {
+			@QueryParam(value = "local") String localOnlyS) {
+		boolean localOnly;
+		try {
+			localOnly = HttpUtils.parseBoolean(localOnlyS);
+		} catch (ResponseException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+		}
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll(HttpHeaders.ACCEPT));
 		if (acceptHeader == -1) {
 			return HttpUtils.getInvalidHeader();
@@ -266,8 +307,15 @@ public class QueryController {
 	@Path("/attributes")
 	@GET
 	public Uni<RestResponse<Object>> getAllAttributes(HttpServerRequest request,
-			@QueryParam(value = "details") boolean details, @QueryParam(value = "local") boolean localOnly) {
-
+			@QueryParam(value = "details") String detailsS, @QueryParam(value = "local") String localOnlyS) {
+		boolean localOnly;
+		boolean details;
+		try {
+			localOnly = HttpUtils.parseBoolean(localOnlyS);
+			details = HttpUtils.parseBoolean(detailsS);
+		} catch (ResponseException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+		}
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll(HttpHeaders.ACCEPT));
 		if (acceptHeader == -1) {
 			return HttpUtils.getInvalidHeader();
@@ -294,7 +342,15 @@ public class QueryController {
 	@Path("/attributes/{attribute}")
 	@GET
 	public Uni<RestResponse<Object>> getAttribute(HttpServerRequest request, @PathParam("attribute") String attribute,
-			@QueryParam(value = "details") boolean details, @QueryParam(value = "local") boolean localOnly) {
+			@QueryParam(value = "details") String detailsS, @QueryParam(value = "local") String localOnlyS) {
+		boolean localOnly;
+		boolean details;
+		try {
+			localOnly = HttpUtils.parseBoolean(localOnlyS);
+			details = HttpUtils.parseBoolean(detailsS);
+		} catch (ResponseException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+		}
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll(HttpHeaders.ACCEPT));
 		if (acceptHeader == -1) {
 			return HttpUtils.getInvalidHeader();
@@ -328,7 +384,14 @@ public class QueryController {
 			@QueryParam("minDistance") String minDistance, @QueryParam("pick") String pick,
 			@QueryParam("omit") String omit, @QueryParam("jsonKeys") String jsonKeysQP,
 			@QueryParam("datasetId") String datasetId,
-			@QueryParam("splitEntities") @DefaultValue("true") boolean distEntities) {
+			@QueryParam("splitEntities") @DefaultValue("true") String distEntitiesS) {
+		
+		boolean distEntities;
+		try {
+			distEntities = HttpUtils.parseBoolean(distEntitiesS);
+		} catch (ResponseException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+		}
 		return getQueryParam(request, id, typeQuery, idPattern, attrs, qInput, csf, geometry, georelInput, coordinates,
 				geoproperty, geometryProperty, lang, scopeQ, false, null, 1, 0, false, null, null, -1, false, null,
 				false, maxDistance, minDistance, pick, omit, null, jsonKeysQP, datasetId, distEntities).onItem()

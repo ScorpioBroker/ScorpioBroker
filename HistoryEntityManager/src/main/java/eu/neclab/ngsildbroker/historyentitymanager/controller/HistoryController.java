@@ -53,7 +53,7 @@ public class HistoryController {
 				.transformToUni(tuple -> {
 					return historyService.createEntry(HttpUtils.getTenant(request), tuple.getItem2(), tuple.getItem1(),
 							request.headers()).onItem().transform(opResult -> {
-								if(opResult.isWasUpdated()) {
+								if (opResult.isWasUpdated()) {
 									return HttpUtils.generateUpdateResultResponse(opResult);
 								}
 								return HttpUtils.generateCreateResult(opResult, AppConstants.HISTORY_URL);
@@ -105,9 +105,11 @@ public class HistoryController {
 	@DELETE
 	public Uni<RestResponse<Object>> deleteAttrib2TemporalEntity(HttpServerRequest request,
 			@PathParam("entityId") String entityId, @PathParam("attrId") String attrId,
-			@QueryParam("datasetId") String datasetId, @QueryParam("deleteAll") boolean deleteAll) {
+			@QueryParam("datasetId") String datasetId, @QueryParam("deleteAll") String deleteAllS) {
+		boolean deleteAll;
 		try {
 			HttpUtils.validateUri(entityId);
+			deleteAll = HttpUtils.parseBoolean(deleteAllS);
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}

@@ -41,7 +41,14 @@ public class ContextController {
 	@GET
 	@Path("{contextId}")
 	public Uni<RestResponse<Object>> getContextById(@PathParam("contextId") String id,
-			@QueryParam("details") boolean details) {
+			@QueryParam("details") String detailsS) {
+
+		boolean details;
+		try {
+			details = HttpUtils.parseBoolean(detailsS);
+		} catch (ResponseException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, AppConstants.INTERNAL_NULL_KEY));
+		}
 		if (NGSIConstants.CORE_CONTEXT_URLS.contains(id)) {
 			id = AppConstants.INTERNAL_NULL_KEY;
 		}
@@ -54,7 +61,13 @@ public class ContextController {
 
 	@GET
 	public Uni<RestResponse<Object>> getContexts(@QueryParam("kind") String kind,
-			@QueryParam("details") boolean details) {
+			@QueryParam("details") String detailsS) {
+		boolean details;
+		try {
+			details = HttpUtils.parseBoolean(detailsS);
+		} catch (ResponseException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, AppConstants.INTERNAL_NULL_KEY));
+		}
 		if (kind != null && !allowedKinds.contains(kind)) {
 			return Uni.createFrom()
 					.item(HttpUtils
@@ -96,7 +109,13 @@ public class ContextController {
 	@DELETE
 	@Path("{contextId}")
 	public Uni<RestResponse<Object>> deleteContextById(@PathParam("contextId") String id,
-			@QueryParam("reload") boolean reload) {
+			@QueryParam("reload") String reloadS) {
+		boolean reload;
+		try {
+			reload = HttpUtils.parseBoolean(reloadS);
+		} catch (ResponseException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, AppConstants.INTERNAL_NULL_KEY));
+		}
 		if (NGSIConstants.CORE_CONTEXT_URLS.contains(id)) {
 			id = AppConstants.INTERNAL_NULL_KEY;
 		}

@@ -69,13 +69,14 @@ public class EntityBatchController {
 	@POST
 	@Path("/create")
 	public Uni<RestResponse<Object>> createMultiple(HttpServerRequest request, String body,
-			@QueryParam("localOnly") boolean localOnly) {
+			@QueryParam("localOnly") String localOnlyS) {
 		List<Uni<Tuple2<String, Object>>> unis = Lists.newArrayList();
 		List<Map<String, Object>> compactedEntities;
-
+		boolean localOnly;
 		try {
+			localOnly = HttpUtils.parseBoolean(localOnlyS);
 			compactedEntities = new JsonArray(body).getList();
-		} catch (DecodeException e) {
+		} catch (DecodeException | ResponseException e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
 		if (compactedEntities == null || compactedEntities.isEmpty()) {
@@ -143,14 +144,14 @@ public class EntityBatchController {
 
 	@POST
 	@Path("/upsert")
-	public Uni<RestResponse<Object>> upsertMultiple(HttpServerRequest request,
-			String body, @QueryParam(value = "options") String options,
-			@QueryParam("localOnly") boolean localOnly) {
+	public Uni<RestResponse<Object>> upsertMultiple(HttpServerRequest request, String body,
+			@QueryParam(value = "options") String options, @QueryParam("localOnly") String localOnlyS) {
+		boolean localOnly;
 		List<Map<String, Object>> compactedEntities;
-
 		try {
+			localOnly = HttpUtils.parseBoolean(localOnlyS);
 			compactedEntities = new JsonArray(body).getList();
-		} catch (DecodeException e) {
+		} catch (DecodeException | ResponseException e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
 		boolean doReplace;
@@ -224,14 +225,14 @@ public class EntityBatchController {
 	 */
 	@POST
 	@Path("/update")
-	public Uni<RestResponse<Object>> appendMultiple(HttpServerRequest request,
-			String body, @QueryParam(value = "options") String options,
-			@QueryParam("localOnly") boolean localOnly) {
+	public Uni<RestResponse<Object>> appendMultiple(HttpServerRequest request, String body,
+			@QueryParam(value = "options") String options, @QueryParam("localOnly") String localOnlyS) {
 		List<Map<String, Object>> compactedEntities;
-
+		boolean localOnly;
 		try {
+			localOnly = HttpUtils.parseBoolean(localOnlyS);
 			compactedEntities = new JsonArray(body).getList();
-		} catch (DecodeException e) {
+		} catch (DecodeException | ResponseException e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
 		boolean isNoOverwrite = options != null && options.contains(NGSIConstants.NO_OVERWRITE_OPTION);
@@ -290,11 +291,13 @@ public class EntityBatchController {
 	@POST
 	@Path("/delete")
 	public Uni<RestResponse<Object>> deleteMultiple(HttpServerRequest request, String entityIdsStr,
-			@QueryParam("localOnly") boolean localOnly) {
+			@QueryParam("localOnly") String localOnlyS) {
 		List<String> entityIds;
+		boolean localOnly;
 		try {
+			localOnly = HttpUtils.parseBoolean(localOnlyS);
 			entityIds = new JsonArray(entityIdsStr).getList();
-		} catch (DecodeException e) {
+		} catch (DecodeException | ResponseException e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
 		if (entityIds.isEmpty()) {
@@ -313,14 +316,14 @@ public class EntityBatchController {
 
 	@POST
 	@Path("/merge")
-	public Uni<RestResponse<Object>> mergeMultiple(HttpServerRequest request,
-			String body, @QueryParam(value = "options") String options,
-			@QueryParam("localOnly") boolean localOnly) {
+	public Uni<RestResponse<Object>> mergeMultiple(HttpServerRequest request, String body,
+			@QueryParam(value = "options") String options, @QueryParam("localOnly") String localOnlyS) {
 		List<Map<String, Object>> compactedEntities;
-
+		boolean localOnly;
 		try {
+			localOnly = HttpUtils.parseBoolean(localOnlyS);
 			compactedEntities = new JsonArray(body).getList();
-		} catch (DecodeException e) {
+		} catch (DecodeException | ResponseException e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
 		boolean isNoOverwrite = options != null && options.contains(NGSIConstants.NO_OVERWRITE_OPTION);

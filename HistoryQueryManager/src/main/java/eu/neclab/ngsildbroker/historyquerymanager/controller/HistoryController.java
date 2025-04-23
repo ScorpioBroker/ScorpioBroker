@@ -72,8 +72,17 @@ public class HistoryController {
 			@QueryParam("lang") String lang, @QueryParam("aggrMethods") String aggrMethods,
 			@QueryParam("aggrPeriodDuration") String aggrPeriodDuration, @QueryParam(value = "limit") Integer limit,
 			@QueryParam(value = "offset") int offset, @QueryParam(value = "entityMap") String qToken,
-			@QueryParam(value = "options") String options, @QueryParam(value = "count") boolean count,
-			@QueryParam(value = "localOnly") boolean localOnly, @QueryParam("format") String format) {
+			@QueryParam(value = "options") String options, @QueryParam(value = "count") String countS,
+			@QueryParam(value = "localOnly") String localOnlyS, @QueryParam("format") String format) {
+		boolean localOnly;
+		boolean count;
+
+		try {
+			localOnly = HttpUtils.parseBoolean(localOnlyS);
+			count = HttpUtils.parseBoolean(countS);
+		} catch (ResponseException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+		}
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		if (format != null && !format.isEmpty()) {
 			options += "," + format;
@@ -165,12 +174,17 @@ public class HistoryController {
 			@PathParam("entityId") String entityId, @QueryParam("attrs") String attrs,
 			@QueryParam("aggrMethods") String aggrMethods, @QueryParam("aggrPeriodDuration") String aggrPeriodDuration,
 			@QueryParam("lang") String lang, @QueryParam("lastN") Integer lastN,
-			@QueryParam("localOnly") boolean localOnly, @QueryParam(value = "options") String optionsString,
+			@QueryParam("localOnly") String localOnlyS, @QueryParam(value = "options") String optionsString,
 			@QueryParam(value = "geometryProperty") String geometryProperty,
 			@QueryParam("timeproperty") String timeProperty, @QueryParam("timerel") String timeRel,
 			@QueryParam("timeAt") String timeAt, @QueryParam("endTimeAt") String endTimeAt,
 			@QueryParam("format") String format) {
-
+		boolean localOnly;
+		try {
+			localOnly = HttpUtils.parseBoolean(localOnlyS);
+		} catch (ResponseException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+		}
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		if (format != null && !format.isEmpty()) {
 			optionsString += "," + format;

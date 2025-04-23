@@ -1348,4 +1348,19 @@ public final class HttpUtils {
 		return toFrwd;
 	}
 
+	public static boolean parseBoolean(String value) throws ResponseException {
+		if (value == null || value.isEmpty()) {
+			return true;
+		}
+		value = value.toLowerCase();
+		switch (value) {
+		case "true":
+			return true;
+		case "false":
+			return false;
+		default:
+			throw new ResponseException(ErrorType.BadRequestData, "only true and false are valid values for booleans");
+		}
+	}
+
 }
