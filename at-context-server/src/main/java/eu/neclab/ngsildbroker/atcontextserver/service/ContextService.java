@@ -46,7 +46,7 @@ public class ContextService {
 	public Uni<Map<String, Object>> getContextById(String id, boolean details) {
 		return cache.createOrGetCache(id, details, false).onFailure().recoverWithUni(e -> {
 			return dao.getById(id, details);
-		}); 
+		});
 	}
 
 	public Uni<NGSILDOperationResult> createContextHosted(Map<String, Object> payload) {
@@ -58,7 +58,18 @@ public class ContextService {
 	}
 
 	public Uni<Void> deleteById(String id, Boolean reload) {
-		return dao.deleteById(id).onItem().transformToUni(response -> {
+		boolean isCached = cache.isCached(id);
+		if (reload && !isCached) {
+			return Uni.createFrom().failure(
+					new ResponseException(ErrorType.BadRequestData, "You can't reload anything that is not cached"));
+		}
+		return dao.deleteById(id).onItemOrFailure().transformToUni((response, fail) -> {
+			if (!isCached) {
+				if (fail != null) {
+					return Uni.createFrom().failure(fail);
+				}
+				return Uni.createFrom().voidItem();
+			}
 			return cache.invalidate(id);
 		});
 	}

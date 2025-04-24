@@ -86,6 +86,11 @@ public class ContextCache {
 		});
 	}
 
+	public boolean isCached(String uri) {
+		Set<Object> cacheSet = cache.as(CaffeineCache.class).keySet();
+		return cacheSet.contains(uri);
+	}
+
 	public Uni<Map<String, Object>> createOrGetCache(String uri, Boolean details, Boolean loadNewCache) {
 		logger.debug("Create or cache uri " + uri);
 		Set<Object> cacheSet = cache.as(CaffeineCache.class).keySet();
