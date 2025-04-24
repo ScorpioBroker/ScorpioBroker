@@ -955,16 +955,17 @@ public final class HttpUtils {
 				if (lastErrorCode == 415 || (lastErrorCode == 400
 						&& "You can not have a Link to a context is content-type application/ld+json"
 								.equals(((Map<String, Object>) errors.get(0).get("error")).get("detail")))) {
-					builder = new RestResponseBuilderImpl<>().status(lastErrorCode)
-							.type(AppConstants.NGB_APPLICATION_JSON).entity(errors.get(0).get("error"));
-				} else {
-					builder = new RestResponseBuilderImpl<>().status(lastErrorCode)
-							.type(AppConstants.NGB_APPLICATION_JSON).entity(result);
+					return new RestResponseBuilderImpl<>().status(lastErrorCode).type(AppConstants.NGB_APPLICATION_JSON)
+							.entity(errors.get(0).get("error")).build();
 				}
-			} else {
-				builder = new RestResponseBuilderImpl<>().status(400).type(AppConstants.NGB_APPLICATION_JSON)
-						.entity(result);
+//				else {
+//					builder = new RestResponseBuilderImpl<>().status(lastErrorCode)
+//							.type(AppConstants.NGB_APPLICATION_JSON).entity(result);
+//				}
 			}
+			builder = new RestResponseBuilderImpl<>().status(207).type(AppConstants.NGB_APPLICATION_JSON)
+					.entity(result);
+
 			if (!t.get(0).getTenant().equals(AppConstants.INTERNAL_NULL_KEY)) {
 				builder.header(NGSIConstants.TENANT_HEADER, t.get(0).getTenant());
 			}
@@ -1352,7 +1353,7 @@ public final class HttpUtils {
 		if (value == null) {
 			return false;
 		}
-		
+
 		value = value.toLowerCase();
 		switch (value) {
 		case "true":
