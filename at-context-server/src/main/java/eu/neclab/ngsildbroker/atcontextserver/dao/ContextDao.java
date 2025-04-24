@@ -16,6 +16,7 @@ import java.util.UUID;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
+import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -74,12 +75,13 @@ public class ContextDao {
 						LocalDateTime lastUsage = row.getLocalDateTime(NGSIConstants.LAST_USAGE.toLowerCase());
 						LocalDateTime createdAt = row.getLocalDateTime(NGSIConstants.CREATEDAT.toLowerCase());
 						if (lastUsage != null) {
-							result.put(NGSIConstants.LAST_USAGE, lastUsage.toString() + 'Z');
+
+							result.put(NGSIConstants.LAST_USAGE, SerializationTools.formatter.format(lastUsage));
 						}
 						result.put(NGSIConstants.URL,
 								atContextUrl + URLEncoder.encode(localId, StandardCharsets.UTF_8));
 						result.put(NGSIConstants.BODY, row.getJsonObject(NGSIConstants.BODY).getMap());
-						result.put(NGSIConstants.CREATEDAT, createdAt.toString() + 'Z');
+						result.put(NGSIConstants.CREATEDAT, SerializationTools.formatter.format(createdAt));
 						return Uni.createFrom().item(result);
 					} else
 						return Uni.createFrom().item(row.getJsonObject(NGSIConstants.BODY).getMap());
@@ -156,14 +158,15 @@ public class ContextDao {
 						result.put(NGSIConstants.NUMBER_OF_HITS,
 								row.getLong(NGSIConstants.NUMBER_OF_HITS.toLowerCase()));
 						LocalDateTime lastUsage = row.getLocalDateTime(NGSIConstants.LAST_USAGE.toLowerCase());
-						
+
 						if (lastUsage != null) {
-							result.put(NGSIConstants.LAST_USAGE, lastUsage.toString() + 'Z');
+							result.put(NGSIConstants.LAST_USAGE, SerializationTools.formatter.format(lastUsage));
 						}
 
 						result.put(NGSIConstants.KIND, row.getString(NGSIConstants.KIND));
 						result.put(NGSIConstants.BODY, row.getJsonObject(NGSIConstants.BODY).getMap());
-						result.put(NGSIConstants.CREATEDAT, row.getLocalDateTime(NGSIConstants.CREATEDAT.toLowerCase()).toString() + 'Z');
+						result.put(NGSIConstants.CREATEDAT, SerializationTools.formatter
+								.format(row.getLocalDateTime(NGSIConstants.CREATEDAT.toLowerCase())));
 						result.put(NGSIConstants.URL, atContextUrl
 								+ URLEncoder.encode(row.getString(NGSIConstants.ID), StandardCharsets.UTF_8));
 						contexts.add(result);
