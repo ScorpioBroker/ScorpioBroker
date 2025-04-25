@@ -353,14 +353,15 @@ public class JsonUtils {
 				}).onItem().transformToUni(result -> {
 					final int status = result.statusCode();
 					if (status != 200 && status != 203) {
-						String finalUrl = URLDecoder.decode(url.getPath().split("createcache/")[1],StandardCharsets.UTF_8);
-						logger.debug("Failed to retrieve context:");
 						logger.debug("cache uri - " + url.toExternalForm());
-						logger.debug("request uri - " + finalUrl);
+						
+						logger.debug("Failed to retrieve context:");
+						
+						
 						logger.debug("response code: " + status);
 						//logger.debug("response body: " + result.bodyAsString());
 						return Uni.createFrom()
-								.failure(new LdContextException("Can't retrieve " + finalUrl + ", status code: " + status));
+								.failure(new LdContextException("Can't retrieve " + url.toExternalForm() + ", status code: " + status));
 					}
 					URL alternateLink;
 					try {
