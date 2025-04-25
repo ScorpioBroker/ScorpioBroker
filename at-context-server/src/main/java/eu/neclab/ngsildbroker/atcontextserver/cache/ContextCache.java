@@ -68,9 +68,8 @@ public class ContextCache {
 		atContextUrl = microServiceUtils.getGatewayURL().toString() + "/ngsi-ld/v1/jsonldContexts/";
 	}
 
-	@CacheResult(cacheName = "context")
+	
 	public Uni<Map<String, Object>> load(String uri) {
-
 		logger.debug("loading uri " + uri);
 		return jsonLdOptions.getDocumentLoader().loadDocument(uri, webClient).onItem().transformToUni(rd -> {
 			if (rd.getDocument() instanceof Map<?, ?> map && map.containsKey(NGSIConstants.JSON_LD_CONTEXT)) {
