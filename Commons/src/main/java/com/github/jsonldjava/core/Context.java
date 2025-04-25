@@ -22,6 +22,7 @@ import com.github.jsonldjava.utils.JsonLdUrl;
 import com.github.jsonldjava.utils.Obj;
 import com.google.common.collect.Lists;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.vertx.mutiny.ext.web.client.WebClient;
@@ -232,8 +233,7 @@ public class Context extends LinkedHashMap<String, Object> {
 
 				// 3.2.3: Dereference context
 				String finalUrl = uri;
-				if (uri != null && !(uri.contains(atContextUrl) || uri.contains("localhost")
-						|| uri.contains(NGSIConstants.IMPLICITLYCREATED))) {
+				if (uri != null && !(uri.contains(atContextUrl) || uri.contains(NGSIConstants.IMPLICITLYCREATED))) {
 					String encodedUrl = URLEncoder.encode(uri, StandardCharsets.UTF_8);
 					finalUrl = atContextUrl + "createcache/" + encodedUrl;
 					logger.debug("replacing original uri " + uri);
@@ -348,7 +348,7 @@ public class Context extends LinkedHashMap<String, Object> {
 		} else {
 			Context finalResult = result;
 			return Uni.combine().all().unis(rds).with(list -> list).onItem().transformToUni(list -> {
-				
+
 				Uni<Context> resultUni = Uni.createFrom().item(finalResult);
 				for (Object obj : list) {
 					Tuple2<RemoteDocument, Object> tuple = (Tuple2<RemoteDocument, Object>) obj;
@@ -376,8 +376,9 @@ public class Context extends LinkedHashMap<String, Object> {
 	public void setOriginalAtContext(List<String> originalAtContext) {
 		this.originalAtContext = originalAtContext;
 	}
+
 	public List<String> getOriginalAtContext() {
-		if(originalAtContext.isEmpty()) {
+		if (originalAtContext.isEmpty()) {
 			return List.of(NGSIConstants.CURRENT_CORE_CONTEXT);
 		}
 		return originalAtContext;
@@ -1311,7 +1312,7 @@ public class Context extends LinkedHashMap<String, Object> {
 //				ctx.put(term, defn);
 //			}
 			Object entry = termDefinitions.get(term);
-			if (entry instanceof Map<?,?> m) {
+			if (entry instanceof Map<?, ?> m) {
 				m.remove(JsonLdConsts.REVERSE);
 			}
 			ctx.put(term, entry);
