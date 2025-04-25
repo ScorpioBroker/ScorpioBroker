@@ -70,6 +70,9 @@ public class ContextService {
 				}
 				return Uni.createFrom().voidItem();
 			}
+			if(reload) {
+				return cache.reload(id);
+			}
 			return cache.invalidate(id);
 		});
 	}
