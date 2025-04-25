@@ -70,6 +70,7 @@ public class ContextCache {
 
 	@CacheResult(cacheName = "context")
 	public Uni<Map<String, Object>> load(String uri) {
+
 		logger.debug("loading uri " + uri);
 		return jsonLdOptions.getDocumentLoader().loadDocument(uri, webClient).onItem().transformToUni(rd -> {
 			if (rd.getDocument() instanceof Map<?, ?> map && map.containsKey(NGSIConstants.JSON_LD_CONTEXT)) {
@@ -80,6 +81,8 @@ public class ContextCache {
 				finalContext.put(NGSIConstants.CREATEDAT, SerializationTools.formatter.format(Instant.now()));
 				finalContext.put(NGSIConstants.URL, atContextUrl + URLEncoder.encode(uri, StandardCharsets.UTF_8));
 				finalContext.put(NGSIConstants.LOCAL_ID, uri);
+				cache.as(CaffeineCache.class).put(uri,
+						Uni.createFrom().item(finalContext).subscribeAsCompletionStage());
 				return Uni.createFrom().item(finalContext);
 			} else
 				return Uni.createFrom().item(new HashMap<>());
@@ -156,13 +159,15 @@ public class ContextCache {
 
 	@CacheInvalidate(cacheName = "context")
 	public Uni<Void> invalidate(@CacheKey String uri) {
+		id2numberOfHit.remove(uri);
+		id2LastUsage.remove(uri);
 		return Uni.createFrom().voidItem();
 	}
 
-	@CacheInvalidateAll(cacheName = "context")
-	@Scheduled(every = "${atcontext.cache.duration}", identity = "cacheDuration")
-	public void invalidateAll() {
-		id2numberOfHit.clear();
-		id2LastUsage.clear();
-	}
+//	@CacheInvalidateAll(cacheName = "context")
+//	@Scheduled(every = "${atcontext.cache.duration}", identity = "cacheDuration")
+//	public void invalidateAll() {
+//		id2numberOfHit.clear();
+//		id2LastUsage.clear();
+//	}
 }
