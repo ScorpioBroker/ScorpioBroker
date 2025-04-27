@@ -45,9 +45,6 @@ public class ContextService {
 
 	public Uni<Map<String, Object>> getContextById(String id, boolean details) {
 		return cache.createOrGetCache(id, details, false).onFailure().recoverWithUni(e -> {
-			System.out.println("=========================================");
-			e.printStackTrace();
-			System.out.println("=========================================");
 			return dao.getById(id, details);
 		});
 	}

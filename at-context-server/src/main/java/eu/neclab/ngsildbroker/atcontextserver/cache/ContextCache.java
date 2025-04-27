@@ -75,11 +75,11 @@ public class ContextCache {
 		cacheDuration = Duration.parse(cacheDurationTime);
 	}
 
-	public Uni<Map<String, Object>> load(String uri) {
+	public Uni<Map<String, Object>> load(String uri, boolean reload) {
 		logger.debug("loading uri " + uri);
 		CaffeineCache caffeinCache = cache.as(CaffeineCache.class);
 		CompletableFuture<Object> valueFuture = caffeinCache.getIfPresent(uri);
-		if (valueFuture != null) {
+		if (valueFuture != null && !reload) {
 			logger.debug("using cache");
 			return Uni.createFrom().completionStage(valueFuture).onItem().transformToUni(value -> {
 				logger.debug("retrieved cache");
@@ -122,7 +122,7 @@ public class ContextCache {
 		String lastUsage = id2LastUsage.get(uri);
 		id2LastUsage.put(uri, SerializationTools.formatter.format(Instant.now()));
 		if (details) {
-			return load(uri).onItem().transform(map -> {
+			return load(uri, false).onItem().transform(map -> {
 
 				if (lastUsage != null) {
 					map.put(NGSIConstants.LAST_USAGE, lastUsage);
@@ -133,7 +133,7 @@ public class ContextCache {
 				return map;
 			});
 		} else {
-			return load(uri).onItemOrFailure().transformToUni((map, fail) -> {
+			return load(uri, false).onItemOrFailure().transformToUni((map, fail) -> {
 				if (fail != null || map == null || map.isEmpty()) {
 					return Uni.createFrom().failure(new ResponseException(ErrorType.LdContextNotAvailable));
 				} else {
@@ -169,10 +169,10 @@ public class ContextCache {
 		return Uni.createFrom().item(list);
 	}
 
-	@CacheInvalidate(cacheName = "context")
-	public Uni<Void> reload(@CacheKey String uri) {
+	
+	public Uni<Void> reload(String uri) {
 		logger.debug("reloading cache for uri " + uri);
-		return load(uri).onItem().transformToUni(res -> Uni.createFrom().voidItem());
+		return load(uri, true).onItem().transformToUni(res -> Uni.createFrom().voidItem());
 	}
 
 	@CacheInvalidate(cacheName = "context")

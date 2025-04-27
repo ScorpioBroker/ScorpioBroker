@@ -55,7 +55,7 @@ public class JsonUtils {
 	 * An HTTP Accept header that prefers JSONLD.
 	 */
 	public static final String ACCEPT_HEADER = "application/ld+json, application/json;q=0.9, application/javascript;q=0.5, text/javascript;q=0.5, text/plain;q=0.2, */*;q=0.1";
-	
+
 	private static final Logger logger = LoggerFactory.getLogger(JsonUtils.class);
 
 	/**
@@ -348,20 +348,19 @@ public class JsonUtils {
 
 		return webClient.getAbs(url.toExternalForm()).putHeader("Accept", ACCEPT_HEADER).send().onFailure()
 				.recoverWithUni(e -> {
-					e.printStackTrace();
-					return Uni.createFrom().failure(e);
+					return Uni.createFrom().failure(new LdContextException(
+							"Can't retrieve " + url.toExternalForm() + ", because " + e.getLocalizedMessage()));
 				}).onItem().transformToUni(result -> {
 					final int status = result.statusCode();
 					if (status != 200 && status != 203) {
 						logger.debug("cache uri - " + url.toExternalForm());
-						
+
 						logger.debug("Failed to retrieve context:");
-						
-						
+
 						logger.debug("response code: " + status);
-						//logger.debug("response body: " + result.bodyAsString());
-						return Uni.createFrom()
-								.failure(new LdContextException("Can't retrieve " + url.toExternalForm() + ", status code: " + status));
+						// logger.debug("response body: " + result.bodyAsString());
+						return Uni.createFrom().failure(new LdContextException(
+								"Can't retrieve " + url.toExternalForm() + ", status code: " + status));
 					}
 					URL alternateLink;
 					try {
@@ -436,8 +435,6 @@ public class JsonUtils {
 		final Object context = JsonUtils.fromReader(new StringReader(output.toString()));
 		return context;
 	}
-
-
 
 	private JsonUtils() {
 		// Static class, no access to constructor

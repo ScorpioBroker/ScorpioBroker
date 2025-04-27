@@ -13,11 +13,11 @@ import jakarta.ws.rs.ext.Provider;
 
 @Provider
 public class AlsoMethodNotAllowedExceptionMapper implements ExceptionMapper<NotAllowedException> {
-	private static Logger logger = LoggerFactory.getLogger(AlsoMethodNotAllowedExceptionMapper.class);
+
 	
 	@Override
 	public Response toResponse(NotAllowedException exception) {
-		logger.debug("unsupported media type", exception);
+
 		return Response.status(Response.Status.METHOD_NOT_ALLOWED)
 				.entity(new ResponseException(ErrorType.MethodNotAllowed).getJson())
 				.header("Content-Type", "application/json").build();

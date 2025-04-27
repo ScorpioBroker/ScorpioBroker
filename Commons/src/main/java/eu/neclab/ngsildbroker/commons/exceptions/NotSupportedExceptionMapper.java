@@ -11,11 +11,11 @@ import jakarta.ws.rs.ext.Provider;
 
 @Provider
 public class NotSupportedExceptionMapper implements ExceptionMapper<NotSupportedException> {
-	private static Logger logger = LoggerFactory.getLogger(NotSupportedExceptionMapper.class);
+
 	
 	@Override
 	public Response toResponse(NotSupportedException exception) {
-		logger.debug("unsupported media type", exception);
+
 		return Response.status(Response.Status.UNSUPPORTED_MEDIA_TYPE)
 				.entity(new ResponseException(ErrorType.UnsupportedMediaType).getJson())
 				.header("Content-Type", "application/json").build();

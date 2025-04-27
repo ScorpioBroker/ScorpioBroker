@@ -13,12 +13,10 @@ import jakarta.ws.rs.ext.Provider;
 
 @Provider
 public class JsonMappingExceptionMapper implements ExceptionMapper<JsonMappingException> {
-
-	private static Logger logger = LoggerFactory.getLogger(JsonMappingExceptionMapper.class);
 	
 	@Override
 	public Response toResponse(JsonMappingException exception) {
-		logger.debug("failed to process JSON.", exception);
+
 		return Response.status(Response.Status.BAD_REQUEST)
 				.entity(new ResponseException(ErrorType.InvalidRequest,
 						"There is an error in the provided json document").getJson())
