@@ -135,7 +135,8 @@ public class ContextCache {
 		} else {
 			return load(uri, false).onItemOrFailure().transformToUni((map, fail) -> {
 				if (fail != null || map == null || map.isEmpty()) {
-					return Uni.createFrom().failure(new ResponseException(ErrorType.LdContextNotAvailable));
+					return Uni.createFrom().failure(new ResponseException(ErrorType.LdContextNotAvailable,
+							"Failed to load remote context " + uri));
 				} else {
 					return Uni.createFrom().item((Map<String, Object>) map.get(NGSIConstants.BODY));
 				}
@@ -169,7 +170,6 @@ public class ContextCache {
 		return Uni.createFrom().item(list);
 	}
 
-	
 	public Uni<Void> reload(String uri) {
 		logger.debug("reloading cache for uri " + uri);
 		return load(uri, true).onItem().transformToUni(res -> Uni.createFrom().voidItem());
