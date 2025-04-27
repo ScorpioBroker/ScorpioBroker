@@ -15,6 +15,8 @@ import io.vertx.core.json.JsonObject;
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.RestResponse.ResponseBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
@@ -33,6 +35,7 @@ import java.util.Set;
 @SuppressWarnings("unchecked")
 public class ContextController {
 
+	private final static Logger logger = LoggerFactory.getLogger(ContextController.class);
 	@Inject
 	ContextService contextService;
 
@@ -53,7 +56,10 @@ public class ContextController {
 			id = AppConstants.INTERNAL_NULL_KEY;
 		}
 		return contextService.getContextById(id, details).onItem().transform(
-				context -> ResponseBuilder.ok().entity(context).header("Content-Type", "application/json").build())
+				context -> {
+					logger.debug("sending context response");
+					
+					return ResponseBuilder.ok().entity(context).header("Content-Type", "application/json").build();})
 				.onFailure().recoverWithItem(e -> {
 					return HttpUtils.handleControllerExceptions(e, AppConstants.INTERNAL_NULL_KEY);
 				});

@@ -16,7 +16,7 @@ public class MethodNotAllowedExceptionMapper implements ExceptionMapper<NotFound
 	
 	@Override
 	public Response toResponse(NotFoundException exception) {
-		logger.debug("unsupported media type", exception);
+		logger.debug("method not allowed", exception);
 		return Response.status(Response.Status.METHOD_NOT_ALLOWED)
 				.entity(new ResponseException(ErrorType.MethodNotAllowed).getJson())
 				.header("Content-Type", "application/json").build();

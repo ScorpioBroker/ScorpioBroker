@@ -32,12 +32,14 @@ import jakarta.inject.Inject;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 @ApplicationScoped
 public class ContextCache {
@@ -45,7 +47,7 @@ public class ContextCache {
 	Cache cache;
 
 	@ConfigProperty(name = "atcontext.cache.duration", defaultValue = "20m")
-	String cacheDuration;
+	String cacheDurationTime;
 	JsonLdOptions jsonLdOptions = new JsonLdOptions();
 	private static Logger logger = LoggerFactory.getLogger(ContextCache.class);
 
@@ -61,16 +63,30 @@ public class ContextCache {
 	Map<String, Long> id2numberOfHit = new HashMap<>();
 	Map<String, String> id2LastUsage = new HashMap<>();
 	String atContextUrl;
+	Duration cacheDuration;
 
 	@PostConstruct
 	void init() {
 		webClient = WebClient.create(vertx);
 		atContextUrl = microServiceUtils.getGatewayURL().toString() + "/ngsi-ld/v1/jsonldContexts/";
+		if (!cacheDurationTime.startsWith("PT")) {
+			cacheDurationTime = "PT" + cacheDurationTime;
+		}
+		cacheDuration = Duration.parse(cacheDurationTime);
 	}
 
-	
 	public Uni<Map<String, Object>> load(String uri) {
 		logger.debug("loading uri " + uri);
+		CaffeineCache caffeinCache = cache.as(CaffeineCache.class);
+		CompletableFuture<Object> valueFuture = caffeinCache.getIfPresent(uri);
+		if (valueFuture != null) {
+			logger.debug("using cache");
+			return Uni.createFrom().completionStage(valueFuture).onItem().transformToUni(value -> {
+				logger.debug("retrieved cache");
+				return Uni.createFrom().item((Map<String, Object>) value);
+			});
+		}
+		logger.debug("loading from server");
 		return jsonLdOptions.getDocumentLoader().loadDocument(uri, webClient).onItem().transformToUni(rd -> {
 			if (rd.getDocument() instanceof Map<?, ?> map && map.containsKey(NGSIConstants.JSON_LD_CONTEXT)) {
 				Map<String, Object> finalContext = new HashMap<>();
@@ -87,6 +103,7 @@ public class ContextCache {
 				return Uni.createFrom().item(new HashMap<>());
 
 		});
+
 	}
 
 	public boolean isCached(String uri) {
@@ -106,11 +123,12 @@ public class ContextCache {
 		id2LastUsage.put(uri, SerializationTools.formatter.format(Instant.now()));
 		if (details) {
 			return load(uri).onItem().transform(map -> {
-				Instant expiresAt = scheduler.getScheduledJob("cacheDuration").getNextFireTime();
+
 				if (lastUsage != null) {
 					map.put(NGSIConstants.LAST_USAGE, lastUsage);
 				}
-				map.put(NGSIConstants.EXPIRES_AT, SerializationTools.formatter.format(expiresAt));
+				map.put(NGSIConstants.EXPIRES_AT,
+						SerializationTools.formatter.format(Instant.now().plus(cacheDuration)));
 				map.put(NGSIConstants.NUMBER_OF_HITS, hit - 1);
 				return map;
 			});
@@ -135,8 +153,9 @@ public class ContextCache {
 						.get();
 				if (details) {
 					list.add(cachedItem);
-					Instant expiresAt = scheduler.getScheduledJob("cacheDuration").getNextFireTime();
-					cachedItem.put(NGSIConstants.EXPIRES_AT, SerializationTools.formatter.format(expiresAt));
+
+					cachedItem.put(NGSIConstants.EXPIRES_AT,
+							SerializationTools.formatter.format(Instant.now().plus(cacheDuration)));
 					long hit = id2numberOfHit.getOrDefault(key.toString(), 0L);
 					cachedItem.put(NGSIConstants.NUMBER_OF_HITS, hit);
 					id2numberOfHit.put(key.toString(), hit + 1);
