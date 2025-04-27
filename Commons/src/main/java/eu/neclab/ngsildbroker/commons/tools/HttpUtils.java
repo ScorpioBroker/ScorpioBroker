@@ -987,7 +987,7 @@ public final class HttpUtils {
 	public static Uni<Context> getContextFromPayload(Map<String, Object> originalPayload, List<Object> atContextHeader,
 			boolean atContextAllowed, JsonLDService ldService) {
 
-		Object payloadAtContext = originalPayload.get(NGSIConstants.JSON_LD_CONTEXT);
+		Object payloadAtContext = originalPayload.remove(NGSIConstants.JSON_LD_CONTEXT);
 		if (payloadAtContext == null) {
 			if (atContextAllowed) {
 				return Uni.createFrom()
