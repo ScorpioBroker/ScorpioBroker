@@ -333,7 +333,8 @@ public final class HttpUtils {
 			logger.debug("Exception :: ", ldContextException);
 			myBuilder = RestResponseBuilderImpl.create(ErrorType.LdContextNotAvailable.getCode())
 					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-					.entity(new ResponseException(ErrorType.LdContextNotAvailable).getJson());
+					.entity(new ResponseException(ErrorType.LdContextNotAvailable, ldContextException.getMessage())
+							.getJson());
 		} else if (e instanceof DateTimeParseException) {
 			logger.debug("Exception :: ", e);
 			myBuilder = RestResponseBuilderImpl.create(HttpStatus.SC_BAD_REQUEST)
