@@ -682,7 +682,7 @@ jobs:
           cd ..
           git clone https://forge.etsi.org/rep/cim/ngsi-ld-test-suite.git
           cd ngsi-ld-test-suite
-          git checkout fix/hostcontext
+          git checkout fix/jsonldContext
       - name: config etsi testsuite
         run: |
           cd ..
