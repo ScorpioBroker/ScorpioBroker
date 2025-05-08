@@ -630,9 +630,14 @@ public record RegistrationEntry(String cId, String eId, String eIdp, String type
 				result.addAttr(eRel);
 			}
 		}
+		
 		if (geoQuery != null) {
+			System.out.println(geoQuery);
+			System.out.println("adding geo q");
 			if (geoQuery.getGeoproperty().equals(NGSIConstants.NGSI_LD_LOCATION)) {
 				Shape geoShape = geoQuery.getShape();
+				result.setGeoOp(geoQuery.getGeorel());
+				result.setGeoQuery(geoQuery);
 				if (location == null) {
 					result.setGeo(geoShape);
 				} else {
@@ -858,6 +863,7 @@ public record RegistrationEntry(String cId, String eId, String eIdp, String type
 			}
 		} else {
 			if (location != null) {
+				result.setGeoOp(NGSIConstants.GEO_REL_WITHIN);
 				result.setGeo(location);
 			}
 		}

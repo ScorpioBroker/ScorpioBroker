@@ -13,6 +13,7 @@ import com.google.common.collect.Sets;
 
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import io.smallrye.mutiny.tuples.Tuple2;
 
@@ -32,6 +33,7 @@ public class QueryInfos {
 	Shape geo;
 	String idPattern;
 	private String geoRel;
+	private QQueryTerm qQuery;
 
 	public Set<String> getIds() {
 		return ids;
@@ -114,8 +116,8 @@ public class QueryInfos {
 	}
 
 	public Map<String, String> toQueryParams(Context context, boolean ignoredId, EntityCache fullEntityCache,
-			QueryRemoteHost tmpHost) {
-
+			QueryRemoteHost tmpHost, boolean distEntities) {
+		System.out.println("distEntiities: " +  distEntities);
 		Map<String, String> result = Maps.newHashMap();
 		Set<String> idsToBeUsed;
 		if (fullEntityCache != null && ids != null && !ids.isEmpty()) {
@@ -156,6 +158,7 @@ public class QueryInfos {
 				result.put("type", String.join(",", types));
 			}
 		}
+
 		if (!attrs.isEmpty()) {
 			StringBuilder tmp = new StringBuilder();
 			for (String attr : attrs) {
@@ -165,22 +168,31 @@ public class QueryInfos {
 			tmp.setLength(tmp.length() - 1);
 			result.put("attrs", tmp.toString());
 		}
-		if (!scopes.isEmpty()) {
-			result.put("scopeQ", String.join(",", scopes));
-		}
 		if (langQuery != null) {
 			result.put("lang", langQuery.toRequestString());
 
 		}
-		if (geo != null && geoQuery != null) {
-			Map<String, Object> tmp = Maps.newHashMap();
-			geoQuery.addToRequestParams(tmp, geo, geoQuery.getGeorel());
-			tmp.entrySet().forEach(entry -> {
-				result.put(entry.getKey(), (String) entry.getValue());
-			});
+		if (!distEntities) {
+			System.out.println("not dist");
+			if (scopes != null && !scopes.isEmpty()) {
+				result.put("scopeQ", String.join(",", scopes));
+			}
 
+			if (geo != null && geoQuery != null) {
+				System.out.println("ssssssssss");
+				Map<String, Object> tmp = Maps.newHashMap();
+				geoQuery.addToRequestParams(tmp, geo, geoQuery.getGeorel());
+				tmp.entrySet().forEach(entry -> {
+					System.out.println(entry.getKey());
+					System.out.println(entry.getValue());
+					result.put(entry.getKey(), (String) entry.getValue());
+				});
+
+			}
+			if (qQuery != null) {
+				result.put("q", qQuery.toQueryParam(context));
+			}
 		}
-
 		return result;
 	}
 
@@ -261,6 +273,15 @@ public class QueryInfos {
 
 	public void setLangQuery(LanguageQueryTerm langQuery) {
 		this.langQuery = langQuery;
+	}
+
+	@Override
+	public String toString() {
+		return "QueryInfos [typeQuery=" + typeQuery + ", geoQuery=" + geoQuery + ", langQuery=" + langQuery
+				+ ", fullIdFound=" + fullIdFound + ", fullTypesFound=" + fullTypesFound + ", fullAttrsFound="
+				+ fullAttrsFound + ", fullScopeFound=" + fullScopeFound + ", ids=" + ids + ", types=" + types
+				+ ", attrs=" + attrs + ", scopes=" + scopes + ", geo=" + geo + ", idPattern=" + idPattern + ", geoRel="
+				+ geoRel + ", qQuery=" + qQuery + "]";
 	}
 
 }

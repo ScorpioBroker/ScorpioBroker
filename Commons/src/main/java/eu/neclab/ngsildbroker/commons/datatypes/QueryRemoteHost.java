@@ -41,7 +41,7 @@ public class QueryRemoteHost {
 		this.canDoQuery = canDoQuery;
 		this.canDoRetrieve = canDoRetrieve;
 		this.regMode = regMode;
-		this.canDoEntityMap = false;//canDoEntityMap;
+		this.canDoEntityMap = false;// canDoEntityMap;
 		this.canDoZip = canDoZip;
 		this.entityMapToken = entityMapToken;
 		this.queryParams = queryParams;
@@ -261,7 +261,5 @@ public class QueryRemoteHost {
 				&& Objects.equals(queryParams, other.queryParams) && regMode == other.regMode
 				&& Objects.equals(tenant, other.tenant) && Objects.equals(viaHeaders, other.viaHeaders);
 	}
-	
-	
 
 }

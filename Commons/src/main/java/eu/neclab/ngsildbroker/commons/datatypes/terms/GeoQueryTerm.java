@@ -19,6 +19,7 @@ import org.locationtech.spatial4j.shape.ShapeFactory.LineStringBuilder;
 import org.locationtech.spatial4j.shape.ShapeFactory.MultiPolygonBuilder;
 import org.locationtech.spatial4j.shape.ShapeFactory.PolygonBuilder;
 import org.locationtech.spatial4j.shape.ShapeFactory.PolygonBuilder.HoleBuilder;
+import org.locationtech.spatial4j.shape.impl.GeoCircle;
 import org.locationtech.spatial4j.shape.jts.JtsGeometry;
 import org.locationtech.spatial4j.shape.jts.JtsPoint;
 
@@ -530,7 +531,8 @@ public class GeoQueryTerm implements Serializable {
 
 		}
 		if (getDistanceValue() != null) {
-			queryShape = queryShape.getBuffered(getDistanceValue() * DistanceUtils.KM_TO_DEG, queryShape.getContext());
+			queryShape = queryShape.getBuffered((getDistanceValue() / 1000) * DistanceUtils.KM_TO_DEG,
+					queryShape.getContext());
 		}
 		return queryShape;
 	}
@@ -543,7 +545,7 @@ public class GeoQueryTerm implements Serializable {
 			georel = georel + ";" + distanceType + "=" + distanceValue;
 		}
 		queryParams.put("georel", georel);
-		
+
 		StringBuilder result = new StringBuilder();
 		result.append('[');
 		if (geo instanceof JtsPoint) {
@@ -551,14 +553,22 @@ public class GeoQueryTerm implements Serializable {
 			result.append(point.getLon());
 			result.append(',');
 			result.append(point.getLat());
+			queryParams.put("geometry", "Point");
+		} else if (geo instanceof GeoCircle c) {
+			result.append(c.getCenter().getLon());
+			result.append(',');
+			result.append(c.getCenter().getLat());
+			queryParams.put("geometry", "Point");
 		} else {
 			JtsGeometry jtsGeom = (JtsGeometry) geo;
 			Geometry geom = jtsGeom.getGeom();
 			if (geom instanceof LineString) {
+				queryParams.put("geometry", "LineString");
 				LineString line = (LineString) geom;
 				handleLine(line, result);
 			} else if (geom instanceof MultiLineString) {
 				MultiLineString multiLine = (MultiLineString) geom;
+				queryParams.put("geometry", "MultiLineString");
 				int numGeo = multiLine.getNumGeometries();
 				result.append('[');
 				for (int i = 0; i < numGeo; i++) {
@@ -569,9 +579,11 @@ public class GeoQueryTerm implements Serializable {
 				result.setCharAt(result.length() - 1, ']');
 			} else if (geom instanceof Polygon) {
 				Polygon poly = (Polygon) geom;
+				queryParams.put("geometry", "Polygon");
 				handlePoly(poly, result);
 			} else if (geom instanceof MultiPolygon) {
 				MultiPolygon multiPoly = (MultiPolygon) geom;
+				queryParams.put("geometry", "MultiPolygon");
 				int numGeom = multiPoly.getNumGeometries();
 				result.append('[');
 				for (int i = 0; i < numGeom; i++) {

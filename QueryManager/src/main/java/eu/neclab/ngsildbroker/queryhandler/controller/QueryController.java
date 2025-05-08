@@ -36,6 +36,7 @@ import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
 import com.google.common.net.HttpHeaders;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.ViaHeaders;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
@@ -108,7 +109,7 @@ public class QueryController {
 			@QueryParam(value = "geometryProperty") String geometryProperty,
 			@QueryParam(value = "local") String localOnlyS, @PathParam("entityId") String entityId,
 			@QueryParam(value = "doNotCompact") String doNotCompactS,
-			@QueryParam("containedBy") @DefaultValue("") String containedBy, @QueryParam("join") String join,
+			@QueryParam("containedBy") @DefaultValue(AppConstants.EMPTY) String containedBy, @QueryParam("join") String join,
 			@QueryParam("joinLevel") Integer joinLevel, @QueryParam("pick") String pick,
 			@QueryParam("omit") String omit, @QueryParam("format") String format,
 			@QueryParam("entityMap") String entityMapS, @QueryParam("datasetId") String datasetId,
@@ -165,7 +166,7 @@ public class QueryController {
 			@QueryParam("geometryProperty") String geometryProperty, @QueryParam("lang") String lang,
 			@QueryParam("scopeQ") String scopeQ, @QueryParam("local") String localOnly,
 			@QueryParam("options") String options, @QueryParam("limit") Integer limit, @QueryParam("offset") int offset,
-			@QueryParam("count") String count, @QueryParam("containedBy") @DefaultValue("") String containedBy,
+			@QueryParam("count") String count, @QueryParam("containedBy") @DefaultValue(AppConstants.EMPTY) String containedBy,
 			@QueryParam("join") String join, @QueryParam("joinLevel") Integer joinLevel,
 			@QueryParam("doNotCompact") String doNotCompact, @HeaderParam("NGSILD-EntityMap") String entityMapToken,
 			@QueryParam("entityMap") String entityMapRetrieve, @QueryParam("maxDistance") String maxDistance,
@@ -190,7 +191,7 @@ public class QueryController {
 			@QueryParam("geometryProperty") String geometryProperty, @QueryParam("lang") String lang,
 			@QueryParam("scopeQ") String scopeQ, @QueryParam("local") String localOnlyS,
 			@QueryParam("options") String options, @QueryParam("limit") Integer limit, @QueryParam("offset") int offset,
-			@QueryParam("count") String countS, @QueryParam("containedBy") @DefaultValue("") String containedBy,
+			@QueryParam("count") String countS, @QueryParam("containedBy") @DefaultValue(AppConstants.EMPTY) String containedBy,
 			@QueryParam("join") String join, @QueryParam("joinLevel") Integer joinLevel,
 			@QueryParam("doNotCompact") String doNotCompactS, @HeaderParam("NGSILD-EntityMap") String entityMapToken,
 			@QueryParam("entityMap") String entityMapRetrieveS, @QueryParam("maxDistance") String maxDistance,
@@ -446,7 +447,7 @@ public class QueryController {
 
 	}
 
-	private Uni<Tuple5<QueryResult, String, Integer, Integer, Context>> queryForQueryResult(HttpServerRequest request,
+	public Uni<Tuple5<QueryResult, String, Integer, Integer, Context>> queryForQueryResult(HttpServerRequest request,
 			String id, String typeQuery, String idPattern, String attrs, String qInput, String csf, String geometry,
 			String georelInput, String coordinates, String geoproperty, String geometryProperty, String lang,
 			String scopeQ, boolean localOnly, String options, Integer limit, int offset, boolean count,

@@ -273,12 +273,14 @@ public class SubscriptionTools {
 					Shape bufferedShape;
 					switch (geoQuery.getDistanceType()) {
 					case NGSIConstants.GEO_REL_MAX_DISTANCE:
-						bufferedShape = queryShape.getBuffered(geoQuery.getDistanceValue() * DistanceUtils.KM_TO_DEG,
+						bufferedShape = queryShape.getBuffered(
+								(geoQuery.getDistanceValue() / 1000) * DistanceUtils.KM_TO_DEG,
 								queryShape.getContext());
 						result = SpatialPredicate.IsWithin.evaluate(entityShape, bufferedShape);
 						break;
 					case NGSIConstants.GEO_REL_MIN_DISTANCE:
-						bufferedShape = queryShape.getBuffered(geoQuery.getDistanceValue() * DistanceUtils.KM_TO_DEG,
+						bufferedShape = queryShape.getBuffered(
+								(geoQuery.getDistanceValue() / 1000) * DistanceUtils.KM_TO_DEG,
 								queryShape.getContext());
 						result = !SpatialPredicate.IsWithin.evaluate(entityShape, bufferedShape);
 						break;
@@ -359,7 +361,7 @@ public class SubscriptionTools {
 								atCtx = List.of(NGSIConstants.CURRENT_CORE_CONTEXT);
 							}
 							try {
-								
+
 								notification.put(NGSIConstants.NGSI_LD_DATA_SHORT,
 										HttpUtils.generateGeoJson(data, null, atCtx, true));
 							} catch (ResponseException e) {
@@ -414,7 +416,7 @@ public class SubscriptionTools {
 				result.add(entry.getKey(), entry.getValue());
 			}
 		}
-		if(otherHead != null) { 
+		if (otherHead != null) {
 			result.addAll(otherHead);
 		}
 		String accept = notificationParam.getEndPoint().getAccept();
@@ -424,7 +426,7 @@ public class SubscriptionTools {
 		if (!accept.equals(AppConstants.NGB_APPLICATION_JSON)) {
 			result.remove(NGSIConstants.LINK_HEADER);
 		}
-		
+
 		result.set(HttpHeaders.ACCEPT, accept);
 		result.set(HttpHeaders.CONTENT_TYPE, accept);
 		return new MultiMap(result);
@@ -566,7 +568,7 @@ public class SubscriptionTools {
 					contextToUse = context;
 				}
 				Map<String, Object> queryParams = Maps
-						.newHashMap(entry.getValue().toQueryParams(context, false, null, finalHost));
+						.newHashMap(entry.getValue().toQueryParams(context, false, null, finalHost, true));
 
 				Map<String, String> entities = Maps.newHashMap();
 				queryParams.put(NGSIConstants.NGSI_LD_ENTITIES_SHORT, Lists.newArrayList(entities));
