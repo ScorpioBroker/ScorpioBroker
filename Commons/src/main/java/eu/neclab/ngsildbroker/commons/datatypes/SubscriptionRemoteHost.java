@@ -14,7 +14,7 @@ public class SubscriptionRemoteHost extends QueryRemoteHost {
 
 	public SubscriptionRemoteHost(String host, String tenant, MultiMap headers, String cSourceId, boolean canDoQuery,
 			boolean canDoBatchQuery, boolean canDoRetrieve, int regMode,
-			List<Tuple3<String, String, String>> idsAndTypesAndIdPattern, Map<String, String> queryParams,
+			List<Tuple3<String, String, String>> idsAndTypesAndIdPattern, Map<String, Object> queryParams,
 			boolean canDoEntityMap, boolean canDoZip, String entityMapToken, ViaHeaders viaHeaders) {
 		super(host, tenant, headers, cSourceId, canDoQuery, canDoBatchQuery, canDoRetrieve, regMode,
 				idsAndTypesAndIdPattern, queryParams, canDoEntityMap, canDoZip, entityMapToken, viaHeaders);

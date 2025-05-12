@@ -35,6 +35,14 @@ public class QueryInfos {
 	private String geoRel;
 	private QQueryTerm qQuery;
 
+	public QQueryTerm getqQuery() {
+		return qQuery;
+	}
+
+	public void setqQuery(QQueryTerm qQuery) {
+		this.qQuery = qQuery;
+	}
+
 	public Set<String> getIds() {
 		return ids;
 	}
@@ -115,10 +123,9 @@ public class QueryInfos {
 		this.fullScopeFound = fullScopeFound;
 	}
 
-	public Map<String, String> toQueryParams(Context context, boolean ignoredId, EntityCache fullEntityCache,
+	public Map<String, Object> toQueryParams(Context context, boolean ignoredId, EntityCache fullEntityCache,
 			QueryRemoteHost tmpHost, boolean distEntities) {
-		System.out.println("distEntiities: " +  distEntities);
-		Map<String, String> result = Maps.newHashMap();
+				Map<String, Object> result = Maps.newHashMap();
 		Set<String> idsToBeUsed;
 		if (fullEntityCache != null && ids != null && !ids.isEmpty()) {
 			idsToBeUsed = Sets.newHashSet();
@@ -173,21 +180,12 @@ public class QueryInfos {
 
 		}
 		if (!distEntities) {
-			System.out.println("not dist");
-			if (scopes != null && !scopes.isEmpty()) {
+						if (scopes != null && !scopes.isEmpty()) {
 				result.put("scopeQ", String.join(",", scopes));
 			}
 
 			if (geo != null && geoQuery != null) {
-				System.out.println("ssssssssss");
-				Map<String, Object> tmp = Maps.newHashMap();
-				geoQuery.addToRequestParams(tmp, geo, geoQuery.getGeorel());
-				tmp.entrySet().forEach(entry -> {
-					System.out.println(entry.getKey());
-					System.out.println(entry.getValue());
-					result.put(entry.getKey(), (String) entry.getValue());
-				});
-
+				geoQuery.addToRequestParams(result, geo, geoQuery.getGeorel());
 			}
 			if (qQuery != null) {
 				result.put("q", qQuery.toQueryParam(context));

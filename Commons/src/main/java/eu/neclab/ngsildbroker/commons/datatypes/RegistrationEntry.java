@@ -33,20 +33,133 @@ import eu.neclab.ngsildbroker.commons.tools.SubscriptionTools;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.vertx.mutiny.core.MultiMap;
+
 @SuppressWarnings("unchecked")
-public record RegistrationEntry(String cId, String eId, String eIdp, String type, String eProp, String eRel,
-		Shape location, String[] scopes, long expiresAt, int regMode, boolean createEntity, boolean updateEntity,
-		boolean appendAttrs, boolean updateAttrs, boolean deleteAttrs, boolean deleteEntity, boolean createBatch,
-		boolean upsertBatch, boolean updateBatch, boolean deleteBatch, boolean upsertTemporal,
-		boolean appendAttrsTemporal, boolean deleteAttrsTemporal, boolean updateAttrsTemporal,
-		boolean deleteAttrInstanceTemporal, boolean deleteTemporal, boolean mergeEntity, boolean replaceEntity,
-		boolean replaceAttrs, boolean mergeBatch, boolean retrieveEntity, boolean queryEntity, boolean queryBatch,
-		boolean retrieveTemporal, boolean queryTemporal, boolean retrieveEntityTypes, boolean retrieveEntityTypeDetails,
-		boolean retrieveEntityTypeInfo, boolean retrieveAttrTypes, boolean retrieveAttrTypeDetails,
-		boolean retrieveAttrTypeInfo, boolean createSubscription, boolean updateSubscription,
-		boolean retrieveSubscription, boolean querySubscription, boolean deleteSubscription, boolean queryEntityMap,
-		boolean createEntityMap, boolean updateEntityMap, boolean deleteEntityMap, boolean retrieveEntityMap,
-		RemoteHost host, Context context) {
+public class RegistrationEntry {
+	String cId;
+	String eId;
+	String eIdp;
+	String type;
+	String eProp;
+	String eRel;
+	Shape location;
+	String[] scopes;
+	long expiresAt;
+	int regMode;
+	boolean createEntity;
+	boolean updateEntity;
+	boolean appendAttrs;
+	boolean updateAttrs;
+	boolean deleteAttrs;
+	boolean deleteEntity;
+	boolean createBatch;
+	boolean upsertBatch;
+	boolean updateBatch;
+	boolean deleteBatch;
+	boolean upsertTemporal;
+	boolean appendAttrsTemporal;
+	boolean deleteAttrsTemporal;
+	boolean updateAttrsTemporal;
+	boolean deleteAttrInstanceTemporal;
+	boolean deleteTemporal;
+	boolean mergeEntity;
+	boolean replaceEntity;
+	boolean replaceAttrs;
+	boolean mergeBatch;
+	boolean retrieveEntity;
+	boolean queryEntity;
+	boolean queryBatch;
+	boolean retrieveTemporal;
+	boolean queryTemporal;
+	boolean retrieveEntityTypes;
+	boolean retrieveEntityTypeDetails;
+	boolean retrieveEntityTypeInfo;
+	boolean retrieveAttrTypes;
+	boolean retrieveAttrTypeDetails;
+	boolean retrieveAttrTypeInfo;
+	boolean createSubscription;
+	boolean updateSubscription;
+	boolean retrieveSubscription;
+	boolean querySubscription;
+	boolean deleteSubscription;
+	boolean queryEntityMap;
+	boolean createEntityMap;
+	boolean updateEntityMap;
+	boolean deleteEntityMap;
+	boolean retrieveEntityMap;
+	RemoteHost host;
+	Context context;
+	
+	
+
+	public RegistrationEntry(String cId, String eId, String eIdp, String type, String eProp, String eRel,
+			Shape location, String[] scopes, long expiresAt, int regMode, boolean createEntity, boolean updateEntity,
+			boolean appendAttrs, boolean updateAttrs, boolean deleteAttrs, boolean deleteEntity, boolean createBatch,
+			boolean upsertBatch, boolean updateBatch, boolean deleteBatch, boolean upsertTemporal,
+			boolean appendAttrsTemporal, boolean deleteAttrsTemporal, boolean updateAttrsTemporal,
+			boolean deleteAttrInstanceTemporal, boolean deleteTemporal, boolean mergeEntity, boolean replaceEntity,
+			boolean replaceAttrs, boolean mergeBatch, boolean retrieveEntity, boolean queryEntity, boolean queryBatch,
+			boolean retrieveTemporal, boolean queryTemporal, boolean retrieveEntityTypes,
+			boolean retrieveEntityTypeDetails, boolean retrieveEntityTypeInfo, boolean retrieveAttrTypes,
+			boolean retrieveAttrTypeDetails, boolean retrieveAttrTypeInfo, boolean createSubscription,
+			boolean updateSubscription, boolean retrieveSubscription, boolean querySubscription,
+			boolean deleteSubscription, boolean queryEntityMap, boolean createEntityMap, boolean updateEntityMap,
+			boolean deleteEntityMap, boolean retrieveEntityMap, RemoteHost host, Context context) {
+		super();
+		this.cId = cId;
+		this.eId = eId;
+		this.eIdp = eIdp;
+		this.type = type;
+		this.eProp = eProp;
+		this.eRel = eRel;
+		this.location = location;
+		this.scopes = scopes;
+		this.expiresAt = expiresAt;
+		this.regMode = regMode;
+		this.createEntity = createEntity;
+		this.updateEntity = updateEntity;
+		this.appendAttrs = appendAttrs;
+		this.updateAttrs = updateAttrs;
+		this.deleteAttrs = deleteAttrs;
+		this.deleteEntity = deleteEntity;
+		this.createBatch = createBatch;
+		this.upsertBatch = upsertBatch;
+		this.updateBatch = updateBatch;
+		this.deleteBatch = deleteBatch;
+		this.upsertTemporal = upsertTemporal;
+		this.appendAttrsTemporal = appendAttrsTemporal;
+		this.deleteAttrsTemporal = deleteAttrsTemporal;
+		this.updateAttrsTemporal = updateAttrsTemporal;
+		this.deleteAttrInstanceTemporal = deleteAttrInstanceTemporal;
+		this.deleteTemporal = deleteTemporal;
+		this.mergeEntity = mergeEntity;
+		this.replaceEntity = replaceEntity;
+		this.replaceAttrs = replaceAttrs;
+		this.mergeBatch = mergeBatch;
+		this.retrieveEntity = retrieveEntity;
+		this.queryEntity = queryEntity;
+		this.queryBatch = queryBatch;
+		this.retrieveTemporal = retrieveTemporal;
+		this.queryTemporal = queryTemporal;
+		this.retrieveEntityTypes = retrieveEntityTypes;
+		this.retrieveEntityTypeDetails = retrieveEntityTypeDetails;
+		this.retrieveEntityTypeInfo = retrieveEntityTypeInfo;
+		this.retrieveAttrTypes = retrieveAttrTypes;
+		this.retrieveAttrTypeDetails = retrieveAttrTypeDetails;
+		this.retrieveAttrTypeInfo = retrieveAttrTypeInfo;
+		this.createSubscription = createSubscription;
+		this.updateSubscription = updateSubscription;
+		this.retrieveSubscription = retrieveSubscription;
+		this.querySubscription = querySubscription;
+		this.deleteSubscription = deleteSubscription;
+		this.queryEntityMap = queryEntityMap;
+		this.createEntityMap = createEntityMap;
+		this.updateEntityMap = updateEntityMap;
+		this.deleteEntityMap = deleteEntityMap;
+		this.retrieveEntityMap = retrieveEntityMap;
+		this.host = host;
+		this.context = context;
+	}
 
 	public static Uni<List<RegistrationEntry>> fromRegPayload(Map<String, Object> payload, JsonLDService ldService) {
 		List<RegistrationEntry> result = Lists.newArrayList();
@@ -339,13 +452,13 @@ public record RegistrationEntry(String cId, String eId, String eIdp, String type
 							.get(NGSIConstants.NGSI_LD_ENTITIES)) {
 						Object typesObj = entitiesEntry.get(NGSIConstants.JSON_LD_TYPE);
 						List<String> types;
-						if(typesObj != null) {
+						if (typesObj != null) {
 							types = (List<String>) typesObj;
-						}else {
+						} else {
 							types = Lists.newArrayList();
 							types.add(null);
 						}
-						for (String entityType : types ) {
+						for (String entityType : types) {
 							String tmpEId = null;
 							String tmpEIdp = null;
 							if (entitiesEntry.containsKey(NGSIConstants.JSON_LD_ID)) {
@@ -630,11 +743,9 @@ public record RegistrationEntry(String cId, String eId, String eIdp, String type
 				result.addAttr(eRel);
 			}
 		}
-		
+
 		if (geoQuery != null) {
-			System.out.println(geoQuery);
-			System.out.println("adding geo q");
-			if (geoQuery.getGeoproperty().equals(NGSIConstants.NGSI_LD_LOCATION)) {
+									if (geoQuery.getGeoproperty().equals(NGSIConstants.NGSI_LD_LOCATION)) {
 				Shape geoShape = geoQuery.getShape();
 				result.setGeoOp(geoQuery.getGeorel());
 				result.setGeoQuery(geoQuery);
@@ -867,8 +978,433 @@ public record RegistrationEntry(String cId, String eId, String eIdp, String type
 				result.setGeo(location);
 			}
 		}
+		result.setqQuery(qQuery);
 		return result;
 
+	}
+
+	public String cId() {
+		return cId;
+	}
+
+	public void setcId(String cId) {
+		this.cId = cId;
+	}
+
+	public String eId() {
+		return eId;
+	}
+
+	public void seteId(String eId) {
+		this.eId = eId;
+	}
+
+	public String eIdp() {
+		return eIdp;
+	}
+
+	public void seteIdp(String eIdp) {
+		this.eIdp = eIdp;
+	}
+
+	public String type() {
+		return type;
+	}
+
+	public void setType(String type) {
+		this.type = type;
+	}
+
+	public String eProp() {
+		return eProp;
+	}
+
+	public void seteProp(String eProp) {
+		this.eProp = eProp;
+	}
+
+	public String eRel() {
+		return eRel;
+	}
+
+	public void seteRel(String eRel) {
+		this.eRel = eRel;
+	}
+
+	public Shape location() {
+		return location;
+	}
+
+	public void setLocation(Shape location) {
+		this.location = location;
+	}
+
+	public String[] scopes() {
+		return scopes;
+	}
+
+	public void setScopes(String[] scopes) {
+		this.scopes = scopes;
+	}
+
+	public long expiresAt() {
+		return expiresAt;
+	}
+
+	public void setExpiresAt(long expiresAt) {
+		this.expiresAt = expiresAt;
+	}
+
+	public int regMode() {
+		return regMode;
+	}
+
+	public void setRegMode(int regMode) {
+		this.regMode = regMode;
+	}
+
+	public boolean createEntity() {
+		return createEntity;
+	}
+
+	public void setCreateEntity(boolean createEntity) {
+		this.createEntity = createEntity;
+	}
+
+	public boolean updateEntity() {
+		return updateEntity;
+	}
+
+	public void setUpdateEntity(boolean updateEntity) {
+		this.updateEntity = updateEntity;
+	}
+
+	public boolean appendAttrs() {
+		return appendAttrs;
+	}
+
+	public void setAppendAttrs(boolean appendAttrs) {
+		this.appendAttrs = appendAttrs;
+	}
+
+	public boolean  updateAttrs() {
+		return updateAttrs;
+	}
+
+	public void setUpdateAttrs(boolean updateAttrs) {
+		this.updateAttrs = updateAttrs;
+	}
+
+	public boolean deleteAttrs() {
+		return deleteAttrs;
+	}
+
+	public void setDeleteAttrs(boolean deleteAttrs) {
+		this.deleteAttrs = deleteAttrs;
+	}
+
+	public boolean deleteEntity() {
+		return deleteEntity;
+	}
+
+	public void setDeleteEntity(boolean deleteEntity) {
+		this.deleteEntity = deleteEntity;
+	}
+
+	public boolean createBatch() {
+		return createBatch;
+	}
+
+	public void setCreateBatch(boolean createBatch) {
+		this.createBatch = createBatch;
+	}
+
+	public boolean  upsertBatch() {
+		return upsertBatch;
+	}
+
+	public void setUpsertBatch(boolean upsertBatch) {
+		this.upsertBatch = upsertBatch;
+	}
+
+	public boolean updateBatch() {
+		return updateBatch;
+	}
+
+	public void setUpdateBatch(boolean updateBatch) {
+		this.updateBatch = updateBatch;
+	}
+
+	public boolean deleteBatch() {
+		return deleteBatch;
+	}
+
+	public void setDeleteBatch(boolean deleteBatch) {
+		this.deleteBatch = deleteBatch;
+	}
+
+	public boolean upsertTemporal() {
+		return upsertTemporal;
+	}
+
+	public void setUpsertTemporal(boolean upsertTemporal) {
+		this.upsertTemporal = upsertTemporal;
+	}
+
+	public boolean appendAttrsTemporal() {
+		return appendAttrsTemporal;
+	}
+
+	public void setAppendAttrsTemporal(boolean appendAttrsTemporal) {
+		this.appendAttrsTemporal = appendAttrsTemporal;
+	}
+
+	public boolean deleteAttrsTemporal() {
+		return deleteAttrsTemporal;
+	}
+
+	public void setDeleteAttrsTemporal(boolean deleteAttrsTemporal) {
+		this.deleteAttrsTemporal = deleteAttrsTemporal;
+	}
+
+	public boolean updateAttrsTemporal() {
+		return updateAttrsTemporal;
+	}
+
+	public void setUpdateAttrsTemporal(boolean updateAttrsTemporal) {
+		this.updateAttrsTemporal = updateAttrsTemporal;
+	}
+
+	public boolean deleteAttrInstanceTemporal() {
+		return deleteAttrInstanceTemporal;
+	}
+
+	public void setDeleteAttrInstanceTemporal(boolean deleteAttrInstanceTemporal) {
+		this.deleteAttrInstanceTemporal = deleteAttrInstanceTemporal;
+	}
+
+	public boolean deleteTemporal() {
+		return deleteTemporal;
+	}
+
+	public void setDeleteTemporal(boolean deleteTemporal) {
+		this.deleteTemporal = deleteTemporal;
+	}
+
+	public boolean mergeEntity() {
+		return mergeEntity;
+	}
+
+	public void setMergeEntity(boolean mergeEntity) {
+		this.mergeEntity = mergeEntity;
+	}
+
+	public boolean replaceEntity() {
+		return replaceEntity;
+	}
+
+	public void setReplaceEntity(boolean replaceEntity) {
+		this.replaceEntity = replaceEntity;
+	}
+
+	public boolean replaceAttrs() {
+		return replaceAttrs;
+	}
+
+	public void setReplaceAttrs(boolean replaceAttrs) {
+		this.replaceAttrs = replaceAttrs;
+	}
+
+	public boolean mergeBatch() {
+		return mergeBatch;
+	}
+
+	public void setMergeBatch(boolean mergeBatch) {
+		this.mergeBatch = mergeBatch;
+	}
+
+	public boolean retrieveEntity() {
+		return retrieveEntity;
+	}
+
+	public void setRetrieveEntity(boolean retrieveEntity) {
+		this.retrieveEntity = retrieveEntity;
+	}
+
+	public boolean queryEntity() {
+		return queryEntity;
+	}
+
+	public void setQueryEntity(boolean queryEntity) {
+		this.queryEntity = queryEntity;
+	}
+
+	public boolean queryBatch() {
+		return queryBatch;
+	}
+
+	public void setQueryBatch(boolean queryBatch) {
+		this.queryBatch = queryBatch;
+	}
+
+	public boolean retrieveTemporal() {
+		return retrieveTemporal;
+	}
+
+	public void setRetrieveTemporal(boolean retrieveTemporal) {
+		this.retrieveTemporal = retrieveTemporal;
+	}
+
+	public boolean queryTemporal() {
+		return queryTemporal;
+	}
+
+	public void setQueryTemporal(boolean queryTemporal) {
+		this.queryTemporal = queryTemporal;
+	}
+
+	public boolean retrieveEntityTypes() {
+		return retrieveEntityTypes;
+	}
+
+	public void setRetrieveEntityTypes(boolean retrieveEntityTypes) {
+		this.retrieveEntityTypes = retrieveEntityTypes;
+	}
+
+	public boolean retrieveEntityTypeDetails() {
+		return retrieveEntityTypeDetails;
+	}
+
+	public void setRetrieveEntityTypeDetails(boolean retrieveEntityTypeDetails) {
+		this.retrieveEntityTypeDetails = retrieveEntityTypeDetails;
+	}
+
+	public boolean retrieveEntityTypeInfo() {
+		return retrieveEntityTypeInfo;
+	}
+
+	public void setRetrieveEntityTypeInfo(boolean retrieveEntityTypeInfo) {
+		this.retrieveEntityTypeInfo = retrieveEntityTypeInfo;
+	}
+
+	public boolean retrieveAttrTypes() {
+		return retrieveAttrTypes;
+	}
+
+	public void setRetrieveAttrTypes(boolean retrieveAttrTypes) {
+		this.retrieveAttrTypes = retrieveAttrTypes;
+	}
+
+	public boolean retrieveAttrTypeDetails() {
+		return retrieveAttrTypeDetails;
+	}
+
+	public void setRetrieveAttrTypeDetails(boolean retrieveAttrTypeDetails) {
+		this.retrieveAttrTypeDetails = retrieveAttrTypeDetails;
+	}
+
+	public boolean retrieveAttrTypeInfo() {
+		return retrieveAttrTypeInfo;
+	}
+
+	public void setRetrieveAttrTypeInfo(boolean retrieveAttrTypeInfo) {
+		this.retrieveAttrTypeInfo = retrieveAttrTypeInfo;
+	}
+
+	public boolean createSubscription() {
+		return createSubscription;
+	}
+
+	public void setCreateSubscription(boolean createSubscription) {
+		this.createSubscription = createSubscription;
+	}
+
+	public boolean updateSubscription() {
+		return updateSubscription;
+	}
+
+	public void setUpdateSubscription(boolean updateSubscription) {
+		this.updateSubscription = updateSubscription;
+	}
+
+	public boolean retrieveSubscription() {
+		return retrieveSubscription;
+	}
+
+	public void setRetrieveSubscription(boolean retrieveSubscription) {
+		this.retrieveSubscription = retrieveSubscription;
+	}
+
+	public boolean querySubscription() {
+		return querySubscription;
+	}
+
+	public void setQuerySubscription(boolean querySubscription) {
+		this.querySubscription = querySubscription;
+	}
+
+	public boolean deleteSubscription() {
+		return deleteSubscription;
+	}
+
+	public void setDeleteSubscription(boolean deleteSubscription) {
+		this.deleteSubscription = deleteSubscription;
+	}
+
+	public boolean queryEntityMap() {
+		return queryEntityMap;
+	}
+
+	public void setQueryEntityMap(boolean queryEntityMap) {
+		this.queryEntityMap = queryEntityMap;
+	}
+
+	public boolean createEntityMap() {
+		return createEntityMap;
+	}
+
+	public void setCreateEntityMap(boolean createEntityMap) {
+		this.createEntityMap = createEntityMap;
+	}
+
+	public boolean updateEntityMap() {
+		return updateEntityMap;
+	}
+
+	public void setUpdateEntityMap(boolean updateEntityMap) {
+		this.updateEntityMap = updateEntityMap;
+	}
+
+	public boolean deleteEntityMap() {
+		return deleteEntityMap;
+	}
+
+	public void setDeleteEntityMap(boolean deleteEntityMap) {
+		this.deleteEntityMap = deleteEntityMap;
+	}
+
+	public boolean retrieveEntityMap() {
+		return retrieveEntityMap;
+	}
+
+	public void setRetrieveEntityMap(boolean retrieveEntityMap) {
+		this.retrieveEntityMap = retrieveEntityMap;
+	}
+
+	public RemoteHost host() {
+		return host;
+	}
+
+	public void setHost(RemoteHost host) {
+		this.host = host;
+	}
+
+	public Context context() {
+		return context;
+	}
+
+	public void setContext(Context context) {
+		this.context = context;
 	}
 
 }

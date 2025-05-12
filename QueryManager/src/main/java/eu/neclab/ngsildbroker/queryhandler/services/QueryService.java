@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.queryhandler.services;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -99,6 +100,10 @@ public class QueryService implements CSourceHandler {
 
 	@ConfigProperty(name = "scorpio.fed.timeout", defaultValue = "20000")
 	int timeout;
+
+	@ConfigProperty(name = "scorpio.fed.limit", defaultValue = "100")
+	int fedlimit;
+
 	@Inject
 	MicroServiceUtils microServiceUtils;
 
@@ -346,6 +351,7 @@ public class QueryService implements CSourceHandler {
 								Map<String, Map<String, Object>> deleted = EntityTools.evaluateFilterQueries(result,
 										qQuery, scopeQuery, geoQuery, attrsQuery, pickTerm, omitTerm, dataSetIdTerm,
 										updatedEntityCache, jsonKeys, false);
+
 								if (deleted.isEmpty()) {
 									if (entityMap.isChanged()) {
 										return queryDAO.storeEntityMap(tenant, entityMap.getId(), entityMap).onItem()
@@ -472,17 +478,19 @@ public class QueryService implements CSourceHandler {
 		List<Uni<Tuple2<List<Map<String, Object>>, QueryRemoteHost>>> unis = Lists.newArrayList();
 		for (Entry<QueryRemoteHost, Set<String>> entry : remoteHost2Ids.entrySet()) {
 			QueryRemoteHost host = entry.getKey();
-			Map<String, String> queryParams = host.getQueryParam();
+			Map<String, Object> queryParams = host.getQueryParam();
 			Set<String> value = entry.getValue();
 			List<String> ids = new ArrayList<String>(value.size());
 			value.forEach(id -> {
-				if (!entityCache.get(id).getItem2().contains(host.cSourceId())) {
+				Tuple2<Map<String, Object>, Set<String>> cacheEntry = entityCache.get(id);
+				if (cacheEntry == null || !cacheEntry.getItem2().contains(host.cSourceId())) {
 					ids.add(id);
 				}
 			});
 			if (!ids.isEmpty()) {
-				queryParams.put(NGSIConstants.ID, StringUtils.join(ids, ','));
-				unis.add(EntityTools.getRemoteEntities(host, webClient, timeout, ldService).onItem()
+				host.setIdsAndTypesAndIdPattern(List.of(Tuple3.of(StringUtils.join(ids, ','), null, null)));
+
+				unis.add(EntityTools.getRemoteEntities(host, webClient, timeout, fedlimit, 0, ldService).onItem()
 						.transform(entities -> Tuple2.of(entities, host)));
 			}
 		}
@@ -762,33 +770,34 @@ public class QueryService implements CSourceHandler {
 			int offSet, boolean count, DataSetIdTerm dataSetIdTerm, String join, int joinLevel, Context context,
 			Set<String> jsonKeys, io.vertx.core.MultiMap headersFromReq, PickTerm pickTerm, OmitTerm omitTerm,
 			ViaHeaders viaHeaders) {
-		if (entityMap.removeEntries(deleted.keySet())) {
-			QueryResult result = new QueryResult(tenant);
-			List<Map<String, Object>> resultData = Lists.newArrayList();
-			result.setData(resultData);
-			result.setCount((long) entityMap.size());
-			result.setqToken(entityMap.getId());
-			result.setLimit(limit);
-			result.setOffset(offSet);
 
-			long leftAfter = entityMap.size() - (offSet + limit);
-			if (leftAfter < 0) {
-				leftAfter = 0;
-			}
-			result.setResultsLeftAfter(leftAfter);
-			result.setResultsLeftBefore((long) offSet);
-			Stream<Entry<String, Set<String>>> subMap = entityMap.getEntityId2CSourceIds().entrySet().stream()
-					.skip(offSet).limit(limit);
-			subMap.forEach(id2Hosts -> {
-				resultData.add(entityCache.getAllIds2EntityAndHosts().get(id2Hosts.getKey()).getItem1());
-			});
+//		if (entityMap.removeEntries(deleted.keySet())) {
+//			QueryResult result = new QueryResult(tenant);
+//			List<Map<String, Object>> resultData = Lists.newArrayList();
+//			result.setData(resultData);
+//			result.setCount((long) entityMap.size());
+//			result.setqToken(entityMap.getId());
+//			result.setLimit(limit);
+//			result.setOffset(offSet);
+//
+//			long leftAfter = entityMap.size() - (offSet + limit);
+//			if (leftAfter < 0) {
+//				leftAfter = 0;
+//			}
+//			result.setResultsLeftAfter(leftAfter);
+//			result.setResultsLeftBefore((long) offSet);
+//			Stream<Entry<String, Set<String>>> subMap = entityMap.getEntityId2CSourceIds().entrySet().stream()
+//					.skip(offSet).limit(limit);
+//			subMap.forEach(id2Hosts -> {
+//				resultData.add(entityCache.getAllIds2EntityAndHosts().get(id2Hosts.getKey()).getItem1());
+//			});
+//
+//			return doJoinIfNeeded(tenant, result, entityCache, context, join, joinLevel, viaHeaders, pickTerm, omitTerm,
+//					entityMap.isDistEntities());
+//
+//		}
 
-			return doJoinIfNeeded(tenant, result, entityCache, context, join, joinLevel, viaHeaders, pickTerm, omitTerm,
-					entityMap.isDistEntities());
-
-		}
-
-		entityMap.setChanged(true);
+		entityMap.setChanged(entityMap.removeEntries(deleted.keySet()));
 
 		return fillCacheFromEntityMap(entityMap, entityCache, context, headersFromReq, true, tenant, offSet,
 				limit + (deleted.size() * 3)).onItem().transformToUni(updatedCache -> {
@@ -1780,8 +1789,8 @@ public class QueryService implements CSourceHandler {
 							if (idPattern != null) {
 								req = req.setQueryParam(NGSIConstants.QUERY_PARAMETER_IDPATTERN, idPattern);
 							}
-							for (Entry<String, String> param : remoteHost.getQueryParam().entrySet()) {
-								req = req.setQueryParam(param.getKey(), (String) param.getValue());
+							for (Entry<String, Object> param : remoteHost.getQueryParam().entrySet()) {
+								req = HttpUtils.serializeQueryParams(req, param);
 							}
 							req = req.putHeader(HttpHeaders.VIA, remoteHost.getViaHeaders().getViaHeaders());
 							// todo check how to solve this proper once and for all
@@ -1798,25 +1807,21 @@ public class QueryService implements CSourceHandler {
 										if (response != null && response.statusCode() == 200) {
 											result = response.bodyAsJsonObject().getMap();
 
-										} else if (response != null && response.statusCode() == 404) {
-											result = null;
 										} else {
-											result = Maps.newHashMap();
+											result = null;
 										}
 										logger.debug("from remote host: " + remoteHost.host()
 												+ NGSIConstants.NGSI_LD_ENTITY_MAP_ENDPOINT
 												+ remoteHost.getQueryParam());
 										return Tuple2.of(result, remoteHost);
 									}).onFailure().recoverWithItem(e -> {
-										logger.warn(
-												"Failed to query entity list from remote host" + remoteHost.toString());
 										return Tuple2.of(null, remoteHost);
 									}));
 						}
 					} else {
-						unisForEntityRetrieval
-								.add(EntityTools.getRemoteEntities(remoteHost, webClient, timeout, ldService).onItem()
-										.transform(entities -> Tuple2.of(entities, remoteHost)));
+						unisForEntityRetrieval.add(
+								EntityTools.getRemoteEntities(remoteHost, webClient, timeout, fedlimit, 0, ldService)
+										.onItem().transform(entities -> Tuple2.of(entities, remoteHost)));
 					}
 				}
 				Uni<List<?>> combinedMaps;
@@ -1848,9 +1853,14 @@ public class QueryService implements CSourceHandler {
 									QueryRemoteHost rHost = mapT.getItem2();
 									Map<String, Object> rMap = mapT.getItem1();
 									if (rMap == null) {
-										recoverEntityMapFail
-												.add(EntityTools.getRemoteEntities(rHost, webClient, timeout, ldService)
-														.onItem().transform(entities -> Tuple2.of(entities, rHost)));
+										logger.warn("Failed to query entity list from remote host" + rHost.toString()
+												+ " attempting recovery with entities endpoint");
+										tenant2CId2RegEntries.get(tenant, rHost.cSourceId()).forEach(regEntry -> {
+											regEntry.setQueryEntityMap(false);
+										});
+										recoverEntityMapFail.add(EntityTools
+												.getRemoteEntities(rHost, webClient, timeout, fedlimit, 0, ldService)
+												.onItem().transform(entities -> Tuple2.of(entities, rHost)));
 										continue;
 									}
 									String cSourceId = rHost.cSourceId();
@@ -1963,7 +1973,7 @@ public class QueryService implements CSourceHandler {
 					splitEntities);
 			for (QueryRemoteHost remoteQuery : remoteQueries) {
 
-				unis.add(EntityTools.getRemoteEntities(remoteQuery, webClient, timeout, ldService).onItem()
+				unis.add(EntityTools.getRemoteEntities(remoteQuery, webClient, timeout, fedlimit, 0, ldService).onItem()
 						.transform(l -> Tuple3.of(l, remoteQuery)));
 			}
 

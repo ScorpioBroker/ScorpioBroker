@@ -61,6 +61,7 @@ import io.vertx.core.http.impl.headers.HeadersMultiMap;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.buffer.Buffer;
+import io.vertx.mutiny.ext.web.client.HttpRequest;
 import io.vertx.mutiny.ext.web.client.HttpResponse;
 import jakarta.ws.rs.core.MediaType;
 
@@ -164,6 +165,34 @@ public final class HttpUtils {
 		default:
 			return -1;// error
 		}
+	}
+
+	public static Tuple2<Integer, Integer> parseNextLink(HttpResponse<Buffer> response) {
+		List<String> linkHeaders = response.headers().getAll("Link");
+
+		for (String linkHeader : linkHeaders) {
+			if (linkHeader.contains("rel=\"next\"")) {
+				linkHeader = linkHeader.substring(1, linkHeader.indexOf('>'));
+				int start = linkHeader.indexOf("limit=") + 6;
+				int end = linkHeader.indexOf("&", start);
+				int limit;
+																if (end == -1) {
+										limit = Integer.parseInt(linkHeader.substring(start));
+				} else {
+					limit = Integer.parseInt(linkHeader.substring(start, end));
+				}
+				start = linkHeader.indexOf("offset=") + 7;
+				end = linkHeader.indexOf("&", start);
+				int offset;
+				if (end == -1) {
+					offset = Integer.parseInt(linkHeader.substring(start));
+				} else {
+					offset = Integer.parseInt(linkHeader.substring(start, end));
+				}
+				return Tuple2.of(limit, offset);
+			}
+		}
+		return null;
 	}
 
 	public static List<Object> parseLinkHeaderNoUni(List<String> rawLinks, String headerRelLdcontext) {
@@ -1365,6 +1394,29 @@ public final class HttpUtils {
 		default:
 			throw new ResponseException(ErrorType.BadRequestData, "only true and false are valid values for booleans");
 		}
+	}
+
+	public static HttpRequest<Buffer> serializeQueryParams(HttpRequest<Buffer> req, Entry<String, Object> param) {
+		String s;
+		Object value = param.getValue();
+		if (value instanceof String s2) {
+			s = s2;
+		} else if (value instanceof Number n) {
+			s = n.toString();
+		} else if (value instanceof Boolean b) {
+			s = b.toString();
+		} else {
+			try {
+				s = JsonUtils.toString(value);
+			} catch (IOException e) {
+				logger.error("Failed to serialize query param " + value);
+				s = null;
+			}
+		}
+		if (s != null) {
+			req = req.addQueryParam(param.getKey(), s);
+		}
+		return req;
 	}
 
 }

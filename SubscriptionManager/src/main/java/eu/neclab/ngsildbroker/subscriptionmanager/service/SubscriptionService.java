@@ -1346,10 +1346,7 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 	public static void main(String[] args) throws MalformedURLException, URISyntaxException {
 		URI url = new URI("mqtts://bla.com/basd");
 
-		System.out.println(url.getAuthority());
-		System.out.println(url.getScheme());
-		System.out.println(url.getSchemeSpecificPart());
-	}
+							}
 
 	private Uni<MqttClient> getMqttClient(NotificationParam notificationParam) {
 		URI host = notificationParam.getEndPoint().getUri();

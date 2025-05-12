@@ -22,7 +22,7 @@ public class QueryRemoteHost {
 	boolean canDoRetrieve;
 	int regMode;
 	List<Tuple3<String, String, String>> idsAndTypesAndIdPattern = Lists.newArrayList();
-	Map<String, String> queryParams;
+	Map<String, Object> queryParams;
 	boolean canDoEntityMap;
 	boolean canDoZip;
 	String entityMapToken;
@@ -31,7 +31,7 @@ public class QueryRemoteHost {
 
 	public QueryRemoteHost(String host, String tenant, MultiMap headers, String cSourceId, boolean canDoQuery,
 			boolean canDoBatchQuery, boolean canDoRetrieve, int regMode,
-			List<Tuple3<String, String, String>> idsAndTypesAndIdPattern, Map<String, String> queryParams,
+			List<Tuple3<String, String, String>> idsAndTypesAndIdPattern, Map<String, Object> queryParams,
 			boolean canDoEntityMap, boolean canDoZip, String entityMapToken, ViaHeaders viaHeaders) {
 		this.host = host;
 		this.tenant = tenant;
@@ -41,7 +41,7 @@ public class QueryRemoteHost {
 		this.canDoQuery = canDoQuery;
 		this.canDoRetrieve = canDoRetrieve;
 		this.regMode = regMode;
-		this.canDoEntityMap = false;// canDoEntityMap;
+		this.canDoEntityMap = canDoEntityMap;
 		this.canDoZip = canDoZip;
 		this.entityMapToken = entityMapToken;
 		this.queryParams = queryParams;
@@ -98,11 +98,11 @@ public class QueryRemoteHost {
 		this.regMode = regMode;
 	}
 
-	public Map<String, String> getQueryParam() {
+	public Map<String, Object> getQueryParam() {
 		return queryParams;
 	}
 
-	public void setQueryParam(Map<String, String> queryParams) {
+	public void setQueryParam(Map<String, Object> queryParams) {
 		this.queryParams = queryParams;
 	}
 
@@ -167,9 +167,9 @@ public class QueryRemoteHost {
 	}
 
 	public void setParamsFromNext(String nextLink) {
-		String pureLink = nextLink.substring(1, nextLink.length() - 12);
+				String pureLink = nextLink.substring(1, nextLink.indexOf(">;"));
 
-		String params = pureLink.substring(pureLink.indexOf('?'));
+		String params = pureLink.substring(pureLink.indexOf('?') + 1);
 		int index = params.indexOf('&', 0);
 		int lastIndex = 0;
 		int equalIdx;
@@ -177,27 +177,31 @@ public class QueryRemoteHost {
 		String paramPart;
 		while (index != -1) {
 			paramPart = params.substring(lastIndex, index);
-			equalIdx = paramPart.indexOf('=', lastIndex);
+			equalIdx = paramPart.indexOf('=');
 			if (equalIdx == -1) {
 				queryParams.put(paramPart, "true");
 			} else {
-				queryParams.put(paramPart.substring(0, equalIdx), paramPart.substring(equalIdx, paramPart.length()));
+				queryParams.put(paramPart.substring(0, equalIdx), paramPart.substring(equalIdx + 1));
 			}
-			lastIndex = index;
+			lastIndex = index + 1;
 			index = params.indexOf('&', lastIndex);
-		}
-		paramPart = params.substring(lastIndex, index);
-		equalIdx = paramPart.indexOf('=', lastIndex);
+					}
+		paramPart = params.substring(lastIndex);
+		equalIdx = paramPart.indexOf('=');
 		if (equalIdx == -1) {
 			queryParams.put(paramPart, "true");
 		} else {
-			queryParams.put(paramPart.substring(0, equalIdx), paramPart.substring(equalIdx, paramPart.length()));
+			queryParams.put(paramPart.substring(0, equalIdx), paramPart.substring(equalIdx + 1));
 		}
 
 	}
 
 	public List<Tuple3<String, String, String>> getIdsAndTypesAndIdPattern() {
 		return idsAndTypesAndIdPattern;
+	}
+
+	public void setIdsAndTypesAndIdPattern(List<Tuple3<String, String, String>> idsAndTypesAndIdPattern) {
+		this.idsAndTypesAndIdPattern = idsAndTypesAndIdPattern;
 	}
 
 	public void addIdsAndTypesAndIdPattern(Tuple3<String, String, String> idsAndTypesAndIdPattern) {

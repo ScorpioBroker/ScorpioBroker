@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.commons.tools;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -609,7 +610,7 @@ public final class EntityTools {
 	}
 
 	private static Uni<List<Map<String, Object>>> handle414(WebClient webClient, QueryRemoteHost remoteHost,
-			int timeout, JsonLDService ldService, String id, String type, String idPattern) {
+			int timeout, int limit, int offset, JsonLDService ldService, String id, String type, String idPattern) {
 		logger.debug("Attempting 414 recovery");
 		if (id == null) {
 			logger.debug("Can't recover 414 because no id has been used");
@@ -636,8 +637,8 @@ public final class EntityTools {
 		QueryRemoteHost hostOne = remoteHost.copyFor414Handle(newHalfIdOne, type, idPattern);
 		QueryRemoteHost hostTwo = remoteHost.copyFor414Handle(newHalfIdTwo, type, idPattern);
 
-		return Uni.combine().all().unis(getRemoteEntities(hostOne, webClient, timeout, ldService),
-				getRemoteEntities(hostTwo, webClient, timeout, ldService)).asTuple().onItem().transform(tpl -> {
+		return Uni.combine().all().unis(getRemoteEntities(hostOne, webClient, timeout, limit, offset, ldService),
+				getRemoteEntities(hostTwo, webClient, timeout, limit, offset, ldService)).asTuple().onItem().transform(tpl -> {
 					List<Map<String, Object>> result = tpl.getItem1();
 					result.addAll(tpl.getItem2());
 					return result;
@@ -645,7 +646,7 @@ public final class EntityTools {
 	}
 
 	public static Uni<List<Map<String, Object>>> getRemoteEntities(QueryRemoteHost remoteHost, WebClient webClient,
-			int timeout, JsonLDService ldService) {
+			int timeout, int limit, int offset, JsonLDService ldService) {
 		logger.debug("Calling remote host:" + remoteHost);
 		List<Tuple3<String, String, String>> idsAndTypesAndIdPattern = remoteHost.getIdsAndTypesAndIdPattern();
 		Context context = remoteHost.context();
@@ -674,27 +675,28 @@ public final class EntityTools {
 				}
 				batchBody.put(NGSIConstants.NGSI_LD_ENTITIES_SHORT, entities);
 			}
-			Map<String, String> queryParams = remoteHost.getQueryParam();
+			Map<String, Object> queryParams = remoteHost.getQueryParam();
 			queryParams.remove(NGSIConstants.ID);
 			queryParams.remove(NGSIConstants.TYPE);
 			if (queryParams != null) {
 				batchBody.putAll(queryParams);
-				if(batchBody.containsKey("georel")) {
+				if (batchBody.containsKey("georel")) {
 					Map<String, Object> tmp = Maps.newHashMap();
 					batchBody.put(NGSIConstants.NGSI_LD_GEO_QUERY_SHORT, tmp);
 					tmp.put("georel", batchBody.remove("georel"));
 					tmp.put("coordinates", batchBody.remove("coordinates"));
-					
+
 					tmp.put("geometry", batchBody.remove("geometry"));
 					Object geoProperty = batchBody.remove("geoproperty");
-					if(geoProperty != null) {
+					if (geoProperty != null) {
 						tmp.put("geoproperty", geoProperty);
 					}
 				}
 			}
 			HttpRequest<Buffer> req = webClient.postAbs(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_QUERY)
 					.timeout(timeout);
-			req = req.setQueryParam("limit", "100");
+			req = req.setQueryParam("limit", limit + "");
+			req = req.setQueryParam("offset", offset + "");
 			req = req.setQueryParam("options", "sysAttrs");
 			req = req.putHeader(HttpHeaders.VIA, remoteHost.getViaHeaders().getViaHeaders());
 			String batchString;
@@ -713,14 +715,17 @@ public final class EntityTools {
 			logger.debug(batchString);
 			unis.add(req.putHeaders(remoteHost.headers()).sendBuffer(Buffer.buffer(batchString)).onItem()
 					.transformToUni(response -> {
+						logger.debug(response.headers().toString());
+						logger.debug(response.headers().getAll("Link").size() + " link size");
 						if (response != null) {
 							logger.debug(response.statusCode() + "");
 							// logger.debug(response.bodyAsString());
 							switch (response.statusCode()) {
 							case 200: {
-								return handle200(webClient, remoteHost, response, ldService, timeout);
+								return handle200(webClient, remoteHost, response, ldService, timeout, limit, offset);
 							}
 							default: {
+								logger.debug(response.bodyAsString());
 								return Uni.createFrom().item(Lists.newArrayList());
 							}
 
@@ -755,10 +760,11 @@ public final class EntityTools {
 					req = req.setQueryParam(NGSIConstants.QUERY_PARAMETER_IDPATTERN, idPattern);
 				}
 
-				for (Entry<String, String> param : remoteHost.getQueryParam().entrySet()) {
-					req = req.setQueryParam(param.getKey(), (String) param.getValue());
+				for (Entry<String, Object> param : remoteHost.getQueryParam().entrySet()) {
+					req = HttpUtils.serializeQueryParams(req, param);
 				}
-				req = req.setQueryParam("limit", "100");
+				req = req.setQueryParam("limit", limit + "");
+				req = req.setQueryParam("offset", offset + "");
 				req = req.setQueryParam("options", "sysAttrs");
 				req = req.putHeader(HttpHeaders.VIA, remoteHost.getViaHeaders().getViaHeaders());
 				// <https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json>;
@@ -786,10 +792,10 @@ public final class EntityTools {
 								// logger.debug(response.bodyAsString());
 								switch (response.statusCode()) {
 								case 200: {
-									return handle200(webClient, remoteHost, response, ldService, timeout);
+									return handle200(webClient, remoteHost, response, ldService, timeout, limit, offset);
 								}
 								case 414: {
-									return handle414(webClient, remoteHost, timeout, ldService, id, type, idPattern)
+									return handle414(webClient, remoteHost, timeout, limit, offset, ldService, id, type, idPattern)
 											.onItem().transformToUni(entities -> {
 												logger.debug("414 recovered");
 												return ldService.expand(context, entities, AppConstants.opts, -1,
@@ -814,7 +820,7 @@ public final class EntityTools {
 			}
 		} else if (remoteHost.isCanDoRetrieve()) {
 			List<Tuple3<String, String, String>> idsTypeAndPattern = remoteHost.getIdsAndTypesAndIdPattern();
-			Map<String, String> queryParams = remoteHost.getQueryParam();
+			Map<String, Object> queryParams = remoteHost.getQueryParam();
 
 			if (idsTypeAndPattern != null) {
 				for (Tuple3<String, String, String> tpl : idsTypeAndPattern) {
@@ -826,8 +832,9 @@ public final class EntityTools {
 									remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + idEntry);
 							req = req.putHeader(HttpHeaders.VIA, remoteHost.getViaHeaders().getViaHeaders());
 							if (queryParams != null) {
-								for (Entry<String, String> param : queryParams.entrySet()) {
-									req = req.addQueryParam(param.getKey(), param.getValue());
+								for (Entry<String, Object> param : queryParams.entrySet()) {
+									req = HttpUtils.serializeQueryParams(req, param);
+
 								}
 							}
 							if (context != null && context.getOriginalAtContext() != null
@@ -849,7 +856,7 @@ public final class EntityTools {
 										if (response != null) {
 											switch (response.statusCode()) {
 											case 200: {
-												return handle200(webClient, remoteHost, response, ldService, timeout);
+												return handle200(webClient, remoteHost, response, ldService, timeout, limit, offset);
 											}
 											default: {
 
@@ -890,7 +897,7 @@ public final class EntityTools {
 	}
 
 	private static Uni<List<Object>> handle200(WebClient webClient, QueryRemoteHost remoteHost,
-			HttpResponse<Buffer> response, JsonLDService ldService, int timeout) {
+			HttpResponse<Buffer> response, JsonLDService ldService, int timeout, int limit, int offset) {
 		String tmp = response.bodyAsString().trim();
 		List<Map<String, Object>> tmpList;
 		if (tmp.charAt(0) == '[') {
@@ -901,9 +908,14 @@ public final class EntityTools {
 
 		return ldService.expand(remoteHost.context(), tmpList, AppConstants.opts, -1, true).onItem()
 				.transformToUni(expanded -> {
-					if (response.headers().contains("Next")) {
-						remoteHost.setParamsFromNext(response.headers().get("Next"));
-						return getRemoteEntities(remoteHost, webClient, timeout, ldService).onItem()
+					
+					Tuple2<Integer, Integer> nextT = HttpUtils.parseNextLink(response);
+					if (nextT != null) {
+						logger.debug("calling next");
+						
+						
+						logger.debug(remoteHost.toString());
+						return getRemoteEntities(remoteHost, webClient, timeout, nextT.getItem1(), nextT.getItem2(), ldService).onItem()
 								.transform(nextResult -> {
 
 									if (nextResult != null) {
@@ -1022,12 +1034,9 @@ public final class EntityTools {
 			}
 		}
 		Map<String, QueryRemoteHost> cSourceId2QueryRemoteHost = Maps.newHashMap();
-System.out.println("aaaaaaaaaaaaaaaaaaaa");
-		for (Map<QueryRemoteHost, QueryInfos> remoteHost2QueryInfo : remoteHost2QueryInfos) {
-			System.out.println("bbbbbbbbbbbbbbbbbbb");
-			for (Entry<QueryRemoteHost, QueryInfos> entry : remoteHost2QueryInfo.entrySet()) {
-				System.out.println("ccccccccccccccccc");
-				QueryRemoteHost tmpHost = entry.getKey();
+				for (Map<QueryRemoteHost, QueryInfos> remoteHost2QueryInfo : remoteHost2QueryInfos) {
+						for (Entry<QueryRemoteHost, QueryInfos> entry : remoteHost2QueryInfo.entrySet()) {
+								QueryRemoteHost tmpHost = entry.getKey();
 				QueryRemoteHost finalHost = cSourceId2QueryRemoteHost.get(tmpHost.cSourceId());
 				if (finalHost == null) {
 					finalHost = tmpHost;
@@ -1041,11 +1050,11 @@ System.out.println("aaaaaaaaaaaaaaaaaaaa");
 					finalHost.setContext(context);
 					contextToUse = context;
 				}
-				Map<String, String> queryParams = entry.getValue().toQueryParams(context, false, fullEntityCache,
+				Map<String, Object> queryParams = entry.getValue().toQueryParams(context, false, fullEntityCache,
 						finalHost, isDist);
-				finalHost.addIdsAndTypesAndIdPattern(
-						Tuple3.of(queryParams.remove(NGSIConstants.ID), queryParams.remove(NGSIConstants.TYPE),
-								queryParams.remove(NGSIConstants.QUERY_PARAMETER_IDPATTERN)));
+				finalHost.addIdsAndTypesAndIdPattern(Tuple3.of((String) queryParams.remove(NGSIConstants.ID),
+						(String) queryParams.remove(NGSIConstants.TYPE),
+						(String) queryParams.remove(NGSIConstants.QUERY_PARAMETER_IDPATTERN)));
 				finalHost.setQueryParam(queryParams);
 
 			}
@@ -1058,7 +1067,7 @@ System.out.println("aaaaaaaaaaaaaaaaaaaa");
 			ScopeQueryTerm scopeQuery, GeoQueryTerm geoQuery, AttrsQueryTerm attrsTerm, PickTerm pickTerm,
 			OmitTerm omitTerm, DataSetIdTerm dataSetIdTerm, EntityCache entityCache, Set<String> jsonKeys,
 			boolean calculateLinked) {
-		Map<String, Map<String, Object>> deleted = Maps.newHashMap();
+				Map<String, Map<String, Object>> deleted = Maps.newHashMap();
 		List<Map<String, Object>> resultData = queryResult.getData();
 		Iterator<Map<String, Object>> it = resultData.iterator();
 		Map<String, Map<String, Object>> flatEntities = queryResult.getFlatJoin();
@@ -1069,7 +1078,7 @@ System.out.println("aaaaaaaaaaaaaaaaaaaa");
 			// order is important here qquery scope and geo remove full entities and the
 			// rest modifies the entities and might result in empty entities
 			boolean qResult = (qQuery != null && !qQuery.calculateEntity(entity, entityCache, jsonKeys, false));
-			boolean scopeResult = (scopeQuery != null && !scopeQuery.calculateEntity(entity));
+						boolean scopeResult = (scopeQuery != null && !scopeQuery.calculateEntity(entity));
 			boolean geoQResult = (geoQuery != null && !geoQuery.calculateEntity(entity));
 			boolean attrsResult = (attrsTerm != null && !attrsTerm.calculateEntity(entity));
 			boolean pickResult = (pickTerm != null
@@ -1078,12 +1087,12 @@ System.out.println("aaaaaaaaaaaaaaaaaaaa");
 					&& !omitTerm.calculateEntity(entity, flatJoin, flatEntities, pickForFlat, calculateLinked));
 			boolean datasetIdResult = (dataSetIdTerm != null && !dataSetIdTerm.calculateEntity(entity));
 			if (qResult || scopeResult || geoQResult || attrsResult || pickResult || omitResult || datasetIdResult) {
-				it.remove();
+								it.remove();
 				deleted.put((String) entity.get(NGSIConstants.JSON_LD_ID), entity);
 			}
 
 		}
-		if (flatEntities != null && flatJoin) {
+				if (flatEntities != null && flatJoin) {
 			if (pickTerm == null && omitTerm == null) {
 				resultData.addAll(flatEntities.values());
 			} else {

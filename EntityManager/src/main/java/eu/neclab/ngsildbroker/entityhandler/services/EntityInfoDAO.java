@@ -451,7 +451,7 @@ public class EntityInfoDAO {
 
 			Tuple tuple = Tuple.of(request.getFirstId(), new JsonObject(request.getFirstPayload()), !noOverwrite);
 //			logger.debug(sql);
-			logger.debug(tuple.deepToString());
+			// logger.debug(tuple.deepToString());
 			return client.preparedQuery(sql).execute(tuple).onFailure().recoverWithUni(e -> {
 				return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
 			}).onItem().transformToUni(rows -> {
@@ -525,8 +525,7 @@ public class EntityInfoDAO {
 		});
 	}
 public static void main(String[] args) {
-	System.out.println( Boolean.parseBoolean("true"));
-}
+	}
 	/**
 	 * 
 	 * @param request

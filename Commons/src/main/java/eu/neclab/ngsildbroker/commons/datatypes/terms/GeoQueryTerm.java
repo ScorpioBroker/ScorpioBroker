@@ -542,22 +542,20 @@ public class GeoQueryTerm implements Serializable {
 		queryParams.put("geoproperty", geoproperty);
 
 		if (georel.equals(NGSIConstants.GEO_REL_NEAR)) {
-			georel = georel + ";" + distanceType + "=" + distanceValue;
+			georel = georel + ";" + distanceType + "==" + distanceValue;
 		}
 		queryParams.put("georel", georel);
 
-		StringBuilder result = new StringBuilder();
-		result.append('[');
+		List<Object> coordinates = Lists.newArrayList();
+
 		if (geo instanceof JtsPoint) {
 			JtsPoint point = (JtsPoint) geo;
-			result.append(point.getLon());
-			result.append(',');
-			result.append(point.getLat());
+			coordinates.add(point.getLon());
+			coordinates.add(point.getLat());
 			queryParams.put("geometry", "Point");
 		} else if (geo instanceof GeoCircle c) {
-			result.append(c.getCenter().getLon());
-			result.append(',');
-			result.append(c.getCenter().getLat());
+			coordinates.add(c.getCenter().getLon());
+			coordinates.add(c.getCenter().getLat());
 			queryParams.put("geometry", "Point");
 		} else {
 			JtsGeometry jtsGeom = (JtsGeometry) geo;
@@ -565,76 +563,63 @@ public class GeoQueryTerm implements Serializable {
 			if (geom instanceof LineString) {
 				queryParams.put("geometry", "LineString");
 				LineString line = (LineString) geom;
-				handleLine(line, result);
+				handleLine(line, coordinates);
 			} else if (geom instanceof MultiLineString) {
 				MultiLineString multiLine = (MultiLineString) geom;
 				queryParams.put("geometry", "MultiLineString");
 				int numGeo = multiLine.getNumGeometries();
-				result.append('[');
 				for (int i = 0; i < numGeo; i++) {
 					LineString line = (LineString) multiLine.getGeometryN(i);
-					handleLine(line, result);
-					result.append(',');
+					List<Object> tmp = new ArrayList<Object>(line.getCoordinates().length);
+					coordinates.add(tmp);
+					handleLine(line, tmp);
+
 				}
-				result.setCharAt(result.length() - 1, ']');
+
 			} else if (geom instanceof Polygon) {
 				Polygon poly = (Polygon) geom;
 				queryParams.put("geometry", "Polygon");
-				handlePoly(poly, result);
+				handlePoly(poly, coordinates);
 			} else if (geom instanceof MultiPolygon) {
 				MultiPolygon multiPoly = (MultiPolygon) geom;
 				queryParams.put("geometry", "MultiPolygon");
 				int numGeom = multiPoly.getNumGeometries();
-				result.append('[');
+				
 				for (int i = 0; i < numGeom; i++) {
-					handlePoly((Polygon) multiPoly.getGeometryN(i), result);
-					result.append(',');
+					List<Object> tmp = new ArrayList<Object>(numGeom);
+					handlePoly((Polygon) multiPoly.getGeometryN(i), tmp);
+					coordinates.add(tmp);
 				}
-				result.setCharAt(result.length() - 1, ']');
 			}
 		}
-		result.append(']');
-		queryParams.put("coordinates", result.toString());
+		queryParams.put("coordinates", coordinates);
 	}
 
-	private void handleLine(LineString line, StringBuilder result) {
+	private void handleLine(LineString line, List<Object> topLevel) {
 		for (Coordinate coordinate : line.getCoordinates()) {
-			result.append('[');
-			result.append(coordinate.getX());
-			result.append(',');
-			result.append(coordinate.getY());
-			result.append(']');
-			result.append(',');
+			topLevel.add(Lists.newArrayList(coordinate.getX(), coordinate.getY()));
 		}
-		result.setLength(result.length() - 1);
 	}
 
-	private void handlePoly(Polygon poly, StringBuilder result) {
+	private void handlePoly(Polygon poly, List<Object> topLevel) {
 		LinearRing extRing = poly.getExteriorRing();
-		result.append('[');
-		for (Coordinate coordinate : extRing.getCoordinates()) {
-			result.append('[');
-			result.append(coordinate.getX());
-			result.append(',');
-			result.append(coordinate.getY());
-			result.append(']');
+		Coordinate[] coordinates = extRing.getCoordinates();
+		List<List<Double>> tmp = new ArrayList<List<Double>>(coordinates.length);
+		for (Coordinate coordinate : coordinates) {
+			tmp.add(Lists.newArrayList(coordinate.getX(), coordinate.getY()));
 		}
+		topLevel.add(tmp);
 		int intRingNum = poly.getNumInteriorRing();
 		for (int i = 0; i < intRingNum; i++) {
 			LinearRing intRing = poly.getInteriorRingN(i);
-			result.append(",[");
-			for (Coordinate coordinate : intRing.getCoordinates()) {
-				result.append('[');
-				result.append(coordinate.getX());
-				result.append(',');
-				result.append(coordinate.getY());
-				result.append(']');
+			Coordinate[] coordinates2 = intRing.getCoordinates();
+			List<List<Double>> tmp2 = new ArrayList<List<Double>>(coordinates2.length);
+			for (Coordinate coordinate : coordinates) {
+				tmp2.add(Lists.newArrayList(coordinate.getX(), coordinate.getY()));
 			}
-			result.append(']');
+			topLevel.add(coordinates2);
 
 		}
-		result.append(']');
-
 	}
 
 	public boolean calculateEntity(Map<String, Object> entity) {

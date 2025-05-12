@@ -94,7 +94,7 @@ public class EntityMap {
 				}
 			});
 		}
-		if(json.containsKey("list_size")) {
+		if (json.containsKey("list_size")) {
 			result.setManualSize(json.getInteger("list_size"));
 		}
 		result.setSelectPart(json.getString("selectPart"));
@@ -243,7 +243,16 @@ public class EntityMap {
 			return false;
 		}
 		ids.forEach(id -> {
-			entityId2CSourceIds.remove(id);
+			Set<String> cIds = entityId2CSourceIds.remove(id);
+//			if (cIds != null) {
+//				cIds.forEach(cId -> {
+//					Set<String> eIds = csourceId2EntityIds.get(cId);
+//					if(eIds != null) {
+//						eIds.remove(id);
+//					}
+//					
+//				});
+//			}
 		});
 
 		return true;
@@ -301,7 +310,5 @@ public class EntityMap {
 	public void setManualSize(int manualSize) {
 		this.manualSize = manualSize;
 	}
-	
-	
 
 }

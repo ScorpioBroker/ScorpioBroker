@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.commons.datatypes.terms;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -15,6 +16,7 @@ import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.github.jsonldjava.core.Context;
+import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
@@ -178,6 +180,7 @@ public class QQueryTerm implements Serializable {
 
 	@SuppressWarnings("unchecked")
 	private Object getElemByPath(Object entity, String[] path, int index, String operant) {
+		
 		if (entity == null || index >= path.length) {
 			if (entity instanceof List<?> list && list.get(0) instanceof Map<?, ?> map) {
 				if (map.containsKey(NGSIConstants.NGSI_LD_HAS_VALUE)) {
@@ -1065,13 +1068,11 @@ public class QQueryTerm implements Serializable {
 				if (wildcardUse) {
 					result.append(
 							"AND EXISTS (SELECT TRUE FROM JSONB_OBJECT_KEYS(ENTITY) AS ATTRKEY, JSONB_ARRAY_ELEMENTS(ENTITY -> ATTRKEY) AS rel");
-					
 
 					followUp.append(
 							"AND EXISTS (SELECT TRUE FROM JSONB_OBJECT_KEYS(ENTITY) AS ATTRKEY, JSONB_ARRAY_ELEMENTS(ENTITY -> ATTRKEY) AS rel");
-					
 
-				}else {
+				} else {
 					result.append(" AND EXISTS (SELECT TRUE FROM JSONB_ARRAY_ELEMENTS(ENTITY -> $");
 					result.append(dollarCount);
 					result.append(") as rel");
@@ -1085,8 +1086,7 @@ public class QQueryTerm implements Serializable {
 						", JSONB_ARRAY_ELEMENTS(rel -> 'https://uri.etsi.org/ngsi-ld/hasObject') as obj left join entity on obj->>'@id'=entity.id WHERE rel.value #>> '{@type,0}' = 'https://uri.etsi.org/ngsi-ld/Relationship'");
 				followUp.append(
 						", JSONB_ARRAY_ELEMENTS(rel -> ''https://uri.etsi.org/ngsi-ld/hasObject'') as obj left join entity on obj->>''@id''=entity.id WHERE rel.value #>> ''{@type,0}'' = ''https://uri.etsi.org/ngsi-ld/Relationship''");
-				
-				
+
 				if (!localOnly) {
 					result.append(" AND rel.value ? 'https://uri.etsi.org/ngsi-ld/hasObjectType'");
 					if (!linkedEntityTypes.isEmpty()) {
@@ -2565,7 +2565,6 @@ public class QQueryTerm implements Serializable {
 					result = result || next.calculateEntity(entity, updatedEntityCache, jsonKeys, localOnly);
 				}
 			}
-
 			return result;
 		}
 
