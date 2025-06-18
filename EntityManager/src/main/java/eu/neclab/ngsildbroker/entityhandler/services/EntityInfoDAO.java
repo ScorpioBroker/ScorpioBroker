@@ -43,10 +43,8 @@ import jakarta.inject.Singleton;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 @Singleton
@@ -400,7 +398,6 @@ public class EntityInfoDAO {
 
 	}
 
-	@SuppressWarnings("unchecked")
 	public Uni<Map<String, Object>> updateEntity(UpdateEntityRequest request) {
 		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {
 			String sql = """
@@ -436,7 +433,6 @@ public class EntityInfoDAO {
 	 * @param noOverwrite
 	 * @return the not added attribs
 	 */
-	@SuppressWarnings("unchecked")
 	public Uni<Tuple3<Map<String, Object>, Map<String, Object>, Set<String>>> appendToEntity2(
 			AppendEntityRequest request, boolean noOverwrite) {
 		return clientManager.getClient(request.getTenant(), false).onItem().transformToUni(client -> {

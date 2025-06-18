@@ -1,6 +1,5 @@
 package eu.neclab.ngsildbroker.commons.tools;
 
-import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -168,34 +167,34 @@ public final class EntityTools {
 					typeString = (String) type;
 				}
 				switch (typeString) {
-				case NGSIConstants.NGSI_LD_GEOPROPERTY:
-					prop = SerializationTools.parseGeoProperty((List<Map<String, Object>>) value, key);
-					continue;
-				case NGSIConstants.NGSI_LD_RELATIONSHIP:
-					prop = SerializationTools.parseRelationship((List<Map<String, Object>>) value, key);
-					break;
-				case NGSIConstants.NGSI_LD_LISTRELATIONSHIP:
-					prop = SerializationTools.parseRelationship((List<Map<String, Object>>) value, key);
-					break;
-				case NGSIConstants.NGSI_LD_DATE_TIME:
-					prop = generateFakeProperty(typeString, ((List<Map<String, Object>>) value).get(0));
-					break;
-				case NGSIConstants.NGSI_LD_LANGPROPERTY:
-					prop = generateFakeProperty(key, tmp);
-					break;
-				case NGSIConstants.NGSI_LD_VocabProperty:
-					prop = generateFakeProperty(key, tmp);
-					break;
-				case NGSIConstants.NGSI_LD_ListProperty:
-					prop = generateFakeProperty(key, tmp);
-					break;
-				case NGSIConstants.NGSI_LD_LOCALONLY:
-					prop = generateFakeProperty(key, tmp);
-					break;
-				case NGSIConstants.NGSI_LD_PROPERTY:
-				default:
-					prop = SerializationTools.parseProperty((List<Map<String, Object>>) value, key);
-					break;
+					case NGSIConstants.NGSI_LD_GEOPROPERTY:
+						prop = SerializationTools.parseGeoProperty((List<Map<String, Object>>) value, key);
+						continue;
+					case NGSIConstants.NGSI_LD_RELATIONSHIP:
+						prop = SerializationTools.parseRelationship((List<Map<String, Object>>) value, key);
+						break;
+					case NGSIConstants.NGSI_LD_LISTRELATIONSHIP:
+						prop = SerializationTools.parseRelationship((List<Map<String, Object>>) value, key);
+						break;
+					case NGSIConstants.NGSI_LD_DATE_TIME:
+						prop = generateFakeProperty(typeString, ((List<Map<String, Object>>) value).get(0));
+						break;
+					case NGSIConstants.NGSI_LD_LANGPROPERTY:
+						prop = generateFakeProperty(key, tmp);
+						break;
+					case NGSIConstants.NGSI_LD_VocabProperty:
+						prop = generateFakeProperty(key, tmp);
+						break;
+					case NGSIConstants.NGSI_LD_ListProperty:
+						prop = generateFakeProperty(key, tmp);
+						break;
+					case NGSIConstants.NGSI_LD_LOCALONLY:
+						prop = generateFakeProperty(key, tmp);
+						break;
+					case NGSIConstants.NGSI_LD_PROPERTY:
+					default:
+						prop = SerializationTools.parseProperty((List<Map<String, Object>>) value, key);
+						break;
 				}
 
 			}
@@ -213,11 +212,12 @@ public final class EntityTools {
 		return result;
 	}
 
-//	@SuppressWarnings("unchecked")
-//	public static Set<String> getTypesFromEntity(BaseRequest createRequest) {
-//		List<String> temp = (List<String>) createRequest.getPayload().get(NGSIConstants.JSON_LD_TYPE);
-//		return new HashSet<String>(temp);
-//	}
+	// @SuppressWarnings("unchecked")
+	// public static Set<String> getTypesFromEntity(BaseRequest createRequest) {
+	// List<String> temp = (List<String>)
+	// createRequest.getPayload().get(NGSIConstants.JSON_LD_TYPE);
+	// return new HashSet<String>(temp);
+	// }
 
 	public static String getInstanceId(Map<String, Object> jsonElement) {
 		Object instanceId = jsonElement.get(NGSIConstants.NGSI_LD_INSTANCE_ID);
@@ -638,7 +638,8 @@ public final class EntityTools {
 		QueryRemoteHost hostTwo = remoteHost.copyFor414Handle(newHalfIdTwo, type, idPattern);
 
 		return Uni.combine().all().unis(getRemoteEntities(hostOne, webClient, timeout, limit, offset, ldService),
-				getRemoteEntities(hostTwo, webClient, timeout, limit, offset, ldService)).asTuple().onItem().transform(tpl -> {
+				getRemoteEntities(hostTwo, webClient, timeout, limit, offset, ldService)).asTuple().onItem()
+				.transform(tpl -> {
 					List<Map<String, Object>> result = tpl.getItem1();
 					result.addAll(tpl.getItem2());
 					return result;
@@ -715,19 +716,18 @@ public final class EntityTools {
 			logger.debug(batchString);
 			unis.add(req.putHeaders(remoteHost.headers()).sendBuffer(Buffer.buffer(batchString)).onItem()
 					.transformToUni(response -> {
-						logger.debug(response.headers().toString());
-						logger.debug(response.headers().getAll("Link").size() + " link size");
 						if (response != null) {
 							logger.debug(response.statusCode() + "");
 							// logger.debug(response.bodyAsString());
 							switch (response.statusCode()) {
-							case 200: {
-								return handle200(webClient, remoteHost, response, ldService, timeout, limit, offset);
-							}
-							default: {
-								logger.debug(response.bodyAsString());
-								return Uni.createFrom().item(Lists.newArrayList());
-							}
+								case 200: {
+									return handle200(webClient, remoteHost, response, ldService, timeout, limit,
+											offset);
+								}
+								default: {
+									//logger.debug(response.bodyAsString());
+									return Uni.createFrom().item(Lists.newArrayList());
+								}
 
 							}
 						} else {
@@ -791,21 +791,23 @@ public final class EntityTools {
 								logger.debug(response.statusCode() + "");
 								// logger.debug(response.bodyAsString());
 								switch (response.statusCode()) {
-								case 200: {
-									return handle200(webClient, remoteHost, response, ldService, timeout, limit, offset);
-								}
-								case 414: {
-									return handle414(webClient, remoteHost, timeout, limit, offset, ldService, id, type, idPattern)
-											.onItem().transformToUni(entities -> {
-												logger.debug("414 recovered");
-												return ldService.expand(context, entities, AppConstants.opts, -1,
-														false);
-											});
-								}
-								default: {
+									case 200: {
+										return handle200(webClient, remoteHost, response, ldService, timeout, limit,
+												offset);
+									}
+									case 414: {
+										return handle414(webClient, remoteHost, timeout, limit, offset, ldService, id,
+												type, idPattern)
+												.onItem().transformToUni(entities -> {
+													logger.debug("414 recovered");
+													return ldService.expand(context, entities, AppConstants.opts, -1,
+															false);
+												});
+									}
+									default: {
 
-									return Uni.createFrom().item(Lists.newArrayList());
-								}
+										return Uni.createFrom().item(Lists.newArrayList());
+									}
 
 								}
 							} else {
@@ -855,13 +857,14 @@ public final class EntityTools {
 
 										if (response != null) {
 											switch (response.statusCode()) {
-											case 200: {
-												return handle200(webClient, remoteHost, response, ldService, timeout, limit, offset);
-											}
-											default: {
+												case 200: {
+													return handle200(webClient, remoteHost, response, ldService,
+															timeout, limit, offset);
+												}
+												default: {
 
-												return Uni.createFrom().item(Lists.newArrayList());
-											}
+													return Uni.createFrom().item(Lists.newArrayList());
+												}
 
 											}
 										} else {
@@ -908,14 +911,14 @@ public final class EntityTools {
 
 		return ldService.expand(remoteHost.context(), tmpList, AppConstants.opts, -1, true).onItem()
 				.transformToUni(expanded -> {
-					
+
 					Tuple2<Integer, Integer> nextT = HttpUtils.parseNextLink(response);
 					if (nextT != null) {
 						logger.debug("calling next");
-						
-						
+
 						logger.debug(remoteHost.toString());
-						return getRemoteEntities(remoteHost, webClient, timeout, nextT.getItem1(), nextT.getItem2(), ldService).onItem()
+						return getRemoteEntities(remoteHost, webClient, timeout, nextT.getItem1(), nextT.getItem2(),
+								ldService).onItem()
 								.transform(nextResult -> {
 
 									if (nextResult != null) {
@@ -1034,9 +1037,9 @@ public final class EntityTools {
 			}
 		}
 		Map<String, QueryRemoteHost> cSourceId2QueryRemoteHost = Maps.newHashMap();
-				for (Map<QueryRemoteHost, QueryInfos> remoteHost2QueryInfo : remoteHost2QueryInfos) {
-						for (Entry<QueryRemoteHost, QueryInfos> entry : remoteHost2QueryInfo.entrySet()) {
-								QueryRemoteHost tmpHost = entry.getKey();
+		for (Map<QueryRemoteHost, QueryInfos> remoteHost2QueryInfo : remoteHost2QueryInfos) {
+			for (Entry<QueryRemoteHost, QueryInfos> entry : remoteHost2QueryInfo.entrySet()) {
+				QueryRemoteHost tmpHost = entry.getKey();
 				QueryRemoteHost finalHost = cSourceId2QueryRemoteHost.get(tmpHost.cSourceId());
 				if (finalHost == null) {
 					finalHost = tmpHost;
@@ -1052,6 +1055,9 @@ public final class EntityTools {
 				}
 				Map<String, Object> queryParams = entry.getValue().toQueryParams(context, false, fullEntityCache,
 						finalHost, isDist);
+				if (queryParams == null) {
+					continue;
+				}
 				finalHost.addIdsAndTypesAndIdPattern(Tuple3.of((String) queryParams.remove(NGSIConstants.ID),
 						(String) queryParams.remove(NGSIConstants.TYPE),
 						(String) queryParams.remove(NGSIConstants.QUERY_PARAMETER_IDPATTERN)));
@@ -1067,7 +1073,7 @@ public final class EntityTools {
 			ScopeQueryTerm scopeQuery, GeoQueryTerm geoQuery, AttrsQueryTerm attrsTerm, PickTerm pickTerm,
 			OmitTerm omitTerm, DataSetIdTerm dataSetIdTerm, EntityCache entityCache, Set<String> jsonKeys,
 			boolean calculateLinked) {
-				Map<String, Map<String, Object>> deleted = Maps.newHashMap();
+		Map<String, Map<String, Object>> deleted = Maps.newHashMap();
 		List<Map<String, Object>> resultData = queryResult.getData();
 		Iterator<Map<String, Object>> it = resultData.iterator();
 		Map<String, Map<String, Object>> flatEntities = queryResult.getFlatJoin();
@@ -1078,7 +1084,7 @@ public final class EntityTools {
 			// order is important here qquery scope and geo remove full entities and the
 			// rest modifies the entities and might result in empty entities
 			boolean qResult = (qQuery != null && !qQuery.calculateEntity(entity, entityCache, jsonKeys, false));
-						boolean scopeResult = (scopeQuery != null && !scopeQuery.calculateEntity(entity));
+			boolean scopeResult = (scopeQuery != null && !scopeQuery.calculateEntity(entity));
 			boolean geoQResult = (geoQuery != null && !geoQuery.calculateEntity(entity));
 			boolean attrsResult = (attrsTerm != null && !attrsTerm.calculateEntity(entity));
 			boolean pickResult = (pickTerm != null
@@ -1087,12 +1093,12 @@ public final class EntityTools {
 					&& !omitTerm.calculateEntity(entity, flatJoin, flatEntities, pickForFlat, calculateLinked));
 			boolean datasetIdResult = (dataSetIdTerm != null && !dataSetIdTerm.calculateEntity(entity));
 			if (qResult || scopeResult || geoQResult || attrsResult || pickResult || omitResult || datasetIdResult) {
-								it.remove();
+				it.remove();
 				deleted.put((String) entity.get(NGSIConstants.JSON_LD_ID), entity);
 			}
 
 		}
-				if (flatEntities != null && flatJoin) {
+		if (flatEntities != null && flatJoin) {
 			if (pickTerm == null && omitTerm == null) {
 				resultData.addAll(flatEntities.values());
 			} else {
@@ -1207,100 +1213,101 @@ public final class EntityTools {
 						if (types != null && types instanceof List<?> typeList) {
 							String type = (String) typeList.get(0);
 							switch (type) {
-							case NGSIConstants.NGSI_LD_GEOPROPERTY:
-							case NGSIConstants.NGSI_LD_PROPERTY: {
-								List<Map<String, Object>> hasValue = (List<Map<String, Object>>) m
-										.get(NGSIConstants.NGSI_LD_HAS_VALUE);
+								case NGSIConstants.NGSI_LD_GEOPROPERTY:
+								case NGSIConstants.NGSI_LD_PROPERTY: {
+									List<Map<String, Object>> hasValue = (List<Map<String, Object>>) m
+											.get(NGSIConstants.NGSI_LD_HAS_VALUE);
 
-								if (hasValue != null && !hasValue.isEmpty() && NGSIConstants.NGSI_LD_NULL
-										.equals(hasValue.get(0).get(NGSIConstants.JSON_LD_VALUE))) {
-									changed = true;
-								} else {
-									toAdd.add(m);
+									if (hasValue != null && !hasValue.isEmpty() && NGSIConstants.NGSI_LD_NULL
+											.equals(hasValue.get(0).get(NGSIConstants.JSON_LD_VALUE))) {
+										changed = true;
+									} else {
+										toAdd.add(m);
+									}
+									break;
 								}
-								break;
-							}
-							case NGSIConstants.NGSI_LD_RELATIONSHIP: {
-								List<Map<String, Object>> hasObject = (List<Map<String, Object>>) m
-										.get(NGSIConstants.NGSI_LD_HAS_OBJECT);
-								if (hasObject != null && !hasObject.isEmpty() && NGSIConstants.NGSI_LD_NULL
-										.equals(hasObject.get(0).get(NGSIConstants.JSON_LD_ID))) {
-									changed = true;
-								} else {
-									toAdd.add(m);
+								case NGSIConstants.NGSI_LD_RELATIONSHIP: {
+									List<Map<String, Object>> hasObject = (List<Map<String, Object>>) m
+											.get(NGSIConstants.NGSI_LD_HAS_OBJECT);
+									if (hasObject != null && !hasObject.isEmpty() && NGSIConstants.NGSI_LD_NULL
+											.equals(hasObject.get(0).get(NGSIConstants.JSON_LD_ID))) {
+										changed = true;
+									} else {
+										toAdd.add(m);
+									}
+									break;
 								}
-								break;
-							}
-							case NGSIConstants.NGSI_LD_ListProperty: {
-								List<Map<String, Object>> hasValueList = (List<Map<String, Object>>) m
-										.get(NGSIConstants.NGSI_LD_HAS_LIST);
-								if (hasValueList != null && hasValueList.size() > 0
-										&& hasValueList.get(0).get(NGSIConstants.JSON_LD_LIST) instanceof List<?> l2
-										&& l2.size() > 0 && l2.get(0) instanceof Map<?, ?> m2
-										&& NGSIConstants.NGSI_LD_NULL.equals(m2.get(NGSIConstants.JSON_LD_VALUE))
+								case NGSIConstants.NGSI_LD_ListProperty: {
+									List<Map<String, Object>> hasValueList = (List<Map<String, Object>>) m
+											.get(NGSIConstants.NGSI_LD_HAS_LIST);
+									if (hasValueList != null && hasValueList.size() > 0
+											&& hasValueList.get(0).get(NGSIConstants.JSON_LD_LIST) instanceof List<?> l2
+											&& l2.size() > 0 && l2.get(0) instanceof Map<?, ?> m2
+											&& NGSIConstants.NGSI_LD_NULL.equals(m2.get(NGSIConstants.JSON_LD_VALUE))
 
-								) {
-									changed = true;
-								} else {
-									toAdd.add(m);
+									) {
+										changed = true;
+									} else {
+										toAdd.add(m);
+									}
+									break;
 								}
-								break;
-							}
-							case NGSIConstants.NGSI_LD_LISTRELATIONSHIP: {
-								List<Map<String, Object>> hasObjectList = (List<Map<String, Object>>) m
-										.get(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST);
-								if (hasObjectList != null && hasObjectList.size() > 0
-										&& hasObjectList.get(0).containsKey(NGSIConstants.JSON_LD_LIST)
-										&& (NGSIConstants.NGSI_LD_NULL.equals(
-												((List<Map<String, String>>) ((List<Map<String, Object>>) hasObjectList
-														.get(0).get(NGSIConstants.JSON_LD_LIST)).get(0)
-														.get(NGSIConstants.NGSI_LD_HAS_OBJECT)).get(0)
-														.get(NGSIConstants.JSON_LD_ID))
-												|| NGSIConstants.NGSI_LD_NULL
-														.equals(((List<Map<String, Object>>) hasObjectList.get(0)
-																.get(NGSIConstants.JSON_LD_LIST)).get(0)
-																.get(NGSIConstants.JSON_LD_VALUE)))) {
-									changed = true;
-								} else {
-									toAdd.add(m);
+								case NGSIConstants.NGSI_LD_LISTRELATIONSHIP: {
+									List<Map<String, Object>> hasObjectList = (List<Map<String, Object>>) m
+											.get(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST);
+									if (hasObjectList != null && hasObjectList.size() > 0
+											&& hasObjectList.get(0).containsKey(NGSIConstants.JSON_LD_LIST)
+											&& (NGSIConstants.NGSI_LD_NULL.equals(
+													((List<Map<String, String>>) ((List<Map<String, Object>>) hasObjectList
+															.get(0).get(NGSIConstants.JSON_LD_LIST)).get(0)
+															.get(NGSIConstants.NGSI_LD_HAS_OBJECT)).get(0)
+															.get(NGSIConstants.JSON_LD_ID))
+													|| NGSIConstants.NGSI_LD_NULL
+															.equals(((List<Map<String, Object>>) hasObjectList.get(0)
+																	.get(NGSIConstants.JSON_LD_LIST)).get(0)
+																	.get(NGSIConstants.JSON_LD_VALUE)))) {
+										changed = true;
+									} else {
+										toAdd.add(m);
+									}
+									break;
 								}
-								break;
-							}
-							case NGSIConstants.NGSI_LD_JSON_PROPERTY: {
-								List<Map<String, Object>> hasJson = (List<Map<String, Object>>) m
-										.get(NGSIConstants.NGSI_LD_HAS_JSON);
-								if (hasJson != null && !hasJson.isEmpty() && NGSIConstants.NGSI_LD_NULL
-										.equals(hasJson.get(0).get(NGSIConstants.JSON_LD_VALUE))) {
-									changed = true;
-								} else {
-									toAdd.add(m);
+								case NGSIConstants.NGSI_LD_JSON_PROPERTY: {
+									List<Map<String, Object>> hasJson = (List<Map<String, Object>>) m
+											.get(NGSIConstants.NGSI_LD_HAS_JSON);
+									if (hasJson != null && !hasJson.isEmpty() && NGSIConstants.NGSI_LD_NULL
+											.equals(hasJson.get(0).get(NGSIConstants.JSON_LD_VALUE))) {
+										changed = true;
+									} else {
+										toAdd.add(m);
+									}
+									break;
 								}
-								break;
-							}
-							case NGSIConstants.NGSI_LD_VocabProperty: {
-								List<Map<String, Object>> hasVocab = (List<Map<String, Object>>) m
-										.get(NGSIConstants.NGSI_LD_HAS_VOCAB);
-								if (hasVocab != null && !hasVocab.isEmpty() && NGSIConstants.NGSI_LD_NULL
-										.equals(hasVocab.get(0).get(NGSIConstants.JSON_LD_ID))) {
-									changed = true;
-								} else {
-									toAdd.add(m);
+								case NGSIConstants.NGSI_LD_VocabProperty: {
+									List<Map<String, Object>> hasVocab = (List<Map<String, Object>>) m
+											.get(NGSIConstants.NGSI_LD_HAS_VOCAB);
+									if (hasVocab != null && !hasVocab.isEmpty() && NGSIConstants.NGSI_LD_NULL
+											.equals(hasVocab.get(0).get(NGSIConstants.JSON_LD_ID))) {
+										changed = true;
+									} else {
+										toAdd.add(m);
+									}
+									break;
 								}
-								break;
-							}
-							case NGSIConstants.NGSI_LD_LANGPROPERTY: {
-								List<Map<String, Object>> hasLanguageMap = (List<Map<String, Object>>) m
-										.get(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP);
-								if (hasLanguageMap != null && !hasLanguageMap.isEmpty() && NGSIConstants.NGSI_LD_NULL
-										.equals(hasLanguageMap.get(0).get(NGSIConstants.JSON_LD_VALUE))) {
-									changed = true;
-								} else {
-									toAdd.add(m);
+								case NGSIConstants.NGSI_LD_LANGPROPERTY: {
+									List<Map<String, Object>> hasLanguageMap = (List<Map<String, Object>>) m
+											.get(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP);
+									if (hasLanguageMap != null && !hasLanguageMap.isEmpty()
+											&& NGSIConstants.NGSI_LD_NULL
+													.equals(hasLanguageMap.get(0).get(NGSIConstants.JSON_LD_VALUE))) {
+										changed = true;
+									} else {
+										toAdd.add(m);
+									}
+									break;
 								}
-								break;
-							}
-							default:
-								toAdd.add(m);
+								default:
+									toAdd.add(m);
 							}
 						} else {
 							toAdd.add(m);

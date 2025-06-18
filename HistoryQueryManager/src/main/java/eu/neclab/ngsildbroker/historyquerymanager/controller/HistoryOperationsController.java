@@ -2,7 +2,6 @@ package eu.neclab.ngsildbroker.historyquerymanager.controller;
 
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -19,7 +18,6 @@ import com.google.common.net.HttpHeaders;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.ViaHeaders;
-import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AggrTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
@@ -62,18 +60,18 @@ public class HistoryOperationsController {
 	MicroServiceUtils microServiceUtils;
 	private String selfViaHeader;
 
-	@ConfigProperty(name = "scorpio.history.defaultLimit", defaultValue = "50")
+	@ConfigProperty(name = "scorpio.history.default-limit")
 	int defaultLimit;
-	@ConfigProperty(name = "scorpio.history.maxLimit", defaultValue = "1000")
+	@ConfigProperty(name = "scorpio.history.max-limit")
 	int maxLimit;
-	@ConfigProperty(name = "scorpio.history.lastN", defaultValue = "50")
+	@ConfigProperty(name = "scorpio.history.lastn")
 	int defaultLastN;
-	@ConfigProperty(name = "scorpio.history.maxLastN", defaultValue = "1000")
+	@ConfigProperty(name = "scorpio.history.max-lastn")
 	int maxLastN;
 
 	@PostConstruct
 	public void setup() {
-		URI gateway = microServiceUtils.getGatewayURL();
+		URI gateway = microServiceUtils.getGatewayURI();
 		this.selfViaHeader = gateway.getScheme().toUpperCase() + "/1.1 " + gateway.getAuthority();
 	}
 
@@ -101,13 +99,13 @@ public class HistoryOperationsController {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
 					new ResponseException(ErrorType.TooManyResults), HttpUtils.getTenant(request)));
 		}
-		boolean retrieveEntityMap;
-		boolean doNotCompact;
+		// boolean retrieveEntityMap;
+		// boolean doNotCompact;
 		boolean localOnly;
 		boolean count;
 		try {
-			retrieveEntityMap = HttpUtils.parseBoolean(retrieveEntityMapS);
-			doNotCompact = HttpUtils.parseBoolean(doNotCompactS);
+			// retrieveEntityMap = HttpUtils.parseBoolean(retrieveEntityMapS);
+			// doNotCompact = HttpUtils.parseBoolean(doNotCompactS);
 			localOnly = HttpUtils.parseBoolean(localOnlyS);
 			count = HttpUtils.parseBoolean(countS);
 			body = new JsonObject(bodyStr).getMap();
@@ -350,7 +348,7 @@ public class HistoryOperationsController {
 						false, localOnly, context, request).onItem().transformToUni(queryResult -> {
 							return HttpUtils.generateQueryResult(request, queryResult, options, (String) geoproperty,
 									acceptHeader, count, actualLimit, langQuery, context, ldService, true, true, false,
-									microServiceUtils.getGatewayURL().toString(),
+									microServiceUtils.getGatewayString(),
 									NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT);
 						});
 

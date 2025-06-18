@@ -125,10 +125,10 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 	@Inject
 	MicroServiceUtils microServiceUtils;
 
-	@ConfigProperty(name = "scorpio.alltypesub.type", defaultValue = "*")
+	@ConfigProperty(name = "scorpio.alltypesub.type")
 	private String allTypeSubType;
 
-	@ConfigProperty(name = "scorpio.entity-manager-server", defaultValue = "http://localhost:9090")
+	@ConfigProperty(name = "scorpio.entitymanager.url")
 	private String entityServiceUrl;
 
 	private String ALL_TYPES_SUB;
@@ -152,8 +152,7 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 
 	private Map<String, MqttClient> host2MqttClient = Maps.newHashMap();
 	private SyncService subscriptionSyncService = null;
-	@ConfigProperty(name = "scorpio.at-context-server", defaultValue = "http://localhost:9090")
-	private String atContextUrl;
+	
 
 	public Uni<Void> handleRegistryChange(CSourceBaseRequest req) {
 		return RegistrationEntry.fromRegPayload(req.getPayload(), ldService).onItem().transformToUni(regs -> {
@@ -452,7 +451,7 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 		Map<String, Object> tmp = request.getContext().serialize();
 
 		return localContextService.createImplicitly(tenant, tmp).onItem().transformToUni(contextId -> {
-			String ctxUrl = microServiceUtils.getExternalContextServerURL() + contextId;
+			String ctxUrl = microServiceUtils.getGatewayString() + NGSIConstants.JSONLD_CONTEXTS + contextId;
 			request.getSubscription().getOtherHead().add(NGSIConstants.LINK_HEADER,
 					"<%s>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\""
 							.formatted(ctxUrl));
@@ -559,7 +558,7 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 			return Uni.createFrom().voidItem();
 		}
 		List<Uni<Void>> unis = new ArrayList<>(subs.size());
-		String gateway = microServiceUtils.getGatewayURL().toString() + "/remotenotify/";
+		String gateway = microServiceUtils.getGatewayString() + "/remotenotify/";
 		subs.forEach(sub -> {
 			String endpoint = prepareNotificationServlet(req, sub);
 			unis.add(SubscriptionTools.subsribeRemote(sub, webClient, gateway + endpoint));
@@ -1456,7 +1455,7 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 			Set<String> idsTBU, Map<String, List<Map<String, Object>>> prevPayloadToUse,
 			Map<String, List<Map<String, Object>>> payloadToUse) {
 		HttpRequest<Buffer> req = webClient.postAbs(entityServiceUrl + NGSIConstants.ENDPOINT_BATCH_QUERY);
-		Map<String, Object> queryBody = request.getAsQueryBody(idsTBU, atContextUrl);
+		Map<String, Object> queryBody = request.getAsQueryBody(idsTBU, microServiceUtils.getContextServerURL());
 
 		req = req.addQueryParam(NGSIConstants.QUERY_PARAMETER_DO_NOT_COMPACT, "true");
 		req = req.addQueryParam(NGSIConstants.QUERY_PARAMETER_LIMIT, "1000");

@@ -7,8 +7,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 
-import org.checkerframework.checker.nullness.qual.Nullable;
-
 public interface NGSIConstants {
 	public final static String GEO_REL_TYPE = "type";
 	public final static String GEO_REL_REL = "rel";

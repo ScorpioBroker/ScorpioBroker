@@ -57,7 +57,7 @@ import java.util.Set;
 @Singleton
 public class CSourceService {
 	private final static Logger logger = LoggerFactory.getLogger(RegistryController.class);
-	List<String> scorpioFedList = ConfigProvider.getConfig().getValues("scorpio.federation", String.class);
+	List<String> scorpioFedList = ConfigProvider.getConfig().getOptionalValues("scorpio.federation", String.class).orElse(null);
 	Map<String, Map<String, String>> fedMap = new HashMap<>();
 	@Inject
 	MicroServiceUtils microServiceUtils;
@@ -73,10 +73,10 @@ public class CSourceService {
 	@Broadcast
 	MutinyEmitter<String> emitter;
 
-	@ConfigProperty(name = "scorpio.federation.registrationtype", defaultValue = "types")
+	@ConfigProperty(name = "scorpio.federation.registrationtype")
 	String AUTO_REG_MODE;
 
-	@ConfigProperty(name = "scorpio.federation.hosts", defaultValue = " ")
+	@ConfigProperty(name = "scorpio.federation.hosts")
 	String FED_BROKERS_CONFIG;
 
 	String[] FED_BROKERS;
@@ -84,8 +84,7 @@ public class CSourceService {
 	@ConfigProperty(name = "scorpio.topics.registry")
 	String CSOURCE_TOPIC;
 
-	@ConfigProperty(name = "scorpio.directDB", defaultValue = "true")
-	boolean directDB;
+
 
 	@Inject
 	Vertx vertx;
@@ -266,7 +265,7 @@ public class CSourceService {
 	}
 
 	@IfBuildProperty(name = "scorpio.fedupdate", stringValue = "active", enableIfMissing = false)
-	@Scheduled(every = "${scorpio.fedupdaterate}", delayed = "${scorpio.startupdelay}")
+	@Scheduled(every = "${scorpio.federation.updaterate}", delayed = "${scorpio.startupdelay}")
 	Uni<Void> checkInternalAndSendUpdateIfNeeded() {
 		Object[] brokersNames = fedMap.keySet().toArray();
 		List<Uni<Void>> unis = new ArrayList<>();
@@ -280,7 +279,7 @@ public class CSourceService {
 			unis.add(cSourceInfoDAO.isTenantPresent(sourceTenant).onItem().transformToUni(present -> {
 				if (present) {
 					return retrieveRegistration(sourceTenant, regType).onItem().transformToUni(body -> {
-						String csourceId = microServiceUtils.getGatewayURL().toString();
+						String csourceId = microServiceUtils.getGatewayString();
 						body.put("@id", csourceId);
 						return ldService.compact(body, null, HttpUtils.opts).onItem().transformToUni(compacted -> {
 							String compact;
@@ -316,6 +315,10 @@ public class CSourceService {
 				return Uni.createFrom().voidItem();
 
 			}));
+		}
+
+		if (unis.isEmpty()) {
+			return Uni.createFrom().voidItem();
 		}
 		return Uni.combine().all().unis(unis).collectFailures().discardItems();
 	}

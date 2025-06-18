@@ -9,7 +9,6 @@ import java.util.Random;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import io.vertx.core.json.DecodeException;
 import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import jakarta.ws.rs.POST;
@@ -23,7 +22,6 @@ import org.jboss.resteasy.reactive.RestResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLDService;
-import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.Lists;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
@@ -43,19 +41,19 @@ public class EntityBatchController {
 	@Inject
 	EntityService entityService;
 
-	@ConfigProperty(name = "batchoperations.maxnumber.create", defaultValue = "-1")
+	@ConfigProperty(name = "batchoperations.maxnumber.create")
 	int maxCreateBatch;
 
-	@ConfigProperty(name = "batchoperations.maxnumber.update", defaultValue = "-1")
+	@ConfigProperty(name = "batchoperations.maxnumber.update")
 	int maxUpdateBatch;
 
-	@ConfigProperty(name = "batchoperations.maxnumber.upsert", defaultValue = "-1")
+	@ConfigProperty(name = "batchoperations.maxnumber.upsert")
 	int maxUpsertBatch;
 
-	@ConfigProperty(name = "batchoperations.maxnumber.delete", defaultValue = "-1")
+	@ConfigProperty(name = "batchoperations.maxnumber.delete")
 	int maxDeleteBatch;
 
-	@ConfigProperty(name = "ngsild.corecontext", defaultValue = "ngsild.corecontext:https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld")
+	@ConfigProperty(name = "scorpio.ngsild.corecontext")
 	String coreContext;
 
 	Random random = new Random();

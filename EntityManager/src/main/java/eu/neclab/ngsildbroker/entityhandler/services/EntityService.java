@@ -78,7 +78,7 @@ public class EntityService implements CSourceHandler {
 
 	private final static Logger logger = LoggerFactory.getLogger(EntityService.class);
 	public static boolean checkEntity = false;
-	@ConfigProperty(name = "scorpio.topics.entity.zip", defaultValue = "false")
+	@ConfigProperty(name = "scorpio.topics.entity.zip")
 	boolean zip;
 	@Inject
 	EntityInfoDAO entityDAO;

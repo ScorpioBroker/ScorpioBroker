@@ -2,7 +2,6 @@ package eu.neclab.ngsildbroker.historyentitymanager.service;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -67,13 +66,10 @@ public class HistoryEntityService implements CSourceHandler  {
 	@Inject
 	HistoryDAO historyDAO;
 
-	@ConfigProperty(name = "scorpio.directDB", defaultValue = "true")
-	boolean directDB;
-
 	@ConfigProperty(name = "scorpio.topics.temporal")
 	String TEMP_TOPIC;
 
-//	@ConfigProperty(name = "scorpio.history.tokafka", defaultValue = "false")
+//	@ConfigProperty(name = "scorpio.history.tokafka")
 //	boolean historyToKafkaEnabled;
 
 //	@Inject

@@ -56,10 +56,10 @@ public class EntityOperationsQueryController {
 	@Inject
 	MicroServiceUtils microServiceUtils;
 
-	@ConfigProperty(name = "scorpio.entity.default-limit", defaultValue = "50")
+	@ConfigProperty(name = "scorpio.entity.default-limit")
 	int defaultLimit;
 
-	@ConfigProperty(name = "scorpio.entity.max-limit", defaultValue = "1000")
+	@ConfigProperty(name = "scorpio.entity.max-limit")
 	int maxLimit;
 
 	@Inject
@@ -69,7 +69,7 @@ public class EntityOperationsQueryController {
 
 	@PostConstruct
 	public void setup() {
-		URI gateway = microServiceUtils.getGatewayURL();
+		URI gateway = microServiceUtils.getGatewayURI();
 		this.selfViaHeader = gateway.getScheme().toUpperCase() + "/1.1 " + gateway.getAuthority();
 	}
 
@@ -318,7 +318,7 @@ public class EntityOperationsQueryController {
 							}
 							return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty,
 									acceptHeader, count, actualLimit, langQuery, context, ldService, retrieveEntityMap,
-									microServiceUtils.getGatewayURL().toString(),
+									microServiceUtils.getGatewayString(),
 									NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT);
 						}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, tenant));
 

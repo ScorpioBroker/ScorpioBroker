@@ -41,13 +41,13 @@ public abstract class HistoryMessagingBase implements BaseRequestHandler {
 	@Inject
 	HistoryEntityService historyService;
 
-	@ConfigProperty(name = "scorpio.history.autorecording", defaultValue = "true")
+	@ConfigProperty(name = "scorpio.history.autorecording")
 	boolean autoRecording;
 	
-	@ConfigProperty(name = "scorpio.history.autorecordingthreadpoolsize", defaultValue = "1")
+	@ConfigProperty(name = "scorpio.history.autorecordingthreadpoolsize")
 	int histRecordingThreadPooolSzie;
 	
-	@ConfigProperty(name = "scorpio.history.autorecordingbuffersize", defaultValue = "50000")
+	@ConfigProperty(name = "scorpio.history.autorecordingbuffersize")
 	int maxSize;
 
 	int instancesNr = 1;

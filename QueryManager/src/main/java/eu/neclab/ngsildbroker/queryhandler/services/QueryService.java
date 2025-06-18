@@ -1,6 +1,5 @@
 package eu.neclab.ngsildbroker.queryhandler.services;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -95,13 +94,13 @@ public class QueryService implements CSourceHandler {
 
 	private Table<String, String, List<RegistrationEntry>> tenant2CId2RegEntries = HashBasedTable.create();
 
-	@ConfigProperty(name = "scorpio.entitymap.cleanup.ttl", defaultValue = "30 sec")
+	@ConfigProperty(name = "scorpio.entitymap.cleanup.ttl")
 	String entityMapTTL;
 
-	@ConfigProperty(name = "scorpio.fed.timeout", defaultValue = "20000")
+	@ConfigProperty(name = "scorpio.fed.timeout")
 	int timeout;
 
-	@ConfigProperty(name = "scorpio.fed.limit", defaultValue = "100")
+	@ConfigProperty(name = "scorpio.fed.limit")
 	int fedlimit;
 
 	@Inject

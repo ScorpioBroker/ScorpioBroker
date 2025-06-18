@@ -82,7 +82,7 @@ public class HistoryQueryService implements CSourceHandler {
 	@Inject
 	MicroServiceUtils microServiceUtils;
 
-	@ConfigProperty(name = "scorpio.directDB", defaultValue = "true")
+	@ConfigProperty(name = "scorpio.directDB")
 	boolean directDB;
 
 	private Table<String, String, List<RegistrationEntry>> tenant2CId2RegEntries = HashBasedTable.create();

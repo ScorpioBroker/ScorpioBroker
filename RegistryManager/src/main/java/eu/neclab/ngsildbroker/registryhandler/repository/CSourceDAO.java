@@ -43,7 +43,7 @@ public class CSourceDAO {
 			switch (id) {
 			case AppConstants.INTERNAL_TYPE_REGISTRATION_ID -> {
 				String sql1 = "SELECT jsonb_set('{\"https://uri.etsi.org/ngsi-ld/endpoint\": [{\"@value\": \""
-						+ microServiceUtils.getGatewayURL().toString() + "\"}],\"@id\": \""
+						+ microServiceUtils.getGatewayString() + "\"}],\"@id\": \""
 						+ AppConstants.INTERNAL_TYPE_REGISTRATION_ID
 						+ "\",\"https://uri.etsi.org/ngsi-ld/information\": [{\"https://uri.etsi.org/ngsi-ld/entities\": [{}]}],\"@type\": [\"https://uri.etsi.org/ngsi-ld/ContextSourceRegistration\"]  }'::jsonb,'{https://uri.etsi.org/ngsi-ld/information,0,https://uri.etsi.org/ngsi-ld/entities,0,@type}' ,jsonb_agg(distinct myTypes)) from entity, jsonb_array_elements(ENTITY -> '@type') as myTypes";
 
@@ -78,14 +78,14 @@ public class CSourceDAO {
 								                            JSONB_AGG(JSONB_BUILD_OBJECT('@id',ATTRIBNAME)) FILTER
 								                            (WHERE ENTITY #>> (ATTRIBNAME || '{0,@type,0}'::text[]) = ANY('{https://uri.etsi.org/ngsi-ld/Relationship}'))))
 								                            FROM ENTITY, Jsonb_object_keys(ENTITY) as attribname"""
-								.formatted(microServiceUtils.getGatewayURL().toString(),
+								.formatted(microServiceUtils.getGatewayString(),
 										AppConstants.INTERNAL_TYPE_ATTRS_REGISTRATION_ID))
 						.execute();
 			}
 			case AppConstants.INTERNAL_ID_REGISTRATION_ID -> {
 				return client
 						.preparedQuery("SELECT jsonb_set('{\"https://uri.etsi.org/ngsi-ld/endpoint\": [{\"@value\": \""
-								+ microServiceUtils.getGatewayURL().toString() + "\"}],\"@id\": \""
+								+ microServiceUtils.getGatewayString() + "\"}],\"@id\": \""
 								+ AppConstants.INTERNAL_ID_REGISTRATION_ID
 								+ "\",\"https://uri.etsi.org/ngsi-ld/information\": [{\"https://uri.etsi.org/ngsi-ld/entities\": [{}]}],\"@type\": [\"https://uri.etsi.org/ngsi-ld/ContextSourceRegistration\"]  }'::jsonb,'{https://uri.etsi.org/ngsi-ld/information,0,https://uri.etsi.org/ngsi-ld/entities}' ,jsonb_agg(jsonb_build_object('@id', id))) from entity")
 						.execute();
@@ -124,7 +124,7 @@ public class CSourceDAO {
 								              ENTITY,\s
 								              Jsonb_object_keys(ENTITY) as attribname
 								"""
-								.formatted(microServiceUtils.getGatewayURL().toString(),
+								.formatted(microServiceUtils.getGatewayString(),
 										AppConstants.INTERNAL_FULL_REGISTRATION_ID))
 						.execute();
 			}

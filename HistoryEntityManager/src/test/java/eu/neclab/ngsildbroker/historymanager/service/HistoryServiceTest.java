@@ -59,7 +59,7 @@
 //	@Mock
 //	private PgPool pgClient;
 //
-//	@ConfigProperty(name = "scorpio.directDB", defaultValue = "true")
+//	@ConfigProperty(name = "scorpio.directDB")
 //	boolean directDB;
 //
 //	@Mock

@@ -28,10 +28,10 @@ import jakarta.inject.Singleton;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.net.InetAddress;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.UnknownHostException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Base64.Encoder;
@@ -52,9 +52,7 @@ public class MicroServiceUtils {
 	@ConfigProperty(name = "scorpio.gatewayurl")
 	String gatewayUrl;
 
-	@ConfigProperty(name = "mysettings.gateway.port")
-	int port;
-	@ConfigProperty(name = "atcontext.url", defaultValue = "http://localhost:9090/ngsi-ld/v1/jsonldContexts/")
+	@ConfigProperty(name = "scorpio.atcontexturl")
 	String contextServerUrl;
 
 	private boolean inMemoryActive = ConfigUtils.isProfileActive("in-memory");
@@ -62,6 +60,8 @@ public class MicroServiceUtils {
 	List<CSourceHandler> csourceReceivers = Lists.newArrayList();
 
 	List<BaseRequestHandler> baseRequestReceivers = Lists.newArrayList();
+
+	URI gatewayUri;
 
 	private static final Encoder base64Encoder = Base64.getEncoder();
 	public static final byte[] NULL_ARRAY = "null".getBytes();
@@ -73,16 +73,12 @@ public class MicroServiceUtils {
 
 	@PostConstruct
 	void setup() {
-		if (contextServerUrl.endsWith("ngsi-ld/v1/jsonldContexts")) {
-			contextServerUrl = contextServerUrl + "/";
-		} else if (!contextServerUrl.endsWith("ngsi-ld/v1/jsonldContexts/")) {
-			if (contextServerUrl.endsWith("/")) {
-				contextServerUrl = contextServerUrl + "/ngsi-ld/v1/jsonldContexts/";
-			} else {
-				contextServerUrl = contextServerUrl + "ngsi-ld/v1/jsonldContexts/";
-			}
+		if (!gatewayUrl.endsWith("/")) {
+			gatewayUrl = gatewayUrl + "/";
 		}
-
+		if (!contextServerUrl.endsWith("/")) {
+			contextServerUrl = contextServerUrl + "/";
+		}
 	}
 
 	public static void putIntoIdMap(Map<String, List<Map<String, Object>>> localEntities, String id,
@@ -395,23 +391,24 @@ public class MicroServiceUtils {
 		return tmp;
 	}
 
-	public URI getGatewayURL() {
-		logger.trace("getGatewayURL() :: started");
-		String url = null;
-		try {
-			if (gatewayUrl == null || gatewayUrl.strip().isEmpty()) {
-				String hostIP = InetAddress.getLocalHost().getHostName();
-				url = new StringBuilder("http://").append(hostIP).append(":").append(port).toString();
-			} else {
-				url = gatewayUrl;
-			}
-			logger.trace("getGatewayURL() :: completed");
+	public String getGatewayString() {
+		return gatewayUrl;
+	}
 
-			return new URI(url.toString());
-		} catch (URISyntaxException | UnknownHostException e) {
+	public URI getGatewayURI() {
+		logger.trace("getGatewayURL() :: started");
+		if (gatewayUri != null) {
+			logger.trace("getGatewayURL() :: completed");
+			return gatewayUri;
+		}
+		try {
+			gatewayUri = new URI(gatewayUrl);
+			logger.trace("getGatewayURL() :: completed");
+			return gatewayUri;
+		} catch (URISyntaxException e) {
 			throw new AssertionError(
 					"something went really wrong here when creating a URL... this should never happen but did with "
-							+ url,
+							+ gatewayUri,
 					e);
 		}
 	}
@@ -515,25 +512,21 @@ public class MicroServiceUtils {
 		return result;
 	}
 
-//	public static SyncMessage deepCopySyncMessage(SyncMessage originalSync) {
-//		SubscriptionRequest tmp = new SubscriptionRequest();
-//		SubscriptionRequest originalPayload = originalSync.getRequest();
-//		tmp.setActive(originalPayload.isActive());
-//		tmp.setContext(deppCopyList(originalPayload.getContext()));
-//		tmp.setPayload(deepCopyMap(originalPayload.getPayload()));
-//		tmp.setHeaders(ArrayListMultimap.create(originalPayload.getHeaders()));
-//		tmp.setId(originalPayload.getId());
-//		tmp.setType(originalPayload.getRequestType());
-//		tmp.setSubscription(new Subscription(originalPayload.getSubscription()));
-//		return new SyncMessage(originalSync.getSyncId(), tmp);
-//	}
-	public URI getContextServerURL() {
-		logger.trace("getContextServerURL :: started");
-		try {
-			return new URI(contextServerUrl);
-		} catch (URISyntaxException e) {
-			throw new RuntimeException(e);
-		}
+	// public static SyncMessage deepCopySyncMessage(SyncMessage originalSync) {
+	// SubscriptionRequest tmp = new SubscriptionRequest();
+	// SubscriptionRequest originalPayload = originalSync.getRequest();
+	// tmp.setActive(originalPayload.isActive());
+	// tmp.setContext(deppCopyList(originalPayload.getContext()));
+	// tmp.setPayload(deepCopyMap(originalPayload.getPayload()));
+	// tmp.setHeaders(ArrayListMultimap.create(originalPayload.getHeaders()));
+	// tmp.setId(originalPayload.getId());
+	// tmp.setType(originalPayload.getRequestType());
+	// tmp.setSubscription(new Subscription(originalPayload.getSubscription()));
+	// return new SyncMessage(originalSync.getSyncId(), tmp);
+	// }
+	public String getContextServerURL() {
+
+		return contextServerUrl;
 
 	}
 
@@ -579,8 +572,8 @@ public class MicroServiceUtils {
 		baseRequestReceivers.add(handler);
 	}
 
-	public String getExternalContextServerURL() {
-		return getGatewayURL().toString() + "/ngsi-ld/v1/jsonldContexts/";
+	public static void main(String[] args) throws MalformedURLException {
+		System.out.println(new URL("http://test.com").toString());
 	}
 
 }

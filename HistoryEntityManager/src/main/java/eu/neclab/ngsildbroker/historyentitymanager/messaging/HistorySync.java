@@ -43,7 +43,7 @@ public abstract class HistorySync {
 	@Inject
 	MicroServiceUtils microServiceUtils;
 	
-	@ConfigProperty(name = "scorpio.history.syncchecktime", defaultValue = "5000")
+	@ConfigProperty(name = "scorpio.history.syncchecktime")
 	private long syncCheckTime;
 
 	Map<String, Long> instanceId2LastAnnouncement = Maps.newHashMap();

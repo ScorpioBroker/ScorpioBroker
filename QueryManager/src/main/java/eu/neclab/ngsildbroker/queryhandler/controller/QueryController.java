@@ -76,20 +76,20 @@ public class QueryController {
 	@Inject
 	MicroServiceUtils microServiceUtils;
 
-	@ConfigProperty(name = "scorpio.entity.default-limit", defaultValue = "50")
+	@ConfigProperty(name = "scorpio.entity.default-limit")
 	int defaultLimit;
 
-	@ConfigProperty(name = "scorpio.entity.max-limit", defaultValue = "1000")
+	@ConfigProperty(name = "scorpio.entity.max-limit")
 	int maxLimit;
 
-	@ConfigProperty(name = "ngsild.corecontext", defaultValue = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld")
+	@ConfigProperty(name = "scorpio.ngsild.corecontext")
 	String coreContext;
 
 	private String selfViaHeader;
 
 	@PostConstruct
 	public void setup() {
-		URI gateway = microServiceUtils.getGatewayURL();
+		URI gateway = microServiceUtils.getGatewayURI();
 		this.selfViaHeader = gateway.getScheme().toUpperCase() + "/1.1 " + gateway.getAuthority();
 	}
 
@@ -141,45 +141,14 @@ public class QueryController {
 					}
 					return HttpUtils.generateQueryResult(request, queryResult, t.getItem2(), geometryProperty,
 							t.getItem3(), false, t.getItem4(), queryResult.getLanguageQueryTerm(), t.getItem5(),
-							ldService, false, false, entityMap, microServiceUtils.getGatewayURL().toString(),
+							ldService, false, false, entityMap, microServiceUtils.getGatewayString(),
 							NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT);
 				}).onFailure()
 				.recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 
 	}
 
-	/**
-	 * Method(GET) for fetching all entities by kafka and other geo query operation
-	 * by database
-	 *
-	 * @param request
-	 * @param idPattern
-	 * @return ResponseEntity object
-	 */
-	@Path("/geoentities")
-	@GET
-	public Uni<RestResponse<Object>> queryForGeoJson(HttpServerRequest request, @QueryParam("id") String id,
-			@QueryParam("type") String typeQuery, @QueryParam("idPattern") String idPattern,
-			@QueryParam("attrs") String attrs, @QueryParam("q") String qInput, @QueryParam("csf") String csf,
-			@QueryParam("geometry") String geometry, @QueryParam("georel") String georelInput,
-			@QueryParam("coordinates") String coordinates, @QueryParam("geoproperty") String geoproperty,
-			@QueryParam("geometryProperty") String geometryProperty, @QueryParam("lang") String lang,
-			@QueryParam("scopeQ") String scopeQ, @QueryParam("local") String localOnly,
-			@QueryParam("options") String options, @QueryParam("limit") Integer limit, @QueryParam("offset") int offset,
-			@QueryParam("count") String count, @QueryParam("containedBy") @DefaultValue(AppConstants.EMPTY) String containedBy,
-			@QueryParam("join") String join, @QueryParam("joinLevel") Integer joinLevel,
-			@QueryParam("doNotCompact") String doNotCompact, @HeaderParam("NGSILD-EntityMap") String entityMapToken,
-			@QueryParam("entityMap") String entityMapRetrieve, @QueryParam("maxDistance") String maxDistance,
-			@QueryParam("minDistance") String minDistance, @QueryParam("pick") String pick,
-			@QueryParam("omit") String omit, @QueryParam("format") String format,
-			@QueryParam("jsonKeys") String jsonKeysQP, @QueryParam("datasetId") String datasetId,
-			@QueryParam("splitEntities") @DefaultValue("true") String distEntities) {
-		request.params().set(HttpHeaders.ACCEPT, "application/geo+json");
-		return query(request, id, typeQuery, idPattern, attrs, qInput, csf, geometry, georelInput, coordinates,
-				geoproperty, geometryProperty, lang, scopeQ, localOnly, options, limit, offset, count, containedBy,
-				join, joinLevel, doNotCompact, entityMapToken, entityMapRetrieve, maxDistance, minDistance, pick, omit,
-				format, jsonKeysQP, datasetId, distEntities);
-	}
+
 
 	@Path("/entities")
 	@GET
@@ -231,7 +200,7 @@ public class QueryController {
 
 					return HttpUtils.generateQueryResult(request, queryResult, finalOptions, geometryProperty,
 							acceptHeader, count, actualLimit, queryResult.getLanguageQueryTerm(), context, ldService,
-							entityMapRetrieve, microServiceUtils.getGatewayURL().toString(),
+							entityMapRetrieve, microServiceUtils.getGatewayString(),
 							NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT);
 				}).onFailure()
 				.recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));

@@ -106,7 +106,7 @@ public class RegistrySubscriptionService implements CSourceHandler{
 	@Inject
 	JsonLDService ldService;
 
-	@ConfigProperty(name = "scorpio.alltypesub.type", defaultValue = "*")
+	@ConfigProperty(name = "scorpio.alltypesub.type")
 	private String allTypeSubType;
 
 	@Inject

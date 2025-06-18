@@ -72,7 +72,7 @@ public class QueryDAO {
 	@Inject
 	ObjectMapper objectMapper;
 
-	@ConfigProperty(name = "scorpio.entitymap.cleanup.ttl", defaultValue = "300 sec")
+	@ConfigProperty(name = "scorpio.entitymap.cleanup.ttl")
 	String entityMapTTL;
 
 	GeoJSONReader geoReader = new GeoJSONReader(JtsSpatialContext.GEO, new SpatialContextFactory());

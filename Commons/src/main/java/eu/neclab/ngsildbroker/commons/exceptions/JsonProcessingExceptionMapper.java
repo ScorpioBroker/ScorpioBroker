@@ -1,9 +1,5 @@
 package eu.neclab.ngsildbroker.commons.exceptions;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;

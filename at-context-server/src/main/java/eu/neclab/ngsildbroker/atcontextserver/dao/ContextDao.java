@@ -1,11 +1,8 @@
 package eu.neclab.ngsildbroker.atcontextserver.dao;
 
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -14,7 +11,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
-import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import jakarta.annotation.PostConstruct;
@@ -22,7 +18,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import org.jboss.resteasy.reactive.RestResponse;
-import org.jboss.resteasy.reactive.server.jaxrs.RestResponseBuilderImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,7 +45,7 @@ public class ContextDao {
 
 	@PostConstruct
 	void setup() {
-		atContextUrl = microServiceUtils.getGatewayURL().toString() + "/ngsi-ld/v1/jsonldContexts/";
+		atContextUrl = microServiceUtils.getGatewayString() + NGSIConstants.JSONLD_CONTEXTS;
 	}
 
 	public Uni<Map<String, Object>> getById(String id, Boolean details) {

@@ -27,7 +27,7 @@ public class JsonLDService {
 
 	private Context coreContext;
 
-	@ConfigProperty(name = "ngsild.corecontext", defaultValue = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld")
+	@ConfigProperty(name = "scorpio.ngsild.corecontext")
 	String coreContextUrl;
 
 	@Inject

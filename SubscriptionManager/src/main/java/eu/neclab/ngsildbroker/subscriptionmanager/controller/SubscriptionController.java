@@ -2,8 +2,6 @@ package eu.neclab.ngsildbroker.subscriptionmanager.controller;
 
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLDService;
-import com.github.jsonldjava.core.JsonLdConsts;
-import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.Lists;
 import com.google.common.net.HttpHeaders;
 
@@ -19,7 +17,6 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.impl.headers.HeadersMultiMap;
 import io.vertx.core.json.DecodeException;
-import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
@@ -33,7 +30,6 @@ import jakarta.ws.rs.QueryParam;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.RestResponse;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -51,12 +47,12 @@ public class SubscriptionController {
 	@Inject
 	MicroServiceUtils microServiceUtils;
 
-	@ConfigProperty(name = "ngsild.corecontext", defaultValue = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld")
+	@ConfigProperty(name = "scorpio.ngsild.corecontext")
 	String coreContext;
 
-	@ConfigProperty(name = "scorpio.subscription.default-limit", defaultValue = "50")
+	@ConfigProperty(name = "scorpio.subscription.default-limit")
 	int defaultLimit;
-	@ConfigProperty(name = "scorpio.subscription.max-limit", defaultValue = "1000")
+	@ConfigProperty(name = "scorpio.subscription.max-limit")
 	int maxLimit;
 
 	@Inject
@@ -66,11 +62,11 @@ public class SubscriptionController {
 
 	@PostConstruct
 	public void setup() {
-		URI gateway = microServiceUtils.getGatewayURL();
+		URI gateway = microServiceUtils.getGatewayURI();
 		this.selfViaHeader = gateway.getScheme().toUpperCase() + "/1.1 " + gateway.getAuthority();
 	}
 
-	@SuppressWarnings("unchecked")
+	
 	@POST
 	public Uni<RestResponse<Object>> subscribe(HttpServerRequest request, String body) {
 		Map<String, Object> map;
@@ -152,7 +148,7 @@ public class SubscriptionController {
 							fixSub(sub);
 						});
 						return HttpUtils.generateQueryResult(request, subscriptions, options, null, acceptHeader, false,
-								actualLimit, null, ctx, ldService, false, microServiceUtils.getGatewayURL().toString(),
+								actualLimit, null, ctx, ldService, false, microServiceUtils.getGatewayString(),
 								NGSIConstants.NGSI_LD_SUB_ENDPOINT);
 					});
 		}).onFailure().recoverWithItem(e -> {

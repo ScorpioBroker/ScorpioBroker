@@ -8,7 +8,7 @@ import static com.github.jsonldjava.core.JsonLdConsts.RDF_TYPE;
 import static com.github.jsonldjava.core.JsonLdUtils.isKeyword;
 import static com.github.jsonldjava.utils.Obj.newMap;
 
-import java.lang.System.Logger;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;

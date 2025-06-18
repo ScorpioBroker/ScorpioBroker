@@ -21,7 +21,7 @@ import io.vertx.core.http.HttpServerRequest;
 @Path("/remotenotify")
 public class NotificationController {
 
-	@ConfigProperty(name = "ngsild.corecontext", defaultValue = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld")
+	@ConfigProperty(name = "ngsild.corecontext")
 	String coreContext;
 
 	@Inject

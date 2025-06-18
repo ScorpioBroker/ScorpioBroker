@@ -8,20 +8,15 @@ import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import io.quarkus.cache.Cache;
 import io.quarkus.cache.CacheInvalidate;
-import io.quarkus.cache.CacheInvalidateAll;
 import io.quarkus.cache.CacheKey;
 import io.quarkus.cache.CacheName;
-import io.quarkus.cache.CacheResult;
 import io.quarkus.cache.CaffeineCache;
-import io.quarkus.scheduler.Scheduled;
 import io.quarkus.scheduler.Scheduler;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.ext.web.client.WebClient;
 
-import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.resteasy.reactive.RestResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +26,6 @@ import jakarta.inject.Inject;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -46,7 +40,7 @@ public class ContextCache {
 	@CacheName("context")
 	Cache cache;
 
-	@ConfigProperty(name = "atcontext.cache.duration", defaultValue = "20m")
+	@ConfigProperty(name = "scorpio.atcontext.cache.duration")
 	String cacheDurationTime;
 	JsonLdOptions jsonLdOptions = new JsonLdOptions();
 	private static Logger logger = LoggerFactory.getLogger(ContextCache.class);
@@ -68,7 +62,7 @@ public class ContextCache {
 	@PostConstruct
 	void init() {
 		webClient = WebClient.create(vertx);
-		atContextUrl = microServiceUtils.getGatewayURL().toString() + "/ngsi-ld/v1/jsonldContexts/";
+		atContextUrl = microServiceUtils.getGatewayString() + NGSIConstants.JSONLD_CONTEXTS;
 		if (!cacheDurationTime.startsWith("PT")) {
 			cacheDurationTime = "PT" + cacheDurationTime;
 		}

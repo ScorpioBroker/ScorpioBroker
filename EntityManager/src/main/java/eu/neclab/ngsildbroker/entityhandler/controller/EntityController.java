@@ -1,6 +1,5 @@
 package eu.neclab.ngsildbroker.entityhandler.controller;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -11,12 +10,7 @@ import org.jboss.resteasy.reactive.RestResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.core.JsonGenerationException;
 import com.github.jsonldjava.core.JsonLDService;
-import com.github.jsonldjava.utils.JsonUtils;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
@@ -49,7 +43,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	@Inject
 	EntityService entityService;
 
-	@ConfigProperty(name = "ngsild.corecontext", defaultValue = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld")
+	@ConfigProperty(name = "scorpio.ngsild.corecontext")
 	String coreContext;
 
 	@Inject

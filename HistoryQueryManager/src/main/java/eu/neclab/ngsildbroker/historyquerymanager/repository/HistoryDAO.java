@@ -15,7 +15,6 @@ import org.slf4j.LoggerFactory;
 
 import com.github.jsonldjava.core.JsonLDService;
 import com.github.jsonldjava.core.JsonLdConsts;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Table;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.RegistrationEntry;

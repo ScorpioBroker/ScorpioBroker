@@ -19,14 +19,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import jakarta.inject.Inject;
-import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
-import jakarta.ws.rs.core.MediaType;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;

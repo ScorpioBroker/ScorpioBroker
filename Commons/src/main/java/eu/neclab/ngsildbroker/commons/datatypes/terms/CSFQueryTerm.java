@@ -1,10 +1,8 @@
 package eu.neclab.ngsildbroker.commons.datatypes.terms;
 
-import java.io.Serializable;
-
 import com.github.jsonldjava.core.Context;
 
-public class CSFQueryTerm extends QQueryTerm implements Serializable {
+public class CSFQueryTerm extends QQueryTerm {
 
 	/**
 	 * 

@@ -51,12 +51,12 @@ public class RegistryController {
 	MicroServiceUtils microServiceUtils;
 	@Inject
 	CSourceService csourceService;
-	@ConfigProperty(name = "scorpio.entity.default-limit", defaultValue = "50")
+	@ConfigProperty(name = "scorpio.entity.default-limit")
 	int defaultLimit;
-	@ConfigProperty(name = "scorpio.entity.max-limit", defaultValue = "1000")
+	@ConfigProperty(name = "scorpio.entity.max-limit")
 	int maxLimit;
 
-	@ConfigProperty(name = "ngsild.corecontext", defaultValue = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld")
+	@ConfigProperty(name = "scorpio.ngsild.corecontext")
 	String coreContext;
 
 	@Inject
@@ -129,7 +129,7 @@ public class RegistryController {
 					.onItem().transformToUni(queryResult -> {
 						return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty,
 								acceptHeader, count, actualLimit, null, context, ldService, false,
-								microServiceUtils.getGatewayURL().toString(), NGSIConstants.NGSI_LD_REGISTRY_ENDPOINT);
+								microServiceUtils.getGatewayString(), NGSIConstants.NGSI_LD_REGISTRY_ENDPOINT);
 					});
 		}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 	}

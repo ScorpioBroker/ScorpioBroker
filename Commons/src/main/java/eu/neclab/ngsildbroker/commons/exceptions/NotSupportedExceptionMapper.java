@@ -1,8 +1,5 @@
 package eu.neclab.ngsildbroker.commons.exceptions;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import jakarta.ws.rs.NotSupportedException;
 import jakarta.ws.rs.core.Response;

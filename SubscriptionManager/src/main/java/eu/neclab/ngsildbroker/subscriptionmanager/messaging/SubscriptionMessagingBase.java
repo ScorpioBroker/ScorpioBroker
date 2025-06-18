@@ -25,10 +25,10 @@ public abstract class SubscriptionMessagingBase {
 	@Inject
 	SubscriptionService subscriptionService;
 
-	@ConfigProperty(name = "scorpio.subscriptions.collectinterval", defaultValue = "-1")
+	@ConfigProperty(name = "scorpio.subscriptions.collectinterval")
 	int collectInterval;
 
-	@ConfigProperty(name = "scorpio.subscriptions.collectmaxtime", defaultValue = "1000")
+	@ConfigProperty(name = "scorpio.subscriptions.collectmaxtime")
 	int collectMaxTime;
 
 	long lastMessage = System.currentTimeMillis();

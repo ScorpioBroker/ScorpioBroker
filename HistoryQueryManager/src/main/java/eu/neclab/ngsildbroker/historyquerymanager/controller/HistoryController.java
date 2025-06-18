@@ -47,13 +47,13 @@ public class HistoryController {
 	MicroServiceUtils microServiceUtils;
 	@Inject
 	HistoryQueryService historyQueryService;
-	@ConfigProperty(name = "scorpio.history.defaultLimit", defaultValue = "50")
+	@ConfigProperty(name = "scorpio.history.default-limit")
 	int defaultLimit;
-	@ConfigProperty(name = "scorpio.history.maxLimit", defaultValue = "1000")
+	@ConfigProperty(name = "scorpio.history.max-limit")
 	int maxLimit;
-	@ConfigProperty(name = "scorpio.history.lastN", defaultValue = "50")
+	@ConfigProperty(name = "scorpio.history.lastn")
 	int defaultLastN;
-	@ConfigProperty(name = "scorpio.history.maxLastN", defaultValue = "1000")
+	@ConfigProperty(name = "scorpio.history.max-lastn")
 	int maxLastN;
 
 	@Inject
@@ -162,7 +162,7 @@ public class HistoryController {
 					.transformToUni(queryResult -> {
 						return HttpUtils.generateQueryResult(request, queryResult, finalOptions, geoproperty,
 								acceptHeader, count, actualLimit, languageQueryTerm, context, ldService, true, true,
-								false, microServiceUtils.getGatewayURL().toString(),
+								false, microServiceUtils.getGatewayString(),
 								NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT);
 					});
 		}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));

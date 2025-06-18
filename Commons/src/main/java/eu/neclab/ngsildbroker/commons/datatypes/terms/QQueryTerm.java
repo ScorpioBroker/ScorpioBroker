@@ -1,6 +1,5 @@
 package eu.neclab.ngsildbroker.commons.datatypes.terms;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -16,7 +15,6 @@ import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.github.jsonldjava.core.Context;
-import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
@@ -1155,7 +1153,7 @@ public class QQueryTerm implements Serializable {
 				try {
 					firstChild.setOperant(operant);
 				} catch (ResponseException e) {
-					// TODO Auto-generated catch block
+					
 					e.printStackTrace();
 				}
 				firstChild.setOperator(operator);

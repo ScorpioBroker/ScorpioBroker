@@ -1,8 +1,6 @@
 package eu.neclab.ngsildbroker.atcontextserver.service;
 
 import com.github.jsonldjava.core.JsonLdOptions;
-import com.google.common.collect.Sets;
-
 import eu.neclab.ngsildbroker.atcontextserver.cache.ContextCache;
 import eu.neclab.ngsildbroker.atcontextserver.dao.ContextDao;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
@@ -18,11 +16,9 @@ import org.jboss.resteasy.reactive.RestResponse;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 @ApplicationScoped
 public class ContextService {
