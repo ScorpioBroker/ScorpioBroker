@@ -21,7 +21,7 @@ import io.vertx.core.http.HttpServerRequest;
 @Path("/remotenotify")
 public class NotificationController {
 
-	@ConfigProperty(name = "ngsild.corecontext")
+	@ConfigProperty(name = "scorpio.ngsild.corecontext")
 	String coreContext;
 
 	@Inject

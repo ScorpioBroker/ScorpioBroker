@@ -97,10 +97,10 @@ public class QueryService implements CSourceHandler {
 	@ConfigProperty(name = "scorpio.entitymap.cleanup.ttl")
 	String entityMapTTL;
 
-	@ConfigProperty(name = "scorpio.fed.timeout")
+	@ConfigProperty(name = "scorpio.federation.timeout")
 	int timeout;
 
-	@ConfigProperty(name = "scorpio.fed.limit")
+	@ConfigProperty(name = "scorpio.federation.limit")
 	int fedlimit;
 
 	@Inject

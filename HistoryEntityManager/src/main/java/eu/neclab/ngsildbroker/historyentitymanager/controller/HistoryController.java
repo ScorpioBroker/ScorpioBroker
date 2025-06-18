@@ -30,12 +30,12 @@ public class HistoryController {
 	@Inject
 	HistoryEntityService historyService;
 
-	@ConfigProperty(name = "scorpio.history.defaultLimit")
+	@ConfigProperty(name = "scorpio.history.default-limit")
 	int defaultLimit;
-	@ConfigProperty(name = "scorpio.history.maxLimit")
+	@ConfigProperty(name = "scorpio.history.max-limit")
 	int maxLimit;
 
-	@ConfigProperty(name = "ngsild.corecontext")
+	@ConfigProperty(name = "scorpio.ngsild.corecontext")
 	String coreContext;
 
 	@Inject

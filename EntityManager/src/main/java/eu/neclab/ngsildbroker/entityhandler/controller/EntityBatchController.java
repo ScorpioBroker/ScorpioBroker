@@ -41,16 +41,16 @@ public class EntityBatchController {
 	@Inject
 	EntityService entityService;
 
-	@ConfigProperty(name = "batchoperations.maxnumber.create")
+	@ConfigProperty(name = "scorpio.entity.batch-operations.create.max")
 	int maxCreateBatch;
 
-	@ConfigProperty(name = "batchoperations.maxnumber.update")
+	@ConfigProperty(name = "scorpio.entity.batch-operations.update.max")
 	int maxUpdateBatch;
 
-	@ConfigProperty(name = "batchoperations.maxnumber.upsert")
+	@ConfigProperty(name = "scorpio.entity.batch-operations.upsert.max")
 	int maxUpsertBatch;
 
-	@ConfigProperty(name = "batchoperations.maxnumber.delete")
+	@ConfigProperty(name = "scorpio.entity.batch-operations.delete.max")
 	int maxDeleteBatch;
 
 	@ConfigProperty(name = "scorpio.ngsild.corecontext")

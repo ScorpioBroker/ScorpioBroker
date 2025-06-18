@@ -25,35 +25,18 @@ public abstract class SubscriptionMessagingBase {
 	@Inject
 	SubscriptionService subscriptionService;
 
-	@ConfigProperty(name = "scorpio.subscriptions.collectinterval")
-	int collectInterval;
-
-	@ConfigProperty(name = "scorpio.subscriptions.collectmaxtime")
-	int collectMaxTime;
-
-	long lastMessage = System.currentTimeMillis();
-	long lastSent = System.currentTimeMillis();
-	
-
-	ArrayList<BaseRequest> requestStore = new ArrayList<>();
 
 	public Uni<Void> baseHandleEntity(BaseRequest message) {
-		if (collectInterval == -1) {
-			logger.debug("Subscription sub manager got called for entity: " + message.getIds());
-			return subscriptionService.handleBaseRequest(message).onFailure().recoverWithUni(t -> {
-				logger.debug("Exception Occurred in checkSubscriptions: " + t);
-				t.printStackTrace();
-				logger.debug(t.getStackTrace().toString());
-				return Uni.createFrom().voidItem();
-			});
-		} else {
-			requestStore.add(message);
-			lastMessage = System.currentTimeMillis();
+
+		// logger.debug("Subscription sub manager got called for entity: " +
+		// message.getIds());
+		return subscriptionService.handleBaseRequest(message).onFailure().recoverWithUni(t -> {
+			logger.debug("Exception Occurred in checkSubscriptions: ", t);
 			return Uni.createFrom().voidItem();
-		}
+		});
+
 	}
 
-	
 	@Inject
 	Vertx vertx;
 
@@ -68,11 +51,11 @@ public abstract class SubscriptionMessagingBase {
 			logger.error("failed to serialize message " + byteMessage, e);
 			return Uni.createFrom().voidItem();
 		}
-		
+
 		return baseHandleEntity(baseRequest);
 
 	}
-	
+
 	public Uni<Void> handleCsourceRaw(String byteMessage) {
 		CSourceBaseRequest message;
 		try {
