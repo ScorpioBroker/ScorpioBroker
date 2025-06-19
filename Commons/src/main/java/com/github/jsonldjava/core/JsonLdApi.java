@@ -8,7 +8,6 @@ import static com.github.jsonldjava.core.JsonLdConsts.RDF_TYPE;
 import static com.github.jsonldjava.core.JsonLdUtils.isKeyword;
 import static com.github.jsonldjava.utils.Obj.newMap;
 
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -34,6 +33,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.vertx.mutiny.ext.web.client.WebClient;
@@ -84,10 +84,11 @@ public class JsonLdApi {
 	 * @throws JsonLdError If there is an error initializing using the object and
 	 *                     options.
 	 */
-//	public JsonLdApi(Object input, Object context, JsonLdOptions opts) throws JsonLdError {
-//		this(opts);
-//		initialize(input, null);
-//	}
+	// public JsonLdApi(Object input, Object context, JsonLdOptions opts) throws
+	// JsonLdError {
+	// this(opts);
+	// initialize(input, null);
+	// }
 
 	/**
 	 * Constructs an empty JsonLdApi object using the given JsonLdOptions, and
@@ -122,14 +123,16 @@ public class JsonLdApi {
 		}
 		// TODO: string/IO input
 		this.context = new Context(opts);
-//		if (context != null) {
-//			this.context = this.context.parse(context, false);
-//		}
+		// if (context != null) {
+		// this.context = this.context.parse(context, false);
+		// }
 	}
-//	public Object compact(Context activeCtx, String activeProperty, Object element, boolean compactArrays, int endPoint)
-//			throws JsonLdError {
-//		return compact(activeCtx, activeProperty, element, compactArrays, endPoint, null, null);
-//	}
+	// public Object compact(Context activeCtx, String activeProperty, Object
+	// element, boolean compactArrays, int endPoint)
+	// throws JsonLdError {
+	// return compact(activeCtx, activeProperty, element, compactArrays, endPoint,
+	// null, null);
+	// }
 
 	/***
 	 * ____ _ _ _ _ _ _ / ___|___ _ __ ___ _ __ __ _ ___| |_ / \ | | __ _ ___ _
@@ -269,33 +272,33 @@ public class JsonLdApi {
 					}
 					if ((keyValue || concise || langQuery != null) && JsonLdConsts.TYPE.equals(expandedProperty)) {
 						switch (((List<String>) expandedValue).get(0)) {
-						case NGSIConstants.NGSI_LD_PROPERTY:
-							isProperty = true;
+							case NGSIConstants.NGSI_LD_PROPERTY:
+								isProperty = true;
 
-						case NGSIConstants.NGSI_LD_GEOPROPERTY:
-							isGeoProperty = true;
-							break;
-						case NGSIConstants.NGSI_LD_LANGPROPERTY:
-							isLanguageProperty = true;
-							break;
-						case NGSIConstants.NGSI_LD_JSON_PROPERTY:
-							isJsonProperty = true;
-							break;
-						case NGSIConstants.NGSI_LD_RELATIONSHIP:
-							isRelationship = true;
-							break;
-						case NGSIConstants.NGSI_LD_LISTRELATIONSHIP:
-							isListRelationship = true;
-							break;
-						case NGSIConstants.NGSI_LD_VocabProperty:
-							isVocabProperty = true;
-							break;
-						case NGSIConstants.NGSI_LD_ListProperty:
-							isListProperty = true;
-							break;
-						case NGSIConstants.NGSI_LD_LOCALONLY:
-							isLocalOnly = true;
-							break;
+							case NGSIConstants.NGSI_LD_GEOPROPERTY:
+								isGeoProperty = true;
+								break;
+							case NGSIConstants.NGSI_LD_LANGPROPERTY:
+								isLanguageProperty = true;
+								break;
+							case NGSIConstants.NGSI_LD_JSON_PROPERTY:
+								isJsonProperty = true;
+								break;
+							case NGSIConstants.NGSI_LD_RELATIONSHIP:
+								isRelationship = true;
+								break;
+							case NGSIConstants.NGSI_LD_LISTRELATIONSHIP:
+								isListRelationship = true;
+								break;
+							case NGSIConstants.NGSI_LD_VocabProperty:
+								isVocabProperty = true;
+								break;
+							case NGSIConstants.NGSI_LD_ListProperty:
+								isListProperty = true;
+								break;
+							case NGSIConstants.NGSI_LD_LOCALONLY:
+								isLocalOnly = true;
+								break;
 						}
 						if (!alias.equals(NGSIConstants.TYPE) && (keyValue || concise)) {
 							continue;
@@ -456,19 +459,19 @@ public class JsonLdApi {
 							continue;
 						}
 					} else if (isListRelationship) {
-//						expanded value for ListRelationship
-//						"https://uri.etsi.org/ngsi-ld/hasObjectList": [
-//						{
-//							"@list": [
-//							{
-//								"@value": "urn:ngsi-ld:Person:Alice"
-//							},
-//							{
-//								"@value": "urn:ngsi-ld:Person:Bob"
-//							}
-//         				 ]
-//						}
-//					]
+						// expanded value for ListRelationship
+						// "https://uri.etsi.org/ngsi-ld/hasObjectList": [
+						// {
+						// "@list": [
+						// {
+						// "@value": "urn:ngsi-ld:Person:Alice"
+						// },
+						// {
+						// "@value": "urn:ngsi-ld:Person:Bob"
+						// }
+						// ]
+						// }
+						// ]
 						if (expandedProperty.equals(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST)) {
 							List<String> ids = new ArrayList<>();
 							if (expandedValue instanceof List<?> lsIdsMap) {
@@ -503,13 +506,13 @@ public class JsonLdApi {
 								.get(0);
 
 						switch (tmp) {
-						case NGSIConstants.NGSI_LD_PROPERTY:
-						case NGSIConstants.NGSI_LD_RELATIONSHIP:
-						case NGSIConstants.NGSI_LD_GEOPROPERTY:
-						case NGSIConstants.NGSI_LD_LANGPROPERTY:
-							break;
-						default:
-							continue;
+							case NGSIConstants.NGSI_LD_PROPERTY:
+							case NGSIConstants.NGSI_LD_RELATIONSHIP:
+							case NGSIConstants.NGSI_LD_GEOPROPERTY:
+							case NGSIConstants.NGSI_LD_LANGPROPERTY:
+								break;
+							default:
+								continue;
 						}
 					} else {
 						continue;
@@ -801,7 +804,7 @@ public class JsonLdApi {
 	 */
 
 	public Uni<NGSIObject> expand(Context activeCtx, String activeProperty, NGSIObject ngsiElement, int payloadType,
-			boolean atContextAllowed, WebClient webClient, String atContextUrl) {
+			boolean atContextAllowed, WebClient webClient, MicroServiceUtils microServiceUtils) {
 		final boolean frameExpansion = this.opts.getFrameExpansion();
 		// 1)
 		if (ngsiElement.getElement() == null) {
@@ -821,7 +824,7 @@ public class JsonLdApi {
 				unis.add(expand(activeCtx, activeProperty,
 						new NGSIObject(item, ngsiElement)
 								.setFromHasValue(ngsiElement.isHasAtValue() || ngsiElement.isFromHasValue()),
-						payloadType, atContextAllowed, webClient, atContextUrl));
+						payloadType, atContextAllowed, webClient, microServiceUtils));
 			}
 			if (unis.isEmpty()) {
 				return Uni.createFrom().item(ngsiElement);
@@ -896,7 +899,7 @@ public class JsonLdApi {
 					return Uni.createFrom().failure(
 							new ResponseException(ErrorType.BadRequestData, "@context entry in body is not allowed"));
 				}
-				ctxUni = activeCtx.parse(bodyContext, true, webClient, atContextUrl);
+				ctxUni = activeCtx.parse(bodyContext, true, webClient, microServiceUtils);
 			} else {
 				ctxUni = Uni.createFrom().item(activeCtx);
 			}
@@ -1004,14 +1007,15 @@ public class JsonLdApi {
 			// subject reference).
 			// GK: If we found a `propertyScopedContext` above, we can parse it to create a
 			// new activeCtx using the `override protected` option
-//			ngsiElement.setAtContextRequired(atContextAllowed);
-//			if (elem.containsKey(JsonLdConsts.CONTEXT)) {
-//				ngsiElement.setHasAtContext(true);
-//				if (!atContextAllowed) {
-//					throw new ResponseException(ErrorType.BadRequestData, "@context entry in body is not allowed");
-//				}
-//				activeCtx = activeCtx.parse(elem.get(JsonLdConsts.CONTEXT), true);
-//			}
+			// ngsiElement.setAtContextRequired(atContextAllowed);
+			// if (elem.containsKey(JsonLdConsts.CONTEXT)) {
+			// ngsiElement.setHasAtContext(true);
+			// if (!atContextAllowed) {
+			// throw new ResponseException(ErrorType.BadRequestData, "@context entry in body
+			// is not allowed");
+			// }
+			// activeCtx = activeCtx.parse(elem.get(JsonLdConsts.CONTEXT), true);
+			// }
 			// GK: This would be the place to remember this version of activeCtx as
 			// `typeScopedContext`.
 			// 6)
@@ -1120,7 +1124,7 @@ public class JsonLdApi {
 						if (value instanceof List) {
 							expandedValue = new ArrayList<String>();
 							for (final Object v : (List) value) {
-//								if (!ngsiElement.isFromHasValue()) {
+								// if (!ngsiElement.isFromHasValue()) {
 								if (!(v instanceof String)) {
 									throw new JsonLdError(Error.INVALID_TYPE_VALUE,
 											"@type value must be a string or array of strings");
@@ -1128,7 +1132,7 @@ public class JsonLdApi {
 								String type = activeCtx.expandIri((String) v, true, true, null, null);
 								((List<String>) expandedValue).add(type);
 								ngsiElement.addType(type);
-//								}
+								// }
 							}
 						} else if (value instanceof String) {
 							expandedValue = activeCtx.expandIri((String) value, true, true, null, null);
@@ -1315,68 +1319,69 @@ public class JsonLdApi {
 					continue;
 				} else {
 					switch (payloadType) {
-					case AppConstants.ENTITY_CREATE_PAYLOAD:
-					case AppConstants.MERGE_PATCH_PAYLOAD:
-					case AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD:
-					case AppConstants.ENTITY_UPDATE_PAYLOAD:
-					case AppConstants.ENTITY_RETRIEVED_PAYLOAD:
-					case AppConstants.TEMP_ENTITY_CREATE_PAYLOAD:
-					case AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD:
-					case AppConstants.TEMP_ENTITY_RETRIEVED_PAYLOAD:
-//						if (NGSIConstants.NGSI_LD_CREATED_AT.equals(expandedProperty)
-//								|| NGSIConstants.NGSI_LD_MODIFIED_AT.equals(expandedProperty)) {
-//							throw new ResponseException(ErrorType.BadRequestData, "createdAt and modifiedAt cannot be provided by the user and will be system generated");
-//						}
-						if (NGSIConstants.NGSI_LD_HAS_VALUE.equals(expandedProperty)
-								|| NGSIConstants.NGSI_LD_HAS_LIST.equals(expandedProperty)) {
-							ngsiElement.setHasAtValue(true);
-						} else if (NGSIConstants.NGSI_LD_HAS_VOCAB.equals(expandedProperty)) {
-							ngsiElement.setHasVocab(true);
-						} else if (NGSIConstants.NGSI_LD_HAS_JSON.equals(expandedProperty)) {
-							ngsiElement.setHasJson(true);
-						} else if (NGSIConstants.NGSI_LD_HAS_OBJECT.equals(expandedProperty)) {
-							ngsiElement.setHasAtObject(true);
-						} else if (NGSIConstants.NGSI_LD_HAS_OBJECT_LIST.equals(expandedProperty)) {
-							ngsiElement.setHasListObject(true);
-						} else if (NGSIConstants.NGSI_LD_DATE_TIME.equals(expandedProperty)) {
-							ngsiElement.setDateTime(true);
-						} else if (NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP.equals(expandedProperty)) {
-							ngsiElement.setLanguageProperty(true);
-						} else if (!ngsiElement.isFromHasValue() && ((ngsiElement.getParent() == null
-								&& !NGSIConstants.ENTITY_BASE_PROPS.contains(expandedProperty))
-								|| ((ngsiElement.isGeoProperty() || ngsiElement.isRelationship()
-										|| ngsiElement.isProperty() || ngsiElement.isJsonProperty()
-										|| ngsiElement.isListProperty() || ngsiElement.isListRelationship()
-										|| ngsiElement.isVocabProperty() || ngsiElement.isLanguageProperty())
-										&& !NGSIConstants.ATTR_BASE_PROPS.contains(expandedProperty)))) {
-							if (payloadType != AppConstants.MERGE_PATCH_PAYLOAD
-									&& payloadType != AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD) {
-								value = noConcise(value);
+						case AppConstants.ENTITY_CREATE_PAYLOAD:
+						case AppConstants.MERGE_PATCH_PAYLOAD:
+						case AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD:
+						case AppConstants.ENTITY_UPDATE_PAYLOAD:
+						case AppConstants.ENTITY_RETRIEVED_PAYLOAD:
+						case AppConstants.TEMP_ENTITY_CREATE_PAYLOAD:
+						case AppConstants.TEMP_ENTITY_UPDATE_PAYLOAD:
+						case AppConstants.TEMP_ENTITY_RETRIEVED_PAYLOAD:
+							// if (NGSIConstants.NGSI_LD_CREATED_AT.equals(expandedProperty)
+							// || NGSIConstants.NGSI_LD_MODIFIED_AT.equals(expandedProperty)) {
+							// throw new ResponseException(ErrorType.BadRequestData, "createdAt and
+							// modifiedAt cannot be provided by the user and will be system generated");
+							// }
+							if (NGSIConstants.NGSI_LD_HAS_VALUE.equals(expandedProperty)
+									|| NGSIConstants.NGSI_LD_HAS_LIST.equals(expandedProperty)) {
+								ngsiElement.setHasAtValue(true);
+							} else if (NGSIConstants.NGSI_LD_HAS_VOCAB.equals(expandedProperty)) {
+								ngsiElement.setHasVocab(true);
+							} else if (NGSIConstants.NGSI_LD_HAS_JSON.equals(expandedProperty)) {
+								ngsiElement.setHasJson(true);
+							} else if (NGSIConstants.NGSI_LD_HAS_OBJECT.equals(expandedProperty)) {
+								ngsiElement.setHasAtObject(true);
+							} else if (NGSIConstants.NGSI_LD_HAS_OBJECT_LIST.equals(expandedProperty)) {
+								ngsiElement.setHasListObject(true);
+							} else if (NGSIConstants.NGSI_LD_DATE_TIME.equals(expandedProperty)) {
+								ngsiElement.setDateTime(true);
+							} else if (NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP.equals(expandedProperty)) {
+								ngsiElement.setLanguageProperty(true);
+							} else if (!ngsiElement.isFromHasValue() && ((ngsiElement.getParent() == null
+									&& !NGSIConstants.ENTITY_BASE_PROPS.contains(expandedProperty))
+									|| ((ngsiElement.isGeoProperty() || ngsiElement.isRelationship()
+											|| ngsiElement.isProperty() || ngsiElement.isJsonProperty()
+											|| ngsiElement.isListProperty() || ngsiElement.isListRelationship()
+											|| ngsiElement.isVocabProperty() || ngsiElement.isLanguageProperty())
+											&& !NGSIConstants.ATTR_BASE_PROPS.contains(expandedProperty)))) {
+								if (payloadType != AppConstants.MERGE_PATCH_PAYLOAD
+										&& payloadType != AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD) {
+									value = noConcise(value);
+								}
 							}
-						}
 
-						break;
-					case AppConstants.SUBSCRIPTION_CREATE_PAYLOAD:
-					case AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD:
-						ngsiElement.resetSubscriptionVars();
-						if (NGSIConstants.NGSI_LD_ENTITIES.equals(expandedProperty)) {
-							ngsiElement.setEntities(true);
-						} else if (NGSIConstants.NGSI_LD_GEO_QUERY.equals(expandedProperty)) {
-							ngsiElement.setGeoQ(true);
-						} else if (NGSIConstants.NGSI_LD_NOTIFICATION.equals(expandedProperty)) {
-							ngsiElement.setNotificationEntry(true);
-						} else if (NGSIConstants.NGSI_LD_TEMPORAL_QUERY.equals(expandedProperty)) {
-							ngsiElement.setTemporalQ(true);
-						} else if (NGSIConstants.NGSI_LD_ENDPOINT.equals(expandedProperty)) {
-							ngsiElement.setEndpoint(true);
-						} else if (NGSIConstants.NGSI_LD_NOTIFIERINFO.equals(expandedProperty)) {
-							ngsiElement.setNotifierInfo(true);
-						} else if (NGSIConstants.NGSI_LD_RECEIVERINFO.equals(expandedProperty)) {
-							ngsiElement.setReceiverInfo(true);
-						}
-						break;
-					default:
-						break;
+							break;
+						case AppConstants.SUBSCRIPTION_CREATE_PAYLOAD:
+						case AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD:
+							ngsiElement.resetSubscriptionVars();
+							if (NGSIConstants.NGSI_LD_ENTITIES.equals(expandedProperty)) {
+								ngsiElement.setEntities(true);
+							} else if (NGSIConstants.NGSI_LD_GEO_QUERY.equals(expandedProperty)) {
+								ngsiElement.setGeoQ(true);
+							} else if (NGSIConstants.NGSI_LD_NOTIFICATION.equals(expandedProperty)) {
+								ngsiElement.setNotificationEntry(true);
+							} else if (NGSIConstants.NGSI_LD_TEMPORAL_QUERY.equals(expandedProperty)) {
+								ngsiElement.setTemporalQ(true);
+							} else if (NGSIConstants.NGSI_LD_ENDPOINT.equals(expandedProperty)) {
+								ngsiElement.setEndpoint(true);
+							} else if (NGSIConstants.NGSI_LD_NOTIFIERINFO.equals(expandedProperty)) {
+								ngsiElement.setNotifierInfo(true);
+							} else if (NGSIConstants.NGSI_LD_RECEIVERINFO.equals(expandedProperty)) {
+								ngsiElement.setReceiverInfo(true);
+							}
+							break;
+						default:
+							break;
 					}
 				}
 
@@ -1764,9 +1769,9 @@ public class JsonLdApi {
 	 * @throws ResponseException
 	 */
 	public Uni<Object> expand(Context activeCtx, Object element, int payloadType, boolean atContextAllowed,
-			WebClient webClient, String atContextUrl) {
+			WebClient webClient, MicroServiceUtils microServiceUtils) {
 		return expand(activeCtx, null, new NGSIObject(element, null), payloadType, atContextAllowed, webClient,
-				atContextUrl).onItem().transform(ngsiElem -> ngsiElem.getElement());
+				microServiceUtils).onItem().transform(ngsiElem -> ngsiElem.getElement());
 	}
 
 	/***
@@ -2343,16 +2348,16 @@ public class JsonLdApi {
 		}
 		if (value instanceof String) {
 			switch ((String) value) {
-			case "@always":
-				return Embed.ALWAYS;
-			case "@never":
-				return Embed.NEVER;
-			case "@last":
-				return Embed.LAST;
-			case "@link":
-				return Embed.LINK;
-			default:
-				throw new JsonLdError(JsonLdError.Error.INVALID_EMBED_VALUE);
+				case "@always":
+					return Embed.ALWAYS;
+				case "@never":
+					return Embed.NEVER;
+				case "@last":
+					return Embed.LAST;
+				case "@link":
+					return Embed.LINK;
+				default:
+					throw new JsonLdError(JsonLdError.Error.INVALID_EMBED_VALUE);
 			}
 		}
 		throw new JsonLdError(JsonLdError.Error.INVALID_EMBED_VALUE);

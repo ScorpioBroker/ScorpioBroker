@@ -38,12 +38,11 @@ public class JsonLDService {
 	Vertx vertx;
 
 	WebClient webClient;
-	String atContextUrl;
 
 	@PostConstruct
 	void setup() {
 		WebClientOptions options = new WebClientOptions();
-		atContextUrl = microServiceUtils.getContextServerURL().toString();
+
 		this.webClient = WebClient.create(vertx, options);
 		this.coreContext = clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem()
 				.transformToUni(client -> {
@@ -55,7 +54,7 @@ public class JsonLDService {
 							});
 				}).onItem().transformToUni(coreContextMap -> {
 					return new Context(new JsonLdOptions(JsonLdOptions.JSON_LD_1_1))
-							.parse(coreContextMap.get("@context"), false, webClient, atContextUrl).onItem()
+							.parse(coreContextMap.get("@context"), false, webClient, microServiceUtils).onItem()
 							.transform(coreContext -> {
 								// this.coreContext = coreContext;
 								coreContext.getTermDefinition("features").remove("@container");
@@ -66,7 +65,7 @@ public class JsonLDService {
 					// used term and we don't need the geo json definition
 
 				}).await().indefinitely();
-		JsonLdProcessor.init(coreContextUrl, coreContext, atContextUrl);
+		JsonLdProcessor.init(coreContextUrl, coreContext, microServiceUtils);
 
 	}
 
@@ -115,7 +114,7 @@ public class JsonLDService {
 
 	public Uni<Context> parse(Object headerContext) {
 		try {
-			return getCoreContextClone().parse(headerContext, true, webClient, atContextUrl).onFailure()
+			return getCoreContextClone().parse(headerContext, true, webClient, microServiceUtils).onFailure()
 					.recoverWithUni(e -> {
 						return Uni.createFrom().failure(new ResponseException(ErrorType.LdContextNotAvailable,
 								"Failed to retrieve remote context because " + e.getLocalizedMessage()));
@@ -127,7 +126,7 @@ public class JsonLDService {
 	}
 
 	public Uni<Context> parsePure(Object headerContext) {
-		return new Context().parse(headerContext, false, webClient, atContextUrl);
+		return new Context().parse(headerContext, false, webClient, microServiceUtils);
 	}
 
 	public Uni<Object> toRDF(Object entity) {

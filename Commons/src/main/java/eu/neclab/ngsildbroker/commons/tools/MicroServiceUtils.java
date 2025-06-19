@@ -55,6 +55,8 @@ public class MicroServiceUtils {
 	@ConfigProperty(name = "scorpio.atcontexturl")
 	String contextServerUrl;
 
+	boolean gatewayAndAtContextDiffer = false;
+
 	private boolean inMemoryActive = ConfigUtils.isProfileActive("in-memory");
 
 	List<CSourceHandler> csourceReceivers = Lists.newArrayList();
@@ -79,6 +81,7 @@ public class MicroServiceUtils {
 		if (!contextServerUrl.endsWith("/")) {
 			contextServerUrl = contextServerUrl + "/";
 		}
+		gatewayAndAtContextDiffer = !gatewayUrl.equals(contextServerUrl);
 	}
 
 	public static void putIntoIdMap(Map<String, List<Map<String, Object>>> localEntities, String id,
@@ -574,6 +577,10 @@ public class MicroServiceUtils {
 
 	public static void main(String[] args) throws MalformedURLException {
 		System.out.println(new URL("http://test.com").toString());
+	}
+
+	public boolean gatewayAndAtContextDiffer() {
+		return gatewayAndAtContextDiffer;
 	}
 
 }

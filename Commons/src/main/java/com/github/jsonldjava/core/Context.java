@@ -22,6 +22,7 @@ import com.github.jsonldjava.utils.JsonLdUrl;
 import com.github.jsonldjava.utils.Obj;
 import com.google.common.collect.Lists;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.vertx.mutiny.ext.web.client.WebClient;
@@ -153,8 +154,9 @@ public class Context extends LinkedHashMap<String, Object> {
 	 */
 
 	public Uni<Context> parse(Object localContext, List<String> remoteContexts, boolean checkToRemoveNGSILDContext,
-			WebClient webClient, String atContextUrl) {
-		return parse(localContext, remoteContexts, false, checkToRemoveNGSILDContext, true, webClient, atContextUrl);
+			WebClient webClient, MicroServiceUtils microServiceUtils) {
+		return parse(localContext, remoteContexts, false, checkToRemoveNGSILDContext, true, webClient,
+				microServiceUtils);
 	}
 
 	/**
@@ -175,7 +177,8 @@ public class Context extends LinkedHashMap<String, Object> {
 	// GK: Note that parsing may also depend on some options: `override protected
 	// and `propagate`
 	private Uni<Context> parse(Object localContext, List<String> remoteContextsInput, boolean parsingARemoteContext,
-			boolean checkToRemoveNGSILDContext, boolean root, WebClient webClient, String atContextUrl) {
+			boolean checkToRemoveNGSILDContext, boolean root, WebClient webClient,
+			MicroServiceUtils microServiceUtils) {
 		List<String> remoteContexts;
 		if (remoteContextsInput == null) {
 			remoteContexts = new ArrayList<String>();
@@ -231,15 +234,23 @@ public class Context extends LinkedHashMap<String, Object> {
 				remoteContexts.add(uri);
 
 				// 3.2.3: Dereference context
-				String finalUrl = uri;
-				if (uri != null && !(uri.contains(atContextUrl) || uri.contains(NGSIConstants.IMPLICITLYCREATED))) {
-					String encodedUrl = URLEncoder.encode(uri, StandardCharsets.UTF_8);
-					finalUrl = atContextUrl + "createcache/" + encodedUrl;
-					logger.debug("replacing original uri " + uri);
-					logger.debug("call uri is " + finalUrl);
+
+				if (uri != null && !uri.startsWith(microServiceUtils.getContextServerURL())) {
+					if (microServiceUtils.gatewayAndAtContextDiffer()) {
+						if (uri.startsWith(microServiceUtils.getGatewayString())) {
+							uri = microServiceUtils.getContextServerURL()
+									+ uri.substring(microServiceUtils.getGatewayString().length());
+						}
+					} else {
+						String encodedUrl = URLEncoder.encode(uri, StandardCharsets.UTF_8);
+						uri = microServiceUtils.getContextServerURL() + NGSIConstants.JSONLD_CONTEXTS + "createcache/"
+								+ encodedUrl;
+						logger.debug("replacing original uri " + uri);
+					}
+
 				}
-				logger.debug("calling document loader from context parsing for uri " + finalUrl);
-				rds.add(this.options.getDocumentLoader().loadDocument(finalUrl, webClient).onItem()
+				logger.debug("calling document loader from context parsing for uri " + uri);
+				rds.add(this.options.getDocumentLoader().loadDocument(uri, webClient).onItem()
 						.transform(rd -> Tuple2.of(rd, context)));
 				// 3.2.5
 				continue;
@@ -362,7 +373,7 @@ public class Context extends LinkedHashMap<String, Object> {
 					}
 					final Object tempContext = ((Map<String, Object>) remoteContext).get(JsonLdConsts.CONTEXT);
 					resultUni = resultUni.onItem().transformToUni(resultTmp -> resultTmp.parse(tempContext,
-							remoteContexts, true, checkToRemoveNGSILDContext, false, webClient, atContextUrl));
+							remoteContexts, true, checkToRemoveNGSILDContext, false, webClient, microServiceUtils));
 				}
 				return resultUni;
 			});
@@ -397,8 +408,9 @@ public class Context extends LinkedHashMap<String, Object> {
 	}
 
 	public Uni<Context> parse(Object localContext, boolean checkToRemoveNGSILDContext, WebClient webClient,
-			String atContextUrl) {
-		return this.parse(localContext, new ArrayList<String>(), checkToRemoveNGSILDContext, webClient, atContextUrl);
+			MicroServiceUtils microServiceUtils) {
+		return this.parse(localContext, new ArrayList<String>(), checkToRemoveNGSILDContext, webClient,
+				microServiceUtils);
 	}
 
 	/**
@@ -1283,33 +1295,38 @@ public class Context extends LinkedHashMap<String, Object> {
 			ctx.put(JsonLdConsts.VOCAB, this.get(JsonLdConsts.VOCAB));
 		}
 		for (final String term : termDefinitions.keySet()) {
-//			final Map<String, Object> definition = (Map<String, Object>) termDefinitions.get(term);
-//			if (definition.get(JsonLdConsts.LANGUAGE) == null && definition.get(JsonLdConsts.CONTAINER) == null
-//					&& definition.get(JsonLdConsts.TYPE) == null && (definition.get(JsonLdConsts.REVERSE) == null
-//							|| Boolean.FALSE.equals(definition.get(JsonLdConsts.REVERSE)))) {
-//				final String cid = this.compactIri((String) definition.get(JsonLdConsts.ID));
-//				ctx.put(term, term.equals(cid) ? definition.get(JsonLdConsts.ID) : cid);
-//			} else {
-//				final Map<String, Object> defn = newMap();
-//				final String cid = this.compactIri((String) definition.get(JsonLdConsts.ID));
-//				final Boolean reverseProperty = Boolean.TRUE.equals(definition.get(JsonLdConsts.REVERSE));
-//				if (!(term.equals(cid) && !reverseProperty)) {
-//					defn.put(reverseProperty ? JsonLdConsts.REVERSE : JsonLdConsts.ID, cid);
-//				}
-//				final String typeMapping = (String) definition.get(JsonLdConsts.TYPE);
-//				if (typeMapping != null) {
-//					defn.put(JsonLdConsts.TYPE,
-//							JsonLdUtils.isKeyword(typeMapping) ? typeMapping : compactIri(typeMapping, true));
-//				}
-//				if (definition.get(JsonLdConsts.CONTAINER) != null) {
-//					defn.put(JsonLdConsts.CONTAINER, definition.get(JsonLdConsts.CONTAINER));
-//				}
-//				final Object lang = definition.get(JsonLdConsts.LANGUAGE);
-//				if (definition.get(JsonLdConsts.LANGUAGE) != null) {
-//					defn.put(JsonLdConsts.LANGUAGE, Boolean.FALSE.equals(lang) ? null : lang);
-//				}
-//				ctx.put(term, defn);
-//			}
+			// final Map<String, Object> definition = (Map<String, Object>)
+			// termDefinitions.get(term);
+			// if (definition.get(JsonLdConsts.LANGUAGE) == null &&
+			// definition.get(JsonLdConsts.CONTAINER) == null
+			// && definition.get(JsonLdConsts.TYPE) == null &&
+			// (definition.get(JsonLdConsts.REVERSE) == null
+			// || Boolean.FALSE.equals(definition.get(JsonLdConsts.REVERSE)))) {
+			// final String cid = this.compactIri((String) definition.get(JsonLdConsts.ID));
+			// ctx.put(term, term.equals(cid) ? definition.get(JsonLdConsts.ID) : cid);
+			// } else {
+			// final Map<String, Object> defn = newMap();
+			// final String cid = this.compactIri((String) definition.get(JsonLdConsts.ID));
+			// final Boolean reverseProperty =
+			// Boolean.TRUE.equals(definition.get(JsonLdConsts.REVERSE));
+			// if (!(term.equals(cid) && !reverseProperty)) {
+			// defn.put(reverseProperty ? JsonLdConsts.REVERSE : JsonLdConsts.ID, cid);
+			// }
+			// final String typeMapping = (String) definition.get(JsonLdConsts.TYPE);
+			// if (typeMapping != null) {
+			// defn.put(JsonLdConsts.TYPE,
+			// JsonLdUtils.isKeyword(typeMapping) ? typeMapping : compactIri(typeMapping,
+			// true));
+			// }
+			// if (definition.get(JsonLdConsts.CONTAINER) != null) {
+			// defn.put(JsonLdConsts.CONTAINER, definition.get(JsonLdConsts.CONTAINER));
+			// }
+			// final Object lang = definition.get(JsonLdConsts.LANGUAGE);
+			// if (definition.get(JsonLdConsts.LANGUAGE) != null) {
+			// defn.put(JsonLdConsts.LANGUAGE, Boolean.FALSE.equals(lang) ? null : lang);
+			// }
+			// ctx.put(term, defn);
+			// }
 			Object entry = termDefinitions.get(term);
 			if (entry instanceof Map<?, ?> m) {
 				m.remove(JsonLdConsts.REVERSE);

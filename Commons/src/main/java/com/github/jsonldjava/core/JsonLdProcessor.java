@@ -17,6 +17,7 @@ import com.github.jsonldjava.impl.NQuadTripleCallback;
 import com.google.common.collect.Lists;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.ext.web.client.WebClient;
 
@@ -35,40 +36,46 @@ public class JsonLdProcessor {
 	private static Context coreContext = null;
 	// private static boolean initialized = false;
 	private static String coreContextUrl;
-	private static String atContextUrl;
+	private static MicroServiceUtils microServiceUtils;
 
 	private static Logger logger = LoggerFactory.getLogger(JsonLdProcessor.class);
 
-	static void init(String coreContextUrl, Context coreContext, String atContextUrl) {
+	static void init(String coreContextUrl, Context coreContext, MicroServiceUtils microServiceUtils) {
 		JsonLdProcessor.coreContext = coreContext;
 		JsonLdProcessor.coreContextUrl = coreContextUrl;
-		JsonLdProcessor.atContextUrl = atContextUrl;
+		JsonLdProcessor.microServiceUtils = microServiceUtils;
 	}
-//	public synchronized static void init(ClientManager clientManager, WebClient webClient, String coreContextUrl) {
-//		if (JsonLdProcessor.initialized) {
-//			return;
-//		}
-//		JsonLdProcessor.initialized = true;
-//		JsonLdProcessor.coreContextUrl = coreContextUrl;
-//		clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
-//			return client.preparedQuery("SELECT body FROM context WHERE id='" + AppConstants.INTERNAL_NULL_KEY + "'")
-//					.execute().onItem().transform(rows -> {
-//						return rows.iterator().next().getJsonObject(0).getMap();
-//					});
-//		}).onItem().transformToUni(coreContextMap -> {
-//			return new Context(new JsonLdOptions(JsonLdOptions.JSON_LD_1_1)).parse(coreContextMap, false, webClient)
-//					.onItem().transform(coreContext -> {
-//						JsonLdProcessor.coreContext = coreContext;
-//						JsonLdProcessor.coreContext.getTermDefinition("features").remove("@container");
-//						JsonLdProcessor.coreContext.getInverse();
-//						return null;
-//					});
-//			// this explicitly removes the features term from the core as it is a commonly
-//			// used term and we don't need the geo json definition
-//
-//		}).await().indefinitely();
-//
-//	}
+	// public synchronized static void init(ClientManager clientManager, WebClient
+	// webClient, String coreContextUrl) {
+	// if (JsonLdProcessor.initialized) {
+	// return;
+	// }
+	// JsonLdProcessor.initialized = true;
+	// JsonLdProcessor.coreContextUrl = coreContextUrl;
+	// clientManager.getClient(AppConstants.INTERNAL_NULL_KEY,
+	// false).onItem().transformToUni(client -> {
+	// return client.preparedQuery("SELECT body FROM context WHERE id='" +
+	// AppConstants.INTERNAL_NULL_KEY + "'")
+	// .execute().onItem().transform(rows -> {
+	// return rows.iterator().next().getJsonObject(0).getMap();
+	// });
+	// }).onItem().transformToUni(coreContextMap -> {
+	// return new Context(new
+	// JsonLdOptions(JsonLdOptions.JSON_LD_1_1)).parse(coreContextMap, false,
+	// webClient)
+	// .onItem().transform(coreContext -> {
+	// JsonLdProcessor.coreContext = coreContext;
+	// JsonLdProcessor.coreContext.getTermDefinition("features").remove("@container");
+	// JsonLdProcessor.coreContext.getInverse();
+	// return null;
+	// });
+	// // this explicitly removes the features term from the core as it is a
+	// commonly
+	// // used term and we don't need the geo json definition
+	//
+	// }).await().indefinitely();
+	//
+	// }
 
 	static Context getCoreContextClone() {
 		Context clone = coreContext.clone();
@@ -138,7 +145,7 @@ public class JsonLdProcessor {
 			activeCtx = coreContext.clone();
 		}
 		if (context != null) {
-			ctxUni = activeCtx.parse(context, true, webClient, atContextUrl);
+			ctxUni = activeCtx.parse(context, true, webClient, microServiceUtils);
 		} else {
 			ctxUni = Uni.createFrom().item(activeCtx);
 		}
@@ -184,11 +191,13 @@ public class JsonLdProcessor {
 					} else {
 						((Map<String, Object>) compacted).put(JsonLdConsts.CONTEXT, context);
 					}
-//				if (context instanceof List && ((List<Object>) context).size() == 1 && opts.getCompactArrays()) {
-//					((Map<String, Object>) compacted).put(JsonLdConsts.CONTEXT, ((List<Object>) context).get(0));
-//				} else {
+					// if (context instanceof List && ((List<Object>) context).size() == 1 &&
+					// opts.getCompactArrays()) {
+					// ((Map<String, Object>) compacted).put(JsonLdConsts.CONTEXT, ((List<Object>)
+					// context).get(0));
+					// } else {
 
-//				}
+					// }
 				}
 			}
 
@@ -244,7 +253,7 @@ public class JsonLdProcessor {
 
 		Uni<Context> activeCtx;
 		if (contextLinks != null && !contextLinks.isEmpty()) {
-			activeCtx = coreContext.clone().parse(contextLinks, true, webClient, atContextUrl);
+			activeCtx = coreContext.clone().parse(contextLinks, true, webClient, microServiceUtils);
 		} else {
 			activeCtx = Uni.createFrom().item(coreContext.clone());
 		}
@@ -257,7 +266,7 @@ public class JsonLdProcessor {
 				if (exCtx instanceof Map && ((Map<String, Object>) exCtx).containsKey(JsonLdConsts.CONTEXT)) {
 					exCtx = ((Map<String, Object>) exCtx).get(JsonLdConsts.CONTEXT);
 				}
-				return ctx.parse(exCtx, true, webClient, atContextUrl).onItem()
+				return ctx.parse(exCtx, true, webClient, microServiceUtils).onItem()
 						.transformToUni(ctx2 -> expand(ctx2, myInput, opts, payloadType, atContextAllowed, webClient));
 			} else {
 				return expand(ctx, myInput, opts, payloadType, atContextAllowed, webClient);
@@ -274,7 +283,7 @@ public class JsonLdProcessor {
 		// is set to a jsonld compatable format
 
 		// 6)
-		return new JsonLdApi(opts).expand(activeCtx, input, payloadType, atContextAllowed, webClient, atContextUrl)
+		return new JsonLdApi(opts).expand(activeCtx, input, payloadType, atContextAllowed, webClient, microServiceUtils)
 				.onItem().transform(expanded -> {
 					// final step of Expansion Algorithm
 					if (expanded instanceof Map && ((Map) expanded).containsKey(JsonLdConsts.GRAPH)
@@ -369,7 +378,7 @@ public class JsonLdProcessor {
 			// 8)
 			if (context != null && !flattened.isEmpty()) {
 				Context activeCtx = new Context(opts);
-				return activeCtx.parse(context, false, webClient, atContextUrl).onItem().transform(ctx -> {
+				return activeCtx.parse(context, false, webClient, microServiceUtils).onItem().transform(ctx -> {
 					// TODO: only instantiate one jsonldapi
 					Object compacted = new JsonLdApi(opts).compact(activeCtx, null, flattened, opts.getCompactArrays(),
 							-1, null, null);
@@ -447,7 +456,7 @@ public class JsonLdProcessor {
 						// context, otherwise.
 						final JsonLdApi api = new JsonLdApi(expandedInput, opts);
 						return api.context.parse(((Map<String, Object>) myFrame).get(JsonLdConsts.CONTEXT), false,
-								webClient, atContextUrl).onItem().transform(activeCtx -> {
+								webClient, microServiceUtils).onItem().transform(activeCtx -> {
 									final List<Object> framed = api.frame(expandedInput, expandedFrame);
 									if (opts.getPruneBlankNodeIdentifiers()) {
 										JsonLdUtils.pruneBlankNodes(framed);
@@ -649,7 +658,7 @@ public class JsonLdProcessor {
 						for (final Map<String, Object> e : _input) {
 							if (e.containsKey(JsonLdConsts.CONTEXT)) {
 								uni = uni.onItem().transformToUni(v -> dataset.parseContext(e.get(JsonLdConsts.CONTEXT),
-										webClient, atContextUrl));
+										webClient, microServiceUtils));
 							}
 						}
 					}
@@ -805,11 +814,13 @@ public class JsonLdProcessor {
 				} else {
 					((Map<String, Object>) compacted).put(JsonLdConsts.CONTEXT, context);
 				}
-//				if (context instanceof List && ((List<Object>) context).size() == 1 && opts.getCompactArrays()) {
-//					((Map<String, Object>) compacted).put(JsonLdConsts.CONTEXT, ((List<Object>) context).get(0));
-//				} else {
+				// if (context instanceof List && ((List<Object>) context).size() == 1 &&
+				// opts.getCompactArrays()) {
+				// ((Map<String, Object>) compacted).put(JsonLdConsts.CONTEXT, ((List<Object>)
+				// context).get(0));
+				// } else {
 
-//				}
+				// }
 			}
 		}
 
