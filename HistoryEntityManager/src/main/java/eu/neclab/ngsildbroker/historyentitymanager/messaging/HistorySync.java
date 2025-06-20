@@ -39,12 +39,12 @@ public abstract class HistorySync {
 
 	@Inject
 	HistoryMessagingBase historyMessaging;
-	
+
 	@Inject
 	MicroServiceUtils microServiceUtils;
-	
+
 	@ConfigProperty(name = "scorpio.history.syncchecktime")
-	private long syncCheckTime;
+	long syncCheckTime;
 
 	Map<String, Long> instanceId2LastAnnouncement = Maps.newHashMap();
 
@@ -53,7 +53,8 @@ public abstract class HistorySync {
 
 	void syncTask() {
 		try {
-			microServiceUtils.serializeAndSplitObjectAndEmit(announcement, Integer.MAX_VALUE, syncEmitter, objectMapper);
+			microServiceUtils.serializeAndSplitObjectAndEmit(announcement, Integer.MAX_VALUE, syncEmitter,
+					objectMapper);
 		} catch (ResponseException e) {
 			logger.error("Failed to serialize sync message.", e);
 		}
