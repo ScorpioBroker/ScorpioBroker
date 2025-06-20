@@ -57,7 +57,8 @@ import java.util.Set;
 @Singleton
 public class CSourceService {
 	private final static Logger logger = LoggerFactory.getLogger(RegistryController.class);
-	List<String> scorpioFedList = ConfigProvider.getConfig().getOptionalValues("scorpio.federation", String.class).orElse(null);
+	List<String> scorpioFedList = ConfigProvider.getConfig().getOptionalValues("scorpio.federation", String.class)
+			.orElse(null);
 	Map<String, Map<String, String>> fedMap = new HashMap<>();
 	@Inject
 	MicroServiceUtils microServiceUtils;
@@ -84,8 +85,6 @@ public class CSourceService {
 	@ConfigProperty(name = "scorpio.topics.registry")
 	String CSOURCE_TOPIC;
 
-
-
 	@Inject
 	Vertx vertx;
 
@@ -102,7 +101,7 @@ public class CSourceService {
 	@PostConstruct
 	void setup() {
 		this.webClient = WebClient.create(vertx);
-		if (FED_BROKERS_CONFIG.isBlank()) {
+		if (FED_BROKERS_CONFIG.equals("none")) {
 			FED_BROKERS = new String[0];
 		} else {
 			FED_BROKERS = FED_BROKERS_CONFIG.split(",");
