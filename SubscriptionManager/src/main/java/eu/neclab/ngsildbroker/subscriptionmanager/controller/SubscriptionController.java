@@ -18,7 +18,6 @@ import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.impl.headers.HeadersMultiMap;
 import io.vertx.core.json.DecodeException;
 import io.vertx.core.json.JsonObject;
-import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
@@ -30,7 +29,6 @@ import jakarta.ws.rs.QueryParam;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.RestResponse;
 
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -58,49 +56,48 @@ public class SubscriptionController {
 	@Inject
 	JsonLDService ldService;
 
-	private String selfViaHeader;
-
-	@PostConstruct
-	public void setup() {
-		URI gateway = microServiceUtils.getGatewayURI();
-		this.selfViaHeader = gateway.getScheme().toUpperCase() + "/1.1 " + gateway.getAuthority();
-	}
-
-	
 	@POST
 	public Uni<RestResponse<Object>> subscribe(HttpServerRequest request, String body) {
 		Map<String, Object> map;
-
+		String tenant = HttpUtils.getTenant(request);
 		try {
 			map = new JsonObject(body).getMap();
 		} catch (DecodeException e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
 		}
 
-//		try {
-//			if (!map.containsKey(NGSIConstants.JSONLD_CONTEXT)) {
-//				Object contextLink;
-//				if (request.getHeader(NGSIConstants.LINK_HEADER) != null) {
-//					contextLink = request.getHeader(NGSIConstants.LINK_HEADER).split(";")[0].replace("<", "")
-//							.replace(">", "");
-//				} else if (map.containsKey(JsonLdConsts.CONTEXT)) {
-//					contextLink = map.get(JsonLdConsts.CONTEXT);
-//				} else {
-//					contextLink = coreContext;
-//				}
-//				map.put(NGSIConstants.JSONLD_CONTEXT, contextLink);
-//			}
-//		} catch (Exception e) {
-//			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
-//					new ResponseException(ErrorType.BadRequestData), HttpUtils.getTenant(request)));
-//		}
+		// try {
+		// if (!map.containsKey(NGSIConstants.JSONLD_CONTEXT)) {
+		// Object contextLink;
+		// if (request.getHeader(NGSIConstants.LINK_HEADER) != null) {
+		// contextLink =
+		// request.getHeader(NGSIConstants.LINK_HEADER).split(";")[0].replace("<", "")
+		// .replace(">", "");
+		// } else if (map.containsKey(JsonLdConsts.CONTEXT)) {
+		// contextLink = map.get(JsonLdConsts.CONTEXT);
+		// } else {
+		// contextLink = coreContext;
+		// }
+		// map.put(NGSIConstants.JSONLD_CONTEXT, contextLink);
+		// }
+		// } catch (Exception e) {
+		// return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
+		// new ResponseException(ErrorType.BadRequestData),
+		// tenant));
+		// }
 		HeadersMultiMap otherHead = new HeadersMultiMap();
 		if (request.headers().contains(NGSIConstants.TENANT_HEADER)) {
 			otherHead.add(NGSIConstants.TENANT_HEADER, request.headers().get(NGSIConstants.TENANT_HEADER));
 		}
 
-		ViaHeaders viaHeaders = new ViaHeaders(request.headers().getAll(HttpHeaders.VIA), this.selfViaHeader);
-		
+		ViaHeaders viaHeaders;
+		try {
+			viaHeaders = new ViaHeaders(request.headers().getAll(HttpHeaders.VIA),
+					microServiceUtils.getSourceAlias(tenant));
+		} catch (ResponseException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
+		}
+
 		return HttpUtils.expandBody(request, map, AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, ldService).onItem()
 				.transformToUni(tuple -> {
 					Uni<Context> contextLink;
@@ -111,12 +108,12 @@ public class SubscriptionController {
 					}
 					return contextLink.onItem().transformToUni(ctx -> {
 						return subService
-								.createSubscription(otherHead, HttpUtils.getTenant(request), tuple.getItem2(),
+								.createSubscription(otherHead, tenant, tuple.getItem2(),
 										ctx, viaHeaders)
 								.onItem().transform(t -> HttpUtils.generateSubscriptionResult(t, tuple.getItem1()));
 					});
 				}).onFailure().recoverWithItem(e -> {
-					return HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request));
+					return HttpUtils.handleControllerExceptions(e, tenant);
 				});
 	}
 
@@ -124,6 +121,7 @@ public class SubscriptionController {
 	public Uni<RestResponse<Object>> getAllSubscriptions(HttpServerRequest request, @QueryParam("limit") Integer limit,
 			@QueryParam("offset") int offset, @QueryParam("options") String options) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
+		String tenant = HttpUtils.getTenant(request);
 		if (acceptHeader != 1 && acceptHeader != 2) {
 			return HttpUtils.getInvalidHeader();
 		}
@@ -135,14 +133,14 @@ public class SubscriptionController {
 		}
 		if (actualLimit > maxLimit) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
-					new ResponseException(ErrorType.TooManyResults), HttpUtils.getTenant(request)));
+					new ResponseException(ErrorType.TooManyResults), tenant));
 		}
 		if (offset < 0) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
-					new ResponseException(ErrorType.InvalidRequest, "invalid offset"), HttpUtils.getTenant(request)));
+					new ResponseException(ErrorType.InvalidRequest, "invalid offset"), tenant));
 		}
 		return ldService.parse(HttpUtils.getAtContext(request)).onItem().transformToUni(ctx -> {
-			return subService.getAllSubscriptions(HttpUtils.getTenant(request), actualLimit, offset).onItem()
+			return subService.getAllSubscriptions(tenant, actualLimit, offset).onItem()
 					.transformToUni(subscriptions -> {
 						subscriptions.getData().forEach(sub -> {
 							fixSub(sub);
@@ -152,7 +150,7 @@ public class SubscriptionController {
 								NGSIConstants.NGSI_LD_SUB_ENDPOINT);
 					});
 		}).onFailure().recoverWithItem(e -> {
-			return HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request));
+			return HttpUtils.handleControllerExceptions(e, tenant);
 		});
 
 	}
@@ -191,38 +189,41 @@ public class SubscriptionController {
 	public Uni<RestResponse<Object>> getSubscriptionById(HttpServerRequest request,
 			@PathParam(value = "id") String subscriptionId, @QueryParam(value = "options") String options) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
+		String tenant = HttpUtils.getTenant(request);
 		if (acceptHeader != 1 && acceptHeader != 2) {
 			return HttpUtils.getInvalidHeader();
 		}
 		try {
 			HttpUtils.validateUri(subscriptionId);
 		} catch (Exception e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
 		}
+
 		List<Object> contextHeader = HttpUtils.getAtContext(request);
 		return ldService.parse(contextHeader).onItem().transformToUni(context -> {
-			return subService.getSubscription(HttpUtils.getTenant(request), subscriptionId).onItem()
+			return subService.getSubscription(tenant, subscriptionId).onItem()
 					.transformToUni(subscription -> {
 						fixSub(subscription);
 						return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, subscription, null,
 								options, null, ldService, null, null, true);
 					});
 		}).onFailure().recoverWithItem(e -> {
-			return HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request));
+			return HttpUtils.handleControllerExceptions(e, tenant);
 		});
 	}
 
 	@Path("/{id}")
 	@DELETE
 	public Uni<RestResponse<Object>> deleteSubscription(HttpServerRequest request, @PathParam(value = "id") String id) {
+		String tenant = HttpUtils.getTenant(request);
 		try {
 			HttpUtils.validateUri(id);
 		} catch (Exception e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
 		}
-		return subService.deleteSubscription(HttpUtils.getTenant(request), id).onItem()
+		return subService.deleteSubscription(tenant, id).onItem()
 				.transform(t -> HttpUtils.generateDeleteResult(t)).onFailure().recoverWithItem(e -> {
-					return HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request));
+					return HttpUtils.handleControllerExceptions(e, tenant);
 				});
 
 	}
@@ -232,18 +233,25 @@ public class SubscriptionController {
 	public Uni<RestResponse<Object>> updateSubscription(HttpServerRequest request, @PathParam(value = "id") String id,
 			String body) {
 		Map<String, Object> map;
-
+		String tenant = HttpUtils.getTenant(request);
+		ViaHeaders viaHeaders;
+		try {
+			viaHeaders = new ViaHeaders(request.headers().getAll(HttpHeaders.VIA),
+					microServiceUtils.getSourceAlias(tenant));
+		} catch (ResponseException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
+		}
 		try {
 			map = new JsonObject(body).getMap();
 		} catch (DecodeException e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
 		}
 		try {
 			HttpUtils.validateUri(id);
 		} catch (Exception e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
 		}
-		@SuppressWarnings("unchecked")
+
 		List<String> contexts;
 		Object ctxObj = map.get("@context");
 		if (ctxObj instanceof List) {
@@ -261,15 +269,15 @@ public class SubscriptionController {
 			}
 			map.put("@context", finalContexts);
 		}
-		ViaHeaders viaHeaders = new ViaHeaders(request.headers().getAll(HttpHeaders.VIA), this.selfViaHeader);
+
 		return HttpUtils.expandBody(request, map, AppConstants.SUBSCRIPTION_UPDATE_PAYLOAD, ldService).onItem()
 				.transformToUni(tuple -> {
 					return subService
-							.updateSubscription(HttpUtils.getTenant(request), id, tuple.getItem2(), tuple.getItem1(),
+							.updateSubscription(tenant, id, tuple.getItem2(), tuple.getItem1(),
 									viaHeaders)
 							.onItem().transform(t -> HttpUtils.generateSubscriptionResult(t, tuple.getItem1()));
 				}).onFailure().recoverWithItem(e -> {
-					return HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request));
+					return HttpUtils.handleControllerExceptions(e, tenant);
 				});
 
 	}

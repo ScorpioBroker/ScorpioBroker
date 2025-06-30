@@ -59,7 +59,7 @@ import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.ext.web.client.WebClient;
 
 @ApplicationScoped
-public class HistoryEntityService implements CSourceHandler  {
+public class HistoryEntityService implements CSourceHandler {
 
 	private final static Logger logger = LoggerFactory.getLogger(HistoryEntityService.class);
 
@@ -69,12 +69,12 @@ public class HistoryEntityService implements CSourceHandler  {
 	@ConfigProperty(name = "scorpio.topics.temporal")
 	String TEMP_TOPIC;
 
-//	@ConfigProperty(name = "scorpio.history.tokafka")
-//	boolean historyToKafkaEnabled;
+	// @ConfigProperty(name = "scorpio.history.tokafka")
+	// boolean historyToKafkaEnabled;
 
-//	@Inject
-//	@Channel(AppConstants.HISTORY_CHANNEL)
-//	Optional<MutinyEmitter<String>> kafkaSenderInterface;
+	// @Inject
+	// @Channel(AppConstants.HISTORY_CHANNEL)
+	// Optional<MutinyEmitter<String>> kafkaSenderInterface;
 
 	@Inject
 	Vertx vertx;
@@ -83,7 +83,7 @@ public class HistoryEntityService implements CSourceHandler  {
 	JsonLDService ldService;
 
 	WebClient webClient;
-	
+
 	@Inject
 	MicroServiceUtils microServiceUtils;
 
@@ -148,7 +148,8 @@ public class HistoryEntityService implements CSourceHandler  {
 
 		}
 		return Uni.combine().all().unis(unis).with(list -> {
-			NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.CREATE_TEMPORAL_REQUEST, entityId, tenant);
+			NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.CREATE_TEMPORAL_REQUEST, entityId,
+					tenant);
 			list.forEach(obj -> {
 				NGSILDOperationResult opResult = (NGSILDOperationResult) obj;
 				if (opResult.isWasUpdated()) {
@@ -218,17 +219,17 @@ public class HistoryEntityService implements CSourceHandler  {
 			io.vertx.core.MultiMap headersFromReq) {
 		Object attribEntry = payloadInput.get(attribId);
 		Map<String, Object> payload;
-		if(attribEntry != null) {
-			if(attribEntry instanceof Map<?,?>) {
+		if (attribEntry != null) {
+			if (attribEntry instanceof Map<?, ?>) {
 				attribEntry = Lists.newArrayList(attribEntry);
 				payloadInput.put(attribId, attribEntry);
 			}
 			payload = payloadInput;
-		}else {
+		} else {
 			Map<String, Object> tmp = Maps.newHashMap();
 			tmp.put(attribId, Lists.newArrayList(payloadInput));
 			payload = tmp;
-			
+
 		}
 		UpdateAttrHistoryEntityRequest request = new UpdateAttrHistoryEntityRequest(tenant, entityId, attribId,
 				instanceId, payload, false);
@@ -329,7 +330,7 @@ public class HistoryEntityService implements CSourceHandler  {
 	public Uni<NGSILDOperationResult> deleteAttrFromEntry(String tenant, String entityId, String attrId,
 			String datasetId, boolean deleteAll, Context originalContext, io.vertx.core.MultiMap headersFromReq) {
 		DeleteAttrHistoryEntityRequest request = new DeleteAttrHistoryEntityRequest(tenant, entityId, attrId, datasetId,
-				deleteAll,false);
+				deleteAll, false);
 		Uni<NGSILDOperationResult> local = historyDAO.deleteAttrFromHistoryEntity(request).onItem().transform(v -> {
 			NGSILDOperationResult result;
 			result = new NGSILDOperationResult(AppConstants.DELETE_TEMPORAL_ATTRIBUTE_REQUEST, entityId, tenant);
@@ -438,14 +439,15 @@ public class HistoryEntityService implements CSourceHandler  {
 						|| (regEntry.eIdp() != null && entityId.matches(regEntry.eIdp()))) {
 					result.add(new RemoteHost(regEntry.host().host(), regEntry.host().tenant(),
 							regEntry.host().headers(), regEntry.host().cSourceId(), true, false, regEntry.regMode(),
-							false, regEntry.queryEntityMap()));
+							false, regEntry.queryEntityMap(), regEntry.host().cSourceAlias()));
 				}
 			}
 		}
 		return result;
 	}
 
-	private Set<RemoteHost> getRemoteHostsForDeleteAttribInstance(DeleteAttrInstanceHistoryEntityRequest request, String entityId) {
+	private Set<RemoteHost> getRemoteHostsForDeleteAttribInstance(DeleteAttrInstanceHistoryEntityRequest request,
+			String entityId) {
 		Set<RemoteHost> result = Sets.newHashSet();
 		for (List<RegistrationEntry> regEntries : tenant2CId2RegEntries.row(request.getTenant()).values()) {
 			for (RegistrationEntry regEntry : regEntries) {
@@ -458,7 +460,7 @@ public class HistoryEntityService implements CSourceHandler  {
 								&& (regEntry.eProp() == null || regEntry.eProp().equals(request.getAttribName()))) {
 					result.add(new RemoteHost(regEntry.host().host(), regEntry.host().tenant(),
 							regEntry.host().headers(), regEntry.host().cSourceId(), true, false, regEntry.regMode(),
-							false, regEntry.queryEntityMap()));
+							false, regEntry.queryEntityMap(), regEntry.host().cSourceAlias()));
 				}
 			}
 		}
@@ -478,7 +480,7 @@ public class HistoryEntityService implements CSourceHandler  {
 								&& (regEntry.eProp() == null || regEntry.eProp().equals(request.getAttribName()))) {
 					result.add(new RemoteHost(regEntry.host().host(), regEntry.host().tenant(),
 							regEntry.host().headers(), regEntry.host().cSourceId(), true, false, regEntry.regMode(),
-							false, regEntry.queryEntityMap()));
+							false, regEntry.queryEntityMap(), regEntry.host().cSourceAlias()));
 				}
 			}
 		}
@@ -487,67 +489,67 @@ public class HistoryEntityService implements CSourceHandler  {
 
 	public Uni<Void> handleInternalRequest(BaseRequest request) {
 		switch (request.getRequestType()) {
-		case AppConstants.CREATE_REQUEST:
-			return historyDAO.createHistoryEntity(new CreateHistoryEntityRequest(request)).onItem()
-					.transformToUni(b -> {
-						return Uni.createFrom().voidItem();
-					}).onFailure().recoverWithUni(e -> {
-						logger.debug("Failed to record create", e);
-						return Uni.createFrom().voidItem();
-					});
-		case AppConstants.APPEND_REQUEST:
-		case AppConstants.UPDATE_REQUEST:
-		case AppConstants.REPLACE_ENTITY_REQUEST:
-		case AppConstants.REPLACE_ATTRIBUTE_REQUEST:
-		case AppConstants.PARTIAL_UPDATE_REQUEST:
-			return historyDAO.appendToHistoryEntity(new AppendHistoryEntityRequest(request)).onItem()
-					.transformToUni(resultTable -> {
-						return Uni.createFrom().voidItem();
-					}).onFailure().recoverWithUni(e -> {
-						logger.debug("Failed to record update", e);
-						return Uni.createFrom().voidItem();
-					});
-		case AppConstants.DELETE_REQUEST:
-			return historyDAO.setEntityDeleted(request).onFailure().recoverWithUni(e -> {
-				logger.debug("Failed to record delete", e);
+			case AppConstants.CREATE_REQUEST:
+				return historyDAO.createHistoryEntity(new CreateHistoryEntityRequest(request)).onItem()
+						.transformToUni(b -> {
+							return Uni.createFrom().voidItem();
+						}).onFailure().recoverWithUni(e -> {
+							logger.debug("Failed to record create", e);
+							return Uni.createFrom().voidItem();
+						});
+			case AppConstants.APPEND_REQUEST:
+			case AppConstants.UPDATE_REQUEST:
+			case AppConstants.REPLACE_ENTITY_REQUEST:
+			case AppConstants.REPLACE_ATTRIBUTE_REQUEST:
+			case AppConstants.PARTIAL_UPDATE_REQUEST:
+				return historyDAO.appendToHistoryEntity(new AppendHistoryEntityRequest(request)).onItem()
+						.transformToUni(resultTable -> {
+							return Uni.createFrom().voidItem();
+						}).onFailure().recoverWithUni(e -> {
+							logger.debug("Failed to record update", e);
+							return Uni.createFrom().voidItem();
+						});
+			case AppConstants.DELETE_REQUEST:
+				return historyDAO.setEntityDeleted(request).onFailure().recoverWithUni(e -> {
+					logger.debug("Failed to record delete", e);
+					return Uni.createFrom().voidItem();
+				});
+			case AppConstants.DELETE_ATTRIBUTE_REQUEST:
+				return historyDAO.setAttributeDeleted(request).onFailure().recoverWithUni(e -> {
+					logger.debug("Failed to record delete attrs", e);
+					return Uni.createFrom().voidItem();
+				});
+			case AppConstants.MERGE_PATCH_REQUEST:
+				return historyDAO.setMergePatch(request).onFailure().recoverWithUni(e -> {
+					logger.debug("Failed to record merge patch", e);
+					return Uni.createFrom().voidItem();
+				});
+			default:
 				return Uni.createFrom().voidItem();
-			});
-		case AppConstants.DELETE_ATTRIBUTE_REQUEST:
-			return historyDAO.setAttributeDeleted(request).onFailure().recoverWithUni(e -> {
-				logger.debug("Failed to record delete attrs", e);
-				return Uni.createFrom().voidItem();
-			});
-		case AppConstants.MERGE_PATCH_REQUEST:
-			return historyDAO.setMergePatch(request).onFailure().recoverWithUni(e -> {
-				logger.debug("Failed to record merge patch", e);
-				return Uni.createFrom().voidItem();
-			});
-		default:
-			return Uni.createFrom().voidItem();
 		}
 	}
 
 	public Uni<Void> handleInternalBatchRequest(BatchRequest request) {
 		switch (request.getRequestType()) {
-		case AppConstants.CREATE_REQUEST:
-		case AppConstants.APPEND_REQUEST:
-		case AppConstants.UPDATE_REQUEST:
-		case AppConstants.UPSERT_REQUEST:
-		case AppConstants.BATCH_CREATE_REQUEST:
-		case AppConstants.BATCH_UPSERT_REQUEST:
-		case AppConstants.BATCH_UPDATE_REQUEST:
-			return historyDAO.batchUpsertHistoryEntity(request).onFailure().recoverWithUni(e -> {
-				logger.debug("Failed to record create", e);
+			case AppConstants.CREATE_REQUEST:
+			case AppConstants.APPEND_REQUEST:
+			case AppConstants.UPDATE_REQUEST:
+			case AppConstants.UPSERT_REQUEST:
+			case AppConstants.BATCH_CREATE_REQUEST:
+			case AppConstants.BATCH_UPSERT_REQUEST:
+			case AppConstants.BATCH_UPDATE_REQUEST:
+				return historyDAO.batchUpsertHistoryEntity(request).onFailure().recoverWithUni(e -> {
+					logger.debug("Failed to record create", e);
+					return Uni.createFrom().voidItem();
+				});
+			case AppConstants.DELETE_REQUEST:
+			case AppConstants.BATCH_DELETE_REQUEST:
+				return historyDAO.setDeletedBatchHistoryEntity(request).onFailure().recoverWithUni(e -> {
+					logger.debug("Failed to record delete", e);
+					return Uni.createFrom().voidItem();
+				});
+			default:
 				return Uni.createFrom().voidItem();
-			});
-		case AppConstants.DELETE_REQUEST:
-		case AppConstants.BATCH_DELETE_REQUEST:
-			return historyDAO.setDeletedBatchHistoryEntity(request).onFailure().recoverWithUni(e -> {
-				logger.debug("Failed to record delete", e);
-				return Uni.createFrom().voidItem();
-			});
-		default:
-			return Uni.createFrom().voidItem();
 		}
 	}
 
@@ -573,38 +575,38 @@ public class HistoryEntityService implements CSourceHandler  {
 						continue;
 					}
 					switch (request.getRequestType()) {
-					case AppConstants.CREATE_TEMPORAL_REQUEST:
-						if (!regEntry.upsertTemporal()) {
+						case AppConstants.CREATE_TEMPORAL_REQUEST:
+							if (!regEntry.upsertTemporal()) {
+								continue;
+							}
+							break;
+						case AppConstants.APPEND_TEMPORAL_REQUEST:
+							if (!regEntry.appendAttrsTemporal()) {
+								continue;
+							}
+							break;
+						case AppConstants.UPDATE_TEMPORAL_INSTANCE_REQUEST:
+							if (!regEntry.updateAttrsTemporal()) {
+								continue;
+							}
+							break;
+						case AppConstants.DELETE_TEMPORAL_REQUEST:
+							if (!regEntry.deleteTemporal()) {
+								continue;
+							}
+							break;
+						case AppConstants.DELETE_TEMPORAL_ATTRIBUTE_REQUEST:
+							if (!regEntry.deleteAttrsTemporal()) {
+								continue;
+							}
+							break;
+						case AppConstants.DELETE_TEMPORAL_ATTRIBUTE_INSTANCE_REQUEST:
+							if (!regEntry.deleteAttrInstanceTemporal()) {
+								continue;
+							}
+							break;
+						default:
 							continue;
-						}
-						break;
-					case AppConstants.APPEND_TEMPORAL_REQUEST:
-						if (!regEntry.appendAttrsTemporal()) {
-							continue;
-						}
-						break;
-					case AppConstants.UPDATE_TEMPORAL_INSTANCE_REQUEST:
-						if (!regEntry.updateAttrsTemporal()) {
-							continue;
-						}
-						break;
-					case AppConstants.DELETE_TEMPORAL_REQUEST:
-						if (!regEntry.deleteTemporal()) {
-							continue;
-						}
-						break;
-					case AppConstants.DELETE_TEMPORAL_ATTRIBUTE_REQUEST:
-						if (!regEntry.deleteAttrsTemporal()) {
-							continue;
-						}
-						break;
-					case AppConstants.DELETE_TEMPORAL_ATTRIBUTE_INSTANCE_REQUEST:
-						if (!regEntry.deleteAttrInstanceTemporal()) {
-							continue;
-						}
-						break;
-					default:
-						continue;
 					}
 
 					String propType = ((List<String>) ((List<Map<String, Object>>) entry.getValue()).get(0)
@@ -636,38 +638,42 @@ public class HistoryEntityService implements CSourceHandler  {
 							RemoteHost regHost = regEntry.host();
 							RemoteHost host;
 							switch (request.getRequestType()) {
-							case AppConstants.CREATE_TEMPORAL_REQUEST:
-								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
-										regHost.cSourceId(), regEntry.upsertTemporal(), false, regEntry.regMode(),
-										false, regEntry.queryEntityMap());
-								break;
-							case AppConstants.APPEND_TEMPORAL_REQUEST:
-								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
-										regHost.cSourceId(), regEntry.appendAttrsTemporal(), false, regEntry.regMode(),
-										false, regEntry.queryEntityMap());
-								break;
-							case AppConstants.UPDATE_TEMPORAL_INSTANCE_REQUEST:
-								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
-										regHost.cSourceId(), regEntry.updateAttrsTemporal(), false, regEntry.regMode(),
-										false, regEntry.queryEntityMap());
-								break;
-							case AppConstants.DELETE_TEMPORAL_REQUEST:
-								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
-										regHost.cSourceId(), regEntry.deleteTemporal(), false, regEntry.regMode(),
-										false, regEntry.queryEntityMap());
-								break;
-							case AppConstants.DELETE_TEMPORAL_ATTRIBUTE_REQUEST:
-								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
-										regHost.cSourceId(), regEntry.deleteAttrsTemporal(), false, regEntry.regMode(),
-										false, regEntry.queryEntityMap());
-								break;
-							case AppConstants.DELETE_TEMPORAL_ATTRIBUTE_INSTANCE_REQUEST:
-								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
-										regHost.cSourceId(), regEntry.deleteAttrInstanceTemporal(), false,
-										regEntry.regMode(), false, regEntry.queryEntityMap());
-								break;
-							default:
-								return null;
+								case AppConstants.CREATE_TEMPORAL_REQUEST:
+									host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
+											regHost.cSourceId(), regEntry.upsertTemporal(), false, regEntry.regMode(),
+											false, regEntry.queryEntityMap(), regEntry.host().cSourceAlias());
+									break;
+								case AppConstants.APPEND_TEMPORAL_REQUEST:
+									host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
+											regHost.cSourceId(), regEntry.appendAttrsTemporal(), false,
+											regEntry.regMode(),
+											false, regEntry.queryEntityMap(), regEntry.host().cSourceAlias());
+									break;
+								case AppConstants.UPDATE_TEMPORAL_INSTANCE_REQUEST:
+									host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
+											regHost.cSourceId(), regEntry.updateAttrsTemporal(), false,
+											regEntry.regMode(),
+											false, regEntry.queryEntityMap(), regEntry.host().cSourceAlias());
+									break;
+								case AppConstants.DELETE_TEMPORAL_REQUEST:
+									host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
+											regHost.cSourceId(), regEntry.deleteTemporal(), false, regEntry.regMode(),
+											false, regEntry.queryEntityMap(), regEntry.host().cSourceAlias());
+									break;
+								case AppConstants.DELETE_TEMPORAL_ATTRIBUTE_REQUEST:
+									host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
+											regHost.cSourceId(), regEntry.deleteAttrsTemporal(), false,
+											regEntry.regMode(),
+											false, regEntry.queryEntityMap(), regEntry.host().cSourceAlias());
+									break;
+								case AppConstants.DELETE_TEMPORAL_ATTRIBUTE_INSTANCE_REQUEST:
+									host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
+											regHost.cSourceId(), regEntry.deleteAttrInstanceTemporal(), false,
+											regEntry.regMode(), false, regEntry.queryEntityMap(),
+											regEntry.host().cSourceAlias());
+									break;
+								default:
+									return null;
 							}
 
 							tmp = Maps.newHashMap();
@@ -730,7 +736,5 @@ public class HistoryEntityService implements CSourceHandler  {
 			return Uni.createFrom().voidItem();
 		});
 	}
-
-	
 
 }

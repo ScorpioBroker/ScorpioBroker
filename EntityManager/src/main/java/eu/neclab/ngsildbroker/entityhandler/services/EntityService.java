@@ -89,11 +89,11 @@ public class EntityService implements CSourceHandler {
 	@OnOverflow(value = Strategy.UNBOUNDED_BUFFER)
 	MutinyEmitter<String> entityEmitter;
 
-//	@Inject
-//	@Channel(AppConstants.ENTITY_BATCH_CHANNEL)
-//	@Broadcast
-//	@OnOverflow(value = Strategy.UNBOUNDED_BUFFER)
-//	MutinyEmitter<String> batchEmitter;
+	// @Inject
+	// @Channel(AppConstants.ENTITY_BATCH_CHANNEL)
+	// @Broadcast
+	// @OnOverflow(value = Strategy.UNBOUNDED_BUFFER)
+	// MutinyEmitter<String> batchEmitter;
 
 	@Inject
 	Vertx vertx;
@@ -166,7 +166,8 @@ public class EntityService implements CSourceHandler {
 						} catch (ResponseException e) {
 							remoteResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST,
 									jsonObj.getMap().get("id") == null ? "no entityId"
-											: (String) jsonObj.getMap().get("id"), host.tenant());
+											: (String) jsonObj.getMap().get("id"),
+									host.tenant());
 							remoteResult.addFailure(e);
 						}
 						result.add(remoteResult);
@@ -270,18 +271,17 @@ public class EntityService implements CSourceHandler {
 	public Uni<NGSILDOperationResult> partialUpdateAttribute(String tenant, String entityId, String attribName,
 			Map<String, Object> payload, Context context, io.vertx.core.MultiMap headersFromReq) {
 		logger.trace("updateMessage() :: started");
-		
-		
+
 		UpdateEntityRequest request = new UpdateEntityRequest(tenant, entityId, payload, attribName, zip);
 		request.setRequestType(AppConstants.PARTIAL_UPDATE_REQUEST);
 		Tuple2<Map<String, Object>, Collection<Tuple2<RemoteHost, Map<String, Object>>>> splitted = splitEntity(request,
 				entityId);
 		Map<String, Object> localEntity = splitted.getItem1();
 		Collection<Tuple2<RemoteHost, Map<String, Object>>> remoteEntitiesAndHosts = splitted.getItem2();
-//		if (remoteEntitiesAndHosts.isEmpty()) {
-//			request.setPayload(localEntity);
-//			return partialUpdateLocalEntity(request, context);
-//		}
+		// if (remoteEntitiesAndHosts.isEmpty()) {
+		// request.setPayload(localEntity);
+		// return partialUpdateLocalEntity(request, context);
+		// }
 		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(remoteEntitiesAndHosts.size());
 		for (Tuple2<RemoteHost, Map<String, Object>> remoteEntityAndHost : remoteEntitiesAndHosts) {
 			Map<String, Object> expanded = remoteEntityAndHost.getItem2();
@@ -352,9 +352,9 @@ public class EntityService implements CSourceHandler {
 		DeleteAttributeRequest request = new DeleteAttributeRequest(tenant, entityId, attribName, datasetId, deleteAll,
 				zip);
 		Set<RemoteHost> remoteHosts = getRemoteHostsForDeleteAttrib(request, entityId);
-//		if (remoteHosts.isEmpty()) {
-//			return localDeleteAttrib(request, context);
-//		}
+		// if (remoteHosts.isEmpty()) {
+		// return localDeleteAttrib(request, context);
+		// }
 		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(remoteHosts.size());
 		for (RemoteHost remoteHost : remoteHosts) {
 			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(), headersFromReq);
@@ -392,7 +392,8 @@ public class EntityService implements CSourceHandler {
 			} catch (ResponseException e) {
 				return Uni.createFrom().failure(e);
 			}
-			NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.DELETE_ATTRIBUTE_REQUEST, entityId, request.getTenant());
+			NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.DELETE_ATTRIBUTE_REQUEST, entityId,
+					request.getTenant());
 			result.addSuccess(new CRUDSuccess(null, null, null,
 					Set.of(new Attrib(request.getAttribName(), request.getDatasetId()))));
 			return Uni.createFrom().item(result);
@@ -416,7 +417,8 @@ public class EntityService implements CSourceHandler {
 						)) {
 					result.add(new RemoteHost(regEntry.host().host(), regEntry.host().tenant(),
 							regEntry.host().headers(), regEntry.host().cSourceId(), regEntry.deleteEntity(),
-							regEntry.deleteBatch(), regEntry.regMode(), false, regEntry.queryEntityMap()));
+							regEntry.deleteBatch(), regEntry.regMode(), false, regEntry.queryEntityMap(),
+							regEntry.host().cSourceAlias()));
 				}
 			}
 		}
@@ -428,9 +430,9 @@ public class EntityService implements CSourceHandler {
 		DeleteEntityRequest request = new DeleteEntityRequest(tenant, entityId, zip);
 		Set<RemoteHost> remoteHosts = getRemoteHostsForDelete(request, entityId);
 
-//		if (remoteHosts.isEmpty()) {
-//			return localDeleteEntity(request, context);
-//		}
+		// if (remoteHosts.isEmpty()) {
+		// return localDeleteEntity(request, context);
+		// }
 		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(remoteHosts.size());
 		for (RemoteHost remoteHost : remoteHosts) {
 			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(), headersFromReq);
@@ -481,7 +483,8 @@ public class EntityService implements CSourceHandler {
 			} catch (ResponseException e) {
 				return Uni.createFrom().failure(e);
 			}
-			NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.DELETE_REQUEST, entityId, request.getTenant());
+			NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.DELETE_REQUEST, entityId,
+					request.getTenant());
 			result.addSuccess(new CRUDSuccess(null, null, null, deleted, context));
 			return Uni.createFrom().item(result);
 		});
@@ -499,7 +502,8 @@ public class EntityService implements CSourceHandler {
 						|| (regEntry.eIdp() != null && entityId.matches(regEntry.eIdp()))) {
 					result.add(new RemoteHost(regEntry.host().host(), regEntry.host().tenant(),
 							regEntry.host().headers(), regEntry.host().cSourceId(), regEntry.deleteEntity(),
-							regEntry.deleteBatch(), regEntry.regMode(), false, regEntry.queryEntityMap()));
+							regEntry.deleteBatch(), regEntry.regMode(), false, regEntry.queryEntityMap(),
+							regEntry.host().cSourceAlias()));
 				}
 			}
 		}
@@ -513,10 +517,10 @@ public class EntityService implements CSourceHandler {
 				request, entityId);
 		Map<String, Object> localEntity = localAndRemote.getItem1();
 		Collection<Tuple2<RemoteHost, Map<String, Object>>> remoteEntitiesAndHosts = localAndRemote.getItem2();
-//		if (remoteEntitiesAndHosts.isEmpty()) {
-//			request.setPayload(localEntity);
-//			return appendLocal(request, noOverwrite, context);
-//		}
+		// if (remoteEntitiesAndHosts.isEmpty()) {
+		// request.setPayload(localEntity);
+		// return appendLocal(request, noOverwrite, context);
+		// }
 		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(remoteEntitiesAndHosts.size());
 		for (Tuple2<RemoteHost, Map<String, Object>> remoteEntityAndHost : remoteEntitiesAndHosts) {
 			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
@@ -557,7 +561,8 @@ public class EntityService implements CSourceHandler {
 			}
 			request.setPayloadFromSingle(entityId, localEntity);
 			unis.add(appendLocal(request, entityId, noOverwrite, context).onFailure().recoverWithItem(e -> {
-				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, entityId, tenant);
+				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, entityId,
+						tenant);
 				if (e instanceof ResponseException) {
 					localResult.addFailure((ResponseException) e);
 				} else {
@@ -580,10 +585,10 @@ public class EntityService implements CSourceHandler {
 				request, entityId);
 		Map<String, Object> localEntity = localAndRemote.getItem1();
 		Collection<Tuple2<RemoteHost, Map<String, Object>>> remoteEntitiesAndHosts = localAndRemote.getItem2();
-//		if (remoteEntitiesAndHosts.isEmpty()) {
-//			request.setPayload(localEntity);
-//			return updateLocalEntity(request, context);
-//		}
+		// if (remoteEntitiesAndHosts.isEmpty()) {
+		// request.setPayload(localEntity);
+		// return updateLocalEntity(request, context);
+		// }
 		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(remoteEntitiesAndHosts.size());
 		for (Tuple2<RemoteHost, Map<String, Object>> remoteEntityAndHost : remoteEntitiesAndHosts) {
 			Map<String, Object> expanded = remoteEntityAndHost.getItem2();
@@ -611,7 +616,8 @@ public class EntityService implements CSourceHandler {
 			}
 			request.setPayloadFromSingle(entityId, localEntity);
 			unis.add(updateLocalEntity(request, entityId, context).onFailure().recoverWithItem(e -> {
-				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.UPDATE_REQUEST, entityId, tenant);
+				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.UPDATE_REQUEST, entityId,
+						tenant);
 				if (e instanceof ResponseException) {
 					localResult.addFailure((ResponseException) e);
 				} else {
@@ -649,7 +655,8 @@ public class EntityService implements CSourceHandler {
 				return Uni.createFrom().failure(e);
 			}
 
-			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.UPDATE_REQUEST, entityId, request.getTenant());
+			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.UPDATE_REQUEST, entityId,
+					request.getTenant());
 			localResult.addSuccess(new CRUDSuccess(null, null, null, request.getFirstPayload(), context));
 			return Uni.createFrom().item(localResult);
 		});
@@ -664,10 +671,10 @@ public class EntityService implements CSourceHandler {
 				request, entityId);
 		Map<String, Object> localEntity = localAndRemote.getItem1();
 		Collection<Tuple2<RemoteHost, Map<String, Object>>> remoteEntitiesAndHosts = localAndRemote.getItem2();
-//		if (remoteEntitiesAndHosts.isEmpty()) {
-//			request.setPayload(localEntity);
-//			return createLocalEntity(request, context);
-//		}
+		// if (remoteEntitiesAndHosts.isEmpty()) {
+		// request.setPayload(localEntity);
+		// return createLocalEntity(request, context);
+		// }
 		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(remoteEntitiesAndHosts.size());
 		for (Tuple2<RemoteHost, Map<String, Object>> remoteEntityAndHost : remoteEntitiesAndHosts) {
 			Map<String, Object> expanded = remoteEntityAndHost.getItem2();
@@ -703,7 +710,8 @@ public class EntityService implements CSourceHandler {
 			}
 			request.setPayloadFromSingle(entityId, localEntity);
 			unis.add(0, createLocalEntity(request, entityId, context).onFailure().recoverWithItem(e -> {
-				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, entityId, tenant);
+				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, entityId,
+						tenant);
 				if (e instanceof ResponseException) {
 					localResult.addFailure((ResponseException) e);
 				} else {
@@ -735,7 +743,8 @@ public class EntityService implements CSourceHandler {
 			} catch (ResponseException e) {
 				return Uni.createFrom().failure(e);
 			}
-			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, entityId, request.getTenant());
+			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, entityId,
+					request.getTenant());
 			localResult
 					.addSuccess(new CRUDSuccess(null, null, null, request.getPayload().get(entityId).get(0), context));
 			return Uni.createFrom().item(localResult);
@@ -781,36 +790,36 @@ public class EntityService implements CSourceHandler {
 						continue;
 					}
 					switch (request.getRequestType()) {
-					case AppConstants.CREATE_REQUEST:
-						if (!regEntry.createEntity() && !regEntry.createBatch()) {
+						case AppConstants.CREATE_REQUEST:
+							if (!regEntry.createEntity() && !regEntry.createBatch()) {
+								continue;
+							}
+							break;
+						case AppConstants.UPDATE_REQUEST:
+						case AppConstants.MERGE_PATCH_REQUEST:
+						case AppConstants.REPLACE_ENTITY_REQUEST:
+							if (!regEntry.updateEntity()) {
+								continue;
+							}
+							break;
+						case AppConstants.PARTIAL_UPDATE_REQUEST:
+						case AppConstants.REPLACE_ATTRIBUTE_REQUEST:
+							if (!regEntry.updateAttrs()) {
+								continue;
+							}
+							break;
+						case AppConstants.APPEND_REQUEST:
+							if (!regEntry.appendAttrs() && !regEntry.updateBatch()) {
+								continue;
+							}
+							break;
+						case AppConstants.UPSERT_REQUEST:
+							if (!regEntry.upsertBatch() && !regEntry.appendAttrs() && !regEntry.createEntity()) {
+								continue;
+							}
+							break;
+						default:
 							continue;
-						}
-						break;
-					case AppConstants.UPDATE_REQUEST:
-					case AppConstants.MERGE_PATCH_REQUEST:
-					case AppConstants.REPLACE_ENTITY_REQUEST:
-						if (!regEntry.updateEntity()) {
-							continue;
-						}
-						break;
-					case AppConstants.PARTIAL_UPDATE_REQUEST:
-					case AppConstants.REPLACE_ATTRIBUTE_REQUEST:
-						if (!regEntry.updateAttrs()) {
-							continue;
-						}
-						break;
-					case AppConstants.APPEND_REQUEST:
-						if (!regEntry.appendAttrs() && !regEntry.updateBatch()) {
-							continue;
-						}
-						break;
-					case AppConstants.UPSERT_REQUEST:
-						if (!regEntry.upsertBatch() && !regEntry.appendAttrs() && !regEntry.createEntity()) {
-							continue;
-						}
-						break;
-					default:
-						continue;
 					}
 
 					String propType = ((List<String>) ((List<Map<String, Object>>) entry.getValue()).get(0)
@@ -842,47 +851,55 @@ public class EntityService implements CSourceHandler {
 							RemoteHost regHost = regEntry.host();
 							RemoteHost host;
 							switch (request.getRequestType()) {
-							case AppConstants.CREATE_REQUEST:
-								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
-										regHost.cSourceId(), regEntry.createEntity(), regEntry.createBatch(),
-										regEntry.regMode(), false, regEntry.queryEntityMap());
-								break;
-							case AppConstants.UPDATE_REQUEST:
-								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
-										regHost.cSourceId(), regEntry.updateAttrs(), regEntry.updateBatch(),
-										regEntry.regMode(), false, regEntry.queryEntityMap());
-								break;
-							case AppConstants.MERGE_PATCH_REQUEST:
-								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
-										regHost.cSourceId(), regEntry.mergeEntity(), regEntry.mergeBatch(),
-										regEntry.regMode(), false, regEntry.queryEntityMap());
-								break;
-							case AppConstants.REPLACE_ENTITY_REQUEST:
-								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
-										regHost.cSourceId(), regEntry.replaceEntity(), false, regEntry.regMode(), false,
-										regEntry.queryEntityMap());
-								break;
-							case AppConstants.REPLACE_ATTRIBUTE_REQUEST:
-								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
-										regHost.cSourceId(), regEntry.replaceAttrs(), false, regEntry.regMode(), false,
-										regEntry.queryEntityMap());
-							case AppConstants.PARTIAL_UPDATE_REQUEST:
-								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
-										regHost.cSourceId(), regEntry.updateAttrs(), false, regEntry.regMode(), false,
-										regEntry.queryEntityMap());
-								break;
-							case AppConstants.APPEND_REQUEST:
-								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
-										regHost.cSourceId(), regEntry.appendAttrs(), regEntry.updateBatch(),
-										regEntry.regMode(), false, regEntry.queryEntityMap());
-								break;
-							case AppConstants.UPSERT_REQUEST:
-								host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
-										regHost.cSourceId(), (regEntry.appendAttrs() && regEntry.createEntity()),
-										regEntry.upsertBatch(), regEntry.regMode(), false, regEntry.queryEntityMap());
-								break;
-							default:
-								return null;
+								case AppConstants.CREATE_REQUEST:
+									host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
+											regHost.cSourceId(), regEntry.createEntity(), regEntry.createBatch(),
+											regEntry.regMode(), false, regEntry.queryEntityMap(),
+											regEntry.host().cSourceAlias());
+									break;
+								case AppConstants.UPDATE_REQUEST:
+									host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
+											regHost.cSourceId(), regEntry.updateAttrs(), regEntry.updateBatch(),
+											regEntry.regMode(), false, regEntry.queryEntityMap(),
+											regEntry.host().cSourceAlias());
+									break;
+								case AppConstants.MERGE_PATCH_REQUEST:
+									host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
+											regHost.cSourceId(), regEntry.mergeEntity(), regEntry.mergeBatch(),
+											regEntry.regMode(), false, regEntry.queryEntityMap(),
+											regEntry.host().cSourceAlias());
+									break;
+								case AppConstants.REPLACE_ENTITY_REQUEST:
+									host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
+											regHost.cSourceId(), regEntry.replaceEntity(), false, regEntry.regMode(),
+											false,
+											regEntry.queryEntityMap(), regEntry.host().cSourceAlias());
+									break;
+								case AppConstants.REPLACE_ATTRIBUTE_REQUEST:
+									host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
+											regHost.cSourceId(), regEntry.replaceAttrs(), false, regEntry.regMode(),
+											false,
+											regEntry.queryEntityMap(), regEntry.host().cSourceAlias());
+								case AppConstants.PARTIAL_UPDATE_REQUEST:
+									host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
+											regHost.cSourceId(), regEntry.updateAttrs(), false, regEntry.regMode(),
+											false,
+											regEntry.queryEntityMap(), regEntry.host().cSourceAlias());
+									break;
+								case AppConstants.APPEND_REQUEST:
+									host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
+											regHost.cSourceId(), regEntry.appendAttrs(), regEntry.updateBatch(),
+											regEntry.regMode(), false, regEntry.queryEntityMap(),
+											regEntry.host().cSourceAlias());
+									break;
+								case AppConstants.UPSERT_REQUEST:
+									host = new RemoteHost(regHost.host(), regHost.tenant(), regHost.headers(),
+											regHost.cSourceId(), (regEntry.appendAttrs() && regEntry.createEntity()),
+											regEntry.upsertBatch(), regEntry.regMode(), false,
+											regEntry.queryEntityMap(), regEntry.host().cSourceAlias());
+									break;
+								default:
+									return null;
 							}
 
 							tmp = Maps.newHashMap();
@@ -969,7 +986,8 @@ public class EntityService implements CSourceHandler {
 	private Uni<NGSILDOperationResult> appendLocal(AppendEntityRequest request, String entityId, boolean noOverwrite,
 			Context context) {
 		return entityDAO.appendToEntity2(request, noOverwrite).onItem().transformToUni(resultAndNotAppended -> {
-			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.APPEND_REQUEST, entityId, request.getTenant());
+			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.APPEND_REQUEST, entityId,
+					request.getTenant());
 			Set<Attrib> failedToAdd = Sets.newHashSet();
 			Set<String> notAppended = resultAndNotAppended.getItem3();
 			Map<String, Object> payload = request.getPayload().get(entityId).get(0);
@@ -1105,7 +1123,8 @@ public class EntityService implements CSourceHandler {
 				List<Map<String, String>> fails = (List<Map<String, String>>) dbResult.get("failure");
 
 				for (String entityId : successes) {
-					NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, entityId, tenant);
+					NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, entityId,
+							tenant);
 					opResult.addSuccess(new CRUDSuccess(null, null, null, Sets.newHashSet()));
 					result.add(opResult);
 				}
@@ -1583,10 +1602,10 @@ public class EntityService implements CSourceHandler {
 				request, entityId);
 		Map<String, Object> localEntity = localAndRemote.getItem1();
 		Collection<Tuple2<RemoteHost, Map<String, Object>>> remoteEntitiesAndHosts = localAndRemote.getItem2();
-//		if (remoteEntitiesAndHosts.isEmpty()) {
-//			request.setPayload(localEntity);
-//			return localMergePatch(request, context);
-//		}
+		// if (remoteEntitiesAndHosts.isEmpty()) {
+		// request.setPayload(localEntity);
+		// return localMergePatch(request, context);
+		// }
 		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(remoteEntitiesAndHosts.size());
 		for (Tuple2<RemoteHost, Map<String, Object>> remoteEntityAndHost : remoteEntitiesAndHosts) {
 			Map<String, Object> expanded = remoteEntityAndHost.getItem2();
@@ -1624,7 +1643,8 @@ public class EntityService implements CSourceHandler {
 			}
 			request.setPayloadFromSingle(entityId, localEntity);
 			unis.add(localMergePatch(request, entityId, context).onFailure().recoverWithItem(e -> {
-				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, entityId, tenant);
+				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, entityId,
+						tenant);
 				if (e instanceof ResponseException) {
 					localResult.addFailure((ResponseException) e);
 				} else {
@@ -1649,7 +1669,8 @@ public class EntityService implements CSourceHandler {
 				});
 				return Uni.createFrom().failure(collectedFails.get(0));
 			}
-			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.MERGE_PATCH_REQUEST, entityId, request.getTenant());
+			NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.MERGE_PATCH_REQUEST, entityId,
+					request.getTenant());
 			localResult
 					.addSuccess(new CRUDSuccess(null, null, null, request.getPayload().get(entityId).get(0), context));
 			return Uni.createFrom().item(localResult);
@@ -1745,10 +1766,10 @@ public class EntityService implements CSourceHandler {
 				request, entityId);
 		Map<String, Object> localEntity = localAndRemote.getItem1();
 		Collection<Tuple2<RemoteHost, Map<String, Object>>> remoteEntitiesAndHosts = localAndRemote.getItem2();
-//		if (remoteEntitiesAndHosts.isEmpty()) {
-//			request.setPayload(localEntity);
-//			return replaceLocalEntity(request, context);
-//		}
+		// if (remoteEntitiesAndHosts.isEmpty()) {
+		// request.setPayload(localEntity);
+		// return replaceLocalEntity(request, context);
+		// }
 		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(remoteEntitiesAndHosts.size());
 		for (Tuple2<RemoteHost, Map<String, Object>> remoteEntityAndHost : remoteEntitiesAndHosts) {
 			Map<String, Object> expanded = remoteEntityAndHost.getItem2();
@@ -1777,7 +1798,8 @@ public class EntityService implements CSourceHandler {
 
 			request.setPayloadFromSingle(entityId, localEntity);
 			unis.add(replaceLocalEntity(request, entityId, context).onFailure().recoverWithItem(e -> {
-				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, entityId, tenant);
+				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, entityId,
+						tenant);
 				if (e instanceof ResponseException) {
 					localResult.addFailure((ResponseException) e);
 				} else {
@@ -1828,10 +1850,10 @@ public class EntityService implements CSourceHandler {
 		Collection<Tuple2<RemoteHost, Map<String, Object>>> remoteEntitiesAndHosts = localAndRemote.getItem2();
 		localEntity.remove(NGSIConstants.JSON_LD_TYPE);
 		List<Uni<NGSILDOperationResult>> unis = new ArrayList<>(remoteEntitiesAndHosts.size());
-//		if (remoteEntitiesAndHosts.isEmpty()) {
-//			request.setPayload(localEntity);
-//			return replaceLocalAttrib(request, context);
-//		}
+		// if (remoteEntitiesAndHosts.isEmpty()) {
+		// request.setPayload(localEntity);
+		// return replaceLocalAttrib(request, context);
+		// }
 		for (Tuple2<RemoteHost, Map<String, Object>> remoteEntityAndHost : remoteEntitiesAndHosts) {
 			Map<String, Object> expanded = remoteEntityAndHost.getItem2();
 			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
@@ -1859,7 +1881,8 @@ public class EntityService implements CSourceHandler {
 			}
 			request.setPayloadFromSingle(entityId, localEntity);
 			unis.add(replaceLocalAttrib(request, entityId, context).onFailure().recoverWithItem(e -> {
-				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, entityId, tenant);
+				NGSILDOperationResult localResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, entityId,
+						tenant);
 				if (e instanceof ResponseException) {
 					localResult.addFailure((ResponseException) e);
 				} else {
@@ -2051,15 +2074,16 @@ public class EntityService implements CSourceHandler {
 							});
 
 						}
-//						if (!request.getPayload().isEmpty()) {
-//							
-//							try {
-//								microServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter,
-//										objectMapper);
-//							} catch (ResponseException e) {
-//								return Uni.createFrom().failure(e);
-//							}
-//						}
+						// if (!request.getPayload().isEmpty()) {
+						//
+						// try {
+						// microServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize,
+						// entityEmitter,
+						// objectMapper);
+						// } catch (ResponseException e) {
+						// return Uni.createFrom().failure(e);
+						// }
+						// }
 						return Uni.createFrom().item(result);
 					});
 

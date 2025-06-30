@@ -116,8 +116,6 @@ public class AppConstants {
 	public static final int DELETE_TEMPORAL_ATTRIBUTE_REQUEST = 9;
 	public static final int DELETE_TEMPORAL_ATTRIBUTE_INSTANCE_REQUEST = 10;
 	public static final int UPSERT_REQUEST = 11;
-	
-	
 
 	public static final int OPERATION_CREATE_REGISTRATION = 11;
 	public static final int OPERATION_UPDATE_REGISTRATION = 12;
@@ -128,7 +126,7 @@ public class AppConstants {
 	public static final int CREATE_SUBSCRIPTION_REQUEST = 16;
 
 	public static final int REPLACE_ATTRIBUTE_REQUEST = 23;
-	
+
 	public static final int BATCH_CREATE_REQUEST = 30;
 	public static final int BATCH_UPSERT_REQUEST = 31;
 	public static final int BATCH_UPDATE_REQUEST = 32;
@@ -160,7 +158,7 @@ public class AppConstants {
 	public static final String SQL_ALREADY_EXISTS = "23505";
 	public static final String SQL_NOT_FOUND = "02000";
 	public static final String SQL_FOREIGN_KEY_VIOLATION = "23503";
-	
+
 	public static final String SQL_INVALID_OPERATOR = "42804";
 	public static final String SQL_INVALID_INTERVAL = "22007";
 
@@ -176,13 +174,13 @@ public class AppConstants {
 	public static final String INVALID_GEO_QUERY = "XX000";
 
 	public static JsonLdOptions opts = new JsonLdOptions(JsonLdOptions.JSON_LD_1_1);
-	public static char[] CHAR_ARRAY_WHERE = new char[]{'W','H','E','R','E',' '};
+	public static char[] CHAR_ARRAY_WHERE = new char[] { 'W', 'H', 'E', 'R', 'E', ' ' };
 
 	public static final QueryRemoteHost DB_REMOTE_HOST = new QueryRemoteHost(INTERNAL_NULL_KEY, null, null, null, true,
 			true, true, -1, null, null, false, false, null, null);
 	public static final Map<String, QueryRemoteHost> DEFAULT_REMOTE_HOST_MAP = Maps
 			.newHashMap(Map.of(INTERNAL_NULL_KEY, DB_REMOTE_HOST));
-	
+
 	public static final String TENANT_SERIALIZATION_CHAR = "a";
 	public static final String PAYLOAD_SERIALIZATION_CHAR = "b";
 	public static final String PREVPAYLOAD_SERIALIZATION_CHAR = "c";
@@ -196,7 +194,7 @@ public class AppConstants {
 	public static final String NOOVERWRITE_SERIALIZATION_CHAR = "k";
 	public static final String INSTANCEID_SERIALIZATION_CHAR = "l";
 	public static final String ZIPPED_SERIALIZATION_CHAR = "m";
-	
+
 	public static final byte BYTE_TENANT_SERIALIZATION_CHAR = 'a';
 	public static final byte BYTE_PAYLOAD_SERIALIZATION_CHAR = 'b';
 	public static final byte BYTE_PREVPAYLOAD_SERIALIZATION_CHAR = 'c';
@@ -220,5 +218,11 @@ public class AppConstants {
 	public static final String ENTITYMAP_IGNORE = "ngsi-ld:scorpio:ignore";
 	public static final String EMPTY = "";
 
+	public static final int GET_OP = 0;
+	public static final int POST_OP = 1;
+	public static final int PATCH_OP = 2;
+	public static final int PUT_OP = 3;
+	public static final int DELETE_OP = 4;
+	public static final int MERGE_OP = 5;
 
 }

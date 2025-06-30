@@ -7,16 +7,23 @@ import java.util.Set;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
+import eu.neclab.ngsildbroker.commons.enums.ErrorType;
+import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+
 public class ViaHeaders {
 
 	private List<String> viaHeaders;
 	private Set<String> hostUrls = Sets.newHashSet();
 
-	public ViaHeaders(List<String> viaHeaders, String selfViaEntry) {
+	public ViaHeaders(List<String> viaHeaders, String selfViaEntry) throws ResponseException {
 
 		for (String viaHeader : viaHeaders) {
+
 			String[] viaEntries = viaHeader.split(",");
 			for (String entry : viaEntries) {
+				if (entry.equals(selfViaEntry)) {
+					throw new ResponseException(ErrorType.LoopDeteced);
+				}
 				String[] parts = entry.trim().split(" ");
 				if (parts.length > 1) {
 					String protocolPart = parts[0];

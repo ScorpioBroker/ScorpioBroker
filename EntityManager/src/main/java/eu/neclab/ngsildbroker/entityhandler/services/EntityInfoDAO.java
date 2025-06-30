@@ -191,44 +191,46 @@ public class EntityInfoDAO {
 		return first;
 	}
 
-//	public Uni<Map<String, Object>> batchAppendEntity(BatchRequest request) {
-//		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
-//			List<Tuple> entities = Lists.newArrayList();
-//			request.getPayload().values().forEach(entityList -> {
-//				entityList.forEach(entity -> entities.add(Tuple.of(entity)));
-//			});
-//			
-//
-//			return client.preparedQuery(
-//					"UPDATE ENTITY (id, e_types, entity) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING RETURNING id, true;")
-//					.executeBatch(nullFoundAndTuple.getItem2()).onItem().transform(rows -> {
-//						Set<String> ids = nullFoundAndTuple.getItem3();
-//						Map<String, Object> result = new HashMap<>(2);
-//						ArrayList<String> success = new ArrayList<>();
-//						ArrayList<Map<String, String>> failure = new ArrayList<>();
-//						result.put("success", success);
-//						result.put("failure", failure);
-//						while (rows != null) {
-//							rows.forEach(row -> {
-//								String id = row.getString(0);
-//								ids.remove(id);
-//								success.add(id);
-//							});
-//							rows = rows.next();
-//						}
-//						ids.forEach(id -> {
-//							failure.add(Map.of(id, AppConstants.SQL_ALREADY_EXISTS));
-//						});
-//						return result;
-//					}).onFailure().recoverWithUni(e -> {
-//						if (e instanceof PgException pge) {
-//							logger.error(pge.getDetail());
-//						}
-//						logger.error("Failed to store entities in batch create.", e);
-//						return Uni.createFrom().failure(e);
-//					});
-//		});
-//	}
+	// public Uni<Map<String, Object>> batchAppendEntity(BatchRequest request) {
+	// return clientManager.getClient(request.getTenant(),
+	// true).onItem().transformToUni(client -> {
+	// List<Tuple> entities = Lists.newArrayList();
+	// request.getPayload().values().forEach(entityList -> {
+	// entityList.forEach(entity -> entities.add(Tuple.of(entity)));
+	// });
+	//
+	//
+	// return client.preparedQuery(
+	// "UPDATE ENTITY (id, e_types, entity) VALUES ($1, $2, $3) ON CONFLICT DO
+	// NOTHING RETURNING id, true;")
+	// .executeBatch(nullFoundAndTuple.getItem2()).onItem().transform(rows -> {
+	// Set<String> ids = nullFoundAndTuple.getItem3();
+	// Map<String, Object> result = new HashMap<>(2);
+	// ArrayList<String> success = new ArrayList<>();
+	// ArrayList<Map<String, String>> failure = new ArrayList<>();
+	// result.put("success", success);
+	// result.put("failure", failure);
+	// while (rows != null) {
+	// rows.forEach(row -> {
+	// String id = row.getString(0);
+	// ids.remove(id);
+	// success.add(id);
+	// });
+	// rows = rows.next();
+	// }
+	// ids.forEach(id -> {
+	// failure.add(Map.of(id, AppConstants.SQL_ALREADY_EXISTS));
+	// });
+	// return result;
+	// }).onFailure().recoverWithUni(e -> {
+	// if (e instanceof PgException pge) {
+	// logger.error(pge.getDetail());
+	// }
+	// logger.error("Failed to store entities in batch create.", e);
+	// return Uni.createFrom().failure(e);
+	// });
+	// });
+	// }
 
 	public Uni<Map<String, Object>> batchAppendEntity(BatchRequest request) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
@@ -393,7 +395,7 @@ public class EntityInfoDAO {
 
 	public Uni<Table<String, String, List<RegistrationEntry>>> getAllRegistries() {
 		return DBUtil.getAllRegistries(clientManager, ldService,
-				"SELECT cs_id, c_id, e_id, e_id_p, e_type, e_prop, e_rel, ST_AsGeoJSON(i_location), scopes, EXTRACT(MILLISECONDS FROM expires), endpoint, tenant_id, headers, reg_mode, createEntity, updateEntity, appendAttrs, updateAttrs, deleteAttrs, deleteEntity, createBatch, upsertBatch, updateBatch, deleteBatch, upsertTemporal, appendAttrsTemporal, deleteAttrsTemporal, updateAttrsTemporal, deleteAttrInstanceTemporal, deleteTemporal, mergeEntity, replaceEntity, replaceAttrs, mergeBatch, retrieveEntity, queryEntity, queryBatch, retrieveTemporal, queryTemporal, retrieveEntityTypes, retrieveEntityTypeDetails, retrieveEntityTypeInfo, retrieveAttrTypes, retrieveAttrTypeDetails, retrieveAttrTypeInfo, createSubscription, updateSubscription, retrieveSubscription, querySubscription, deleteSubscription,queryEntityMap, createEntityMap, updateEntityMap, deleteEntityMap, retrieveEntityMap FROM csourceinformation WHERE (createEntity OR createBatch OR updateEntity OR appendAttrs OR deleteAttrs OR deleteEntity OR upsertBatch OR updateBatch OR deleteBatch) AND reg_mode != 0",
+				"SELECT cs_id, c_id, e_id, e_id_p, e_type, e_prop, e_rel, ST_AsGeoJSON(i_location), scopes, EXTRACT(MILLISECONDS FROM expires), endpoint, tenant_id, headers, reg_mode, createEntity, updateEntity, appendAttrs, updateAttrs, deleteAttrs, deleteEntity, createBatch, upsertBatch, updateBatch, deleteBatch, upsertTemporal, appendAttrsTemporal, deleteAttrsTemporal, updateAttrsTemporal, deleteAttrInstanceTemporal, deleteTemporal, mergeEntity, replaceEntity, replaceAttrs, mergeBatch, retrieveEntity, queryEntity, queryBatch, retrieveTemporal, queryTemporal, retrieveEntityTypes, retrieveEntityTypeDetails, retrieveEntityTypeInfo, retrieveAttrTypes, retrieveAttrTypeDetails, retrieveAttrTypeInfo, createSubscription, updateSubscription, retrieveSubscription, querySubscription, deleteSubscription,queryEntityMap, createEntityMap, updateEntityMap, deleteEntityMap, retrieveEntityMap, csourceAlias FROM csourceinformation WHERE (createEntity OR createBatch OR updateEntity OR appendAttrs OR deleteAttrs OR deleteEntity OR upsertBatch OR updateBatch OR deleteBatch) AND reg_mode != 0",
 				logger);
 
 	}
@@ -411,8 +413,8 @@ public class EntityInfoDAO {
 
 			Tuple tuple = Tuple.of(request.getFirstId(), new JsonObject(request.getFirstPayload()),
 					!request.isNoOverwrite());
-//			logger.debug(sql);
-//			logger.debug(tuple.deepToString());
+			// logger.debug(sql);
+			// logger.debug(tuple.deepToString());
 			return client.preparedQuery(sql).execute(tuple).onFailure().recoverWithUni(e -> {
 				e.printStackTrace();
 				return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
@@ -446,7 +448,7 @@ public class EntityInfoDAO {
 					""";
 
 			Tuple tuple = Tuple.of(request.getFirstId(), new JsonObject(request.getFirstPayload()), !noOverwrite);
-//			logger.debug(sql);
+			// logger.debug(sql);
 			// logger.debug(tuple.deepToString());
 			return client.preparedQuery(sql).execute(tuple).onFailure().recoverWithUni(e -> {
 				return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
@@ -520,8 +522,10 @@ public class EntityInfoDAO {
 			});
 		});
 	}
-public static void main(String[] args) {
+
+	public static void main(String[] args) {
 	}
+
 	/**
 	 * 
 	 * @param request
@@ -595,7 +599,7 @@ public static void main(String[] args) {
 
 	public Uni<Table<String, String, List<RegistrationEntry>>> getAllQueryRegistries() {
 		return DBUtil.getAllRegistries(clientManager, ldService,
-				"SELECT cs_id, c_id, e_id, e_id_p, e_type, e_prop, e_rel, ST_AsGeoJSON(i_location), scopes, EXTRACT(MILLISECONDS FROM expires), endpoint, tenant_id, headers, reg_mode, createEntity, updateEntity, appendAttrs, updateAttrs, deleteAttrs, deleteEntity, createBatch, upsertBatch, updateBatch, deleteBatch, upsertTemporal, appendAttrsTemporal, deleteAttrsTemporal, updateAttrsTemporal, deleteAttrInstanceTemporal, deleteTemporal, mergeEntity, replaceEntity, replaceAttrs, mergeBatch, retrieveEntity, queryEntity, queryBatch, retrieveTemporal, queryTemporal, retrieveEntityTypes, retrieveEntityTypeDetails, retrieveEntityTypeInfo, retrieveAttrTypes, retrieveAttrTypeDetails, retrieveAttrTypeInfo, createSubscription, updateSubscription, retrieveSubscription, querySubscription, deleteSubscription, queryEntityMap, createEntityMap, updateEntityMap, deleteEntityMap, retrieveEntityMap FROM csourceinformation WHERE queryentity OR querybatch OR retrieveentity OR retrieveentitytypes OR retrieveentitytypedetails OR retrieveentitytypeinfo OR retrieveattrtypes OR retrieveattrtypedetails OR retrieveattrtypeinfo",
+				"SELECT cs_id, c_id, e_id, e_id_p, e_type, e_prop, e_rel, ST_AsGeoJSON(i_location), scopes, EXTRACT(MILLISECONDS FROM expires), endpoint, tenant_id, headers, reg_mode, createEntity, updateEntity, appendAttrs, updateAttrs, deleteAttrs, deleteEntity, createBatch, upsertBatch, updateBatch, deleteBatch, upsertTemporal, appendAttrsTemporal, deleteAttrsTemporal, updateAttrsTemporal, deleteAttrInstanceTemporal, deleteTemporal, mergeEntity, replaceEntity, replaceAttrs, mergeBatch, retrieveEntity, queryEntity, queryBatch, retrieveTemporal, queryTemporal, retrieveEntityTypes, retrieveEntityTypeDetails, retrieveEntityTypeInfo, retrieveAttrTypes, retrieveAttrTypeDetails, retrieveAttrTypeInfo, createSubscription, updateSubscription, retrieveSubscription, querySubscription, deleteSubscription, queryEntityMap, createEntityMap, updateEntityMap, deleteEntityMap, retrieveEntityMap, csourceAlias FROM csourceinformation WHERE queryentity OR querybatch OR retrieveentity OR retrieveentitytypes OR retrieveentitytypedetails OR retrieveentitytypeinfo OR retrieveattrtypes OR retrieveattrtypedetails OR retrieveattrtypeinfo",
 				logger);
 	}
 

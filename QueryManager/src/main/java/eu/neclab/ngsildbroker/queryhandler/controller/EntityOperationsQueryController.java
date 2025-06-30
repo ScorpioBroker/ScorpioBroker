@@ -1,13 +1,11 @@
 package eu.neclab.ngsildbroker.queryhandler.controller;
 
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import io.vertx.core.json.JsonObject;
-import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import jakarta.ws.rs.HeaderParam;
@@ -65,14 +63,6 @@ public class EntityOperationsQueryController {
 	@Inject
 	JsonLDService ldService;
 
-	private String selfViaHeader;
-
-	@PostConstruct
-	public void setup() {
-		URI gateway = microServiceUtils.getGatewayURI();
-		this.selfViaHeader = gateway.getScheme().toUpperCase() + "/1.1 " + gateway.getAuthority();
-	}
-
 	@Path("/query")
 	@POST
 	public Uni<RestResponse<Object>> postQuery(HttpServerRequest request, String bodyStr,
@@ -85,13 +75,13 @@ public class EntityOperationsQueryController {
 		boolean localOnly;
 		boolean count;
 		boolean retrieveEntityMap;
-
+		String tenant = HttpUtils.getTenant(request);
 		try {
 			localOnly = HttpUtils.parseBoolean(localOnlyS);
 			count = HttpUtils.parseBoolean(countS);
 			retrieveEntityMap = HttpUtils.parseBoolean(retrieveEntityMapS);
 		} catch (ResponseException e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
 		}
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		Map<String, Object> body;
@@ -106,13 +96,14 @@ public class EntityOperationsQueryController {
 		}
 		if (actualLimit > maxLimit) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
-					new ResponseException(ErrorType.TooManyResults), HttpUtils.getTenant(request)));
+					new ResponseException(ErrorType.TooManyResults), tenant));
 		}
 		try {
 			body = new JsonObject(bodyStr).getMap();
 		} catch (Exception e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
 		}
+
 		// we are not expanding the complete payload here because there is some
 		// weirdness in postquery payload. expanding item by item through the parsers is
 		// fine
@@ -120,35 +111,35 @@ public class EntityOperationsQueryController {
 		Uni<Context> ctxUni;
 
 		switch (request.getHeader(io.vertx.core.http.HttpHeaders.CONTENT_TYPE)) {
-		case AppConstants.NGB_APPLICATION_JSON:
-			if (body.containsKey(NGSIConstants.JSON_LD_CONTEXT)) {
-				return Uni.createFrom()
-						.item(HttpUtils.handleControllerExceptions(
-								new ResponseException(ErrorType.BadRequestData,
-										"@context is not allowed in content-type application/json"),
-								HttpUtils.getTenant(request)));
+			case AppConstants.NGB_APPLICATION_JSON:
+				if (body.containsKey(NGSIConstants.JSON_LD_CONTEXT)) {
+					return Uni.createFrom()
+							.item(HttpUtils.handleControllerExceptions(
+									new ResponseException(ErrorType.BadRequestData,
+											"@context is not allowed in content-type application/json"),
+									tenant));
 
-			} else {
-				ctxUni = ldService.parse(HttpUtils.getAtContext(request));
-				break;
-			}
-		case AppConstants.NGB_APPLICATION_JSONLD:
-			if (body.containsKey(NGSIConstants.JSON_LD_CONTEXT)) {
-				ctxUni = ldService.parse(body.get(NGSIConstants.JSON_LD_CONTEXT));
-				break;
-			} else {
+				} else {
+					ctxUni = ldService.parse(HttpUtils.getAtContext(request));
+					break;
+				}
+			case AppConstants.NGB_APPLICATION_JSONLD:
+				if (body.containsKey(NGSIConstants.JSON_LD_CONTEXT)) {
+					ctxUni = ldService.parse(body.get(NGSIConstants.JSON_LD_CONTEXT));
+					break;
+				} else {
+					return Uni.createFrom()
+							.item(HttpUtils.handleControllerExceptions(
+									new ResponseException(ErrorType.BadRequestData, "@context entry missing"),
+									tenant));
+				}
+			default:
 				return Uni.createFrom()
 						.item(HttpUtils.handleControllerExceptions(
-								new ResponseException(ErrorType.BadRequestData, "@context entry missing"),
-								HttpUtils.getTenant(request)));
-			}
-		default:
-			return Uni.createFrom()
-					.item(HttpUtils.handleControllerExceptions(
-							new ResponseException(ErrorType.InvalidRequest,
-									"Only Content-Type " + AppConstants.NGB_APPLICATION_JSON + " and "
-											+ AppConstants.NGB_APPLICATION_JSONLD + " are allowed"),
-							HttpUtils.getTenant(request)));
+								new ResponseException(ErrorType.InvalidRequest,
+										"Only Content-Type " + AppConstants.NGB_APPLICATION_JSON + " and "
+												+ AppConstants.NGB_APPLICATION_JSONLD + " are allowed"),
+								tenant));
 		}
 		return ctxUni.onItem().transformToUni(context -> {
 			try {
@@ -176,7 +167,7 @@ public class EntityOperationsQueryController {
 							.item(HttpUtils.handleControllerExceptions(
 									new ResponseException(ErrorType.BadRequestData,
 											"At least one of these entries is required: entities, attrs, q, geoQ"),
-									HttpUtils.getTenant(request)));
+									tenant));
 				}
 
 				Object lang = body.get(NGSIConstants.QUERY_PARAMETER_LANG);
@@ -193,7 +184,8 @@ public class EntityOperationsQueryController {
 				String coordinates = null;
 				Object geoproperty = null;
 				Object geometry = null;
-				ViaHeaders viaHeaders = new ViaHeaders(request.headers().getAll(HttpHeaders.VIA), this.selfViaHeader);
+				ViaHeaders viaHeaders = new ViaHeaders(request.headers().getAll(HttpHeaders.VIA),
+						microServiceUtils.getSourceAlias(tenant));
 
 				if (attrs != null) {
 					if (attrs instanceof List<?>) {
@@ -253,7 +245,7 @@ public class EntityOperationsQueryController {
 					}
 
 				}
-				String tenant = HttpUtils.getTenant(request);
+
 				String token;
 				boolean tokenProvided;
 				if (entityMapToken != null) {
@@ -323,9 +315,9 @@ public class EntityOperationsQueryController {
 						}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, tenant));
 
 			} catch (Exception e) {
-				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
 			}
-		}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+		}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, tenant));
 
 	}
 }

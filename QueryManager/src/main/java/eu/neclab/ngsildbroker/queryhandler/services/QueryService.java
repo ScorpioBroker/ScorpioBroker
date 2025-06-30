@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
@@ -65,6 +66,7 @@ import io.vertx.mutiny.core.MultiMap;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
+import io.vertx.mutiny.ext.web.client.HttpResponse;
 import io.vertx.mutiny.ext.web.client.WebClient;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowSet;
@@ -770,31 +772,33 @@ public class QueryService implements CSourceHandler {
 			Set<String> jsonKeys, io.vertx.core.MultiMap headersFromReq, PickTerm pickTerm, OmitTerm omitTerm,
 			ViaHeaders viaHeaders) {
 
-//		if (entityMap.removeEntries(deleted.keySet())) {
-//			QueryResult result = new QueryResult(tenant);
-//			List<Map<String, Object>> resultData = Lists.newArrayList();
-//			result.setData(resultData);
-//			result.setCount((long) entityMap.size());
-//			result.setqToken(entityMap.getId());
-//			result.setLimit(limit);
-//			result.setOffset(offSet);
-//
-//			long leftAfter = entityMap.size() - (offSet + limit);
-//			if (leftAfter < 0) {
-//				leftAfter = 0;
-//			}
-//			result.setResultsLeftAfter(leftAfter);
-//			result.setResultsLeftBefore((long) offSet);
-//			Stream<Entry<String, Set<String>>> subMap = entityMap.getEntityId2CSourceIds().entrySet().stream()
-//					.skip(offSet).limit(limit);
-//			subMap.forEach(id2Hosts -> {
-//				resultData.add(entityCache.getAllIds2EntityAndHosts().get(id2Hosts.getKey()).getItem1());
-//			});
-//
-//			return doJoinIfNeeded(tenant, result, entityCache, context, join, joinLevel, viaHeaders, pickTerm, omitTerm,
-//					entityMap.isDistEntities());
-//
-//		}
+		// if (entityMap.removeEntries(deleted.keySet())) {
+		// QueryResult result = new QueryResult(tenant);
+		// List<Map<String, Object>> resultData = Lists.newArrayList();
+		// result.setData(resultData);
+		// result.setCount((long) entityMap.size());
+		// result.setqToken(entityMap.getId());
+		// result.setLimit(limit);
+		// result.setOffset(offSet);
+		//
+		// long leftAfter = entityMap.size() - (offSet + limit);
+		// if (leftAfter < 0) {
+		// leftAfter = 0;
+		// }
+		// result.setResultsLeftAfter(leftAfter);
+		// result.setResultsLeftBefore((long) offSet);
+		// Stream<Entry<String, Set<String>>> subMap =
+		// entityMap.getEntityId2CSourceIds().entrySet().stream()
+		// .skip(offSet).limit(limit);
+		// subMap.forEach(id2Hosts -> {
+		// resultData.add(entityCache.getAllIds2EntityAndHosts().get(id2Hosts.getKey()).getItem1());
+		// });
+		//
+		// return doJoinIfNeeded(tenant, result, entityCache, context, join, joinLevel,
+		// viaHeaders, pickTerm, omitTerm,
+		// entityMap.isDistEntities());
+		//
+		// }
 
 		entityMap.setChanged(entityMap.removeEntries(deleted.keySet()));
 
@@ -1071,7 +1075,7 @@ public class QueryService implements CSourceHandler {
 						}
 					}
 					if (!entities.isEmpty()) {
-						attribMap.put(NGSIConstants.NGSI_LD_ENTITY_LIST,
+						attribMap.put(NGSIConstants.NGSI_LD_ENTITY_TYPE_LIST,
 								List.of(Map.of(NGSIConstants.JSON_LD_LIST, entities)));
 					}
 
@@ -1239,50 +1243,170 @@ public class QueryService implements CSourceHandler {
 
 	}
 
-	public Uni<Map<String, Object>> getTypes(String tenant, boolean localOnly, io.vertx.core.MultiMap headersFromReq) {
-		Uni<Map<String, Object>> local = queryDAO.getTypes(tenant);
+	public Uni<List<Map<String, Object>>> getTypes(String tenant, boolean localOnly,
+			io.vertx.core.MultiMap headersFromReq,
+			boolean details, boolean bbox, ViaHeaders viaHeaders) {
+		Uni<Map<String, Set<String>>> local;
 		if (localOnly) {
-			return local;
+			local = queryDAO.getTypes(tenant);
+		} else {
+			local = queryDAO.getTypesWithDetails(tenant);
 		}
+		Uni<Map<String, Set<String>>> remoteTypesAndAttrs = queryDAO.getRemoteTypesAndEndpoints(tenant).onItem()
+				.transformToUni(hostDetails -> {
+					List<Uni<Map<String, Set<String>>>> results = Lists.newArrayList();
+					hostDetails.forEach((rHost, typeAttrs) -> {
+						// Abusing remotehost for this
+						// Can do /types with details
 
-		Uni<Set<String>> remoteTypes = Uni.combine().all()
-				.unis(queryDAO.getRemoteSourcesForTypes(tenant),
-						queryDAO.getRemoteTypesForRegWithoutTypesSupport(tenant))
-				.asTuple().onItem().transformToUni(t -> {
-					RowSet<Row> rows = t.getItem1();
-					Set<String> currentTypes = Sets.newHashSet(t.getItem2());
-					if (rows.size() > 0) {
-						List<Uni<List<Object>>> unis = getRemoteCalls(rows, NGSIConstants.NGSI_LD_TYPES_ENDPOINT,
-								headersFromReq);
-						return Uni.combine().all().unis(unis).with(list -> {
-							for (Object entry : list) {
-								if (!((List<?>) entry).isEmpty()) {
-									Map<String, Object> typeMap = ((List<Map<String, Object>>) entry).get(0);
-									mergeTypeList(typeMap.get(NGSIConstants.NGSI_LD_TYPE_LIST), currentTypes);
+						if (rHost.canDoBatchOp()) {
+							results.add(getRemoteTypesWithDetails(HttpUtils.connect(webClient,
+									rHost.host() + NGSIConstants.NGSI_LD_TYPES_ENDPOINT, tenant, AppConstants.GET_OP,
+									null, Map.of(NGSIConstants.QUERY_PARAMETER_DETAILS, "true"), null, null, viaHeaders,
+									rHost.cSourceAlias(), -1), typeAttrs));
+							// Can do /types with details
+						} else if (rHost.canDoSingleOp()) {
+							results.add(getRemoteTypes(HttpUtils.connect(webClient,
+									rHost.host() + NGSIConstants.NGSI_LD_TYPES_ENDPOINT, tenant, AppConstants.GET_OP,
+									null, null, null, null, viaHeaders,
+									rHost.cSourceAlias(), -1), typeAttrs));
+							// Can't do /types at all
+						} else {
+							results.add(Uni.createFrom().item(typeAttrs));
+						}
+					});
+					return Uni.combine().all().unis(results).with(l -> {
+						Map<String, Set<String>> result = Maps.newHashMap();
+						l.forEach(obj -> {
+							Map<String, Set<String>> map = (Map<String, Set<String>>) obj;
+							map.forEach((key, value) -> {
+								Set<String> tmp = result.get(key);
+								if (tmp == null) {
+									tmp = Sets.newHashSet();
+									result.put(key, tmp);
+								}
+								tmp.addAll(value);
+							});
+						});
+						return result;
+					});
+				});
+		List<Uni<Map<String, Set<String>>>> unis = Lists.newArrayList();
+		unis.add(local);
+		if (!localOnly) {
+			unis.add(remoteTypesAndAttrs);
+		}
+		return Uni.combine().all().unis(unis).with(l -> {
+			List<Map<String, Object>> result = Lists.newArrayList();
+			if (details) {
+				l.forEach(obj -> {
+					Map<String, Set<String>> map = (Map<String, Set<String>>) obj;
+					map.forEach((type, attrs) -> {
+						Map<String, Object> tmp = new HashMap<>(4);
+						tmp.put(NGSIConstants.JSON_LD_ID, type);
+						tmp.put(NGSIConstants.JSON_LD_TYPE, List.of(NGSIConstants.NGSI_LD_ENTITY_TYPE));
+						tmp.put(NGSIConstants.NGSI_LD_TYPE_NAME, List.of(Map.of(NGSIConstants.JSON_LD_ID, type)));
+						List<Map<String, String>> attrList = new ArrayList<>(attrs.size());
+						for (String attr : attrs) {
+							attrList.add(Map.of(NGSIConstants.JSON_LD_ID, attr));
+						}
+						result.add(tmp);
+					});
+				});
+			} else {
+				Map<String, Object> tmp = new HashMap<>(3);
+				tmp.put(NGSIConstants.JSON_LD_ID, AppConstants.TYPE_LIST_PREFIX + System.currentTimeMillis());
+				tmp.put(NGSIConstants.JSON_LD_TYPE, List.of(NGSIConstants.NGSI_LD_ENTITY_TYPE_LIST));
+				List<Map<String, String>> typeList = Lists.newArrayList();
+				l.forEach(obj -> {
+					Map<String, Set<String>> map = (Map<String, Set<String>>) obj;
+					map.keySet().forEach(type -> {
+						typeList.add(Map.of(NGSIConstants.JSON_LD_ID, type));
+					});
+				});
+				tmp.put(NGSIConstants.NGSI_LD_TYPE_LIST, typeList);
+				result.add(tmp);
+			}
+			return result;
+		});
+	}
+
+	private Uni<Map<String, Set<String>>> getRemoteTypes(Uni<HttpResponse<Buffer>> webClientConnection,
+			Map<String, Set<String>> typeAttrs) {
+		return webClientConnection.onItem().transformToUni(resp -> {
+			if (resp.statusCode() != 200) {
+				return Uni.createFrom().item(new HashMap<>(0));
+			}
+			return ldService.expand(JsonUtils.fromString(resp.bodyAsString())).onItem()
+					.transform(expanded -> {
+						Map<String, Set<String>> result = Maps.newHashMap();
+						Object tmpObj = expanded.get(0);
+						if (tmpObj instanceof Map<?, ?> m) {
+							List<Map<String, String>> remoteTypes = (List<Map<String, String>>) m
+									.get(NGSIConstants.NGSI_LD_ATTRIBUTE_NAMES);
+							if (remoteTypes != null) {
+								for (Map<String, String> remoteType : remoteTypes) {
+									String type = remoteType.get(NGSIConstants.JSON_LD_ID);
+									Set<String> attrs = typeAttrs.get(type);
+									if (attrs != null) {
+										result.put(type, attrs);
+									}
 								}
 							}
-							return currentTypes;
-						});
-					} else {
-						return Uni.createFrom().item(currentTypes);
-					}
+						}
 
-				});
+						return result;
+					});
 
-		return Uni.combine().all().unis(local, remoteTypes).asTuple().onItem().transform(t -> {
-			Map<String, Object> localResult = t.getItem1();
-			Set<String> remoteResult = t.getItem2();
-			if (!remoteResult.isEmpty()) {
-				mergeTypeList(localResult.get(NGSIConstants.NGSI_LD_TYPE_LIST), remoteResult);
-				List<Map<String, String>> newTypeList = Lists.newArrayList();
-				for (String type : remoteResult) {
-					Map<String, String> tmp = Maps.newHashMap();
-					tmp.put(NGSIConstants.JSON_LD_ID, type);
-					newTypeList.add(tmp);
-				}
-				localResult.put(NGSIConstants.NGSI_LD_TYPE_LIST, newTypeList);
+		});
+	}
+
+	private Uni<Map<String, Set<String>>> getRemoteTypesWithDetails(Uni<HttpResponse<Buffer>> webClientConnection,
+			Map<String, Set<String>> typeAttrs) {
+		return webClientConnection.onItem().transformToUni(resp -> {
+			if (resp.statusCode() != 200) {
+				return Uni.createFrom().item(new HashMap<>(0));
 			}
-			return localResult;
+			return ldService.expand(JsonUtils.fromString(resp.bodyAsString())).onItem()
+					.transform(expanded -> {
+						Map<String, Set<String>> result = Maps.newHashMap();
+						for (Object entry : expanded) {
+							if (entry instanceof Map<?, ?> m) {
+								String type = (String) m.get(NGSIConstants.JSON_LD_ID);
+								Set<String> attrs = typeAttrs.get(type);
+								if (attrs == null) {
+									continue;
+								}
+								List<Map<String, String>> remoteAttrs = (List<Map<String, String>>) m
+										.get(NGSIConstants.NGSI_LD_ATTRIBUTE_NAMES);
+								if (!attrs.isEmpty()) {
+									if (remoteAttrs == null) {
+										result.put(type, attrs);
+									} else {
+										Set<String> attrs2Add = Sets.newHashSet();
+										for (Map<String, String> remoteAttr : remoteAttrs) {
+											String remoteAttrEntry = remoteAttr.get(NGSIConstants.JSON_LD_ID);
+											if (attrs.contains(remoteAttrEntry)) {
+												attrs2Add.add(remoteAttrEntry);
+											}
+										}
+										if (!attrs2Add.isEmpty()) {
+											result.put(type, attrs2Add);
+										}
+									}
+								} else {
+									Set<String> attrs2Add = Sets.newHashSet();
+									for (Map<String, String> remoteAttr : remoteAttrs) {
+										String remoteAttrEntry = remoteAttr.get(NGSIConstants.JSON_LD_ID);
+										attrs2Add.add(remoteAttrEntry);
+									}
+									result.put(type, attrs2Add);
+								}
+							}
+						}
+						return result;
+					});
+
 		});
 	}
 
@@ -1940,8 +2064,8 @@ public class QueryService implements CSourceHandler {
 				Map<String, Tuple2<Map<String, Object>, Set<String>>> cacheIds = fullEntityCache
 						.getAllIds2EntityAndHosts();
 				// todo
-//						fullEntityCache
-//						.getByType(type);
+				// fullEntityCache
+				// .getByType(type);
 				if (cacheIds == null) {
 					cacheIds = new HashMap<>(0);
 				}

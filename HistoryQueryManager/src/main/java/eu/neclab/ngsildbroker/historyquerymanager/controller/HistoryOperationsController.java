@@ -58,7 +58,6 @@ public class HistoryOperationsController {
 	JsonLDService ldService;
 	@Inject
 	MicroServiceUtils microServiceUtils;
-	private String selfViaHeader;
 
 	@ConfigProperty(name = "scorpio.history.default-limit")
 	int defaultLimit;
@@ -68,12 +67,6 @@ public class HistoryOperationsController {
 	int defaultLastN;
 	@ConfigProperty(name = "scorpio.history.max-lastn")
 	int maxLastN;
-
-	@PostConstruct
-	public void setup() {
-		URI gateway = microServiceUtils.getGatewayURI();
-		this.selfViaHeader = gateway.getScheme().toUpperCase() + "/1.1 " + gateway.getAuthority();
-	}
 
 	@Path("/query")
 	@POST
@@ -85,6 +78,7 @@ public class HistoryOperationsController {
 			@HeaderParam("NGSILD-EntityMap") String entityMapToken, @QueryParam("entityMap") String retrieveEntityMapS,
 			@QueryParam(value = "doNotCompact") String doNotCompactS) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
+		String tenant = HttpUtils.getTenant(request);
 		Map<String, Object> body;
 		if (acceptHeader == -1) {
 			return HttpUtils.getInvalidHeader();
@@ -97,7 +91,7 @@ public class HistoryOperationsController {
 		}
 		if (actualLimit > maxLimit) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
-					new ResponseException(ErrorType.TooManyResults), HttpUtils.getTenant(request)));
+					new ResponseException(ErrorType.TooManyResults), tenant));
 		}
 		// boolean retrieveEntityMap;
 		// boolean doNotCompact;
@@ -110,7 +104,7 @@ public class HistoryOperationsController {
 			count = HttpUtils.parseBoolean(countS);
 			body = new JsonObject(bodyStr).getMap();
 		} catch (Exception e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
 		}
 		int lastNTBU;
 		if (lastN == null) {
@@ -125,35 +119,35 @@ public class HistoryOperationsController {
 		Uni<Context> ctxUni;
 
 		switch (request.getHeader(io.vertx.core.http.HttpHeaders.CONTENT_TYPE)) {
-		case AppConstants.NGB_APPLICATION_JSON:
-			if (body.containsKey(NGSIConstants.JSON_LD_CONTEXT)) {
-				return Uni.createFrom()
-						.item(HttpUtils.handleControllerExceptions(
-								new ResponseException(ErrorType.BadRequestData,
-										"@context is not allowed in content-type application/json"),
-								HttpUtils.getTenant(request)));
+			case AppConstants.NGB_APPLICATION_JSON:
+				if (body.containsKey(NGSIConstants.JSON_LD_CONTEXT)) {
+					return Uni.createFrom()
+							.item(HttpUtils.handleControllerExceptions(
+									new ResponseException(ErrorType.BadRequestData,
+											"@context is not allowed in content-type application/json"),
+									tenant));
 
-			} else {
-				ctxUni = ldService.parse(HttpUtils.getAtContext(request));
-				break;
-			}
-		case AppConstants.NGB_APPLICATION_JSONLD:
-			if (body.containsKey(NGSIConstants.JSON_LD_CONTEXT)) {
-				ctxUni = ldService.parse(body.get(NGSIConstants.JSON_LD_CONTEXT));
-				break;
-			} else {
+				} else {
+					ctxUni = ldService.parse(HttpUtils.getAtContext(request));
+					break;
+				}
+			case AppConstants.NGB_APPLICATION_JSONLD:
+				if (body.containsKey(NGSIConstants.JSON_LD_CONTEXT)) {
+					ctxUni = ldService.parse(body.get(NGSIConstants.JSON_LD_CONTEXT));
+					break;
+				} else {
+					return Uni.createFrom()
+							.item(HttpUtils.handleControllerExceptions(
+									new ResponseException(ErrorType.BadRequestData, "@context entry missing"),
+									tenant));
+				}
+			default:
 				return Uni.createFrom()
 						.item(HttpUtils.handleControllerExceptions(
-								new ResponseException(ErrorType.BadRequestData, "@context entry missing"),
-								HttpUtils.getTenant(request)));
-			}
-		default:
-			return Uni.createFrom()
-					.item(HttpUtils.handleControllerExceptions(
-							new ResponseException(ErrorType.InvalidRequest,
-									"Only Content-Type " + AppConstants.NGB_APPLICATION_JSON + " and "
-											+ AppConstants.NGB_APPLICATION_JSONLD + " are allowed"),
-							HttpUtils.getTenant(request)));
+								new ResponseException(ErrorType.InvalidRequest,
+										"Only Content-Type " + AppConstants.NGB_APPLICATION_JSON + " and "
+												+ AppConstants.NGB_APPLICATION_JSONLD + " are allowed"),
+								tenant));
 		}
 		return ctxUni.onItem().transformToUni(context -> {
 			try {
@@ -186,7 +180,7 @@ public class HistoryOperationsController {
 							.item(HttpUtils.handleControllerExceptions(
 									new ResponseException(ErrorType.BadRequestData,
 											"At least one of these entries is required: entities, attrs, q, geoQ"),
-									HttpUtils.getTenant(request)));
+									tenant));
 				}
 
 				Object lang = body.get(NGSIConstants.QUERY_PARAMETER_LANG);
@@ -203,7 +197,8 @@ public class HistoryOperationsController {
 				String coordinates = null;
 				Object geoproperty;
 				Object geometry = null;
-				ViaHeaders viaHeaders = new ViaHeaders(request.headers().getAll(HttpHeaders.VIA), this.selfViaHeader);
+				ViaHeaders viaHeaders = new ViaHeaders(request.headers().getAll(HttpHeaders.VIA),
+						microServiceUtils.getSourceAlias(tenant));
 
 				if (attrs != null) {
 					if (attrs instanceof List<?>) {
@@ -288,7 +283,7 @@ public class HistoryOperationsController {
 					}
 
 				}
-				String tenant = HttpUtils.getTenant(request);
+
 				String token;
 				boolean tokenProvided;
 				if (entityMapToken != null) {
@@ -353,9 +348,9 @@ public class HistoryOperationsController {
 						});
 
 			} catch (Exception e) {
-				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
 			}
-		}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+		}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, tenant));
 
 	}
 

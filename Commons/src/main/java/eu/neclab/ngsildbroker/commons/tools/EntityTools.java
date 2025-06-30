@@ -694,14 +694,13 @@ public final class EntityTools {
 					}
 				}
 			}
-			HttpRequest<Buffer> req = webClient.postAbs(remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_QUERY)
-					.timeout(timeout);
-			req = req.setQueryParam("limit", limit + "");
-			req = req.setQueryParam("offset", offset + "");
-			req = req.setQueryParam("options", "sysAttrs");
-			req = req.putHeader(HttpHeaders.VIA, remoteHost.getViaHeaders().getViaHeaders());
+			Map<String, String> httpQueryParams = new HashMap<>(3);
+			httpQueryParams.put("limit", limit + "");
+			httpQueryParams.put("offset", limit + "");
+			httpQueryParams.put("options", "sysAttrs");
+
 			String batchString;
-			req.putHeader(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSONLD);
+
 			batchBody.put(NGSIConstants.JSON_LD_CONTEXT, context.getOriginalAtContext());
 			try {
 				batchString = JsonUtils.toPrettyString(batchBody);
@@ -709,12 +708,22 @@ public final class EntityTools {
 				logger.warn("failed to serialize batch request");
 				return Uni.createFrom().item(Lists.newArrayList());
 			}
+			Map<String, String> headers = new HashMap<>(remoteHost.headers().size() + 1);
 			if (!remoteHost.headers().contains(HttpHeaders.ACCEPT)) {
-				req = req.putHeader(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSON);
+				headers.put(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSON);
 			}
+			remoteHost.headers().forEach((key, value) -> {
+				headers.put(key, value);
+			});
+
 			logger.debug("calling batch query on " + remoteHost.host());
 			logger.debug(batchString);
-			unis.add(req.putHeaders(remoteHost.headers()).sendBuffer(Buffer.buffer(batchString)).onItem()
+			unis.add(HttpUtils
+					.connect(webClient, remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_QUERY, remoteHost.tenant(),
+							AppConstants.POST_OP, AppConstants.NGB_APPLICATION_JSONLD, httpQueryParams, headers,
+							batchString,
+							remoteHost.getViaHeaders(), remoteHost.getSourceAlias(), timeout)
+					.onItem()
 					.transformToUni(response -> {
 						if (response != null) {
 							logger.debug(response.statusCode() + "");
@@ -725,7 +734,7 @@ public final class EntityTools {
 											offset);
 								}
 								default: {
-									//logger.debug(response.bodyAsString());
+									// logger.debug(response.bodyAsString());
 									return Uni.createFrom().item(Lists.newArrayList());
 								}
 
@@ -749,42 +758,50 @@ public final class EntityTools {
 				String id = tpl.getItem1();
 				String type = tpl.getItem2();
 				String idPattern = tpl.getItem3();
-				HttpRequest<Buffer> req = webClient.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT);
+				Map<String, String> queryParams = new HashMap<>(remoteHost.getQueryParam().size() + 6);
+
 				if (id != null) {
-					req = req.setQueryParam(NGSIConstants.ID, id);
+					queryParams.put(NGSIConstants.ID, id);
 				}
 				if (type != null) {
-					req = req.setQueryParam(NGSIConstants.TYPE, remoteHost.context().compactIri(type));
+					queryParams.put(NGSIConstants.TYPE, remoteHost.context().compactIri(type));
 				}
 				if (idPattern != null) {
-					req = req.setQueryParam(NGSIConstants.QUERY_PARAMETER_IDPATTERN, idPattern);
+					queryParams.put(NGSIConstants.QUERY_PARAMETER_IDPATTERN, idPattern);
 				}
 
 				for (Entry<String, Object> param : remoteHost.getQueryParam().entrySet()) {
-					req = HttpUtils.serializeQueryParams(req, param);
+					HttpUtils.serializeQueryParams(queryParams, param);
 				}
-				req = req.setQueryParam("limit", limit + "");
-				req = req.setQueryParam("offset", offset + "");
-				req = req.setQueryParam("options", "sysAttrs");
-				req = req.putHeader(HttpHeaders.VIA, remoteHost.getViaHeaders().getViaHeaders());
+				queryParams.put("limit", limit + "");
+				queryParams.put("offset", offset + "");
+				queryParams.put("options", "sysAttrs");
+				Map<String, String> headers = Maps.newHashMap();
 				// <https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json>;
 				// rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"
 				if (context != null && context.getOriginalAtContext() != null
 						&& !context.getOriginalAtContext().isEmpty()) {
 					Object ctx = context.getOriginalAtContext().get(0);
 					if (ctx instanceof String ctxStr) {
-						req = req.putHeader(HttpHeaders.LINK,
+						headers.put(HttpHeaders.LINK,
 								"<" + ctxStr + ">; rel=\"" + NGSIConstants.HEADER_REL_LDCONTEXT + "\"; type=\""
 										+ AppConstants.NGB_APPLICATION_JSONLD + "\"");
 					}
 				}
 				if (!remoteHost.headers().contains(HttpHeaders.ACCEPT)) {
-					req = req.putHeader(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSON);
+					headers.put(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSON);
 				}
 				logger.debug("calling query on " + remoteHost.host());
 				// logger.debug(req.queryParams().toString());
+				remoteHost.headers().forEach((key, value) -> {
+					headers.put(key, value);
+				});
 
-				unis.add(req.putHeaders(remoteHost.headers()).timeout(timeout).send().onItem()
+				unis.add(HttpUtils
+						.connect(webClient, remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT,
+								remoteHost.tenant(), AppConstants.GET_OP, null, queryParams, headers, null,
+								remoteHost.getViaHeaders(), remoteHost.getSourceAlias(), timeout)
+						.onItem()
 						.transformToUni(response -> {
 
 							if (response != null) {
@@ -830,52 +847,63 @@ public final class EntityTools {
 					if (id != null) {
 						String[] ids = id.split(",");
 						for (String idEntry : ids) {
-							HttpRequest<Buffer> req = webClient.getAbs(
-									remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + idEntry);
-							req = req.putHeader(HttpHeaders.VIA, remoteHost.getViaHeaders().getViaHeaders());
+
+							Map<String, String> httpQueryParams = Maps.newHashMap();
+							Map<String, String> headers = Maps.newHashMap();
 							if (queryParams != null) {
 								for (Entry<String, Object> param : queryParams.entrySet()) {
-									req = HttpUtils.serializeQueryParams(req, param);
-
+									HttpUtils.serializeQueryParams(httpQueryParams, param);
 								}
 							}
 							if (context != null && context.getOriginalAtContext() != null
 									&& !context.getOriginalAtContext().isEmpty()) {
 								Object ctx = context.getOriginalAtContext().get(0);
 								if (ctx instanceof String ctxStr) {
-									req = req.putHeader(HttpHeaders.LINK,
+									headers.put(HttpHeaders.LINK,
 											"<" + ctxStr + ">; rel=\"" + NGSIConstants.HEADER_REL_LDCONTEXT
 													+ "\"; type=\"" + AppConstants.NGB_APPLICATION_JSONLD + "\"");
 								}
 							}
-							req = req.setQueryParam("options", "sysAttrs");
+							httpQueryParams.put("options", "sysAttrs");
 							if (!remoteHost.headers().contains(HttpHeaders.ACCEPT)) {
-								req = req.putHeader(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSON);
+								headers.put(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSON);
 							}
-							unis.add(req.putHeaders(remoteHost.headers()).timeout(timeout).send().onItem()
-									.transformToUni(response -> {
+							remoteHost.headers().forEach((key, value) -> {
+								headers.put(key, value);
+							});
 
-										if (response != null) {
-											switch (response.statusCode()) {
-												case 200: {
-													return handle200(webClient, remoteHost, response, ldService,
-															timeout, limit, offset);
-												}
-												default: {
+							unis.add(
+									HttpUtils
+											.connect(webClient,
+													remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/"
+															+ idEntry,
+													remoteHost.tenant(), AppConstants.GET_OP, null, httpQueryParams,
+													headers, null, remoteHost.getViaHeaders(),
+													remoteHost.getSourceAlias(), timeout)
+											.onItem()
+											.transformToUni(response -> {
 
+												if (response != null) {
+													switch (response.statusCode()) {
+														case 200: {
+															return handle200(webClient, remoteHost, response, ldService,
+																	timeout, limit, offset);
+														}
+														default: {
+
+															return Uni.createFrom().item(Lists.newArrayList());
+														}
+
+													}
+												} else {
 													return Uni.createFrom().item(Lists.newArrayList());
 												}
 
-											}
-										} else {
-											return Uni.createFrom().item(Lists.newArrayList());
-										}
+											}).onFailure().recoverWithUni(e -> {
+												logger.warn("Failed to query remote host" + remoteHost.toString(), e);
 
-									}).onFailure().recoverWithUni(e -> {
-										logger.warn("Failed to query remote host" + remoteHost.toString(), e);
-
-										return Uni.createFrom().item(Lists.newArrayList());
-									}));
+												return Uni.createFrom().item(Lists.newArrayList());
+											}));
 
 						}
 					}

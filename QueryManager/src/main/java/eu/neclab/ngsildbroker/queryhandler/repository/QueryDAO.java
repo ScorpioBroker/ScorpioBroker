@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -36,6 +37,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.EntityCache;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityMap;
 import eu.neclab.ngsildbroker.commons.datatypes.QueryRemoteHost;
 import eu.neclab.ngsildbroker.commons.datatypes.RegistrationEntry;
+import eu.neclab.ngsildbroker.commons.datatypes.RemoteHost;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
@@ -123,21 +125,15 @@ public class QueryDAO {
 		});
 	}
 
-	public Uni<Map<String, Object>> getTypes(String tenantId) {
+	public Uni<Map<String, Set<String>>> getTypes(String tenantId) {
 		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
 			return client.preparedQuery(
-					"SELECT DISTINCT myTypes from (SELECT to_jsonb(unnest(e_types)) as myTypes from entity UNION ALL SELECT to_jsonb(e_type) as myTypes from csourceinformation) as NA;")
+					"select distinct a from (select unnest(e_types) as a from entity) as b;")
 					.execute().onItem().transform(rows -> {
-						Map<String, Object> result = Maps.newHashMap();
-						result.put(NGSIConstants.JSON_LD_TYPE, Lists.newArrayList(NGSIConstants.NGSI_LD_ENTITY_LIST));
-						List<Map<String, String>> typeList = Lists.newArrayList();
+						Map<String, Set<String>> result = new HashMap<>(rows.size());
 						rows.forEach(row -> {
-							Map<String, String> tmp = Maps.newHashMap();
-							tmp.put(NGSIConstants.JSON_LD_ID, row.getString(0));
-							typeList.add(tmp);
+							result.put(row.getString(0), new HashSet<>(0));
 						});
-						result.put(NGSIConstants.NGSI_LD_TYPE_LIST, typeList);
-						result.put(NGSIConstants.JSON_LD_ID, AppConstants.TYPE_LIST_PREFIX + typeList.hashCode());
 						return result;
 					});
 		});
@@ -381,6 +377,48 @@ public class QueryDAO {
 			return client.preparedQuery(
 					"SELECT C.endpoint, C.tenant_id, c.headers, c.reg_mode FROM CSOURCEINFORMATION AS C WHERE C.retrieveEntityTypeDetails=true")
 					.execute();
+		});
+	}
+
+	public Uni<Map<RemoteHost, Map<String, Set<String>>>> getRemoteTypesAndEndpoints(
+			String tenantId) {
+		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
+			return client.preparedQuery(
+					"SELECT C.cs_id, C.endpoint, C.tenant_id, C.e_type, ARRAY_AGG(C.e_prop) || ARRAY_AGG(C.e_rel), C.retrieveEntityTypeDetails, C.retrieveEntityTypes, C.csourceAlias FROM CSOURCEINFORMATION AS C GROUP BY C.endpoint, C.e_type, C.tenant_id, C.retrieveEntityTypeDetails, C.retrieveEntityTypes")
+					.execute().onItem().transform(rows -> {
+						Map<RemoteHost, Map<String, Set<String>>> result = Maps
+								.newHashMap();
+						rows.forEach(row -> {
+							String cId = row.getString(0);
+							String host = row.getString(1);
+							String tenant_id = row.getString(2);
+							String type = row.getString(3);
+							String[] attrs = row.getArrayOfStrings(4);
+							boolean retrieveEntityTypeDetails = row.getBoolean(5);
+							boolean retrieveEntityTypes = row.getBoolean(6);
+							String sourceAlias = row.getString(7);
+							if (tenant_id == null) {
+								tenant_id = AppConstants.INTERNAL_NULL_KEY;
+							}
+							RemoteHost rHost = new RemoteHost(host, tenant_id, null, cId, retrieveEntityTypes,
+									retrieveEntityTypeDetails, -1, false, false, sourceAlias);
+
+							Map<String, Set<String>> hostEntry = result
+									.get(rHost);
+							if (hostEntry == null) {
+								hostEntry = Maps.newHashMap();
+								result.put(rHost, hostEntry);
+							}
+
+							if (type == null) {
+								type = "none";
+							}
+							hostEntry.put(type, Sets.newHashSet(attrs));
+
+						});
+						return result;
+					});
+
 		});
 	}
 
@@ -665,7 +703,7 @@ public class QueryDAO {
 
 	public Uni<Table<String, String, List<RegistrationEntry>>> getAllRegistries() {
 		return DBUtil.getAllRegistries(clientManager, ldService,
-				"SELECT cs_id, c_id, e_id, e_id_p, e_type, e_prop, e_rel, ST_AsGeoJSON(i_location), scopes, EXTRACT(MILLISECONDS FROM expires), endpoint, tenant_id, headers, reg_mode, createEntity, updateEntity, appendAttrs, updateAttrs, deleteAttrs, deleteEntity, createBatch, upsertBatch, updateBatch, deleteBatch, upsertTemporal, appendAttrsTemporal, deleteAttrsTemporal, updateAttrsTemporal, deleteAttrInstanceTemporal, deleteTemporal, mergeEntity, replaceEntity, replaceAttrs, mergeBatch, retrieveEntity, queryEntity, queryBatch, retrieveTemporal, queryTemporal, retrieveEntityTypes, retrieveEntityTypeDetails, retrieveEntityTypeInfo, retrieveAttrTypes, retrieveAttrTypeDetails, retrieveAttrTypeInfo, createSubscription, updateSubscription, retrieveSubscription, querySubscription, deleteSubscription, queryEntityMap, createEntityMap, updateEntityMap, deleteEntityMap, retrieveEntityMap FROM csourceinformation WHERE queryentity OR querybatch OR retrieveentity OR retrieveentitytypes OR retrieveentitytypedetails OR retrieveentitytypeinfo OR retrieveattrtypes OR retrieveattrtypedetails OR retrieveattrtypeinfo",
+				"SELECT cs_id, c_id, e_id, e_id_p, e_type, e_prop, e_rel, ST_AsGeoJSON(i_location), scopes, EXTRACT(MILLISECONDS FROM expires), endpoint, tenant_id, headers, reg_mode, createEntity, updateEntity, appendAttrs, updateAttrs, deleteAttrs, deleteEntity, createBatch, upsertBatch, updateBatch, deleteBatch, upsertTemporal, appendAttrsTemporal, deleteAttrsTemporal, updateAttrsTemporal, deleteAttrInstanceTemporal, deleteTemporal, mergeEntity, replaceEntity, replaceAttrs, mergeBatch, retrieveEntity, queryEntity, queryBatch, retrieveTemporal, queryTemporal, retrieveEntityTypes, retrieveEntityTypeDetails, retrieveEntityTypeInfo, retrieveAttrTypes, retrieveAttrTypeDetails, retrieveAttrTypeInfo, createSubscription, updateSubscription, retrieveSubscription, querySubscription, deleteSubscription, queryEntityMap, createEntityMap, updateEntityMap, deleteEntityMap, retrieveEntityMap, csourceAlias FROM csourceinformation WHERE queryentity OR querybatch OR retrieveentity OR retrieveentitytypes OR retrieveentitytypedetails OR retrieveentitytypeinfo OR retrieveattrtypes OR retrieveattrtypedetails OR retrieveattrtypeinfo",
 				logger);
 
 	}
@@ -763,10 +801,10 @@ public class QueryDAO {
 	public Uni<Void> storeEntityMap(String tenant, String qToken, EntityMap entityMap) {
 
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
-//			 id text,
-//			    expires_at timestamp without time zone,
-//				last_access timestamp without time zone,
-//			    entity_map jsonb,
+			// id text,
+			// expires_at timestamp without time zone,
+			// last_access timestamp without time zone,
+			// entity_map jsonb,
 			String sql = "INSERT INTO entitymap VALUES ($1, now() + interval '" + entityMapTTL
 					+ "', now(), $2) ON CONFLICT(id) DO UPDATE SET last_access=now(), entity_map=$2";
 			client.preparedQuery(sql).executeAndForget(Tuple.of(qToken, entityMap.toSQLJson(objectMapper)));
@@ -1017,13 +1055,13 @@ public class QueryDAO {
 			query.append(",0,");
 			query.append(NGSIConstants.JSON_LD_LIST);
 			query.append("}' ELSE null END) AS Z");
-//			if (!localOnly) {
+			// if (!localOnly) {
 			query.append(", JSONB_ARRAY_ELEMENTS(Y -> '");
 			query.append(NGSIConstants.NGSI_LD_OBJECT_TYPE);
 			query.append("') AS E_TYPES");
-//			} else {
-//				query.append(", null AS E_TYPES");
-//			}
+			// } else {
+			// query.append(", null AS E_TYPES");
+			// }
 			query.append(" WHERE Y #>> '{");
 			query.append(NGSIConstants.JSON_LD_TYPE);
 			query.append(",0}' = ANY('{");
@@ -1085,9 +1123,9 @@ public class QueryDAO {
 			followUp.append(", ARRAY_AGG(E_TYPES ->> ''");
 			followUp.append(NGSIConstants.JSON_LD_ID);
 			followUp.append("'') AS ET");
-//			} else {
-//				followUp.append(", null AS ET");
-//			}
+			// } else {
+			// followUp.append(", null AS ET");
+			// }
 			followUp.append(" FROM B");
 			followUp.append(counter + 1);
 			followUp.append(", JSONB_ARRAY_ELEMENTS(B");
@@ -1614,6 +1652,24 @@ public class QueryDAO {
 							return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
 						}
 						return Uni.createFrom().voidItem();
+					});
+		});
+	}
+
+	public Uni<Map<String, Set<String>>> getTypesWithDetails(String tenantId) {
+		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
+			String sql = "SELECT DISTINCT myTypes, array_agg(myAttr) from entity, jsonb_array_elements(ENTITY -> '@type') as myTypes, jsonb_object_keys((ENTITY - ARRAY['"
+					+ NGSIConstants.JSON_LD_TYPE + "', '" + NGSIConstants.JSON_LD_ID + "', '"
+					+ NGSIConstants.NGSI_LD_CREATED_AT + "','" + NGSIConstants.NGSI_LD_MODIFIED_AT
+					+ "'])) as myAttr group by myTypes";
+			return client.preparedQuery(
+					sql)
+					.execute().onItem().transform(rows -> {
+						Map<String, Set<String>> result = new HashMap<>(rows.size());
+						rows.forEach(row -> {
+							result.put(row.getString(0), Sets.newHashSet(row.getArrayOfStrings(1)));
+						});
+						return result;
 					});
 		});
 	}
