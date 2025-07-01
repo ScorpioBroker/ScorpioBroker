@@ -1446,7 +1446,7 @@ public final class HttpUtils {
 			String contentType,
 			Map<String, String> queryParams, Map<String, String> headers, String body, ViaHeaders viaHeaders,
 			String sourceAlias, int timeout) {
-		if (viaHeaders != null && viaHeaders.getViaHeaders().contains(sourceAlias)) {
+		if (viaHeaders != null && sourceAlias != null && viaHeaders.getHostUrls().contains(sourceAlias)) {
 			return null;
 		}
 		HttpRequest<Buffer> result;

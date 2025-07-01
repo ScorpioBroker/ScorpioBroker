@@ -155,7 +155,15 @@ public class CSourceService {
 				tmp = tmp.putHeader(NGSIConstants.TENANT_HEADER, regTenant);
 			}
 			regUni = tmp.send().onItem().transform(resp -> {
-
+				if (resp.statusCode() != 200) {
+					String result;
+					if (regTenant != null) {
+						result = baseUrl + '/' + regTenant;
+					} else {
+						result = baseUrl;
+					}
+					return result;
+				}
 				return resp.bodyAsJsonObject().getString(NGSIConstants.NGSI_LD_SOURCE_ALIAS_SHORT);
 			}).onFailure().recoverWithItem(e -> {
 				String result;

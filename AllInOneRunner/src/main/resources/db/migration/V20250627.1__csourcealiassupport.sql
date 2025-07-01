@@ -209,3 +209,29 @@ BEGIN
     RETURN NEW;
 END;
 $BODY$;
+
+UPDATE csource
+SET reg = jsonb_set(
+    reg,
+    '{https://uri.etsi.org/ngsi-ld/contextSourceAlias}',
+    to_jsonb(
+        ARRAY[
+            jsonb_build_object(
+                '@value',
+                (reg->'https://uri.etsi.org/ngsi-ld/endpoint')->0->>'@value'
+                || 
+                COALESCE(
+                    (
+                        CASE
+                            WHEN reg ? 'https://uri.etsi.org/ngsi-ld/tenant'
+                            THEN '/' || ((reg->'https://uri.etsi.org/ngsi-ld/tenant')->0->>'@value') 
+                            ELSE ''
+                        END
+                    ),
+                    ''
+                )
+            )
+        ]
+    )
+)
+WHERE NOT (reg ? 'https://uri.etsi.org/ngsi-ld/contextSourceAlias');
