@@ -1484,8 +1484,6 @@ public final class HttpUtils {
 		}
 		if (contentType != null) {
 			result = result.putHeader(HttpHeaders.CONTENT_TYPE, contentType);
-		} else {
-			result = result.putHeader(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON);
 		}
 		if (tenant != null && !tenant.equals(AppConstants.INTERNAL_NULL_KEY)) {
 			result = result.putHeader(NGSIConstants.TENANT_HEADER, tenant);

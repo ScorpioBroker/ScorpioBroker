@@ -34,6 +34,7 @@ import io.smallrye.reactive.messaging.annotations.Broadcast;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.buffer.Buffer;
+import io.vertx.mutiny.ext.web.client.HttpRequest;
 import io.vertx.mutiny.ext.web.client.WebClient;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowIterator;
@@ -129,40 +130,80 @@ public class CSourceService {
 
 	}
 
-	public Uni<NGSILDOperationResult> createRegistration(String tenant, Map<String, Object> registration) {
-		CreateCSourceRequest request;
+	public Uni<NGSILDOperationResult> createRegistration(String tenant, Map<String, Object> registrationIn) {
+
 		String id;
-		Object idObj = registration.get(NGSIConstants.JSON_LD_ID);
+		Object idObj = registrationIn.get(NGSIConstants.JSON_LD_ID);
 		if (idObj == null) {
-			id = EntityTools.generateUniqueRegId(registration);
-			registration.put(NGSIConstants.JSON_LD_ID, id);
+			id = EntityTools.generateUniqueRegId(registrationIn);
+			registrationIn.put(NGSIConstants.JSON_LD_ID, id);
 		}
-		try {
-			request = new CreateCSourceRequest(tenant, registration);
-		} catch (Exception e) {
-			return Uni.createFrom().failure(e);
+		Uni<Map<String, Object>> regUni;
+		if (!registrationIn.containsKey(NGSIConstants.NGSI_LD_SOURCE_ALIAS)) {
+			Object regTenantObj = registrationIn.get(NGSIConstants.NGSI_LD_TENANT);
+			String regTenant;
+			if (regTenantObj != null) {
+				regTenant = ((List<Map<String, String>>) regTenantObj).get(0).get(NGSIConstants.JSON_LD_ID);
+			} else {
+				regTenant = null;
+			}
+
+			String baseUrl = ((List<Map<String, String>>) registrationIn.get(NGSIConstants.NGSI_LD_ENDPOINT)).get(0)
+					.get(NGSIConstants.JSON_LD_VALUE);
+			HttpRequest<Buffer> tmp = webClient.getAbs(baseUrl + NGSIConstants.ENDPOINT_SOURCE_IDENTITY);
+			if (regTenant != null) {
+				tmp = tmp.putHeader(NGSIConstants.TENANT_HEADER, regTenant);
+			}
+			regUni = tmp.send().onItem().transform(resp -> {
+
+				return resp.bodyAsJsonObject().getString(NGSIConstants.NGSI_LD_SOURCE_ALIAS_SHORT);
+			}).onFailure().recoverWithItem(e -> {
+				String result;
+				if (regTenant != null) {
+					result = baseUrl + '/' + regTenant;
+				} else {
+					result = baseUrl;
+				}
+				logger.debug("Failed to retrieve sourceAlias recovering with " + result);
+				return result;
+			}).onItem().transform(sourceAlias -> {
+				registrationIn.put(NGSIConstants.NGSI_LD_SOURCE_ALIAS,
+						List.of(Map.of(NGSIConstants.JSON_LD_VALUE, sourceAlias)));
+				return registrationIn;
+			});
+		} else {
+			regUni = Uni.createFrom().item(registrationIn);
 		}
-		return cSourceInfoDAO.createRegistration(request).onItem().transformToUni(rowset -> {
+
+		return regUni.onItem().transformToUni(registration -> {
+			CreateCSourceRequest request;
 			try {
-				microServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, emitter, objectMapper);
-			} catch (ResponseException e) {
+				request = new CreateCSourceRequest(tenant, registration);
+			} catch (Exception e) {
 				return Uni.createFrom().failure(e);
 			}
-			NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.OPERATION_CREATE_REGISTRATION,
-					(String) registration.get(NGSIConstants.JSON_LD_ID), tenant);
-			result.addSuccess(new CRUDSuccess(null, null, request.getId(), Sets.newHashSet()));
-			return Uni.createFrom().item(result);
-		}).onFailure().recoverWithUni(e -> {
-			ErrorType error = ErrorType.InternalError;
-			String errorMsg = e.getMessage();
-			if (e instanceof PgException pge) {
-				if (pge.getSqlState().equals("23505")) {
-					error = ErrorType.AlreadyExists;
-					errorMsg = "Registration already exists";
+			return cSourceInfoDAO.createRegistration(request).onItem().transformToUni(rowset -> {
+				try {
+					microServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, emitter, objectMapper);
+				} catch (ResponseException e) {
+					return Uni.createFrom().failure(e);
 				}
-			}
-			e.printStackTrace();
-			return Uni.createFrom().failure(new ResponseException(error, errorMsg));
+				NGSILDOperationResult result = new NGSILDOperationResult(AppConstants.OPERATION_CREATE_REGISTRATION,
+						(String) registration.get(NGSIConstants.JSON_LD_ID), tenant);
+				result.addSuccess(new CRUDSuccess(null, null, request.getId(), Sets.newHashSet()));
+				return Uni.createFrom().item(result);
+			}).onFailure().recoverWithUni(e -> {
+				ErrorType error = ErrorType.InternalError;
+				String errorMsg = e.getMessage();
+				if (e instanceof PgException pge) {
+					if (pge.getSqlState().equals("23505")) {
+						error = ErrorType.AlreadyExists;
+						errorMsg = "Registration already exists";
+					}
+				}
+				e.printStackTrace();
+				return Uni.createFrom().failure(new ResponseException(error, errorMsg));
+			});
 		});
 	}
 
