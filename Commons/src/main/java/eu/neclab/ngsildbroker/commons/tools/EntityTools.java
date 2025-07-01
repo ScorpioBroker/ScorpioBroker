@@ -1071,7 +1071,7 @@ public final class EntityTools {
 				QueryRemoteHost finalHost = cSourceId2QueryRemoteHost.get(tmpHost.cSourceId());
 				if (finalHost == null) {
 					finalHost = tmpHost;
-					viaHeaders.addViaHeader(tmpHost.host());
+					// viaHeaders.addViaHeader(tmpHost.host());
 					finalHost.setViaHeaders(viaHeaders);
 					cSourceId2QueryRemoteHost.put(finalHost.cSourceId(), finalHost);
 				}
