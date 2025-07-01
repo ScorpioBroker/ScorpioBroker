@@ -384,7 +384,7 @@ public class QueryDAO {
 			String tenantId) {
 		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
 			return client.preparedQuery(
-					"SELECT C.cs_id, C.endpoint, C.tenant_id, C.e_type, ARRAY_AGG(C.e_prop) || ARRAY_AGG(C.e_rel), C.retrieveEntityTypeDetails, C.retrieveEntityTypes, C.csourceAlias FROM CSOURCEINFORMATION AS C GROUP BY C.endpoint, C.e_type, C.tenant_id, C.retrieveEntityTypeDetails, C.retrieveEntityTypes")
+					"SELECT C.cs_id, C.endpoint, C.tenant_id, C.e_type, ARRAY_AGG(C.e_prop) || ARRAY_AGG(C.e_rel), C.retrieveEntityTypeDetails, C.retrieveEntityTypes, C.csource_alias FROM CSOURCEINFORMATION AS C GROUP BY C.endpoint, C.e_type, C.tenant_id, C.retrieveEntityTypeDetails, C.retrieveEntityTypes")
 					.execute().onItem().transform(rows -> {
 						Map<RemoteHost, Map<String, Set<String>>> result = Maps
 								.newHashMap();
@@ -703,7 +703,7 @@ public class QueryDAO {
 
 	public Uni<Table<String, String, List<RegistrationEntry>>> getAllRegistries() {
 		return DBUtil.getAllRegistries(clientManager, ldService,
-				"SELECT cs_id, c_id, e_id, e_id_p, e_type, e_prop, e_rel, ST_AsGeoJSON(i_location), scopes, EXTRACT(MILLISECONDS FROM expires), endpoint, tenant_id, headers, reg_mode, createEntity, updateEntity, appendAttrs, updateAttrs, deleteAttrs, deleteEntity, createBatch, upsertBatch, updateBatch, deleteBatch, upsertTemporal, appendAttrsTemporal, deleteAttrsTemporal, updateAttrsTemporal, deleteAttrInstanceTemporal, deleteTemporal, mergeEntity, replaceEntity, replaceAttrs, mergeBatch, retrieveEntity, queryEntity, queryBatch, retrieveTemporal, queryTemporal, retrieveEntityTypes, retrieveEntityTypeDetails, retrieveEntityTypeInfo, retrieveAttrTypes, retrieveAttrTypeDetails, retrieveAttrTypeInfo, createSubscription, updateSubscription, retrieveSubscription, querySubscription, deleteSubscription, queryEntityMap, createEntityMap, updateEntityMap, deleteEntityMap, retrieveEntityMap, csourceAlias FROM csourceinformation WHERE queryentity OR querybatch OR retrieveentity OR retrieveentitytypes OR retrieveentitytypedetails OR retrieveentitytypeinfo OR retrieveattrtypes OR retrieveattrtypedetails OR retrieveattrtypeinfo",
+				"SELECT cs_id, c_id, e_id, e_id_p, e_type, e_prop, e_rel, ST_AsGeoJSON(i_location), scopes, EXTRACT(MILLISECONDS FROM expires), endpoint, tenant_id, headers, reg_mode, createEntity, updateEntity, appendAttrs, updateAttrs, deleteAttrs, deleteEntity, createBatch, upsertBatch, updateBatch, deleteBatch, upsertTemporal, appendAttrsTemporal, deleteAttrsTemporal, updateAttrsTemporal, deleteAttrInstanceTemporal, deleteTemporal, mergeEntity, replaceEntity, replaceAttrs, mergeBatch, retrieveEntity, queryEntity, queryBatch, retrieveTemporal, queryTemporal, retrieveEntityTypes, retrieveEntityTypeDetails, retrieveEntityTypeInfo, retrieveAttrTypes, retrieveAttrTypeDetails, retrieveAttrTypeInfo, createSubscription, updateSubscription, retrieveSubscription, querySubscription, deleteSubscription, queryEntityMap, createEntityMap, updateEntityMap, deleteEntityMap, retrieveEntityMap, csource_Alias FROM csourceinformation WHERE queryentity OR querybatch OR retrieveentity OR retrieveentitytypes OR retrieveentitytypedetails OR retrieveentitytypeinfo OR retrieveattrtypes OR retrieveattrtypedetails OR retrieveattrtypeinfo",
 				logger);
 
 	}
