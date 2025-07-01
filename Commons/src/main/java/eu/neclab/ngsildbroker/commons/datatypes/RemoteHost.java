@@ -7,19 +7,20 @@ import java.util.Objects;
 import io.vertx.mutiny.core.MultiMap;
 
 public record RemoteHost(String host, String tenant, MultiMap headers, String cSourceId, boolean canDoSingleOp,
-		boolean canDoBatchOp, int regMode, boolean canDoZip, boolean canDoEntityId) {
+		boolean canDoBatchOp, int regMode, boolean canDoZip, boolean canDoEntityId, String cSourceAlias) {
 
 	public Object toJson() {
 		Map<String, Object> result = new HashMap<>(9);
-		result.put("host",host);
-		result.put("tenant",tenant);
-		result.put("headers",headers);
-		result.put("cSourceId",cSourceId);
-		result.put("canDoSingleOp",canDoSingleOp);
-		result.put("canDoBatchOp",canDoBatchOp);
-		result.put("regMode",regMode);
-		result.put("canDoZip",canDoZip);
+		result.put("host", host);
+		result.put("tenant", tenant);
+		result.put("headers", headers);
+		result.put("cSourceId", cSourceId);
+		result.put("canDoSingleOp", canDoSingleOp);
+		result.put("canDoBatchOp", canDoBatchOp);
+		result.put("regMode", regMode);
+		result.put("canDoZip", canDoZip);
 		result.put("canDoEntityId", canDoEntityId);
+		result.put("cSourceAlias", cSourceAlias);
 		return result;
 	}
 
@@ -29,7 +30,7 @@ public record RemoteHost(String host, String tenant, MultiMap headers, String cS
 
 	@Override
 	public int hashCode() {
-		//headers, 
+		// headers,
 		return Objects.hash(cSourceId, canDoBatchOp, canDoEntityId, canDoSingleOp, canDoZip, host, regMode,
 				tenant);
 	}
@@ -43,13 +44,11 @@ public record RemoteHost(String host, String tenant, MultiMap headers, String cS
 		if (getClass() != obj.getClass())
 			return false;
 		RemoteHost other = (RemoteHost) obj;
-		//&& Objects.equals(headers, other.headers)
+		// && Objects.equals(headers, other.headers)
 		return Objects.equals(cSourceId, other.cSourceId) && canDoBatchOp == other.canDoBatchOp
 				&& canDoEntityId == other.canDoEntityId && canDoSingleOp == other.canDoSingleOp
-				&& canDoZip == other.canDoZip 
+				&& canDoZip == other.canDoZip
 				&& Objects.equals(host, other.host) && regMode == other.regMode && Objects.equals(tenant, other.tenant);
 	}
-	
-	
 
 }

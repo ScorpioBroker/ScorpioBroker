@@ -15,9 +15,11 @@ public class SubscriptionRemoteHost extends QueryRemoteHost {
 	public SubscriptionRemoteHost(String host, String tenant, MultiMap headers, String cSourceId, boolean canDoQuery,
 			boolean canDoBatchQuery, boolean canDoRetrieve, int regMode,
 			List<Tuple3<String, String, String>> idsAndTypesAndIdPattern, Map<String, Object> queryParams,
-			boolean canDoEntityMap, boolean canDoZip, String entityMapToken, ViaHeaders viaHeaders) {
+			boolean canDoEntityMap, boolean canDoZip, String entityMapToken, ViaHeaders viaHeaders,
+			String sourceAlias) {
 		super(host, tenant, headers, cSourceId, canDoQuery, canDoBatchQuery, canDoRetrieve, regMode,
-				idsAndTypesAndIdPattern, queryParams, canDoEntityMap, canDoZip, entityMapToken, viaHeaders);
+				idsAndTypesAndIdPattern, queryParams, canDoEntityMap, canDoZip, entityMapToken, viaHeaders,
+				sourceAlias);
 	}
 
 	public String getSubscriptionId() {
@@ -31,12 +33,13 @@ public class SubscriptionRemoteHost extends QueryRemoteHost {
 	public static SubscriptionRemoteHost fromQueryRemoteHost(QueryRemoteHost qHost) {
 		return new SubscriptionRemoteHost(qHost.host, qHost.tenant, qHost.headers, qHost.cSourceId, qHost.canDoQuery,
 				qHost.canDoBatchQuery, qHost.canDoRetrieve, qHost.regMode, qHost.idsAndTypesAndIdPattern,
-				qHost.queryParams, qHost.canDoEntityMap, qHost.canDoZip, qHost.entityMapToken, qHost.viaHeaders);
+				qHost.queryParams, qHost.canDoEntityMap, qHost.canDoZip, qHost.entityMapToken, qHost.viaHeaders,
+				qHost.sourceAlias);
 	}
 
 	public void setSubParam(Map<String, Object> subParam) {
 		this.subParam = subParam;
-		
+
 	}
 
 	public Map<String, Object> getSubParam() {
@@ -59,6 +62,5 @@ public class SubscriptionRemoteHost extends QueryRemoteHost {
 		SubscriptionRemoteHost other = (SubscriptionRemoteHost) obj;
 		return Objects.equals(subParam, other.subParam);
 	}
-	
 
 }

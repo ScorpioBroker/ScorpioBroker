@@ -11,6 +11,7 @@
 			"kafka-streams.*",
 			"camel.*",
 			"scorpio.*"
-		]
+		],
+		"java.configuration.updateBuildConfiguration": "automatic"
 	}
 }

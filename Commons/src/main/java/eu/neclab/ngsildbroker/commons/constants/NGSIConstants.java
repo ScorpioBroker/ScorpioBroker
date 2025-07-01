@@ -136,7 +136,7 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_UNIT_CODE = "https://uri.etsi.org/ngsi-ld/unitCode";
 	public final static String NGSI_LD_DATA_SET_ID = "https://uri.etsi.org/ngsi-ld/datasetId";
 	public final static String NGSI_LD_IS_ACTIVE = "https://uri.etsi.org/ngsi-ld/isActive";
-	public final static String NGSI_LD_ENTITY_LIST = "https://uri.etsi.org/ngsi-ld/EntityTypeList";
+	public final static String NGSI_LD_ENTITY_TYPE_LIST = "https://uri.etsi.org/ngsi-ld/EntityTypeList";
 	public final static String NGSI_LD_TYPE_LIST = "https://uri.etsi.org/ngsi-ld/typeList";
 	public final static String NGSI_LD_TYPE_LIST_COMPACTED = "typeList";
 	public final static String NGSI_LD_ENTITY_TYPE = "https://uri.etsi.org/ngsi-ld/EntityType";
@@ -302,9 +302,9 @@ public interface NGSIConstants {
 	public static final Integer[] VALID_QOS = { 0, 1, 2 };
 	public static final String COUNT_HEADER_RESULT = "NGSILD-Results-Count";
 	public static final Set<String> NGSI_LD_ATTR_TYPES = Sets.newHashSet(NGSI_LD_PROPERTY, NGSI_LD_RELATIONSHIP,
-			NGSI_LD_GEOPROPERTY, NGSI_LD_LANGPROPERTY, NGSI_LD_VocabProperty, NGSI_LD_ListProperty, NGSI_LD_LISTRELATIONSHIP,
+			NGSI_LD_GEOPROPERTY, NGSI_LD_LANGPROPERTY, NGSI_LD_VocabProperty, NGSI_LD_ListProperty,
+			NGSI_LD_LISTRELATIONSHIP,
 			NGSI_LD_JSON_PROPERTY);
-	
 
 	public final static String NOTIFICATION = "Notification";
 
@@ -391,6 +391,7 @@ public interface NGSIConstants {
 	public static final String ENDPOINT_TEMPORAL_BATCH_DELETE = "/ngsi-ld/v1/temporal/entityOperations/delete";
 	public static final String ENDPOINT_TEMPORAL_CREATE_DELETE = "/ngsi-ld/v1/temporal/entityOperations/create";
 	public static final String ENDPOINT_TEMPROAL_BATCH_APPEND = "/ngsi-ld/v1/temporal/entityOperations/append";
+	public static final String ENDPOINT_SOURCE_IDENTITY = "/ngsi-ld/v1/info/sourceIdentity";
 	public static final String AGGR_METH_TOTAL_COUNT = "totalCount";
 	public static final String AGGR_METH_DISTINCT_COUNT = "distinctCount";
 	public static final String AGGR_METH_SUM = "sum";
@@ -579,4 +580,11 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_AGGR_QUERY_SHORT = "aggrQ";
 	public static final String NGSI_LD_AGGR_METHODS_SHORT = "aggrMethods";
 	public static final String NGSI_LD_AGGR_PERIOD_DURATION_SHORT = "aggrPeriodDuration";
+	public static final String NGSI_LD_SOURCE_ALIAS = "https://uri.etsi.org/ngsi-ld/contextSourceAlias";
+	public static final String NGSI_LD_SOURCE_ALIAS_SHORT = "contextSourceAlias";
+	public static final String NGSI_LD_SOURCE_EXTRAS_SHORT = "contextSourceExtras";
+	public static final String NGSI_LD_SOURCE_UPTIME_SHORT = "contextSourceUptime";
+	public static final String NGSI_LD_SOURCE_TIME_AT_SHORT = "contextSourceTimeAt";
+
+	public static final String CONTEXT_SOURCE_IDENTITY_SHORT = "ContextSourceIdentity";
 }

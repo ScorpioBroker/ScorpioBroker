@@ -46,11 +46,7 @@ jobs:
 
       - name: build-java
         run: |
-          mvn clean package -DskipTests -Din-memory -Pin-memory -Ddocker -Ddocker-tag=java-${{steps.get-id.outputs.id}} -Dos=java -Dquarkus.profile=in-memory
-
-      - name: docker tag
-        run: |
-          docker tag scorpiobroker/all-in-one-runner:java-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:java-latest
+          mvn clean package -DskipTests -Din-memory -Pin-memory -Ddocker -Ddocker-tag=java-latest -Dos=java -Dquarkus.profile=in-memory
       - name: start docker aaio
         run: |
           docker compose -f ./compose-files/docker-compose-java-aaio-fed-test.yml up > dockerout.log &

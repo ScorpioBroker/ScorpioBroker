@@ -28,11 +28,13 @@ public class QueryRemoteHost {
 	String entityMapToken;
 	Context context;
 	ViaHeaders viaHeaders;
+	String sourceAlias;
 
 	public QueryRemoteHost(String host, String tenant, MultiMap headers, String cSourceId, boolean canDoQuery,
 			boolean canDoBatchQuery, boolean canDoRetrieve, int regMode,
 			List<Tuple3<String, String, String>> idsAndTypesAndIdPattern, Map<String, Object> queryParams,
-			boolean canDoEntityMap, boolean canDoZip, String entityMapToken, ViaHeaders viaHeaders) {
+			boolean canDoEntityMap, boolean canDoZip, String entityMapToken, ViaHeaders viaHeaders,
+			String sourceAlias) {
 		this.host = host;
 		this.tenant = tenant;
 		this.headers = headers;
@@ -47,6 +49,7 @@ public class QueryRemoteHost {
 		this.queryParams = queryParams;
 		this.idsAndTypesAndIdPattern = idsAndTypesAndIdPattern;
 		this.viaHeaders = viaHeaders;
+		this.sourceAlias = sourceAlias;
 	}
 
 	public QueryRemoteHost copyFor414Handle(String id, String type, String idPattern) {
@@ -55,7 +58,7 @@ public class QueryRemoteHost {
 		idAndTypesAndIdPatternEntry.add(tmpTuple);
 		return new QueryRemoteHost(host, tenant, headers, cSourceId, canDoQuery, canDoBatchQuery, canDoRetrieve,
 				regMode, idAndTypesAndIdPatternEntry, queryParams, canDoEntityMap, canDoZip, entityMapToken,
-				viaHeaders);
+				viaHeaders, sourceAlias);
 	}
 
 	public String host() {
@@ -167,7 +170,7 @@ public class QueryRemoteHost {
 	}
 
 	public void setParamsFromNext(String nextLink) {
-				String pureLink = nextLink.substring(1, nextLink.indexOf(">;"));
+		String pureLink = nextLink.substring(1, nextLink.indexOf(">;"));
 
 		String params = pureLink.substring(pureLink.indexOf('?') + 1);
 		int index = params.indexOf('&', 0);
@@ -185,7 +188,7 @@ public class QueryRemoteHost {
 			}
 			lastIndex = index + 1;
 			index = params.indexOf('&', lastIndex);
-					}
+		}
 		paramPart = params.substring(lastIndex);
 		equalIdx = paramPart.indexOf('=');
 		if (equalIdx == -1) {
@@ -211,7 +214,7 @@ public class QueryRemoteHost {
 	public static QueryRemoteHost fromRegEntry(RemoteHost remoteHost, boolean canDoIdQuery, boolean canDoZip) {
 		return new QueryRemoteHost(remoteHost.host(), remoteHost.tenant(), remoteHost.headers(), remoteHost.cSourceId(),
 				remoteHost.canDoSingleOp(), remoteHost.canDoBatchOp(), remoteHost.canDoBatchOp(), remoteHost.regMode(),
-				Lists.newArrayList(), Maps.newHashMap(), canDoIdQuery, canDoZip, null, null);
+				Lists.newArrayList(), Maps.newHashMap(), canDoIdQuery, canDoZip, null, null, remoteHost.cSourceAlias());
 	}
 
 	public ViaHeaders getViaHeaders() {
@@ -227,7 +230,7 @@ public class QueryRemoteHost {
 		QueryRemoteHost result = new QueryRemoteHost(remoteHost.host(), remoteHost.tenant(), remoteHost.headers(),
 				remoteHost.cSourceId(), regEntry.queryEntity(), regEntry.queryBatch(), regEntry.retrieveEntity(),
 				remoteHost.regMode(), Lists.newArrayList(), Maps.newHashMap(), regEntry.queryEntityMap(), false, null,
-				null);
+				null, remoteHost.cSourceAlias());
 		result.setContext(regEntry.context());
 		return result;
 	}
@@ -264,6 +267,10 @@ public class QueryRemoteHost {
 				&& Objects.equals(idsAndTypesAndIdPattern, other.idsAndTypesAndIdPattern)
 				&& Objects.equals(queryParams, other.queryParams) && regMode == other.regMode
 				&& Objects.equals(tenant, other.tenant) && Objects.equals(viaHeaders, other.viaHeaders);
+	}
+
+	public String getSourceAlias() {
+		return sourceAlias;
 	}
 
 }

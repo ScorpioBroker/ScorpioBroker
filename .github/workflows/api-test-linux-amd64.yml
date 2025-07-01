@@ -3,7 +3,7 @@ on:
   push:
     branches:
       - 'development-quarkus'
-    path:
+    paths:
       - '**.java'
       - '**.sql'
       - '**/pom.xml'
@@ -40,18 +40,7 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-linux-amd64-with-kafka
         run: |
-          mvn clean package -DskipTests -Dkafka -Pkafka -Dnative -Ddocker -Dnativedocker -Ddocker-tag=linux-amd64-kafka-${{steps.get-id.outputs.id}} -Dquarkus.profile=kafka -Dquarkus.docker.buildx.platform=linux/amd64
-      - name: docker tag 
-        run: |
-          docker tag scorpiobroker/at-context-server:linux-amd64-kafka-${{steps.get-id.outputs.id}} scorpiobroker/at-context-server:linux-amd64-kafka-latest
-          docker tag scorpiobroker/history-entity-manager:linux-amd64-kafka-${{steps.get-id.outputs.id}} scorpiobroker/history-entity-manager:linux-amd64-kafka-latest
-          docker tag scorpiobroker/history-query-manager:linux-amd64-kafka-${{steps.get-id.outputs.id}} scorpiobroker/history-query-manager:linux-amd64-kafka-latest
-          docker tag scorpiobroker/registry-subscription-manager:linux-amd64-kafka-${{steps.get-id.outputs.id}} scorpiobroker/registry-subscription-manager:linux-amd64-kafka-latest
-          docker tag scorpiobroker/registry-manager:linux-amd64-kafka-${{steps.get-id.outputs.id}} scorpiobroker/registry-manager:linux-amd64-kafka-latest
-          docker tag scorpiobroker/subscription-manager:linux-amd64-kafka-${{steps.get-id.outputs.id}} scorpiobroker/subscription-manager:linux-amd64-kafka-latest
-          docker tag scorpiobroker/query-manager:linux-amd64-kafka-${{steps.get-id.outputs.id}} scorpiobroker/query-manager:linux-amd64-kafka-latest
-          docker tag scorpiobroker/entity-manager:linux-amd64-kafka-${{steps.get-id.outputs.id}} scorpiobroker/entity-manager:linux-amd64-kafka-latest
-          docker tag scorpiobroker/all-in-one-runner:linux-amd64-kafka-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:linux-amd64-kafka-latest
+          mvn clean package -DskipTests -Dkafka -Pkafka -Dnative -Ddocker -Dnativedocker -Ddocker-tag=linux-amd64-kafka-latest -Dquarkus.profile=kafka -Dquarkus.docker.buildx.platform=linux/amd64
       - name: start docker aaio 
         run: |
           docker compose -f ./compose-files/docker-compose-linux-amd64-aaio-kafka-test.yml up > dockerout.log &
@@ -110,18 +99,7 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-linux-amd64-with-mqtt
         run: |
-          mvn clean package -DskipTests -Dmqtt -Pmqtt -Dnative -Ddocker -Dnativedocker -Ddocker-tag=linux-amd64-mqtt-${{steps.get-id.outputs.id}} -Dquarkus.profile=mqtt -Dquarkus.docker.buildx.platform=linux/amd64
-      - name: docker tag 
-        run: |
-          docker tag scorpiobroker/at-context-server:linux-amd64-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/at-context-server:linux-amd64-mqtt-latest
-          docker tag scorpiobroker/history-entity-manager:linux-amd64-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/history-entity-manager:linux-amd64-mqtt-latest
-          docker tag scorpiobroker/history-query-manager:linux-amd64-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/history-query-manager:linux-amd64-mqtt-latest
-          docker tag scorpiobroker/registry-subscription-manager:linux-amd64-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/registry-subscription-manager:linux-amd64-mqtt-latest
-          docker tag scorpiobroker/registry-manager:linux-amd64-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/registry-manager:linux-amd64-mqtt-latest
-          docker tag scorpiobroker/subscription-manager:linux-amd64-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/subscription-manager:linux-amd64-mqtt-latest
-          docker tag scorpiobroker/query-manager:linux-amd64-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/query-manager:linux-amd64-mqtt-latest
-          docker tag scorpiobroker/entity-manager:linux-amd64-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/entity-manager:linux-amd64-mqtt-latest
-          docker tag scorpiobroker/all-in-one-runner:linux-amd64-mqtt-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:linux-amd64-mqtt-latest
+          mvn clean package -DskipTests -Dmqtt -Pmqtt -Dnative -Ddocker -Dnativedocker -Ddocker-tag=linux-amd64-mqtt-latest -Dquarkus.profile=mqtt -Dquarkus.docker.buildx.platform=linux/amd64
       - name: start docker aaio 
         run: |
           docker compose -f ./compose-files/docker-compose-linux-amd64-aaio-mqtt-test.yml up > dockerout.log &
@@ -169,18 +147,7 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-linux-amd64-with-rabbitmq
         run: |
-          mvn clean package -DskipTests -Drabbitmq -Prabbitmq -Dnative -Ddocker -Dnativedocker -Ddocker-tag=linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} -Dquarkus.profile=rabbitmq -Dquarkus.docker.buildx.platform=linux/amd64
-      - name: docker tag 
-        run: |
-          docker tag scorpiobroker/at-context-server:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/at-context-server:linux-amd64-rabbitmq-latest
-          docker tag scorpiobroker/history-entity-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/history-entity-manager:linux-amd64-rabbitmq-latest
-          docker tag scorpiobroker/history-query-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/history-query-manager:linux-amd64-rabbitmq-latest
-          docker tag scorpiobroker/registry-subscription-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/registry-subscription-manager:linux-amd64-rabbitmq-latest
-          docker tag scorpiobroker/registry-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/registry-manager:linux-amd64-rabbitmq-latest
-          docker tag scorpiobroker/subscription-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/subscription-manager:linux-amd64-rabbitmq-latest
-          docker tag scorpiobroker/query-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/query-manager:linux-amd64-rabbitmq-latest
-          docker tag scorpiobroker/entity-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/entity-manager:linux-amd64-rabbitmq-latest
-          docker tag scorpiobroker/all-in-one-runner:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:linux-amd64-rabbitmq-latest
+          mvn clean package -DskipTests -Drabbitmq -Prabbitmq -Dnative -Ddocker -Dnativedocker -Ddocker-tag=linux-amd64-rabbitmq-latest -Dquarkus.profile=rabbitmq -Dquarkus.docker.buildx.platform=linux/amd64
       - name: start docker aaio 
         run: |
           docker compose -f ./compose-files/docker-compose-linux-amd64-aaio-rabbitmq-test.yml up > dockerout.log &
@@ -222,10 +189,7 @@ jobs:
           echo "::set-output name=id::$id"
       - name: build-linux-amd64
         run: |
-          mvn clean package -DskipTests -Din-memory -Pin-memory -Ddocker -Dnative -Dnativedocker -Ddocker-tag=linux-amd64-${{steps.get-id.outputs.id}} -Dquarkus.profile=in-memory -Dquarkus.docker.buildx.platform=linux/amd64
-      - name: docker tag
-        run: |
-          docker tag scorpiobroker/all-in-one-runner:linux-amd64-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:linux-amd64-latest
+          mvn clean package -DskipTests -Din-memory -Pin-memory -Ddocker -Dnative -Dnativedocker -Ddocker-tag=linux-amd64-latest -Dquarkus.profile=in-memory -Dquarkus.docker.buildx.platform=linux/amd64
       - name: start docker aaio 
         run: |
           docker compose -f ./compose-files/docker-compose-linux-amd64-aaio-test.yml up > dockerout.log &

@@ -65,6 +65,8 @@ public class MicroServiceUtils {
 
 	URI gatewayUri;
 
+	private String sourceAlias;
+
 	private static final Encoder base64Encoder = Base64.getEncoder();
 	public static final byte[] NULL_ARRAY = "null".getBytes();
 	private static byte[] ZIPPED_NULL_ARRAY;
@@ -82,6 +84,7 @@ public class MicroServiceUtils {
 			contextServerUrl = contextServerUrl + "/";
 		}
 		gatewayAndAtContextDiffer = !gatewayUrl.equals(contextServerUrl);
+		sourceAlias = getGatewayURI().getScheme().toUpperCase() + "/1.1 " + getGatewayURI().getAuthority();
 	}
 
 	public static void putIntoIdMap(Map<String, List<Map<String, Object>>> localEntities, String id,
@@ -575,12 +578,16 @@ public class MicroServiceUtils {
 		baseRequestReceivers.add(handler);
 	}
 
-	public static void main(String[] args) throws MalformedURLException {
-		System.out.println(new URL("http://test.com").toString());
-	}
-
 	public boolean gatewayAndAtContextDiffer() {
 		return gatewayAndAtContextDiffer;
+	}
+
+	public String getSourceAlias(String tenant) {
+		if (tenant != null && !tenant.equals(AppConstants.INTERNAL_NULL_KEY)) {
+			return sourceAlias + tenant;
+
+		}
+		return sourceAlias;
 	}
 
 }

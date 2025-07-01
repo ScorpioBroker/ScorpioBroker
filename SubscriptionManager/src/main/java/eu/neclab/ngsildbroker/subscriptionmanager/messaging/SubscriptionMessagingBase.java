@@ -8,9 +8,6 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Vertx;
 
 import java.io.IOException;
-import java.util.ArrayList;
-
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,7 +21,6 @@ public abstract class SubscriptionMessagingBase {
 	private static final Logger logger = LoggerFactory.getLogger(SubscriptionMessagingBase.class);
 	@Inject
 	SubscriptionService subscriptionService;
-
 
 	public Uni<Void> baseHandleEntity(BaseRequest message) {
 

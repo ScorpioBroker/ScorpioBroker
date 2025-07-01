@@ -45,6 +45,7 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.EntityMap;
 import eu.neclab.ngsildbroker.commons.datatypes.RemoteHost;
+import eu.neclab.ngsildbroker.commons.datatypes.ViaHeaders;
 import eu.neclab.ngsildbroker.commons.datatypes.results.Attrib;
 import eu.neclab.ngsildbroker.commons.datatypes.results.CRUDSuccess;
 import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
@@ -63,6 +64,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
 import io.vertx.mutiny.ext.web.client.HttpResponse;
+import io.vertx.mutiny.ext.web.client.WebClient;
 import jakarta.ws.rs.core.MediaType;
 
 /**
@@ -84,7 +86,7 @@ public final class HttpUtils {
 						AppConstants.INTERNAL_NULL_KEY));
 	}
 
-//	private static final String CORE_CONTEXT_URL_LINK = null;;
+	// private static final String CORE_CONTEXT_URL_LINK = null;;
 	/** Timeout for all requests to respond. */
 
 	private static Pattern headerPattern = Pattern.compile(
@@ -94,30 +96,32 @@ public final class HttpUtils {
 
 	private static Set<String> DO_NOT_SCAN_ATTRIBS = Sets.newHashSet("id", "type", "createdAt", "scope", "@context");
 
-//	public static final RestResponse<Object> NOT_FOUND_REPLY = RestResponseBuilderImpl.create(HttpStatus.SC_NOT_FOUND)
-//			.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
-//			.entity(new NGSIRestResponse(ErrorType.NotFound, "Resource not found.").toJson()).build();
+	// public static final RestResponse<Object> NOT_FOUND_REPLY =
+	// RestResponseBuilderImpl.create(HttpStatus.SC_NOT_FOUND)
+	// .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+	// .entity(new NGSIRestResponse(ErrorType.NotFound, "Resource not
+	// found.").toJson()).build();
 
 	public static boolean doPreflightCheck(HttpServerRequest req, List<Object> atContextLinks)
 			throws ResponseException {
 		String contentType = req.getHeader(HttpHeaders.CONTENT_TYPE);
 		switch (contentType) {
-		case AppConstants.NGB_APPLICATION_JSON_PATCH:
-		case AppConstants.NGB_APPLICATION_JSON: {
-			return false;
-		}
-
-		case AppConstants.NGB_APPLICATION_JSONLD: {
-			if (!atContextLinks.isEmpty()) {
-				throw new ResponseException(ErrorType.BadRequestData,
-						"You can not have a Link to a context is content-type application/ld+json");
+			case AppConstants.NGB_APPLICATION_JSON_PATCH:
+			case AppConstants.NGB_APPLICATION_JSON: {
+				return false;
 			}
-			return true;
-		}
-		default: {
-			throw new ResponseException(ErrorType.UnsupportedMediaType,
-					"Invalid content type header provided: " + contentType);
-		}
+
+			case AppConstants.NGB_APPLICATION_JSONLD: {
+				if (!atContextLinks.isEmpty()) {
+					throw new ResponseException(ErrorType.BadRequestData,
+							"You can not have a Link to a context is content-type application/ld+json");
+				}
+				return true;
+			}
+			default: {
+				throw new ResponseException(ErrorType.UnsupportedMediaType,
+						"Invalid content type header provided: " + contentType);
+			}
 		}
 	}
 
@@ -152,18 +156,18 @@ public final class HttpUtils {
 			}
 		}
 		switch (appGroup) {
-		case 5:
-			return 2; // application/ld+json
-		case 2:
-		case 3:
-		case 4:
-			return 1; // application/json
-		case 6:
-			return 3;// application/n-quads
-		case 7:
-			return 4;// application/geo+json
-		default:
-			return -1;// error
+			case 5:
+				return 2; // application/ld+json
+			case 2:
+			case 3:
+			case 4:
+				return 1; // application/json
+			case 6:
+				return 3;// application/n-quads
+			case 7:
+				return 4;// application/geo+json
+			default:
+				return -1;// error
 		}
 	}
 
@@ -176,8 +180,8 @@ public final class HttpUtils {
 				int start = linkHeader.indexOf("limit=") + 6;
 				int end = linkHeader.indexOf("&", start);
 				int limit;
-																if (end == -1) {
-										limit = Integer.parseInt(linkHeader.substring(start));
+				if (end == -1) {
+					limit = Integer.parseInt(linkHeader.substring(start));
 				} else {
 					limit = Integer.parseInt(linkHeader.substring(start, end));
 				}
@@ -445,17 +449,6 @@ public final class HttpUtils {
 		return mMap;
 	}
 
-//	public static String utfDecoder(String data) {
-//		try {
-//			return URLDecoder.decode(data, NGSIConstants.ENCODE_FORMAT);
-//		} catch (UnsupportedEncodingException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//		return null;
-//
-//	}
-
 	public static RestResponse<Object> generateUpdateResultResponse(NGSILDOperationResult updateResult) {
 		if (updateResult.getFailures().isEmpty()) {
 			ResponseBuilder<Object> builder = new RestResponseBuilderImpl<Object>().status(204);
@@ -613,128 +606,134 @@ public final class HttpUtils {
 		Uni<Tuple3<String, String, List<Tuple2<String, String>>>> uni;
 		switch (acceptHeader) {
 
-		case 1:
-			uni = ldService.compact(entity, contextHeader, context, opts, -1, optionSet, langQuery).onItem()
-					.transformToUni(compacted -> {
-						List<Tuple2<String, String>> headers = Lists.newArrayList();
-						Object bodyContext = compacted.remove(NGSIConstants.JSON_LD_CONTEXT);
-						Object finalCompacted;
-						if (contextHeader.isEmpty()) {
-							if (bodyContext != null) {
-								contextHeader.add(((List<Object>) bodyContext).get(0));
-							} else if (context != null) {
-								contextHeader.add(context.getOriginalAtContext().get(0));
-							}
-						}
-						finalCompacted = compacted.getOrDefault(JsonLdConsts.GRAPH, compacted);
-						if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)) {
-							makeConcise(finalCompacted);
-						}
-
-						if (forceAttributeList) {
-							enforceAttributeList(finalCompacted);
-						}
-						if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_TEMPORALVALUES)) {
-							makeTemporalValues(finalCompacted);
-						}
-						if (forceArray && !(finalCompacted instanceof List)) {
-							finalCompacted = List.of(finalCompacted);
-						}
-
-						for (Object entry : contextHeader) {
-							headers.add(Tuple2.of(NGSIConstants.LINK_HEADER, getLinkHeader(entry)));
-						}
-
-						try {
-							return Uni.createFrom().item(Tuple3.of(JsonUtils.toPrettyString(finalCompacted),
-									AppConstants.NGB_APPLICATION_JSON, headers));
-						} catch (IOException e) {
-							return Uni.createFrom().failure(e);
-						}
-					});
-			break;
-		case 2:
-			uni = ldService.compact(entity, contextHeader, context, opts, -1, optionSet, langQuery).onItem()
-					.transformToUni(compacted -> {
-						Object finalCompacted;
-						if (compacted.containsKey(JsonLdConsts.GRAPH)) {
-							finalCompacted = compacted.get(JsonLdConsts.GRAPH);
-							Object bodyContext = compacted.get(NGSIConstants.JSON_LD_CONTEXT);
-							if (finalCompacted instanceof List) {
-								List<Map<String, Object>> tmpList = (List<Map<String, Object>>) finalCompacted;
-								for (Map<String, Object> entry : tmpList) {
-									entry.put(NGSIConstants.JSON_LD_CONTEXT, bodyContext);
+			case 1:
+				uni = ldService.compact(entity, contextHeader, context, opts, -1, optionSet, langQuery).onItem()
+						.transformToUni(compacted -> {
+							List<Tuple2<String, String>> headers = Lists.newArrayList();
+							Object bodyContext = compacted.remove(NGSIConstants.JSON_LD_CONTEXT);
+							Object finalCompacted;
+							if (contextHeader.isEmpty()) {
+								if (bodyContext != null) {
+									contextHeader.add(((List<Object>) bodyContext).get(0));
+								} else if (context != null) {
+									contextHeader.add(context.getOriginalAtContext().get(0));
 								}
-							} else if (finalCompacted instanceof Map) {
-								((Map<String, Object>) finalCompacted).put(NGSIConstants.JSON_LD_CONTEXT, bodyContext);
 							}
-						} else {
-							finalCompacted = compacted;
-						}
-						if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)) {
-							makeConcise(finalCompacted);
-						}
-						if (forceAttributeList) {
-							enforceAttributeList(finalCompacted);
-						}
-						if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_TEMPORALVALUES)) {
-							makeTemporalValues(finalCompacted);
-						}
-						if (forceArray && !(finalCompacted instanceof List)) {
-							finalCompacted = List.of(finalCompacted);
-						}
+							finalCompacted = compacted.getOrDefault(JsonLdConsts.GRAPH, compacted);
+							if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)) {
+								makeConcise(finalCompacted);
+							}
 
-						try {
-							return Uni.createFrom().item(Tuple3.of(JsonUtils.toPrettyString(finalCompacted),
-									AppConstants.NGB_APPLICATION_JSONLD, null));
-						} catch (IOException e) {
-							return Uni.createFrom().failure(e);
-						}
-					});
-			break;
-		case 3:
-			uni = ldService.toRDF(entity).onItem().transform(rdf -> {
-				return Tuple3.of(RDFDatasetUtils.toNQuads((RDFDataset) rdf), AppConstants.NGB_APPLICATION_NQUADS, null);
-			});
-			break;
-		case 4:// geo+json
-			uni = ldService.compact(entity, contextHeader, context, opts, -1, optionSet, langQuery).onItem()
-					.transformToUni(compacted -> {
-						Object finalCompacted = compacted;
-						if (compacted.containsKey(JsonLdConsts.GRAPH)) {
-							finalCompacted = compacted.get(JsonLdConsts.GRAPH);
-							Object bodyContext = compacted.get(NGSIConstants.JSON_LD_CONTEXT);
-							if (finalCompacted instanceof List) {
-								List<Map<String, Object>> tmpList = (List<Map<String, Object>>) finalCompacted;
-								for (Map<String, Object> entry : tmpList) {
-									entry.put(NGSIConstants.JSON_LD_CONTEXT, bodyContext);
-								}
-							} else if (finalCompacted instanceof Map) {
-								((Map<String, Object>) finalCompacted).put(NGSIConstants.JSON_LD_CONTEXT, bodyContext);
+							if (forceAttributeList) {
+								enforceAttributeList(finalCompacted);
 							}
-						}
-						if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)) {
-							makeConcise(finalCompacted);
-						}
-						if (forceAttributeList) {
-							enforceAttributeList(finalCompacted);
-						}
-						if (forceArray && !(finalCompacted instanceof List)) {
-							finalCompacted = List.of(finalCompacted);
-						}
-						try {
-							return Uni.createFrom()
-									.item(Tuple3.of(
-											JsonUtils.toPrettyString(generateGeoJson(finalCompacted, geometryProperty,
-													contextHeader, addAtContext)),
-											AppConstants.NGB_APPLICATION_GEO_JSON, null));
-						} catch (Exception e) {
-							return Uni.createFrom().failure(e);
-						}
-					});
-			break;
-		default:
-			return Uni.createFrom().nullItem();
+							if (options != null
+									&& options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_TEMPORALVALUES)) {
+								makeTemporalValues(finalCompacted);
+							}
+							if (forceArray && !(finalCompacted instanceof List)) {
+								finalCompacted = List.of(finalCompacted);
+							}
+
+							for (Object entry : contextHeader) {
+								headers.add(Tuple2.of(NGSIConstants.LINK_HEADER, getLinkHeader(entry)));
+							}
+
+							try {
+								return Uni.createFrom().item(Tuple3.of(JsonUtils.toPrettyString(finalCompacted),
+										AppConstants.NGB_APPLICATION_JSON, headers));
+							} catch (IOException e) {
+								return Uni.createFrom().failure(e);
+							}
+						});
+				break;
+			case 2:
+				uni = ldService.compact(entity, contextHeader, context, opts, -1, optionSet, langQuery).onItem()
+						.transformToUni(compacted -> {
+							Object finalCompacted;
+							if (compacted.containsKey(JsonLdConsts.GRAPH)) {
+								finalCompacted = compacted.get(JsonLdConsts.GRAPH);
+								Object bodyContext = compacted.get(NGSIConstants.JSON_LD_CONTEXT);
+								if (finalCompacted instanceof List) {
+									List<Map<String, Object>> tmpList = (List<Map<String, Object>>) finalCompacted;
+									for (Map<String, Object> entry : tmpList) {
+										entry.put(NGSIConstants.JSON_LD_CONTEXT, bodyContext);
+									}
+								} else if (finalCompacted instanceof Map) {
+									((Map<String, Object>) finalCompacted).put(NGSIConstants.JSON_LD_CONTEXT,
+											bodyContext);
+								}
+							} else {
+								finalCompacted = compacted;
+							}
+							if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)) {
+								makeConcise(finalCompacted);
+							}
+							if (forceAttributeList) {
+								enforceAttributeList(finalCompacted);
+							}
+							if (options != null
+									&& options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_TEMPORALVALUES)) {
+								makeTemporalValues(finalCompacted);
+							}
+							if (forceArray && !(finalCompacted instanceof List)) {
+								finalCompacted = List.of(finalCompacted);
+							}
+
+							try {
+								return Uni.createFrom().item(Tuple3.of(JsonUtils.toPrettyString(finalCompacted),
+										AppConstants.NGB_APPLICATION_JSONLD, null));
+							} catch (IOException e) {
+								return Uni.createFrom().failure(e);
+							}
+						});
+				break;
+			case 3:
+				uni = ldService.toRDF(entity).onItem().transform(rdf -> {
+					return Tuple3.of(RDFDatasetUtils.toNQuads((RDFDataset) rdf), AppConstants.NGB_APPLICATION_NQUADS,
+							null);
+				});
+				break;
+			case 4:// geo+json
+				uni = ldService.compact(entity, contextHeader, context, opts, -1, optionSet, langQuery).onItem()
+						.transformToUni(compacted -> {
+							Object finalCompacted = compacted;
+							if (compacted.containsKey(JsonLdConsts.GRAPH)) {
+								finalCompacted = compacted.get(JsonLdConsts.GRAPH);
+								Object bodyContext = compacted.get(NGSIConstants.JSON_LD_CONTEXT);
+								if (finalCompacted instanceof List) {
+									List<Map<String, Object>> tmpList = (List<Map<String, Object>>) finalCompacted;
+									for (Map<String, Object> entry : tmpList) {
+										entry.put(NGSIConstants.JSON_LD_CONTEXT, bodyContext);
+									}
+								} else if (finalCompacted instanceof Map) {
+									((Map<String, Object>) finalCompacted).put(NGSIConstants.JSON_LD_CONTEXT,
+											bodyContext);
+								}
+							}
+							if (options != null && options.contains(NGSIConstants.QUERY_PARAMETER_CONCISE_VALUE)) {
+								makeConcise(finalCompacted);
+							}
+							if (forceAttributeList) {
+								enforceAttributeList(finalCompacted);
+							}
+							if (forceArray && !(finalCompacted instanceof List)) {
+								finalCompacted = List.of(finalCompacted);
+							}
+							try {
+								return Uni.createFrom()
+										.item(Tuple3.of(
+												JsonUtils.toPrettyString(
+														generateGeoJson(finalCompacted, geometryProperty,
+																contextHeader, addAtContext)),
+												AppConstants.NGB_APPLICATION_GEO_JSON, null));
+							} catch (Exception e) {
+								return Uni.createFrom().failure(e);
+							}
+						});
+				break;
+			default:
+				return Uni.createFrom().nullItem();
 		}
 		return uni.onItem().transform(tuple -> {
 			String replyBody = tuple.getItem1();
@@ -781,46 +780,46 @@ public final class HttpUtils {
 							}
 							List<Object> valueEntry = null;
 							switch (type) {
-							case NGSIConstants.PROPERTY: {
-								valueEntry = new ArrayList<Object>(2);
-								valueEntry.add(m.get(NGSIConstants.VALUE));
-								break;
-							}
-							case NGSIConstants.RELATIONSHIP: {
-								valueEntry = new ArrayList<Object>(2);
-								valueEntry.add(m.get(NGSIConstants.OBJECT));
-								break;
-							}
-							case NGSIConstants.LISTPROPERTY: {
-								valueEntry = new ArrayList<Object>(2);
-								valueEntry.add(m.get(NGSIConstants.VALUE_LIST));
-								break;
-							}
-							case NGSIConstants.LISTRELATIONSHIP: {
-								valueEntry = new ArrayList<Object>(2);
-								valueEntry.add(m.get(NGSIConstants.OBJECT_LIST));
-								break;
-							}
-							case NGSIConstants.GEOPROPERTY: {
-								valueEntry = new ArrayList<Object>(2);
-								valueEntry.add(m.get(NGSIConstants.VALUE));
-								break;
-							}
-							case NGSIConstants.LANGUAGE_PROPERTY: {
-								valueEntry = new ArrayList<Object>(2);
-								valueEntry.add(m.get(NGSIConstants.LANGUAGE_MAP));
-								break;
-							}
-							case NGSIConstants.VOCABPROPERTY: {
-								valueEntry = new ArrayList<Object>(2);
-								valueEntry.add(m.get(NGSIConstants.VOCAB));
-								break;
-							}
-							case NGSIConstants.JSONPROPERTY: {
-								valueEntry = new ArrayList<Object>(2);
-								valueEntry.add(m.get(NGSIConstants.JSON));
-								break;
-							}
+								case NGSIConstants.PROPERTY: {
+									valueEntry = new ArrayList<Object>(2);
+									valueEntry.add(m.get(NGSIConstants.VALUE));
+									break;
+								}
+								case NGSIConstants.RELATIONSHIP: {
+									valueEntry = new ArrayList<Object>(2);
+									valueEntry.add(m.get(NGSIConstants.OBJECT));
+									break;
+								}
+								case NGSIConstants.LISTPROPERTY: {
+									valueEntry = new ArrayList<Object>(2);
+									valueEntry.add(m.get(NGSIConstants.VALUE_LIST));
+									break;
+								}
+								case NGSIConstants.LISTRELATIONSHIP: {
+									valueEntry = new ArrayList<Object>(2);
+									valueEntry.add(m.get(NGSIConstants.OBJECT_LIST));
+									break;
+								}
+								case NGSIConstants.GEOPROPERTY: {
+									valueEntry = new ArrayList<Object>(2);
+									valueEntry.add(m.get(NGSIConstants.VALUE));
+									break;
+								}
+								case NGSIConstants.LANGUAGE_PROPERTY: {
+									valueEntry = new ArrayList<Object>(2);
+									valueEntry.add(m.get(NGSIConstants.LANGUAGE_MAP));
+									break;
+								}
+								case NGSIConstants.VOCABPROPERTY: {
+									valueEntry = new ArrayList<Object>(2);
+									valueEntry.add(m.get(NGSIConstants.VOCAB));
+									break;
+								}
+								case NGSIConstants.JSONPROPERTY: {
+									valueEntry = new ArrayList<Object>(2);
+									valueEntry.add(m.get(NGSIConstants.JSON));
+									break;
+								}
 							}
 							if (valueEntry != null) {
 								if (date != null) {
@@ -834,39 +833,39 @@ public final class HttpUtils {
 						Map<String, Object> tmp = Maps.newLinkedHashMap();
 						tmp.put(NGSIConstants.TYPE, type);
 						switch (type) {
-						case NGSIConstants.PROPERTY: {
-							tmp.put(NGSIConstants.VALUES, valuesWithDate);
-							entityMap.put(key, tmp);
-							break;
-						}
-						case NGSIConstants.RELATIONSHIP: {
-							tmp.put(NGSIConstants.OBJECTS, valuesWithDate);
-							break;
-						}
-						case NGSIConstants.LISTPROPERTY: {
-							tmp.put(NGSIConstants.VALUELISTS, valuesWithDate);
-							break;
-						}
-						case NGSIConstants.LISTRELATIONSHIP: {
-							tmp.put(NGSIConstants.OBJECTSLISTS, valuesWithDate);
-							break;
-						}
-						case NGSIConstants.GEOPROPERTY: {
-							tmp.put(NGSIConstants.VALUES, valuesWithDate);
-							break;
-						}
-						case NGSIConstants.LANGUAGE_PROPERTY: {
-							tmp.put(NGSIConstants.LANGUAGEMAPS, valuesWithDate);
-							break;
-						}
-						case NGSIConstants.VOCABPROPERTY: {
-							tmp.put(NGSIConstants.VOCABS, valuesWithDate);
-							break;
-						}
-						case NGSIConstants.JSONPROPERTY: {
-							tmp.put(NGSIConstants.JSONS, valuesWithDate);
-							break;
-						}
+							case NGSIConstants.PROPERTY: {
+								tmp.put(NGSIConstants.VALUES, valuesWithDate);
+								entityMap.put(key, tmp);
+								break;
+							}
+							case NGSIConstants.RELATIONSHIP: {
+								tmp.put(NGSIConstants.OBJECTS, valuesWithDate);
+								break;
+							}
+							case NGSIConstants.LISTPROPERTY: {
+								tmp.put(NGSIConstants.VALUELISTS, valuesWithDate);
+								break;
+							}
+							case NGSIConstants.LISTRELATIONSHIP: {
+								tmp.put(NGSIConstants.OBJECTSLISTS, valuesWithDate);
+								break;
+							}
+							case NGSIConstants.GEOPROPERTY: {
+								tmp.put(NGSIConstants.VALUES, valuesWithDate);
+								break;
+							}
+							case NGSIConstants.LANGUAGE_PROPERTY: {
+								tmp.put(NGSIConstants.LANGUAGEMAPS, valuesWithDate);
+								break;
+							}
+							case NGSIConstants.VOCABPROPERTY: {
+								tmp.put(NGSIConstants.VOCABS, valuesWithDate);
+								break;
+							}
+							case NGSIConstants.JSONPROPERTY: {
+								tmp.put(NGSIConstants.JSONS, valuesWithDate);
+								break;
+							}
 						}
 					}
 				}
@@ -988,10 +987,10 @@ public final class HttpUtils {
 					return new RestResponseBuilderImpl<>().status(lastErrorCode).type(AppConstants.NGB_APPLICATION_JSON)
 							.entity(errors.get(0).get("error")).build();
 				}
-//				else {
-//					builder = new RestResponseBuilderImpl<>().status(lastErrorCode)
-//							.type(AppConstants.NGB_APPLICATION_JSON).entity(result);
-//				}
+				// else {
+				// builder = new RestResponseBuilderImpl<>().status(lastErrorCode)
+				// .type(AppConstants.NGB_APPLICATION_JSON).entity(result);
+				// }
 			}
 			builder = new RestResponseBuilderImpl<>().status(207).type(AppConstants.NGB_APPLICATION_JSON)
 					.entity(result);
@@ -1162,10 +1161,11 @@ public final class HttpUtils {
 		// TODO Cases remaining for upsert(determine created or updated)
 		// and noLongerMatching due to update or delete attr
 		return switch (triggerReason) {
-		case AppConstants.CREATE_REQUEST -> NGSIConstants.SUBSCRIPTION_NEWLY_MATCHING;
-		case AppConstants.UPDATE_REQUEST, AppConstants.APPEND_REQUEST -> NGSIConstants.SUBSCRIPTION_UPDATED_MATCHING;
-		case AppConstants.DELETE_REQUEST -> NGSIConstants.SUBSCRIPTION_NO_LONGER_MATCHING;
-		default -> null;
+			case AppConstants.CREATE_REQUEST -> NGSIConstants.SUBSCRIPTION_NEWLY_MATCHING;
+			case AppConstants.UPDATE_REQUEST, AppConstants.APPEND_REQUEST ->
+				NGSIConstants.SUBSCRIPTION_UPDATED_MATCHING;
+			case AppConstants.DELETE_REQUEST -> NGSIConstants.SUBSCRIPTION_NO_LONGER_MATCHING;
+			default -> null;
 		};
 	}
 
@@ -1386,13 +1386,14 @@ public final class HttpUtils {
 
 		value = value.toLowerCase();
 		switch (value) {
-		case "true":
-		case "":
-			return true;
-		case "false":
-			return false;
-		default:
-			throw new ResponseException(ErrorType.BadRequestData, "only true and false are valid values for booleans");
+			case "true":
+			case "":
+				return true;
+			case "false":
+				return false;
+			default:
+				throw new ResponseException(ErrorType.BadRequestData,
+						"only true and false are valid values for booleans");
 		}
 	}
 
@@ -1417,6 +1418,84 @@ public final class HttpUtils {
 			req = req.addQueryParam(param.getKey(), s);
 		}
 		return req;
+	}
+
+	public static void serializeQueryParams(Map<String, String> queryMap, Entry<String, Object> param) {
+		String s;
+		Object value = param.getValue();
+		if (value instanceof String s2) {
+			s = s2;
+		} else if (value instanceof Number n) {
+			s = n.toString();
+		} else if (value instanceof Boolean b) {
+			s = b.toString();
+		} else {
+			try {
+				s = JsonUtils.toString(value);
+			} catch (IOException e) {
+				logger.error("Failed to serialize query param " + value);
+				s = null;
+			}
+		}
+		if (s != null) {
+			queryMap.put(param.getKey(), s);
+		}
+	}
+
+	public static Uni<HttpResponse<Buffer>> connect(WebClient webClient, String url, String tenant, int method,
+			String contentType,
+			Map<String, String> queryParams, Map<String, String> headers, String body, ViaHeaders viaHeaders,
+			String sourceAlias, int timeout) {
+		if (viaHeaders != null && sourceAlias != null && viaHeaders.getHostUrls().contains(sourceAlias)) {
+			return null;
+		}
+		HttpRequest<Buffer> result;
+		switch (method) {
+			case AppConstants.GET_OP:
+				result = webClient.getAbs(url);
+				break;
+			case AppConstants.POST_OP:
+				result = webClient.postAbs(url);
+				break;
+			case AppConstants.PATCH_OP:
+				result = webClient.patchAbs(url);
+				break;
+			case AppConstants.PUT_OP:
+				result = webClient.putAbs(url);
+				break;
+			case AppConstants.DELETE_OP:
+				result = webClient.deleteAbs(url);
+				break;
+			default:
+				return null;
+		}
+		if (queryParams != null) {
+			for (Entry<String, String> entry : queryParams.entrySet()) {
+				result = result.addQueryParam(entry.getKey(), entry.getValue());
+			}
+		}
+		if (headers != null) {
+			for (Entry<String, String> entry : headers.entrySet()) {
+				result = result.putHeader(entry.getKey(), entry.getValue());
+			}
+		}
+		if (viaHeaders != null) {
+			result = result.putHeader(HttpHeaders.VIA, viaHeaders.getViaHeaders());
+		}
+		if (contentType != null) {
+			result = result.putHeader(HttpHeaders.CONTENT_TYPE, contentType);
+		}
+		if (tenant != null && !tenant.equals(AppConstants.INTERNAL_NULL_KEY)) {
+			result = result.putHeader(NGSIConstants.TENANT_HEADER, tenant);
+		}
+		if (timeout != -1) {
+			result = result.timeout(timeout);
+		}
+		if (method == AppConstants.POST_OP || method == AppConstants.PUT_OP || method == AppConstants.PATCH_OP) {
+			return result.sendBuffer(Buffer.buffer(body));
+		} else {
+			return result.send();
+		}
 	}
 
 }

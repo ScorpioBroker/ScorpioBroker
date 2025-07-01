@@ -23,5 +23,6 @@
     <module>HistoryQueryManager</module>
     <module>AllInOneRunner</module>
     <module>SnsFanoutMessaging</module>
+    <module>InfoManager</module>
   </modules>
 </project>

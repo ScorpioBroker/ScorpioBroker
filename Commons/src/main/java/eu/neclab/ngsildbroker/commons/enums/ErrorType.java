@@ -8,7 +8,8 @@ package eu.neclab.ngsildbroker.commons.enums;
 public enum ErrorType {
 
 	None(200, "none", "none"),
-	MethodNotAllowed(405, "https://uri.etsi.org/ngsi-ld/errors/MethodNotAllowed", "Method not supported on this endpoint."),
+	MethodNotAllowed(405, "https://uri.etsi.org/ngsi-ld/errors/MethodNotAllowed",
+			"Method not supported on this endpoint."),
 	NotAcceptable(406, "https://uri.etsi.org/ngsi-ld/errors/NotAcceptable", "Not an acceptable request."),
 	InvalidRequest(400, "https://uri.etsi.org/ngsi-ld/errors/InvalidRequest", "Invalid request."),
 	BadRequestData(400, "https://uri.etsi.org/ngsi-ld/errors/BadRequestData", "Bad Request Data."),
@@ -16,7 +17,8 @@ public enum ErrorType {
 	TooComplexQuery(403, "https://uri.etsi.org/ngsi-ld/errors/TooComplexQuery", "Too complex query"),
 	TooManyResults(403, "https://uri.etsi.org/ngsi-ld/errors/TooManyResults ", "Too many results"),
 	NotFound(404, "https://uri.etsi.org/ngsi-ld/errors/ResourceNotFound", "Resource not found."),
-	CombinationNotFound(404, "https://uri.etsi.org/ngsi-ld/errors/ResourceNotFound", "Combination Entity/Attributes Not Found"),
+	CombinationNotFound(404, "https://uri.etsi.org/ngsi-ld/errors/ResourceNotFound",
+			"Combination Entity/Attributes Not Found"),
 	TenantNotFound(404, "https://uri.etsi.org/ngsi-ld/errors/TenantNotFound", "Tenant not found."),
 	LdContextNotAvailable(503, "https://uri.etsi.org/ngsi-ld/errors/LdContextNotAvailable",
 			"LD context not available."),
@@ -28,7 +30,7 @@ public enum ErrorType {
 	UnsupportedMediaType(415, "Unsupported Media type", "Unsupported Media type"),
 	OperationNotSupported(422, "https://uri.etsi.org/ngsi-ld/errors/OperationNotSupported", "Operation not supported."),
 	UnprocessableEntity(422, "Unprocessable Entity.", "Unprocessable Entity."),
-
+	LoopDeteced(508, "https://uri.etsi.org/ngsi-ld/errors/LoopDeteced", "Loop detected. Host has already been called."),
 	InternalError(500, "https://uri.etsi.org/ngsi-ld/errors/InternalError", "Internal error"),
 	KafkaWriteError(500, "https://uri.etsi.org/ngsi-ld/errors/InternalError", "Kafka write exception."),
 	MultiStatus(207, "Multi status result", "Multi status result"),

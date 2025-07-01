@@ -44,7 +44,7 @@ public class SubscriptionInfoDAO {
 
 	@Inject
 	ClientManager clientManager;
-	
+
 	@Inject
 	JsonLDService ldService;
 
@@ -165,8 +165,8 @@ public class SubscriptionInfoDAO {
 				// dollar++;
 			}
 
-//			logger.debug("SQL I noti: " + sql);
-//			logger.debug("Tuple I noti: " + tuple.deepToString());
+			// logger.debug("SQL I noti: " + sql);
+			// logger.debug("Tuple I noti: " + tuple.deepToString());
 			return client.preparedQuery(sql.toString()).execute(tuple).onFailure().retry().atMost(3);
 		});
 	}
@@ -203,7 +203,8 @@ public class SubscriptionInfoDAO {
 
 	public Uni<RowSet<Row>> getAllSubscriptions(String tenant, int limit, int offset) {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(
-				client -> client.preparedQuery("SELECT subscription, count(*) over() FROM subscriptions LIMIT $1 OFFSET $2")
+				client -> client
+						.preparedQuery("SELECT subscription, count(*) over() FROM subscriptions LIMIT $1 OFFSET $2")
 						.execute(Tuple.of(limit, offset)).onFailure().retry().atMost(3));
 	}
 
@@ -318,10 +319,10 @@ public class SubscriptionInfoDAO {
 					.retry().atMost(3);
 		});
 	}
-	
+
 	public Uni<Table<String, String, List<RegistrationEntry>>> getAllRegistries() {
 		return DBUtil.getAllRegistries(clientManager, ldService,
-				"SELECT cs_id, c_id, e_id, e_id_p, e_type, e_prop, e_rel, ST_AsGeoJSON(i_location), scopes, EXTRACT(MILLISECONDS FROM expires), endpoint, tenant_id, headers, reg_mode, createEntity, updateEntity, appendAttrs, updateAttrs, deleteAttrs, deleteEntity, createBatch, upsertBatch, updateBatch, deleteBatch, upsertTemporal, appendAttrsTemporal, deleteAttrsTemporal, updateAttrsTemporal, deleteAttrInstanceTemporal, deleteTemporal, mergeEntity, replaceEntity, replaceAttrs, mergeBatch, retrieveEntity, queryEntity, queryBatch, retrieveTemporal, queryTemporal, retrieveEntityTypes, retrieveEntityTypeDetails, retrieveEntityTypeInfo, retrieveAttrTypes, retrieveAttrTypeDetails, retrieveAttrTypeInfo, createSubscription, updateSubscription, retrieveSubscription, querySubscription, deleteSubscription, queryEntityMap, createEntityMap, updateEntityMap, deleteEntityMap, retrieveEntityMap FROM csourceinformation WHERE queryentity OR querybatch OR retrieveentity OR createSubscription",
+				"SELECT cs_id, c_id, e_id, e_id_p, e_type, e_prop, e_rel, ST_AsGeoJSON(i_location), scopes, EXTRACT(MILLISECONDS FROM expires), endpoint, tenant_id, headers, reg_mode, createEntity, updateEntity, appendAttrs, updateAttrs, deleteAttrs, deleteEntity, createBatch, upsertBatch, updateBatch, deleteBatch, upsertTemporal, appendAttrsTemporal, deleteAttrsTemporal, updateAttrsTemporal, deleteAttrInstanceTemporal, deleteTemporal, mergeEntity, replaceEntity, replaceAttrs, mergeBatch, retrieveEntity, queryEntity, queryBatch, retrieveTemporal, queryTemporal, retrieveEntityTypes, retrieveEntityTypeDetails, retrieveEntityTypeInfo, retrieveAttrTypes, retrieveAttrTypeDetails, retrieveAttrTypeInfo, createSubscription, updateSubscription, retrieveSubscription, querySubscription, deleteSubscription, queryEntityMap, createEntityMap, updateEntityMap, deleteEntityMap, retrieveEntityMap, csource_Alias FROM csourceinformation WHERE queryentity OR querybatch OR retrieveentity OR createSubscription",
 				logger);
 
 	}

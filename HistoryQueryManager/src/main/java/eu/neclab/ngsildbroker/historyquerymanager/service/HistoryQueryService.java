@@ -78,10 +78,9 @@ public class HistoryQueryService implements CSourceHandler {
 
 	@Inject
 	HistoryDAO historyDAO;
-	
+
 	@Inject
 	MicroServiceUtils microServiceUtils;
-
 
 	private Table<String, String, List<RegistrationEntry>> tenant2CId2RegEntries = HashBasedTable.create();
 
@@ -100,7 +99,8 @@ public class HistoryQueryService implements CSourceHandler {
 	void startup(@Observes StartupEvent event) {
 	}
 
-	public Uni<QueryResult> query(String tenant, List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeQueryAndIdPattern,
+	public Uni<QueryResult> query(String tenant,
+			List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeQueryAndIdPattern,
 			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, CSFQueryTerm csf, GeoQueryTerm geoQuery,
 			ScopeQueryTerm scopeQuery, TemporalQueryTerm tempQuery, AggrTerm aggrQuery, LanguageQueryTerm langQuery,
 			Integer lastN, Integer limit, Integer offSet, Boolean count, Boolean localOnly, Context context,
@@ -157,7 +157,7 @@ public class HistoryQueryService implements CSourceHandler {
 										List<Map<String, Object>> resultList = new ArrayList<>(expanded.size());
 										for (Object entry2 : expanded) {
 											Map<String, Object> tmp = (Map<String, Object>) entry2;
-//											tmp.put(EntityTools.REG_MODE_KEY, remoteHost.regMode());
+											// tmp.put(EntityTools.REG_MODE_KEY, remoteHost.regMode());
 											resultList.add(tmp);
 										}
 										result.setData(resultList);
@@ -370,7 +370,7 @@ public class HistoryQueryService implements CSourceHandler {
 						|| (regEntry.eIdp() != null && entityId.matches(regEntry.eIdp()))) {
 					RemoteHost remoteHost = new RemoteHost(regEntry.host().host(), regEntry.host().tenant(),
 							regEntry.host().headers(), regEntry.host().cSourceId(), true, false, regEntry.regMode(),
-							false, regEntry.queryEntityMap());
+							false, regEntry.queryEntityMap(), regEntry.host().cSourceAlias());
 
 					Set<String> attribs;
 					if (result.containsKey(remoteHost)) {
@@ -416,7 +416,7 @@ public class HistoryQueryService implements CSourceHandler {
 
 				RemoteHost remoteHost = new RemoteHost(regEntry.host().host(), regEntry.host().tenant(),
 						regEntry.host().headers(), regEntry.host().cSourceId(), true, false, regEntry.regMode(), false,
-						regEntry.queryEntityMap());
+						regEntry.queryEntityMap(), regEntry.host().cSourceAlias());
 
 				if (regEntry.eId() != null || regEntry.eIdp() != null) {
 					for (String id : entityIds) {
