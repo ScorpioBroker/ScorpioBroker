@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "b154db56-4d3b-41c6-8ee1-b94d63a89a2d",
+		"_postman_id": "e1443a3b-de91-4b66-bae9-94f7ca2afff0",
 		"name": "API Test",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
@@ -66723,7 +66723,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:ContextSourceRegistration:csr1a3456\",\r\n\t\"type\": \"ContextSourceRegistration\",\r\n\t\"information\": [{\r\n\t\t\t\"entities\": [{\r\n\t\t\t\t\"type\": \"Test2\"\r\n\t\t\t}]\r\n\t\t}\r\n\t],\r\n\t\"endpoint\": \"http://localhost:9080\"\r\n}",
+															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:ContextSourceRegistration:csr1a3456\",\r\n\t\"type\": \"ContextSourceRegistration\",\r\n\t\"information\": [{\r\n\t\t\t\"entities\": [{\r\n\t\t\t\t\"type\": \"Test2\"\r\n\t\t\t}]\r\n\t\t}\r\n\t],\r\n    \"contextSourceAlias\": \"http://localhost:9080\",\r\n\t\"endpoint\": \"http://localhost:9080\"\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -66883,7 +66883,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:ContextSourceRegistration:csr1a3456\",\r\n\t\"type\": \"ContextSourceRegistration\",\r\n\t\"information\": [{\r\n\t\t\t\"entities\": [{\r\n\t\t\t\t\"type\": \"Test2\"\r\n\t\t\t}]\r\n\t\t}\r\n\t],\r\n\t\"endpoint\": \"http://localhost:9080\",\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.8.jsonld\"]\r\n}",
+															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:ContextSourceRegistration:csr1a3456\",\r\n\t\"type\": \"ContextSourceRegistration\",\r\n\t\"information\": [{\r\n\t\t\t\"entities\": [{\r\n\t\t\t\t\"type\": \"Test2\"\r\n\t\t\t}]\r\n\t\t}\r\n\t],\r\n\t\"endpoint\": \"http://localhost:9080\",\r\n    \"contextSourceAlias\": \"http://localhost:9080\",\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.8.jsonld\"]\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -67048,7 +67048,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:ContextSourceRegistration:csr1a3456\",\r\n\t\"type\": \"ContextSourceRegistration\",\r\n\t\"information\": [{\r\n\t\t\t\"entities\": [{\r\n\t\t\t\t\"type\": \"Test2\"\r\n\t\t\t}]\r\n\t\t}\r\n\t],\r\n\t\"endpoint\": \"http://localhost:9080\"\r\n}",
+															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:ContextSourceRegistration:csr1a3456\",\r\n\t\"type\": \"ContextSourceRegistration\",\r\n\t\"information\": [{\r\n\t\t\t\"entities\": [{\r\n\t\t\t\t\"type\": \"Test2\"\r\n\t\t\t}]\r\n\t\t}\r\n\t],\r\n    \"contextSourceAlias\": \"http://localhost:9080\",\r\n\t\"endpoint\": \"http://localhost:9080\"\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -67228,7 +67228,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:ContextSourceRegistration:csr1a3456\",\r\n\t\"type\": \"ContextSourceRegistration\",\r\n\t\"information\": [{\r\n\t\t\t\"entities\": [{\r\n\t\t\t\t\"type\": \"Test2\"\r\n\t\t\t}]\r\n\t\t}\r\n\t],\r\n\t\"endpoint\": \"http://localhost:9080\"\r\n}",
+															"raw": "{\r\n\t\"id\": \"urn:ngsi-ld:ContextSourceRegistration:csr1a3456\",\r\n\t\"type\": \"ContextSourceRegistration\",\r\n\t\"information\": [{\r\n\t\t\t\"entities\": [{\r\n\t\t\t\t\"type\": \"Test2\"\r\n\t\t\t}]\r\n\t\t}\r\n\t],\r\n    \"contextSourceAlias\": \"http://localhost:9080\",\r\n\t\"endpoint\": \"http://localhost:9080\"\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -88861,7 +88861,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n\t\"id\": \"tenanttest:urn:ngsi-ld:ContextSourceRegistration:csr1a3456\",\r\n\t\"type\": \"ContextSourceRegistration\",\r\n\t\"information\": [{\r\n\t\t\t\"entities\": [{\r\n\t\t\t\t\"type\": \"Test2\"\r\n\t\t\t}]\r\n\t\t}\r\n\t],\r\n\t\"endpoint\": \"http://localhost:9080\"\r\n}",
+															"raw": "{\r\n\t\"id\": \"tenanttest:urn:ngsi-ld:ContextSourceRegistration:csr1a3456\",\r\n\t\"type\": \"ContextSourceRegistration\",\r\n\t\"information\": [{\r\n\t\t\t\"entities\": [{\r\n\t\t\t\t\"type\": \"Test2\"\r\n\t\t\t}]\r\n\t\t}\r\n\t],\r\n    \"contextSourceAlias\": \"http://localhost:9080\",\r\n\t\"endpoint\": \"http://localhost:9080\"\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -89037,7 +89037,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n\t\"id\": \"tenanttest:urn:ngsi-ld:ContextSourceRegistration:csr1a3456\",\r\n\t\"type\": \"ContextSourceRegistration\",\r\n\t\"information\": [{\r\n\t\t\t\"entities\": [{\r\n\t\t\t\t\"type\": \"Test2\"\r\n\t\t\t}]\r\n\t\t}\r\n\t],\r\n\t\"endpoint\": \"http://localhost:9080\",\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.8.jsonld\"]\r\n}",
+															"raw": "{\r\n\t\"id\": \"tenanttest:urn:ngsi-ld:ContextSourceRegistration:csr1a3456\",\r\n\t\"type\": \"ContextSourceRegistration\",\r\n\t\"information\": [{\r\n\t\t\t\"entities\": [{\r\n\t\t\t\t\"type\": \"Test2\"\r\n\t\t\t}]\r\n\t\t}\r\n\t],\r\n\t\"endpoint\": \"http://localhost:9080\",\r\n    \"contextSourceAlias\": \"http://localhost:9080\",\r\n    \"@context\": [\"https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json\", \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.8.jsonld\"]\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -89218,7 +89218,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n\t\"id\": \"tenanttest:urn:ngsi-ld:ContextSourceRegistration:csr1a3456\",\r\n\t\"type\": \"ContextSourceRegistration\",\r\n\t\"information\": [{\r\n\t\t\t\"entities\": [{\r\n\t\t\t\t\"type\": \"Test2\"\r\n\t\t\t}]\r\n\t\t}\r\n\t],\r\n\t\"endpoint\": \"http://localhost:9080\"\r\n}",
+															"raw": "{\r\n\t\"id\": \"tenanttest:urn:ngsi-ld:ContextSourceRegistration:csr1a3456\",\r\n\t\"type\": \"ContextSourceRegistration\",\r\n\t\"information\": [{\r\n\t\t\t\"entities\": [{\r\n\t\t\t\t\"type\": \"Test2\"\r\n\t\t\t}]\r\n\t\t}\r\n\t],\r\n    \"contextSourceAlias\": \"http://localhost:9080\",\r\n\t\"endpoint\": \"http://localhost:9080\"\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
@@ -89634,7 +89634,7 @@
 														],
 														"body": {
 															"mode": "raw",
-															"raw": "{\r\n\t\"id\": \"tenanttest:urn:ngsi-ld:ContextSourceRegistration:csr1a3456\",\r\n\t\"type\": \"ContextSourceRegistration\",\r\n\t\"information\": [{\r\n\t\t\t\"entities\": [{\r\n\t\t\t\t\"type\": \"Test2\"\r\n\t\t\t}]\r\n\t\t}\r\n\t],\r\n\t\"endpoint\": \"http://localhost:9080\"\r\n}",
+															"raw": "{\r\n\t\"id\": \"tenanttest:urn:ngsi-ld:ContextSourceRegistration:csr1a3456\",\r\n\t\"type\": \"ContextSourceRegistration\",\r\n\t\"information\": [{\r\n\t\t\t\"entities\": [{\r\n\t\t\t\t\"type\": \"Test2\"\r\n\t\t\t}]\r\n\t\t}\r\n\t],\r\n    \"contextSourceAlias\": \"http://localhost:9080\",\r\n\t\"endpoint\": \"http://localhost:9080\"\r\n}",
 															"options": {
 																"raw": {
 																	"language": "json"
