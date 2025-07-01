@@ -237,7 +237,7 @@ public class RegistrationEntry {
 			}
 			String sourceAlias;
 			if (payload.containsKey(NGSIConstants.NGSI_LD_SOURCE_ALIAS)) {
-				sourceAlias = ((List<Map<String, String>>) payload.get(NGSIConstants.NGSI_LD_EXPIRES)).get(0)
+				sourceAlias = ((List<Map<String, String>>) payload.get(NGSIConstants.NGSI_LD_SOURCE_ALIAS)).get(0)
 						.get(NGSIConstants.JSON_LD_VALUE);
 			} else {
 				sourceAlias = null;
