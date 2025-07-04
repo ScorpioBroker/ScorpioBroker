@@ -384,7 +384,7 @@ public class QueryDAO {
 			String tenantId) {
 		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
 			return client.preparedQuery(
-					"SELECT C.cs_id, C.endpoint, C.tenant_id, C.e_type, ARRAY_AGG(C.e_prop) || ARRAY_AGG(C.e_rel), C.retrieveEntityTypeDetails, C.retrieveEntityTypes, C.csource_alias FROM CSOURCEINFORMATION AS C GROUP BY C.endpoint, C.e_type, C.tenant_id, C.retrieveEntityTypeDetails, C.retrieveEntityTypes")
+					"SELECT C.c_id, C.endpoint, C.tenant_id, C.e_type, ARRAY_AGG(C.e_prop) || ARRAY_AGG(C.e_rel), C.retrieveEntityTypeDetails, C.retrieveEntityTypes, C.csource_alias FROM CSOURCEINFORMATION AS C GROUP BY C.endpoint, C.e_type, C.tenant_id, C.retrieveEntityTypeDetails, C.retrieveEntityTypes, c.c_id, c.csource_alias")
 					.execute().onItem().transform(rows -> {
 						Map<RemoteHost, Map<String, Set<String>>> result = Maps
 								.newHashMap();

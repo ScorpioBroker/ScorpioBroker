@@ -1,6 +1,7 @@
 package eu.neclab.ngsildbroker.entityhandler.controller;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import io.vertx.core.json.DecodeException;
@@ -11,11 +12,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.jsonldjava.core.JsonLDService;
+import com.github.jsonldjava.utils.JsonUtils;
+import com.google.common.net.HttpHeaders;
+
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.ViaHeaders;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
@@ -49,6 +55,9 @@ public class EntityController {// implements EntityHandlerInterface {
 	@Inject
 	JsonLDService ldService;
 
+	@Inject
+	MicroServiceUtils microServiceUtils;
+
 	/**
 	 * Method(POST) for "/ngsi-ld/v1/entities/" rest endpoint.
 	 * 
@@ -58,29 +67,39 @@ public class EntityController {// implements EntityHandlerInterface {
 	@Path("/entities")
 	@POST
 	public Uni<RestResponse<Object>> createEntity(HttpServerRequest req, String bodyStr) {
+
 		Map<String, Object> body;
+		String tenant = HttpUtils.getTenant(req);
 		try {
 			body = new JsonObject(bodyStr).getMap();
 		} catch (DecodeException e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(req)));
 		}
-//		try {
-//			noConcise(body);
-//		} catch (ResponseException e) {
-//			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(req)));
-//		}
+		ViaHeaders viaHeaders;
+		try {
+			viaHeaders = new ViaHeaders(req.headers().getAll(HttpHeaders.VIA),
+					microServiceUtils.getSourceAlias(tenant));
+		} catch (ResponseException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
+		}
+		// try {
+		// noConcise(body);
+		// } catch (ResponseException e) {
+		// return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e,
+		// HttpUtils.getTenant(req)));
+		// }
 		return HttpUtils.expandBody(req, body, AppConstants.ENTITY_CREATE_PAYLOAD, ldService).onItem()
 				.transformToUni(tuple -> {
 					logger.debug("creating entity");
-					
+
 					return entityService
-							.createEntity(HttpUtils.getTenant(req), tuple.getItem2(), tuple.getItem1(), req.headers())
+							.createEntity(tenant, tuple.getItem2(), tuple.getItem1(), req.headers(), viaHeaders)
 							.onItem().transform(opResult -> {
 								logger.debug("Done creating entity");
 								return HttpUtils.generateCreateResult(opResult, AppConstants.ENTITES_URL);
 							});
 				}).onFailure().recoverWithItem(e -> {
-					return HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(req));
+					return HttpUtils.handleControllerExceptions(e, tenant);
 				});
 
 	}
@@ -98,24 +117,33 @@ public class EntityController {// implements EntityHandlerInterface {
 	public Uni<RestResponse<Object>> updateEntity(HttpServerRequest req, @PathParam("entityId") String entityId,
 			String bodyStr) {
 		Map<String, Object> body;
+		String tenant = HttpUtils.getTenant(req);
 		try {
 			HttpUtils.validateUri(entityId);
 			body = new JsonObject(bodyStr).getMap();
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(req)));
 		}
-//		try {
-//			noConcise(body);
-//		} catch (ResponseException e) {
-//			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(req)));
-//		}
+		ViaHeaders viaHeaders;
+		try {
+			viaHeaders = new ViaHeaders(req.headers().getAll(HttpHeaders.VIA),
+					microServiceUtils.getSourceAlias(tenant));
+		} catch (ResponseException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
+		}
+		// try {
+		// noConcise(body);
+		// } catch (ResponseException e) {
+		// return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e,
+		// HttpUtils.getTenant(req)));
+		// }
 
 		return HttpUtils.expandBody(req, body, AppConstants.ENTITY_UPDATE_PAYLOAD, ldService).onItem()
 				.transformToUni(tuple -> {
-					
+
 					logger.debug("patch attrs");
 					return entityService.updateEntity(HttpUtils.getTenant(req), entityId, tuple.getItem2(),
-							tuple.getItem1(), req.headers()).onItem()
+							tuple.getItem1(), req.headers(), viaHeaders).onItem()
 							.transform(HttpUtils::generateUpdateResultResponse);
 				}).onFailure().recoverWithItem(e -> {
 					return HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(req));
@@ -141,18 +169,27 @@ public class EntityController {// implements EntityHandlerInterface {
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(req)));
 		}
-//		try {
-//			noConcise(body);
-//		} catch (ResponseException e) {
-//			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(req)));
-//		}
+		String tenant = HttpUtils.getTenant(req);
+		ViaHeaders viaHeaders;
+		try {
+			viaHeaders = new ViaHeaders(req.headers().getAll(HttpHeaders.VIA),
+					microServiceUtils.getSourceAlias(tenant));
+		} catch (ResponseException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
+		}
+		// try {
+		// noConcise(body);
+		// } catch (ResponseException e) {
+		// return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e,
+		// HttpUtils.getTenant(req)));
+		// }
 		boolean noOverwrite = options != null && options.contains(NGSIConstants.NO_OVERWRITE_OPTION);
 		return HttpUtils.expandBody(req, body, AppConstants.ENTITY_UPDATE_PAYLOAD, ldService).onItem()
 				.transformToUni(tuple -> {
 					logger.debug("post attrs");
 					return entityService
 							.appendToEntity(HttpUtils.getTenant(req), entityId, tuple.getItem2(), noOverwrite,
-									tuple.getItem1(), req.headers())
+									tuple.getItem1(), req.headers(), viaHeaders)
 							.onItem().transform(HttpUtils::generateUpdateResultResponse);
 				}).onFailure().recoverWithItem(e -> {
 					return HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(req));
@@ -172,6 +209,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	@Path("/entities/{entityId}/attrs/{attrId}")
 	public Uni<RestResponse<Object>> partialUpdateAttribute(HttpServerRequest req,
 			@PathParam("entityId") String entityId, @PathParam("attrId") String attrib, String bodyStr) {
+
 		Map<String, Object> body;
 		try {
 			HttpUtils.validateUri(entityId);
@@ -186,29 +224,41 @@ public class EntityController {// implements EntityHandlerInterface {
 				}
 				tmp2.put(attrib, tmp);
 				body = tmp2;
-			}else {
+			} else {
 				body = tmp;
 			}
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(req)));
 		}
-//		try {
-//			noConcise(body);
-//		} catch (ResponseException e) {
-//			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(req)));
-//		}
-		
+
+		String tenant = HttpUtils.getTenant(req);
+		ViaHeaders viaHeaders;
+		try {
+			viaHeaders = new ViaHeaders(req.headers().getAll(HttpHeaders.VIA),
+					microServiceUtils.getSourceAlias(tenant));
+		} catch (ResponseException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
+		}
+		// try {
+		// noConcise(body);
+		// } catch (ResponseException e) {
+		// return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e,
+		// HttpUtils.getTenant(req)));
+		// }
+
 		return HttpUtils.expandBody(req, body, AppConstants.ENTITY_UPDATE_PAYLOAD, ldService).onItem()
 				.transformToUni(tuple -> {
 					String expAttrib = tuple.getItem1().expandIri(attrib, false, true, null, null);
 					logger.debug("update entry :: started");
-					
+
 					return entityService.partialUpdateAttribute(HttpUtils.getTenant(req), entityId, expAttrib,
-							tuple.getItem2(), tuple.getItem1(), req.headers()).onItem().transform(updateResult -> {
+							tuple.getItem2(), tuple.getItem1(), req.headers(), viaHeaders).onItem()
+							.transform(updateResult -> {
 								logger.trace("update entry :: completed");
 								return HttpUtils.generateUpdateResultResponse(updateResult);
 							});
-				}).onFailure().recoverWithUni(t -> entityService.patchToEndPoint(entityId, req, body, attrib).onItem()
+				}).onFailure()
+				.recoverWithUni(t -> entityService.patchToEndPoint(entityId, req, body, attrib, viaHeaders).onItem()
 						.transform(isEndPointExist -> {
 							if (isEndPointExist)
 								return RestResponse.noContent();
@@ -241,11 +291,19 @@ public class EntityController {// implements EntityHandlerInterface {
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
+		String tenant = HttpUtils.getTenant(request);
+		ViaHeaders viaHeaders;
+		try {
+			viaHeaders = new ViaHeaders(request.headers().getAll(HttpHeaders.VIA),
+					microServiceUtils.getSourceAlias(tenant));
+		} catch (ResponseException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
+		}
 		return ldService.parse(HttpUtils.getAtContext(request)).onItem().transformToUni(context -> {
 			String finalAttrId = context.expandIri(attrId, false, true, null, null);
 			logger.trace("delete attribute :: started");
 			return entityService.deleteAttribute(HttpUtils.getTenant(request), entityId, finalAttrId, datasetId,
-					deleteAll, context, request.headers()).onItem().transform(opResult -> {
+					deleteAll, context, request.headers(), viaHeaders).onItem().transform(opResult -> {
 						logger.trace("delete attribute :: completed");
 						return HttpUtils.generateDeleteResult(opResult);
 
@@ -270,8 +328,17 @@ public class EntityController {// implements EntityHandlerInterface {
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
+		String tenant = HttpUtils.getTenant(request);
+		ViaHeaders viaHeaders;
+		try {
+			viaHeaders = new ViaHeaders(request.headers().getAll(HttpHeaders.VIA),
+					microServiceUtils.getSourceAlias(tenant));
+		} catch (ResponseException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
+		}
 		return ldService.parse(HttpUtils.getAtContext(request)).onItem().transformToUni(context -> {
-			return entityService.deleteEntity(HttpUtils.getTenant(request), entityId, context, request.headers())
+			return entityService
+					.deleteEntity(HttpUtils.getTenant(request), entityId, context, request.headers(), viaHeaders)
 					.onItem().transform(HttpUtils::generateDeleteResult);
 		}).onFailure().recoverWithItem(e -> {
 			return HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request));
@@ -290,21 +357,30 @@ public class EntityController {// implements EntityHandlerInterface {
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
+		String tenant = HttpUtils.getTenant(request);
+		ViaHeaders viaHeaders;
+		try {
+			viaHeaders = new ViaHeaders(request.headers().getAll(HttpHeaders.VIA),
+					microServiceUtils.getSourceAlias(tenant));
+		} catch (ResponseException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
+		}
 		if (!entityId.equals(body.get(NGSIConstants.ID)) && body.get(NGSIConstants.ID) != null) {
 			return Uni.createFrom()
 					.item(HttpUtils.handleControllerExceptions(
 							new ResponseException(ErrorType.BadRequestData, "Id can not be updated"),
 							HttpUtils.getTenant(request)));
 		}
-//		try {
-//			noConcise(body);
-//		} catch (ResponseException e) {
-//			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
-//		}
+		// try {
+		// noConcise(body);
+		// } catch (ResponseException e) {
+		// return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e,
+		// HttpUtils.getTenant(request)));
+		// }
 		return HttpUtils.expandBody(request, body, AppConstants.MERGE_PATCH_REQUEST, ldService).onItem()
 				.transformToUni(tuple -> {
 					return entityService.mergePatch(HttpUtils.getTenant(request), entityId, tuple.getItem2(),
-							tuple.getItem1(), request.headers()).onItem()
+							tuple.getItem1(), request.headers(), viaHeaders).onItem()
 							.transform(HttpUtils::generateUpdateResultResponse);
 				}).onFailure().recoverWithItem(e -> {
 					return HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request));
@@ -324,11 +400,20 @@ public class EntityController {// implements EntityHandlerInterface {
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
-//		try {
-//			noConcise(body);
-//		} catch (ResponseException e) {
-//			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
-//		}
+		String tenant = HttpUtils.getTenant(request);
+		ViaHeaders viaHeaders;
+		try {
+			viaHeaders = new ViaHeaders(request.headers().getAll(HttpHeaders.VIA),
+					microServiceUtils.getSourceAlias(tenant));
+		} catch (ResponseException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
+		}
+		// try {
+		// noConcise(body);
+		// } catch (ResponseException e) {
+		// return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e,
+		// HttpUtils.getTenant(request)));
+		// }
 		body.put(NGSIConstants.ID, entityId);
 		if (!body.containsKey(NGSIConstants.TYPE)) {
 			return Uni.createFrom()
@@ -340,7 +425,7 @@ public class EntityController {// implements EntityHandlerInterface {
 				.transformToUni(tuple -> {
 
 					return entityService.replaceEntity(HttpUtils.getTenant(request), entityId, tuple.getItem2(),
-							tuple.getItem1(), request.headers()).onItem().transform(opResult -> {
+							tuple.getItem1(), request.headers(), viaHeaders).onItem().transform(opResult -> {
 
 								logger.debug("Done replacing entity");
 								return HttpUtils.generateUpdateResultResponse(opResult);
@@ -355,27 +440,54 @@ public class EntityController {// implements EntityHandlerInterface {
 	public Uni<RestResponse<Object>> replaceAttribute(@PathParam("attrId") String attrId,
 			@PathParam("entityId") String entityId, HttpServerRequest request, String bodyStr) {
 		logger.debug("replacing Attrs");
-		Map<String, Object> body;
+		Object body;
 		try {
+			body = JsonUtils.fromString(bodyStr);
 			HttpUtils.validateUri(entityId);
-			body = new JsonObject(bodyStr).getMap();
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
-//		try {
-//			noConcise(body);
-//		} catch (ResponseException e) {
-//			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
-//		}
-		return HttpUtils.expandBody(request, body, AppConstants.PARTIAL_UPDATE_REQUEST, ldService).onItem()
+
+		String tenant = HttpUtils.getTenant(request);
+		ViaHeaders viaHeaders;
+		try {
+			viaHeaders = new ViaHeaders(request.headers().getAll(HttpHeaders.VIA),
+					microServiceUtils.getSourceAlias(tenant));
+		} catch (ResponseException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
+		}
+		Map<String, Object> finalBody;
+		if (body instanceof Map m) {
+
+			if (!m.containsKey(attrId)) {
+				if (m.containsKey(NGSIConstants.JSON_LD_CONTEXT)) {
+					finalBody = new HashMap<>(2);
+					finalBody.put(NGSIConstants.JSON_LD_CONTEXT, m.remove(NGSIConstants.JSON_LD_CONTEXT));
+				} else {
+					finalBody = new HashMap<>(1);
+				}
+				finalBody.put(bodyStr, m);
+			} else {
+				finalBody = m;
+			}
+
+		} else if (body instanceof List l) {
+			finalBody = new HashMap<>(1);
+			finalBody.put(attrId, l);
+		} else {
+			return Uni.createFrom().item(
+					HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData), tenant));
+		}
+		return HttpUtils.expandBody(request, finalBody, AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, ldService).onItem()
 				.transformToUni(tuple -> {
 					String finalAttrId = tuple.getItem1().expandIri(attrId, false, true, null, null);
-					return entityService.replaceAttribute(HttpUtils.getTenant(request), tuple.getItem2(),
-							tuple.getItem1(), entityId, finalAttrId, request.headers()).onItem().transform(opResult -> {
+					return entityService.replaceAttribute(tenant, tuple.getItem2(),
+							tuple.getItem1(), entityId, finalAttrId, request.headers(), viaHeaders).onItem()
+							.transform(opResult -> {
 								logger.debug("Done replacing attribute");
 								return HttpUtils.generateUpdateResultResponse(opResult);
 							}).onFailure().recoverWithItem(e -> {
-								return HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request));
+								return HttpUtils.handleControllerExceptions(e, tenant);
 							});
 				});
 	}

@@ -381,16 +381,17 @@ public class EntityInfoDAO {
 		});
 	}
 
-	public Uni<String> getEndpoint(String entityId, String tenantId) {
-		String query = "SELECT endpoint FROM csource, csourceinformation csi WHERE csource.id=csi.id AND csi.e_id='"
+	public Uni<Tuple2<String, String>> getEndpoint(String entityId, String tenantId) {
+		String query = "SELECT endpoint, csource_alias FROM csource, csourceinformation csi WHERE csource.id=csi.id AND csi.e_id='"
 				+ entityId + "'";
 		return clientManager.getClient(tenantId, false).onItem()
 				.transformToUni(client -> client.preparedQuery(query).execute().onItem().transform((rowSet) -> {
 					if (rowSet.rowCount() == 0) {
 						return null;
 					}
-					return rowSet.iterator().next().getString("endpoint");
-				}).onFailure().recoverWithUni(Uni.createFrom().item("")));
+					Row row = rowSet.iterator().next();
+					return Tuple2.of(row.getString(0), row.getString(1));
+				}).onFailure().recoverWithUni(Uni.createFrom().item(null)));
 	}
 
 	public Uni<Table<String, String, List<RegistrationEntry>>> getAllRegistries() {

@@ -1247,7 +1247,7 @@ public class QueryService implements CSourceHandler {
 			io.vertx.core.MultiMap headersFromReq,
 			boolean details, boolean bbox, ViaHeaders viaHeaders) {
 		Uni<Map<String, Set<String>>> local;
-		if (localOnly) {
+		if (details) {
 			local = queryDAO.getTypes(tenant);
 		} else {
 			local = queryDAO.getTypesWithDetails(tenant);
@@ -1275,6 +1275,9 @@ public class QueryService implements CSourceHandler {
 							results.add(Uni.createFrom().item(typeAttrs));
 						}
 					});
+					if (results.isEmpty()) {
+						return Uni.createFrom().item(Maps.newHashMap());
+					}
 					return Uni.combine().all().unis(results).with(l -> {
 						Map<String, Set<String>> result = Maps.newHashMap();
 						l.forEach(obj -> {
@@ -1333,8 +1336,8 @@ public class QueryService implements CSourceHandler {
 
 	private Uni<Map<String, Set<String>>> getRemoteTypes(Uni<HttpResponse<Buffer>> webClientConnection,
 			Map<String, Set<String>> typeAttrs) {
-		return webClientConnection.onItem().transformToUni(resp -> {
-			if (resp.statusCode() != 200) {
+		return webClientConnection.onItemOrFailure().transformToUni((resp, e) -> {
+			if (e != null || resp.statusCode() != 200) {
 				return Uni.createFrom().item(new HashMap<>(0));
 			}
 			return ldService.expand(JsonUtils.fromString(resp.bodyAsString())).onItem()
@@ -1363,8 +1366,8 @@ public class QueryService implements CSourceHandler {
 
 	private Uni<Map<String, Set<String>>> getRemoteTypesWithDetails(Uni<HttpResponse<Buffer>> webClientConnection,
 			Map<String, Set<String>> typeAttrs) {
-		return webClientConnection.onItem().transformToUni(resp -> {
-			if (resp.statusCode() != 200) {
+		return webClientConnection.onItemOrFailure().transformToUni((resp, e) -> {
+			if (e != null || resp.statusCode() != 200) {
 				return Uni.createFrom().item(new HashMap<>(0));
 			}
 			return ldService.expand(JsonUtils.fromString(resp.bodyAsString())).onItem()

@@ -34,6 +34,7 @@ import com.google.common.collect.Table;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.RegistrationEntry;
+import eu.neclab.ngsildbroker.commons.datatypes.ViaHeaders;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CreateEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.UpdateEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
@@ -75,6 +76,9 @@ public class EntityServiceTest {
 	@Mock
 	io.vertx.core.MultiMap headersFromReq;
 
+	@Mock
+	ViaHeaders viaHeaders;
+
 	String jsonLdObject;
 	String tenant = "tenant";
 	String entityId = "urn:test:testentity2";
@@ -90,7 +94,7 @@ public class EntityServiceTest {
 		entityService.webClient = webClient;
 		entityService.vertx = vertx;
 		entityService.entityEmitter = entityEmitter;
-//		entityService.batchEmitter = batchEmitter;
+		// entityService.batchEmitter = batchEmitter;
 
 		Table<String, String, List<RegistrationEntry>> registriesMap = HashBasedTable.create();
 		Uni<Table<String, String, List<RegistrationEntry>>> uniRegistriesMap = Uni.createFrom().item(registriesMap);
@@ -132,7 +136,8 @@ public class EntityServiceTest {
 
 		when(context.compactIri(anyString())).thenReturn("");
 
-		NGSILDOperationResult operationResult = entityService.createEntity(tenant, resolved, context, headersFromReq)
+		NGSILDOperationResult operationResult = entityService
+				.createEntity(tenant, resolved, context, headersFromReq, viaHeaders)
 				.await().indefinitely();
 
 		assertEquals(entityId, operationResult.getEntityId());
@@ -154,7 +159,7 @@ public class EntityServiceTest {
 		when(entityEmitter.send(objectMapper.writeValueAsString(request))).thenReturn(emitterResponse);
 
 		NGSILDOperationResult operationResult = entityService
-				.updateEntity(tenant, entityId, resolved, context, headersFromReq).await().indefinitely();
+				.updateEntity(tenant, entityId, resolved, context, headersFromReq, viaHeaders).await().indefinitely();
 
 		assertEquals(entityId, operationResult.getEntityId());
 		assertEquals(1, operationResult.getSuccesses().size());
@@ -174,7 +179,8 @@ public class EntityServiceTest {
 		when(entityEmitter.send(any(String.class))).thenReturn(emitterResponse);
 
 		NGSILDOperationResult operationResult = entityService
-				.appendToEntity(tenant, entityId, resolved, false, context, headersFromReq).await().indefinitely();
+				.appendToEntity(tenant, entityId, resolved, false, context, headersFromReq, viaHeaders).await()
+				.indefinitely();
 
 		assertEquals(entityId, operationResult.getEntityId());
 		assertEquals(1, operationResult.getSuccesses().size());
@@ -191,7 +197,8 @@ public class EntityServiceTest {
 		when(entityDAO.partialUpdateAttribute(any())).thenReturn(partialUpdateAttributeRes);
 
 		NGSILDOperationResult operationResult = entityService
-				.partialUpdateAttribute(tenant, entityId, "brandName", resolved, context, headersFromReq).await()
+				.partialUpdateAttribute(tenant, entityId, "brandName", resolved, context, headersFromReq, viaHeaders)
+				.await()
 				.indefinitely();
 
 		assertEquals(entityId, operationResult.getEntityId());
@@ -211,7 +218,9 @@ public class EntityServiceTest {
 			when(entityEmitter.send(any(String.class))).thenReturn(emitterResponse);
 
 			NGSILDOperationResult operationResult = entityService
-					.deleteAttribute(tenant, entityId, "brandName", "datasetId", false, context, headersFromReq).await()
+					.deleteAttribute(tenant, entityId, "brandName", "datasetId", false, context, headersFromReq,
+							viaHeaders)
+					.await()
 					.indefinitely();
 
 			verify(entityDAO, times(1)).deleteAttribute(any());
@@ -236,7 +245,7 @@ public class EntityServiceTest {
 			when(entityEmitter.send(any(String.class))).thenReturn(emitterResponse);
 
 			NGSILDOperationResult operationResult = entityService
-					.deleteEntity(tenant, entityId, context, headersFromReq).await().indefinitely();
+					.deleteEntity(tenant, entityId, context, headersFromReq, viaHeaders).await().indefinitely();
 
 			verify(entityDAO, times(1)).deleteEntity(any());
 			verify(entityEmitter, times(1)).sendAndForget(any(String.class));
@@ -273,7 +282,8 @@ public class EntityServiceTest {
 		when(entityDAO.batchCreateEntity(any())).thenReturn(createEntityRes);
 
 		List<NGSILDOperationResult> operationResultList = entityService
-				.createBatch(tenant, expandedEntities, contextList, true, headersFromReq).await().indefinitely();
+				.createBatch(tenant, expandedEntities, contextList, true, headersFromReq, viaHeaders).await()
+				.indefinitely();
 
 		assertEquals(1, operationResultList.size());
 		verify(entityDAO, times(1)).batchCreateEntity(any());
@@ -309,7 +319,8 @@ public class EntityServiceTest {
 		when(entityDAO.batchCreateEntity(any())).thenReturn(createEntityRes);
 
 		List<NGSILDOperationResult> operationResultList = entityService
-				.createBatch(tenant, expandedEntities, contextList, true, headersFromReq).await().indefinitely();
+				.createBatch(tenant, expandedEntities, contextList, true, headersFromReq, viaHeaders).await()
+				.indefinitely();
 
 		assertEquals(2, operationResultList.size());
 		verify(entityDAO, times(1)).batchCreateEntity(any());
@@ -340,7 +351,8 @@ public class EntityServiceTest {
 		when(entityDAO.batchAppendEntity(any())).thenReturn(createEntityRes);
 
 		List<NGSILDOperationResult> operationResultList = entityService
-				.appendBatch(tenant, expandedEntities, contextList, true, false, headersFromReq).await().indefinitely();
+				.appendBatch(tenant, expandedEntities, contextList, true, false, headersFromReq, viaHeaders).await()
+				.indefinitely();
 
 		assertEquals(1, operationResultList.size());
 		verify(entityDAO, times(1)).batchAppendEntity(any());
@@ -376,7 +388,8 @@ public class EntityServiceTest {
 		when(entityDAO.batchAppendEntity(any())).thenReturn(createEntityRes);
 
 		List<NGSILDOperationResult> operationResultList = entityService
-				.appendBatch(tenant, expandedEntities, contextList, true, false, headersFromReq).await().indefinitely();
+				.appendBatch(tenant, expandedEntities, contextList, true, false, headersFromReq, viaHeaders).await()
+				.indefinitely();
 
 		assertEquals(2, operationResultList.size());
 		verify(entityDAO, times(1)).batchAppendEntity(any());
@@ -410,7 +423,8 @@ public class EntityServiceTest {
 		when(entityDAO.batchUpsertEntity(any(), anyBoolean())).thenReturn(createEntityRes);
 
 		List<NGSILDOperationResult> operationResultList = entityService
-				.upsertBatch(tenant, expandedEntities, contextList, true, anyBoolean(), headersFromReq).await()
+				.upsertBatch(tenant, expandedEntities, contextList, true, anyBoolean(), headersFromReq, viaHeaders)
+				.await()
 				.indefinitely();
 
 		assertEquals(1, operationResultList.size());
@@ -447,7 +461,8 @@ public class EntityServiceTest {
 		when(entityDAO.batchUpsertEntity(any(), anyBoolean())).thenReturn(createEntityRes);
 
 		List<NGSILDOperationResult> operationResultList = entityService
-				.upsertBatch(tenant, expandedEntities, contextList, true, anyBoolean(), headersFromReq).await()
+				.upsertBatch(tenant, expandedEntities, contextList, true, anyBoolean(), headersFromReq, viaHeaders)
+				.await()
 				.indefinitely();
 
 		assertEquals(2, operationResultList.size());
@@ -479,7 +494,7 @@ public class EntityServiceTest {
 		when(entityDAO.batchDeleteEntity(any(), any())).thenReturn(createEntityRes);
 
 		List<NGSILDOperationResult> operationResultList = entityService
-				.deleteBatch(tenant, entityIds, true, headersFromReq).await().indefinitely();
+				.deleteBatch(tenant, entityIds, true, headersFromReq, viaHeaders).await().indefinitely();
 
 		assertEquals(1, operationResultList.size());
 		verify(entityDAO, times(1)).batchDeleteEntity(any(), any());
@@ -514,7 +529,7 @@ public class EntityServiceTest {
 		when(entityDAO.batchDeleteEntity(any(), any())).thenReturn(createEntityRes);
 
 		List<NGSILDOperationResult> operationResultList = entityService
-				.deleteBatch(tenant, entityIds, true, headersFromReq).await().indefinitely();
+				.deleteBatch(tenant, entityIds, true, headersFromReq, viaHeaders).await().indefinitely();
 
 		assertEquals(1, operationResultList.size());
 		verify(entityDAO, times(1)).batchDeleteEntity(any(), any());
