@@ -2091,7 +2091,8 @@ public class EntityService implements CSourceHandler {
 		logger.debug("ReplaceMessage() :: started");
 		if (!resolved.containsKey(attrId)) {
 			if (resolved.size() == 1) {
-				return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData));
+				return Uni.createFrom()
+						.failure(new ResponseException(ErrorType.BadRequestData, "resolved size " + resolved.size()));
 			}
 			Map<String, Object> temp = new HashMap<>();
 			temp.put(attrId, List.of(resolved));

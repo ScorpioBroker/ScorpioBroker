@@ -440,9 +440,9 @@ public class EntityController {// implements EntityHandlerInterface {
 	public Uni<RestResponse<Object>> replaceAttribute(@PathParam("attrId") String attrId,
 			@PathParam("entityId") String entityId, HttpServerRequest request, String bodyStr) {
 		logger.debug("replacing Attrs");
-		Object body;
+
 		try {
-			body = JsonUtils.fromString(bodyStr);
+
 			HttpUtils.validateUri(entityId);
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
@@ -456,39 +456,42 @@ public class EntityController {// implements EntityHandlerInterface {
 		} catch (ResponseException e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
 		}
-		Map<String, Object> finalBody;
-		if (body instanceof Map m) {
+		return JsonUtils.fromString(bodyStr).onItem().transformToUni(body -> {
+			Map<String, Object> finalBody;
+			if (body instanceof Map m) {
 
-			if (!m.containsKey(attrId)) {
-				if (m.containsKey(NGSIConstants.JSON_LD_CONTEXT)) {
-					finalBody = new HashMap<>(2);
-					finalBody.put(NGSIConstants.JSON_LD_CONTEXT, m.remove(NGSIConstants.JSON_LD_CONTEXT));
+				if (!m.containsKey(attrId)) {
+					if (m.containsKey(NGSIConstants.JSON_LD_CONTEXT)) {
+						finalBody = new HashMap<>(2);
+						finalBody.put(NGSIConstants.JSON_LD_CONTEXT, m.remove(NGSIConstants.JSON_LD_CONTEXT));
+					} else {
+						finalBody = new HashMap<>(1);
+					}
+					finalBody.put(bodyStr, m);
 				} else {
-					finalBody = new HashMap<>(1);
+					finalBody = m;
 				}
-				finalBody.put(bodyStr, m);
-			} else {
-				finalBody = m;
-			}
 
-		} else if (body instanceof List l) {
-			finalBody = new HashMap<>(1);
-			finalBody.put(attrId, l);
-		} else {
-			return Uni.createFrom().item(
-					HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData), tenant));
-		}
-		return HttpUtils.expandBody(request, finalBody, AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, ldService).onItem()
-				.transformToUni(tuple -> {
-					String finalAttrId = tuple.getItem1().expandIri(attrId, false, true, null, null);
-					return entityService.replaceAttribute(tenant, tuple.getItem2(),
-							tuple.getItem1(), entityId, finalAttrId, request.headers(), viaHeaders).onItem()
-							.transform(opResult -> {
-								logger.debug("Done replacing attribute");
-								return HttpUtils.generateUpdateResultResponse(opResult);
-							}).onFailure().recoverWithItem(e -> {
-								return HttpUtils.handleControllerExceptions(e, tenant);
-							});
-				});
+			} else if (body instanceof List l) {
+				finalBody = new HashMap<>(1);
+				finalBody.put(attrId, l);
+			} else {
+				return Uni.createFrom().item(
+						HttpUtils.handleControllerExceptions(new ResponseException(ErrorType.BadRequestData), tenant));
+			}
+			return HttpUtils.expandBody(request, finalBody, AppConstants.ENTITY_ATTRS_UPDATE_PAYLOAD, ldService)
+					.onItem()
+					.transformToUni(tuple -> {
+						String finalAttrId = tuple.getItem1().expandIri(attrId, false, true, null, null);
+						return entityService.replaceAttribute(tenant, tuple.getItem2(),
+								tuple.getItem1(), entityId, finalAttrId, request.headers(), viaHeaders).onItem()
+								.transform(opResult -> {
+									logger.debug("Done replacing attribute");
+									return HttpUtils.generateUpdateResultResponse(opResult);
+								}).onFailure().recoverWithItem(e -> {
+									return HttpUtils.handleControllerExceptions(e, tenant);
+								});
+					});
+		});
 	}
 }

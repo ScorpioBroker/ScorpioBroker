@@ -1340,26 +1340,27 @@ public class QueryService implements CSourceHandler {
 			if (e != null || resp.statusCode() != 200) {
 				return Uni.createFrom().item(new HashMap<>(0));
 			}
-			return ldService.expand(JsonUtils.fromString(resp.bodyAsString())).onItem()
-					.transform(expanded -> {
-						Map<String, Set<String>> result = Maps.newHashMap();
-						Object tmpObj = expanded.get(0);
-						if (tmpObj instanceof Map<?, ?> m) {
-							List<Map<String, String>> remoteTypes = (List<Map<String, String>>) m
-									.get(NGSIConstants.NGSI_LD_ATTRIBUTE_NAMES);
-							if (remoteTypes != null) {
-								for (Map<String, String> remoteType : remoteTypes) {
-									String type = remoteType.get(NGSIConstants.JSON_LD_ID);
-									Set<String> attrs = typeAttrs.get(type);
-									if (attrs != null) {
-										result.put(type, attrs);
+			return JsonUtils.fromString(resp.bodyAsString()).onItem()
+					.transformToUni(body -> ldService.expand(body).onItem()
+							.transform(expanded -> {
+								Map<String, Set<String>> result = Maps.newHashMap();
+								Object tmpObj = expanded.get(0);
+								if (tmpObj instanceof Map<?, ?> m) {
+									List<Map<String, String>> remoteTypes = (List<Map<String, String>>) m
+											.get(NGSIConstants.NGSI_LD_ATTRIBUTE_NAMES);
+									if (remoteTypes != null) {
+										for (Map<String, String> remoteType : remoteTypes) {
+											String type = remoteType.get(NGSIConstants.JSON_LD_ID);
+											Set<String> attrs = typeAttrs.get(type);
+											if (attrs != null) {
+												result.put(type, attrs);
+											}
+										}
 									}
 								}
-							}
-						}
 
-						return result;
-					});
+								return result;
+							}));
 
 		});
 	}
@@ -1370,45 +1371,46 @@ public class QueryService implements CSourceHandler {
 			if (e != null || resp.statusCode() != 200) {
 				return Uni.createFrom().item(new HashMap<>(0));
 			}
-			return ldService.expand(JsonUtils.fromString(resp.bodyAsString())).onItem()
-					.transform(expanded -> {
-						Map<String, Set<String>> result = Maps.newHashMap();
-						for (Object entry : expanded) {
-							if (entry instanceof Map<?, ?> m) {
-								String type = (String) m.get(NGSIConstants.JSON_LD_ID);
-								Set<String> attrs = typeAttrs.get(type);
-								if (attrs == null) {
-									continue;
-								}
-								List<Map<String, String>> remoteAttrs = (List<Map<String, String>>) m
-										.get(NGSIConstants.NGSI_LD_ATTRIBUTE_NAMES);
-								if (!attrs.isEmpty()) {
-									if (remoteAttrs == null) {
-										result.put(type, attrs);
-									} else {
-										Set<String> attrs2Add = Sets.newHashSet();
-										for (Map<String, String> remoteAttr : remoteAttrs) {
-											String remoteAttrEntry = remoteAttr.get(NGSIConstants.JSON_LD_ID);
-											if (attrs.contains(remoteAttrEntry)) {
+			return JsonUtils.fromString(resp.bodyAsString()).onItem()
+					.transformToUni(body -> ldService.expand(body).onItem()
+							.transform(expanded -> {
+								Map<String, Set<String>> result = Maps.newHashMap();
+								for (Object entry : expanded) {
+									if (entry instanceof Map<?, ?> m) {
+										String type = (String) m.get(NGSIConstants.JSON_LD_ID);
+										Set<String> attrs = typeAttrs.get(type);
+										if (attrs == null) {
+											continue;
+										}
+										List<Map<String, String>> remoteAttrs = (List<Map<String, String>>) m
+												.get(NGSIConstants.NGSI_LD_ATTRIBUTE_NAMES);
+										if (!attrs.isEmpty()) {
+											if (remoteAttrs == null) {
+												result.put(type, attrs);
+											} else {
+												Set<String> attrs2Add = Sets.newHashSet();
+												for (Map<String, String> remoteAttr : remoteAttrs) {
+													String remoteAttrEntry = remoteAttr.get(NGSIConstants.JSON_LD_ID);
+													if (attrs.contains(remoteAttrEntry)) {
+														attrs2Add.add(remoteAttrEntry);
+													}
+												}
+												if (!attrs2Add.isEmpty()) {
+													result.put(type, attrs2Add);
+												}
+											}
+										} else {
+											Set<String> attrs2Add = Sets.newHashSet();
+											for (Map<String, String> remoteAttr : remoteAttrs) {
+												String remoteAttrEntry = remoteAttr.get(NGSIConstants.JSON_LD_ID);
 												attrs2Add.add(remoteAttrEntry);
 											}
-										}
-										if (!attrs2Add.isEmpty()) {
 											result.put(type, attrs2Add);
 										}
 									}
-								} else {
-									Set<String> attrs2Add = Sets.newHashSet();
-									for (Map<String, String> remoteAttr : remoteAttrs) {
-										String remoteAttrEntry = remoteAttr.get(NGSIConstants.JSON_LD_ID);
-										attrs2Add.add(remoteAttrEntry);
-									}
-									result.put(type, attrs2Add);
 								}
-							}
-						}
-						return result;
-					});
+								return result;
+							}));
 
 		});
 	}
