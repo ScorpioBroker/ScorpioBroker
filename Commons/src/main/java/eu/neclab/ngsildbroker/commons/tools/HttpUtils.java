@@ -1476,7 +1476,7 @@ public final class HttpUtils {
 			}
 		}
 		if (toFrwd != null) {
-			result.putHeaders(toFrwd));
+			result.putHeaders(toFrwd);
 		}
 		if (viaHeaders != null) {
 			result.putHeader(HttpHeaders.VIA, viaHeaders.getViaHeaders());
