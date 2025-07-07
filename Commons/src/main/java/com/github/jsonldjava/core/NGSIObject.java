@@ -731,7 +731,7 @@ class NGSIObject {
 						"The key " + activeProperty + " is an invalid entry.");
 			}
 		} else if (isArray) {
-			validateArray();
+			validateArray(payloadType);
 		} else {
 			if (isLdKeyWord && parent == null && !isProperty && !isRelationship && !isGeoProperty && !isDateTime
 					&& !isLanguageProperty && !isVocabProperty && !isListProperty && !isListRelationship && !isLocalOnly
@@ -797,7 +797,7 @@ class NGSIObject {
 
 	}
 
-	private void validateArray() throws ResponseException {
+	private void validateArray(int payloadType) throws ResponseException {
 		if (isProperty && isRelationship) {
 			throw new ResponseException(ErrorType.BadRequestData,
 					"Multi value with Relationship and Property mixed is not allowed");
@@ -807,8 +807,15 @@ class NGSIObject {
 		}
 
 		if (((List<?>) element).size() != datasetIds.size()) {
-			throw new ResponseException(ErrorType.BadRequestData,
-					"Duplicated datasetId or multiple entries with no datasetId found");
+			switch (payloadType) {
+				case AppConstants.TEMP_ENTITY_RETRIEVED_PAYLOAD:
+				case AppConstants.TEMP_ENTITY_CREATE_PAYLOAD:
+					break;
+				default:
+					throw new ResponseException(ErrorType.BadRequestData,
+							"Duplicated datasetId or multiple entries with no datasetId found");
+			}
+
 		}
 	}
 
