@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -143,23 +144,26 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 	private Table<String, String, SubscriptionRequest> tenant2subscriptionId2Subscription = HashBasedTable.create();
 	private Table<String, String, SubscriptionRequest> tenant2subscriptionId2IntervalSubscription = HashBasedTable
 			.create();
-	private Map<String, SubscriptionRequest> subscriptionId2RequestGlobal = Maps.newHashMap();
-	private HashMap<String, List<SubscriptionRequest>> remoteNotifyCallbackId2SubRequest = new HashMap<String, List<SubscriptionRequest>>();
-	private HashMap<SubscriptionRemoteHost, String> subRemoteRequest2RemoteNotifyCallbackId = new HashMap<SubscriptionRemoteHost, String>();
-	private HashMap<String, Set<SubscriptionRemoteHost>> cId2RemoteHost = new HashMap<>();
+	private Map<String, SubscriptionRequest> subscriptionId2RequestGlobal = Maps.newConcurrentMap();
+	private Map<String, List<SubscriptionRequest>> remoteNotifyCallbackId2SubRequest = Maps.newConcurrentMap();
+	private Map<SubscriptionRemoteHost, String> subRemoteRequest2RemoteNotifyCallbackId = Maps.newConcurrentMap();
+	private Map<String, Set<SubscriptionRemoteHost>> cId2RemoteHost = Maps.newConcurrentMap();
 
 	private WebClient webClient;
 
-	private Map<String, MqttClient> host2MqttClient = Maps.newHashMap();
+	private Map<String, MqttClient> host2MqttClient = new ConcurrentHashMap<>();
 	private SyncService subscriptionSyncService = null;
-	
+
+	private final Object tableLock = new Object();
 
 	public Uni<Void> handleRegistryChange(CSourceBaseRequest req) {
 		return RegistrationEntry.fromRegPayload(req.getPayload(), ldService).onItem().transformToUni(regs -> {
 			List<RegistrationEntry> queryNewRegs = Lists.newArrayList();
 			List<RegistrationEntry> subscriptionNewRegs = Lists.newArrayList();
-			queryTenant2CId2RegEntries.remove(req.getTenant(), req.getId());
-			subscriptionTenant2CId2RegEntries.remove(req.getTenant(), req.getId());
+			synchronized (tableLock) {
+				queryTenant2CId2RegEntries.remove(req.getTenant(), req.getId());
+				subscriptionTenant2CId2RegEntries.remove(req.getTenant(), req.getId());
+			}
 			if (req.getRequestType() != AppConstants.DELETE_REQUEST) {
 				for (RegistrationEntry regEntry : regs) {
 					if (regEntry.retrieveEntity() || regEntry.queryEntity() || regEntry.queryBatch()) {
@@ -169,52 +173,65 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 						subscriptionNewRegs.add(regEntry);
 					}
 				}
-				queryTenant2CId2RegEntries.put(req.getTenant(), req.getId(), queryNewRegs);
-				subscriptionTenant2CId2RegEntries.put(req.getTenant(), req.getId(), subscriptionNewRegs);
+				synchronized (tableLock) {
+					queryTenant2CId2RegEntries.put(req.getTenant(), req.getId(), queryNewRegs);
+					subscriptionTenant2CId2RegEntries.put(req.getTenant(), req.getId(), subscriptionNewRegs);
+				}
 			}
 			return recheckAllSubscriptionsForRegChange(req, subscriptionNewRegs);
 		});
 	}
 
 	private Uni<Void> recheckAllSubscriptionsForRegChange(CSourceBaseRequest req,
-			Collection<RegistrationEntry> regEntries) {
+        Collection<RegistrationEntry> regEntries) {
 		List<Uni<Void>> unis = Lists.newArrayList();
 		String tenant = req.getTenant();
 		if (req.getRequestType() == AppConstants.DELETE_REQUEST) {
 			Set<SubscriptionRemoteHost> remoteHosts = cId2RemoteHost.remove(req.getId());
 			if (remoteHosts != null) {
 				remoteHosts.forEach(host -> {
-
-					Set<String> subIds = tenant2RemoteHost2SubIds.remove(tenant, host);
+					Set<String> subIds;
+					synchronized (tableLock) {
+						subIds = tenant2RemoteHost2SubIds.remove(tenant, host);
+					}
 					if (subIds != null) {
 						subIds.forEach(subId -> {
-							Set<SubscriptionRemoteHost> tmp = tenant2SubIds2RemoteHosts.get(tenant, subId);
-							tmp.remove(host);
-							if (tmp.isEmpty()) {
-								tenant2SubIds2RemoteHosts.remove(tenant, subId);
+							synchronized (tableLock) {
+								Set<SubscriptionRemoteHost> tmp = tenant2SubIds2RemoteHosts.get(tenant, subId);
+								if (tmp != null) {
+									tmp.remove(host);
+									if (tmp.isEmpty()) {
+										tenant2SubIds2RemoteHosts.remove(tenant, subId);
+									}
+								}
 							}
 						});
 					}
-					String callbackId = subRemoteRequest2RemoteNotifyCallbackId.remove(host);
-					if (callbackId != null) {
-						remoteNotifyCallbackId2SubRequest.remove(callbackId);
+					String callbackId;
+					synchronized (tableLock) {
+						callbackId = subRemoteRequest2RemoteNotifyCallbackId.remove(host);
+						if (callbackId != null) {
+							remoteNotifyCallbackId2SubRequest.remove(callbackId);
+						}
 					}
 					unis.add(SubscriptionTools.unsubsribeRemote(host, webClient));
-
 				});
 			}
 		} else {
 			Set<SubscriptionRemoteHost> remoteHosts = cId2RemoteHost.remove(req.getId());
 			if (remoteHosts != null) {
 				remoteHosts.forEach(host -> {
-					Set<String> subIds = tenant2RemoteHost2SubIds.get(tenant, host);
-					subIds.forEach(subId -> {
-						SubscriptionRequest sub = tenant2subscriptionId2Subscription.get(tenant, subId);
-						unis.add(updateRemoteSubs(sub, remoteHosts));
-					});
+					synchronized (tableLock) {
+						Set<String> subIds = tenant2RemoteHost2SubIds.get(tenant, host);
+						if (subIds != null) {
+							subIds.forEach(subId -> {
+								SubscriptionRequest sub = tenant2subscriptionId2Subscription.get(tenant, subId);
+								unis.add(updateRemoteSubs(sub, remoteHosts));
+							});
+						}
+					}
 				});
 			}
-
 		}
 		if (unis.isEmpty()) {
 			return Uni.createFrom().voidItem();
@@ -384,11 +401,15 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 						request.getSubscription().addOtherHead(NGSIConstants.TENANT_HEADER, request.getTenant());
 						request.setSendTimestamp(-1);
 						if (isIntervalSub(request)) {
-							this.tenant2subscriptionId2IntervalSubscription.put(request.getTenant(), request.getId(),
-									request);
+							synchronized (tableLock) {
+								this.tenant2subscriptionId2IntervalSubscription.put(request.getTenant(), request.getId(),
+										request);
+							}
 
 						} else {
-							this.tenant2subscriptionId2Subscription.put(request.getTenant(), request.getId(), request);
+							synchronized (tableLock) {
+								this.tenant2subscriptionId2Subscription.put(request.getTenant(), request.getId(), request);
+							}
 						}
 						subscriptionId2RequestGlobal.put(request.getId(), request);
 					} catch (Exception e) {
@@ -417,10 +438,14 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 					}
 				});
 				if (!tmpQuery.isEmpty()) {
-					queryTenant2CId2RegEntries.put(rowKey, columnKey, tmpQuery);
+					synchronized (tableLock) {
+						queryTenant2CId2RegEntries.put(rowKey, columnKey, tmpQuery);
+					}
 				}
 				if (!tmpSub.isEmpty()) {
-					subscriptionTenant2CId2RegEntries.put(rowKey, columnKey, tmpSub);
+					synchronized (tableLock) {
+						subscriptionTenant2CId2RegEntries.put(rowKey, columnKey, tmpSub);
+					}
 				}
 			});
 			return Uni.createFrom().voidItem();
@@ -463,10 +488,13 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 			request.getPayload().put(NGSIConstants.NGSI_LD_JSONLD_CONTEXT, contextList);
 			return subDAO.createSubscription(request, contextId).onItem().transformToUni(t -> {
 				if (isIntervalSub(request)) {
-					this.tenant2subscriptionId2IntervalSubscription.put(request.getTenant(), request.getId(), request);
-
+					synchronized (tableLock) {
+						tenant2subscriptionId2IntervalSubscription.put(request.getTenant(), request.getId(), request);
+					}
 				} else {
-					tenant2subscriptionId2Subscription.put(tenant, request.getId(), request);
+					synchronized (tableLock) {
+						tenant2subscriptionId2Subscription.put(tenant, request.getId(), request);
+					}
 				}
 				subscriptionId2RequestGlobal.put(request.getId(), request);
 				Uni<Void> syncService;
@@ -503,10 +531,14 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 	private Uni<Void> updateRemoteSubs(SubscriptionRequest request, ViaHeaders viaHeaders) {
 		Subscription sub = request.getSubscription();
 
-		Collection<SubscriptionRemoteHost> remoteHosts = SubscriptionTools.getRemoteSubscriptions(sub,
+		Collection<SubscriptionRemoteHost> remoteHosts;
+		synchronized (tableLock) {
+			remoteHosts = SubscriptionTools.getRemoteSubscriptions(sub,
 				sub.getEntities(), sub.getNotification().getAttrs(), sub.getLdQuery(), sub.getLdGeoQuery(),
 				sub.getScopeQuery(), sub.getLanguageQuery(),
 				subscriptionTenant2CId2RegEntries.row(request.getTenant()).values(), request.getContext(), viaHeaders);
+		}
+
 		return updateRemoteSubs(request, remoteHosts);
 	}
 
@@ -520,22 +552,25 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 		String subId = request.getSubscription().getId();
 		Set<SubscriptionRemoteHost> toStore = Sets.newHashSet();
 		remoteHosts.forEach(remoteHost -> {
-			Set<String> existingSubIds = tenant2RemoteHost2SubIds.get(tenant, remoteHosts);
-			Set<SubscriptionRemoteHost> existingRemoteHosts = tenant2SubIds2RemoteHosts.get(tenant, subId);
+			synchronized (tableLock) {
+				Set<String> existingSubIds = tenant2RemoteHost2SubIds.get(tenant, remoteHosts);
+				Set<SubscriptionRemoteHost> existingRemoteHosts = tenant2SubIds2RemoteHosts.get(tenant, subId);
 
-			if (existingSubIds == null) {
-				existingSubIds = Sets.newHashSet();
-				tenant2RemoteHost2SubIds.put(tenant, remoteHost, existingSubIds);
+				if (existingSubIds == null) {
+					existingSubIds = Sets.newHashSet();
+					tenant2RemoteHost2SubIds.put(tenant, remoteHost, existingSubIds);
+				}
+				if (existingRemoteHosts == null) {
+					existingRemoteHosts = Sets.newHashSet();
+					tenant2SubIds2RemoteHosts.put(tenant, subId, existingRemoteHosts);
+				}
+				if (!existingSubIds.contains(subId)) {
+					existingSubIds.add(subId);
+					toStore.add(remoteHost);
+				}
+				existingRemoteHosts.remove(remoteHost);
 			}
-			if (existingRemoteHosts == null) {
-				existingRemoteHosts = Sets.newHashSet();
-				tenant2SubIds2RemoteHosts.put(tenant, subId, existingRemoteHosts);
-			}
-			if (!existingSubIds.contains(subId)) {
-				existingSubIds.add(subId);
-				toStore.add(remoteHost);
-			}
-			existingRemoteHosts.remove(remoteHost);
+
 			Set<SubscriptionRemoteHost> rHosts = cId2RemoteHost.get(remoteHost.cSourceId());
 			if (rHosts == null) {
 				rHosts = Sets.newHashSet();
@@ -544,13 +579,17 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 			rHosts.add(remoteHost);
 		});
 		List<Uni<Void>> unis = Lists.newArrayList();
-		unis.add(unsubsribeRemote(tenant2SubIds2RemoteHosts.get(tenant, subId), subId));
+		synchronized (tableLock) {
+			unis.add(unsubsribeRemote(tenant2SubIds2RemoteHosts.get(tenant, subId), subId));
+		}
 		unis.add(subscribeRemote(toStore, request));
 
-		return Uni.combine().all().unis(unis).withUni(l -> {
-			tenant2SubIds2RemoteHosts.get(tenant, subId).addAll(toStore);
-			return Uni.createFrom().voidItem();
-		});
+		synchronized (tableLock) {
+			return Uni.combine().all().unis(unis).withUni(l -> {
+				tenant2SubIds2RemoteHosts.get(tenant, subId).addAll(toStore);
+				return Uni.createFrom().voidItem();
+			});
+		}
 	}
 
 	private Uni<Void> subscribeRemote(Set<SubscriptionRemoteHost> subs, SubscriptionRequest req) {
@@ -573,7 +612,6 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 		remoteNotifyCallbackId2SubRequest.put(uuid, reqList);
 		subRemoteRequest2RemoteNotifyCallbackId.put(remoteHost, uuid);
 		return uuid;
-
 	}
 
 	private Uni<Void> unsubsribeRemote(Set<SubscriptionRemoteHost> subs, String subId) {
@@ -583,11 +621,13 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 		List<Uni<Void>> unis = new ArrayList<>(subs.size());
 		subs.forEach(sub -> {
 			String tenant = sub.tenant();
-			Set<String> activeSubsForRemote = tenant2RemoteHost2SubIds.get(tenant, subId);
-			activeSubsForRemote.remove(subId);
-			if (activeSubsForRemote.isEmpty()) {
-				tenant2RemoteHost2SubIds.remove(tenant, subId);
-				unis.add(SubscriptionTools.unsubsribeRemote(sub, webClient));
+			synchronized (tableLock) {
+				Set<String> activeSubsForRemote = tenant2RemoteHost2SubIds.get(tenant, subId);
+				activeSubsForRemote.remove(subId);
+				if (activeSubsForRemote.isEmpty()) {
+					tenant2RemoteHost2SubIds.remove(tenant, subId);
+					unis.add(SubscriptionTools.unsubsribeRemote(sub, webClient));
+				}
 			}
 		});
 		return Uni.combine().all().unis(unis).withUni(l -> Uni.createFrom().voidItem());
@@ -620,15 +660,19 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 							}
 							return syncService.onItem().transformToUni(v2 -> {
 								if (isIntervalSub(updatedRequest)) {
-									tenant2subscriptionId2IntervalSubscription.put(tenant, updatedRequest.getId(),
-											updatedRequest);
-									subscriptionId2RequestGlobal.put(updatedRequest.getId(), updatedRequest);
-									tenant2subscriptionId2Subscription.remove(tenant, updatedRequest.getId());
+									synchronized (tableLock) {
+										tenant2subscriptionId2IntervalSubscription.put(tenant, updatedRequest.getId(),
+												updatedRequest);
+										subscriptionId2RequestGlobal.put(updatedRequest.getId(), updatedRequest);
+										tenant2subscriptionId2Subscription.remove(tenant, updatedRequest.getId());
+									}
 								} else {
-									tenant2subscriptionId2Subscription.put(tenant, updatedRequest.getId(),
-											updatedRequest);
-									subscriptionId2RequestGlobal.put(updatedRequest.getId(), updatedRequest);
-									tenant2subscriptionId2IntervalSubscription.remove(tenant, updatedRequest.getId());
+									synchronized (tableLock) {
+										tenant2subscriptionId2Subscription.put(tenant, updatedRequest.getId(),
+												updatedRequest);
+										subscriptionId2RequestGlobal.put(updatedRequest.getId(), updatedRequest);
+										tenant2subscriptionId2IntervalSubscription.remove(tenant, updatedRequest.getId());
+									}
 								}
 //								try {
 //									MicroServiceUtils.serializeAndSplitObjectAndEmit(updatedRequest, messageSize,
@@ -649,9 +693,11 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 	public Uni<NGSILDOperationResult> deleteSubscription(String tenant, String subscriptionId) {
 		DeleteSubscriptionRequest request = new DeleteSubscriptionRequest(tenant, subscriptionId);
 		return subDAO.deleteSubscription(request).onItem().transformToUni(t -> {
-			tenant2subscriptionId2IntervalSubscription.remove(tenant, subscriptionId);
-			tenant2subscriptionId2Subscription.remove(tenant, subscriptionId);
-			subscriptionId2RequestGlobal.remove(request.getId());
+			synchronized (tableLock) {
+				tenant2subscriptionId2IntervalSubscription.remove(tenant, subscriptionId);
+				tenant2subscriptionId2Subscription.remove(tenant, subscriptionId);
+				subscriptionId2RequestGlobal.remove(request.getId());
+			}
 			Uni<Void> syncService;
 			if (subscriptionSyncService != null) {
 				syncService = subscriptionSyncService.sync(request);
@@ -673,20 +719,25 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 	}
 
 	private Uni<Void> unsubscribeRemote(String tenant, String subscriptionId) {
-		Set<SubscriptionRemoteHost> remoteHosts = tenant2SubIds2RemoteHosts.remove(tenant, subscriptionId);
+		Set<SubscriptionRemoteHost> remoteHosts;
+		synchronized (tableLock) {
+			remoteHosts = tenant2SubIds2RemoteHosts.remove(tenant, subscriptionId);
+		}
 		// Set<String> subIds = tenant2RemoteHost2SubIds.remove(tenant, host);
 		List<Uni<Void>> unis = Lists.newArrayList();
 		if (remoteHosts != null) {
 			remoteHosts.forEach(remoteHost -> {
-				Set<String> tmp = tenant2RemoteHost2SubIds.get(tenant, remoteHost);
-				if (tmp != null) {
-					tmp.remove(subscriptionId);
-					if (tmp.isEmpty()) {
-						tenant2RemoteHost2SubIds.remove(tenant, remoteHost);
-					}
-					String callbackId = subRemoteRequest2RemoteNotifyCallbackId.remove(remoteHost);
-					if (callbackId != null) {
-						remoteNotifyCallbackId2SubRequest.remove(callbackId);
+				synchronized (tableLock) {
+					Set<String> tmp = tenant2RemoteHost2SubIds.get(tenant, remoteHost);
+					if (tmp != null) {
+						tmp.remove(subscriptionId);
+						if (tmp.isEmpty()) {
+							tenant2RemoteHost2SubIds.remove(tenant, remoteHost);
+						}
+						String callbackId = subRemoteRequest2RemoteNotifyCallbackId.remove(remoteHost);
+						if (callbackId != null) {
+							remoteNotifyCallbackId2SubRequest.remove(callbackId);
+						}
 					}
 				}
 				unis.add(SubscriptionTools.unsubsribeRemote(remoteHost, webClient));
@@ -747,13 +798,15 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 	}
 
 	public Uni<Void> handleBaseRequest(BaseRequest message) {
-		Collection<SubscriptionRequest> potentialSubs = tenant2subscriptionId2Subscription.row(message.getTenant())
-				.values();
+		Collection<SubscriptionRequest> potentialSubs;
+		synchronized (tableLock) {
+			// Copy the values to avoid concurrent modification issues
+			potentialSubs = List.copyOf(tenant2subscriptionId2Subscription.row(message.getTenant()).values());
+		}
 		return checkSubscriptions(message, potentialSubs);
 	}
 
 	public Uni<Void> checkSubscriptions(BaseRequest message, Collection<SubscriptionRequest> potentialSubs) {
-
 		List<Uni<Void>> unis = Lists.newArrayList();
 		logger.debug("checking subscriptions");
 		// logger.debug(message.toString());
@@ -1423,25 +1476,27 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 	@Scheduled(every = "${scorpio.subscription.checkinterval}", delayed = "${scorpio.startupdelay}")
 	Uni<Void> checkIntervalSubs() {
 		List<Uni<Void>> unis = Lists.newArrayList();
-		for (Cell<String, String, SubscriptionRequest> cell : tenant2subscriptionId2IntervalSubscription.cellSet()) {
-			SubscriptionRequest request = cell.getValue();
-			Subscription sub = request.getSubscription();
-			long now = System.currentTimeMillis();
-			if (sub.getNotification().getLastNotification() + sub.getTimeInterval() * 1000 < now) {
-				sub.getNotification().setLastNotification(now);
-				unis.add(queryFromSubscription(request, request.getTenant(), null, Maps.newHashMap(), Maps.newHashMap())
-						.onItem().transformToUni(queryResult -> {
-							if (queryResult == null || queryResult.isEmpty()) {
-								return Uni.createFrom().voidItem();
-							}
-							try {
-								return sendNotification(request, queryResult);
-							} catch (Exception e) {
-								logger.error("Failed to send initial notifcation", e);
-								return Uni.createFrom().voidItem();
-							}
+		synchronized (tableLock) {
+			for (Cell<String, String, SubscriptionRequest> cell : tenant2subscriptionId2IntervalSubscription.cellSet()) {
+				SubscriptionRequest request = cell.getValue();
+				Subscription sub = request.getSubscription();
+				long now = System.currentTimeMillis();
+				if (sub.getNotification().getLastNotification() + sub.getTimeInterval() * 1000 < now) {
+					sub.getNotification().setLastNotification(now);
+					unis.add(queryFromSubscription(request, request.getTenant(), null, Maps.newHashMap(), Maps.newHashMap())
+							.onItem().transformToUni(queryResult -> {
+								if (queryResult == null || queryResult.isEmpty()) {
+									return Uni.createFrom().voidItem();
+								}
+								try {
+									return sendNotification(request, queryResult);
+								} catch (Exception e) {
+									logger.error("Failed to send initial notifcation", e);
+									return Uni.createFrom().voidItem();
+								}
 
-						}));
+							}));
+				}
 			}
 		}
 		if (unis.isEmpty()) {
@@ -1736,15 +1791,19 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 	}
 
 	public Uni<Void> syncDeleteSubscription(String tenant, String subId) {
-		tenant2subscriptionId2IntervalSubscription.remove(tenant, subId);
-		tenant2subscriptionId2Subscription.remove(tenant, subId);
+		synchronized (tableLock) {
+			tenant2subscriptionId2IntervalSubscription.remove(tenant, subId);
+			tenant2subscriptionId2Subscription.remove(tenant, subId);
+		}
 		return Uni.createFrom().voidItem();
 	}
 
 	public Uni<Void> syncUpdateSubscription(String tenant, String subId) {
 		return subDAO.getSubscription(tenant, subId).onFailure().recoverWithItem(e -> {
-			tenant2subscriptionId2IntervalSubscription.remove(tenant, subId);
-			tenant2subscriptionId2Subscription.remove(tenant, subId);
+			synchronized (tableLock) {
+				tenant2subscriptionId2IntervalSubscription.remove(tenant, subId);
+				tenant2subscriptionId2Subscription.remove(tenant, subId);
+			}
 			return null;
 		}).onItem().transformToUni(rows -> {
 			if (rows == null || rows.size() == 0) {
@@ -1762,11 +1821,15 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 					request.getSubscription().addOtherHead(NGSIConstants.TENANT_HEADER, request.getTenant());
 					request.setSendTimestamp(-1);
 					if (isIntervalSub(request)) {
-						tenant2subscriptionId2IntervalSubscription.put(request.getTenant(), request.getId(), request);
-						tenant2subscriptionId2Subscription.remove(tenant, request.getId());
+						synchronized (tableLock) {
+							tenant2subscriptionId2IntervalSubscription.put(request.getTenant(), request.getId(), request);
+							tenant2subscriptionId2Subscription.remove(tenant, request.getId());
+						}
 					} else {
-						tenant2subscriptionId2Subscription.put(request.getTenant(), request.getId(), request);
-						tenant2subscriptionId2IntervalSubscription.remove(tenant, request.getId());
+						synchronized (tableLock) {
+							tenant2subscriptionId2Subscription.put(request.getTenant(), request.getId(), request);
+							tenant2subscriptionId2IntervalSubscription.remove(tenant, request.getId());
+						}
 					}
 					subscriptionId2RequestGlobal.put(request.getId(), request);
 				} catch (Exception e) {
@@ -1778,27 +1841,30 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 	}
 
 	public List<String> getAllSubscriptionIds() {
-		Set<String> tmp = Sets.newHashSet(tenant2subscriptionId2Subscription.columnKeySet());
-		tmp.addAll(tenant2subscriptionId2IntervalSubscription.columnKeySet());
-		return tmp.stream().sorted().collect(Collectors.toList());
+		synchronized (tableLock) {
+			Set<String> tmp = Sets.newHashSet(tenant2subscriptionId2Subscription.columnKeySet());
+			tmp.addAll(tenant2subscriptionId2IntervalSubscription.columnKeySet());
+			return tmp.stream().sorted().collect(Collectors.toList());
+		}
 	}
 
 	public void activateSubs(List<String> mySubs) {
-		tenant2subscriptionId2Subscription.values().forEach(t -> {
-			if (mySubs.contains(t.getId())) {
-				t.getSubscription().setActive(true);
-			} else {
-				t.getSubscription().setActive(false);
-			}
-		});
-		tenant2subscriptionId2IntervalSubscription.values().forEach(t -> {
-			if (mySubs.contains(t.getId())) {
-				t.getSubscription().setActive(true);
-			} else {
-				t.getSubscription().setActive(false);
-			}
-		});
-
+		synchronized (tableLock) {
+			tenant2subscriptionId2Subscription.values().forEach(t -> {
+				if (mySubs.contains(t.getId())) {
+					t.getSubscription().setActive(true);
+				} else {
+					t.getSubscription().setActive(false);
+				}
+			});
+			tenant2subscriptionId2IntervalSubscription.values().forEach(t -> {
+				if (mySubs.contains(t.getId())) {
+					t.getSubscription().setActive(true);
+				} else {
+					t.getSubscription().setActive(false);
+				}
+			});
+		}
 	}
 
 	public void addSyncService(SyncService subscriptionSyncService) {
@@ -1819,9 +1885,13 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 				request.setSendTimestamp(-1);
 				request.setContextId(t.getItem2());
 				if (isIntervalSub(request)) {
-					this.tenant2subscriptionId2IntervalSubscription.put(request.getTenant(), request.getId(), request);
+					synchronized (tableLock) {
+						this.tenant2subscriptionId2IntervalSubscription.put(request.getTenant(), request.getId(), request);
+					}
 				} else {
-					this.tenant2subscriptionId2Subscription.put(request.getTenant(), request.getId(), request);
+					synchronized (tableLock) {
+						this.tenant2subscriptionId2Subscription.put(request.getTenant(), request.getId(), request);
+					}
 				}
 				subscriptionId2RequestGlobal.put(request.getId(), request);
 				return Uni.createFrom().voidItem();
