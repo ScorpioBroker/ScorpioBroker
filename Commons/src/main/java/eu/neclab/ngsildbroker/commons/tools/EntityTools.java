@@ -56,6 +56,7 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple3;
+import io.vertx.mutiny.core.MultiMap;
 import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
 import io.vertx.mutiny.ext.web.client.HttpResponse;
@@ -708,13 +709,10 @@ public final class EntityTools {
 				logger.warn("failed to serialize batch request");
 				return Uni.createFrom().item(Lists.newArrayList());
 			}
-			Map<String, String> headers = new HashMap<>(remoteHost.headers().size() + 1);
-			if (!remoteHost.headers().contains(HttpHeaders.ACCEPT)) {
-				headers.put(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSON);
+			MultiMap headers = remoteHost.headers();
+			if (!headers.contains(HttpHeaders.ACCEPT)) {
+				headers.add(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSON);
 			}
-			remoteHost.headers().forEach((key, value) -> {
-				headers.put(key, value);
-			});
 
 			logger.debug("calling batch query on " + remoteHost.host());
 			logger.debug(batchString);
@@ -776,26 +774,24 @@ public final class EntityTools {
 				queryParams.put("limit", limit + "");
 				queryParams.put("offset", offset + "");
 				queryParams.put("options", "sysAttrs");
-				Map<String, String> headers = Maps.newHashMap();
+				MultiMap headers = remoteHost.headers();
 				// <https://raw.githubusercontent.com/ScorpioBroker/ScorpioBroker/new_ci/testcontext.json>;
 				// rel="http://www.w3.org/ns/json-ld#context"; type="application/ld+json"
 				if (context != null && context.getOriginalAtContext() != null
 						&& !context.getOriginalAtContext().isEmpty()) {
 					Object ctx = context.getOriginalAtContext().get(0);
 					if (ctx instanceof String ctxStr) {
-						headers.put(HttpHeaders.LINK,
+						headers.set(HttpHeaders.LINK,
 								"<" + ctxStr + ">; rel=\"" + NGSIConstants.HEADER_REL_LDCONTEXT + "\"; type=\""
 										+ AppConstants.NGB_APPLICATION_JSONLD + "\"");
 					}
 				}
-				if (!remoteHost.headers().contains(HttpHeaders.ACCEPT)) {
-					headers.put(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSON);
+
+				if (!headers.contains(HttpHeaders.ACCEPT)) {
+					headers.add(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSON);
 				}
 				logger.debug("calling query on " + remoteHost.host());
 				// logger.debug(req.queryParams().toString());
-				remoteHost.headers().forEach((key, value) -> {
-					headers.put(key, value);
-				});
 
 				unis.add(HttpUtils
 						.connect(webClient, remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT,
@@ -849,7 +845,7 @@ public final class EntityTools {
 						for (String idEntry : ids) {
 
 							Map<String, String> httpQueryParams = Maps.newHashMap();
-							Map<String, String> headers = Maps.newHashMap();
+							MultiMap headers = remoteHost.headers();
 							if (queryParams != null) {
 								for (Entry<String, Object> param : queryParams.entrySet()) {
 									HttpUtils.serializeQueryParams(httpQueryParams, param);
@@ -859,18 +855,15 @@ public final class EntityTools {
 									&& !context.getOriginalAtContext().isEmpty()) {
 								Object ctx = context.getOriginalAtContext().get(0);
 								if (ctx instanceof String ctxStr) {
-									headers.put(HttpHeaders.LINK,
+									headers.set(HttpHeaders.LINK,
 											"<" + ctxStr + ">; rel=\"" + NGSIConstants.HEADER_REL_LDCONTEXT
 													+ "\"; type=\"" + AppConstants.NGB_APPLICATION_JSONLD + "\"");
 								}
 							}
 							httpQueryParams.put("options", "sysAttrs");
-							if (!remoteHost.headers().contains(HttpHeaders.ACCEPT)) {
-								headers.put(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSON);
+							if (!headers.contains(HttpHeaders.ACCEPT)) {
+								headers.add(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSON);
 							}
-							remoteHost.headers().forEach((key, value) -> {
-								headers.put(key, value);
-							});
 
 							unis.add(
 									HttpUtils

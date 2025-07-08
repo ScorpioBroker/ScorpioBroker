@@ -1444,11 +1444,12 @@ public final class HttpUtils {
 
 	public static Uni<HttpResponse<Buffer>> connect(WebClient webClient, String url, String tenant, int method,
 			String contentType,
-			Map<String, String> queryParams, Map<String, String> headers, String body, ViaHeaders viaHeaders,
+			Map<String, String> queryParams, io.vertx.mutiny.core.MultiMap toFrwd, String body, ViaHeaders viaHeaders,
 			String sourceAlias, int timeout) {
 		if (viaHeaders != null && sourceAlias != null && viaHeaders.getHostUrls().contains(sourceAlias)) {
 			return null;
 		}
+
 		HttpRequest<Buffer> result;
 		switch (method) {
 			case AppConstants.GET_OP:
@@ -1471,25 +1472,23 @@ public final class HttpUtils {
 		}
 		if (queryParams != null) {
 			for (Entry<String, String> entry : queryParams.entrySet()) {
-				result = result.addQueryParam(entry.getKey(), entry.getValue());
+				result.addQueryParam(entry.getKey(), entry.getValue());
 			}
 		}
-		if (headers != null) {
-			for (Entry<String, String> entry : headers.entrySet()) {
-				result = result.putHeader(entry.getKey(), entry.getValue());
-			}
+		if (toFrwd != null) {
+			result.putHeaders(toFrwd);
 		}
 		if (viaHeaders != null) {
-			result = result.putHeader(HttpHeaders.VIA, viaHeaders.getViaHeaders());
+			result.putHeader(HttpHeaders.VIA, viaHeaders.getViaHeaders());
 		}
 		if (contentType != null) {
-			result = result.putHeader(HttpHeaders.CONTENT_TYPE, contentType);
+			result.putHeader(HttpHeaders.CONTENT_TYPE, contentType);
 		}
 		if (tenant != null && !tenant.equals(AppConstants.INTERNAL_NULL_KEY)) {
-			result = result.putHeader(NGSIConstants.TENANT_HEADER, tenant);
+			result.putHeader(NGSIConstants.TENANT_HEADER, tenant);
 		}
 		if (timeout != -1) {
-			result = result.timeout(timeout);
+			result.timeout(timeout);
 		}
 		if (method == AppConstants.POST_OP || method == AppConstants.PUT_OP || method == AppConstants.PATCH_OP) {
 			return result.sendBuffer(Buffer.buffer(body));

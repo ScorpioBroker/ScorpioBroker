@@ -120,11 +120,12 @@ public class EntityBatchControllerTest {
 
 		List<NGSILDOperationResult> NGSILDOperationResultList = new ArrayList<>();
 
-		NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, "urn:test:testentity1", AppConstants.INTERNAL_NULL_KEY);
+		NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.CREATE_REQUEST, "urn:test:testentity1",
+				AppConstants.INTERNAL_NULL_KEY);
 		opResult.addSuccess(new CRUDSuccess(null, null, null, Sets.newHashSet()));
 		NGSILDOperationResultList.add(opResult);
 
-		Mockito.when(entityService.createBatch(any(), any(), any(), anyBoolean(), any()))
+		Mockito.when(entityService.createBatch(any(), any(), any(), anyBoolean(), any(), any()))
 				.thenReturn(Uni.createFrom().item(NGSILDOperationResultList));
 
 		try {
@@ -152,8 +153,9 @@ public class EntityBatchControllerTest {
 
 		try {
 
-			Mockito.when(entityService.createEntity(any(), any(), any(), any())).thenReturn(Uni.createFrom()
-					.item(new NGSILDOperationResult(AppConstants.CREATE_REQUEST, "urn:test:testentity1", AppConstants.INTERNAL_NULL_KEY)));
+			Mockito.when(entityService.createEntity(any(), any(), any(), any(), any())).thenReturn(Uni.createFrom()
+					.item(new NGSILDOperationResult(AppConstants.CREATE_REQUEST, "urn:test:testentity1",
+							AppConstants.INTERNAL_NULL_KEY)));
 
 			ExtractableResponse<Response> response = RestAssured.given().body(badRequestPayload)
 					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
@@ -178,12 +180,13 @@ public class EntityBatchControllerTest {
 
 		List<NGSILDOperationResult> NGSILDOperationResultList = new ArrayList<>();
 
-		NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.UPSERT_REQUEST, "urn:test:testentity1", AppConstants.INTERNAL_NULL_KEY);
+		NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.UPSERT_REQUEST, "urn:test:testentity1",
+				AppConstants.INTERNAL_NULL_KEY);
 		opResult.addSuccess(new CRUDSuccess(null, null, null, Sets.newHashSet()));
 		opResult.setWasUpdated(true);
 		NGSILDOperationResultList.add(opResult);
 
-		Mockito.when(entityService.appendBatch(any(), any(), any(), anyBoolean(),anyBoolean(), any()))
+		Mockito.when(entityService.appendBatch(any(), any(), any(), anyBoolean(), anyBoolean(), any(), any()))
 				.thenReturn(Uni.createFrom().item(NGSILDOperationResultList));
 
 		try {
@@ -234,12 +237,13 @@ public class EntityBatchControllerTest {
 
 		List<NGSILDOperationResult> NGSILDOperationResultList = new ArrayList<>();
 
-		NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.UPSERT_REQUEST, "urn:test:testentity1", AppConstants.INTERNAL_NULL_KEY);
+		NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.UPSERT_REQUEST, "urn:test:testentity1",
+				AppConstants.INTERNAL_NULL_KEY);
 		opResult.addSuccess(new CRUDSuccess(null, null, null, Sets.newHashSet()));
 		opResult.setWasUpdated(true);
 		NGSILDOperationResultList.add(opResult);
 
-		Mockito.when(entityService.upsertBatch(any(), any(), any(), anyBoolean(), anyBoolean(), any()))
+		Mockito.when(entityService.upsertBatch(any(), any(), any(), anyBoolean(), anyBoolean(), any(), any()))
 				.thenReturn(Uni.createFrom().item(NGSILDOperationResultList));
 
 		try {
@@ -289,12 +293,13 @@ public class EntityBatchControllerTest {
 
 		List<NGSILDOperationResult> NGSILDOperationResultList = new ArrayList<>();
 
-		NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.DELETE_REQUEST, "urn:test:testentity1", AppConstants.INTERNAL_NULL_KEY);
+		NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.DELETE_REQUEST, "urn:test:testentity1",
+				AppConstants.INTERNAL_NULL_KEY);
 		opResult.addSuccess(new CRUDSuccess(null, null, null, Sets.newHashSet()));
 		opResult.setWasUpdated(true);
 		NGSILDOperationResultList.add(opResult);
 
-		Mockito.when(entityService.deleteBatch(any(), any(), anyBoolean(), any()))
+		Mockito.when(entityService.deleteBatch(any(), any(), anyBoolean(), any(), any()))
 				.thenReturn(Uni.createFrom().item(NGSILDOperationResultList));
 
 		try {
@@ -328,7 +333,7 @@ public class EntityBatchControllerTest {
 			opResult.addFailure(new ResponseException(ErrorType.InvalidRequest, ""));
 			NGSILDOperationResultList.add(opResult);
 
-			Mockito.when(entityService.deleteBatch(any(), any(), anyBoolean(), any()))
+			Mockito.when(entityService.deleteBatch(any(), any(), anyBoolean(), any(), any()))
 					.thenReturn(Uni.createFrom().item(NGSILDOperationResultList));
 
 			ExtractableResponse<Response> response = RestAssured.given().body(BadRequestDeletePayload)

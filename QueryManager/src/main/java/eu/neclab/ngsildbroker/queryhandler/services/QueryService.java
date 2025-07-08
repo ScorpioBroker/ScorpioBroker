@@ -1247,7 +1247,7 @@ public class QueryService implements CSourceHandler {
 			io.vertx.core.MultiMap headersFromReq,
 			boolean details, boolean bbox, ViaHeaders viaHeaders) {
 		Uni<Map<String, Set<String>>> local;
-		if (localOnly) {
+		if (details) {
 			local = queryDAO.getTypes(tenant);
 		} else {
 			local = queryDAO.getTypesWithDetails(tenant);
@@ -1275,6 +1275,9 @@ public class QueryService implements CSourceHandler {
 							results.add(Uni.createFrom().item(typeAttrs));
 						}
 					});
+					if (results.isEmpty()) {
+						return Uni.createFrom().item(Maps.newHashMap());
+					}
 					return Uni.combine().all().unis(results).with(l -> {
 						Map<String, Set<String>> result = Maps.newHashMap();
 						l.forEach(obj -> {
@@ -1333,79 +1336,81 @@ public class QueryService implements CSourceHandler {
 
 	private Uni<Map<String, Set<String>>> getRemoteTypes(Uni<HttpResponse<Buffer>> webClientConnection,
 			Map<String, Set<String>> typeAttrs) {
-		return webClientConnection.onItem().transformToUni(resp -> {
-			if (resp.statusCode() != 200) {
+		return webClientConnection.onItemOrFailure().transformToUni((resp, e) -> {
+			if (e != null || resp.statusCode() != 200) {
 				return Uni.createFrom().item(new HashMap<>(0));
 			}
-			return ldService.expand(JsonUtils.fromString(resp.bodyAsString())).onItem()
-					.transform(expanded -> {
-						Map<String, Set<String>> result = Maps.newHashMap();
-						Object tmpObj = expanded.get(0);
-						if (tmpObj instanceof Map<?, ?> m) {
-							List<Map<String, String>> remoteTypes = (List<Map<String, String>>) m
-									.get(NGSIConstants.NGSI_LD_ATTRIBUTE_NAMES);
-							if (remoteTypes != null) {
-								for (Map<String, String> remoteType : remoteTypes) {
-									String type = remoteType.get(NGSIConstants.JSON_LD_ID);
-									Set<String> attrs = typeAttrs.get(type);
-									if (attrs != null) {
-										result.put(type, attrs);
+			return JsonUtils.fromString(resp.bodyAsString()).onItem()
+					.transformToUni(body -> ldService.expand(body).onItem()
+							.transform(expanded -> {
+								Map<String, Set<String>> result = Maps.newHashMap();
+								Object tmpObj = expanded.get(0);
+								if (tmpObj instanceof Map<?, ?> m) {
+									List<Map<String, String>> remoteTypes = (List<Map<String, String>>) m
+											.get(NGSIConstants.NGSI_LD_ATTRIBUTE_NAMES);
+									if (remoteTypes != null) {
+										for (Map<String, String> remoteType : remoteTypes) {
+											String type = remoteType.get(NGSIConstants.JSON_LD_ID);
+											Set<String> attrs = typeAttrs.get(type);
+											if (attrs != null) {
+												result.put(type, attrs);
+											}
+										}
 									}
 								}
-							}
-						}
 
-						return result;
-					});
+								return result;
+							}));
 
 		});
 	}
 
 	private Uni<Map<String, Set<String>>> getRemoteTypesWithDetails(Uni<HttpResponse<Buffer>> webClientConnection,
 			Map<String, Set<String>> typeAttrs) {
-		return webClientConnection.onItem().transformToUni(resp -> {
-			if (resp.statusCode() != 200) {
+		return webClientConnection.onItemOrFailure().transformToUni((resp, e) -> {
+			if (e != null || resp.statusCode() != 200) {
 				return Uni.createFrom().item(new HashMap<>(0));
 			}
-			return ldService.expand(JsonUtils.fromString(resp.bodyAsString())).onItem()
-					.transform(expanded -> {
-						Map<String, Set<String>> result = Maps.newHashMap();
-						for (Object entry : expanded) {
-							if (entry instanceof Map<?, ?> m) {
-								String type = (String) m.get(NGSIConstants.JSON_LD_ID);
-								Set<String> attrs = typeAttrs.get(type);
-								if (attrs == null) {
-									continue;
-								}
-								List<Map<String, String>> remoteAttrs = (List<Map<String, String>>) m
-										.get(NGSIConstants.NGSI_LD_ATTRIBUTE_NAMES);
-								if (!attrs.isEmpty()) {
-									if (remoteAttrs == null) {
-										result.put(type, attrs);
-									} else {
-										Set<String> attrs2Add = Sets.newHashSet();
-										for (Map<String, String> remoteAttr : remoteAttrs) {
-											String remoteAttrEntry = remoteAttr.get(NGSIConstants.JSON_LD_ID);
-											if (attrs.contains(remoteAttrEntry)) {
+			return JsonUtils.fromString(resp.bodyAsString()).onItem()
+					.transformToUni(body -> ldService.expand(body).onItem()
+							.transform(expanded -> {
+								Map<String, Set<String>> result = Maps.newHashMap();
+								for (Object entry : expanded) {
+									if (entry instanceof Map<?, ?> m) {
+										String type = (String) m.get(NGSIConstants.JSON_LD_ID);
+										Set<String> attrs = typeAttrs.get(type);
+										if (attrs == null) {
+											continue;
+										}
+										List<Map<String, String>> remoteAttrs = (List<Map<String, String>>) m
+												.get(NGSIConstants.NGSI_LD_ATTRIBUTE_NAMES);
+										if (!attrs.isEmpty()) {
+											if (remoteAttrs == null) {
+												result.put(type, attrs);
+											} else {
+												Set<String> attrs2Add = Sets.newHashSet();
+												for (Map<String, String> remoteAttr : remoteAttrs) {
+													String remoteAttrEntry = remoteAttr.get(NGSIConstants.JSON_LD_ID);
+													if (attrs.contains(remoteAttrEntry)) {
+														attrs2Add.add(remoteAttrEntry);
+													}
+												}
+												if (!attrs2Add.isEmpty()) {
+													result.put(type, attrs2Add);
+												}
+											}
+										} else {
+											Set<String> attrs2Add = Sets.newHashSet();
+											for (Map<String, String> remoteAttr : remoteAttrs) {
+												String remoteAttrEntry = remoteAttr.get(NGSIConstants.JSON_LD_ID);
 												attrs2Add.add(remoteAttrEntry);
 											}
-										}
-										if (!attrs2Add.isEmpty()) {
 											result.put(type, attrs2Add);
 										}
 									}
-								} else {
-									Set<String> attrs2Add = Sets.newHashSet();
-									for (Map<String, String> remoteAttr : remoteAttrs) {
-										String remoteAttrEntry = remoteAttr.get(NGSIConstants.JSON_LD_ID);
-										attrs2Add.add(remoteAttrEntry);
-									}
-									result.put(type, attrs2Add);
 								}
-							}
-						}
-						return result;
-					});
+								return result;
+							}));
 
 		});
 	}
