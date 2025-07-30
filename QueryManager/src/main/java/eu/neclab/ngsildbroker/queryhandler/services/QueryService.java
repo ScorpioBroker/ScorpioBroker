@@ -1908,28 +1908,35 @@ public class QueryService implements CSourceHandler {
 							HttpRequest<Buffer> req = webClient
 									.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITY_MAP_ENDPOINT)
 									.timeout(timeout);
+							Map<String, String> queryParams = Maps.newHashMap();
+
 							if (id != null) {
-								req = req.setQueryParam(NGSIConstants.ID, id);
+								queryParams.put(NGSIConstants.ID, id);
 							}
 							if (type != null) {
-								req = req.setQueryParam(NGSIConstants.TYPE, type);
+								queryParams.put(NGSIConstants.TYPE, type);
 							}
 							if (idPattern != null) {
-								req = req.setQueryParam(NGSIConstants.QUERY_PARAMETER_IDPATTERN, idPattern);
+								queryParams.put(NGSIConstants.QUERY_PARAMETER_IDPATTERN, idPattern);
 							}
 							for (Entry<String, Object> param : remoteHost.getQueryParam().entrySet()) {
-								req = HttpUtils.serializeQueryParams(req, param);
+								HttpUtils.serializeQueryParams(queryParams, param);
 							}
-							req = req.putHeader(HttpHeaders.VIA, remoteHost.getViaHeaders().getViaHeaders());
+
 							// todo check how to solve this proper once and for all
 							Context contextTBU = remoteHost.context();
 							List<String> ogAtContext = contextTBU.getOriginalAtContext();
 							if (ogAtContext != null && !ogAtContext.isEmpty()) {
-								req = req.putHeader(HttpHeaders.LINK, "<" + ogAtContext.get(0)
+								queryParams.put(HttpHeaders.LINK, "<" + ogAtContext.get(0)
 										+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
 							}
-							req = req.putHeader(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSON);
-							unisForEntityMapRetrieval.add(req.putHeaders(remoteHost.headers()).timeout(timeout).send()
+							queryParams.put(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSON);
+
+							unisForEntityMapRetrieval.add(HttpUtils
+									.connect(webClient, remoteHost.host() + NGSIConstants.NGSI_LD_ENTITY_MAP_ENDPOINT,
+											tenant, AppConstants.GET_OP, null, queryParams, remoteHost.headers(), null,
+											viaHeaders,
+											remoteHost.getSourceAlias(), timeout)
 									.onItem().transform(response -> {
 										Map<String, Object> result;
 										if (response != null && response.statusCode() == 200) {
