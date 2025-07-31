@@ -1313,6 +1313,7 @@ public class QueryService implements CSourceHandler {
 						for (String attr : attrs) {
 							attrList.add(Map.of(NGSIConstants.JSON_LD_ID, attr));
 						}
+						tmp.put(NGSIConstants.NGSI_LD_ATTRIBUTE_NAMES, attrList);
 						result.add(tmp);
 					});
 				});
