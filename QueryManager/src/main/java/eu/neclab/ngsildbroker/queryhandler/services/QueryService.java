@@ -1247,7 +1247,7 @@ public class QueryService implements CSourceHandler {
 			io.vertx.core.MultiMap headersFromReq,
 			boolean details, boolean bbox, ViaHeaders viaHeaders) {
 		Uni<Map<String, Set<String>>> local;
-		if (details) {
+		if (!details) {
 			local = queryDAO.getTypes(tenant);
 		} else {
 			local = queryDAO.getTypesWithDetails(tenant);

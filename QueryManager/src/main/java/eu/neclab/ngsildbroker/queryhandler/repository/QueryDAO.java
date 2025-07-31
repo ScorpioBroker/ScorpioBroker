@@ -1658,20 +1658,33 @@ public class QueryDAO {
 
 	public Uni<Map<String, Set<String>>> getTypesWithDetails(String tenantId) {
 		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
-			String sql = "SELECT DISTINCT myTypes, array_agg(myAttr) from entity, jsonb_array_elements(ENTITY -> '@type') as myTypes, jsonb_object_keys((ENTITY - ARRAY['"
-					+ NGSIConstants.JSON_LD_TYPE + "', '" + NGSIConstants.JSON_LD_ID + "', '"
-					+ NGSIConstants.NGSI_LD_CREATED_AT + "','" + NGSIConstants.NGSI_LD_MODIFIED_AT
-					+ "'])) as myAttr group by myTypes";
+			String sql = "SELECT DISTINCT unnest(e_types), jsonb_object_keys(ENTITY) from entity;";
 			return client.preparedQuery(
 					sql)
 					.execute().onItem().transform(rows -> {
-						Map<String, Set<String>> result = new HashMap<>(rows.size());
-						rows.forEach(row -> {
-							result.put(row.getString(0), Sets.newHashSet(row.getArrayOfStrings(1)));
-						});
+						Map<String, Set<String>> result = new HashMap<>();
+						Set<String> attrs = Sets.newHashSet();
+						RowIterator<Row> it = rows.iterator();
+						while (it.hasNext()) {
+							Row row = it.next();
+							String type = row.getString(0);
+							attrs.add(row.getString(1));
+							if (type != null) {
+								result.put(type, attrs);
+								attrs = Sets.newHashSet();
+							}
+						}
 						return result;
 					});
 		});
+	}
+
+	public static void main(String[] args) {
+		String sql = "SELECT DISTINCT myTypes, array_agg(myAttr) from entity, jsonb_array_elements(ENTITY -> '@type') as myTypes, jsonb_object_keys((ENTITY - ARRAY['"
+				+ NGSIConstants.JSON_LD_TYPE + "', '" + NGSIConstants.JSON_LD_ID + "', '"
+				+ NGSIConstants.NGSI_LD_CREATED_AT + "','" + NGSIConstants.NGSI_LD_MODIFIED_AT
+				+ "'])) as myAttr group by myTypes";
+		System.out.println(sql);
 	}
 
 }
