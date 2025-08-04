@@ -1594,8 +1594,8 @@ public class QueryDAO {
 						// a.ID, D0.ENTITY, D0.PARENT, D0.E_TYPES, D0.SIZE, a.remote_query, a.csourceid
 						String id = row.getString(0);
 						JsonObject entityObj = row.getJsonObject(1);
-						int size = row.getInteger(4);
-						entityMap.setManualSize(size);
+						Integer size = row.getInteger(4);
+						entityMap.addEntry(id, NGSIConstants.JSON_LD_NONE, null);
 						if (entityObj != null) {
 							Map<String, Object> entity = entityObj.getMap();
 							entityCache.setEntityIntoEntityCache(id, entity, NGSIConstants.JSON_LD_NONE);
@@ -1610,6 +1610,9 @@ public class QueryDAO {
 								dataSetIdTerm.calculateEntity(entity);
 							}
 						}
+						if (size != null) {
+							entityMap.setManualSize(size);
+						}
 					}
 				} else {
 					while (it.hasNext()) {
@@ -1617,7 +1620,7 @@ public class QueryDAO {
 						// a.ID, D0.ENTITY, D0.PARENT, D0.E_TYPES, D0.SIZE, a.remote_query, a.csourceid
 						String id = row.getString(0);
 						JsonObject entityObj = row.getJsonObject(1);
-
+						boolean parent = row.getBoolean(2);
 						String csourceId = row.getString(6);
 						String remoteQuery = row.getString(7);
 
@@ -1632,10 +1635,12 @@ public class QueryDAO {
 								continue;
 							}
 						}
-						entityMap.addEntry(id, csourceId, queryRemoteHost);
+						if (parent) {
+							entityMap.addEntry(id, csourceId, queryRemoteHost);
+						}
 						if (entityObj != null) {
 							Map<String, Object> entity = entityObj.getMap();
-							entityCache.setEntityIntoEntityCache(id, entity, NGSIConstants.JSON_LD_NONE);
+							entityCache.setEntityIntoEntityCache(id, entity, csourceId);
 						}
 					}
 				}

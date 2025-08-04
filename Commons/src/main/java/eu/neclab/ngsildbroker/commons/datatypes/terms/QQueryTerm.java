@@ -178,7 +178,7 @@ public class QQueryTerm implements Serializable {
 
 	@SuppressWarnings("unchecked")
 	private Object getElemByPath(Object entity, String[] path, int index, String operant) {
-		
+
 		if (entity == null || index >= path.length) {
 			if (entity instanceof List<?> list && list.get(0) instanceof Map<?, ?> map) {
 				if (map.containsKey(NGSIConstants.NGSI_LD_HAS_VALUE)) {
@@ -256,7 +256,7 @@ public class QQueryTerm implements Serializable {
 			Set<String> jsonKeys) {
 
 		boolean finalReturnValue = false;
-//        if (!attribute.matches(URI) && attribute.contains(".")) {
+		// if (!attribute.matches(URI) && attribute.contains(".")) {
 
 		String[] splittedAttrib = attribute.split("[\\[\\].]");
 		List<String> doNotExpandAttrs = new ArrayList<>();
@@ -296,17 +296,17 @@ public class QQueryTerm implements Serializable {
 			String[] range = operant.split("\\.\\.");
 
 			switch (operator) {
-			case "==":
+				case "==":
 
-				if (compare(range[0], value, operator) >= 0 && compare(range[1], value, operator) <= 0) {
-					return true;
-				}
-				break;
-			case "!=":
-				if (compare(range[0], value, operator) <= 0 && compare(range[1], value, operator) >= 0) {
-					return true;
-				}
-				break;
+					if (compare(range[0], value, operator) >= 0 && compare(range[1], value, operator) <= 0) {
+						return true;
+					}
+					break;
+				case "!=":
+					if (compare(range[0], value, operator) <= 0 && compare(range[1], value, operator) >= 0) {
+						return true;
+					}
+					break;
 			}
 
 			return false;
@@ -319,79 +319,79 @@ public class QQueryTerm implements Serializable {
 			@SuppressWarnings("unchecked") // check above
 			List<Object> myList = (List<Object>) value;
 			return switch (operator) {
-			case "!=" -> {
-				for (String listOperant : listOfOperants) {
-					if (myList.contains(listOperant)) {
-						yield false;
+				case "!=" -> {
+					for (String listOperant : listOfOperants) {
+						if (myList.contains(listOperant)) {
+							yield false;
+						}
 					}
+					yield true;
 				}
-				yield true;
-			}
-			case "==" -> {
-				for (String listOperant : listOfOperants) {
-					if (myList.contains(listOperant)) {
-						yield true;
+				case "==" -> {
+					for (String listOperant : listOfOperants) {
+						if (myList.contains(listOperant)) {
+							yield true;
+						}
 					}
+					yield false;
 				}
-				yield false;
-			}
-			default -> false;
+				default -> false;
 			};
 		} else {
 			switch (operator) {
-			case "==":
-				if (value instanceof List<?> l) {
-					return listContains(l, operant);
-				}
-				if (operant.equals(value.toString())) {
-					return true;
-				}
-				break;
-			case "!=":
-				finalReturnValue = true;
-				if (value instanceof List<?> l) {
-					return !listContains(l, operant);
-				}
-				if (operant.equals(value.toString())) {
-					return false;
-				}
-				break;
-			case ">=":
+				case "==":
+					if (value instanceof List<?> l) {
+						return listContains(l, operant);
+					}
+					if (operant.equals(value.toString())) {
+						return true;
+					}
+					break;
+				case "!=":
+					finalReturnValue = true;
+					if (value instanceof List<?> l) {
+						return !listContains(l, operant);
+					}
+					if (operant.equals(value.toString())) {
+						return false;
+					}
+					break;
+				case ">=":
 
-				if (compare(operant, value, operator) >= 0) {
-					return true;
-				}
-				break;
-			case "<=":
-				if (compare(operant, value, operator) <= 0) {
-					return true;
-				}
-				break;
-			case ">":
-				if (compare(operant, value, operator) > 0) {
-					return true;
-				}
-				break;
-			case "<":
-				if (compare(operant, value, operator) < 0) {
-					return true;
-				}
-				break;
-			case "~=":
-				if (value.toString().matches(operant)) {
-					return true;
-				}
-				break;
-			case "!~=":
-				finalReturnValue = true;
-				if (value.toString().matches(operant)) {
-					return false;
-				}
-				break;
+					if (compare(operant, value, operator) >= 0) {
+						return true;
+					}
+					break;
+				case "<=":
+					if (compare(operant, value, operator) <= 0) {
+						return true;
+					}
+					break;
+				case ">":
+					if (compare(operant, value, operator) > 0) {
+						return true;
+					}
+					break;
+				case "<":
+					if (compare(operant, value, operator) < 0) {
+						return true;
+					}
+					break;
+				case "~=":
+					if (value.toString().matches(operant)) {
+						return true;
+					}
+					break;
+				case "!~=":
+					finalReturnValue = true;
+					if (value.toString().matches(operant)) {
+						return false;
+					}
+					break;
 			}
 
 		}
-//        }
+		// }
 		return finalReturnValue;
 	}
 
@@ -452,33 +452,33 @@ public class QQueryTerm implements Serializable {
 				while (it.hasNext()) {
 					BaseEntry next = (BaseEntry) it.next();
 					switch (index) {
-					case 0:
-						// NGSI_LD_CREATED_AT
-						value = next.getCreatedAt();
-						break;
-					case 1:
-						// NGSI_LD_OBSERVED_AT
-						value = next.getObservedAt();
-						break;
-					case 2:
-						// NGSI_LD_MODIFIED_AT
-						value = next.getModifiedAt();
-						break;
-					case 3:
-						// NGSI_LD_DATA_SET_ID
-						value = next.getCreatedAt();
-					case 4:
-						// NGSI_LD_UNIT_CODE
-						if (next instanceof PropertyEntry) {
-							value = ((PropertyEntry) next).getUnitCode();
-						}
-					default:
+						case 0:
+							// NGSI_LD_CREATED_AT
+							value = next.getCreatedAt();
+							break;
+						case 1:
+							// NGSI_LD_OBSERVED_AT
+							value = next.getObservedAt();
+							break;
+						case 2:
+							// NGSI_LD_MODIFIED_AT
+							value = next.getModifiedAt();
+							break;
+						case 3:
+							// NGSI_LD_DATA_SET_ID
+							value = next.getCreatedAt();
+						case 4:
+							// NGSI_LD_UNIT_CODE
+							if (next instanceof PropertyEntry) {
+								value = ((PropertyEntry) next).getUnitCode();
+							}
+						default:
 
-						value = getValue(next);
-						if (compound != null) {
-							value = getCompoundValue(value, compound);
-						}
-						break;
+							value = getValue(next);
+							if (compound != null) {
+								value = getCompoundValue(value, compound);
+							}
+							break;
 					}
 					if (value == null) {
 						break;
@@ -495,17 +495,19 @@ public class QQueryTerm implements Serializable {
 						String[] range = operant.split("\\.\\.");
 
 						switch (operator) {
-						case "==":
+							case "==":
 
-							if (compare(range[0], value, operator) >= 0 && compare(range[1], value, operator) <= 0) {
-								return true;
-							}
-							break;
-						case "!=":
-							if (compare(range[0], value, operator) <= 0 && compare(range[1], value, operator) >= 0) {
-								return true;
-							}
-							break;
+								if (compare(range[0], value, operator) >= 0
+										&& compare(range[1], value, operator) <= 0) {
+									return true;
+								}
+								break;
+							case "!=":
+								if (compare(range[0], value, operator) <= 0
+										&& compare(range[1], value, operator) >= 0) {
+									return true;
+								}
+								break;
 						}
 
 						return false;
@@ -518,74 +520,74 @@ public class QQueryTerm implements Serializable {
 						@SuppressWarnings("unchecked") // check above
 						List<Object> myList = (List<Object>) value;
 						switch (operator) {
-						case "!=":
-							for (String listOperant : listOfOperants) {
-								if (myList.contains(listOperant)) {
-									return false;
+							case "!=":
+								for (String listOperant : listOfOperants) {
+									if (myList.contains(listOperant)) {
+										return false;
+									}
 								}
-							}
-							return true;
-						case "==":
-							for (String listOperant : listOfOperants) {
-								if (myList.contains(listOperant)) {
-									return true;
+								return true;
+							case "==":
+								for (String listOperant : listOfOperants) {
+									if (myList.contains(listOperant)) {
+										return true;
+									}
 								}
-							}
-							return false;
-						default:
-							return false;
+								return false;
+							default:
+								return false;
 						}
 					} else {
 						switch (operator) {
-						case "==":
-							if (value instanceof List) {
-								return listContains((List) value, operant);
-							}
-							if (operant.equals(value.toString())) {
-								return true;
-							}
-							break;
-						case "!=":
-							finalReturnValue = true;
-							if (value instanceof List) {
-								return !listContains((List) value, operant);
-							}
-							if (operant.equals(value.toString())) {
-								return false;
-							}
-							break;
-						case ">=":
+							case "==":
+								if (value instanceof List) {
+									return listContains((List) value, operant);
+								}
+								if (operant.equals(value.toString())) {
+									return true;
+								}
+								break;
+							case "!=":
+								finalReturnValue = true;
+								if (value instanceof List) {
+									return !listContains((List) value, operant);
+								}
+								if (operant.equals(value.toString())) {
+									return false;
+								}
+								break;
+							case ">=":
 
-							if (compare(operant, value, operator) >= 0) {
-								return true;
-							}
-							break;
-						case "<=":
-							if (compare(operant, value, operator) <= 0) {
-								return true;
-							}
-							break;
-						case ">":
-							if (compare(operant, value, operator) > 0) {
-								return true;
-							}
-							break;
-						case "<":
-							if (compare(operant, value, operator) < 0) {
-								return true;
-							}
-							break;
-						case "~=":
-							if (value.toString().matches(operant)) {
-								return true;
-							}
-							break;
-						case "!~=":
-							finalReturnValue = true;
-							if (value.toString().matches(operant)) {
-								return false;
-							}
-							break;
+								if (compare(operant, value, operator) >= 0) {
+									return true;
+								}
+								break;
+							case "<=":
+								if (compare(operant, value, operator) <= 0) {
+									return true;
+								}
+								break;
+							case ">":
+								if (compare(operant, value, operator) > 0) {
+									return true;
+								}
+								break;
+							case "<":
+								if (compare(operant, value, operator) < 0) {
+									return true;
+								}
+								break;
+							case "~=":
+								if (value.toString().matches(operant)) {
+									return true;
+								}
+								break;
+							case "!~=":
+								finalReturnValue = true;
+								if (value.toString().matches(operant)) {
+									return false;
+								}
+								break;
 						}
 
 					}
@@ -606,48 +608,48 @@ public class QQueryTerm implements Serializable {
 				r = compare(operant, obj, operator);
 				boolean found = false;
 				switch (operator) {
-				case "==":
-					if (r == 0) {
-						found = true;
-					}
-					break;
-				case "!=":
-					if (r != 0) {
-						found = true;
-					}
-					break;
-				case ">=":
-					if (r >= 0) {
-						found = true;
-					}
-					break;
-				case "<=":
-					if (r <= 0) {
-						found = true;
-					}
-					break;
-				case ">":
-					if (r > 0) {
-						found = true;
-					}
-					break;
-				case "<":
-					if (r < 0) {
-						found = true;
-					}
-					break;
-				case "~=":
-					if (obj.toString().matches(operant)) {
-						found = true;
-						r = 0;
-					}
-					break;
-				case "!~=":
-					if (!obj.toString().matches(operant)) {
-						found = true;
-						r = -1;
-					}
-					break;
+					case "==":
+						if (r == 0) {
+							found = true;
+						}
+						break;
+					case "!=":
+						if (r != 0) {
+							found = true;
+						}
+						break;
+					case ">=":
+						if (r >= 0) {
+							found = true;
+						}
+						break;
+					case "<=":
+						if (r <= 0) {
+							found = true;
+						}
+						break;
+					case ">":
+						if (r > 0) {
+							found = true;
+						}
+						break;
+					case "<":
+						if (r < 0) {
+							found = true;
+						}
+						break;
+					case "~=":
+						if (obj.toString().matches(operant)) {
+							found = true;
+							r = 0;
+						}
+						break;
+					case "!~=":
+						if (!obj.toString().matches(operant)) {
+							found = true;
+							r = -1;
+						}
+						break;
 				}
 				if (found) {
 					return r;
@@ -827,36 +829,36 @@ public class QQueryTerm implements Serializable {
 			this.operant = operant;
 		}
 		switch (operator) {
-		case NGSIConstants.QUERY_GREATEREQ:
-			if (operant.matches(LIST) || operant.matches(RANGE)) {
-				throw new ResponseException(ErrorType.BadRequestData, "invalid operant for greater equal");
-			}
-			break;
-		case NGSIConstants.QUERY_LESSEQ:
-			if (operant.matches(LIST) || operant.matches(RANGE)) {
-				throw new ResponseException(ErrorType.BadRequestData, "invalid operant for less equal");
-			}
-			break;
-		case NGSIConstants.QUERY_GREATER:
-			if (operant.matches(LIST) || operant.matches(RANGE)) {
-				throw new ResponseException(ErrorType.BadRequestData, "invalid operant for greater");
-			}
-			break;
-		case NGSIConstants.QUERY_LESS:
-			if (operant.matches(LIST) || operant.matches(RANGE)) {
-				throw new ResponseException(ErrorType.BadRequestData, "invalid operant for less");
-			}
-			break;
-		case NGSIConstants.QUERY_PATTERNOP:
-			if (operant.matches(LIST) || operant.matches(RANGE)) {
-				throw new ResponseException(ErrorType.BadRequestData, "invalid operant for pattern operation");
-			}
-			break;
-		case NGSIConstants.QUERY_NOTPATTERNOP:
-			if (operant.matches(LIST) || operant.matches(RANGE)) {
-				throw new ResponseException(ErrorType.BadRequestData, "invalid operant for not pattern operation");
-			}
-			break;
+			case NGSIConstants.QUERY_GREATEREQ:
+				if (operant.matches(LIST) || operant.matches(RANGE)) {
+					throw new ResponseException(ErrorType.BadRequestData, "invalid operant for greater equal");
+				}
+				break;
+			case NGSIConstants.QUERY_LESSEQ:
+				if (operant.matches(LIST) || operant.matches(RANGE)) {
+					throw new ResponseException(ErrorType.BadRequestData, "invalid operant for less equal");
+				}
+				break;
+			case NGSIConstants.QUERY_GREATER:
+				if (operant.matches(LIST) || operant.matches(RANGE)) {
+					throw new ResponseException(ErrorType.BadRequestData, "invalid operant for greater");
+				}
+				break;
+			case NGSIConstants.QUERY_LESS:
+				if (operant.matches(LIST) || operant.matches(RANGE)) {
+					throw new ResponseException(ErrorType.BadRequestData, "invalid operant for less");
+				}
+				break;
+			case NGSIConstants.QUERY_PATTERNOP:
+				if (operant.matches(LIST) || operant.matches(RANGE)) {
+					throw new ResponseException(ErrorType.BadRequestData, "invalid operant for pattern operation");
+				}
+				break;
+			case NGSIConstants.QUERY_NOTPATTERNOP:
+				if (operant.matches(LIST) || operant.matches(RANGE)) {
+					throw new ResponseException(ErrorType.BadRequestData, "invalid operant for not pattern operation");
+				}
+				break;
 		}
 
 	}
@@ -939,9 +941,8 @@ public class QQueryTerm implements Serializable {
 		return equals(obj, false);
 	}
 
-	private int getAttribQuery(StringBuilder result, int dollarCount, Tuple tuple, boolean isDist, boolean localOnly) {
-		result.append("ENTITY ? $");
-		result.append(dollarCount);
+	private int getAttribQuery(StringBuilder result, int dollarCount, Tuple tuple,
+			boolean isDist, boolean localOnly) {
 
 		String[] splitted = getAttribute().split("\\[");
 		if (splitted.length > 1) {
@@ -950,65 +951,95 @@ public class QQueryTerm implements Serializable {
 		String[] subAttribPath = splitted.length == 1 ? null : splitted[1].split("\\.");
 		String[] attribPath = splitted[0].split("\\.");
 		String attribName = linkHeaders.expandIri(attribPath[0], false, true, null, null);
+		boolean wildcardUse;
 
 		if (isLinkedQ) {
-			result.append(dollarCount);
-			tuple.addString(linkedAttrName);
-			dollarCount++;
-			if (!isDist || localOnly) {
-				result.append(" AND EXISTS (SELECT TRUE FROM JSONB_ARRAY_ELEMENTS(ENTITY -> $");
+			String linkedAttrExpanded = linkHeaders.expandIri(linkedAttrName, false, true, null, null);
+			wildcardUse = NGSIConstants.NGSI_LD_STAR.equals(attribName);
+			if (!wildcardUse) {
+				result.append("ENTITY ? $");
 				result.append(dollarCount);
-				tuple.addString(linkedAttrName);
-				result.append(
-						" ) as rel, JSONB_ARRAY_ELEMENTS(rel -> 'https://uri.etsi.org/ngsi-ld/hasObject') as obj left join entity toplevel on obj->>'@id'=toplevel.id WHERE rel.value #>> '{@type,0}' = 'https://uri.etsi.org/ngsi-ld/Relationship'");
+
+				tuple.addString(linkedAttrExpanded);
 				dollarCount++;
+			}
+			if (!isDist || localOnly) {
+				if (wildcardUse) {
+					result.append(
+							"AND EXISTS (SELECT TRUE FROM JSONB_OBJECT_KEYS(ENTITY) AS ATTRKEY, JSONB_ARRAY_ELEMENTS(ENTITY -> ATTRKEY) AS rel");
+
+				} else {
+					result.append(" AND EXISTS (SELECT TRUE FROM JSONB_ARRAY_ELEMENTS(ENTITY -> $");
+					result.append(dollarCount);
+					result.append(") as rel");
+					tuple.addString(linkedAttrExpanded);
+					dollarCount++;
+				}
+				result.append(
+						", JSONB_ARRAY_ELEMENTS(rel -> 'https://uri.etsi.org/ngsi-ld/hasObject') as obj left join entity on obj->>'@id'=entity.id WHERE rel.value #>> '{@type,0}' = 'https://uri.etsi.org/ngsi-ld/Relationship'");
+
 				if (!localOnly) {
 					result.append(" AND rel.value ? 'https://uri.etsi.org/ngsi-ld/hasObjectType'");
 					if (!linkedEntityTypes.isEmpty()) {
 						result.append(
 								" AND EXISTS (SELECT TRUE FROM JSONB_ARRAY_ELEMENTS(rel.value -> 'https://uri.etsi.org/ngsi-ld/hasObjectType') as objType WHERE (objType ->> '@id') IN (");
+
 						for (String linkedEntityType : linkedEntityTypes) {
 							result.append('$');
 							result.append(dollarCount);
+							result.append(',');
 							dollarCount++;
 							tuple.addString(linkedEntityType);
-							result.append(',');
+
 						}
 						result.setCharAt(result.length() - 1, ')');
-						result.append(" AND toplevel.e_types && ARRAY[");
+						result.append(" AND entity.e_types && ARRAY[");
 						for (String linkedEntityType : linkedEntityTypes) {
 							result.append('$');
 							result.append(dollarCount);
+							result.append(',');
 							dollarCount++;
 							tuple.addString(linkedEntityType);
-							result.append(',');
+
 						}
 						result.setCharAt(result.length() - 1, ']');
 						result.append(')');
 					}
 
 				} else if (!linkedEntityTypes.isEmpty()) {
-					result.append(" AND toplevel.e_types && ARRAY[");
+					result.append(" AND entity.e_types && ARRAY[");
 					for (String linkedEntityType : linkedEntityTypes) {
 						result.append('$');
 						result.append(dollarCount);
+						result.append(',');
 						dollarCount++;
 						tuple.addString(linkedEntityType);
-						result.append(',');
 					}
 					result.setCharAt(result.length() - 1, ']');
 				}
 
-				result.append(')');
+			}
+			if (firstChild != null) {
+				result.append(" AND ");
+				try {
+					firstChild.setOperant(operant);
+				} catch (ResponseException e) {
+
+					e.printStackTrace();
+				}
+				firstChild.setOperator(operator);
+				firstChild.setExpandedOpt(expandedOpt);
+				dollarCount = firstChild.toSql(result, dollarCount, tuple, isDist, localOnly);
 
 			}
-			if ((operator != null && !operator.isEmpty()) || attribPath.length > 1
-					|| (subAttribPath != null && subAttribPath.length > 0)) {
-				dollarCount = commonWherePart(attribPath, subAttribPath, "toplevel", dollarCount, tuple, result, this);
-			} else {
-				result.append(')');
-			}
+			result.append(')');
+
 		} else {
+			wildcardUse = NGSIConstants.NGSI_LD_STAR.equals(attribName);
+			if (!wildcardUse) {
+				result.append("ENTITY ? $");
+				result.append(dollarCount);
+			}
 			if (attribName.equals("@id")) {
 				result.append(" AND entity ->> $");
 				result.append(dollarCount);
@@ -1019,14 +1050,40 @@ public class QQueryTerm implements Serializable {
 				dollarCount++;
 				tuple.addString(operant);
 			} else {
-				result.append(" AND EXISTS (SELECT TRUE FROM JSONB_ARRAY_ELEMENTS(ENTITY -> $");
-				result.append(dollarCount);
-				dollarCount++;
-				tuple.addString(attribName);
-				result.append(") AS toplevel ");
+				if (!wildcardUse) {
+					result.append(" AND ");
+				}
+				if (operator.equals(NGSIConstants.QUERY_UNEQUAL)) {
+					result.append("NOT ");
+				}
+
+				if (wildcardUse) {
+					result.append(
+							"EXISTS (SELECT TRUE FROM JSONB_OBJECT_KEYS(ENTITY) AS ATTRKEY, JSONB_ARRAY_ELEMENTS(ENTITY -> ATTRKEY) AS toplevel WHERE ATTRKEY NOT IN ('");
+					result.append(NGSIConstants.JSON_LD_ID);
+					result.append("','");
+					result.append(NGSIConstants.JSON_LD_TYPE);
+					result.append("','");
+					result.append(NGSIConstants.NGSI_LD_MODIFIED_AT);
+					result.append("','");
+					result.append(NGSIConstants.NGSI_LD_CREATED_AT);
+					result.append("') ");
+
+				} else {
+					result.append("EXISTS (SELECT TRUE FROM JSONB_ARRAY_ELEMENTS(ENTITY -> $");
+					result.append(dollarCount);
+					dollarCount++;
+					tuple.addString(attribName);
+					result.append(") AS toplevel ");
+				}
+
 				if ((operator != null && !operator.isEmpty()) || attribPath.length > 1
 						|| (subAttribPath != null && subAttribPath.length > 0)) {
-					result.append("WHERE ");
+					if (wildcardUse) {
+						result.append("AND ");
+					} else {
+						result.append("WHERE ");
+					}
 					dollarCount = commonWherePart(attribPath, subAttribPath, "toplevel", dollarCount, tuple, result,
 							this);
 				} else {
@@ -1153,7 +1210,7 @@ public class QQueryTerm implements Serializable {
 				try {
 					firstChild.setOperant(operant);
 				} catch (ResponseException e) {
-					
+
 					e.printStackTrace();
 				}
 				firstChild.setOperator(operator);
@@ -1163,8 +1220,8 @@ public class QQueryTerm implements Serializable {
 			}
 			result.append(')');
 			followUp.append(")");
-//			result.append(')');
-//			followUp.append(')');
+			// result.append(')');
+			// followUp.append(')');
 
 		} else {
 			wildcardUse = NGSIConstants.NGSI_LD_STAR.equals(attribName);
@@ -1259,8 +1316,9 @@ public class QQueryTerm implements Serializable {
 		return dollarCount;
 	}
 
-	public int toSql(StringBuilder result, int dollarCount, Tuple tuple, boolean isDist, boolean localOnly) {
-		if (firstChild != null) {
+	public int toSql(StringBuilder result, int dollarCount, Tuple tuple, boolean isDist,
+			boolean localOnly) {
+		if (firstChild != null && !isLinkedQ) {
 			result.append("(");
 			dollarCount = firstChild.toSql(result, dollarCount, tuple, isDist, localOnly);
 			result.append(")");
@@ -1298,40 +1356,8 @@ public class QQueryTerm implements Serializable {
 		return dollarCount;
 	}
 
-//	private ArrayList<String> getAttribPathArray(String attribute) {
-//		ArrayList<String> attribPath = new ArrayList<String>();
-//		if (attribute.contains("[") && attribute.contains(".")) {
-//			if (attribute.contains(".")) {
-//				for (String subPart : attribute.split("\\.")) {
-//					if (subPart.contains("[")) {
-//						for (String subParts : subPart.split("\\[")) {
-//							// subParts = subParts.replaceAll("\\]", "");
-//							attribPath.add(expandAttributeName(subParts));
-//						}
-//					} else {
-//						attribPath.add(expandAttributeName(subPart));
-//					}
-//				}
-//			}
-//		} else if (attribute.contains("[")) {
-//			for (String subPart : attribute.split("\\[")) {
-//				subPart = subPart.replaceAll("\\]", "");
-//				attribPath.addAll(getAttribPathArray(subPart));
-//			}
-//		} else if (attribute.matches(URI)) {
-//			attribPath.add(expandAttributeName(attribute));
-//		} else if (attribute.contains(".")) {
-//			for (String subPart : attribute.split("\\.")) {
-//				attribPath.addAll(getAttribPathArray(subPart));
-//			}
-//		} else {
-//			attribPath.add(expandAttributeName(attribute));
-//		}
-//		return attribPath;
-//	}
-
-	private int applyOperator(StringBuilder attributeFilterProperty, int dollarCount, Tuple tuple,
-			Boolean needExpanded) {
+	private int applyOperator(StringBuilder attributeFilterProperty, int dollarCount,
+			Tuple tuple, Boolean needExpanded) {
 		String finalOperant;
 		if (needExpanded) {
 			finalOperant = expandedOpt;
@@ -1339,112 +1365,95 @@ public class QQueryTerm implements Serializable {
 			finalOperant = operant;
 		}
 		String typecast = "jsonb";
-//		if (operant.matches(DATETIME)) {
-//			typecast = "timestamp";
-//		} else if (operant.matches(DATE)) {
-//			typecast = "date";
-//		} else if (operant.matches(TIME)) {
-//			typecast = "time";
-//		}
+		// if (operant.matches(DATETIME)) {
+		// typecast = "timestamp";
+		// } else if (operant.matches(DATE)) {
+		// typecast = "date";
+		// } else if (operant.matches(TIME)) {
+		// typecast = "time";
+		// }
 		switch (operator) {
-		case NGSIConstants.QUERY_UNEQUAL:
-		case NGSIConstants.QUERY_EQUAL:
-			if (finalOperant.matches(LIST)) {
-				if (operator.equals(NGSIConstants.QUERY_UNEQUAL)) {
-					attributeFilterProperty.append(" not");
-				}
-				attributeFilterProperty.append(" in (");
-				for (String listItem : finalOperant.split(",")) {
-					attributeFilterProperty.append("$");
-					attributeFilterProperty.append(dollarCount);
-					dollarCount++;
-					addItemToTupel(tuple, listItem, attributeFilterProperty);
-					attributeFilterProperty.append("::");
-					attributeFilterProperty.append(typecast);
-					attributeFilterProperty.append(',');
+			case NGSIConstants.QUERY_UNEQUAL:
+			case NGSIConstants.QUERY_EQUAL:
+				if (finalOperant.matches(LIST)) {
+					if (operator.equals(NGSIConstants.QUERY_UNEQUAL)) {
+						// attributeFilterProperty.append(" not");
+						// followUp.append(" not");
+					}
+					attributeFilterProperty.append(" in (");
+					for (String listItem : finalOperant.split(",")) {
+						dollarCount++;
+						dollarCount = addItemToTupel(tuple, listItem, attributeFilterProperty, dollarCount);
+						attributeFilterProperty.append(',');
 
-				}
-				attributeFilterProperty.setCharAt(attributeFilterProperty.length() - 1, ')');
-			} else if (finalOperant.matches(RANGE)) {
-				String[] myRange = finalOperant.split("\\.\\.");
-				if (operator.equals(NGSIConstants.QUERY_UNEQUAL)) {
-					attributeFilterProperty.append(" not");
-				}
-				attributeFilterProperty.append(" between $");
-				attributeFilterProperty.append(dollarCount);
-				addItemToTupel(tuple, myRange[0], attributeFilterProperty);
-				attributeFilterProperty.append("::");
-				attributeFilterProperty.append(typecast);
-				attributeFilterProperty.append(" and $");
-				attributeFilterProperty.append(dollarCount + 1);
-				addItemToTupel(tuple, myRange[1], attributeFilterProperty);
-				attributeFilterProperty.append("::" + typecast);
-				dollarCount += 2;
+					}
+					attributeFilterProperty.setCharAt(attributeFilterProperty.length() - 1, ')');
 
-			} else {
-				if (operator.equals(NGSIConstants.QUERY_UNEQUAL)) {
-					attributeFilterProperty.append(" != $");
+				} else if (finalOperant.matches(RANGE)) {
+					String[] myRange = finalOperant.split("\\.\\.");
+					if (operator.equals(NGSIConstants.QUERY_UNEQUAL)) {
+						// attributeFilterProperty.append(" not");
+						// followUp.append(" not");
+					}
+					attributeFilterProperty.append(" between ");
+
+					dollarCount = addItemToTupel(tuple, myRange[0], attributeFilterProperty, dollarCount);
+					attributeFilterProperty.append(" and ");
+
+					dollarCount = addItemToTupel(tuple, myRange[1], attributeFilterProperty, dollarCount);
+					attributeFilterProperty.append("::" + typecast);
+
 				} else {
-					attributeFilterProperty.append(" = $");
+					if (operator.equals(NGSIConstants.QUERY_UNEQUAL)) {
+						attributeFilterProperty.append(" = ");
+
+					} else {
+						attributeFilterProperty.append(" = ");
+
+					}
+
+					dollarCount = addItemToTupelForEqualAndUnequal(tuple, finalOperant, attributeFilterProperty,
+							dollarCount);
+
 				}
+
+				break;
+			case NGSIConstants.QUERY_GREATEREQ:
+				attributeFilterProperty.append(" >= ");
+
+				dollarCount = addItemToTupel(tuple, finalOperant, attributeFilterProperty, dollarCount);
+
+				break;
+			case NGSIConstants.QUERY_LESSEQ:
+				attributeFilterProperty.append(" <= ");
+				dollarCount = addItemToTupel(tuple, finalOperant, attributeFilterProperty, dollarCount);
+
+				break;
+			case NGSIConstants.QUERY_GREATER:
+				attributeFilterProperty.append(" > ");
+
+				dollarCount = addItemToTupel(tuple, finalOperant, attributeFilterProperty, dollarCount);
+				break;
+			case NGSIConstants.QUERY_LESS:
+				attributeFilterProperty.append(" < ");
+				dollarCount = addItemToTupel(tuple, finalOperant, attributeFilterProperty, dollarCount);
+				break;
+			case NGSIConstants.QUERY_PATTERNOP:
+				attributeFilterProperty.append("::text ~ $");
 				attributeFilterProperty.append(dollarCount);
+				// attributeFilterProperty.append("'");
 				dollarCount++;
-				addItemToTupel(tuple, finalOperant, attributeFilterProperty);
-				attributeFilterProperty.append("::" + typecast);
-
-			}
-
-			break;
-		case NGSIConstants.QUERY_GREATEREQ:
-			attributeFilterProperty.append(" >= $");
-			attributeFilterProperty.append(dollarCount);
-			dollarCount++;
-			addItemToTupel(tuple, finalOperant, attributeFilterProperty);
-			attributeFilterProperty.append("::");
-			attributeFilterProperty.append(typecast);
-
-			break;
-		case NGSIConstants.QUERY_LESSEQ:
-			attributeFilterProperty.append(" <= $");
-			attributeFilterProperty.append(dollarCount);
-			dollarCount++;
-			addItemToTupel(tuple, finalOperant, attributeFilterProperty);
-			attributeFilterProperty.append("::");
-			attributeFilterProperty.append(typecast);
-
-			break;
-		case NGSIConstants.QUERY_GREATER:
-			attributeFilterProperty.append(" > $");
-			attributeFilterProperty.append(dollarCount);
-			dollarCount++;
-			addItemToTupel(tuple, finalOperant, attributeFilterProperty);
-			attributeFilterProperty.append("::");
-			attributeFilterProperty.append(typecast);
-			break;
-		case NGSIConstants.QUERY_LESS:
-			attributeFilterProperty.append(" < $");
-			attributeFilterProperty.append(dollarCount);
-			dollarCount++;
-			addItemToTupel(tuple, finalOperant, attributeFilterProperty);
-			attributeFilterProperty.append("::");
-			attributeFilterProperty.append(typecast);
-			break;
-		case NGSIConstants.QUERY_PATTERNOP:
-			attributeFilterProperty.append("::text ~ $");
-			attributeFilterProperty.append(dollarCount);
-			// attributeFilterProperty.append("'");
-			dollarCount++;
-			tuple.addString(finalOperant);
-			// addItemToTupel(tuple, operant);
-			break;
-		case NGSIConstants.QUERY_NOTPATTERNOP:
-			attributeFilterProperty.append("::text !~ $");
-			attributeFilterProperty.append(dollarCount);
-			// attributeFilterProperty.append("'");
-			dollarCount++;
-			tuple.addString(finalOperant);
-			// addItemToTupel(tuple, operant);
-			break;
+				tuple.addString(finalOperant);
+				// addItemToTupel(tuple, operant);
+				break;
+			case NGSIConstants.QUERY_NOTPATTERNOP:
+				attributeFilterProperty.append("::text !~ $");
+				attributeFilterProperty.append(dollarCount);
+				// attributeFilterProperty.append("'");
+				dollarCount++;
+				tuple.addString(finalOperant);
+				// addItemToTupel(tuple, operant);
+				break;
 		}
 		return dollarCount;
 	}
@@ -1509,134 +1518,207 @@ public class QQueryTerm implements Serializable {
 			finalOperant = operant;
 		}
 		String typecast = "jsonb";
-//		if (operant.matches(DATETIME)) {
-//			typecast = "timestamp";
-//		} else if (operant.matches(DATE)) {
-//			typecast = "date";
-//		} else if (operant.matches(TIME)) {
-//			typecast = "time";
-//		}
+		// if (operant.matches(DATETIME)) {
+		// typecast = "timestamp";
+		// } else if (operant.matches(DATE)) {
+		// typecast = "date";
+		// } else if (operant.matches(TIME)) {
+		// typecast = "time";
+		// }
 		switch (operator) {
-		case NGSIConstants.QUERY_UNEQUAL:
-		case NGSIConstants.QUERY_EQUAL:
-			if (finalOperant.matches(LIST)) {
-				if (operator.equals(NGSIConstants.QUERY_UNEQUAL)) {
-					// attributeFilterProperty.append(" not");
-					// followUp.append(" not");
-				}
-				attributeFilterProperty.append(" in (");
-				for (String listItem : finalOperant.split(",")) {
-					dollarCount++;
-					dollarCount = addItemToTupel(tuple, listItem, attributeFilterProperty, followUp, dollarCount);
-					attributeFilterProperty.append(',');
+			case NGSIConstants.QUERY_UNEQUAL:
+			case NGSIConstants.QUERY_EQUAL:
+				if (finalOperant.matches(LIST)) {
+					if (operator.equals(NGSIConstants.QUERY_UNEQUAL)) {
+						// attributeFilterProperty.append(" not");
+						// followUp.append(" not");
+					}
+					attributeFilterProperty.append(" in (");
+					for (String listItem : finalOperant.split(",")) {
+						dollarCount++;
+						dollarCount = addItemToTupel(tuple, listItem, attributeFilterProperty, followUp, dollarCount);
+						attributeFilterProperty.append(',');
 
-					followUp.append(',');
+						followUp.append(',');
 
-				}
-				attributeFilterProperty.setCharAt(attributeFilterProperty.length() - 1, ')');
-				followUp.setCharAt(followUp.length() - 1, ')');
-			} else if (finalOperant.matches(RANGE)) {
-				String[] myRange = finalOperant.split("\\.\\.");
-				if (operator.equals(NGSIConstants.QUERY_UNEQUAL)) {
-					// attributeFilterProperty.append(" not");
-					// followUp.append(" not");
-				}
-				attributeFilterProperty.append(" between ");
+					}
+					attributeFilterProperty.setCharAt(attributeFilterProperty.length() - 1, ')');
+					followUp.setCharAt(followUp.length() - 1, ')');
+				} else if (finalOperant.matches(RANGE)) {
+					String[] myRange = finalOperant.split("\\.\\.");
+					if (operator.equals(NGSIConstants.QUERY_UNEQUAL)) {
+						// attributeFilterProperty.append(" not");
+						// followUp.append(" not");
+					}
+					attributeFilterProperty.append(" between ");
 
-				followUp.append(" between ");
+					followUp.append(" between ");
 
-				dollarCount = addItemToTupel(tuple, myRange[0], attributeFilterProperty, followUp, dollarCount);
-				attributeFilterProperty.append(" and ");
-				followUp.append(" and ");
+					dollarCount = addItemToTupel(tuple, myRange[0], attributeFilterProperty, followUp, dollarCount);
+					attributeFilterProperty.append(" and ");
+					followUp.append(" and ");
 
-				dollarCount = addItemToTupel(tuple, myRange[1], attributeFilterProperty, followUp, dollarCount);
-				attributeFilterProperty.append("::" + typecast);
-				followUp.append("::" + typecast);
-			} else {
-				if (operator.equals(NGSIConstants.QUERY_UNEQUAL)) {
-					attributeFilterProperty.append(" = ");
-					followUp.append(" = ");
+					dollarCount = addItemToTupel(tuple, myRange[1], attributeFilterProperty, followUp, dollarCount);
+					attributeFilterProperty.append("::" + typecast);
+					followUp.append("::" + typecast);
 				} else {
-					attributeFilterProperty.append(" = ");
-					followUp.append(" = ");
+					if (operator.equals(NGSIConstants.QUERY_UNEQUAL)) {
+						attributeFilterProperty.append(" = ");
+						followUp.append(" = ");
+					} else {
+						attributeFilterProperty.append(" = ");
+						followUp.append(" = ");
+					}
+
+					dollarCount = addItemToTupelForEqualAndUnequal(tuple, finalOperant, attributeFilterProperty,
+							followUp,
+							dollarCount);
+
 				}
 
-				dollarCount = addItemToTupelForEqualAndUnequal(tuple, finalOperant, attributeFilterProperty, followUp,
-						dollarCount);
+				break;
+			case NGSIConstants.QUERY_GREATEREQ:
+				attributeFilterProperty.append(" >= ");
 
-			}
+				followUp.append(" >= ");
 
-			break;
-		case NGSIConstants.QUERY_GREATEREQ:
-			attributeFilterProperty.append(" >= ");
+				dollarCount = addItemToTupel(tuple, finalOperant, attributeFilterProperty, followUp, dollarCount);
 
-			followUp.append(" >= ");
+				break;
+			case NGSIConstants.QUERY_LESSEQ:
+				attributeFilterProperty.append(" <= ");
+				followUp.append(" <= ");
+				dollarCount = addItemToTupel(tuple, finalOperant, attributeFilterProperty, followUp, dollarCount);
 
-			dollarCount = addItemToTupel(tuple, finalOperant, attributeFilterProperty, followUp, dollarCount);
-
-			break;
-		case NGSIConstants.QUERY_LESSEQ:
-			attributeFilterProperty.append(" <= ");
-			followUp.append(" <= ");
-			dollarCount = addItemToTupel(tuple, finalOperant, attributeFilterProperty, followUp, dollarCount);
-
-			break;
-		case NGSIConstants.QUERY_GREATER:
-			attributeFilterProperty.append(" > ");
-			followUp.append(" > ");
-			dollarCount = addItemToTupel(tuple, finalOperant, attributeFilterProperty, followUp, dollarCount);
-			break;
-		case NGSIConstants.QUERY_LESS:
-			attributeFilterProperty.append(" < ");
-			followUp.append(" < ");
-			dollarCount = addItemToTupel(tuple, finalOperant, attributeFilterProperty, followUp, dollarCount);
-			break;
-		case NGSIConstants.QUERY_PATTERNOP:
-			attributeFilterProperty.append("::text ~ $");
-			attributeFilterProperty.append(dollarCount);
-			followUp.append("::text ~ ''' || $");
-			followUp.append(dollarCount);
-			followUp.append(" || '''");
-			// attributeFilterProperty.append("'");
-			dollarCount++;
-			tuple.addString(finalOperant);
-			// addItemToTupel(tuple, operant);
-			break;
-		case NGSIConstants.QUERY_NOTPATTERNOP:
-			attributeFilterProperty.append("::text !~ $");
-			attributeFilterProperty.append(dollarCount);
-			followUp.append("::text !~ ''' || $");
-			followUp.append(dollarCount);
-			followUp.append(" || '''");
-			// attributeFilterProperty.append("'");
-			dollarCount++;
-			tuple.addString(finalOperant);
-			// addItemToTupel(tuple, operant);
-			break;
+				break;
+			case NGSIConstants.QUERY_GREATER:
+				attributeFilterProperty.append(" > ");
+				followUp.append(" > ");
+				dollarCount = addItemToTupel(tuple, finalOperant, attributeFilterProperty, followUp, dollarCount);
+				break;
+			case NGSIConstants.QUERY_LESS:
+				attributeFilterProperty.append(" < ");
+				followUp.append(" < ");
+				dollarCount = addItemToTupel(tuple, finalOperant, attributeFilterProperty, followUp, dollarCount);
+				break;
+			case NGSIConstants.QUERY_PATTERNOP:
+				attributeFilterProperty.append("::text ~ $");
+				attributeFilterProperty.append(dollarCount);
+				followUp.append("::text ~ ''' || $");
+				followUp.append(dollarCount);
+				followUp.append(" || '''");
+				// attributeFilterProperty.append("'");
+				dollarCount++;
+				tuple.addString(finalOperant);
+				// addItemToTupel(tuple, operant);
+				break;
+			case NGSIConstants.QUERY_NOTPATTERNOP:
+				attributeFilterProperty.append("::text !~ $");
+				attributeFilterProperty.append(dollarCount);
+				followUp.append("::text !~ ''' || $");
+				followUp.append(dollarCount);
+				followUp.append(" || '''");
+				// attributeFilterProperty.append("'");
+				dollarCount++;
+				tuple.addString(finalOperant);
+				// addItemToTupel(tuple, operant);
+				break;
 		}
 		return dollarCount;
 	}
 
-	private void addItemToTupel(Tuple tuple, String listItem, StringBuilder sql) {
+	private int addItemToTupel(Tuple tuple, String listItem, StringBuilder sql,
+			int dollarCount) {
 		try {
 			double tmp = Double.parseDouble(listItem);
-			sql.insert(sql.lastIndexOf("$"), "TO_JSONB(");
+			sql.append("TO_JSONB($");
+			sql.append(dollarCount);
 			sql.append(")");
+
 			tuple.addDouble(tmp);
+			dollarCount++;
 		} catch (NumberFormatException e) {
 			if (listItem.equalsIgnoreCase("true") || listItem.equalsIgnoreCase("false")) {
+
+				sql.append("$");
+				sql.append(dollarCount);
+				sql.append("::jsonb");
+				dollarCount++;
 				tuple.addBoolean(Boolean.parseBoolean(listItem));
 			} else {
-				if (!listItem.matches(DATETIME)) {
-					if (listItem.charAt(0) != '"' || listItem.charAt(listItem.length() - 1) != '"') {
-						listItem = '"' + listItem + '"';
-					}
-					sql.append("::text");
+				sql.append("$");
+				sql.append(dollarCount);
+				dollarCount++;
+
+				// if (!listItem.matches(DATETIME)) {
+				if (listItem.charAt(0) != '"' || listItem.charAt(listItem.length() - 1) != '"') {
+					listItem = '"' + listItem + '"';
 				}
+
+				sql.append("::text::jsonb");
+
+				// }
 
 				tuple.addString(listItem);
 			}
 		}
+		return dollarCount;
+
+	}
+
+	private int addItemToTupelForEqualAndUnequal(Tuple tuple, String listItem, StringBuilder sql, int dollarCount) {
+		String strTBU;
+		if (listItem.charAt(0) != '"' || listItem.charAt(listItem.length() - 1) != '"') {
+			strTBU = '"' + listItem + '"';
+		} else {
+			strTBU = listItem;
+		}
+		sql.append("ANY(ARRAY[");
+		try {
+			double tmp = Double.parseDouble(listItem);
+			sql.append("TO_JSONB($");
+			sql.append(dollarCount);
+			sql.append(")");
+
+			tuple.addDouble(tmp);
+			dollarCount++;
+
+			sql.append(",$");
+			sql.append(dollarCount);
+			sql.append("::text::jsonb");
+
+			dollarCount++;
+			tuple.addString(strTBU);
+		} catch (NumberFormatException e) {
+			if (listItem.equalsIgnoreCase("true") || listItem.equalsIgnoreCase("false")) {
+
+				sql.append("$");
+				sql.append(dollarCount);
+				dollarCount++;
+				tuple.addBoolean(Boolean.parseBoolean(listItem));
+
+				sql.append(",$");
+				sql.append(dollarCount);
+				sql.append("::text::jsonb");
+
+				dollarCount++;
+				tuple.addString(strTBU);
+			} else {
+				sql.append("$");
+				sql.append(dollarCount);
+				dollarCount++;
+
+				// if (!listItem.matches(DATETIME)) {
+
+				sql.append("::text::jsonb");
+
+				// }
+
+				tuple.addString(strTBU);
+			}
+		}
+		sql.append("])");
+		return dollarCount;
 
 	}
 
@@ -1731,25 +1813,27 @@ public class QQueryTerm implements Serializable {
 
 	private int temporalSqlWherePart(StringBuilder sql, int dollarCount, Tuple tuple, QQueryTerm current,
 			TemporalQueryTerm tempQuery) {
-//		sql.append("(TEAI.ATTRIBUTEID=$");
-//		sql.append(dollarCount);
-//		dollarCount++;
+		// sql.append("(TEAI.ATTRIBUTEID=$");
+		// sql.append(dollarCount);
+		// dollarCount++;
 		String[] splitted = current.getAttribute().split("\\[");
 		if (splitted.length > 1) {
 			splitted[1] = splitted[1].substring(0, splitted[1].length() - 1);
 		}
 		String[] subAttribPath = splitted.length == 1 ? null : splitted[1].split("\\.");
 		String[] attribPath = splitted[0].split("\\.");
-//		String attribName = linkHeaders.expandIri(attribPath[0], false, true, null, null);
-//		tuple.addString(attribName);
-//		if (tempQuery != null) {
-//			sql.append(" AND TEAI.");
-//			dollarCount = tempQuery.toSql(sql, tuple, dollarCount);
-//		}
+		// String attribName = linkHeaders.expandIri(attribPath[0], false, true, null,
+		// null);
+		// tuple.addString(attribName);
+		// if (tempQuery != null) {
+		// sql.append(" AND TEAI.");
+		// dollarCount = tempQuery.toSql(sql, tuple, dollarCount);
+		// }
 		String currentSqlAttrib = "TEAI.data";
-//		if (!current.getOperator().isEmpty() || attribPath.length > 1 || subAttribPath != null) {
-//			sql.append(" AND ");
-//		}
+		// if (!current.getOperator().isEmpty() || attribPath.length > 1 ||
+		// subAttribPath != null) {
+		// sql.append(" AND ");
+		// }
 
 		return commonWherePart(attribPath, subAttribPath, currentSqlAttrib, dollarCount, tuple, sql, current);
 	}
@@ -1764,6 +1848,7 @@ public class QQueryTerm implements Serializable {
 			sql.append(currentSqlAttrib);
 			sql.append(" -> $");
 			sql.append(dollarCount);
+
 			tuple.addString(linkHeaders.expandIri(attribPath[i], false, true, null, null));
 			dollarCount++;
 			currentSqlAttrib = prefix + currentChar;
@@ -1771,6 +1856,7 @@ public class QQueryTerm implements Serializable {
 			sql.append(") AS ");
 			sql.append(currentSqlAttrib);
 			sql.append(" WHERE ");
+
 		}
 
 		if (subAttribPath == null) {
@@ -1781,6 +1867,7 @@ public class QQueryTerm implements Serializable {
 				sql.append(" #>'{");
 				sql.append(NGSIConstants.JSON_LD_ID);
 				sql.append("}') ");
+
 				dollarCount = applyOperator(sql, dollarCount, tuple, false);
 				sql.append(" THEN true");
 
@@ -1797,6 +1884,7 @@ public class QQueryTerm implements Serializable {
 				sql.append("') AS mostInnerValue WHERE (mostInnerValue->'");
 				sql.append(NGSIConstants.JSON_LD_VALUE);
 				sql.append("')");
+
 				dollarCount = applyOperator(sql, dollarCount, tuple, false);
 				sql.append(") WHEN ");
 
@@ -1812,6 +1900,7 @@ public class QQueryTerm implements Serializable {
 				sql.append("') AS mostInnerValue WHERE (mostInnerValue->'");
 				sql.append(NGSIConstants.JSON_LD_ID);
 				sql.append("')");
+
 				dollarCount = applyOperator(sql, dollarCount, tuple, false);
 				sql.append(") WHEN ");
 
@@ -1827,6 +1916,7 @@ public class QQueryTerm implements Serializable {
 				sql.append("') AS mostInnerValue WHERE (mostInnerValue->'");
 				sql.append(NGSIConstants.JSON_LD_ID);
 				sql.append("')");
+
 				dollarCount = applyOperator(sql, dollarCount, tuple, true);
 				sql.append(") WHEN ");
 
@@ -1842,6 +1932,7 @@ public class QQueryTerm implements Serializable {
 				sql.append("') AS mostInnerValue WHERE (mostInnerValue->'");
 				sql.append(NGSIConstants.JSON_LD_ID);
 				sql.append("')");
+
 				dollarCount = applyOperator(sql, dollarCount, tuple, true);
 				sql.append(") WHEN ");
 
@@ -1857,6 +1948,7 @@ public class QQueryTerm implements Serializable {
 				sql.append("') AS mostInnerValue WHERE (mostInnerValue->'");
 				sql.append(NGSIConstants.JSON_LD_ID);
 				sql.append("')");
+
 				dollarCount = applyOperator(sql, dollarCount, tuple, false);
 				sql.append(") WHEN ");
 
@@ -1870,6 +1962,7 @@ public class QQueryTerm implements Serializable {
 				sql.append(" ->'");
 				sql.append(NGSIConstants.JSON_LD_VALUE);
 				sql.append("')");
+
 				dollarCount = applyOperator(sql, dollarCount, tuple, false);
 				sql.append(" WHEN ");
 				sql.append(currentSqlAttrib);
@@ -1882,6 +1975,7 @@ public class QQueryTerm implements Serializable {
 				sql.append(" ->'");
 				sql.append(NGSIConstants.JSON_LD_VALUE);
 				sql.append("')");
+
 				dollarCount = applyOperator(sql, dollarCount, tuple, false);
 
 				sql.append(" ELSE FALSE END ");
@@ -1901,6 +1995,7 @@ public class QQueryTerm implements Serializable {
 			sql.append(" ->'");
 			sql.append(NGSIConstants.NGSI_LD_HAS_VALUE);
 			sql.append("') AS mostInnerValue");
+
 			String currentSqlAttrib2 = "mostInnerValue";
 			prefix = "mostInnerValue";
 			currentChar = 'a';
@@ -1909,18 +2004,14 @@ public class QQueryTerm implements Serializable {
 				sql.append(currentSqlAttrib2);
 				sql.append(" -> $");
 				sql.append(dollarCount);
+
 				tuple.addString(linkHeaders.expandIri(subAttribPath[i], false, true, null, null));
 				dollarCount++;
 				currentSqlAttrib2 = prefix + currentChar;
 				currentChar++;
 				sql.append(") AS " + currentSqlAttrib2);
 			}
-//			sql.append("EXISTS (SELECT TRUE FROM JSONB_ARRAY_ELEMENTS(");
-//			sql.append(currentSqlAttrib2);
-//			sql.append(") AS ");
-//			dollarCount++;
-//			currentSqlAttrib2 = prefix + currentChar;
-//			sql.append(currentSqlAttrib2);
+
 			if (!current.getOperator().isEmpty()) {
 				sql.append(" WHERE ");
 				sql.append(currentSqlAttrib2);
@@ -1948,11 +2039,13 @@ public class QQueryTerm implements Serializable {
 			sql.append(" ->'");
 			sql.append(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP);
 			sql.append("') AS LANGPROP");
+
 			if (!current.getOperator().isEmpty()) {
 				sql.append(" WHERE ");
 				if (!subAttribPath[0].equals("*")) {
 					sql.append("LANGPROP ->> '@language'=$");
 					sql.append(dollarCount);
+
 					dollarCount++;
 					tuple.addString(subAttribPath[0]);
 					sql.append(" AND ");
@@ -1985,11 +2078,13 @@ public class QQueryTerm implements Serializable {
 			sql.append(NGSIConstants.JSON_LD_VALUE);
 			sql.append("' ->> $");
 			sql.append(dollarCount);
+
 			dollarCount++;
 			tuple.addString(subAttribPath[0]);
 			sql.append("=");
 			sql.append(" $");
 			sql.append(dollarCount);
+
 			dollarCount++;
 			tuple.addString(current.operant);
 			sql.append(")  ELSE FALSE END ");
@@ -2606,8 +2701,9 @@ public class QQueryTerm implements Serializable {
 													if (entity2CsourceIds != null) {
 														Map<String, Object> linkedEntity = entity2CsourceIds.getItem1();
 														if (linkedEntity != null) {
-//															List<String> linkedEntityType = (List<String>) linkedEntity
-//																	.get(NGSIConstants.JSON_LD_TYPE);
+															// List<String> linkedEntityType = (List<String>)
+															// linkedEntity
+															// .get(NGSIConstants.JSON_LD_TYPE);
 
 															if (linkedQ.calculateEntity(linkedEntity,
 																	updatedEntityCache, jsonKeys, localOnly)) {
@@ -2659,8 +2755,9 @@ public class QQueryTerm implements Serializable {
 																Map<String, Object> linkedEntity = entity2CsourceIds
 																		.getItem1();
 																if (linkedEntity != null) {
-//																	List<String> linkedEntityType = (List<String>) linkedEntity
-//																			.get(NGSIConstants.JSON_LD_TYPE);
+																	// List<String> linkedEntityType = (List<String>)
+																	// linkedEntity
+																	// .get(NGSIConstants.JSON_LD_TYPE);
 
 																	if (linkedQ.calculateEntity(linkedEntity,
 																			updatedEntityCache, jsonKeys, localOnly)) {
