@@ -22,6 +22,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLDService;
@@ -883,22 +885,28 @@ public class QueryDAO {
 	}
 
 	public Uni<Void> runEntityMapCleanup(String cleanUpInterval) {
-		return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
-			return client.preparedQuery("select tenant_id from tenant").execute().onItem().transformToUni(rows -> {
-				List<Uni<Void>> cleanUpUnis = Lists.newArrayList();
-				String sql = "DELETE FROM entitymap WHERE last_access < NOW() - INTERVAL '" + cleanUpInterval + "'";
-				cleanUpUnis.add(
-						client.preparedQuery(sql).execute().onItem().transformToUni(r -> Uni.createFrom().voidItem()));
-				rows.forEach(row -> {
-					cleanUpUnis.add(
-							clientManager.getClient(row.getString(0), false).onItem().transformToUni(tenantClient -> {
-								return tenantClient.preparedQuery(sql).execute().onItem()
-										.transformToUni(r -> Uni.createFrom().voidItem());
-							}));
-				});
-				return Uni.combine().all().unis(cleanUpUnis).discardItems();
-			});
-		});
+		// return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY,
+		// false).onItem().transformToUni(client -> {
+		// return client.preparedQuery("select tenant_id from
+		// tenant").execute().onItem().transformToUni(rows -> {
+		// List<Uni<Void>> cleanUpUnis = Lists.newArrayList();
+		// String sql = "DELETE FROM entitymap WHERE last_access < NOW() - INTERVAL '" +
+		// cleanUpInterval + "'";
+		// cleanUpUnis.add(
+		// client.preparedQuery(sql).execute().onItem().transformToUni(r ->
+		// Uni.createFrom().voidItem()));
+		// rows.forEach(row -> {
+		// cleanUpUnis.add(
+		// clientManager.getClient(row.getString(0),
+		// false).onItem().transformToUni(tenantClient -> {
+		// return tenantClient.preparedQuery(sql).execute().onItem()
+		// .transformToUni(r -> Uni.createFrom().voidItem());
+		// }));
+		// });
+		// return Uni.combine().all().unis(cleanUpUnis).discardItems();
+		// });
+		// });
+		return Uni.createFrom().voidItem();
 	}
 
 	/*
@@ -1199,6 +1207,442 @@ public class QueryDAO {
 		followUp.setLength(followUp.length() - " UNION ALL ".length());
 		followUp.append(")");
 
+	}
+
+	private void generateJoinQuery(StringBuilder query, int joinLevel, boolean localOnly) {
+		query.append(", ");
+		int counter;
+		for (counter = 0; counter < joinLevel; counter++) {
+			query.append('B');
+			query.append(counter + 1);
+			query.append(" AS (SELECT ");
+			query.append('D');
+			query.append(counter);
+			query.append(".ID AS ID, X.VALUE AS VALUE FROM D");
+			query.append(counter);
+			query.append(", JSONB_EACH(D");
+			query.append(counter);
+			query.append(".ENTITY) AS X WHERE JSONB_TYPEOF(X.VALUE) = 'array'), ");
+			query.append('C');
+			query.append(counter + 1);
+			query.append(" AS (SELECT DISTINCT (CASE WHEN Y #>> '{");
+			query.append(NGSIConstants.JSON_LD_TYPE);
+			query.append(",0}' = '");
+			query.append(NGSIConstants.NGSI_LD_RELATIONSHIP);
+			query.append("' THEN Z ->> '");
+			query.append(NGSIConstants.JSON_LD_ID);
+			query.append("' WHEN Y #>> '{");
+			query.append(NGSIConstants.JSON_LD_TYPE);
+			query.append(",0}' = '");
+			query.append(NGSIConstants.NGSI_LD_LISTRELATIONSHIP);
+			query.append("' THEN Z #>> '{");
+			query.append(NGSIConstants.NGSI_LD_HAS_OBJECT);
+			query.append(",0,");
+			query.append(NGSIConstants.JSON_LD_ID);
+			query.append("}' ELSE NULL END) AS LINK");
+			if (!localOnly) {
+				query.append(", ARRAY_AGG(E_TYPES ->> '");
+				query.append(NGSIConstants.JSON_LD_ID);
+				query.append("') AS ET");
+			} else {
+				query.append(", null AS ET");
+			}
+			query.append(" FROM B");
+			query.append(counter + 1);
+			query.append(", JSONB_ARRAY_ELEMENTS(B");
+			query.append(counter + 1);
+			query.append(".VALUE) AS Y, JSONB_ARRAY_ELEMENTS(CASE WHEN Y #>> '{");
+			query.append(NGSIConstants.JSON_LD_TYPE);
+			query.append(",0}' = '");
+			query.append(NGSIConstants.NGSI_LD_RELATIONSHIP);
+			query.append("' THEN Y #> '{");
+			query.append(NGSIConstants.NGSI_LD_HAS_OBJECT);
+			query.append("}' WHEN Y #>> '{");
+			query.append(NGSIConstants.JSON_LD_TYPE);
+			query.append(",0}' = '");
+			query.append(NGSIConstants.NGSI_LD_LISTRELATIONSHIP);
+			query.append("' THEN Y #> '{");
+			query.append(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST);
+			query.append(",0,");
+			query.append(NGSIConstants.JSON_LD_LIST);
+			query.append("}' ELSE null END) AS Z");
+			// if (!localOnly) {
+			query.append(", JSONB_ARRAY_ELEMENTS(Y -> '");
+			query.append(NGSIConstants.NGSI_LD_OBJECT_TYPE);
+			query.append("') AS E_TYPES");
+			// } else {
+			// query.append(", null AS E_TYPES");
+			// }
+			query.append(" WHERE Y #>> '{");
+			query.append(NGSIConstants.JSON_LD_TYPE);
+			query.append(",0}' = ANY('{");
+			query.append(NGSIConstants.NGSI_LD_RELATIONSHIP);
+			query.append(",");
+			query.append(NGSIConstants.NGSI_LD_LISTRELATIONSHIP);
+			query.append("}')");
+			if (!localOnly) {
+				query.append(" AND Y ? '");
+				query.append(NGSIConstants.NGSI_LD_OBJECT_TYPE);
+				query.append('\'');
+			}
+			query.append(" GROUP BY y.value, z.value), ");
+
+			query.append('D');
+			query.append(counter + 1);
+			query.append(
+					" as (SELECT E.ID as id, E.ENTITY as entity, FALSE as parent, E.E_TYPES as E_TYPES, null::bigint, null, null");
+			query.append(" from C");
+			query.append(counter + 1);
+			query.append(" LEFT JOIN ENTITY as E on C");
+			query.append(counter + 1);
+			query.append(".link = E.ID");
+			if (!localOnly) {
+				query.append(" WHERE C");
+				query.append(counter + 1);
+				query.append(".ET && E.E_TYPES");
+			}
+			query.append("), ");
+
+		}
+
+		query.append(" JOINENTITIES AS (");
+
+		for (int i = 1; i <= joinLevel; i++) {
+			query.append("SELECT * FROM D");
+			query.append(i);
+			query.append(" UNION ALL ");
+
+		}
+		query.setLength(query.length() - " UNION ALL ".length());
+		query.append(")");
+
+	}
+
+	private int generateWherePart(StringBuilder query, int dollar, Tuple tuple,
+			List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeAndIdPattern, AttrsQueryTerm attrsQuery,
+			QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, Context context, int limit, int offset,
+			DataSetIdTerm dataSetIdTerm, String join, int joinLevel, String qToken, PickTerm pickTerm,
+			OmitTerm omitTerm, String queryChecksum, boolean splitEntities,
+			boolean regEmptyOrNoRegEntryAndNoLinkedQuery, boolean noRootLevelRegEntryAndLinkedQuery,
+			String typePattern, boolean localOnly) {
+
+		if (typePattern != null) {
+			query.append("EXISTS (SELECT TRUE FROM UNNEST(E_TYPES) AS E_TYPE WHERE E_TYPE ~ $");
+			query.append(dollar);
+			dollar++;
+			tuple.addString(typePattern);
+			query.append(") AND ");
+		}
+		boolean sqlAdded = false;
+		if (idsAndTypeAndIdPattern != null) {
+			sqlAdded = true;
+			query.append('(');
+
+			for (Tuple3<String[], TypeQueryTerm, String> t : idsAndTypeAndIdPattern) {
+				TypeQueryTerm typeQuery = t.getItem2();
+				String[] ids = t.getItem1();
+				String idPattern = t.getItem3();
+				boolean tSqlAdded = false;
+				query.append('(');
+
+				if (typeQuery != null) {
+					if (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery
+							|| !splitEntities) {
+						dollar = typeQuery.toSql(query, tuple, dollar);
+					} else {
+						dollar = typeQuery.toBroadSql(query, tuple, dollar);
+					}
+
+					tSqlAdded = true;
+				}
+				if (ids != null) {
+					if (tSqlAdded) {
+						query.append(" AND ");
+					}
+					query.append("id IN (");
+					for (String id : ids) {
+						query.append('$');
+						query.append(dollar);
+						query.append(',');
+						tuple.addString(id);
+						dollar++;
+					}
+
+					query.setCharAt(query.length() - 1, ')');
+					tSqlAdded = true;
+				}
+				if (idPattern != null) {
+					if (tSqlAdded) {
+						query.append(" AND ");
+					}
+					query.append("id ~ $");
+					query.append(dollar);
+					tuple.addString(idPattern);
+					dollar++;
+					tSqlAdded = true;
+				}
+				query.append(") OR ");
+
+			}
+			query.setLength(query.length() - 4);
+
+			query.append(')');
+
+		} else if (splitEntities && !regEmptyOrNoRegEntryAndNoLinkedQuery) {
+			if (attrsQuery != null) {
+				if (sqlAdded) {
+					query.append(" AND ");
+				}
+				dollar = attrsQuery.toSql(query, tuple, dollar);
+				sqlAdded = true;
+			} else if (pickTerm != null) {
+				if (sqlAdded) {
+					query.append(" AND ");
+				}
+				dollar = pickTerm.toSql(query, tuple, dollar);
+				sqlAdded = true;
+			} else if (omitTerm != null) {
+				if (sqlAdded) {
+					query.append(" AND ");
+				}
+				dollar = omitTerm.toSql(query, tuple, dollar);
+				sqlAdded = true;
+			} else if (qQuery != null) {
+				if (sqlAdded) {
+					query.append(" AND ");
+				}
+				dollar = qQuery.toSql(query, dollar, tuple, splitEntities, localOnly);
+				sqlAdded = true;
+			} else if (geoQuery != null) {
+				if (sqlAdded) {
+					query.append(" AND ");
+				}
+				dollar = geoQuery.toSql(query, tuple, dollar);
+				sqlAdded = true;
+			}
+
+		}
+
+		if (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery || !splitEntities) {
+			if (attrsQuery != null) {
+				if (sqlAdded) {
+					query.append(" AND ");
+				}
+				dollar = attrsQuery.toSql(query, tuple, dollar);
+				sqlAdded = true;
+			}
+			if (pickTerm != null) {
+				if (sqlAdded) {
+					query.append(" AND ");
+				}
+				dollar = pickTerm.toSql(query, tuple, dollar);
+				sqlAdded = true;
+			}
+			if (omitTerm != null) {
+				if (sqlAdded) {
+					query.append(" AND ");
+				}
+				dollar = omitTerm.toSql(query, tuple, dollar);
+				sqlAdded = true;
+			}
+			if (geoQuery != null) {
+				if (sqlAdded) {
+					query.append(" AND ");
+				}
+				dollar = geoQuery.toSql(query, tuple, dollar);
+				sqlAdded = true;
+			}
+
+			if (qQuery != null) {
+				if (sqlAdded) {
+					query.append(" AND ");
+				}
+				dollar = qQuery.toSql(query, dollar, tuple,
+						!regEmptyOrNoRegEntryAndNoLinkedQuery && splitEntities, localOnly);
+				sqlAdded = true;
+			}
+			if (dataSetIdTerm != null) {
+				if (sqlAdded) {
+					query.append(" AND ");
+				}
+				dollar = dataSetIdTerm.toSql(query, tuple, dollar, pickTerm, omitTerm,
+						attrsQuery);
+				sqlAdded = true;
+			}
+		}
+
+		if (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery || !splitEntities) {
+			if (scopeQuery != null) {
+				query.append(" AND ");
+				scopeQuery.toSql(query);
+			}
+		}
+		char[] checkArray = new char[AppConstants.CHAR_ARRAY_WHERE.length];
+		query.getChars(query.length() - checkArray.length, query.length(), checkArray, 0);
+		if (Arrays.equals(checkArray, AppConstants.CHAR_ARRAY_WHERE)) {
+			query.setLength(query.length() - checkArray.length);
+		}
+		query.append(
+				" ORDER BY createdAt");
+		return dollar;
+
+	}
+
+	public Uni<Tuple2<EntityCache, EntityMap>> newQuery(String tenant,
+			List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeAndIdPattern, AttrsQueryTerm attrsQuery,
+			QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, Context context, int limit, int offset,
+			DataSetIdTerm dataSetIdTerm, String join, int joinLevel, String qToken, PickTerm pickTerm,
+			OmitTerm omitTerm, String queryChecksum, boolean splitEntities,
+			boolean regEmptyOrNoRegEntryAndNoLinkedQuery, boolean noRootLevelRegEntryAndLinkedQuery, String typePattern,
+			boolean localOnly, boolean forceEntitymapCreation, boolean tokenProvided) {
+		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
+			StringBuilder query = new StringBuilder();
+			Tuple tuple = Tuple.tuple();
+			int dollar;
+			boolean doJoin = (join != null && joinLevel > 0);
+			if (!forceEntitymapCreation
+					&& (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery || localOnly)) {
+				query.append(
+						"WITH D0 AS (SELECT ID, ENTITY, TRUE as PARENT, ENTITY.E_TYPES AS E_TYPES, count(*) over() as list_size, null, null FROM ENTITY WHERE ");
+				dollar = 1;
+				dollar = generateWherePart(query, dollar, tuple, idsAndTypeAndIdPattern, attrsQuery, qQuery, geoQuery,
+						scopeQuery,
+						context, limit, offset, dataSetIdTerm, join, joinLevel, qToken, pickTerm, omitTerm,
+						queryChecksum,
+						splitEntities, regEmptyOrNoRegEntryAndNoLinkedQuery, noRootLevelRegEntryAndLinkedQuery,
+						typePattern,
+						localOnly);
+				query.append(" limit $");
+				query.append(dollar);
+				dollar++;
+				query.append(" offset $");
+				query.append(dollar);
+				query.append(')');
+				dollar++;
+				tuple.addInteger(limit);
+				tuple.addInteger(offset);
+				;
+			} else {
+				query.append("WITH a AS (");
+				if (tokenProvided) {
+					query.append(
+							"SELECT query_checksum, entity_id as id, remote_query, csourceid FROM entitymap WHERE map_id=$1), validation AS (SELECT CASE WHEN EXISTS (SELECT 1 FROM a WHERE query_checksum != $2) THEN 1 / 0 ELSE 1 END AS result)");
+					tuple.addString(qToken);
+					tuple.addString(queryChecksum);
+					dollar = 3;
+				} else {
+					dollar = 1;
+					query.append("SELECT ID, null as remote_query, '@none' as csourceid FROM ENTITY WHERE ");
+					generateWherePart(query, dollar, tuple, idsAndTypeAndIdPattern, attrsQuery, qQuery, geoQuery,
+							scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel, qToken, pickTerm,
+							omitTerm,
+							queryChecksum, splitEntities, regEmptyOrNoRegEntryAndNoLinkedQuery,
+							noRootLevelRegEntryAndLinkedQuery, typePattern, localOnly);
+					query.append(
+							"), b as (INSERT INTO entitymap (map_id, query_checksum , entity_id, remote_query, csourceid, last_access, expires_at) SELECT $");
+					query.append(dollar);
+					dollar++;
+					tuple.addString(qToken);
+					query.append(", $");
+					query.append(dollar);
+					dollar++;
+					tuple.addString(queryChecksum);
+					query.append(", id, null, '@none', now(), now() + interval '");
+					query.append(entityMapTTL);
+					query.append("' FROM a)");
+
+				}
+				query.append(
+						",D0 as (SELECT ENTITY.ID, ENTITY.ENTITY, TRUE as PARENT, ENTITY.E_TYPES AS E_TYPES, null::bigint as SIZE, a.remote_query, a.csourceid FROM a left join ENTITY on a.ID = ENTITY.ID");
+				query.append(" limit $");
+				query.append(dollar);
+				dollar++;
+				query.append(" offset $");
+				query.append(dollar);
+				query.append(')');
+				dollar++;
+				tuple.addInteger(limit);
+				tuple.addInteger(offset);
+			}
+
+			if (doJoin) {
+				generateJoinQuery(query, joinLevel, localOnly);
+			}
+			if (!forceEntitymapCreation
+					&& (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery || localOnly)) {
+				query.append(" SELECT * FROM D0");
+			} else {
+				query.append(
+						" SELECT a.ID, D0.ENTITY, D0.PARENT, D0.E_TYPES, D0.SIZE, a.remote_query, a.csourceid FROM a left join D0 on a.ID = D0.ID");
+			}
+
+			if (doJoin) {
+				query.append(" UNION ALL (SELECT * FROM JOINENTITIES)");
+			}
+
+			System.out.println(query.toString());
+			System.out.println(tuple.deepToString());
+			return client.preparedQuery(query.toString()).execute(tuple).onItem().transform(rows -> {
+				EntityMap entityMap = new EntityMap(qToken, splitEntities, regEmptyOrNoRegEntryAndNoLinkedQuery,
+						noRootLevelRegEntryAndLinkedQuery);
+				EntityCache entityCache = new EntityCache();
+				RowIterator<Row> it = rows.iterator();
+				if (!forceEntitymapCreation
+						&& (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery || localOnly)) {
+					while (it.hasNext()) {
+						Row row = it.next();
+						// a.ID, D0.ENTITY, D0.PARENT, D0.E_TYPES, D0.SIZE, a.remote_query, a.csourceid
+						String id = row.getString(0);
+						JsonObject entityObj = row.getJsonObject(1);
+						int size = row.getInteger(4);
+						entityMap.setManualSize(size);
+						if (entityObj != null) {
+							Map<String, Object> entity = entityObj.getMap();
+							entityCache.setEntityIntoEntityCache(id, entity, NGSIConstants.JSON_LD_NONE);
+
+							if (attrsQuery != null) {
+								attrsQuery.calculateEntity(entity);
+							} else if (pickTerm != null) {
+								// pickTerm.calculateEntity(entity);
+							} else if (omitTerm != null) {
+								// omitTerm.calculateEntity(entity);
+							} else if (dataSetIdTerm != null) {
+								dataSetIdTerm.calculateEntity(entity);
+							}
+						}
+					}
+				} else {
+					while (it.hasNext()) {
+						Row row = it.next();
+						// a.ID, D0.ENTITY, D0.PARENT, D0.E_TYPES, D0.SIZE, a.remote_query, a.csourceid
+						String id = row.getString(0);
+						JsonObject entityObj = row.getJsonObject(1);
+
+						String csourceId = row.getString(6);
+						String remoteQuery = row.getString(7);
+
+						QueryRemoteHost queryRemoteHost;
+						if (remoteQuery == null) {
+							queryRemoteHost = null;
+						} else {
+							try {
+								queryRemoteHost = objectMapper.readValue(remoteQuery, QueryRemoteHost.class);
+							} catch (JsonProcessingException e) {
+								e.printStackTrace();
+								continue;
+							}
+						}
+						entityMap.addEntry(id, csourceId, queryRemoteHost);
+						if (entityObj != null) {
+							Map<String, Object> entity = entityObj.getMap();
+							entityCache.setEntityIntoEntityCache(id, entity, NGSIConstants.JSON_LD_NONE);
+						}
+					}
+				}
+
+				return Tuple2.of(entityCache, entityMap);
+			});
+		});
 	}
 
 	public Uni<Tuple2<EntityCache, EntityMap>> createEntityMapAndFillEntityCache(String tenant,

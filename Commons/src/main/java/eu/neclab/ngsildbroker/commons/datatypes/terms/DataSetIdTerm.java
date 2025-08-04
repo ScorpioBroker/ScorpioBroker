@@ -67,8 +67,11 @@ public class DataSetIdTerm implements Serializable {
 			}
 		}
 	}
-	public int toSql(StringBuilder query,StringBuilder followUp, Tuple tuple, int dollar, PickTerm pick, OmitTerm omit, AttrsQueryTerm attrsQuery) {
-		query.append("EXISTS (SELECT FROM JSONB_EACH(ENTITY) as attrs, JSONB_ARRAY_ELEMENTS(attrs.value) as elem WHERE NOT attrs.key = ANY(ARRAY['");
+
+	public int toSql(StringBuilder query, StringBuilder followUp, Tuple tuple, int dollar, PickTerm pick, OmitTerm omit,
+			AttrsQueryTerm attrsQuery) {
+		query.append(
+				"EXISTS (SELECT FROM JSONB_EACH(ENTITY) as attrs, JSONB_ARRAY_ELEMENTS(attrs.value) as elem WHERE NOT attrs.key = ANY(ARRAY['");
 		query.append(NGSIConstants.JSON_LD_ID);
 		query.append("','");
 		query.append(NGSIConstants.JSON_LD_TYPE);
@@ -79,10 +82,9 @@ public class DataSetIdTerm implements Serializable {
 		query.append("','");
 		query.append(NGSIConstants.NGSI_LD_OBSERVED_AT);
 		query.append("'])");
-		
-		
-		
-		followUp.append("EXISTS (SELECT FROM JSONB_EACH(ENTITY) as attrs, JSONB_ARRAY_ELEMENTS(attrs.value) as elem WHERE NOT attrs.key = ANY(ARRAY[''");
+
+		followUp.append(
+				"EXISTS (SELECT FROM JSONB_EACH(ENTITY) as attrs, JSONB_ARRAY_ELEMENTS(attrs.value) as elem WHERE NOT attrs.key = ANY(ARRAY[''");
 		followUp.append(NGSIConstants.JSON_LD_ID);
 		followUp.append("'',''");
 		followUp.append(NGSIConstants.JSON_LD_TYPE);
@@ -93,35 +95,35 @@ public class DataSetIdTerm implements Serializable {
 		followUp.append("'',''");
 		followUp.append(NGSIConstants.NGSI_LD_OBSERVED_AT);
 		followUp.append("''])");
-		
-		if(pick != null || omit != null || attrsQuery !=null) {
+
+		if (pick != null || omit != null || attrsQuery != null) {
 			Set<String> attrs = null;
-			if(omit != null) {
+			if (omit != null) {
 				attrs = omit.getAllTopLevelAttribs(false);
 			}
-			if(pick != null) {
+			if (pick != null) {
 				attrs = pick.getAllTopLevelAttribs(true);
 			}
-			if(attrsQuery != null) {
+			if (attrsQuery != null) {
 				attrs = attrsQuery.getAttrs();
 			}
 			query.append(" AND ");
 			followUp.append(" AND ");
-			if(omit != null) {
+			if (omit != null) {
 				query.append("NOT ");
-				followUp.append("NOT ");	
+				followUp.append("NOT ");
 			}
 			query.append("attrs.key = ANY(ARRAY[");
 			followUp.append("attrs.key = ANY(ARRAY[''' || ");
-			for(String attrib: attrs) {
+			for (String attrib : attrs) {
 				query.append('$');
 				query.append(dollar);
 				query.append(',');
-				
+
 				followUp.append('$');
 				followUp.append(dollar);
 				followUp.append(" || ''',''' || ");
-				
+
 				tuple.addString(attrib);
 				dollar++;
 			}
@@ -133,23 +135,23 @@ public class DataSetIdTerm implements Serializable {
 		query.append(" AND (");
 		followUp.append(" AND (");
 		boolean onlyNone = false;
-		if(ids.contains(NGSIConstants.JSON_LD_NONE)) {
+		if (ids.contains(NGSIConstants.JSON_LD_NONE)) {
 			query.append("NOT elem ? '");
 			query.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
 			query.append("'");
-			
+
 			followUp.append("NOT elem ? ''");
 			followUp.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
 			followUp.append("''");
 			onlyNone = true;
-			
-			if(ids.size() > 1) {
-				query.append(" OR ");	
+
+			if (ids.size() > 1) {
+				query.append(" OR ");
 				followUp.append(" OR ");
 				onlyNone = false;
 			}
 		}
-		if(!onlyNone) {
+		if (!onlyNone) {
 			query.append("(elem ? '");
 			query.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
 			query.append("' and elem #>> '{");
@@ -157,7 +159,7 @@ public class DataSetIdTerm implements Serializable {
 			query.append(",0,");
 			query.append(NGSIConstants.JSON_LD_ID);
 			query.append("}' = ANY(ARRAY[");
-			
+
 			followUp.append("(elem ? ''");
 			followUp.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
 			followUp.append("'' and elem #>> ''{");
@@ -165,8 +167,8 @@ public class DataSetIdTerm implements Serializable {
 			followUp.append(",0,");
 			followUp.append(NGSIConstants.JSON_LD_ID);
 			followUp.append("}'' = ANY(ARRAY[''' || ");
-			for(String id: ids) {
-				if(NGSIConstants.JSON_LD_NONE.equals(id)) {
+			for (String id : ids) {
+				if (NGSIConstants.JSON_LD_NONE.equals(id)) {
 					continue;
 				}
 				query.append('$');
@@ -187,10 +189,95 @@ public class DataSetIdTerm implements Serializable {
 		followUp.append(")");
 		followUp.append("))");
 		query.append("))");
-		
+
 		return dollar;
 	}
-	
+
+	public int toSql(StringBuilder query, Tuple tuple, int dollar, PickTerm pick, OmitTerm omit,
+			AttrsQueryTerm attrsQuery) {
+		query.append(
+				"EXISTS (SELECT FROM JSONB_EACH(ENTITY) as attrs, JSONB_ARRAY_ELEMENTS(attrs.value) as elem WHERE NOT attrs.key = ANY(ARRAY['");
+		query.append(NGSIConstants.JSON_LD_ID);
+		query.append("','");
+		query.append(NGSIConstants.JSON_LD_TYPE);
+		query.append("','");
+		query.append(NGSIConstants.NGSI_LD_CREATED_AT);
+		query.append("','");
+		query.append(NGSIConstants.NGSI_LD_MODIFIED_AT);
+		query.append("','");
+		query.append(NGSIConstants.NGSI_LD_OBSERVED_AT);
+		query.append("'])");
+
+		if (pick != null || omit != null || attrsQuery != null) {
+			Set<String> attrs = null;
+			if (omit != null) {
+				attrs = omit.getAllTopLevelAttribs(false);
+			}
+			if (pick != null) {
+				attrs = pick.getAllTopLevelAttribs(true);
+			}
+			if (attrsQuery != null) {
+				attrs = attrsQuery.getAttrs();
+			}
+			query.append(" AND ");
+			if (omit != null) {
+				query.append("NOT ");
+			}
+			query.append("attrs.key = ANY(ARRAY[");
+			for (String attrib : attrs) {
+				query.append('$');
+				query.append(dollar);
+				query.append(',');
+
+				tuple.addString(attrib);
+				dollar++;
+			}
+			query.setLength(query.length() - 1);
+			query.append("])");
+		}
+		query.append(" AND (");
+
+		boolean onlyNone = false;
+		if (ids.contains(NGSIConstants.JSON_LD_NONE)) {
+			query.append("NOT elem ? '");
+			query.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
+			query.append("'");
+			onlyNone = true;
+
+			if (ids.size() > 1) {
+				query.append(" OR ");
+				onlyNone = false;
+			}
+		}
+		if (!onlyNone) {
+			query.append("(elem ? '");
+			query.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
+			query.append("' and elem #>> '{");
+			query.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
+			query.append(",0,");
+			query.append(NGSIConstants.JSON_LD_ID);
+			query.append("}' = ANY(ARRAY[");
+
+			for (String id : ids) {
+				if (NGSIConstants.JSON_LD_NONE.equals(id)) {
+					continue;
+				}
+				query.append('$');
+				query.append(dollar);
+				query.append(',');
+
+				dollar++;
+				tuple.addString(id);
+			}
+			query.setLength(query.length() - 1);
+			query.append("])");
+		}
+		query.append(")");
+		query.append("))");
+
+		return dollar;
+	}
+
 	public int toSqlConstructEntity(StringBuilder query, Tuple tuple, String tableToUse, int dollar) {
 		query.append("JSONB_STRIP_NULLS(JSONB_OBJECT_AGG(");
 		query.append(tableToUse);
@@ -208,18 +295,19 @@ public class DataSetIdTerm implements Serializable {
 		query.append(NGSIConstants.NGSI_LD_MODIFIED_AT);
 		query.append("}') THEN ");
 		query.append(tableToUse);
-		query.append(".VALUE ELSE (SELECT CASE WHEN jsonb_array_length(filtered.res) > 0 THEN filtered.res ELSE NULL::jsonb END FROM (SELECT jsonb_agg(val) as res FROM jsonb_array_elements(");
+		query.append(
+				".VALUE ELSE (SELECT CASE WHEN jsonb_array_length(filtered.res) > 0 THEN filtered.res ELSE NULL::jsonb END FROM (SELECT jsonb_agg(val) as res FROM jsonb_array_elements(");
 		query.append(tableToUse);
 		query.append(".VALUE) as val where ");
-		if(ids.remove(NGSIConstants.JSON_LD_NONE)) {
+		if (ids.remove(NGSIConstants.JSON_LD_NONE)) {
 			query.append("NOT val ? '");
 			query.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
 			query.append("'");
-			if(!ids.isEmpty()) {
-				query.append(" OR ");	
+			if (!ids.isEmpty()) {
+				query.append(" OR ");
 			}
 		}
-		if(!ids.isEmpty()) {
+		if (!ids.isEmpty()) {
 			query.append("val ? '");
 			query.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
 			query.append("' and val #>> '{");
@@ -235,8 +323,9 @@ public class DataSetIdTerm implements Serializable {
 		query.append(") as filtered) END ))");
 		return dollar;
 	}
-	
-	public int toSqlConstructEntity(StringBuilder query, StringBuilder followUp, Tuple tuple, String tableToUse, int dollar) {
+
+	public int toSqlConstructEntity(StringBuilder query, StringBuilder followUp, Tuple tuple, String tableToUse,
+			int dollar) {
 		query.append("JSONB_STRIP_NULLS(JSONB_OBJECT_AGG(");
 		query.append(tableToUse);
 		query.append(".KEY, CASE WHEN ");
@@ -253,10 +342,11 @@ public class DataSetIdTerm implements Serializable {
 		query.append(NGSIConstants.NGSI_LD_MODIFIED_AT);
 		query.append("}') THEN ");
 		query.append(tableToUse);
-		query.append(".VALUE ELSE (SELECT CASE WHEN jsonb_array_length(filtered.res) > 0 THEN filtered.res ELSE NULL::jsonb END FROM (SELECT jsonb_agg(val) as res FROM jsonb_array_elements(");
+		query.append(
+				".VALUE ELSE (SELECT CASE WHEN jsonb_array_length(filtered.res) > 0 THEN filtered.res ELSE NULL::jsonb END FROM (SELECT jsonb_agg(val) as res FROM jsonb_array_elements(");
 		query.append(tableToUse);
 		query.append(".VALUE) as val where ");
-		
+
 		followUp.append("JSONB_STRIP_NULLS(JSONB_OBJECT_AGG(");
 		followUp.append(tableToUse);
 		followUp.append(".KEY, CASE WHEN ");
@@ -273,26 +363,27 @@ public class DataSetIdTerm implements Serializable {
 		followUp.append(NGSIConstants.NGSI_LD_MODIFIED_AT);
 		followUp.append("}'') THEN ");
 		followUp.append(tableToUse);
-		followUp.append(".VALUE ELSE (SELECT CASE WHEN jsonb_array_length(filtered.res) > 0 THEN filtered.res ELSE NULL::jsonb END FROM (SELECT jsonb_agg(val) as res FROM jsonb_array_elements(");
+		followUp.append(
+				".VALUE ELSE (SELECT CASE WHEN jsonb_array_length(filtered.res) > 0 THEN filtered.res ELSE NULL::jsonb END FROM (SELECT jsonb_agg(val) as res FROM jsonb_array_elements(");
 		followUp.append(tableToUse);
 		followUp.append(".VALUE) as val where ");
 		boolean onlyNone = false;
-		if(ids.contains(NGSIConstants.JSON_LD_NONE)) {
+		if (ids.contains(NGSIConstants.JSON_LD_NONE)) {
 			query.append("NOT val ? '");
 			query.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
 			query.append("'");
-			
+
 			followUp.append("NOT val ? ''");
 			followUp.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
 			followUp.append("''");
 			onlyNone = true;
-			if(ids.size() > 1) {
-				query.append(" OR ");	
+			if (ids.size() > 1) {
+				query.append(" OR ");
 				followUp.append(" OR ");
 				onlyNone = false;
 			}
 		}
-		if(!onlyNone) {
+		if (!onlyNone) {
 			query.append("val ? '");
 			query.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
 			query.append("' and val #>> '{");
@@ -300,7 +391,7 @@ public class DataSetIdTerm implements Serializable {
 			query.append(",0,");
 			query.append(NGSIConstants.JSON_LD_ID);
 			query.append("}' = ANY(ARRAY[");
-			
+
 			followUp.append("val ? ''");
 			followUp.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
 			followUp.append("'' and val #>> ''{");
@@ -308,8 +399,8 @@ public class DataSetIdTerm implements Serializable {
 			followUp.append(",0,");
 			followUp.append(NGSIConstants.JSON_LD_ID);
 			followUp.append("}'' = ANY(ARRAY[''' || ");
-			for(String id: ids) {
-				if(NGSIConstants.JSON_LD_NONE.equals(id)) {
+			for (String id : ids) {
+				if (NGSIConstants.JSON_LD_NONE.equals(id)) {
 					continue;
 				}
 				query.append('$');

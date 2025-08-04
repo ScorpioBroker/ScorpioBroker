@@ -133,7 +133,8 @@ public class QueryService implements CSourceHandler {
 		if (!tokenProvided || AppConstants.ENTITYMAP_IGNORE.equals(qToken)) {
 			return getAndStoreEntityMap(tenant, qToken, idsAndTypeQueryAndIdPattern, attrsQuery, geoQuery, qQuery,
 					scopeQuery, langQuery, limit, offSet, context, headersFromReq, doNotCompact, dataSetIdTerm, join,
-					joinLevel, entityDist, pickTerm, omitTerm, checkSum, viaHeaders, typePattern, localOnly, false)
+					joinLevel, entityDist, pickTerm, omitTerm, checkSum, viaHeaders, typePattern, localOnly, false,
+					tokenProvided)
 					.onItem().transformToUni(t -> {
 						return handleEntityMap(t.getItem2(), t.getItem1(), tenant, idsAndTypeQueryAndIdPattern,
 								attrsQuery, qQuery, geoQuery, scopeQuery, langQuery, limit, offSet, count,
@@ -155,7 +156,8 @@ public class QueryService implements CSourceHandler {
 							return getAndStoreEntityMap(tenant, qToken, idsAndTypeQueryAndIdPattern, attrsQuery,
 									geoQuery, qQuery, scopeQuery, langQuery, limit, offSet, context, headersFromReq,
 									doNotCompact, dataSetIdTerm, join, joinLevel, entityDist, pickTerm, omitTerm,
-									checkSum, viaHeaders, typePattern, localOnly, false).onItem().transformToUni(t2 -> {
+									checkSum, viaHeaders, typePattern, localOnly, false, tokenProvided).onItem()
+									.transformToUni(t2 -> {
 										return handleEntityMap(t2.getItem2(), t2.getItem1(), tenant,
 												idsAndTypeQueryAndIdPattern, attrsQuery, qQuery, geoQuery, scopeQuery,
 												langQuery, limit, offSet, count, dataSetIdTerm, join, joinLevel,
@@ -1857,13 +1859,13 @@ public class QueryService implements CSourceHandler {
 			int offset, Context context, io.vertx.core.MultiMap headersFromReq, boolean doNotCompact,
 			DataSetIdTerm dataSetIdTerm, String join, int joinLevel, boolean splitEntities, PickTerm pickTerm,
 			OmitTerm omitTerm, String queryCechksum, ViaHeaders viaHeaders, String typePattern, boolean localOnly,
-			boolean forceEntitymapCreation) {
+			boolean forceEntitymapCreation, boolean tokenProvided) {
 
 		if (tenant2CId2RegEntries.isEmpty()) {
-			return queryDAO.createEntityMapAndFillEntityCache(tenant, idsAndTypeQueryAndIdPattern, attrsQuery, qQuery,
+			return queryDAO.newQuery(tenant, idsAndTypeQueryAndIdPattern, attrsQuery, qQuery,
 					geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel, qToken, pickTerm,
 					omitTerm, queryCechksum, splitEntities, true, false, typePattern, localOnly,
-					forceEntitymapCreation);
+					forceEntitymapCreation, tokenProvided);
 		} else {
 			EntityCache fullEntityCache = new EntityCache();
 			Collection<QueryRemoteHost> remoteHost2Query = EntityTools.getRemoteQueries(tenant,
