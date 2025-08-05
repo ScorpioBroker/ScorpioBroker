@@ -1,5 +1,8 @@
 package com.github.jsonldjava.core;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -11,6 +14,9 @@ import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+
+import com.google.common.collect.Maps;
+
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
@@ -38,6 +44,9 @@ public class JsonLDService {
 	Vertx vertx;
 
 	WebClient webClient;
+
+	@ConfigProperty(name = "scorpio.multithreadingthreshold", defaultValue = "3000")
+	int multiThreadingThreshold;
 
 	@PostConstruct
 	void setup() {
@@ -91,7 +100,32 @@ public class JsonLDService {
 
 	public Uni<Map<String, Object>> compact(Object input, Object context, Context activeCtx, JsonLdOptions opts,
 			int endPoint, Set<String> options, LanguageQueryTerm langQuery) {
-		return JsonLdProcessor.compact(input, context, activeCtx, opts, endPoint, options, langQuery, webClient);
+		if (input instanceof List<?> l && l.size() > multiThreadingThreshold * 1.5) {
+			int i = 0;
+			int lSize = l.size();
+			List<Uni<Map<String, Object>>> unis = new ArrayList<>(lSize / multiThreadingThreshold);
+			while (i < l.size()) {
+				unis.add(JsonLdProcessor.compact(l.subList(i, i + multiThreadingThreshold), context, activeCtx, opts,
+						endPoint, options, langQuery, webClient));
+				i = i + multiThreadingThreshold;
+			}
+			return Uni.combine().all().unis(unis).with(rl -> {
+				Map<String, Object> result = new HashMap<>(2);
+				List<Map<String, Object>> graphList = new ArrayList<>(lSize);
+				result.put(JsonLdConsts.GRAPH, graphList);
+				result.put(JsonLdConsts.CONTEXT, ((Map<String, Object>) rl.get(0)).get(JsonLdConsts.CONTEXT));
+				Iterator<?> it = rl.iterator();
+				while (it.hasNext()) {
+					Map<String, Object> next = (Map<String, Object>) it.next();
+					List<Map<String, Object>> nextGraphList = (List<Map<String, Object>>) next.get(JsonLdConsts.GRAPH);
+					graphList.addAll(nextGraphList);
+				}
+				return result;
+			});
+		} else {
+			return JsonLdProcessor.compact(input, context, activeCtx, opts, endPoint, options, langQuery, webClient);
+		}
+
 	}
 
 	public Uni<List<Object>> expand(List<Object> contextLinks, Object input, JsonLdOptions opts, int payloadType,
