@@ -1594,20 +1594,22 @@ public class QueryDAO {
 						// a.ID, D0.ENTITY, D0.PARENT, D0.E_TYPES, D0.SIZE, a.remote_query, a.csourceid
 						String id = row.getString(0);
 						JsonObject entityObj = row.getJsonObject(1);
+						boolean parent = row.getBoolean(2);
 						Integer size = row.getInteger(4);
 						entityMap.addEntry(id, NGSIConstants.JSON_LD_NONE, null);
 						if (entityObj != null) {
 							Map<String, Object> entity = entityObj.getMap();
 							entityCache.setEntityIntoEntityCache(id, entity, NGSIConstants.JSON_LD_NONE);
-
-							if (attrsQuery != null) {
-								attrsQuery.calculateEntity(entity);
-							} else if (pickTerm != null) {
-								// pickTerm.calculateEntity(entity);
-							} else if (omitTerm != null) {
-								// omitTerm.calculateEntity(entity);
-							} else if (dataSetIdTerm != null) {
-								dataSetIdTerm.calculateEntity(entity);
+							if (parent) {
+								if (attrsQuery != null) {
+									attrsQuery.calculateEntity(entity);
+								} else if (pickTerm != null) {
+									pickTerm.calculateEntity(entity, false, null, null, false);
+								} else if (omitTerm != null) {
+									omitTerm.calculateEntity(entity, false, null, null, false);
+								} else if (dataSetIdTerm != null) {
+									dataSetIdTerm.calculateEntity(entity);
+								}
 							}
 						}
 						if (size != null) {

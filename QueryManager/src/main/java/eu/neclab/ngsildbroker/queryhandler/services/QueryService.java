@@ -272,11 +272,6 @@ public class QueryService implements CSourceHandler {
 					resultData.add(entityCache.get(id2Hosts.getKey()).getItem1());
 				}
 			});
-			if ((pickTerm != null)
-					|| (omitTerm != null)) {
-				EntityTools.evaluateFilterQueries(result, null, null, null, null, pickTerm, omitTerm, null,
-						entityCache, null, true);
-			}
 
 			if (join != null && joinLevel > 0) {
 				if (NGSIConstants.FLAT.equals(join)) {
