@@ -1525,8 +1525,10 @@ public class QueryDAO {
 			} else {
 				query.append("WITH a AS (");
 				if (tokenProvided) {
+					query.append("UPDATE entitymap SET expires_at = now() + interval '");
+					query.append(entityMapTTL);
 					query.append(
-							"SELECT query_checksum, entity_id as id, remote_query, csourceid FROM entitymap WHERE map_id=$1), validation AS (SELECT CASE WHEN EXISTS (SELECT 1 FROM a WHERE query_checksum != $2) THEN 1 / 0 ELSE 1 END AS result)");
+							"' last_access = now() WHERE map_id=$1 RETURNING query_checksum, entity_id as id, remote_query, csourceid), validation AS (SELECT CASE WHEN NOT EXISTS (SELECT 1 FROM a) THEN 1 / 0 WHEN EXISTS (SELECT 1 FROM a WHERE query_checksum != $2) THEN 1 / 0 ELSE 1 END AS result)");
 					tuple.addString(qToken);
 					tuple.addString(queryChecksum);
 					dollar = 3;
@@ -1648,6 +1650,18 @@ public class QueryDAO {
 				}
 
 				return Tuple2.of(entityCache, entityMap);
+			}).onFailure().recoverWithUni(e -> {
+				if (e instanceof PgException pgE) {
+					// abusing division by zero for handling invalid entitymap requests
+					if (pgE.getErrorCode() == 22012) {
+						return newQuery(tenant, idsAndTypeAndIdPattern, attrsQuery, qQuery, geoQuery, scopeQuery,
+								context, limit, offset, dataSetIdTerm, join, joinLevel, qToken, pickTerm, omitTerm,
+								queryChecksum, splitEntities, regEmptyOrNoRegEntryAndNoLinkedQuery,
+								noRootLevelRegEntryAndLinkedQuery, typePattern, localOnly, forceEntitymapCreation,
+								false);
+					}
+				}
+				return Uni.createFrom().failure(e);
 			});
 		});
 	}

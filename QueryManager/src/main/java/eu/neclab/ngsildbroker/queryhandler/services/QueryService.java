@@ -130,97 +130,112 @@ public class QueryService implements CSourceHandler {
 			io.vertx.core.MultiMap headersFromReq, boolean doNotCompact, Set<String> jsonKeys,
 			DataSetIdTerm dataSetIdTerm, String join, int joinLevel, boolean entityDist, PickTerm pickTerm,
 			OmitTerm omitTerm, String checkSum, ViaHeaders viaHeaders, String typePattern) {
-		if (!tokenProvided || AppConstants.ENTITYMAP_IGNORE.equals(qToken)) {
-			return getAndStoreEntityMap(tenant, qToken, idsAndTypeQueryAndIdPattern, attrsQuery, geoQuery, qQuery,
-					scopeQuery, langQuery, limit, offSet, context, headersFromReq, doNotCompact, dataSetIdTerm, join,
-					joinLevel, entityDist, pickTerm, omitTerm, checkSum, viaHeaders, typePattern, localOnly, false,
-					tokenProvided)
-					.onItem().transformToUni(t -> {
-						return handleEntityMap(t.getItem2(), t.getItem1(), tenant, idsAndTypeQueryAndIdPattern,
-								attrsQuery, qQuery, geoQuery, scopeQuery, langQuery, limit, offSet, count,
-								dataSetIdTerm, join, joinLevel, context, jsonKeys, headersFromReq, pickTerm, omitTerm,
-								viaHeaders);
+		// if (!tokenProvided || AppConstants.ENTITYMAP_IGNORE.equals(qToken)) {
+		return getAndStoreEntityMap(tenant, qToken, idsAndTypeQueryAndIdPattern, attrsQuery, geoQuery, qQuery,
+				scopeQuery, langQuery, limit, offSet, context, headersFromReq, doNotCompact, dataSetIdTerm, join,
+				joinLevel, entityDist, pickTerm, omitTerm, checkSum, viaHeaders, typePattern, localOnly, false,
+				tokenProvided)
+				.onItem().transformToUni(t -> {
+					return handleEntityMap(t.getItem2(), t.getItem1(), tenant, idsAndTypeQueryAndIdPattern,
+							attrsQuery, qQuery, geoQuery, scopeQuery, langQuery, limit, offSet, count,
+							dataSetIdTerm, join, joinLevel, context, jsonKeys, headersFromReq, pickTerm, omitTerm,
+							viaHeaders);
 
-					});
-		} else {
-			return getEntityMapAndEntitiesAndUpdateExpires(tenant, idsAndTypeQueryAndIdPattern, limit, offSet, qToken,
-					checkSum).onItem().transformToUni(t -> {
-						EntityMap entityMap = t.getItem2();
-						if (entityMap == null) {
-							if (idsAndTypeQueryAndIdPattern == null && attrsQuery == null && geoQuery == null
-									&& qQuery == null && scopeQuery == null && langQuery == null && pickTerm == null
-									&& omitTerm == null) {
-								return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData,
-										"Unknow entitymap and no query details provided please requery with the original query params"));
-							}
-							return getAndStoreEntityMap(tenant, qToken, idsAndTypeQueryAndIdPattern, attrsQuery,
-									geoQuery, qQuery, scopeQuery, langQuery, limit, offSet, context, headersFromReq,
-									doNotCompact, dataSetIdTerm, join, joinLevel, entityDist, pickTerm, omitTerm,
-									checkSum, viaHeaders, typePattern, localOnly, false, tokenProvided).onItem()
-									.transformToUni(t2 -> {
-										return handleEntityMap(t2.getItem2(), t2.getItem1(), tenant,
-												idsAndTypeQueryAndIdPattern, attrsQuery, qQuery, geoQuery, scopeQuery,
-												langQuery, limit, offSet, count, dataSetIdTerm, join, joinLevel,
-												context, jsonKeys, headersFromReq, pickTerm, omitTerm, viaHeaders);
+				});
+		// } else {
+		// return getEntityMapAndEntitiesAndUpdateExpires(tenant,
+		// idsAndTypeQueryAndIdPattern, limit, offSet, qToken,
+		// checkSum).onItem().transformToUni(t -> {
+		// EntityMap entityMap = t.getItem2();
+		// if (entityMap == null) {
+		// if (idsAndTypeQueryAndIdPattern == null && attrsQuery == null && geoQuery ==
+		// null
+		// && qQuery == null && scopeQuery == null && langQuery == null && pickTerm ==
+		// null
+		// && omitTerm == null) {
+		// return Uni.createFrom().failure(new
+		// ResponseException(ErrorType.BadRequestData,
+		// "Unknow entitymap and no query details provided please requery with the
+		// original query params"));
+		// }
+		// return getAndStoreEntityMap(tenant, qToken, idsAndTypeQueryAndIdPattern,
+		// attrsQuery,
+		// geoQuery, qQuery, scopeQuery, langQuery, limit, offSet, context,
+		// headersFromReq,
+		// doNotCompact, dataSetIdTerm, join, joinLevel, entityDist, pickTerm, omitTerm,
+		// checkSum, viaHeaders, typePattern, localOnly, false, tokenProvided).onItem()
+		// .transformToUni(t2 -> {
+		// return handleEntityMap(t2.getItem2(), t2.getItem1(), tenant,
+		// idsAndTypeQueryAndIdPattern, attrsQuery, qQuery, geoQuery, scopeQuery,
+		// langQuery, limit, offSet, count, dataSetIdTerm, join, joinLevel,
+		// context, jsonKeys, headersFromReq, pickTerm, omitTerm, viaHeaders);
 
-									});
-						}
+		// });
+		// }
 
-						List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeQueryAndIdPatternTBU = idsAndTypeQueryAndIdPattern;
-						AttrsQueryTerm attrsQueryTBU = attrsQuery;
-						QQueryTerm qQueryTBU = qQuery;
-						GeoQueryTerm geoQueryTBU = geoQuery;
-						ScopeQueryTerm scopeQueryTBU = scopeQuery;
-						LanguageQueryTerm langQueryTBU = langQuery;
-						Set<String> jsonKeysTBU = jsonKeys;
-						DataSetIdTerm dataSetIdTermTBU = dataSetIdTerm;
-						String joinTBU = join;
-						int joinLevelTBU = joinLevel;
-						PickTerm pickTermTBU = pickTerm;
-						OmitTerm omitTermTBU = omitTerm;
+		// List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeQueryAndIdPatternTBU
+		// = idsAndTypeQueryAndIdPattern;
+		// AttrsQueryTerm attrsQueryTBU = attrsQuery;
+		// QQueryTerm qQueryTBU = qQuery;
+		// GeoQueryTerm geoQueryTBU = geoQuery;
+		// ScopeQueryTerm scopeQueryTBU = scopeQuery;
+		// LanguageQueryTerm langQueryTBU = langQuery;
+		// Set<String> jsonKeysTBU = jsonKeys;
+		// DataSetIdTerm dataSetIdTermTBU = dataSetIdTerm;
+		// String joinTBU = join;
+		// int joinLevelTBU = joinLevel;
+		// PickTerm pickTermTBU = pickTerm;
+		// OmitTerm omitTermTBU = omitTerm;
 
-						if (entityMap.isRegEmptyOrNoRegEntryAndNoLinkedQuery()) {
-							return handleEntityMap(t.getItem2(), t.getItem1(), tenant, idsAndTypeQueryAndIdPatternTBU,
-									attrsQuery, qQuery, geoQuery, scopeQuery, langQuery, limit, offSet, count,
-									dataSetIdTerm, join, joinLevel, context, jsonKeys, headersFromReq, pickTerm,
-									omitTerm, viaHeaders);
-						} else if (entityMap.isNoRootLevelRegEntryAndLinkedQuery()) {
-							if (attrsQuery == null && pickTerm == null && qQuery == null && omitTerm == null
-									&& dataSetIdTerm == null) {
-								Query storedQuery = entityMap.getQuery();
-								attrsQueryTBU = storedQuery.getAttrsQueryTerm();
-								qQueryTBU = storedQuery.getqQueryTerm();
-								dataSetIdTermTBU = storedQuery.getDataSetIdTerm();
-								pickTermTBU = storedQuery.getPickTerm();
-								omitTermTBU = storedQuery.getOmitTerm();
-								jsonKeysTBU = storedQuery.getJsonKeys();
-							}
-						} else {
-							if (idsAndTypeQueryAndIdPattern == null && attrsQuery == null && qQuery == null
-									&& csf == null && geoQuery == null && scopeQuery == null && langQuery == null
-									&& jsonKeys == null && dataSetIdTerm == null && join == null && joinLevel <= 0
-									&& pickTerm == null && omitTerm == null) {
-								Query storedQuery = entityMap.getQuery();
-								idsAndTypeQueryAndIdPatternTBU = storedQuery.getIdsAndTypeAndIdPattern();
-								attrsQueryTBU = storedQuery.getAttrsQueryTerm();
-								qQueryTBU = storedQuery.getqQueryTerm();
-								geoQueryTBU = storedQuery.getGeoQueryTerm();
-								scopeQueryTBU = storedQuery.getScopeQueryTerm();
-								langQueryTBU = storedQuery.getLanguageQueryTerm();
-								jsonKeysTBU = storedQuery.getJsonKeys();
-								dataSetIdTermTBU = storedQuery.getDataSetIdTerm();
-								joinTBU = storedQuery.getJoin();
-								joinLevelTBU = storedQuery.getJoinLevel();
-								pickTermTBU = storedQuery.getPickTerm();
-								omitTermTBU = storedQuery.getOmitTerm();
-							}
-						}
-						return handleEntityMap(t.getItem2(), t.getItem1(), tenant, idsAndTypeQueryAndIdPatternTBU,
-								attrsQueryTBU, qQueryTBU, geoQueryTBU, scopeQueryTBU, langQueryTBU, limit, offSet,
-								count, dataSetIdTermTBU, joinTBU, joinLevelTBU, context, jsonKeysTBU, headersFromReq,
-								pickTermTBU, omitTermTBU, viaHeaders);
-					});
-		}
+		// if (entityMap.isRegEmptyOrNoRegEntryAndNoLinkedQuery()) {
+		// return handleEntityMap(t.getItem2(), t.getItem1(), tenant,
+		// idsAndTypeQueryAndIdPatternTBU,
+		// attrsQuery, qQuery, geoQuery, scopeQuery, langQuery, limit, offSet, count,
+		// dataSetIdTerm, join, joinLevel, context, jsonKeys, headersFromReq, pickTerm,
+		// omitTerm, viaHeaders);
+		// } else if (entityMap.isNoRootLevelRegEntryAndLinkedQuery()) {
+		// if (attrsQuery == null && pickTerm == null && qQuery == null && omitTerm ==
+		// null
+		// && dataSetIdTerm == null) {
+		// Query storedQuery = entityMap.getQuery();
+		// attrsQueryTBU = storedQuery.getAttrsQueryTerm();
+		// qQueryTBU = storedQuery.getqQueryTerm();
+		// dataSetIdTermTBU = storedQuery.getDataSetIdTerm();
+		// pickTermTBU = storedQuery.getPickTerm();
+		// omitTermTBU = storedQuery.getOmitTerm();
+		// jsonKeysTBU = storedQuery.getJsonKeys();
+		// }
+		// } else {
+		// if (idsAndTypeQueryAndIdPattern == null && attrsQuery == null && qQuery ==
+		// null
+		// && csf == null && geoQuery == null && scopeQuery == null && langQuery == null
+		// && jsonKeys == null && dataSetIdTerm == null && join == null && joinLevel <=
+		// 0
+		// && pickTerm == null && omitTerm == null) {
+		// Query storedQuery = entityMap.getQuery();
+		// idsAndTypeQueryAndIdPatternTBU = storedQuery.getIdsAndTypeAndIdPattern();
+		// attrsQueryTBU = storedQuery.getAttrsQueryTerm();
+		// qQueryTBU = storedQuery.getqQueryTerm();
+		// geoQueryTBU = storedQuery.getGeoQueryTerm();
+		// scopeQueryTBU = storedQuery.getScopeQueryTerm();
+		// langQueryTBU = storedQuery.getLanguageQueryTerm();
+		// jsonKeysTBU = storedQuery.getJsonKeys();
+		// dataSetIdTermTBU = storedQuery.getDataSetIdTerm();
+		// joinTBU = storedQuery.getJoin();
+		// joinLevelTBU = storedQuery.getJoinLevel();
+		// pickTermTBU = storedQuery.getPickTerm();
+		// omitTermTBU = storedQuery.getOmitTerm();
+		// }
+		// }
+		// return handleEntityMap(t.getItem2(), t.getItem1(), tenant,
+		// idsAndTypeQueryAndIdPatternTBU,
+		// attrsQueryTBU, qQueryTBU, geoQueryTBU, scopeQueryTBU, langQueryTBU, limit,
+		// offSet,
+		// count, dataSetIdTermTBU, joinTBU, joinLevelTBU, context, jsonKeysTBU,
+		// headersFromReq,
+		// pickTermTBU, omitTermTBU, viaHeaders);
+		// });
+		// }
 	}
 
 	private Uni<Tuple2<EntityCache, EntityMap>> getEntityMapAndEntitiesAndUpdateExpires(String tenant,
@@ -1874,22 +1889,22 @@ public class QueryService implements CSourceHandler {
 			remoteHost2Query.forEach(entry -> logger.debug(entry.toString()));
 			if (remoteHost2Query.isEmpty() || localOnly) {
 				if ((join == null || joinLevel <= 0) && (qQuery == null || !qQuery.hasLinkedQ()) && !localOnly) {
-					return queryDAO.createEntityMapAndFillEntityCache(tenant, idsAndTypeQueryAndIdPattern, attrsQuery,
+					return queryDAO.newQuery(tenant, idsAndTypeQueryAndIdPattern, attrsQuery,
 							qQuery, geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel,
 							qToken, pickTerm, omitTerm, queryCechksum, splitEntities, true, false, typePattern,
-							localOnly, forceEntitymapCreation);
+							localOnly, forceEntitymapCreation, tokenProvided);
 				} else {
-					return queryDAO.createEntityMapAndFillEntityCache(tenant, idsAndTypeQueryAndIdPattern, attrsQuery,
+					return queryDAO.newQuery(tenant, idsAndTypeQueryAndIdPattern, attrsQuery,
 							qQuery, geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel,
 							qToken, pickTerm, omitTerm, queryCechksum, splitEntities, false, true, typePattern,
-							localOnly, forceEntitymapCreation);
+							localOnly, forceEntitymapCreation, tokenProvided);
 				}
 			} else {
 				Uni<Tuple2<EntityCache, EntityMap>> localEntityCacheAndEntityMap = queryDAO
-						.createEntityMapAndFillEntityCache(tenant, idsAndTypeQueryAndIdPattern, attrsQuery, qQuery,
+						.newQuery(tenant, idsAndTypeQueryAndIdPattern, attrsQuery, qQuery,
 								geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel, qToken,
 								pickTerm, omitTerm, queryCechksum, splitEntities, false, false, typePattern, localOnly,
-								forceEntitymapCreation);
+								forceEntitymapCreation, tokenProvided);
 				List<Uni<Tuple2<List<Map<String, Object>>, QueryRemoteHost>>> unisForEntityRetrieval = Lists
 						.newArrayList();
 				List<Uni<Tuple2<Map<String, Object>, QueryRemoteHost>>> unisForEntityMapRetrieval = Lists
