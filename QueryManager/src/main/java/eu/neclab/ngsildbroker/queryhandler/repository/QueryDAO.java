@@ -1591,6 +1591,7 @@ public class QueryDAO {
 				RowIterator<Row> it = rows.iterator();
 				if (!forceEntitymapCreation
 						&& (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery || localOnly)) {
+					entityMap.setId(AppConstants.ENTITYMAP_IGNORE);
 					while (it.hasNext()) {
 						Row row = it.next();
 						// a.ID, D0.ENTITY, D0.PARENT, D0.E_TYPES, D0.SIZE, a.remote_query, a.csourceid
