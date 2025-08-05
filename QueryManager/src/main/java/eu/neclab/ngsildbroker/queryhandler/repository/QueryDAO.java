@@ -1599,7 +1599,9 @@ public class QueryDAO {
 						JsonObject entityObj = row.getJsonObject(1);
 						boolean parent = row.getBoolean(2);
 						Integer size = row.getInteger(4);
-						entityMap.addEntry(id, NGSIConstants.JSON_LD_NONE, null);
+						if (parent) {
+							entityMap.addEntry(id, NGSIConstants.JSON_LD_NONE, null);
+						}
 						if (entityObj != null) {
 							Map<String, Object> entity = entityObj.getMap();
 							entityCache.setEntityIntoEntityCache(id, entity, NGSIConstants.JSON_LD_NONE);
