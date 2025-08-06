@@ -106,6 +106,7 @@ public class QueryController {
 			@QueryParam("entityMap") String entityMapS, @QueryParam("datasetId") String datasetId,
 			@QueryParam("splitEntities") @DefaultValue("true") String distEntitiesS,
 			@HeaderParam("NGSILD-EntityMap") String entityMapToken) {
+		logger.debug("getEntity");
 		boolean localOnly;
 		boolean doNotCompact;
 		boolean entityMap;
@@ -159,6 +160,7 @@ public class QueryController {
 			@QueryParam("omit") String omit, @QueryParam("format") String format,
 			@QueryParam("jsonKeys") String jsonKeysQP, @QueryParam("datasetId") String datasetId,
 			@QueryParam("splitEntities") @DefaultValue("true") String distEntitiesS) {
+		logger.debug("query");
 		boolean localOnly;
 		boolean doNotCompact;
 		boolean entityMapRetrieve;
@@ -203,6 +205,7 @@ public class QueryController {
 	public Uni<RestResponse<Object>> getAllTypes(HttpServerRequest request,
 			@QueryParam(value = "details") String detailsS, @QueryParam(value = "local") String localOnlyS,
 			@QueryParam(value = "bbox") @DefaultValue("false") String bboxS) {
+		logger.debug("getAllTypes");
 		boolean details;
 		boolean localOnly;
 		boolean bbox;
@@ -245,6 +248,7 @@ public class QueryController {
 	@GET
 	public Uni<RestResponse<Object>> getType(HttpServerRequest request, @PathParam("entityType") String type,
 			@QueryParam(value = "local") String localOnlyS) {
+		logger.debug("getType");
 		boolean localOnly;
 		String tenant = HttpUtils.getTenant(request);
 		try {
@@ -275,6 +279,7 @@ public class QueryController {
 	@GET
 	public Uni<RestResponse<Object>> getAllAttributes(HttpServerRequest request,
 			@QueryParam(value = "details") String detailsS, @QueryParam(value = "local") String localOnlyS) {
+		logger.debug("getAllAttributes");
 		boolean localOnly;
 		boolean details;
 		String tenant = HttpUtils.getTenant(request);
@@ -311,6 +316,7 @@ public class QueryController {
 	@GET
 	public Uni<RestResponse<Object>> getAttribute(HttpServerRequest request, @PathParam("attribute") String attribute,
 			@QueryParam(value = "details") String detailsS, @QueryParam(value = "local") String localOnlyS) {
+		logger.debug("getAttribute");
 		boolean localOnly;
 		boolean details;
 		String tenant = HttpUtils.getTenant(request);
@@ -354,7 +360,7 @@ public class QueryController {
 			@QueryParam("omit") String omit, @QueryParam("jsonKeys") String jsonKeysQP,
 			@QueryParam("datasetId") String datasetId,
 			@QueryParam("splitEntities") @DefaultValue("true") String distEntitiesS) {
-
+		logger.debug("queryEntityMap");
 		boolean distEntities;
 		String tenant = HttpUtils.getTenant(request);
 		try {
@@ -383,6 +389,7 @@ public class QueryController {
 	@GET
 	public Uni<RestResponse<Object>> getEntityMap(HttpServerRequest request,
 			@PathParam("entityMapId") String entityMapId) {
+		logger.debug("getEntityMap");
 		String tenant = HttpUtils.getTenant(request);
 		return queryService.getEntityMap(tenant, entityMapId).onItem()
 				.transform(entityMap -> HttpUtils.generateEntityMapResult(entityMap)).onFailure()
@@ -394,6 +401,7 @@ public class QueryController {
 	@DELETE
 	public Uni<RestResponse<Object>> deleteEntityMap(HttpServerRequest request,
 			@PathParam("entityMapId") String entityMapId) {
+		logger.debug("deleteEntityMap");
 		String tenant = HttpUtils.getTenant(request);
 		return queryService.deleteEntityMap(tenant, entityMapId).onItem()
 				.transform(v -> RestResponse.status(204));
@@ -404,7 +412,7 @@ public class QueryController {
 	@PATCH
 	public Uni<RestResponse<Object>> updateEntityMap(HttpServerRequest request, String bodyStr,
 			@PathParam("entityMapId") String entityMapId) {
-
+		logger.debug("updateEntityMap");
 		return JsonUtils.fromString(bodyStr).onItem().transformToUni(obj -> {
 			@SuppressWarnings("unchecked")
 			Map<String, Object> body = (Map<String, Object>) obj;

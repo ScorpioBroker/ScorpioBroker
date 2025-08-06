@@ -6,8 +6,8 @@ CREATE TABLE entitymap (
     entity_id text NOT NULL,
     remote_query text,
     csourceid text NOT NULL,
-    last_access time without time zone NOT NULL,
-    expires_at time with time zone NOT NULL
+    last_access timestamp without time zone NOT NULL,
+    expires_at timestamp without time zone NOT NULL
 );
 
 CREATE INDEX i_entitymap_id ON entitymap USING hash (map_id text_pattern_ops);

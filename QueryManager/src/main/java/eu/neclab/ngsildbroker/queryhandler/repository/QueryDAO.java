@@ -23,7 +23,6 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLDService;
@@ -46,7 +45,6 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.OmitTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.PickTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
-import eu.neclab.ngsildbroker.commons.datatypes.terms.Query;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
@@ -803,14 +801,44 @@ public class QueryDAO {
 	public Uni<Void> storeEntityMap(String tenant, String qToken, EntityMap entityMap) {
 
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
-			// id text,
-			// expires_at timestamp without time zone,
-			// last_access timestamp without time zone,
-			// entity_map jsonb,
-			String sql = "INSERT INTO entitymap VALUES ($1, now() + interval '" + entityMapTTL
-					+ "', now(), $2) ON CONFLICT(id) DO UPDATE SET last_access=now(), entity_map=$2";
-			client.preparedQuery(sql).executeAndForget(Tuple.of(qToken, entityMap.toSQLJson(objectMapper)));
-			return Uni.createFrom().voidItem();
+			return client.getConnection().onItem().transformToUni(conn -> {
+				// map_id text NOT NULL,
+				// query_checksum text NOT NULL,
+				// entity_id text NOT NULL,
+				// remote_query text,
+				// csourceid text NOT NULL,
+				// last_access timestamp without time zone NOT NULL,
+				// expires_at timestamp without time zone NOT NULL
+				logger.debug("storeEntityMap");
+				String deleteSql = "DELETE FROM entitymap WHERE map_id = $1";
+				return conn.preparedQuery(deleteSql).execute(Tuple.of(qToken)).onItem().transformToUni(ignored -> {
+					String sql = "INSERT INTO entitymap VALUES ($1, $2, $3, $4, $5, now() + interval '" + entityMapTTL
+							+ "', now())";
+					String mapId = entityMap.getId();
+					String checksum = entityMap.getQueryCheckSum();
+					List<Tuple> batch = Lists.newArrayList();
+					for (Entry<String, Set<String>> entry : entityMap.getEntityId2CSourceIds().entrySet()) {
+						for (String cId : entry.getValue()) {
+							String remoteHost;
+							QueryRemoteHost tmp = entityMap.getRemoteHost(cId);
+							if (tmp == null) {
+								remoteHost = null;
+							} else {
+								try {
+									remoteHost = objectMapper.writeValueAsString(tmp);
+								} catch (JsonProcessingException e) {
+									continue;
+								}
+							}
+							batch.add(Tuple.of(mapId, checksum, entry.getKey(), remoteHost, cId));
+						}
+					}
+					return conn.preparedQuery(sql).executeBatch(batch).onItem().transformToUni(ignoredToo -> {
+						return conn.close();
+					});
+
+				});
+			});
 		});
 	}
 
@@ -866,9 +894,10 @@ public class QueryDAO {
 	}
 
 	public Uni<Map<String, Object>> getEntityMap(String tenant, String qToken) {
+		logger.debug("getEntityMap");
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
 
-			String sql = "SELECT entity_map, expires_at from entitymap WHERE id=$1";
+			String sql = "SELECT * from entitymap WHERE map_id=$1";
 			return client.preparedQuery(sql).execute(Tuple.of(qToken)).onItem().transformToUni(rows -> {
 				if (rows.rowCount() == 0) {
 					return Uni.createFrom()
@@ -885,124 +914,30 @@ public class QueryDAO {
 	}
 
 	public Uni<Void> runEntityMapCleanup(String cleanUpInterval) {
-		// return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY,
-		// false).onItem().transformToUni(client -> {
-		// return client.preparedQuery("select tenant_id from
-		// tenant").execute().onItem().transformToUni(rows -> {
-		// List<Uni<Void>> cleanUpUnis = Lists.newArrayList();
-		// String sql = "DELETE FROM entitymap WHERE last_access < NOW() - INTERVAL '" +
-		// cleanUpInterval + "'";
-		// cleanUpUnis.add(
-		// client.preparedQuery(sql).execute().onItem().transformToUni(r ->
-		// Uni.createFrom().voidItem()));
-		// rows.forEach(row -> {
-		// cleanUpUnis.add(
-		// clientManager.getClient(row.getString(0),
-		// false).onItem().transformToUni(tenantClient -> {
-		// return tenantClient.preparedQuery(sql).execute().onItem()
-		// .transformToUni(r -> Uni.createFrom().voidItem());
-		// }));
-		// });
-		// return Uni.combine().all().unis(cleanUpUnis).discardItems();
-		// });
-		// });
-		return Uni.createFrom().voidItem();
-	}
-
-	/*
-	 * public Uni<Map<String, Tuple2<Map<String, Object>, Boolean>>>
-	 * queryForEntityIds(String tenant, String[] ids, TypeQueryTerm typeQuery,
-	 * String idPattern, AttrsQueryTerm attrsQuery, int limit, int offset, String
-	 * join, int joinLevel) { return clientManager.getClient(tenant,
-	 * false).onItem().transformToUni(client -> { StringBuilder query = new
-	 * StringBuilder(); int dollar = 1; Tuple tuple = Tuple.tuple();
-	 * 
-	 * query.append("WITH a as (SELECT ID");
-	 * 
-	 * query.append(" FROM ENTITY WHERE "); boolean sqlAdded = false; if (typeQuery
-	 * != null) { dollar = typeQuery.toBroadSql(query, tuple, dollar); sqlAdded =
-	 * true; } if (attrsQuery != null) { if (sqlAdded) { query.append(" AND "); }
-	 * dollar = attrsQuery.toSql(query, tuple, dollar); sqlAdded = true; }
-	 * 
-	 * if (ids != null) { if (sqlAdded) { query.append(" AND "); }
-	 * query.append("id IN ("); for (String id : ids) { query.append('$');
-	 * query.append(dollar); query.append(','); tuple.addString(id); dollar++; }
-	 * 
-	 * query.setCharAt(query.length() - 1, ')'); sqlAdded = true; } if (idPattern !=
-	 * null) { if (sqlAdded) { query.append(" AND "); } query.append("id ~ $");
-	 * query.append(dollar); tuple.addString(idPattern); dollar++; sqlAdded = true;
-	 * }
-	 * 
-	 * query.append(" ORDER BY createdAt), b as (SELECT a.ID FROM a limit $");
-	 * query.append(dollar); tuple.addInteger(limit); dollar++;
-	 * query.append(" offset $"); query.append(dollar); tuple.addInteger(offset);
-	 * dollar++; query.append("), c as (SELECT ENTITY.ID, "); if (attrsQuery !=
-	 * null) { dollar = attrsQuery.toSqlConstructEntity(query, tuple, dollar, null);
-	 * } else { query.append("ENTITY.ENTITY"); }
-	 * query.append(" as ENTITY FROM b left join ENTITY on b.ID = ENTITY.ID)  ");
-	 * query.append("SELECT a.ID, c.ENTITY FROM a left outer join c on a.ID = c.ID"
-	 * );
-	 * 
-	 * String queryString = query.toString(); logger.debug("SQL REQUEST: " +
-	 * queryString); logger.debug("SQL TUPLE: " + tuple.deepToString()); return
-	 * client.preparedQuery(queryString).execute(tuple).onItem().transform(rows -> {
-	 * Map<String, Tuple2<Map<String, Object>, Boolean>> result = Maps.newHashMap();
-	 * rows.forEach(row -> { String id = row.getString(0); JsonObject entity =
-	 * row.getJsonObject(1); Boolean parent = row.getBoolean(2); Map<String, Object>
-	 * entityMap = null; if (entity != null) { entityMap = entity.getMap(); } if
-	 * (parent == null) { parent = true; } result.put(id, Tuple2.of(entityMap,
-	 * parent));
-	 * 
-	 * }); return result; }); }).onFailure().recoverWithUni(e -> { if (e instanceof
-	 * PgException pge) { logger.debug(pge.getPosition()); if
-	 * (pge.getSqlState().equals(AppConstants.INVALID_REGULAR_EXPRESSION)) { return
-	 * Uni.createFrom() .failure(new ResponseException(ErrorType.BadRequestData,
-	 * "Invalid regular expression")); } if
-	 * (pge.getSqlState().equals(AppConstants.INVALID_GEO_QUERY)) { return
-	 * Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData,
-	 * "Invalid geo query. " + pge.getErrorMessage())); } } return
-	 * Uni.createFrom().failure(e); }); }
-	 */
-	public Uni<Tuple2<EntityCache, EntityMap>> queryForEntityMapAndEntities(String tenant, String entityMapToken,
-			List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeQueryAndIdPattern, int limit, int offset,
-			String checkSum) {
-		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
-			String[] ids;
-			if (idsAndTypeQueryAndIdPattern == null) {
-				ids = null;
-			} else {
-				Set<String> tmpIds = Sets.newHashSet();
-				idsAndTypeQueryAndIdPattern.forEach(entry -> {
-					String[] itemIds = entry.getItem1();
-					if (itemIds != null) {
-						for (String id : itemIds) {
-							tmpIds.add(id);
-						}
-					}
+		logger.debug("runEntityMapCleanup");
+		return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY,
+				false).onItem().transformToUni(client -> {
+					return client.preparedQuery("select tenant_id from tenant").execute().onItem()
+							.transformToUni(rows -> {
+								List<Uni<Void>> cleanUpUnis = Lists.newArrayList();
+								String sql = "DELETE FROM entitymap WHERE last_access < NOW() - INTERVAL '" +
+										cleanUpInterval + "'";
+								cleanUpUnis.add(
+										client.preparedQuery(sql).execute().onItem()
+												.transformToUni(r -> Uni.createFrom().voidItem()));
+								rows.forEach(row -> {
+									cleanUpUnis.add(
+											clientManager.getClient(row.getString(0),
+													false).onItem().transformToUni(tenantClient -> {
+														return tenantClient.preparedQuery(sql).execute().onItem()
+																.transformToUni(r -> Uni.createFrom().voidItem());
+													}));
+								});
+								return Uni.combine().all().unis(cleanUpUnis).discardItems();
+							});
 				});
-				if (tmpIds.isEmpty()) {
-					ids = null;
-				} else {
-					ids = tmpIds.toArray(new String[0]);
-				}
-			}
+		// return Uni.createFrom().voidItem();
 
-			return client.preparedQuery("SELECT * FROM getEntityMapAndEntities($1, $2, $3, $4)")
-					.execute(Tuple.of(entityMapToken, ids, limit, offset)).onItem().transformToUni(rows -> {
-
-						Tuple2<EntityCache, EntityMap> t = putQueryResultIntoMapAndCache(rows, entityMapToken);
-						if (checkSum != null && !t.getItem2().getQueryCheckSum().equals(checkSum)) {
-							return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData,
-									"Provided query does not match the original query."));
-						}
-						return Uni.createFrom().item(t);
-					}).onFailure().recoverWithUni(e -> {
-						if (e instanceof PgException pge && pge.getSqlState().equals("S0001")) {
-							return Uni.createFrom().item(Tuple2.of(null, null));
-						}
-						return Uni.createFrom().failure(e);
-					});
-		});
 	}
 
 	private void generateJoinQuery(StringBuilder query, StringBuilder followUp, int joinLevel, boolean localOnly) {
@@ -1550,7 +1485,8 @@ public class QueryDAO {
 					query.append(dollar);
 					dollar++;
 					if (queryChecksum == null) {
-						System.err.println();
+
+						System.err.println("query");
 					}
 					tuple.addString(queryChecksum);
 					query.append(", id, null, '@none', now(), now() + interval '");
@@ -1627,8 +1563,12 @@ public class QueryDAO {
 					while (it.hasNext()) {
 						Row row = it.next();
 						// a.ID, D0.ENTITY, D0.PARENT, D0.E_TYPES, D0.SIZE, a.remote_query, a.csourceid
+
 						String id = row.getString(0);
 						JsonObject entityObj = row.getJsonObject(1);
+						if (row.getBoolean(2) == null) {
+							System.out.println(query.toString());
+						}
 						boolean parent = row.getBoolean(2);
 						String csourceId = row.getString(6);
 						String remoteQuery = row.getString(7);
@@ -1675,420 +1615,6 @@ public class QueryDAO {
 		});
 	}
 
-	public Uni<Tuple2<EntityCache, EntityMap>> createEntityMapAndFillEntityCache(String tenant,
-			List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeAndIdPattern, AttrsQueryTerm attrsQuery,
-			QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, Context context, int limit, int offset,
-			DataSetIdTerm dataSetIdTerm, String join, int joinLevel, String qToken, PickTerm pickTerm,
-			OmitTerm omitTerm, String queryChecksum, boolean splitEntities,
-			boolean regEmptyOrNoRegEntryAndNoLinkedQuery, boolean noRootLevelRegEntryAndLinkedQuery, String typePattern,
-			boolean localOnly, boolean forceEntitymapCreation) {
-
-		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
-			StringBuilder query = new StringBuilder();
-			StringBuilder queryToStoreWherePart = new StringBuilder();
-			StringBuilder queryToStoreSelectPart = new StringBuilder();
-			StringBuilder queryToStoreFinalSelectPart = new StringBuilder();
-
-			Query queryParams = new Query();
-
-			int dollar = 1;
-			Tuple tuple = Tuple.tuple();
-
-			boolean doJoin = (join != null && joinLevel > 0);
-			query.append("WITH a as (SELECT ID");
-			if (!forceEntitymapCreation
-					&& (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery || localOnly)) {
-				query.append(", count(*) over() as list_size");
-			}
-			query.append(" FROM ENTITY WHERE ");
-			if (typePattern != null) {
-				query.append("EXISTS (SELECT TRUE FROM UNNEST(E_TYPES) AS E_TYPE WHERE E_TYPE ~ $");
-				query.append(dollar);
-				dollar++;
-				tuple.addString(typePattern);
-				query.append(") AND ");
-			}
-			boolean sqlAdded = false;
-			if (idsAndTypeAndIdPattern != null) {
-				sqlAdded = true;
-				queryParams.setIdsAndTypeAndIdPattern(idsAndTypeAndIdPattern);
-				query.append('(');
-				queryToStoreWherePart.append('(');
-
-				for (Tuple3<String[], TypeQueryTerm, String> t : idsAndTypeAndIdPattern) {
-					TypeQueryTerm typeQuery = t.getItem2();
-					String[] ids = t.getItem1();
-					String idPattern = t.getItem3();
-					boolean tSqlAdded = false;
-					query.append('(');
-					queryToStoreWherePart.append('(');
-
-					if (typeQuery != null) {
-						if (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery
-								|| !splitEntities) {
-							dollar = typeQuery.toSql(query, queryToStoreWherePart, tuple, dollar);
-						} else {
-							dollar = typeQuery.toBroadSql(query, queryToStoreWherePart, tuple, dollar);
-						}
-
-						tSqlAdded = true;
-					}
-					if (ids != null) {
-						if (tSqlAdded) {
-							query.append(" AND ");
-						}
-						query.append("id IN (");
-						for (String id : ids) {
-							query.append('$');
-							query.append(dollar);
-							query.append(',');
-							tuple.addString(id);
-							dollar++;
-						}
-
-						query.setCharAt(query.length() - 1, ')');
-						tSqlAdded = true;
-					}
-					if (idPattern != null) {
-						if (tSqlAdded) {
-							query.append(" AND ");
-						}
-						query.append("id ~ $");
-						query.append(dollar);
-						tuple.addString(idPattern);
-						dollar++;
-						tSqlAdded = true;
-					}
-					query.append(") OR ");
-					queryToStoreWherePart.append(") OR ");
-				}
-				query.setLength(query.length() - 4);
-				queryToStoreWherePart.setLength(queryToStoreWherePart.length() - 4);
-
-				query.append(')');
-				queryToStoreWherePart.append(')');
-				// if it's only brackets because of no type query
-				if (queryToStoreWherePart.length() == 4) {
-					queryToStoreWherePart.setLength(0);
-					queryToStoreWherePart.append("1=1");
-				}
-			} else if (splitEntities && !regEmptyOrNoRegEntryAndNoLinkedQuery) {
-				if (attrsQuery != null) {
-					if (sqlAdded) {
-						query.append(" AND ");
-						queryToStoreWherePart.append(" AND ");
-					}
-					queryParams.setAttrsQueryTerm(attrsQuery);
-					dollar = attrsQuery.toSql(query, queryToStoreWherePart, tuple, dollar);
-					sqlAdded = true;
-				} else if (pickTerm != null) {
-					if (sqlAdded) {
-						query.append(" AND ");
-						queryToStoreWherePart.append(" AND ");
-					}
-					queryParams.setPickTerm(pickTerm);
-					dollar = pickTerm.toSql(query, queryToStoreWherePart, tuple, dollar);
-					sqlAdded = true;
-				} else if (omitTerm != null) {
-					if (sqlAdded) {
-						query.append(" AND ");
-						queryToStoreWherePart.append(" AND ");
-					}
-					queryParams.setOmitTerm(omitTerm);
-					dollar = omitTerm.toSql(query, queryToStoreWherePart, tuple, dollar);
-					sqlAdded = true;
-				} else if (qQuery != null) {
-					if (sqlAdded) {
-						query.append(" AND ");
-						queryToStoreWherePart.append(" AND ");
-					}
-					queryParams.setqQueryTerm(qQuery);
-					dollar = qQuery.toSql(query, queryToStoreWherePart, dollar, tuple, splitEntities, localOnly);
-					sqlAdded = true;
-				} else if (geoQuery != null) {
-					if (sqlAdded) {
-						query.append(" AND ");
-						queryToStoreWherePart.append(" AND ");
-					}
-					dollar = geoQuery.toSql(query, queryToStoreWherePart, tuple, dollar);
-					queryParams.setGeoQueryTerm(geoQuery);
-					sqlAdded = true;
-				}
-
-			}
-
-			if (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery || !splitEntities) {
-				if (attrsQuery != null) {
-					if (sqlAdded) {
-						query.append(" AND ");
-						queryToStoreWherePart.append(" AND ");
-					}
-					queryParams.setAttrsQueryTerm(attrsQuery);
-					dollar = attrsQuery.toSql(query, queryToStoreWherePart, tuple, dollar);
-					sqlAdded = true;
-				}
-				if (pickTerm != null) {
-					if (sqlAdded) {
-						query.append(" AND ");
-						queryToStoreWherePart.append(" AND ");
-					}
-					queryParams.setPickTerm(pickTerm);
-					dollar = pickTerm.toSql(query, queryToStoreWherePart, tuple, dollar);
-					sqlAdded = true;
-				}
-				if (omitTerm != null) {
-					if (sqlAdded) {
-						query.append(" AND ");
-						queryToStoreWherePart.append(" AND ");
-					}
-					queryParams.setOmitTerm(omitTerm);
-					dollar = omitTerm.toSql(query, queryToStoreWherePart, tuple, dollar);
-					sqlAdded = true;
-				}
-				if (geoQuery != null) {
-					if (sqlAdded) {
-						query.append(" AND ");
-						queryToStoreWherePart.append(" AND ");
-					}
-					dollar = geoQuery.toSql(query, queryToStoreWherePart, tuple, dollar);
-					queryParams.setGeoQueryTerm(geoQuery);
-					sqlAdded = true;
-				}
-
-				if (qQuery != null) {
-					if (sqlAdded) {
-						query.append(" AND ");
-						queryToStoreWherePart.append(" AND ");
-					}
-					queryParams.setqQueryTerm(qQuery);
-					dollar = qQuery.toSql(query, queryToStoreWherePart, dollar, tuple,
-							!regEmptyOrNoRegEntryAndNoLinkedQuery && splitEntities, localOnly);
-					sqlAdded = true;
-				}
-				if (dataSetIdTerm != null) {
-					if (sqlAdded) {
-						query.append(" AND ");
-						queryToStoreWherePart.append(" AND ");
-					}
-					queryParams.setDataSetIdTerm(dataSetIdTerm);
-					dollar = dataSetIdTerm.toSql(query, queryToStoreWherePart, tuple, dollar, pickTerm, omitTerm,
-							attrsQuery);
-					sqlAdded = true;
-				}
-			}
-
-			if (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery || !splitEntities) {
-				if (scopeQuery != null) {
-					query.append(" AND ");
-					scopeQuery.toSql(query, queryToStoreWherePart);
-				}
-			}
-			char[] checkArray = new char[AppConstants.CHAR_ARRAY_WHERE.length];
-			query.getChars(query.length() - checkArray.length, query.length(), checkArray, 0);
-			if (Arrays.equals(checkArray, AppConstants.CHAR_ARRAY_WHERE)) {
-				query.setLength(query.length() - checkArray.length);
-			}
-			query.append(" ORDER BY createdAt");
-			char sourceForEntities;
-			if (!forceEntitymapCreation
-					&& (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery || localOnly)) {
-				query.append(" limit $");
-				query.append(dollar);
-				tuple.addInteger(limit);
-				dollar++;
-				query.append(" offset $");
-				query.append(dollar);
-				tuple.addInteger(offset);
-				dollar++;
-				query.append("), ");
-				sourceForEntities = 'a';
-			} else {
-				query.append("), b as (SELECT a.ID FROM a limit $");
-				query.append(dollar);
-				tuple.addInteger(limit);
-				dollar++;
-				query.append(" offset $");
-				query.append(dollar);
-				tuple.addInteger(offset);
-				dollar++;
-				query.append("), ");
-				sourceForEntities = 'b';
-			}
-
-			query.append("D0 as (SELECT ENTITY.ID, ");
-			queryToStoreSelectPart.append("D0 as (SELECT ENTITY.ID, ");
-			if (regEmptyOrNoRegEntryAndNoLinkedQuery) {
-				if (attrsQuery != null) {
-					dollar = attrsQuery.toSqlConstructEntity(query, queryToStoreSelectPart, tuple, dollar,
-							dataSetIdTerm);
-				} else if (pickTerm != null) {
-					dollar = pickTerm.toSqlConstructEntity(query, queryToStoreSelectPart, tuple, dollar, "entityAttrs",
-							dataSetIdTerm);
-				} else if (omitTerm != null) {
-					dollar = omitTerm.toSqlConstructEntity(query, queryToStoreSelectPart, tuple, dollar, "entityAttrs",
-							dataSetIdTerm);
-				} else if (dataSetIdTerm != null) {
-					dollar = dataSetIdTerm.toSqlConstructEntity(query, queryToStoreSelectPart, tuple, "entityAttrs",
-							dollar);
-				} else {
-					query.append("ENTITY.ENTITY");
-					queryToStoreSelectPart.append("ENTITY.ENTITY");
-				}
-			} else {
-				query.append("ENTITY.ENTITY");
-				queryToStoreSelectPart.append("ENTITY.ENTITY");
-			}
-			query.append(" as ENTITY, TRUE as PARENT, ENTITY.E_TYPES AS E_TYPES, null::jsonb FROM ");
-			query.append(sourceForEntities);
-			query.append(" left join ENTITY on ");
-			query.append(sourceForEntities);
-			query.append(".ID = ENTITY.ID");
-
-			queryToStoreSelectPart.append(" as ENTITY, TRUE as PARENT, ENTITY.E_TYPES AS E_TYPES, null::jsonb");
-			if (regEmptyOrNoRegEntryAndNoLinkedQuery) {
-				queryToStoreSelectPart.append(", a.ordinality");
-			}
-			queryToStoreSelectPart.append(" FROM a left join ENTITY on a.ID = ENTITY.ID");
-			if (attrsQuery == null && (dataSetIdTerm != null || omitTerm != null || pickTerm != null)) {
-				query.append(", JSONB_EACH(ENTITY.ENTITY) AS entityAttrs GROUP BY ENTITY.ID");
-				queryToStoreSelectPart.append(", JSONB_EACH(ENTITY.ENTITY) AS entityAttrs");
-				queryToStoreWherePart.append(" GROUP BY a.ordinality, ENTITY.ID order by a.ordinality");
-			}
-			query.append(")  ");
-			queryToStoreSelectPart.append(" WHERE ");
-
-			if (doJoin) {
-				generateJoinQuery(query, queryToStoreSelectPart, joinLevel, localOnly);
-			}
-			queryToStoreFinalSelectPart.append(
-					" SELECT null::text as id, null::jsonb as entity, null::boolean as parent, null::text[] as e_types, c.entity_map as entity_map FROM c UNION ALL SELECT D0.ID as id, D0.ENTITY as entity, D0.parent as parent, D0.E_TYPES as e_types, null::jsonb as entity_map FROM D0");
-			if (doJoin) {
-				queryToStoreFinalSelectPart.append(" UNION ALL (SELECT * FROM JOINENTITIES)");
-			}
-			String qTokenTBU;
-			if (!forceEntitymapCreation
-					&& (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery || localOnly)) {
-				query.append(
-						", c as (SELECT jsonb_build_object('entityMap', jsonb_agg(jsonb_build_object(id, jsonb_build_array('");
-				query.append(NGSIConstants.JSON_LD_NONE);
-				query.append("'))), 'splitEntities', $");
-				query.append(dollar);
-				dollar++;
-				tuple.addBoolean(splitEntities);
-				query.append("::boolean, 'regEmptyOrNoRegEntryAndNoLinkedQuery', $");
-				query.append(dollar);
-				dollar++;
-				tuple.addBoolean(regEmptyOrNoRegEntryAndNoLinkedQuery);
-				query.append("::boolean, 'noRootLevelRegEntryAndLinkedQuery', $");
-				query.append(dollar);
-				dollar++;
-				tuple.addBoolean(noRootLevelRegEntryAndLinkedQuery);
-				query.append(
-						"::boolean, 'list_size', a.list_size, 'checkSum', null::text, 'wherePart', null::text, 'selectPart', null::text, 'finalselect', null::text, 'queryParams', null::jsonb) as entity_map from a group by a.list_size)");
-
-				qTokenTBU = AppConstants.ENTITYMAP_IGNORE;
-			} else {
-				qTokenTBU = qToken;
-				query.append(", c as (INSERT INTO entitymap (SELECT $");
-				query.append(dollar);
-				dollar++;
-				tuple.addString(qToken);
-				query.append(", now() + interval '");
-				query.append(entityMapTTL);
-
-				query.append(
-						"',now(), jsonb_build_object('entityMap', jsonb_agg(jsonb_build_object(id, jsonb_build_array('");
-				query.append(NGSIConstants.JSON_LD_NONE);
-				query.append("'))), 'splitEntities', $");
-				query.append(dollar);
-				dollar++;
-				tuple.addBoolean(splitEntities);
-				query.append("::boolean, 'regEmptyOrNoRegEntryAndNoLinkedQuery', $");
-				query.append(dollar);
-				dollar++;
-				tuple.addBoolean(regEmptyOrNoRegEntryAndNoLinkedQuery);
-				query.append("::boolean, 'noRootLevelRegEntryAndLinkedQuery', $");
-				query.append(dollar);
-				dollar++;
-				tuple.addBoolean(noRootLevelRegEntryAndLinkedQuery);
-				query.append("::boolean, 'checkSum', $");
-
-				query.append(dollar);
-				dollar++;
-				tuple.addString(queryChecksum);
-				query.append("::text, 'wherePart', '");
-				query.append(queryToStoreWherePart.toString());
-				query.append("', 'selectPart', '");
-				query.append(queryToStoreSelectPart.toString());
-				query.append("', 'finalselect', '");
-				query.append(queryToStoreFinalSelectPart.toString());
-				query.append("', 'queryParams', '");
-				try {
-					query.append(objectMapper.writeValueAsString(queryParams));
-				} catch (Exception e1) {
-					logger.error("Failed to serialize query.", e1);
-					query.append("{}");
-					logger.warn("follow up restoring will not work on this query");
-				}
-
-				query.append("'::jsonb) FROM a) RETURNING entity_map) ");
-			}
-			query.append(
-					" SELECT null::text, null::jsonb, null::boolean, null::text[], entity_map FROM c UNION ALL SELECT D0.ID, D0.ENTITY, D0.parent, D0.E_TYPES, null FROM D0");
-
-			if (doJoin) {
-				query.append(" UNION ALL (SELECT * FROM JOINENTITIES)");
-			}
-
-			String queryString = query.toString();
-			logger.debug("SQL REQUEST: " + queryString);
-			logger.debug("SQL TUPLE: " + tuple.deepToString());
-			return client.preparedQuery(queryString).execute(tuple).onItem()
-					.transform(rows -> putQueryResultIntoMapAndCache(rows, qTokenTBU));
-		}).onFailure().recoverWithUni(e -> {
-			if (e instanceof PgException pge) {
-				logger.debug(pge.getPosition());
-				if (pge.getSqlState().equals(AppConstants.INVALID_REGULAR_EXPRESSION)) {
-					return Uni.createFrom()
-							.failure(new ResponseException(ErrorType.BadRequestData, "Invalid regular expression"));
-				}
-				if (pge.getSqlState().equals(AppConstants.INVALID_GEO_QUERY)) {
-					return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData,
-							"Invalid geo query. " + pge.getErrorMessage()));
-				}
-			}
-			return Uni.createFrom().failure(e);
-		});
-	}
-
-	private Tuple2<EntityCache, EntityMap> putQueryResultIntoMapAndCache(RowSet<Row> rows, String qToken) {
-		EntityCache resultEntities = new EntityCache();
-		if (rows.size() == 0) {
-			return Tuple2.of(resultEntities, new EntityMap(null, false, false, false));
-		}
-		RowIterator<Row> it = rows.iterator();
-		Row first = it.next();
-		EntityMap resultEntityMap = EntityMap.fromJson(qToken, first.getJsonObject(4), objectMapper);
-		Row row;
-		String id;
-
-		JsonObject entityObj;
-		while (it.hasNext()) {
-			row = it.next();
-			id = row.getString(0);
-			entityObj = row.getJsonObject(1);
-
-			// String[] types = row.getArrayOfStrings(3);
-
-			if (entityObj != null) {
-				Map<String, Object> entity = entityObj.getMap();
-				resultEntities.setEntityIntoEntityCache(id, entity, NGSIConstants.JSON_LD_NONE);
-			}
-		}
-		resultEntityMap.setExpiresAt(System.currentTimeMillis() + 300000);
-		return Tuple2.of(resultEntities, resultEntityMap);
-	}
-
 	public Uni<Tuple2<List<Map<String, Object>>, QueryRemoteHost>> queryForEntities(String tenant,
 			Set<String> idsForDBCall) {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
@@ -2106,8 +1632,10 @@ public class QueryDAO {
 	}
 
 	public Uni<Void> deleteEntityMap(String tenant, String entityMapId) {
+		logger.debug("deleteEntityMap");
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
-			return client.preparedQuery("DELETE FROM ENTITYMAP WHERE id=$1 RETURNING id").execute(Tuple.of(entityMapId))
+			return client.preparedQuery("DELETE FROM ENTITYMAP WHERE map_id=$1 RETURNING distinct map_id")
+					.execute(Tuple.of(entityMapId))
 					.onItem().transformToUni(rows -> {
 						if (rows.rowCount() == 0) {
 							return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
@@ -2119,7 +1647,7 @@ public class QueryDAO {
 
 	public Uni<Void> updateEntityMap(String tenant, String entityMapId, String expiresAt) {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
-			return client.preparedQuery("UPDATE ENTITYMAP SET EXPIRES_AT=$1 WHERE id=$2 RETURNING id")
+			return client.preparedQuery("UPDATE ENTITYMAP SET EXPIRES_AT=$1 WHERE id=$2 RETURNING distinct map_id")
 					.execute(Tuple.of(SerializationTools.localDateTimeFormatter(expiresAt), entityMapId)).onItem()
 					.transformToUni(rows -> {
 						if (rows.rowCount() == 0) {
