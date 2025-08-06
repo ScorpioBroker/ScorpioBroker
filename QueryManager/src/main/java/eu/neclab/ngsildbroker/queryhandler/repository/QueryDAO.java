@@ -1535,7 +1535,8 @@ public class QueryDAO {
 				} else {
 					dollar = 1;
 					query.append("SELECT ID, null as remote_query, '@none' as csourceid FROM ENTITY WHERE ");
-					generateWherePart(query, dollar, tuple, idsAndTypeAndIdPattern, attrsQuery, qQuery, geoQuery,
+					dollar = generateWherePart(query, dollar, tuple, idsAndTypeAndIdPattern, attrsQuery, qQuery,
+							geoQuery,
 							scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel, qToken, pickTerm,
 							omitTerm,
 							queryChecksum, splitEntities, regEmptyOrNoRegEntryAndNoLinkedQuery,
@@ -1548,6 +1549,9 @@ public class QueryDAO {
 					query.append(", $");
 					query.append(dollar);
 					dollar++;
+					if (queryChecksum == null) {
+						System.err.println();
+					}
 					tuple.addString(queryChecksum);
 					query.append(", id, null, '@none', now(), now() + interval '");
 					query.append(entityMapTTL);
@@ -1582,8 +1586,6 @@ public class QueryDAO {
 				query.append(" UNION ALL (SELECT * FROM JOINENTITIES)");
 			}
 
-			System.out.println(query.toString());
-			System.out.println(tuple.deepToString());
 			return client.preparedQuery(query.toString()).execute(tuple).onItem().transform(rows -> {
 				EntityMap entityMap = new EntityMap(qToken, splitEntities, regEmptyOrNoRegEntryAndNoLinkedQuery,
 						noRootLevelRegEntryAndLinkedQuery);
@@ -1654,6 +1656,7 @@ public class QueryDAO {
 
 				return Tuple2.of(entityCache, entityMap);
 			}).onFailure().recoverWithUni(e -> {
+
 				if (e instanceof PgException pgE) {
 					// abusing division by zero for handling invalid entitymap requests
 					if (pgE.getErrorCode() == 22012) {
@@ -1664,6 +1667,9 @@ public class QueryDAO {
 								false);
 					}
 				}
+				logger.debug(query.toString());
+				logger.debug(tuple.deepToString());
+
 				return Uni.createFrom().failure(e);
 			});
 		});

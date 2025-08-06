@@ -630,7 +630,7 @@ public class QueryController {
 			if (typeQuery == null && attrs == null && q == null && csf == null && geometry == null && georel == null
 					&& coordinates == null && geoproperty == null && geometryProperty == null && scopeQ == null
 					&& pick == null && omit == null) {
-				checkSum = null;
+				checkSum = "";
 			} else {
 				checkSum = String.valueOf(Objects.hashCode(typeQuery, attrs, q, csf, geometry, georel, coordinates,
 						geoproperty, geometryProperty, scopeQ, pick, omit));
