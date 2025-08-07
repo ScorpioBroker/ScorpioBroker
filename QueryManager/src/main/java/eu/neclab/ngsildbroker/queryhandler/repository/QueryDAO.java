@@ -833,6 +833,9 @@ public class QueryDAO {
 							batch.add(Tuple.of(mapId, checksum, entry.getKey(), remoteHost, cId));
 						}
 					}
+					if (batch.isEmpty()) {
+						return conn.close();
+					}
 					return conn.preparedQuery(sql).executeBatch(batch).onItem().transformToUni(ignoredToo -> {
 						return conn.close();
 					});
@@ -1463,13 +1466,14 @@ public class QueryDAO {
 					query.append("UPDATE entitymap SET expires_at = now() + interval '");
 					query.append(entityMapTTL);
 					query.append(
-							"' last_access = now() WHERE map_id=$1 RETURNING query_checksum, entity_id as id, remote_query, csourceid), validation AS (SELECT CASE WHEN NOT EXISTS (SELECT 1 FROM a) THEN 1 / 0 WHEN EXISTS (SELECT 1 FROM a WHERE query_checksum != $2) THEN 1 / 0 ELSE 1 END AS result)");
+							"', last_access = now() WHERE map_id=$1 RETURNING entity_id as id, query_checksum, TRUE as PARENT, remote_query, csourceid), validation AS (SELECT CASE WHEN NOT EXISTS (SELECT 1 FROM a) THEN 1 / 0 WHEN EXISTS (SELECT 1 FROM a WHERE query_checksum != $2) THEN 1 / 0 ELSE 1 END AS result), check as (select * from validation)");
 					tuple.addString(qToken);
 					tuple.addString(queryChecksum);
 					dollar = 3;
 				} else {
 					dollar = 1;
-					query.append("SELECT ID, null as remote_query, '@none' as csourceid FROM ENTITY WHERE ");
+					query.append(
+							"SELECT ID, TRUE as PARENT, null as remote_query, '@none' as csourceid FROM ENTITY WHERE ");
 					dollar = generateWherePart(query, dollar, tuple, idsAndTypeAndIdPattern, attrsQuery, qQuery,
 							geoQuery,
 							scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel, qToken, pickTerm,
@@ -1495,7 +1499,7 @@ public class QueryDAO {
 
 				}
 				query.append(
-						",D0 as (SELECT ENTITY.ID, ENTITY.ENTITY, TRUE as PARENT, ENTITY.E_TYPES AS E_TYPES, null::bigint as SIZE, a.remote_query, a.csourceid FROM a left join ENTITY on a.ID = ENTITY.ID");
+						",D0 as (SELECT ENTITY.ID, ENTITY.ENTITY, a.PARENT, ENTITY.E_TYPES AS E_TYPES, null::bigint as SIZE, a.remote_query, a.csourceid FROM a left join ENTITY on a.ID = ENTITY.ID");
 				query.append(" limit $");
 				query.append(dollar);
 				dollar++;
@@ -1515,7 +1519,7 @@ public class QueryDAO {
 				query.append(" SELECT * FROM D0");
 			} else {
 				query.append(
-						" SELECT a.ID, D0.ENTITY, D0.PARENT, D0.E_TYPES, D0.SIZE, a.remote_query, a.csourceid FROM a left join D0 on a.ID = D0.ID");
+						" SELECT a.ID, D0.ENTITY, a.PARENT, D0.E_TYPES, D0.SIZE, a.remote_query, a.csourceid FROM a left join D0 on a.ID = D0.ID");
 			}
 
 			if (doJoin) {
@@ -1594,7 +1598,8 @@ public class QueryDAO {
 						}
 					}
 				}
-
+				logger.debug(query.toString());
+				logger.debug(tuple.deepToString());
 				return Tuple2.of(entityCache, entityMap);
 			}).onFailure().recoverWithUni(e -> {
 
