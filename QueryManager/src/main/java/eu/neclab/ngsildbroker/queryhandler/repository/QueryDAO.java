@@ -1526,6 +1526,7 @@ public class QueryDAO {
 				EntityMap entityMap = new EntityMap(qToken, splitEntities, regEmptyOrNoRegEntryAndNoLinkedQuery,
 						noRootLevelRegEntryAndLinkedQuery);
 				EntityCache entityCache = new EntityCache();
+				entityMap.setQueryCheckSum(queryChecksum);
 				RowIterator<Row> it = rows.iterator();
 				if (!forceEntitymapCreation
 						&& (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery || localOnly)) {
