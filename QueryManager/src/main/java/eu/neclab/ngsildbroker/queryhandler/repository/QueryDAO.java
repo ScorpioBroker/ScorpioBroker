@@ -1466,7 +1466,7 @@ public class QueryDAO {
 					query.append("UPDATE entitymap SET expires_at = now() + interval '");
 					query.append(entityMapTTL);
 					query.append(
-							"', last_access = now() WHERE map_id=$1 RETURNING entity_id as id, query_checksum, TRUE as PARENT, remote_query, csourceid), validation AS (SELECT CASE WHEN NOT EXISTS (SELECT 1 FROM a) THEN 1 / 0 WHEN EXISTS (SELECT 1 FROM a WHERE query_checksum != $2) THEN 1 / 0 ELSE 1 END AS result), check as (select * from validation)");
+							"', last_access = now() WHERE map_id=$1 RETURNING entity_id as id, query_checksum, TRUE as PARENT, remote_query, csourceid), validation AS (SELECT CASE WHEN NOT EXISTS (SELECT 1 FROM a) THEN 1 / 0 WHEN EXISTS (SELECT 1 FROM a WHERE query_checksum != $2) THEN 1 / 0 ELSE 1 END AS result), runvalidation as (select * from validation)");
 					tuple.addString(qToken);
 					tuple.addString(queryChecksum);
 					dollar = 3;
