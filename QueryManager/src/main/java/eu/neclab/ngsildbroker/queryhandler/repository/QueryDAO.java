@@ -903,7 +903,7 @@ public class QueryDAO {
 		logger.debug("getEntityMap");
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
 
-			String sql = "SELECT entity_id, csourceid, expires_at from entitymap WHERE map_id=$1 ORDER BY entity_id";
+			String sql = "SELECT entity_id, csourceid, expires_at from entitymap WHERE map_id=$1 ORDER BY pos";
 			return client.preparedQuery(sql).execute(Tuple.of(qToken)).onItem().transformToUni(rows -> {
 				if (rows.rowCount() == 0) {
 					return Uni.createFrom()
@@ -1505,7 +1505,7 @@ public class QueryDAO {
 					query.append(dollar);
 					dollar++;
 					tuple.addString(qToken);
-					query.append(", ROW_NUMBER(), $");
+					query.append(", ROW_NUMBER() OVER(), $");
 					query.append(dollar);
 					dollar++;
 					tuple.addString(queryChecksum);
