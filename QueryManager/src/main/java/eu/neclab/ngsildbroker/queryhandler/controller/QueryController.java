@@ -622,7 +622,7 @@ public class QueryController {
 			}
 			String token;
 			boolean tokenProvided;
-
+			boolean forceEntitymapCreation;
 			if (entityMapToken != null) {
 				try {
 					HttpUtils.validateUri(entityMapToken);
@@ -630,10 +630,18 @@ public class QueryController {
 					return Uni.createFrom().failure(e);
 				}
 				token = entityMapToken;
-				tokenProvided = true;
+				if (AppConstants.ENTITYMAP_IGNORE.equals(token)) {
+					tokenProvided = false;
+					forceEntitymapCreation = false;
+				} else {
+					tokenProvided = true;
+					forceEntitymapCreation = entityMapRetrieve;
+				}
+
 			} else {
 				token = "urn:ngsi-ld:entitymap:" + UUID.randomUUID().toString();
 				tokenProvided = false;
+				forceEntitymapCreation = entityMapRetrieve;
 			}
 			String checkSum;
 			if (typeQuery == null && attrs == null && q == null && csf == null && geometry == null && georel == null
@@ -679,6 +687,7 @@ public class QueryController {
 			result.setLimit(actualLimit);
 			result.setAcceptHeader(acceptHeader);
 			result.setDataSetIdTerm(dataSetIdTerm);
+			result.setEntityMap(forceEntitymapCreation);
 			return Uni.createFrom().item(result);
 		});
 	}

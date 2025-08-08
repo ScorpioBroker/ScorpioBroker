@@ -2,6 +2,7 @@ DROP TABLE entitymap;
 
 CREATE TABLE entitymap (
     map_id text NOT NULL,
+    pos BIGINT NOT NULL,
     query_checksum text NOT NULL,
     entity_id text NOT NULL,
     remote_query text,

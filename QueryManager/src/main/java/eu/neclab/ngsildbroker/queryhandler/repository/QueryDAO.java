@@ -812,11 +812,13 @@ public class QueryDAO {
 				logger.debug("storeEntityMap");
 				String deleteSql = "DELETE FROM entitymap WHERE map_id = $1";
 				return conn.preparedQuery(deleteSql).execute(Tuple.of(qToken)).onItem().transformToUni(ignored -> {
-					String sql = "INSERT INTO entitymap VALUES ($1, $2, $3, $4, $5, now() + interval '" + entityMapTTL
+					String sql = "INSERT INTO entitymap VALUES ($1, $2, $3, $4, $5, $6, now() + interval '"
+							+ entityMapTTL
 							+ "', now())";
 					String mapId = entityMap.getId();
 					String checksum = entityMap.getQueryCheckSum();
 					List<Tuple> batch = Lists.newArrayList();
+					int i = 0;
 					for (Entry<String, Set<String>> entry : entityMap.getEntityId2CSourceIds().entrySet()) {
 						for (String cId : entry.getValue()) {
 							String remoteHost;
@@ -830,7 +832,8 @@ public class QueryDAO {
 									continue;
 								}
 							}
-							batch.add(Tuple.of(mapId, checksum, entry.getKey(), remoteHost, cId));
+							batch.add(Tuple.of(mapId, i, checksum, entry.getKey(), remoteHost, cId));
+							i++;
 						}
 					}
 					if (batch.isEmpty()) {
@@ -1483,7 +1486,7 @@ public class QueryDAO {
 					query.append("WITH emupdate AS (UPDATE entitymap SET expires_at = now() + interval '");
 					query.append(entityMapTTL);
 					query.append(
-							"', last_access = now() WHERE map_id=$1 RETURNING entity_id as id, query_checksum, TRUE as PARENT, remote_query, csourceid), validation AS (SELECT CASE WHEN NOT EXISTS (SELECT 1 FROM emupdate) THEN 1 / 0 WHEN EXISTS (SELECT 1 FROM emupdate WHERE query_checksum != $2) THEN 1 / 0 ELSE 1 END AS result), a as (SELECT * FROM emupdate, validation)");
+							"', last_access = now() WHERE map_id=$1 RETURNING pos, entity_id as id, query_checksum, TRUE as PARENT, remote_query, csourceid), validation AS (SELECT CASE WHEN NOT EXISTS (SELECT 1 FROM emupdate) THEN 1 / 0 WHEN EXISTS (SELECT 1 FROM emupdate WHERE query_checksum != $2) THEN 1 / 0 ELSE 1 END AS result), a as (SELECT * FROM emupdate, validation)");
 					tuple.addString(qToken);
 					tuple.addString(queryChecksum);
 					dollar = 3;
@@ -1498,22 +1501,22 @@ public class QueryDAO {
 							queryChecksum, splitEntities, regEmptyOrNoRegEntryAndNoLinkedQuery,
 							noRootLevelRegEntryAndLinkedQuery, typePattern, localOnly);
 					query.append(
-							"), a as (INSERT INTO entitymap (map_id, query_checksum , entity_id, remote_query, csourceid, last_access, expires_at) SELECT $");
+							"), a as (INSERT INTO entitymap (map_id, pos, query_checksum , entity_id, remote_query, csourceid, last_access, expires_at) SELECT $");
 					query.append(dollar);
 					dollar++;
 					tuple.addString(qToken);
-					query.append(", $");
+					query.append(", ROW_NUMBER(), $");
 					query.append(dollar);
 					dollar++;
 					tuple.addString(queryChecksum);
 					query.append(", id, null, '@none', now(), now() + interval '");
 					query.append(entityMapTTL);
 					query.append(
-							"' FROM ementries RETURNING entity_id as id, TRUE as PARENT, remote_query, csourceid)");
+							"' FROM ementries RETURNING pos, entity_id as id, TRUE as PARENT, remote_query, csourceid)");
 
 				}
 				query.append(
-						",D0 as (SELECT ENTITY.ID, ENTITY.ENTITY, a.PARENT, ENTITY.E_TYPES AS E_TYPES, null::bigint as SIZE, a.remote_query, a.csourceid FROM a left join ENTITY on a.ID = ENTITY.ID");
+						",D0 as (SELECT ENTITY.ID, ENTITY.ENTITY, a.PARENT, ENTITY.E_TYPES AS E_TYPES, null::bigint as SIZE, a.remote_query, a.csourceid FROM a left join ENTITY on a.ID = ENTITY.ID ORDER BY a.pos");
 				query.append(" limit $");
 				query.append(dollar);
 				dollar++;
