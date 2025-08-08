@@ -12,7 +12,7 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.smallrye.mutiny.tuples.Tuple3;
 
 @RegisterForReflection
-public class Query implements Serializable{
+public class Query implements Serializable {
 	/**
 	 * 
 	 */
@@ -31,6 +31,8 @@ public class Query implements Serializable{
 	private int joinLevel;
 	private String entityMapToken;
 	private boolean tokenProvided;
+	private boolean entityMap;
+
 	private CSFQueryTerm csfQueryTerm;
 	@JsonIgnore
 	private Context context;
@@ -41,7 +43,7 @@ public class Query implements Serializable{
 	private String finalOptions;
 	private int acceptHeader;
 	private boolean localOnly;
-	
+
 	public Query() {
 		// for serializer
 	}
@@ -224,7 +226,7 @@ public class Query implements Serializable{
 	public int getAcceptHeader() {
 		return acceptHeader;
 	}
-	
+
 	public boolean isLocalOnly() {
 		return localOnly;
 	}
@@ -233,5 +235,12 @@ public class Query implements Serializable{
 		this.localOnly = localOnly;
 	}
 
+	public boolean getEntityMap() {
+		return entityMap;
+	}
+
+	public void setEntityMap(boolean entityMap) {
+		this.entityMap = entityMap;
+	}
 
 }

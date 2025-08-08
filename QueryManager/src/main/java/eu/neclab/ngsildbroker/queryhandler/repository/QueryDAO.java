@@ -900,17 +900,34 @@ public class QueryDAO {
 		logger.debug("getEntityMap");
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
 
-			String sql = "SELECT * from entitymap WHERE map_id=$1";
+			String sql = "SELECT entity_id, csourceid, expires_at from entitymap WHERE map_id=$1 ORDER BY entity_id";
 			return client.preparedQuery(sql).execute(Tuple.of(qToken)).onItem().transformToUni(rows -> {
 				if (rows.rowCount() == 0) {
 					return Uni.createFrom()
 							.failure(new ResponseException(ErrorType.InvalidRequest, "EntityMapId is invalid."));
 				}
-				Row first = rows.iterator().next();
-				Map<String, Object> tmp = first.getJsonObject(0).getMap();
-				tmp.put(NGSIConstants.ID, qToken);
-				tmp.put(NGSIConstants.EXPIRES_AT, first.getLocalDateTime(1));
-				return Uni.createFrom().item(tmp);
+				RowIterator<Row> it = rows.iterator();
+				Row first = it.next();
+				Map<String, Object> result = Maps.newHashMap();
+				result.put(NGSIConstants.ID, qToken);
+				result.put(NGSIConstants.EXPIRES_AT, first.getLocalDateTime(2));
+				String lastEntityId = first.getString(0);
+				Map<String, List<String>> entityMap = Maps.newHashMap();
+				List<String> cIds = Lists.newArrayList();
+				entityMap.put(lastEntityId, cIds);
+				cIds.add(first.getString(1));
+				while (it.hasNext()) {
+					Row row = it.next();
+					String currentEntityID = row.getString(0);
+					if (!currentEntityID.equals(lastEntityId)) {
+						cIds = Lists.newArrayList();
+						entityMap.put(currentEntityID, cIds);
+						lastEntityId = currentEntityID;
+					}
+					cIds.add(first.getString(1));
+				}
+				result.put(NGSIConstants.NGSI_LD_ENTITY_MAP_SHORT, entityMap);
+				return Uni.createFrom().item(result);
 			});
 		});
 
@@ -1461,19 +1478,19 @@ public class QueryDAO {
 				tuple.addInteger(offset);
 				;
 			} else {
-				query.append("WITH a AS (");
+
 				if (tokenProvided) {
-					query.append("UPDATE entitymap SET expires_at = now() + interval '");
+					query.append("WITH emupdate AS (UPDATE entitymap SET expires_at = now() + interval '");
 					query.append(entityMapTTL);
 					query.append(
-							"', last_access = now() WHERE map_id=$1 RETURNING entity_id as id, query_checksum, TRUE as PARENT, remote_query, csourceid), validation AS (SELECT CASE WHEN NOT EXISTS (SELECT 1 FROM a) THEN 1 / 0 WHEN EXISTS (SELECT 1 FROM a WHERE query_checksum != $2) THEN 1 / 0 ELSE 1 END AS result), runvalidation as (select * from validation)");
+							"', last_access = now() WHERE map_id=$1 RETURNING entity_id as id, query_checksum, TRUE as PARENT, remote_query, csourceid), validation AS (SELECT CASE WHEN NOT EXISTS (SELECT 1 FROM emupdate) THEN 1 / 0 WHEN EXISTS (SELECT 1 FROM emupdate WHERE query_checksum != $2) THEN 1 / 0 ELSE 1 END AS result), a as (SELECT * FROM emupdate, validation)");
 					tuple.addString(qToken);
 					tuple.addString(queryChecksum);
 					dollar = 3;
 				} else {
 					dollar = 1;
 					query.append(
-							"SELECT ID, TRUE as PARENT, null as remote_query, '@none' as csourceid FROM ENTITY WHERE ");
+							"WITH ementries AS (SELECT ID, null as remote_query, '@none' as csourceid FROM ENTITY WHERE ");
 					dollar = generateWherePart(query, dollar, tuple, idsAndTypeAndIdPattern, attrsQuery, qQuery,
 							geoQuery,
 							scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel, qToken, pickTerm,
@@ -1481,21 +1498,18 @@ public class QueryDAO {
 							queryChecksum, splitEntities, regEmptyOrNoRegEntryAndNoLinkedQuery,
 							noRootLevelRegEntryAndLinkedQuery, typePattern, localOnly);
 					query.append(
-							"), b as (INSERT INTO entitymap (map_id, query_checksum , entity_id, remote_query, csourceid, last_access, expires_at) SELECT $");
+							"), a as (INSERT INTO entitymap (map_id, query_checksum , entity_id, remote_query, csourceid, last_access, expires_at) SELECT $");
 					query.append(dollar);
 					dollar++;
 					tuple.addString(qToken);
 					query.append(", $");
 					query.append(dollar);
 					dollar++;
-					if (queryChecksum == null) {
-
-						System.err.println("query");
-					}
 					tuple.addString(queryChecksum);
 					query.append(", id, null, '@none', now(), now() + interval '");
 					query.append(entityMapTTL);
-					query.append("' FROM a)");
+					query.append(
+							"' FROM ementries RETURNING entity_id as id, TRUE as PARENT, remote_query, csourceid)");
 
 				}
 				query.append(
@@ -1571,9 +1585,6 @@ public class QueryDAO {
 
 						String id = row.getString(0);
 						JsonObject entityObj = row.getJsonObject(1);
-						if (row.getBoolean(2) == null) {
-							System.out.println(query.toString());
-						}
 						boolean parent = row.getBoolean(2);
 						String csourceId = row.getString(6);
 						String remoteQuery = row.getString(7);
@@ -1598,14 +1609,15 @@ public class QueryDAO {
 						}
 					}
 				}
-				logger.debug(query.toString());
-				logger.debug(tuple.deepToString());
+				logger.info(query.toString());
+				logger.info(tuple.deepToString());
 				return Tuple2.of(entityCache, entityMap);
 			}).onFailure().recoverWithUni(e -> {
 
 				if (e instanceof PgException pgE) {
 					// abusing division by zero for handling invalid entitymap requests
-					if (pgE.getErrorCode() == 22012) {
+					if (pgE.getSqlState().equals("22012")) {
+						logger.debug("recovering");
 						return newQuery(tenant, idsAndTypeAndIdPattern, attrsQuery, qQuery, geoQuery, scopeQuery,
 								context, limit, offset, dataSetIdTerm, join, joinLevel, qToken, pickTerm, omitTerm,
 								queryChecksum, splitEntities, regEmptyOrNoRegEntryAndNoLinkedQuery,
@@ -1640,7 +1652,7 @@ public class QueryDAO {
 	public Uni<Void> deleteEntityMap(String tenant, String entityMapId) {
 		logger.debug("deleteEntityMap");
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
-			return client.preparedQuery("DELETE FROM ENTITYMAP WHERE map_id=$1 RETURNING distinct map_id")
+			return client.preparedQuery("DELETE FROM ENTITYMAP WHERE map_id=$1 RETURNING map_id")
 					.execute(Tuple.of(entityMapId))
 					.onItem().transformToUni(rows -> {
 						if (rows.rowCount() == 0) {
@@ -1653,7 +1665,7 @@ public class QueryDAO {
 
 	public Uni<Void> updateEntityMap(String tenant, String entityMapId, String expiresAt) {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
-			return client.preparedQuery("UPDATE ENTITYMAP SET EXPIRES_AT=$1 WHERE id=$2 RETURNING distinct map_id")
+			return client.preparedQuery("UPDATE ENTITYMAP SET EXPIRES_AT=$1 WHERE map_id=$2 RETURNING map_id")
 					.execute(Tuple.of(SerializationTools.localDateTimeFormatter(expiresAt), entityMapId)).onItem()
 					.transformToUni(rows -> {
 						if (rows.rowCount() == 0) {

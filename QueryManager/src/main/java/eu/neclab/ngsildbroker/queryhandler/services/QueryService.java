@@ -129,11 +129,13 @@ public class QueryService implements CSourceHandler {
 			LanguageQueryTerm langQuery, int limit, int offSet, boolean count, boolean localOnly, Context context,
 			io.vertx.core.MultiMap headersFromReq, boolean doNotCompact, Set<String> jsonKeys,
 			DataSetIdTerm dataSetIdTerm, String join, int joinLevel, boolean entityDist, PickTerm pickTerm,
-			OmitTerm omitTerm, String checkSum, ViaHeaders viaHeaders, String typePattern) {
+			OmitTerm omitTerm, String checkSum, ViaHeaders viaHeaders, String typePattern,
+			boolean forceEntitymapCreation) {
 		// if (!tokenProvided || AppConstants.ENTITYMAP_IGNORE.equals(qToken)) {
 		return getAndStoreEntityMap(tenant, qToken, idsAndTypeQueryAndIdPattern, attrsQuery, geoQuery, qQuery,
 				scopeQuery, langQuery, limit, offSet, context, headersFromReq, doNotCompact, dataSetIdTerm, join,
-				joinLevel, entityDist, pickTerm, omitTerm, checkSum, viaHeaders, typePattern, localOnly, false,
+				joinLevel, entityDist, pickTerm, omitTerm, checkSum, viaHeaders, typePattern, localOnly,
+				forceEntitymapCreation || tokenProvided,
 				tokenProvided)
 				.onItem().transformToUni(t -> {
 					return handleEntityMap(t.getItem2(), t.getItem1(), tenant, idsAndTypeQueryAndIdPattern,

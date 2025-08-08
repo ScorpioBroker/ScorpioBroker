@@ -1333,26 +1333,29 @@ public final class HttpUtils {
 	}
 
 	public static RestResponse<Object> generateEntityMapResult(Map<String, Object> entityMap) {
-		Map<String, Object> result = Maps.newLinkedHashMap();
-		Map<String, List<String>> entityMapEntry = Maps.newLinkedHashMap();
-		result.put(NGSIConstants.ID, entityMap.get(NGSIConstants.ID));
-		result.put(NGSIConstants.TYPE, NGSIConstants.ENTITY_MAP_TYPE);
-		List<Map<String, List<String>>> dbEntityMap = (List<Map<String, List<String>>>) entityMap
-				.get(NGSIConstants.ENTITY_MAP_COMPACTED_ENTRY);
-		dbEntityMap.forEach(entry -> {
-			entry.entrySet().forEach(id2Cid -> {
-				entityMapEntry.put(id2Cid.getKey(), id2Cid.getValue());
-			});
-		});
-		result.put(NGSIConstants.ENTITY_MAP_COMPACTED_ENTRY, entityMapEntry);
-		if (entityMap.containsKey(NGSIConstants.LINKED_MAP_COMPACTED_ENTRY)) {
-			result.put(NGSIConstants.LINKED_MAP_COMPACTED_ENTRY,
-					entityMap.get(NGSIConstants.LINKED_MAP_COMPACTED_ENTRY));
-		}
-		LocalDateTime expiresAt = (LocalDateTime) entityMap.get(NGSIConstants.EXPIRES_AT);
-		result.put(NGSIConstants.EXPIRES_AT, SerializationTools.formatter.format(expiresAt));
-
-		return RestResponse.ok(result, MediaType.APPLICATION_JSON);
+		// Map<String, Object> result = Maps.newLinkedHashMap();
+		// Map<String, List<String>> entityMapEntry = Maps.newLinkedHashMap();
+		// result.put(NGSIConstants.ID, entityMap.get(NGSIConstants.ID));
+		// result.put(NGSIConstants.TYPE, NGSIConstants.ENTITY_MAP_TYPE);
+		// Map<String, List<String>> dbEntityMap = (Map<String, List<String>>) entityMap
+		// .get(NGSIConstants.ENTITY_MAP_COMPACTED_ENTRY);
+		// dbEntityMap.forEach(entry -> {
+		// entry.entrySet().forEach(id2Cid -> {
+		// entityMapEntry.put(id2Cid.getKey(), id2Cid.getValue());
+		// });
+		// });
+		// result.put(NGSIConstants.ENTITY_MAP_COMPACTED_ENTRY, entityMapEntry);
+		// if (entityMap.containsKey(NGSIConstants.LINKED_MAP_COMPACTED_ENTRY)) {
+		// result.put(NGSIConstants.LINKED_MAP_COMPACTED_ENTRY,
+		// entityMap.get(NGSIConstants.LINKED_MAP_COMPACTED_ENTRY));
+		// }
+		// LocalDateTime expiresAt = (LocalDateTime)
+		// entityMap.get(NGSIConstants.EXPIRES_AT);
+		// result.put(NGSIConstants.EXPIRES_AT,
+		// SerializationTools.formatter.format(expiresAt));
+		entityMap.put(NGSIConstants.TYPE, NGSIConstants.ENTITY_MAP_TYPE);
+		entityMap.put(NGSIConstants.EXPIRES_AT, entityMap.get(NGSIConstants.EXPIRES_AT) + "Z");
+		return RestResponse.ok(entityMap, MediaType.APPLICATION_JSON);
 	}
 
 	public static RestResponse<Object> generateEntityMapResult(EntityMap entityMap) {

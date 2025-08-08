@@ -404,7 +404,8 @@ public class QueryController {
 		logger.debug("deleteEntityMap");
 		String tenant = HttpUtils.getTenant(request);
 		return queryService.deleteEntityMap(tenant, entityMapId).onItem()
-				.transform(v -> RestResponse.status(204));
+				.transform(v -> RestResponse.status(204)).onFailure()
+				.recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, tenant));
 
 	}
 
@@ -455,7 +456,7 @@ public class QueryController {
 									qP.getLanguageQueryTerm(), qP.getLimit(), offset, count, qP.isLocalOnly(),
 									qP.getContext(), request.headers(), doNotCompact, qP.getJsonKeys(),
 									qP.getDataSetIdTerm(), join, joinLevel, distEntities, qP.getPickTerm(),
-									qP.getOmitTerm(), qP.getCheckSum(), qP.getViaHeaders(), null)
+									qP.getOmitTerm(), qP.getCheckSum(), qP.getViaHeaders(), null, qP.getEntityMap())
 							.onItem().transform(qR -> Tuple5.of(qR, qP.getFinalOptions(), qP.getAcceptHeader(),
 									qP.getLimit(), qP.getContext()));
 				});
