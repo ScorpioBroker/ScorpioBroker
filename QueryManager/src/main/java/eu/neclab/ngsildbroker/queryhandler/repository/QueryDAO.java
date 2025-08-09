@@ -1627,6 +1627,14 @@ public class QueryDAO {
 								noRootLevelRegEntryAndLinkedQuery, typePattern, localOnly, forceEntitymapCreation,
 								false);
 					}
+					if (pgE.getSqlState().equals(AppConstants.INVALID_REGULAR_EXPRESSION)) {
+						return Uni.createFrom()
+								.failure(new ResponseException(ErrorType.BadRequestData, "Invalid regular expression"));
+					}
+					if (pgE.getSqlState().equals(AppConstants.INVALID_GEO_QUERY)) {
+						return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData,
+								"Invalid geo query. " + pgE.getErrorMessage()));
+					}
 				}
 				logger.debug(query.toString());
 				logger.debug(tuple.deepToString());
