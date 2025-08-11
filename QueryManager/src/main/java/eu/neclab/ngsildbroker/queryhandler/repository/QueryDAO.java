@@ -1612,15 +1612,12 @@ public class QueryDAO {
 						}
 					}
 				}
-				logger.info(query.toString());
-				logger.info(tuple.deepToString());
 				return Tuple2.of(entityCache, entityMap);
 			}).onFailure().recoverWithUni(e -> {
 
 				if (e instanceof PgException pgE) {
 					// abusing division by zero for handling invalid entitymap requests
 					if (pgE.getSqlState().equals("22012")) {
-						logger.debug("recovering");
 						return newQuery(tenant, idsAndTypeAndIdPattern, attrsQuery, qQuery, geoQuery, scopeQuery,
 								context, limit, offset, dataSetIdTerm, join, joinLevel, qToken, pickTerm, omitTerm,
 								queryChecksum, splitEntities, regEmptyOrNoRegEntryAndNoLinkedQuery,
@@ -1636,8 +1633,6 @@ public class QueryDAO {
 								"Invalid geo query. " + pgE.getErrorMessage()));
 					}
 				}
-				logger.debug(query.toString());
-				logger.debug(tuple.deepToString());
 
 				return Uni.createFrom().failure(e);
 			});

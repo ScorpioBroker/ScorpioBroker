@@ -649,7 +649,7 @@ public final class EntityTools {
 
 	public static Uni<List<Map<String, Object>>> getRemoteEntities(QueryRemoteHost remoteHost, WebClient webClient,
 			int timeout, int limit, int offset, JsonLDService ldService) {
-		logger.debug("Calling remote host:" + remoteHost);
+		// logger.debug("Calling remote host:" + remoteHost);
 		List<Tuple3<String, String, String>> idsAndTypesAndIdPattern = remoteHost.getIdsAndTypesAndIdPattern();
 		Context context = remoteHost.context();
 		List<Uni<List<Object>>> unis = new ArrayList<>();
