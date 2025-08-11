@@ -104,8 +104,12 @@ public class JsonLDService {
 			int i = 0;
 			int lSize = l.size();
 			List<Uni<Map<String, Object>>> unis = new ArrayList<>(lSize / multiThreadingThreshold);
-			while (i < l.size()) {
-				unis.add(JsonLdProcessor.compact(l.subList(i, i + multiThreadingThreshold), context, activeCtx, opts,
+			while (i < lSize) {
+				int end = i + multiThreadingThreshold;
+				if (end > lSize) {
+					end = lSize;
+				}
+				unis.add(JsonLdProcessor.compact(l.subList(i, end), context, activeCtx, opts,
 						endPoint, options, langQuery, webClient));
 				i = i + multiThreadingThreshold;
 			}
