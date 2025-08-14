@@ -183,10 +183,10 @@ public final class EntityTools {
 					case NGSIConstants.NGSI_LD_LANGPROPERTY:
 						prop = generateFakeProperty(key, tmp);
 						break;
-					case NGSIConstants.NGSI_LD_VocabProperty:
+					case NGSIConstants.NGSI_LD_VOCAB_PROPERTY:
 						prop = generateFakeProperty(key, tmp);
 						break;
-					case NGSIConstants.NGSI_LD_ListProperty:
+					case NGSIConstants.NGSI_LD_LIST_PROPERTY:
 						prop = generateFakeProperty(key, tmp);
 						break;
 					case NGSIConstants.NGSI_LD_LOCALONLY:
@@ -522,7 +522,7 @@ public final class EntityTools {
 			}
 			// Map have vocab but not type
 			else if (map.containsKey(NGSIConstants.VOCAB)) {
-				((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.VOCABPROPERTY);
+				((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.VOCAB_PROPERTY);
 			}
 			// Map have value but not type
 			else if (map.containsKey(NGSIConstants.VALUE) && !map.containsKey(NGSIConstants.TYPE)) {
@@ -1258,7 +1258,7 @@ public final class EntityTools {
 									}
 									break;
 								}
-								case NGSIConstants.NGSI_LD_ListProperty: {
+								case NGSIConstants.NGSI_LD_LIST_PROPERTY: {
 									List<Map<String, Object>> hasValueList = (List<Map<String, Object>>) m
 											.get(NGSIConstants.NGSI_LD_HAS_LIST);
 									if (hasValueList != null && hasValueList.size() > 0
@@ -1304,7 +1304,7 @@ public final class EntityTools {
 									}
 									break;
 								}
-								case NGSIConstants.NGSI_LD_VocabProperty: {
+								case NGSIConstants.NGSI_LD_VOCAB_PROPERTY: {
 									List<Map<String, Object>> hasVocab = (List<Map<String, Object>>) m
 											.get(NGSIConstants.NGSI_LD_HAS_VOCAB);
 									if (hasVocab != null && !hasVocab.isEmpty() && NGSIConstants.NGSI_LD_NULL

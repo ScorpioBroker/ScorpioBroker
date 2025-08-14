@@ -549,7 +549,8 @@ public final class HttpUtils {
 			JsonLDService ldService, List<String> omitList, List<String> pickList, boolean forceList,
 			boolean addAtContext) {
 		return generateCompactedResult(contextHeader, context, acceptHeader, entity, geometryProperty, options,
-				langQuery, false, false, ldService, addAtContext).onItem().transform(resultBodyAndHeaders -> {
+				langQuery, false, false, ldService, addAtContext, AppConstants.ENTITY_RETRIEVED_PAYLOAD).onItem()
+				.transform(resultBodyAndHeaders -> {
 					ResponseBuilder<Object> resp = RestResponseBuilderImpl.ok();
 					List<Tuple2<String, String>> headers = resultBodyAndHeaders.getItem2();
 					for (Tuple2<String, String> entry : headers) {
@@ -596,7 +597,7 @@ public final class HttpUtils {
 	public static Uni<Tuple2<Object, List<Tuple2<String, String>>>> generateCompactedResult(List<Object> contextHeader,
 			Context context, int acceptHeader, Object entity, String geometryProperty, String options,
 			LanguageQueryTerm langQuery, boolean forceArray, boolean forceAttributeList, JsonLDService ldService,
-			boolean addAtContext) {
+			boolean addAtContext, int payloadType) {
 
 		Set<String> optionSet = null;
 		if (options != null) {
@@ -607,7 +608,8 @@ public final class HttpUtils {
 		switch (acceptHeader) {
 
 			case 1:
-				uni = ldService.compact(entity, contextHeader, context, opts, -1, optionSet, langQuery).onItem()
+				uni = ldService.compact(entity, contextHeader, context, opts, payloadType, optionSet, langQuery)
+						.onItem()
 						.transformToUni(compacted -> {
 							List<Tuple2<String, String>> headers = Lists.newArrayList();
 							Object bodyContext = compacted.remove(NGSIConstants.JSON_LD_CONTEXT);
@@ -648,7 +650,8 @@ public final class HttpUtils {
 						});
 				break;
 			case 2:
-				uni = ldService.compact(entity, contextHeader, context, opts, -1, optionSet, langQuery).onItem()
+				uni = ldService.compact(entity, contextHeader, context, opts, payloadType, optionSet, langQuery)
+						.onItem()
 						.transformToUni(compacted -> {
 							Object finalCompacted;
 							if (compacted.containsKey(JsonLdConsts.GRAPH)) {
@@ -695,7 +698,8 @@ public final class HttpUtils {
 				});
 				break;
 			case 4:// geo+json
-				uni = ldService.compact(entity, contextHeader, context, opts, -1, optionSet, langQuery).onItem()
+				uni = ldService.compact(entity, contextHeader, context, opts, payloadType, optionSet, langQuery)
+						.onItem()
 						.transformToUni(compacted -> {
 							Object finalCompacted = compacted;
 							if (compacted.containsKey(JsonLdConsts.GRAPH)) {
@@ -810,7 +814,7 @@ public final class HttpUtils {
 									valueEntry.add(m.get(NGSIConstants.LANGUAGE_MAP));
 									break;
 								}
-								case NGSIConstants.VOCABPROPERTY: {
+								case NGSIConstants.VOCAB_PROPERTY: {
 									valueEntry = new ArrayList<Object>(2);
 									valueEntry.add(m.get(NGSIConstants.VOCAB));
 									break;
@@ -858,7 +862,7 @@ public final class HttpUtils {
 								tmp.put(NGSIConstants.LANGUAGEMAPS, valuesWithDate);
 								break;
 							}
-							case NGSIConstants.VOCABPROPERTY: {
+							case NGSIConstants.VOCAB_PROPERTY: {
 								tmp.put(NGSIConstants.VOCABS, valuesWithDate);
 								break;
 							}
@@ -1196,7 +1200,8 @@ public final class HttpUtils {
 				.equals(request.headers().get(NGSIConstants.PREFER_HEADER));
 
 		return generateCompactedResult(atContext, context, acceptHeader, queryResult.getData(), geometryProperty,
-				options, lang, forceList, forceAttributeList, ldService, addAtContext).onItem()
+				options, lang, forceList, forceAttributeList, ldService, addAtContext, AppConstants.QUERY_PAYLOAD)
+				.onItem()
 				.transform(resultAndHeaders -> {
 					String nextLink;
 					String prevLink;

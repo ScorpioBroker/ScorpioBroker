@@ -251,9 +251,9 @@ class NGSIObject {
 			this.isDateTime = true;
 		} else if (NGSIConstants.NGSI_LD_LANGPROPERTY.equals(type)) {
 			this.isLanguageProperty = true;
-		} else if (NGSIConstants.NGSI_LD_VocabProperty.equals(type)) {
+		} else if (NGSIConstants.NGSI_LD_VOCAB_PROPERTY.equals(type)) {
 			this.isVocabProperty = true;
-		} else if (NGSIConstants.NGSI_LD_ListProperty.equals(type)) {
+		} else if (NGSIConstants.NGSI_LD_LIST_PROPERTY.equals(type)) {
 			this.isListProperty = true;
 		} else if (NGSIConstants.NGSI_LD_LOCALONLY.equals(type)) {
 			this.isLocalOnly = true;

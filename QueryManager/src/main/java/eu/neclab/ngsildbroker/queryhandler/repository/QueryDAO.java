@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -1458,10 +1459,11 @@ public class QueryDAO {
 			Tuple tuple = Tuple.tuple();
 			int dollar;
 			boolean doJoin = (join != null && joinLevel > 0);
-			if (!forceEntitymapCreation
-					&& (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery || localOnly)) {
+			boolean doNotCreateEntityMap = !forceEntitymapCreation
+					&& (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery || localOnly);
+			if (doNotCreateEntityMap) {
 				query.append(
-						"WITH D0 AS (SELECT ID, ENTITY, TRUE as PARENT, ENTITY.E_TYPES AS E_TYPES, count(*) over() as list_size, null, null FROM ENTITY WHERE ");
+						"WITH D0 AS (SELECT ID, ENTITY, TRUE as PARENT, ENTITY.E_TYPES AS E_TYPES, count(ID) over() as list_size, null, null FROM ENTITY WHERE ");
 				dollar = 1;
 				dollar = generateWherePart(query, dollar, tuple, idsAndTypeAndIdPattern, attrsQuery, qQuery, geoQuery,
 						scopeQuery,
@@ -1531,8 +1533,7 @@ public class QueryDAO {
 			if (doJoin) {
 				generateJoinQuery(query, joinLevel, localOnly);
 			}
-			if (!forceEntitymapCreation
-					&& (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery || localOnly)) {
+			if (doNotCreateEntityMap) {
 				query.append(" SELECT * FROM D0");
 			} else {
 				query.append(
@@ -1548,9 +1549,9 @@ public class QueryDAO {
 						noRootLevelRegEntryAndLinkedQuery);
 				EntityCache entityCache = new EntityCache();
 				entityMap.setQueryCheckSum(queryChecksum);
+				LinkedHashMap<String, Set<String>> id2Cid = entityMap.getEntityId2CSourceIds();
 				RowIterator<Row> it = rows.iterator();
-				if (!forceEntitymapCreation
-						&& (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery || localOnly)) {
+				if (doNotCreateEntityMap) {
 					entityMap.setId(AppConstants.ENTITYMAP_IGNORE);
 					while (it.hasNext()) {
 						Row row = it.next();
@@ -1560,7 +1561,8 @@ public class QueryDAO {
 						boolean parent = row.getBoolean(2);
 						Integer size = row.getInteger(4);
 						if (parent) {
-							entityMap.addEntry(id, NGSIConstants.JSON_LD_NONE, null);
+							id2Cid.put(id, Sets.newHashSet(NGSIConstants.JSON_LD_NONE));
+
 						}
 						if (entityObj != null) {
 							Map<String, Object> entity = entityObj.getMap();

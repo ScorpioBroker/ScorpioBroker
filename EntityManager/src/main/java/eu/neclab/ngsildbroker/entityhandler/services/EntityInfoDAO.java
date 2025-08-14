@@ -649,7 +649,7 @@ public class EntityInfoDAO {
 			sql.append(dollar);
 			sql.append(",false)");
 			sql.append("WHEN entity#>>'{$1,@type,0}' = '");
-			sql.append(NGSIConstants.NGSI_LD_ListProperty);
+			sql.append(NGSIConstants.NGSI_LD_LIST_PROPERTY);
 			sql.append("' THEN JSONB_SET(ENTITY, ARRAY[$1,ELEMENTS.INDEX, '");
 			sql.append(NGSIConstants.NGSI_LD_HAS_LIST);
 			sql.append("']::text[],$");
@@ -661,7 +661,7 @@ public class EntityInfoDAO {
 			sql.append("']::text[],$");
 			sql.append(dollar);
 			sql.append(",false)" + "WHEN entity#>>'{$1,@type,0}' = '");
-			sql.append(NGSIConstants.NGSI_LD_VocabProperty);
+			sql.append(NGSIConstants.NGSI_LD_VOCAB_PROPERTY);
 			sql.append("' THEN JSONB_SET(ENTITY, ARRAY[$1,ELEMENTS.INDEX, '");
 			sql.append(NGSIConstants.NGSI_LD_HAS_VOCAB);
 			sql.append("']::text[],$");

@@ -1908,7 +1908,7 @@ public class QQueryTerm implements Serializable {
 				sql.append(" #>>'{");
 				sql.append(NGSIConstants.JSON_LD_TYPE);
 				sql.append(",0}' = '");
-				sql.append(NGSIConstants.NGSI_LD_VocabProperty);
+				sql.append(NGSIConstants.NGSI_LD_VOCAB_PROPERTY);
 				sql.append("' THEN EXISTS (SELECT TRUE FROM JSONB_ARRAY_ELEMENTS(");
 				sql.append(currentSqlAttrib);
 				sql.append(" ->'");
@@ -1924,7 +1924,7 @@ public class QQueryTerm implements Serializable {
 				sql.append(" #>>'{");
 				sql.append(NGSIConstants.JSON_LD_TYPE);
 				sql.append(",0}' = '");
-				sql.append(NGSIConstants.NGSI_LD_ListProperty);
+				sql.append(NGSIConstants.NGSI_LD_LIST_PROPERTY);
 				sql.append("' THEN EXISTS (SELECT TRUE FROM JSONB_ARRAY_ELEMENTS(");
 				sql.append(currentSqlAttrib);
 				sql.append(" ->'");
@@ -2213,7 +2213,7 @@ public class QQueryTerm implements Serializable {
 				sql.append(" #>>'{");
 				sql.append(NGSIConstants.JSON_LD_TYPE);
 				sql.append(",0}' = '");
-				sql.append(NGSIConstants.NGSI_LD_VocabProperty);
+				sql.append(NGSIConstants.NGSI_LD_VOCAB_PROPERTY);
 				sql.append("' THEN EXISTS (SELECT TRUE FROM JSONB_ARRAY_ELEMENTS(");
 				sql.append(currentSqlAttrib);
 				sql.append(" ->'");
@@ -2228,7 +2228,7 @@ public class QQueryTerm implements Serializable {
 				followUp.append(" #>>''{");
 				followUp.append(NGSIConstants.JSON_LD_TYPE);
 				followUp.append(",0}'' = ''");
-				followUp.append(NGSIConstants.NGSI_LD_VocabProperty);
+				followUp.append(NGSIConstants.NGSI_LD_VOCAB_PROPERTY);
 				followUp.append("'' THEN EXISTS (SELECT TRUE FROM JSONB_ARRAY_ELEMENTS(");
 				followUp.append(currentSqlAttrib);
 				followUp.append(" ->''");
@@ -2243,7 +2243,7 @@ public class QQueryTerm implements Serializable {
 				sql.append(" #>>'{");
 				sql.append(NGSIConstants.JSON_LD_TYPE);
 				sql.append(",0}' = '");
-				sql.append(NGSIConstants.NGSI_LD_ListProperty);
+				sql.append(NGSIConstants.NGSI_LD_LIST_PROPERTY);
 				sql.append("' THEN EXISTS (SELECT TRUE FROM JSONB_ARRAY_ELEMENTS(");
 				sql.append(currentSqlAttrib);
 				sql.append(" ->'");
@@ -2258,7 +2258,7 @@ public class QQueryTerm implements Serializable {
 				followUp.append(" #>>''{");
 				followUp.append(NGSIConstants.JSON_LD_TYPE);
 				followUp.append(",0}'' = ''");
-				followUp.append(NGSIConstants.NGSI_LD_ListProperty);
+				followUp.append(NGSIConstants.NGSI_LD_LIST_PROPERTY);
 				followUp.append("'' THEN EXISTS (SELECT TRUE FROM JSONB_ARRAY_ELEMENTS(");
 				followUp.append(currentSqlAttrib);
 				followUp.append(" ->''");
