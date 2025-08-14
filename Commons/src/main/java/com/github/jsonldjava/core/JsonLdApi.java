@@ -18,6 +18,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 
@@ -215,7 +216,7 @@ public class JsonLdApi {
 			boolean temporal = payloadType == AppConstants.TEMP_ENTITY_RETRIEVED_PAYLOAD;
 			if (payloadType == AppConstants.QUERY_PAYLOAD || payloadType == AppConstants.ENTITY_RETRIEVED_PAYLOAD) {
 				return compactEntity(elem, activeCtx, removeSysAttrs, keyValue, concise,
-						temporal, langQuery);
+						temporal, langQuery, options);
 			}
 			// 4
 			if (elem.containsKey(JsonLdConsts.VALUE) || elem.containsKey(JsonLdConsts.ID)) {
@@ -776,7 +777,7 @@ public class JsonLdApi {
 
 	private Object compactEntity(Map<String, Object> elem, Context activeCtx, boolean removeSysAttrs, boolean keyValue,
 			boolean concise, boolean temporal,
-			LanguageQueryTerm langQuery) {
+			LanguageQueryTerm langQuery, Set<String> options) {
 		Map<String, Object> result = new LinkedHashMap<>(elem.size());
 		final List<String> keys = new ArrayList<String>(elem.keySet());
 		Collections.sort(keys);
@@ -811,13 +812,26 @@ public class JsonLdApi {
 								((List<Map<String, Object>>) expandedValue).get(0).get(NGSIConstants.JSON_LD_VALUE));
 					}
 					break;
+				case NGSIConstants.NGSI_LD_SCOPE:
+					List<Map<String, String>> scopeHelper = (List<Map<String, String>>) expandedValue;
+					if (scopeHelper.size() == 1) {
+						result.put(NGSIConstants.SCOPE, scopeHelper.get(0).get(NGSIConstants.JSON_LD_ID));
+					} else {
+						List<String> scopes = new ArrayList<>(scopeHelper.size());
+						for (Map<String, String> entry : scopeHelper) {
+							scopes.add(entry.get(NGSIConstants.JSON_LD_ID));
+						}
+						result.put(NGSIConstants.SCOPE, scopes);
+					}
+					break;
 				default:
 					if (expandedValue instanceof List l) {
 						result.put(activeCtx.compactIri(key),
 								compactAttribute(key, l, activeCtx, removeSysAttrs, keyValue, concise, temporal,
-										langQuery));
+										langQuery, options));
 					} else {
-						result.put(activeCtx.compactIri(key), compact(activeCtx, key, expandedValue));
+						result.put(activeCtx.compactIri(key),
+								compact(activeCtx, key, expandedValue, true, -1, options, langQuery));
 					}
 					break;
 			}
@@ -828,7 +842,7 @@ public class JsonLdApi {
 	private Object compactAttribute(String expandedName, List<Object> expandedAttrib, Context activeCtx,
 			boolean removeSysAttrs,
 			boolean keyValue,
-			boolean concise, boolean temporal, LanguageQueryTerm langQuery) {
+			boolean concise, boolean temporal, LanguageQueryTerm langQuery, Set<String> options) {
 		List<Object> result = new ArrayList<>(expandedAttrib.size());
 		if (keyValue) {
 
@@ -954,7 +968,7 @@ public class JsonLdApi {
 				}
 				commonSubAttribsCompaction(resultMap, attribMap, activeCtx, removeSysAttrs, createAt, modifiedAt,
 						observedAt, datasetId, instanceId, unitCode, objectType, entity, entityList, valueType,
-						expandedName, keyValue, concise, temporal, langQuery);
+						expandedName, keyValue, concise, temporal, langQuery, options);
 				if (isProp && resultMap.size() == 1) {
 					Object valueEntry = resultMap.get(NGSIConstants.VALUE);
 					if (valueEntry != null) {
@@ -1051,7 +1065,7 @@ public class JsonLdApi {
 				}
 				commonSubAttribsCompaction(resultMap, attribMap, activeCtx, removeSysAttrs, createAt, modifiedAt,
 						observedAt, datasetId, instanceId, unitCode, objectType, entity, entityList, valueType,
-						expandedName, keyValue, concise, temporal, langQuery);
+						expandedName, keyValue, concise, temporal, langQuery, options);
 				result.add(resultMap);
 			}
 		}
@@ -1076,7 +1090,7 @@ public class JsonLdApi {
 			List<Map<String, Object>> entity,
 			List<Map<String, List<Map<String, Object>>>> entityList,
 			List<Map<String, String>> valueType, String expandedName, boolean keyValue, boolean concise,
-			boolean temporal, LanguageQueryTerm langQuery) {
+			boolean temporal, LanguageQueryTerm langQuery, Set<String> options) {
 		if (!removeSysAttrs) {
 			resultMap.put(NGSIConstants.CREATEDAT, createAt.get(0).get(NGSIConstants.JSON_LD_VALUE));
 			resultMap.put(NGSIConstants.QUERY_PARAMETER_MODIFIED_AT,
@@ -1111,12 +1125,12 @@ public class JsonLdApi {
 			if (entity.size() == 1) {
 				resultMap.put(NGSIConstants.ENTITY,
 						compactEntity(entity.get(0), activeCtx, removeSysAttrs, keyValue, concise, temporal,
-								langQuery));
+								langQuery, options));
 			} else {
 				List<Object> tmp = new ArrayList<>(entity.size());
 				for (Map<String, Object> entry : entity) {
 					tmp.add(compactEntity(entry, activeCtx, removeSysAttrs, keyValue, concise, temporal,
-							langQuery));
+							langQuery, options));
 				}
 				resultMap.put(NGSIConstants.ENTITY, tmp);
 			}
@@ -1126,7 +1140,7 @@ public class JsonLdApi {
 			List<Object> tmp = new ArrayList<>(entity.size());
 			for (Map<String, Object> entry : entity) {
 				tmp.add(compactEntity(entry, activeCtx, removeSysAttrs, keyValue, concise, temporal,
-						langQuery));
+						langQuery, options));
 			}
 			resultMap.put(NGSIConstants.ENTITY_LIST, tmp);
 
@@ -1137,7 +1151,7 @@ public class JsonLdApi {
 		for (String key : keys) {
 			resultMap.put(activeCtx.compactIri(key),
 					compactAttribute(key, (List<Object>) attribMap.get(key), activeCtx, removeSysAttrs,
-							keyValue, concise, temporal, langQuery));
+							keyValue, concise, temporal, langQuery, options));
 		}
 	}
 
@@ -3638,6 +3652,13 @@ public class JsonLdApi {
 		}
 	}
 
+	public Map<String, Object> expandEntity(Map<String, Object> compacted, Context activeCtx) {
+		Map<String, Object> result = new HashMap<>(compacted.size());
+		for (Entry<String, Object> entry : compacted.entrySet()) {
+
+		}
+		return result;
+	}
 	/*
 	 * public Map<String, Object> expandWithCoreContext(Object geoJsonValue) {
 	 * return expand(JsonLdProcessor.getCoreContextClone(), geoJsonValue, -1,
