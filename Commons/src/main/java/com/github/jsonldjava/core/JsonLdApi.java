@@ -214,7 +214,8 @@ public class JsonLdApi {
 					|| options.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_SIMPLIFIED));
 			boolean temporal = payloadType == AppConstants.TEMP_ENTITY_RETRIEVED_PAYLOAD;
 			if (payloadType == AppConstants.QUERY_PAYLOAD || payloadType == AppConstants.ENTITY_RETRIEVED_PAYLOAD) {
-				return compactEntity(elem, activeCtx, removeSysAttrs, keyValue, concise, temporal, langQuery);
+				return compactEntity(elem, activeCtx, removeSysAttrs, keyValue, concise,
+						temporal, langQuery);
 			}
 			// 4
 			if (elem.containsKey(JsonLdConsts.VALUE) || elem.containsKey(JsonLdConsts.ID)) {
@@ -905,7 +906,7 @@ public class JsonLdApi {
 						.remove(NGSIConstants.NGSI_LD_INSTANCE_ID);
 				List<Map<String, Object>> unitCode = (List<Map<String, Object>>) attribMap
 						.remove(NGSIConstants.NGSI_LD_INSTANCE_ID);
-				List<Map<String, Object>> objectType = (List<Map<String, Object>>) attribMap
+				List<Map<String, String>> objectType = (List<Map<String, String>>) attribMap
 						.remove(NGSIConstants.NGSI_LD_OBJECT_TYPE);
 				List<Map<String, Object>> entity = (List<Map<String, Object>>) attribMap
 						.remove(NGSIConstants.NGSI_LD_ENTITY);
@@ -987,7 +988,7 @@ public class JsonLdApi {
 						.remove(NGSIConstants.NGSI_LD_INSTANCE_ID);
 				List<Map<String, Object>> unitCode = (List<Map<String, Object>>) attribMap
 						.remove(NGSIConstants.NGSI_LD_INSTANCE_ID);
-				List<Map<String, Object>> objectType = (List<Map<String, Object>>) attribMap
+				List<Map<String, String>> objectType = (List<Map<String, String>>) attribMap
 						.remove(NGSIConstants.NGSI_LD_OBJECT_TYPE);
 				List<Map<String, Object>> entity = (List<Map<String, Object>>) attribMap
 						.remove(NGSIConstants.NGSI_LD_ENTITY);
@@ -1036,7 +1037,7 @@ public class JsonLdApi {
 						break;
 
 					case NGSIConstants.NGSI_LD_LANGPROPERTY:
-						if (langQuery != null) {
+						if (langQuery == null) {
 							resultMap.put(NGSIConstants.TYPE, NGSIConstants.LANGUAGE_PROPERTY);
 						} else {
 							resultMap.put(NGSIConstants.TYPE, NGSIConstants.PROPERTY);
@@ -1071,7 +1072,7 @@ public class JsonLdApi {
 			List<Map<String, Object>> datasetId,
 			List<Map<String, Object>> instanceId,
 			List<Map<String, Object>> unitCode,
-			List<Map<String, Object>> objectType,
+			List<Map<String, String>> objectType,
 			List<Map<String, Object>> entity,
 			List<Map<String, List<Map<String, Object>>>> entityList,
 			List<Map<String, String>> valueType, String expandedName, boolean keyValue, boolean concise,
@@ -1100,11 +1101,11 @@ public class JsonLdApi {
 		}
 		if (objectType != null) {
 			resultMap.put(NGSIConstants.OBJECT_TYPE,
-					compact(activeCtx, expandedName, objectType.get(0).get(NGSIConstants.JSON_LD_ID)));
+					activeCtx.compactIri(objectType.get(0).get(NGSIConstants.JSON_LD_ID)));
 		}
 		if (valueType != null) {
 			resultMap.put(NGSIConstants.VALUE_TYPE,
-					compact(activeCtx, expandedName, valueType.get(0).get(NGSIConstants.JSON_LD_ID)));
+					activeCtx.compactIri(valueType.get(0).get(NGSIConstants.JSON_LD_ID)));
 		}
 		if (entity != null) {
 			if (entity.size() == 1) {
@@ -3381,9 +3382,9 @@ public class JsonLdApi {
 			case NGSIConstants.NGSI_LD_POINT:
 				// Point: [{"@list": [{"@value": lon}, {"@value": lat}]}]
 
-				List<Map<String, Double>> pointCoords = ((List<Map<String, List<Map<String, Double>>>>) coordinatesObj)
+				List<Map<String, Number>> pointCoords = ((List<Map<String, List<Map<String, Number>>>>) coordinatesObj)
 						.get(0).get(NGSIConstants.JSON_LD_LIST);
-				List<Double> pointResult = new ArrayList<Double>();
+				List<Number> pointResult = new ArrayList<Number>();
 				pointResult.add(pointCoords.get(0).get(NGSIConstants.JSON_LD_VALUE));
 				pointResult.add(pointCoords.get(1).get(NGSIConstants.JSON_LD_VALUE));
 				geoValue.put(NGSIConstants.TYPE, NGSIConstants.GEO_TYPE_POINT);
@@ -3392,12 +3393,12 @@ public class JsonLdApi {
 
 			case NGSIConstants.NGSI_LD_MULTI_POINT:
 			case NGSIConstants.NGSI_LD_LINESTRING:
-				List<Map<String, List<Map<String, Double>>>> lineCoords = ((List<Map<String, List<Map<String, List<Map<String, Double>>>>>>) coordinatesObj)
+				List<Map<String, List<Map<String, Number>>>> lineCoords = ((List<Map<String, List<Map<String, List<Map<String, Number>>>>>>) coordinatesObj)
 						.get(0).get(NGSIConstants.JSON_LD_LIST);
-				List<List<Double>> lineResult = new ArrayList<>(lineCoords.size());
-				for (Map<String, List<Map<String, Double>>> pointEntry : lineCoords) {
-					List<Map<String, Double>> tmp = pointEntry.get(NGSIConstants.JSON_LD_LIST);
-					List<Double> point = new ArrayList<>(2);
+				List<List<Number>> lineResult = new ArrayList<>(lineCoords.size());
+				for (Map<String, List<Map<String, Number>>> pointEntry : lineCoords) {
+					List<Map<String, Number>> tmp = pointEntry.get(NGSIConstants.JSON_LD_LIST);
+					List<Number> point = new ArrayList<>(2);
 					point.add(tmp.get(0).get(NGSIConstants.JSON_LD_VALUE));
 					point.add(tmp.get(1).get(NGSIConstants.JSON_LD_VALUE));
 					lineResult.add(point);
@@ -3415,20 +3416,20 @@ public class JsonLdApi {
 			case NGSIConstants.NGSI_LD_POLYGON:
 				// MultiLineString: [[{"@list": [{"@list": [{"@value": lon}, {"@value": lat}]},
 				// ...]}, ...]
-				List<Map<String, List<Map<String, List<Map<String, Double>>>>>> multiLineStringHelper = ((List<Map<String, List<Map<String, List<Map<String, List<Map<String, Double>>>>>>>>) coordinatesObj)
+				List<Map<String, List<Map<String, List<Map<String, Number>>>>>> multiLineStringHelper = ((List<Map<String, List<Map<String, List<Map<String, List<Map<String, Number>>>>>>>>) coordinatesObj)
 						.get(0).get(NGSIConstants.JSON_LD_LIST);
 				;
-				List<List<List<Double>>> multiLineStringResult = new ArrayList<>(
+				List<List<List<Number>>> multiLineStringResult = new ArrayList<>(
 						multiLineStringHelper.size());
-				for (Map<String, List<Map<String, List<Map<String, Double>>>>> lineEntry : multiLineStringHelper) {
-					List<Map<String, List<Map<String, Double>>>> line = lineEntry
+				for (Map<String, List<Map<String, List<Map<String, Number>>>>> lineEntry : multiLineStringHelper) {
+					List<Map<String, List<Map<String, Number>>>> line = lineEntry
 							.get(NGSIConstants.JSON_LD_LIST);
 
-					List<List<Double>> mLineResult = new ArrayList<>(line.size());
-					for (Map<String, List<Map<String, Double>>> pointEntry : line) {
-						List<Map<String, Double>> tmp = pointEntry
+					List<List<Number>> mLineResult = new ArrayList<>(line.size());
+					for (Map<String, List<Map<String, Number>>> pointEntry : line) {
+						List<Map<String, Number>> tmp = pointEntry
 								.get(NGSIConstants.JSON_LD_LIST);
-						List<Double> point = new ArrayList<>(2);
+						List<Number> point = new ArrayList<>(2);
 						point.add(tmp.get(0).get(NGSIConstants.JSON_LD_VALUE));
 						point.add(tmp.get(1).get(NGSIConstants.JSON_LD_VALUE));
 						mLineResult.add(point);
@@ -3446,26 +3447,26 @@ public class JsonLdApi {
 			case NGSIConstants.NGSI_LD_MULTI_POLYGON:
 				// MultiPolygon: [{"@list": [{"@list": [{"@list": [{"@list": [{"@value": lon},
 				// {"@value": lat}]}, ...]}, ...]}, ...]
-				List<Map<String, List<Map<String, List<Map<String, List<Map<String, List<Map<String, Double>>>>>>>>>> multiPolyHelper = (List<Map<String, List<Map<String, List<Map<String, List<Map<String, List<Map<String, Double>>>>>>>>>>) coordinatesObj;
-				List<List<List<List<Double>>>> multiPoliResult = new ArrayList<>(
+				List<Map<String, List<Map<String, List<Map<String, List<Map<String, List<Map<String, Number>>>>>>>>>> multiPolyHelper = (List<Map<String, List<Map<String, List<Map<String, List<Map<String, List<Map<String, Number>>>>>>>>>>) coordinatesObj;
+				List<List<List<List<Number>>>> multiPoliResult = new ArrayList<>(
 						multiPolyHelper.size());
-				for (Map<String, List<Map<String, List<Map<String, List<Map<String, List<Map<String, Double>>>>>>>>> polyEntry : multiPolyHelper) {
+				for (Map<String, List<Map<String, List<Map<String, List<Map<String, List<Map<String, Number>>>>>>>>> polyEntry : multiPolyHelper) {
 
-					List<Map<String, List<Map<String, List<Map<String, Double>>>>>> poliHelper = polyEntry
+					List<Map<String, List<Map<String, List<Map<String, Number>>>>>> poliHelper = polyEntry
 							.get(NGSIConstants.JSON_LD_LIST).get(0)
 							.get(NGSIConstants.JSON_LD_LIST);
 					;
-					List<List<List<Double>>> polyResult = new ArrayList<>(poliHelper.size());
-					for (Map<String, List<Map<String, List<Map<String, Double>>>>> lineEntry : poliHelper) {
-						List<Map<String, List<Map<String, Double>>>> line = lineEntry
+					List<List<List<Number>>> polyResult = new ArrayList<>(poliHelper.size());
+					for (Map<String, List<Map<String, List<Map<String, Number>>>>> lineEntry : poliHelper) {
+						List<Map<String, List<Map<String, Number>>>> line = lineEntry
 								.get(NGSIConstants.JSON_LD_LIST);
 
-						List<List<Double>> mLineResult = new ArrayList<>(line.size());
-						for (Map<String, List<Map<String, Double>>> pointEntry : line) {
+						List<List<Number>> mLineResult = new ArrayList<>(line.size());
+						for (Map<String, List<Map<String, Number>>> pointEntry : line) {
 
-							List<Map<String, Double>> tmp = pointEntry
+							List<Map<String, Number>> tmp = pointEntry
 									.get(NGSIConstants.JSON_LD_LIST);
-							List<Double> point = new ArrayList<>(2);
+							List<Number> point = new ArrayList<>(2);
 							point.add(tmp.get(0).get(NGSIConstants.JSON_LD_VALUE));
 							point.add(tmp.get(1).get(NGSIConstants.JSON_LD_VALUE));
 							mLineResult.add(point);
@@ -3531,19 +3532,17 @@ public class JsonLdApi {
 
 		if (hasGeoValue.size() == 1) {
 			Map<String, Object> first = hasGeoValue.get(0);
-			Object coordinatesObj = first.remove(NGSIConstants.NGSI_LD_COORDINATES);
-			List<String> geoTypes = (List<String>) first.remove(NGSIConstants.JSON_LD_TYPE);
+			Object coordinatesObj = first.get(NGSIConstants.NGSI_LD_COORDINATES);
+			List<String> geoTypes = (List<String>) first.get(NGSIConstants.JSON_LD_TYPE);
 			if (geoTypes == null || coordinatesObj == null) {
 				result.add(compact(activeCtx, expandedName, attribInstance));
 				return false; // Signal to continue in the original loop
 			}
 			String geoType = geoTypes.get(0);
-			if (first.size() == 1 && coordinatesObj != null) {
-				Map<String, Object> geoValue = generateGeoValue(geoType, coordinatesObj, activeCtx, expandedName);
-				resultMap.put(NGSIConstants.VALUE, geoValue);
-			} else {
-				resultMap.put(NGSIConstants.VALUE, compact(activeCtx, expandedName, hasGeoValue));
-			}
+
+			Map<String, Object> geoValue = generateGeoValue(geoType, coordinatesObj, activeCtx, expandedName);
+			resultMap.put(NGSIConstants.VALUE, geoValue);
+
 		} else {
 			resultMap.put(NGSIConstants.VALUE, compact(activeCtx, expandedName, hasGeoValue));
 		}
@@ -3575,9 +3574,15 @@ public class JsonLdApi {
 
 	private void handleListProperty(Map<String, Object> resultMap, Map<String, Object> attribMap,
 			Context activeCtx, String expandedName) {
-
-		List<Map<String, Object>> propListHelper = ((List<Map<String, List<Map<String, Object>>>>) attribMap
-				.remove(NGSIConstants.NGSI_LD_HAS_LIST)).get(0).get(NGSIConstants.JSON_LD_LIST);
+		// stupid error handling because we got a bug in merge patch which messes this
+		// up
+		Object valueListObj = attribMap.remove(NGSIConstants.NGSI_LD_HAS_LIST);
+		List<Map<String, Object>> propListHelper;
+		if (valueListObj instanceof List<?> l1) {
+			propListHelper = ((Map<String, List<Map<String, Object>>>) l1.get(0)).get(NGSIConstants.JSON_LD_LIST);
+		} else {
+			propListHelper = ((Map<String, List<Map<String, Object>>>) valueListObj).get(NGSIConstants.JSON_LD_LIST);
+		}
 		List<Object> valueList = new ArrayList<>(propListHelper.size());
 		for (Map<String, Object> propListEntry : propListHelper) {
 			Object ldValue = propListEntry.get(NGSIConstants.JSON_LD_VALUE);
