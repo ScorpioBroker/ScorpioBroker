@@ -537,7 +537,6 @@ public final class HttpUtils {
 	}
 
 	public static Uni<RestResponse<Object>> generateEntityResult(List<Object> contextHeader, Context context,
-
 			int acceptHeader, Object entity, String geometryProperty, String options, LanguageQueryTerm langQuery,
 			JsonLDService ldService, List<String> omitList, List<String> pickList, boolean addAtContext) {
 		return generateResult(contextHeader, context, acceptHeader, entity, geometryProperty, options, langQuery,
@@ -1510,6 +1509,13 @@ public final class HttpUtils {
 		} else {
 			return result.send();
 		}
+	}
+
+	public static Uni<RestResponse<Object>> generateRegistryResult(List<Object> contextHeader, Context context,
+			int acceptHeader, Object entity,
+			JsonLDService ldService, boolean addAtContext) {
+		return generateResult(contextHeader, context, acceptHeader, entity, null, null, null,
+				ldService, null, null, false, addAtContext, AppConstants.CSOURCE_REG_CREATE_PAYLOAD);
 	}
 
 }
