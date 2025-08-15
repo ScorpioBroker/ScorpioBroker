@@ -204,8 +204,9 @@ public class SubscriptionController {
 			return subService.getSubscription(tenant, subscriptionId).onItem()
 					.transformToUni(subscription -> {
 						fixSub(subscription);
-						return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, subscription, null,
-								options, null, ldService, null, null, true);
+
+						return HttpUtils.generateSubscriptionResult(contextHeader, context, acceptHeader, subscription,
+								options, ldService, true);
 					});
 		}).onFailure().recoverWithItem(e -> {
 			return HttpUtils.handleControllerExceptions(e, tenant);

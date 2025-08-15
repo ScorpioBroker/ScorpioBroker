@@ -3677,7 +3677,8 @@ public class JsonLdApi {
 		}
 	}
 
-	public Map<String, Object> expandEntity(Map<String, Object> compacted, Context activeCtx) {
+	public Map<String, Object> expandEntity(Map<String, Object> compacted, Context activeCtx)
+			throws JsonLdError, ResponseException {
 		Map<String, Object> result = new HashMap<>(compacted.size());
 		for (Entry<String, Object> entry : compacted.entrySet()) {
 			String key = entry.getKey();
@@ -3730,7 +3731,13 @@ public class JsonLdApi {
 					result.put(NGSIConstants.NGSI_LD_SCOPE, scope);
 					break;
 				default:
-					result.put(activeCtx.expandIri(key, false, false, null, null), expandAttrib(entryValue));
+					Object expanded = expandAttrib(entryValue, activeCtx, key);
+					if (!(expanded instanceof List)) {
+						List<Object> tmp = new ArrayList<>(1);
+						tmp.add(expanded);
+						expanded = tmp;
+					}
+					result.put(activeCtx.expandIri(key, false, false, null, null), expanded);
 					break;
 			}
 		}
@@ -3742,9 +3749,22 @@ public class JsonLdApi {
 	 * false); }
 	 */
 
-	private Object expandAttrib(Object entryValue) {
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException("Unimplemented method 'expandAttrib'");
+	private Object expandAttrib(Object entryValue, Context activeCtx, String activeProperty)
+			throws JsonLdError, ResponseException {
+		if (entryValue instanceof List<?> l) {
+			List<Object> result = new ArrayList<>(l.size());
+			for (Object entry : l) {
+				result.add(expandAttrib(entry, activeCtx, activeProperty));
+			}
+			return result;
+		} else if (entryValue instanceof Map<?, ?> m) {
+			Map<String, Object> result = new HashMap<>(m.size());
+
+			return result;
+		}
+
+		return expandSubLevels(context, activeProperty, new NGSIObject(entryValue, null), -1, false);
+
 	}
 
 }

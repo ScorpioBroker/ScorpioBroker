@@ -540,16 +540,23 @@ public final class HttpUtils {
 
 			int acceptHeader, Object entity, String geometryProperty, String options, LanguageQueryTerm langQuery,
 			JsonLDService ldService, List<String> omitList, List<String> pickList, boolean addAtContext) {
-		return generateEntityResult(contextHeader, context, acceptHeader, entity, geometryProperty, options, langQuery,
-				ldService, omitList, pickList, false, addAtContext);
+		return generateResult(contextHeader, context, acceptHeader, entity, geometryProperty, options, langQuery,
+				ldService, omitList, pickList, false, addAtContext, AppConstants.ENTITY_RETRIEVED_PAYLOAD);
 	}
 
-	public static Uni<RestResponse<Object>> generateEntityResult(List<Object> contextHeader, Context context,
+	public static Uni<RestResponse<Object>> generateSubscriptionResult(List<Object> contextHeader, Context context,
+			int acceptHeader, Object entity, String options,
+			JsonLDService ldService, boolean addAtContext) {
+		return generateResult(contextHeader, context, acceptHeader, entity, null, options, null,
+				ldService, null, null, false, addAtContext, AppConstants.SUBSCRIPTION_CREATE_PAYLOAD);
+	}
+
+	public static Uni<RestResponse<Object>> generateResult(List<Object> contextHeader, Context context,
 			int acceptHeader, Object entity, String geometryProperty, String options, LanguageQueryTerm langQuery,
 			JsonLDService ldService, List<String> omitList, List<String> pickList, boolean forceList,
-			boolean addAtContext) {
+			boolean addAtContext, int payloadType) {
 		return generateCompactedResult(contextHeader, context, acceptHeader, entity, geometryProperty, options,
-				langQuery, false, false, ldService, addAtContext, AppConstants.ENTITY_RETRIEVED_PAYLOAD).onItem()
+				langQuery, false, false, ldService, addAtContext, payloadType).onItem()
 				.transform(resultBodyAndHeaders -> {
 					ResponseBuilder<Object> resp = RestResponseBuilderImpl.ok();
 					List<Tuple2<String, String>> headers = resultBodyAndHeaders.getItem2();
