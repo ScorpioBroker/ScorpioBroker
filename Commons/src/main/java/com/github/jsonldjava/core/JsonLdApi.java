@@ -815,11 +815,11 @@ public class JsonLdApi {
 				case NGSIConstants.NGSI_LD_SCOPE:
 					List<Map<String, String>> scopeHelper = (List<Map<String, String>>) expandedValue;
 					if (scopeHelper.size() == 1) {
-						result.put(NGSIConstants.SCOPE, scopeHelper.get(0).get(NGSIConstants.JSON_LD_ID));
+						result.put(NGSIConstants.SCOPE, scopeHelper.get(0).get(NGSIConstants.JSON_LD_VALUE));
 					} else {
 						List<String> scopes = new ArrayList<>(scopeHelper.size());
 						for (Map<String, String> entry : scopeHelper) {
-							scopes.add(entry.get(NGSIConstants.JSON_LD_ID));
+							scopes.add(entry.get(NGSIConstants.JSON_LD_VALUE));
 						}
 						result.put(NGSIConstants.SCOPE, scopes);
 					}
@@ -848,11 +848,17 @@ public class JsonLdApi {
 
 			for (Object attribInstance : expandedAttrib) {
 				if (!(attribInstance instanceof Map)) {
-					result.add(compact(activeCtx, expandedName, attribInstance));
+					result.add(compact(activeCtx, expandedName, attribInstance, true, -1, options, langQuery));
+					continue;
 				}
 				Map<String, Object> attribMap = (Map<String, Object>) attribInstance;
 				Map<String, Object> resultMap = new HashMap<>(attribMap.size());
-				String attribType = ((List<String>) attribMap.remove(NGSIConstants.JSON_LD_TYPE)).get(0);
+				Object typeObj = attribMap.remove(NGSIConstants.JSON_LD_TYPE);
+				if (typeObj == null) {
+					result.add(compact(activeCtx, expandedName, attribInstance, true, -1, options, langQuery));
+					continue;
+				}
+				String attribType = ((List<String>) typeObj).get(0);
 
 				switch (attribType) {
 					case NGSIConstants.NGSI_LD_PROPERTY:
@@ -903,11 +909,17 @@ public class JsonLdApi {
 		} else if (concise) {
 			for (Object attribInstance : expandedAttrib) {
 				if (!(attribInstance instanceof Map)) {
-					result.add(compact(activeCtx, expandedName, attribInstance));
+					result.add(compact(activeCtx, expandedName, attribInstance, true, -1, options, langQuery));
+					continue;
 				}
 				Map<String, Object> attribMap = (Map<String, Object>) attribInstance;
 				Map<String, Object> resultMap = new LinkedHashMap<>(attribMap.size());
-				String attribType = ((List<String>) attribMap.remove(NGSIConstants.JSON_LD_TYPE)).get(0);
+				Object typeObj = attribMap.remove(NGSIConstants.JSON_LD_TYPE);
+				if (typeObj == null) {
+					result.add(compact(activeCtx, expandedName, attribInstance, true, -1, options, langQuery));
+					continue;
+				}
+				String attribType = ((List<String>) typeObj).get(0);
 				List<Map<String, Object>> createAt = (List<Map<String, Object>>) attribMap
 						.remove(NGSIConstants.NGSI_LD_CREATED_AT);
 				List<Map<String, Object>> modifiedAt = (List<Map<String, Object>>) attribMap
@@ -984,12 +996,17 @@ public class JsonLdApi {
 		} else {
 			for (Object attribInstance : expandedAttrib) {
 				if (!(attribInstance instanceof Map)) {
-					result.add(compact(activeCtx, expandedName, attribInstance));
+					result.add(compact(activeCtx, expandedName, attribInstance, true, -1, options, langQuery));
+					continue;
 				}
 				Map<String, Object> attribMap = (Map<String, Object>) attribInstance;
 				Map<String, Object> resultMap = new LinkedHashMap<>(attribMap.size());
-
-				String attribType = ((List<String>) attribMap.remove(NGSIConstants.JSON_LD_TYPE)).get(0);
+				Object typeObj = attribMap.remove(NGSIConstants.JSON_LD_TYPE);
+				if (typeObj == null) {
+					result.add(compact(activeCtx, expandedName, attribInstance, true, -1, options, langQuery));
+					continue;
+				}
+				String attribType = ((List<String>) typeObj).get(0);
 				List<Map<String, Object>> createAt = (List<Map<String, Object>>) attribMap
 						.remove(NGSIConstants.NGSI_LD_CREATED_AT);
 				List<Map<String, Object>> modifiedAt = (List<Map<String, Object>>) attribMap
@@ -1001,7 +1018,7 @@ public class JsonLdApi {
 				List<Map<String, Object>> instanceId = (List<Map<String, Object>>) attribMap
 						.remove(NGSIConstants.NGSI_LD_INSTANCE_ID);
 				List<Map<String, Object>> unitCode = (List<Map<String, Object>>) attribMap
-						.remove(NGSIConstants.NGSI_LD_INSTANCE_ID);
+						.remove(NGSIConstants.NGSI_LD_UNIT_CODE);
 				List<Map<String, String>> objectType = (List<Map<String, String>>) attribMap
 						.remove(NGSIConstants.NGSI_LD_OBJECT_TYPE);
 				List<Map<String, Object>> entity = (List<Map<String, Object>>) attribMap
@@ -3350,14 +3367,16 @@ public class JsonLdApi {
 						entry.remove(JsonLdConsts.LANGUAGE);
 						expandedValue = List.of(entry);
 						result.put(NGSIConstants.QUERY_PARAMETER_LANG, atLang);
+						result.put(NGSIConstants.VALUE, entry.get(NGSIConstants.JSON_LD_VALUE));
 						found = true;
 						break;
 					}
 					if (NGSIConstants.JSON_LD_NONE.equals(atLang)) {
 						entry.remove(JsonLdConsts.LANGUAGE);
-						atNoneEntry = List.of(entry);
+						atNoneEntry = entry.get(NGSIConstants.JSON_LD_VALUE);
 						if ("*".equals(lang)) {
 							result.put(NGSIConstants.QUERY_PARAMETER_LANG, atLang);
+							result.put(NGSIConstants.VALUE, atNoneEntry);
 							found = true;
 							break;
 						}
@@ -3369,6 +3388,7 @@ public class JsonLdApi {
 					Object atLang = entry.remove(JsonLdConsts.LANGUAGE);
 					expandedValue = List.of(entry);
 					result.put(NGSIConstants.QUERY_PARAMETER_LANG, atLang);
+					result.put(NGSIConstants.VALUE, entry.get(NGSIConstants.JSON_LD_VALUE));
 					found = true;
 					break;
 				}
@@ -3380,10 +3400,12 @@ public class JsonLdApi {
 		if (!found) {
 			if (atNoneEntry != null) {
 				result.put(NGSIConstants.QUERY_PARAMETER_LANG, NGSIConstants.JSON_LD_NONE);
+				result.put(NGSIConstants.VALUE, atNoneEntry);
 			} else {
 				Map<String, Object> entry = expandedValue.get(0);
 				Object atLang = entry.remove(JsonLdConsts.LANGUAGE);
 				result.put(NGSIConstants.QUERY_PARAMETER_LANG, atLang);
+				result.put(NGSIConstants.VALUE, entry.get(NGSIConstants.JSON_LD_VALUE));
 			}
 		}
 
@@ -3621,6 +3643,9 @@ public class JsonLdApi {
 			Map<String, Object> objectResult = new HashMap<>(1);
 			List<Map<String, String>> hasObjectEntry = objectEntry
 					.get(NGSIConstants.NGSI_LD_HAS_OBJECT);
+			if (hasObjectEntry == null) {
+				continue;
+			}
 			if (hasObjectEntry.size() == 1) {
 				objectResult.put(NGSIConstants.OBJECT,
 						hasObjectEntry.get(0).get(NGSIConstants.JSON_LD_ID));
@@ -3655,7 +3680,59 @@ public class JsonLdApi {
 	public Map<String, Object> expandEntity(Map<String, Object> compacted, Context activeCtx) {
 		Map<String, Object> result = new HashMap<>(compacted.size());
 		for (Entry<String, Object> entry : compacted.entrySet()) {
+			String key = entry.getKey();
+			Object entryValue = entry.getValue();
+			switch (key) {
 
+				case NGSIConstants.ID:
+					result.put(NGSIConstants.JSON_LD_ID, entryValue);
+					break;
+				case NGSIConstants.TYPE:
+					final List<String> types;
+					if (entryValue instanceof List<?> l) {
+						types = new ArrayList<String>(l.size());
+						for (Object obj : l) {
+							types.add(activeCtx.expandIri((String) obj, false, false, null, null));
+						}
+					} else {
+						types = new ArrayList<String>(1);
+						types.add(activeCtx.expandIri((String) entryValue, false, false, null, null));
+					}
+					result.put(NGSIConstants.JSON_LD_TYPE, types);
+					break;
+				case NGSIConstants.CREATEDAT:
+					List<Map<String, Object>> createdAt = new ArrayList<>(1);
+					Map<String, Object> createdAtValue = new HashMap<>(2);
+					createdAtValue.put(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME);
+					createdAtValue.put(NGSIConstants.JSON_LD_VALUE, entryValue);
+					createdAt.add(createdAtValue);
+					result.put(NGSIConstants.NGSI_LD_CREATED_AT, createdAt);
+					break;
+				case NGSIConstants.QUERY_PARAMETER_MODIFIED_AT:
+					List<Map<String, Object>> modifiedAt = new ArrayList<>(1);
+					Map<String, Object> modifiedAtValue = new HashMap<>(2);
+					modifiedAtValue.put(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME);
+					modifiedAtValue.put(NGSIConstants.JSON_LD_VALUE, entryValue);
+					modifiedAt.add(modifiedAtValue);
+					result.put(NGSIConstants.NGSI_LD_MODIFIED_AT, modifiedAt);
+					break;
+				case NGSIConstants.SCOPE:
+					List<Map<String, Object>> scope;
+					if (entryValue instanceof List<?> l) {
+						scope = new ArrayList<>(l.size());
+						for (Object scopeObj : l) {
+							scope.add(Map.of(NGSIConstants.JSON_LD_ID, scopeObj));
+						}
+					} else {
+						scope = new ArrayList<>(1);
+						scope.add(Map.of(NGSIConstants.JSON_LD_ID, entryValue));
+					}
+					result.put(NGSIConstants.NGSI_LD_SCOPE, scope);
+					break;
+				default:
+					result.put(activeCtx.expandIri(key, false, false, null, null), expandAttrib(entryValue));
+					break;
+			}
 		}
 		return result;
 	}
@@ -3664,5 +3741,10 @@ public class JsonLdApi {
 	 * return expand(JsonLdProcessor.getCoreContextClone(), geoJsonValue, -1,
 	 * false); }
 	 */
+
+	private Object expandAttrib(Object entryValue) {
+		// TODO Auto-generated method stub
+		throw new UnsupportedOperationException("Unimplemented method 'expandAttrib'");
+	}
 
 }
