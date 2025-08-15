@@ -129,7 +129,7 @@ public class RegistryController {
 					.onItem().transformToUni(queryResult -> {
 						return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty,
 								acceptHeader, count, actualLimit, null, context, ldService, false,
-								microServiceUtils.getGatewayString(), NGSIConstants.NGSI_LD_REGISTRY_ENDPOINT);
+								microServiceUtils.getGatewayString(), NGSIConstants.NGSI_LD_REGISTRY_ENDPOINT, -1);
 					});
 		}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 	}

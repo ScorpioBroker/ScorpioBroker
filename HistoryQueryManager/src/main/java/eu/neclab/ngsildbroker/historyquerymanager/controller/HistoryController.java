@@ -2,6 +2,7 @@ package eu.neclab.ngsildbroker.historyquerymanager.controller;
 
 import com.github.jsonldjava.core.JsonLDService;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AggrTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
@@ -160,10 +161,16 @@ public class HistoryController {
 					csfQueryTerm, geoQueryTerm, scopeQueryTerm, temporalQueryTerm, aggrTerm, languageQueryTerm,
 					lastNTBU, actualLimit, offset, count, localOnly, context, request).onItem()
 					.transformToUni(queryResult -> {
+						int payloadType;
+						if (aggrTerm == null) {
+							payloadType = AppConstants.QUERY_PAYLOAD;
+						} else {
+							payloadType = -1;
+						}
 						return HttpUtils.generateQueryResult(request, queryResult, finalOptions, geoproperty,
 								acceptHeader, count, actualLimit, languageQueryTerm, context, ldService, true, true,
 								false, microServiceUtils.getGatewayString(),
-								NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT);
+								NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT, payloadType);
 					});
 		}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 	}

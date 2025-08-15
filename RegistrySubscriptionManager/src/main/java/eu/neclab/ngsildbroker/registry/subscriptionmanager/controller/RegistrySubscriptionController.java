@@ -88,7 +88,7 @@ public class RegistrySubscriptionController {
 					.transformToUni(subscriptions -> {
 						return HttpUtils.generateQueryResult(request, subscriptions, options, null, acceptHeader, false,
 								acceptHeader, null, ctx, ldService, false, microServiceUtils.getGatewayString(),
-								NGSIConstants.NGSI_LD_REGISTRY_SUB_ENDPOINT);
+								NGSIConstants.NGSI_LD_REGISTRY_SUB_ENDPOINT, -1);
 					}).onFailure()
 					.recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 

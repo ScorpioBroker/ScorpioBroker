@@ -1,6 +1,5 @@
 package eu.neclab.ngsildbroker.historyquerymanager.controller;
 
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -39,7 +38,6 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple3;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.json.JsonObject;
-import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import jakarta.ws.rs.HeaderParam;
@@ -161,7 +159,7 @@ public class HistoryOperationsController {
 				PickTerm pickTerm = null;
 				boolean localOnlyTBU = localOnly;
 				LanguageQueryTerm langQuery;
-				AggrTerm aggrTerm = null;
+				AggrTerm aggrTerm;
 				LanguageQueryTerm languageQueryTerm = null;
 				TemporalQueryTerm temporalQueryTerm = null;
 				Object entities = body.get(NGSIConstants.NGSI_LD_ENTITIES_SHORT);
@@ -229,6 +227,8 @@ public class HistoryOperationsController {
 
 					aggrTerm = QueryParser.parseAggrTerm(aggrMethods == null ? null : (String) aggrMethods,
 							aggrPeriodDuration == null ? null : (String) aggrPeriodDuration);
+				} else {
+					aggrTerm = null;
 				}
 				//
 				//
@@ -341,10 +341,16 @@ public class HistoryOperationsController {
 				return queryService.query(tenant, idsAndTypeQueryAndIdPattern, attrsQuery, qQueryTerm, csfQueryTerm,
 						geoQueryTerm, scopeQueryTerm, temporalQueryTerm, aggrTerm, langQuery, lastNTBU, limit, offset,
 						false, localOnly, context, request).onItem().transformToUni(queryResult -> {
+							int payloadType;
+							if (aggrTerm == null) {
+								payloadType = AppConstants.QUERY_PAYLOAD;
+							} else {
+								payloadType = -1;
+							}
 							return HttpUtils.generateQueryResult(request, queryResult, options, (String) geoproperty,
 									acceptHeader, count, actualLimit, langQuery, context, ldService, true, true, false,
 									microServiceUtils.getGatewayString(),
-									NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT);
+									NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT, payloadType);
 						});
 
 			} catch (Exception e) {

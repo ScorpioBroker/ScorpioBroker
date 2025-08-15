@@ -3759,7 +3759,9 @@ public class JsonLdApi {
 			return result;
 		} else if (entryValue instanceof Map<?, ?> m) {
 			Map<String, Object> result = new HashMap<>(m.size());
+			for (Entry<?, ?> entry : m.entrySet()) {
 
+			}
 			return result;
 		}
 

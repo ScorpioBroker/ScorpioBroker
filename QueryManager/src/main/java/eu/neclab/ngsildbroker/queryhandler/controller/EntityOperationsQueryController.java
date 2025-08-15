@@ -311,7 +311,7 @@ public class EntityOperationsQueryController {
 							return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty,
 									acceptHeader, count, actualLimit, langQuery, context, ldService, retrieveEntityMap,
 									microServiceUtils.getGatewayString(),
-									NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT);
+									NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT, AppConstants.QUERY_PAYLOAD);
 						}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, tenant));
 
 			} catch (Exception e) {

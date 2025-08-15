@@ -1182,16 +1182,17 @@ public final class HttpUtils {
 	public static Uni<RestResponse<Object>> generateQueryResult(HttpServerRequest request, QueryResult queryResult,
 
 			String options, String geometryProperty, int acceptHeader, boolean count, int limit, LanguageQueryTerm lang,
-			Context context, JsonLDService ldService, boolean entityMap, String baseUrl, String ngsiLdEndpoint) {
+			Context context, JsonLDService ldService, boolean entityMap, String baseUrl, String ngsiLdEndpoint,
+			int payloadType) {
 		return generateQueryResult(request, queryResult, options, geometryProperty, acceptHeader, count, limit, lang,
-				context, ldService, true, false, entityMap, baseUrl, ngsiLdEndpoint);
+				context, ldService, true, false, entityMap, baseUrl, ngsiLdEndpoint, payloadType);
 	}
 
 	public static Uni<RestResponse<Object>> generateQueryResult(HttpServerRequest request, QueryResult queryResult,
 
 			String options, String geometryProperty, int acceptHeader, boolean count, int limit, LanguageQueryTerm lang,
 			Context context, JsonLDService ldService, boolean forceList, boolean forceAttributeList, boolean entityMap,
-			String baseUrl, String ngsiLdEndpoint) {
+			String baseUrl, String ngsiLdEndpoint, int payloadType) {
 		ResponseBuilder<Object> builder;
 		if (count) {
 			builder = RestResponseBuilderImpl.ok().header(NGSIConstants.COUNT_HEADER_RESULT, queryResult.getCount());
@@ -1206,7 +1207,7 @@ public final class HttpUtils {
 				.equals(request.headers().get(NGSIConstants.PREFER_HEADER));
 
 		return generateCompactedResult(atContext, context, acceptHeader, queryResult.getData(), geometryProperty,
-				options, lang, forceList, forceAttributeList, ldService, addAtContext, AppConstants.QUERY_PAYLOAD)
+				options, lang, forceList, forceAttributeList, ldService, addAtContext, payloadType)
 				.onItem()
 				.transform(resultAndHeaders -> {
 					String nextLink;

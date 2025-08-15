@@ -135,7 +135,7 @@ public class QueryController {
 					return HttpUtils.generateQueryResult(request, queryResult, t.getItem2(), geometryProperty,
 							t.getItem3(), false, t.getItem4(), queryResult.getLanguageQueryTerm(), t.getItem5(),
 							ldService, false, false, entityMap, microServiceUtils.getGatewayString(),
-							NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT);
+							NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT, AppConstants.QUERY_PAYLOAD);
 				}).onFailure()
 				.recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, tenant));
 
@@ -195,7 +195,7 @@ public class QueryController {
 					return HttpUtils.generateQueryResult(request, queryResult, finalOptions, geometryProperty,
 							acceptHeader, count, actualLimit, queryResult.getLanguageQueryTerm(), context, ldService,
 							entityMapRetrieve, microServiceUtils.getGatewayString(),
-							NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT);
+							NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT, AppConstants.QUERY_PAYLOAD);
 				}).onFailure()
 				.recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, tenant));
 	}

@@ -147,7 +147,7 @@ public class SubscriptionController {
 						});
 						return HttpUtils.generateQueryResult(request, subscriptions, options, null, acceptHeader, false,
 								actualLimit, null, ctx, ldService, false, microServiceUtils.getGatewayString(),
-								NGSIConstants.NGSI_LD_SUB_ENDPOINT);
+								NGSIConstants.NGSI_LD_SUB_ENDPOINT, -1);
 					});
 		}).onFailure().recoverWithItem(e -> {
 			return HttpUtils.handleControllerExceptions(e, tenant);
