@@ -113,8 +113,8 @@ public class RegistrySubscriptionController {
 		return ldService.parse(contextHeader).onItem().transformToUni(context -> {
 			return subService.getSubscription(HttpUtils.getTenant(request), subscriptionId).onItem()
 					.transformToUni(subscription -> {
-						return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, subscription, null,
-								options, null, ldService, null, null, true);
+						return HttpUtils.generateSubscriptionResult(contextHeader, context, acceptHeader, contextHeader,
+								options, ldService, true);
 					});
 		}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 

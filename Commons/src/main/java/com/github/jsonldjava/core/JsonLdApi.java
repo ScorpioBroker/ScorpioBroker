@@ -1006,7 +1006,16 @@ public class JsonLdApi {
 					result.add(compact(activeCtx, expandedName, attribInstance, true, -1, options, langQuery));
 					continue;
 				}
-				String attribType = ((List<String>) typeObj).get(0);
+				String attribType;
+				if (typeObj instanceof List<?> l) {
+					attribType = (String) l.get(0);
+				} else if (typeObj instanceof String s) {
+					attribType = s;
+				} else {
+					result.add(compact(activeCtx, expandedName, attribInstance, true, -1, options, langQuery));
+					continue;
+				}
+
 				List<Map<String, Object>> createAt = (List<Map<String, Object>>) attribMap
 						.remove(NGSIConstants.NGSI_LD_CREATED_AT);
 				List<Map<String, Object>> modifiedAt = (List<Map<String, Object>>) attribMap

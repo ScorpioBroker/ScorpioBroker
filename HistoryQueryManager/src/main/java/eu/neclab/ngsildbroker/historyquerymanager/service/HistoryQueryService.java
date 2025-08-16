@@ -177,6 +177,9 @@ public class HistoryQueryService implements CSourceHandler {
 			Map<String, Map<String, Object>> entityId2Entity = Maps.newHashMap();
 			long rCount = 0;
 			for (Object entry : list) {
+				if (entry == null) {
+					continue;
+				}
 				QueryResult qResult = (QueryResult) entry;
 				mergeInResult(entityId2Entity, qResult.getData());
 				if (count) {
