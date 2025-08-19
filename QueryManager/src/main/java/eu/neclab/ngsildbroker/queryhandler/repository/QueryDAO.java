@@ -1617,12 +1617,11 @@ public class QueryDAO {
 					while (it.hasNext()) {
 						Row row = it.next();
 						// a.ID, D0.ENTITY, D0.PARENT, a.remote_query, a.csourceid
-
 						String id = row.getString(0);
 						JsonObject entityObj = row.getJsonObject(1);
 						boolean parent = row.getBoolean(2);
-						String csourceId = row.getString(3);
-						String remoteQuery = row.getString(4);
+						String remoteQuery = row.getString(3);
+						String csourceId = row.getString(4);
 
 						QueryRemoteHost queryRemoteHost;
 						if (remoteQuery == null) {
