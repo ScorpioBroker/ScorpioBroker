@@ -377,7 +377,7 @@ public class QueryController {
 							params.getqQueryTerm(), params.getScopeQueryTerm(), params.getLanguageQueryTerm(), 1, 0,
 							params.getContext(), request.headers(), false, params.getDataSetIdTerm(), null, -1,
 							distEntities, params.getPickTerm(), params.getOmitTerm(), params.getCheckSum(),
-							params.getViaHeaders(), null, false, true, true).onItem().transform(t -> {
+							params.getViaHeaders(), null, false, true, true, true).onItem().transform(t -> {
 								return HttpUtils.generateEntityMapResult(t.getItem2());
 							}).onFailure().recoverWithItem(
 									e -> HttpUtils.handleControllerExceptions(e, tenant));
