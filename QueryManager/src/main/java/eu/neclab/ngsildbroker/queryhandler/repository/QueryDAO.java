@@ -1453,7 +1453,7 @@ public class QueryDAO {
 			DataSetIdTerm dataSetIdTerm, String join, int joinLevel, String qToken, PickTerm pickTerm,
 			OmitTerm omitTerm, String queryChecksum, boolean splitEntities,
 			boolean regEmptyOrNoRegEntryAndNoLinkedQuery, boolean noRootLevelRegEntryAndLinkedQuery, String typePattern,
-			boolean localOnly, boolean forceEntitymapCreation, boolean tokenProvided) {
+			boolean localOnly, boolean forceEntitymapCreation, boolean tokenProvided, boolean count) {
 		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
 			StringBuilder query = new StringBuilder();
 			Tuple tuple = Tuple.tuple();
@@ -1463,7 +1463,12 @@ public class QueryDAO {
 					&& (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery || localOnly);
 			if (doNotCreateEntityMap) {
 				query.append(
-						"WITH D0 AS (SELECT ID, ENTITY, TRUE as PARENT, ENTITY.E_TYPES AS E_TYPES, count(ID) over() as list_size, null, null FROM ENTITY WHERE ");
+						"WITH D0 AS (SELECT ID, ENTITY, TRUE as PARENT");
+				if (count) {
+					query.append(", count(ID) over() as list_size");
+				}
+				query.append(" FROM ENTITY WHERE ");
+
 				dollar = 1;
 				dollar = generateWherePart(query, dollar, tuple, idsAndTypeAndIdPattern, attrsQuery, qQuery, geoQuery,
 						scopeQuery,
@@ -1518,7 +1523,7 @@ public class QueryDAO {
 
 				}
 				query.append(
-						",D0 as (SELECT ENTITY.ID, ENTITY.ENTITY, a.PARENT, ENTITY.E_TYPES AS E_TYPES, null::bigint as SIZE, a.remote_query, a.csourceid FROM a left join ENTITY on a.ID = ENTITY.ID ORDER BY a.pos");
+						",D0 as (SELECT ENTITY.ID, ENTITY.ENTITY, a.PARENT, a.remote_query, a.csourceid FROM a left join ENTITY on a.ID = ENTITY.ID ORDER BY a.pos");
 				query.append(" limit $");
 				query.append(dollar);
 				dollar++;
@@ -1534,14 +1539,25 @@ public class QueryDAO {
 				generateJoinQuery(query, joinLevel, localOnly);
 			}
 			if (doNotCreateEntityMap) {
-				query.append(" SELECT * FROM D0");
+				query.append(" SELECT ID, ENTITY, PARENT");
+				if (count) {
+					query.append(", list_size");
+				}
+				query.append(" FROM D0");
 			} else {
 				query.append(
-						" SELECT a.ID, D0.ENTITY, a.PARENT, D0.E_TYPES, D0.SIZE, a.remote_query, a.csourceid FROM a left join D0 on a.ID = D0.ID");
+						" SELECT a.ID, D0.ENTITY, a.PARENT, a.remote_query, a.csourceid FROM a left join D0 on a.ID = D0.ID");
 			}
 
 			if (doJoin) {
-				query.append(" UNION ALL (SELECT * FROM JOINENTITIES)");
+				query.append(" UNION ALL (SELECT ID, ENTITY, PARENT");
+				if (doNotCreateEntityMap && count) {
+					query.append(", null::bigint");
+				}
+				if (!doNotCreateEntityMap) {
+					query.append(", null, null");
+				}
+				query.append(" FROM JOINENTITIES)");
 			}
 
 			return client.preparedQuery(query.toString()).execute(tuple).onItem().transform(rows -> {
@@ -1551,15 +1567,22 @@ public class QueryDAO {
 				entityMap.setQueryCheckSum(queryChecksum);
 				LinkedHashMap<String, Set<String>> id2Cid = entityMap.getEntityId2CSourceIds();
 				RowIterator<Row> it = rows.iterator();
+
 				if (doNotCreateEntityMap) {
 					entityMap.setId(AppConstants.ENTITYMAP_IGNORE);
 					while (it.hasNext()) {
 						Row row = it.next();
-						// a.ID, D0.ENTITY, D0.PARENT, D0.E_TYPES, D0.SIZE, a.remote_query, a.csourceid
+						// a.ID, D0.ENTITY, D0.PARENT, D0.SIZE
 						String id = row.getString(0);
 						JsonObject entityObj = row.getJsonObject(1);
 						boolean parent = row.getBoolean(2);
-						Integer size = row.getInteger(4);
+						Integer size;
+						if (count) {
+							size = row.getInteger(3);
+						} else {
+							size = null;
+						}
+
 						if (parent) {
 							id2Cid.put(id, Sets.newHashSet(NGSIConstants.JSON_LD_NONE));
 
@@ -1583,16 +1606,23 @@ public class QueryDAO {
 							entityMap.setManualSize(size);
 						}
 					}
+					if (!count) {
+						if (id2Cid.size() < limit) {
+							entityMap.setManualSize(offset + limit);
+						} else {
+							entityMap.setManualSize(offset + 2 * limit);
+						}
+					}
 				} else {
 					while (it.hasNext()) {
 						Row row = it.next();
-						// a.ID, D0.ENTITY, D0.PARENT, D0.E_TYPES, D0.SIZE, a.remote_query, a.csourceid
+						// a.ID, D0.ENTITY, D0.PARENT, a.remote_query, a.csourceid
 
 						String id = row.getString(0);
 						JsonObject entityObj = row.getJsonObject(1);
 						boolean parent = row.getBoolean(2);
-						String csourceId = row.getString(6);
-						String remoteQuery = row.getString(7);
+						String csourceId = row.getString(3);
+						String remoteQuery = row.getString(4);
 
 						QueryRemoteHost queryRemoteHost;
 						if (remoteQuery == null) {
@@ -1624,7 +1654,7 @@ public class QueryDAO {
 								context, limit, offset, dataSetIdTerm, join, joinLevel, qToken, pickTerm, omitTerm,
 								queryChecksum, splitEntities, regEmptyOrNoRegEntryAndNoLinkedQuery,
 								noRootLevelRegEntryAndLinkedQuery, typePattern, localOnly, forceEntitymapCreation,
-								false);
+								false, count);
 					}
 					if (pgE.getSqlState().equals(AppConstants.INVALID_REGULAR_EXPRESSION)) {
 						return Uni.createFrom()
