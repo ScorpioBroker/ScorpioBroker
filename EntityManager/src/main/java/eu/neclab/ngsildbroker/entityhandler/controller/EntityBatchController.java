@@ -1,6 +1,7 @@
 package eu.neclab.ngsildbroker.entityhandler.controller;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +23,8 @@ import org.jboss.resteasy.reactive.RestResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLDService;
+import com.github.jsonldjava.core.JsonLdApi;
+import com.github.jsonldjava.core.JsonLdError;
 import com.google.common.collect.Lists;
 import com.google.common.net.HttpHeaders;
 
@@ -70,9 +73,81 @@ public class EntityBatchController {
 	@Inject
 	MicroServiceUtils microServiceUtils;
 
+	JsonLdApi api = new JsonLdApi();
+
 	@POST
 	@Path("/create")
 	public Uni<RestResponse<Object>> createMultiple(HttpServerRequest request, String body,
+			@QueryParam("localOnly") String localOnlyS) {
+		List<Map<String, Object>> compactedEntities;
+		boolean localOnly;
+		String tenant = HttpUtils.getTenant(request);
+		try {
+			localOnly = HttpUtils.parseBoolean(localOnlyS);
+			compactedEntities = new JsonArray(body).getList();
+		} catch (DecodeException | ResponseException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
+		}
+		if (compactedEntities == null || compactedEntities.isEmpty()) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
+					new ResponseException(ErrorType.BadRequestData), tenant));
+		}
+		ViaHeaders viaHeaders;
+		try {
+			viaHeaders = new ViaHeaders(request.headers().getAll(HttpHeaders.VIA),
+					microServiceUtils.getSourceAlias(tenant));
+		} catch (ResponseException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
+		}
+		boolean atContextAllowed;
+		try {
+			atContextAllowed = HttpUtils.doPreflightCheck(request, HttpUtils.getAtContext(request));
+		} catch (ResponseException e) {
+			return Uni.createFrom().failure(e);
+		}
+
+		return HttpUtils
+				.getContextFromPayload(compactedEntities.get(0), HttpUtils.getAtContext(request), atContextAllowed,
+						ldService)
+				.onItem()
+				.transformToUni(context -> {
+					List<Map<String, Object>> expandedEntities = new ArrayList<>(compactedEntities.size());
+					List<Context> contexts = new ArrayList<>(compactedEntities.size());
+					List<NGSILDOperationResult> fails = Lists.newArrayList();
+					for (Map<String, Object> compactedEntity : compactedEntities) {
+						try {
+							expandedEntities.add(api.expandEntity(compactedEntity, context));
+						} catch (JsonLdError | ResponseException e) {
+							NGSILDOperationResult failureResults = new NGSILDOperationResult(
+									AppConstants.CREATE_REQUEST,
+									(String) compactedEntity.get(NGSIConstants.ID), tenant);
+							if (e instanceof ResponseException) {
+								failureResults.addFailure((ResponseException) e);
+							} else if (e instanceof IOException) {
+								failureResults.addFailure(new ResponseException(ErrorType.LdContextNotAvailable,
+										((Exception) e).getMessage()));
+							} else {
+								failureResults.addFailure(
+										new ResponseException(ErrorType.InvalidRequest,
+												((Exception) e).getMessage()));
+							}
+							fails.add(failureResults);
+						}
+						contexts.add(context);
+					}
+					return entityService
+							.createBatch(tenant, expandedEntities, contexts, localOnly, request.headers(),
+									viaHeaders)
+							.onItem().transform(opResults -> {
+								opResults.addAll(fails);
+								return HttpUtils.generateBatchResult(opResults);
+							});
+				}).onFailure().recoverWithItem(e -> {
+					return HttpUtils.handleControllerExceptions(e, tenant);
+				});
+	}
+
+	public Uni<RestResponse<Object>> backupcreateMultiple(HttpServerRequest request, String body,
 			@QueryParam("localOnly") String localOnlyS) {
 		List<Uni<Tuple2<String, Object>>> unis = Lists.newArrayList();
 		List<Map<String, Object>> compactedEntities;
@@ -103,7 +178,8 @@ public class EntityBatchController {
 			// (Object) e)));
 			// continue;
 			// }
-			unis.add(HttpUtils.expandBody(request, compactedEntity, AppConstants.CREATE_REQUEST, ldService).onItem()
+			unis.add(HttpUtils.expandBody(request, compactedEntity, AppConstants.ENTITY_CREATE_PAYLOAD, ldService)
+					.onItem()
 					.transform(i -> Tuple2.of((String) compactedEntity.get("id"), (Object) i)).onFailure()
 					.recoverWithItem(e -> Tuple2.of((String) compactedEntity.get("id"), (Object) e)));
 		}

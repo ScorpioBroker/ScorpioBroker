@@ -8,6 +8,7 @@ import static com.github.jsonldjava.core.JsonLdConsts.RDF_TYPE;
 import static com.github.jsonldjava.core.JsonLdUtils.isKeyword;
 import static com.github.jsonldjava.utils.Obj.newMap;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -19,11 +20,16 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import org.checkerframework.checker.units.qual.s;
+
 import java.util.Set;
 import java.util.TreeMap;
 
+import com.fasterxml.jackson.core.JsonGenerationException;
 import com.github.jsonldjava.core.JsonLdConsts.Embed;
 import com.github.jsonldjava.core.JsonLdError.Error;
+import com.github.jsonldjava.utils.JsonUtils;
 import com.github.jsonldjava.utils.Obj;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -38,6 +44,7 @@ import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.vertx.mutiny.ext.web.client.WebClient;
+import jakarta.ws.rs.BadRequestException;
 
 /**
  * A container object to maintain state relating to JsonLdOptions and the
@@ -1293,11 +1300,13 @@ public class JsonLdApi {
 
 				}
 				resultElement.setElement(result);
-				try {
-					resultElement.validate(payloadType, activeProperty,
-							activeCtx.expandIri(activeProperty, false, true, null, null), this);
-				} catch (JsonLdError | ResponseException e) {
-					return Uni.createFrom().failure(e);
+				if (payloadType != AppConstants.OPERATION_CREATE_ENTITY) {
+					try {
+						resultElement.validate(payloadType, activeProperty,
+								activeCtx.expandIri(activeProperty, false, true, null, null), this);
+					} catch (JsonLdError | ResponseException e) {
+						return Uni.createFrom().failure(e);
+					}
 				}
 				return Uni.createFrom().item(resultElement);
 			});
@@ -1329,6 +1338,9 @@ public class JsonLdApi {
 			}
 			return ctxUni.onItem().transformToUni(ctx -> {
 				try {
+					if (payloadType == AppConstants.ENTITY_CREATE_PAYLOAD) {
+						return Uni.createFrom().item(new NGSIObject(expandEntity(elem, ctx), null));
+					}
 					return Uni.createFrom()
 							.item(expandSubLevels(ctx, activeProperty, ngsiElement, payloadType, atContextAllowed));
 				} catch (JsonLdError | ResponseException e) {
@@ -3695,6 +3707,7 @@ public class JsonLdApi {
 			switch (key) {
 
 				case NGSIConstants.ID:
+					uriCheck(NGSIConstants.OBJECT, entryValue);
 					result.put(NGSIConstants.JSON_LD_ID, entryValue);
 					break;
 				case NGSIConstants.TYPE:
@@ -3702,11 +3715,11 @@ public class JsonLdApi {
 					if (entryValue instanceof List<?> l) {
 						types = new ArrayList<String>(l.size());
 						for (Object obj : l) {
-							types.add(activeCtx.expandIri((String) obj, false, false, null, null));
+							types.add(activeCtx.expandIri((String) obj, false, true, null, null));
 						}
 					} else {
 						types = new ArrayList<String>(1);
-						types.add(activeCtx.expandIri((String) entryValue, false, false, null, null));
+						types.add(activeCtx.expandIri((String) entryValue, false, true, null, null));
 					}
 					result.put(NGSIConstants.JSON_LD_TYPE, types);
 					break;
@@ -3746,7 +3759,7 @@ public class JsonLdApi {
 						tmp.add(expanded);
 						expanded = tmp;
 					}
-					result.put(activeCtx.expandIri(key, false, false, null, null), expanded);
+					result.put(activeCtx.expandIri(key, false, true, null, null), expanded);
 					break;
 			}
 		}
@@ -3760,22 +3773,1136 @@ public class JsonLdApi {
 
 	private Object expandAttrib(Object entryValue, Context activeCtx, String activeProperty)
 			throws JsonLdError, ResponseException {
-		if (entryValue instanceof List<?> l) {
-			List<Object> result = new ArrayList<>(l.size());
-			for (Object entry : l) {
-				result.add(expandAttrib(entry, activeCtx, activeProperty));
+		if (entryValue instanceof Map m) {
+			Map<String, Object> result;
+			String type = (String) m.remove(NGSIConstants.TYPE);
+			if (type == null) {
+				Object tmp = m.remove(NGSIConstants.JSON_LD_TYPE);
+				if (tmp == null) {
+					type = null;
+				} else if (tmp instanceof String s) {
+					type = s;
+				} else if (tmp instanceof List<?> l && l.size() > 0) {
+					tmp = l.get(0);
+					if (tmp instanceof String s) {
+						type = s;
+					} else {
+						throw new ResponseException(ErrorType.BadRequestData,
+								"Unknow format for type or @type field detected");
+					}
+				} else {
+					throw new ResponseException(ErrorType.BadRequestData,
+							"Unknow format for type or @type field detected");
+				}
 			}
-			return result;
-		} else if (entryValue instanceof Map<?, ?> m) {
-			Map<String, Object> result = new HashMap<>(m.size());
-			for (Entry<?, ?> entry : m.entrySet()) {
+			if (type == null) {
+				result = new HashMap<>(4);
+				if (m.containsKey(NGSIConstants.VALUE)) {
+					Object valueEntry = m.remove(NGSIConstants.VALUE);
+					if (valueEntry instanceof Map<?, ?> nestedMap
+							&& (NGSIConstants.GEO_KEYWORDS.contains(nestedMap.get(NGSIConstants.TYPE)))) {
+						addHasGeoValue(result, activeCtx, nestedMap);
+					} else {
+						addHasValue(result, activeCtx, valueEntry);
+					}
+				} else if (m.containsKey(NGSIConstants.OBJECT)) {
+					Object objectEntry = m.remove(NGSIConstants.OBJECT);
+					addHasObject(result, activeCtx, objectEntry);
+				} else if (m.containsKey(NGSIConstants.TYPE)
+						&& (NGSIConstants.GEO_KEYWORDS.contains(m.get(NGSIConstants.TYPE)))) {
+					addHasGeoValue(result, activeCtx, m);
+				} else if (m.containsKey(NGSIConstants.LANGUAGE_MAP)) {
+					Object languageMapEntry = m.remove(NGSIConstants.LANGUAGE_MAP);
+					addHasLanguageMap(result, activeCtx, languageMapEntry);
+				} else if (m.containsKey(NGSIConstants.JSON)) {
+					Object jsonEntry = m.remove(NGSIConstants.JSON);
+					addHasJson(result, activeCtx, jsonEntry);
+				} else if (m.containsKey(NGSIConstants.OBJECT_LIST)) {
+					Object objectListEntry = m.remove(NGSIConstants.OBJECT_LIST);
+					addHasObjectList(result, activeCtx, objectListEntry);
+				} else if (m.containsKey(NGSIConstants.VALUE_LIST)) {
+					Object valueListEntry = m.remove(NGSIConstants.VALUE_LIST);
+					addHasValueList(result, activeCtx, valueListEntry);
+				} else if (m.containsKey(NGSIConstants.VOCAB)) {
+					Object vocabEntry = m.remove(NGSIConstants.VOCAB);
+					addHasVocab(result, activeCtx, vocabEntry);
+				} else {
+					addHasValue(result, activeCtx, m);
+					// breaking here because it is only a prop nothing to do anymore
+					return result;
+				}
+			} else {
+				result = new HashMap<>(m.size() + 3);
+				switch (type) {
+					case NGSIConstants.PROPERTY:
+						addHasValue(result, activeCtx, m.remove(NGSIConstants.VALUE));
+						break;
+					case NGSIConstants.RELATIONSHIP:
+						addHasObject(result, activeCtx, m.remove(NGSIConstants.OBJECT));
+						break;
+					case NGSIConstants.GEOPROPERTY:
+						addHasGeoValue(result, activeCtx, m.remove(NGSIConstants.VALUE));
+						break;
+					case NGSIConstants.VOCAB_PROPERTY:
+						addHasVocab(result, activeCtx, m.remove(NGSIConstants.VOCAB));
+						break;
+					case NGSIConstants.JSON_PROPERTY:
+						addHasJson(result, activeCtx, m.remove(NGSIConstants.JSON));
+						break;
+					case NGSIConstants.LISTPROPERTY:
+						addHasValueList(result, activeCtx, m.remove(NGSIConstants.VALUE_LIST));
+						break;
+					case NGSIConstants.LISTRELATIONSHIP:
+						addHasObjectList(result, activeCtx, m.remove(NGSIConstants.OBJECT_LIST));
+						break;
+					case NGSIConstants.LANGUAGE_PROPERTY:
+						addHasLanguageMap(result, activeCtx, m.remove(NGSIConstants.LANGUAGE_MAP));
+						break;
+					default:
+						throw new ResponseException(ErrorType.BadRequestData, "Unknown attribute type: " + type);
+				}
+				Map<String, Object> helper = m;
+				for (Entry<String, Object> entry : helper.entrySet()) {
+					String key = entry.getKey();
+					Object subValue = entry.getValue();
+					switch (key) {
+						case NGSIConstants.CREATEDAT:
+							result.put(NGSIConstants.NGSI_LD_CREATED_AT, getDateEntry((String) subValue));
+							break;
+						case NGSIConstants.QUERY_PARAMETER_MODIFIED_AT:
+							result.put(NGSIConstants.NGSI_LD_MODIFIED_AT, getDateEntry((String) subValue));
+							break;
+						case NGSIConstants.QUERY_PARAMETER_OBSERVED_AT:
+							result.put(NGSIConstants.NGSI_LD_OBSERVED_AT, getDateEntry((String) subValue));
+							break;
+						case NGSIConstants.NGSI_LD_DATA_SET_ID_SHORT:
+							result.put(NGSIConstants.NGSI_LD_DATA_SET_ID, getIdEntry((String) subValue));
+							break;
+						case NGSIConstants.NGSI_LD_INSTANCE_ID_SHORT:
+							result.put(NGSIConstants.NGSI_LD_INSTANCE_ID, getIdEntry((String) subValue));
+							break;
+						case NGSIConstants.NGSI_LD_UNIT_CODE_SHORT:
+							result.put(NGSIConstants.NGSI_LD_UNIT_CODE, getIdEntry((String) subValue));
+							break;
+						case NGSIConstants.OBJECT_TYPE:
+							result.put(NGSIConstants.NGSI_LD_OBJECT_TYPE,
+									getIdEntry(activeCtx.expandIri((String) subValue, false, true, null, null)));
+							break;
+						case NGSIConstants.VALUE_TYPE:
+							result.put(NGSIConstants.NGSI_LD_HAS_VALUE_TYPE,
+									getIdEntry(activeCtx.expandIri((String) subValue, false, true, null, null)));
+							break;
+						case NGSIConstants.ENTITY:
+							if (!(subValue instanceof Map)) {
+								throw new ResponseException(ErrorType.InvalidRequest,
+										"Invalid entry for sub attrib entity");
+							}
+							List<Map<String, Object>> expandedEntity = new ArrayList<>(1);
+							expandedEntity.add(expandEntity((Map<String, Object>) subValue, activeCtx));
+							result.put(NGSIConstants.NGSI_LD_ENTITY, expandedEntity);
+							break;
+						case NGSIConstants.ENTITY_LIST:
+							if (subValue instanceof List<?> l) {
+								List<Map<String, Object>> expandedEntityList = new ArrayList<>(l.size());
+								for (Object obj : l) {
+									expandedEntityList.add(expandEntity((Map<String, Object>) obj, activeCtx));
+								}
+								result.put(NGSIConstants.NGSI_LD_ENTITY_LIST, expandedEntityList);
+							} else {
+								throw new ResponseException(ErrorType.InvalidRequest,
+										"Invalid entry for sub attrib entityList");
+							}
+							break;
+						default:
+							result.put(activeCtx.expandIri(key, false, true, null, null),
+									Lists.newArrayList(expandAttrib(entryValue, activeCtx, key)));
+							break;
+					}
+				}
 
 			}
+			return result;
+		} else if (entryValue instanceof List<?> l) {
+
+			boolean putType = true;
+			for (Object obj : l) {
+				if (obj instanceof Map<?, ?> map
+						&& NGSIConstants.NGSI_LD_ATTR_SHORT_TYPES.contains(map.get(NGSIConstants.TYPE))) {
+					putType = false;
+					break;
+				}
+			}
+			if (putType) {
+				Map<String, Object> result = new HashMap<String, Object>(4);
+				addHasValue(result, activeCtx, l);
+				return result;
+			} else {
+				List<Object> result = new ArrayList<Object>(l.size());
+				int datasetIdCounter = 0;
+				for (Object o : l) {
+					Map<String, Object> attrib = (Map<String, Object>) expandAttrib(o, activeCtx, activeProperty);
+					if (attrib.containsKey(NGSIConstants.NGSI_LD_DATA_SET_ID)) {
+						datasetIdCounter++;
+					}
+					result.add(attrib);
+				}
+				if (datasetIdCounter < l.size() - 1) {
+					throw new ResponseException(ErrorType.BadRequestData,
+							"Detected multiple entries without a datasetId in " + activeProperty);
+				}
+				return result;
+
+			}
+		} else {
+			Map<String, Object> result = new HashMap<>(4);
+			result.put(NGSIConstants.TYPE, NGSIConstants.PROPERTY);
+			result.put(NGSIConstants.VALUE, value);
 			return result;
 		}
 
-		return expandSubLevels(context, activeProperty, new NGSIObject(entryValue, null), -1, false);
+	}
 
+	private void addHasObjectList(Map<String, Object> result, Context activeCtx, Object objectListEntry)
+			throws ResponseException {
+		if (objectListEntry == null) {
+			throw new ResponseException(ErrorType.BadRequestData, "A ListRelationship requires a objectList field");
+		}
+		if (objectListEntry instanceof List<?> l) {
+			List<Map<String, List<Map<String, Object>>>> hasObjectList = new ArrayList<>(1);
+
+			Map<String, List<Map<String, Object>>> level1 = new HashMap<>(1);
+			List<Map<String, Object>> objectList = new ArrayList<>(l.size());
+			for (Object obj : l) {
+				String objEntry;
+				if (obj instanceof Map<?, ?> m) {
+					Object objectEntry = m.get(NGSIConstants.OBJECT);
+					if (objectEntry != null && objectEntry instanceof String s) {
+						objEntry = s;
+					} else {
+						throw new ResponseException(ErrorType.BadRequestData, "A Relationship object has to be URI");
+					}
+				} else if (obj instanceof String s) {
+					objEntry = s;
+				} else {
+					throw new ResponseException(ErrorType.BadRequestData, "A Relationship object has to be URI");
+				}
+				uriCheck(NGSIConstants.OBJECT, objEntry);
+				Map<String, Object> hasObject = new HashMap<>(1);
+				List<Map<String, Object>> tmp = new ArrayList<>(1);
+				Map<String, Object> tmp2 = new HashMap<>(1);
+				tmp2.put(NGSIConstants.JSON_LD_ID, objEntry);
+				tmp.add(tmp2);
+				hasObject.put(NGSIConstants.NGSI_LD_HAS_OBJECT, tmp);
+				objectList.add(hasObject);
+			}
+
+			level1.put(NGSIConstants.JSON_LD_LIST, objectList);
+			hasObjectList.add(level1);
+			result.put(NGSIConstants.JSON_LD_TYPE, NGSIConstants.LD_LIST_RELATIONSHIP_TYPE);
+			result.put(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST, hasObjectList);
+		} else {
+			throw new ResponseException(ErrorType.BadRequestData, "The objectList field needs to be a List");
+		}
+	}
+
+	private void uriCheck(String entryName, Object objEntry) throws ResponseException {
+		if (objEntry instanceof String s) {
+			if (s.indexOf(':') == -1) {
+				throw new ResponseException(ErrorType.BadRequestData, entryName + " needs to be URI");
+			}
+		} else {
+			throw new ResponseException(ErrorType.BadRequestData, entryName + " needs to be URI");
+		}
+
+	}
+
+	private void addHasValueList(Map<String, Object> result, Context activeCtx, Object valueListEntry)
+			throws ResponseException {
+		if (valueListEntry == null) {
+			throw new ResponseException(ErrorType.BadRequestData, "A ListProperty requires a valueList field");
+		}
+		if (valueListEntry instanceof List<?> l) {
+			List<Map<String, List<Map<String, Object>>>> hasValueList = new ArrayList<>(1);
+			Map<String, List<Map<String, Object>>> level1 = new HashMap<>(1);
+			List<Map<String, Object>> valueList = new ArrayList<>(l.size());
+			for (Object obj : l) {
+				Map<String, Object> tmp = new HashMap<>(1);
+				if (isBaseDataType(obj)) {
+					tmp.put(NGSIConstants.JSON_LD_VALUE, obj);
+				} else {
+					tmp.put(NGSIConstants.JSON_LD_VALUE,
+							pureExpand(activeCtx, NGSIConstants.NGSI_LD_HAS_VALUE, obj));
+				}
+				valueList.add(tmp);
+			}
+
+			level1.put(NGSIConstants.JSON_LD_LIST, valueList);
+			hasValueList.add(level1);
+			result.put(NGSIConstants.JSON_LD_TYPE, NGSIConstants.LD_LIST_PROPERTY_TYPE);
+			result.put(NGSIConstants.NGSI_LD_HAS_LIST, hasValueList);
+		} else {
+			throw new ResponseException(ErrorType.BadRequestData, "The valueList field needs to be a List");
+		}
+	}
+
+	private void addHasLanguageMap(Map<String, Object> result, Context activeCtx, Object languageMapEntry)
+			throws ResponseException {
+		if (languageMapEntry == null) {
+			throw new ResponseException(ErrorType.BadRequestData, "A LanguageProperty requires a languageMap field");
+		}
+		if (languageMapEntry instanceof Map<?, ?> m) {
+			if (m.isEmpty()) {
+				throw new ResponseException(ErrorType.BadRequestData,
+						"The languageMap field needs to a Map of language to value and cannot be empty");
+			}
+			List<Map<String, Object>> hasLanguageMap = new ArrayList<>(m.size());
+			for (Entry<?, ?> entry : m.entrySet()) {
+				Map<String, Object> mapEntry = new HashMap<>(2);
+				mapEntry.put(NGSIConstants.JSON_LD_LANGUAGE, entry.getKey());
+				mapEntry.put(NGSIConstants.JSON_LD_VALUE, entry.getValue());
+				hasLanguageMap.add(mapEntry);
+			}
+			result.put(NGSIConstants.JSON_LD_TYPE, NGSIConstants.LD_LANGUAGE_PROPERTY_TYPE);
+			result.put(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP, hasLanguageMap);
+		} else {
+			throw new ResponseException(ErrorType.BadRequestData,
+					"The languageMap field needs to a Map of language to value");
+		}
+	}
+
+	private void addHasJson(Map<String, Object> result, Context activeCtx, Object jsonEntry) throws ResponseException {
+		if (jsonEntry == null) {
+			throw new ResponseException(ErrorType.BadRequestData, "A JsonProperty requires a json field");
+		}
+		result.put(NGSIConstants.JSON_LD_TYPE, NGSIConstants.LD_JSON_PROPERTY_TYPE);
+		List<Map<String, Object>> hasJson = new ArrayList<>(1);
+		Map<String, Object> json = new HashMap<>(2);
+		json.put(NGSIConstants.JSON_LD_TYPE, NGSIConstants.JSON_LD_JSON);
+		json.put(NGSIConstants.JSON_LD_VALUE, jsonEntry);
+		hasJson.add(json);
+		result.put(NGSIConstants.NGSI_LD_HAS_JSON, hasJson);
+	}
+
+	private void addHasVocab(Map<String, Object> result, Context activeCtx, Object vocabEntry)
+			throws ResponseException {
+		if (vocabEntry == null) {
+			throw new ResponseException(ErrorType.BadRequestData, "A VocabProperty requires a vocab field");
+		}
+		result.put(NGSIConstants.JSON_LD_TYPE, NGSIConstants.LD_VOCAB_PROPERTY_TYPE);
+		if (vocabEntry instanceof List<?> l) {
+			List<Map<String, String>> hasVocab = new ArrayList<>(l.size());
+			for (Object obj : l) {
+				if (obj instanceof String s) {
+					Map<String, String> vocabMap = new HashMap<>(1);
+					vocabMap.put(NGSIConstants.JSON_LD_ID, activeCtx.expandIri(s, false, false, null, null));
+					hasVocab.add(vocabMap);
+				} else {
+					throw new ResponseException(ErrorType.BadRequestData,
+							"The vocab field has to be a String or a String array");
+				}
+			}
+			result.put(NGSIConstants.NGSI_LD_HAS_VOCAB, hasVocab);
+		} else if (vocabEntry instanceof String s) {
+			List<Map<String, String>> hasVocab = new ArrayList<>(1);
+			Map<String, String> vocabMap = new HashMap<>(1);
+			vocabMap.put(NGSIConstants.JSON_LD_ID, activeCtx.expandIri(s, false, false, null, null));
+			hasVocab.add(vocabMap);
+			result.put(NGSIConstants.NGSI_LD_HAS_VOCAB, hasVocab);
+		} else {
+			throw new ResponseException(ErrorType.BadRequestData,
+					"The vocab field has to be a String or a String array");
+		}
+	}
+
+	private void addHasGeoValue(Map<String, Object> result, Context activeCtx, Object geoValue)
+			throws ResponseException {
+		if (geoValue == null) {
+			throw new ResponseException(ErrorType.BadRequestData, "A GeoProperty requires a value field");
+		}
+		result.put(NGSIConstants.JSON_LD_TYPE, NGSIConstants.LD_GEO_PROPERTY_TYPE);
+		if (geoValue instanceof Map<?, ?> m) {
+			Object geoType = m.get(NGSIConstants.TYPE);
+			Object coordinates = m.get(NGSIConstants.GEO_JSON_COORDINATES);
+			if (coordinates == null) {
+				throw new ResponseException(ErrorType.BadRequestData, "Coordinates field is missing");
+			}
+			String geoTypeHelper = (String) geoType;
+			Map<String, Object> expandedGeoValue = new HashMap<>(2);
+			List<Map<String, Object>> expandedCoordinates = new ArrayList<>(1);
+			Map<String, Object> level1 = new HashMap<>(1);
+			expandedCoordinates.add(level1);
+			switch (geoTypeHelper) {
+				case NGSIConstants.GEO_TYPE_POINT:
+					expandedGeoValue.put(NGSIConstants.JSON_LD_TYPE, List.of(NGSIConstants.NGSI_LD_POINT));
+					level1.put(NGSIConstants.JSON_LD_LIST, getExpandedPointCoordinates(coordinates));
+					break;
+				case NGSIConstants.GEO_TYPE_MULTI_POINT:
+					expandedGeoValue.put(NGSIConstants.JSON_LD_TYPE, List.of(NGSIConstants.NGSI_LD_MULTI_POINT));
+					level1.put(NGSIConstants.JSON_LD_LIST, getExpandedLineStringCoordinates(coordinates));
+					break;
+				case NGSIConstants.GEO_TYPE_LINESTRING:
+					expandedGeoValue.put(NGSIConstants.JSON_LD_TYPE, List.of(NGSIConstants.NGSI_LD_LINESTRING));
+					level1.put(NGSIConstants.JSON_LD_LIST, getExpandedLineStringCoordinates(coordinates));
+					break;
+				case NGSIConstants.GEO_TYPE_MULTI_LINESTRING:
+					expandedGeoValue.put(NGSIConstants.JSON_LD_TYPE,
+							List.of(NGSIConstants.NGSI_LD_MULTI_LINESTRING));
+					level1.put(NGSIConstants.JSON_LD_LIST, getExpandedPolygonCoordinates(coordinates));
+					break;
+				case NGSIConstants.GEO_TYPE_POLYGON:
+					expandedGeoValue.put(NGSIConstants.JSON_LD_TYPE, List.of(NGSIConstants.NGSI_LD_POLYGON));
+					level1.put(NGSIConstants.JSON_LD_LIST, getExpandedPolygonCoordinates(coordinates));
+					break;
+
+				case NGSIConstants.GEO_TYPE_MULTI_POLYGON:
+					expandedGeoValue.put(NGSIConstants.JSON_LD_TYPE, List.of(NGSIConstants.NGSI_LD_MULTI_POLYGON));
+					level1.put(NGSIConstants.JSON_LD_LIST, getExpandedMultiPolygonCoordinates(coordinates));
+					break;
+
+				default:
+					throw new ResponseException(ErrorType.BadRequestData, "Unsupported Geometry Type " + geoType);
+
+			}
+
+			expandedGeoValue.put(NGSIConstants.NGSI_LD_COORDINATES, expandedCoordinates);
+			List<Map<String, Object>> tmp = new ArrayList<>(1);
+			tmp.add(expandedGeoValue);
+			result.put(NGSIConstants.NGSI_LD_HAS_VALUE, tmp);
+
+		} else {
+			throw new ResponseException(ErrorType.BadRequestData, "Unknown format for GeoProperty");
+		}
+	}
+
+	private Object getExpandedMultiPolygonCoordinates(Object coordinates) throws ResponseException {
+		if (coordinates instanceof List<?> l) {
+			List<Map<String, Object>> expandedCoordinates = new ArrayList<>(l.size());
+			for (Object entry : l) {
+				Map<String, Object> level1 = new HashMap<>(1);
+				level1.put(NGSIConstants.JSON_LD_LIST, getExpandedPolygonCoordinates(entry));
+				expandedCoordinates.add(level1);
+			}
+			return expandedCoordinates;
+		}
+		throw new ResponseException(ErrorType.BadRequestData,
+				"Coordinates field format does not match Polygon or MultiLineString");
+	}
+
+	private Object getExpandedPolygonCoordinates(Object coordinates) throws ResponseException {
+		if (coordinates instanceof List<?> l) {
+			List<Map<String, Object>> expandedCoordinates = new ArrayList<>(l.size());
+			for (Object entry : l) {
+				Map<String, Object> level1 = new HashMap<>(1);
+				level1.put(NGSIConstants.JSON_LD_LIST, getExpandedLineStringCoordinates(entry));
+				expandedCoordinates.add(level1);
+			}
+			return expandedCoordinates;
+		}
+		throw new ResponseException(ErrorType.BadRequestData,
+				"Coordinates field format does not match Polygon or MultiLineString");
+	}
+
+	private List<Map<String, Object>> getExpandedLineStringCoordinates(Object coordinates) throws ResponseException {
+		if (coordinates instanceof List<?> l) {
+			List<Map<String, Object>> expandedCoordinates = new ArrayList<>(l.size());
+			for (Object entry : l) {
+				Map<String, Object> level1 = new HashMap<>(1);
+				level1.put(NGSIConstants.JSON_LD_LIST, getExpandedPointCoordinates(entry));
+				expandedCoordinates.add(level1);
+			}
+			return expandedCoordinates;
+		}
+		throw new ResponseException(ErrorType.BadRequestData,
+				"Coordinates field format does not match LineString or MultiPoint");
+	}
+
+	private List<Map<String, Object>> getExpandedPointCoordinates(Object coordinates) throws ResponseException {
+		if (coordinates instanceof List<?> l && l.size() == 2) {
+			List<Map<String, Object>> point = new ArrayList<>(2);
+			point.add(Map.of(NGSIConstants.JSON_LD_VALUE, l.get(0)));
+			point.add(Map.of(NGSIConstants.JSON_LD_VALUE, l.get(1)));
+			return point;
+		} else {
+			throw new ResponseException(ErrorType.BadRequestData,
+					"Coordinates field format does not match point");
+		}
+	}
+
+	private void addHasObject(Map<String, Object> result, Context activeCtx, Object object) throws ResponseException {
+		if (object == null) {
+			throw new ResponseException(ErrorType.BadRequestData, "A Relationship requires an object field");
+		}
+		result.put(NGSIConstants.JSON_LD_TYPE, NGSIConstants.LD_RELATIONSHIP_TYPE);
+		if (object instanceof List<?> l) {
+			List<Map<String, Object>> hasObject = new ArrayList<>(l.size());
+			for (Object obj : l) {
+				Map<String, Object> tmp = new HashMap<>(1);
+				uriCheck(NGSIConstants.OBJECT, obj);
+				tmp.put(NGSIConstants.JSON_LD_ID, obj);
+				hasObject.add(tmp);
+			}
+			result.put(NGSIConstants.NGSI_LD_HAS_OBJECT, hasObject);
+		} else {
+			List<Map<String, Object>> hasObject = new ArrayList<>(1);
+			Map<String, Object> tmp = new HashMap<>(1);
+			uriCheck(NGSIConstants.OBJECT, object);
+			tmp.put(NGSIConstants.JSON_LD_ID, object);
+			hasObject.add(tmp);
+			result.put(NGSIConstants.NGSI_LD_HAS_OBJECT, hasObject);
+		}
+
+	}
+
+	private void addHasValue(Map<String, Object> result, Context activeCtx, Object valueEntry)
+			throws ResponseException {
+		if (valueEntry == null) {
+			throw new ResponseException(ErrorType.BadRequestData, "A Property requires a value field");
+		}
+		result.put(NGSIConstants.JSON_LD_TYPE, NGSIConstants.LD_PROPERTY_TYPE);
+		if (isBaseDataType(valueEntry)) {
+			List<Map<String, Object>> hasValue = new ArrayList<>(1);
+			Map<String, Object> tmp = new HashMap<>(1);
+			tmp.put(NGSIConstants.JSON_LD_VALUE, valueEntry);
+			hasValue.add(tmp);
+			result.put(NGSIConstants.NGSI_LD_HAS_VALUE, hasValue);
+		} else {
+			result.put(NGSIConstants.NGSI_LD_HAS_VALUE,
+					pureExpand(activeCtx, NGSIConstants.NGSI_LD_HAS_VALUE, valueEntry));
+		}
+	}
+
+	private List<Map<String, String>> getDateEntry(String dateValue) {
+		List<Map<String, String>> result = new ArrayList<>(1);
+		Map<String, String> tmp = new HashMap<>(2);
+		tmp.put(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME);
+		tmp.put(NGSIConstants.JSON_LD_VALUE, dateValue);
+		result.add(tmp);
+		return result;
+	}
+
+	private List<Map<String, String>> getIdEntry(String idValue) {
+		List<Map<String, String>> result = new ArrayList<>(1);
+		Map<String, String> tmp = new HashMap<>(1);
+		tmp.put(NGSIConstants.JSON_LD_ID, idValue);
+		result.add(tmp);
+		return result;
+	}
+
+	private List<Map<String, Object>> getValueEntry(Object valueEntry) {
+		List<Map<String, Object>> result = new ArrayList<>(1);
+		Map<String, Object> tmp = new HashMap<>(1);
+		tmp.put(NGSIConstants.JSON_LD_VALUE, valueEntry);
+		result.add(tmp);
+		return result;
+	}
+
+	public Object pureExpand(Context activeCtx, String activeProperty, Object element)
+			throws JsonLdError, ResponseException {
+		final boolean frameExpansion = this.opts.getFrameExpansion();
+		// 1)
+		if (element == null) {
+			return null;
+		}
+
+		// GK: This would be the point to set `propertyScopedContext` to the `@context`
+		// entry for any term definition associated with `activeProperty`.
+		// 3)
+		if (element instanceof List) {
+			// 3.1)
+
+			final List<Object> result = new ArrayList<Object>();
+			// 3.2)
+
+			for (final Object item : (List<Object>) element) {
+				// 3.2.1)
+
+				final Object v = pureExpand(activeCtx, activeProperty, item);
+
+				// 3.2.2)
+				if ((JsonLdConsts.LIST.equals(activeProperty)
+						|| JsonLdConsts.LIST.equals(activeCtx.getContainer(activeProperty)))
+						&& (v instanceof List
+								|| (v instanceof Map && ((Map<String, Object>) v).containsKey(JsonLdConsts.LIST)))) {
+					// throw new JsonLdError(Error.LIST_OF_LISTS, "lists of lists are not
+					// permitted.");
+					if (v instanceof List) {
+						Object expandedValue = newMap();
+						((Map<String, Object>) expandedValue).put(JsonLdConsts.LIST, v);
+						result.add(expandedValue);
+					} else if (v instanceof Map) {
+						result.add(v);
+					}
+
+				}
+				// 3.2.3)
+				else {
+
+					if (v != null) {
+						if (v instanceof List) {
+							result.addAll((Collection<? extends Object>) v);
+						} else {
+							result.add(v);
+						}
+					}
+				}
+			}
+
+			return result;
+		}
+		// 4)
+		else if (element instanceof Map)
+
+		{
+			// access helper
+			final Map<String, Object> elem = (Map<String, Object>) element;
+			// 5)
+			// This would be the place to revert the active context from any previous
+			// type-scoped context if the active context has a `previousContext` entry (with
+			// some exceptions when called from a map, or if it's a value object or a
+			// subject reference).
+			// GK: If we found a `propertyScopedContext` above, we can parse it to create a
+			// new activeCtx using the `override protected` option
+			// ngsiElement.setAtContextRequired(atContextAllowed);
+			// if (elem.containsKey(JsonLdConsts.CONTEXT)) {
+			// ngsiElement.setHasAtContext(true);
+			// if (!atContextAllowed) {
+			// throw new ResponseException(ErrorType.BadRequestData, "@context entry in body
+			// is not allowed");
+			// }
+			// activeCtx = activeCtx.parse(elem.get(JsonLdConsts.CONTEXT), true);
+			// }
+			// GK: This would be the place to remember this version of activeCtx as
+			// `typeScopedContext`.
+			// 6)
+			Map<String, Object> result = newMap();
+			// 7)
+			final List<String> keys = new ArrayList<String>(elem.keySet());
+			Collections.sort(keys, new Comparator<String>() {
+
+				@Override
+				public int compare(String o1, String o2) {
+					if (NGSIConstants.TYPE.equals(o1)) {
+						return -1;
+					}
+					if (NGSIConstants.TYPE.equals(o2)) {
+						return 1;
+					}
+					if (o1 == null) {
+						if (o2 == null) {
+							return 0;
+						}
+						return -1;
+					}
+					return o1.compareTo(o2);
+				}
+			});
+
+			// GK: This is the place to check for a type-scoped context by checking any key
+			// that expands to `@type` to see the current context has a term that equals
+			// that key where the term definition includes `@context`, updating the
+			// activeCtx as you go (but using termScopedContext when checking the keys).
+			// GK: 1.1 made the following loop somewhat recursive, due to nesting, so might
+			// want to extract into a method.
+			for (final String key : keys) {
+				Object value = elem.get(key);
+				// 7.1)
+				if (key.equals(JsonLdConsts.CONTEXT)) {
+					continue;
+				}
+				// 7.2)
+				final String expandedProperty = activeCtx.expandIri(key, false, true, null, null);
+
+				Object expandedValue = null;
+				// 7.3)
+				if (expandedProperty == null || (!expandedProperty.contains(":") && !isKeyword(expandedProperty))) {
+					continue;
+				}
+				// 7.4)
+				if (isKeyword(expandedProperty)) {
+					// 7.4.1)
+
+					if (JsonLdConsts.REVERSE.equals(activeProperty)) {
+						throw new JsonLdError(Error.INVALID_REVERSE_PROPERTY_MAP,
+								"a keyword cannot be used as a @reverse propery");
+					}
+					// 7.4.2)
+					if (result.containsKey(expandedProperty)) {
+						throw new JsonLdError(Error.COLLIDING_KEYWORDS, expandedProperty + " already exists in result");
+					}
+					// jsonld 1.1: 12 in https://w3c.github.io/json-ld-api/#algorithm-3
+					Object inputType = elem.get(JsonLdConsts.TYPE);
+					// 7.4.3)
+					if (JsonLdConsts.ID.equals(expandedProperty)) {
+
+						if (value instanceof String) {
+							// TODO discuss this with martin afaik in ngsild ids need to be already uris in
+							// the
+							// compacted version and should not be expanded
+							// expandedValue = activeCtx.expandIri((String) value, true, false, null, null);
+
+							expandedValue = activeCtx.expandIri((String) value, true, false, null, null);
+
+							// NGSICOMMENT: LD at the moment has no scenario where ids are arrays if this
+							// changes this needs to be updated
+
+						} else if (frameExpansion) {
+							if (value instanceof Map) {
+								if (((Map<String, Object>) value).size() != 0) {
+									throw new JsonLdError(Error.INVALID_ID_VALUE,
+											"@id value must be a an empty object for framing");
+								}
+								expandedValue = value;
+							} else if (value instanceof List) {
+								expandedValue = new ArrayList<String>();
+								for (final Object v : (List<Object>) value) {
+									if (!(v instanceof String)) {
+										throw new JsonLdError(Error.INVALID_ID_VALUE,
+												"@id value must be a string, an array of strings or an empty dictionary");
+									}
+									((List<String>) expandedValue)
+											.add(activeCtx.expandIri((String) v, true, true, null, null));
+								}
+							} else {
+								throw new JsonLdError(Error.INVALID_ID_VALUE,
+										"value of @id must be a string, an array of strings or an empty dictionary");
+							}
+						} else {
+							throw new JsonLdError(Error.INVALID_ID_VALUE, "value of @id must be a string");
+						}
+					}
+					// 7.4.4)
+					else if (JsonLdConsts.TYPE.equals(expandedProperty)) {
+
+						if (value instanceof List) {
+							expandedValue = new ArrayList<String>();
+							for (final Object v : (List) value) {
+								// if (!ngsiElement.isFromHasValue()) {
+								if (!(v instanceof String)) {
+									throw new JsonLdError(Error.INVALID_TYPE_VALUE,
+											"@type value must be a string or array of strings");
+								}
+								String type = activeCtx.expandIri((String) v, true, true, null, null);
+								((List<String>) expandedValue).add(type);
+
+								// }
+							}
+						} else if (value instanceof String) {
+							expandedValue = activeCtx.expandIri((String) value, true, true, null, null);
+
+						}
+						// TODO: SPEC: no mention of empty map check
+						else if (frameExpansion && value instanceof Map) {
+							if (!((Map<String, Object>) value).isEmpty()) {
+								throw new JsonLdError(Error.INVALID_TYPE_VALUE,
+										"@type value must be a an empty object for framing");
+							}
+							expandedValue = value;
+
+						} else {
+							throw new JsonLdError(Error.INVALID_TYPE_VALUE,
+									"@type value must be a string or array of strings");
+						}
+					}
+					// 7.4.5)
+					else if (JsonLdConsts.GRAPH.equals(expandedProperty)) {
+						expandedValue = pureExpand(activeCtx, JsonLdConsts.GRAPH, value);
+					}
+					// 7.4.6)
+					else if (JsonLdConsts.VALUE.equals(expandedProperty)) {
+						// jsonld 1.1: 13.4.7.1 in https://w3c.github.io/json-ld-api/#algorithm-3
+						if (JsonLdConsts.JSON.equals(inputType)) {
+							expandedValue = value;
+							if (opts.getProcessingMode().equals(JsonLdOptions.JSON_LD_1_0)) {
+								throw new JsonLdError(Error.INVALID_VALUE_OBJECT_VALUE, value);
+							}
+						}
+						// jsonld 1.1: 13.4.7.2 in https://w3c.github.io/json-ld-api/#algorithm-3
+						else if (value != null && (value instanceof Map || value instanceof List)) {
+							throw new JsonLdError(Error.INVALID_VALUE_OBJECT_VALUE,
+									"value of " + expandedProperty + " must be a scalar or null, but was: " + value);
+						}
+						// jsonld 1.1: 13.4.7.3 in https://w3c.github.io/json-ld-api/#algorithm-3
+						else {
+							expandedValue = value;
+						}
+						// jsonld 1.1: 13.4.7.4 in https://w3c.github.io/json-ld-api/#algorithm-3
+						if (expandedValue == null) {
+							result.put(JsonLdConsts.VALUE, null);
+							continue;
+						}
+					}
+					// 7.4.7)
+					else if (JsonLdConsts.LANGUAGE.equals(expandedProperty)) {
+						if (!(value instanceof String)) {
+							throw new JsonLdError(Error.INVALID_LANGUAGE_TAGGED_STRING,
+									"Value of " + expandedProperty + " must be a string");
+						}
+						expandedValue = ((String) value).toLowerCase();
+					}
+					// 7.4.8)
+					else if (JsonLdConsts.INDEX.equals(expandedProperty)) {
+						if (!(value instanceof String)) {
+							throw new JsonLdError(Error.INVALID_INDEX_VALUE,
+									"Value of " + expandedProperty + " must be a string");
+						}
+						expandedValue = value;
+					}
+					// 7.4.9)
+					else if (JsonLdConsts.LIST.equals(expandedProperty)) {
+						// 7.4.9.1)
+						if (activeProperty == null || JsonLdConsts.GRAPH.equals(activeProperty)) {
+							continue;
+						}
+						// 7.4.9.2)
+						expandedValue = pureExpand(activeCtx, activeProperty, value);
+
+						// NOTE: step not in the spec yet
+						if (!(expandedValue instanceof List)) {
+							final List<Object> tmp = new ArrayList<Object>();
+							tmp.add(expandedValue);
+							expandedValue = tmp;
+						}
+
+						// 7.4.9.3)
+						/*
+						 * for (final Object o : (List<Object>) expandedValue) { if (o instanceof Map &&
+						 * ((Map<String, Object>) o).containsKey(JsonLdConsts.LIST)) { throw new
+						 * JsonLdError(Error.LIST_OF_LISTS, "A list may not contain another list"); } }
+						 */
+					}
+					// 7.4.10)
+					else if (JsonLdConsts.SET.equals(expandedProperty)) {
+						expandedValue = pureExpand(activeCtx, activeProperty, value);
+					}
+					// 7.4.11)
+					else if (JsonLdConsts.REVERSE.equals(expandedProperty)) {
+						if (!(value instanceof Map)) {
+							throw new JsonLdError(Error.INVALID_REVERSE_VALUE, "@reverse value must be an object");
+						}
+						// 7.4.11.1)
+
+						expandedValue = pureExpand(activeCtx, JsonLdConsts.REVERSE, value);
+						// NOTE: algorithm assumes the result is a map
+						// 7.4.11.2)
+						if (((Map<String, Object>) expandedValue).containsKey(JsonLdConsts.REVERSE)) {
+							final Map<String, Object> reverse = (Map<String, Object>) ((Map<String, Object>) expandedValue)
+									.get(JsonLdConsts.REVERSE);
+							for (final String property : reverse.keySet()) {
+								final Object item = reverse.get(property);
+								// 7.4.11.2.1)
+								if (!result.containsKey(property)) {
+									result.put(property, new ArrayList<Object>());
+								}
+								// 7.4.11.2.2)
+								if (item instanceof List) {
+									((List<Object>) result.get(property)).addAll((List<Object>) item);
+								} else {
+									((List<Object>) result.get(property)).add(item);
+								}
+							}
+						}
+						// 7.4.11.3)
+						if (((Map<String, Object>) expandedValue)
+								.size() > (((Map<String, Object>) expandedValue).containsKey(JsonLdConsts.REVERSE) ? 1
+										: 0)) {
+							// 7.4.11.3.1)
+							if (!result.containsKey(JsonLdConsts.REVERSE)) {
+								result.put(JsonLdConsts.REVERSE, newMap());
+							}
+							// 7.4.11.3.2)
+							final Map<String, Object> reverseMap = (Map<String, Object>) result
+									.get(JsonLdConsts.REVERSE);
+							// 7.4.11.3.3)
+							for (final String property : ((Map<String, Object>) expandedValue).keySet()) {
+								if (JsonLdConsts.REVERSE.equals(property)) {
+									continue;
+								}
+								// 7.4.11.3.3.1)
+								final List<Object> items = (List<Object>) ((Map<String, Object>) expandedValue)
+										.get(property);
+								for (final Object item : items) {
+									// 7.4.11.3.3.1.1)
+									if (item instanceof Map
+											&& (((Map<String, Object>) item).containsKey(JsonLdConsts.VALUE)
+													|| ((Map<String, Object>) item).containsKey(JsonLdConsts.LIST))) {
+										throw new JsonLdError(Error.INVALID_REVERSE_PROPERTY_VALUE);
+									}
+									// 7.4.11.3.3.1.2)
+									if (!reverseMap.containsKey(property)) {
+										reverseMap.put(property, new ArrayList<Object>());
+									}
+									// 7.4.11.3.3.1.3)
+									((List<Object>) reverseMap.get(property)).add(item);
+								}
+							}
+						}
+						// GK: Also, `@included`, `@graph`, and `@direction`
+						// 7.4.11.4)
+						continue;
+					}
+					// TODO: SPEC no mention of @explicit etc in spec
+					else if (frameExpansion && (JsonLdConsts.EXPLICIT.equals(expandedProperty)
+							|| JsonLdConsts.DEFAULT.equals(expandedProperty)
+							|| JsonLdConsts.EMBED.equals(expandedProperty)
+							|| JsonLdConsts.REQUIRE_ALL.equals(expandedProperty)
+							|| JsonLdConsts.EMBED_CHILDREN.equals(expandedProperty)
+							|| JsonLdConsts.OMIT_DEFAULT.equals(expandedProperty))) {
+						expandedValue = pureExpand(activeCtx, expandedProperty, value);
+
+					}
+					// 7.4.12)
+					if (expandedValue != null) {
+						/*
+						 * jsonld 1.1: 13.4.16 in https://w3c.github.io/json-ld-api/#algorithm-3 if
+						 * (!(expandedValue == null && JsonLdConsts.VALUE.equals(expandedProperty) &&
+						 * (inputType == null || JsonLdConsts.JSON.equals(inputType)))) {
+						 */
+						result.put(expandedProperty, expandedValue);
+					}
+					// 7.4.13)
+					continue;
+				} else {
+
+				}
+
+				// jsonld 1.1: 13.5 in https://w3c.github.io/json-ld-api/#algorithm-3
+				String containerMapping = activeCtx.getContainer(key);
+				// jsonld 1.1: 13.6 in https://w3c.github.io/json-ld-api/#algorithm-3
+				if (activeCtx.getTermDefinition(key) != null
+						&& JsonLdConsts.JSON.equals(activeCtx.getTermDefinition(key).get(JsonLdConsts.TYPE))) {
+					Map<String, Object> newMap = newMap();
+					newMap.put(JsonLdConsts.VALUE, value);
+					newMap.put(JsonLdConsts.TYPE, JsonLdConsts.JSON);
+					expandedValue = newMap;
+				}
+				// 7.5
+				else if (JsonLdConsts.LANGUAGE.equals(containerMapping) && value instanceof Map) {
+					// 7.5.1)
+					expandedValue = new ArrayList<Object>();
+					// 7.5.2)
+					for (final String language : ((Map<String, Object>) value).keySet()) {
+						Object languageValue = ((Map<String, Object>) value).get(language);
+						// 7.5.2.1)
+						if (!(languageValue instanceof List)) {
+							final Object tmp = languageValue;
+							languageValue = new ArrayList<Object>();
+							((List<Object>) languageValue).add(tmp);
+						}
+						// 7.5.2.2)
+						for (final Object item : (List<Object>) languageValue) {
+							// jsonld 1.1: 13.7.4.2.1 in
+							// https://w3c.github.io/json-ld-api/#expansion-algorithm
+							if (item == null) {
+								continue;
+							}
+							// 7.5.2.2.1)
+							if (!(item instanceof String)) {
+								throw new JsonLdError(Error.INVALID_LANGUAGE_MAP_VALUE,
+										"Expected " + item.toString() + " to be a string");
+							}
+							// 7.5.2.2.2)
+							final Map<String, Object> tmp = newMap();
+							tmp.put(JsonLdConsts.VALUE, item);
+							tmp.put(JsonLdConsts.LANGUAGE, language.toLowerCase());
+							((List<Object>) expandedValue).add(tmp);
+						}
+					}
+				}
+				// 7.6)
+				// GK: Also a place to see if key is `@json` for JSON literals.
+				else if (JsonLdConsts.INDEX.equals(activeCtx.getContainer(key)) && value instanceof Map) {
+					// 7.6.1)
+					// GK: `@index` also supports property indexing, if the term definition includes
+					// `@index`.
+					// GK: A map can also include `@none`.
+					expandedValue = new ArrayList<Object>();
+					// 7.6.2)
+					final List<String> indexKeys = new ArrayList<String>(((Map<String, Object>) value).keySet());
+					Collections.sort(indexKeys);
+					for (final String index : indexKeys) {
+						Object indexValue = ((Map<String, Object>) value).get(index);
+						// 7.6.2.1)
+						if (!(indexValue instanceof List)) {
+							final Object tmp = indexValue;
+							indexValue = new ArrayList<Object>();
+							((List<Object>) indexValue).add(tmp);
+						}
+						// 7.6.2.2)
+
+						indexValue = pureExpand(activeCtx, key, indexValue);
+						// 7.6.2.3)
+						for (final Map<String, Object> item : (List<Map<String, Object>>) indexValue) {
+							// 7.6.2.3.1)
+							if (!item.containsKey(JsonLdConsts.INDEX)) {
+								item.put(JsonLdConsts.INDEX, index);
+							}
+							// 7.6.2.3.2)
+							((List<Object>) expandedValue).add(item);
+						}
+					}
+				}
+				// 7.7)
+				else {
+
+					expandedValue = pureExpand(activeCtx, key, value);
+
+				}
+				// 7.8)
+				if (expandedValue == null) {
+					continue;
+				}
+				// 7.9)
+				if (JsonLdConsts.LIST.equals(activeCtx.getContainer(key))) {
+					if (!(expandedValue instanceof Map)
+							|| !((Map<String, Object>) expandedValue).containsKey(JsonLdConsts.LIST)) {
+						Object tmp = expandedValue;
+						if (!(tmp instanceof List)) {
+							tmp = new ArrayList<Object>();
+							((List<Object>) tmp).add(expandedValue);
+						}
+						expandedValue = newMap();
+						((Map<String, Object>) expandedValue).put(JsonLdConsts.LIST, tmp);
+					}
+				}
+				// GK: Other container possibilities including `@graph`, `@id`, and `@type`
+				// along with variations.
+				// 7.10)
+				if (activeCtx.isReverseProperty(key)) {
+					// 7.10.1)
+					if (!result.containsKey(JsonLdConsts.REVERSE)) {
+						result.put(JsonLdConsts.REVERSE, newMap());
+					}
+					// 7.10.2)
+					final Map<String, Object> reverseMap = (Map<String, Object>) result.get(JsonLdConsts.REVERSE);
+					// 7.10.3)
+					if (!(expandedValue instanceof List)) {
+						final Object tmp = expandedValue;
+						expandedValue = new ArrayList<Object>();
+						((List<Object>) expandedValue).add(tmp);
+					}
+					// 7.10.4)
+					for (final Object item : (List<Object>) expandedValue) {
+						// 7.10.4.1)
+						if (item instanceof Map && (((Map<String, Object>) item).containsKey(JsonLdConsts.VALUE)
+								|| ((Map<String, Object>) item).containsKey(JsonLdConsts.LIST))) {
+							throw new JsonLdError(Error.INVALID_REVERSE_PROPERTY_VALUE);
+						}
+						// 7.10.4.2)
+						if (!reverseMap.containsKey(expandedProperty)) {
+							reverseMap.put(expandedProperty, new ArrayList<Object>());
+						}
+						// 7.10.4.3)
+						if (item instanceof List) {
+							((List<Object>) reverseMap.get(expandedProperty)).addAll((List<Object>) item);
+						} else {
+							((List<Object>) reverseMap.get(expandedProperty)).add(item);
+						}
+					}
+				}
+				// 7.11)
+				else {
+					// 7.11.1)
+					if (!result.containsKey(expandedProperty)) {
+						result.put(expandedProperty, new ArrayList<Object>());
+					}
+					// 7.11.2)
+					if (expandedValue instanceof List) {
+						((List<Object>) result.get(expandedProperty)).addAll((List<Object>) expandedValue);
+					} else {
+						((List<Object>) result.get(expandedProperty)).add(expandedValue);
+					}
+				}
+			}
+			// 8)
+			if (result.containsKey(JsonLdConsts.VALUE)) {
+				// 8.1)
+				// TODO: is this method faster than just using containsKey for
+				// each?
+				final Set<String> keySet = new HashSet<String>(result.keySet());
+				keySet.remove(JsonLdConsts.VALUE);
+				keySet.remove(JsonLdConsts.INDEX);
+				final boolean langremoved = keySet.remove(JsonLdConsts.LANGUAGE);
+				final boolean typeremoved = keySet.remove(JsonLdConsts.TYPE);
+				if ((langremoved && typeremoved) || !keySet.isEmpty()) {
+					throw new JsonLdError(Error.INVALID_VALUE_OBJECT, "value object has unknown keys");
+				}
+				// 8.2)
+				final Object rval = result.get(JsonLdConsts.VALUE);
+				if (rval == null) {
+					// nothing else is possible with result if we set it to
+					// null, so simply return it
+					return null;
+				} else if (result.getOrDefault(JsonLdConsts.TYPE, "").equals(JsonLdConsts.JSON)) {
+					// jsonld 1.1: 14.3 in https://w3c.github.io/json-ld-api/#algorithm-3
+				}
+				// 8.3)
+				else if (!(rval instanceof String) && result.containsKey(JsonLdConsts.LANGUAGE)) {
+					throw new JsonLdError(Error.INVALID_LANGUAGE_TAGGED_VALUE,
+							"when @language is used, @value must be a string");
+				}
+				// 8.4)
+				else if (result.containsKey(JsonLdConsts.TYPE)) {
+					// TODO: is this enough for "is an IRI"
+					if (!(result.get(JsonLdConsts.TYPE) instanceof String)
+							|| ((String) result.get(JsonLdConsts.TYPE)).startsWith("_:")
+							|| !((String) result.get(JsonLdConsts.TYPE)).contains(":")) {
+						throw new JsonLdError(Error.INVALID_TYPED_VALUE, "value of @type must be an IRI");
+					}
+				}
+			}
+			// 9)
+			else if (result.containsKey(JsonLdConsts.TYPE)) {
+				final Object rtype = result.get(JsonLdConsts.TYPE);
+				if (!(rtype instanceof List)) {
+					final List<Object> tmp = new ArrayList<Object>();
+					tmp.add(rtype);
+					result.put(JsonLdConsts.TYPE, tmp);
+				}
+			}
+			// 10)
+			else if (result.containsKey(JsonLdConsts.SET) || result.containsKey(JsonLdConsts.LIST)) {
+				// 10.1)
+				if (result.size() > (result.containsKey(JsonLdConsts.INDEX) ? 2 : 1)) {
+					throw new JsonLdError(Error.INVALID_SET_OR_LIST_OBJECT, "@set or @list may only contain @index");
+				}
+				// 10.2)
+				if (result.containsKey(JsonLdConsts.SET)) {
+					return result.get(JsonLdConsts.SET);
+				}
+			}
+			// 11)
+			if (result.containsKey(JsonLdConsts.LANGUAGE) && result.size() == 1) {
+				result = null;
+			}
+			// 12)
+			if (activeProperty == null || JsonLdConsts.GRAPH.equals(activeProperty)) {
+				// 12.1)
+				if (result != null && (result.size() == 0 || result.containsKey(JsonLdConsts.VALUE)
+						|| result.containsKey(JsonLdConsts.LIST))) {
+					result = null;
+				}
+				// 12.2)
+				else if (result != null && !frameExpansion && result.containsKey(JsonLdConsts.ID)
+						&& result.size() == 1) {
+					result = null;
+				}
+			}
+
+			return result;
+		}
+		// 2) If element is a scalar
+		else {
+			// 2.1)
+			if (activeProperty == null) {
+				throw new ResponseException(ErrorType.BadRequestData, "null values are not allowed");
+			}
+			if (JsonLdConsts.GRAPH.equals(activeProperty)) {
+				return null;
+			}
+			String expandedProperty = activeCtx.expandIri(activeProperty, false, true, null, null);
+			Object result = activeCtx.expandValue(activeProperty, element);
+			return result;
+		}
 	}
 
 }
