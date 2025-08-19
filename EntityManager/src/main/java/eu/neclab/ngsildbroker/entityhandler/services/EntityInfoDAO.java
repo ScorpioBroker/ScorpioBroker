@@ -22,7 +22,6 @@ import eu.neclab.ngsildbroker.commons.storage.ClientManager;
 import eu.neclab.ngsildbroker.commons.tools.DBUtil;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
-import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
@@ -34,7 +33,6 @@ import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
 import io.vertx.pgclient.PgException;
-import io.vertx.pgclient.data.Point;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -367,127 +365,10 @@ public class EntityInfoDAO {
 	@SuppressWarnings("unchecked")
 	public Uni<Void> createEntity(CreateEntityRequest request) {
 		return clientManager.getClient(request.getTenant(), true).onItem().transformToUni(client -> {
-			StringBuilder sql = new StringBuilder("INSERT INTO ENTITY VALUES ($1, $2, $3, $4, ");
-
-			int dollar = 5;
-
-			Map<String, Object> entity = request.getFirstPayload();
-			String[] types = ((List<String>) entity.get(NGSIConstants.JSON_LD_TYPE))
+			String[] types = ((List<String>) request.getFirstPayload().get(NGSIConstants.JSON_LD_TYPE))
 					.toArray(new String[0]);
-			Tuple tuple = Tuple.tuple();
-			tuple.addString(request.getFirstId());
-			tuple.addJsonObject(new JsonObject(entity));
-
-			tuple.addLocalDateTime(SerializationTools
-					.localDateTimeFormatter(((List<Map<String, String>>) entity.get(NGSIConstants.NGSI_LD_CREATED_AT))
-							.get(0).get(NGSIConstants.JSON_LD_VALUE)));
-			tuple.addLocalDateTime(SerializationTools
-					.localDateTimeFormatter(((List<Map<String, String>>) entity.get(NGSIConstants.NGSI_LD_MODIFIED_AT))
-							.get(0).get(NGSIConstants.JSON_LD_VALUE)));
-			List<Map<String, Object>> location = (List<Map<String, Object>>) entity.get(NGSIConstants.NGSI_LD_LOCATION);
-			if (location != null) {
-				Map<String, Object> geoValue = ((List<Map<String, Object>>) location.get(0)
-						.get(NGSIConstants.NGSI_LD_HAS_VALUE)).get(0);
-				String geoType = ((List<String>) geoValue.get(NGSIConstants.JSON_LD_TYPE)).get(0);
-				List<Map<String, Object>> coordinates = (List<Map<String, Object>>) geoValue
-						.get(NGSIConstants.NGSI_LD_COORDINATES);
-				switch (geoType) {
-					case NGSIConstants.NGSI_LD_POINT:
-						List<Map<String, Number>> tmp = (List<Map<String, Number>>) coordinates.get(0)
-								.get(NGSIConstants.JSON_LD_LIST);
-						sql.append("ST_POINT($");
-						sql.append(dollar);
-						dollar++;
-						sql.append(", $");
-						sql.append(dollar);
-						dollar++;
-						sql.append(", 4326)");
-						tuple.addDouble(tmp.get(0).get(NGSIConstants.JSON_LD_VALUE).doubleValue());
-						tuple.addDouble(tmp.get(1).get(NGSIConstants.JSON_LD_VALUE).doubleValue());
-
-						break;
-					case NGSIConstants.NGSI_LD_MULTI_POINT:
-						List<Map<String, List<Map<String, Number>>>> tmp2 = (List<Map<String, List<Map<String, Number>>>>) coordinates
-								.get(0).get(NGSIConstants.JSON_LD_LIST);
-						sql.append("ST_Collect(ARRAY[");
-						for (Map<String, List<Map<String, Number>>> entry : tmp2) {
-							List<Map<String, Number>> helper = entry.get(NGSIConstants.JSON_LD_LIST);
-							sql.append("ST_POINT($");
-							sql.append(dollar);
-							dollar++;
-							sql.append(", $");
-							sql.append(dollar);
-							dollar++;
-							sql.append(", 4326),");
-							tuple.addDouble(helper.get(0).get(NGSIConstants.JSON_LD_VALUE).doubleValue());
-							tuple.addDouble(helper.get(1).get(NGSIConstants.JSON_LD_VALUE).doubleValue());
-						}
-						sql.setLength(sql.length() - 1);
-						sql.append("])");
-						break;
-					case NGSIConstants.NGSI_LD_LINESTRING:
-						List<Map<String, List<Map<String, Number>>>> tmp3 = (List<Map<String, List<Map<String, Number>>>>) coordinates
-								.get(0).get(NGSIConstants.JSON_LD_LIST);
-						sql.append("ST_MakeLine(ARRAY[");
-						for (Map<String, List<Map<String, Number>>> entry : tmp3) {
-							List<Map<String, Number>> helper = entry.get(NGSIConstants.JSON_LD_LIST);
-							sql.append("ST_POINT($");
-							sql.append(dollar);
-							dollar++;
-							sql.append(", $");
-							sql.append(dollar);
-							dollar++;
-							sql.append(", 4326),");
-							tuple.addDouble(helper.get(0).get(NGSIConstants.JSON_LD_VALUE).doubleValue());
-							tuple.addDouble(helper.get(1).get(NGSIConstants.JSON_LD_VALUE).doubleValue());
-						}
-						sql.setLength(sql.length() - 1);
-						sql.append("])");
-
-						break;
-					case NGSIConstants.NGSI_LD_POLYGON:
-
-						// List<Map<String, List<Map<String, Number>>>> tmp4 = (List<Map<String,
-						// List<Map<String, Number>>>>) coordinates
-						// .get(0).get(NGSIConstants.JSON_LD_LIST);
-						// sql.append("ST_MakeLine(ARRAY[");
-						// for (Map<String, List<Map<String, Number>>> entry : tmp3) {
-						// List<Map<String, Number>> helper = entry.get(NGSIConstants.JSON_LD_LIST);
-						// sql.append("ST_POINT($");
-						// sql.append(dollar);
-						// dollar++;
-						// sql.append(", $");
-						// sql.append(dollar);
-						// dollar++;
-						// sql.append(", 4326),");
-						// tuple.addDouble(helper.get(0).get(NGSIConstants.JSON_LD_VALUE).doubleValue());
-						// tuple.addDouble(helper.get(1).get(NGSIConstants.JSON_LD_VALUE).doubleValue());
-						// }
-						// sql.setLength(sql.length() - 1);
-						// sql.append("])");
-
-						break;
-					case NGSIConstants.NGSI_LD_MULTI_LINESTRING:
-
-						break;
-					case NGSIConstants.NGSI_LD_MULTI_POLYGON:
-
-						break;
-					default:
-						sql.append("null::Ggeometry");
-						break;
-				}
-			} else {
-				sql.append("null::Ggeometry");
-			}
-			sql.append(", null::text[], $");
-			sql.append(dollar);
-			sql.append(')');
-			tuple.addArrayOfString(types);
-			System.out.println(sql.toString());
-			return client
-					.preparedQuery(sql.toString())
-					.execute(tuple)
+			return client.preparedQuery("INSERT INTO ENTITY(ID,E_TYPES, ENTITY) VALUES ($1, $2, $3)")
+					.execute(Tuple.of(request.getFirstId(), types, new JsonObject(request.getFirstPayload())))
 					.onFailure().recoverWithUni(e -> {
 						if (e instanceof PgException pge) {
 							if (pge.getSqlState().equals(AppConstants.SQL_ALREADY_EXISTS)) {

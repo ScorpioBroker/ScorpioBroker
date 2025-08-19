@@ -424,9 +424,8 @@ public interface NGSIConstants {
 	public static final String JSONLD_CONTEXTS = "ngsi-ld/v1/jsonldContexts/";
 	public static final String JSONLD_CONTEXT = "jsonldContext";
 	public static final String NGSI_LD_ATTRIBUTES_ENDPOINT = "/ngsi-ld/v1/attributes";
-	public static final Set<String> GEO_KEYWORDS = Sets.newHashSet(NGSIConstants.GEO_TYPE_POINT,
-			NGSIConstants.GEO_TYPE_POLYGON, NGSIConstants.GEO_TYPE_LINESTRING, NGSIConstants.GEO_TYPE_MULTI_LINESTRING,
-			NGSIConstants.GEO_TYPE_MULTI_POLYGON, NGSIConstants.GEO_TYPE_MULTI_POINT);
+	public static final List<String> GEO_KEYWORDS = Arrays.asList(NGSIConstants.GEO_TYPE_POINT,
+			NGSIConstants.GEO_TYPE_POLYGON, NGSIConstants.GEO_TYPE_LINESTRING, NGSIConstants.GEO_TYPE_MULTI_POLYGON);
 	public final static String TYPE = "type";
 	public final static String RELATIONSHIP = "Relationship";
 	public final static String LISTRELATIONSHIP = "ListRelationship";
@@ -604,13 +603,5 @@ public interface NGSIConstants {
 	public static final String FIELD_DATASET_ID = "\"datasetId\": \"";
 	public static final String ENTITY = "entity";
 	public static final String ENTITY_LIST = "entityList";
-	public static final List<String> LD_PROPERTY_TYPE = List.of(NGSIConstants.NGSI_LD_PROPERTY);
-	public static final List<String> LD_RELATIONSHIP_TYPE = List.of(NGSIConstants.NGSI_LD_RELATIONSHIP);
-	public static final List<String> LD_GEO_PROPERTY_TYPE = List.of(NGSIConstants.NGSI_LD_GEOPROPERTY);
-	public static final List<String> LD_LIST_PROPERTY_TYPE = List.of(NGSIConstants.NGSI_LD_LIST_PROPERTY);
-	public static final List<String> LD_LIST_RELATIONSHIP_TYPE = List.of(NGSIConstants.NGSI_LD_LISTRELATIONSHIP);
-	public static final List<String> LD_LANGUAGE_PROPERTY_TYPE = List.of(NGSIConstants.NGSI_LD_LANGPROPERTY);
-	public static final List<String> LD_VOCAB_PROPERTY_TYPE = List.of(NGSIConstants.NGSI_LD_VOCAB_PROPERTY);
-	public static final List<String> LD_JSON_PROPERTY_TYPE = List.of(NGSIConstants.NGSI_LD_JSON_PROPERTY);
 
 }
