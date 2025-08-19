@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
@@ -46,11 +45,8 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.OmitTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.PickTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
-import eu.neclab.ngsildbroker.commons.datatypes.terms.Query;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
-import eu.neclab.ngsildbroker.commons.enums.ErrorType;
-import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.CSourceHandler;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
@@ -136,7 +132,7 @@ public class QueryService implements CSourceHandler {
 				scopeQuery, langQuery, limit, offSet, context, headersFromReq, doNotCompact, dataSetIdTerm, join,
 				joinLevel, entityDist, pickTerm, omitTerm, checkSum, viaHeaders, typePattern, localOnly,
 				forceEntitymapCreation || tokenProvided,
-				tokenProvided)
+				tokenProvided, count)
 				.onItem().transformToUni(t -> {
 					return handleEntityMap(t.getItem2(), t.getItem1(), tenant, idsAndTypeQueryAndIdPattern,
 							attrsQuery, qQuery, geoQuery, scopeQuery, langQuery, limit, offSet, count,
@@ -1868,13 +1864,13 @@ public class QueryService implements CSourceHandler {
 			int offset, Context context, io.vertx.core.MultiMap headersFromReq, boolean doNotCompact,
 			DataSetIdTerm dataSetIdTerm, String join, int joinLevel, boolean splitEntities, PickTerm pickTerm,
 			OmitTerm omitTerm, String queryCechksum, ViaHeaders viaHeaders, String typePattern, boolean localOnly,
-			boolean forceEntitymapCreation, boolean tokenProvided) {
+			boolean forceEntitymapCreation, boolean tokenProvided, boolean count) {
 
 		if (tenant2CId2RegEntries.isEmpty()) {
 			return queryDAO.newQuery(tenant, idsAndTypeQueryAndIdPattern, attrsQuery, qQuery,
 					geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel, qToken, pickTerm,
 					omitTerm, queryCechksum, splitEntities, true, false, typePattern, localOnly,
-					forceEntitymapCreation, tokenProvided);
+					forceEntitymapCreation, tokenProvided, count);
 		} else {
 			EntityCache fullEntityCache = new EntityCache();
 			Collection<QueryRemoteHost> remoteHost2Query = EntityTools.getRemoteQueries(tenant,
@@ -1886,19 +1882,19 @@ public class QueryService implements CSourceHandler {
 					return queryDAO.newQuery(tenant, idsAndTypeQueryAndIdPattern, attrsQuery,
 							qQuery, geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel,
 							qToken, pickTerm, omitTerm, queryCechksum, splitEntities, true, false, typePattern,
-							localOnly, forceEntitymapCreation, tokenProvided);
+							localOnly, forceEntitymapCreation, tokenProvided, count);
 				} else {
 					return queryDAO.newQuery(tenant, idsAndTypeQueryAndIdPattern, attrsQuery,
 							qQuery, geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel,
 							qToken, pickTerm, omitTerm, queryCechksum, splitEntities, false, true, typePattern,
-							localOnly, forceEntitymapCreation, tokenProvided);
+							localOnly, forceEntitymapCreation, tokenProvided, count);
 				}
 			} else {
 				Uni<Tuple2<EntityCache, EntityMap>> localEntityCacheAndEntityMap = queryDAO
 						.newQuery(tenant, idsAndTypeQueryAndIdPattern, attrsQuery, qQuery,
 								geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel, qToken,
 								pickTerm, omitTerm, queryCechksum, splitEntities, false, false, typePattern, localOnly,
-								forceEntitymapCreation, tokenProvided);
+								forceEntitymapCreation, tokenProvided, count);
 				List<Uni<Tuple2<List<Map<String, Object>>, QueryRemoteHost>>> unisForEntityRetrieval = Lists
 						.newArrayList();
 				List<Uni<Tuple2<Map<String, Object>, QueryRemoteHost>>> unisForEntityMapRetrieval = Lists
