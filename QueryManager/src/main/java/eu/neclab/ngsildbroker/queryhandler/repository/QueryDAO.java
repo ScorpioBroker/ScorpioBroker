@@ -1608,7 +1608,7 @@ public class QueryDAO {
 					}
 					if (!count) {
 						if (id2Cid.size() < limit) {
-							entityMap.setManualSize(offset + limit);
+							entityMap.setManualSize(offset + id2Cid.size());
 						} else {
 							entityMap.setManualSize(offset + 2 * limit);
 						}
