@@ -1318,14 +1318,24 @@ public class QQueryTerm implements Serializable {
 		return dollarCount;
 	}
 
-	private int parseAttribute(StringBuilder result, int dollar, Tuple tuple, String attrib) {
+	private int parseAttribute(StringBuilder result, int dollar, Tuple tuple, String attrib, boolean localOnly,
+			boolean isDist, int entityLevelCounter) {
 
 		int linkedIndex = attrib.indexOf('{');
 		if (linkedIndex != -1) {
 			String linkedPart = attrib.substring(linkedIndex, attrib.length() - 1);
 			String attribPath = attrib.substring(0, linkedIndex);
-			result.append("EXISTS (SELECT TRUE FROM ENTITY WHERE ID = ");
-			dollar = parseAttribute(result, dollar, tuple, linkedPart);
+			String prevEntity;
+			if (entityLevelCounter == -1) {
+				prevEntity = "ENTITY.ENTITY";
+			} else {
+				prevEntity = "E" + entityLevelCounter + ".ENTITY";
+			}
+			entityLevelCounter++;
+			result.append("EXISTS (SELECT TRUE FROM ENTITY E");
+			result.append(entityLevelCounter);
+			result.append("WHERE ID = ");
+			dollar = parseAttribute(result, dollar, tuple, linkedPart, localOnly, isDist, entityLevelCounter);
 			result.append(")");
 
 			return dollar;
@@ -1342,7 +1352,26 @@ public class QQueryTerm implements Serializable {
 			complexSplitted = null;
 		}
 		String[] attribPath = StringUtils.split(attrib, '.');
-		result.append("(jsonb_path_exists(entity, '$.");
+		String rootPathExpanded = linkHeaders.expandIri(attribPath[0], false, true, null, null);
+		if (!rootPathExpanded.equals(NGSIConstants.NGSI_LD_STAR)) {
+			if (entityLevelCounter != -1) {
+				result.append('E');
+				result.append(entityLevelCounter);
+				result.append('.');
+			}
+			result.append("entity ? $");
+			result.append(dollar);
+			dollar++;
+			tuple.addString(rootPathExpanded);
+			result.append(" AND ");
+		}
+		result.append("(jsonb_path_exists(");
+		if (entityLevelCounter != -1) {
+			result.append('E');
+			result.append(entityLevelCounter);
+			result.append('.');
+		}
+		result.append("entity, '$.");
 		for (String pathEntry : attribPath) {
 			String attribName = linkHeaders.expandIri(pathEntry, false, true, null, null);
 			boolean wildcardUse = NGSIConstants.NGSI_LD_STAR.equals(attribName);
@@ -1650,7 +1679,7 @@ public class QQueryTerm implements Serializable {
 
 	public int toSql(StringBuilder result, int dollar, Tuple tuple, boolean isDist,
 			boolean localOnly) {
-		return parseAttribute(result, dollar, tuple, attribute);
+		return parseAttribute(result, dollar, tuple, attribute, localOnly, isDist, -1);
 	}
 
 	public int toSqlOld(StringBuilder result, int dollarCount, Tuple tuple, boolean isDist,
