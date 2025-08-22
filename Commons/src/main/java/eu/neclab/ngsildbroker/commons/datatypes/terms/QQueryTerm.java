@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.lang3.StringUtils;
+
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
@@ -1029,7 +1031,7 @@ public class QQueryTerm implements Serializable {
 				}
 				firstChild.setOperator(operator);
 				firstChild.setExpandedOpt(expandedOpt);
-				dollarCount = firstChild.toSql(result, dollarCount, tuple, isDist, localOnly);
+				dollarCount = firstChild.toSqlOld(result, dollarCount, tuple, isDist, localOnly);
 
 			}
 			result.append(')');
@@ -1316,11 +1318,346 @@ public class QQueryTerm implements Serializable {
 		return dollarCount;
 	}
 
-	public int toSql(StringBuilder result, int dollarCount, Tuple tuple, boolean isDist,
+	private int parseAttribute(StringBuilder result, int dollar, Tuple tuple, String attrib) {
+
+		int linkedIndex = attrib.indexOf('{');
+		if (linkedIndex != -1) {
+			String linkedPart = attrib.substring(linkedIndex, attrib.length() - 1);
+			String attribPath = attrib.substring(0, linkedIndex);
+			result.append("EXISTS (SELECT TRUE FROM ENTITY WHERE ID = ");
+			dollar = parseAttribute(result, dollar, tuple, linkedPart);
+			result.append(")");
+
+			return dollar;
+		}
+		int complexIndex = attrib.indexOf('[');
+		String complexPart;
+		String[] complexSplitted;
+		if (complexIndex != -1) {
+			complexPart = attrib.substring(complexIndex, attrib.length() - 1);
+			complexSplitted = StringUtils.split(complexPart, '.');
+			attrib = attrib.substring(0, complexIndex);
+		} else {
+			complexPart = null;
+			complexSplitted = null;
+		}
+		String[] attribPath = StringUtils.split(attrib, '.');
+		result.append("(jsonb_path_exists(entity, '$.");
+		for (String pathEntry : attribPath) {
+			String attribName = linkHeaders.expandIri(pathEntry, false, true, null, null);
+			boolean wildcardUse = NGSIConstants.NGSI_LD_STAR.equals(attribName);
+
+			if (wildcardUse) {
+				result.append('*');
+			} else {
+				result.append('"');
+				result.append(attribName);
+				result.append('"');
+			}
+			result.append("[*].");
+		}
+		result.setLength(result.length() - 1);
+
+		if (operant != null) {
+			String operatorTBU;
+			boolean not = false;
+
+			if (operator.equals(NGSIConstants.QUERY_PATTERNOP)) {
+				operatorTBU = "=~";
+			} else if (operator.equals(NGSIConstants.QUERY_NOTPATTERNOP)) {
+				operatorTBU = "=~";
+				not = true;
+			} else {
+				operatorTBU = operator;
+			}
+			result.append(" ? (");
+			if (not) {
+				result.append("not ");
+			}
+			result.append("(@.\"");
+			result.append(NGSIConstants.NGSI_LD_HAS_VALUE);
+			result.append("\"[*].\"");
+			result.append(NGSIConstants.JSON_LD_VALUE);
+			result.append('"');
+			if (complexPart != null) {
+				result.append('.');
+				for (String complexEntry : complexSplitted) {
+					result.append('"');
+					result.append(linkHeaders.expandIri(complexEntry, false, true, null, null));
+					result.append("\"[*].");
+				}
+				result.setLength(result.length() - 1);
+			}
+
+			List<String[]> tokens = splitValues(operant);
+			if (tokens.size() == 1) {
+				String[] token = tokens.get(0);
+				if (operatorTBU.equals(NGSIConstants.QUERY_EQUAL) || operatorTBU.equals(NGSIConstants.QUERY_UNEQUAL)) {
+					int listIndex = token[0].indexOf("..");
+					if (listIndex != -1) {
+						String from = token[0].substring(0, listIndex);
+						String to = token[0].substring(listIndex + 2);
+						result.append(NGSIConstants.QUERY_GREATEREQ);
+						result.append(from);
+						result.append(" && @.\"");
+						result.append(NGSIConstants.NGSI_LD_HAS_VALUE);
+						result.append("\"[*].\"");
+						result.append(NGSIConstants.JSON_LD_VALUE);
+						result.append('"');
+						if (complexPart != null) {
+							result.append('.');
+							for (String complexEntry : complexSplitted) {
+								result.append('"');
+								result.append(linkHeaders.expandIri(complexEntry, false, true, null, null));
+								result.append("\"[*].");
+							}
+							result.setLength(result.length() - 1);
+						}
+
+						result.append(NGSIConstants.QUERY_LESSEQ);
+						result.append(to);
+					} else {
+						result.append(operatorTBU);
+						result.append(token[0]);
+					}
+				} else {
+					result.append(operatorTBU);
+					result.append(token[0]);
+				}
+
+			} else {
+				result.append(operatorTBU);
+				result.append('[');
+				for (String[] token : tokens) {
+					result.append(token[0]);
+					result.append(',');
+				}
+				result.setCharAt(result.length(), ']');
+			}
+			result.append(") || ");
+
+			if (not) {
+				result.append("not ");
+			}
+			result.append("(@.\"");
+			result.append(NGSIConstants.NGSI_LD_HAS_LIST);
+			result.append("\"[1].\"");
+			result.append(NGSIConstants.JSON_LD_LIST);
+			result.append("\"[*].\"");
+			result.append(NGSIConstants.JSON_LD_VALUE);
+			result.append('"');
+			if (complexPart != null) {
+				result.append('.');
+				for (String complexEntry : complexSplitted) {
+					result.append('"');
+					result.append(linkHeaders.expandIri(complexEntry, false, true, null, null));
+					result.append("\"[*].");
+				}
+				result.setLength(result.length() - 1);
+			}
+
+			if (tokens.size() == 1) {
+				String[] token = tokens.get(0);
+				if (operatorTBU.equals(NGSIConstants.QUERY_EQUAL) || operatorTBU.equals(NGSIConstants.QUERY_UNEQUAL)) {
+					int listIndex = token[0].indexOf("..");
+					if (listIndex != -1) {
+						String from = token[0].substring(0, listIndex);
+						String to = token[0].substring(listIndex + 2);
+						result.append(NGSIConstants.QUERY_GREATEREQ);
+						result.append(from);
+						result.append(" && @.\"");
+						result.append(NGSIConstants.NGSI_LD_HAS_LIST);
+						result.append("\"[0].\"");
+						result.append(NGSIConstants.JSON_LD_LIST);
+						result.append("\"[*].\"");
+						result.append(NGSIConstants.JSON_LD_VALUE);
+						result.append('"');
+						if (complexPart != null) {
+							result.append('.');
+							for (String complexEntry : complexSplitted) {
+								result.append('"');
+								result.append(linkHeaders.expandIri(complexEntry, false, true, null, null));
+								result.append("\"[*].");
+							}
+							result.setLength(result.length() - 1);
+						}
+
+						result.append(NGSIConstants.QUERY_LESSEQ);
+						result.append(to);
+					} else {
+						result.append(operatorTBU);
+						result.append(token[0]);
+					}
+				} else {
+					result.append(operatorTBU);
+					result.append(token[0]);
+				}
+			} else {
+				result.append(operatorTBU);
+				result.append('[');
+				for (String[] token : tokens) {
+					result.append(token[0]);
+					result.append(',');
+				}
+				result.setCharAt(result.length(), ']');
+			}
+			result.append(") || ");
+
+			if (not) {
+				result.append("not ");
+			}
+			result.append("(@.\"");
+			result.append(NGSIConstants.NGSI_LD_HAS_OBJECT);
+			result.append("\"[*].\"");
+			result.append(NGSIConstants.JSON_LD_ID);
+			result.append('"');
+			result.append(operatorTBU);
+
+			if (tokens.size() == 1) {
+				result.append(tokens.get(0)[0]);
+			} else {
+				result.append('[');
+				for (String[] token : tokens) {
+					result.append(token[0]);
+					result.append(',');
+				}
+				result.setCharAt(result.length(), ']');
+			}
+			result.append(") || ");
+			if (not) {
+				result.append("not ");
+			}
+			result.append("(@.\"");
+			result.append(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST);
+			result.append("\"[0].\"");
+			result.append(NGSIConstants.JSON_LD_LIST);
+			result.append("\"[*].\"");
+			result.append(NGSIConstants.NGSI_LD_HAS_OBJECT);
+			result.append("\"[*].\"");
+			result.append(NGSIConstants.JSON_LD_ID);
+			result.append('"');
+			result.append(operatorTBU);
+
+			if (tokens.size() == 1) {
+				result.append(tokens.get(0)[0]);
+			} else {
+				result.append('[');
+				for (String[] token : tokens) {
+					result.append(token[0]);
+					result.append(',');
+				}
+				result.setCharAt(result.length(), ']');
+			}
+			result.append(") || ");
+
+			if (not) {
+				result.append("not ");
+			}
+			result.append("(@.\"");
+			result.append(NGSIConstants.NGSI_LD_HAS_VOCAB);
+			result.append("\"[*].\"");
+			result.append(NGSIConstants.JSON_LD_ID);
+			result.append('"');
+			result.append(operatorTBU);
+
+			if (tokens.size() == 1) {
+				result.append('"');
+				result.append(linkHeaders.expandIri(tokens.get(0)[1], false, true, null, null));
+				result.append('"');
+			} else {
+				result.append('[');
+				for (String[] token : tokens) {
+					result.append('"');
+					result.append(linkHeaders.expandIri(token[1], false, true, null, null));
+					result.append('"');
+					result.append(',');
+				}
+				result.setCharAt(result.length(), ']');
+			}
+			result.append(") || ");
+
+			if (not) {
+				result.append("not ");
+			}
+			result.append("(@.\"");
+			result.append(NGSIConstants.NGSI_LD_HAS_VOCAB);
+			result.append("\"[*].\"");
+			result.append(NGSIConstants.JSON_LD_ID);
+			result.append('"');
+			result.append(operatorTBU);
+
+			if (tokens.size() == 1) {
+				result.append('"');
+				result.append(linkHeaders.expandIri(tokens.get(0)[1], false, true, null, null));
+				result.append('"');
+			} else {
+				result.append('[');
+				for (String[] token : tokens) {
+					result.append('"');
+					result.append(linkHeaders.expandIri(token[1], false, true, null, null));
+					result.append('"');
+					result.append(',');
+				}
+				result.setCharAt(result.length(), ']');
+			}
+			result.append("))') OR jsonb_path_exists(entity, '$.");
+			for (String pathEntry : attribPath) {
+				String attribName = linkHeaders.expandIri(pathEntry, false, true, null, null);
+				boolean wildcardUse = NGSIConstants.NGSI_LD_STAR.equals(attribName);
+
+				if (wildcardUse) {
+					result.append('*');
+				} else {
+					result.append('"');
+					result.append(attribName);
+					result.append('"');
+				}
+				result.append("[*].");
+			}
+			result.append('"');
+			result.append(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP);
+			result.append("\"[*] ? ");
+			if (not) {
+				result.append("not ");
+			}
+			result.append("((@.\"");
+			if (complexPart != null && !complexPart.equals("*")) {
+				result.append(NGSIConstants.JSON_LD_LANGUAGE);
+				result.append("\" = \"");
+				result.append(complexPart.replace("\"", "\\\""));
+				result.append("\") && (@.\"");
+			}
+
+			result.append(NGSIConstants.JSON_LD_VALUE);
+			result.append('"');
+			result.append(operatorTBU);
+
+			if (tokens.size() == 1) {
+				result.append(tokens.get(0)[0]);
+			} else {
+				result.append('[');
+				for (String[] token : tokens) {
+					result.append(token[0]);
+					result.append(',');
+				}
+				result.setCharAt(result.length(), ']');
+			}
+			result.append("))'))");
+		}
+
+		return dollar;
+	}
+
+	public int toSql(StringBuilder result, int dollar, Tuple tuple, boolean isDist,
+			boolean localOnly) {
+		return parseAttribute(result, dollar, tuple, attribute);
+	}
+
+	public int toSqlOld(StringBuilder result, int dollarCount, Tuple tuple, boolean isDist,
 			boolean localOnly) {
 		if (firstChild != null && !isLinkedQ) {
 			result.append("(");
-			dollarCount = firstChild.toSql(result, dollarCount, tuple, isDist, localOnly);
+			dollarCount = firstChild.toSqlOld(result, dollarCount, tuple, isDist, localOnly);
 			result.append(")");
 		} else {
 			dollarCount = getAttribQuery(result, dollarCount, tuple, isDist, localOnly);
@@ -1331,7 +1668,7 @@ public class QQueryTerm implements Serializable {
 			} else {
 				result.append(" or ");
 			}
-			dollarCount = next.toSql(result, dollarCount, tuple, isDist, localOnly);
+			dollarCount = next.toSqlOld(result, dollarCount, tuple, isDist, localOnly);
 		}
 		return dollarCount;
 	}
@@ -2813,6 +3150,75 @@ public class QQueryTerm implements Serializable {
 			}
 		}
 		return result;
+	}
+
+	private List<String[]> splitValues(String input) {
+		List<String[]> values = new ArrayList<>();
+		StringBuilder sb = new StringBuilder();
+		boolean inQuotes = false;
+
+		for (int i = 0; i < input.length(); i++) {
+			char c = input.charAt(i);
+
+			if (c == '"' && (i == 0 || input.charAt(i - 1) != '\\')) {
+				// Toggle quote state
+				inQuotes = !inQuotes;
+				sb.append(c);
+			} else if (c == ',' && !inQuotes) {
+				// Found comma outside quotes → split
+				String tmp = sb.toString().trim();
+				String[] result = new String[2];
+				result[0] = parseSingle(tmp);
+				result[1] = tmp;
+				values.add(result);
+				sb.setLength(0);
+			} else {
+				sb.append(c);
+			}
+		}
+
+		// Add last token
+		if (sb.length() > 0) {
+			String tmp = sb.toString().trim();
+			String[] result = new String[2];
+			result[0] = parseSingle(tmp);
+			result[1] = tmp;
+			values.add(result);
+		}
+
+		return values;
+	}
+
+	private String parseSingle(String token) {
+		// Quoted string?
+		if (token.startsWith("\"") && token.endsWith("\"") && token.length() >= 2) {
+			// Remove outer quotes, escape inner quotes
+			String inner = token.substring(1, token.length() - 1)
+					.replace("\"", "\\\"");
+			return '"' + inner + '"';
+		}
+
+		// Boolean?
+		if ("true".equalsIgnoreCase(token) || "false".equalsIgnoreCase(token)) {
+			return token;
+		}
+
+		// Integer?
+		try {
+			Integer.valueOf(token);
+			return token;
+		} catch (NumberFormatException ignore) {
+		}
+
+		// Double?
+		try {
+			Double.valueOf(token);
+			return token;
+		} catch (NumberFormatException ignore) {
+		}
+
+		// Fallback: unquoted string
+		return '"' + token + '"';
 	}
 
 }

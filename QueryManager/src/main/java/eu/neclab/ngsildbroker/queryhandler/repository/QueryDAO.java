@@ -1559,7 +1559,7 @@ public class QueryDAO {
 				}
 				query.append(" FROM JOINENTITIES)");
 			}
-
+			logger.info(query.toString());
 			return client.preparedQuery(query.toString()).execute(tuple).onItem().transform(rows -> {
 				EntityMap entityMap = new EntityMap(qToken, splitEntities, regEmptyOrNoRegEntryAndNoLinkedQuery,
 						noRootLevelRegEntryAndLinkedQuery);

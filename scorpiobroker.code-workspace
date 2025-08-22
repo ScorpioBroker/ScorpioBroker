@@ -15,6 +15,7 @@
 			"camel.*",
 			"scorpio.*"
 		],
-		"java.configuration.updateBuildConfiguration": "automatic"
+		"java.configuration.updateBuildConfiguration": "automatic",
+		"java.debug.settings.onBuildFailureProceed": true
 	}
 }
