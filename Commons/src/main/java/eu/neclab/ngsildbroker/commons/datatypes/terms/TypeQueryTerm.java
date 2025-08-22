@@ -205,6 +205,14 @@ public class TypeQueryTerm implements Serializable {
 	}
 
 	public int toSql(StringBuilder result, Tuple tuple, int dollar) {
+		if (firstChild == null && next == null && parent == null) {
+			result.append('$');
+			result.append(dollar);
+			tuple.addString(type);
+			dollar++;
+			result.append(" = ANY(e_types)");
+			return dollar;
+		}
 		if (type == null || type.isEmpty()) {
 			TypeQueryTerm current = this;
 			while (current.firstChild != null) {

@@ -1334,7 +1334,7 @@ public class QQueryTerm implements Serializable {
 			entityLevelCounter++;
 			result.append("EXISTS (SELECT TRUE FROM ENTITY E");
 			result.append(entityLevelCounter);
-			result.append("WHERE ID = ");
+			result.append(", jsonb_path_query() WHERE ID = ");
 			dollar = parseAttribute(result, dollar, tuple, linkedPart, localOnly, isDist, entityLevelCounter);
 			result.append(")");
 
