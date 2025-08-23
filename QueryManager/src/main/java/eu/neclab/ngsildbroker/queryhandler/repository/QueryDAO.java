@@ -50,7 +50,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.storage.ClientManager;
+import eu.neclab.ngsildbroker.commons.storage.ConnectionManager;
 import eu.neclab.ngsildbroker.commons.tools.DBUtil;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import io.smallrye.mutiny.Uni;
@@ -67,7 +67,7 @@ import io.vertx.pgclient.PgException;
 public class QueryDAO {
 
 	@Inject
-	ClientManager clientManager;
+	ConnectionManager connectionManager;
 
 	@Inject
 	JsonLDService ldService;
@@ -84,261 +84,165 @@ public class QueryDAO {
 
 	public Uni<Map<String, Object>> getEntity(String entityId, String tenantId, AttrsQueryTerm attrsQuery,
 			DataSetIdTerm datasetIdTerm) {
-		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
-			Tuple tuple = Tuple.tuple();
-			int dollar = 1;
-			StringBuilder query = new StringBuilder("SELECT ");
-			if (attrsQuery != null) {
-				dollar = attrsQuery.toSqlConstructEntity(query, tuple, dollar, datasetIdTerm);
-			} else {
-				query.append("ENTITY");
+
+		Tuple tuple = Tuple.tuple();
+		int dollar = 1;
+		StringBuilder query = new StringBuilder("SELECT ");
+		if (attrsQuery != null) {
+			dollar = attrsQuery.toSqlConstructEntity(query, tuple, dollar, datasetIdTerm);
+		} else {
+			query.append("ENTITY");
+		}
+		query.append(" FROM ENTITY WHERE ID=$");
+		query.append(dollar);
+		tuple.addString(entityId);
+		return connectionManager.executeQuery(tenantId, query.toString(), tuple, false).onItem().transformToUni(t -> {
+			if (t.rowCount() == 0) {
+				return Uni.createFrom().item(new HashMap<String, Object>());
 			}
-			query.append(" FROM ENTITY WHERE ID=$");
-			query.append(dollar);
-			tuple.addString(entityId);
-			return client.preparedQuery(query.toString()).execute(tuple).onItem().transformToUni(t -> {
-				if (t.rowCount() == 0) {
-					return Uni.createFrom().item(new HashMap<String, Object>());
-				}
-				Map<String, Object> result = t.iterator().next().getJsonObject(0).getMap();
-				if (attrsQuery != null && !attrsQuery.getAttrs().isEmpty() && result.size() <= 4) {
-					return Uni.createFrom().failure(new ResponseException(ErrorType.CombinationNotFound));
-				}
-				return Uni.createFrom().item(t.iterator().next().getJsonObject(0).getMap());
-			});
+			Map<String, Object> result = t.iterator().next().getJsonObject(0).getMap();
+			if (attrsQuery != null && !attrsQuery.getAttrs().isEmpty() && result.size() <= 4) {
+				return Uni.createFrom().failure(new ResponseException(ErrorType.CombinationNotFound));
+			}
+			return Uni.createFrom().item(t.iterator().next().getJsonObject(0).getMap());
 		});
 
 	}
 
 	public Uni<RowSet<Row>> getRemoteSourcesForEntity(String entityId, AttrsQueryTerm attrs, String tenantId) {
-		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
-
-			if (attrs == null) {
-				return client.preparedQuery(
-						"SELECT C.endpoint, C.tenant_id, c.headers, c.reg_mode, (array_agg(DISTINCT C.e_prop) FILTER (WHERE C.e_prop is not null) || array_agg(DISTINCT C.e_rel) FILTER (WHERE C.e_rel is not null)) AS attrs FROM CSOURCEINFORMATION AS C WHERE C.retrieveEntity AND (C.E_ID=$1 OR C.E_ID is NULL)  AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') GROUP BY C.endpoint, C.tenant_id, c.headers, c.reg_mode")
-						.execute(Tuple.of(entityId));
-			} else {
-				return client.preparedQuery(
-						"SELECT C.endpoint, C.tenant_id, c.headers, c.reg_mode, (array_agg(DISTINCT C.e_prop) FILTER (WHERE C.e_prop is not null) || array_agg(DISTINCT C.e_rel) FILTER (WHERE C.e_rel is not null)) AS attrs FROM CSOURCEINFORMATION AS C WHERE C.retrieveEntity AND (C.E_ID=$1 OR C.E_ID is NULL) AND (C.e_prop is NULL OR C.e_prop IN $2) AND (C.e_rel is NULL OR C.e_rel IN $2) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') GROUP BY C.endpoint, C.tenant_id, c.headers, c.reg_mode")
-						.execute(Tuple.of(entityId, attrs.getAttrs()));
-			}
-
-		});
+		String query;
+		Tuple tuple;
+		if (attrs == null) {
+			query = "SELECT C.endpoint, C.tenant_id, c.headers, c.reg_mode, (array_agg(DISTINCT C.e_prop) FILTER (WHERE C.e_prop is not null) || array_agg(DISTINCT C.e_rel) FILTER (WHERE C.e_rel is not null)) AS attrs FROM CSOURCEINFORMATION AS C WHERE C.retrieveEntity AND (C.E_ID=$1 OR C.E_ID is NULL)  AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') GROUP BY C.endpoint, C.tenant_id, c.headers, c.reg_mode";
+			tuple = Tuple.of(entityId);
+		} else {
+			query = "SELECT C.endpoint, C.tenant_id, c.headers, c.reg_mode, (array_agg(DISTINCT C.e_prop) FILTER (WHERE C.e_prop is not null) || array_agg(DISTINCT C.e_rel) FILTER (WHERE C.e_rel is not null)) AS attrs FROM CSOURCEINFORMATION AS C WHERE C.retrieveEntity AND (C.E_ID=$1 OR C.E_ID is NULL) AND (C.e_prop is NULL OR C.e_prop IN $2) AND (C.e_rel is NULL OR C.e_rel IN $2) AND (c.expires IS NULL OR c.expires >= now() at time zone 'utc') GROUP BY C.endpoint, C.tenant_id, c.headers, c.reg_mode";
+			tuple = Tuple.of(entityId, attrs.getAttrs());
+		}
+		return connectionManager.executeQuery(tenantId, query.toString(), tuple, false);
 	}
 
 	public Uni<Map<String, Set<String>>> getTypes(String tenantId) {
-		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
-			return client.preparedQuery(
-					"select distinct a from (select unnest(e_types) as a from entity) as b;")
-					.execute().onItem().transform(rows -> {
-						Map<String, Set<String>> result = new HashMap<>(rows.size());
-						rows.forEach(row -> {
-							result.put(row.getString(0), new HashSet<>(0));
-						});
-						return result;
+		return connectionManager.executeQuery(tenantId,
+				"select distinct a from (select unnest(e_types) as a from entity) as b;", null, false).onItem()
+				.transform(rows -> {
+					Map<String, Set<String>> result = new HashMap<>(rows.size());
+					rows.forEach(row -> {
+						result.put(row.getString(0), new HashSet<>(0));
 					});
-		});
+					return result;
+				});
 	}
 
 	public Uni<Map<String, Object>> getAttributeList(String tenantId) {
-		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
+		String sql = "select distinct x from entity, jsonb_object_keys(entity.entity) as x where x not in ('"
+				+ NGSIConstants.JSON_LD_ID + "', '" + NGSIConstants.JSON_LD_TYPE + "', '"
+				+ NGSIConstants.NGSI_LD_CREATED_AT + "', '" + NGSIConstants.NGSI_LD_MODIFIED_AT + "')";
 
-			return client.preparedQuery(
-					"select distinct x from entity, jsonb_object_keys(entity.entity) as x where x not in ('"
-							+ NGSIConstants.JSON_LD_ID + "', '" + NGSIConstants.JSON_LD_TYPE + "', '"
-							+ NGSIConstants.NGSI_LD_CREATED_AT + "', '" + NGSIConstants.NGSI_LD_MODIFIED_AT + "')")
-					.execute().onItem().transform(rows -> {
-						Map<String, Object> result = Maps.newHashMap();
-						List<Map<String, String>> attribs = new ArrayList<>(rows.size());
-						rows.forEach(row -> {
-							attribs.add(Map.of(NGSIConstants.JSON_LD_ID, row.getString(0)));
-						});
-						result.put(NGSIConstants.JSON_LD_ID, AppConstants.ATTRIBUTE_LIST_PREFIX + attribs.hashCode());
-						result.put(NGSIConstants.JSON_LD_TYPE, List.of(NGSIConstants.NGSI_LD_ATTRIBUTE_LIST_TYPE));
-						result.put(NGSIConstants.NGSI_LD_ATTRIBUTE_LIST_ATTRIBUTE_KEY, attribs);
-						return result;
-					});
+		return connectionManager.executeQuery(tenantId, sql, null, false).onItem().transform(rows -> {
+			Map<String, Object> result = Maps.newHashMap();
+			List<Map<String, String>> attribs = new ArrayList<>(rows.size());
+			rows.forEach(row -> {
+				attribs.add(Map.of(NGSIConstants.JSON_LD_ID, row.getString(0)));
+			});
+			result.put(NGSIConstants.JSON_LD_ID, AppConstants.ATTRIBUTE_LIST_PREFIX + attribs.hashCode());
+			result.put(NGSIConstants.JSON_LD_TYPE, List.of(NGSIConstants.NGSI_LD_ATTRIBUTE_LIST_TYPE));
+			result.put(NGSIConstants.NGSI_LD_ATTRIBUTE_LIST_ATTRIBUTE_KEY, attribs);
+			return result;
 		});
 	}
 
 	public Uni<List<Map<String, Object>>> getAttributesDetail(String tenantId) {
-		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
 
-			return client.preparedQuery(
-					"select distinct x, jsonb_agg(jsonb_build_object('@id',y)) from entity, jsonb_object_keys(entity.entity) as x, unnest(entity.e_types) as y where x not in ('"
-							+ NGSIConstants.JSON_LD_ID + "', '" + NGSIConstants.JSON_LD_TYPE + "', '"
-							+ NGSIConstants.NGSI_LD_CREATED_AT + "', '" + NGSIConstants.NGSI_LD_MODIFIED_AT
-							+ "') group by x")
-					.execute().onItem().transform(rows -> {
-						List<Map<String, Object>> result = new ArrayList<>(rows.size());
-						rows.forEach(row -> {
-							String attrib = row.getString(0);
-							@SuppressWarnings("unchecked")
-							List<Map<String, Object>> types = row.getJsonArray(1).getList();
-							Map<String, Object> tmp = Maps.newHashMap();
-							tmp.put(NGSIConstants.JSON_LD_ID, attrib);
-							tmp.put(NGSIConstants.JSON_LD_TYPE, Lists.newArrayList(NGSIConstants.NGSI_LD_ATTRIBUTE));
-							Map<String, Object> tmp2 = Maps.newHashMap();
-							tmp2.put(NGSIConstants.JSON_LD_ID, attrib);
-							tmp.put(NGSIConstants.NGSI_LD_ATTRIBUTE_NAME, Lists.newArrayList(tmp2));
-							tmp.put(NGSIConstants.NGSI_LD_TYPE_NAMES, types.stream().distinct().toList());
-							result.add(tmp);
-						});
-						return result;
-					});
+		String sql = "select distinct x, jsonb_agg(jsonb_build_object('@id',y)) from entity, jsonb_object_keys(entity.entity) as x, unnest(entity.e_types) as y where x not in ('"
+				+ NGSIConstants.JSON_LD_ID + "', '" + NGSIConstants.JSON_LD_TYPE + "', '"
+				+ NGSIConstants.NGSI_LD_CREATED_AT + "', '" + NGSIConstants.NGSI_LD_MODIFIED_AT
+				+ "') group by x";
+		return connectionManager.executeQuery(tenantId, sql, null, false).onItem().transform(rows -> {
+			List<Map<String, Object>> result = new ArrayList<>(rows.size());
+			rows.forEach(row -> {
+				String attrib = row.getString(0);
+				@SuppressWarnings("unchecked")
+				List<Map<String, Object>> types = row.getJsonArray(1).getList();
+				Map<String, Object> tmp = Maps.newHashMap();
+				tmp.put(NGSIConstants.JSON_LD_ID, attrib);
+				tmp.put(NGSIConstants.JSON_LD_TYPE, Lists.newArrayList(NGSIConstants.NGSI_LD_ATTRIBUTE));
+				Map<String, Object> tmp2 = Maps.newHashMap();
+				tmp2.put(NGSIConstants.JSON_LD_ID, attrib);
+				tmp.put(NGSIConstants.NGSI_LD_ATTRIBUTE_NAME, Lists.newArrayList(tmp2));
+				tmp.put(NGSIConstants.NGSI_LD_TYPE_NAMES, types.stream().distinct().toList());
+				result.add(tmp);
+			});
+			return result;
 		});
 	}
 
 	public Uni<Map<String, Object>> getAttributeDetail(String tenantId, String attribId) {
-		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
-			Tuple tuple = Tuple.tuple();
-			tuple.addString(attribId);
-			return client.preparedQuery(
-					"Select jsonb_agg(distinct jsonb_build_object('@id', x#>>'{@type,0}')), jsonb_agg(distinct jsonb_build_object('@id', y)), count(entity) from entity, jsonb_array_elements(entity.entity-> $1) as x, jsonb_array_elements(entity->'@type') as y where entity ? $1")
-					.execute(tuple).onItem().transformToUni(rows -> {
-						if (rows.size() == 0) {
-							return Uni.createFrom().item(new HashMap<>(0));
-						}
-						Row row = rows.iterator().next();
-						Long count = row.getLong(2);
-						if (count == 0) {
-							return Uni.createFrom().item(new HashMap<>(0));
-						}
-						List<?> types = row.getJsonArray(1).getList();
-						List<?> attribTypes = row.getJsonArray(0).getList();
 
-						Map<String, Object> result = Maps.newHashMap();
-						result.put(NGSIConstants.JSON_LD_ID, attribId);
-						result.put(NGSIConstants.JSON_LD_TYPE, Lists.newArrayList(NGSIConstants.NGSI_LD_ATTRIBUTE));
-						Map<String, Object> tmp = Maps.newHashMap();
-						tmp.put(NGSIConstants.JSON_LD_ID, attribId);
-						result.put(NGSIConstants.NGSI_LD_ATTRIBUTE_NAME, Lists.newArrayList(tmp));
-						result.put(NGSIConstants.NGSI_LD_TYPE_NAMES, types);
-						result.put(NGSIConstants.NGSI_LD_ATTRIBUTE_TYPES, attribTypes);
-						result.put(NGSIConstants.NGSI_LD_ATTRIBUTE_COUNT_SHORT, Lists.newArrayList(count));
-						return Uni.createFrom().item(result);
-					});
+		Tuple tuple = Tuple.tuple();
+		tuple.addString(attribId);
+
+		String sql = "Select jsonb_agg(distinct jsonb_build_object('@id', x#>>'{@type,0}')), jsonb_agg(distinct jsonb_build_object('@id', y)), count(entity) from entity, jsonb_array_elements(entity.entity-> $1) as x, jsonb_array_elements(entity->'@type') as y where entity ? $1";
+
+		return connectionManager.executeQuery(tenantId, sql, tuple, false).onItem().transformToUni(rows -> {
+			if (rows.size() == 0) {
+				return Uni.createFrom().item(new HashMap<>(0));
+			}
+			Row row = rows.iterator().next();
+			Long count = row.getLong(2);
+			if (count == 0) {
+				return Uni.createFrom().item(new HashMap<>(0));
+			}
+			List<?> types = row.getJsonArray(1).getList();
+			List<?> attribTypes = row.getJsonArray(0).getList();
+
+			Map<String, Object> result = Maps.newHashMap();
+			result.put(NGSIConstants.JSON_LD_ID, attribId);
+			result.put(NGSIConstants.JSON_LD_TYPE, Lists.newArrayList(NGSIConstants.NGSI_LD_ATTRIBUTE));
+			Map<String, Object> tmp = Maps.newHashMap();
+			tmp.put(NGSIConstants.JSON_LD_ID, attribId);
+			result.put(NGSIConstants.NGSI_LD_ATTRIBUTE_NAME, Lists.newArrayList(tmp));
+			result.put(NGSIConstants.NGSI_LD_TYPE_NAMES, types);
+			result.put(NGSIConstants.NGSI_LD_ATTRIBUTE_TYPES, attribTypes);
+			result.put(NGSIConstants.NGSI_LD_ATTRIBUTE_COUNT_SHORT, Lists.newArrayList(count));
+			return Uni.createFrom().item(result);
 		});
 	}
 
 	public Uni<List<Map<String, Object>>> getTypesWithDetails(String tenantId, boolean bbox) {
-		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
-			String sql;
-			if (!bbox) {
-				sql = "SELECT DISTINCT myTypes, jsonb_agg(jsonb_build_object('" + NGSIConstants.JSON_LD_ID
-						+ "', myAttr)) from entity, jsonb_array_elements(ENTITY -> '@type') as myTypes, jsonb_object_keys((ENTITY - ARRAY['"
-						+ NGSIConstants.JSON_LD_TYPE + "', '" + NGSIConstants.JSON_LD_ID + "', '"
-						+ NGSIConstants.NGSI_LD_CREATED_AT + "','" + NGSIConstants.NGSI_LD_MODIFIED_AT
-						+ "'])) as myAttr group by myTypes";
-			} else {
-				sql = "SELECT DISTINCT myTypes, jsonb_agg(jsonb_build_object('" + NGSIConstants.JSON_LD_ID
-						+ "', myAttr)), ST_XMin(ST_SetSRID(ST_Extent(ENTITY.LOCATION), 4326)) AS xmin,"
-						+ "ST_XMax(ST_SetSRID(ST_Extent(ENTITY.LOCATION), 4326)) AS xmax,"
-						+ "ST_YMin(ST_SetSRID(ST_Extent(ENTITY.LOCATION), 4326)) AS ymin,"
-						+ "ST_YMax(ST_SetSRID(ST_Extent(ENTITY.LOCATION), 4326)) AS ymax from entity, jsonb_array_elements(ENTITY -> '@type') as myTypes, jsonb_object_keys((ENTITY - ARRAY['"
-						+ NGSIConstants.JSON_LD_TYPE + "', '" + NGSIConstants.JSON_LD_ID + "', '"
-						+ NGSIConstants.NGSI_LD_CREATED_AT + "','" + NGSIConstants.NGSI_LD_MODIFIED_AT
-						+ "'])) as myAttr group by myTypes";
-			}
-			return client.preparedQuery(sql).execute().onItem().transform(rows -> {
-				List<Map<String, Object>> result = Lists.newArrayList();
-				rows.forEach(row -> {
-					Map<String, Object> resultEntry = Maps.newHashMap();
-					resultEntry.put(NGSIConstants.JSON_LD_ID, row.getString(0));
-					resultEntry.put(NGSIConstants.JSON_LD_TYPE, Lists.newArrayList(NGSIConstants.NGSI_LD_ENTITY_TYPE));
-					Map<String, String> tmp = Maps.newHashMap();
-					tmp.put(NGSIConstants.JSON_LD_ID, row.getString(0));
-					resultEntry.put(NGSIConstants.NGSI_LD_TYPE_NAME, Lists.newArrayList(tmp));
-					resultEntry.put(NGSIConstants.NGSI_LD_ATTRIBUTE_NAMES,
-							row.getJsonArray(1).getList().stream().distinct().toList());
-					if (bbox) {
-						Double xmin = row.getDouble(2);
-						Double xmax = row.getDouble(3);
-						Double ymin = row.getDouble(4);
-						Double ymax = row.getDouble(5);
-						if (xmin != null && xmax != null && ymax != null && ymin != null) {
-							List<Map<String, List<Map<String, Double>>>> bboxEntry = List
-									.of(Map.of(NGSIConstants.JSON_LD_LIST,
-											List.of(Map.of(NGSIConstants.JSON_LD_VALUE, xmin),
-													Map.of(NGSIConstants.JSON_LD_VALUE, ymin),
-													Map.of(NGSIConstants.JSON_LD_VALUE, xmax),
-													Map.of(NGSIConstants.JSON_LD_VALUE, ymax))));
-							resultEntry.put(NGSIConstants.BBOX, bboxEntry);
-
-						}
-					}
-					result.add(resultEntry);
-				});
-				return result;
-			});
-		});
-	}
-
-	public Uni<Map<String, Object>> getType(String tenantId, String type, boolean bbox) {
-		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
-			Tuple tuple = Tuple.tuple();
-			tuple.addArrayOfString(new String[] { type });
-			String sql;
-			if (bbox) {
-				sql = "with a as (select x as id, entity -> x as data from entity, jsonb_object_keys(entity.entity) as x where e_types && $1::text[] and x not in ('"
-						+ NGSIConstants.JSON_LD_ID + "', '" + NGSIConstants.JSON_LD_TYPE + "', '"
-						+ NGSIConstants.NGSI_LD_CREATED_AT + "', '" + NGSIConstants.NGSI_LD_MODIFIED_AT
-						+ "')), b as (SELECT count(entity.id) as mycount, ST_XMin(ST_SetSRID(ST_Extent(ENTITY.LOCATION), 4326)) AS xmin,"
-						+ "ST_XMax(ST_SetSRID(ST_Extent(ENTITY.LOCATION), 4326)) AS xmax,"
-						+ "ST_YMin(ST_SetSRID(ST_Extent(ENTITY.LOCATION), 4326)) AS ymin,"
-						+ "ST_YMax(ST_SetSRID(ST_Extent(ENTITY.LOCATION), 4326)) AS ymax FROM entity where e_types && $1::text[]) "
-						+ "select b.mycount, a.id, jsonb_agg(distinct jsonb_build_object('" + NGSIConstants.JSON_LD_ID
-						+ "', x#>'{" + NGSIConstants.JSON_LD_TYPE
-						+ ",0}')), b.xmin, b.xmax, b.ymin, b.ymax from b, a, jsonb_array_elements(a.data) as x group by a.id, b.mycount, b.xmin, b.xmax, b.ymin, b.ymax;";
-			} else {
-				sql = "with a as (select x as id, entity -> x as data from entity, jsonb_object_keys(entity.entity) as x where e_types && $1::text[] and x not in ('"
-						+ NGSIConstants.JSON_LD_ID + "', '" + NGSIConstants.JSON_LD_TYPE + "', '"
-						+ NGSIConstants.NGSI_LD_CREATED_AT + "', '" + NGSIConstants.NGSI_LD_MODIFIED_AT
-						+ "')), b as (SELECT count(entity.id) as mycount FROM entity where e_types && $1::text[]) "
-						+ "select b.mycount, a.id, jsonb_agg(distinct jsonb_build_object('" + NGSIConstants.JSON_LD_ID
-						+ "', x#>'{" + NGSIConstants.JSON_LD_TYPE
-						+ ",0}')) from b, a, jsonb_array_elements(a.data) as x group by a.id, b.mycount;";
-			}
-			return client.preparedQuery(sql).execute(tuple).onItem().transform(rows -> {
-				Map<String, Object> result = Maps.newHashMap();
-				if (rows.size() == 0) {
-					return result;
-				}
-				long count = 0;
-				RowIterator<Row> it = rows.iterator();
-				List<Map<String, Object>> attrDetails = Lists.newArrayList();
-				Double xmin = null;
-				Double xmax = null;
-				Double ymin = null;
-				Double ymax = null;
-				while (it.hasNext()) {
-					Row row = it.next();
-					count = row.getLong(0);
-					if (bbox) {
-						xmin = row.getDouble(3);
-						xmax = row.getDouble(4);
-						ymin = row.getDouble(5);
-						ymax = row.getDouble(6);
-					}
-					Map<String, Object> attribDetail = Maps.newHashMap();
-					Map<String, String> tmp = Maps.newHashMap();
-					tmp.put(NGSIConstants.JSON_LD_ID, row.getString(1));
-					attribDetail.put(NGSIConstants.JSON_LD_ID, row.getString(1));
-					attribDetail.put(NGSIConstants.TYPE, NGSIConstants.ATTRIBUTE);
-					attribDetail.put(NGSIConstants.NGSI_LD_ATTRIBUTE_NAME, Lists.newArrayList(tmp));
-					attribDetail.put(NGSIConstants.NGSI_LD_ATTRIBUTE_TYPES, row.getJsonArray(2).getList());
-					attrDetails.add(attribDetail);
-				}
-				result.put(NGSIConstants.ATTRIBUTE_DETAILS, attrDetails);
-				Map<String, Long> countMap = Maps.newHashMap();
-				countMap.put(NGSIConstants.JSON_LD_VALUE, count);
-				result.put(NGSIConstants.NGSI_LD_ENTITY_COUNT, countMap);
-				result.put(NGSIConstants.JSON_LD_ID, type);
-				result.put(NGSIConstants.JSON_LD_TYPE, Lists.newArrayList(NGSIConstants.NGSI_LD_ENTITY_TYPE_INFO));
+		String sql;
+		if (!bbox) {
+			sql = "SELECT DISTINCT myTypes, jsonb_agg(jsonb_build_object('" + NGSIConstants.JSON_LD_ID
+					+ "', myAttr)) from entity, jsonb_array_elements(ENTITY -> '@type') as myTypes, jsonb_object_keys((ENTITY - ARRAY['"
+					+ NGSIConstants.JSON_LD_TYPE + "', '" + NGSIConstants.JSON_LD_ID + "', '"
+					+ NGSIConstants.NGSI_LD_CREATED_AT + "','" + NGSIConstants.NGSI_LD_MODIFIED_AT
+					+ "'])) as myAttr group by myTypes";
+		} else {
+			sql = "SELECT DISTINCT myTypes, jsonb_agg(jsonb_build_object('" + NGSIConstants.JSON_LD_ID
+					+ "', myAttr)), ST_XMin(ST_SetSRID(ST_Extent(ENTITY.LOCATION), 4326)) AS xmin,"
+					+ "ST_XMax(ST_SetSRID(ST_Extent(ENTITY.LOCATION), 4326)) AS xmax,"
+					+ "ST_YMin(ST_SetSRID(ST_Extent(ENTITY.LOCATION), 4326)) AS ymin,"
+					+ "ST_YMax(ST_SetSRID(ST_Extent(ENTITY.LOCATION), 4326)) AS ymax from entity, jsonb_array_elements(ENTITY -> '@type') as myTypes, jsonb_object_keys((ENTITY - ARRAY['"
+					+ NGSIConstants.JSON_LD_TYPE + "', '" + NGSIConstants.JSON_LD_ID + "', '"
+					+ NGSIConstants.NGSI_LD_CREATED_AT + "','" + NGSIConstants.NGSI_LD_MODIFIED_AT
+					+ "'])) as myAttr group by myTypes";
+		}
+		return connectionManager.executeQuery(tenantId, sql, null, false).onItem().transform(rows -> {
+			List<Map<String, Object>> result = Lists.newArrayList();
+			rows.forEach(row -> {
+				Map<String, Object> resultEntry = Maps.newHashMap();
+				resultEntry.put(NGSIConstants.JSON_LD_ID, row.getString(0));
+				resultEntry.put(NGSIConstants.JSON_LD_TYPE, Lists.newArrayList(NGSIConstants.NGSI_LD_ENTITY_TYPE));
 				Map<String, String> tmp = Maps.newHashMap();
-				tmp.put(NGSIConstants.JSON_LD_ID, type);
-				result.put(NGSIConstants.NGSI_LD_TYPE_NAME, Lists.newArrayList(tmp));
+				tmp.put(NGSIConstants.JSON_LD_ID, row.getString(0));
+				resultEntry.put(NGSIConstants.NGSI_LD_TYPE_NAME, Lists.newArrayList(tmp));
+				resultEntry.put(NGSIConstants.NGSI_LD_ATTRIBUTE_NAMES,
+						row.getJsonArray(1).getList().stream().distinct().toList());
 				if (bbox) {
+					Double xmin = row.getDouble(2);
+					Double xmax = row.getDouble(3);
+					Double ymin = row.getDouble(4);
+					Double ymax = row.getDouble(5);
 					if (xmin != null && xmax != null && ymax != null && ymin != null) {
 						List<Map<String, List<Map<String, Double>>>> bboxEntry = List
 								.of(Map.of(NGSIConstants.JSON_LD_LIST,
@@ -346,329 +250,384 @@ public class QueryDAO {
 												Map.of(NGSIConstants.JSON_LD_VALUE, ymin),
 												Map.of(NGSIConstants.JSON_LD_VALUE, xmax),
 												Map.of(NGSIConstants.JSON_LD_VALUE, ymax))));
-						result.put(NGSIConstants.BBOX, bboxEntry);
+						resultEntry.put(NGSIConstants.BBOX, bboxEntry);
 
 					}
 				}
-				return result;
+				result.add(resultEntry);
 			});
+			return result;
+		});
+	}
+
+	public Uni<Map<String, Object>> getType(String tenantId, String type, boolean bbox) {
+
+		Tuple tuple = Tuple.tuple();
+		tuple.addArrayOfString(new String[] { type });
+		String sql;
+		if (bbox) {
+			sql = "with a as (select x as id, entity -> x as data from entity, jsonb_object_keys(entity.entity) as x where e_types && $1::text[] and x not in ('"
+					+ NGSIConstants.JSON_LD_ID + "', '" + NGSIConstants.JSON_LD_TYPE + "', '"
+					+ NGSIConstants.NGSI_LD_CREATED_AT + "', '" + NGSIConstants.NGSI_LD_MODIFIED_AT
+					+ "')), b as (SELECT count(entity.id) as mycount, ST_XMin(ST_SetSRID(ST_Extent(ENTITY.LOCATION), 4326)) AS xmin,"
+					+ "ST_XMax(ST_SetSRID(ST_Extent(ENTITY.LOCATION), 4326)) AS xmax,"
+					+ "ST_YMin(ST_SetSRID(ST_Extent(ENTITY.LOCATION), 4326)) AS ymin,"
+					+ "ST_YMax(ST_SetSRID(ST_Extent(ENTITY.LOCATION), 4326)) AS ymax FROM entity where e_types && $1::text[]) "
+					+ "select b.mycount, a.id, jsonb_agg(distinct jsonb_build_object('" + NGSIConstants.JSON_LD_ID
+					+ "', x#>'{" + NGSIConstants.JSON_LD_TYPE
+					+ ",0}')), b.xmin, b.xmax, b.ymin, b.ymax from b, a, jsonb_array_elements(a.data) as x group by a.id, b.mycount, b.xmin, b.xmax, b.ymin, b.ymax;";
+		} else {
+			sql = "with a as (select x as id, entity -> x as data from entity, jsonb_object_keys(entity.entity) as x where e_types && $1::text[] and x not in ('"
+					+ NGSIConstants.JSON_LD_ID + "', '" + NGSIConstants.JSON_LD_TYPE + "', '"
+					+ NGSIConstants.NGSI_LD_CREATED_AT + "', '" + NGSIConstants.NGSI_LD_MODIFIED_AT
+					+ "')), b as (SELECT count(entity.id) as mycount FROM entity where e_types && $1::text[]) "
+					+ "select b.mycount, a.id, jsonb_agg(distinct jsonb_build_object('" + NGSIConstants.JSON_LD_ID
+					+ "', x#>'{" + NGSIConstants.JSON_LD_TYPE
+					+ ",0}')) from b, a, jsonb_array_elements(a.data) as x group by a.id, b.mycount;";
+		}
+		return connectionManager.executeQuery(tenantId, sql, tuple, false).onItem().transform(rows -> {
+			Map<String, Object> result = Maps.newHashMap();
+			if (rows.size() == 0) {
+				return result;
+			}
+			long count = 0;
+			RowIterator<Row> it = rows.iterator();
+			List<Map<String, Object>> attrDetails = Lists.newArrayList();
+			Double xmin = null;
+			Double xmax = null;
+			Double ymin = null;
+			Double ymax = null;
+			while (it.hasNext()) {
+				Row row = it.next();
+				count = row.getLong(0);
+				if (bbox) {
+					xmin = row.getDouble(3);
+					xmax = row.getDouble(4);
+					ymin = row.getDouble(5);
+					ymax = row.getDouble(6);
+				}
+				Map<String, Object> attribDetail = Maps.newHashMap();
+				Map<String, String> tmp = Maps.newHashMap();
+				tmp.put(NGSIConstants.JSON_LD_ID, row.getString(1));
+				attribDetail.put(NGSIConstants.JSON_LD_ID, row.getString(1));
+				attribDetail.put(NGSIConstants.TYPE, NGSIConstants.ATTRIBUTE);
+				attribDetail.put(NGSIConstants.NGSI_LD_ATTRIBUTE_NAME, Lists.newArrayList(tmp));
+				attribDetail.put(NGSIConstants.NGSI_LD_ATTRIBUTE_TYPES, row.getJsonArray(2).getList());
+				attrDetails.add(attribDetail);
+			}
+			result.put(NGSIConstants.ATTRIBUTE_DETAILS, attrDetails);
+			Map<String, Long> countMap = Maps.newHashMap();
+			countMap.put(NGSIConstants.JSON_LD_VALUE, count);
+			result.put(NGSIConstants.NGSI_LD_ENTITY_COUNT, countMap);
+			result.put(NGSIConstants.JSON_LD_ID, type);
+			result.put(NGSIConstants.JSON_LD_TYPE, Lists.newArrayList(NGSIConstants.NGSI_LD_ENTITY_TYPE_INFO));
+			Map<String, String> tmp = Maps.newHashMap();
+			tmp.put(NGSIConstants.JSON_LD_ID, type);
+			result.put(NGSIConstants.NGSI_LD_TYPE_NAME, Lists.newArrayList(tmp));
+			if (bbox) {
+				if (xmin != null && xmax != null && ymax != null && ymin != null) {
+					List<Map<String, List<Map<String, Double>>>> bboxEntry = List
+							.of(Map.of(NGSIConstants.JSON_LD_LIST,
+									List.of(Map.of(NGSIConstants.JSON_LD_VALUE, xmin),
+											Map.of(NGSIConstants.JSON_LD_VALUE, ymin),
+											Map.of(NGSIConstants.JSON_LD_VALUE, xmax),
+											Map.of(NGSIConstants.JSON_LD_VALUE, ymax))));
+					result.put(NGSIConstants.BBOX, bboxEntry);
+
+				}
+			}
+			return result;
 		});
 	}
 
 	public Uni<RowSet<Row>> getRemoteSourcesForTypes(String tenantId) {
-		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
-			return client.preparedQuery(
-					"SELECT C.endpoint, C.tenant_id, c.headers, c.reg_mode FROM CSOURCEINFORMATION AS C WHERE C.retrieveEntityTypes=true")
-					.execute();
-		});
+		return connectionManager.executeQuery(tenantId,
+				"SELECT C.endpoint, C.tenant_id, c.headers, c.reg_mode FROM CSOURCEINFORMATION AS C WHERE C.retrieveEntityTypes=true",
+				null, false);
 	}
 
 	public Uni<String[]> getRemoteTypesForRegWithoutTypesSupport(String tenantId) {
-		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
-			return client.preparedQuery(
-					"SELECT case when array_agg(distinct C.e_type) is null then array[]::text[] else array_agg(distinct C.e_type) end FROM CSOURCEINFORMATION AS C WHERE C.retrieveAttrTypes=false AND C.e_type is not null")
-					.execute().onItem().transform(rows -> {
-						return rows.iterator().next().getArrayOfStrings(0);
-					});
-		});
+		return connectionManager.executeQuery(tenantId,
+				"SELECT case when array_agg(distinct C.e_type) is null then array[]::text[] else array_agg(distinct C.e_type) end FROM CSOURCEINFORMATION AS C WHERE C.retrieveAttrTypes=false AND C.e_type is not null",
+				null, false).onItem().transform(rows -> {
+					return rows.iterator().next().getArrayOfStrings(0);
+				});
 	}
 
 	public Uni<RowSet<Row>> getRemoteSourcesForTypesWithDetails(String tenantId) {
-		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
-			return client.preparedQuery(
-					"SELECT C.endpoint, C.tenant_id, c.headers, c.reg_mode FROM CSOURCEINFORMATION AS C WHERE C.retrieveEntityTypeDetails=true")
-					.execute();
-		});
+		return connectionManager.executeQuery(tenantId,
+				"SELECT C.endpoint, C.tenant_id, c.headers, c.reg_mode FROM CSOURCEINFORMATION AS C WHERE C.retrieveEntityTypeDetails=true",
+				null, false);
 	}
 
 	public Uni<Map<RemoteHost, Map<String, Set<String>>>> getRemoteTypesAndEndpoints(
 			String tenantId) {
-		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
-			return client.preparedQuery(
-					"SELECT C.c_id, C.endpoint, C.tenant_id, C.e_type, ARRAY_AGG(C.e_prop) || ARRAY_AGG(C.e_rel), C.retrieveEntityTypeDetails, C.retrieveEntityTypes, C.csource_alias FROM CSOURCEINFORMATION AS C GROUP BY C.endpoint, C.e_type, C.tenant_id, C.retrieveEntityTypeDetails, C.retrieveEntityTypes, c.c_id, c.csource_alias")
-					.execute().onItem().transform(rows -> {
-						Map<RemoteHost, Map<String, Set<String>>> result = Maps
-								.newHashMap();
-						rows.forEach(row -> {
-							String cId = row.getString(0);
-							String host = row.getString(1);
-							String tenant_id = row.getString(2);
-							String type = row.getString(3);
-							String[] attrs = row.getArrayOfStrings(4);
-							boolean retrieveEntityTypeDetails = row.getBoolean(5);
-							boolean retrieveEntityTypes = row.getBoolean(6);
-							String sourceAlias = row.getString(7);
-							if (tenant_id == null) {
-								tenant_id = AppConstants.INTERNAL_NULL_KEY;
-							}
-							RemoteHost rHost = new RemoteHost(host, tenant_id, null, cId, retrieveEntityTypes,
-									retrieveEntityTypeDetails, -1, false, false, sourceAlias);
 
-							Map<String, Set<String>> hostEntry = result
-									.get(rHost);
-							if (hostEntry == null) {
-								hostEntry = Maps.newHashMap();
-								result.put(rHost, hostEntry);
-							}
+		return connectionManager.executeQuery(tenantId,
+				"SELECT C.c_id, C.endpoint, C.tenant_id, C.e_type, ARRAY_AGG(C.e_prop) || ARRAY_AGG(C.e_rel), C.retrieveEntityTypeDetails, C.retrieveEntityTypes, C.csource_alias FROM CSOURCEINFORMATION AS C GROUP BY C.endpoint, C.e_type, C.tenant_id, C.retrieveEntityTypeDetails, C.retrieveEntityTypes, c.c_id, c.csource_alias",
+				null, false).onItem().transform(rows -> {
+					Map<RemoteHost, Map<String, Set<String>>> result = Maps
+							.newHashMap();
+					rows.forEach(row -> {
+						String cId = row.getString(0);
+						String host = row.getString(1);
+						String tenant_id = row.getString(2);
+						String type = row.getString(3);
+						String[] attrs = row.getArrayOfStrings(4);
+						boolean retrieveEntityTypeDetails = row.getBoolean(5);
+						boolean retrieveEntityTypes = row.getBoolean(6);
+						String sourceAlias = row.getString(7);
+						if (tenant_id == null) {
+							tenant_id = AppConstants.INTERNAL_NULL_KEY;
+						}
+						RemoteHost rHost = new RemoteHost(host, tenant_id, null, cId, retrieveEntityTypes,
+								retrieveEntityTypeDetails, -1, false, false, sourceAlias);
 
-							if (type == null) {
-								type = "none";
-							}
-							hostEntry.put(type, Sets.newHashSet(attrs));
+						Map<String, Set<String>> hostEntry = result
+								.get(rHost);
+						if (hostEntry == null) {
+							hostEntry = Maps.newHashMap();
+							result.put(rHost, hostEntry);
+						}
 
-						});
-						return result;
+						if (type == null) {
+							type = "none";
+						}
+						hostEntry.put(type, Sets.newHashSet(attrs));
+
 					});
-
-		});
+					return result;
+				});
 	}
 
 	public Uni<Map<String, Set<String>>> getRemoteTypesWithDetailsForRegWithoutTypeSupport(String tenantId) {
-		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
-			return client.preparedQuery(
-					"SELECT C.e_type, C.e_prop, c.e_rel FROM CSOURCEINFORMATION AS C WHERE C.retrieveEntityTypeDetails=false AND C.e_type is not null")
-					.execute().onItem().transform(rows -> {
-						Map<String, Set<String>> result = Maps.newHashMap();
-						rows.forEach(row -> {
-							String type = row.getString(0);
-							String prop = row.getString(1);
-							String rel = row.getString(2);
-							Set<String> attribs = result.get(type);
-							if (attribs == null) {
-								attribs = Sets.newHashSet();
-								result.put(type, attribs);
-							}
-							if (prop != null) {
-								attribs.add(prop);
-							}
-							if (rel != null) {
-								attribs.add(prop);
-							}
+		return connectionManager.executeQuery(tenantId,
+				"SELECT C.e_type, C.e_prop, c.e_rel FROM CSOURCEINFORMATION AS C WHERE C.retrieveEntityTypeDetails=false AND C.e_type is not null",
+				null, false).onItem().transform(rows -> {
+					Map<String, Set<String>> result = Maps.newHashMap();
+					rows.forEach(row -> {
+						String type = row.getString(0);
+						String prop = row.getString(1);
+						String rel = row.getString(2);
+						Set<String> attribs = result.get(type);
+						if (attribs == null) {
+							attribs = Sets.newHashSet();
+							result.put(type, attribs);
+						}
+						if (prop != null) {
+							attribs.add(prop);
+						}
+						if (rel != null) {
+							attribs.add(prop);
+						}
 
-						});
-						return result;
 					});
-		});
+					return result;
+				});
 	}
 
 	public Uni<RowSet<Row>> getRemoteSourcesForType(String tenantId, String type) {
-		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
-			return client.preparedQuery(
-					"SELECT C.endpoint, C.tenant_id, c.headers, c.reg_mode FROM CSOURCEINFORMATION AS C WHERE C.retrieveEntityTypeInfo=true AND (C.e_type is NULL OR C.e_type=$1)")
-					.execute(Tuple.of(type));
-		});
+		return connectionManager.executeQuery(tenantId,
+				"SELECT C.endpoint, C.tenant_id, c.headers, c.reg_mode FROM CSOURCEINFORMATION AS C WHERE C.retrieveEntityTypeInfo=true AND (C.e_type is NULL OR C.e_type=$1)",
+				Tuple.of(type), false);
 	}
 
 	public Uni<Map<String, Set<String>>> getRemoteTypeInfoForRegWithOutTypeSupport(String tenantId, String type) {
-		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
-			return client.preparedQuery(
-					"SELECT C.e_prop, C.e_rel FROM CSOURCEINFORMATION AS C WHERE C.retrieveEntityTypeInfo=false AND (C.e_type=$1) AND (C.e_prop is not null OR C.e_rel is not null)")
-					.execute(Tuple.of(type)).onItem().transform(rows -> {
-						if (rows.size() == 0) {
-							return Maps.newHashMap();
+		return connectionManager.executeQuery(tenantId,
+				"SELECT C.e_prop, C.e_rel FROM CSOURCEINFORMATION AS C WHERE C.retrieveEntityTypeInfo=false AND (C.e_type=$1) AND (C.e_prop is not null OR C.e_rel is not null)",
+				Tuple.of(type), false).onItem().transform(rows -> {
+					if (rows.size() == 0) {
+						return Maps.newHashMap();
+					}
+					Map<String, Set<String>> result = Maps.newHashMap();
+					rows.forEach(row -> {
+						String prop = row.getString(0);
+						String rel = row.getString(1);
+						String attribName = prop == null ? rel : prop;
+						String attribType = prop == null ? NGSIConstants.NGSI_LD_PROPERTY
+								: NGSIConstants.NGSI_LD_RELATIONSHIP;
+						Set<String> types = result.get(attribName);
+						if (types == null) {
+							types = Sets.newHashSet();
+							result.put(attribName, types);
 						}
-						Map<String, Set<String>> result = Maps.newHashMap();
-						rows.forEach(row -> {
-							String prop = row.getString(0);
-							String rel = row.getString(1);
-							String attribName = prop == null ? rel : prop;
-							String attribType = prop == null ? NGSIConstants.NGSI_LD_PROPERTY
-									: NGSIConstants.NGSI_LD_RELATIONSHIP;
-							Set<String> types = result.get(attribName);
-							if (types == null) {
-								types = Sets.newHashSet();
-								result.put(attribName, types);
-							}
-							types.add(attribType);
-						});
-						return result;
-
+						types.add(attribType);
 					});
-		});
+					return result;
+
+				});
 	}
 
 	public Uni<RowSet<Row>> getRemoteSourcesForAttribs(String tenantId) {
-		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
-			return client.preparedQuery(
-					"SELECT C.endpoint, C.tenant_id, c.headers, c.reg_mode FROM CSOURCEINFORMATION AS C WHERE C.retrieveAttrTypes=true")
-					.execute();
-		});
+		return connectionManager.executeQuery(tenantId,
+				"SELECT C.endpoint, C.tenant_id, c.headers, c.reg_mode FROM CSOURCEINFORMATION AS C WHERE C.retrieveAttrTypes=true",
+				null, false);
 	}
 
 	public Uni<Set<String>> getRemoteAttribsForRegWithoutAttribSupport(String tenantId) {
-		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
-			return client.preparedQuery(
-					"SELECT C.e_prop, C.e_rel FROM CSOURCEINFORMATION AS C WHERE C.retrieveAttrTypes=true AND (C.e_prop is not null OR C.e_rel is not null)")
-					.execute().onItem().transform(rows -> {
-						Set<String> result = Sets.newHashSet();
-						rows.forEach(row -> {
-							String prop = row.getString(0);
-							String rel = row.getString(1);
-							if (prop != null) {
-								result.add(prop);
-							}
-							if (rel != null) {
-								result.add(rel);
-							}
-						});
-						return result;
+		return connectionManager.executeQuery(tenantId,
+				"SELECT C.e_prop, C.e_rel FROM CSOURCEINFORMATION AS C WHERE C.retrieveAttrTypes=true AND (C.e_prop is not null OR C.e_rel is not null)",
+				null, false).onItem().transform(rows -> {
+					Set<String> result = Sets.newHashSet();
+					rows.forEach(row -> {
+						String prop = row.getString(0);
+						String rel = row.getString(1);
+						if (prop != null) {
+							result.add(prop);
+						}
+						if (rel != null) {
+							result.add(rel);
+						}
 					});
-		});
+					return result;
+				});
 	}
 
 	public Uni<RowSet<Row>> getRemoteSourcesForAttribsWithDetails(String tenantId) {
-		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
-			return client.preparedQuery(
-					"SELECT C.endpoint, C.tenant_id, c.headers, c.reg_mode FROM CSOURCEINFORMATION AS C WHERE C.retrieveAttrTypeDetails=true")
-					.execute();
-		});
+		return connectionManager.executeQuery(tenantId,
+				"SELECT C.endpoint, C.tenant_id, c.headers, c.reg_mode FROM CSOURCEINFORMATION AS C WHERE C.retrieveAttrTypeDetails=true",
+				null, false);
 	}
 
 	public Uni<Map<String, Set<String>>> getRemoteAttribsWithDetailsForRegWithoutAttribSupport(String tenantId) {
-		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
-			return client.preparedQuery(
-					"SELECT C.e_type, C.e_prop, C.e_rel  FROM CSOURCEINFORMATION AS C WHERE C.retrieveAttrTypeDetails=false AND (c.e_prop is not null OR c.e_rel is not null)")
-					.execute().onItem().transform(rows -> {
-						Map<String, Set<String>> result = Maps.newHashMap();
-						rows.forEach(row -> {
-							String type = row.getString(0);
-							String prop = row.getString(1);
-							String rel = row.getString(2);
-							String attr = prop == null ? rel : prop;
-							Set<String> types = result.get(attr);
-							if (types == null) {
-								types = Sets.newHashSet();
-								result.put(attr, types);
-							}
-							if (type != null) {
-								types.add(type);
-							}
-						});
-						return result;
+
+		return connectionManager.executeQuery(tenantId,
+				"SELECT C.e_type, C.e_prop, C.e_rel  FROM CSOURCEINFORMATION AS C WHERE C.retrieveAttrTypeDetails=false AND (c.e_prop is not null OR c.e_rel is not null)",
+				null, false).onItem().transform(rows -> {
+					Map<String, Set<String>> result = Maps.newHashMap();
+					rows.forEach(row -> {
+						String type = row.getString(0);
+						String prop = row.getString(1);
+						String rel = row.getString(2);
+						String attr = prop == null ? rel : prop;
+						Set<String> types = result.get(attr);
+						if (types == null) {
+							types = Sets.newHashSet();
+							result.put(attr, types);
+						}
+						if (type != null) {
+							types.add(type);
+						}
 					});
-		});
+					return result;
+				});
 	}
 
 	public Uni<RowSet<Row>> getRemoteSourcesForAttrib(String tenantId, String attrib) {
-		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
-			return client.preparedQuery(
-					"SELECT C.endpoint, C.tenant_id, c.headers, c.reg_mode FROM CSOURCEINFORMATION AS C WHERE C.retrieveAttrTypeInfo=true AND (C.e_prop is NULL OR C.e_prop=$1) AND (C.e_rel is NULL OR C.e_rel=$1)")
-					.execute(Tuple.of(attrib));
-		});
+		return connectionManager.executeQuery(tenantId,
+				"SELECT C.endpoint, C.tenant_id, c.headers, c.reg_mode FROM CSOURCEINFORMATION AS C WHERE C.retrieveAttrTypeInfo=true AND (C.e_prop is NULL OR C.e_prop=$1) AND (C.e_rel is NULL OR C.e_rel=$1)",
+				Tuple.of(attrib), false);
 	}
 
 	public Uni<Tuple2<Set<String>, Set<String>>> getRemoteAttribForRegWithoutAttribSupport(String tenantId,
 			String attrib) {
-		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
-			return client.preparedQuery(
-					"SELECT C.e_type, (C.e_prop is null) FROM CSOURCEINFORMATION AS C WHERE C.retrieveAttrTypeInfo=false AND C.e_prop=$1 OR C.e_rel=$1")
-					.execute(Tuple.of(attrib)).onItem().transform(rows -> {
-						Set<String> attribTypes = Sets.newHashSet();
-						Set<String> entityTypes = Sets.newHashSet();
-						rows.forEach(row -> {
-							String type = row.getString(0);
-							boolean isRel = row.getBoolean(1);
-							if (isRel) {
-								attribTypes.add(NGSIConstants.NGSI_LD_RELATIONSHIP);
-							} else {
-								attribTypes.add(NGSIConstants.NGSI_LD_PROPERTY);
-							}
-							if (type != null) {
-								entityTypes.add(type);
-							}
-						});
-						return Tuple2.of(attribTypes, entityTypes);
+		return connectionManager.executeQuery(tenantId,
+				"SELECT C.e_type, (C.e_prop is null) FROM CSOURCEINFORMATION AS C WHERE C.retrieveAttrTypeInfo=false AND C.e_prop=$1 OR C.e_rel=$1",
+				Tuple.of(attrib), false).onItem().transform(rows -> {
+					Set<String> attribTypes = Sets.newHashSet();
+					Set<String> entityTypes = Sets.newHashSet();
+					rows.forEach(row -> {
+						String type = row.getString(0);
+						boolean isRel = row.getBoolean(1);
+						if (isRel) {
+							attribTypes.add(NGSIConstants.NGSI_LD_RELATIONSHIP);
+						} else {
+							attribTypes.add(NGSIConstants.NGSI_LD_PROPERTY);
+						}
+						if (type != null) {
+							entityTypes.add(type);
+						}
 					});
-		});
+					return Tuple2.of(attribTypes, entityTypes);
+				});
 	}
 
 	public Uni<RowSet<Row>> getRemoteSourcesForQuery(String tenantId, Set<String> id, TypeQueryTerm typeQuery,
 			String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery, CSFQueryTerm csf, GeoQueryTerm geoQuery,
 			ScopeQueryTerm scopeQuery) {
-		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
-			Set<String> attribs = Sets.newHashSet();
-			if (attrsQuery != null) {
-				attribs.addAll(attrsQuery.getAttrs());
-			}
-			if (qQuery != null && attrsQuery == null && typeQuery == null) {
-				Set<String> result = Sets.newHashSet();
-				getAttribsFromQuery(qQuery, result);
-				attribs.addAll(result);
-			}
-			Set<String> types = Sets.newHashSet();
-			if (typeQuery != null) {
-				getTypesFromQuery(typeQuery, types);
-			}
-			List<Object> prepareObjects = Lists.newArrayList();
-			StringBuilder queryFront = new StringBuilder(
-					"SELECT C.endpoint C.tenant_id, c.headers, c.reg_mode, c.queryEntity, c.queryBatch");
-			StringBuilder wherePart = new StringBuilder(" WHERE ");
-			int dollarCount = 1;
-			if (!types.isEmpty()) {
-				queryFront.append(", array_agg(DISTINCT C.e_type) FILTER (WHERE C.e_type is not null) as entityType");
-				wherePart.append("(C.e_type is NULL OR C.e_type in $");
-				wherePart.append(dollarCount);
-				wherePart.append(") AND ");
-				prepareObjects.add(types);
-				dollarCount++;
-			} else {
-				queryFront.append(", null as entityType");
-			}
-			if (id != null) {
-				queryFront.append(", array_agg(DISTINCT C.e_id) FILTER (WHERE C.e_id is not null) as entityId");
-				wherePart.append("(C.e_id is NULL OR C.e_id in $");
-				wherePart.append(dollarCount);
-				wherePart.append(") AND (C.e_id_p is NULL OR C.e_id_p ~ ANY($");
-				wherePart.append(dollarCount);
-				wherePart.append(")) AND ");
-				prepareObjects.add(id);
-				dollarCount++;
-			} else {
-				queryFront.append(", null as entityId");
-			}
-			if (idPattern != null) {
-				queryFront.append(", array_agg(DISTINCT C.e_id) FILTER (WHERE C.e_id is not null) as entityId");
-				wherePart.append("(C.e_id is NULL OR $");
-				wherePart.append(dollarCount);
-				wherePart.append(" ~ C.e_id) AND (C.e_id_p is NULL OR $");
-				wherePart.append(dollarCount);
-				wherePart.append(" ~ C.e_id_p) AND ");
-				prepareObjects.add(id);
-				dollarCount++;
-			} else {
-				queryFront.append(", null as entityId");
-			}
-			if (attribs.isEmpty()) {
-				queryFront.append(
-						", (array_agg(DISTINCT C.e_prop) FILTER (WHERE C.e_prop is not null) || array_agg(DISTINCT C.e_rel) FILTER (WHERE C.e_rel is not null)) AS attrs");
-				wherePart.append("(C.e_prop is NULL OR C.e_prop IN $");
-				wherePart.append(dollarCount);
-				wherePart.append(") AND (C.e_rel is NULL OR C.e_rel IN $");
-				wherePart.append(dollarCount);
-				wherePart.append(")) AND ");
-			} else {
-				queryFront.append(", null as attrs");
-			}
-			if (geoQuery != null) {
-				// TODO user intersect between search area and registration area
-			} else {
-				queryFront.append(", null as geoq");
-			}
-			if (scopeQuery != null) {
-				// TODO array check between scopes from query and reg query
-			} else {
-				queryFront.append(", null as scopeq");
-			}
-			if (csf != null) {
-				// TODO talk with martin to understand csf better
-			}
-			// remove last " AND "
-			wherePart.setLength(wherePart.length() - 5);
-			queryFront.append(" FROM CSOURCEINFORMATION AS C");
-			queryFront.append(wherePart);
 
-			return client.preparedQuery(queryFront.toString()).execute(Tuple.from(prepareObjects));
-		});
+		Set<String> attribs = Sets.newHashSet();
+		if (attrsQuery != null) {
+			attribs.addAll(attrsQuery.getAttrs());
+		}
+		if (qQuery != null && attrsQuery == null && typeQuery == null) {
+			Set<String> result = Sets.newHashSet();
+			getAttribsFromQuery(qQuery, result);
+			attribs.addAll(result);
+		}
+		Set<String> types = Sets.newHashSet();
+		if (typeQuery != null) {
+			getTypesFromQuery(typeQuery, types);
+		}
+		List<Object> prepareObjects = Lists.newArrayList();
+		StringBuilder queryFront = new StringBuilder(
+				"SELECT C.endpoint C.tenant_id, c.headers, c.reg_mode, c.queryEntity, c.queryBatch");
+		StringBuilder wherePart = new StringBuilder(" WHERE ");
+		int dollarCount = 1;
+		if (!types.isEmpty()) {
+			queryFront.append(", array_agg(DISTINCT C.e_type) FILTER (WHERE C.e_type is not null) as entityType");
+			wherePart.append("(C.e_type is NULL OR C.e_type in $");
+			wherePart.append(dollarCount);
+			wherePart.append(") AND ");
+			prepareObjects.add(types);
+			dollarCount++;
+		} else {
+			queryFront.append(", null as entityType");
+		}
+		if (id != null) {
+			queryFront.append(", array_agg(DISTINCT C.e_id) FILTER (WHERE C.e_id is not null) as entityId");
+			wherePart.append("(C.e_id is NULL OR C.e_id in $");
+			wherePart.append(dollarCount);
+			wherePart.append(") AND (C.e_id_p is NULL OR C.e_id_p ~ ANY($");
+			wherePart.append(dollarCount);
+			wherePart.append(")) AND ");
+			prepareObjects.add(id);
+			dollarCount++;
+		} else {
+			queryFront.append(", null as entityId");
+		}
+		if (idPattern != null) {
+			queryFront.append(", array_agg(DISTINCT C.e_id) FILTER (WHERE C.e_id is not null) as entityId");
+			wherePart.append("(C.e_id is NULL OR $");
+			wherePart.append(dollarCount);
+			wherePart.append(" ~ C.e_id) AND (C.e_id_p is NULL OR $");
+			wherePart.append(dollarCount);
+			wherePart.append(" ~ C.e_id_p) AND ");
+			prepareObjects.add(id);
+			dollarCount++;
+		} else {
+			queryFront.append(", null as entityId");
+		}
+		if (attribs.isEmpty()) {
+			queryFront.append(
+					", (array_agg(DISTINCT C.e_prop) FILTER (WHERE C.e_prop is not null) || array_agg(DISTINCT C.e_rel) FILTER (WHERE C.e_rel is not null)) AS attrs");
+			wherePart.append("(C.e_prop is NULL OR C.e_prop IN $");
+			wherePart.append(dollarCount);
+			wherePart.append(") AND (C.e_rel is NULL OR C.e_rel IN $");
+			wherePart.append(dollarCount);
+			wherePart.append(")) AND ");
+		} else {
+			queryFront.append(", null as attrs");
+		}
+		if (geoQuery != null) {
+			// TODO user intersect between search area and registration area
+		} else {
+			queryFront.append(", null as geoq");
+		}
+		if (scopeQuery != null) {
+			// TODO array check between scopes from query and reg query
+		} else {
+			queryFront.append(", null as scopeq");
+		}
+		if (csf != null) {
+			// TODO talk with martin to understand csf better
+		}
+		// remove last " AND "
+		wherePart.setLength(wherePart.length() - 5);
+		queryFront.append(" FROM CSOURCEINFORMATION AS C");
+		queryFront.append(wherePart);
+
+		return connectionManager.executeQuery(tenantId, queryFront.toString(), Tuple.from(prepareObjects), false);
 
 	}
 
@@ -703,7 +662,7 @@ public class QueryDAO {
 	}
 
 	public Uni<Table<String, String, List<RegistrationEntry>>> getAllRegistries() {
-		return DBUtil.getAllRegistries(clientManager, ldService,
+		return DBUtil.getAllRegistries(connectionManager, ldService,
 				"SELECT cs_id, c_id, e_id, e_id_p, e_type, e_prop, e_rel, ST_AsGeoJSON(i_location), scopes, EXTRACT(MILLISECONDS FROM expires), endpoint, tenant_id, headers, reg_mode, createEntity, updateEntity, appendAttrs, updateAttrs, deleteAttrs, deleteEntity, createBatch, upsertBatch, updateBatch, deleteBatch, upsertTemporal, appendAttrsTemporal, deleteAttrsTemporal, updateAttrsTemporal, deleteAttrInstanceTemporal, deleteTemporal, mergeEntity, replaceEntity, replaceAttrs, mergeBatch, retrieveEntity, queryEntity, queryBatch, retrieveTemporal, queryTemporal, retrieveEntityTypes, retrieveEntityTypeDetails, retrieveEntityTypeInfo, retrieveAttrTypes, retrieveAttrTypeDetails, retrieveAttrTypeInfo, createSubscription, updateSubscription, retrieveSubscription, querySubscription, deleteSubscription, queryEntityMap, createEntityMap, updateEntityMap, deleteEntityMap, retrieveEntityMap, csource_Alias FROM csourceinformation WHERE queryentity OR querybatch OR retrieveentity OR retrieveentitytypes OR retrieveentitytypedetails OR retrieveentitytypeinfo OR retrieveattrtypes OR retrieveattrtypedetails OR retrieveattrtypeinfo",
 				logger);
 
@@ -801,52 +760,41 @@ public class QueryDAO {
 	 */
 	public Uni<Void> storeEntityMap(String tenant, String qToken, EntityMap entityMap) {
 
-		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
-			return client.getConnection().onItem().transformToUni(conn -> {
-				// map_id text NOT NULL,
-				// query_checksum text NOT NULL,
-				// entity_id text NOT NULL,
-				// remote_query text,
-				// csourceid text NOT NULL,
-				// last_access timestamp without time zone NOT NULL,
-				// expires_at timestamp without time zone NOT NULL
-				logger.debug("storeEntityMap");
-				String deleteSql = "DELETE FROM entitymap WHERE map_id = $1";
-				return conn.preparedQuery(deleteSql).execute(Tuple.of(qToken)).onItem().transformToUni(ignored -> {
-					String sql = "INSERT INTO entitymap VALUES ($1, $2, $3, $4, $5, $6, now() + interval '"
-							+ entityMapTTL
-							+ "', now())";
-					String mapId = entityMap.getId();
-					String checksum = entityMap.getQueryCheckSum();
-					List<Tuple> batch = Lists.newArrayList();
-					int i = 0;
-					for (Entry<String, Set<String>> entry : entityMap.getEntityId2CSourceIds().entrySet()) {
-						for (String cId : entry.getValue()) {
-							String remoteHost;
-							QueryRemoteHost tmp = entityMap.getRemoteHost(cId);
-							if (tmp == null) {
-								remoteHost = null;
-							} else {
-								try {
-									remoteHost = objectMapper.writeValueAsString(tmp);
-								} catch (JsonProcessingException e) {
-									continue;
-								}
-							}
-							batch.add(Tuple.of(mapId, i, checksum, entry.getKey(), remoteHost, cId));
-							i++;
-						}
-					}
-					if (batch.isEmpty()) {
-						return conn.close();
-					}
-					return conn.preparedQuery(sql).executeBatch(batch).onItem().transformToUni(ignoredToo -> {
-						return conn.close();
-					});
+		// map_id text NOT NULL,
+		// query_checksum text NOT NULL,
+		// entity_id text NOT NULL,
+		// remote_query text,
+		// csourceid text NOT NULL,
+		// last_access timestamp without time zone NOT NULL,
+		// expires_at timestamp without time zone NOT NULL
+		logger.debug("storeEntityMap");
+		String deleteSql = "DELETE FROM entitymap WHERE map_id = $1";
 
-				});
-			});
-		});
+		String sql = "INSERT INTO entitymap VALUES ($1, $2, $3, $4, $5, $6, now() + interval '"
+				+ entityMapTTL
+				+ "', now())";
+		String mapId = entityMap.getId();
+		String checksum = entityMap.getQueryCheckSum();
+		List<Tuple> batch = Lists.newArrayList();
+		int i = 0;
+		for (Entry<String, Set<String>> entry : entityMap.getEntityId2CSourceIds().entrySet()) {
+			for (String cId : entry.getValue()) {
+				String remoteHost;
+				QueryRemoteHost tmp = entityMap.getRemoteHost(cId);
+				if (tmp == null) {
+					remoteHost = null;
+				} else {
+					try {
+						remoteHost = objectMapper.writeValueAsString(tmp);
+					} catch (JsonProcessingException e) {
+						continue;
+					}
+				}
+				batch.add(Tuple.of(mapId, i, checksum, entry.getKey(), remoteHost, cId));
+				i++;
+			}
+		}
+		return connectionManager.executeBatchQueryWithPreStep(tenant, sql, batch, deleteSql, Tuple.of(qToken), false);
 	}
 
 	public Uni<List<Map<String, Object>>> getEntities(String tenant, Map<Set<String>, Set<String>> types2EntityIds,
@@ -888,80 +836,65 @@ public class QueryDAO {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
-			return client.preparedQuery(sql).execute(tuple).onItem().transform(rows -> {
-				List<Map<String, Object>> result = Lists.newArrayList();
-				rows.forEach(row -> {
-					result.add(row.getJsonObject(1).getMap());
-				});
-
-				return result;
+		return connectionManager.executeQuery(tenant, sql, tuple, false).onItem().transform(rows -> {
+			List<Map<String, Object>> result = Lists.newArrayList();
+			rows.forEach(row -> {
+				result.add(row.getJsonObject(1).getMap());
 			});
+			return result;
 		});
 	}
 
 	public Uni<Map<String, Object>> getEntityMap(String tenant, String qToken) {
 		logger.debug("getEntityMap");
-		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
-
-			String sql = "SELECT entity_id, csourceid, expires_at from entitymap WHERE map_id=$1 ORDER BY pos";
-			return client.preparedQuery(sql).execute(Tuple.of(qToken)).onItem().transformToUni(rows -> {
-				if (rows.rowCount() == 0) {
-					return Uni.createFrom()
-							.failure(new ResponseException(ErrorType.InvalidRequest, "EntityMapId is invalid."));
+		String sql = "SELECT entity_id, csourceid, expires_at from entitymap WHERE map_id=$1 ORDER BY pos";
+		return connectionManager.executeQuery(tenant, sql, Tuple.of(qToken), false).onItem().transformToUni(rows -> {
+			if (rows.rowCount() == 0) {
+				return Uni.createFrom()
+						.failure(new ResponseException(ErrorType.InvalidRequest, "EntityMapId is invalid."));
+			}
+			RowIterator<Row> it = rows.iterator();
+			Row first = it.next();
+			Map<String, Object> result = Maps.newHashMap();
+			result.put(NGSIConstants.ID, qToken);
+			result.put(NGSIConstants.EXPIRES_AT, first.getLocalDateTime(2));
+			String lastEntityId = first.getString(0);
+			Map<String, List<String>> entityMap = Maps.newHashMap();
+			List<String> cIds = Lists.newArrayList();
+			entityMap.put(lastEntityId, cIds);
+			cIds.add(first.getString(1));
+			while (it.hasNext()) {
+				Row row = it.next();
+				String currentEntityID = row.getString(0);
+				if (!currentEntityID.equals(lastEntityId)) {
+					cIds = Lists.newArrayList();
+					entityMap.put(currentEntityID, cIds);
+					lastEntityId = currentEntityID;
 				}
-				RowIterator<Row> it = rows.iterator();
-				Row first = it.next();
-				Map<String, Object> result = Maps.newHashMap();
-				result.put(NGSIConstants.ID, qToken);
-				result.put(NGSIConstants.EXPIRES_AT, first.getLocalDateTime(2));
-				String lastEntityId = first.getString(0);
-				Map<String, List<String>> entityMap = Maps.newHashMap();
-				List<String> cIds = Lists.newArrayList();
-				entityMap.put(lastEntityId, cIds);
 				cIds.add(first.getString(1));
-				while (it.hasNext()) {
-					Row row = it.next();
-					String currentEntityID = row.getString(0);
-					if (!currentEntityID.equals(lastEntityId)) {
-						cIds = Lists.newArrayList();
-						entityMap.put(currentEntityID, cIds);
-						lastEntityId = currentEntityID;
-					}
-					cIds.add(first.getString(1));
-				}
-				result.put(NGSIConstants.NGSI_LD_ENTITY_MAP_SHORT, entityMap);
-				return Uni.createFrom().item(result);
-			});
+			}
+			result.put(NGSIConstants.NGSI_LD_ENTITY_MAP_SHORT, entityMap);
+			return Uni.createFrom().item(result);
 		});
-
 	}
 
 	public Uni<Void> runEntityMapCleanup(String cleanUpInterval) {
 		logger.debug("runEntityMapCleanup");
-		return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY,
-				false).onItem().transformToUni(client -> {
-					return client.preparedQuery("select tenant_id from tenant").execute().onItem()
-							.transformToUni(rows -> {
-								List<Uni<Void>> cleanUpUnis = Lists.newArrayList();
-								String sql = "DELETE FROM entitymap WHERE last_access < NOW() - INTERVAL '" +
-										cleanUpInterval + "'";
-								cleanUpUnis.add(
-										client.preparedQuery(sql).execute().onItem()
-												.transformToUni(r -> Uni.createFrom().voidItem()));
-								rows.forEach(row -> {
-									cleanUpUnis.add(
-											clientManager.getClient(row.getString(0),
-													false).onItem().transformToUni(tenantClient -> {
-														return tenantClient.preparedQuery(sql).execute().onItem()
-																.transformToUni(r -> Uni.createFrom().voidItem());
-													}));
-								});
-								return Uni.combine().all().unis(cleanUpUnis).discardItems();
-							});
-				});
-		// return Uni.createFrom().voidItem();
 
+		return connectionManager.executeQuery(null, "select tenant_id from tenant", null, false).onItem()
+				.transformToUni(rows -> {
+					List<Uni<Void>> cleanUpUnis = Lists.newArrayList();
+					String sql = "DELETE FROM entitymap WHERE last_access < NOW() - INTERVAL '" +
+							cleanUpInterval + "'";
+					cleanUpUnis.add(
+							connectionManager.executeQuery(null, sql, null, false).onItem()
+									.transformToUni(r -> Uni.createFrom().voidItem()));
+					rows.forEach(row -> {
+						cleanUpUnis.add(connectionManager.executeQuery(row.getString(0), sql, null, false).onItem()
+								.transformToUni(r -> Uni.createFrom().voidItem()));
+					});
+					return Uni.combine().all().unis(cleanUpUnis).discardItems();
+				});
 	}
 
 	private void generateJoinQuery(StringBuilder query, StringBuilder followUp, int joinLevel, boolean localOnly) {
@@ -1454,294 +1387,279 @@ public class QueryDAO {
 			OmitTerm omitTerm, String queryChecksum, boolean splitEntities,
 			boolean regEmptyOrNoRegEntryAndNoLinkedQuery, boolean noRootLevelRegEntryAndLinkedQuery, String typePattern,
 			boolean localOnly, boolean forceEntitymapCreation, boolean tokenProvided, boolean count) {
-		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
-			StringBuilder query = new StringBuilder();
-			Tuple tuple = Tuple.tuple();
-			int dollar;
-			boolean doJoin = (join != null && joinLevel > 0);
-			boolean doNotCreateEntityMap = !forceEntitymapCreation
-					&& (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery || localOnly);
-			if (doNotCreateEntityMap) {
-				query.append(
-						"WITH D0 AS (SELECT ID, ENTITY, TRUE as PARENT");
-				if (count) {
-					query.append(", count(ID) over() as list_size");
-				}
-				query.append(" FROM ENTITY WHERE ");
 
+		StringBuilder query = new StringBuilder();
+		Tuple tuple = Tuple.tuple();
+		int dollar;
+		boolean doJoin = (join != null && joinLevel > 0);
+		boolean doNotCreateEntityMap = !forceEntitymapCreation
+				&& (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery || localOnly);
+		if (doNotCreateEntityMap) {
+			query.append(
+					"WITH D0 AS (SELECT ID, ENTITY, TRUE as PARENT");
+			if (count) {
+				query.append(", count(*) over() as list_size");
+			}
+			query.append(" FROM ENTITY WHERE ");
+
+			dollar = 1;
+			dollar = generateWherePart(query, dollar, tuple, idsAndTypeAndIdPattern, attrsQuery, qQuery, geoQuery,
+					scopeQuery,
+					context, limit, offset, dataSetIdTerm, join, joinLevel, qToken, pickTerm, omitTerm,
+					queryChecksum,
+					splitEntities, regEmptyOrNoRegEntryAndNoLinkedQuery, noRootLevelRegEntryAndLinkedQuery,
+					typePattern,
+					localOnly);
+			query.append(" limit $");
+			query.append(dollar);
+			dollar++;
+			query.append(" offset $");
+			query.append(dollar);
+			query.append(')');
+			dollar++;
+			tuple.addInteger(limit);
+			tuple.addInteger(offset);
+			;
+		} else {
+
+			if (tokenProvided) {
+				query.append("WITH emupdate AS (UPDATE entitymap SET expires_at = now() + interval '");
+				query.append(entityMapTTL);
+				query.append(
+						"', last_access = now() WHERE map_id=$1 RETURNING pos, entity_id as id, query_checksum, TRUE as PARENT, remote_query, csourceid), validation AS (SELECT CASE WHEN NOT EXISTS (SELECT 1 FROM emupdate) THEN 1 / 0 WHEN EXISTS (SELECT 1 FROM emupdate WHERE query_checksum != $2) THEN 1 / 0 ELSE 1 END AS result), a as (SELECT * FROM emupdate, validation)");
+				tuple.addString(qToken);
+				tuple.addString(queryChecksum);
+				dollar = 3;
+			} else {
 				dollar = 1;
-				dollar = generateWherePart(query, dollar, tuple, idsAndTypeAndIdPattern, attrsQuery, qQuery, geoQuery,
-						scopeQuery,
-						context, limit, offset, dataSetIdTerm, join, joinLevel, qToken, pickTerm, omitTerm,
-						queryChecksum,
-						splitEntities, regEmptyOrNoRegEntryAndNoLinkedQuery, noRootLevelRegEntryAndLinkedQuery,
-						typePattern,
-						localOnly);
-				query.append(" limit $");
-				query.append(dollar);
-				dollar++;
-				query.append(" offset $");
-				query.append(dollar);
-				query.append(')');
-				dollar++;
-				tuple.addInteger(limit);
-				tuple.addInteger(offset);
-				;
-			} else {
-
-				if (tokenProvided) {
-					query.append("WITH emupdate AS (UPDATE entitymap SET expires_at = now() + interval '");
-					query.append(entityMapTTL);
-					query.append(
-							"', last_access = now() WHERE map_id=$1 RETURNING pos, entity_id as id, query_checksum, TRUE as PARENT, remote_query, csourceid), validation AS (SELECT CASE WHEN NOT EXISTS (SELECT 1 FROM emupdate) THEN 1 / 0 WHEN EXISTS (SELECT 1 FROM emupdate WHERE query_checksum != $2) THEN 1 / 0 ELSE 1 END AS result), a as (SELECT * FROM emupdate, validation)");
-					tuple.addString(qToken);
-					tuple.addString(queryChecksum);
-					dollar = 3;
-				} else {
-					dollar = 1;
-					query.append(
-							"WITH ementries AS (SELECT ID, null as remote_query, '@none' as csourceid FROM ENTITY WHERE ");
-					dollar = generateWherePart(query, dollar, tuple, idsAndTypeAndIdPattern, attrsQuery, qQuery,
-							geoQuery,
-							scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel, qToken, pickTerm,
-							omitTerm,
-							queryChecksum, splitEntities, regEmptyOrNoRegEntryAndNoLinkedQuery,
-							noRootLevelRegEntryAndLinkedQuery, typePattern, localOnly);
-					query.append(
-							"), a as (INSERT INTO entitymap (map_id, pos, query_checksum , entity_id, remote_query, csourceid, last_access, expires_at) SELECT $");
-					query.append(dollar);
-					dollar++;
-					tuple.addString(qToken);
-					query.append(", ROW_NUMBER() OVER(), $");
-					query.append(dollar);
-					dollar++;
-					tuple.addString(queryChecksum);
-					query.append(", id, null, '@none', now(), now() + interval '");
-					query.append(entityMapTTL);
-					query.append(
-							"' FROM ementries RETURNING pos, entity_id as id, TRUE as PARENT, remote_query, csourceid)");
-
-				}
 				query.append(
-						",D0 as (SELECT ENTITY.ID, ENTITY.ENTITY, a.PARENT, a.remote_query, a.csourceid FROM a left join ENTITY on a.ID = ENTITY.ID ORDER BY a.pos");
-				query.append(" limit $");
+						"WITH ementries AS (SELECT ID, null as remote_query, '@none' as csourceid FROM ENTITY WHERE ");
+				dollar = generateWherePart(query, dollar, tuple, idsAndTypeAndIdPattern, attrsQuery, qQuery,
+						geoQuery,
+						scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel, qToken, pickTerm,
+						omitTerm,
+						queryChecksum, splitEntities, regEmptyOrNoRegEntryAndNoLinkedQuery,
+						noRootLevelRegEntryAndLinkedQuery, typePattern, localOnly);
+				query.append(
+						"), a as (INSERT INTO entitymap (map_id, pos, query_checksum , entity_id, remote_query, csourceid, last_access, expires_at) SELECT $");
 				query.append(dollar);
 				dollar++;
-				query.append(" offset $");
+				tuple.addString(qToken);
+				query.append(", ROW_NUMBER() OVER(), $");
 				query.append(dollar);
-				query.append(')');
 				dollar++;
-				tuple.addInteger(limit);
-				tuple.addInteger(offset);
-			}
+				tuple.addString(queryChecksum);
+				query.append(", id, null, '@none', now(), now() + interval '");
+				query.append(entityMapTTL);
+				query.append(
+						"' FROM ementries RETURNING pos, entity_id as id, TRUE as PARENT, remote_query, csourceid)");
 
-			if (doJoin) {
-				generateJoinQuery(query, joinLevel, localOnly);
 			}
+			query.append(
+					",D0 as (SELECT ENTITY.ID, ENTITY.ENTITY, a.PARENT, a.remote_query, a.csourceid FROM a left join ENTITY on a.ID = ENTITY.ID ORDER BY a.pos");
+			query.append(" limit $");
+			query.append(dollar);
+			dollar++;
+			query.append(" offset $");
+			query.append(dollar);
+			query.append(')');
+			dollar++;
+			tuple.addInteger(limit);
+			tuple.addInteger(offset);
+		}
+
+		if (doJoin) {
+			generateJoinQuery(query, joinLevel, localOnly);
+		}
+		if (doNotCreateEntityMap) {
+			if (count) {
+				query.append(" SELECT null::text, null::jsonb, null::boolean, list_size FROM D0 limit 1 UNION ALL");
+			}
+			query.append(" SELECT ID, ENTITY, PARENT");
+			if (count) {
+				query.append(", null::bigint");
+			}
+			query.append(" FROM D0");
+		} else {
+			query.append(
+					" SELECT a.ID, D0.ENTITY, a.PARENT, a.remote_query, a.csourceid FROM a left join D0 on a.ID = D0.ID");
+		}
+
+		if (doJoin) {
+			query.append(" UNION ALL (SELECT ID, ENTITY, PARENT");
+			if (doNotCreateEntityMap && count) {
+				query.append(", null::bigint");
+			}
+			if (!doNotCreateEntityMap) {
+				query.append(", null, null");
+			}
+			query.append(" FROM JOINENTITIES)");
+		}
+
+		return connectionManager.executeQuery(tenant, query.toString(), tuple, false).onItem().transform(rows -> {
+			EntityMap entityMap = new EntityMap(qToken, splitEntities, regEmptyOrNoRegEntryAndNoLinkedQuery,
+					noRootLevelRegEntryAndLinkedQuery);
+			EntityCache entityCache = new EntityCache();
+			entityMap.setQueryCheckSum(queryChecksum);
+			LinkedHashMap<String, Set<String>> id2Cid = entityMap.getEntityId2CSourceIds();
+			RowIterator<Row> it = rows.iterator();
 			if (doNotCreateEntityMap) {
-				query.append(" SELECT ID, ENTITY, PARENT");
+				entityMap.setId(AppConstants.ENTITYMAP_IGNORE);
 				if (count) {
-					query.append(", list_size");
-				}
-				query.append(" FROM D0");
-			} else {
-				query.append(
-						" SELECT a.ID, D0.ENTITY, a.PARENT, a.remote_query, a.csourceid FROM a left join D0 on a.ID = D0.ID");
-			}
-
-			if (doJoin) {
-				query.append(" UNION ALL (SELECT ID, ENTITY, PARENT");
-				if (doNotCreateEntityMap && count) {
-					query.append(", null::bigint");
-				}
-				if (!doNotCreateEntityMap) {
-					query.append(", null, null");
-				}
-				query.append(" FROM JOINENTITIES)");
-			}
-			logger.info(query.toString());
-			return client.preparedQuery(query.toString()).execute(tuple).onItem().transform(rows -> {
-				EntityMap entityMap = new EntityMap(qToken, splitEntities, regEmptyOrNoRegEntryAndNoLinkedQuery,
-						noRootLevelRegEntryAndLinkedQuery);
-				EntityCache entityCache = new EntityCache();
-				entityMap.setQueryCheckSum(queryChecksum);
-				LinkedHashMap<String, Set<String>> id2Cid = entityMap.getEntityId2CSourceIds();
-				RowIterator<Row> it = rows.iterator();
-
-				if (doNotCreateEntityMap) {
-					entityMap.setId(AppConstants.ENTITYMAP_IGNORE);
-					while (it.hasNext()) {
-						Row row = it.next();
-						// a.ID, D0.ENTITY, D0.PARENT, D0.SIZE
-						String id = row.getString(0);
-						JsonObject entityObj = row.getJsonObject(1);
-						boolean parent = row.getBoolean(2);
-						Integer size;
-						if (count) {
-							size = row.getInteger(3);
-						} else {
-							size = null;
-						}
-
-						if (parent) {
-							id2Cid.put(id, Sets.newHashSet(NGSIConstants.JSON_LD_NONE));
-
-						}
-						if (entityObj != null) {
-							Map<String, Object> entity = entityObj.getMap();
-							entityCache.setEntityIntoEntityCache(id, entity, NGSIConstants.JSON_LD_NONE);
-							if (parent) {
-								if (attrsQuery != null) {
-									attrsQuery.calculateEntity(entity);
-								} else if (pickTerm != null) {
-									pickTerm.calculateEntity(entity, false, null, null, false);
-								} else if (omitTerm != null) {
-									omitTerm.calculateEntity(entity, false, null, null, false);
-								} else if (dataSetIdTerm != null) {
-									dataSetIdTerm.calculateEntity(entity);
-								}
-							}
-						}
-						if (size != null) {
-							entityMap.setManualSize(size);
-						}
-					}
-					if (!count) {
-						if (id2Cid.size() < limit) {
-							entityMap.setManualSize(offset + id2Cid.size());
-						} else {
-							entityMap.setManualSize(offset + 2 * limit);
-						}
-					}
+					Row first = it.next();
+					entityMap.setManualSize(first.getInteger(3));
 				} else {
-					while (it.hasNext()) {
-						Row row = it.next();
-						// a.ID, D0.ENTITY, D0.PARENT, a.remote_query, a.csourceid
-						String id = row.getString(0);
-						JsonObject entityObj = row.getJsonObject(1);
-						boolean parent = row.getBoolean(2);
-						String remoteQuery = row.getString(3);
-						String csourceId = row.getString(4);
+					int rowSize = rows.size();
+					if (rowSize < limit) {
+						entityMap.setManualSize(offset + rowSize);
+					} else {
+						entityMap.setManualSize(offset + 2 * limit);
+					}
+				}
+				while (it.hasNext()) {
+					Row row = it.next();
+					// a.ID, D0.ENTITY, D0.PARENT, D0.SIZE
+					String id = row.getString(0);
+					JsonObject entityObj = row.getJsonObject(1);
+					boolean parent = row.getBoolean(2);
 
-						QueryRemoteHost queryRemoteHost;
-						if (remoteQuery == null) {
-							queryRemoteHost = null;
-						} else {
-							try {
-								queryRemoteHost = objectMapper.readValue(remoteQuery, QueryRemoteHost.class);
-							} catch (JsonProcessingException e) {
-								e.printStackTrace();
-								continue;
+					if (parent) {
+						id2Cid.put(id, Sets.newHashSet(NGSIConstants.JSON_LD_NONE));
+
+					}
+					if (entityObj != null) {
+						Map<String, Object> entity = entityObj.getMap();
+						entityCache.setEntityIntoEntityCache(id, entity, NGSIConstants.JSON_LD_NONE);
+						if (parent) {
+							if (attrsQuery != null) {
+								attrsQuery.calculateEntity(entity);
+							} else if (pickTerm != null) {
+								pickTerm.calculateEntity(entity, false, null, null, false);
+							} else if (omitTerm != null) {
+								omitTerm.calculateEntity(entity, false, null, null, false);
+							} else if (dataSetIdTerm != null) {
+								dataSetIdTerm.calculateEntity(entity);
 							}
 						}
-						if (parent) {
-							entityMap.addEntry(id, csourceId, queryRemoteHost);
-						}
-						if (entityObj != null) {
-							Map<String, Object> entity = entityObj.getMap();
-							entityCache.setEntityIntoEntityCache(id, entity, csourceId);
-						}
 					}
 				}
-				return Tuple2.of(entityCache, entityMap);
-			}).onFailure().recoverWithUni(e -> {
+			} else {
+				while (it.hasNext()) {
+					Row row = it.next();
+					// a.ID, D0.ENTITY, D0.PARENT, a.remote_query, a.csourceid
+					String id = row.getString(0);
+					JsonObject entityObj = row.getJsonObject(1);
+					boolean parent = row.getBoolean(2);
+					String remoteQuery = row.getString(3);
+					String csourceId = row.getString(4);
 
-				if (e instanceof PgException pgE) {
-					// abusing division by zero for handling invalid entitymap requests
-					if (pgE.getSqlState().equals("22012")) {
-						return newQuery(tenant, idsAndTypeAndIdPattern, attrsQuery, qQuery, geoQuery, scopeQuery,
-								context, limit, offset, dataSetIdTerm, join, joinLevel, qToken, pickTerm, omitTerm,
-								queryChecksum, splitEntities, regEmptyOrNoRegEntryAndNoLinkedQuery,
-								noRootLevelRegEntryAndLinkedQuery, typePattern, localOnly, forceEntitymapCreation,
-								false, count);
+					QueryRemoteHost queryRemoteHost;
+					if (remoteQuery == null) {
+						queryRemoteHost = null;
+					} else {
+						try {
+							queryRemoteHost = objectMapper.readValue(remoteQuery, QueryRemoteHost.class);
+						} catch (JsonProcessingException e) {
+							e.printStackTrace();
+							continue;
+						}
 					}
-					if (pgE.getSqlState().equals(AppConstants.INVALID_REGULAR_EXPRESSION)) {
-						return Uni.createFrom()
-								.failure(new ResponseException(ErrorType.BadRequestData, "Invalid regular expression"));
+					if (parent) {
+						entityMap.addEntry(id, csourceId, queryRemoteHost);
 					}
-					if (pgE.getSqlState().equals(AppConstants.INVALID_GEO_QUERY)) {
-						return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData,
-								"Invalid geo query. " + pgE.getErrorMessage()));
+					if (entityObj != null) {
+						Map<String, Object> entity = entityObj.getMap();
+						entityCache.setEntityIntoEntityCache(id, entity, csourceId);
 					}
 				}
+			}
+			return Tuple2.of(entityCache, entityMap);
+		}).onFailure().recoverWithUni(e -> {
 
-				return Uni.createFrom().failure(e);
-			});
+			if (e instanceof PgException pgE) {
+				// abusing division by zero for handling invalid entitymap requests
+				if (pgE.getSqlState().equals("22012")) {
+					return newQuery(tenant, idsAndTypeAndIdPattern, attrsQuery, qQuery, geoQuery, scopeQuery,
+							context, limit, offset, dataSetIdTerm, join, joinLevel, qToken, pickTerm, omitTerm,
+							queryChecksum, splitEntities, regEmptyOrNoRegEntryAndNoLinkedQuery,
+							noRootLevelRegEntryAndLinkedQuery, typePattern, localOnly, forceEntitymapCreation,
+							false, count);
+				}
+				if (pgE.getSqlState().equals(AppConstants.INVALID_REGULAR_EXPRESSION)) {
+					return Uni.createFrom()
+							.failure(new ResponseException(ErrorType.BadRequestData, "Invalid regular expression"));
+				}
+				if (pgE.getSqlState().equals(AppConstants.INVALID_GEO_QUERY)) {
+					return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData,
+							"Invalid geo query. " + pgE.getErrorMessage()));
+				}
+			}
+
+			return Uni.createFrom().failure(e);
 		});
 	}
 
 	public Uni<Tuple2<List<Map<String, Object>>, QueryRemoteHost>> queryForEntities(String tenant,
 			Set<String> idsForDBCall) {
-		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
-			return client.preparedQuery("SELECT ENTITY FROM ENTITY WHERE id=ANY($1);")
-					.execute(Tuple.of(idsForDBCall.toArray(new String[0]))).onItem().transform(rows -> {
-						List<Map<String, Object>> resultEntities = new ArrayList<>(rows.size());
-						rows.forEach(row -> {
-							Map<String, Object> entity = row.getJsonObject(0).getMap();
-							entity.put(AppConstants.REG_MODE_KEY, 1);
-							resultEntities.add(entity);
-						});
-						return Tuple2.of(resultEntities, AppConstants.DB_REMOTE_HOST);
-					});
+		String sql = "SELECT ENTITY FROM ENTITY WHERE id=ANY($1);";
+		Tuple tuple = Tuple.of(idsForDBCall.toArray(new String[0]));
+		return connectionManager.executeQuery(tenant, sql, tuple, false).onItem().transform(rows -> {
+			List<Map<String, Object>> resultEntities = new ArrayList<>(rows.size());
+			rows.forEach(row -> {
+				Map<String, Object> entity = row.getJsonObject(0).getMap();
+				entity.put(AppConstants.REG_MODE_KEY, 1);
+				resultEntities.add(entity);
+			});
+			return Tuple2.of(resultEntities, AppConstants.DB_REMOTE_HOST);
 		});
 	}
 
 	public Uni<Void> deleteEntityMap(String tenant, String entityMapId) {
 		logger.debug("deleteEntityMap");
-		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
-			return client.preparedQuery("DELETE FROM ENTITYMAP WHERE map_id=$1 RETURNING map_id")
-					.execute(Tuple.of(entityMapId))
-					.onItem().transformToUni(rows -> {
-						if (rows.rowCount() == 0) {
-							return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
-						}
-						return Uni.createFrom().voidItem();
-					});
-		});
+		String sql = "DELETE FROM ENTITYMAP WHERE map_id=$1 RETURNING map_id";
+		Tuple tuple = Tuple.of(entityMapId);
+
+		return connectionManager.executeQuery(tenant, sql, tuple, false)
+				.onItem().transformToUni(rows -> {
+					if (rows.rowCount() == 0) {
+						return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
+					}
+					return Uni.createFrom().voidItem();
+				});
+
 	}
 
 	public Uni<Void> updateEntityMap(String tenant, String entityMapId, String expiresAt) {
-		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
-			return client.preparedQuery("UPDATE ENTITYMAP SET EXPIRES_AT=$1 WHERE map_id=$2 RETURNING map_id")
-					.execute(Tuple.of(SerializationTools.localDateTimeFormatter(expiresAt), entityMapId)).onItem()
-					.transformToUni(rows -> {
-						if (rows.rowCount() == 0) {
-							return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
-						}
-						return Uni.createFrom().voidItem();
-					});
-		});
+		String sql = "UPDATE ENTITYMAP SET EXPIRES_AT=$1 WHERE map_id=$2 RETURNING map_id";
+		Tuple tuple = Tuple.of(SerializationTools.localDateTimeFormatter(expiresAt), entityMapId);
+
+		return connectionManager.executeQuery(tenant, sql, tuple, false).onItem()
+				.transformToUni(rows -> {
+					if (rows.rowCount() == 0) {
+						return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
+					}
+					return Uni.createFrom().voidItem();
+				});
 	}
 
 	public Uni<Map<String, Set<String>>> getTypesWithDetails(String tenantId) {
-		return clientManager.getClient(tenantId, false).onItem().transformToUni(client -> {
-			String sql = "SELECT DISTINCT unnest(e_types), jsonb_object_keys(ENTITY) from entity;";
-			return client.preparedQuery(
-					sql)
-					.execute().onItem().transform(rows -> {
-						Map<String, Set<String>> result = new HashMap<>();
-						Set<String> attrs = Sets.newHashSet();
-						RowIterator<Row> it = rows.iterator();
-						while (it.hasNext()) {
-							Row row = it.next();
-							String type = row.getString(0);
-							attrs.add(row.getString(1));
-							if (type != null) {
-								result.put(type, attrs);
-								attrs = Sets.newHashSet();
-							}
-						}
-						return result;
-					});
-		});
-	}
 
-	public static void main(String[] args) {
-		String sql = "SELECT DISTINCT myTypes, array_agg(myAttr) from entity, jsonb_array_elements(ENTITY -> '@type') as myTypes, jsonb_object_keys((ENTITY - ARRAY['"
-				+ NGSIConstants.JSON_LD_TYPE + "', '" + NGSIConstants.JSON_LD_ID + "', '"
-				+ NGSIConstants.NGSI_LD_CREATED_AT + "','" + NGSIConstants.NGSI_LD_MODIFIED_AT
-				+ "'])) as myAttr group by myTypes";
-		System.out.println(sql);
+		String sql = "SELECT DISTINCT unnest(e_types), jsonb_object_keys(ENTITY) from entity;";
+		return connectionManager.executeQuery(tenantId, sql, null, false).onItem().transform(rows -> {
+			Map<String, Set<String>> result = new HashMap<>();
+			Set<String> attrs = Sets.newHashSet();
+			RowIterator<Row> it = rows.iterator();
+			while (it.hasNext()) {
+				Row row = it.next();
+				String type = row.getString(0);
+				attrs.add(row.getString(1));
+				if (type != null) {
+					result.put(type, attrs);
+					attrs = Sets.newHashSet();
+				}
+			}
+			return result;
+		});
 	}
 
 }

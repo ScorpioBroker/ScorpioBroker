@@ -15,13 +15,11 @@ import jakarta.inject.Singleton;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
-import com.google.common.collect.Maps;
-
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.storage.ClientManager;
+import eu.neclab.ngsildbroker.commons.storage.ConnectionManager;
 import io.quarkus.runtime.StartupEvent;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.client.WebClientOptions;
@@ -37,7 +35,7 @@ public class JsonLDService {
 	String coreContextUrl;
 
 	@Inject
-	ClientManager clientManager;
+	ConnectionManager connectionManager;
 	@Inject
 	MicroServiceUtils microServiceUtils;
 	@Inject
@@ -53,14 +51,11 @@ public class JsonLDService {
 		WebClientOptions options = new WebClientOptions();
 
 		this.webClient = WebClient.create(vertx, options);
-		this.coreContext = clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem()
-				.transformToUni(client -> {
-					return client
-							.preparedQuery(
-									"SELECT body FROM contexts WHERE id='" + AppConstants.INTERNAL_NULL_KEY + "'")
-							.execute().onItem().transform(rows -> {
-								return rows.iterator().next().getJsonObject(0).getMap();
-							});
+
+		this.coreContext = connectionManager.executeQuery(null,
+				"SELECT body FROM contexts WHERE id='" + AppConstants.INTERNAL_NULL_KEY + "'", null, false).onItem()
+				.transform(rows -> {
+					return rows.iterator().next().getJsonObject(0).getMap();
 				}).onItem().transformToUni(coreContextMap -> {
 					return new Context(new JsonLdOptions(JsonLdOptions.JSON_LD_1_1))
 							.parse(coreContextMap.get("@context"), false, webClient, microServiceUtils).onItem()

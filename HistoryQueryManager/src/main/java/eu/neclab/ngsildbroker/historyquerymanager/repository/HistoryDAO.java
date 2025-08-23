@@ -27,7 +27,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TemporalQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.storage.ClientManager;
+import eu.neclab.ngsildbroker.commons.storage.ConnectionManager;
 import eu.neclab.ngsildbroker.commons.tools.DBUtil;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
@@ -45,7 +45,7 @@ public class HistoryDAO {
 	private final String TIMESTAMP_FORMAT = "'YYYY-MM-DDThh24:MI:SS.usZ'";
 
 	@Inject
-	ClientManager clientManager;
+	ConnectionManager connectionManager;
 
 	@Inject
 	JsonLDService ldService;
@@ -76,67 +76,66 @@ public class HistoryDAO {
 		}
 		String sqlString = t.getItem1();
 		Tuple tuple = t.getItem2();
-		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
-			return client.preparedQuery(sqlString).execute(tuple).onItem().transform(rows -> {
-				if (rows.size() == 0) {
-					return new HashMap<>(0);
-				}
-				JsonObject json = rows.iterator().next().getJsonObject(0);
-				if (json == null) {
-					return new HashMap<>(0);
-				}
-				if (aggrQuery != null && (aggrQuery.getAggrFunctions().contains(NGSIConstants.AGGR_METH_MAX)
-						|| aggrQuery.getAggrFunctions().contains(NGSIConstants.AGGR_METH_MIN))) {
-					for (Entry<String, Object> entry : json.getMap().entrySet()) {
-						if (NGSIConstants.ENTITY_BASE_PROPS.contains(entry.getKey())) {
-							continue;
-						}
-						List<Map<String, List<Map<String, List>>>> tmp = (List<Map<String, List<Map<String, List>>>>) entry
-								.getValue();
-						for (Map<String, List<Map<String, List>>> listEntry : tmp) {
 
-							List<Map<String, List>> maxes = listEntry.get(NGSIConstants.NGSI_LD_MAX);
-							if (maxes != null) {
-								for (Map<String, List> max : maxes) {
-									List<Map<String, List<Map<String, Object>>>> subMaxes = max.get(JsonLdConsts.LIST);
-									for (Map<String, List<Map<String, Object>>> subMax : subMaxes) {
-										List<Map<String, Object>> realValues = subMax.get(JsonLdConsts.LIST);
-										String potentialValue = realValues.get(0).get(JsonLdConsts.VALUE).toString();
-										if (NumberUtils.isCreatable(potentialValue)) {
-											realValues.get(0).put(JsonLdConsts.VALUE,
-													NumberUtils.createNumber(potentialValue));
-										}
+		return connectionManager.executeQuery(tenant, sqlString, tuple, false).onItem().transform(rows -> {
+			if (rows.size() == 0) {
+				return new HashMap<>(0);
+			}
+			JsonObject json = rows.iterator().next().getJsonObject(0);
+			if (json == null) {
+				return new HashMap<>(0);
+			}
+			if (aggrQuery != null && (aggrQuery.getAggrFunctions().contains(NGSIConstants.AGGR_METH_MAX)
+					|| aggrQuery.getAggrFunctions().contains(NGSIConstants.AGGR_METH_MIN))) {
+				for (Entry<String, Object> entry : json.getMap().entrySet()) {
+					if (NGSIConstants.ENTITY_BASE_PROPS.contains(entry.getKey())) {
+						continue;
+					}
+					List<Map<String, List<Map<String, List>>>> tmp = (List<Map<String, List<Map<String, List>>>>) entry
+							.getValue();
+					for (Map<String, List<Map<String, List>>> listEntry : tmp) {
 
+						List<Map<String, List>> maxes = listEntry.get(NGSIConstants.NGSI_LD_MAX);
+						if (maxes != null) {
+							for (Map<String, List> max : maxes) {
+								List<Map<String, List<Map<String, Object>>>> subMaxes = max.get(JsonLdConsts.LIST);
+								for (Map<String, List<Map<String, Object>>> subMax : subMaxes) {
+									List<Map<String, Object>> realValues = subMax.get(JsonLdConsts.LIST);
+									String potentialValue = realValues.get(0).get(JsonLdConsts.VALUE).toString();
+									if (NumberUtils.isCreatable(potentialValue)) {
+										realValues.get(0).put(JsonLdConsts.VALUE,
+												NumberUtils.createNumber(potentialValue));
 									}
+
 								}
 							}
-							List<Map<String, List>> mins = listEntry.get(NGSIConstants.NGSI_LD_MIN);
-							if (mins != null) {
-								for (Map<String, List> min : mins) {
-									List<Map<String, List<Map<String, Object>>>> subMins = min.get(JsonLdConsts.LIST);
-									for (Map<String, List<Map<String, Object>>> subMin : subMins) {
-										List<Map<String, Object>> realValues = subMin.get(JsonLdConsts.LIST);
-										String potentialValue = realValues.get(0).get(JsonLdConsts.VALUE).toString();
-										if (NumberUtils.isCreatable(potentialValue)) {
-											realValues.get(0).put(JsonLdConsts.VALUE,
-													NumberUtils.createNumber(potentialValue));
-										}
-
+						}
+						List<Map<String, List>> mins = listEntry.get(NGSIConstants.NGSI_LD_MIN);
+						if (mins != null) {
+							for (Map<String, List> min : mins) {
+								List<Map<String, List<Map<String, Object>>>> subMins = min.get(JsonLdConsts.LIST);
+								for (Map<String, List<Map<String, Object>>> subMin : subMins) {
+									List<Map<String, Object>> realValues = subMin.get(JsonLdConsts.LIST);
+									String potentialValue = realValues.get(0).get(JsonLdConsts.VALUE).toString();
+									if (NumberUtils.isCreatable(potentialValue)) {
+										realValues.get(0).put(JsonLdConsts.VALUE,
+												NumberUtils.createNumber(potentialValue));
 									}
+
 								}
 							}
 						}
 					}
 				}
-				return json.getMap();
+			}
+			return json.getMap();
 
-			});
 		});
 
 	}
 
 	public Uni<Table<String, String, List<RegistrationEntry>>> getAllRegistries() {
-		return DBUtil.getAllRegistries(clientManager, ldService,
+		return DBUtil.getAllRegistries(connectionManager, ldService,
 				"SELECT cs_id, c_id, e_id, e_id_p, e_type, e_prop, e_rel, ST_AsGeoJSON(i_location), scopes, EXTRACT(MILLISECONDS FROM expires), endpoint, tenant_id, headers, reg_mode, createEntity, updateEntity, appendAttrs, updateAttrs, deleteAttrs, deleteEntity, createBatch, upsertBatch, updateBatch, deleteBatch, upsertTemporal, appendAttrsTemporal, deleteAttrsTemporal, updateAttrsTemporal, deleteAttrInstanceTemporal, deleteTemporal, mergeEntity, replaceEntity, replaceAttrs, mergeBatch, retrieveEntity, queryEntity, queryBatch, retrieveTemporal, queryTemporal, retrieveEntityTypes, retrieveEntityTypeDetails, retrieveEntityTypeInfo, retrieveAttrTypes, retrieveAttrTypeDetails, retrieveAttrTypeInfo, createSubscription, updateSubscription, retrieveSubscription, querySubscription, deleteSubscription, queryEntityMap, createEntityMap, updateEntityMap, deleteEntityMap, retrieveEntityMap, csource_Alias  FROM csourceinformation WHERE retrieveTemporal OR queryTemporal",
 				logger);
 	}
@@ -155,100 +154,98 @@ public class HistoryDAO {
 		}
 		String sqlString = t.getItem1();
 		Tuple tuple = t.getItem2();
-		return clientManager.getClient(tenant, false).onItem().transformToUni(client -> {
-			return client.preparedQuery(sqlString).execute(tuple).onItem().transform(rows -> {
-				QueryResult result = new QueryResult(tenant);
-				if (limit == 0 && count) {
-					result.setCount(rows.iterator().next().getLong(0));
-				} else {
-					RowIterator<Row> it = rows.iterator();
-					Row next = null;
-					List<Map<String, Object>> resultData = new ArrayList<Map<String, Object>>(rows.size());
-					Map<String, Object> entity;
-					while (it.hasNext()) {
-						next = it.next();
-						if (next.getJsonObject(0) != null) {
-							entity = next.getJsonObject(0).getMap();
-						} else {
-							entity = new HashMap<>();
-						}
-						if (aggrQuery != null && (aggrQuery.getAggrFunctions().contains(NGSIConstants.AGGR_METH_MAX)
-								|| aggrQuery.getAggrFunctions().contains(NGSIConstants.AGGR_METH_MIN))) {
-							for (Entry<String, Object> entry : entity.entrySet()) {
-								if (NGSIConstants.ENTITY_BASE_PROPS.contains(entry.getKey())) {
-									continue;
-								}
-								List<Map<String, List<Map<String, List>>>> tmp = (List<Map<String, List<Map<String, List>>>>) entry
-										.getValue();
-								for (Map<String, List<Map<String, List>>> listEntry : tmp) {
+		return connectionManager.executeQuery(tenant, sqlString, tuple, false).onItem().transform(rows -> {
+			QueryResult result = new QueryResult(tenant);
+			if (limit == 0 && count) {
+				result.setCount(rows.iterator().next().getLong(0));
+			} else {
+				RowIterator<Row> it = rows.iterator();
+				Row next = null;
+				List<Map<String, Object>> resultData = new ArrayList<Map<String, Object>>(rows.size());
+				Map<String, Object> entity;
+				while (it.hasNext()) {
+					next = it.next();
+					if (next.getJsonObject(0) != null) {
+						entity = next.getJsonObject(0).getMap();
+					} else {
+						entity = new HashMap<>();
+					}
+					if (aggrQuery != null && (aggrQuery.getAggrFunctions().contains(NGSIConstants.AGGR_METH_MAX)
+							|| aggrQuery.getAggrFunctions().contains(NGSIConstants.AGGR_METH_MIN))) {
+						for (Entry<String, Object> entry : entity.entrySet()) {
+							if (NGSIConstants.ENTITY_BASE_PROPS.contains(entry.getKey())) {
+								continue;
+							}
+							List<Map<String, List<Map<String, List>>>> tmp = (List<Map<String, List<Map<String, List>>>>) entry
+									.getValue();
+							for (Map<String, List<Map<String, List>>> listEntry : tmp) {
 
-									List<Map<String, List>> maxes = listEntry.get(NGSIConstants.NGSI_LD_MAX);
-									if (maxes != null) {
-										for (Map<String, List> max : maxes) {
-											List<Map<String, List<Map<String, Object>>>> subMaxes = max
-													.get(JsonLdConsts.LIST);
-											for (Map<String, List<Map<String, Object>>> subMax : subMaxes) {
-												List<Map<String, Object>> realValues = subMax.get(JsonLdConsts.LIST);
-												String potentialValue = realValues.get(0).get(JsonLdConsts.VALUE)
-														.toString();
-												if (NumberUtils.isCreatable(potentialValue)) {
-													realValues.get(0).put(JsonLdConsts.VALUE,
-															NumberUtils.createNumber(potentialValue));
-												}
-
+								List<Map<String, List>> maxes = listEntry.get(NGSIConstants.NGSI_LD_MAX);
+								if (maxes != null) {
+									for (Map<String, List> max : maxes) {
+										List<Map<String, List<Map<String, Object>>>> subMaxes = max
+												.get(JsonLdConsts.LIST);
+										for (Map<String, List<Map<String, Object>>> subMax : subMaxes) {
+											List<Map<String, Object>> realValues = subMax.get(JsonLdConsts.LIST);
+											String potentialValue = realValues.get(0).get(JsonLdConsts.VALUE)
+													.toString();
+											if (NumberUtils.isCreatable(potentialValue)) {
+												realValues.get(0).put(JsonLdConsts.VALUE,
+														NumberUtils.createNumber(potentialValue));
 											}
+
 										}
 									}
-									List<Map<String, List>> mins = listEntry.get(NGSIConstants.NGSI_LD_MIN);
-									if (mins != null) {
-										for (Map<String, List> min : mins) {
-											List<Map<String, List<Map<String, Object>>>> subMins = min
-													.get(JsonLdConsts.LIST);
-											for (Map<String, List<Map<String, Object>>> subMin : subMins) {
-												List<Map<String, Object>> realValues = subMin.get(JsonLdConsts.LIST);
-												String potentialValue = realValues.get(0).get(JsonLdConsts.VALUE)
-														.toString();
-												if (NumberUtils.isCreatable(potentialValue)) {
-													realValues.get(0).put(JsonLdConsts.VALUE,
-															NumberUtils.createNumber(potentialValue));
-												}
-
+								}
+								List<Map<String, List>> mins = listEntry.get(NGSIConstants.NGSI_LD_MIN);
+								if (mins != null) {
+									for (Map<String, List> min : mins) {
+										List<Map<String, List<Map<String, Object>>>> subMins = min
+												.get(JsonLdConsts.LIST);
+										for (Map<String, List<Map<String, Object>>> subMin : subMins) {
+											List<Map<String, Object>> realValues = subMin.get(JsonLdConsts.LIST);
+											String potentialValue = realValues.get(0).get(JsonLdConsts.VALUE)
+													.toString();
+											if (NumberUtils.isCreatable(potentialValue)) {
+												realValues.get(0).put(JsonLdConsts.VALUE,
+														NumberUtils.createNumber(potentialValue));
 											}
+
 										}
 									}
 								}
 							}
 						}
-
-						resultData.add(entity);
 					}
-					if (count) {
-						Long resultCount = next.getLong(1);
-						result.setCount(resultCount);
-						long leftAfter = resultCount - (offset + limit);
-						if (leftAfter < 0) {
-							leftAfter = 0;
-						}
-						result.setResultsLeftAfter(leftAfter);
-					} else {
-						if (resultData.size() < limit) {
-							result.setResultsLeftAfter(0l);
-						} else {
-							result.setResultsLeftAfter((long) limit);
-						}
 
-					}
-					long leftBefore = offset;
-
-					result.setResultsLeftBefore(leftBefore);
-					result.setLimit(limit);
-					result.setOffset(offset);
-					result.setData(resultData);
+					resultData.add(entity);
 				}
+				if (count) {
+					Long resultCount = next.getLong(1);
+					result.setCount(resultCount);
+					long leftAfter = resultCount - (offset + limit);
+					if (leftAfter < 0) {
+						leftAfter = 0;
+					}
+					result.setResultsLeftAfter(leftAfter);
+				} else {
+					if (resultData.size() < limit) {
+						result.setResultsLeftAfter(0l);
+					} else {
+						result.setResultsLeftAfter((long) limit);
+					}
 
-				return result;
+				}
+				long leftBefore = offset;
 
-			});
+				result.setResultsLeftBefore(leftBefore);
+				result.setLimit(limit);
+				result.setOffset(offset);
+				result.setData(resultData);
+			}
+
+			return result;
+
 		});
 	}
 

@@ -6,9 +6,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
-import eu.neclab.ngsildbroker.commons.storage.ClientManager;
+import eu.neclab.ngsildbroker.commons.storage.ConnectionManager;
 import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
 import io.quarkus.arc.profile.IfBuildProfile;
 import io.quarkus.runtime.StartupEvent;
@@ -30,7 +29,7 @@ public class SubscriptionSyncSQS implements SyncService {
 	PgSubscriber pgSubscriber;
 
 	@Inject
-	ClientManager clientManager;
+	ConnectionManager connectionManager;
 
 	@Inject
 	Vertx vertx;
@@ -46,10 +45,8 @@ public class SubscriptionSyncSQS implements SyncService {
 	String password;
 
 	Logger logger = LoggerFactory.getLogger(SubscriptionSyncSQS.class);
-	
-	
+
 	private long lastFailConnectTime = 0;
-	
 
 	private String seperator = "<&>";
 
@@ -73,7 +70,7 @@ public class SubscriptionSyncSQS implements SyncService {
 		pgSubscriber.channel("subscriptionchannel").handler(notice -> {
 			logger.debug("notice received: " + notice);
 			String[] noticeSplitted = notice.split(seperator);
-			//int requestType = Integer.parseInt(noticeSplitted[2]);
+			// int requestType = Integer.parseInt(noticeSplitted[2]);
 			String syncId = noticeSplitted[3];
 			if (syncId.equals(SYNC_ID)) {
 				logger.debug("Discarding own announcement");
@@ -81,14 +78,14 @@ public class SubscriptionSyncSQS implements SyncService {
 				subService.reloadSubscription(noticeSplitted[1], noticeSplitted[0]);
 			}
 		});
-		
+
 		pgSubscriber.reconnectPolicy(retries -> {
 			long now = System.currentTimeMillis();
 			long reconnectTime;
-			if(lastFailConnectTime + (5000) < now) {
+			if (lastFailConnectTime + (5000) < now) {
 				reconnectTime = 100;
-				
-			}else {
+
+			} else {
 				reconnectTime = 5000;
 			}
 			lastFailConnectTime = now;
@@ -100,12 +97,11 @@ public class SubscriptionSyncSQS implements SyncService {
 	@Override
 	public Uni<Void> sync(SubscriptionRequest request) {
 		logger.debug("sending notify: ");
-		return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
-			return client
-					.query("NOTIFY subscriptionchannel, '" + request.getId() + seperator + request.getTenant()
-							+ seperator + request.getRequestType() + seperator + SYNC_ID + "'")
-					.execute().onItem().transformToUni(r -> Uni.createFrom().voidItem());
-		});
+
+		return connectionManager
+				.executeQuery(null, "NOTIFY subscriptionchannel, '" + request.getId() + seperator + request.getTenant()
+						+ seperator + request.getRequestType() + seperator + SYNC_ID + "'", null, false)
+				.onItem().transformToUni(r -> Uni.createFrom().voidItem());
 
 	}
 

@@ -3,6 +3,8 @@ package eu.neclab.ngsildbroker.commons.storage;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import jakarta.annotation.PostConstruct;
@@ -27,21 +29,25 @@ import io.quarkus.arc.Arc;
 import io.quarkus.flyway.runtime.FlywayContainer;
 import io.quarkus.flyway.runtime.FlywayContainerProducer;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.tuples.Tuple2;
+
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.vertx.mutiny.core.Vertx;
-import io.vertx.mutiny.pgclient.PgPool;
+
+import io.vertx.mutiny.sqlclient.Pool;
+
+import io.vertx.mutiny.sqlclient.Row;
+import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
 import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.sqlclient.PoolOptions;
 
 @Singleton
-public class ClientManager {
+public class ConnectionManager {
 
-	Logger logger = LoggerFactory.getLogger(ClientManager.class);
+	Logger logger = LoggerFactory.getLogger(ConnectionManager.class);
 
 	@Inject
-	PgPool pgClient;
+	Pool pgClient;
 
 	@Inject
 	AgroalDataSource writerDataSource;
@@ -76,31 +82,118 @@ public class ClientManager {
 	int initialSize;
 
 	private String reactiveBaseUrl;
-	protected ConcurrentMap<String, Uni<PgPool>> tenant2Client = Maps.newConcurrentMap();
+
+	private Map<String, Pool> tenant2Client = Maps.newHashMap();
 
 	@PostConstruct
 	void loadTenantClients() throws URISyntaxException {
 		URI uri = new URI(reactiveDefaultUrl);
 		reactiveBaseUrl = uri.getScheme() + "://" + uri.getHost() + ":" + uri.getPort() + "/";
-		tenant2Client.put(AppConstants.INTERNAL_NULL_KEY, Uni.createFrom().item(pgClient));
+		tenant2Client.put(AppConstants.INTERNAL_NULL_KEY, pgClient);
 	}
 
-	public Uni<PgPool> getClient(String tenant, boolean create) {
+	public Uni<RowSet<Row>> executeQuery(String tenant, String sql, Tuple tuple, boolean createTenant) {
+		Pool client;
 		if (tenant == null) {
-			return tenant2Client.get(AppConstants.INTERNAL_NULL_KEY);
+			client = pgClient;
+		} else {
+			client = tenant2Client.get(tenant);
 		}
-		Uni<PgPool> result = tenant2Client.get(tenant);
-		if (result == null) {
-			result = getTenant(tenant, create);
-			return result.onItem().transformToUni(pgClient->{
-                return tenant2Client.put(tenant, Uni.createFrom().item(pgClient));
+		if (client != null) {
+			if (tuple != null) {
+				return client.preparedQuery(sql).execute(tuple);
+			} else {
+				return client.preparedQuery(sql).execute();
+			}
+		} else {
+			if (!createTenant) {
+				return Uni.createFrom().failure(
+						new ResponseException(ErrorType.TenantNotFound, tenant + " tenant was not found"));
+			}
+			return getTenant(tenant, createTenant).onItem().transformToUni(tenantClient -> {
+				if (tuple != null) {
+					return tenantClient.preparedQuery(sql).execute(tuple);
+				} else {
+					return tenantClient.preparedQuery(sql).execute();
+				}
 			});
 		}
-		return result;
 	}
 
-	private Uni<PgPool> getTenant(String tenant, boolean createDB) {
-		return determineTargetDataSource(tenant, createDB).onItem().transformToUni(Unchecked.function(finalDataBase -> {
+	public Uni<RowSet<Row>> executeBatchQuery(String tenant, String sql, List<Tuple> tuples, boolean createTenant) {
+		Pool client;
+		if (tenant == null) {
+			client = pgClient;
+		} else {
+			client = tenant2Client.get(tenant);
+		}
+		if (client != null) {
+			return client.preparedQuery(sql).executeBatch(tuples);
+		} else {
+			if (!createTenant) {
+				return Uni.createFrom().failure(
+						new ResponseException(ErrorType.TenantNotFound, tenant + " tenant was not found"));
+			}
+			return getTenant(tenant, createTenant).onItem().transformToUni(tenantClient -> {
+				return tenantClient.preparedQuery(sql).executeBatch(tuples);
+			});
+		}
+	}
+
+	public Uni<Void> executeBatchQueryWithPreStep(String tenant, String sql, List<Tuple> tuples, String preStepSql,
+			Tuple preStepTuple, boolean createTenant) {
+		Pool client;
+		if (tenant == null) {
+			client = pgClient;
+		} else {
+			client = tenant2Client.get(tenant);
+		}
+		if (client != null) {
+			return client.getConnection().onItem().transformToUni(conn -> {
+				Uni<RowSet<Row>> tmp;
+				if (preStepTuple != null) {
+					tmp = conn.preparedQuery(preStepSql).execute(preStepTuple);
+				} else {
+					tmp = conn.preparedQuery(preStepSql).execute();
+				}
+				return tmp.onItem().transformToUni(ignored -> {
+					if (tuples == null) {
+						return conn.close();
+					}
+					return conn.preparedQuery(sql).executeBatch(tuples).onItem().transformToUni(ignoredToo -> {
+						return conn.close();
+					});
+				});
+			});
+
+		} else {
+			if (!createTenant) {
+				return Uni.createFrom().failure(
+						new ResponseException(ErrorType.TenantNotFound, tenant + " tenant was not found"));
+			}
+			return getTenant(tenant, createTenant).onItem().transformToUni(tenantClient -> {
+				return tenantClient.getConnection().onItem().transformToUni(conn -> {
+					Uni<RowSet<Row>> tmp;
+					if (preStepTuple != null) {
+						tmp = conn.preparedQuery(preStepSql).execute(preStepTuple);
+					} else {
+						tmp = conn.preparedQuery(preStepSql).execute();
+					}
+					return tmp.onItem().transformToUni(ignored -> {
+						if (tuples == null) {
+							return conn.close();
+						}
+						return conn.preparedQuery(sql).executeBatch(tuples).onItem().transformToUni(ignoredToo -> {
+							return conn.close();
+						});
+					});
+				});
+			});
+		}
+	}
+
+	private Uni<Pool> getTenant(String tenant, boolean createDB) {
+		return determineTargetDataSource(tenant, createDB).onItem().transform(Unchecked.function(finalDataBase -> {
 			PoolOptions options = new PoolOptions();
 			options.setName(finalDataBase);
 			options.setShared(true);
@@ -110,23 +203,21 @@ public class ClientManager {
 			options.setConnectionTimeout((int) connectionTime.getSeconds());
 			options.setConnectionTimeoutUnit(TimeUnit.SECONDS);
 
-			PgPool pool = PgPool.pool(vertx, PgConnectOptions.fromUri(reactiveBaseUrl + finalDataBase).setUser(username)
+			Pool pool = Pool.pool(vertx, PgConnectOptions.fromUri(reactiveBaseUrl + finalDataBase).setUser(username)
 					.setPassword(password).setCachePreparedStatements(true), options);
-			Uni<PgPool> result = Uni.createFrom().item(pool);
-			tenant2Client.put(tenant, result);
-			return result;
+
+			tenant2Client.put(tenant, pool);
+			return pool;
 		}));
 	}
 
 	public Uni<String> determineTargetDataSource(String tenantidvalue, boolean createDB) {
-		return createDataSourceForTenantId(tenantidvalue, createDB).onItem().transform(tenantDataSource -> {
-			flywayMigrate(tenantDataSource.getItem1());
-			tenantDataSource.getItem1().close();
-			return tenantDataSource.getItem2();
+		return createDataSourceForTenantId(tenantidvalue, createDB).onItem().transform(tenant -> {
+			return tenant;
 		});
 	}
 
-	private Uni<Tuple2<AgroalDataSource, String>> createDataSourceForTenantId(String tenantidvalue, boolean createDB) {
+	private Uni<String> createDataSourceForTenantId(String tenantidvalue, boolean createDB) {
 		return findDataBaseNameByTenantId(tenantidvalue, createDB).onItem()
 				.transform(Unchecked.function(tenantDatabaseName -> {
 					// TODO this needs to be from the config not hardcoded!!!
@@ -140,13 +231,10 @@ public class ClientManager {
 													.principal(new NamePrincipal(username))
 													.credential(new SimplePassword(password))));
 					AgroalDataSource agroaldataSource = AgroalDataSource.from(configuration);
-					return Tuple2.of(agroaldataSource, tenantDatabaseName);
+					flywayMigrate(agroaldataSource);
+					return tenantDatabaseName;
 				}));
 
-	}
-
-	public ConcurrentMap<String, Uni<PgPool>> getAllClients() {
-		return tenant2Client;
 	}
 
 	public Uni<String> findDataBaseNameByTenantId(String tenant, boolean create) {
@@ -185,9 +273,9 @@ public class ClientManager {
 
 	public Boolean flywayMigrate(DataSource tenantDataSource) {
 
-        FlywayContainerProducer flywayProducer = Arc.container().instance(FlywayContainerProducer.class).get();
-        FlywayContainer flywayContainer = flywayProducer.createFlyway(tenantDataSource, "<default>", true, true);
-        Flyway flyway = flywayContainer.getFlyway();
+		FlywayContainerProducer flywayProducer = Arc.container().instance(FlywayContainerProducer.class).get();
+		FlywayContainer flywayContainer = flywayProducer.createFlyway(tenantDataSource, "<default>", true, true);
+		Flyway flyway = flywayContainer.getFlyway();
 		try {
 			flyway.migrate();
 		} catch (Exception e) {

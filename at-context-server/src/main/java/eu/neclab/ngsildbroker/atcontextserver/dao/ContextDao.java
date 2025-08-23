@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.storage.ClientManager;
+import eu.neclab.ngsildbroker.commons.storage.ConnectionManager;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.sqlclient.Row;
@@ -34,7 +34,7 @@ import io.vertx.pgclient.PgException;
 @ApplicationScoped
 public class ContextDao {
 	@Inject
-	ClientManager clientManager;
+	ConnectionManager connectionManager;
 
 	@Inject
 	MicroServiceUtils microServiceUtils;
@@ -53,86 +53,84 @@ public class ContextDao {
 				with a as(select * from contexts WHERE id=$1),
 				b as (update contexts set lastusage = now(), numberofhits = numberofhits+1 WHERE id=$1)
 				select * from a""";
-		logger.debug(sql);
-		logger.debug(id);
-		return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
-			return client.preparedQuery(sql).execute(Tuple.of(id)).onItem().transformToUni(rows -> {
-				if (rows.size() > 0) {
-					Row row = rows.iterator().next();
 
-					Map<String, Object> result = new HashMap<>();
-					if (details) {
-						String localId = row.getString(NGSIConstants.ID);
-						result.put(NGSIConstants.LOCAL_ID, localId);
-						result.put(NGSIConstants.KIND, row.getString(NGSIConstants.KIND));
-						result.put(NGSIConstants.NUMBER_OF_HITS,
-								row.getLong(NGSIConstants.NUMBER_OF_HITS.toLowerCase()));
-						LocalDateTime lastUsage = row.getLocalDateTime(NGSIConstants.LAST_USAGE.toLowerCase());
-						LocalDateTime createdAt = row.getLocalDateTime(NGSIConstants.CREATEDAT.toLowerCase());
-						if (lastUsage != null) {
+		return connectionManager.executeQuery(null, sql, Tuple.of(id), false).onItem().transformToUni(rows -> {
+			if (rows.size() > 0) {
+				Row row = rows.iterator().next();
 
-							result.put(NGSIConstants.LAST_USAGE, SerializationTools.formatter.format(lastUsage));
-						}
-						result.put(NGSIConstants.URL,
-								atContextUrl + URLEncoder.encode(localId, StandardCharsets.UTF_8));
-						result.put(NGSIConstants.BODY, row.getJsonObject(NGSIConstants.BODY).getMap());
-						result.put(NGSIConstants.CREATEDAT, SerializationTools.formatter.format(createdAt));
-						return Uni.createFrom().item(result);
-					} else
-						return Uni.createFrom().item(row.getJsonObject(NGSIConstants.BODY).getMap());
+				Map<String, Object> result = new HashMap<>();
+				if (details) {
+					String localId = row.getString(NGSIConstants.ID);
+					result.put(NGSIConstants.LOCAL_ID, localId);
+					result.put(NGSIConstants.KIND, row.getString(NGSIConstants.KIND));
+					result.put(NGSIConstants.NUMBER_OF_HITS,
+							row.getLong(NGSIConstants.NUMBER_OF_HITS.toLowerCase()));
+					LocalDateTime lastUsage = row.getLocalDateTime(NGSIConstants.LAST_USAGE.toLowerCase());
+					LocalDateTime createdAt = row.getLocalDateTime(NGSIConstants.CREATEDAT.toLowerCase());
+					if (lastUsage != null) {
 
+						result.put(NGSIConstants.LAST_USAGE, SerializationTools.formatter.format(lastUsage));
+					}
+					result.put(NGSIConstants.URL,
+							atContextUrl + URLEncoder.encode(localId, StandardCharsets.UTF_8));
+					result.put(NGSIConstants.BODY, row.getJsonObject(NGSIConstants.BODY).getMap());
+					result.put(NGSIConstants.CREATEDAT, SerializationTools.formatter.format(createdAt));
+					return Uni.createFrom().item(result);
 				} else
-					return Uni.createFrom()
-							.failure(new ResponseException(ErrorType.NotFound, "The context was not found"));
-			});
+					return Uni.createFrom().item(row.getJsonObject(NGSIConstants.BODY).getMap());
+
+			} else
+				return Uni.createFrom()
+						.failure(new ResponseException(ErrorType.NotFound, "The context was not found"));
 		});
+
 	}
 
 	public Uni<String> hostContext(Map<String, Object> payload) {
 		String sql = "INSERT INTO contexts (id, body, kind) values($1, $2, 'Hosted') returning id";
 		String id = "urn:" + UUID.randomUUID();
-		return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
-			return client.preparedQuery(sql).execute(Tuple.of(id, new JsonObject(payload))).onFailure()
-					.recoverWithUni(e -> {
 
-						if (e instanceof PgException pge) {
+		return connectionManager.executeQuery(null, sql, Tuple.of(id, new JsonObject(payload)), false)
+				.onFailure()
+				.recoverWithUni(e -> {
 
-							MicroServiceUtils.logPGE(pge, logger);
-							if (pge.getSqlState().equals(AppConstants.SQL_NOT_FOUND)) {
-								return Uni.createFrom()
-										.failure(new ResponseException(ErrorType.NotFound, id + " not found"));
-							}
-							if (pge.getSqlState().startsWith("SB")) {
-								return Uni.createFrom().failure(
-										new ResponseException(ErrorType.BadRequestData, pge.getErrorMessage()));
-							}
+					if (e instanceof PgException pge) {
+
+						MicroServiceUtils.logPGE(pge, logger);
+						if (pge.getSqlState().equals(AppConstants.SQL_NOT_FOUND)) {
+							return Uni.createFrom()
+									.failure(new ResponseException(ErrorType.NotFound, id + " not found"));
 						}
-						logger.debug("database exception", e);
-						return Uni.createFrom().failure(e);
-					}).onItem().transformToUni(rows -> {
-						if (rows.size() > 0) {
-							return Uni.createFrom().item(rows.iterator().next().getString(0));
-						} else {
+						if (pge.getSqlState().startsWith("SB")) {
 							return Uni.createFrom().failure(
-									new ResponseException(ErrorType.InternalError, "An unexcpected error happened"));
+									new ResponseException(ErrorType.BadRequestData, pge.getErrorMessage()));
 						}
-					});
-		});
+					}
+					logger.debug("database exception", e);
+					return Uni.createFrom().failure(e);
+				}).onItem().transformToUni(rows -> {
+					if (rows.size() > 0) {
+						return Uni.createFrom().item(rows.iterator().next().getString(0));
+					} else {
+						return Uni.createFrom().failure(
+								new ResponseException(ErrorType.InternalError, "An unexcpected error happened"));
+					}
+				});
 
 	}
 
 	public Uni<Void> deleteById(String id) {
 		String sql = "DELETE FROM contexts WHERE id=$1 RETURNING id";
-		return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
-			return client.preparedQuery(sql).execute(Tuple.of(id)).onItem().transformToUni(rows -> {
-				if (rows.size() > 0) {
-					return Uni.createFrom().voidItem();
-				} else {
-					return Uni.createFrom()
-							.failure(new ResponseException(ErrorType.NotFound, "@Context was not found"));
-				}
-			});
+
+		return connectionManager.executeQuery(null, sql, Tuple.of(id), false).onItem().transformToUni(rows -> {
+			if (rows.size() > 0) {
+				return Uni.createFrom().voidItem();
+			} else {
+				return Uni.createFrom()
+						.failure(new ResponseException(ErrorType.NotFound, "@Context was not found"));
+			}
 		});
+
 	}
 
 	public Uni<List<Object>> getAllContexts(String kind, Boolean details) {
@@ -142,37 +140,35 @@ public class ContextDao {
 			sql.append("where kind='%s'".formatted(kind));
 		}
 		List<Object> contexts = new ArrayList<>();
-		logger.debug(sql.toString());
-		return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
-			return client.preparedQuery(sql.toString()).execute().onItem().transform(rows -> {
-				rows.forEach(row -> {
-					Map<String, Object> result = new HashMap<>();
 
-					if (details) {
-						result.put(NGSIConstants.LOCAL_ID, row.getString(NGSIConstants.ID));
-						result.put(NGSIConstants.NUMBER_OF_HITS,
-								row.getLong(NGSIConstants.NUMBER_OF_HITS.toLowerCase()));
-						LocalDateTime lastUsage = row.getLocalDateTime(NGSIConstants.LAST_USAGE.toLowerCase());
+		return connectionManager.executeQuery(null, sql.toString(), null, false).onItem().transform(rows -> {
+			rows.forEach(row -> {
+				Map<String, Object> result = new HashMap<>();
 
-						if (lastUsage != null) {
-							result.put(NGSIConstants.LAST_USAGE, SerializationTools.formatter.format(lastUsage));
-						}
+				if (details) {
+					result.put(NGSIConstants.LOCAL_ID, row.getString(NGSIConstants.ID));
+					result.put(NGSIConstants.NUMBER_OF_HITS,
+							row.getLong(NGSIConstants.NUMBER_OF_HITS.toLowerCase()));
+					LocalDateTime lastUsage = row.getLocalDateTime(NGSIConstants.LAST_USAGE.toLowerCase());
 
-						result.put(NGSIConstants.KIND, row.getString(NGSIConstants.KIND));
-						result.put(NGSIConstants.BODY, row.getJsonObject(NGSIConstants.BODY).getMap());
-						result.put(NGSIConstants.CREATEDAT, SerializationTools.formatter
-								.format(row.getLocalDateTime(NGSIConstants.CREATEDAT.toLowerCase())));
-						result.put(NGSIConstants.URL, atContextUrl
-								+ URLEncoder.encode(row.getString(NGSIConstants.ID), StandardCharsets.UTF_8));
-						contexts.add(result);
-					} else {
-						contexts.add(atContextUrl
-								+ URLEncoder.encode(row.getString(NGSIConstants.ID), StandardCharsets.UTF_8));
+					if (lastUsage != null) {
+						result.put(NGSIConstants.LAST_USAGE, SerializationTools.formatter.format(lastUsage));
 					}
 
-				});
-				return contexts;
+					result.put(NGSIConstants.KIND, row.getString(NGSIConstants.KIND));
+					result.put(NGSIConstants.BODY, row.getJsonObject(NGSIConstants.BODY).getMap());
+					result.put(NGSIConstants.CREATEDAT, SerializationTools.formatter
+							.format(row.getLocalDateTime(NGSIConstants.CREATEDAT.toLowerCase())));
+					result.put(NGSIConstants.URL, atContextUrl
+							+ URLEncoder.encode(row.getString(NGSIConstants.ID), StandardCharsets.UTF_8));
+					contexts.add(result);
+				} else {
+					contexts.add(atContextUrl
+							+ URLEncoder.encode(row.getString(NGSIConstants.ID), StandardCharsets.UTF_8));
+				}
+
 			});
+			return contexts;
 		});
 
 	}
@@ -191,25 +187,24 @@ public class ContextDao {
 		}
 		String id = "urn:" + sb;
 		String sql = "INSERT INTO public.contexts (id, body, kind) values($1, $2, 'ImplicitlyCreated') returning id";
-		return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
-			return client.preparedQuery(sql).execute(Tuple.of(id, new JsonObject(payload))).onItemOrFailure()
-					.transform((rows, failure) -> {
-						if (failure != null) {
-							if (failure instanceof PgException
-									&& ((PgException) failure).getSqlState().equals("23505")) {// already exists
-								return RestResponse.ok(id);
-							} else {
-								return RestResponse.status(RestResponse.Status.INTERNAL_SERVER_ERROR,
-										failure.getMessage());
-							}
-
-						}
-						if (rows.size() > 0) {
-							return RestResponse.ok(rows.iterator().next().getString(0));
+		return connectionManager.executeQuery(null, sql, Tuple.of(id, new JsonObject(payload)), false).onItemOrFailure()
+				.transform((rows, failure) -> {
+					if (failure != null) {
+						if (failure instanceof PgException
+								&& ((PgException) failure).getSqlState().equals("23505")) {// already exists
+							return RestResponse.ok(id);
 						} else {
-							return RestResponse.status(RestResponse.Status.INTERNAL_SERVER_ERROR);
+							return RestResponse.status(RestResponse.Status.INTERNAL_SERVER_ERROR,
+									failure.getMessage());
 						}
-					});
-		});
+
+					}
+					if (rows.size() > 0) {
+						return RestResponse.ok(rows.iterator().next().getString(0));
+					} else {
+						return RestResponse.status(RestResponse.Status.INTERNAL_SERVER_ERROR);
+					}
+				});
+
 	}
 }

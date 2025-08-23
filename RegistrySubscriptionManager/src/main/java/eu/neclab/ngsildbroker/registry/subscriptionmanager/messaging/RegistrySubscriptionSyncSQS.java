@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
-import eu.neclab.ngsildbroker.commons.storage.ClientManager;
+import eu.neclab.ngsildbroker.commons.storage.ConnectionManager;
 import eu.neclab.ngsildbroker.registry.subscriptionmanager.service.RegistrySubscriptionService;
 import io.quarkus.arc.profile.IfBuildProfile;
 import io.quarkus.runtime.StartupEvent;
@@ -30,7 +30,7 @@ public class RegistrySubscriptionSyncSQS implements SyncService {
 	PgSubscriber pgSubscriber;
 
 	@Inject
-	ClientManager clientManager;
+	ConnectionManager connectionManager;
 
 	@Inject
 	Vertx vertx;
@@ -84,17 +84,16 @@ public class RegistrySubscriptionSyncSQS implements SyncService {
 	@Override
 	public Uni<Void> sync(SubscriptionRequest request) {
 		logger.debug("sending notify: ");
-		return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
-			String internal = "0";
-			if (request.getSubscription().getNotification().getEndPoint().getUri().toString()
-					.equals("internal:kafka")) {
-				internal = "1";
-			}
-			return client
-					.query("NOTIFY regsubscriptionchannel, '" + request.getId() + seperator + request.getTenant()
-							+ seperator + request.getRequestType() + seperator + SYNC_ID + seperator + internal + "'")
-					.execute().onItem().transformToUni(r -> Uni.createFrom().voidItem());
-		});
+
+		String internal = "0";
+		if (request.getSubscription().getNotification().getEndPoint().getUri().toString()
+				.equals("internal:kafka")) {
+			internal = "1";
+		}
+		return connectionManager.executeQuery(null,
+				"NOTIFY regsubscriptionchannel, '" + request.getId() + seperator + request.getTenant()
+						+ seperator + request.getRequestType() + seperator + SYNC_ID + seperator + internal + "'",
+				null, false).onItem().transformToUni(r -> Uni.createFrom().voidItem());
 
 	}
 
