@@ -17,4 +17,4 @@ CREATE INDEX ON entitymap USING btree (expires_at ASC NULLS LAST)
 WITH (deduplicate_items = True);
 DROP INDEX "I_entity_types";
 CREATE INDEX "I_entity_types" ON public.entity USING gin (e_types array_ops);
-CREATE INDEX "I_entity_types_elements" ON public.entity USING gin (e_types gin__int_ops);
+REINDEX TABLE entity;
