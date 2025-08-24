@@ -1495,7 +1495,7 @@ public class QueryDAO {
 			}
 			query.append(" FROM JOINENTITIES)");
 		}
-
+		System.out.println(query.toString());
 		return connectionManager.executeQuery(tenant, query.toString(), tuple, false).onItem().transform(rows -> {
 			EntityMap entityMap = new EntityMap(qToken, splitEntities, regEmptyOrNoRegEntryAndNoLinkedQuery,
 					noRootLevelRegEntryAndLinkedQuery);
