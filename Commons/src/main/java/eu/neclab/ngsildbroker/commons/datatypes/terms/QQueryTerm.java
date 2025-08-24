@@ -1796,7 +1796,13 @@ public class QQueryTerm implements Serializable {
 					}
 					result.setCharAt(result.length(), ']');
 				}
-				result.append("))') OR jsonb_path_exists(entity, '$.");
+				result.append("))') ");
+				if (not) {
+					result.append("AND NOT ");
+				} else {
+					result.append("OR");
+				}
+				result.append(" jsonb_path_exists(entity, '$.");
 				for (String pathEntry : attribPath) {
 					String attribName = linkHeaders.expandIri(pathEntry, false, true, null, null);
 					boolean wildcardUse = NGSIConstants.NGSI_LD_STAR.equals(attribName);
@@ -1813,9 +1819,7 @@ public class QQueryTerm implements Serializable {
 				result.append('"');
 				result.append(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP);
 				result.append("\"[*] ? (");
-				if (not) {
-					result.append("!");
-				}
+
 				result.append("(@.\"");
 				if (complexPart != null && !complexPart.equals("*")) {
 					result.append(NGSIConstants.JSON_LD_LANGUAGE);
