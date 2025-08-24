@@ -1331,10 +1331,11 @@ public class QQueryTerm implements Serializable {
 	private int parseAttribute(StringBuilder result, int dollar, Tuple tuple, String attrib, boolean localOnly,
 			boolean isDist, int entityLevelCounter) {
 
-		int linkedIndex = attrib.indexOf('{');
-		if (linkedIndex != -1) {
-			String linkedPart = attrib.substring(linkedIndex + 1, attrib.length() - 1);
-			String[] attribPath = StringUtils.split(attrib.substring(0, linkedIndex));
+		if (firstChild != null && isLinkedQ) {
+			String linkedPart = firstChild.attribute;
+			firstChild.operant = operant;
+			firstChild.operator = operator;
+			String[] attribPath = StringUtils.split(linkedAttrName, '.');
 			String prevEntity;
 			if (entityLevelCounter == -1) {
 				prevEntity = "ENTITY.ENTITY";
@@ -1342,9 +1343,7 @@ public class QQueryTerm implements Serializable {
 				prevEntity = "E" + entityLevelCounter + ".ENTITY";
 			}
 			entityLevelCounter++;
-			result.append("EXISTS (SELECT TRUE FROM ENTITY E");
-			result.append(entityLevelCounter);
-			result.append(", jsonb_path_query(");
+			result.append("EXISTS (SELECT 1 FROM jsonb_path_query(");
 			result.append(prevEntity);
 			result.append(", '$.");
 			for (String pathLevel : attribPath) {
@@ -1354,20 +1353,40 @@ public class QQueryTerm implements Serializable {
 				result.append("\"[*].");
 			}
 			result.setLength(result.length() - 1);
-			result.append(" ? (@.\"");
+			result.append(" ? ((@.\"");
 			result.append(NGSIConstants.JSON_LD_TYPE);
 			result.append("\"[0] == \"");
 			result.append(NGSIConstants.NGSI_LD_RELATIONSHIP);
-			result.append('"');
+			result.append("\")");
 			if (!localOnly) {
 				result.append(" && exists(@.\"");
 				result.append(NGSIConstants.NGSI_LD_OBJECT_TYPE);
 				result.append("\")");
 			}
-			result.append("') as rels WHERE ID=ANY(rels#>>'{}')");
+			result.append(
+					")') as rels JOIN LATERAL (SELECT jsonb_array_elements_text(jsonb_path_query_array(rels, '$.\"");
+			result.append(NGSIConstants.NGSI_LD_HAS_OBJECT);
+			result.append("\"[*].\"@id\"')) AS obj_id) AS obj_ids ON TRUE JOIN ENTITY E");
+			result.append(entityLevelCounter);
+			result.append(" ON E");
+			result.append(entityLevelCounter);
+			result.append(".id = obj_ids.obj_id WHERE (");
+			if (!localOnly) {
+				result.append("NOT jsonb_path_exists(rels, '$.\"");
+				result.append(NGSIConstants.NGSI_LD_OBJECT_TYPE);
+				result.append("\"') OR ");
+			}
+			result.append("E");
+			result.append(entityLevelCounter);
+			result.append(".e_types && ARRAY(");
+			result.append("SELECT jsonb_array_elements_text(");
+			result.append("jsonb_path_query_array(rels, '$.\"");
+			result.append(NGSIConstants.NGSI_LD_OBJECT_TYPE);
+			result.append("\"[*].\"@id\"')))) AND (");
 
-			dollar = parseAttribute(result, dollar, tuple, linkedPart, localOnly, isDist, entityLevelCounter);
-			result.append(")");
+			dollar = firstChild.parseAttribute(result, dollar, tuple, linkedPart, localOnly, isDist,
+					entityLevelCounter);
+			result.append("))");
 
 			return dollar;
 		}
@@ -1851,7 +1870,13 @@ public class QQueryTerm implements Serializable {
 
 	public int toSql(StringBuilder result, int dollar, Tuple tuple, boolean isDist,
 			boolean localOnly) {
-		dollar = parseAttribute(result, dollar, tuple, attribute, localOnly, isDist, -1);
+		if (firstChild != null && !isLinkedQ) {
+			result.append("(");
+			dollar = firstChild.toSqlOld(result, dollar, tuple, isDist, localOnly);
+			result.append(")");
+		} else {
+			dollar = parseAttribute(result, dollar, tuple, attribute, localOnly, isDist, -1);
+		}
 		if (hasNext()) {
 			if (nextAnd) {
 				result.append(" and ");
