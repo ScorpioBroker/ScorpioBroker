@@ -127,7 +127,7 @@ jobs:
       - name: Setup GraalVM
         uses: graalvm/setup-graalvm@v1
         with:
-          java-version: '17' # for a specific JDK 17; or '17' for the latest JDK 17
+          java-version: '21' # for a specific JDK 17; or '17' for the latest JDK 17
           distribution: 'graalvm'
       - name: Get release number
         id: get-id
@@ -243,7 +243,7 @@ jobs:
       - name: Setup GraalVM
         uses: graalvm/setup-graalvm@v1
         with:
-          java-version: '17' # for a specific JDK 17; or '17' for the latest JDK 17
+          java-version: '21' # for a specific JDK 17; or '17' for the latest JDK 17
           distribution: 'graalvm'
       - name: Get release number
         id: get-id
@@ -359,7 +359,7 @@ jobs:
       - name: Setup GraalVM
         uses: graalvm/setup-graalvm@v1
         with:
-          java-version: '17' # for a specific JDK 17; or '17' for the latest JDK 17
+          java-version: '21' # for a specific JDK 17; or '17' for the latest JDK 17
           distribution: 'graalvm'
       - name: Get release number
         id: get-id
@@ -475,7 +475,7 @@ jobs:
       - name: Setup GraalVM
         uses: graalvm/setup-graalvm@v1
         with:
-          java-version: '17' # for a specific JDK 17; or '17' for the latest JDK 17
+          java-version: '21' # for a specific JDK 17; or '17' for the latest JDK 17
           distribution: 'graalvm'
       - name: Get release number
         id: get-id
