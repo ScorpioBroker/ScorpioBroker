@@ -775,7 +775,8 @@ public class JsonLdApi {
 
 	}
 
-	private Object compactEntity(Map<String, Object> elem, Context activeCtx, boolean removeSysAttrs, boolean keyValue,
+	private Map<String, Object> compactEntity(Map<String, Object> elem, Context activeCtx, boolean removeSysAttrs,
+			boolean keyValue,
 			boolean concise, boolean temporal,
 			LanguageQueryTerm langQuery, Set<String> options) {
 		Map<String, Object> result = new LinkedHashMap<>(elem.size());
@@ -866,8 +867,24 @@ public class JsonLdApi {
 						result.add(resultMap.get(NGSIConstants.VALUE));
 						break;
 					case NGSIConstants.NGSI_LD_RELATIONSHIP:
-						handleRelationship(resultMap, attribMap);
-						result.add(resultMap.get(NGSIConstants.OBJECT));
+						List<Map<String, Object>> entityEntry = (List<Map<String, Object>>) attribMap
+								.get(NGSIConstants.NGSI_LD_ENTITY);
+						if (entityEntry != null) {
+							List<Map<String, Object>> resultEntityEntry = new ArrayList<>(entityEntry.size());
+							for (Map<String, Object> entity : entityEntry) {
+								resultEntityEntry.add(compactEntity(entity, activeCtx, removeSysAttrs, keyValue,
+										concise, temporal, langQuery, options));
+							}
+							if (resultEntityEntry.size() == 1) {
+								result.add(resultEntityEntry.get(0));
+							} else {
+								result.addAll(resultEntityEntry);
+							}
+						} else {
+							handleRelationship(resultMap, attribMap);
+							result.add(resultMap.get(NGSIConstants.OBJECT));
+						}
+
 						break;
 					case NGSIConstants.NGSI_LD_GEOPROPERTY:
 						if (!handleGeoProperty(resultMap, attribMap, activeCtx, expandedName, result, attribInstance)) {
@@ -891,8 +908,19 @@ public class JsonLdApi {
 						break;
 
 					case NGSIConstants.NGSI_LD_LISTRELATIONSHIP:
-						handleListRelationship(resultMap, attribMap);
-						result.add(resultMap.get(NGSIConstants.OBJECT_LIST));
+						List<Map<String, List<Map<String, Object>>>> entityList = (List<Map<String, List<Map<String, Object>>>>) attribMap
+								.get(NGSIConstants.NGSI_LD_ENTITY_LIST);
+						if (entityList != null) {
+							List<Map<String, Object>> helper = entityList.get(0).get(NGSIConstants.JSON_LD_LIST);
+							for (Map<String, Object> entry : helper) {
+								result.add(compactEntity(entry, activeCtx, removeSysAttrs, keyValue, concise, temporal,
+										langQuery, options));
+							}
+						} else {
+							handleListRelationship(resultMap, attribMap);
+							result.add(resultMap.get(NGSIConstants.OBJECT_LIST));
+						}
+
 						break;
 
 					case NGSIConstants.NGSI_LD_LANGPROPERTY:
@@ -1163,13 +1191,13 @@ public class JsonLdApi {
 		}
 
 		if (entityList != null) {
-			List<Object> tmp = new ArrayList<>(entity.size());
-			for (Map<String, Object> entry : entity) {
+			List<Map<String, Object>> helper = entityList.get(0).get(NGSIConstants.JSON_LD_LIST);
+			List<Object> tmp = new ArrayList<>(helper.size());
+			for (Map<String, Object> entry : helper) {
 				tmp.add(compactEntity(entry, activeCtx, removeSysAttrs, keyValue, concise, temporal,
 						langQuery, options));
 			}
 			resultMap.put(NGSIConstants.ENTITY_LIST, tmp);
-
 		}
 
 		final List<String> keys = new ArrayList<String>(attribMap.keySet());
