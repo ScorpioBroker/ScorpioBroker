@@ -75,7 +75,7 @@ public class OrderByTerm {
                         break;
                     case NGSIConstants.NGSI_LD_LOCATION:
                         if (orderTerm.orderFrom != null) {
-                            sql.append("ST_DISTANCE(");
+                            sql.append("ST_DistanceSphere(");
                         }
                         sql.append("LOCATION");
                         if (orderTerm.orderFrom != null) {
@@ -83,7 +83,7 @@ public class OrderByTerm {
                             sql.append(dollar);
                             dollar++;
                             tuple.addJsonObject(getGeoJson(orderTerm.orderFrom, orderTerm.orderGeometry, objectMapper));
-                            sql.append("), 4326))");
+                            sql.append("::jsonb), 4326))");
                         }
                         break;
                     case NGSIConstants.NGSI_LD_CREATED_AT:
@@ -109,7 +109,7 @@ public class OrderByTerm {
 
                         sql.append("COALESCE(jsonb_path_query_first(ENTITY, '$.\"");
                         sql.append(expandedTerm);
-                        sql.append("[*]\".");
+                        sql.append("\"[*].\"");
                         sql.append(NGSIConstants.NGSI_LD_HAS_VALUE);
                         sql.append('"');
                         if (complexPart != null) {
@@ -127,30 +127,31 @@ public class OrderByTerm {
 
                         sql.append("jsonb_path_query_first(ENTITY, '$.\"");
                         sql.append(expandedTerm);
-                        sql.append("[*]\".");
+                        sql.append("\"[*].\"");
                         sql.append(NGSIConstants.JSON_LD_VALUE);
                         sql.append("\"'),");
 
                         sql.append("jsonb_path_query_first(ENTITY, '$.\"");
                         sql.append(expandedTerm);
-                        sql.append("[*]\".");
+                        sql.append("\"[*].\"");
                         sql.append(NGSIConstants.NGSI_LD_HAS_OBJECT);
-                        sql.append("[0].\"");
+                        sql.append("\"[0].\"");
                         sql.append(NGSIConstants.JSON_LD_ID);
                         sql.append("\"'),");
 
                         sql.append("jsonb_path_query_first(ENTITY, '$.\"");
                         sql.append(expandedTerm);
-                        sql.append("[*]\".");
+                        sql.append("\"[*].\"");
                         sql.append(NGSIConstants.NGSI_LD_HAS_VOCAB);
-                        sql.append("[0].\"");
+                        sql.append("\"[0].\"");
                         sql.append(NGSIConstants.JSON_LD_ID);
                         sql.append("\"'),");
 
                         sql.append("jsonb_path_query_first(ENTITY, '$.\"");
                         sql.append(expandedTerm);
-                        sql.append("[*]\".");
+                        sql.append("\"[*].\"");
                         sql.append(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP);
+                        sql.append('"');
                         if (complexPart == null || complexPart.equals("*")) {
                             sql.append("[0].\"");
                         } else {
@@ -169,9 +170,9 @@ public class OrderByTerm {
 
                         sql.append("jsonb_path_query_first(ENTITY, '$.\"");
                         sql.append(expandedTerm);
-                        sql.append("[*]\".");
+                        sql.append("\"[*].\"");
                         sql.append(NGSIConstants.NGSI_LD_HAS_JSON);
-                        sql.append("[0].\"");
+                        sql.append("\"[0].\"");
                         sql.append(NGSIConstants.JSON_LD_VALUE);
                         sql.append('"');
                         if (complexPart != null) {
@@ -187,7 +188,7 @@ public class OrderByTerm {
 
                         sql.append("jsonb_path_query_first(ENTITY, '$.\"");
                         sql.append(expandedTerm);
-                        sql.append("[*]\".");
+                        sql.append("\"[*].\"");
                         sql.append(NGSIConstants.NGSI_LD_HAS_LIST);
                         sql.append("\"[0].\"");
                         sql.append(NGSIConstants.JSON_LD_LIST);
@@ -207,7 +208,7 @@ public class OrderByTerm {
 
                         sql.append("jsonb_path_query_first(ENTITY, '$.\"");
                         sql.append(expandedTerm);
-                        sql.append("[*]\".");
+                        sql.append("\"[*].\"");
                         sql.append(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST);
                         sql.append("\"[0].\"");
                         sql.append(NGSIConstants.JSON_LD_LIST);
@@ -353,11 +354,12 @@ public class OrderByTerm {
                 sql.append(NGSIConstants.JSON_LD_ID);
                 sql.append("\"'))");
             }
-            sql.append("as ORDER_VALUE");
+            sql.append(" as ORDER_VALUE");
             sql.append(i);
             sql.append(',');
             i++;
         }
+        sql.setLength(sql.length() - 1);
 
         return dollar;
 
@@ -419,10 +421,10 @@ public class OrderByTerm {
     }
 
     public void toSqlOrder(StringBuilder sql) {
-        sql.append("ORDER BY ");
+        sql.append(" ORDER BY ");
         int i = 0;
         for (TermEntry term : orderTerms) {
-            sql.append("orderValue");
+            sql.append("ORDER_VALUE");
             sql.append(i);
             if (term.collation != null) {
                 sql.append(" COLLATE \"");
@@ -434,8 +436,17 @@ public class OrderByTerm {
                 sql.append(term.orderDirection);
             }
             sql.append(',');
+            i++;
         }
         sql.setLength(sql.length() - 1);
+    }
+
+    public int termSize() {
+        return orderTerms.size();
+    }
+
+    public String getTerm(int i) {
+        return orderTerms.get(i).orderTerm;
     }
 
 }

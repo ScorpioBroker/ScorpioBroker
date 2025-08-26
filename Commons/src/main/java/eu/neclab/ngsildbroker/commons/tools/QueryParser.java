@@ -631,13 +631,13 @@ public class QueryParser {
 					current.append(b);
 					break;
 			}
-			if (readingAttrib) {
-				orderTerm = current.toString();
-			} else {
-				orderDirection = current.toString();
-			}
-			result.addTerm(orderTerm, collation, orderFrom, orderDirection, orderGeometry);
 		}
+		if (readingAttrib) {
+			orderTerm = current.toString();
+		} else {
+			orderDirection = current.toString();
+		}
+		result.addTerm(orderTerm, collation, orderFrom, orderDirection, orderGeometry);
 		return result;
 	}
 

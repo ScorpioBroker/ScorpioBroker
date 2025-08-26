@@ -33,6 +33,7 @@ public class Query implements Serializable {
 	private String entityMapToken;
 	private boolean tokenProvided;
 	private boolean entityMap;
+	private boolean metadata;
 
 	private CSFQueryTerm csfQueryTerm;
 	@JsonIgnore
@@ -250,6 +251,14 @@ public class Query implements Serializable {
 
 	public void setOrderBy(OrderByTerm orderBy) {
 		this.orderBy = orderBy;
+	}
+
+	public boolean isMetadata() {
+		return metadata;
+	}
+
+	public void setMetadata(boolean metadata) {
+		this.metadata = metadata;
 	}
 
 }

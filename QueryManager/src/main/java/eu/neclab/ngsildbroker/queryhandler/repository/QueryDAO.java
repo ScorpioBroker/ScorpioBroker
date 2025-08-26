@@ -1391,7 +1391,7 @@ public class QueryDAO {
 			OmitTerm omitTerm, String queryChecksum, boolean splitEntities,
 			boolean regEmptyOrNoRegEntryAndNoLinkedQuery, boolean noRootLevelRegEntryAndLinkedQuery, String typePattern,
 			boolean localOnly, boolean forceEntitymapCreation, boolean tokenProvided, boolean count,
-			OrderByTerm orderBy) {
+			OrderByTerm orderBy, boolean metadata) {
 
 		StringBuilder query = new StringBuilder();
 		Tuple tuple = Tuple.tuple();
@@ -1501,6 +1501,17 @@ public class QueryDAO {
 			if (count) {
 				query.append(", null::bigint");
 			}
+			if (orderBy != null && metadata) {
+				query.append(',');
+				for (int i = 0; i < orderBy.termSize(); i++) {
+					query.append("ORDER_VALUE");
+					query.append(i);
+					query.append(',');
+
+				}
+				query.setLength(query.length() - 1);
+
+			}
 			query.append(" FROM D0");
 		} else {
 			query.append(
@@ -1509,8 +1520,20 @@ public class QueryDAO {
 
 		if (doJoin) {
 			query.append(" UNION ALL (SELECT ID, ENTITY, PARENT");
-			if (doNotCreateEntityMap && count) {
-				query.append(", null::bigint");
+			if (doNotCreateEntityMap) {
+				if (count) {
+					query.append(", null::bigint");
+				}
+				if (orderBy != null && metadata) {
+					query.append(',');
+					for (int i = 0; i < orderBy.termSize(); i++) {
+						query.append("null");
+						query.append(',');
+
+					}
+					query.setLength(query.length() - 1);
+
+				}
 			}
 			if (!doNotCreateEntityMap) {
 				query.append(", null, null");
@@ -1550,8 +1573,9 @@ public class QueryDAO {
 						id2Cid.put(id, Sets.newHashSet(NGSIConstants.JSON_LD_NONE));
 
 					}
+					Map<String, Object> entity;
 					if (entityObj != null) {
-						Map<String, Object> entity = entityObj.getMap();
+						entity = entityObj.getMap();
 						entityCache.setEntityIntoEntityCache(id, entity, NGSIConstants.JSON_LD_NONE);
 						if (parent) {
 							if (attrsQuery != null) {
@@ -1564,6 +1588,25 @@ public class QueryDAO {
 								dataSetIdTerm.calculateEntity(entity);
 							}
 						}
+					} else {
+						entity = null;
+					}
+					if (orderBy != null && metadata) {
+						int accessCounter;
+						if (count) {
+							accessCounter = 4;
+						} else {
+							accessCounter = 3;
+						}
+						Map<String, Object> metadataResult = new LinkedHashMap<>(2);
+						metadataResult.put(NGSIConstants.TYPE, "NGSI-LDMetaData");
+
+						Map<String, Object> metadataValues = new HashMap<>(orderBy.termSize());
+						for (int i = 0; i < orderBy.termSize(); i++) {
+							metadataValues.put(orderBy.getTerm(i), row.getValue(i + accessCounter));
+						}
+						metadataResult.put("metadata", metadataValues);
+						entity.put("ngsiLdMetaData", metadataResult);
 					}
 				}
 			} else {
@@ -1606,7 +1649,7 @@ public class QueryDAO {
 							context, limit, offset, dataSetIdTerm, join, joinLevel, qToken, pickTerm, omitTerm,
 							queryChecksum, splitEntities, regEmptyOrNoRegEntryAndNoLinkedQuery,
 							noRootLevelRegEntryAndLinkedQuery, typePattern, localOnly, forceEntitymapCreation,
-							false, count, orderBy);
+							false, count, orderBy, metadata);
 				}
 				if (pgE.getSqlState().equals(AppConstants.INVALID_REGULAR_EXPRESSION)) {
 					return Uni.createFrom()

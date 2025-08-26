@@ -127,13 +127,13 @@ public class QueryService implements CSourceHandler {
 			io.vertx.core.MultiMap headersFromReq, boolean doNotCompact, Set<String> jsonKeys,
 			DataSetIdTerm dataSetIdTerm, String join, int joinLevel, boolean entityDist, PickTerm pickTerm,
 			OmitTerm omitTerm, String checkSum, ViaHeaders viaHeaders, String typePattern,
-			boolean forceEntitymapCreation, OrderByTerm orderBy) {
+			boolean forceEntitymapCreation, OrderByTerm orderBy, boolean metadata) {
 		// if (!tokenProvided || AppConstants.ENTITYMAP_IGNORE.equals(qToken)) {
 		return getAndStoreEntityMap(tenant, qToken, idsAndTypeQueryAndIdPattern, attrsQuery, geoQuery, qQuery,
 				scopeQuery, langQuery, limit, offSet, context, headersFromReq, doNotCompact, dataSetIdTerm, join,
 				joinLevel, entityDist, pickTerm, omitTerm, checkSum, viaHeaders, typePattern, localOnly,
 				forceEntitymapCreation || tokenProvided,
-				tokenProvided, count, orderBy)
+				tokenProvided, count, orderBy, metadata)
 				.onItem().transformToUni(t -> {
 					return handleEntityMap(t.getItem2(), t.getItem1(), tenant, idsAndTypeQueryAndIdPattern,
 							attrsQuery, qQuery, geoQuery, scopeQuery, langQuery, limit, offSet, count,
@@ -1865,13 +1865,14 @@ public class QueryService implements CSourceHandler {
 			int offset, Context context, io.vertx.core.MultiMap headersFromReq, boolean doNotCompact,
 			DataSetIdTerm dataSetIdTerm, String join, int joinLevel, boolean splitEntities, PickTerm pickTerm,
 			OmitTerm omitTerm, String queryCechksum, ViaHeaders viaHeaders, String typePattern, boolean localOnly,
-			boolean forceEntitymapCreation, boolean tokenProvided, boolean count, OrderByTerm orderBy) {
+			boolean forceEntitymapCreation, boolean tokenProvided, boolean count, OrderByTerm orderBy,
+			boolean metadata) {
 
 		if (tenant2CId2RegEntries.isEmpty()) {
 			return queryDAO.newQuery(tenant, idsAndTypeQueryAndIdPattern, attrsQuery, qQuery,
 					geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel, qToken, pickTerm,
 					omitTerm, queryCechksum, splitEntities, true, false, typePattern, localOnly,
-					forceEntitymapCreation, tokenProvided, count, orderBy);
+					forceEntitymapCreation, tokenProvided, count, orderBy, metadata);
 		} else {
 			EntityCache fullEntityCache = new EntityCache();
 			Collection<QueryRemoteHost> remoteHost2Query = EntityTools.getRemoteQueries(tenant,
@@ -1883,19 +1884,19 @@ public class QueryService implements CSourceHandler {
 					return queryDAO.newQuery(tenant, idsAndTypeQueryAndIdPattern, attrsQuery,
 							qQuery, geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel,
 							qToken, pickTerm, omitTerm, queryCechksum, splitEntities, true, false, typePattern,
-							localOnly, forceEntitymapCreation, tokenProvided, count, orderBy);
+							localOnly, forceEntitymapCreation, tokenProvided, count, orderBy, metadata);
 				} else {
 					return queryDAO.newQuery(tenant, idsAndTypeQueryAndIdPattern, attrsQuery,
 							qQuery, geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel,
 							qToken, pickTerm, omitTerm, queryCechksum, splitEntities, false, true, typePattern,
-							localOnly, forceEntitymapCreation, tokenProvided, count, orderBy);
+							localOnly, forceEntitymapCreation, tokenProvided, count, orderBy, metadata);
 				}
 			} else {
 				Uni<Tuple2<EntityCache, EntityMap>> localEntityCacheAndEntityMap = queryDAO
 						.newQuery(tenant, idsAndTypeQueryAndIdPattern, attrsQuery, qQuery,
 								geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel, qToken,
 								pickTerm, omitTerm, queryCechksum, splitEntities, false, false, typePattern, localOnly,
-								forceEntitymapCreation, tokenProvided, count, orderBy);
+								forceEntitymapCreation, tokenProvided, count, orderBy, metadata);
 				List<Uni<Tuple2<List<Map<String, Object>>, QueryRemoteHost>>> unisForEntityRetrieval = Lists
 						.newArrayList();
 				List<Uni<Tuple2<Map<String, Object>, QueryRemoteHost>>> unisForEntityMapRetrieval = Lists
