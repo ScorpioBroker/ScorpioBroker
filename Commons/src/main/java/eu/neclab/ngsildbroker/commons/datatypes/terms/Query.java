@@ -26,6 +26,7 @@ public class Query implements Serializable {
 	GeoQueryTerm geoQueryTerm;
 	DataSetIdTerm dataSetIdTerm;
 	AttrsQueryTerm attrsQueryTerm;
+	OrderByTerm orderBy;
 	private Set<String> jsonKeys;
 	private String join;
 	private int joinLevel;
@@ -241,6 +242,14 @@ public class Query implements Serializable {
 
 	public void setEntityMap(boolean entityMap) {
 		this.entityMap = entityMap;
+	}
+
+	public OrderByTerm getOrderBy() {
+		return orderBy;
+	}
+
+	public void setOrderBy(OrderByTerm orderBy) {
+		this.orderBy = orderBy;
 	}
 
 }

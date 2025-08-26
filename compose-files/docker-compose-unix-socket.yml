@@ -1,0 +1,25 @@
+volumes:
+  pg-socket:
+
+
+services:
+  postgres:
+    image: postgis/postgis
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ngb
+      POSTGRES_PASSWORD: ngb
+      POSTGRES_DB: ngb
+    volumes:
+      - pg-socket:/var/run/postgresql
+  scorpio:
+    image: scorpiobroker/all-in-one-runner:java-latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - pg-socket:/var/run/postgresql
+    environment:
+      QUARKUS_DATASOURCE_REACTIVE_URL: "postgresql:///ngb?host=/var/run/postgresql"
+    depends_on:
+      - postgres

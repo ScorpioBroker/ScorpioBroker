@@ -43,6 +43,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.OmitTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.OrderByTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.PickTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.Query;
@@ -122,7 +123,8 @@ public class QueryController {
 		}
 		return queryForQueryResult(request, entityId, null, null, attrs, null, null, null, null, null, null,
 				geometryProperty, lang, null, localOnly, options, 1, 0, false, containedBy, join, joinLevel,
-				doNotCompact, entityMapToken, entityMap, null, null, pick, omit, format, null, datasetId, distEntities)
+				doNotCompact, entityMapToken, entityMap, null, null, pick, omit, format, null, datasetId, distEntities,
+				null, null, null, null)
 				.onItemOrFailure().transformToUni((t, e) -> {
 					if (e != null) {
 						return Uni.createFrom().failure(e);
@@ -159,7 +161,9 @@ public class QueryController {
 			@QueryParam("minDistance") String minDistance, @QueryParam("pick") String pick,
 			@QueryParam("omit") String omit, @QueryParam("format") String format,
 			@QueryParam("jsonKeys") String jsonKeysQP, @QueryParam("datasetId") String datasetId,
-			@QueryParam("splitEntities") @DefaultValue("true") String distEntitiesS) {
+			@QueryParam("splitEntities") @DefaultValue("true") String distEntitiesS,
+			@QueryParam("orderBy") String orderBy, @QueryParam("orderFrom") String orderFrom,
+			@QueryParam("orderGeometry") String orderGeometry, @QueryParam("collation") String collation) {
 		logger.debug("query");
 		boolean localOnly;
 		boolean doNotCompact;
@@ -179,7 +183,8 @@ public class QueryController {
 		return queryForQueryResult(request, id, typeQuery, idPattern, attrs, qInput, csf, geometry, georelInput,
 				coordinates, geoproperty, geometryProperty, lang, scopeQ, localOnly, options, limit, offset, count,
 				containedBy, join, joinLevel, doNotCompact, entityMapToken, entityMapRetrieve, maxDistance, minDistance,
-				pick, omit, format, jsonKeysQP, datasetId, distEntities).onItemOrFailure().transformToUni((t, e) -> {
+				pick, omit, format, jsonKeysQP, datasetId, distEntities, orderBy, orderFrom, orderGeometry, collation)
+				.onItemOrFailure().transformToUni((t, e) -> {
 					if (e != null) {
 						return Uni.createFrom().failure(e);
 					}
@@ -359,7 +364,9 @@ public class QueryController {
 			@QueryParam("minDistance") String minDistance, @QueryParam("pick") String pick,
 			@QueryParam("omit") String omit, @QueryParam("jsonKeys") String jsonKeysQP,
 			@QueryParam("datasetId") String datasetId,
-			@QueryParam("splitEntities") @DefaultValue("true") String distEntitiesS) {
+			@QueryParam("splitEntities") @DefaultValue("true") String distEntitiesS,
+			@QueryParam("orderBy") String orderBy, @QueryParam("orderFrom") String orderFrom,
+			@QueryParam("orderGeometry") String orderGeometry, @QueryParam("collation") String collation) {
 		logger.debug("queryEntityMap");
 		boolean distEntities;
 		String tenant = HttpUtils.getTenant(request);
@@ -370,14 +377,17 @@ public class QueryController {
 		}
 		return getQueryParam(request, id, typeQuery, idPattern, attrs, qInput, csf, geometry, georelInput, coordinates,
 				geoproperty, geometryProperty, lang, scopeQ, false, null, 1, 0, false, null, null, -1, false, null,
-				false, maxDistance, minDistance, pick, omit, null, jsonKeysQP, datasetId, distEntities).onItem()
+				false, maxDistance, minDistance, pick, omit, null, jsonKeysQP, datasetId, distEntities, orderBy,
+				orderFrom,
+				orderGeometry, collation).onItem()
 				.transformToUni(params -> {
 					return queryService.getAndStoreEntityMap(tenant, params.getEntityMapToken(),
 							params.getIdsAndTypeAndIdPattern(), params.getAttrsQueryTerm(), params.getGeoQueryTerm(),
 							params.getqQueryTerm(), params.getScopeQueryTerm(), params.getLanguageQueryTerm(), 1, 0,
 							params.getContext(), request.headers(), false, params.getDataSetIdTerm(), null, -1,
 							distEntities, params.getPickTerm(), params.getOmitTerm(), params.getCheckSum(),
-							params.getViaHeaders(), null, false, true, true, true).onItem().transform(t -> {
+							params.getViaHeaders(), null, false, true, true, true, params.getOrderBy()).onItem()
+							.transform(t -> {
 								return HttpUtils.generateEntityMapResult(t.getItem2());
 							}).onFailure().recoverWithItem(
 									e -> HttpUtils.handleControllerExceptions(e, tenant));
@@ -433,7 +443,8 @@ public class QueryController {
 			String scopeQ, boolean localOnly, String options, Integer limit, int offset, boolean count,
 			String containedBy, String join, Integer joinLevelInput, boolean doNotCompact, String entityMapToken,
 			boolean entityMapRetrieve, String maxDistance, String minDistance, String pick, String omit, String format,
-			String jsonKeysQP, String datasetId, boolean distEntities) {
+			String jsonKeysQP, String datasetId, boolean distEntities, String orderBy, String orderFrom,
+			String orderGeometry, String collation) {
 		int joinLevel;
 		if (joinLevelInput == null) {
 			if (join == null) {
@@ -448,7 +459,8 @@ public class QueryController {
 		return getQueryParam(request, id, typeQuery, idPattern, attrs, qInput, csf, geometry, georelInput, coordinates,
 				geoproperty, geometryProperty, lang, scopeQ, localOnly, options, limit, offset, count, containedBy,
 				join, joinLevel, doNotCompact, entityMapToken, entityMapRetrieve, maxDistance, minDistance, pick, omit,
-				format, jsonKeysQP, datasetId, distEntities).onItem().transformToUni(qP -> {
+				format, jsonKeysQP, datasetId, distEntities, orderBy, orderFrom, orderGeometry, collation).onItem()
+				.transformToUni(qP -> {
 					return queryService
 							.query(tenant, qP.getEntityMapToken(), qP.isTokenProvided(),
 									qP.getIdsAndTypeAndIdPattern(), qP.getAttrsQueryTerm(), qP.getqQueryTerm(),
@@ -456,7 +468,8 @@ public class QueryController {
 									qP.getLanguageQueryTerm(), qP.getLimit(), offset, count, qP.isLocalOnly(),
 									qP.getContext(), request.headers(), doNotCompact, qP.getJsonKeys(),
 									qP.getDataSetIdTerm(), join, joinLevel, distEntities, qP.getPickTerm(),
-									qP.getOmitTerm(), qP.getCheckSum(), qP.getViaHeaders(), null, qP.getEntityMap())
+									qP.getOmitTerm(), qP.getCheckSum(), qP.getViaHeaders(), null, qP.getEntityMap(),
+									qP.getOrderBy())
 							.onItem().transform(qR -> Tuple5.of(qR, qP.getFinalOptions(), qP.getAcceptHeader(),
 									qP.getLimit(), qP.getContext()));
 				});
@@ -469,7 +482,7 @@ public class QueryController {
 			Integer limit, int offset, boolean count, String containedBy, String join, int joinLevel,
 			boolean doNotCompact, String entityMapToken, boolean entityMapRetrieve, String maxDistance,
 			String minDistance, String pick, String omit, String format, String jsonKeysQP, String datasetId,
-			boolean distEntities) {
+			boolean distEntities, String orderBy, String orderFrom, String orderGeometry, String collation) {
 
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		if ((pick != null && omit != null) || (pick != null && attrs != null) || (attrs != null && omit != null)) {
@@ -558,6 +571,7 @@ public class QueryController {
 			DataSetIdTerm dataSetIdTerm;
 			OmitTerm omitTerm = null;
 			PickTerm pickTerm = null;
+			OrderByTerm orderByTerm;
 			Query result = new Query();
 			try {
 				if (pick != null) {
@@ -584,6 +598,7 @@ public class QueryController {
 				geoQueryTerm = QueryParser.parseGeoQuery(georel, coordinates, geometry, geoproperty, context);
 				scopeQueryTerm = QueryParser.parseScopeQuery(scopeQ);
 				langQuery = QueryParser.parseLangQuery(lang);
+				orderByTerm = QueryParser.parseOrderBy(orderBy, collation, orderFrom, orderGeometry, context);
 
 			} catch (Exception e) {
 				return Uni.createFrom().failure(e);
@@ -688,6 +703,7 @@ public class QueryController {
 			result.setAcceptHeader(acceptHeader);
 			result.setDataSetIdTerm(dataSetIdTerm);
 			result.setEntityMap(forceEntitymapCreation);
+			result.setOrderBy(orderByTerm);
 			return Uni.createFrom().item(result);
 		});
 	}

@@ -30,6 +30,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.OmitTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.OrderByTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.PickTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
@@ -151,6 +152,7 @@ public class EntityOperationsQueryController {
 				ScopeQueryTerm scopeQueryTerm = null;
 				OmitTerm omitTerm = null;
 				PickTerm pickTerm = null;
+				OrderByTerm orderBy = null;
 				boolean localOnlyTBU = localOnly;
 				LanguageQueryTerm langQuery;
 				Object entities = body.get(NGSIConstants.NGSI_LD_ENTITIES_SHORT);
@@ -303,7 +305,7 @@ public class EntityOperationsQueryController {
 						.query(tenant, token, tokenProvided, idsAndTypeQueryAndIdPattern, attrsQuery, qQueryTerm,
 								csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset, count,
 								localOnlyTBU, context, request.headers(), false, null, null, join, joinLevel,
-								entityDist, pickTerm, omitTerm, checkSum, viaHeaders, null, retrieveEntityMap)
+								entityDist, pickTerm, omitTerm, checkSum, viaHeaders, null, retrieveEntityMap, orderBy)
 						.onItem().transformToUni(queryResult -> {
 							if (doNotCompact) {
 								return Uni.createFrom().item(RestResponse.ok((Object) queryResult.getData()));

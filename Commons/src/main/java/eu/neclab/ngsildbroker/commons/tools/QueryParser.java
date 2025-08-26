@@ -24,6 +24,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.OrderByTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ProjectionTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
@@ -589,6 +590,55 @@ public class QueryParser {
 			expanded = context.expandIri(attribName.toString(), false, true, null, null);
 			current.setAttrib(expanded);
 		}
+	}
+
+	public static OrderByTerm parseOrderBy(String input, String collation, String orderFrom, String orderGeometry,
+			Context context) throws ResponseException {
+		if (input == null) {
+			return null;
+		}
+		OrderByTerm result = new OrderByTerm();
+
+		input = URLDecoder.decode(input, StandardCharsets.UTF_8);
+		OfInt it = input.chars().iterator();
+
+		StringBuilder current = new StringBuilder();
+		String orderTerm = null;
+		boolean readingAttrib = true;
+		String orderDirection = null;
+		while (it.hasNext()) {
+			char b = (char) it.next().intValue();
+			switch (b) {
+				case ';':
+					orderTerm = current.toString();
+					current.setLength(0);
+					readingAttrib = false;
+					break;
+				case ',':
+					if (readingAttrib) {
+						orderTerm = current.toString();
+					} else {
+						orderDirection = current.toString();
+					}
+					result.addTerm(orderTerm, collation, orderFrom, orderDirection, orderGeometry);
+					orderTerm = null;
+					orderDirection = null;
+					readingAttrib = true;
+					current.setLength(0);
+					break;
+
+				default:
+					current.append(b);
+					break;
+			}
+			if (readingAttrib) {
+				orderTerm = current.toString();
+			} else {
+				orderDirection = current.toString();
+			}
+			result.addTerm(orderTerm, collation, orderFrom, orderDirection, orderGeometry);
+		}
+		return result;
 	}
 
 }

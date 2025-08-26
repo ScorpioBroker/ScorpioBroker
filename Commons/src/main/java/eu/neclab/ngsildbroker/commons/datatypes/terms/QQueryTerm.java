@@ -1595,7 +1595,7 @@ public class QQueryTerm implements Serializable {
 				}
 				result.append("(@.\"");
 				result.append(NGSIConstants.NGSI_LD_HAS_LIST);
-				result.append("\"[1].\"");
+				result.append("\"[0].\"");
 				result.append(NGSIConstants.JSON_LD_LIST);
 				result.append("\"[*].");
 

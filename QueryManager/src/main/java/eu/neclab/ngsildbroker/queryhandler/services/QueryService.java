@@ -43,6 +43,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.DataSetIdTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.OmitTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.OrderByTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.PickTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
@@ -126,13 +127,13 @@ public class QueryService implements CSourceHandler {
 			io.vertx.core.MultiMap headersFromReq, boolean doNotCompact, Set<String> jsonKeys,
 			DataSetIdTerm dataSetIdTerm, String join, int joinLevel, boolean entityDist, PickTerm pickTerm,
 			OmitTerm omitTerm, String checkSum, ViaHeaders viaHeaders, String typePattern,
-			boolean forceEntitymapCreation) {
+			boolean forceEntitymapCreation, OrderByTerm orderBy) {
 		// if (!tokenProvided || AppConstants.ENTITYMAP_IGNORE.equals(qToken)) {
 		return getAndStoreEntityMap(tenant, qToken, idsAndTypeQueryAndIdPattern, attrsQuery, geoQuery, qQuery,
 				scopeQuery, langQuery, limit, offSet, context, headersFromReq, doNotCompact, dataSetIdTerm, join,
 				joinLevel, entityDist, pickTerm, omitTerm, checkSum, viaHeaders, typePattern, localOnly,
 				forceEntitymapCreation || tokenProvided,
-				tokenProvided, count)
+				tokenProvided, count, orderBy)
 				.onItem().transformToUni(t -> {
 					return handleEntityMap(t.getItem2(), t.getItem1(), tenant, idsAndTypeQueryAndIdPattern,
 							attrsQuery, qQuery, geoQuery, scopeQuery, langQuery, limit, offSet, count,
@@ -1864,37 +1865,37 @@ public class QueryService implements CSourceHandler {
 			int offset, Context context, io.vertx.core.MultiMap headersFromReq, boolean doNotCompact,
 			DataSetIdTerm dataSetIdTerm, String join, int joinLevel, boolean splitEntities, PickTerm pickTerm,
 			OmitTerm omitTerm, String queryCechksum, ViaHeaders viaHeaders, String typePattern, boolean localOnly,
-			boolean forceEntitymapCreation, boolean tokenProvided, boolean count) {
+			boolean forceEntitymapCreation, boolean tokenProvided, boolean count, OrderByTerm orderBy) {
 
 		if (tenant2CId2RegEntries.isEmpty()) {
 			return queryDAO.newQuery(tenant, idsAndTypeQueryAndIdPattern, attrsQuery, qQuery,
 					geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel, qToken, pickTerm,
 					omitTerm, queryCechksum, splitEntities, true, false, typePattern, localOnly,
-					forceEntitymapCreation, tokenProvided, count);
+					forceEntitymapCreation, tokenProvided, count, orderBy);
 		} else {
 			EntityCache fullEntityCache = new EntityCache();
 			Collection<QueryRemoteHost> remoteHost2Query = EntityTools.getRemoteQueries(tenant,
 					idsAndTypeQueryAndIdPattern, attrsQuery, qQuery, geoQuery, scopeQuery, langQuery,
 					tenant2CId2RegEntries, context, fullEntityCache, splitEntities, viaHeaders);
-			remoteHost2Query.forEach(entry -> logger.debug(entry.toString()));
+			// remoteHost2Query.forEach(entry -> logger.debug(entry.toString()));
 			if (remoteHost2Query.isEmpty() || localOnly) {
 				if ((join == null || joinLevel <= 0) && (qQuery == null || !qQuery.hasLinkedQ()) && !localOnly) {
 					return queryDAO.newQuery(tenant, idsAndTypeQueryAndIdPattern, attrsQuery,
 							qQuery, geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel,
 							qToken, pickTerm, omitTerm, queryCechksum, splitEntities, true, false, typePattern,
-							localOnly, forceEntitymapCreation, tokenProvided, count);
+							localOnly, forceEntitymapCreation, tokenProvided, count, orderBy);
 				} else {
 					return queryDAO.newQuery(tenant, idsAndTypeQueryAndIdPattern, attrsQuery,
 							qQuery, geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel,
 							qToken, pickTerm, omitTerm, queryCechksum, splitEntities, false, true, typePattern,
-							localOnly, forceEntitymapCreation, tokenProvided, count);
+							localOnly, forceEntitymapCreation, tokenProvided, count, orderBy);
 				}
 			} else {
 				Uni<Tuple2<EntityCache, EntityMap>> localEntityCacheAndEntityMap = queryDAO
 						.newQuery(tenant, idsAndTypeQueryAndIdPattern, attrsQuery, qQuery,
 								geoQuery, scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel, qToken,
 								pickTerm, omitTerm, queryCechksum, splitEntities, false, false, typePattern, localOnly,
-								forceEntitymapCreation, tokenProvided, count);
+								forceEntitymapCreation, tokenProvided, count, orderBy);
 				List<Uni<Tuple2<List<Map<String, Object>>, QueryRemoteHost>>> unisForEntityRetrieval = Lists
 						.newArrayList();
 				List<Uni<Tuple2<Map<String, Object>, QueryRemoteHost>>> unisForEntityMapRetrieval = Lists
@@ -1913,16 +1914,14 @@ public class QueryService implements CSourceHandler {
 							String id = tpl.getItem1();
 							String type = tpl.getItem2();
 							String idPattern = tpl.getItem3();
-							HttpRequest<Buffer> req = webClient
-									.getAbs(remoteHost.host() + NGSIConstants.NGSI_LD_ENTITY_MAP_ENDPOINT)
-									.timeout(timeout);
+
 							Map<String, String> queryParams = Maps.newHashMap();
 
 							if (id != null) {
 								queryParams.put(NGSIConstants.ID, id);
 							}
 							if (type != null) {
-								queryParams.put(NGSIConstants.TYPE, type);
+								queryParams.put(NGSIConstants.TYPE, remoteHost.context().compactIri(type));
 							}
 							if (idPattern != null) {
 								queryParams.put(NGSIConstants.QUERY_PARAMETER_IDPATTERN, idPattern);
@@ -1935,10 +1934,10 @@ public class QueryService implements CSourceHandler {
 							Context contextTBU = remoteHost.context();
 							List<String> ogAtContext = contextTBU.getOriginalAtContext();
 							if (ogAtContext != null && !ogAtContext.isEmpty()) {
-								queryParams.put(HttpHeaders.LINK, "<" + ogAtContext.get(0)
+								remoteHost.headers().add(HttpHeaders.LINK, "<" + ogAtContext.get(0)
 										+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
 							}
-							queryParams.put(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSON);
+							remoteHost.headers().set(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSON);
 
 							unisForEntityMapRetrieval.add(HttpUtils
 									.connect(webClient, remoteHost.host() + NGSIConstants.NGSI_LD_ENTITY_MAP_ENDPOINT,

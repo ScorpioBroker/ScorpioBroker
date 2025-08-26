@@ -44,6 +44,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.OmitTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.OrderByTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.PickTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
@@ -1216,7 +1217,7 @@ public class QueryDAO {
 			DataSetIdTerm dataSetIdTerm, String join, int joinLevel, String qToken, PickTerm pickTerm,
 			OmitTerm omitTerm, String queryChecksum, boolean splitEntities,
 			boolean regEmptyOrNoRegEntryAndNoLinkedQuery, boolean noRootLevelRegEntryAndLinkedQuery,
-			String typePattern, boolean localOnly) {
+			String typePattern, boolean localOnly, OrderByTerm orderBy) {
 
 		if (typePattern != null) {
 			query.append("EXISTS (SELECT TRUE FROM UNNEST(E_TYPES) AS E_TYPE WHERE E_TYPE ~ $");
@@ -1374,8 +1375,11 @@ public class QueryDAO {
 		if (Arrays.equals(checkArray, AppConstants.CHAR_ARRAY_WHERE)) {
 			query.setLength(query.length() - checkArray.length);
 		}
-		query.append(
-				" ORDER BY createdAt");
+		if (orderBy == null) {
+			query.append(" ORDER BY createdAt");
+		} else {
+			orderBy.toSqlOrder(query);
+		}
 		return dollar;
 
 	}
@@ -1386,7 +1390,8 @@ public class QueryDAO {
 			DataSetIdTerm dataSetIdTerm, String join, int joinLevel, String qToken, PickTerm pickTerm,
 			OmitTerm omitTerm, String queryChecksum, boolean splitEntities,
 			boolean regEmptyOrNoRegEntryAndNoLinkedQuery, boolean noRootLevelRegEntryAndLinkedQuery, String typePattern,
-			boolean localOnly, boolean forceEntitymapCreation, boolean tokenProvided, boolean count) {
+			boolean localOnly, boolean forceEntitymapCreation, boolean tokenProvided, boolean count,
+			OrderByTerm orderBy) {
 
 		StringBuilder query = new StringBuilder();
 		Tuple tuple = Tuple.tuple();
@@ -1395,21 +1400,29 @@ public class QueryDAO {
 		boolean doNotCreateEntityMap = !forceEntitymapCreation
 				&& (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery || localOnly);
 		if (doNotCreateEntityMap) {
+			dollar = 1;
 			query.append(
 					"WITH D0 AS (SELECT ID, ENTITY, TRUE as PARENT");
 			if (count) {
 				query.append(", count(*) over() as list_size");
 			}
+			if (orderBy != null) {
+				query.append(',');
+				try {
+					dollar = orderBy.toSqlOrderValue(query, dollar, tuple, objectMapper, context);
+				} catch (ResponseException e) {
+					return Uni.createFrom().failure(e);
+				}
+			}
 			query.append(" FROM ENTITY WHERE ");
 
-			dollar = 1;
 			dollar = generateWherePart(query, dollar, tuple, idsAndTypeAndIdPattern, attrsQuery, qQuery, geoQuery,
 					scopeQuery,
 					context, limit, offset, dataSetIdTerm, join, joinLevel, qToken, pickTerm, omitTerm,
 					queryChecksum,
 					splitEntities, regEmptyOrNoRegEntryAndNoLinkedQuery, noRootLevelRegEntryAndLinkedQuery,
 					typePattern,
-					localOnly);
+					localOnly, orderBy);
 			query.append(" limit $");
 			query.append(dollar);
 			dollar++;
@@ -1433,13 +1446,22 @@ public class QueryDAO {
 			} else {
 				dollar = 1;
 				query.append(
-						"WITH ementries AS (SELECT ID, null as remote_query, '@none' as csourceid FROM ENTITY WHERE ");
+						"WITH ementries AS (SELECT ID, null as remote_query, '@none' as csourceid");
+				if (orderBy != null) {
+					query.append(',');
+					try {
+						dollar = orderBy.toSqlOrderValue(query, dollar, tuple, objectMapper, context);
+					} catch (ResponseException e) {
+						return Uni.createFrom().failure(e);
+					}
+				}
+				query.append(" FROM ENTITY WHERE ");
 				dollar = generateWherePart(query, dollar, tuple, idsAndTypeAndIdPattern, attrsQuery, qQuery,
 						geoQuery,
 						scopeQuery, context, limit, offset, dataSetIdTerm, join, joinLevel, qToken, pickTerm,
 						omitTerm,
 						queryChecksum, splitEntities, regEmptyOrNoRegEntryAndNoLinkedQuery,
-						noRootLevelRegEntryAndLinkedQuery, typePattern, localOnly);
+						noRootLevelRegEntryAndLinkedQuery, typePattern, localOnly, orderBy);
 				query.append(
 						"), a as (INSERT INTO entitymap (map_id, pos, query_checksum , entity_id, remote_query, csourceid, last_access, expires_at) SELECT $");
 				query.append(dollar);
@@ -1496,6 +1518,7 @@ public class QueryDAO {
 			query.append(" FROM JOINENTITIES)");
 		}
 		System.out.println(query.toString());
+		System.out.println(tuple.deepToString());
 		return connectionManager.executeQuery(tenant, query.toString(), tuple, false).onItem().transform(rows -> {
 			EntityMap entityMap = new EntityMap(qToken, splitEntities, regEmptyOrNoRegEntryAndNoLinkedQuery,
 					noRootLevelRegEntryAndLinkedQuery);
@@ -1583,7 +1606,7 @@ public class QueryDAO {
 							context, limit, offset, dataSetIdTerm, join, joinLevel, qToken, pickTerm, omitTerm,
 							queryChecksum, splitEntities, regEmptyOrNoRegEntryAndNoLinkedQuery,
 							noRootLevelRegEntryAndLinkedQuery, typePattern, localOnly, forceEntitymapCreation,
-							false, count);
+							false, count, orderBy);
 				}
 				if (pgE.getSqlState().equals(AppConstants.INVALID_REGULAR_EXPRESSION)) {
 					return Uni.createFrom()

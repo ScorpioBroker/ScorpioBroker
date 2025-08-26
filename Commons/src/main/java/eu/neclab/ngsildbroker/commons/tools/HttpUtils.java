@@ -1505,10 +1505,22 @@ public final class HttpUtils {
 		if (timeout != -1) {
 			result.timeout(timeout);
 		}
+		System.out.println(result.host());
+		System.out.println(result.port());
+		System.out.println(result.uri());
+		System.out.println("Params:");
+		System.out.println(result.queryParams().toString());
+		System.out.println("Headers:");
+		System.out.println(result.headers().toString());
 		if (method == AppConstants.POST_OP || method == AppConstants.PUT_OP || method == AppConstants.PATCH_OP) {
 			return result.sendBuffer(Buffer.buffer(body));
 		} else {
-			return result.send();
+			return result.send().onItem().transform(resp -> {
+				System.out.println(resp.statusCode());
+				System.out.println(resp.statusMessage());
+				System.out.println(resp.bodyAsString());
+				return resp;
+			});
 		}
 	}
 
