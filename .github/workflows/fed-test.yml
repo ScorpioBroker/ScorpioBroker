@@ -61,6 +61,10 @@ jobs:
         with:
           collection: fed-test.json
           environment: fed-test-environment.json
+      - name: print log
+        if: always()
+        run: |
+          docker ps --format '{{.Names}}' | while read name; do echo "=== $name ==="; docker logs "$name"; done
       - name: Stopping Scorpio 
         if: always()
         run: |
