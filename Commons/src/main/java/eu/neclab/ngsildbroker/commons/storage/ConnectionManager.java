@@ -157,7 +157,7 @@ public class ConnectionManager {
 					tmp = conn.preparedQuery(preStepSql).execute();
 				}
 				return tmp.onItem().transformToUni(ignored -> {
-					if (tuples == null) {
+					if (tuples == null || tuples.isEmpty()) {
 						return conn.close();
 					}
 					return conn.preparedQuery(sql).executeBatch(tuples).onItem().transformToUni(ignoredToo -> {
