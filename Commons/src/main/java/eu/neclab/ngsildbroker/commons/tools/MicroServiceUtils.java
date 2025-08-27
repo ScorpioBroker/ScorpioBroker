@@ -49,7 +49,7 @@ public class MicroServiceUtils {
 
 	// private final static Charset UTF8_CHARSET = Charset.forName("UTF-8");
 
-	@ConfigProperty(name = "scorpio.gatewayurl")
+	@ConfigProperty(name = "scorpio.gateway.url")
 	String gatewayUrl;
 
 	@ConfigProperty(name = "scorpio.atcontexturl")
