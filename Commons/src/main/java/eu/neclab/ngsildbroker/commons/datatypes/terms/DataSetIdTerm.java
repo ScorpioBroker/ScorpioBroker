@@ -454,4 +454,25 @@ public class DataSetIdTerm implements Serializable {
 		return !entity.isEmpty();
 	}
 
+	public void toTempSql(StringBuilder sql) {
+		sql.append("(jsonb_path_exists(data, '$.\"");
+		sql.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
+		sql.append("\"[0].\"");
+		sql.append(NGSIConstants.JSON_LD_ID);
+		sql.append("\" ? (@ == [");
+		for (String id : ids) {
+			sql.append('"');
+			sql.append(id.replace("\"", "\\\""));
+			sql.append("\",");
+		}
+		sql.setLength(sql.length() - 1);
+		sql.append("])')");
+		if (ids.contains(NGSIConstants.JSON_LD_NONE)) {
+			sql.append(" OR not jsonb_path_exists(data, '$.\"");
+			sql.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
+			sql.append("\"')");
+		}
+		sql.append(')');
+	}
+
 }

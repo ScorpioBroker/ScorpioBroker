@@ -28,9 +28,9 @@ public class OmitTerm extends ProjectionTerm {
 
 	public static OmitTerm getNewRootInstance() {
 		OmitTerm result = new OmitTerm();
-//		result.attrib = NGSIConstants.NGSI_LD_CREATED_AT;
-//		result = (OmitTerm) result.getNext();
-//		result.attrib = NGSIConstants.NGSI_LD_MODIFIED_AT;
+		// result.attrib = NGSIConstants.NGSI_LD_CREATED_AT;
+		// result = (OmitTerm) result.getNext();
+		// result.attrib = NGSIConstants.NGSI_LD_MODIFIED_AT;
 		return result;
 
 	}
@@ -242,6 +242,15 @@ public class OmitTerm extends ProjectionTerm {
 		return dollar;
 	}
 
+	public int toTempSql(StringBuilder query, Tuple tuple, int dollar) {
+		query.append("attributeid = any($");
+		query.append(dollar);
+		query.append(')');
+		dollar++;
+		tuple.addArrayOfString(getAllTopLevelAttribs(true).toArray(new String[0]));
+		return dollar;
+	}
+
 	public int toSql(StringBuilder query, StringBuilder followUp, Tuple tuple, int dollar) {
 		HashSet<String> tmp = Sets.newHashSet(getAllTopLevelAttribs(false));
 		tmp.add(NGSIConstants.NGSI_LD_CREATED_AT);
@@ -265,7 +274,6 @@ public class OmitTerm extends ProjectionTerm {
 		return dollar;
 	}
 
-	
 	@Override
 	public boolean calculateEntity(Map<String, Object> entity, boolean flatJoin,
 			Map<String, Map<String, Object>> flatEntities, Set<String> pickForFlat, boolean calculateLinked) {
@@ -352,8 +360,8 @@ public class OmitTerm extends ProjectionTerm {
 		}
 		// only createdat and modifiedat are left so it's empty for the result
 		if (entity.size() == 2) {
-//			entity.remove(NGSIConstants.NGSI_LD_CREATED_AT);
-//			entity.remove(NGSIConstants.NGSI_LD_MODIFIED_AT);
+			// entity.remove(NGSIConstants.NGSI_LD_CREATED_AT);
+			// entity.remove(NGSIConstants.NGSI_LD_MODIFIED_AT);
 			return false;
 		}
 		if (flatJoin) {

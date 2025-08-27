@@ -1872,7 +1872,7 @@ public class QQueryTerm implements Serializable {
 			boolean localOnly) {
 		if (firstChild != null && !isLinkedQ) {
 			result.append("(");
-			dollar = firstChild.toSqlOld(result, dollar, tuple, isDist, localOnly);
+			dollar = firstChild.toSql(result, dollar, tuple, isDist, localOnly);
 			result.append(")");
 		} else {
 			dollar = parseAttribute(result, dollar, tuple, attribute, localOnly, isDist, -1);
@@ -3463,6 +3463,572 @@ public class QQueryTerm implements Serializable {
 
 		// Fallback: unquoted string
 		return '"' + token + '"';
+	}
+
+	public int toTempSql(StringBuilder result, int dollar, Tuple tuple, boolean isDist,
+			boolean localOnly) {
+		if (firstChild != null && !isLinkedQ) {
+			result.append("(");
+			dollar = firstChild.toTempSql(result, dollar, tuple, isDist, localOnly);
+			result.append(")");
+		} else {
+			dollar = parseTempAttribute(result, dollar, tuple, attribute, localOnly, isDist, 0);
+		}
+		if (hasNext()) {
+			if (nextAnd) {
+				result.append(" and ");
+			} else {
+				result.append(" or ");
+			}
+			dollar = next.toTempSql(result, dollar, tuple, isDist, localOnly);
+		}
+		return dollar;
+	}
+
+	private int parseTempAttribute(StringBuilder result, int dollar, Tuple tuple, String attrib, boolean localOnly,
+			boolean isDist, int entityLevelCounter) {
+
+		if (firstChild != null && isLinkedQ) {
+			String linkedPart = firstChild.attribute;
+			firstChild.operant = operant;
+			firstChild.operator = operator;
+			String[] attribPath = StringUtils.split(linkedAttrName, '.');
+			String prevEntity;
+			if (entityLevelCounter == -1) {
+				prevEntity = "ENTITY.ENTITY";
+			} else {
+				prevEntity = "E" + entityLevelCounter + ".ENTITY";
+			}
+			entityLevelCounter++;
+			result.append("EXISTS (SELECT 1 FROM jsonb_path_query(");
+			result.append(prevEntity);
+			result.append(", '$.");
+			for (String pathLevel : attribPath) {
+				String expandedAttrib = linkHeaders.expandIri(pathLevel, false, true, null, null);
+				result.append('"');
+				result.append(expandedAttrib);
+				result.append("\"[*].");
+			}
+			result.setLength(result.length() - 1);
+			result.append(" ? ((@.\"");
+			result.append(NGSIConstants.JSON_LD_TYPE);
+			result.append("\"[0] == \"");
+			result.append(NGSIConstants.NGSI_LD_RELATIONSHIP);
+			result.append("\")");
+			if (!localOnly) {
+				result.append(" && exists(@.\"");
+				result.append(NGSIConstants.NGSI_LD_OBJECT_TYPE);
+				result.append("\")");
+			}
+			result.append(
+					")') as rels JOIN LATERAL (SELECT jsonb_array_elements_text(jsonb_path_query_array(rels, '$.\"");
+			result.append(NGSIConstants.NGSI_LD_HAS_OBJECT);
+			result.append("\"[*].\"@id\"')) AS obj_id) AS obj_ids ON TRUE JOIN ENTITY E");
+			result.append(entityLevelCounter);
+			result.append(" ON E");
+			result.append(entityLevelCounter);
+			result.append(".id = obj_ids.obj_id WHERE (");
+			if (!localOnly) {
+				result.append("NOT jsonb_path_exists(rels, '$.\"");
+				result.append(NGSIConstants.NGSI_LD_OBJECT_TYPE);
+				result.append("\"') OR ");
+			}
+			result.append("E");
+			result.append(entityLevelCounter);
+			result.append(".e_types && ARRAY(");
+			result.append("SELECT jsonb_array_elements_text(");
+			result.append("jsonb_path_query_array(rels, '$.\"");
+			result.append(NGSIConstants.NGSI_LD_OBJECT_TYPE);
+			result.append("\"[*].\"@id\"')))) AND (");
+
+			dollar = firstChild.parseAttribute(result, dollar, tuple, linkedPart, localOnly, isDist,
+					entityLevelCounter);
+			result.append("))");
+
+			return dollar;
+		}
+
+		result.append("EXISTS (SELECT 1 FROM temporalentityattrinstance WHERE temporalentity_id = te");
+		result.append(entityLevelCounter);
+		result.append(".id AND ");
+
+		int complexIndex = attrib.indexOf('[');
+		String complexPart;
+		String[] complexSplitted;
+		if (complexIndex != -1) {
+			complexPart = attrib.substring(complexIndex + 1, attrib.length() - 1);
+			complexSplitted = StringUtils.split(complexPart, '.');
+			attrib = attrib.substring(0, complexIndex);
+		} else {
+			complexPart = null;
+			complexSplitted = null;
+		}
+		String[] attribPath = StringUtils.split(attrib, '.');
+		String rootPathExpanded = linkHeaders.expandIri(attribPath[0], false, true, null, null);
+		if (!rootPathExpanded.equals(NGSIConstants.NGSI_LD_STAR)) {
+
+			result.append("attributeid = $");
+			result.append(dollar);
+			dollar++;
+			tuple.addString(rootPathExpanded);
+			result.append(" AND ");
+		}
+		result.append("(jsonb_path_exists(");
+		result.append("data, '$.");
+		String lastAttrib = null;
+		String[] subPath;
+		if (attribPath.length > 1) {
+			subPath = Arrays.copyOfRange(attribPath, 1, attribPath.length);
+		} else {
+			subPath = null;
+		}
+		if (subPath != null) {
+			for (String pathEntry : subPath) {
+				String attribName = linkHeaders.expandIri(pathEntry, false, true, null, null);
+				boolean wildcardUse = NGSIConstants.NGSI_LD_STAR.equals(attribName);
+
+				if (wildcardUse) {
+					result.append('*');
+				} else {
+					result.append('"');
+					result.append(attribName);
+					result.append('"');
+				}
+				result.append("[*].");
+				lastAttrib = attribName;
+			}
+		}
+		result.setLength(result.length() - 1);
+		if (operant == null || operant.isEmpty()) {
+			if (complexPart != null) {
+				result.append(" ? (exists(@.\"");
+				result.append(NGSIConstants.NGSI_LD_HAS_VALUE);
+				result.append("\"[*].");
+
+				for (String complexEntry : complexSplitted) {
+					result.append('"');
+					result.append(linkHeaders.expandIri(complexEntry, false, true, null, null));
+					result.append("\"[*].");
+				}
+
+				result.setLength(result.length() - 1);
+				result.append(") || (@.\"");
+				result.append(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP);
+				result.append("\"[*].\"");
+				result.append(NGSIConstants.JSON_LD_LANGUAGE);
+				result.append("\"==\"");
+				result.append(complexPart);
+				result.append("\") || exists(@.\"");
+				result.append(NGSIConstants.NGSI_LD_HAS_LIST);
+				result.append("\"[1].\"");
+				result.append(NGSIConstants.JSON_LD_LIST);
+				result.append("\"[*].");
+				for (String complexEntry : complexSplitted) {
+					result.append('"');
+					result.append(linkHeaders.expandIri(complexEntry, false, true, null, null));
+					result.append("\"[*].");
+				}
+				result.setLength(result.length() - 1);
+				result.append("))");
+			}
+			result.append("'))");
+		} else {
+			String operatorTBU;
+			boolean not = false;
+			boolean regex = false;
+			List<String[]> tokens = splitValues(operant);
+			if (operator.equals(NGSIConstants.QUERY_PATTERNOP)) {
+				operatorTBU = ".string() like_regex ";
+				regex = true;
+			} else if (operator.equals(NGSIConstants.QUERY_NOTPATTERNOP)) {
+				operatorTBU = ".string() like_regex ";
+				regex = true;
+				not = true;
+			} else if (operator.equals(NGSIConstants.QUERY_UNEQUAL)) {
+				operatorTBU = "==";
+				not = true;
+			} else {
+				operatorTBU = operator;
+			}
+			result.append(" ? (");
+			if (not) {
+				result.append("!");
+			}
+			result.append("(@.\"");
+			if (NGSIConstants.SPECIAL_AT_VALUE_PROPERTIES.contains(lastAttrib)) {
+				result.append(NGSIConstants.JSON_LD_VALUE);
+				result.append('"');
+				result.append(operatorTBU);
+				if (tokens.size() == 1) {
+					result.append(prepValueForJsonPath(tokens.get(0)[0], regex));
+				} else {
+					result.append('[');
+					for (String[] token : tokens) {
+						result.append(prepValueForJsonPath(token[0], regex));
+						result.append(',');
+					}
+					result.setCharAt(result.length(), ']');
+				}
+
+			} else if (NGSIConstants.NGSI_LD_DATA_SET_ID.equals(lastAttrib)) {
+				result.append(NGSIConstants.JSON_LD_ID);
+				result.append('"');
+				result.append(operatorTBU);
+				if (tokens.size() == 1) {
+					result.append(prepValueForJsonPath(tokens.get(0)[0], regex));
+				} else {
+					result.append('[');
+					for (String[] token : tokens) {
+						result.append(prepValueForJsonPath(token[0], regex));
+						result.append(',');
+					}
+					result.setCharAt(result.length(), ']');
+				}
+
+			} else {
+
+				result.append(NGSIConstants.NGSI_LD_HAS_VALUE);
+				result.append("\"[*].");
+				if (complexPart != null) {
+					for (String complexEntry : complexSplitted) {
+						result.append('"');
+						result.append(linkHeaders.expandIri(complexEntry, false, true, null, null));
+						result.append("\"[*].");
+					}
+				}
+				result.append('"');
+				result.append(NGSIConstants.JSON_LD_VALUE);
+				result.append('"');
+
+				if (tokens.size() == 1) {
+					String[] token = tokens.get(0);
+					if (operatorTBU.equals(NGSIConstants.QUERY_EQUAL)
+							|| operatorTBU.equals(NGSIConstants.QUERY_UNEQUAL)) {
+						int listIndex = token[0].indexOf("..");
+						if (listIndex != -1) {
+							String from = token[0].substring(0, listIndex);
+							String to = token[0].substring(listIndex + 2);
+							result.append(NGSIConstants.QUERY_GREATEREQ);
+							result.append(from);
+							result.append(" && @.\"");
+							result.append(NGSIConstants.NGSI_LD_HAS_VALUE);
+							result.append("\"[*].");
+
+							if (complexPart != null) {
+								for (String complexEntry : complexSplitted) {
+									result.append('"');
+									result.append(linkHeaders.expandIri(complexEntry, false, true, null, null));
+									result.append("\"[*].");
+								}
+							}
+							result.append('"');
+							result.append(NGSIConstants.JSON_LD_VALUE);
+							result.append('"');
+							result.append(NGSIConstants.QUERY_LESSEQ);
+							result.append(to);
+						} else {
+							result.append(operatorTBU);
+							result.append(prepValueForJsonPath(token[0], regex));
+						}
+					} else {
+						result.append(operatorTBU);
+						result.append(prepValueForJsonPath(token[0], regex));
+					}
+
+				} else {
+					result.append(operatorTBU);
+					result.append('[');
+					for (String[] token : tokens) {
+						result.append(prepValueForJsonPath(token[0], regex));
+						result.append(',');
+					}
+					result.setCharAt(result.length(), ']');
+				}
+				result.append(')');
+				if (not) {
+					result.append(" && ");
+				} else {
+					result.append(" || ");
+				}
+
+				if (not) {
+					result.append("!");
+				}
+				result.append("(@.\"");
+				result.append(NGSIConstants.NGSI_LD_HAS_LIST);
+				result.append("\"[0].\"");
+				result.append(NGSIConstants.JSON_LD_LIST);
+				result.append("\"[*].");
+
+				if (complexPart != null) {
+
+					for (String complexEntry : complexSplitted) {
+						result.append('"');
+						result.append(linkHeaders.expandIri(complexEntry, false, true, null, null));
+						result.append("\"[*].");
+					}
+
+				}
+				result.append('"');
+				result.append(NGSIConstants.JSON_LD_VALUE);
+				result.append('"');
+
+				if (tokens.size() == 1) {
+					String[] token = tokens.get(0);
+					if (operatorTBU.equals(NGSIConstants.QUERY_EQUAL)
+							|| operatorTBU.equals(NGSIConstants.QUERY_UNEQUAL)) {
+						int listIndex = token[0].indexOf("..");
+						if (listIndex != -1) {
+							String from = token[0].substring(0, listIndex);
+							String to = token[0].substring(listIndex + 2);
+							result.append(NGSIConstants.QUERY_GREATEREQ);
+							result.append(from);
+							result.append(" && @.\"");
+							result.append(NGSIConstants.NGSI_LD_HAS_LIST);
+							result.append("\"[0].\"");
+							result.append(NGSIConstants.JSON_LD_LIST);
+							result.append("\"[*].");
+
+							if (complexPart != null) {
+								for (String complexEntry : complexSplitted) {
+									result.append('"');
+									result.append(linkHeaders.expandIri(complexEntry, false, true, null, null));
+									result.append("\"[*].");
+								}
+							}
+							result.append('"');
+							result.append(NGSIConstants.JSON_LD_VALUE);
+							result.append('"');
+
+							result.append(NGSIConstants.QUERY_LESSEQ);
+							result.append(to);
+						} else {
+							result.append(operatorTBU);
+							result.append(prepValueForJsonPath(token[0], regex));
+						}
+					} else {
+						result.append(operatorTBU);
+						result.append(prepValueForJsonPath(token[0], regex));
+					}
+				} else {
+					result.append(operatorTBU);
+					result.append('[');
+					for (String[] token : tokens) {
+						result.append(prepValueForJsonPath(token[0], regex));
+						result.append(',');
+					}
+					result.setCharAt(result.length(), ']');
+				}
+
+				result.append(')');
+				if (not) {
+					result.append(" && ");
+				} else {
+					result.append(" || ");
+				}
+
+				if (not) {
+					result.append("!");
+				}
+				result.append("(@.\"");
+				result.append(NGSIConstants.NGSI_LD_HAS_OBJECT);
+				result.append("\"[*].\"");
+				result.append(NGSIConstants.JSON_LD_ID);
+				result.append('"');
+				result.append(operatorTBU);
+
+				if (tokens.size() == 1) {
+					result.append(prepValueForJsonPath(tokens.get(0)[0], regex));
+				} else {
+					result.append('[');
+					for (String[] token : tokens) {
+						result.append(prepValueForJsonPath(token[0], regex));
+						result.append(',');
+					}
+					result.setCharAt(result.length(), ']');
+				}
+				result.append(')');
+				if (not) {
+					result.append(" && ");
+				} else {
+					result.append(" || ");
+				}
+
+				if (not) {
+					result.append("!");
+				}
+				result.append("(@.\"");
+				result.append(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST);
+				result.append("\"[0].\"");
+				result.append(NGSIConstants.JSON_LD_LIST);
+				result.append("\"[*].\"");
+				result.append(NGSIConstants.NGSI_LD_HAS_OBJECT);
+				result.append("\"[*].\"");
+				result.append(NGSIConstants.JSON_LD_ID);
+				result.append('"');
+				result.append(operatorTBU);
+
+				if (tokens.size() == 1) {
+					result.append(prepValueForJsonPath(tokens.get(0)[0], regex));
+				} else {
+					result.append('[');
+					for (String[] token : tokens) {
+						result.append(prepValueForJsonPath(token[0], regex));
+						result.append(',');
+					}
+					result.setCharAt(result.length(), ']');
+				}
+				result.append(')');
+				if (not) {
+					result.append(" && ");
+				} else {
+					result.append(" || ");
+				}
+				if (complexPart != null) {
+					if (not) {
+						result.append("!");
+					}
+					result.append("(@.\"");
+					result.append(NGSIConstants.NGSI_LD_HAS_JSON);
+					result.append("\"[0].\"");
+					result.append(NGSIConstants.JSON_LD_VALUE);
+					result.append("\".");
+
+					for (String complexEntry : complexSplitted) {
+						result.append('"');
+						result.append(complexEntry);
+						result.append("\".");
+					}
+					result.setLength(result.length() - 1);
+
+					if (tokens.size() == 1) {
+						String[] token = tokens.get(0);
+						if (operatorTBU.equals(NGSIConstants.QUERY_EQUAL)
+								|| operatorTBU.equals(NGSIConstants.QUERY_UNEQUAL)) {
+							int listIndex = token[0].indexOf("..");
+							if (listIndex != -1) {
+								String from = token[0].substring(0, listIndex);
+								String to = token[0].substring(listIndex + 2);
+								result.append(NGSIConstants.QUERY_GREATEREQ);
+								result.append(from);
+								result.append(" && @.\"");
+								result.append(NGSIConstants.NGSI_LD_HAS_JSON);
+								result.append("\"[0].\"");
+								result.append(NGSIConstants.JSON_LD_VALUE);
+								result.append("\".");
+
+								for (String complexEntry : complexSplitted) {
+									result.append('"');
+									result.append(complexEntry);
+									result.append("\".");
+								}
+								result.setLength(result.length() - 1);
+								result.append(NGSIConstants.QUERY_LESSEQ);
+								result.append(to);
+							} else {
+								result.append(operatorTBU);
+								result.append(prepValueForJsonPath(token[0], regex));
+							}
+						} else {
+							result.append(operatorTBU);
+							result.append(prepValueForJsonPath(token[0], regex));
+						}
+
+					} else {
+						result.append(operatorTBU);
+						result.append('[');
+						for (String[] token : tokens) {
+							result.append(prepValueForJsonPath(token[0], regex));
+							result.append(',');
+						}
+						result.setCharAt(result.length(), ']');
+					}
+					result.append(')');
+					if (not) {
+						result.append(" && ");
+					} else {
+						result.append(" || ");
+					}
+
+				}
+
+				if (not) {
+					result.append("!");
+				}
+				result.append("(@.\"");
+				result.append(NGSIConstants.NGSI_LD_HAS_VOCAB);
+				result.append("\"[*].\"");
+				result.append(NGSIConstants.JSON_LD_ID);
+				result.append('"');
+				result.append(operatorTBU);
+
+				if (tokens.size() == 1) {
+					result.append('"');
+					result.append(linkHeaders.expandIri(tokens.get(0)[1], false, true, null, null));
+					result.append('"');
+				} else {
+					result.append('[');
+					for (String[] token : tokens) {
+						result.append('"');
+						result.append(linkHeaders.expandIri(token[1], false, true, null, null));
+						result.append('"');
+						result.append(',');
+					}
+					result.setCharAt(result.length(), ']');
+				}
+				result.append("))') ");
+				if (not) {
+					result.append("AND NOT ");
+				} else {
+					result.append("OR");
+				}
+				result.append(" jsonb_path_exists(entity, '$.");
+				if (subPath != null) {
+					for (String pathEntry : subPath) {
+						String attribName = linkHeaders.expandIri(pathEntry, false, true, null, null);
+						boolean wildcardUse = NGSIConstants.NGSI_LD_STAR.equals(attribName);
+
+						if (wildcardUse) {
+							result.append('*');
+						} else {
+							result.append('"');
+							result.append(attribName);
+							result.append('"');
+						}
+						result.append("[*].");
+					}
+				}
+				result.append('"');
+				result.append(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP);
+				result.append("\"[*] ? (");
+
+				result.append("(@.\"");
+				if (complexPart != null && !complexPart.equals("*")) {
+					result.append(NGSIConstants.JSON_LD_LANGUAGE);
+					result.append("\" == \"");
+					result.append(complexPart.replace("\"", "\\\""));
+					result.append("\") && (@.\"");
+				}
+
+				result.append(NGSIConstants.JSON_LD_VALUE);
+				result.append('"');
+				result.append(operatorTBU);
+
+				if (tokens.size() == 1) {
+					result.append(prepValueForJsonPath(tokens.get(0)[0], regex));
+				} else {
+					result.append('[');
+					for (String[] token : tokens) {
+						result.append(prepValueForJsonPath(token[0], regex));
+						result.append(',');
+					}
+					result.setCharAt(result.length(), ']');
+				}
+			}
+			result.append("))')))");
+		}
+
+		return dollar;
 	}
 
 }

@@ -52,17 +52,26 @@ public class AttrsQueryTerm implements Serializable {
 		tuple.addArrayOfString(attrs.toArray(new String[0]));
 		return dollar;
 	}
-	
+
+	public int toTempSql(StringBuilder query, Tuple tuple, int dollar) {
+		query.append("attributeid = any($");
+		query.append(dollar);
+		query.append(')');
+		dollar++;
+		tuple.addArrayOfString(attrs.toArray(new String[0]));
+		return dollar;
+	}
+
 	public int toSql(StringBuilder query, StringBuilder followUp, Tuple tuple, int dollar) {
 		query.append("ENTITY ?| ARRAY[");
 		followUp.append("ENTITY ?| ARRAY['''");
-		for(String attr: attrs) {
+		for (String attr : attrs) {
 			query.append('$');
 			query.append(dollar);
 			query.append(',');
 			followUp.append(" || $");
 			followUp.append(dollar);
-			followUp.append(" || ''','''" );
+			followUp.append(" || ''','''");
 			dollar++;
 			tuple.addString(attr);
 		}
@@ -154,8 +163,9 @@ public class AttrsQueryTerm implements Serializable {
 		query.append("' ) ELSE '{}'::jsonb END");
 		return dollar;
 	}
-	
-	public int toSqlConstructEntity(StringBuilder query, StringBuilder followUp, Tuple tuple, int dollar, DataSetIdTerm datasetIdTerm) {
+
+	public int toSqlConstructEntity(StringBuilder query, StringBuilder followUp, Tuple tuple, int dollar,
+			DataSetIdTerm datasetIdTerm) {
 
 		query.append("JSONB_BUILD_OBJECT('");
 		query.append(NGSIConstants.JSON_LD_ID);
@@ -174,7 +184,7 @@ public class AttrsQueryTerm implements Serializable {
 		query.append("', ENTITY -> '");
 		query.append(NGSIConstants.NGSI_LD_MODIFIED_AT);
 		query.append("')");
-		
+
 		followUp.append("JSONB_BUILD_OBJECT(''");
 		followUp.append(NGSIConstants.JSON_LD_ID);
 		followUp.append("'', ENTITY -> ''");
@@ -193,7 +203,6 @@ public class AttrsQueryTerm implements Serializable {
 		followUp.append(NGSIConstants.NGSI_LD_MODIFIED_AT);
 		followUp.append("'')");
 
-
 		if (datasetIdTerm == null) {
 			for (String attrs : getAttrs()) {
 				query.append(" || ");
@@ -205,7 +214,7 @@ public class AttrsQueryTerm implements Serializable {
 				query.append(", ENTITY->$");
 				query.append(dollar);
 				query.append(" ) ELSE '{}'::jsonb END");
-				
+
 				followUp.append(" || ");
 				followUp.append("CASE WHEN ENTITY ? ");
 				followUp.append("''' || $");
@@ -215,8 +224,7 @@ public class AttrsQueryTerm implements Serializable {
 				followUp.append(", ENTITY->''' || $");
 				followUp.append(dollar);
 				followUp.append("|| ''' ) ELSE ''{}''::jsonb END");
-				
-				
+
 				tuple.addString(attrs);
 				dollar++;
 			}
@@ -231,11 +239,12 @@ public class AttrsQueryTerm implements Serializable {
 						", filtered.res) ELSE '{}'::jsonb END FROM (SELECT jsonb_agg(val) as res FROM jsonb_array_elements(ENTITY -> $");
 				query.append(dollar);
 				query.append(") as val where ");
-				
+
 				followUp.append(" || ");
 				followUp.append("CASE WHEN ENTITY ? ''' || $");
 				followUp.append(dollar);
-				followUp.append(" || ''' THEN (SELECT CASE WHEN jsonb_array_length(filtered.res) > 0 THEN JSONB_BUILD_OBJECT(''' || $");
+				followUp.append(
+						" || ''' THEN (SELECT CASE WHEN jsonb_array_length(filtered.res) > 0 THEN JSONB_BUILD_OBJECT(''' || $");
 				followUp.append(dollar);
 				followUp.append(
 						"||''', filtered.res) ELSE ''{}''::jsonb END FROM (SELECT jsonb_agg(val) as res FROM jsonb_array_elements(ENTITY -> $");
@@ -243,17 +252,16 @@ public class AttrsQueryTerm implements Serializable {
 				followUp.append(") as val where ");
 				tuple.addString(attrs);
 				dollar++;
-				
-				
+
 				if (datasetIdTerm.ids.remove(NGSIConstants.JSON_LD_NONE)) {
 					query.append("NOT val ? '");
 					query.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
 					query.append("'");
-					
+
 					followUp.append("NOT val ? ''");
 					followUp.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
 					followUp.append("''");
-					
+
 					if (!datasetIdTerm.ids.isEmpty()) {
 						query.append(" OR ");
 						followUp.append(" OR ");
@@ -267,7 +275,7 @@ public class AttrsQueryTerm implements Serializable {
 					query.append(",0,");
 					query.append(NGSIConstants.JSON_LD_ID);
 					query.append("}' = ANY(ARRAY[");
-					
+
 					followUp.append("val ? ''");
 					followUp.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
 					followUp.append("'' and val #>> ''{");
@@ -275,24 +283,23 @@ public class AttrsQueryTerm implements Serializable {
 					followUp.append(",0,");
 					followUp.append(NGSIConstants.JSON_LD_ID);
 					followUp.append("}'' = ANY(ARRAY[''' || ");
-					
-					for(String id: datasetIdTerm.ids) {
+
+					for (String id : datasetIdTerm.ids) {
 						followUp.append('$');
 						followUp.append(dollar);
 						followUp.append(" || ''',''' || ");
-						
+
 						query.append('$');
 						query.append(dollar);
 						query.append(',');
 						tuple.addString(id);
 						dollar++;
 					}
-					query.setLength(query.length() -1);
+					query.setLength(query.length() - 1);
 					query.append("])");
-					followUp.setLength(followUp.length() -8);
+					followUp.setLength(followUp.length() - 8);
 					followUp.append("])");
-					
-					
+
 				}
 				query.append(") as filtered)");
 				followUp.append(") as filtered)");
@@ -306,7 +313,7 @@ public class AttrsQueryTerm implements Serializable {
 		query.append("' , ENTITY-> '");
 		query.append(NGSIConstants.NGSI_LD_SCOPE);
 		query.append("' ) ELSE '{}'::jsonb END");
-		
+
 		followUp.append(" || ");
 		followUp.append("CASE WHEN ENTITY-> ''");
 		followUp.append(NGSIConstants.NGSI_LD_SCOPE);
@@ -355,9 +362,10 @@ public class AttrsQueryTerm implements Serializable {
 		builder.setLength(builder.length() - 1);
 		return builder.toString();
 	}
+
 	public List<String> toQueryBodyEntry(Context context) {
 		List<String> result = new ArrayList<>(attrs.size());
-		
+
 		attrs.forEach(attr -> {
 			result.add(context.compactIri(attr));
 		});

@@ -220,6 +220,15 @@ public class PickTerm extends ProjectionTerm {
 		return dollar;
 	}
 
+	public int toTempSql(StringBuilder query, Tuple tuple, int dollar) {
+		query.append("not attributeid = any($");
+		query.append(dollar);
+		query.append(')');
+		dollar++;
+		tuple.addArrayOfString(getAllTopLevelAttribs(true).toArray(new String[0]));
+		return dollar;
+	}
+
 	public int toSql(StringBuilder query, StringBuilder followUp, Tuple tuple, int dollar) {
 		query.append("ENTITY ?| ARRAY[");
 		followUp.append("ENTITY ?| ARRAY['''");
@@ -250,8 +259,7 @@ public class PickTerm extends ProjectionTerm {
 			Object attribObj = entity.get(current.attrib);
 			if (attribObj != null) {
 				if (current.hasLinked && calculateLinked) {
-					
-					
+
 					if (attribObj instanceof List<?> attrList) {
 						if (!flatJoin) {
 							for (Object attrInstanceObj : attrList) {
@@ -366,7 +374,5 @@ public class PickTerm extends ProjectionTerm {
 		entity.putAll(result);
 		return true;
 	}
-
-	
 
 }

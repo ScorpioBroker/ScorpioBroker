@@ -1393,7 +1393,7 @@ public class QueryDAO {
 			boolean localOnly, boolean forceEntitymapCreation, boolean tokenProvided, boolean count,
 			OrderByTerm orderBy, boolean metadata) {
 
-		StringBuilder query = new StringBuilder();
+		StringBuilder query = new StringBuilder(512);
 		Tuple tuple = Tuple.tuple();
 		int dollar;
 		boolean doJoin = (join != null && joinLevel > 0);
