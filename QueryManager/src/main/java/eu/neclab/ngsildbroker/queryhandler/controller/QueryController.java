@@ -395,9 +395,9 @@ public class QueryController {
 							params.isMetadata()).onItem()
 							.transform(t -> {
 								return HttpUtils.generateEntityMapResult(t.getItem2());
-							}).onFailure().recoverWithItem(
-									e -> HttpUtils.handleControllerExceptions(e, tenant));
-				});
+							});
+				}).onFailure().recoverWithItem(
+						e -> HttpUtils.handleControllerExceptions(e, tenant));
 
 	}
 
