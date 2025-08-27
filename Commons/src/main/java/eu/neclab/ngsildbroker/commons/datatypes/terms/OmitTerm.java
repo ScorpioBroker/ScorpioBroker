@@ -233,7 +233,7 @@ public class OmitTerm extends ProjectionTerm {
 	public int toSql(StringBuilder query, Tuple tuple, int dollar) {
 		query.append("entity - $");
 		query.append(dollar);
-		query.append("::text[]) <> '{}'::jsonb");
+		query.append("::text[] <> '{}'::jsonb");
 
 		dollar++;
 		HashSet<String> tmp = Sets.newHashSet(getAllTopLevelAttribs(false));

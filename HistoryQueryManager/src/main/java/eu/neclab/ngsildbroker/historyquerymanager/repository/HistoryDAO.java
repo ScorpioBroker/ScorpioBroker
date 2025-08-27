@@ -358,6 +358,9 @@ public class HistoryDAO {
 					entity.put(NGSIConstants.NGSI_LD_SCOPE, getScope(scopes));
 					entity.put(NGSIConstants.NGSI_LD_CREATED_AT, getDateField(createdAt));
 					entity.put(NGSIConstants.NGSI_LD_MODIFIED_AT, getDateField(modifiedAt));
+					if (deletedAt != null) {
+						entity.put(NGSIConstants.NGSI_LD_DELETED_AT, getDateField(deletedAt));
+					}
 
 					boolean parent = row.getBoolean(7);
 

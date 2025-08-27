@@ -55,6 +55,7 @@ import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.historyquerymanager.repository.HistoryDAO;
 import io.quarkus.runtime.StartupEvent;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple3;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.ext.web.client.WebClient;
@@ -105,7 +106,25 @@ public class HistoryQueryService implements CSourceHandler {
 			ScopeQueryTerm scopeQuery, TemporalQueryTerm tempQuery, AggrTerm aggrQuery, LanguageQueryTerm langQuery,
 			Integer lastN, Integer limit, Integer offSet, Boolean count, Boolean localOnly, Context context,
 			HttpServerRequest request) {
+		if (true) {
+			return historyDAO
+					.newQuery(tenant, idsAndTypeQueryAndIdPattern, attrsQuery, qQuery, geoQuery, scopeQuery, context,
+							limit, offSet, null, null, 0, null, null, null, tenant, false, true, true, tenant, true,
+							false, false, false, null, false, tempQuery, aggrQuery, lastN, null, null)
+					.onItem().transform(t -> {
+						QueryResult result = new QueryResult(tenant);
+						result.setLimit(limit);
+						result.setOffset(offSet);
+						Set<Entry<String, Tuple2<Map<String, Object>, Set<String>>>> tmp = t.getItem1().entrySet();
+						List<Map<String, Object>> resultData = new ArrayList<>(tmp.size());
+						for (Entry<String, Tuple2<Map<String, Object>, Set<String>>> entry : tmp) {
+							resultData.add(entry.getValue().getItem1());
+						}
+						result.setLanguageQueryTerm(langQuery);
 
+						return result;
+					});
+		}
 		Uni<QueryResult> local = historyDAO.query(tenant, idsAndTypeQueryAndIdPattern, attrsQuery, qQuery,
 				tempQuery, aggrQuery, geoQuery, scopeQuery, lastN, limit, offSet, count).onFailure()
 				.recoverWithUni(e -> {
