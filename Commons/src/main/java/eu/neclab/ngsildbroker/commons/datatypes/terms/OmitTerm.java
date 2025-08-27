@@ -231,14 +231,16 @@ public class OmitTerm extends ProjectionTerm {
 
 	@Override
 	public int toSql(StringBuilder query, Tuple tuple, int dollar) {
-		query.append("NOT (ARRAY(SELECT jsonb_object_keys(ENTITY)) <@ $");
+		query.append("entity - $");
 		query.append(dollar);
+		query.append("::text[]) <> '{}'::jsonb");
+
 		dollar++;
 		HashSet<String> tmp = Sets.newHashSet(getAllTopLevelAttribs(false));
 		tmp.add(NGSIConstants.NGSI_LD_CREATED_AT);
 		tmp.add(NGSIConstants.NGSI_LD_MODIFIED_AT);
 		tuple.addArrayOfString(tmp.toArray(new String[0]));
-		query.append(')');
+
 		return dollar;
 	}
 
