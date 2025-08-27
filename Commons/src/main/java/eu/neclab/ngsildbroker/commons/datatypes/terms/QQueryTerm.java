@@ -1329,7 +1329,7 @@ public class QQueryTerm implements Serializable {
 	}
 
 	private int parseAttribute(StringBuilder result, int dollar, Tuple tuple, String attrib, boolean localOnly,
-			boolean isDist, int entityLevelCounter) {
+			boolean isDist, int entityLevelCounter, DataSetIdTerm dataSetIdTerm) {
 
 		if (firstChild != null && isLinkedQ) {
 			String linkedPart = firstChild.attribute;
@@ -1385,7 +1385,7 @@ public class QQueryTerm implements Serializable {
 			result.append("\"[*].\"@id\"')))) AND (");
 
 			dollar = firstChild.parseAttribute(result, dollar, tuple, linkedPart, localOnly, isDist,
-					entityLevelCounter);
+					entityLevelCounter, dataSetIdTerm);
 			result.append("))");
 
 			return dollar;
@@ -1439,8 +1439,15 @@ public class QQueryTerm implements Serializable {
 		}
 		result.setLength(result.length() - 1);
 		if (operant == null || operant.isEmpty()) {
+			result.append(" ? (");
+			if (dataSetIdTerm != null) {
+				dataSetIdTerm.toJsonPath(result);
+				if (complexPart != null) {
+					result.append(" && ");
+				}
+			}
 			if (complexPart != null) {
-				result.append(" ? (exists(@.\"");
+				result.append("exists(@.\"");
 				result.append(NGSIConstants.NGSI_LD_HAS_VALUE);
 				result.append("\"[*].");
 
@@ -1470,7 +1477,7 @@ public class QQueryTerm implements Serializable {
 				result.setLength(result.length() - 1);
 				result.append("))");
 			}
-			result.append("'))");
+			result.append(")'))");
 		} else {
 			String operatorTBU;
 			boolean not = false;
@@ -1489,7 +1496,12 @@ public class QQueryTerm implements Serializable {
 			} else {
 				operatorTBU = operator;
 			}
-			result.append(" ? (");
+			result.append(" ? ");
+			if (dataSetIdTerm != null) {
+				dataSetIdTerm.toJsonPath(result);
+				result.append(" && ");
+			}
+			result.append('(');
 			if (not) {
 				result.append("!");
 			}
@@ -1869,13 +1881,13 @@ public class QQueryTerm implements Serializable {
 	}
 
 	public int toSql(StringBuilder result, int dollar, Tuple tuple, boolean isDist,
-			boolean localOnly) {
+			boolean localOnly, DataSetIdTerm dataSetIdTerm) {
 		if (firstChild != null && !isLinkedQ) {
 			result.append("(");
-			dollar = firstChild.toSql(result, dollar, tuple, isDist, localOnly);
+			dollar = firstChild.toSql(result, dollar, tuple, isDist, localOnly, dataSetIdTerm);
 			result.append(")");
 		} else {
-			dollar = parseAttribute(result, dollar, tuple, attribute, localOnly, isDist, -1);
+			dollar = parseAttribute(result, dollar, tuple, attribute, localOnly, isDist, -1, dataSetIdTerm);
 		}
 		if (hasNext()) {
 			if (nextAnd) {
@@ -1883,7 +1895,7 @@ public class QQueryTerm implements Serializable {
 			} else {
 				result.append(" or ");
 			}
-			dollar = next.toSql(result, dollar, tuple, isDist, localOnly);
+			dollar = next.toSql(result, dollar, tuple, isDist, localOnly, dataSetIdTerm);
 		}
 		return dollar;
 	}
@@ -3541,8 +3553,9 @@ public class QQueryTerm implements Serializable {
 			result.append(NGSIConstants.NGSI_LD_OBJECT_TYPE);
 			result.append("\"[*].\"@id\"')))) AND (");
 
-			dollar = firstChild.parseAttribute(result, dollar, tuple, linkedPart, localOnly, isDist,
-					entityLevelCounter);
+			// dollar = firstChild.parseAttribute(result, dollar, tuple, linkedPart,
+			// localOnly, isDist,
+			// entityLevelCounter, dataSetIdTerm);
 			result.append("))");
 
 			return dollar;

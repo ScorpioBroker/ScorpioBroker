@@ -109,7 +109,7 @@ public class HistoryQueryService implements CSourceHandler {
 		if (true) {
 			return historyDAO
 					.newQuery(tenant, idsAndTypeQueryAndIdPattern, attrsQuery, qQuery, geoQuery, scopeQuery, context,
-							limit, offSet, null, null, 0, null, null, null, tenant, false, true, true, tenant, true,
+							limit, offSet, null, null, 0, null, null, null, null, false, true, true, null, true,
 							false, false, false, null, false, tempQuery, aggrQuery, lastN, null, null)
 					.onItem().transform(t -> {
 						QueryResult result = new QueryResult(tenant);

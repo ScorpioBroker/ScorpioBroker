@@ -823,7 +823,7 @@ public class QueryDAO {
 		query.append(")");
 		if (qQuery != null) {
 			query.append(" AND ");
-			dollarCount = qQuery.toSql(query, dollarCount, tuple, false, true);
+			dollarCount = qQuery.toSql(query, dollarCount, tuple, false, true, null);
 		}
 		String sql = query.toString();
 		// logger.debug("SQL Request: " + sql);
@@ -1286,25 +1286,25 @@ public class QueryDAO {
 				if (sqlAdded) {
 					query.append(" AND ");
 				}
-				dollar = attrsQuery.toSql(query, tuple, dollar);
+				dollar = attrsQuery.toSql(query, tuple, dollar, dataSetIdTerm);
 				sqlAdded = true;
 			} else if (pickTerm != null) {
 				if (sqlAdded) {
 					query.append(" AND ");
 				}
-				dollar = pickTerm.toSql(query, tuple, dollar);
+				dollar = pickTerm.toSql(query, tuple, dollar, dataSetIdTerm);
 				sqlAdded = true;
 			} else if (omitTerm != null) {
 				if (sqlAdded) {
 					query.append(" AND ");
 				}
-				dollar = omitTerm.toSql(query, tuple, dollar);
+				dollar = omitTerm.toSql(query, tuple, dollar, dataSetIdTerm);
 				sqlAdded = true;
 			} else if (qQuery != null) {
 				if (sqlAdded) {
 					query.append(" AND ");
 				}
-				dollar = qQuery.toSql(query, dollar, tuple, splitEntities, localOnly);
+				dollar = qQuery.toSql(query, dollar, tuple, splitEntities, localOnly, dataSetIdTerm);
 				sqlAdded = true;
 			} else if (geoQuery != null) {
 				if (sqlAdded) {
@@ -1321,21 +1321,21 @@ public class QueryDAO {
 				if (sqlAdded) {
 					query.append(" AND ");
 				}
-				dollar = attrsQuery.toSql(query, tuple, dollar);
+				dollar = attrsQuery.toSql(query, tuple, dollar, dataSetIdTerm);
 				sqlAdded = true;
 			}
 			if (pickTerm != null) {
 				if (sqlAdded) {
 					query.append(" AND ");
 				}
-				dollar = pickTerm.toSql(query, tuple, dollar);
+				dollar = pickTerm.toSql(query, tuple, dollar, dataSetIdTerm);
 				sqlAdded = true;
 			}
 			if (omitTerm != null) {
 				if (sqlAdded) {
 					query.append(" AND ");
 				}
-				dollar = omitTerm.toSql(query, tuple, dollar);
+				dollar = omitTerm.toSql(query, tuple, dollar, dataSetIdTerm);
 				sqlAdded = true;
 			}
 			if (geoQuery != null) {
@@ -1351,7 +1351,7 @@ public class QueryDAO {
 					query.append(" AND ");
 				}
 				dollar = qQuery.toSql(query, dollar, tuple,
-						!regEmptyOrNoRegEntryAndNoLinkedQuery && splitEntities, localOnly);
+						!regEmptyOrNoRegEntryAndNoLinkedQuery && splitEntities, localOnly, dataSetIdTerm);
 				sqlAdded = true;
 			}
 			if (dataSetIdTerm != null) {

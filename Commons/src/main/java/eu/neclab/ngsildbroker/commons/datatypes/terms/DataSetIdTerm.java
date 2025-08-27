@@ -475,4 +475,25 @@ public class DataSetIdTerm implements Serializable {
 		sql.append(')');
 	}
 
+	public void toJsonPath(StringBuilder result) {
+		result.append('(');
+		if (ids.contains(NGSIConstants.JSON_LD_NONE)) {
+			result.append("!(exists(@.\"");
+			result.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
+			result.append("\")) || ");
+		}
+		result.append("(@.\"");
+		result.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
+		result.append("\"[0].\"");
+		result.append(NGSIConstants.JSON_LD_ID);
+		result.append("\" == [");
+		for (String id : ids) {
+			result.append('"');
+			result.append(id);
+			result.append("\".");
+		}
+		result.setLength(result.length() - 1);
+		result.append("]))");
+	}
+
 }

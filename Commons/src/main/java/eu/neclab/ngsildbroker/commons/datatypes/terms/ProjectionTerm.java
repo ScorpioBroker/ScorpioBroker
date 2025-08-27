@@ -139,7 +139,7 @@ public abstract class ProjectionTerm implements Serializable {
 	public abstract int toSqlConstructEntity(StringBuilder query, Tuple tuple, int dollar, String tableToUse,
 			DataSetIdTerm dataSetIdTerm);
 
-	public abstract int toSql(StringBuilder query, Tuple tuple, int dollar);
+	public abstract int toSql(StringBuilder query, Tuple tuple, int dollar, DataSetIdTerm dataSetIdTerm);
 
 	public abstract boolean calculateEntity(Map<String, Object> entity, boolean inlineJoin,
 			Map<String, Map<String, Object>> flatEntities, Set<String> pickForFlat, boolean calculateLinked);

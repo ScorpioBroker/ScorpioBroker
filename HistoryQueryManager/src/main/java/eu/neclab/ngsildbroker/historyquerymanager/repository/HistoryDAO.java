@@ -173,16 +173,18 @@ public class HistoryDAO {
 			String rangeStart, String rangeEnd) {
 		StringBuilder sql = new StringBuilder(512);
 		Tuple tuple = Tuple.tuple();
-		int dollar = 0;
+		int dollar = 1;
 		boolean doJoin = (join != null && joinLevel > 0);
 		boolean doNotCreateEntityMap = !forceEntitymapCreation
 				&& (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery || localOnly);
 		if (doNotCreateEntityMap) {
 			if (typePattern != null || idsAndTypeAndIdPattern != null || scopeQuery != null) {
 				sql.append(
-						"WITH D0 as (SELECT id, to_char(createdat, " + TIMESTAMP_FORMAT + "), to_char(modifiedAt, "
+						"WITH D0 as (SELECT id, to_char(createdat, " + TIMESTAMP_FORMAT
+								+ ") as createdat, to_char(modifiedAt, "
 								+ TIMESTAMP_FORMAT
-								+ "), scopes, e_types, deletedAt jsonb_object_agg(A0.attributeid, A0.instancedata), true FROM temporalentity te0 left join (SELECT temporalentity_id, attributeid, JSONB_AGG(data) as instancedata");
+								+ ") as modifiedat, scopes, e_types, to_char(deletedAt, " + TIMESTAMP_FORMAT
+								+ ") as deletedat, jsonb_object_agg(A0.attributeid, A0.instancedata) as attrs, true as parent FROM temporalentity te0 left join (SELECT temporalentity_id, attributeid, JSONB_AGG(data) as instancedata FROM temporalentityattrinstance");
 				if (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery || !splitEntities) {
 					sql.append(" WHERE ");
 					if (attrsQuery != null) {
@@ -224,13 +226,16 @@ public class HistoryDAO {
 					}
 					sql.setLength(sql.length() - 5);
 				}
+
+				sql.append(" GROUP BY temporalentity_id, attributeid");
+
 				if (lastN != -1) {
 					sql.append(" LIMIT $");
 					sql.append(dollar);
 					tuple.addInteger(lastN);
 
 				}
-				sql.append(" GROUP BY temporalentity_id, attributeid) A0 ON TE0.id=A0.temporalentity_id WHERE ");
+				sql.append(") A0 ON TE0.id=A0.temporalentity_id WHERE ");
 
 				if (typePattern != null) {
 					sql.append("EXISTS (SELECT TRUE FROM UNNEST(E_TYPES) AS E_TYPE WHERE E_TYPE ~ $");
@@ -250,7 +255,7 @@ public class HistoryDAO {
 						String idPattern = t.getItem3();
 
 						sql.append('(');
-
+						System.out.println(sql.toString());
 						if (typeQuery != null) {
 							if (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery
 									|| !splitEntities) {
@@ -260,6 +265,7 @@ public class HistoryDAO {
 							}
 
 							sql.append(" AND ");
+							System.out.println(sql.toString());
 						}
 						if (ids != null) {
 
@@ -280,12 +286,18 @@ public class HistoryDAO {
 							sql.append(dollar);
 							tuple.addString(idPattern);
 							dollar++;
+							sql.append(" AND ");
 						}
+						sql.setLength(sql.length() - 5);
+						System.out.println(sql.toString());
 						sql.append(") OR ");
+						System.out.println(sql.toString());
 
 					}
 					sql.setLength(sql.length() - 4);
+					System.out.println(sql.toString());
 					sql.append(") AND ");
+					System.out.println(sql.toString());
 				}
 				if (scopeQuery != null) {
 					scopeQuery.toSql(sql);
@@ -296,12 +308,12 @@ public class HistoryDAO {
 					sql.append(" AND ");
 				}
 				sql.setLength(sql.length() - 5);
-				sql.append(')');
 
 			} else {
 				dollar = 0;
 			}
 
+			sql.append(" GROUP BY id, createdat, modifiedat, scopes, e_types, deletedat, parent");
 			if (orderBy == null) {
 				sql.append(" ORDER BY createdAt");
 			} else {

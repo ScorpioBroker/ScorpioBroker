@@ -189,7 +189,7 @@ public class CSourceDAO {
 				sql.append(" AND ");
 			}
 			StringBuilder tempSql = new StringBuilder();
-			dollar = qQueryTerm.toSql(tempSql, dollar, tuple, true, false);
+			dollar = qQueryTerm.toSqlOld(tempSql, dollar, tuple, true, false);
 			sql.append(tempSql.toString().toLowerCase().replace("entity", "csource.reg"));
 			sqlAdded = true;
 		}

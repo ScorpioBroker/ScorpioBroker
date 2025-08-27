@@ -230,16 +230,25 @@ public class OmitTerm extends ProjectionTerm {
 	}
 
 	@Override
-	public int toSql(StringBuilder query, Tuple tuple, int dollar) {
+	public int toSql(StringBuilder query, Tuple tuple, int dollar, DataSetIdTerm dataSetIdTerm) {
+		if (dataSetIdTerm != null) {
+			query.append("jsonb_path_exists(");
+		}
 		query.append("entity - $");
 		query.append(dollar);
-		query.append("::text[] <> '{}'::jsonb");
-
 		dollar++;
 		HashSet<String> tmp = Sets.newHashSet(getAllTopLevelAttribs(false));
 		tmp.add(NGSIConstants.NGSI_LD_CREATED_AT);
 		tmp.add(NGSIConstants.NGSI_LD_MODIFIED_AT);
 		tuple.addArrayOfString(tmp.toArray(new String[0]));
+		query.append("::text[]");
+		if (dataSetIdTerm != null) {
+			query.append(",'$.* ? ");
+			dataSetIdTerm.toJsonPath(query);
+			query.append("')");
+		} else {
+			query.append(" <> '{}'::jsonb");
+		}
 
 		return dollar;
 	}
