@@ -120,6 +120,7 @@ public class HistoryQueryService implements CSourceHandler {
 						for (Entry<String, Tuple2<Map<String, Object>, Set<String>>> entry : tmp) {
 							resultData.add(entry.getValue().getItem1());
 						}
+						result.setData(resultData);
 						result.setLanguageQueryTerm(langQuery);
 
 						return result;

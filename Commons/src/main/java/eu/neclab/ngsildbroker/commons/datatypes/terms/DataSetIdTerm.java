@@ -193,6 +193,13 @@ public class DataSetIdTerm implements Serializable {
 		return dollar;
 	}
 
+	public void toSql(StringBuilder query) {
+		query.append("jsonb_path_exists(entity, '$.* ? ");
+		toJsonPath(query);
+		query.append("')");
+
+	}
+
 	public int toSql(StringBuilder query, Tuple tuple, int dollar, PickTerm pick, OmitTerm omit,
 			AttrsQueryTerm attrsQuery) {
 		query.append(
@@ -482,18 +489,19 @@ public class DataSetIdTerm implements Serializable {
 			result.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
 			result.append("\")) || ");
 		}
-		result.append("(@.\"");
-		result.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
-		result.append("\"[0].\"");
-		result.append(NGSIConstants.JSON_LD_ID);
-		result.append("\" == [");
 		for (String id : ids) {
+			result.append("(@.\"");
+			result.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
+			result.append("\"[0].\"");
+			result.append(NGSIConstants.JSON_LD_ID);
+			result.append("\" == ");
+
 			result.append('"');
 			result.append(id);
-			result.append("\".");
+			result.append("\") || ");
 		}
-		result.setLength(result.length() - 1);
-		result.append("]))");
+		result.setLength(result.length() - 4);
+		result.append(')');
 	}
 
 }

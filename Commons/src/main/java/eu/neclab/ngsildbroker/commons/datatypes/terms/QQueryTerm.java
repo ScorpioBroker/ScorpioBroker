@@ -1438,46 +1438,53 @@ public class QQueryTerm implements Serializable {
 			lastAttrib = attribName;
 		}
 		result.setLength(result.length() - 1);
+		System.out.println(operant.length());
+		System.out.println(operant);
+		System.out.println(operant.isEmpty());
 		if (operant == null || operant.isEmpty()) {
-			result.append(" ? (");
-			if (dataSetIdTerm != null) {
-				dataSetIdTerm.toJsonPath(result);
+			if (dataSetIdTerm != null || complexPart != null) {
+
+				result.append(" ? (");
+				if (dataSetIdTerm != null) {
+					dataSetIdTerm.toJsonPath(result);
+					if (complexPart != null) {
+						result.append(" && ");
+					}
+				}
 				if (complexPart != null) {
-					result.append(" && ");
-				}
-			}
-			if (complexPart != null) {
-				result.append("exists(@.\"");
-				result.append(NGSIConstants.NGSI_LD_HAS_VALUE);
-				result.append("\"[*].");
-
-				for (String complexEntry : complexSplitted) {
-					result.append('"');
-					result.append(linkHeaders.expandIri(complexEntry, false, true, null, null));
+					result.append("(exists(@.\"");
+					result.append(NGSIConstants.NGSI_LD_HAS_VALUE);
 					result.append("\"[*].");
-				}
 
-				result.setLength(result.length() - 1);
-				result.append(") || (@.\"");
-				result.append(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP);
-				result.append("\"[*].\"");
-				result.append(NGSIConstants.JSON_LD_LANGUAGE);
-				result.append("\"==\"");
-				result.append(complexPart);
-				result.append("\") || exists(@.\"");
-				result.append(NGSIConstants.NGSI_LD_HAS_LIST);
-				result.append("\"[1].\"");
-				result.append(NGSIConstants.JSON_LD_LIST);
-				result.append("\"[*].");
-				for (String complexEntry : complexSplitted) {
-					result.append('"');
-					result.append(linkHeaders.expandIri(complexEntry, false, true, null, null));
+					for (String complexEntry : complexSplitted) {
+						result.append('"');
+						result.append(linkHeaders.expandIri(complexEntry, false, true, null, null));
+						result.append("\"[*].");
+					}
+
+					result.setLength(result.length() - 1);
+					result.append(") || (@.\"");
+					result.append(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP);
+					result.append("\"[*].\"");
+					result.append(NGSIConstants.JSON_LD_LANGUAGE);
+					result.append("\"==\"");
+					result.append(complexPart);
+					result.append("\") || exists(@.\"");
+					result.append(NGSIConstants.NGSI_LD_HAS_LIST);
+					result.append("\"[1].\"");
+					result.append(NGSIConstants.JSON_LD_LIST);
 					result.append("\"[*].");
+					for (String complexEntry : complexSplitted) {
+						result.append('"');
+						result.append(linkHeaders.expandIri(complexEntry, false, true, null, null));
+						result.append("\"[*].");
+					}
+					result.setLength(result.length() - 1);
+					result.append("))");
 				}
-				result.setLength(result.length() - 1);
-				result.append("))");
+				result.append(')');
 			}
-			result.append(")'))");
+			result.append("'))");
 		} else {
 			String operatorTBU;
 			boolean not = false;

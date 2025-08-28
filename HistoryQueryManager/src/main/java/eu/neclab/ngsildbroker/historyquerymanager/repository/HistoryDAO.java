@@ -232,6 +232,7 @@ public class HistoryDAO {
 				if (lastN != -1) {
 					sql.append(" LIMIT $");
 					sql.append(dollar);
+					dollar++;
 					tuple.addInteger(lastN);
 
 				}
@@ -367,7 +368,10 @@ public class HistoryDAO {
 					Map<String, Object> entity = row.getJsonObject(6).getMap();
 					entity.put(NGSIConstants.JSON_LD_ID, id);
 					entity.put(NGSIConstants.JSON_LD_TYPE, Lists.newArrayList(types));
-					entity.put(NGSIConstants.NGSI_LD_SCOPE, getScope(scopes));
+					if (scopes != null) {
+						entity.put(NGSIConstants.NGSI_LD_SCOPE, getScope(scopes));
+					}
+
 					entity.put(NGSIConstants.NGSI_LD_CREATED_AT, getDateField(createdAt));
 					entity.put(NGSIConstants.NGSI_LD_MODIFIED_AT, getDateField(modifiedAt));
 					if (deletedAt != null) {

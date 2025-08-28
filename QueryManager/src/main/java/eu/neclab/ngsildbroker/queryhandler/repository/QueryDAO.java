@@ -1354,12 +1354,13 @@ public class QueryDAO {
 						!regEmptyOrNoRegEntryAndNoLinkedQuery && splitEntities, localOnly, dataSetIdTerm);
 				sqlAdded = true;
 			}
-			if (dataSetIdTerm != null) {
+			if (qQuery == null && omitTerm == null && pickTerm == null && attrsQuery == null && dataSetIdTerm != null) {
 				if (sqlAdded) {
 					query.append(" AND ");
 				}
-				dollar = dataSetIdTerm.toSql(query, tuple, dollar, pickTerm, omitTerm,
-						attrsQuery);
+				// dollar = dataSetIdTerm.toSql(query, tuple, dollar, pickTerm, omitTerm,
+				// attrsQuery);
+				dataSetIdTerm.toSql(query);
 				sqlAdded = true;
 			}
 		}
