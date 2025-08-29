@@ -216,35 +216,36 @@ public class PickTerm extends ProjectionTerm {
 	@Override
 	public int toSql(StringBuilder query, Tuple tuple, int dollar, DataSetIdTerm dataSetIdTerm) {
 		if (dataSetIdTerm != null) {
-			query.append("jsonb_path_exists(ENTITY, '$.keyvalue() ? (@.key == [");
+
+			query.append("jsonb_path_exists(ENTITY, '$.keyvalue() ? (");
 			Set<String> attribs = getAllTopLevelAttribs(true);
 			Set<String> ids = dataSetIdTerm.getIds();
 			for (String attrib : attribs) {
-				query.append('"');
+				query.append("(@.key == \"");
 				query.append(attrib);
-				query.append("\",");
+				query.append("\") || ");
 			}
-			query.setLength(query.length() - 1);
-			query.append("] && (");
-
+			query.setLength(query.length() - 4);
+			query.append(" && ");
+			query.append('(');
 			if (ids.contains(NGSIConstants.JSON_LD_NONE)) {
 				query.append("!(exists(@.value.\"");
 				query.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
 				query.append("\")) || ");
 			}
-			query.append("(@.value.\"");
-			query.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
-			query.append("\"[0].\"");
-			query.append(NGSIConstants.JSON_LD_ID);
-			query.append("\" == [");
 			for (String id : ids) {
+				query.append("(@.value.\"");
+				query.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
+				query.append("\"[0].\"");
+				query.append(NGSIConstants.JSON_LD_ID);
+				query.append("\" == ");
+
 				query.append('"');
 				query.append(id);
-				query.append("\".");
+				query.append("\") || ");
 			}
-			query.setLength(query.length() - 1);
-			query.append("]))");
-			query.append(")')");
+			query.setLength(query.length() - 4);
+			query.append("))')");
 		} else {
 			query.append("ENTITY ?| $");
 			query.append(dollar);
