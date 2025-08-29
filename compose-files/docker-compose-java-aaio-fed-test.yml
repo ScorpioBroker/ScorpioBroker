@@ -25,7 +25,7 @@ services:
     environment:
       DBHOST: postgres
       QUARKUS_LOG_LEVEL: DEBUG
-      SCORPIO_GATEWAYURL: http://host.docker.internal:9090
+      SCORPIO_GATEWAY_URL: http://host.docker.internal:9090
     ports:
       - "9090:9090"
     depends_on:
@@ -46,7 +46,7 @@ services:
     environment:
       DBHOST: postgresone
       QUARKUS_LOG_LEVEL: DEBUG
-      SCORPIO_GATEWAYURL: http://host.docker.internal:9080
+      SCORPIO_GATEWAY_URL: http://host.docker.internal:9080
     ports:
       - "9080:9090"
     depends_on:
@@ -66,7 +66,7 @@ services:
     environment:
       DBHOST: postgrestwo
       QUARKUS_LOG_LEVEL: DEBUG
-      SCORPIO_GATEWAYURL: http://host.docker.internal:9070
+      SCORPIO_GATEWAY_URL: http://host.docker.internal:9070
     ports:
       - "9070:9090"
     depends_on:
