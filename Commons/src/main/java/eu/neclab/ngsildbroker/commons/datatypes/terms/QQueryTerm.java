@@ -1503,7 +1503,7 @@ public class QQueryTerm implements Serializable {
 			} else {
 				operatorTBU = operator;
 			}
-			result.append(" ? ");
+			result.append(" ? (");
 			if (dataSetIdTerm != null) {
 				dataSetIdTerm.toJsonPath(result);
 				result.append(" && ");
@@ -1834,7 +1834,7 @@ public class QQueryTerm implements Serializable {
 					}
 					result.setCharAt(result.length(), ']');
 				}
-				result.append("))') ");
+				result.append(")))') ");
 				if (not) {
 					result.append("AND NOT ");
 				} else {

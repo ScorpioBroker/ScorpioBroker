@@ -284,11 +284,11 @@ public class OrderByTerm {
                 sql.append(", ST_DistanceSphere(ST_SetSRID(ST_GeomFromGeoJSON(getgeojson(");
                 sql.append("jsonb_path_query_first(ENTITY, '$.\"");
                 sql.append(sTermBase);
-                sql.append("\"[*] ? (@.\"");
+                sql.append("\"[*] ? ((@.\"");
                 sql.append(NGSIConstants.JSON_LD_TYPE);
                 sql.append("\"[0] == \"");
                 sql.append(NGSIConstants.NGSI_LD_GEOPROPERTY);
-                sql.append("\"");
+                sql.append("\")");
                 if (datasetIdTerm != null) {
                     sql.append(" && ");
                     datasetIdTerm.toJsonPath(sql);

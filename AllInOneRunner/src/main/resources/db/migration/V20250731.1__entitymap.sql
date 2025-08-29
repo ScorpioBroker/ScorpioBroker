@@ -26,11 +26,15 @@ IMMUTABLE
 PARALLEL SAFE
 COST 10
 AS $BODY$
-  SELECT jsonb_build_object(
-    'type', substring(ldjson#>>'{@type,0}' FROM 32),
-    'coordinates', getcoordinates(ldjson#>'{https://purl.org/geojson/vocab#coordinates,0,@list}')
-  );
+  SELECT CASE
+    WHEN ldjson IS NULL THEN NULL
+    ELSE jsonb_build_object(
+      'type', substring(ldjson#>>'{@type,0}' FROM 32),
+      'coordinates', getcoordinates(ldjson#>'{https://purl.org/geojson/vocab#coordinates,0,@list}')
+    )
+  END;
 $BODY$;
+
 
 CREATE OR REPLACE FUNCTION getcoordinates(IN coordinatelist jsonb)
     RETURNS jsonb

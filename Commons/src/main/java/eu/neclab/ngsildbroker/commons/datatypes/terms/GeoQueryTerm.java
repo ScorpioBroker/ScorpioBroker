@@ -305,32 +305,31 @@ public class GeoQueryTerm implements Serializable {
 
 	public int toSql(StringBuilder query, Tuple tuple, int dollar, DataSetIdTerm dataSetIdTerm, boolean useDefault) {
 		String dbColumn;
-		if (!geoproperty.equals(NGSIConstants.NGSI_LD_LOCATION)
-				|| (dataSetIdTerm != null
-						&& (!useDefault || !dataSetIdTerm.getIds().contains(NGSIConstants.JSON_LD_NONE)))) {
-			query.append("jsonb_data_query_first(entity, '$.\"");
-			query.append(geoproperty);
-			query.append("\"[*] ? ((@.\"");
-			query.append(NGSIConstants.JSON_LD_TYPE);
-			query.append("\"[0] == \"");
-			query.append(NGSIConstants.NGSI_LD_GEOPROPERTY);
-			query.append("\")");
-			if (dataSetIdTerm != null) {
-				query.append(" && ");
-				dataSetIdTerm.toJsonPath(query);
-			}
-			query.append(")')");
-			query.append("data @> '{\"");
-			query.append(geoproperty);
-			query.append("\": [{\"");
-			query.append(NGSIConstants.JSON_LD_TYPE);
-			query.append("\":[\"");
-			query.append(NGSIConstants.NGSI_LD_GEOPROPERTY);
-			query.append("\"]}]}' AND ");
-			dbColumn = "ST_SetSRID(ST_GeomFromGeoJSON( getGeoJson( " + "data#>'{" + geoproperty + ",0,"
-					+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0}') ), 4326)";
-		} else {
+		if (geoproperty.equals(NGSIConstants.NGSI_LD_LOCATION)
+				&& (useDefault || dataSetIdTerm == null
+						|| dataSetIdTerm.getIds().contains(NGSIConstants.JSON_LD_NONE))) {
 			dbColumn = "location";
+		} else {
+			StringBuilder inlineSql = new StringBuilder(512);
+			inlineSql.append("ST_SetSRID(ST_GeomFromGeoJSON(getgeojson(");
+			inlineSql.append("jsonb_path_query_first(ENTITY, '$.\"");
+			inlineSql.append(geoproperty);
+			inlineSql.append("\"[*] ? ((@.\"");
+			inlineSql.append(NGSIConstants.JSON_LD_TYPE);
+			inlineSql.append("\"[0] == \"");
+			inlineSql.append(NGSIConstants.NGSI_LD_GEOPROPERTY);
+			inlineSql.append("\")");
+			if (dataSetIdTerm != null) {
+				inlineSql.append(" && ");
+				dataSetIdTerm.toJsonPath(inlineSql);
+			}
+			inlineSql.append(").\"");
+			inlineSql.append(NGSIConstants.NGSI_LD_HAS_VALUE);
+			inlineSql.append("\"[0].\"");
+			inlineSql.append(NGSIConstants.JSON_LD_VALUE);
+			inlineSql.append("\"')");
+			inlineSql.append(")), 4326)");
+			dbColumn = inlineSql.toString();
 		}
 
 		String referenceValue = "ST_SetSRID(ST_GeomFromGeoJSON('{\"type\": \"" + geometry + "\", \"coordinates\": "
