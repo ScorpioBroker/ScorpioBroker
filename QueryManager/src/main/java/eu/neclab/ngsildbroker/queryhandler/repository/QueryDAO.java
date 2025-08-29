@@ -79,6 +79,9 @@ public class QueryDAO {
 	@ConfigProperty(name = "scorpio.entitymap.cleanup.ttl")
 	String entityMapTTL;
 
+	@ConfigProperty(name = "scorpio.geoquery.defaultdatasetid", defaultValue = "true")
+	boolean useDefaultForGeo;
+
 	GeoJSONReader geoReader = new GeoJSONReader(JtsSpatialContext.GEO, new SpatialContextFactory());
 
 	private static Logger logger = LoggerFactory.getLogger(QueryDAO.class);
@@ -1310,7 +1313,7 @@ public class QueryDAO {
 				if (sqlAdded) {
 					query.append(" AND ");
 				}
-				dollar = geoQuery.toSql(query, tuple, dollar);
+				dollar = geoQuery.toSql(query, tuple, dollar, dataSetIdTerm, useDefaultForGeo);
 				sqlAdded = true;
 			}
 
@@ -1342,7 +1345,7 @@ public class QueryDAO {
 				if (sqlAdded) {
 					query.append(" AND ");
 				}
-				dollar = geoQuery.toSql(query, tuple, dollar);
+				dollar = geoQuery.toSql(query, tuple, dollar, dataSetIdTerm, useDefaultForGeo);
 				sqlAdded = true;
 			}
 
@@ -1410,7 +1413,8 @@ public class QueryDAO {
 			if (orderBy != null) {
 				query.append(',');
 				try {
-					dollar = orderBy.toSqlOrderValue(query, dollar, tuple, objectMapper, context);
+					dollar = orderBy.toSqlOrderValue(query, dollar, tuple, objectMapper, context, dataSetIdTerm,
+							useDefaultForGeo);
 				} catch (ResponseException e) {
 					return Uni.createFrom().failure(e);
 				}
@@ -1451,7 +1455,8 @@ public class QueryDAO {
 				if (orderBy != null) {
 					query.append(',');
 					try {
-						dollar = orderBy.toSqlOrderValue(query, dollar, tuple, objectMapper, context);
+						dollar = orderBy.toSqlOrderValue(query, dollar, tuple, objectMapper, context, dataSetIdTerm,
+								useDefaultForGeo);
 					} catch (ResponseException e) {
 						return Uni.createFrom().failure(e);
 					}
