@@ -1403,6 +1403,14 @@ public class QQueryTerm implements Serializable {
 		}
 		String[] attribPath = StringUtils.split(attrib, '.');
 		String rootPathExpanded = linkHeaders.expandIri(attribPath[0], false, true, null, null);
+		String jsonbPathExistsBase;
+		if (entityLevelCounter == -1) {
+			jsonbPathExistsBase = "jsonb_path_exists(entity, ";
+		} else {
+			jsonbPathExistsBase = "jsonb_path_exists(E" + entityLevelCounter + ".entity, ";
+		}
+		StringBuilder jsonPathBaseBuilder = new StringBuilder(128);
+
 		if (!rootPathExpanded.equals(NGSIConstants.NGSI_LD_STAR)) {
 			if (entityLevelCounter != -1) {
 				result.append('E');
@@ -1415,476 +1423,443 @@ public class QQueryTerm implements Serializable {
 			tuple.addString(rootPathExpanded);
 			result.append(" AND ");
 		}
-		result.append("(jsonb_path_exists(");
-		if (entityLevelCounter != -1) {
-			result.append('E');
-			result.append(entityLevelCounter);
-			result.append('.');
-		}
-		result.append("entity, '$.");
+
+		jsonPathBaseBuilder.append("$.");
 		String lastAttrib = null;
 		for (String pathEntry : attribPath) {
 			String attribName = linkHeaders.expandIri(pathEntry, false, true, null, null);
 			boolean wildcardUse = NGSIConstants.NGSI_LD_STAR.equals(attribName);
 
 			if (wildcardUse) {
-				result.append('*');
+				jsonPathBaseBuilder.append('*');
 			} else {
-				result.append('"');
-				result.append(attribName);
-				result.append('"');
+				jsonPathBaseBuilder.append('"');
+				jsonPathBaseBuilder.append(attribName);
+				jsonPathBaseBuilder.append('"');
 			}
-			result.append("[*].");
+			jsonPathBaseBuilder.append("[*].");
 			lastAttrib = attribName;
 		}
-		result.setLength(result.length() - 1);
-		System.out.println(operant.length());
-		System.out.println(operant);
-		System.out.println(operant.isEmpty());
-		if (operant == null || operant.isEmpty()) {
-			if (dataSetIdTerm != null || complexPart != null) {
+		jsonPathBaseBuilder.setLength(jsonPathBaseBuilder.length() - 1);
 
-				result.append(" ? (");
-				if (dataSetIdTerm != null) {
-					dataSetIdTerm.toJsonPath(result);
-					if (complexPart != null) {
-						result.append(" && ");
-					}
-				}
-				if (complexPart != null) {
-					result.append("(exists(@.\"");
-					result.append(NGSIConstants.NGSI_LD_HAS_VALUE);
-					result.append("\"[*].");
-
-					for (String complexEntry : complexSplitted) {
-						result.append('"');
-						result.append(linkHeaders.expandIri(complexEntry, false, true, null, null));
-						result.append("\"[*].");
-					}
-
-					result.setLength(result.length() - 1);
-					result.append(") || (@.\"");
-					result.append(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP);
-					result.append("\"[*].\"");
-					result.append(NGSIConstants.JSON_LD_LANGUAGE);
-					result.append("\"==\"");
-					result.append(complexPart);
-					result.append("\") || exists(@.\"");
-					result.append(NGSIConstants.NGSI_LD_HAS_LIST);
-					result.append("\"[1].\"");
-					result.append(NGSIConstants.JSON_LD_LIST);
-					result.append("\"[*].");
-					for (String complexEntry : complexSplitted) {
-						result.append('"');
-						result.append(linkHeaders.expandIri(complexEntry, false, true, null, null));
-						result.append("\"[*].");
-					}
-					result.setLength(result.length() - 1);
-					result.append("))");
-				}
-				result.append(')');
-			}
-			result.append("'))");
+		String jsonPathBase = jsonPathBaseBuilder.toString();
+		jsonPathBaseBuilder.setLength(0);
+		String datasetIdPath;
+		if (dataSetIdTerm != null) {
+			dataSetIdTerm.toJsonPath(jsonPathBaseBuilder);
+			datasetIdPath = jsonPathBaseBuilder.toString();
+			jsonPathBaseBuilder.setLength(0);
 		} else {
-			String operatorTBU;
-			boolean not = false;
-			boolean regex = false;
-			List<String[]> tokens = splitValues(operant);
-			if (operator.equals(NGSIConstants.QUERY_PATTERNOP)) {
-				operatorTBU = ".string() like_regex ";
-				regex = true;
-			} else if (operator.equals(NGSIConstants.QUERY_NOTPATTERNOP)) {
-				operatorTBU = ".string() like_regex ";
-				regex = true;
-				not = true;
-			} else if (operator.equals(NGSIConstants.QUERY_UNEQUAL)) {
-				operatorTBU = "==";
-				not = true;
-			} else {
-				operatorTBU = operator;
-			}
-			result.append(" ? (");
-			if (dataSetIdTerm != null) {
-				dataSetIdTerm.toJsonPath(result);
-				result.append(" && ");
-			}
-			result.append('(');
-			if (not) {
-				result.append("!");
-			}
-			result.append("(@.\"");
-			if (NGSIConstants.SPECIAL_AT_VALUE_PROPERTIES.contains(lastAttrib)) {
-				result.append(NGSIConstants.JSON_LD_VALUE);
-				result.append('"');
-				result.append(operatorTBU);
-				if (tokens.size() == 1) {
-					result.append(prepValueForJsonPath(tokens.get(0)[0], regex));
-				} else {
-					result.append('[');
-					for (String[] token : tokens) {
-						result.append(prepValueForJsonPath(token[0], regex));
-						result.append(',');
-					}
-					result.setCharAt(result.length(), ']');
-				}
-
-			} else if (NGSIConstants.NGSI_LD_DATA_SET_ID.equals(lastAttrib)) {
-				result.append(NGSIConstants.JSON_LD_ID);
-				result.append('"');
-				result.append(operatorTBU);
-				if (tokens.size() == 1) {
-					result.append(prepValueForJsonPath(tokens.get(0)[0], regex));
-				} else {
-					result.append('[');
-					for (String[] token : tokens) {
-						result.append(prepValueForJsonPath(token[0], regex));
-						result.append(',');
-					}
-					result.setCharAt(result.length(), ']');
-				}
-
-			} else {
-
-				result.append(NGSIConstants.NGSI_LD_HAS_VALUE);
-				result.append("\"[*].");
-				if (complexPart != null) {
-					for (String complexEntry : complexSplitted) {
-						result.append('"');
-						result.append(linkHeaders.expandIri(complexEntry, false, true, null, null));
-						result.append("\"[*].");
-					}
-				}
-				result.append('"');
-				result.append(NGSIConstants.JSON_LD_VALUE);
-				result.append('"');
-
-				if (tokens.size() == 1) {
-					String[] token = tokens.get(0);
-					if (operatorTBU.equals(NGSIConstants.QUERY_EQUAL)
-							|| operatorTBU.equals(NGSIConstants.QUERY_UNEQUAL)) {
-						int listIndex = token[0].indexOf("..");
-						if (listIndex != -1) {
-							String from = token[0].substring(0, listIndex);
-							String to = token[0].substring(listIndex + 2);
-							result.append(NGSIConstants.QUERY_GREATEREQ);
-							result.append(from);
-							result.append(" && @.\"");
-							result.append(NGSIConstants.NGSI_LD_HAS_VALUE);
-							result.append("\"[*].");
-
-							if (complexPart != null) {
-								for (String complexEntry : complexSplitted) {
-									result.append('"');
-									result.append(linkHeaders.expandIri(complexEntry, false, true, null, null));
-									result.append("\"[*].");
-								}
-							}
-							result.append('"');
-							result.append(NGSIConstants.JSON_LD_VALUE);
-							result.append('"');
-							result.append(NGSIConstants.QUERY_LESSEQ);
-							result.append(to);
-						} else {
-							result.append(operatorTBU);
-							result.append(prepValueForJsonPath(token[0], regex));
-						}
-					} else {
-						result.append(operatorTBU);
-						result.append(prepValueForJsonPath(token[0], regex));
-					}
-
-				} else {
-					result.append(operatorTBU);
-					result.append('[');
-					for (String[] token : tokens) {
-						result.append(prepValueForJsonPath(token[0], regex));
-						result.append(',');
-					}
-					result.setCharAt(result.length(), ']');
-				}
-				result.append(')');
-				if (not) {
-					result.append(" && ");
-				} else {
-					result.append(" || ");
-				}
-
-				if (not) {
-					result.append("!");
-				}
-				result.append("(@.\"");
-				result.append(NGSIConstants.NGSI_LD_HAS_LIST);
-				result.append("\"[0].\"");
-				result.append(NGSIConstants.JSON_LD_LIST);
-				result.append("\"[*].");
-
-				if (complexPart != null) {
-
-					for (String complexEntry : complexSplitted) {
-						result.append('"');
-						result.append(linkHeaders.expandIri(complexEntry, false, true, null, null));
-						result.append("\"[*].");
-					}
-
-				}
-				result.append('"');
-				result.append(NGSIConstants.JSON_LD_VALUE);
-				result.append('"');
-
-				if (tokens.size() == 1) {
-					String[] token = tokens.get(0);
-					if (operatorTBU.equals(NGSIConstants.QUERY_EQUAL)
-							|| operatorTBU.equals(NGSIConstants.QUERY_UNEQUAL)) {
-						int listIndex = token[0].indexOf("..");
-						if (listIndex != -1) {
-							String from = token[0].substring(0, listIndex);
-							String to = token[0].substring(listIndex + 2);
-							result.append(NGSIConstants.QUERY_GREATEREQ);
-							result.append(from);
-							result.append(" && @.\"");
-							result.append(NGSIConstants.NGSI_LD_HAS_LIST);
-							result.append("\"[0].\"");
-							result.append(NGSIConstants.JSON_LD_LIST);
-							result.append("\"[*].");
-
-							if (complexPart != null) {
-								for (String complexEntry : complexSplitted) {
-									result.append('"');
-									result.append(linkHeaders.expandIri(complexEntry, false, true, null, null));
-									result.append("\"[*].");
-								}
-							}
-							result.append('"');
-							result.append(NGSIConstants.JSON_LD_VALUE);
-							result.append('"');
-
-							result.append(NGSIConstants.QUERY_LESSEQ);
-							result.append(to);
-						} else {
-							result.append(operatorTBU);
-							result.append(prepValueForJsonPath(token[0], regex));
-						}
-					} else {
-						result.append(operatorTBU);
-						result.append(prepValueForJsonPath(token[0], regex));
-					}
-				} else {
-					result.append(operatorTBU);
-					result.append('[');
-					for (String[] token : tokens) {
-						result.append(prepValueForJsonPath(token[0], regex));
-						result.append(',');
-					}
-					result.setCharAt(result.length(), ']');
-				}
-
-				result.append(')');
-				if (not) {
-					result.append(" && ");
-				} else {
-					result.append(" || ");
-				}
-
-				if (not) {
-					result.append("!");
-				}
-				result.append("(@.\"");
-				result.append(NGSIConstants.NGSI_LD_HAS_OBJECT);
-				result.append("\"[*].\"");
-				result.append(NGSIConstants.JSON_LD_ID);
-				result.append('"');
-				result.append(operatorTBU);
-
-				if (tokens.size() == 1) {
-					result.append(prepValueForJsonPath(tokens.get(0)[0], regex));
-				} else {
-					result.append('[');
-					for (String[] token : tokens) {
-						result.append(prepValueForJsonPath(token[0], regex));
-						result.append(',');
-					}
-					result.setCharAt(result.length(), ']');
-				}
-				result.append(')');
-				if (not) {
-					result.append(" && ");
-				} else {
-					result.append(" || ");
-				}
-
-				if (not) {
-					result.append("!");
-				}
-				result.append("(@.\"");
-				result.append(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST);
-				result.append("\"[0].\"");
-				result.append(NGSIConstants.JSON_LD_LIST);
-				result.append("\"[*].\"");
-				result.append(NGSIConstants.NGSI_LD_HAS_OBJECT);
-				result.append("\"[*].\"");
-				result.append(NGSIConstants.JSON_LD_ID);
-				result.append('"');
-				result.append(operatorTBU);
-
-				if (tokens.size() == 1) {
-					result.append(prepValueForJsonPath(tokens.get(0)[0], regex));
-				} else {
-					result.append('[');
-					for (String[] token : tokens) {
-						result.append(prepValueForJsonPath(token[0], regex));
-						result.append(',');
-					}
-					result.setCharAt(result.length(), ']');
-				}
-				result.append(')');
-				if (not) {
-					result.append(" && ");
-				} else {
-					result.append(" || ");
-				}
-				if (complexPart != null) {
-					if (not) {
-						result.append("!");
-					}
-					result.append("(@.\"");
-					result.append(NGSIConstants.NGSI_LD_HAS_JSON);
-					result.append("\"[0].\"");
-					result.append(NGSIConstants.JSON_LD_VALUE);
-					result.append("\".");
-
-					for (String complexEntry : complexSplitted) {
-						result.append('"');
-						result.append(complexEntry);
-						result.append("\".");
-					}
-					result.setLength(result.length() - 1);
-
-					if (tokens.size() == 1) {
-						String[] token = tokens.get(0);
-						if (operatorTBU.equals(NGSIConstants.QUERY_EQUAL)
-								|| operatorTBU.equals(NGSIConstants.QUERY_UNEQUAL)) {
-							int listIndex = token[0].indexOf("..");
-							if (listIndex != -1) {
-								String from = token[0].substring(0, listIndex);
-								String to = token[0].substring(listIndex + 2);
-								result.append(NGSIConstants.QUERY_GREATEREQ);
-								result.append(from);
-								result.append(" && @.\"");
-								result.append(NGSIConstants.NGSI_LD_HAS_JSON);
-								result.append("\"[0].\"");
-								result.append(NGSIConstants.JSON_LD_VALUE);
-								result.append("\".");
-
-								for (String complexEntry : complexSplitted) {
-									result.append('"');
-									result.append(complexEntry);
-									result.append("\".");
-								}
-								result.setLength(result.length() - 1);
-								result.append(NGSIConstants.QUERY_LESSEQ);
-								result.append(to);
-							} else {
-								result.append(operatorTBU);
-								result.append(prepValueForJsonPath(token[0], regex));
-							}
-						} else {
-							result.append(operatorTBU);
-							result.append(prepValueForJsonPath(token[0], regex));
-						}
-
-					} else {
-						result.append(operatorTBU);
-						result.append('[');
-						for (String[] token : tokens) {
-							result.append(prepValueForJsonPath(token[0], regex));
-							result.append(',');
-						}
-						result.setCharAt(result.length(), ']');
-					}
-					result.append(')');
-					if (not) {
-						result.append(" && ");
-					} else {
-						result.append(" || ");
-					}
-
-				}
-
-				if (not) {
-					result.append("!");
-				}
-				result.append("(@.\"");
-				result.append(NGSIConstants.NGSI_LD_HAS_VOCAB);
-				result.append("\"[*].\"");
-				result.append(NGSIConstants.JSON_LD_ID);
-				result.append('"');
-				result.append(operatorTBU);
-
-				if (tokens.size() == 1) {
-					result.append('"');
-					result.append(linkHeaders.expandIri(tokens.get(0)[1], false, true, null, null));
-					result.append('"');
-				} else {
-					result.append('[');
-					for (String[] token : tokens) {
-						result.append('"');
-						result.append(linkHeaders.expandIri(token[1], false, true, null, null));
-						result.append('"');
-						result.append(',');
-					}
-					result.setCharAt(result.length(), ']');
-				}
-				result.append(")))') ");
-				if (not) {
-					result.append("AND NOT ");
-				} else {
-					result.append("OR");
-				}
-				result.append(" jsonb_path_exists(entity, '$.");
-				for (String pathEntry : attribPath) {
-					String attribName = linkHeaders.expandIri(pathEntry, false, true, null, null);
-					boolean wildcardUse = NGSIConstants.NGSI_LD_STAR.equals(attribName);
-
-					if (wildcardUse) {
-						result.append('*');
-					} else {
-						result.append('"');
-						result.append(attribName);
-						result.append('"');
-					}
-					result.append("[*].");
-				}
-				result.append('"');
-				result.append(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP);
-				result.append("\"[*] ? (");
-
-				result.append("(@.\"");
-				if (complexPart != null && !complexPart.equals("*")) {
-					result.append(NGSIConstants.JSON_LD_LANGUAGE);
-					result.append("\" == \"");
-					result.append(complexPart.replace("\"", "\\\""));
-					result.append("\") && (@.\"");
-				}
-
-				result.append(NGSIConstants.JSON_LD_VALUE);
-				result.append('"');
-				result.append(operatorTBU);
-
-				if (tokens.size() == 1) {
-					result.append(prepValueForJsonPath(tokens.get(0)[0], regex));
-				} else {
-					result.append('[');
-					for (String[] token : tokens) {
-						result.append(prepValueForJsonPath(token[0], regex));
-						result.append(',');
-					}
-					result.setCharAt(result.length(), ']');
-				}
-			}
-			result.append("))'))");
+			datasetIdPath = null;
 		}
 
+		if (operant == null || operant.isEmpty()) {
+			result.append(jsonbPathExistsBase);
+			jsonPathBaseBuilder.append(jsonPathBase);
+			if (complexPart != null || datasetIdPath != null) {
+				jsonPathBaseBuilder.append(" ? (");
+			}
+
+			if (datasetIdPath != null) {
+				jsonPathBaseBuilder.append(datasetIdPath);
+			}
+			if (complexPart != null) {
+				if (datasetIdPath != null) {
+					jsonPathBaseBuilder.append(" && ");
+				}
+				jsonPathBaseBuilder.append("((exists(@.\"");
+				jsonPathBaseBuilder.append(NGSIConstants.NGSI_LD_HAS_VALUE);
+				jsonPathBaseBuilder.append("\"[*].");
+				for (String complexEntry : complexSplitted) {
+					jsonPathBaseBuilder.append('"');
+					jsonPathBaseBuilder.append(linkHeaders.expandIri(complexEntry, false, true, null, null));
+					jsonPathBaseBuilder.append("\"[*].");
+				}
+				jsonPathBaseBuilder.setLength(result.length() - 1);
+				jsonPathBaseBuilder.append(") || (@.\"");
+				jsonPathBaseBuilder.append(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP);
+				jsonPathBaseBuilder.append("\"[*].\"");
+				jsonPathBaseBuilder.append(NGSIConstants.JSON_LD_LANGUAGE);
+				jsonPathBaseBuilder.append("\"==\"");
+				jsonPathBaseBuilder.append(complexPart);
+				jsonPathBaseBuilder.append("\") || exists(@.\"");
+				jsonPathBaseBuilder.append(NGSIConstants.NGSI_LD_HAS_LIST);
+				jsonPathBaseBuilder.append("\"[1].\"");
+				jsonPathBaseBuilder.append(NGSIConstants.JSON_LD_LIST);
+				jsonPathBaseBuilder.append("\"[*].");
+				for (String complexEntry : complexSplitted) {
+					jsonPathBaseBuilder.append('"');
+					jsonPathBaseBuilder.append(linkHeaders.expandIri(complexEntry, false, true, null, null));
+					jsonPathBaseBuilder.append("\"[*].");
+				}
+				jsonPathBaseBuilder.setLength(jsonPathBaseBuilder.length() - 1);
+				jsonPathBaseBuilder.append("))");
+			}
+
+			jsonPathBaseBuilder.append(')');
+			result.append('$');
+			result.append(dollar);
+			dollar++;
+			tuple.addString(jsonPathBaseBuilder.toString());
+			result.append(')');
+			return dollar;
+		}
+
+		String operatorTBU;
+		boolean not = false;
+		boolean regex = false;
+		List<String[]> tokens = splitValues(operant);
+
+		if (operator.equals(NGSIConstants.QUERY_PATTERNOP)) {
+			operatorTBU = ".string() like_regex ";
+			regex = true;
+		} else if (operator.equals(NGSIConstants.QUERY_NOTPATTERNOP)) {
+			operatorTBU = ".string() like_regex ";
+			regex = true;
+			not = true;
+		} else if (operator.equals(NGSIConstants.QUERY_UNEQUAL)) {
+			operatorTBU = "==";
+			not = true;
+		} else {
+			operatorTBU = operator;
+		}
+		if (not) {
+			result.append("NOT ");
+		}
+		if (NGSIConstants.SPECIAL_AT_VALUE_PROPERTIES.contains(lastAttrib)) {
+			result.append(jsonbPathExistsBase);
+
+			jsonPathBaseBuilder.append(jsonPathBase);
+			jsonPathBaseBuilder.append(" ? (");
+			if (not) {
+				jsonPathBaseBuilder.append("!");
+			}
+			jsonPathBaseBuilder.append('(');
+			for (String[] token : tokens) {
+				jsonPathBaseBuilder.append("(@.\"");
+				jsonPathBaseBuilder.append(NGSIConstants.JSON_LD_VALUE);
+				jsonPathBaseBuilder.append('"');
+				jsonPathBaseBuilder.append(operatorTBU);
+				jsonPathBaseBuilder.append(prepValueForJsonPath(token[0], regex));
+				jsonPathBaseBuilder.append(") || ");
+			}
+			jsonPathBaseBuilder.setLength(jsonPathBaseBuilder.length() - 4);
+			jsonPathBaseBuilder.append("))");
+			result.append('$');
+			result.append(dollar);
+			dollar++;
+			tuple.addString(jsonPathBaseBuilder.toString());
+			result.append(')');
+			return dollar;
+		}
+		if (NGSIConstants.NGSI_LD_DATA_SET_ID.equals(lastAttrib)) {
+			result.append(jsonbPathExistsBase);
+			jsonPathBaseBuilder.append(jsonPathBase);
+			jsonPathBaseBuilder.append(" ? (");
+			if (not) {
+				jsonPathBaseBuilder.append("!");
+			}
+			jsonPathBaseBuilder.append('(');
+			for (String[] token : tokens) {
+				jsonPathBaseBuilder.append("(@.\"");
+				jsonPathBaseBuilder.append(NGSIConstants.JSON_LD_ID);
+				jsonPathBaseBuilder.append('"');
+				jsonPathBaseBuilder.append(operatorTBU);
+				jsonPathBaseBuilder.append(prepValueForJsonPath(token[0], regex));
+				jsonPathBaseBuilder.append(") || ");
+			}
+			jsonPathBaseBuilder.setLength(jsonPathBaseBuilder.length() - 4);
+
+			result.append('$');
+			result.append(dollar);
+			dollar++;
+			tuple.addString(jsonPathBaseBuilder.toString());
+			result.append(')');
+			return dollar;
+		}
+
+		StringBuilder fromToBuilder = new StringBuilder(128);
+		StringBuilder idQBuilder = new StringBuilder(128);
+		StringBuilder vocabQBuilder = new StringBuilder(128);
+		StringBuilder valueQBuilder = new StringBuilder(128);
+		fromToBuilder.append('(');
+		idQBuilder.append('(');
+		vocabQBuilder.append('(');
+		valueQBuilder.append('(');
+		for (String[] token : tokens) {
+
+			int listIndex = token[0].indexOf("..");
+			String prepedValue = prepValueForJsonPath(token[0], regex);
+			idQBuilder.append("@.\"");
+			idQBuilder.append(NGSIConstants.JSON_LD_ID);
+			idQBuilder.append('"');
+			idQBuilder.append(operatorTBU);
+			idQBuilder.append(prepedValue);
+			idQBuilder.append(" || ");
+
+			vocabQBuilder.append("@.\"");
+			vocabQBuilder.append(NGSIConstants.JSON_LD_ID);
+			vocabQBuilder.append('"');
+			vocabQBuilder.append(operatorTBU);
+			vocabQBuilder.append('"');
+			vocabQBuilder.append(linkHeaders.expandIri(token[1], false, true, null, null));
+			vocabQBuilder.append("\" || ");
+
+			valueQBuilder.append("@.\"");
+			valueQBuilder.append(NGSIConstants.JSON_LD_VALUE);
+			valueQBuilder.append('"');
+			valueQBuilder.append(operatorTBU);
+			valueQBuilder.append(prepedValue);
+			valueQBuilder.append(" || ");
+
+			if (NGSIConstants.QUERY_EQUAL.equals(operatorTBU) && listIndex != -1) {
+				fromToBuilder.append("(@.\"");
+				fromToBuilder.append(NGSIConstants.JSON_LD_VALUE);
+				fromToBuilder.append("\" >= ");
+				fromToBuilder.append(token[0].substring(0, listIndex));
+				fromToBuilder.append(" && @.\"");
+				fromToBuilder.append(NGSIConstants.JSON_LD_VALUE);
+				fromToBuilder.append("\" <= ");
+				fromToBuilder.append(token[0].substring(listIndex + 2));
+				fromToBuilder.append(')');
+				valueQBuilder.append(" || ");
+			}
+
+		}
+		if (fromToBuilder.length() >= 4) {
+			fromToBuilder.setLength(fromToBuilder.length() - 4);
+		}
+		idQBuilder.setLength(idQBuilder.length() - 4);
+		vocabQBuilder.setLength(vocabQBuilder.length() - 4);
+		valueQBuilder.setLength(valueQBuilder.length() - 4);
+
+		fromToBuilder.append(')');
+		idQBuilder.append(')');
+		vocabQBuilder.append(')');
+		valueQBuilder.append(')');
+
+		String fromTo = fromToBuilder.length() == 2 ? null : fromToBuilder.toString();
+		String idQ = idQBuilder.toString();
+		String vocabQ = vocabQBuilder.toString();
+		String valueQ = valueQBuilder.toString();
+
+		StringBuilder propPathBuilder = new StringBuilder(256);
+
+		propPathBuilder.append(jsonPathBase);
+
+		if (datasetIdPath != null) {
+			propPathBuilder.append(" ? (");
+			propPathBuilder.append(datasetIdPath);
+			propPathBuilder.append(")");
+		}
+		propPathBuilder.append(".\"");
+		propPathBuilder.append(NGSIConstants.NGSI_LD_HAS_VALUE);
+		propPathBuilder.append("\"[*].");
+		if (complexPart != null) {
+			for (String complexEntry : complexSplitted) {
+				propPathBuilder.append('"');
+				propPathBuilder.append(linkHeaders.expandIri(complexEntry, false, true, null, null));
+				propPathBuilder.append("\"[*].");
+			}
+		}
+		propPathBuilder.setLength(propPathBuilder.length() - 1);
+		propPathBuilder.append(" ? (");
+		if (fromTo != null) {
+			propPathBuilder.append(fromTo);
+			propPathBuilder.append(" || ");
+		}
+		propPathBuilder.append(valueQ);
+		propPathBuilder.append(')');
+
+		result.append('(');
+		if (not) {
+			result.append("NOT ");
+		}
+		result.append(jsonbPathExistsBase);
+		result.append('$');
+		result.append(dollar);
+		dollar++;
+		tuple.addString(propPathBuilder.toString());
+		result.append(") OR ");
+
+		propPathBuilder.setLength(0);
+		propPathBuilder.append(jsonPathBase);
+
+		if (datasetIdPath != null) {
+			propPathBuilder.append(" ? (");
+			propPathBuilder.append(datasetIdPath);
+			propPathBuilder.append(")");
+		}
+		propPathBuilder.append(".\"");
+		propPathBuilder.append(NGSIConstants.NGSI_LD_HAS_OBJECT);
+		propPathBuilder.append("\"[*]");
+		propPathBuilder.append(" ? ");
+		propPathBuilder.append(idQ);
+
+		if (not) {
+			result.append("NOT ");
+		}
+		result.append(jsonbPathExistsBase);
+		result.append('$');
+		result.append(dollar);
+		dollar++;
+		tuple.addString(propPathBuilder.toString());
+		result.append(") OR ");
+		propPathBuilder.setLength(0);
+		propPathBuilder.append(jsonPathBase);
+		if (datasetIdPath != null) {
+			propPathBuilder.append(" ? (");
+			propPathBuilder.append(datasetIdPath);
+			propPathBuilder.append(")");
+		}
+		propPathBuilder.append(".\"");
+		propPathBuilder.append(NGSIConstants.NGSI_LD_HAS_LIST);
+		propPathBuilder.append("\"[0].\"");
+		propPathBuilder.append(NGSIConstants.JSON_LD_LIST);
+		propPathBuilder.append("\"[*].");
+		if (complexPart != null) {
+			for (String complexEntry : complexSplitted) {
+				propPathBuilder.append('"');
+				propPathBuilder.append(linkHeaders.expandIri(complexEntry, false, true, null, null));
+				propPathBuilder.append("\"[*].");
+			}
+		}
+		propPathBuilder.setLength(propPathBuilder.length() - 1);
+		propPathBuilder.append(" ? (");
+		if (fromTo != null) {
+			propPathBuilder.append(fromTo);
+			propPathBuilder.append(" || ");
+		}
+		propPathBuilder.append(valueQ);
+		propPathBuilder.append(')');
+		if (not) {
+			result.append("NOT ");
+		}
+		result.append(jsonbPathExistsBase);
+		result.append('$');
+		result.append(dollar);
+		dollar++;
+		tuple.addString(propPathBuilder.toString());
+		result.append(") OR ");
+
+		propPathBuilder.setLength(0);
+		propPathBuilder.append(jsonPathBase);
+
+		if (datasetIdPath != null) {
+			propPathBuilder.append(" ? (");
+			propPathBuilder.append(datasetIdPath);
+			propPathBuilder.append(")");
+		}
+		propPathBuilder.append(".\"");
+		propPathBuilder.append(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST);
+		propPathBuilder.append("\"[0].\"");
+		propPathBuilder.append(NGSIConstants.JSON_LD_LIST);
+		propPathBuilder.append("\"[*].\"");
+		propPathBuilder.append(NGSIConstants.NGSI_LD_HAS_OBJECT);
+		propPathBuilder.append("\"[*]");
+
+		propPathBuilder.append(" ? ");
+		propPathBuilder.append(idQ);
+
+		if (not) {
+			result.append("NOT ");
+		}
+		result.append(jsonbPathExistsBase);
+		result.append('$');
+		result.append(dollar);
+		dollar++;
+		tuple.addString(propPathBuilder.toString());
+		result.append(") OR ");
+
+		propPathBuilder.setLength(0);
+		propPathBuilder.append(jsonPathBase);
+
+		if (complexPart != null) {
+
+			propPathBuilder.append(".\"");
+			propPathBuilder.append(NGSIConstants.NGSI_LD_HAS_JSON);
+			propPathBuilder.append("\"[0].\"");
+			propPathBuilder.append(NGSIConstants.JSON_LD_VALUE);
+			propPathBuilder.append("\".");
+			for (String complexEntry : complexSplitted) {
+				propPathBuilder.append('"');
+				propPathBuilder.append(complexEntry);
+				propPathBuilder.append("\".");
+			}
+			propPathBuilder.setLength(result.length() - 1);
+			propPathBuilder.append(" ? (");
+			if (fromTo != null) {
+				propPathBuilder.append(fromTo);
+				propPathBuilder.append(" || ");
+			}
+			propPathBuilder.append(valueQ);
+			propPathBuilder.append(')');
+			if (not) {
+				result.append("NOT ");
+			}
+			result.append(jsonbPathExistsBase);
+			result.append('$');
+			result.append(dollar);
+			dollar++;
+			tuple.addString(propPathBuilder.toString());
+			result.append(") OR ");
+
+			propPathBuilder.setLength(0);
+			propPathBuilder.append(jsonPathBase);
+		}
+
+		if (datasetIdPath != null) {
+			propPathBuilder.append(" ? (");
+			propPathBuilder.append(datasetIdPath);
+			propPathBuilder.append(")");
+		}
+		propPathBuilder.append(".\"");
+		propPathBuilder.append(NGSIConstants.NGSI_LD_HAS_VOCAB);
+		propPathBuilder.append("\"[*]");
+		propPathBuilder.append(" ? ");
+		propPathBuilder.append(vocabQ);
+
+		if (not) {
+			result.append("NOT ");
+		}
+		result.append(jsonbPathExistsBase);
+		result.append('$');
+		result.append(dollar);
+		dollar++;
+		tuple.addString(propPathBuilder.toString());
+		result.append(") OR ");
+		propPathBuilder.setLength(0);
+		propPathBuilder.append(jsonPathBase);
+
+		propPathBuilder.append(".\"");
+		propPathBuilder.append(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP);
+		propPathBuilder.append("\"[*] ? (");
+		if (complexPart != null && !complexPart.equals("*")) {
+			propPathBuilder.append("(@.\"");
+			propPathBuilder.append(NGSIConstants.JSON_LD_LANGUAGE);
+			propPathBuilder.append("\" == \"");
+			propPathBuilder.append(complexPart.replace("\"", "\\\""));
+			propPathBuilder.append("\") ? ");
+		}
+
+		if (fromTo != null) {
+			propPathBuilder.append(fromTo);
+			propPathBuilder.append(" || ");
+		}
+		propPathBuilder.append(valueQ);
+		propPathBuilder.append(")");
+		if (not) {
+			result.append("NOT ");
+		}
+		result.append(jsonbPathExistsBase);
+		result.append('$');
+		result.append(dollar);
+		dollar++;
+		tuple.addString(propPathBuilder.toString());
+		result.append("))");
+
 		return dollar;
+
 	}
 
 	public int toSql(StringBuilder result, int dollar, Tuple tuple, boolean isDist,
