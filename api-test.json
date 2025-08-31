@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "889241b5-05a8-40a0-a994-493ebd828516",
+		"_postman_id": "52441204-70bd-488a-8d0f-c3a759992c05",
 		"name": "API Test",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
@@ -38777,7 +38777,7 @@
 															}
 														],
 														"url": {
-															"raw": "{{entity-manager}}/ngsi-ld/v1/entities?type=Test2&q=dummy==123&pick=testattrib2&geoproperty=location&georel=near%3BmaxDistance==1500&geometry=Point&coordinates=[80,80]&datasetId=urn:my:dataset",
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities?type=Test2&q=dummy==123&pick=testattrib2&geoproperty=location&georel=near%3BmaxDistance==1500&geometry=Point&coordinates=[80,80]",
 															"host": [
 																"{{entity-manager}}"
 															],
@@ -38817,7 +38817,8 @@
 																},
 																{
 																	"key": "datasetId",
-																	"value": "urn:my:dataset"
+																	"value": "urn:my:dataset",
+																	"disabled": true
 																}
 															]
 														}
@@ -53724,7 +53725,7 @@
 															}
 														],
 														"url": {
-															"raw": "{{entity-manager}}/ngsi-ld/v1/entities?type=Test2&q=dummy==123&pick=testattrib2&geoproperty=location&georel=near%3BmaxDistance==1500&geometry=Point&coordinates=[80,80]&datasetId=urn:my:dataset",
+															"raw": "{{entity-manager}}/ngsi-ld/v1/entities?type=Test2&q=dummy==123&pick=testattrib2&geoproperty=location&georel=near%3BmaxDistance==1500&geometry=Point&coordinates=[80,80]",
 															"host": [
 																"{{entity-manager}}"
 															],
@@ -53764,7 +53765,8 @@
 																},
 																{
 																	"key": "datasetId",
-																	"value": "urn:my:dataset"
+																	"value": "urn:my:dataset",
+																	"disabled": true
 																}
 															]
 														}

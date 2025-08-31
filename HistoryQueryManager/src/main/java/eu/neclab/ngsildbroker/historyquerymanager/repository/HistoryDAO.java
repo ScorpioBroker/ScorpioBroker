@@ -506,6 +506,7 @@ public class HistoryDAO {
 		String sqlString = t.getItem1();
 		Tuple tuple = t.getItem2();
 		System.out.println(sqlString);
+		System.out.println(tuple.deepToString());
 		return connectionManager.executeQuery(tenant, sqlString, tuple, false).onItem().transform(rows -> {
 			QueryResult result = new QueryResult(tenant);
 			if (limit == 0 && count) {
