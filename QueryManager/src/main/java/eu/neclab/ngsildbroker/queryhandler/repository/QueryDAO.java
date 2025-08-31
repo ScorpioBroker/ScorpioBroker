@@ -1285,7 +1285,13 @@ public class QueryDAO {
 			query.append(')');
 
 		} else if (splitEntities && !regEmptyOrNoRegEntryAndNoLinkedQuery) {
-			if (attrsQuery != null) {
+			if (geoQuery != null) {
+				if (sqlAdded) {
+					query.append(" AND ");
+				}
+				dollar = geoQuery.toSql(query, tuple, dollar, dataSetIdTerm, useDefaultForGeo);
+				sqlAdded = true;
+			} else if (attrsQuery != null) {
 				if (sqlAdded) {
 					query.append(" AND ");
 				}
@@ -1309,17 +1315,18 @@ public class QueryDAO {
 				}
 				dollar = qQuery.toSql(query, dollar, tuple, splitEntities, localOnly, dataSetIdTerm);
 				sqlAdded = true;
-			} else if (geoQuery != null) {
+			}
+
+		}
+
+		if (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery || !splitEntities) {
+			if (geoQuery != null) {
 				if (sqlAdded) {
 					query.append(" AND ");
 				}
 				dollar = geoQuery.toSql(query, tuple, dollar, dataSetIdTerm, useDefaultForGeo);
 				sqlAdded = true;
 			}
-
-		}
-
-		if (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery || !splitEntities) {
 			if (attrsQuery != null) {
 				if (sqlAdded) {
 					query.append(" AND ");
@@ -1339,13 +1346,6 @@ public class QueryDAO {
 					query.append(" AND ");
 				}
 				dollar = omitTerm.toSql(query, tuple, dollar, dataSetIdTerm);
-				sqlAdded = true;
-			}
-			if (geoQuery != null) {
-				if (sqlAdded) {
-					query.append(" AND ");
-				}
-				dollar = geoQuery.toSql(query, tuple, dollar, dataSetIdTerm, useDefaultForGeo);
 				sqlAdded = true;
 			}
 
