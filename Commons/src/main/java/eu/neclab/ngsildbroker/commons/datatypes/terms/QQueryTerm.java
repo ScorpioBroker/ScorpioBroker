@@ -1495,8 +1495,9 @@ public class QQueryTerm implements Serializable {
 				jsonPathBaseBuilder.setLength(jsonPathBaseBuilder.length() - 1);
 				jsonPathBaseBuilder.append("))");
 			}
-
-			jsonPathBaseBuilder.append(')');
+			if (complexPart != null || datasetIdPath != null) {
+				jsonPathBaseBuilder.append(')');
+			}
 			result.append('$');
 			result.append(dollar);
 			dollar++;
@@ -1531,9 +1532,9 @@ public class QQueryTerm implements Serializable {
 
 			jsonPathBaseBuilder.append(jsonPathBase);
 			jsonPathBaseBuilder.append(" ? (");
-			if (not) {
-				jsonPathBaseBuilder.append("!");
-			}
+			// if (not) {
+			// jsonPathBaseBuilder.append("!");
+			// }
 			jsonPathBaseBuilder.append('(');
 			for (String[] token : tokens) {
 				jsonPathBaseBuilder.append("(@.\"");
@@ -1556,10 +1557,6 @@ public class QQueryTerm implements Serializable {
 			result.append(jsonbPathExistsBase);
 			jsonPathBaseBuilder.append(jsonPathBase);
 			jsonPathBaseBuilder.append(" ? (");
-			if (not) {
-				jsonPathBaseBuilder.append("!");
-			}
-			jsonPathBaseBuilder.append('(');
 			for (String[] token : tokens) {
 				jsonPathBaseBuilder.append("(@.\"");
 				jsonPathBaseBuilder.append(NGSIConstants.JSON_LD_ID);
@@ -1569,7 +1566,7 @@ public class QQueryTerm implements Serializable {
 				jsonPathBaseBuilder.append(") || ");
 			}
 			jsonPathBaseBuilder.setLength(jsonPathBaseBuilder.length() - 4);
-
+			jsonPathBaseBuilder.append(')');
 			result.append('$');
 			result.append(dollar);
 			dollar++;
@@ -1701,9 +1698,9 @@ public class QQueryTerm implements Serializable {
 		propPathBuilder.append(')');
 
 		result.append('(');
-		if (not) {
-			result.append("NOT ");
-		}
+		// if (not) {
+		// result.append("NOT ");
+		// }
 		result.append(jsonbPathExistsBase);
 		result.append('$');
 		result.append(dollar);
@@ -1725,9 +1722,9 @@ public class QQueryTerm implements Serializable {
 		propPathBuilder.append(" ? ");
 		propPathBuilder.append(idQ);
 
-		if (not) {
-			result.append("NOT ");
-		}
+		// if (not) {
+		// result.append("NOT ");
+		// }
 		result.append(jsonbPathExistsBase);
 		result.append('$');
 		result.append(dollar);
@@ -1761,9 +1758,9 @@ public class QQueryTerm implements Serializable {
 		}
 		propPathBuilder.append(valueQ);
 		propPathBuilder.append(')');
-		if (not) {
-			result.append("NOT ");
-		}
+		// if (not) {
+		// result.append("NOT ");
+		// }
 		result.append(jsonbPathExistsBase);
 		result.append('$');
 		result.append(dollar);
@@ -1790,9 +1787,9 @@ public class QQueryTerm implements Serializable {
 		propPathBuilder.append(" ? ");
 		propPathBuilder.append(idQ);
 
-		if (not) {
-			result.append("NOT ");
-		}
+		// if (not) {
+		// result.append("NOT ");
+		// }
 		result.append(jsonbPathExistsBase);
 		result.append('$');
 		result.append(dollar);
@@ -1823,9 +1820,9 @@ public class QQueryTerm implements Serializable {
 			}
 			propPathBuilder.append(pureQ);
 			propPathBuilder.append("))");
-			if (not) {
-				result.append("NOT ");
-			}
+			// if (not) {
+			// result.append("NOT ");
+			// }
 			result.append(jsonbPathExistsBase);
 			result.append('$');
 			result.append(dollar);
@@ -1848,9 +1845,9 @@ public class QQueryTerm implements Serializable {
 		propPathBuilder.append(" ? ");
 		propPathBuilder.append(vocabQ);
 
-		if (not) {
-			result.append("NOT ");
-		}
+		// if (not) {
+		// result.append("NOT ");
+		// }
 		result.append(jsonbPathExistsBase);
 		result.append('$');
 		result.append(dollar);
@@ -1880,9 +1877,9 @@ public class QQueryTerm implements Serializable {
 		propPathBuilder.append(valueQ);
 		propPathBuilder.append(")");
 		System.out.println(propPathBuilder);
-		if (not) {
-			result.append("NOT ");
-		}
+		// if (not) {
+		// result.append("NOT ");
+		// }
 		result.append(jsonbPathExistsBase);
 		result.append('$');
 		result.append(dollar);
