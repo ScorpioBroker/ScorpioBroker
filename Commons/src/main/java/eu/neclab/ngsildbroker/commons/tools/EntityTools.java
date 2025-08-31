@@ -1104,6 +1104,7 @@ public final class EntityTools {
 			Map<String, Object> entity = it.next();
 			// order is important here qquery scope and geo remove full entities and the
 			// rest modifies the entities and might result in empty entities
+			boolean datasetIdResult = (dataSetIdTerm != null && !dataSetIdTerm.calculateEntity(entity));
 			boolean qResult = (qQuery != null && !qQuery.calculateEntity(entity, entityCache, jsonKeys, false));
 			boolean scopeResult = (scopeQuery != null && !scopeQuery.calculateEntity(entity));
 			boolean geoQResult = (geoQuery != null && !geoQuery.calculateEntity(entity));
@@ -1112,7 +1113,7 @@ public final class EntityTools {
 					&& !pickTerm.calculateEntity(entity, flatJoin, flatEntities, pickForFlat, calculateLinked));
 			boolean omitResult = (omitTerm != null
 					&& !omitTerm.calculateEntity(entity, flatJoin, flatEntities, pickForFlat, calculateLinked));
-			boolean datasetIdResult = (dataSetIdTerm != null && !dataSetIdTerm.calculateEntity(entity));
+
 			if (qResult || scopeResult || geoQResult || attrsResult || pickResult || omitResult || datasetIdResult) {
 				it.remove();
 				deleted.put((String) entity.get(NGSIConstants.JSON_LD_ID), entity);

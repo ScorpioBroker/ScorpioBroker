@@ -3256,9 +3256,11 @@ public class QQueryTerm implements Serializable {
 			}
 			if (hasNext()) {
 				if (nextAnd) {
-					result = result && next.calculateEntity(entity, updatedEntityCache, jsonKeys, localOnly);
+					result = result
+							&& next.calculateEntity(entity, updatedEntityCache, jsonKeys, localOnly);
 				} else {
-					result = result || next.calculateEntity(entity, updatedEntityCache, jsonKeys, localOnly);
+					result = result
+							|| next.calculateEntity(entity, updatedEntityCache, jsonKeys, localOnly);
 				}
 			}
 			return result;
