@@ -1405,24 +1405,12 @@ public class QQueryTerm implements Serializable {
 		String rootPathExpanded = linkHeaders.expandIri(attribPath[0], false, true, null, null);
 		String jsonbPathExistsBase;
 		if (entityLevelCounter == -1) {
-			jsonbPathExistsBase = "jsonb_path_exists(entity, ";
+			// jsonbPathExistsBase = "jsonb_path_exists(entity, ";
+			jsonbPathExistsBase = "entity @? ";
 		} else {
-			jsonbPathExistsBase = "jsonb_path_exists(E" + entityLevelCounter + ".entity, ";
+			jsonbPathExistsBase = "E" + entityLevelCounter + ".entity @? ";
 		}
 		StringBuilder jsonPathBaseBuilder = new StringBuilder(128);
-
-		if (!rootPathExpanded.equals(NGSIConstants.NGSI_LD_STAR)) {
-			if (entityLevelCounter != -1) {
-				result.append('E');
-				result.append(entityLevelCounter);
-				result.append('.');
-			}
-			result.append("entity ? $");
-			result.append(dollar);
-			dollar++;
-			tuple.addString(rootPathExpanded);
-			result.append(" AND ");
-		}
 
 		jsonPathBaseBuilder.append("$.");
 		String lastAttrib = null;
@@ -1441,71 +1429,8 @@ public class QQueryTerm implements Serializable {
 			lastAttrib = attribName;
 		}
 		jsonPathBaseBuilder.setLength(jsonPathBaseBuilder.length() - 1);
-
 		String jsonPathBase = jsonPathBaseBuilder.toString();
 		jsonPathBaseBuilder.setLength(0);
-		String datasetIdPath;
-		if (dataSetIdTerm != null) {
-			dataSetIdTerm.toJsonPath(jsonPathBaseBuilder);
-			datasetIdPath = jsonPathBaseBuilder.toString();
-			jsonPathBaseBuilder.setLength(0);
-		} else {
-			datasetIdPath = null;
-		}
-
-		if (operant == null || operant.isEmpty()) {
-			result.append(jsonbPathExistsBase);
-			jsonPathBaseBuilder.append(jsonPathBase);
-			if (complexPart != null || datasetIdPath != null) {
-				jsonPathBaseBuilder.append(" ? (");
-			}
-
-			if (datasetIdPath != null) {
-				jsonPathBaseBuilder.append(datasetIdPath);
-			}
-			if (complexPart != null) {
-				if (datasetIdPath != null) {
-					jsonPathBaseBuilder.append(" && ");
-				}
-				jsonPathBaseBuilder.append("((exists(@.\"");
-				jsonPathBaseBuilder.append(NGSIConstants.NGSI_LD_HAS_VALUE);
-				jsonPathBaseBuilder.append("\"[*].");
-				for (String complexEntry : complexSplitted) {
-					jsonPathBaseBuilder.append('"');
-					jsonPathBaseBuilder.append(linkHeaders.expandIri(complexEntry, false, true, null, null));
-					jsonPathBaseBuilder.append("\"[*].");
-				}
-				jsonPathBaseBuilder.setLength(result.length() - 1);
-				jsonPathBaseBuilder.append(") || (@.\"");
-				jsonPathBaseBuilder.append(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP);
-				jsonPathBaseBuilder.append("\"[*].\"");
-				jsonPathBaseBuilder.append(NGSIConstants.JSON_LD_LANGUAGE);
-				jsonPathBaseBuilder.append("\"==\"");
-				jsonPathBaseBuilder.append(complexPart);
-				jsonPathBaseBuilder.append("\") || exists(@.\"");
-				jsonPathBaseBuilder.append(NGSIConstants.NGSI_LD_HAS_LIST);
-				jsonPathBaseBuilder.append("\"[1].\"");
-				jsonPathBaseBuilder.append(NGSIConstants.JSON_LD_LIST);
-				jsonPathBaseBuilder.append("\"[*].");
-				for (String complexEntry : complexSplitted) {
-					jsonPathBaseBuilder.append('"');
-					jsonPathBaseBuilder.append(linkHeaders.expandIri(complexEntry, false, true, null, null));
-					jsonPathBaseBuilder.append("\"[*].");
-				}
-				jsonPathBaseBuilder.setLength(jsonPathBaseBuilder.length() - 1);
-				jsonPathBaseBuilder.append("))");
-			}
-			if (complexPart != null || datasetIdPath != null) {
-				jsonPathBaseBuilder.append(')');
-			}
-			result.append('$');
-			result.append(dollar);
-			dollar++;
-			tuple.addString(jsonPathBaseBuilder.toString());
-			result.append(')');
-			return dollar;
-		}
-
 		String operatorTBU;
 		boolean not = false;
 		boolean regex = false;
@@ -1524,8 +1449,44 @@ public class QQueryTerm implements Serializable {
 		} else {
 			operatorTBU = operator;
 		}
+		String datasetIdPath;
+		if (dataSetIdTerm != null) {
+			dataSetIdTerm.toJsonPath(jsonPathBaseBuilder);
+			datasetIdPath = jsonPathBaseBuilder.toString();
+			jsonPathBaseBuilder.setLength(0);
+		} else {
+			datasetIdPath = null;
+		}
+
+		if (!rootPathExpanded.equals(NGSIConstants.NGSI_LD_STAR) && !not) {
+			if (entityLevelCounter != -1) {
+				result.append('E');
+				result.append(entityLevelCounter);
+				result.append('.');
+			}
+			result.append("entity ? $");
+			result.append(dollar);
+			dollar++;
+			tuple.addString(rootPathExpanded);
+			result.append(" AND ");
+		}
+
+		if (operant == null || operant.isEmpty() || not) {
+			result.append(jsonbPathExistsBase);
+			existenceCheck(jsonPathBaseBuilder, jsonPathBase, complexSplitted, complexPart, datasetIdPath);
+			result.append('$');
+			result.append(dollar);
+			dollar++;
+			tuple.addString(jsonPathBaseBuilder.toString());
+			// result.append(')');
+			if (operant == null || operant.isEmpty()) {
+				return dollar;
+			}
+			jsonPathBaseBuilder.setLength(0);
+		}
+
 		if (not) {
-			result.append("NOT ");
+			result.append(" AND NOT ");
 		}
 		if (NGSIConstants.SPECIAL_AT_VALUE_PROPERTIES.contains(lastAttrib)) {
 			result.append(jsonbPathExistsBase);
@@ -1550,7 +1511,7 @@ public class QQueryTerm implements Serializable {
 			result.append(dollar);
 			dollar++;
 			tuple.addString(jsonPathBaseBuilder.toString());
-			result.append(')');
+			// result.append(')');
 			return dollar;
 		}
 		if (NGSIConstants.NGSI_LD_DATA_SET_ID.equals(lastAttrib)) {
@@ -1571,7 +1532,7 @@ public class QQueryTerm implements Serializable {
 			result.append(dollar);
 			dollar++;
 			tuple.addString(jsonPathBaseBuilder.toString());
-			result.append(')');
+			// result.append(')');
 			return dollar;
 		}
 
@@ -1706,7 +1667,7 @@ public class QQueryTerm implements Serializable {
 		result.append(dollar);
 		dollar++;
 		tuple.addString(propPathBuilder.toString());
-		result.append(") OR ");
+		result.append(" OR ");
 
 		propPathBuilder.setLength(0);
 		propPathBuilder.append(jsonPathBase);
@@ -1730,7 +1691,7 @@ public class QQueryTerm implements Serializable {
 		result.append(dollar);
 		dollar++;
 		tuple.addString(propPathBuilder.toString());
-		result.append(") OR ");
+		result.append(" OR ");
 		propPathBuilder.setLength(0);
 		propPathBuilder.append(jsonPathBase);
 		if (datasetIdPath != null) {
@@ -1766,7 +1727,7 @@ public class QQueryTerm implements Serializable {
 		result.append(dollar);
 		dollar++;
 		tuple.addString(propPathBuilder.toString());
-		result.append(") OR ");
+		result.append(" OR ");
 
 		propPathBuilder.setLength(0);
 		propPathBuilder.append(jsonPathBase);
@@ -1795,7 +1756,7 @@ public class QQueryTerm implements Serializable {
 		result.append(dollar);
 		dollar++;
 		tuple.addString(propPathBuilder.toString());
-		result.append(") OR ");
+		result.append(" OR ");
 
 		propPathBuilder.setLength(0);
 		propPathBuilder.append(jsonPathBase);
@@ -1828,7 +1789,7 @@ public class QQueryTerm implements Serializable {
 			result.append(dollar);
 			dollar++;
 			tuple.addString(propPathBuilder.toString());
-			result.append(") OR ");
+			result.append(" OR ");
 
 			propPathBuilder.setLength(0);
 			propPathBuilder.append(jsonPathBase);
@@ -1853,7 +1814,7 @@ public class QQueryTerm implements Serializable {
 		result.append(dollar);
 		dollar++;
 		tuple.addString(propPathBuilder.toString());
-		result.append(") OR ");
+		result.append(" OR ");
 		propPathBuilder.setLength(0);
 		propPathBuilder.append(jsonPathBase);
 		System.out.println(propPathBuilder);
@@ -1865,7 +1826,7 @@ public class QQueryTerm implements Serializable {
 			propPathBuilder.append("(@.\"");
 			propPathBuilder.append(NGSIConstants.JSON_LD_LANGUAGE);
 			propPathBuilder.append("\" == \"");
-			propPathBuilder.append(complexPart.replace("\"", "\\\""));
+			propPathBuilder.append(complexPart);
 			propPathBuilder.append("\") && ");
 		}
 		System.out.println(propPathBuilder);
@@ -1885,10 +1846,57 @@ public class QQueryTerm implements Serializable {
 		result.append(dollar);
 		dollar++;
 		tuple.addString(propPathBuilder.toString());
-		result.append("))");
+		result.append(')');
 
 		return dollar;
 
+	}
+
+	private void existenceCheck(StringBuilder jsonPathBaseBuilder, String jsonPathBase, String[] complexSplitted,
+			String complexPart, String datasetIdPath) {
+		jsonPathBaseBuilder.append(jsonPathBase);
+		if (complexSplitted != null || datasetIdPath != null) {
+			jsonPathBaseBuilder.append(" ? (");
+		}
+
+		if (datasetIdPath != null) {
+			jsonPathBaseBuilder.append(datasetIdPath);
+		}
+		if (complexSplitted != null) {
+			if (datasetIdPath != null) {
+				jsonPathBaseBuilder.append(" && ");
+			}
+			jsonPathBaseBuilder.append("((exists(@.\"");
+			jsonPathBaseBuilder.append(NGSIConstants.NGSI_LD_HAS_VALUE);
+			jsonPathBaseBuilder.append("\"[*].");
+			for (String complexEntry : complexSplitted) {
+				jsonPathBaseBuilder.append('"');
+				jsonPathBaseBuilder.append(linkHeaders.expandIri(complexEntry, false, true, null, null));
+				jsonPathBaseBuilder.append("\"[*].");
+			}
+			jsonPathBaseBuilder.setLength(jsonPathBaseBuilder.length() - 1);
+			jsonPathBaseBuilder.append(") || (@.\"");
+			jsonPathBaseBuilder.append(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP);
+			jsonPathBaseBuilder.append("\"[*].\"");
+			jsonPathBaseBuilder.append(NGSIConstants.JSON_LD_LANGUAGE);
+			jsonPathBaseBuilder.append("\"==\"");
+			jsonPathBaseBuilder.append(complexPart);
+			jsonPathBaseBuilder.append("\") || exists(@.\"");
+			jsonPathBaseBuilder.append(NGSIConstants.NGSI_LD_HAS_LIST);
+			jsonPathBaseBuilder.append("\"[0].\"");
+			jsonPathBaseBuilder.append(NGSIConstants.JSON_LD_LIST);
+			jsonPathBaseBuilder.append("\"[*].");
+			for (String complexEntry : complexSplitted) {
+				jsonPathBaseBuilder.append('"');
+				jsonPathBaseBuilder.append(linkHeaders.expandIri(complexEntry, false, true, null, null));
+				jsonPathBaseBuilder.append("\"[*].");
+			}
+			jsonPathBaseBuilder.setLength(jsonPathBaseBuilder.length() - 1);
+			jsonPathBaseBuilder.append("))");
+		}
+		if (complexSplitted != null || datasetIdPath != null) {
+			jsonPathBaseBuilder.append("))");
+		}
 	}
 
 	public int toSql(StringBuilder result, int dollar, Tuple tuple, boolean isDist,
