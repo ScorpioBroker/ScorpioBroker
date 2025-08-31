@@ -95,6 +95,14 @@ END;
 $$;
 
 
-CREATE INDEX i_teai_covering_index 
+CREATE INDEX i_teai_covering_observedat_index
 ON temporalentityattrinstance (temporalentity_id, attributeid, observedat DESC NULLS LAST)
 INCLUDE (data, geovalue, createdat, modifiedat, deletedat);
+
+CREATE INDEX i_teai_covering_createdat_index
+ON temporalentityattrinstance (temporalentity_id, attributeid, createdat DESC NULLS LAST)
+INCLUDE (data, geovalue, observedat, modifiedat, deletedat);
+
+CREATE INDEX i_teai_covering_modifiedat_index
+ON temporalentityattrinstance (temporalentity_id, attributeid, modifiedat DESC NULLS LAST)
+INCLUDE (data, geovalue, createdat, observedat, deletedat);
