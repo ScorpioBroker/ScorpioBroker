@@ -1582,10 +1582,15 @@ public class QQueryTerm implements Serializable {
 		StringBuilder idQBuilder = new StringBuilder(128);
 		StringBuilder vocabQBuilder = new StringBuilder(128);
 		StringBuilder valueQBuilder = new StringBuilder(128);
+		StringBuilder pureQBuilder = new StringBuilder(128);
+		StringBuilder pureFromToBuilder = new StringBuilder(128);
 		fromToBuilder.append('(');
 		idQBuilder.append('(');
 		vocabQBuilder.append('(');
 		valueQBuilder.append('(');
+		pureQBuilder.append('(');
+		pureFromToBuilder.append('(');
+
 		for (String[] token : tokens) {
 
 			int listIndex = token[0].indexOf("..");
@@ -1612,6 +1617,11 @@ public class QQueryTerm implements Serializable {
 			valueQBuilder.append(prepedValue);
 			valueQBuilder.append(" || ");
 
+			pureQBuilder.append('@');
+			pureQBuilder.append(operatorTBU);
+			pureQBuilder.append(prepedValue);
+			pureQBuilder.append(" || ");
+
 			if (NGSIConstants.QUERY_EQUAL.equals(operatorTBU) && listIndex != -1) {
 				fromToBuilder.append("(@.\"");
 				fromToBuilder.append(NGSIConstants.JSON_LD_VALUE);
@@ -1622,26 +1632,45 @@ public class QQueryTerm implements Serializable {
 				fromToBuilder.append("\" <= ");
 				fromToBuilder.append(token[0].substring(listIndex + 2));
 				fromToBuilder.append(')');
-				valueQBuilder.append(" || ");
+				fromToBuilder.append(" || ");
+
+				pureFromToBuilder.append("(@");
+				pureFromToBuilder.append(" >= ");
+				pureFromToBuilder.append(token[0].substring(0, listIndex));
+				pureFromToBuilder.append(" && @");
+				pureFromToBuilder.append(" <= ");
+				pureFromToBuilder.append(token[0].substring(listIndex + 2));
+				pureFromToBuilder.append(')');
+				pureFromToBuilder.append(" || ");
+
 			}
 
 		}
 		if (fromToBuilder.length() >= 4) {
 			fromToBuilder.setLength(fromToBuilder.length() - 4);
 		}
+
+		if (pureFromToBuilder.length() >= 4) {
+			pureFromToBuilder.setLength(pureFromToBuilder.length() - 4);
+		}
+
 		idQBuilder.setLength(idQBuilder.length() - 4);
 		vocabQBuilder.setLength(vocabQBuilder.length() - 4);
 		valueQBuilder.setLength(valueQBuilder.length() - 4);
+		pureQBuilder.setLength(pureQBuilder.length() - 4);
 
 		fromToBuilder.append(')');
+		pureFromToBuilder.append(')');
 		idQBuilder.append(')');
 		vocabQBuilder.append(')');
 		valueQBuilder.append(')');
 
 		String fromTo = fromToBuilder.length() == 2 ? null : fromToBuilder.toString();
+		String pureFromTo = pureFromToBuilder.length() == 2 ? null : pureFromToBuilder.toString();
 		String idQ = idQBuilder.toString();
 		String vocabQ = vocabQBuilder.toString();
 		String valueQ = valueQBuilder.toString();
+		String pureQ = pureQBuilder.toString();
 
 		StringBuilder propPathBuilder = new StringBuilder(256);
 
@@ -1786,14 +1815,14 @@ public class QQueryTerm implements Serializable {
 				propPathBuilder.append(complexEntry);
 				propPathBuilder.append("\".");
 			}
-			propPathBuilder.setLength(result.length() - 1);
+			propPathBuilder.setLength(propPathBuilder.length() - 1);
 			propPathBuilder.append(" ? (");
-			if (fromTo != null) {
-				propPathBuilder.append(fromTo);
+			if (pureFromTo != null) {
+				propPathBuilder.append(pureFromTo);
 				propPathBuilder.append(" || ");
 			}
-			propPathBuilder.append(valueQ);
-			propPathBuilder.append(')');
+			propPathBuilder.append(pureQ);
+			propPathBuilder.append("))");
 			if (not) {
 				result.append("NOT ");
 			}
@@ -1830,24 +1859,27 @@ public class QQueryTerm implements Serializable {
 		result.append(") OR ");
 		propPathBuilder.setLength(0);
 		propPathBuilder.append(jsonPathBase);
-
+		System.out.println(propPathBuilder);
 		propPathBuilder.append(".\"");
 		propPathBuilder.append(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP);
 		propPathBuilder.append("\"[*] ? (");
+		System.out.println(propPathBuilder);
 		if (complexPart != null && !complexPart.equals("*")) {
 			propPathBuilder.append("(@.\"");
 			propPathBuilder.append(NGSIConstants.JSON_LD_LANGUAGE);
 			propPathBuilder.append("\" == \"");
 			propPathBuilder.append(complexPart.replace("\"", "\\\""));
-			propPathBuilder.append("\") ? ");
+			propPathBuilder.append("\") && ");
 		}
-
+		System.out.println(propPathBuilder);
 		if (fromTo != null) {
 			propPathBuilder.append(fromTo);
 			propPathBuilder.append(" || ");
 		}
+		System.out.println(propPathBuilder);
 		propPathBuilder.append(valueQ);
 		propPathBuilder.append(")");
+		System.out.println(propPathBuilder);
 		if (not) {
 			result.append("NOT ");
 		}
