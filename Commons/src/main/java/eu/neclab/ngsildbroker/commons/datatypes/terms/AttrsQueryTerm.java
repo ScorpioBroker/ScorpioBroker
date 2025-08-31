@@ -6,6 +6,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import javax.xml.crypto.Data;
+
 import java.util.Set;
 
 import com.github.jsonldjava.core.Context;
@@ -85,12 +88,21 @@ public class AttrsQueryTerm implements Serializable {
 		return dollar;
 	}
 
-	public int toTempSql(StringBuilder query, Tuple tuple, int dollar) {
+	public int toTempSql(StringBuilder query, Tuple tuple, int dollar, DataSetIdTerm dataSetIdTerm) {
 		query.append("attributeid = any($");
 		query.append(dollar);
 		query.append(')');
 		dollar++;
 		tuple.addArrayOfString(attrs.toArray(new String[0]));
+		if (dataSetIdTerm != null) {
+			StringBuilder tmp = new StringBuilder(128);
+			tmp.append("$ ? ");
+			dataSetIdTerm.toJsonPath(tmp);
+			query.append(" AND data @? $");
+			query.append(dollar);
+			dollar++;
+			tuple.addString(tmp.toString());
+		}
 		return dollar;
 	}
 

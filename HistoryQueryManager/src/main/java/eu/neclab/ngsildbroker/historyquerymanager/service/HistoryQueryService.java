@@ -129,8 +129,16 @@ public class HistoryQueryService implements CSourceHandler {
 		// return result;
 		// });
 		// }
-		Uni<QueryResult> local = historyDAO.query(tenant, idsAndTypeQueryAndIdPattern, attrsQuery, qQuery,
-				tempQuery, aggrQuery, geoQuery, scopeQuery, lastN, limit, offSet, count).onFailure()
+
+		// Uni<QueryResult> local = historyDAO.query(tenant,
+		// idsAndTypeQueryAndIdPattern, attrsQuery, qQuery,
+		// tempQuery, aggrQuery, geoQuery, scopeQuery, lastN, limit, offSet,
+		// count).onFailure()
+		Uni<QueryResult> local = historyDAO
+				.query(tenant, idsAndTypeQueryAndIdPattern, attrsQuery, qQuery, geoQuery, scopeQuery, context, limit,
+						offSet, null, null, -1, null, null, null, "", false, true, true, null, localOnly, false, false,
+						count, null, false, tempQuery, aggrQuery, lastN, null, null)
+				.onFailure()
 				.recoverWithUni(e -> {
 					if (e instanceof PgException) {
 						PgException pge = (PgException) e;

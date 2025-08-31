@@ -93,3 +93,8 @@ BEGIN
   RETURN NEW;
 END;
 $$;
+
+
+CREATE INDEX i_teai_covering_index 
+ON temporalentityattrinstance (temporalentity_id, attributeid, observedat DESC NULLS LAST)
+INCLUDE (data, geovalue, createdat, modifiedat, deletedat);

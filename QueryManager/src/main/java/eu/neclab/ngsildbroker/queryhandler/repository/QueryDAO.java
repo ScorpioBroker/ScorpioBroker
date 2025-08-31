@@ -1363,7 +1363,7 @@ public class QueryDAO {
 				}
 				// dollar = dataSetIdTerm.toSql(query, tuple, dollar, pickTerm, omitTerm,
 				// attrsQuery);
-				dataSetIdTerm.toSql(query);
+				dollar = dataSetIdTerm.toSql(query, tuple, dollar);
 				sqlAdded = true;
 			}
 		}

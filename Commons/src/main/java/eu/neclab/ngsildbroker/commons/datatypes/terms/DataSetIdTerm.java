@@ -193,10 +193,15 @@ public class DataSetIdTerm implements Serializable {
 		return dollar;
 	}
 
-	public void toSql(StringBuilder query) {
-		query.append("jsonb_path_exists(entity, '$.* ? ");
-		toJsonPath(query);
-		query.append("')");
+	public int toSql(StringBuilder query, Tuple tuple, int dollar) {
+		query.append("entity @? $");
+		query.append(dollar);
+		dollar++;
+		StringBuilder tmp = new StringBuilder(128);
+		tmp.append("$.* ? ");
+		toJsonPath(tmp);
+		tuple.addString(tmp.toString());
+		return dollar;
 
 	}
 
@@ -461,25 +466,32 @@ public class DataSetIdTerm implements Serializable {
 		return !entity.isEmpty();
 	}
 
-	public void toTempSql(StringBuilder sql) {
-		sql.append("(jsonb_path_exists(data, '$.\"");
-		sql.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
-		sql.append("\"[0].\"");
-		sql.append(NGSIConstants.JSON_LD_ID);
-		sql.append("\" ? (@ == [");
-		for (String id : ids) {
-			sql.append('"');
-			sql.append(id.replace("\"", "\\\""));
-			sql.append("\",");
-		}
-		sql.setLength(sql.length() - 1);
-		sql.append("])')");
+	public int toTempSql(StringBuilder sql, Tuple tuple, int dollar) {
 		if (ids.contains(NGSIConstants.JSON_LD_NONE)) {
-			sql.append(" OR not jsonb_path_exists(data, '$.\"");
-			sql.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
-			sql.append("\"')");
+			sql.append("NOT data @? $");
+			sql.append(dollar);
+			dollar++;
+			tuple.addString("$.\"" + NGSIConstants.NGSI_LD_DATA_SET_ID + "\"");
+			sql.append(" OR ");
 		}
-		sql.append(')');
+		sql.append("data @? $");
+		sql.append(dollar);
+		dollar++;
+		StringBuilder tmp = new StringBuilder(128);
+		tmp.append("$.\"");
+		tmp.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
+		tmp.append("\"[0].\"");
+		tmp.append(NGSIConstants.JSON_LD_ID);
+		tmp.append("\" ? (@ == [");
+		for (String id : ids) {
+			tmp.append('"');
+			tmp.append(id);
+			tmp.append("\",");
+		}
+		tmp.setLength(tmp.length() - 1);
+		tmp.append("])");
+		tuple.addString(tmp.toString());
+		return dollar;
 	}
 
 	public void toJsonPath(StringBuilder result) {

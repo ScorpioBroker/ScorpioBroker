@@ -215,37 +215,42 @@ public class PickTerm extends ProjectionTerm {
 
 	@Override
 	public int toSql(StringBuilder query, Tuple tuple, int dollar, DataSetIdTerm dataSetIdTerm) {
-		if (dataSetIdTerm != null) {
 
-			query.append("jsonb_path_exists(ENTITY, '$.keyvalue() ? (");
+		if (dataSetIdTerm != null) {
+			query.append("ENTITY @? $");
+			query.append(dollar);
+			dollar++;
+			StringBuilder tmp = new StringBuilder(128);
+			tmp.append("$.keyvalue() ? (");
 			Set<String> attribs = getAllTopLevelAttribs(true);
 			Set<String> ids = dataSetIdTerm.getIds();
 			for (String attrib : attribs) {
-				query.append("(@.key == \"");
-				query.append(attrib);
-				query.append("\") || ");
+				tmp.append("(@.key == \"");
+				tmp.append(attrib);
+				tmp.append("\") || ");
 			}
-			query.setLength(query.length() - 4);
-			query.append(" && ");
-			query.append('(');
+			tmp.setLength(tmp.length() - 4);
+			tmp.append(" && ");
+			tmp.append('(');
 			if (ids.contains(NGSIConstants.JSON_LD_NONE)) {
-				query.append("!(exists(@.value.\"");
-				query.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
-				query.append("\")) || ");
+				tmp.append("!(exists(@.value.\"");
+				tmp.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
+				tmp.append("\")) || ");
 			}
 			for (String id : ids) {
-				query.append("(@.value.\"");
-				query.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
-				query.append("\"[0].\"");
-				query.append(NGSIConstants.JSON_LD_ID);
-				query.append("\" == ");
+				tmp.append("(@.value.\"");
+				tmp.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
+				tmp.append("\"[0].\"");
+				tmp.append(NGSIConstants.JSON_LD_ID);
+				tmp.append("\" == ");
 
-				query.append('"');
-				query.append(id);
-				query.append("\") || ");
+				tmp.append('"');
+				tmp.append(id);
+				tmp.append("\") || ");
 			}
-			query.setLength(query.length() - 4);
-			query.append("))')");
+			tmp.setLength(tmp.length() - 4);
+			tmp.append("))");
+			tuple.addString(tmp.toString());
 		} else {
 			query.append("ENTITY ?| $");
 			query.append(dollar);

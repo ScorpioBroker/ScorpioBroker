@@ -243,9 +243,13 @@ public class OmitTerm extends ProjectionTerm {
 		tuple.addArrayOfString(tmp.toArray(new String[0]));
 		query.append("::text[]");
 		if (dataSetIdTerm != null) {
-			query.append(",'$.* ? ");
-			dataSetIdTerm.toJsonPath(query);
-			query.append("')");
+			query.append(", $");
+			query.append(dollar);
+			dollar++;
+			StringBuilder datasetCheck = new StringBuilder(128);
+			datasetCheck.append("$.* ? ");
+			dataSetIdTerm.toJsonPath(datasetCheck);
+			tuple.addString(datasetCheck.toString());
 		} else {
 			query.append(" <> '{}'::jsonb");
 		}
