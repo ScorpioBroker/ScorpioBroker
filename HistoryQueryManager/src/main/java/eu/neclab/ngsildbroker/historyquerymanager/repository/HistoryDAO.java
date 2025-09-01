@@ -1219,7 +1219,7 @@ public class HistoryDAO {
 			String rangeStart, String rangeEnd) {
 		// it's a large string
 		StringBuilder sql = new StringBuilder(2560);
-		int dollar = 0;
+		int dollar = 1;
 		Tuple tuple = Tuple.tuple();
 		sql.append(
 				"WITH entityInfos AS (SELECT id, e_types, createdat, modifiedat, deletedat, scopes, jsonb_build_array(jsonb_build_object('");
@@ -1243,7 +1243,7 @@ public class HistoryDAO {
 		sql.append("', '");
 		sql.append(NGSIConstants.JSON_LD_VALUE);
 		sql.append(
-				"', to_char(deletedat, 'YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"'))) AS r_deletedat, CASE WHEN scopes IS NULL THEN NULL ELSE getScopeEntry(scopes) END AS scope_entry FROM temporalentity WHERE ");
+				"', to_char(deletedat, 'YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"'))) END AS r_deletedat, CASE WHEN scopes IS NULL THEN NULL ELSE getScopeEntry(scopes) END AS scope_entry FROM temporalentity WHERE ");
 		if (idsAndTypeAndIdPattern != null && idsAndTypeAndIdPattern.size() > 0) {
 			sql.append('(');
 			for (Tuple3<String[], TypeQueryTerm, String> t : idsAndTypeAndIdPattern) {
@@ -1284,7 +1284,7 @@ public class HistoryDAO {
 		}
 		sql.append(
 				"), attribute_arrays AS (SELECT ei.id, ei.e_types, ei.scopes, ei.r_createdat, ei.r_modifiedat, ei.r_deletedat, ei.scope_entry, teai.attributeid, (array_agg(teai.data ORDER BY teai.");
-		String timeProp = tempQuery != null ? tempQuery.getTimeProperty() : null;
+		String timeProp = tempQuery != null ? tempQuery.getTimeProperty() : "";
 		switch (timeProp) {
 			case NGSIConstants.NGSI_LD_CREATED_AT:
 				sql.append("createdat");
@@ -1330,7 +1330,7 @@ public class HistoryDAO {
 
 		sql.setLength(sql.length() - 5);
 		sql.append(
-				"GROUP BY ei.id, ei.e_types, ei.scopes, ei.r_createdat, ei.r_modifiedat, ei.r_deletedat, ei.scope_entry, teai.attributeid) SELECT jsonb_build_object('");
+				" GROUP BY ei.id, ei.e_types, ei.scopes, ei.r_createdat, ei.r_modifiedat, ei.r_deletedat, ei.scope_entry, teai.attributeid) SELECT jsonb_build_object('");
 		sql.append(NGSIConstants.JSON_LD_ID);
 		sql.append("', id,'");
 		sql.append(NGSIConstants.JSON_LD_TYPE);
@@ -1352,7 +1352,8 @@ public class HistoryDAO {
 		sql.append(dollar);
 		dollar++;
 		tuple.addInteger(limit);
-
+		System.out.println(sql.toString());
+		System.out.println(tuple.deepToString());
 		return connectionManager.executeQuery(tenant, sql.toString(), tuple, false).onItem().transform(rows -> {
 			QueryResult result = new QueryResult(tenant);
 			if (limit == 0 && count) {

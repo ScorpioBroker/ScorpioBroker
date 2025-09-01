@@ -246,8 +246,8 @@ public class QueryController {
 					.getTypes(tenant, localOnly, request.headers(), details, bbox, viaHeaders)
 					.onItem()
 					.transformToUni(types -> {
-						return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, types, null,
-								null, null, ldService, null, null, true);
+						return HttpUtils.generateResult(contextHeader, context, acceptHeader, types, null,
+								null, null, ldService, null, null, false, true, -1);
 					});
 
 		}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, tenant));
@@ -277,8 +277,8 @@ public class QueryController {
 						if (map.isEmpty()) {
 							return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
 						} else {
-							return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, map, null, null,
-									null, ldService, null, null, true);
+							return HttpUtils.generateResult(contextHeader, context, acceptHeader, map, null,
+									null, null, ldService, null, null, false, true, -1);
 						}
 					});
 		}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, tenant));
@@ -308,14 +308,14 @@ public class QueryController {
 			if (!details) {
 				return queryService.getAttribs(tenant, localOnly, request.headers()).onItem()
 						.transformToUni(map -> {
-							return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, map, null, null,
-									null, ldService, null, null, true);
+							return HttpUtils.generateResult(contextHeader, context, acceptHeader, map, null,
+									null, null, ldService, null, null, false, true, -1);
 						});
 			} else {
 				return queryService.getAttribsWithDetails(tenant, localOnly, request.headers())
 						.onItem().transformToUni(list -> {
-							return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, list, null,
-									null, null, ldService, null, null, true);
+							return HttpUtils.generateResult(contextHeader, context, acceptHeader, list, null,
+									null, null, ldService, null, null, false, true, -1);
 						});
 			}
 		}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, tenant));
@@ -341,16 +341,16 @@ public class QueryController {
 			return HttpUtils.getInvalidHeader();
 		}
 
-		List<Object> headerContext = HttpUtils.getAtContext(request);
-		return HttpUtils.getContext(headerContext, ldService).onItem().transformToUni(context -> {
+		List<Object> contextHeader = HttpUtils.getAtContext(request);
+		return HttpUtils.getContext(contextHeader, ldService).onItem().transformToUni(context -> {
 			return queryService.getAttrib(tenant,
 					context.expandIri(attribute, false, true, null, null), localOnly, request.headers()).onItem()
 					.transformToUni(map -> {
 						if (map.isEmpty()) {
 							return Uni.createFrom().failure(new ResponseException(ErrorType.NotFound));
 						} else {
-							return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, map, null, null,
-									null, ldService, null, null, true);
+							return HttpUtils.generateResult(contextHeader, context, acceptHeader, map, null,
+									null, null, ldService, null, null, false, true, -1);
 						}
 					});
 		}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, tenant));
