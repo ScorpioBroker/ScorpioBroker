@@ -1693,7 +1693,7 @@ public class QQueryTerm implements Serializable {
 		result.append(dollar);
 		dollar++;
 		tuple.addString(propPathBuilder.toString());
-		result.append(" OR ");
+		result.append("::jsonpath OR ");
 
 		propPathBuilder.setLength(0);
 		propPathBuilder.append(jsonPathBase);
@@ -1717,7 +1717,7 @@ public class QQueryTerm implements Serializable {
 		result.append(dollar);
 		dollar++;
 		tuple.addString(propPathBuilder.toString());
-		result.append(" OR ");
+		result.append("::jsonpath OR ");
 		propPathBuilder.setLength(0);
 		propPathBuilder.append(jsonPathBase);
 		if (datasetIdPath != null) {
@@ -1753,7 +1753,7 @@ public class QQueryTerm implements Serializable {
 		result.append(dollar);
 		dollar++;
 		tuple.addString(propPathBuilder.toString());
-		result.append(" OR ");
+		result.append("::jsonpath OR ");
 
 		propPathBuilder.setLength(0);
 		propPathBuilder.append(jsonPathBase);
@@ -1782,7 +1782,7 @@ public class QQueryTerm implements Serializable {
 		result.append(dollar);
 		dollar++;
 		tuple.addString(propPathBuilder.toString());
-		result.append(" OR ");
+		result.append("::jsonpath OR ");
 
 		propPathBuilder.setLength(0);
 		propPathBuilder.append(jsonPathBase);
@@ -1840,7 +1840,7 @@ public class QQueryTerm implements Serializable {
 		result.append(dollar);
 		dollar++;
 		tuple.addString(propPathBuilder.toString());
-		result.append(" OR ");
+		result.append("::jsonpath OR ");
 		propPathBuilder.setLength(0);
 		propPathBuilder.append(jsonPathBase);
 		System.out.println(propPathBuilder);
@@ -1872,7 +1872,7 @@ public class QQueryTerm implements Serializable {
 		result.append(dollar);
 		dollar++;
 		tuple.addString(propPathBuilder.toString());
-		result.append(')');
+		result.append("::jsonpath)");
 
 		return dollar;
 
