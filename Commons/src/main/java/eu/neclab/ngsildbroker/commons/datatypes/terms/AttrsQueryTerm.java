@@ -7,8 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import javax.xml.crypto.Data;
-
 import java.util.Set;
 
 import com.github.jsonldjava.core.Context;
@@ -52,7 +50,7 @@ public class AttrsQueryTerm implements Serializable {
 		if (dataSetIdTerm != null) {
 			query.append("ENTITY @? $");
 			StringBuilder tmp = new StringBuilder(128);
-			tmp.append("$.keyvalue() ? (@.key == [")
+			tmp.append("$.keyvalue() ? (@.key == [");
 			Set<String> ids = dataSetIdTerm.getIds();
 			for (String attrib : attrs) {
 				tmp.append('"');
