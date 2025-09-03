@@ -1393,6 +1393,12 @@ public class HistoryDAO {
 					} else {
 						entity = new HashMap<>();
 					}
+					try {
+						System.out.println(objectMapper.writeValueAsString(entity));
+					} catch (JsonProcessingException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
 					if (aggrQuery != null && (aggrQuery.getAggrFunctions().contains(NGSIConstants.AGGR_METH_MAX)
 							|| aggrQuery.getAggrFunctions().contains(NGSIConstants.AGGR_METH_MIN))) {
 						postProcessMinOrMaxResults(entity);

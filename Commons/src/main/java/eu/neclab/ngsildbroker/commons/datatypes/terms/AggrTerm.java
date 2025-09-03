@@ -331,7 +331,7 @@ public class AggrTerm implements Serializable {
         sql.append(temporalProperty);
         sql.append("),");
         sql.append(
-                "attribute_arrays AS (SELECT id, e_types, r_createdat, r_modifiedat, r_deletedat, scope_entry, attributeid, jsonb_strip_nulls(jsonb_build_object('@type', jsonb_build_array(attr_type),");
+                "attribute_arrays AS (SELECT id, e_types, r_createdat, r_modifiedat, r_deletedat, scope_entry, attributeid, jsonb_build_array(jsonb_strip_nulls(jsonb_build_object('@type', jsonb_build_array(attr_type),");
         StringBuilder tmp = new StringBuilder(128);
         for (String aggrFunction : aggrFunctions) {
             String aggrResult;
@@ -396,7 +396,7 @@ public class AggrTerm implements Serializable {
         tmp.append(')');
         sql.setLength(sql.length() - 1);
         sql.append(
-                ")) as data_array FROM period_stats GROUP BY id, e_types, r_createdat, r_modifiedat, r_deletedat, scope_entry, attributeid, attr_type,");
+                "))) as data_array FROM period_stats GROUP BY id, e_types, r_createdat, r_modifiedat, r_deletedat, scope_entry, attributeid, attr_type,");
         sql.append(tmp.toString());
 
         return dollar;
