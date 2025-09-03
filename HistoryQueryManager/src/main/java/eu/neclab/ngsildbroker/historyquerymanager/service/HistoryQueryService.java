@@ -135,9 +135,11 @@ public class HistoryQueryService implements CSourceHandler {
 		// tempQuery, aggrQuery, geoQuery, scopeQuery, lastN, limit, offSet,
 		// count).onFailure()
 		Uni<QueryResult> local = historyDAO
-				.query(tenant, idsAndTypeQueryAndIdPattern, attrsQuery, qQuery, geoQuery, scopeQuery, context, limit,
-						offSet, null, null, -1, null, null, null, "", false, true, true, null, localOnly, false, false,
-						count, null, false, tempQuery, aggrQuery, lastN, null, null)
+				.query(tenant, idsAndTypeQueryAndIdPattern, attrsQuery, qQuery, geoQuery,
+						scopeQuery, context, limit,
+						offSet, null, null, -1, null, null, null, "", false, true, true, null,
+						localOnly, false, false,
+						count, null, false, tempQuery, aggrQuery, lastN)
 				.onFailure()
 				.recoverWithUni(e -> {
 					if (e instanceof PgException) {
@@ -145,6 +147,7 @@ public class HistoryQueryService implements CSourceHandler {
 						logger.debug("At position " + pge.getPosition());
 						logger.debug("failed to query", pge);
 						if (pge.getSqlState().equals(AppConstants.SQL_INVALID_OPERATOR)) {
+							pge.printStackTrace();
 							return Uni.createFrom().failure(new ResponseException(ErrorType.InvalidRequest,
 									"Invalid operator in q query or aggr query"));
 						}

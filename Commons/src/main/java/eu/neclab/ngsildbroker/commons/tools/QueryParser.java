@@ -35,9 +35,7 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import io.smallrye.mutiny.tuples.Tuple2;
 
 public class QueryParser {
-	// Query = (QueryTerm / QueryTermAssoc) *(logicalOp (QueryTerm /
-	// QueryTermAssoc))
-	// QueryTermAssoc = %x28 QueryTerm *(logicalOp QueryTerm) %x29 ; (QueryTerm)
+
 	private QueryParser() {
 
 	}
@@ -298,8 +296,6 @@ public class QueryParser {
 		}
 		return result;
 	}
-
-	private Set<Character> allowedTypeOperationChars = Set.of('(', ')', ',', '|', ';');
 
 	public static TypeQueryTerm parseTypeQuery(String input, Context context) throws ResponseException {
 		if (input == null) {

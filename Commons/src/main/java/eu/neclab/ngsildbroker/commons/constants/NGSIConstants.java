@@ -606,5 +606,6 @@ public interface NGSIConstants {
 	public static final String FIELD_DATASET_ID = "\"datasetId\": \"";
 	public static final String ENTITY = "entity";
 	public static final String ENTITY_LIST = "entityList";
+	public static final String UNIT_DATE_TIME = "DateTime";
 
 }

@@ -52,10 +52,10 @@ public class HistoryController {
 	int defaultLimit;
 	@ConfigProperty(name = "scorpio.history.max-limit")
 	int maxLimit;
-	@ConfigProperty(name = "scorpio.history.lastn")
-	int defaultLastN;
-	@ConfigProperty(name = "scorpio.history.max-lastn")
-	int maxLastN;
+	// @ConfigProperty(name = "scorpio.history.lastn")
+	// int defaultLastN;
+	// @ConfigProperty(name = "scorpio.history.max-lastn")
+	// int maxLastN;
 
 	@Inject
 	JsonLDService ldService;
@@ -126,7 +126,7 @@ public class HistoryController {
 		}
 		int lastNTBU;
 		if (lastN == null) {
-			lastNTBU = defaultLastN;
+			lastNTBU = -1;
 		} else {
 			lastNTBU = lastN;
 		}
@@ -201,7 +201,7 @@ public class HistoryController {
 		}
 		int lastNTBU;
 		if (lastN == null) {
-			lastNTBU = defaultLastN;
+			lastNTBU = -1;
 		} else {
 			lastNTBU = lastN;
 		}
