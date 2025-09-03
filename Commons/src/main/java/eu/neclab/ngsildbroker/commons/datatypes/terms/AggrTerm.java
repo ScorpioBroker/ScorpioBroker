@@ -335,57 +335,62 @@ public class AggrTerm implements Serializable {
         StringBuilder tmp = new StringBuilder(128);
         for (String aggrFunction : aggrFunctions) {
             String aggrResult;
+            String aggrTitle;
             switch (aggrFunction) {
                 case NGSIConstants.AGGR_METH_SUM:
                     aggrResult = "sum_result";
+                    aggrTitle = NGSIConstants.NGSI_LD_SUM;
                     break;
                 case NGSIConstants.AGGR_METH_MIN:
                     aggrResult = "min_result";
+                    aggrTitle = NGSIConstants.NGSI_LD_MIN;
                     break;
                 case NGSIConstants.AGGR_METH_MAX:
                     aggrResult = "max_result";
+                    aggrTitle = NGSIConstants.NGSI_LD_MAX;
                     break;
                 case NGSIConstants.AGGR_METH_AVG:
                     aggrResult = "avg_result";
+                    aggrTitle = NGSIConstants.NGSI_LD_AVG;
                     break;
                 case NGSIConstants.AGGR_METH_STDDEV:
-
                     aggrResult = "stddev_result";
+                    aggrTitle = NGSIConstants.NGSI_LD_STDDEV;
                     break;
                 case NGSIConstants.AGGR_METH_SUMSQ:
-
                     aggrResult = "sumsq_result";
+                    aggrTitle = NGSIConstants.NGSI_LD_SUMSQ;
                     break;
                 case NGSIConstants.AGGR_METH_TOTAL_COUNT:
                     aggrResult = "totalcount_result";
+                    aggrTitle = NGSIConstants.NGSI_LD_TOTALCOUNT;
                     break;
                 case NGSIConstants.AGGR_METH_DISTINCT_COUNT:
                     aggrResult = "distinctcount_result";
+                    aggrTitle = NGSIConstants.NGSI_LD_DISTINCTCOUNT;
                     break;
                 default:
-                    aggrResult = null;
-                    break;
+                    continue;
             }
-            if (aggrResult != null) {
-                tmp.append(aggrResult);
-                tmp.append(',');
-                sql.append('\'');
-                sql.append(aggrFunction);
-                sql.append("', CASE WHEN ");
-                sql.append(aggrResult);
-                sql.append(" IS NOT NULL AND NOT ");
-                sql.append(aggrResult);
-                sql.append(
-                        " @> '{\"@list\": [{\"@value\": null}]}'::jsonb THEN jsonb_build_array(jsonb_build_object('@list', jsonb_agg(");
-                sql.append(aggrResult);
-                if (period != null) {
-                    sql.append(" ORDER BY period");
-                }
-                sql.append(")))");
-                sql.append(" ELSE NULL END");
-                sql.append(',');
 
+            tmp.append(aggrResult);
+            tmp.append(',');
+            sql.append('\'');
+            sql.append(aggrTitle);
+            sql.append("', CASE WHEN ");
+            sql.append(aggrResult);
+            sql.append(" IS NOT NULL AND NOT ");
+            sql.append(aggrResult);
+            sql.append(
+                    " @> '{\"@list\": [{\"@value\": null}]}'::jsonb THEN jsonb_build_array(jsonb_build_object('@list', jsonb_agg(");
+            sql.append(aggrResult);
+            if (period != null) {
+                sql.append(" ORDER BY period");
             }
+            sql.append(")))");
+            sql.append(" ELSE NULL END");
+            sql.append(',');
+
         }
         tmp.setLength(tmp.length() - 1);
         tmp.append(')');
