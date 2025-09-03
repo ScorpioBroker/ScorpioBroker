@@ -27,6 +27,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.RestResponse;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
+import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -69,15 +70,34 @@ public class HistoryController {
 			@QueryParam("coordinates") String coordinates, @QueryParam("geoproperty") String geoproperty,
 			@QueryParam("timeproperty") String timeProperty, @QueryParam("timerel") String timerel,
 			@QueryParam("scopeQ") String scopeQ, @QueryParam("timeAt") String timeAt,
-			@QueryParam("endTimeAt") String endTimeAt, @QueryParam("lastN") Integer lastN,
+			@QueryParam("endTimeAt") String endTimeAt, @QueryParam("lastN") @DefaultValue("-1") int lastN,
 			@QueryParam("lang") String lang, @QueryParam("aggrMethods") String aggrMethods,
 			@QueryParam("aggrPeriodDuration") String aggrPeriodDuration, @QueryParam(value = "limit") Integer limit,
 			@QueryParam(value = "offset") int offset, @QueryParam(value = "entityMap") String qToken,
 			@QueryParam(value = "options") String options, @QueryParam(value = "count") String countS,
-			@QueryParam(value = "localOnly") String localOnlyS, @QueryParam("format") String format) {
+			@QueryParam(value = "localOnly") String localOnlyS, @QueryParam("format") String format,
+			@QueryParam("n") @DefaultValue("-1") int nInput,
+			@QueryParam("offsetN") @DefaultValue("-1") int offsetN,
+			@QueryParam("nOrder") @DefaultValue("ASC") String nOrderInput) {
 		boolean localOnly;
 		boolean count;
+		String tenant = HttpUtils.getTenant(request);
 
+		if (nInput != -1 && lastN != -1 && lastN != nInput) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
+					new ResponseException(ErrorType.BadRequestData,
+							"Conflicting input in n and lastN. Please remove one"),
+					tenant));
+		}
+		String nOrder;
+		int n;
+		if (lastN != -1) {
+			nOrder = "DESC";
+			n = lastN;
+		} else {
+			nOrder = nOrderInput;
+			n = nInput;
+		}
 		try {
 			localOnly = HttpUtils.parseBoolean(localOnlyS);
 			count = HttpUtils.parseBoolean(countS);
@@ -124,12 +144,7 @@ public class HistoryController {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
 					new ResponseException(ErrorType.InvalidRequest), HttpUtils.getTenant(request)));
 		}
-		int lastNTBU;
-		if (lastN == null) {
-			lastNTBU = -1;
-		} else {
-			lastNTBU = lastN;
-		}
+
 		List<Object> ctx = HttpUtils.getAtContext(request);
 		String finalOptions = options;
 		return HttpUtils.getContext(ctx, ldService).onItem().transformToUni(context -> {
@@ -157,9 +172,9 @@ public class HistoryController {
 			}
 			List<Tuple3<String[], TypeQueryTerm, String>> tmp = new ArrayList<>(1);
 			tmp.add(Tuple3.of(idList, typeQueryTerm, idPattern));
-			return historyQueryService.query(HttpUtils.getTenant(request), tmp, attrsQueryTerm, qQueryTerm,
+			return historyQueryService.query(tenant, tmp, attrsQueryTerm, qQueryTerm,
 					csfQueryTerm, geoQueryTerm, scopeQueryTerm, temporalQueryTerm, aggrTerm, languageQueryTerm,
-					lastNTBU, actualLimit, offset, count, localOnly, context, request).onItem()
+					n, offsetN, nOrder, actualLimit, offset, count, localOnly, context, request).onItem()
 					.transformToUni(queryResult -> {
 						int payloadType;
 						if (aggrTerm == null) {

@@ -1215,7 +1215,8 @@ public class HistoryDAO {
 			OmitTerm omitTerm, String queryChecksum, boolean splitEntities,
 			boolean regEmptyOrNoRegEntryAndNoLinkedQuery, boolean noRootLevelRegEntryAndLinkedQuery, String typePattern,
 			boolean localOnly, boolean forceEntitymapCreation, boolean tokenProvided, boolean count,
-			OrderByTerm orderBy, boolean metadata, TemporalQueryTerm tempQuery, AggrTerm aggrQuery, int lastN) {
+			OrderByTerm orderBy, boolean metadata, TemporalQueryTerm tempQuery, AggrTerm aggrQuery, int n, int offsetN,
+			String nOrder) {
 		// it's a large string
 		StringBuilder sql = new StringBuilder(2560);
 		int dollar = 1;
@@ -1307,15 +1308,20 @@ public class HistoryDAO {
 			sql.append(
 					"attribute_arrays AS (SELECT ei.id, ei.e_types, ei.r_createdat, ei.r_modifiedat, ei.r_deletedat, ei.scope_entry, teai.attributeid, (array_agg(teai.data ORDER BY teai.");
 			sql.append(timeProp);
-			if (lastN > 0) {
+			sql.append(' ');
+			sql.append(nOrder);
+			sql.append("))");
+			if (n > 0) {
 				sql.append(" DESC))");
-				sql.append("[1:$");
+				sql.append("[1 + $");
+				sql.append(dollar);
+				dollar++;
+				tuple.addInteger(offsetN);
+				sql.append(":$");
 				sql.append(dollar);
 				sql.append(']');
 				dollar++;
-				tuple.addInteger(lastN);
-			} else {
-				sql.append(" ASC))");
+				tuple.addInteger(n);
 			}
 			sql.append(
 					" as data_array FROM entityInfos ei INNER JOIN temporalentityattrinstance teai ON teai.temporalentity_id = ei.id WHERE 1=1 AND ");

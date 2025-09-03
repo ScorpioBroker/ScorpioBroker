@@ -40,6 +40,7 @@ import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.json.JsonObject;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
+import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
@@ -70,11 +71,14 @@ public class HistoryOperationsController {
 	@POST
 	public Uni<RestResponse<Object>> postQuery(HttpServerRequest request, String bodyStr,
 			@QueryParam(value = "limit") Integer limit, @QueryParam(value = "offset") int offset,
-			@QueryParam("lastN") Integer lastN, @QueryParam(value = "options") String options,
+			@QueryParam("lastN") @DefaultValue("-1") int lastN, @QueryParam(value = "options") String options,
 			@QueryParam(value = "count") String countS, @QueryParam(value = "local") String localOnlyS,
 			@QueryParam(value = "geometryProperty") String geometryProperty,
 			@HeaderParam("NGSILD-EntityMap") String entityMapToken, @QueryParam("entityMap") String retrieveEntityMapS,
-			@QueryParam(value = "doNotCompact") String doNotCompactS) {
+			@QueryParam(value = "doNotCompact") String doNotCompactS, @QueryParam("n") @DefaultValue("-1") int nInput,
+			@QueryParam("offsetN") @DefaultValue("-1") int offsetN,
+			@QueryParam("nOrder") @DefaultValue("ASC") String nOrderInput) {
+
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		String tenant = HttpUtils.getTenant(request);
 		Map<String, Object> body;
@@ -91,6 +95,21 @@ public class HistoryOperationsController {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
 					new ResponseException(ErrorType.TooManyResults), tenant));
 		}
+		if (nInput != -1 && lastN != -1 && lastN != nInput) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
+					new ResponseException(ErrorType.BadRequestData,
+							"Conflicting input in n and lastN. Please remove one"),
+					tenant));
+		}
+		String nOrder;
+		int n;
+		if (lastN != -1) {
+			nOrder = "DESC";
+			n = lastN;
+		} else {
+			nOrder = nOrderInput;
+			n = nInput;
+		}
 		// boolean retrieveEntityMap;
 		// boolean doNotCompact;
 		boolean localOnly;
@@ -104,12 +123,7 @@ public class HistoryOperationsController {
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
 		}
-		int lastNTBU;
-		if (lastN == null) {
-			lastNTBU = -1;
-		} else {
-			lastNTBU = lastN;
-		}
+
 		// we are not expanding the complete payload here because there is some
 		// weirdness in postquery payload. expanding item by item through the parsers is
 		// fine
@@ -339,7 +353,8 @@ public class HistoryOperationsController {
 				}
 
 				return queryService.query(tenant, idsAndTypeQueryAndIdPattern, attrsQuery, qQueryTerm, csfQueryTerm,
-						geoQueryTerm, scopeQueryTerm, temporalQueryTerm, aggrTerm, langQuery, lastNTBU, limit, offset,
+						geoQueryTerm, scopeQueryTerm, temporalQueryTerm, aggrTerm, langQuery, n, offsetN, nOrder, limit,
+						offset,
 						false, localOnly, context, request).onItem().transformToUni(queryResult -> {
 							int payloadType;
 							if (aggrTerm == null) {

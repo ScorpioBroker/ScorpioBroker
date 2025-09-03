@@ -104,7 +104,8 @@ public class HistoryQueryService implements CSourceHandler {
 			List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeQueryAndIdPattern,
 			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, CSFQueryTerm csf, GeoQueryTerm geoQuery,
 			ScopeQueryTerm scopeQuery, TemporalQueryTerm tempQuery, AggrTerm aggrQuery, LanguageQueryTerm langQuery,
-			Integer lastN, Integer limit, Integer offSet, Boolean count, Boolean localOnly, Context context,
+			int n, int offsetN, String nOrder, Integer limit, Integer offSet, Boolean count, Boolean localOnly,
+			Context context,
 			HttpServerRequest request) {
 		// if (true) {
 		// return historyDAO
@@ -139,7 +140,7 @@ public class HistoryQueryService implements CSourceHandler {
 						scopeQuery, context, limit,
 						offSet, null, null, -1, null, null, null, "", false, true, true, null,
 						localOnly, false, false,
-						count, null, false, tempQuery, aggrQuery, lastN)
+						count, null, false, tempQuery, aggrQuery, n, offsetN, nOrder)
 				.onFailure()
 				.recoverWithUni(e -> {
 					if (e instanceof PgException) {
