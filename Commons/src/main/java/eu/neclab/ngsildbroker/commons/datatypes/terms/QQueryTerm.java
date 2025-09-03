@@ -1337,6 +1337,7 @@ public class QQueryTerm implements Serializable {
 			firstChild.operator = operator;
 			String[] attribPath = StringUtils.split(linkedAttrName, '.');
 			String prevEntity;
+			StringBuilder tmp = new StringBuilder(128);
 			if (entityLevelCounter == -1) {
 				prevEntity = "ENTITY.ENTITY";
 			} else {
@@ -1345,44 +1346,69 @@ public class QQueryTerm implements Serializable {
 			entityLevelCounter++;
 			result.append("EXISTS (SELECT 1 FROM jsonb_path_query(");
 			result.append(prevEntity);
-			result.append(", '$.");
+			result.append(", $");
+			result.append(dollar);
+			dollar++;
+			result.append("::jsonpath");
+			tmp.append("$.");
 			for (String pathLevel : attribPath) {
 				String expandedAttrib = linkHeaders.expandIri(pathLevel, false, true, null, null);
-				result.append('"');
-				result.append(expandedAttrib);
-				result.append("\"[*].");
+				tmp.append('"');
+				tmp.append(expandedAttrib);
+				tmp.append("\"[*].");
 			}
-			result.setLength(result.length() - 1);
-			result.append(" ? ((@.\"");
-			result.append(NGSIConstants.JSON_LD_TYPE);
-			result.append("\"[0] == \"");
-			result.append(NGSIConstants.NGSI_LD_RELATIONSHIP);
-			result.append("\")");
+			tmp.setLength(tmp.length() - 1);
+			tmp.append(" ? ((@.\"");
+			tmp.append(NGSIConstants.JSON_LD_TYPE);
+			tmp.append("\"[0] == \"");
+			tmp.append(NGSIConstants.NGSI_LD_RELATIONSHIP);
+			tmp.append("\")");
 			if (!localOnly) {
-				result.append(" && exists(@.\"");
-				result.append(NGSIConstants.NGSI_LD_OBJECT_TYPE);
-				result.append("\")");
+				tmp.append(" && exists(@.\"");
+				tmp.append(NGSIConstants.NGSI_LD_OBJECT_TYPE);
+				tmp.append("\")");
 			}
+			tmp.append(')');
+			tuple.addString(tmp.toString());
+			tmp.setLength(0);
 			result.append(
-					")') as rels JOIN LATERAL (SELECT jsonb_array_elements_text(jsonb_path_query_array(rels, '$.\"");
-			result.append(NGSIConstants.NGSI_LD_HAS_OBJECT);
-			result.append("\"[*].\"@id\"')) AS obj_id) AS obj_ids ON TRUE JOIN ENTITY E");
+					") as rels JOIN LATERAL (SELECT jsonb_array_elements_text(jsonb_path_query_array(rels, $");
+			result.append(dollar);
+			dollar++;
+
+			tmp.append("$.\"");
+			tmp.append(NGSIConstants.NGSI_LD_HAS_OBJECT);
+			tmp.append("\"[*].\"@id\"");
+			tuple.addString(tmp.toString());
+			tmp.setLength(0);
+			result.append("::jsonpath)) AS obj_id) AS obj_ids ON TRUE JOIN ENTITY E");
 			result.append(entityLevelCounter);
 			result.append(" ON E");
 			result.append(entityLevelCounter);
 			result.append(".id = obj_ids.obj_id WHERE (");
 			if (!localOnly) {
-				result.append("NOT jsonb_path_exists(rels, '$.\"");
-				result.append(NGSIConstants.NGSI_LD_OBJECT_TYPE);
-				result.append("\"') OR ");
+				tmp.append("$.\"");
+				tmp.append(NGSIConstants.NGSI_LD_OBJECT_TYPE);
+				tmp.append('"');
+				result.append("NOT jsonb_path_exists(rels, $");
+				result.append(dollar);
+				dollar++;
+				tuple.addString(tmp.toString());
+				tmp.setLength(0);
+				result.append(") OR ");
 			}
 			result.append("E");
 			result.append(entityLevelCounter);
 			result.append(".e_types && ARRAY(");
 			result.append("SELECT jsonb_array_elements_text(");
-			result.append("jsonb_path_query_array(rels, '$.\"");
-			result.append(NGSIConstants.NGSI_LD_OBJECT_TYPE);
-			result.append("\"[*].\"@id\"')))) AND (");
+			result.append("jsonb_path_query_array(rels, $");
+			result.append(dollar);
+			dollar++;
+			tmp.append("$.\"");
+			tmp.append(NGSIConstants.NGSI_LD_OBJECT_TYPE);
+			tmp.append("\"[*].\"@id\"");
+			tuple.addString(tmp.toString());
+			result.append("::jsonpath)))) AND (");
 
 			dollar = firstChild.parseAttribute(result, dollar, tuple, linkedPart, localOnly, isDist,
 					entityLevelCounter, dataSetIdTerm);

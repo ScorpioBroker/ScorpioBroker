@@ -310,9 +310,9 @@ public class GeoQueryTerm implements Serializable {
 						|| dataSetIdTerm.getIds().contains(NGSIConstants.JSON_LD_NONE))) {
 			dbColumn = "location";
 		} else {
-			StringBuilder inlineSql = new StringBuilder(512);
-			inlineSql.append("ST_SetSRID(ST_GeomFromGeoJSON(getgeojson(");
-			inlineSql.append("jsonb_path_query_first(ENTITY, '$.\"");
+			StringBuilder inlineSql = new StringBuilder(256);
+
+			inlineSql.append("$.\"");
 			inlineSql.append(geoproperty);
 			inlineSql.append("\"[*] ? ((@.\"");
 			inlineSql.append(NGSIConstants.JSON_LD_TYPE);
@@ -327,9 +327,12 @@ public class GeoQueryTerm implements Serializable {
 			inlineSql.append(NGSIConstants.NGSI_LD_HAS_VALUE);
 			inlineSql.append("\"[0].\"");
 			inlineSql.append(NGSIConstants.JSON_LD_VALUE);
-			inlineSql.append("\"')");
-			inlineSql.append(")), 4326)");
-			dbColumn = inlineSql.toString();
+			inlineSql.append('"');
+
+			dbColumn = "ST_SetSRID(ST_GeomFromGeoJSON(getgeojson(jsonb_path_query_first(ENTITY, $" + dollar
+					+ "::jsonpath))), 4326)";
+			dollar++;
+			tuple.addString(inlineSql.toString());
 		}
 
 		String referenceValue = "ST_SetSRID(ST_GeomFromGeoJSON('{\"type\": \"" + geometry + "\", \"coordinates\": "

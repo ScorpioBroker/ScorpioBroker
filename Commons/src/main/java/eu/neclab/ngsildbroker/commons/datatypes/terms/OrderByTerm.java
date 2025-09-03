@@ -70,9 +70,17 @@ public class OrderByTerm {
                 switch (expandedTerm) {
                     case NGSIConstants.JSON_LD_ID:
                         sql.append("ID");
+                        sql.append(" as ORDER_VALUE");
+                        sql.append(i);
+                        sql.append(',');
+                        i++;
                         continue;
                     case NGSIConstants.JSON_LD_TYPE:
                         sql.append("E_TYPES");
+                        sql.append(" as ORDER_VALUE");
+                        sql.append(i);
+                        sql.append(',');
+                        i++;
                         continue;
                     case NGSIConstants.NGSI_LD_LOCATION:
                         if (useDefaultForGeo || datasetIdTerm == null
@@ -89,13 +97,26 @@ public class OrderByTerm {
                                         getGeoJson(orderTerm.orderFrom, orderTerm.orderGeometry, objectMapper));
                                 sql.append("::jsonb), 4326))");
                             }
+                            sql.append(" as ORDER_VALUE");
+                            sql.append(i);
+                            sql.append(',');
+                            i++;
+                            continue;
                         }
-                        continue;
+                        break;
                     case NGSIConstants.NGSI_LD_CREATED_AT:
                         sql.append("CREATEDAT");
+                        sql.append(" as ORDER_VALUE");
+                        sql.append(i);
+                        sql.append(',');
+                        i++;
                         continue;
                     case NGSIConstants.NGSI_LD_MODIFIED_AT:
                         sql.append("MODIFIEDAT");
+                        sql.append(" as ORDER_VALUE");
+                        sql.append(i);
+                        sql.append(',');
+                        i++;
                         continue;
 
                 }
@@ -113,199 +134,229 @@ public class OrderByTerm {
                 complexPart = null;
                 complexSplitted = null;
             }
-            StringBuilder termBase = new StringBuilder();
-            termBase.append("'$.");
+            StringBuilder termBase = new StringBuilder(128);
+            termBase.append("$.");
             for (String subTerm : orderTerm.splittedOrderTerm) {
                 String expandedTerm = context.expandIri(subTerm, false, true, null, null);
                 termBase.append('"');
                 termBase.append(expandedTerm);
-                termBase.append("[*]\".");
+                termBase.append("\"[*].");
             }
+            termBase.setLength(termBase.length() - 1);
             String sTermBase = termBase.toString();
-
-            sql.append("COALESCE(jsonb_path_query_first(ENTITY, '$.\"");
-            sql.append(sTermBase);
-            sql.append("\"[*] ? (@.\"");
-            sql.append(NGSIConstants.JSON_LD_TYPE);
-            sql.append("\"[0] == \"");
-            sql.append(NGSIConstants.NGSI_LD_PROPERTY);
-            sql.append("\"");
+            termBase.setLength(0);
+            termBase.append(sTermBase);
+            termBase.append(" ? (@.\"");
+            termBase.append(NGSIConstants.JSON_LD_TYPE);
+            termBase.append("\"[0] == \"");
+            termBase.append(NGSIConstants.NGSI_LD_PROPERTY);
+            termBase.append("\"");
             if (datasetIdTerm != null) {
-                sql.append(" && ");
-                datasetIdTerm.toJsonPath(sql);
+                termBase.append(" && ");
+                datasetIdTerm.toJsonPath(termBase);
             }
-            sql.append(").\"");
-            sql.append(NGSIConstants.NGSI_LD_HAS_VALUE);
-            sql.append('"');
+            termBase.append(").\"");
+            termBase.append(NGSIConstants.NGSI_LD_HAS_VALUE);
+            termBase.append('"');
             if (complexPart != null) {
-                sql.append("[*].");
+                termBase.append("[*].");
                 for (String complexEntry : complexSplitted) {
-                    sql.append('"');
-                    sql.append(context.expandIri(complexEntry, false, true, null, null));
-                    sql.append("\"[*].");
+                    termBase.append('"');
+                    termBase.append(context.expandIri(complexEntry, false, true, null, null));
+                    termBase.append("\"[*].");
                 }
-                sql.setLength(sql.length() - 4);
+                termBase.setLength(termBase.length() - 4);
             }
-            sql.append("[0].\"");
-            sql.append(NGSIConstants.JSON_LD_VALUE);
-            sql.append("\"'),");
+            termBase.append("[0].\"");
+            termBase.append(NGSIConstants.JSON_LD_VALUE);
+            termBase.append('"');
+            sql.append("COALESCE(jsonb_path_query_first(ENTITY, $");
+            sql.append(dollar);
+            dollar++;
+            tuple.addString(termBase.toString());
+            termBase.setLength(sTermBase.length());
+            sql.append("::jsonpath),");
 
-            sql.append("jsonb_path_query_first(ENTITY, '$.\"");
-            sql.append(sTermBase);
-            sql.append("\"[*]");
             if (datasetIdTerm != null) {
-                sql.append(" ? ");
-                datasetIdTerm.toJsonPath(sql);
+                termBase.append(" ? ");
+                datasetIdTerm.toJsonPath(termBase);
             }
-            sql.append(".\"");
-            sql.append(NGSIConstants.JSON_LD_VALUE);
-            sql.append('"');
-            sql.append("'),");
+            termBase.append(".\"");
+            termBase.append(NGSIConstants.JSON_LD_VALUE);
+            termBase.append('"');
 
-            sql.append("jsonb_path_query_first(ENTITY, '$.\"");
-            sql.append(sTermBase);
-            sql.append("\"[*].\"");
-            sql.append(NGSIConstants.NGSI_LD_HAS_OBJECT);
-            sql.append("\"[0].\"");
-            sql.append(NGSIConstants.JSON_LD_ID);
-            sql.append('"');
-            if (datasetIdTerm != null) {
-                sql.append(" ? ");
-                datasetIdTerm.toJsonPath(sql);
-            }
-            sql.append("'),");
+            sql.append("jsonb_path_query_first(ENTITY, $");
+            sql.append(dollar);
+            dollar++;
+            tuple.addString(termBase.toString());
+            termBase.setLength(sTermBase.length());
+            sql.append("::jsonpath),");
 
-            sql.append("jsonb_path_query_first(ENTITY, '$.\"");
-            sql.append(sTermBase);
-            sql.append("\"[*].\"");
-            sql.append(NGSIConstants.NGSI_LD_HAS_VOCAB);
-            sql.append("\"[0].\"");
-            sql.append(NGSIConstants.JSON_LD_ID);
-            sql.append('"');
+            termBase.append(".\"");
+            termBase.append(NGSIConstants.NGSI_LD_HAS_OBJECT);
+            termBase.append("\"[0].\"");
+            termBase.append(NGSIConstants.JSON_LD_ID);
+            termBase.append('"');
             if (datasetIdTerm != null) {
-                sql.append(" ? ");
-                datasetIdTerm.toJsonPath(sql);
+                termBase.append(" ? ");
+                datasetIdTerm.toJsonPath(termBase);
             }
-            sql.append("'),");
+            sql.append("jsonb_path_query_first(ENTITY, $");
+            sql.append(dollar);
+            dollar++;
+            tuple.addString(termBase.toString());
+            termBase.setLength(sTermBase.length());
+            sql.append("::jsonpath),");
 
-            sql.append("jsonb_path_query_first(ENTITY, '$.\"");
-            sql.append(sTermBase);
-            sql.append("\"[*]");
+            termBase.append(".\"");
+            termBase.append(NGSIConstants.NGSI_LD_HAS_VOCAB);
+            termBase.append("\"[0].\"");
+            termBase.append(NGSIConstants.JSON_LD_ID);
+            termBase.append('"');
             if (datasetIdTerm != null) {
-                sql.append(" ? ");
-                datasetIdTerm.toJsonPath(sql);
+                termBase.append(" ? ");
+                datasetIdTerm.toJsonPath(termBase);
             }
-            sql.append(".\"");
-            sql.append(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP);
-            sql.append('"');
+
+            sql.append("jsonb_path_query_first(ENTITY, $");
+            sql.append(dollar);
+            dollar++;
+            tuple.addString(termBase.toString());
+            termBase.setLength(sTermBase.length());
+            sql.append("::jsonpath),");
+
+            if (datasetIdTerm != null) {
+                termBase.append(" ? ");
+                datasetIdTerm.toJsonPath(termBase);
+            }
+            termBase.append(".\"");
+            termBase.append(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP);
+            termBase.append('"');
 
             if (complexPart == null || complexPart.equals("*")) {
-                sql.append("[0].\"");
+                termBase.append("[0].\"");
             } else {
-                sql.append("[*].\"");
+                termBase.append("[*].\"");
             }
-            sql.append(NGSIConstants.JSON_LD_VALUE);
-            sql.append('"');
+            termBase.append(NGSIConstants.JSON_LD_VALUE);
+            termBase.append('"');
             if (complexPart != null) {
-                sql.append(" ? (@.\"");
-                sql.append(NGSIConstants.JSON_LD_LANGUAGE);
-                sql.append("\" == \"");
-                sql.append(complexPart);
-                sql.append("\")'),");
+                termBase.append(" ? (@.\"");
+                termBase.append(NGSIConstants.JSON_LD_LANGUAGE);
+                termBase.append("\" == \"");
+                termBase.append(complexPart);
+                termBase.append("\")'),");
             }
-            sql.append("'),");
+            sql.append("jsonb_path_query_first(ENTITY, $");
+            sql.append(dollar);
+            dollar++;
+            tuple.addString(termBase.toString());
+            termBase.setLength(sTermBase.length());
+            sql.append("::jsonpath),");
 
-            sql.append("jsonb_path_query_first(ENTITY, '$.\"");
-            sql.append(sTermBase);
-            sql.append("\"[*]");
             if (datasetIdTerm != null) {
-                sql.append(" ? ");
-                datasetIdTerm.toJsonPath(sql);
+                termBase.append(" ? ");
+                datasetIdTerm.toJsonPath(termBase);
             }
-            sql.append(".\"");
-            sql.append(NGSIConstants.NGSI_LD_HAS_JSON);
-            sql.append("\"[0].\"");
-            sql.append(NGSIConstants.JSON_LD_VALUE);
-            sql.append('"');
+            termBase.append(".\"");
+            termBase.append(NGSIConstants.NGSI_LD_HAS_JSON);
+            termBase.append("\"[0].\"");
+            termBase.append(NGSIConstants.JSON_LD_VALUE);
+            termBase.append('"');
             if (complexPart != null) {
-                sql.append('.');
+                termBase.append('.');
                 for (String complexEntry : complexSplitted) {
-                    sql.append('"');
-                    sql.append(complexEntry);
-                    sql.append("\".");
+                    termBase.append('"');
+                    termBase.append(complexEntry);
+                    termBase.append("\".");
                 }
-                sql.setLength(sql.length() - 1);
+                termBase.setLength(termBase.length() - 1);
             }
-            sql.append("'),");
+            sql.append("jsonb_path_query_first(ENTITY, $");
+            sql.append(dollar);
+            dollar++;
+            tuple.addString(termBase.toString());
+            termBase.setLength(sTermBase.length());
+            sql.append("::jsonpath),");
 
-            sql.append("jsonb_path_query_first(ENTITY, '$.\"");
-            sql.append(sTermBase);
-            sql.append("\"[*]");
             if (datasetIdTerm != null) {
-                sql.append(" ? ");
-                datasetIdTerm.toJsonPath(sql);
+                termBase.append(" ? ");
+                datasetIdTerm.toJsonPath(termBase);
             }
-            sql.append(".\"");
-            sql.append(NGSIConstants.NGSI_LD_HAS_LIST);
-            sql.append("\"[0].\"");
-            sql.append(NGSIConstants.JSON_LD_LIST);
-            sql.append('"');
+            termBase.append(".\"");
+            termBase.append(NGSIConstants.NGSI_LD_HAS_LIST);
+            termBase.append("\"[0].\"");
+            termBase.append(NGSIConstants.JSON_LD_LIST);
+            termBase.append('"');
             if (complexPart != null) {
-                sql.append("[*].");
+                termBase.append("[*].");
                 for (String complexEntry : complexSplitted) {
-                    sql.append('"');
-                    sql.append(context.expandIri(complexEntry, false, true, null, null));
-                    sql.append("\"[*].");
+                    termBase.append('"');
+                    termBase.append(context.expandIri(complexEntry, false, true, null, null));
+                    termBase.append("\"[*].");
                 }
-                sql.setLength(sql.length() - 4);
+                termBase.setLength(termBase.length() - 4);
             }
-            sql.append("[0].\"");
-            sql.append(NGSIConstants.JSON_LD_VALUE);
-            sql.append("\"'),");
+            termBase.append("[0].\"");
+            termBase.append(NGSIConstants.JSON_LD_VALUE);
+            termBase.append('"');
+            sql.append("jsonb_path_query_first(ENTITY, $");
+            sql.append(dollar);
+            dollar++;
+            tuple.addString(termBase.toString());
+            termBase.setLength(sTermBase.length());
+            sql.append("::jsonpath),");
 
-            sql.append("jsonb_path_query_first(ENTITY, '$.\"");
-            sql.append(sTermBase);
-            sql.append("\"[*]");
             if (datasetIdTerm != null) {
-                sql.append(" ? ");
-                datasetIdTerm.toJsonPath(sql);
+                termBase.append(" ? ");
+                datasetIdTerm.toJsonPath(termBase);
             }
-            sql.append(".\"");
-            sql.append(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST);
-            sql.append("\"[0].\"");
-            sql.append(NGSIConstants.JSON_LD_LIST);
-            sql.append("\"[*].\"");
-            sql.append(NGSIConstants.NGSI_LD_HAS_OBJECT);
-            sql.append("\"[*].\"");
-            sql.append(NGSIConstants.JSON_LD_ID);
-            sql.append("\"')");
+            termBase.append(".\"");
+            termBase.append(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST);
+            termBase.append("\"[0].\"");
+            termBase.append(NGSIConstants.JSON_LD_LIST);
+            termBase.append("\"[*].\"");
+            termBase.append(NGSIConstants.NGSI_LD_HAS_OBJECT);
+            termBase.append("\"[*].\"");
+            termBase.append(NGSIConstants.JSON_LD_ID);
+            termBase.append('"');
+            sql.append("jsonb_path_query_first(ENTITY, $");
+            sql.append(dollar);
+            dollar++;
+            tuple.addString(termBase.toString());
+            termBase.setLength(sTermBase.length());
+            sql.append("::jsonpath)");
 
             if (orderTerm.orderFrom != null) {
-                sql.append(", ST_DistanceSphere(ST_SetSRID(ST_GeomFromGeoJSON(getgeojson(");
-                sql.append("jsonb_path_query_first(ENTITY, '$.\"");
-                sql.append(sTermBase);
-                sql.append("\"[*] ? ((@.\"");
-                sql.append(NGSIConstants.JSON_LD_TYPE);
-                sql.append("\"[0] == \"");
-                sql.append(NGSIConstants.NGSI_LD_GEOPROPERTY);
-                sql.append("\")");
+                sql.append(", to_jsonb(ST_DistanceSphere(ST_SetSRID(ST_GeomFromGeoJSON(getgeojson(");
+
+                termBase.append(" ? ((@.\"");
+                termBase.append(NGSIConstants.JSON_LD_TYPE);
+                termBase.append("\"[0] == \"");
+                termBase.append(NGSIConstants.NGSI_LD_GEOPROPERTY);
+                termBase.append("\")");
                 if (datasetIdTerm != null) {
-                    sql.append(" && ");
-                    datasetIdTerm.toJsonPath(sql);
+                    termBase.append(" && ");
+                    datasetIdTerm.toJsonPath(termBase);
                 }
-                sql.append(").\"");
-                sql.append(NGSIConstants.NGSI_LD_HAS_VALUE);
-                sql.append("\"[0].\"");
-                sql.append(NGSIConstants.JSON_LD_VALUE);
-                sql.append("\"')");
-                sql.append(")), 4326)");
+                termBase.append(").\"");
+                termBase.append(NGSIConstants.NGSI_LD_HAS_VALUE);
+                termBase.append("\"[0].\"");
+                termBase.append(NGSIConstants.JSON_LD_VALUE);
+                termBase.append('"');
+                sql.append("jsonb_path_query_first(ENTITY, $");
+                sql.append(dollar);
+                dollar++;
+
+                tuple.addString(termBase.toString());
+                sql.append("::jsonpath))), 4326)");
 
                 sql.append(", ST_SetSRID(ST_GeomFromGeoJSON($");
                 sql.append(dollar);
                 dollar++;
                 tuple.addJsonObject(
                         getGeoJson(orderTerm.orderFrom, orderTerm.orderGeometry, objectMapper));
-                sql.append("::jsonb), 4326))");
+                sql.append("::jsonb), 4326)))");
             }
             sql.append(')');
             sql.append(" as ORDER_VALUE");
