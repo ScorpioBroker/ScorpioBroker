@@ -1843,11 +1843,11 @@ public class QQueryTerm implements Serializable {
 		result.append("::jsonpath OR ");
 		propPathBuilder.setLength(0);
 		propPathBuilder.append(jsonPathBase);
-		System.out.println(propPathBuilder);
+
 		propPathBuilder.append(".\"");
 		propPathBuilder.append(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP);
 		propPathBuilder.append("\"[*] ? (");
-		System.out.println(propPathBuilder);
+
 		if (complexPart != null && !complexPart.equals("*")) {
 			propPathBuilder.append("(@.\"");
 			propPathBuilder.append(NGSIConstants.JSON_LD_LANGUAGE);
@@ -1855,15 +1855,15 @@ public class QQueryTerm implements Serializable {
 			propPathBuilder.append(complexPart);
 			propPathBuilder.append("\") && ");
 		}
-		System.out.println(propPathBuilder);
+
 		if (fromTo != null) {
 			propPathBuilder.append(fromTo);
 			propPathBuilder.append(" || ");
 		}
-		System.out.println(propPathBuilder);
+
 		propPathBuilder.append(valueQ);
 		propPathBuilder.append(")");
-		System.out.println(propPathBuilder);
+
 		// if (not) {
 		// result.append("NOT ");
 		// }

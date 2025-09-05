@@ -23,9 +23,6 @@ public class ViaHeaders {
 			String[] viaEntries = viaHeader.split(",");
 			for (String entry : viaEntries) {
 				if (entry.equals(selfViaEntry)) {
-					System.out.println(entry);
-					System.out.println(selfViaEntry);
-					System.out.println(Arrays.deepToString(viaEntries));
 					throw new ResponseException(ErrorType.LoopDeteced);
 				}
 				String[] parts = entry.trim().split(" ");

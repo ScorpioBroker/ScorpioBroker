@@ -91,20 +91,4 @@ public class HttpParamParser {
         // Fallback: unquoted string
         return '"' + token + '"';
     }
-
-    // Simple test
-    public static void main(String[] args) {
-        String[] tests = {
-                "\"somestring\"",
-                "something",
-                "50",
-                "true",
-                "\"something\", \"somethingelse\", 50",
-                "\"somestring,withacomma\""
-        };
-
-        for (String t : tests) {
-            System.out.println(t + "  →  " + parseParam(t));
-        }
-    }
 }

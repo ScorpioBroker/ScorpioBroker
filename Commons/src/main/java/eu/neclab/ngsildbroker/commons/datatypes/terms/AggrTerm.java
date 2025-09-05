@@ -64,7 +64,7 @@ public class AggrTerm implements Serializable {
         }
 
         sql.append(
-                "period_stats AS (SELECT ei.id, ei.e_types, ei.r_createdat, ei.r_modifiedat, ei.r_deletedat, ei.scope_entry, teai.attributeid, (teai.data #> '{");
+                "period_stats AS (SELECT ei.id, ei.e_types, ei.r_createdat, ei.r_modifiedat, ei.r_deletedat, ei.scope_entry, teai.attributeid, (teai.data #>> '{");
         sql.append(NGSIConstants.JSON_LD_TYPE);
         sql.append(",0}') as attr_type,");
         if (period != null) {
@@ -304,8 +304,11 @@ public class AggrTerm implements Serializable {
             sql.append(periodDollar);
             sql.append("::text::interval) as period) pr");
         }
+        sql.append(" WHERE ");
+        sql.append(temporalProperty);
+        sql.append(" IS NOT NULL ");
         if (from != null || to != null) {
-            sql.append(" WHERE ");
+            sql.append(" AND ");
             if (from != null) {
                 sql.append(temporalProperty);
                 sql.append(" > $");
@@ -323,15 +326,15 @@ public class AggrTerm implements Serializable {
             }
         }
         sql.append(
-                " GROUP BY ei.id, ei.e_types, ei.r_createdat, ei.r_modifiedat, ei.r_deletedat, ei.scope_entry, teai.attributeid, (teai.data #> '{@type,0}'), ");
+                " GROUP BY ei.id, ei.e_types, ei.r_createdat, ei.r_modifiedat, ei.r_deletedat, ei.scope_entry, teai.attributeid, (teai.data #>> '{@type,0}')");
         if (period != null) {
-            sql.append("pr.period, ");
+            sql.append(", pr.period");
         }
-        sql.append(" teai.");
-        sql.append(temporalProperty);
+        // sql.append(" teai.");
+        // sql.append(temporalProperty);
         sql.append("),");
         sql.append(
-                "attribute_arrays AS (SELECT id, e_types, r_createdat, r_modifiedat, r_deletedat, scope_entry, attributeid, jsonb_build_array(jsonb_strip_nulls(jsonb_build_object('@type', jsonb_build_array(attr_type),");
+                "attribute_arrays AS (SELECT id, e_types, r_createdat, r_modifiedat, r_deletedat, scope_entry, attributeid, jsonb_build_array(jsonb_strip_nulls(jsonb_build_object('@type', jsonb_build_array(MAX(attr_type)),");
         StringBuilder tmp = new StringBuilder(128);
         for (String aggrFunction : aggrFunctions) {
             String aggrResult;
@@ -377,17 +380,19 @@ public class AggrTerm implements Serializable {
             tmp.append(',');
             sql.append('\'');
             sql.append(aggrTitle);
-            sql.append("', CASE WHEN ");
+            sql.append("', CASE WHEN bool_or(");
             sql.append(aggrResult);
             sql.append(" IS NOT NULL AND NOT ");
             sql.append(aggrResult);
             sql.append(
-                    " @> '{\"@list\": [{\"@value\": null}]}'::jsonb THEN jsonb_build_array(jsonb_build_object('@list', jsonb_agg(");
+                    " @> '{\"@list\": [{\"@value\": null}]}'::jsonb) THEN jsonb_build_array(jsonb_build_object('@list', jsonb_agg(");
             sql.append(aggrResult);
             if (period != null) {
                 sql.append(" ORDER BY period");
             }
-            sql.append(")))");
+            sql.append(") FILTER (WHERE ");
+            sql.append(aggrResult);
+            sql.append(" IS NOT NULL)))");
             sql.append(" ELSE NULL END");
             sql.append(',');
 
@@ -396,8 +401,8 @@ public class AggrTerm implements Serializable {
         tmp.append(')');
         sql.setLength(sql.length() - 1);
         sql.append(
-                "))) as data_array FROM period_stats GROUP BY id, e_types, r_createdat, r_modifiedat, r_deletedat, scope_entry, attributeid, attr_type,");
-        sql.append(tmp.toString());
+                "))) as data_array FROM period_stats GROUP BY id, e_types, r_createdat, r_modifiedat, r_deletedat, scope_entry, attributeid, attr_type, period)");
+        // sql.append(tmp.toString());
 
         return dollar;
 

@@ -829,17 +829,7 @@ public class QueryDAO {
 			dollarCount = qQuery.toSql(query, dollarCount, tuple, false, true, null);
 		}
 		String sql = query.toString();
-		// logger.debug("SQL Request: " + sql);
-		// logger.debug("Tuple: " + tuple.deepToString());
-		try {
-			logger.debug(JsonUtils.toPrettyString(types2EntityIds));
-		} catch (JsonGenerationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+
 		return connectionManager.executeQuery(tenant, sql, tuple, false).onItem().transform(rows -> {
 			List<Map<String, Object>> result = Lists.newArrayList();
 			rows.forEach(row -> {
@@ -1546,8 +1536,7 @@ public class QueryDAO {
 			}
 			query.append(" FROM JOINENTITIES)");
 		}
-		System.out.println(query.toString());
-		System.out.println(tuple.deepToString());
+
 		return connectionManager.executeQuery(tenant, query.toString(), tuple, false).onItem().transform(rows -> {
 			EntityMap entityMap = new EntityMap(qToken, splitEntities, regEmptyOrNoRegEntryAndNoLinkedQuery,
 					noRootLevelRegEntryAndLinkedQuery);

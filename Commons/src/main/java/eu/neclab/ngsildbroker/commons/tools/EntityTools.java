@@ -1007,7 +1007,7 @@ public final class EntityTools {
 					if (viaHeaders.getHostUrls().contains(regHost.host())) {
 						continue;
 					}
-					logger.debug("ogQueryInfo: " + ogQueryInfo);
+					// logger.debug("ogQueryInfo: " + ogQueryInfo);
 					QueryRemoteHost hostToQuery = QueryRemoteHost.fromRegEntry(regEntry);
 					QueryInfos queryInfos = remoteHost2QueryInfo.get(hostToQuery);
 					if (queryInfos == null) {

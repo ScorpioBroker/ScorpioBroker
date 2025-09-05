@@ -256,7 +256,7 @@ public class HistoryDAO {
 						String idPattern = t.getItem3();
 
 						sql.append('(');
-						System.out.println(sql.toString());
+
 						if (typeQuery != null) {
 							if (regEmptyOrNoRegEntryAndNoLinkedQuery || noRootLevelRegEntryAndLinkedQuery
 									|| !splitEntities) {
@@ -266,7 +266,7 @@ public class HistoryDAO {
 							}
 
 							sql.append(" AND ");
-							System.out.println(sql.toString());
+
 						}
 						if (ids != null) {
 
@@ -290,15 +290,14 @@ public class HistoryDAO {
 							sql.append(" AND ");
 						}
 						sql.setLength(sql.length() - 5);
-						System.out.println(sql.toString());
+
 						sql.append(") OR ");
-						System.out.println(sql.toString());
 
 					}
 					sql.setLength(sql.length() - 4);
-					System.out.println(sql.toString());
+
 					sql.append(") AND ");
-					System.out.println(sql.toString());
+
 				}
 				if (scopeQuery != null) {
 					scopeQuery.toSql(sql);
@@ -333,8 +332,6 @@ public class HistoryDAO {
 
 		}
 
-		System.out.println(sql.toString());
-		System.out.println(tuple.deepToString());
 		return connectionManager.executeQuery(tenant, sql.toString(), tuple, false).onItem().transform(rows -> {
 			EntityMap entityMap = new EntityMap(qToken, splitEntities, regEmptyOrNoRegEntryAndNoLinkedQuery,
 					noRootLevelRegEntryAndLinkedQuery);
@@ -505,8 +502,7 @@ public class HistoryDAO {
 		}
 		String sqlString = t.getItem1();
 		Tuple tuple = t.getItem2();
-		System.out.println(sqlString);
-		System.out.println(tuple.deepToString());
+
 		return connectionManager.executeQuery(tenant, sqlString, tuple, false).onItem().transform(rows -> {
 			QueryResult result = new QueryResult(tenant);
 			if (limit == 0 && count) {
@@ -814,8 +810,8 @@ public class HistoryDAO {
 		dollarCount++;
 
 		String sqlString = sql.toString();
-		logger.debug("SQL QUERY: " + sqlString);
-		logger.debug("SQL TUPLE: " + tuple.deepToString());
+		// logger.debug("SQL QUERY: " + sqlString);
+		// logger.debug("SQL TUPLE: " + tuple.deepToString());
 		return Tuple2.of(sqlString, tuple);
 
 	}
@@ -1221,8 +1217,295 @@ public class HistoryDAO {
 		StringBuilder sql = new StringBuilder(2560);
 		int dollar = 1;
 		Tuple tuple = Tuple.tuple();
+
+		String timeProp = tempQuery != null ? tempQuery.getTimeProperty() : "";
+		switch (timeProp) {
+			case NGSIConstants.QUERY_PARAMETER_CREATED_AT:
+			case NGSIConstants.QUERY_PARAMETER_MODIFIED_AT:
+			case NGSIConstants.QUERY_PARAMETER_OBSERVED_AT:
+			case NGSIConstants.QUERY_PARAMETER_DELETED_AT:
+				break;
+			default:
+				timeProp = NGSIConstants.QUERY_PARAMETER_MODIFIED_AT;
+				break;
+		}
+		String from;
+		String to;
+		if (tempQuery != null) {
+			if (tempQuery.getTimerel().equals(NGSIConstants.TIME_REL_BEFORE)) {
+				to = tempQuery.getTimeAt();
+			} else {
+				to = tempQuery.getEndTimeAt();
+			}
+			from = tempQuery.getTimeAt();
+
+		} else {
+			from = null;
+			to = null;
+		}
+		if (aggrQuery == null) {
+			boolean windowFunction = tempQuery != null || attrsQuery != null || qQuery != null || geoQuery != null
+					|| dataSetIdTerm != null || pickTerm != null || omitTerm != null;
+			if (windowFunction) {
+				sql.append("WITH RECURSIVE result_builder AS (( ");
+			}
+			dollar = addEntityInfoPart(sql, tuple, dollar, idsAndTypeAndIdPattern, scopeQuery, limit, offset, false);
+			try {
+				dollar = addAttributesPart(sql, tuple, dollar, tempQuery, attrsQuery, qQuery, geoQuery, dataSetIdTerm,
+						pickTerm, omitTerm, timeProp, n, offsetN, nOrder);
+			} catch (ResponseException e) {
+				return Uni.createFrom().failure(e);
+			}
+			if (windowFunction) {
+				sql.append(", aggregated_batch AS (");
+			}
+			dollar = addResultPart(sql, tuple, dollar, limit);
+			if (windowFunction) {
+				sql.append(
+						"""
+									)
+								   SELECT entity,
+								            (SELECT COUNT(*) FROM aggregated_batch) AS found_count,
+								            (SELECT MAX(createdat) FROM aggregated_batch) AS last_createdat,
+								            (SELECT MAX(id) FROM aggregated_batch WHERE createdat = (SELECT MAX(createdat) FROM aggregated_batch)) AS last_id_for_createdat
+								     		FROM aggregated_batch
+								 			)
+
+								 			UNION ALL
+								   (
+											WITH previous_results AS (SELECT * FROM result_builder),
+								""");
+				dollar = addEntityInfoPart(sql, tuple, dollar, idsAndTypeAndIdPattern, scopeQuery, limit, 0, true);
+				try {
+					dollar = addAttributesPart(sql, tuple, dollar, tempQuery, attrsQuery, qQuery, geoQuery,
+							dataSetIdTerm, pickTerm, omitTerm, timeProp, n, offsetN, nOrder);
+				} catch (ResponseException e) {
+					return Uni.createFrom().failure(e);
+				}
+
+				sql.append(", aggregated_batch AS (");
+				dollar = addResultPart(sql, tuple, dollar, limit);
+				sql.append(
+						") SELECT ab.entity, (SELECT found_count FROM previous_results LIMIT 1) + (SELECT COUNT(*) FROM aggregated_batch) AS found_count, (SELECT MAX(createdat) FROM aggregated_batch) AS last_createdat, (SELECT MAX(id) FROM aggregated_batch WHERE createdat = (SELECT MAX(createdat) FROM aggregated_batch)) AS last_id_for_createdat FROM aggregated_batch ab WHERE (SELECT found_count FROM previous_results LIMIT 1) < ");
+				sql.append(limit);
+				sql.append(")) SELECT entity FROM result_builder LIMIT ");
+				sql.append(limit);
+
+			}
+
+		} else {
+			sql.append(
+					"WITH entityInfos AS (SELECT id, e_types, jsonb_build_array(jsonb_build_object('");
+			sql.append(NGSIConstants.JSON_LD_TYPE);
+			sql.append("', '");
+			sql.append(NGSIConstants.NGSI_LD_DATE_TIME);
+			sql.append("', '");
+			sql.append(NGSIConstants.JSON_LD_VALUE);
+			sql.append(
+					"', to_char(createdat, 'YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"'))) AS r_createdat, jsonb_build_array(jsonb_build_object('");
+			sql.append(NGSIConstants.JSON_LD_TYPE);
+			sql.append("', '");
+			sql.append(NGSIConstants.NGSI_LD_DATE_TIME);
+			sql.append("', '");
+			sql.append(NGSIConstants.JSON_LD_VALUE);
+			sql.append(
+					"', to_char(modifiedat, 'YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"'))) AS r_modifiedat, CASE WHEN deletedat IS NULL THEN NULL ELSE jsonb_build_array(jsonb_build_object('");
+			sql.append(NGSIConstants.JSON_LD_TYPE);
+			sql.append("', '");
+			sql.append(NGSIConstants.NGSI_LD_DATE_TIME);
+			sql.append("', '");
+			sql.append(NGSIConstants.JSON_LD_VALUE);
+			sql.append(
+					"', to_char(deletedat, 'YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"'))) END AS r_deletedat, CASE WHEN scopes IS NULL THEN NULL ELSE getScopeEntry(scopes) END AS scope_entry FROM temporalentity WHERE ");
+			if (idsAndTypeAndIdPattern != null && idsAndTypeAndIdPattern.size() > 0) {
+				sql.append('(');
+				for (Tuple3<String[], TypeQueryTerm, String> t : idsAndTypeAndIdPattern) {
+					TypeQueryTerm typeQuery = t.getItem2();
+					String[] entityIds = t.getItem1();
+					String idPattern = t.getItem3();
+					sql.append(" (1=1");
+
+					if (typeQuery != null) {
+						sql.append(" AND ");
+						dollar = typeQuery.toSql(sql, tuple, dollar);
+					}
+					if (entityIds != null) {
+						sql.append(" AND id IN (");
+						for (String id : entityIds) {
+							sql.append('$');
+							sql.append(dollar);
+							sql.append(',');
+							tuple.addString(id);
+							dollar++;
+						}
+						sql.setCharAt(sql.length() - 1, ')');
+					}
+					if (idPattern != null) {
+						sql.append(" AND id ~ $");
+						sql.append(dollar);
+						dollar++;
+						tuple.addString(idPattern);
+					}
+					sql.append(") OR ");
+				}
+				sql.setLength(sql.length() - 3);
+				sql.append(')');
+			}
+
+			if (scopeQuery != null) {
+				scopeQuery.toSql(sql);
+			}
+			sql.append(
+					"), ");
+			dollar = aggrQuery.toSql(sql, tuple, dollar, timeProp, from, to);
+			sql.append(" SELECT jsonb_build_object('");
+			sql.append(NGSIConstants.JSON_LD_ID);
+			sql.append("', id,'");
+			sql.append(NGSIConstants.JSON_LD_TYPE);
+			sql.append("', e_types,'");
+			sql.append(NGSIConstants.NGSI_LD_CREATED_AT);
+			sql.append("', r_createdat,'");
+			sql.append(NGSIConstants.NGSI_LD_MODIFIED_AT);
+			sql.append(
+					"', r_modifiedat) || COALESCE(jsonb_object_agg(attributeid, to_jsonb(data_array)) FILTER (WHERE data_array IS NOT NULL), '{}'::jsonb) || CASE WHEN r_deletedat IS NULL THEN '{}'::jsonb ELSE jsonb_build_object('");
+			sql.append(NGSIConstants.NGSI_LD_DELETED_AT);
+			sql.append(
+					"', r_deletedat) END || CASE WHEN scope_entry IS NULL THEN '{}'::jsonb ELSE jsonb_build_object('");
+			sql.append(NGSIConstants.NGSI_LD_SCOPE);
+			sql.append(
+					"', scope_entry) END as entity FROM attribute_arrays GROUP BY id, e_types, r_createdat, r_modifiedat, r_deletedat, scope_entry ORDER BY id OFFSET $");
+			sql.append(dollar);
+			dollar++;
+			tuple.addInteger(offset);
+			sql.append(" LIMIT $");
+			sql.append(dollar);
+			dollar++;
+			tuple.addInteger(limit);
+		}
+
+		return connectionManager.executeQuery(tenant, sql.toString(), tuple, false).onItem().transform(rows -> {
+			QueryResult result = new QueryResult(tenant);
+			if (limit == 0 && count) {
+				result.setCount(rows.iterator().next().getLong(0));
+			} else {
+				RowIterator<Row> it = rows.iterator();
+				Row next = null;
+				List<Map<String, Object>> resultData = new ArrayList<Map<String, Object>>(rows.size());
+				Map<String, Object> entity;
+				while (it.hasNext()) {
+					next = it.next();
+					if (next.getJsonObject(0) != null) {
+						entity = next.getJsonObject(0).getMap();
+					} else {
+						entity = new HashMap<>();
+					}
+
+					if (aggrQuery != null && (aggrQuery.getAggrFunctions().contains(NGSIConstants.AGGR_METH_MAX)
+							|| aggrQuery.getAggrFunctions().contains(NGSIConstants.AGGR_METH_MIN))) {
+						postProcessMinOrMaxResults(entity);
+					}
+					resultData.add(entity);
+				}
+
+				if (count) {
+					Long resultCount = next.getLong(1);
+					result.setCount(resultCount);
+					long leftAfter = resultCount - (offset + limit);
+					if (leftAfter < 0) {
+						leftAfter = 0;
+					}
+					result.setResultsLeftAfter(leftAfter);
+				} else {
+					if (resultData.size() < limit) {
+						result.setResultsLeftAfter(0l);
+					} else {
+						result.setResultsLeftAfter((long) limit);
+					}
+
+				}
+				long leftBefore = offset;
+
+				result.setResultsLeftBefore(leftBefore);
+				result.setLimit(limit);
+				result.setOffset(offset);
+				result.setData(resultData);
+			}
+
+			return result;
+		});
+	}
+
+	private int addResultPart(StringBuilder sql, Tuple tuple, int dollar, int limit) {
+		sql.append(" SELECT jsonb_build_object('");
+		sql.append(NGSIConstants.JSON_LD_ID);
+		sql.append("', id,'");
+		sql.append(NGSIConstants.JSON_LD_TYPE);
+		sql.append("', e_types,'");
+		sql.append(NGSIConstants.NGSI_LD_CREATED_AT);
+		sql.append("', r_createdat,'");
+		sql.append(NGSIConstants.NGSI_LD_MODIFIED_AT);
 		sql.append(
-				"WITH entityInfos AS (SELECT id, e_types, jsonb_build_array(jsonb_build_object('");
+				"', r_modifiedat) || COALESCE(jsonb_object_agg(attributeid, to_jsonb(data_array)) FILTER (WHERE data_array IS NOT NULL), '{}'::jsonb) || CASE WHEN r_deletedat IS NULL THEN '{}'::jsonb ELSE jsonb_build_object('");
+		sql.append(NGSIConstants.NGSI_LD_DELETED_AT);
+		sql.append(
+				"', r_deletedat) END || CASE WHEN scope_entry IS NULL THEN '{}'::jsonb ELSE jsonb_build_object('");
+		sql.append(NGSIConstants.NGSI_LD_SCOPE);
+		sql.append(
+				"', scope_entry) END as entity, id, createdat FROM attribute_arrays GROUP BY id, createdat, e_types, r_createdat, r_modifiedat, r_deletedat, scope_entry ORDER BY createdat DESC, id ASC LIMIT ");
+		sql.append(limit);
+		return dollar;
+	}
+
+	private int addAttributesPart(StringBuilder sql, Tuple tuple, int dollar, TemporalQueryTerm tempQuery,
+			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, GeoQueryTerm geoQuery, DataSetIdTerm dataSetIdTerm,
+			PickTerm pickTerm, OmitTerm omitTerm, String timeProp, int n, int offsetN, String nOrder)
+			throws ResponseException {
+		sql.append(
+				"attribute_arrays AS (SELECT ei.id, ei.createdat, ei.e_types, ei.r_createdat, ei.r_modifiedat, ei.r_deletedat, ei.scope_entry, teai.attributeid, (array_agg(teai.data ORDER BY teai.");
+		sql.append(timeProp);
+		sql.append(' ');
+		sql.append(nOrder);
+		sql.append("))");
+		if (n > 0) {
+			sql.append("[");
+			sql.append(1 + offsetN);
+			sql.append(":");
+			sql.append(n);
+			sql.append(']');
+		}
+		sql.append(
+				" as data_array FROM entityInfos ei INNER JOIN temporalentityattrinstance teai ON teai.temporalentity_id = ei.id WHERE 1=1 AND ");
+		if (attrsQuery != null) {
+			dollar = attrsQuery.toTempSql(sql, tuple, dollar, dataSetIdTerm);
+			sql.append(" AND ");
+		}
+		if (tempQuery != null) {
+			dollar = tempQuery.toSql(sql, tuple, dollar);
+			sql.append(" AND ");
+		}
+		if (geoQuery != null) {
+			dollar = geoQuery.toTempSql(sql, tuple, dollar);
+			sql.append(" AND ");
+		}
+		if (dataSetIdTerm != null) {
+			dollar = dataSetIdTerm.toTempSql(sql, tuple, dollar);
+			sql.append(" AND ");
+		}
+
+		sql.setLength(sql.length() - 5);
+		sql.append(
+				" GROUP BY ei.id, ei.createdat, ei.e_types, ei.r_createdat, ei.r_modifiedat, ei.r_deletedat, ei.scope_entry, teai.attributeid)");
+		return dollar;
+	}
+
+	private int addEntityInfoPart(StringBuilder sql, Tuple tuple, int dollar,
+			List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeAndIdPattern, ScopeQueryTerm scopeQuery, int limit,
+			int offset, boolean windowFunction) {
+		if (!windowFunction) {
+			sql.append("WITH ");
+		}
+		sql.append(
+				"entityInfos AS (SELECT id, createdat, e_types, jsonb_build_array(jsonb_build_object('");
 		sql.append(NGSIConstants.JSON_LD_TYPE);
 		sql.append("', '");
 		sql.append(NGSIConstants.NGSI_LD_DATE_TIME);
@@ -1244,6 +1527,17 @@ public class HistoryDAO {
 		sql.append(NGSIConstants.JSON_LD_VALUE);
 		sql.append(
 				"', to_char(deletedat, 'YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"'))) END AS r_deletedat, CASE WHEN scopes IS NULL THEN NULL ELSE getScopeEntry(scopes) END AS scope_entry FROM temporalentity WHERE ");
+		if (windowFunction) {
+			sql.append("""
+					(
+					               createdat > (SELECT last_createdat FROM previous_results LIMIT 1)
+					               OR (
+					                   createdat = (SELECT last_createdat FROM previous_results LIMIT 1)
+					                   AND id > (SELECT last_id_for_createdat FROM previous_results LIMIT 1)
+					               )
+					) AND
+					 """);
+		}
 		if (idsAndTypeAndIdPattern != null && idsAndTypeAndIdPattern.size() > 0) {
 			sql.append('(');
 			for (Tuple3<String[], TypeQueryTerm, String> t : idsAndTypeAndIdPattern) {
@@ -1282,156 +1576,13 @@ public class HistoryDAO {
 		if (scopeQuery != null) {
 			scopeQuery.toSql(sql);
 		}
+		sql.append(" ORDER BY createdat DESC, id ASC OFFSET ");
+		sql.append(offset);
+		sql.append(" LIMIT ");
+		sql.append(limit);
 		sql.append(
 				"), ");
-		String timeProp = tempQuery != null ? tempQuery.getTimeProperty() : "";
-		switch (timeProp) {
-			case NGSIConstants.QUERY_PARAMETER_CREATED_AT:
-			case NGSIConstants.QUERY_PARAMETER_MODIFIED_AT:
-			case NGSIConstants.QUERY_PARAMETER_OBSERVED_AT:
-			case NGSIConstants.QUERY_PARAMETER_DELETED_AT:
-				break;
-			default:
-				timeProp = NGSIConstants.QUERY_PARAMETER_MODIFIED_AT;
-				break;
-		}
-		String from;
-		String to;
-		if (tempQuery != null) {
-			from = tempQuery.getTimeAt();
-			to = tempQuery.getEndTimeAt();
-		} else {
-			from = null;
-			to = null;
-		}
-		if (aggrQuery == null) {
-			sql.append(
-					"attribute_arrays AS (SELECT ei.id, ei.e_types, ei.r_createdat, ei.r_modifiedat, ei.r_deletedat, ei.scope_entry, teai.attributeid, (array_agg(teai.data ORDER BY teai.");
-			sql.append(timeProp);
-			sql.append(' ');
-			sql.append(nOrder);
-			sql.append("))");
-			if (n > 0) {
-				sql.append(" DESC))");
-				sql.append("[1 + $");
-				sql.append(dollar);
-				dollar++;
-				tuple.addInteger(offsetN);
-				sql.append(":$");
-				sql.append(dollar);
-				sql.append(']');
-				dollar++;
-				tuple.addInteger(n);
-			}
-			sql.append(
-					" as data_array FROM entityInfos ei INNER JOIN temporalentityattrinstance teai ON teai.temporalentity_id = ei.id WHERE 1=1 AND ");
-			if (attrsQuery != null) {
-				dollar = attrsQuery.toTempSql(sql, tuple, dollar, dataSetIdTerm);
-				sql.append(" AND ");
-			}
-			if (tempQuery != null) {
-				dollar = tempQuery.toSql(sql, tuple, dollar);
-				sql.append(" AND ");
-			}
-			if (geoQuery != null) {
-				try {
-					dollar = geoQuery.toTempSql(sql, tuple, dollar);
-					sql.append(" AND ");
-				} catch (ResponseException e) {
-					return Uni.createFrom().failure(e);
-				}
-			}
-			if (dataSetIdTerm != null) {
-				dollar = dataSetIdTerm.toTempSql(sql, tuple, dollar);
-				sql.append(" AND ");
-			}
-
-			sql.setLength(sql.length() - 5);
-			sql.append(
-					" GROUP BY ei.id, ei.e_types, ei.r_createdat, ei.r_modifiedat, ei.r_deletedat, ei.scope_entry, teai.attributeid)");
-		} else {
-			dollar = aggrQuery.toSql(sql, tuple, dollar, timeProp, from, to);
-
-		}
-		sql.append(" SELECT jsonb_build_object('");
-		sql.append(NGSIConstants.JSON_LD_ID);
-		sql.append("', id,'");
-		sql.append(NGSIConstants.JSON_LD_TYPE);
-		sql.append("', e_types,'");
-		sql.append(NGSIConstants.NGSI_LD_CREATED_AT);
-		sql.append("', r_createdat,'");
-		sql.append(NGSIConstants.NGSI_LD_MODIFIED_AT);
-		sql.append(
-				"', r_modifiedat) || COALESCE(jsonb_object_agg(attributeid, to_jsonb(data_array)) FILTER (WHERE data_array IS NOT NULL), '{}'::jsonb) || CASE WHEN r_deletedat IS NULL THEN '{}'::jsonb ELSE jsonb_build_object('");
-		sql.append(NGSIConstants.NGSI_LD_DELETED_AT);
-		sql.append("', r_deletedat) END || CASE WHEN scope_entry IS NULL THEN '{}'::jsonb ELSE jsonb_build_object('");
-		sql.append(NGSIConstants.NGSI_LD_SCOPE);
-		sql.append(
-				"', scope_entry) END as entity FROM attribute_arrays GROUP BY id, e_types, r_createdat, r_modifiedat, r_deletedat, scope_entry ORDER BY id OFFSET $");
-		sql.append(dollar);
-		dollar++;
-		tuple.addInteger(offset);
-		sql.append(" LIMIT $");
-		sql.append(dollar);
-		dollar++;
-		tuple.addInteger(limit);
-		System.out.println(sql.toString());
-		System.out.println(tuple.deepToString());
-		return connectionManager.executeQuery(tenant, sql.toString(), tuple, false).onItem().transform(rows -> {
-			QueryResult result = new QueryResult(tenant);
-			if (limit == 0 && count) {
-				result.setCount(rows.iterator().next().getLong(0));
-			} else {
-				RowIterator<Row> it = rows.iterator();
-				Row next = null;
-				List<Map<String, Object>> resultData = new ArrayList<Map<String, Object>>(rows.size());
-				Map<String, Object> entity;
-				while (it.hasNext()) {
-					next = it.next();
-					if (next.getJsonObject(0) != null) {
-						entity = next.getJsonObject(0).getMap();
-					} else {
-						entity = new HashMap<>();
-					}
-					try {
-						System.out.println(objectMapper.writeValueAsString(entity));
-					} catch (JsonProcessingException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-					if (aggrQuery != null && (aggrQuery.getAggrFunctions().contains(NGSIConstants.AGGR_METH_MAX)
-							|| aggrQuery.getAggrFunctions().contains(NGSIConstants.AGGR_METH_MIN))) {
-						postProcessMinOrMaxResults(entity);
-					}
-					resultData.add(entity);
-				}
-
-				if (count) {
-					Long resultCount = next.getLong(1);
-					result.setCount(resultCount);
-					long leftAfter = resultCount - (offset + limit);
-					if (leftAfter < 0) {
-						leftAfter = 0;
-					}
-					result.setResultsLeftAfter(leftAfter);
-				} else {
-					if (resultData.size() < limit) {
-						result.setResultsLeftAfter(0l);
-					} else {
-						result.setResultsLeftAfter((long) limit);
-					}
-
-				}
-				long leftBefore = offset;
-
-				result.setResultsLeftBefore(leftBefore);
-				result.setLimit(limit);
-				result.setOffset(offset);
-				result.setData(resultData);
-			}
-
-			return result;
-		});
+		return dollar;
 	}
 
 	private void postProcessMinOrMaxResults(Map<String, Object> entity) {
