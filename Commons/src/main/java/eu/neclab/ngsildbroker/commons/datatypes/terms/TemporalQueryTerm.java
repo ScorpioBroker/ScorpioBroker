@@ -61,32 +61,37 @@ public class TemporalQueryTerm implements Serializable {
 	public int toSql(StringBuilder sql, Tuple tuple, int dollarCount) {
 		sql.append("teai.");
 		sql.append(getTimeProperty());
-		switch (getTimerel()) {
-		case NGSIConstants.TIME_REL_BEFORE:
-			sql.append(" < $");
-			sql.append(dollarCount);
-			sql.append("::text::timestamp");
-			tuple.addString(getTimeAt());
-			dollarCount++;
-			break;
-		case NGSIConstants.TIME_REL_AFTER:
-			sql.append(" > $");
-			sql.append(dollarCount);
-			sql.append("::text::timestamp");
-			tuple.addString(getTimeAt());
-			dollarCount++;
-			break;
-		case NGSIConstants.TIME_REL_BETWEEN:
-			sql.append(" between $");
-			sql.append(dollarCount);
-			sql.append("::text::timestamp");
-			sql.append(" AND $");
-			sql.append((dollarCount + 1));
-			sql.append("::text::timestamp");
-			tuple.addString(getTimeAt());
-			tuple.addString(getEndTimeAt());
-			dollarCount += 2;
-			break;
+		String timeRel = getTimerel();
+		if (timeRel == null) {
+			sql.append(" IS NOT NULL");
+			return dollarCount;
+		}
+		switch (timeRel) {
+			case NGSIConstants.TIME_REL_BEFORE:
+				sql.append(" < $");
+				sql.append(dollarCount);
+				sql.append("::text::timestamp");
+				tuple.addString(getTimeAt());
+				dollarCount++;
+				break;
+			case NGSIConstants.TIME_REL_AFTER:
+				sql.append(" > $");
+				sql.append(dollarCount);
+				sql.append("::text::timestamp");
+				tuple.addString(getTimeAt());
+				dollarCount++;
+				break;
+			case NGSIConstants.TIME_REL_BETWEEN:
+				sql.append(" between $");
+				sql.append(dollarCount);
+				sql.append("::text::timestamp");
+				sql.append(" AND $");
+				sql.append((dollarCount + 1));
+				sql.append("::text::timestamp");
+				tuple.addString(getTimeAt());
+				tuple.addString(getEndTimeAt());
+				dollarCount += 2;
+				break;
 		}
 		return dollarCount;
 	}

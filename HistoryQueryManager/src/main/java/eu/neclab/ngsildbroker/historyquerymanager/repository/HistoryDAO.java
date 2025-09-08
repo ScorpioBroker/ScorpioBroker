@@ -989,6 +989,25 @@ public class HistoryDAO {
 		dollarCount += dollarplus;
 
 		sql.append(" FROM attribute_arrays_temp teai, unnest(data_array) as data ");
+		String expandTimeProp;
+		switch (tempProp) {
+			case NGSIConstants.QUERY_PARAMETER_OBSERVED_AT:
+				expandTimeProp = NGSIConstants.NGSI_LD_OBSERVED_AT;
+				break;
+			case NGSIConstants.QUERY_PARAMETER_CREATED_AT:
+				expandTimeProp = NGSIConstants.NGSI_LD_CREATED_AT;
+				break;
+			case NGSIConstants.QUERY_PARAMETER_MODIFIED_AT:
+				expandTimeProp = NGSIConstants.NGSI_LD_MODIFIED_AT;
+				break;
+			case NGSIConstants.QUERY_PARAMETER_DELETED_AT:
+				expandTimeProp = NGSIConstants.NGSI_LD_DELETED_AT;
+				break;
+
+			default:
+				expandTimeProp = NGSIConstants.NGSI_LD_OBSERVED_AT;
+				break;
+		}
 		if (aggrQuery.getPeriod() != null) {
 			sql.append("LEFT JOIN generate_series (");
 			if (tempQuery == null || tempQuery.getTimerel() == null) {
@@ -1027,18 +1046,20 @@ public class HistoryDAO {
 			dollarplus = 1;
 			sql.append(", $");
 			sql.append(dollarCount);
-			sql.append("::text::interval) as pr(period) on teai.");
-			sql.append(tempProp);
-			sql.append(" between pr.period and pr.period + $");
+			sql.append("::text::interval) as pr(period) on (data #>> '{");
+			sql.append(expandTimeProp);
+			sql.append(",0,");
+			sql.append(NGSIConstants.JSON_LD_VALUE);
+			sql.append("}')::timestamp between pr.period and pr.period + $");
 			sql.append(dollarCount);
 			sql.append("::text::interval");
 			tuple.addString(aggrQuery.getPeriod());
 		}
 		dollarCount += dollarplus;
 
-		sql.append(" WHERE TEAI.");
-		sql.append(tempProp);
-		sql.append(" IS NOT NULL");
+		sql.append(" WHERE data ? '");
+		sql.append(expandTimeProp);
+		sql.append("'");
 		if (aggrQuery.getPeriod() != null) {
 			sql.append(" AND PR IS NOT NULL");
 		}
@@ -1576,7 +1597,7 @@ public class HistoryDAO {
 		String from;
 		String to;
 		if (tempQuery != null) {
-			if (tempQuery.getTimerel().equals(NGSIConstants.TIME_REL_BEFORE)) {
+			if (NGSIConstants.TIME_REL_BEFORE.equals(tempQuery.getTimerel())) {
 				to = tempQuery.getTimeAt();
 			} else {
 				to = tempQuery.getEndTimeAt();
@@ -1673,7 +1694,8 @@ public class HistoryDAO {
 		// return null;
 		// }).subscribe().with(t -> {
 		// });
-
+		System.out.println(sql.toString());
+		System.out.println(tuple.deepToString());
 		return connectionManager.executeQuery(tenant, sql.toString(), tuple, false).onItem().transform(rows -> {
 
 			QueryResult result = new QueryResult(tenant);
