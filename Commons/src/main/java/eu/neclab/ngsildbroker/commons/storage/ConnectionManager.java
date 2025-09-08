@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import javax.sql.DataSource;
@@ -28,6 +29,7 @@ import io.agroal.api.security.SimplePassword;
 import io.quarkus.arc.Arc;
 import io.quarkus.flyway.runtime.FlywayContainer;
 import io.quarkus.flyway.runtime.FlywayContainerProducer;
+import io.quarkus.runtime.StartupEvent;
 import io.smallrye.mutiny.Uni;
 
 import io.smallrye.mutiny.unchecked.Unchecked;
@@ -81,16 +83,27 @@ public class ConnectionManager {
 	@ConfigProperty(name = "pool.initialSize")
 	int initialSize;
 
-	private String reactiveBaseUrl;
+	@ConfigProperty(name = "scorpio.postgres.username")
+	String dbUser;
 
-	private Map<String, Pool> tenant2Client = Maps.newHashMap();
+	@ConfigProperty(name = "scorpio.postgres.disablejit", defaultValue = "true")
+	boolean disableJIT;
 
-	@PostConstruct
-	void loadTenantClients() throws URISyntaxException {
+	void onStart(@Observes StartupEvent ev) throws URISyntaxException {
+		if (disableJIT) {
+			executeQuery(null, "ALTER USER " + dbUser + " SET jit = off;", null, false).await().indefinitely();
+		} else {
+			executeQuery(null, "ALTER USER " + dbUser + " SET jit = on;", null, false).await().indefinitely();
+		}
+
 		URI uri = new URI(reactiveDefaultUrl);
 		reactiveBaseUrl = uri.getScheme() + "://" + uri.getHost() + ":" + uri.getPort() + "/";
 		tenant2Client.put(AppConstants.INTERNAL_NULL_KEY, pgClient);
 	}
+
+	private String reactiveBaseUrl;
+
+	private Map<String, Pool> tenant2Client = Maps.newHashMap();
 
 	public Uni<RowSet<Row>> executeQuery(String tenant, String sql, Tuple tuple, boolean createTenant) {
 		Pool client;
@@ -99,6 +112,7 @@ public class ConnectionManager {
 		} else {
 			client = tenant2Client.get(tenant);
 		}
+
 		if (client != null) {
 			if (tuple != null) {
 				return client.preparedQuery(sql).execute(tuple);

@@ -35,7 +35,7 @@ public class AggrTerm implements Serializable {
         this.aggrFunctions = aggrFunctions;
     }
 
-    public int toSql(StringBuilder sql, Tuple tuple, int dollar, String temporalProperty, String from, String to) {
+    public int toSqlBla(StringBuilder sql, Tuple tuple, int dollar, String temporalProperty, String from, String to) {
         int fromDollar;
         if (from != null) {
             tuple.addString(from);

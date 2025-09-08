@@ -77,7 +77,7 @@ public class HistoryController {
 			@QueryParam(value = "options") String options, @QueryParam(value = "count") String countS,
 			@QueryParam(value = "localOnly") String localOnlyS, @QueryParam("format") String format,
 			@QueryParam("n") @DefaultValue("-1") int nInput,
-			@QueryParam("offsetN") @DefaultValue("-1") int offsetN,
+			@QueryParam("offsetN") @DefaultValue("0") int offsetN,
 			@QueryParam("nOrder") @DefaultValue("ASC") String nOrderInput) {
 		boolean localOnly;
 		boolean count;

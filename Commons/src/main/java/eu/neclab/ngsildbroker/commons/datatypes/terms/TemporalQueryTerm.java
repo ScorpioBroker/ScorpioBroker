@@ -59,6 +59,7 @@ public class TemporalQueryTerm implements Serializable {
 	}
 
 	public int toSql(StringBuilder sql, Tuple tuple, int dollarCount) {
+		sql.append("teai.");
 		sql.append(getTimeProperty());
 		switch (getTimerel()) {
 		case NGSIConstants.TIME_REL_BEFORE:

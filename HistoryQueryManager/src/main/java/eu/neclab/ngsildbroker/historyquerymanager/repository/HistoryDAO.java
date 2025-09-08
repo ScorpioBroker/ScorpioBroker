@@ -1,7 +1,8 @@
 package eu.neclab.ngsildbroker.historyquerymanager.repository;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
+
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -9,10 +10,12 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
 import org.apache.commons.lang3.math.NumberUtils;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,9 +50,11 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.storage.ConnectionManager;
 import eu.neclab.ngsildbroker.commons.tools.DBUtil;
+import io.quarkus.runtime.StartupEvent;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple3;
+
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowIterator;
@@ -735,7 +740,7 @@ public class HistoryDAO {
 		sql.append(" ), ");
 		entityInfos = "attributedata";
 		if (aggrQuery != null) {
-			dollarCount = attachAggrQuery(sql, aggrQuery, tempQuery, dollarCount, tuple, temporalProperty);
+			dollarCount = attachAggrQueryBackup(sql, aggrQuery, tempQuery, dollarCount, tuple, temporalProperty);
 			entityInfos = "aggr1";
 		}
 		sql.append("temp1 as (select id, SCOPES, E_TYPES, R_CREATEDAT, R_MODIFIEDAT, R_DELETEDAT, attribid, ");
@@ -817,24 +822,383 @@ public class HistoryDAO {
 	}
 
 	public static void main(String[] args) {
-		StringBuilder sql = new StringBuilder();
-		sql.append("json_build_object(");
-		sql.append(NGSIConstants.JSON_LD_LIST);
-		sql.append(",json_build_array(");
-		sql.append("json_build_object(");
-		sql.append(NGSIConstants.JSON_LD_VALUE);
-		sql.append(",sum(case ");
-		sql.append("when jsonb_typeof(data #>'{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE
-				+ "}')='number' then (data #>'{https://uri.etsi.org/ngsi-ld/hasValue,0,@value}')::numeric ");
-		sql.append("when jsonb_typeof(data #>'{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE
-				+ "}'='boolean' then (data #>'{https://uri.etsi.org/ngsi-ld/hasValue,0,@value}')::boolean ");
-		sql.append("when jsonb_typeof(data #>'{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE
-				+ "}'='array' then (data #>'{https://uri.etsi.org/ngsi-ld/hasValue,0,@value}').size() ");
-		sql.append("else null end)");
-		sql.append(")))");
+		String dbDate = "2025-08-28 13:32:23.638";
+		// not magic numbers!!!
+		System.out.println(dbDate.substring(11));
 	}
 
-	private int attachAggrQuery(StringBuilder sql, AggrTerm aggrQuery, TemporalQueryTerm tempQuery, int dollarCount,
+	private int addAggrQuery(StringBuilder sql, AggrTerm aggrQuery, TemporalQueryTerm tempQuery, int dollarCount,
+			Tuple tuple, String tempProp) {
+		// Doc comment:
+		// we first build a jsonb array with jsonb_agg if it has no contents because of
+		// the filter it will be null this will be used later on to filter out null
+		// values
+		int dollarplus = 1;
+		// ei.id, ei.createdat, ei.e_types, ei.modifiedat, ei.deletedat, ei.scopes,
+		// teai.attributeid, (array_agg(teai.data ORDER BY teai.
+		sql.append(
+				", aggr as (SELECT ID, createdat, e_types, modifiedat, deletedat, scopes, attributeid, ATTRTYPE, PRSTART, PRSTOP, ");
+		for (String aggrFunction : aggrQuery.getAggrFunctions()) {
+			sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_LIST + "', JSONB_BUILD_ARRAY(JSONB_BUILD_OBJECT('"
+					+ NGSIConstants.JSON_LD_VALUE + "', ");
+			switch (aggrFunction) {
+				case NGSIConstants.AGGR_METH_SUM:
+					sql.append("SUM(CASE ");
+					sql.append("WHEN JSONB_TYPEOF(data #> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
+							+ NGSIConstants.JSON_LD_VALUE + "}') = 'number' THEN (data #> '{"
+							+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE + "}')::numeric ");
+					sql.append("WHEN JSONB_TYPEOF(data #> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
+							+ NGSIConstants.JSON_LD_VALUE + "}') = 'boolean' THEN (data #> '{"
+							+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE + "}')::numeric ");
+					sql.append("WHEN JSONB_TYPEOF(data #> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
+							+ NGSIConstants.JSON_LD_VALUE + "}') = 'array' THEN (JSONB_ARRAY_LENGTH(data #> ('{"
+							+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE
+							+ "}')))::numeric ");
+					// nulling here will make the result null as well and it will run into the
+					// filter from above
+					sql.append("ELSE NULL END)) ");
+					dollarplus = generateTimestampForAttr(sql, dollarCount, tempQuery, aggrQuery);
+					sql.append(")) as SUMDATA");
+					break;
+				case NGSIConstants.AGGR_METH_MIN:
+					sql.append("MIN(CASE ");
+					sql.append("WHEN JSONB_TYPEOF(data #> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
+							+ NGSIConstants.JSON_LD_VALUE + "}') = 'number' THEN (data #>> '{"
+							+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE + "}') ");
+					sql.append("WHEN JSONB_TYPEOF(data #> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
+							+ NGSIConstants.JSON_LD_VALUE + "}') = 'boolean' THEN (data #>> '{"
+							+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE + "}') ");
+					sql.append("WHEN JSONB_TYPEOF(data #> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
+							+ NGSIConstants.JSON_LD_VALUE + "}') = 'string' THEN (data #>> '{"
+							+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE + "}') ");
+					sql.append("WHEN JSONB_TYPEOF(data #> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
+							+ NGSIConstants.JSON_LD_VALUE + "}') = 'array' THEN (JSONB_ARRAY_LENGTH(data #> ('{"
+							+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE + "}')))::text ");
+					sql.append("ELSE NULL END)) ");
+					dollarplus = generateTimestampForAttr(sql, dollarCount, tempQuery, aggrQuery);
+					sql.append(")) as MINDATA");
+					break;
+				case NGSIConstants.AGGR_METH_MAX:
+
+					sql.append("(MAX(CASE ");
+					sql.append("WHEN JSONB_TYPEOF(data #> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
+							+ NGSIConstants.JSON_LD_VALUE + "}') = 'number' THEN (data #>> '{"
+							+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE + "}') ");
+					sql.append("WHEN JSONB_TYPEOF(data #> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
+							+ NGSIConstants.JSON_LD_VALUE + "}') = 'boolean' THEN (data #>> '{"
+							+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE + "}') ");
+					sql.append("WHEN JSONB_TYPEOF(data #> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
+							+ NGSIConstants.JSON_LD_VALUE + "}') = 'string' THEN (data #>> '{"
+							+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE + "}') ");
+					sql.append("WHEN JSONB_TYPEOF(data #> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
+							+ NGSIConstants.JSON_LD_VALUE + "}') = 'array' THEN (JSONB_ARRAY_LENGTH(data #> ('{"
+							+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE + "}')))::text ");
+					sql.append("ELSE NULL END))) ");
+					dollarplus = generateTimestampForAttr(sql, dollarCount, tempQuery, aggrQuery);
+					sql.append(")) as MAXDATA");
+					break;
+				case NGSIConstants.AGGR_METH_AVG:
+					sql.append("AVG(CASE ");
+					sql.append("WHEN JSONB_TYPEOF(data #> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
+							+ NGSIConstants.JSON_LD_VALUE + "}') = 'number' THEN (data #> '{"
+							+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE + "}')::numeric ");
+					sql.append("WHEN JSONB_TYPEOF(data #> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
+							+ NGSIConstants.JSON_LD_VALUE + "}') = 'boolean' THEN (data #> '{"
+							+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE + "}')::numeric ");
+					sql.append("WHEN JSONB_TYPEOF(data #> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
+							+ NGSIConstants.JSON_LD_VALUE + "}') = 'array' THEN (JSONB_ARRAY_LENGTH(data #> ('{"
+							+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE
+							+ "}')))::numeric ");
+					sql.append("ELSE NULL END)) ");
+					dollarplus = generateTimestampForAttr(sql, dollarCount, tempQuery, aggrQuery);
+					sql.append(")) as AVGDATA");
+					break;
+				case NGSIConstants.AGGR_METH_STDDEV:
+					sql.append("STDDEV(CASE ");
+					sql.append("WHEN JSONB_TYPEOF(data #> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
+							+ NGSIConstants.JSON_LD_VALUE + "}') = 'number' THEN (data #> '{"
+							+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE + "}')::numeric ");
+					sql.append("WHEN JSONB_TYPEOF(data #> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
+							+ NGSIConstants.JSON_LD_VALUE + "}') = 'boolean' THEN (data #> '{"
+							+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE + "}')::numeric ");
+					sql.append("WHEN JSONB_TYPEOF(data #> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
+							+ NGSIConstants.JSON_LD_VALUE + "}') = 'array' THEN (JSONB_ARRAY_LENGTH(data #> ('{"
+							+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE
+							+ "}')))::numeric ");
+					sql.append("ELSE NULL END)) ");
+					dollarplus = generateTimestampForAttr(sql, dollarCount, tempQuery, aggrQuery);
+					sql.append(")) as STDDEVDATA");
+					break;
+				case NGSIConstants.AGGR_METH_SUMSQ:
+					sql.append("SUM(CASE ");
+					sql.append("WHEN JSONB_TYPEOF(data #> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
+							+ NGSIConstants.JSON_LD_VALUE + "}') = 'number' THEN ((data #> '{"
+							+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE
+							+ "}')::numeric)^2 ");
+					sql.append("WHEN JSONB_TYPEOF(data #> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
+							+ NGSIConstants.JSON_LD_VALUE + "}') = 'boolean' THEN ((data #> '{"
+							+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE
+							+ "}')::numeric)^2 ");
+					sql.append("WHEN JSONB_TYPEOF(data #> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
+							+ NGSIConstants.JSON_LD_VALUE + "}') = 'array' THEN (JSONB_ARRAY_LENGTH(data #> ('{"
+							+ NGSIConstants.NGSI_LD_HAS_VALUE + ",0," + NGSIConstants.JSON_LD_VALUE
+							+ "}')))::numeric^2 ");
+					sql.append("ELSE NULL END)) ");
+					dollarplus = generateTimestampForAttr(sql, dollarCount, tempQuery, aggrQuery);
+					sql.append(")) as SUMSQDATA");
+					break;
+				case NGSIConstants.AGGR_METH_TOTAL_COUNT:
+					sql.append("COUNT(DATA)) ");
+					dollarplus = generateTimestampForAttr(sql, dollarCount, tempQuery, aggrQuery);
+					sql.append(")) as TOTALCOUNTDATA");
+					break;
+				case NGSIConstants.AGGR_METH_DISTINCT_COUNT:
+					sql.append("COUNT(DISTINCT CASE ");
+					sql.append(
+							"WHEN DATA@>'{\"" + NGSIConstants.JSON_LD_TYPE + "\": [\"" + NGSIConstants.NGSI_LD_PROPERTY
+									+ "\"]}' THEN DATA #> '{" + NGSIConstants.NGSI_LD_HAS_VALUE + ",0,"
+									+ NGSIConstants.JSON_LD_VALUE + "}'");
+					sql.append("WHEN DATA@>'{\"" + NGSIConstants.JSON_LD_TYPE + "\": [\""
+							+ NGSIConstants.NGSI_LD_RELATIONSHIP + "\"]}' THEN DATA #> '{"
+							+ NGSIConstants.NGSI_LD_HAS_OBJECT + ",0," + NGSIConstants.JSON_LD_ID + "}'");
+					sql.append("WHEN DATA@>'{\"" + NGSIConstants.JSON_LD_TYPE + "\": [\""
+							+ NGSIConstants.NGSI_LD_GEOPROPERTY + "\"]}' THEN DATA #> '{"
+							+ NGSIConstants.NGSI_LD_HAS_VALUE
+							+ ",0," + NGSIConstants.JSON_LD_VALUE + "}'");
+					sql.append(
+							"WHEN DATA@>'{\"" + NGSIConstants.JSON_LD_TYPE + "\": [\""
+									+ NGSIConstants.NGSI_LD_LANGPROPERTY
+									+ "\"]}' THEN DATA #> '{" + NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP + "}'");
+					sql.append("ELSE DATA END)) ");
+					dollarplus = generateTimestampForAttr(sql, dollarCount, tempQuery, aggrQuery);
+					sql.append(")) as DISTINCTCOUNTDATA");
+					break;
+				default:
+					break;
+			}
+			sql.append(',');
+		}
+
+		if (aggrQuery.getPeriod() != null) {
+			sql.append("PR");
+			tuple.addString(aggrQuery.getPeriod());
+		} else {
+			sql.setLength(sql.length() - 1);
+		}
+
+		dollarCount += dollarplus;
+
+		sql.append(" FROM attribute_arrays_temp teai, unnest(data_array) as data ");
+		if (aggrQuery.getPeriod() != null) {
+			sql.append("LEFT JOIN generate_series (");
+			if (tempQuery == null || tempQuery.getTimerel() == null) {
+				sql.append("PRSTART, PRSTOP");
+			} else {
+				switch (tempQuery.getTimerel()) {
+					case NGSIConstants.TIME_REL_BEFORE:
+						sql.append("PRSTART, $");
+						sql.append(dollarCount);
+						sql.append("::text::timestamp");
+						tuple.addString(tempQuery.getTimeAt());
+						dollarCount++;
+						break;
+					case NGSIConstants.TIME_REL_AFTER:
+						sql.append("$");
+						sql.append(dollarCount);
+						sql.append("::text::timestamp");
+						sql.append(", PRSTOP");
+						tuple.addString(tempQuery.getTimeAt());
+						dollarCount++;
+						break;
+					case NGSIConstants.TIME_REL_BETWEEN:
+						sql.append("$");
+						sql.append(dollarCount);
+						sql.append("::text::timestamp");
+						tuple.addString(tempQuery.getTimeAt());
+						dollarCount++;
+						sql.append(", $");
+						sql.append(dollarCount);
+						sql.append("::text::timestamp");
+						tuple.addString(tempQuery.getEndTimeAt());
+						dollarCount++;
+						break;
+				}
+			}
+			dollarplus = 1;
+			sql.append(", $");
+			sql.append(dollarCount);
+			sql.append("::text::interval) as pr(period) on teai.");
+			sql.append(tempProp);
+			sql.append(" between pr.period and pr.period + $");
+			sql.append(dollarCount);
+			sql.append("::text::interval");
+			tuple.addString(aggrQuery.getPeriod());
+		}
+		dollarCount += dollarplus;
+
+		sql.append(" WHERE TEAI.");
+		sql.append(tempProp);
+		sql.append(" IS NOT NULL");
+		if (aggrQuery.getPeriod() != null) {
+			sql.append(" AND PR IS NOT NULL");
+		}
+		sql.append(" GROUP BY ID, SCOPES, E_TYPES, CREATEDAT, MODIFIEDAT, DELETEDAT, ATTRIBUTEID,");
+		if (aggrQuery.getPeriod() != null) {
+			sql.append(" PR,");
+		}
+		sql.append(" ATTRTYPE");
+		sql.append(",PRSTART, PRSTOP");
+		// if (aggrQuery.getPeriod() != null) {
+		// if (tempQuery != null && tempQuery.getTimerel() != null) {
+		// switch (tempQuery.getTimerel()) {
+		// case NGSIConstants.TIME_REL_BEFORE:
+		// sql.append(",($");
+		// sql.append(dollarCount);
+		// sql.append("::text::timestamp - LEAST(TEAI." + tempProp + "))::interval");
+		// break;
+		// case NGSIConstants.TIME_REL_AFTER:
+		// sql.append(",(GREATEST(TEAI." + tempProp + ") - $");
+		// sql.append(dollarCount);
+		// sql.append("::text::timestamp)::interval");
+		// break;
+		// // sql.append(",TEAI." + tempProp);
+		// // break;
+		// }
+		// } else {
+		// // sql.append(",TEAI." + tempProp);
+
+		// }
+		// }
+		sql.append(" ORDER BY ID");
+		if (aggrQuery.getPeriod() != null) {
+			sql.append(", PR");
+		}
+		sql.append("), ");
+		sql.append(
+				"attribute_arrays as (SELECT id, SCOPES, E_TYPES, CREATEDAT, MODIFIEDAT, DELETEDAT, attributeid, jsonb_build_array(jsonb_strip_nulls(jsonb_build_object('@type', jsonb_build_array(ATTRTYPE),");
+		for (String aggrFunction : aggrQuery.getAggrFunctions()) {
+			switch (aggrFunction) {
+				case NGSIConstants.AGGR_METH_SUM:
+					sql.append('\'');
+					sql.append(NGSIConstants.NGSI_LD_SUM);
+					sql.append('\'');
+					sql.append(
+							",CASE WHEN (JSONB_AGG(X.SUMDATA) FILTER (WHERE X.SUMdata #>>'{@list,0,@value}' is not null)) is not null then ");
+					sql.append("JSONB_BUILD_ARRAY(JSONB_BUILD_OBJECT('");
+					sql.append(NGSIConstants.JSON_LD_LIST);
+					sql.append(
+							"',JSONB_AGG(X.SUMDATA) FILTER (WHERE X.SUMdata #>>'{@list,0,@value}' is not null))) else null end");
+					break;
+				case NGSIConstants.AGGR_METH_MIN:
+					sql.append('\'');
+					sql.append(NGSIConstants.NGSI_LD_MIN);
+					sql.append('\'');
+					sql.append(
+							",CASE WHEN (JSONB_AGG(X.MINdata) FILTER (WHERE X.MINdata #>>'{@list,0,@value}' is not null)) is not null then ");
+					sql.append("JSONB_BUILD_ARRAY(JSONB_BUILD_OBJECT('");
+					sql.append(NGSIConstants.JSON_LD_LIST);
+					sql.append(
+							"',JSONB_AGG(X.MINDATA) FILTER (WHERE X.MINdata #>>'{@list,0,@value}' is not null))) else null end");
+					break;
+				case NGSIConstants.AGGR_METH_MAX:
+					sql.append('\'');
+					sql.append(NGSIConstants.NGSI_LD_MAX);
+					sql.append('\'');
+					sql.append(
+							",CASE WHEN (JSONB_AGG(X.MAXDATA) FILTER (WHERE X.MAXdata #>>'{@list,0,@value}' is not null)) is not null then ");
+					sql.append("JSONB_BUILD_ARRAY(JSONB_BUILD_OBJECT('");
+					sql.append(NGSIConstants.JSON_LD_LIST);
+					sql.append(
+							"',JSONB_AGG(X.MAXDATA) FILTER (WHERE X.MAXdata #>>'{@list,0,@value}' is not null))) else null end");
+					break;
+				case NGSIConstants.AGGR_METH_AVG:
+					sql.append('\'');
+					sql.append(NGSIConstants.NGSI_LD_AVG);
+					sql.append('\'');
+					sql.append(
+							",CASE WHEN (JSONB_AGG(X.AVGDATA) FILTER (WHERE X.AVGdata #>>'{@list,0,@value}' is not null)) is not null then ");
+					sql.append("JSONB_BUILD_ARRAY(JSONB_BUILD_OBJECT('");
+					sql.append(NGSIConstants.JSON_LD_LIST);
+					sql.append(
+							"',JSONB_AGG(X.AVGDATA) FILTER (WHERE X.AVGdata #>>'{@list,0,@value}' is not null))) else null end");
+					break;
+				case NGSIConstants.AGGR_METH_STDDEV:
+					sql.append('\'');
+					sql.append(NGSIConstants.NGSI_LD_STDDEV);
+					sql.append('\'');
+					sql.append(
+							",CASE WHEN (JSONB_AGG(X.STDDEVDATA) FILTER (WHERE X.STDDEVdata #>>'{@list,0,@value}' is not null)) is not null then ");
+					sql.append("JSONB_BUILD_ARRAY(JSONB_BUILD_OBJECT('");
+					sql.append(NGSIConstants.JSON_LD_LIST);
+					sql.append(
+							"',JSONB_AGG(X.STDDEVDATA) FILTER (WHERE X.STDDEVdata #>>'{@list,0,@value}' is not null))) else null end");
+					break;
+				case NGSIConstants.AGGR_METH_SUMSQ:
+					sql.append('\'');
+					sql.append(NGSIConstants.NGSI_LD_SUMSQ);
+					sql.append('\'');
+					sql.append(
+							",CASE WHEN (JSONB_AGG(X.SUMSQDATA) FILTER (WHERE X.SUMSQdata #>>'{@list,0,@value}' is not null)) is not null then ");
+					sql.append("JSONB_BUILD_ARRAY(JSONB_BUILD_OBJECT('");
+					sql.append(NGSIConstants.JSON_LD_LIST);
+					sql.append(
+							"',JSONB_AGG(X.SUMSQDATA) FILTER (WHERE X.SUMSQdata #>>'{@list,0,@value}' is not null))) else null end");
+					break;
+				case NGSIConstants.AGGR_METH_TOTAL_COUNT:
+					sql.append('\'');
+					sql.append(NGSIConstants.NGSI_LD_TOTALCOUNT);
+					sql.append('\'');
+					sql.append(
+							",CASE WHEN (JSONB_AGG(X.TOTALCOUNTDATA) FILTER (WHERE X.TOTALCOUNTdata #>>'{@list,0,@value}' is not null)) is not null then ");
+					sql.append("JSONB_BUILD_ARRAY(JSONB_BUILD_OBJECT('");
+					sql.append(NGSIConstants.JSON_LD_LIST);
+					sql.append(
+							"',JSONB_AGG(X.TOTALCOUNTDATA) FILTER (WHERE X.TOTALCOUNTdata #>>'{@list,0,@value}' is not null))) else null end");
+					break;
+				case NGSIConstants.AGGR_METH_DISTINCT_COUNT:
+					sql.append('\'');
+					sql.append(NGSIConstants.NGSI_LD_DISTINCTCOUNT);
+					sql.append('\'');
+					sql.append(
+							",CASE WHEN (JSONB_AGG(X.DISTINCTCOUNTDATA) FILTER (WHERE X.DISTINCTCOUNTdata #>>'{@list,0,@value}' is not null)) is not null then ");
+					sql.append("JSONB_BUILD_ARRAY(JSONB_BUILD_OBJECT('");
+					sql.append(NGSIConstants.JSON_LD_LIST);
+					sql.append(
+							"',JSONB_AGG(X.DISTINCTCOUNTDATA) FILTER (WHERE X.DISTINCTCOUNTdata #>>'{@list,0,@value}' is not null))) else null end");
+					break;
+				default:
+					break;
+			}
+			sql.append(',');
+		}
+		sql.setLength(sql.length() - 1);
+		sql.append(
+				"))) as data_array, ATTRTYPE FROM aggr X GROUP BY id, SCOPES, E_TYPES, CREATEDAT, MODIFIEDAT, DELETEDAT, attributeid, ATTRTYPE)");
+		return dollarCount;
+	}
+
+	private int generateTimestampForAttr(StringBuilder sql, int dollarCount, TemporalQueryTerm tempQuery,
+			AggrTerm aggrQuery) {
+		if (aggrQuery.getPeriod() != null) {
+			sql.append(",JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_VALUE + "', to_char(pr.period, "
+					+ TIMESTAMP_FORMAT + ")), ");
+			sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_VALUE + "', to_char(pr.period + ");
+			sql.append("$");
+			sql.append(dollarCount);
+			sql.append("::text::interval");
+			sql.append(", " + TIMESTAMP_FORMAT + "))");
+			return 1;
+		} else {
+			sql.append(",JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_VALUE + "', to_char(PRSTART, "
+					+ TIMESTAMP_FORMAT + ")), ");
+			sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_VALUE + "', to_char(PRSTOP ");
+			sql.append(", " + TIMESTAMP_FORMAT + "))");
+			return 0;
+		}
+	}
+
+	private int attachAggrQueryBackup(StringBuilder sql, AggrTerm aggrQuery, TemporalQueryTerm tempQuery,
+			int dollarCount,
 			Tuple tuple, String tempProp) {
 		// Doc comment:
 		// we first build a jsonb array with jsonb_agg if it has no contents because of
@@ -1082,7 +1446,7 @@ public class HistoryDAO {
 		}
 		sql.append("), ");
 		sql.append(
-				"aggr1 as (SELECT id, SCOPES, E_TYPES, R_CREATEDAT, R_MODIFIEDAT, R_DELETEDAT, attribid, jsonb_strip_nulls(jsonb_build_object(");
+				"attribute_arrays as (SELECT id, SCOPES, E_TYPES, CREATEDAT, MODIFIEDAT, DELETEDAT, attributeid, jsonb_strip_nulls(jsonb_build_object(");
 		for (String aggrFunction : aggrQuery.getAggrFunctions()) {
 			switch (aggrFunction) {
 				case NGSIConstants.AGGR_METH_SUM:
@@ -1184,26 +1548,6 @@ public class HistoryDAO {
 		return dollarCount;
 	}
 
-	private int generateTimestampForAttr(StringBuilder sql, int dollarCount, TemporalQueryTerm tempQuery,
-			AggrTerm aggrQuery) {
-		if (aggrQuery.getPeriod() != null) {
-			sql.append(",JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_VALUE + "', to_char(pr.period, "
-					+ TIMESTAMP_FORMAT + ")), ");
-			sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_VALUE + "', to_char(pr.period + ");
-			sql.append("$");
-			sql.append(dollarCount);
-			sql.append("::text::interval");
-			sql.append(", " + TIMESTAMP_FORMAT + "))");
-			return 1;
-		} else {
-			sql.append(",JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_VALUE + "', to_char(PT.PRSTART, "
-					+ TIMESTAMP_FORMAT + ")), ");
-			sql.append("JSONB_BUILD_OBJECT('" + NGSIConstants.JSON_LD_VALUE + "', to_char(PT.PRSTOP ");
-			sql.append(", " + TIMESTAMP_FORMAT + "))");
-			return 0;
-		}
-	}
-
 	public Uni<QueryResult> query(String tenant,
 			List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeAndIdPattern, AttrsQueryTerm attrsQuery,
 			QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, Context context, int limit, int offset,
@@ -1243,147 +1587,93 @@ public class HistoryDAO {
 			from = null;
 			to = null;
 		}
-		if (aggrQuery == null) {
-			boolean windowFunction = tempQuery != null || attrsQuery != null || qQuery != null || geoQuery != null
-					|| dataSetIdTerm != null || pickTerm != null || omitTerm != null;
-			if (windowFunction) {
-				sql.append("WITH RECURSIVE result_builder AS (( ");
-			}
-			dollar = addEntityInfoPart(sql, tuple, dollar, idsAndTypeAndIdPattern, scopeQuery, limit, offset, false);
+
+		boolean windowFunction = tempQuery != null || attrsQuery != null || qQuery != null || geoQuery != null
+				|| dataSetIdTerm != null || pickTerm != null || omitTerm != null;
+
+		if (windowFunction) {
+			sql.append("WITH RECURSIVE result_builder AS (( ");
+		}
+		dollar = addEntityInfoPart(sql, tuple, dollar, idsAndTypeAndIdPattern, scopeQuery, limit, offset, false);
+		try {
+			dollar = addAttributesPart(sql, tuple, dollar, tempQuery, attrsQuery, qQuery, geoQuery, dataSetIdTerm,
+					pickTerm, omitTerm, timeProp, n, offsetN, nOrder, aggrQuery);
+		} catch (ResponseException e) {
+			return Uni.createFrom().failure(e);
+		}
+		if (aggrQuery != null) {
+			dollar = addAggrQuery(sql, aggrQuery, tempQuery, dollar, tuple, timeProp);
+		}
+		if (windowFunction) {
+			sql.append(", aggregated_batch AS (");
+		}
+		dollar = addResultPart(sql, tuple, dollar, limit, windowFunction, aggrQuery);
+		if (windowFunction) {
+			sql.append(
+					"""
+								), batch_stats AS (
+							          SELECT COUNT(*) as found_count,
+							                 MAX(createdat) as last_createdat
+							          FROM aggregated_batch
+							      ),
+							      batch_with_last_id AS (
+							          SELECT ab.*,
+							                 bs.found_count,
+							                 bs.last_createdat,
+							                 -- Calculate last_id_for_createdat in one pass
+							                 MAX(CASE WHEN ab.createdat = bs.last_createdat THEN ab.id ELSE NULL END) OVER() as last_id_for_createdat
+							          FROM aggregated_batch ab
+							          CROSS JOIN batch_stats bs
+							      )
+							      SELECT id, e_types, createdat, modifiedat, deletedat, scopes, attribute_ids, attribute_data_arrays,
+							             found_count, last_createdat, last_id_for_createdat
+							      FROM batch_with_last_id
+							  )
+													 			UNION ALL
+													   (
+							WITH previous_results AS (SELECT * FROM result_builder),
+							prev_stats AS (
+							          SELECT found_count, last_createdat, last_id_for_createdat
+							          FROM previous_results
+							          LIMIT 1
+							      ),
+													""");
+			dollar = addEntityInfoPart(sql, tuple, dollar, idsAndTypeAndIdPattern, scopeQuery, limit, 0, true);
 			try {
-				dollar = addAttributesPart(sql, tuple, dollar, tempQuery, attrsQuery, qQuery, geoQuery, dataSetIdTerm,
-						pickTerm, omitTerm, timeProp, n, offsetN, nOrder);
+				dollar = addAttributesPart(sql, tuple, dollar, tempQuery, attrsQuery, qQuery, geoQuery,
+						dataSetIdTerm, pickTerm, omitTerm, timeProp, n, offsetN, nOrder, aggrQuery);
 			} catch (ResponseException e) {
 				return Uni.createFrom().failure(e);
 			}
-			if (windowFunction) {
-				sql.append(", aggregated_batch AS (");
+			if (aggrQuery != null) {
+				dollar = addAggrQuery(sql, aggrQuery, tempQuery, dollar, tuple, timeProp);
 			}
-			dollar = addResultPart(sql, tuple, dollar, limit);
-			if (windowFunction) {
-				sql.append(
-						"""
-									)
-								   SELECT entity,
-								            (SELECT COUNT(*) FROM aggregated_batch) AS found_count,
-								            (SELECT MAX(createdat) FROM aggregated_batch) AS last_createdat,
-								            (SELECT MAX(id) FROM aggregated_batch WHERE createdat = (SELECT MAX(createdat) FROM aggregated_batch)) AS last_id_for_createdat
-								     		FROM aggregated_batch
-								 			)
+			sql.append(", aggregated_batch AS (");
+			dollar = addResultPart(sql, tuple, dollar, limit, windowFunction, aggrQuery);
+			sql.append(
+					"), batch_stats AS (SELECT COUNT(*) as current_batch_count, MAX(createdat) as current_last_createdat FROM aggregated_batch), combined_stats AS (SELECT ps.found_count + bs.current_batch_count as total_found_count, bs.current_last_createdat as last_createdat FROM prev_stats ps CROSS JOIN batch_stats bs),");
+			sql.append(
+					"final_batch AS (SELECT ab.*, cs.total_found_count as found_count, cs.last_createdat, MAX(CASE WHEN ab.createdat = cs.last_createdat THEN ab.id ELSE NULL END) OVER() as last_id_for_createdat FROM aggregated_batch ab CROSS JOIN combined_stats cs CROSS JOIN prev_stats ps WHERE ps.found_count < ");
+			sql.append(limit);
+			sql.append(
+					") SELECT id, e_types, createdat, modifiedat, deletedat, scopes, attribute_ids, attribute_data_arrays, found_count, last_createdat, last_id_for_createdat FROM final_batch");
+			sql.append(
+					")) SELECT id, e_types, createdat, modifiedat, deletedat, scopes, attribute_ids, attribute_data_arrays FROM result_builder LIMIT ");
+			sql.append(limit);
 
-								 			UNION ALL
-								   (
-											WITH previous_results AS (SELECT * FROM result_builder),
-								""");
-				dollar = addEntityInfoPart(sql, tuple, dollar, idsAndTypeAndIdPattern, scopeQuery, limit, 0, true);
-				try {
-					dollar = addAttributesPart(sql, tuple, dollar, tempQuery, attrsQuery, qQuery, geoQuery,
-							dataSetIdTerm, pickTerm, omitTerm, timeProp, n, offsetN, nOrder);
-				} catch (ResponseException e) {
-					return Uni.createFrom().failure(e);
-				}
-
-				sql.append(", aggregated_batch AS (");
-				dollar = addResultPart(sql, tuple, dollar, limit);
-				sql.append(
-						") SELECT ab.entity, (SELECT found_count FROM previous_results LIMIT 1) + (SELECT COUNT(*) FROM aggregated_batch) AS found_count, (SELECT MAX(createdat) FROM aggregated_batch) AS last_createdat, (SELECT MAX(id) FROM aggregated_batch WHERE createdat = (SELECT MAX(createdat) FROM aggregated_batch)) AS last_id_for_createdat FROM aggregated_batch ab WHERE (SELECT found_count FROM previous_results LIMIT 1) < ");
-				sql.append(limit);
-				sql.append(")) SELECT entity FROM result_builder LIMIT ");
-				sql.append(limit);
-
-			}
-
-		} else {
-			sql.append(
-					"WITH entityInfos AS (SELECT id, e_types, jsonb_build_array(jsonb_build_object('");
-			sql.append(NGSIConstants.JSON_LD_TYPE);
-			sql.append("', '");
-			sql.append(NGSIConstants.NGSI_LD_DATE_TIME);
-			sql.append("', '");
-			sql.append(NGSIConstants.JSON_LD_VALUE);
-			sql.append(
-					"', to_char(createdat, 'YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"'))) AS r_createdat, jsonb_build_array(jsonb_build_object('");
-			sql.append(NGSIConstants.JSON_LD_TYPE);
-			sql.append("', '");
-			sql.append(NGSIConstants.NGSI_LD_DATE_TIME);
-			sql.append("', '");
-			sql.append(NGSIConstants.JSON_LD_VALUE);
-			sql.append(
-					"', to_char(modifiedat, 'YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"'))) AS r_modifiedat, CASE WHEN deletedat IS NULL THEN NULL ELSE jsonb_build_array(jsonb_build_object('");
-			sql.append(NGSIConstants.JSON_LD_TYPE);
-			sql.append("', '");
-			sql.append(NGSIConstants.NGSI_LD_DATE_TIME);
-			sql.append("', '");
-			sql.append(NGSIConstants.JSON_LD_VALUE);
-			sql.append(
-					"', to_char(deletedat, 'YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"'))) END AS r_deletedat, CASE WHEN scopes IS NULL THEN NULL ELSE getScopeEntry(scopes) END AS scope_entry FROM temporalentity WHERE ");
-			if (idsAndTypeAndIdPattern != null && idsAndTypeAndIdPattern.size() > 0) {
-				sql.append('(');
-				for (Tuple3<String[], TypeQueryTerm, String> t : idsAndTypeAndIdPattern) {
-					TypeQueryTerm typeQuery = t.getItem2();
-					String[] entityIds = t.getItem1();
-					String idPattern = t.getItem3();
-					sql.append(" (1=1");
-
-					if (typeQuery != null) {
-						sql.append(" AND ");
-						dollar = typeQuery.toSql(sql, tuple, dollar);
-					}
-					if (entityIds != null) {
-						sql.append(" AND id IN (");
-						for (String id : entityIds) {
-							sql.append('$');
-							sql.append(dollar);
-							sql.append(',');
-							tuple.addString(id);
-							dollar++;
-						}
-						sql.setCharAt(sql.length() - 1, ')');
-					}
-					if (idPattern != null) {
-						sql.append(" AND id ~ $");
-						sql.append(dollar);
-						dollar++;
-						tuple.addString(idPattern);
-					}
-					sql.append(") OR ");
-				}
-				sql.setLength(sql.length() - 3);
-				sql.append(')');
-			}
-
-			if (scopeQuery != null) {
-				scopeQuery.toSql(sql);
-			}
-			sql.append(
-					"), ");
-			dollar = aggrQuery.toSql(sql, tuple, dollar, timeProp, from, to);
-			sql.append(" SELECT jsonb_build_object('");
-			sql.append(NGSIConstants.JSON_LD_ID);
-			sql.append("', id,'");
-			sql.append(NGSIConstants.JSON_LD_TYPE);
-			sql.append("', e_types,'");
-			sql.append(NGSIConstants.NGSI_LD_CREATED_AT);
-			sql.append("', r_createdat,'");
-			sql.append(NGSIConstants.NGSI_LD_MODIFIED_AT);
-			sql.append(
-					"', r_modifiedat) || COALESCE(jsonb_object_agg(attributeid, to_jsonb(data_array)) FILTER (WHERE data_array IS NOT NULL), '{}'::jsonb) || CASE WHEN r_deletedat IS NULL THEN '{}'::jsonb ELSE jsonb_build_object('");
-			sql.append(NGSIConstants.NGSI_LD_DELETED_AT);
-			sql.append(
-					"', r_deletedat) END || CASE WHEN scope_entry IS NULL THEN '{}'::jsonb ELSE jsonb_build_object('");
-			sql.append(NGSIConstants.NGSI_LD_SCOPE);
-			sql.append(
-					"', scope_entry) END as entity FROM attribute_arrays GROUP BY id, e_types, r_createdat, r_modifiedat, r_deletedat, scope_entry ORDER BY id OFFSET $");
-			sql.append(dollar);
-			dollar++;
-			tuple.addInteger(offset);
-			sql.append(" LIMIT $");
-			sql.append(dollar);
-			dollar++;
-			tuple.addInteger(limit);
 		}
+		System.out.println(sql.toString());
+		System.out.println(tuple.deepToString());
+
+		connectionManager.executeQuery(tenant, "EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT) " + sql.toString(), tuple, false).onItem().transform(rows -> {
+		for (Row row : rows) {
+		System.out.println(row.getString(0));
+		}
+		return null;
+		}).subscribe().with(t -> {});
 
 		return connectionManager.executeQuery(tenant, sql.toString(), tuple, false).onItem().transform(rows -> {
+
 			QueryResult result = new QueryResult(tenant);
 			if (limit == 0 && count) {
 				result.setCount(rows.iterator().next().getLong(0));
@@ -1393,11 +1683,35 @@ public class HistoryDAO {
 				List<Map<String, Object>> resultData = new ArrayList<Map<String, Object>>(rows.size());
 				Map<String, Object> entity;
 				while (it.hasNext()) {
+					// id, e_types, createdat, modifiedat, deletedat, scopes, attribute_ids,
+					// attribute_data_arrays
 					next = it.next();
-					if (next.getJsonObject(0) != null) {
-						entity = next.getJsonObject(0).getMap();
-					} else {
-						entity = new HashMap<>();
+					String id = next.getString(0);
+					String[] types = next.getArrayOfStrings(1);
+					LocalDateTime createdAt = next.getLocalDateTime(2);
+
+					LocalDateTime modifiedAt = next.getLocalDateTime(3);
+					LocalDateTime deletedAt = next.getLocalDateTime(4);
+					String[] scopes = next.getArrayOfStrings(5);
+					String[] attribIds = next.getArrayOfStrings(6);
+
+					List attribData = next.getJsonArray(7).getList();
+
+					entity = new HashMap<>(5 + attribIds.length);
+					entity.put(NGSIConstants.JSON_LD_ID, id);
+					entity.put(NGSIConstants.JSON_LD_TYPE, Lists.newArrayList(types));
+					entity.put(NGSIConstants.NGSI_LD_CREATED_AT, generateDateTime(createdAt));
+					entity.put(NGSIConstants.NGSI_LD_MODIFIED_AT, generateDateTime(modifiedAt));
+					if (deletedAt != null) {
+						entity.put(NGSIConstants.NGSI_LD_DELETED_AT, generateDateTime(deletedAt));
+					}
+					if (scopes != null) {
+						entity.put(NGSIConstants.NGSI_LD_SCOPE, getScope(scopes));
+					}
+					for (int i = 0; i < attribIds.length; i++) {
+						String attribId = attribIds[i];
+
+						entity.put(attribId, attribData.get(i));
 					}
 
 					if (aggrQuery != null && (aggrQuery.getAggrFunctions().contains(NGSIConstants.AGGR_METH_MAX)
@@ -1435,33 +1749,51 @@ public class HistoryDAO {
 		});
 	}
 
-	private int addResultPart(StringBuilder sql, Tuple tuple, int dollar, int limit) {
-		sql.append(" SELECT jsonb_build_object('");
-		sql.append(NGSIConstants.JSON_LD_ID);
-		sql.append("', id,'");
-		sql.append(NGSIConstants.JSON_LD_TYPE);
-		sql.append("', e_types,'");
-		sql.append(NGSIConstants.NGSI_LD_CREATED_AT);
-		sql.append("', r_createdat,'");
-		sql.append(NGSIConstants.NGSI_LD_MODIFIED_AT);
+	private List<Map<String, String>> generateDateTime(LocalDateTime dbDate) {
+		List<Map<String, String>> result = new ArrayList<>(1);
+		Map<String, String> dateEntry = new HashMap<>(2);
+		dateEntry.put(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME);
+		dateEntry.put(NGSIConstants.JSON_LD_VALUE, dbDate.toString() + 'Z');
+		result.add(dateEntry);
+		return result;
+	}
+
+	private int addResultPart(StringBuilder sql, Tuple tuple, int dollar, int limit, boolean windowFunction, AggrTerm aggrTerm) {
+		if(aggrTerm != null){
+			sql.append("SELECT * FROM (");
+		}
 		sql.append(
-				"', r_modifiedat) || COALESCE(jsonb_object_agg(attributeid, to_jsonb(data_array)) FILTER (WHERE data_array IS NOT NULL), '{}'::jsonb) || CASE WHEN r_deletedat IS NULL THEN '{}'::jsonb ELSE jsonb_build_object('");
-		sql.append(NGSIConstants.NGSI_LD_DELETED_AT);
-		sql.append(
-				"', r_deletedat) END || CASE WHEN scope_entry IS NULL THEN '{}'::jsonb ELSE jsonb_build_object('");
-		sql.append(NGSIConstants.NGSI_LD_SCOPE);
-		sql.append(
-				"', scope_entry) END as entity, id, createdat FROM attribute_arrays GROUP BY id, createdat, e_types, r_createdat, r_modifiedat, r_deletedat, scope_entry ORDER BY createdat DESC, id ASC LIMIT ");
+				" SELECT id, e_types, createdat, modifiedat, deletedAt, scopes, array_agg(attributeid) FILTER (WHERE data_array IS NOT NULL");
+				if(aggrTerm != null){
+					sql.append(" AND data_array != '[{}]'::jsonb");
+				}
+				sql.append(") as attribute_ids, jsonb_agg(data_array) FILTER (WHERE data_array IS NOT NULL");
+				if(aggrTerm != null){
+					sql.append(" AND data_array != '[{}]'::jsonb");
+				}
+				sql.append(") as attribute_data_arrays FROM attribute_arrays GROUP BY id, createdat, e_types, createdat, modifiedat, deletedat, scopes");
+				if(aggrTerm != null){
+					sql.append(") filtered WHERE attribute_ids IS NOT NULL");
+				}
+		if (!windowFunction) {
+			sql.append(" ORDER BY createdat DESC, id ASC");
+		}
+		sql.append(" LIMIT ");
 		sql.append(limit);
 		return dollar;
 	}
 
 	private int addAttributesPart(StringBuilder sql, Tuple tuple, int dollar, TemporalQueryTerm tempQuery,
 			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, GeoQueryTerm geoQuery, DataSetIdTerm dataSetIdTerm,
-			PickTerm pickTerm, OmitTerm omitTerm, String timeProp, int n, int offsetN, String nOrder)
+			PickTerm pickTerm, OmitTerm omitTerm, String timeProp, int n, int offsetN, String nOrder, AggrTerm aggrTerm)
 			throws ResponseException {
+		if (aggrTerm != null) {
+			sql.append("attribute_arrays_temp");
+		} else {
+			sql.append("attribute_arrays");
+		}
 		sql.append(
-				"attribute_arrays AS (SELECT ei.id, ei.createdat, ei.e_types, ei.r_createdat, ei.r_modifiedat, ei.r_deletedat, ei.scope_entry, teai.attributeid, (array_agg(teai.data ORDER BY teai.");
+				" AS (SELECT ei.id, ei.createdat, ei.e_types, ei.modifiedat, ei.deletedat, ei.scopes, teai.attributeid, (array_agg(teai.data ORDER BY teai.");
 		sql.append(timeProp);
 		sql.append(' ');
 		sql.append(nOrder);
@@ -1474,7 +1806,16 @@ public class HistoryDAO {
 			sql.append(']');
 		}
 		sql.append(
-				" as data_array FROM entityInfos ei INNER JOIN temporalentityattrinstance teai ON teai.temporalentity_id = ei.id WHERE 1=1 AND ");
+				" as data_array");
+		if (aggrTerm != null) {
+			sql.append(", MIN(teai.");
+			sql.append(timeProp);
+			sql.append(") as PRSTART, MAX(teai.");
+			sql.append(timeProp);
+			sql.append(") as PRSTOP, MAX(teai.data #>> '{@type,0}') as ATTRTYPE");
+		}
+		sql.append(
+				" FROM entityInfos ei INNER JOIN temporalentityattrinstance teai ON teai.temporalentity_id = ei.id WHERE 1=1 AND ");
 		if (attrsQuery != null) {
 			dollar = attrsQuery.toTempSql(sql, tuple, dollar, dataSetIdTerm);
 			sql.append(" AND ");
@@ -1494,7 +1835,8 @@ public class HistoryDAO {
 
 		sql.setLength(sql.length() - 5);
 		sql.append(
-				" GROUP BY ei.id, ei.createdat, ei.e_types, ei.r_createdat, ei.r_modifiedat, ei.r_deletedat, ei.scope_entry, teai.attributeid)");
+				" GROUP BY ei.id, ei.createdat, ei.e_types, ei.createdat, ei.modifiedat, ei.deletedat, ei.scopes, teai.attributeid)");
+		
 		return dollar;
 	}
 
@@ -1505,28 +1847,7 @@ public class HistoryDAO {
 			sql.append("WITH ");
 		}
 		sql.append(
-				"entityInfos AS (SELECT id, createdat, e_types, jsonb_build_array(jsonb_build_object('");
-		sql.append(NGSIConstants.JSON_LD_TYPE);
-		sql.append("', '");
-		sql.append(NGSIConstants.NGSI_LD_DATE_TIME);
-		sql.append("', '");
-		sql.append(NGSIConstants.JSON_LD_VALUE);
-		sql.append(
-				"', to_char(createdat, 'YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"'))) AS r_createdat, jsonb_build_array(jsonb_build_object('");
-		sql.append(NGSIConstants.JSON_LD_TYPE);
-		sql.append("', '");
-		sql.append(NGSIConstants.NGSI_LD_DATE_TIME);
-		sql.append("', '");
-		sql.append(NGSIConstants.JSON_LD_VALUE);
-		sql.append(
-				"', to_char(modifiedat, 'YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"'))) AS r_modifiedat, CASE WHEN deletedat IS NULL THEN NULL ELSE jsonb_build_array(jsonb_build_object('");
-		sql.append(NGSIConstants.JSON_LD_TYPE);
-		sql.append("', '");
-		sql.append(NGSIConstants.NGSI_LD_DATE_TIME);
-		sql.append("', '");
-		sql.append(NGSIConstants.JSON_LD_VALUE);
-		sql.append(
-				"', to_char(deletedat, 'YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"'))) END AS r_deletedat, CASE WHEN scopes IS NULL THEN NULL ELSE getScopeEntry(scopes) END AS scope_entry FROM temporalentity WHERE ");
+				"entityInfos AS (SELECT id, e_types, createdat, modifiedat, deletedat, scopes FROM temporalentity WHERE ");
 		if (windowFunction) {
 			sql.append("""
 					(
@@ -1579,7 +1900,17 @@ public class HistoryDAO {
 		sql.append(" ORDER BY createdat DESC, id ASC OFFSET ");
 		sql.append(offset);
 		sql.append(" LIMIT ");
-		sql.append(limit);
+		if (windowFunction) {
+			sql.append("CASE WHEN (SELECT found_count FROM previous_results) < ");
+			sql.append(limit / 3);
+			sql.append(" THEN ");
+			sql.append(limit * 4);
+			sql.append(" ELSE ");
+			sql.append(limit * 2);
+			sql.append(" END");
+		} else {
+			sql.append(limit);
+		}
 		sql.append(
 				"), ");
 		return dollar;
