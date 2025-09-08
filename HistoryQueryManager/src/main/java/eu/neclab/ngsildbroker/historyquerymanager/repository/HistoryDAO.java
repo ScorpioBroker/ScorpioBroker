@@ -1662,15 +1662,17 @@ public class HistoryDAO {
 			sql.append(limit);
 
 		}
-		System.out.println(sql.toString());
-		System.out.println(tuple.deepToString());
 
-		connectionManager.executeQuery(tenant, "EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT) " + sql.toString(), tuple, false).onItem().transform(rows -> {
-		for (Row row : rows) {
-		System.out.println(row.getString(0));
-		}
-		return null;
-		}).subscribe().with(t -> {});
+		// connectionManager
+		// .executeQuery(tenant, "EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT) " +
+		// sql.toString(), tuple, false)
+		// .onItem().transform(rows -> {
+		// for (Row row : rows) {
+		// System.out.println(row.getString(0));
+		// }
+		// return null;
+		// }).subscribe().with(t -> {
+		// });
 
 		return connectionManager.executeQuery(tenant, sql.toString(), tuple, false).onItem().transform(rows -> {
 
@@ -1708,16 +1710,31 @@ public class HistoryDAO {
 					if (scopes != null) {
 						entity.put(NGSIConstants.NGSI_LD_SCOPE, getScope(scopes));
 					}
-					for (int i = 0; i < attribIds.length; i++) {
-						String attribId = attribIds[i];
-
-						entity.put(attribId, attribData.get(i));
+					if (aggrQuery == null) {
+						for (int i = 0; i < attribIds.length; i++) {
+							String attribId = attribIds[i];
+							entity.put(attribId, attribData.get(i));
+						}
+					} else {
+						for (int i = 0; i < attribIds.length; i++) {
+							String attribId = attribIds[i];
+							if (NGSIConstants.ENTITY_BASE_PROPS.contains(attribId)) {
+								entity.put(attribId, attribData.get(i));
+								continue;
+							}
+							List<Map<String, List<Map<String, List>>>> attribEntry = (List<Map<String, List<Map<String, List>>>>) attribData
+									.get(i);
+							if (attribEntry.get(0).size() == 1) {
+								continue;
+							}
+							if ((aggrQuery.getAggrFunctions().contains(NGSIConstants.AGGR_METH_MAX)
+									|| aggrQuery.getAggrFunctions().contains(NGSIConstants.AGGR_METH_MIN))) {
+								postProcessMinOrMaxResults(attribEntry);
+							}
+							entity.put(attribId, attribEntry);
+						}
 					}
 
-					if (aggrQuery != null && (aggrQuery.getAggrFunctions().contains(NGSIConstants.AGGR_METH_MAX)
-							|| aggrQuery.getAggrFunctions().contains(NGSIConstants.AGGR_METH_MIN))) {
-						postProcessMinOrMaxResults(entity);
-					}
 					resultData.add(entity);
 				}
 
@@ -1758,23 +1775,25 @@ public class HistoryDAO {
 		return result;
 	}
 
-	private int addResultPart(StringBuilder sql, Tuple tuple, int dollar, int limit, boolean windowFunction, AggrTerm aggrTerm) {
-		if(aggrTerm != null){
+	private int addResultPart(StringBuilder sql, Tuple tuple, int dollar, int limit, boolean windowFunction,
+			AggrTerm aggrTerm) {
+		if (aggrTerm != null) {
 			sql.append("SELECT * FROM (");
 		}
 		sql.append(
 				" SELECT id, e_types, createdat, modifiedat, deletedAt, scopes, array_agg(attributeid) FILTER (WHERE data_array IS NOT NULL");
-				if(aggrTerm != null){
-					sql.append(" AND data_array != '[{}]'::jsonb");
-				}
-				sql.append(") as attribute_ids, jsonb_agg(data_array) FILTER (WHERE data_array IS NOT NULL");
-				if(aggrTerm != null){
-					sql.append(" AND data_array != '[{}]'::jsonb");
-				}
-				sql.append(") as attribute_data_arrays FROM attribute_arrays GROUP BY id, createdat, e_types, createdat, modifiedat, deletedat, scopes");
-				if(aggrTerm != null){
-					sql.append(") filtered WHERE attribute_ids IS NOT NULL");
-				}
+		if (aggrTerm != null) {
+			sql.append(" AND data_array != '[{}]'::jsonb");
+		}
+		sql.append(") as attribute_ids, jsonb_agg(data_array) FILTER (WHERE data_array IS NOT NULL");
+		if (aggrTerm != null) {
+			sql.append(" AND data_array != '[{}]'::jsonb");
+		}
+		sql.append(
+				") as attribute_data_arrays FROM attribute_arrays GROUP BY id, createdat, e_types, createdat, modifiedat, deletedat, scopes");
+		if (aggrTerm != null) {
+			sql.append(") filtered WHERE attribute_ids IS NOT NULL");
+		}
 		if (!windowFunction) {
 			sql.append(" ORDER BY createdat DESC, id ASC");
 		}
@@ -1836,7 +1855,7 @@ public class HistoryDAO {
 		sql.setLength(sql.length() - 5);
 		sql.append(
 				" GROUP BY ei.id, ei.createdat, ei.e_types, ei.createdat, ei.modifiedat, ei.deletedat, ei.scopes, teai.attributeid)");
-		
+
 		return dollar;
 	}
 
@@ -1916,7 +1935,47 @@ public class HistoryDAO {
 		return dollar;
 	}
 
-	private void postProcessMinOrMaxResults(Map<String, Object> entity) {
+	private void postProcessMinOrMaxResults(List<Map<String, List<Map<String, List>>>> attribValue) {
+		for (Map<String, List<Map<String, List>>> listEntry : attribValue) {
+
+			List<Map<String, List>> maxes = listEntry.get(NGSIConstants.NGSI_LD_MAX);
+			if (maxes != null) {
+				for (Map<String, List> max : maxes) {
+					List<Map<String, List<Map<String, Object>>>> subMaxes = max
+							.get(JsonLdConsts.LIST);
+					for (Map<String, List<Map<String, Object>>> subMax : subMaxes) {
+						List<Map<String, Object>> realValues = subMax.get(JsonLdConsts.LIST);
+						String potentialValue = realValues.get(0).get(JsonLdConsts.VALUE)
+								.toString();
+						if (NumberUtils.isCreatable(potentialValue)) {
+							realValues.get(0).put(JsonLdConsts.VALUE,
+									NumberUtils.createNumber(potentialValue));
+						}
+
+					}
+				}
+			}
+			List<Map<String, List>> mins = listEntry.get(NGSIConstants.NGSI_LD_MIN);
+			if (mins != null) {
+				for (Map<String, List> min : mins) {
+					List<Map<String, List<Map<String, Object>>>> subMins = min
+							.get(JsonLdConsts.LIST);
+					for (Map<String, List<Map<String, Object>>> subMin : subMins) {
+						List<Map<String, Object>> realValues = subMin.get(JsonLdConsts.LIST);
+						String potentialValue = realValues.get(0).get(JsonLdConsts.VALUE)
+								.toString();
+						if (NumberUtils.isCreatable(potentialValue)) {
+							realValues.get(0).put(JsonLdConsts.VALUE,
+									NumberUtils.createNumber(potentialValue));
+						}
+
+					}
+				}
+			}
+		}
+	}
+
+	private void postProcessMinOrMaxResultsBackup(Map<String, Object> entity) {
 		for (Entry<String, Object> entry : entity.entrySet()) {
 			if (NGSIConstants.ENTITY_BASE_PROPS.contains(entry.getKey())) {
 				continue;
