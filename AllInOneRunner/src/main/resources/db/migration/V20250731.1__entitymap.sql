@@ -97,27 +97,65 @@ $$;
 
 CREATE INDEX i_teai_covering_observedat_index
 ON temporalentityattrinstance (temporalentity_id, attributeid, observedat DESC NULLS LAST)
-INCLUDE (data, geovalue, createdat, modifiedat, deletedat);
+INCLUDE (data, createdat, modifiedat, deletedat)
+WHERE octet_length(data::text) <= 4096;
 
 CREATE INDEX i_teai_covering_observedat_asc_index
 ON temporalentityattrinstance (temporalentity_id, attributeid, observedat ASC NULLS LAST)
-INCLUDE (data, geovalue, createdat, modifiedat, deletedat);
+INCLUDE (data, createdat, modifiedat, deletedat)
+WHERE octet_length(data::text) <= 4096;
 
 CREATE INDEX i_teai_covering_createdat_index
 ON temporalentityattrinstance (temporalentity_id, attributeid, createdat DESC NULLS LAST)
-INCLUDE (data, geovalue, observedat, modifiedat, deletedat);
+INCLUDE (data, observedat, modifiedat, deletedat)
+WHERE octet_length(data::text) <= 4096;
 
 CREATE INDEX i_teai_covering_createdat_asc_index
 ON temporalentityattrinstance (temporalentity_id, attributeid, createdat ASC NULLS LAST)
-INCLUDE (data, geovalue, observedat, modifiedat, deletedat);
+INCLUDE (data, observedat, modifiedat, deletedat)
+WHERE octet_length(data::text) <= 4096;
 
 CREATE INDEX i_teai_covering_modifiedat_index
 ON temporalentityattrinstance (temporalentity_id, attributeid, modifiedat DESC NULLS LAST)
-INCLUDE (data, geovalue, createdat, observedat, deletedat);
+INCLUDE (data, createdat, observedat, deletedat)
+WHERE octet_length(data::text) <= 4096;
 
 CREATE INDEX i_teai_covering_modifiedat_asc_index
 ON temporalentityattrinstance (temporalentity_id, attributeid, modifiedat ASC NULLS LAST)
-INCLUDE (data, geovalue, createdat, observedat, deletedat);
+INCLUDE (data, createdat, observedat, deletedat)
+WHERE octet_length(data::text) <= 4096;
+
+
+
+CREATE INDEX i_teai_covering_observedat_index_big_data
+ON temporalentityattrinstance (temporalentity_id, attributeid, observedat DESC NULLS LAST)
+INCLUDE (createdat, modifiedat, deletedat)
+WHERE octet_length(data::text) > 4096;
+
+CREATE INDEX i_teai_covering_observedat_asc_index_big_data
+ON temporalentityattrinstance (temporalentity_id, attributeid, observedat ASC NULLS LAST)
+INCLUDE (createdat, modifiedat, deletedat)
+WHERE octet_length(data::text) > 4096;
+
+CREATE INDEX i_teai_covering_createdat_index_big_data
+ON temporalentityattrinstance (temporalentity_id, attributeid, createdat DESC NULLS LAST)
+INCLUDE (observedat, modifiedat, deletedat)
+WHERE octet_length(data::text) > 4096;
+
+CREATE INDEX i_teai_covering_createdat_asc_index_big_data
+ON temporalentityattrinstance (temporalentity_id, attributeid, createdat ASC NULLS LAST)
+INCLUDE (observedat, modifiedat, deletedat)
+WHERE octet_length(data::text) > 4096;
+
+CREATE INDEX i_teai_covering_modifiedat_index_big_data
+ON temporalentityattrinstance (temporalentity_id, attributeid, modifiedat DESC NULLS LAST)
+INCLUDE (createdat, observedat, deletedat)
+WHERE octet_length(data::text) > 4096;
+
+CREATE INDEX i_teai_covering_modifiedat_asc_index_big_data
+ON temporalentityattrinstance (temporalentity_id, attributeid, modifiedat ASC NULLS LAST)
+INCLUDE (createdat, observedat, deletedat)
+WHERE octet_length(data::text) > 4096;
 
 CREATE INDEX idx_temporalentity_createdat_id ON temporalentity (e_types, createdat DESC, id ASC);
 
