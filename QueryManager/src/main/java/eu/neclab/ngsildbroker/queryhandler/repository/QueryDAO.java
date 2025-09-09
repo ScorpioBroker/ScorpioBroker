@@ -1,6 +1,5 @@
 package eu.neclab.ngsildbroker.queryhandler.repository;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -22,12 +21,10 @@ import org.locationtech.spatial4j.io.GeoJSONReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLDService;
-import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -1491,7 +1488,7 @@ public class QueryDAO {
 		}
 		if (doNotCreateEntityMap) {
 			if (count) {
-				query.append(" SELECT null::text, null::jsonb, null::boolean, list_size FROM D0 limit 1 UNION ALL");
+				query.append(" (SELECT null::text, null::jsonb, null::boolean, list_size FROM D0 limit 1) UNION ALL (");
 			}
 			query.append(" SELECT ID, ENTITY, PARENT");
 			if (count) {
@@ -1509,6 +1506,9 @@ public class QueryDAO {
 
 			}
 			query.append(" FROM D0");
+			if (count) {
+				query.append(')');
+			}
 		} else {
 			query.append(
 					" SELECT a.ID, D0.ENTITY, a.PARENT, a.remote_query, a.csourceid FROM a left join D0 on a.ID = D0.ID");
@@ -1556,12 +1556,17 @@ public class QueryDAO {
 			LinkedHashMap<String, Set<String>> id2Cid = entityMap.getEntityId2CSourceIds();
 			RowIterator<Row> it = rows.iterator();
 			if (doNotCreateEntityMap) {
+
 				entityMap.setId(AppConstants.ENTITYMAP_IGNORE);
+				int rowSize = rows.size();
+				if (rowSize == 0) {
+					return Tuple2.of(entityCache, entityMap);
+				}
 				if (count) {
 					Row first = it.next();
 					entityMap.setManualSize(first.getInteger(3));
 				} else {
-					int rowSize = rows.size();
+
 					if (rowSize < limit) {
 						entityMap.setManualSize(offset + rowSize);
 					} else {

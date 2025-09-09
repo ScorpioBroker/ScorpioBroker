@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "52441204-70bd-488a-8d0f-c3a759992c05",
+		"_postman_id": "892f436d-da83-4fad-928e-504e47d0b797",
 		"name": "API Test",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
@@ -68641,8 +68641,7 @@
 																	"   pm.expect(responseBody[\"speed2\"][1][\"value\"]).to.eql(80);\r",
 																	"});"
 																],
-																"type": "text/javascript",
-																"packages": {}
+																"type": "text/javascript"
 															}
 														}
 													],
@@ -68656,7 +68655,7 @@
 															}
 														],
 														"url": {
-															"raw": "{{history-query-manager}}/ngsi-ld/v1/temporal/entities?type=MyTempTestType",
+															"raw": "{{history-query-manager}}/ngsi-ld/v1/temporal/entities?type=MyTempTestType&nOrder=DESC",
 															"host": [
 																"{{history-query-manager}}"
 															],
@@ -68680,6 +68679,10 @@
 																	"key": "timeproperty",
 																	"value": "observedAt",
 																	"disabled": true
+																},
+																{
+																	"key": "nOrder",
+																	"value": "DESC"
 																}
 															]
 														}
@@ -68948,8 +68951,7 @@
 																	"\r",
 																	"});"
 																],
-																"type": "text/javascript",
-																"packages": {}
+																"type": "text/javascript"
 															}
 														}
 													],
@@ -68963,7 +68965,7 @@
 															}
 														],
 														"url": {
-															"raw": "{{history-query-manager}}/ngsi-ld/v1/temporal/entities?type=MyTempTestType&timerel=between&timeAt=2022-09-10T11%3A11%3A34.000000Z&endTimeAt=2022-09-10T14%3A11%3A34.000000Z",
+															"raw": "{{history-query-manager}}/ngsi-ld/v1/temporal/entities?type=MyTempTestType&timerel=between&timeAt=2022-09-10T11%3A11%3A34.000000Z&endTimeAt=2022-09-10T14%3A11%3A34.000000Z&nOrder=DESC",
 															"host": [
 																"{{history-query-manager}}"
 															],
@@ -68999,6 +69001,10 @@
 																{
 																	"key": "endTimeAt",
 																	"value": "2022-09-10T14%3A11%3A34.000000Z"
+																},
+																{
+																	"key": "nOrder",
+																	"value": "DESC"
 																}
 															]
 														}

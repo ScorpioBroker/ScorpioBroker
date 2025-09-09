@@ -15,7 +15,7 @@ public class GenericExceptionMapper implements ExceptionMapper<Exception> {
 
 	@Override
 	public Response toResponse(Exception exception) {
-		logger.debug("Logs to check", exception);
+		logger.error("Logs to check", exception);
 		return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
 				.entity(new ResponseException(ErrorType.InternalError,
 						"Something unforseen went wrong check the logs.").getJson())

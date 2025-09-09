@@ -257,17 +257,9 @@ public class EntityController {// implements EntityHandlerInterface {
 								logger.trace("update entry :: completed");
 								return HttpUtils.generateUpdateResultResponse(updateResult);
 							});
-				}).onFailure()
-				.recoverWithUni(t -> entityService.patchToEndPoint(entityId, req, body, attrib, viaHeaders).onItem()
-						.transform(isEndPointExist -> {
-							if (isEndPointExist)
-								return RestResponse.noContent();
-							else {
-								return HttpUtils.handleControllerExceptions(t, HttpUtils.getTenant(req));
-							}
-						}).onFailure().recoverWithItem(e -> {
-							return HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(req));
-						}));
+				}).onFailure().recoverWithItem(e -> {
+					return HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(req));
+				});
 	}
 
 	/**
