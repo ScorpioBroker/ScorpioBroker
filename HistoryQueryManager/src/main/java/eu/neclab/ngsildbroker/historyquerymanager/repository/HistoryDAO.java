@@ -1591,7 +1591,7 @@ public class HistoryDAO {
 			case NGSIConstants.QUERY_PARAMETER_DELETED_AT:
 				break;
 			default:
-				timeProp = NGSIConstants.QUERY_PARAMETER_MODIFIED_AT;
+				timeProp = NGSIConstants.QUERY_PARAMETER_OBSERVED_AT;
 				break;
 		}
 		String from;
@@ -1684,16 +1684,16 @@ public class HistoryDAO {
 
 		}
 
-		// connectionManager
-		// .executeQuery(tenant, "EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT) " +
-		// sql.toString(), tuple, false)
-		// .onItem().transform(rows -> {
-		// for (Row row : rows) {
-		// System.out.println(row.getString(0));
-		// }
-		// return null;
-		// }).subscribe().with(t -> {
-		// });
+		connectionManager
+				.executeQuery(tenant, "EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT) " +
+						sql.toString(), tuple, false)
+				.onItem().transform(rows -> {
+					for (Row row : rows) {
+						System.out.println(row.getString(0));
+					}
+					return null;
+				}).subscribe().with(t -> {
+				});
 		System.out.println(sql.toString());
 		System.out.println(tuple.deepToString());
 		return connectionManager.executeQuery(tenant, sql.toString(), tuple, false).onItem().transform(rows -> {

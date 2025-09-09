@@ -1536,7 +1536,18 @@ public class QueryDAO {
 			}
 			query.append(" FROM JOINENTITIES)");
 		}
-
+		connectionManager
+				.executeQuery(tenant, "EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT) " +
+						query.toString(), tuple, false)
+				.onItem().transform(rows -> {
+					for (Row row : rows) {
+						System.out.println(row.getString(0));
+					}
+					return null;
+				}).subscribe().with(t -> {
+				});
+		System.out.println(query.toString());
+		System.out.println(tuple.deepToString());
 		return connectionManager.executeQuery(tenant, query.toString(), tuple, false).onItem().transform(rows -> {
 			EntityMap entityMap = new EntityMap(qToken, splitEntities, regEmptyOrNoRegEntryAndNoLinkedQuery,
 					noRootLevelRegEntryAndLinkedQuery);
