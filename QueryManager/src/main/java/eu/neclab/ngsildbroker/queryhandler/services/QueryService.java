@@ -62,7 +62,6 @@ import io.smallrye.mutiny.tuples.Tuple3;
 import io.vertx.mutiny.core.MultiMap;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.buffer.Buffer;
-import io.vertx.mutiny.ext.web.client.HttpRequest;
 import io.vertx.mutiny.ext.web.client.HttpResponse;
 import io.vertx.mutiny.ext.web.client.WebClient;
 import io.vertx.mutiny.sqlclient.Row;
@@ -1074,87 +1073,92 @@ public class QueryService implements CSourceHandler {
 
 	}
 
-	public Uni<List<Map<String, Object>>> getTypesWithDetail(String tenant, boolean localOnly,
-			io.vertx.core.MultiMap headersFromReq, boolean bbox) {
-		Uni<List<Map<String, Object>>> local = queryDAO.getTypesWithDetails(tenant, bbox);
-		if (localOnly) {
-			return local;
-		}
-		Uni<Map<String, Set<String>>> queryRemoteTypes = Uni.combine().all()
-				.unis(queryDAO.getRemoteSourcesForTypesWithDetails(tenant),
-						queryDAO.getRemoteTypesWithDetailsForRegWithoutTypeSupport(tenant))
-				.asTuple().onItem().transformToUni(t -> {
-					Map<String, Set<String>> currentType2Attrib = t.getItem2();
-					RowSet<Row> rows = t.getItem1();
-					if (rows.size() > 0) {
-						List<Uni<List<Object>>> unis = getRemoteCalls(rows,
-								NGSIConstants.NGSI_LD_TYPES_ENDPOINT + "?details=true", headersFromReq);
-						return Uni.combine().all().unis(unis).with(list -> {
-							for (Object entry : list) {
-								if (((List<?>) entry).isEmpty()) {
-									continue;
-								}
-								List<Map<String, Object>> typeList = (List<Map<String, Object>>) entry;
+	// public Uni<List<Map<String, Object>>> getTypesWithDetail(String tenant,
+	// boolean localOnly,
+	// io.vertx.core.MultiMap headersFromReq, boolean bbox) {
+	// Uni<List<Map<String, Object>>> local = queryDAO.getTypesWithDetails(tenant,
+	// bbox);
+	// if (localOnly) {
+	// return local;
+	// }
+	// Uni<Map<String, Set<String>>> queryRemoteTypes = Uni.combine().all()
+	// .unis(queryDAO.getRemoteSourcesForTypesWithDetails(tenant),
+	// queryDAO.getRemoteTypesWithDetailsForRegWithoutTypeSupport(tenant))
+	// .asTuple().onItem().transformToUni(t -> {
+	// Map<String, Set<String>> currentType2Attrib = t.getItem2();
+	// RowSet<Row> rows = t.getItem1();
+	// if (rows.size() > 0) {
+	// List<Uni<List<Object>>> unis = getRemoteCalls(rows,
+	// NGSIConstants.NGSI_LD_TYPES_ENDPOINT + "?details=true", headersFromReq);
+	// return Uni.combine().all().unis(unis).with(list -> {
+	// for (Object entry : list) {
+	// if (((List<?>) entry).isEmpty()) {
+	// continue;
+	// }
+	// List<Map<String, Object>> typeList = (List<Map<String, Object>>) entry;
 
-								mergeTypeListWithDetails(typeList, currentType2Attrib);
+	// mergeTypeListWithDetails(typeList, currentType2Attrib);
 
-							}
-							return currentType2Attrib;
-						});
-					} else {
-						return Uni.createFrom().item(currentType2Attrib);
-					}
-				});
+	// }
+	// return currentType2Attrib;
+	// });
+	// } else {
+	// return Uni.createFrom().item(currentType2Attrib);
+	// }
+	// });
 
-		return Uni.combine().all().unis(local, queryRemoteTypes).asTuple().onItem().transform(t -> {
-			List<Map<String, Object>> localResult = t.getItem1();
-			Map<String, Set<String>> remoteResults = t.getItem2();
-			if (!remoteResults.isEmpty()) {
-				mergeTypeListWithDetails(localResult, remoteResults);
-				localResult.clear();
-				for (Entry<String, Set<String>> entry : remoteResults.entrySet()) {
-					Map<String, Object> resultEntry = Maps.newHashMap();
-					String type = entry.getKey();
-					resultEntry.put(NGSIConstants.JSON_LD_ID, type);
-					List<Map<String, String>> typeName = Lists.newArrayList();
-					Map<String, String> typeEntry = Maps.newHashMap();
-					typeEntry.put(NGSIConstants.JSON_LD_ID, type);
-					resultEntry.put(NGSIConstants.NGSI_LD_TYPE_NAME, typeName);
-					resultEntry.put(NGSIConstants.JSON_LD_TYPE, Lists.newArrayList(NGSIConstants.NGSI_LD_ENTITY_TYPE));
-					List<Map<String, String>> attribList = Lists.newArrayList();
-					for (String attrib : entry.getValue()) {
-						Map<String, String> attribValue = Maps.newHashMap();
-						attribValue.put(NGSIConstants.JSON_LD_ID, attrib);
-						attribList.add(attribValue);
-					}
-					resultEntry.put(NGSIConstants.NGSI_LD_ATTRIBUTE_NAMES, attribList);
-					localResult.add(resultEntry);
-				}
-			}
-			return localResult;
-		});
-	}
+	// return Uni.combine().all().unis(local,
+	// queryRemoteTypes).asTuple().onItem().transform(t -> {
+	// List<Map<String, Object>> localResult = t.getItem1();
+	// Map<String, Set<String>> remoteResults = t.getItem2();
+	// if (!remoteResults.isEmpty()) {
+	// mergeTypeListWithDetails(localResult, remoteResults);
+	// localResult.clear();
+	// for (Entry<String, Set<String>> entry : remoteResults.entrySet()) {
+	// Map<String, Object> resultEntry = Maps.newHashMap();
+	// String type = entry.getKey();
+	// resultEntry.put(NGSIConstants.JSON_LD_ID, type);
+	// List<Map<String, String>> typeName = Lists.newArrayList();
+	// Map<String, String> typeEntry = Maps.newHashMap();
+	// typeEntry.put(NGSIConstants.JSON_LD_ID, type);
+	// resultEntry.put(NGSIConstants.NGSI_LD_TYPE_NAME, typeName);
+	// resultEntry.put(NGSIConstants.JSON_LD_TYPE,
+	// Lists.newArrayList(NGSIConstants.NGSI_LD_ENTITY_TYPE));
+	// List<Map<String, String>> attribList = Lists.newArrayList();
+	// for (String attrib : entry.getValue()) {
+	// Map<String, String> attribValue = Maps.newHashMap();
+	// attribValue.put(NGSIConstants.JSON_LD_ID, attrib);
+	// attribList.add(attribValue);
+	// }
+	// resultEntry.put(NGSIConstants.NGSI_LD_ATTRIBUTE_NAMES, attribList);
+	// localResult.add(resultEntry);
+	// }
+	// }
+	// return localResult;
+	// });
+	// }
 
-	private void mergeTypeListWithDetails(List<Map<String, Object>> typeList,
-			Map<String, Set<String>> currentType2Attrib) {
-		String type;
-		List<Map<String, String>> attribs;
-		for (Map<String, Object> entry : typeList) {
-			type = (String) entry.get(NGSIConstants.JSON_LD_ID);
-			attribs = (List<Map<String, String>>) entry.get(NGSIConstants.NGSI_LD_ATTRIBUTE_NAMES);
-			Set<String> currentAttribs;
-			if (currentType2Attrib.containsKey(type)) {
-				currentAttribs = currentType2Attrib.get(type);
-			} else {
-				currentAttribs = Sets.newHashSet();
-				currentType2Attrib.put(type, currentAttribs);
-			}
-			for (Map<String, String> attrib : attribs) {
-				currentAttribs.add(attrib.get(NGSIConstants.JSON_LD_ID));
-			}
-		}
+	// private void mergeTypeListWithDetails(List<Map<String, Object>> typeList,
+	// Map<String, Set<String>> currentType2Attrib) {
+	// String type;
+	// List<Map<String, String>> attribs;
+	// for (Map<String, Object> entry : typeList) {
+	// type = (String) entry.get(NGSIConstants.JSON_LD_ID);
+	// attribs = (List<Map<String, String>>)
+	// entry.get(NGSIConstants.NGSI_LD_ATTRIBUTE_NAMES);
+	// Set<String> currentAttribs;
+	// if (currentType2Attrib.containsKey(type)) {
+	// currentAttribs = currentType2Attrib.get(type);
+	// } else {
+	// currentAttribs = Sets.newHashSet();
+	// currentType2Attrib.put(type, currentAttribs);
+	// }
+	// for (Map<String, String> attrib : attribs) {
+	// currentAttribs.add(attrib.get(NGSIConstants.JSON_LD_ID));
+	// }
+	// }
 
-	}
+	// }
 
 	public Uni<List<Map<String, Object>>> getTypes(String tenant, boolean localOnly,
 			io.vertx.core.MultiMap headersFromReq,

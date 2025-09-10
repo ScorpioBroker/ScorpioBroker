@@ -210,56 +210,68 @@ public class QueryDAO {
 		});
 	}
 
-	public Uni<List<Map<String, Object>>> getTypesWithDetails(String tenantId, boolean bbox) {
-		String sql;
-		if (!bbox) {
-			sql = "SELECT DISTINCT myTypes, jsonb_agg(jsonb_build_object('" + NGSIConstants.JSON_LD_ID
-					+ "', myAttr)) from entity, jsonb_array_elements(ENTITY -> '@type') as myTypes, jsonb_object_keys((ENTITY - ARRAY['"
-					+ NGSIConstants.JSON_LD_TYPE + "', '" + NGSIConstants.JSON_LD_ID + "', '"
-					+ NGSIConstants.NGSI_LD_CREATED_AT + "','" + NGSIConstants.NGSI_LD_MODIFIED_AT
-					+ "'])) as myAttr group by myTypes";
-		} else {
-			sql = "SELECT DISTINCT myTypes, jsonb_agg(jsonb_build_object('" + NGSIConstants.JSON_LD_ID
-					+ "', myAttr)), ST_XMin(ST_SetSRID(ST_Extent(ENTITY.LOCATION), 4326)) AS xmin,"
-					+ "ST_XMax(ST_SetSRID(ST_Extent(ENTITY.LOCATION), 4326)) AS xmax,"
-					+ "ST_YMin(ST_SetSRID(ST_Extent(ENTITY.LOCATION), 4326)) AS ymin,"
-					+ "ST_YMax(ST_SetSRID(ST_Extent(ENTITY.LOCATION), 4326)) AS ymax from entity, jsonb_array_elements(ENTITY -> '@type') as myTypes, jsonb_object_keys((ENTITY - ARRAY['"
-					+ NGSIConstants.JSON_LD_TYPE + "', '" + NGSIConstants.JSON_LD_ID + "', '"
-					+ NGSIConstants.NGSI_LD_CREATED_AT + "','" + NGSIConstants.NGSI_LD_MODIFIED_AT
-					+ "'])) as myAttr group by myTypes";
-		}
-		return connectionManager.executeQuery(tenantId, sql, null, false).onItem().transform(rows -> {
-			List<Map<String, Object>> result = Lists.newArrayList();
-			rows.forEach(row -> {
-				Map<String, Object> resultEntry = Maps.newHashMap();
-				resultEntry.put(NGSIConstants.JSON_LD_ID, row.getString(0));
-				resultEntry.put(NGSIConstants.JSON_LD_TYPE, Lists.newArrayList(NGSIConstants.NGSI_LD_ENTITY_TYPE));
-				Map<String, String> tmp = Maps.newHashMap();
-				tmp.put(NGSIConstants.JSON_LD_ID, row.getString(0));
-				resultEntry.put(NGSIConstants.NGSI_LD_TYPE_NAME, Lists.newArrayList(tmp));
-				resultEntry.put(NGSIConstants.NGSI_LD_ATTRIBUTE_NAMES,
-						row.getJsonArray(1).getList().stream().distinct().toList());
-				if (bbox) {
-					Double xmin = row.getDouble(2);
-					Double xmax = row.getDouble(3);
-					Double ymin = row.getDouble(4);
-					Double ymax = row.getDouble(5);
-					if (xmin != null && xmax != null && ymax != null && ymin != null) {
-						List<Map<String, List<Map<String, Double>>>> bboxEntry = List
-								.of(Map.of(NGSIConstants.JSON_LD_LIST,
-										List.of(Map.of(NGSIConstants.JSON_LD_VALUE, xmin),
-												Map.of(NGSIConstants.JSON_LD_VALUE, ymin),
-												Map.of(NGSIConstants.JSON_LD_VALUE, xmax),
-												Map.of(NGSIConstants.JSON_LD_VALUE, ymax))));
-						resultEntry.put(NGSIConstants.BBOX, bboxEntry);
+	// public Uni<List<Map<String, Object>>> getTypesWithDetails(String tenantId,
+	// boolean bbox) {
+	// String sql;
+	// if (!bbox) {
+	// sql = "SELECT DISTINCT myTypes, jsonb_agg(jsonb_build_object('" +
+	// NGSIConstants.JSON_LD_ID
+	// + "', myAttr)) from entity, jsonb_array_elements(ENTITY -> '@type') as
+	// myTypes, jsonb_object_keys((ENTITY - ARRAY['"
+	// + NGSIConstants.JSON_LD_TYPE + "', '" + NGSIConstants.JSON_LD_ID + "', '"
+	// + NGSIConstants.NGSI_LD_CREATED_AT + "','" +
+	// NGSIConstants.NGSI_LD_MODIFIED_AT
+	// + "'])) as myAttr group by myTypes";
+	// } else {
+	// sql = "SELECT DISTINCT myTypes, jsonb_agg(jsonb_build_object('" +
+	// NGSIConstants.JSON_LD_ID
+	// + "', myAttr)), ST_XMin(ST_SetSRID(ST_Extent(ENTITY.LOCATION), 4326)) AS
+	// xmin,"
+	// + "ST_XMax(ST_SetSRID(ST_Extent(ENTITY.LOCATION), 4326)) AS xmax,"
+	// + "ST_YMin(ST_SetSRID(ST_Extent(ENTITY.LOCATION), 4326)) AS ymin,"
+	// + "ST_YMax(ST_SetSRID(ST_Extent(ENTITY.LOCATION), 4326)) AS ymax from entity,
+	// jsonb_array_elements(ENTITY -> '@type') as myTypes, jsonb_object_keys((ENTITY
+	// - ARRAY['"
+	// + NGSIConstants.JSON_LD_TYPE + "', '" + NGSIConstants.JSON_LD_ID + "', '"
+	// + NGSIConstants.NGSI_LD_CREATED_AT + "','" +
+	// NGSIConstants.NGSI_LD_MODIFIED_AT
+	// + "'])) as myAttr group by myTypes";
+	// }
+	// System.out.println(sql);
+	// return connectionManager.executeQuery(tenantId, sql, null,
+	// false).onItem().transform(rows -> {
+	// List<Map<String, Object>> result = Lists.newArrayList();
+	// rows.forEach(row -> {
+	// Map<String, Object> resultEntry = Maps.newHashMap();
+	// resultEntry.put(NGSIConstants.JSON_LD_ID, row.getString(0));
+	// resultEntry.put(NGSIConstants.JSON_LD_TYPE,
+	// Lists.newArrayList(NGSIConstants.NGSI_LD_ENTITY_TYPE));
+	// Map<String, String> tmp = Maps.newHashMap();
+	// tmp.put(NGSIConstants.JSON_LD_ID, row.getString(0));
+	// resultEntry.put(NGSIConstants.NGSI_LD_TYPE_NAME, Lists.newArrayList(tmp));
+	// resultEntry.put(NGSIConstants.NGSI_LD_ATTRIBUTE_NAMES,
+	// row.getJsonArray(1).getList().stream().distinct().toList());
+	// if (bbox) {
+	// Double xmin = row.getDouble(2);
+	// Double xmax = row.getDouble(3);
+	// Double ymin = row.getDouble(4);
+	// Double ymax = row.getDouble(5);
+	// if (xmin != null && xmax != null && ymax != null && ymin != null) {
+	// List<Map<String, List<Map<String, Double>>>> bboxEntry = List
+	// .of(Map.of(NGSIConstants.JSON_LD_LIST,
+	// List.of(Map.of(NGSIConstants.JSON_LD_VALUE, xmin),
+	// Map.of(NGSIConstants.JSON_LD_VALUE, ymin),
+	// Map.of(NGSIConstants.JSON_LD_VALUE, xmax),
+	// Map.of(NGSIConstants.JSON_LD_VALUE, ymax))));
+	// resultEntry.put(NGSIConstants.BBOX, bboxEntry);
 
-					}
-				}
-				result.add(resultEntry);
-			});
-			return result;
-		});
-	}
+	// }
+	// }
+	// result.add(resultEntry);
+	// });
+	// return result;
+	// });
+	// }
 
 	public Uni<Map<String, Object>> getType(String tenantId, String type, boolean bbox) {
 
@@ -1721,19 +1733,34 @@ public class QueryDAO {
 
 	public Uni<Map<String, Set<String>>> getTypesWithDetails(String tenantId) {
 
-		String sql = "SELECT DISTINCT unnest(e_types), jsonb_object_keys(ENTITY) from entity;";
+		String sql = """
+				SELECT DISTINCT
+				    e_type,
+				    object_key
+				FROM entity
+				CROSS JOIN LATERAL unnest(e_types) AS e_type
+				CROSS JOIN LATERAL jsonb_object_keys(entity) AS object_key;
+						""";
 		return connectionManager.executeQuery(tenantId, sql, null, false).onItem().transform(rows -> {
 			Map<String, Set<String>> result = new HashMap<>();
 			Set<String> attrs = Sets.newHashSet();
 			RowIterator<Row> it = rows.iterator();
+			String last = null;
 			while (it.hasNext()) {
 				Row row = it.next();
 				String type = row.getString(0);
-				attrs.add(row.getString(1));
-				if (type != null) {
-					result.put(type, attrs);
+				if (!type.equals(last)) {
+					if (last != null) {
+						result.put(last, attrs);
+					}
 					attrs = Sets.newHashSet();
+					last = type;
 				}
+				attrs.add(row.getString(1));
+			}
+			if (last != null) {
+				result.put(last, attrs);
+				attrs = Sets.newHashSet();
 			}
 			return result;
 		});
