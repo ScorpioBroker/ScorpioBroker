@@ -200,7 +200,9 @@ public class HistoryController {
 			@QueryParam(value = "geometryProperty") String geometryProperty,
 			@QueryParam("timeproperty") String timeProperty, @QueryParam("timerel") String timeRel,
 			@QueryParam("timeAt") String timeAt, @QueryParam("endTimeAt") String endTimeAt,
-			@QueryParam("format") String format) {
+			@QueryParam("format") String format, @QueryParam("n") @DefaultValue("-1") int nInput,
+			@QueryParam("offsetN") @DefaultValue("0") int offsetN,
+			@QueryParam("nOrder") @DefaultValue("ASC") String nOrderInput) {
 		boolean localOnly;
 		try {
 			localOnly = HttpUtils.parseBoolean(localOnlyS);
@@ -214,11 +216,20 @@ public class HistoryController {
 		if (acceptHeader != 1 && acceptHeader != 2) {
 			return HttpUtils.getInvalidHeader();
 		}
-		int lastNTBU;
-		if (lastN == null) {
-			lastNTBU = -1;
+		if (nInput != -1 && lastN != -1 && lastN != nInput) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
+					new ResponseException(ErrorType.BadRequestData,
+							"Conflicting input in n and lastN. Please remove one"),
+					HttpUtils.getTenant(request)));
+		}
+		String nOrder;
+		int n;
+		if (lastN != -1) {
+			nOrder = "DESC";
+			n = lastN;
 		} else {
-			lastNTBU = lastN;
+			nOrder = nOrderInput;
+			n = nInput;
 		}
 
 		List<Object> headerContext;
@@ -238,7 +249,7 @@ public class HistoryController {
 				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 			}
 			return historyQueryService.retrieveEntity(HttpUtils.getTenant(request), entityId, attrsQuery, aggrQuery,
-					tempQuery, lang, lastNTBU, localOnly, context, request.headers()).onItem()
+					tempQuery, lang, n, offsetN, nOrder, localOnly, context, request.headers()).onItem()
 					.transformToUni(entity -> {
 						return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, entity,
 								geometryProperty, finalOptionsString, null, ldService, null, null, true);

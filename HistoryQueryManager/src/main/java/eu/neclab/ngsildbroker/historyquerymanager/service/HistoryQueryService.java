@@ -107,34 +107,6 @@ public class HistoryQueryService implements CSourceHandler {
 			int n, int offsetN, String nOrder, Integer limit, Integer offSet, Boolean count, Boolean localOnly,
 			Context context,
 			HttpServerRequest request) {
-		// if (true) {
-		// return historyDAO
-		// .newQuery(tenant, idsAndTypeQueryAndIdPattern, attrsQuery, qQuery, geoQuery,
-		// scopeQuery, context,
-		// limit, offSet, null, null, 0, null, null, null, null, false, true, true,
-		// null, true,
-		// false, false, false, null, false, tempQuery, aggrQuery, lastN, null, null)
-		// .onItem().transform(t -> {
-		// QueryResult result = new QueryResult(tenant);
-		// result.setLimit(limit);
-		// result.setOffset(offSet);
-		// Set<Entry<String, Tuple2<Map<String, Object>, Set<String>>>> tmp =
-		// t.getItem1().entrySet();
-		// List<Map<String, Object>> resultData = new ArrayList<>(tmp.size());
-		// for (Entry<String, Tuple2<Map<String, Object>, Set<String>>> entry : tmp) {
-		// resultData.add(entry.getValue().getItem1());
-		// }
-		// result.setData(resultData);
-		// result.setLanguageQueryTerm(langQuery);
-
-		// return result;
-		// });
-		// }
-
-		// Uni<QueryResult> local = historyDAO.query(tenant,
-		// idsAndTypeQueryAndIdPattern, attrsQuery, qQuery,
-		// tempQuery, aggrQuery, geoQuery, scopeQuery, lastN, limit, offSet,
-		// count).onFailure()
 		Uni<QueryResult> local = historyDAO
 				.query(tenant, idsAndTypeQueryAndIdPattern, attrsQuery, qQuery, geoQuery,
 						scopeQuery, context, limit,
@@ -252,11 +224,25 @@ public class HistoryQueryService implements CSourceHandler {
 	 * @return Single entity merged with potential
 	 */
 	public Uni<Map<String, Object>> retrieveEntity(String tenant, String entityId, AttrsQueryTerm attrsQuery,
-			AggrTerm aggrQuery, TemporalQueryTerm tempQuery, String lang, int lastN, boolean localOnly, Context context,
+			AggrTerm aggrQuery, TemporalQueryTerm tempQuery, String lang, int n, int offsetN, String nOrder,
+			boolean localOnly, Context context,
 			io.vertx.core.MultiMap headersFromReq) {
+		List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeQueryAndIdPattern = new ArrayList<>(1);
+		idsAndTypeQueryAndIdPattern.add(Tuple3.of(new String[] { entityId }, null, null));
+		Uni<Map<String, Object>> local = historyDAO.query(tenant, idsAndTypeQueryAndIdPattern, attrsQuery, null, null,
+				null, context, 1,
+				0, null, null, -1, null, null, null, "", false, true, true, null,
+				localOnly, false, false,
+				false, null, false, tempQuery, aggrQuery, n, offsetN, nOrder).onItem().transform(qR -> {
+					Map<String, Object> result;
+					if (qR.getData().isEmpty()) {
+						result = new HashMap<>(0);
+					} else {
+						result = qR.getData().get(0);
+					}
 
-		Uni<Map<String, Object>> local = historyDAO.retrieveEntity(tenant, entityId, attrsQuery, aggrQuery, tempQuery,
-				lang, lastN);
+					return result;
+				});
 		if (localOnly) {
 			return local.onItem().transformToUni(localItem -> {
 				if (localItem.isEmpty()) {
