@@ -164,7 +164,7 @@ public class QueryControllerTest {
 		Map<String, Object> map = new HashMap<>();
 		map.put("id", entity);
 		list.add(map);
-		Mockito.when(queryService.getTypesWithDetail(any(), anyBoolean(), any(), false))
+		Mockito.when(queryService.getTypes(any(), anyBoolean(), any(), true, false, any()))
 				.thenReturn(Uni.createFrom().item(list));
 		Boolean details = true;
 
@@ -182,7 +182,7 @@ public class QueryControllerTest {
 		Map<String, Object> map = new HashMap<>();
 		map.put("id", entity);
 		list.add(map);
-		Mockito.when(queryService.getTypesWithDetail(any(), anyBoolean(), any(), false))
+		Mockito.when(queryService.getTypes(any(), anyBoolean(), any(), true, false, any()))
 				.thenReturn(Uni.createFrom().item(list));
 		// Mockito.when(queryService.getTypes(any(), anyBoolean(),any(), anyBoolean(),
 		// anyBoolean())).thenReturn(Uni.createFrom().item(map));
