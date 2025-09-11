@@ -517,33 +517,35 @@ public class HistoryDAO {
 		if (windowFunction) {
 			sql.append(
 					"""
-								), batch_stats AS (
-							          SELECT COUNT(*) as found_count,
-							                 MAX(createdat) as last_createdat
-							          FROM aggregated_batch
-							      ),
-							      batch_with_last_id AS (
-							          SELECT ab.*,
-							                 bs.found_count,
-							                 bs.last_createdat,
-							                 -- Calculate last_id_for_createdat in one pass
-							                 MAX(CASE WHEN ab.createdat = bs.last_createdat THEN ab.id ELSE NULL END) OVER() as last_id_for_createdat
-							          FROM aggregated_batch ab
-							          CROSS JOIN batch_stats bs
-							      )
-							      SELECT id, e_types, createdat, modifiedat, deletedat, scopes, attribute_ids, attribute_data_arrays,
-							             found_count, last_createdat, last_id_for_createdat
-							      FROM batch_with_last_id
-							  )
-													 			UNION ALL
-													   (
-							WITH previous_results AS (SELECT * FROM result_builder),
-							prev_stats AS (
-							          SELECT found_count, last_createdat, last_id_for_createdat
-							          FROM previous_results
-							          LIMIT 1
-							      ),
-													""");
+													), batch_stats AS (
+												          SELECT COUNT(*) as found_count,
+												                 MAX(createdat) as last_createdat
+												          FROM aggregated_batch
+												      ),
+												      batch_with_last_id AS (
+												          SELECT ab.*,
+												                 bs.found_count,
+												                 bs.last_createdat,
+												                 -- Calculate last_id_for_createdat in one pass
+												                 MAX(CASE WHEN ab.createdat = bs.last_createdat THEN ab.id ELSE NULL END) OVER() as last_id_for_createdat
+												          FROM aggregated_batch ab
+												          CROSS JOIN batch_stats bs
+												      )
+												      SELECT id, e_types, createdat, modifiedat, deletedat, scopes, attribute_ids, attribute_data_arrays,
+												             found_count, last_createdat, last_id_for_createdat
+												      FROM batch_with_last_id
+												  )
+																		 			UNION ALL
+																		   (
+												WITH previous_results AS (SELECT * FROM result_builder),
+												prev_stats AS (
+							  SELECT
+							    MAX(found_count) as found_count,
+							    MAX(last_createdat) as last_createdat,
+							    MAX(last_id_for_createdat) as last_id_for_createdat
+							  FROM previous_results
+							),
+																		""");
 			dollar = addEntityInfoPart(sql, tuple, dollar, idsAndTypeAndIdPattern, scopeQuery, limit, 0, true);
 			try {
 				dollar = addAttributesPart(sql, tuple, dollar, tempQuery, attrsQuery, qQuery, geoQuery,
@@ -579,8 +581,8 @@ public class HistoryDAO {
 		// return null;
 		// }).subscribe().with(t -> {
 		// });
-		// System.out.println(sql.toString());
-		// System.out.println(tuple.deepToString());
+		System.out.println(sql.toString());
+		System.out.println(tuple.deepToString());
 		return connectionManager.executeQuery(tenant, sql.toString(), tuple, false).onItem().transform(rows -> {
 
 			QueryResult result = new QueryResult(tenant);
@@ -777,10 +779,10 @@ public class HistoryDAO {
 		if (windowFunction) {
 			sql.append("""
 					(
-					               createdat > (SELECT last_createdat FROM previous_results LIMIT 1)
+					               createdat > (SELECT last_createdat FROM prev_stats)
 					               OR (
-					                   createdat = (SELECT last_createdat FROM previous_results LIMIT 1)
-					                   AND id > (SELECT last_id_for_createdat FROM previous_results LIMIT 1)
+					                   createdat = (SELECT last_createdat FROM prev_stats)
+					                   AND id > (SELECT last_id_for_createdat FROM prev_stats)
 					               )
 					) AND
 					 """);
@@ -827,7 +829,7 @@ public class HistoryDAO {
 		sql.append(offset);
 		sql.append(" LIMIT ");
 		if (windowFunction) {
-			sql.append("CASE WHEN (SELECT found_count FROM previous_results) < ");
+			sql.append("CASE WHEN (SELECT found_count FROM prev_stats) < ");
 			sql.append(limit / 3);
 			sql.append(" THEN ");
 			sql.append(limit * 4);
@@ -876,53 +878,6 @@ public class HistoryDAO {
 									NumberUtils.createNumber(potentialValue));
 						}
 
-					}
-				}
-			}
-		}
-	}
-
-	private void postProcessMinOrMaxResultsBackup(Map<String, Object> entity) {
-		for (Entry<String, Object> entry : entity.entrySet()) {
-			if (NGSIConstants.ENTITY_BASE_PROPS.contains(entry.getKey())) {
-				continue;
-			}
-			List<Map<String, List<Map<String, List>>>> tmp = (List<Map<String, List<Map<String, List>>>>) entry
-					.getValue();
-			for (Map<String, List<Map<String, List>>> listEntry : tmp) {
-
-				List<Map<String, List>> maxes = listEntry.get(NGSIConstants.NGSI_LD_MAX);
-				if (maxes != null) {
-					for (Map<String, List> max : maxes) {
-						List<Map<String, List<Map<String, Object>>>> subMaxes = max
-								.get(JsonLdConsts.LIST);
-						for (Map<String, List<Map<String, Object>>> subMax : subMaxes) {
-							List<Map<String, Object>> realValues = subMax.get(JsonLdConsts.LIST);
-							String potentialValue = realValues.get(0).get(JsonLdConsts.VALUE)
-									.toString();
-							if (NumberUtils.isCreatable(potentialValue)) {
-								realValues.get(0).put(JsonLdConsts.VALUE,
-										NumberUtils.createNumber(potentialValue));
-							}
-
-						}
-					}
-				}
-				List<Map<String, List>> mins = listEntry.get(NGSIConstants.NGSI_LD_MIN);
-				if (mins != null) {
-					for (Map<String, List> min : mins) {
-						List<Map<String, List<Map<String, Object>>>> subMins = min
-								.get(JsonLdConsts.LIST);
-						for (Map<String, List<Map<String, Object>>> subMin : subMins) {
-							List<Map<String, Object>> realValues = subMin.get(JsonLdConsts.LIST);
-							String potentialValue = realValues.get(0).get(JsonLdConsts.VALUE)
-									.toString();
-							if (NumberUtils.isCreatable(potentialValue)) {
-								realValues.get(0).put(JsonLdConsts.VALUE,
-										NumberUtils.createNumber(potentialValue));
-							}
-
-						}
 					}
 				}
 			}
