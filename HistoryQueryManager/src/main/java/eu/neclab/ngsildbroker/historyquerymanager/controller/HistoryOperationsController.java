@@ -353,7 +353,8 @@ public class HistoryOperationsController {
 				}
 
 				return queryService.query(tenant, idsAndTypeQueryAndIdPattern, attrsQuery, qQueryTerm, csfQueryTerm,
-						geoQueryTerm, scopeQueryTerm, temporalQueryTerm, aggrTerm, langQuery, n, offsetN, nOrder, limit,
+						geoQueryTerm, scopeQueryTerm, temporalQueryTerm, aggrTerm, langQuery, n, offsetN, nOrder,
+						actualLimit,
 						offset,
 						false, localOnly, context, request).onItem().transformToUni(queryResult -> {
 							int payloadType;
