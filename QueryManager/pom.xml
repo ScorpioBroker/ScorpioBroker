@@ -1,4 +1,6 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>query-manager</artifactId>
 	<name>QueryManager</name>
@@ -6,7 +8,7 @@
 	<parent>
 		<groupId>eu.neclab.ngsildbroker</groupId>
 		<artifactId>broker-parent</artifactId>
-		<version>5.0.9-SNAPSHOT</version>
+		<version>6.0.0-SNAPSHOT</version>
 		<relativePath>../BrokerParent</relativePath>
 	</parent>
 	<profiles>
@@ -24,8 +26,10 @@
 						<artifactId>maven-compiler-plugin</artifactId>
 						<configuration>
 							<excludes>
-								<exclude>eu/neclab/ngsildbroker/queryhandler/messaging/QueryManagerMessagingInMemory.java</exclude>
-								<exclude>eu/neclab/ngsildbroker/queryhandler/messaging/QueryManagerMessagingByteArray.java</exclude>
+								<exclude>
+									eu/neclab/ngsildbroker/queryhandler/messaging/QueryManagerMessagingInMemory.java</exclude>
+								<exclude>
+									eu/neclab/ngsildbroker/queryhandler/messaging/QueryManagerMessagingByteArray.java</exclude>
 							</excludes>
 						</configuration>
 					</plugin>
@@ -46,8 +50,10 @@
 						<artifactId>maven-compiler-plugin</artifactId>
 						<configuration>
 							<excludes>
-								<exclude>eu/neclab/ngsildbroker/queryhandler/messaging/QueryManagerMessagingString.java</exclude>
-								<exclude>eu/neclab/ngsildbroker/queryhandler/messaging/QueryManagerMessagingByteArray.java</exclude>
+								<exclude>
+									eu/neclab/ngsildbroker/queryhandler/messaging/QueryManagerMessagingString.java</exclude>
+								<exclude>
+									eu/neclab/ngsildbroker/queryhandler/messaging/QueryManagerMessagingByteArray.java</exclude>
 							</excludes>
 						</configuration>
 					</plugin>
@@ -74,8 +80,10 @@
 						<artifactId>maven-compiler-plugin</artifactId>
 						<configuration>
 							<excludes>
-								<exclude>eu/neclab/ngsildbroker/queryhandler/messaging/QueryManagerMessagingByteArray.java</exclude>
-								<exclude>eu/neclab/ngsildbroker/queryhandler/messaging/QueryManagerMessagingInMemory.java</exclude>
+								<exclude>
+									eu/neclab/ngsildbroker/queryhandler/messaging/QueryManagerMessagingByteArray.java</exclude>
+								<exclude>
+									eu/neclab/ngsildbroker/queryhandler/messaging/QueryManagerMessagingInMemory.java</exclude>
 							</excludes>
 						</configuration>
 					</plugin>
@@ -96,8 +104,10 @@
 						<artifactId>maven-compiler-plugin</artifactId>
 						<configuration>
 							<excludes>
-								<exclude>eu/neclab/ngsildbroker/queryhandler/messaging/QueryManagerMessagingString.java</exclude>
-								<exclude>eu/neclab/ngsildbroker/queryhandler/messaging/QueryManagerMessagingInMemory.java</exclude>
+								<exclude>
+									eu/neclab/ngsildbroker/queryhandler/messaging/QueryManagerMessagingString.java</exclude>
+								<exclude>
+									eu/neclab/ngsildbroker/queryhandler/messaging/QueryManagerMessagingInMemory.java</exclude>
 							</excludes>
 						</configuration>
 					</plugin>
@@ -118,8 +128,10 @@
 						<artifactId>maven-compiler-plugin</artifactId>
 						<configuration>
 							<excludes>
-								<exclude>eu/neclab/ngsildbroker/queryhandler/messaging/QueryManagerMessagingString.java</exclude>
-								<exclude>eu/neclab/ngsildbroker/queryhandler/messaging/QueryManagerMessagingInMemory.java</exclude>
+								<exclude>
+									eu/neclab/ngsildbroker/queryhandler/messaging/QueryManagerMessagingString.java</exclude>
+								<exclude>
+									eu/neclab/ngsildbroker/queryhandler/messaging/QueryManagerMessagingInMemory.java</exclude>
 							</excludes>
 						</configuration>
 					</plugin>

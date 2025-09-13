@@ -1,8 +1,8 @@
-# RELEASE NOTES 5.1.0
+# RELEASE NOTES 6.0.0
 
 ## Restructuring config parameters
 
-Scorpio had quite a few config parameters which didn't follow the naming scheme scorpio.<config>. This is addressed in this release please refer to the application.properties to see the full updated list.
+Scorpio had quite a few config parameters which didn't follow the naming scheme scorpio.<configtopic>.<config>. This is addressed in this release please refer to the application.properties to see the full updated list.
 
 ## Clean seperation between internal and external addresses
 
@@ -12,3 +12,6 @@ Scorpio had an issue with addressing it's internal components when run in contai
  - scorpio.gateway.url - the public reachable endpoint of scorpio, defaults to http://localhost:9090
  
 ## Better via header support
+
+Early version has been adapted to be fully spec compliant
+Registrations are auto updated with the host alias on creation/update

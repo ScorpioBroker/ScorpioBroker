@@ -195,7 +195,7 @@ public class HistoryController {
 	public Uni<RestResponse<Object>> retrieveTemporalEntity(HttpServerRequest request,
 			@PathParam("entityId") String entityId, @QueryParam("attrs") String attrs,
 			@QueryParam("aggrMethods") String aggrMethods, @QueryParam("aggrPeriodDuration") String aggrPeriodDuration,
-			@QueryParam("lang") String lang, @QueryParam("lastN") Integer lastN,
+			@QueryParam("lang") String lang, @QueryParam("lastN") @DefaultValue("-1") int lastN,
 			@QueryParam("localOnly") String localOnlyS, @QueryParam(value = "options") String optionsString,
 			@QueryParam(value = "geometryProperty") String geometryProperty,
 			@QueryParam("timeproperty") String timeProperty, @QueryParam("timerel") String timeRel,
