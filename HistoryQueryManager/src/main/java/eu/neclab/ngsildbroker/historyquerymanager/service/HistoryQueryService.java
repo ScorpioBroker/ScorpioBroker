@@ -104,7 +104,7 @@ public class HistoryQueryService implements CSourceHandler {
 			List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeQueryAndIdPattern,
 			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, CSFQueryTerm csf, GeoQueryTerm geoQuery,
 			ScopeQueryTerm scopeQuery, TemporalQueryTerm tempQuery, AggrTerm aggrQuery, LanguageQueryTerm langQuery,
-			int n, int offsetN, String nOrder, Integer limit, Integer offSet, Boolean count, Boolean localOnly,
+			int n, int offsetN, String orderN, Integer limit, Integer offSet, Boolean count, Boolean localOnly,
 			Context context,
 			HttpServerRequest request) {
 		Uni<QueryResult> local = historyDAO
@@ -112,7 +112,7 @@ public class HistoryQueryService implements CSourceHandler {
 						scopeQuery, context, limit,
 						offSet, null, null, -1, null, null, null, "", false, true, true, null,
 						localOnly, false, false,
-						count, null, false, tempQuery, aggrQuery, n, offsetN, nOrder)
+						count, null, false, tempQuery, aggrQuery, n, offsetN, orderN)
 				.onFailure()
 				.recoverWithUni(e -> {
 					if (e instanceof PgException) {
@@ -482,6 +482,9 @@ public class HistoryQueryService implements CSourceHandler {
 	}
 
 	private static Map<String, String> queryStrToMap(String queryString) {
+		if (queryString == null) {
+			return new HashMap<>();
+		}
 		Map<String, String> paramMap = new HashMap<>();
 
 		String[] paramPairs = queryString.split("&");

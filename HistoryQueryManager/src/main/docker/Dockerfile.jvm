@@ -1,4 +1,4 @@
-FROM openjdk:26-slim-trixie
+FROM eclipse-temurin:21-jre-alpine
 WORKDIR /usr/src/scorpio
 COPY target/quarkus-app ./
 ENV DBHOST=postgres
