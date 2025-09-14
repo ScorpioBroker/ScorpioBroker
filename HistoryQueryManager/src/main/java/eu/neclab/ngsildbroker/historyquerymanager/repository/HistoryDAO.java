@@ -581,8 +581,8 @@ public class HistoryDAO {
 		// return null;
 		// }).subscribe().with(t -> {
 		// });
-		System.out.println(sql.toString());
-		System.out.println(tuple.deepToString());
+		// System.out.println(sql.toString());
+		// System.out.println(tuple.deepToString());
 		return connectionManager.executeQuery(tenant, sql.toString(), tuple, false).onItem().transform(rows -> {
 
 			QueryResult result = new QueryResult(tenant);
