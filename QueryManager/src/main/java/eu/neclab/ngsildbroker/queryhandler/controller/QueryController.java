@@ -145,26 +145,44 @@ public class QueryController {
 
 	@Path("/entities")
 	@GET
-	public Uni<RestResponse<Object>> query(HttpServerRequest request, @QueryParam("id") String id,
-			@QueryParam("type") String typeQuery, @QueryParam("idPattern") String idPattern,
-			@QueryParam("attrs") String attrs, @QueryParam("q") String qInput, @QueryParam("csf") String csf,
-			@QueryParam("geometry") String geometry, @QueryParam("georel") String georelInput,
-			@QueryParam("coordinates") String coordinates, @QueryParam("geoproperty") String geoproperty,
-			@QueryParam("geometryProperty") String geometryProperty, @QueryParam("lang") String lang,
-			@QueryParam("scopeQ") String scopeQ, @QueryParam("local") String localOnlyS,
-			@QueryParam("options") String options, @QueryParam("limit") Integer limit, @QueryParam("offset") int offset,
-			@QueryParam("count") String countS,
-			@QueryParam("containedBy") @DefaultValue(AppConstants.EMPTY) String containedBy,
-			@QueryParam("join") String join, @QueryParam("joinLevel") Integer joinLevel,
-			@QueryParam("doNotCompact") String doNotCompactS, @HeaderParam("NGSILD-EntityMap") String entityMapToken,
-			@QueryParam("entityMap") String entityMapRetrieveS, @QueryParam("maxDistance") String maxDistance,
-			@QueryParam("minDistance") String minDistance, @QueryParam("pick") String pick,
-			@QueryParam("omit") String omit, @QueryParam("format") String format,
-			@QueryParam("jsonKeys") String jsonKeysQP, @QueryParam("datasetId") String datasetId,
-			@QueryParam("splitEntities") @DefaultValue("true") String distEntitiesS,
-			@QueryParam("orderBy") String orderBy, @QueryParam("orderFrom") String orderFrom,
-			@QueryParam("orderGeometry") String orderGeometry, @QueryParam("collation") String collation,
-			@QueryParam("metadata") @DefaultValue("false") String metadataS) {
+	public Uni<RestResponse<Object>> query(HttpServerRequest request,
+			@QueryParam(NGSIConstants.QUERY_PARAMETER_ID) String id,
+			@QueryParam(NGSIConstants.QUERY_PARAMETER_TYPE) String typeQuery,
+			@QueryParam(NGSIConstants.QUERY_PARAMETER_IDPATTERN) String idPattern,
+			@QueryParam(NGSIConstants.QUERY_PARAMETER_ATTRS) String attrs,
+			@QueryParam(NGSIConstants.QUERY_PARAMETER_QUERY) String qInput,
+			@QueryParam(NGSIConstants.QUERY_PARAMETER_CSF) String csf,
+			@QueryParam(NGSIConstants.QUERY_PARAMETER_GEOMETRY) String geometry,
+			@QueryParam(NGSIConstants.QUERY_PARAMETER_GEOREL) String georelInput,
+			@QueryParam(NGSIConstants.QUERY_PARAMETER_COORDINATES) String coordinates,
+			@QueryParam(NGSIConstants.QUERY_PARAMETER_GEOPROPERTY) String geoproperty,
+			@QueryParam(NGSIConstants.QUERY_PARAMETER_GEOMETRY_PROPERTY) String geometryProperty,
+			@QueryParam(NGSIConstants.QUERY_PARAMETER_LANG) String lang,
+			@QueryParam(NGSIConstants.QUERY_PARAMETER_SCOPE_QUERY) String scopeQ,
+			@QueryParam(NGSIConstants.QUERY_PARAMETER_LOCAL_ONLY) String localOnlyS,
+			@QueryParam(NGSIConstants.QUERY_PARAMETER_OPTIONS) String options,
+			@QueryParam(NGSIConstants.QUERY_PARAMETER_LIMIT) Integer limit,
+			@QueryParam(NGSIConstants.QUERY_PARAMETER_OFFSET) int offset,
+			@QueryParam(NGSIConstants.QUERY_PARAMETER_COUNT) String countS,
+			@QueryParam(NGSIConstants.QUERY_PARAMETER_CONTAINED_BY) @DefaultValue(AppConstants.EMPTY) String containedBy,
+			@QueryParam(NGSIConstants.QUERY_PARAMETER_JOIN) String join,
+			@QueryParam(NGSIConstants.QUERY_PARAMETER_JOINLEVEL) Integer joinLevel,
+			@QueryParam(NGSIConstants.QUERY_PARAMETER_DO_NOT_COMPACT) String doNotCompactS,
+			@HeaderParam(NGSIConstants.HEADER_ENTITY_MAP) String entityMapToken,
+			@QueryParam(NGSIConstants.QUERY_PARAMETER_ENTITY_MAP) String entityMapRetrieveS,
+			@QueryParam(NGSIConstants.QUERY_PARAMETER_MAX_DISTANCE) String maxDistance,
+			@QueryParam(NGSIConstants.QUERY_PARAMETER_MIN_DISTANCE) String minDistance,
+			@QueryParam(NGSIConstants.QUERY_PARAMETER_PICK) String pick,
+			@QueryParam(NGSIConstants.QUERY_PARAMETER_OMIT) String omit,
+			@QueryParam(NGSIConstants.QUERY_PARAMETER_FORMAT) String format,
+			@QueryParam(NGSIConstants.QUERY_PARAMETER_JSON_KEYS) String jsonKeysQP,
+			@QueryParam(NGSIConstants.QUERY_PARAMETER_DATA_SET_ID) String datasetId,
+			@QueryParam(NGSIConstants.QUERY_PARAMETER_SPLIT_ENTITIES) @DefaultValue("true") String distEntitiesS,
+			@QueryParam(NGSIConstants.QUERY_PARAMETER_ORDER_BY) String orderBy,
+			@QueryParam(NGSIConstants.QUERY_PARAMETER_ORDER_FROM) String orderFrom,
+			@QueryParam(NGSIConstants.QUERY_PARAMETER_ORDER_GEOMETRY) String orderGeometry,
+			@QueryParam(NGSIConstants.QUERY_PARAMETER_ORDER_COLLATION) String collation,
+			@QueryParam(NGSIConstants.QUERY_PARAMETER_META_DATA) @DefaultValue("false") String metadataS) {
 		logger.debug("query");
 		boolean localOnly;
 		boolean doNotCompact;
@@ -213,7 +231,8 @@ public class QueryController {
 	@Path("/types")
 	@GET
 	public Uni<RestResponse<Object>> getAllTypes(HttpServerRequest request,
-			@QueryParam(value = "details") String detailsS, @QueryParam(value = "local") String localOnlyS,
+			@QueryParam(NGSIConstants.QUERY_PARAMETER_DETAILS) String detailsS,
+			@QueryParam(NGSIConstants.QUERY_PARAMETER_LOCAL_ONLY) String localOnlyS,
 			@QueryParam(value = "bbox") @DefaultValue("false") String bboxS) {
 		logger.debug("getAllTypes");
 		boolean details;
@@ -257,7 +276,7 @@ public class QueryController {
 	@Path("/types/{entityType}")
 	@GET
 	public Uni<RestResponse<Object>> getType(HttpServerRequest request, @PathParam("entityType") String type,
-			@QueryParam(value = "local") String localOnlyS) {
+			@QueryParam(NGSIConstants.QUERY_PARAMETER_LOCAL_ONLY) String localOnlyS) {
 		logger.debug("getType");
 		boolean localOnly;
 		String tenant = HttpUtils.getTenant(request);
@@ -288,7 +307,8 @@ public class QueryController {
 	@Path("/attributes")
 	@GET
 	public Uni<RestResponse<Object>> getAllAttributes(HttpServerRequest request,
-			@QueryParam(value = "details") String detailsS, @QueryParam(value = "local") String localOnlyS) {
+			@QueryParam(NGSIConstants.QUERY_PARAMETER_DETAILS) String detailsS,
+			@QueryParam(NGSIConstants.QUERY_PARAMETER_LOCAL_ONLY) String localOnlyS) {
 		logger.debug("getAllAttributes");
 		boolean localOnly;
 		boolean details;
@@ -325,7 +345,8 @@ public class QueryController {
 	@Path("/attributes/{attribute}")
 	@GET
 	public Uni<RestResponse<Object>> getAttribute(HttpServerRequest request, @PathParam("attribute") String attribute,
-			@QueryParam(value = "details") String detailsS, @QueryParam(value = "local") String localOnlyS) {
+			@QueryParam(NGSIConstants.QUERY_PARAMETER_DETAILS) String detailsS,
+			@QueryParam(NGSIConstants.QUERY_PARAMETER_LOCAL_ONLY) String localOnlyS) {
 		logger.debug("getAttribute");
 		boolean localOnly;
 		boolean details;

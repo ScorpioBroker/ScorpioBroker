@@ -381,6 +381,7 @@ public interface NGSIConstants {
 	public static final String ERROR_UNEXPECTED_RESULT_NULL_TITLE = "The resource returned no body check detail for the resources return code";
 	public static final String ERROR_UNEXPECTED_RESULT_NOT_EXPECTED_BODY_TITLE = "The resource gave an unexpected result body";
 	public static final String NGSI_LD_ATTRIBUTE_NAME_SHORT = "attributeName";
+	public static final String NGSI_LD_ORDERING_NAME_SHORT = "ordering";
 	public static final String NGSI_LD_ATTRIBUTE_COUNT_SHORT = "attributeCount";
 	public static final String NGSI_LD_REASON_SHORT = "reason";
 	public static final String NGSI_LD_NOT_UPDATED_SHORT = "notUpdated";
@@ -608,5 +609,19 @@ public interface NGSIConstants {
 	public static final String ENTITY = "entity";
 	public static final String ENTITY_LIST = "entityList";
 	public static final String UNIT_DATE_TIME = "DateTime";
+	public static final String QUERY_PARAMETER_LOCAL_ONLY = "local";
+	public static final String QUERY_PARAMETER_CONTAINED_BY = "containedBy";
+	public static final String HEADER_ENTITY_MAP = "NGSILD-EntityMap";
+	public static final String QUERY_PARAMETER_ENTITY_MAP = "entityMap";
+	public static final String QUERY_PARAMETER_MAX_DISTANCE = "maxDistance";
+	public static final String QUERY_PARAMETER_MIN_DISTANCE = "minDistance";
+	public static final String QUERY_PARAMETER_FORMAT = "format";
+	public static final String QUERY_PARAMETER_JSON_KEYS = "jsonKeys";
+	public static final String QUERY_PARAMETER_SPLIT_ENTITIES = "splitEntities";
+	public static final String QUERY_PARAMETER_ORDER_BY = "orderBy";
+	public static final String QUERY_PARAMETER_ORDER_FROM = "orderFrom";
+	public static final String QUERY_PARAMETER_ORDER_GEOMETRY = "orderGeometry";
+	public static final String QUERY_PARAMETER_ORDER_COLLATION = "collation";
+	public static final String QUERY_PARAMETER_META_DATA = "metadata";
 
 }

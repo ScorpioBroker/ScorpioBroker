@@ -1535,7 +1535,7 @@ public class QueryDAO {
 				    object_key
 				FROM entity
 				CROSS JOIN LATERAL unnest(e_types) AS e_type
-				CROSS JOIN LATERAL jsonb_object_keys(entity) AS object_key;
+				CROSS JOIN LATERAL jsonb_object_keys(entity) AS object_key ORDER BY e_type;
 						""";
 		return connectionManager.executeQuery(tenantId, sql, null, false).onItem().transform(rows -> {
 			Map<String, Set<String>> result = new HashMap<>();
@@ -1552,7 +1552,10 @@ public class QueryDAO {
 					attrs = Sets.newHashSet();
 					last = type;
 				}
-				attrs.add(row.getString(1));
+				String attr = row.getString(1);
+				if (!NGSIConstants.ENTITY_BASE_PROPS.contains(attr)) {
+					attrs.add(attr);
+				}
 			}
 			if (last != null) {
 				result.put(last, attrs);

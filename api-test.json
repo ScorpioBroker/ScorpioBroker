@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "892f436d-da83-4fad-928e-504e47d0b797",
+		"_postman_id": "723ff90f-9a8a-48d2-bc03-68c56b33f46d",
 		"name": "API Test",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
@@ -68655,7 +68655,7 @@
 															}
 														],
 														"url": {
-															"raw": "{{history-query-manager}}/ngsi-ld/v1/temporal/entities?type=MyTempTestType&nOrder=DESC",
+															"raw": "{{history-query-manager}}/ngsi-ld/v1/temporal/entities?type=MyTempTestType&orderN=DESC",
 															"host": [
 																"{{history-query-manager}}"
 															],
@@ -68681,7 +68681,7 @@
 																	"disabled": true
 																},
 																{
-																	"key": "nOrder",
+																	"key": "orderN",
 																	"value": "DESC"
 																}
 															]
@@ -68965,7 +68965,7 @@
 															}
 														],
 														"url": {
-															"raw": "{{history-query-manager}}/ngsi-ld/v1/temporal/entities?type=MyTempTestType&timerel=between&timeAt=2022-09-10T11%3A11%3A34.000000Z&endTimeAt=2022-09-10T14%3A11%3A34.000000Z&nOrder=DESC",
+															"raw": "{{history-query-manager}}/ngsi-ld/v1/temporal/entities?type=MyTempTestType&timerel=between&timeAt=2022-09-10T11%3A11%3A34.000000Z&endTimeAt=2022-09-10T14%3A11%3A34.000000Z&orderN=DESC",
 															"host": [
 																"{{history-query-manager}}"
 															],
@@ -69003,7 +69003,7 @@
 																	"value": "2022-09-10T14%3A11%3A34.000000Z"
 																},
 																{
-																	"key": "nOrder",
+																	"key": "orderN",
 																	"value": "DESC"
 																}
 															]

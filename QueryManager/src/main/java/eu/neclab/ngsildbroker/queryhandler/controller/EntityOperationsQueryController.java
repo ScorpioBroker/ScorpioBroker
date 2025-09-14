@@ -16,6 +16,7 @@ import jakarta.ws.rs.QueryParam;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.RestResponse;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLDService;
 import com.github.jsonldjava.utils.JsonUtils;
@@ -63,6 +64,9 @@ public class EntityOperationsQueryController {
 
 	@Inject
 	JsonLDService ldService;
+
+	@Inject
+	ObjectMapper objectMapper;
 
 	@Path("/query")
 	@POST
@@ -161,6 +165,7 @@ public class EntityOperationsQueryController {
 				Object geoQ = body.get(NGSIConstants.NGSI_LD_GEO_QUERY_SHORT);
 				Object joinObj = body.get(NGSIConstants.QUERY_PARAMETER_JOIN);
 				Object joinLevelObj = body.get(NGSIConstants.QUERY_PARAMETER_JOINLEVEL);
+				Object ordering = body.get(NGSIConstants.NGSI_LD_ORDERING_NAME_SHORT);
 				String join = joinObj == null ? null : (String) joinObj;
 				int joinLevel = joinLevelObj == null ? 0 : (int) joinLevelObj;
 				boolean entityDist = (boolean) body.getOrDefault(NGSIConstants.QUERY_PARAMETER_ENTITY_DIST, false);
@@ -292,6 +297,22 @@ public class EntityOperationsQueryController {
 				} else {
 					idsAndTypeQueryAndIdPattern = null;
 				}
+
+				if (ordering != null && ordering instanceof Map m) {
+					String collation = (String) m.get(NGSIConstants.QUERY_PARAMETER_ORDER_COLLATION);
+					String orderGeometry = (String) m.get(NGSIConstants.QUERY_PARAMETER_GEOMETRY);
+					String orderFrom;
+					if (m.containsKey(NGSIConstants.GEO_JSON_COORDINATES)) {
+						orderFrom = objectMapper.writeValueAsString(m.get(NGSIConstants.GEO_JSON_COORDINATES));
+					} else {
+						orderFrom = null;
+					}
+
+					String orderByString = String.join(",",
+							((List<String>) m.get(NGSIConstants.QUERY_PARAMETER_ORDER_BY)));
+					orderBy = QueryParser.parseOrderBy(orderByString, collation, orderFrom, orderGeometry, context);
+				}
+
 				String checkSum;
 				if (idsAndTypeQueryAndIdPattern == null && attrs == null && q == null && csf == null && geometry == null
 						&& georel == null && coordinates == null && geoproperty == null && geometryProperty == null
@@ -299,8 +320,9 @@ public class EntityOperationsQueryController {
 					checkSum = "";
 				} else {
 					checkSum = String.valueOf(Objects.hashCode(idsAndTypeQueryAndIdPattern, attrs, q, csf, geometry,
-							georel, coordinates, geoproperty, geometryProperty, scopeQ, pick, omit));
+							georel, coordinates, geoproperty, geometryProperty, scopeQ, pick, omit, ordering));
 				}
+
 				return queryService
 						.query(tenant, token, tokenProvided, idsAndTypeQueryAndIdPattern, attrsQuery, qQueryTerm,
 								csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset, count,
