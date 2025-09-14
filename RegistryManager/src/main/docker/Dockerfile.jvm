@@ -1,4 +1,4 @@
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:21-jre-ubi9-minimal
 WORKDIR /usr/src/scorpio
 COPY target/quarkus-app ./
 ENV DBHOST=postgres
