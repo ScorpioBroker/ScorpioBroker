@@ -1,5 +1,7 @@
 package eu.neclab.ngsildbroker.commons.serialization.messaging;
 
+import org.flywaydb.core.internal.exception.sqlExceptions.FlywaySqlServerUntrustedCertificateSqlException;
+
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.google.common.collect.ArrayListMultimap;
@@ -41,7 +43,8 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
 		TemporalQueryTerm.class, LanguageQueryTerm.class, AttrsQueryTerm.class, LanguageQueryTerm.class,
 		QQueryTerm.class, ScopeQueryTerm.class, TypeQueryTerm.class, InternalNotification.class, BatchRequest.class,
 		BaseRequest.class, DeleteSubscriptionRequest.class, UpdateSubscriptionRequest.class, JsonLdOptions.class,
-		Query.class, ProjectionTerm.class, PickTerm.class, OmitTerm.class, CSFQueryTerm.class, DataSetIdTerm.class, CSourceBaseRequest.class }, serialization = true)
+		Query.class, ProjectionTerm.class, PickTerm.class, OmitTerm.class, CSFQueryTerm.class, DataSetIdTerm.class,
+		CSourceBaseRequest.class, FlywaySqlServerUntrustedCertificateSqlException.class }, serialization = true)
 public class NativeReflectionConfig {
 
 }
