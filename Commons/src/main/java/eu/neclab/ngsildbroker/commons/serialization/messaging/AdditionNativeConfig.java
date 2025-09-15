@@ -9,7 +9,7 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
         FlywaySqlNoIntegratedAuthException.class
 },
         // We need to register the methods to avoid the NoSuchMethodException
-        methods = true)
+        methods = true, registerFullHierarchy = true)
 public class AdditionNativeConfig {
 
 }
