@@ -15,10 +15,6 @@ public class Property extends BaseProperty {
 		type = "Property";
 	}
 
-	public void finalize() throws Throwable {
-
-	}
-
 	public void setSingleEntry(PropertyEntry value) {
 		HashMap<String, PropertyEntry> temp = new HashMap<String, PropertyEntry>();
 		temp.put(value.getDataSetId(), value);

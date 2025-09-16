@@ -21,8 +21,4 @@ public class TimeManagement {
 		this.end = end;
 	}
 
-	public void finalize() throws Throwable {
-
-	}
-
 }

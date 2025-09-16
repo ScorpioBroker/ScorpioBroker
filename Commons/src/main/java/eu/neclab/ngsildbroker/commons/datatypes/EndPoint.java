@@ -88,10 +88,6 @@ public class EndPoint implements Serializable {
 
 	}
 
-	public void finalize() throws Throwable {
-
-	}
-
 	public String getAccept() {
 		return accept;
 	}

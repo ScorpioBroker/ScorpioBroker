@@ -12,11 +12,7 @@ public class GeoProperty extends BaseProperty {
 	HashMap<String, GeoPropertyEntry> entries = new HashMap<String, GeoPropertyEntry>();
 
 	public GeoProperty() {
-//		this.type = "GeoProperty";
-	}
-
-	public void finalize() throws Throwable {
-
+		// this.type = "GeoProperty";
 	}
 
 	public HashMap<String, GeoPropertyEntry> getEntries() {

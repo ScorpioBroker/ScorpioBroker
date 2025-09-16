@@ -30,8 +30,4 @@ public class TimeInterval {
 		this.stop = stop;
 	}
 
-	public void finalize() throws Throwable {
-
-	}
-
 }

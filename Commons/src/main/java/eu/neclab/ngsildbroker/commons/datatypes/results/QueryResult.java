@@ -23,7 +23,6 @@ public class QueryResult {
 	private Map<String, Map<String, Object>> flatJoin;
 	private boolean isFlatJoin;
 	private String tenant;
-	
 
 	public QueryResult(String tenant) {
 		this.tenant = tenant;
@@ -117,10 +116,4 @@ public class QueryResult {
 		this.tenant = tenant;
 	}
 
-	
-	
-
-//	public void finalize() throws Throwable {
-//
-//	}
 }

@@ -25,10 +25,6 @@ public class LDTemporalQuery implements Serializable {
 
 	}
 
-	public void finalize() throws Throwable {
-
-	}
-
 	public Date getEndTimeAt() {
 		return endTimeAt;
 	}

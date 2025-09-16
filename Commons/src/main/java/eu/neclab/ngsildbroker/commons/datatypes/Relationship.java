@@ -15,10 +15,6 @@ public class Relationship extends BaseProperty {
 		type = "Relationship";
 	}
 
-	public void finalize() throws Throwable {
-
-	}
-
 	public HashMap<String, RelationshipEntry> getEntries() {
 		return dataSetId2object;
 	}
