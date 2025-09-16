@@ -61,7 +61,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./at-context-server/target/at-context-server-${{steps.get-build-id.outputs.id}}-runner.exe
+          asset_path: ./AtContextServer/target/at-context-server-${{steps.get-build-id.outputs.id}}-runner.exe
           asset_name: at-context-server-windows-kafka-${{steps.get-id.outputs.id}}-windows-kafka.exe
           asset_content_type: application/octet-stream
       - name: Upload Release history-query-manager
@@ -185,7 +185,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./at-context-server/target/at-context-server-${{steps.get-build-id.outputs.id}}-runner.exe
+          asset_path: ./AtContextServer/target/at-context-server-${{steps.get-build-id.outputs.id}}-runner.exe
           asset_name: at-context-server-windows-sqs-${{steps.get-id.outputs.id}}-windows-sqs.exe
           asset_content_type: application/octet-stream
       - name: Upload Release history-query-manager
@@ -309,7 +309,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./at-context-server/target/at-context-server-${{steps.get-build-id.outputs.id}}-runner.exe
+          asset_path: ./AtContextServer/target/at-context-server-${{steps.get-build-id.outputs.id}}-runner.exe
           asset_name: at-context-server-windows-mqtt-${{steps.get-id.outputs.id}}-windows-mqtt.exe
           asset_content_type: application/octet-stream
       - name: Upload Release history-query-manager
@@ -433,7 +433,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./at-context-server/target/at-context-server-${{steps.get-build-id.outputs.id}}-runner.exe
+          asset_path: ./AtContextServer/target/at-context-server-${{steps.get-build-id.outputs.id}}-runner.exe
           asset_name: at-context-server-windows-rabbitmq-${{steps.get-id.outputs.id}}-windows-rabbitmq.exe
           asset_content_type: application/octet-stream
       - name: Upload Release history-query-manager

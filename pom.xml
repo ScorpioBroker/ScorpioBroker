@@ -15,7 +15,7 @@
   <modules>
     <module>BrokerParent</module>
     <module>Commons</module>
-    <module>at-context-server</module>
+    <module>AtContextServer</module>
     <module>EntityManager</module>
     <module>QueryManager</module>
     <module>SubscriptionManager</module>
