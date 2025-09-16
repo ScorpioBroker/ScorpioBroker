@@ -1,8 +1,5 @@
 package eu.neclab.ngsildbroker.commons.serialization.messaging;
 
-import org.flywaydb.core.internal.exception.sqlExceptions.FlywaySqlNoIntegratedAuthException;
-import org.flywaydb.core.internal.exception.sqlExceptions.FlywaySqlServerUntrustedCertificateSqlException;
-
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLdOptions;
 import com.google.common.collect.ArrayListMultimap;
