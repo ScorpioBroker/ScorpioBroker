@@ -177,6 +177,9 @@ public class ConnectionManager {
 					return conn.preparedQuery(sql).executeBatch(tuples).onItem().transformToUni(ignoredToo -> {
 						return conn.close();
 					});
+				}).onFailure().recoverWithUni(e -> {
+					conn.close();
+					return Uni.createFrom().failure(e);
 				});
 			});
 
@@ -200,6 +203,9 @@ public class ConnectionManager {
 						return conn.preparedQuery(sql).executeBatch(tuples).onItem().transformToUni(ignoredToo -> {
 							return conn.close();
 						});
+					}).onFailure().recoverWithUni(e -> {
+						conn.close();
+						return Uni.createFrom().failure(e);
 					});
 				});
 			});
