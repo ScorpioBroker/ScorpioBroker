@@ -83,7 +83,7 @@ import io.vertx.mutiny.mqtt.MqttClient;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowIterator;
 import io.vertx.pgclient.PgException;
-import jakarta.annotation.PostConstruct;
+
 import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
@@ -101,10 +101,10 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 	@Inject
 	JsonLDService ldService;
 
-//	@Inject
-//	@Channel(AppConstants.INTERNAL_SUBS_CHANNEL)
-//	@Broadcast
-//	MutinyEmitter<String> internalSubEmitter;
+	// @Inject
+	// @Channel(AppConstants.INTERNAL_SUBS_CHANNEL)
+	// @Broadcast
+	// MutinyEmitter<String> internalSubEmitter;
 
 	@Inject
 	ObjectMapper objectMapper;
@@ -183,7 +183,7 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 	}
 
 	private Uni<Void> recheckAllSubscriptionsForRegChange(CSourceBaseRequest req,
-        Collection<RegistrationEntry> regEntries) {
+			Collection<RegistrationEntry> regEntries) {
 		List<Uni<Void>> unis = Lists.newArrayList();
 		String tenant = req.getTenant();
 		if (req.getRequestType() == AppConstants.DELETE_REQUEST) {
@@ -370,10 +370,6 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 	}
 
 	void startup(@Observes StartupEvent event) {
-	}
-
-	@PostConstruct
-	void setup() {
 		this.webClient = WebClient.create(vertx);
 		ALL_TYPES_SUB = NGSIConstants.NGSI_LD_DEFAULT_PREFIX + allTypeSubType;
 		Uni<Void> loadSubs = subDAO.loadSubscriptions().onItem().transformToUni(subs -> {
@@ -402,13 +398,15 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 						request.setSendTimestamp(-1);
 						if (isIntervalSub(request)) {
 							synchronized (tableLock) {
-								this.tenant2subscriptionId2IntervalSubscription.put(request.getTenant(), request.getId(),
+								this.tenant2subscriptionId2IntervalSubscription.put(request.getTenant(),
+										request.getId(),
 										request);
 							}
 
 						} else {
 							synchronized (tableLock) {
-								this.tenant2subscriptionId2Subscription.put(request.getTenant(), request.getId(), request);
+								this.tenant2subscriptionId2Subscription.put(request.getTenant(), request.getId(),
+										request);
 							}
 						}
 						subscriptionId2RequestGlobal.put(request.getId(), request);
@@ -534,9 +532,10 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 		Collection<SubscriptionRemoteHost> remoteHosts;
 		synchronized (tableLock) {
 			remoteHosts = SubscriptionTools.getRemoteSubscriptions(sub,
-				sub.getEntities(), sub.getNotification().getAttrs(), sub.getLdQuery(), sub.getLdGeoQuery(),
-				sub.getScopeQuery(), sub.getLanguageQuery(),
-				subscriptionTenant2CId2RegEntries.row(request.getTenant()).values(), request.getContext(), viaHeaders);
+					sub.getEntities(), sub.getNotification().getAttrs(), sub.getLdQuery(), sub.getLdGeoQuery(),
+					sub.getScopeQuery(), sub.getLanguageQuery(),
+					subscriptionTenant2CId2RegEntries.row(request.getTenant()).values(), request.getContext(),
+					viaHeaders);
 		}
 
 		return updateRemoteSubs(request, remoteHosts);
@@ -671,15 +670,16 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 										tenant2subscriptionId2Subscription.put(tenant, updatedRequest.getId(),
 												updatedRequest);
 										subscriptionId2RequestGlobal.put(updatedRequest.getId(), updatedRequest);
-										tenant2subscriptionId2IntervalSubscription.remove(tenant, updatedRequest.getId());
+										tenant2subscriptionId2IntervalSubscription.remove(tenant,
+												updatedRequest.getId());
 									}
 								}
-//								try {
-//									MicroServiceUtils.serializeAndSplitObjectAndEmit(updatedRequest, messageSize,
-//											internalSubEmitter, objectMapper);
-//								} catch (ResponseException e) {
-//									logger.error("Failed to serialize subscription message", e);
-//								}
+								// try {
+								// MicroServiceUtils.serializeAndSplitObjectAndEmit(updatedRequest, messageSize,
+								// internalSubEmitter, objectMapper);
+								// } catch (ResponseException e) {
+								// logger.error("Failed to serialize subscription message", e);
+								// }
 								return updateRemoteSubs(updatedRequest, viaHeaders).onItem().transform(v3 -> {
 									return new NGSILDOperationResult(AppConstants.UPDATE_SUBSCRIPTION_REQUEST,
 											request.getId(), tenant);
@@ -706,12 +706,13 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 			}
 			return syncService.onItem().transformToUni(v2 -> {
 				return unsubscribeRemote(tenant, subscriptionId).onItem().transform(v -> {
-//				try {
-//					MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, internalSubEmitter,
-//							objectMapper);
-//				} catch (ResponseException e) {
-//					logger.error("Failed to serialize subscription message", e);
-//				}
+					// try {
+					// MicroServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize,
+					// internalSubEmitter,
+					// objectMapper);
+					// } catch (ResponseException e) {
+					// logger.error("Failed to serialize subscription message", e);
+					// }
 					return new NGSILDOperationResult(AppConstants.DELETE_SUBSCRIPTION_REQUEST, request.getId(), tenant);
 				});
 			});
@@ -903,72 +904,72 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 
 			} else {
 				switch (message.getRequestType()) {
-				case AppConstants.BATCH_CREATE_REQUEST:
-				case AppConstants.CREATE_REQUEST: {
-					dataToSend = mergePrevAndNew(payloadToUse, null,
-							potentialSub.getSubscription().getNotification().getShowChanges());
-					break;
-				}
-				case AppConstants.BATCH_UPDATE_REQUEST:
-				case AppConstants.BATCH_UPSERT_REQUEST:
-				case AppConstants.APPEND_REQUEST:
-				case AppConstants.UPDATE_REQUEST:
-				case AppConstants.BATCH_MERGE_REQUEST:
-				case AppConstants.REPLACE_ATTRIBUTE_REQUEST:
-				case AppConstants.MERGE_PATCH_REQUEST:
-				case AppConstants.PARTIAL_UPDATE_REQUEST: {
-					dataToSend = mergePrevAndNew(payloadToUse, prevPayloadToUse,
-							potentialSub.getSubscription().getNotification().getShowChanges());
-					break;
-				}
-				case AppConstants.REPLACE_ENTITY_REQUEST: {
-					dataToSend = mergePrevAndNewReplace(payloadToUse, prevPayloadToUse,
-							potentialSub.getSubscription().getNotification().getShowChanges());
-					break;
-				}
-				case AppConstants.DELETE_ATTRIBUTE_REQUEST: {
-					List<Map<String, Object>> tmp = Lists.newArrayList();
-					if (potentialSub.getSubscription().getNotification().getShowChanges()) {
-						prevPayloadToUse.values().forEach(payloads -> {
-							payloads.forEach(payload -> {
-								List<Map<String, Object>> attribs = (List<Map<String, Object>>) payload
-										.get(message.getAttribName());
-								if (attribs != null) {
-									for (Map<String, Object> attrib : attribs) {
-										putOldAttribFromDelete(attrib, message.getSendTimestamp());
+					case AppConstants.BATCH_CREATE_REQUEST:
+					case AppConstants.CREATE_REQUEST: {
+						dataToSend = mergePrevAndNew(payloadToUse, null,
+								potentialSub.getSubscription().getNotification().getShowChanges());
+						break;
+					}
+					case AppConstants.BATCH_UPDATE_REQUEST:
+					case AppConstants.BATCH_UPSERT_REQUEST:
+					case AppConstants.APPEND_REQUEST:
+					case AppConstants.UPDATE_REQUEST:
+					case AppConstants.BATCH_MERGE_REQUEST:
+					case AppConstants.REPLACE_ATTRIBUTE_REQUEST:
+					case AppConstants.MERGE_PATCH_REQUEST:
+					case AppConstants.PARTIAL_UPDATE_REQUEST: {
+						dataToSend = mergePrevAndNew(payloadToUse, prevPayloadToUse,
+								potentialSub.getSubscription().getNotification().getShowChanges());
+						break;
+					}
+					case AppConstants.REPLACE_ENTITY_REQUEST: {
+						dataToSend = mergePrevAndNewReplace(payloadToUse, prevPayloadToUse,
+								potentialSub.getSubscription().getNotification().getShowChanges());
+						break;
+					}
+					case AppConstants.DELETE_ATTRIBUTE_REQUEST: {
+						List<Map<String, Object>> tmp = Lists.newArrayList();
+						if (potentialSub.getSubscription().getNotification().getShowChanges()) {
+							prevPayloadToUse.values().forEach(payloads -> {
+								payloads.forEach(payload -> {
+									List<Map<String, Object>> attribs = (List<Map<String, Object>>) payload
+											.get(message.getAttribName());
+									if (attribs != null) {
+										for (Map<String, Object> attrib : attribs) {
+											putOldAttribFromDelete(attrib, message.getSendTimestamp());
+										}
+										tmp.add(payload);
 									}
-									tmp.add(payload);
-								}
+								});
 							});
-						});
-					} else {
+						} else {
+							prevPayloadToUse.values().forEach(payloads -> {
+								payloads.forEach(payload -> {
+									payload.remove(message.getAttribName());
+									tmp.add(payload);
+								});
+							});
+						}
+						dataToSend = tmp;
+						break;
+					}
+					case AppConstants.DELETE_REQUEST:
+					case AppConstants.BATCH_DELETE_REQUEST: {
+						List<Map<String, Object>> tmp = Lists.newArrayList();
 						prevPayloadToUse.values().forEach(payloads -> {
 							payloads.forEach(payload -> {
-								payload.remove(message.getAttribName());
+								payload.put(NGSIConstants.NGSI_LD_DELETED_AT,
+										List.of(Map.of(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME,
+												NGSIConstants.JSON_LD_VALUE,
+												SerializationTools.toDateTimeString(message.getSendTimestamp()))));
 								tmp.add(payload);
 							});
 						});
+						dataToSend = tmp;
+						break;
 					}
-					dataToSend = tmp;
-					break;
-				}
-				case AppConstants.DELETE_REQUEST:
-				case AppConstants.BATCH_DELETE_REQUEST: {
-					List<Map<String, Object>> tmp = Lists.newArrayList();
-					prevPayloadToUse.values().forEach(payloads -> {
-						payloads.forEach(payload -> {
-							payload.put(NGSIConstants.NGSI_LD_DELETED_AT,
-									List.of(Map.of(NGSIConstants.JSON_LD_TYPE, NGSIConstants.NGSI_LD_DATE_TIME,
-											NGSIConstants.JSON_LD_VALUE,
-											SerializationTools.toDateTimeString(message.getSendTimestamp()))));
-							tmp.add(payload);
-						});
-					});
-					dataToSend = tmp;
-					break;
-				}
-				default:
-					break;
+					default:
+						break;
 				}
 
 			}
@@ -1072,19 +1073,19 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 		if (showChanges) {
 			for (Entry<String, Object> entry : newValue.entrySet()) {
 				switch (entry.getKey()) {
-				case NGSIConstants.JSON_LD_ID:
-				case NGSIConstants.JSON_LD_TYPE:
-				case NGSIConstants.NGSI_LD_SCOPE:
-				case NGSIConstants.NGSI_LD_MODIFIED_AT:
-				case NGSIConstants.NGSI_LD_CREATED_AT:
-					continue;
-				default: {
-					List<Map<String, Object>> attribEntries = (List<Map<String, Object>>) entry.getValue();
-					for (Map<String, Object> attribEntry : attribEntries) {
-						mergeAttribToNone(attribEntry);
-					}
+					case NGSIConstants.JSON_LD_ID:
+					case NGSIConstants.JSON_LD_TYPE:
+					case NGSIConstants.NGSI_LD_SCOPE:
+					case NGSIConstants.NGSI_LD_MODIFIED_AT:
+					case NGSIConstants.NGSI_LD_CREATED_AT:
+						continue;
+					default: {
+						List<Map<String, Object>> attribEntries = (List<Map<String, Object>>) entry.getValue();
+						for (Map<String, Object> attribEntry : attribEntries) {
+							mergeAttribToNone(attribEntry);
+						}
 
-				}
+					}
 				}
 			}
 		}
@@ -1098,63 +1099,64 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 		for (Entry<String, Object> entry : newValue.entrySet()) {
 			String attribName = entry.getKey();
 			switch (attribName) {
-			case NGSIConstants.JSON_LD_ID:
-				result.put(attribName, entry.getValue());
-				break;
-			case NGSIConstants.JSON_LD_TYPE:
-				List<String> oldTypes = (List<String>) result.get(NGSIConstants.JSON_LD_TYPE);
-				if (oldTypes == null) {
+				case NGSIConstants.JSON_LD_ID:
 					result.put(attribName, entry.getValue());
-				} else {
-					List<String> mergedTypes = Stream
-							.concat((oldTypes).stream(), ((List<String>) entry.getValue()).stream()).distinct()
-							.collect(Collectors.toList());
-					result.put(attribName, mergedTypes);
-				}
-				break;
-			case NGSIConstants.NGSI_LD_SCOPE:
-			case NGSIConstants.NGSI_LD_MODIFIED_AT:
-				result.put(attribName, entry.getValue());
-				break;
-			case NGSIConstants.NGSI_LD_CREATED_AT:
-				continue;
-			default:
-				if (showChanges) {
-					List<Map<String, Object>> oldValues = (List<Map<String, Object>>) result.get(attribName);
-					List<Map<String, Object>> newValues = (List<Map<String, Object>>) entry.getValue();
-					if (oldValues == null) {
+					break;
+				case NGSIConstants.JSON_LD_TYPE:
+					List<String> oldTypes = (List<String>) result.get(NGSIConstants.JSON_LD_TYPE);
+					if (oldTypes == null) {
 						result.put(attribName, entry.getValue());
 					} else {
-						for (Map<String, Object> newEntry : newValues) {
-							Object newDatasetId = newEntry.get(NGSIConstants.NGSI_LD_DATA_SET_ID);
-							Iterator<Map<String, Object>> it = oldValues.iterator();
-							boolean found = false;
-							while (it.hasNext()) {
-								Map<String, Object> oldEntry = it.next();
-								Object oldDatasetId = oldEntry.get(NGSIConstants.NGSI_LD_DATA_SET_ID);
-								if (oldDatasetId == null && newDatasetId == null) {
-									it.remove();
-									mergeAttrib(newEntry, oldEntry);
-									found = true;
-									break;
-								}
-								if (oldDatasetId != null && newDatasetId != null && oldDatasetId.equals(newDatasetId)) {
-									it.remove();
-									mergeAttrib(newEntry, oldEntry);
-									found = true;
-									break;
-								}
-							}
-							if (!found) {
-								mergeAttribToNone(newEntry);
-							}
-							oldValues.add(newEntry);
-						}
+						List<String> mergedTypes = Stream
+								.concat((oldTypes).stream(), ((List<String>) entry.getValue()).stream()).distinct()
+								.collect(Collectors.toList());
+						result.put(attribName, mergedTypes);
 					}
-				} else {
+					break;
+				case NGSIConstants.NGSI_LD_SCOPE:
+				case NGSIConstants.NGSI_LD_MODIFIED_AT:
 					result.put(attribName, entry.getValue());
-				}
-				break;
+					break;
+				case NGSIConstants.NGSI_LD_CREATED_AT:
+					continue;
+				default:
+					if (showChanges) {
+						List<Map<String, Object>> oldValues = (List<Map<String, Object>>) result.get(attribName);
+						List<Map<String, Object>> newValues = (List<Map<String, Object>>) entry.getValue();
+						if (oldValues == null) {
+							result.put(attribName, entry.getValue());
+						} else {
+							for (Map<String, Object> newEntry : newValues) {
+								Object newDatasetId = newEntry.get(NGSIConstants.NGSI_LD_DATA_SET_ID);
+								Iterator<Map<String, Object>> it = oldValues.iterator();
+								boolean found = false;
+								while (it.hasNext()) {
+									Map<String, Object> oldEntry = it.next();
+									Object oldDatasetId = oldEntry.get(NGSIConstants.NGSI_LD_DATA_SET_ID);
+									if (oldDatasetId == null && newDatasetId == null) {
+										it.remove();
+										mergeAttrib(newEntry, oldEntry);
+										found = true;
+										break;
+									}
+									if (oldDatasetId != null && newDatasetId != null
+											&& oldDatasetId.equals(newDatasetId)) {
+										it.remove();
+										mergeAttrib(newEntry, oldEntry);
+										found = true;
+										break;
+									}
+								}
+								if (!found) {
+									mergeAttribToNone(newEntry);
+								}
+								oldValues.add(newEntry);
+							}
+						}
+					} else {
+						result.put(attribName, entry.getValue());
+					}
+					break;
 			}
 		}
 		return result;
@@ -1237,27 +1239,74 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 					NotificationParam notificationParam = potentialSub.getSubscription().getNotification();
 					Uni<Void> toSend;
 					switch (notificationParam.getEndPoint().getUri().getScheme()) {
-					case "mqtt", "mqtts" -> {
-						try {
-							toSend = getMqttClient(notificationParam).onItem().transformToUni(client -> {
-								int qos = 1;
+						case "mqtt", "mqtts" -> {
+							try {
+								toSend = getMqttClient(notificationParam).onItem().transformToUni(client -> {
+									int qos = 1;
 
-								String qosString = notificationParam.getEndPoint().getNotifierInfo()
-										.get(NGSIConstants.MQTT_QOS);
-								if (qosString != null) {
-									qos = Integer.parseInt(qosString);
-								}
-								try {
-									return client
-											.publish(notificationParam.getEndPoint().getUri().getPath().substring(1),
-													Buffer.buffer(SubscriptionTools.getMqttPayload(notificationParam,
-															notification)),
-													MqttQoS.valueOf(qos), false, false)
-											.onItem().transformToUni(t -> {
-												if (t == 0) {
-													// TODO what the fuck is the result here
-												}
-												long now = System.currentTimeMillis();
+									String qosString = notificationParam.getEndPoint().getNotifierInfo()
+											.get(NGSIConstants.MQTT_QOS);
+									if (qosString != null) {
+										qos = Integer.parseInt(qosString);
+									}
+									try {
+										return client
+												.publish(
+														notificationParam.getEndPoint().getUri().getPath().substring(1),
+														Buffer.buffer(
+																SubscriptionTools.getMqttPayload(notificationParam,
+																		notification)),
+														MqttQoS.valueOf(qos), false, false)
+												.onItem().transformToUni(t -> {
+													if (t == 0) {
+														// TODO what the fuck is the result here
+													}
+													long now = System.currentTimeMillis();
+													potentialSub.getSubscription().getNotification()
+															.setLastSuccessfulNotification(now);
+													potentialSub.getSubscription().getNotification()
+															.setLastNotification(now);
+													return subDAO.updateNotificationSuccess(potentialSub.getTenant(),
+															potentialSub.getId(),
+															SerializationTools.notifiedAt_formatter.format(LocalDateTime
+																	.ofInstant(Instant.ofEpochMilli(now),
+																			ZoneId.of("Z"))));
+												}).onFailure().recoverWithUni(e -> {
+													logger.error(
+															"failed to send notification for subscription "
+																	+ potentialSub,
+															e);
+													long now = System.currentTimeMillis();
+													potentialSub.getSubscription().getNotification()
+															.setLastFailedNotification(now);
+													potentialSub.getSubscription().getNotification()
+															.setLastNotification(now);
+													return subDAO.updateNotificationFailure(potentialSub.getTenant(),
+															potentialSub.getId(),
+															SerializationTools.notifiedAt_formatter.format(LocalDateTime
+																	.ofInstant(Instant.ofEpochMilli(now),
+																			ZoneId.of("Z"))));
+												});
+									} catch (Exception e) {
+										logger.error("failed to send notification for subscription " + potentialSub, e);
+										return Uni.createFrom().voidItem();
+									}
+								});
+							} catch (Exception e) {
+								logger.error("failed to send notification for subscription " + potentialSub, e);
+								return Uni.createFrom().voidItem();
+							}
+						}
+						case "http", "https" -> {
+							try {
+								toSend = webClient.postAbs(notificationParam.getEndPoint().getUri().toString())
+										.putHeaders(SubscriptionTools.getHeaders(notificationParam,
+												potentialSub.getSubscription().getOtherHead()))
+										.sendBuffer(Buffer.buffer(JsonUtils.toPrettyString(notification))).onFailure()
+										.retry().atMost(3).onItem().transformToUni(result -> {
+											int statusCode = result.statusCode();
+											long now = System.currentTimeMillis();
+											if (statusCode >= 200 && statusCode < 300) {
 												potentialSub.getSubscription().getNotification()
 														.setLastSuccessfulNotification(now);
 												potentialSub.getSubscription().getNotification()
@@ -1266,11 +1315,12 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 														potentialSub.getId(),
 														SerializationTools.notifiedAt_formatter.format(LocalDateTime
 																.ofInstant(Instant.ofEpochMilli(now), ZoneId.of("Z"))));
-											}).onFailure().recoverWithUni(e -> {
-												logger.error(
-														"failed to send notification for subscription " + potentialSub,
-														e);
-												long now = System.currentTimeMillis();
+											} else {
+												logger.error("failed to send notification for subscription "
+														+ potentialSub.getId() + " with status code " + statusCode
+														+ ". Remember there is no redirect following for post due to security considerations");
+												logger.debug(result.statusMessage());
+												logger.debug(result.bodyAsString());
 												potentialSub.getSubscription().getNotification()
 														.setLastFailedNotification(now);
 												potentialSub.getSubscription().getNotification()
@@ -1279,40 +1329,11 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 														potentialSub.getId(),
 														SerializationTools.notifiedAt_formatter.format(LocalDateTime
 																.ofInstant(Instant.ofEpochMilli(now), ZoneId.of("Z"))));
-											});
-								} catch (Exception e) {
-									logger.error("failed to send notification for subscription " + potentialSub, e);
-									return Uni.createFrom().voidItem();
-								}
-							});
-						} catch (Exception e) {
-							logger.error("failed to send notification for subscription " + potentialSub, e);
-							return Uni.createFrom().voidItem();
-						}
-					}
-					case "http", "https" -> {
-						try {
-							toSend = webClient.postAbs(notificationParam.getEndPoint().getUri().toString())
-									.putHeaders(SubscriptionTools.getHeaders(notificationParam,
-											potentialSub.getSubscription().getOtherHead()))
-									.sendBuffer(Buffer.buffer(JsonUtils.toPrettyString(notification))).onFailure()
-									.retry().atMost(3).onItem().transformToUni(result -> {
-										int statusCode = result.statusCode();
-										long now = System.currentTimeMillis();
-										if (statusCode >= 200 && statusCode < 300) {
-											potentialSub.getSubscription().getNotification()
-													.setLastSuccessfulNotification(now);
-											potentialSub.getSubscription().getNotification().setLastNotification(now);
-											return subDAO.updateNotificationSuccess(potentialSub.getTenant(),
-													potentialSub.getId(),
-													SerializationTools.notifiedAt_formatter.format(LocalDateTime
-															.ofInstant(Instant.ofEpochMilli(now), ZoneId.of("Z"))));
-										} else {
-											logger.error("failed to send notification for subscription "
-													+ potentialSub.getId() + " with status code " + statusCode
-													+ ". Remember there is no redirect following for post due to security considerations");
-											logger.debug(result.statusMessage());
-											logger.debug(result.bodyAsString());
+											}
+										}).onFailure().recoverWithUni(e -> {
+											logger.error("failed to send notification for subscription " + potentialSub,
+													e);
+											long now = System.currentTimeMillis();
 											potentialSub.getSubscription().getNotification()
 													.setLastFailedNotification(now);
 											potentialSub.getSubscription().getNotification().setLastNotification(now);
@@ -1320,26 +1341,16 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 													potentialSub.getId(),
 													SerializationTools.notifiedAt_formatter.format(LocalDateTime
 															.ofInstant(Instant.ofEpochMilli(now), ZoneId.of("Z"))));
-										}
-									}).onFailure().recoverWithUni(e -> {
-										logger.error("failed to send notification for subscription " + potentialSub, e);
-										long now = System.currentTimeMillis();
-										potentialSub.getSubscription().getNotification().setLastFailedNotification(now);
-										potentialSub.getSubscription().getNotification().setLastNotification(now);
-										return subDAO.updateNotificationFailure(potentialSub.getTenant(),
-												potentialSub.getId(),
-												SerializationTools.notifiedAt_formatter.format(LocalDateTime
-														.ofInstant(Instant.ofEpochMilli(now), ZoneId.of("Z"))));
-									});
-						} catch (Exception e) {
-							logger.error("failed to send notification for subscription " + potentialSub, e);
+										});
+							} catch (Exception e) {
+								logger.error("failed to send notification for subscription " + potentialSub, e);
+								return Uni.createFrom().voidItem();
+							}
+						}
+						default -> {
+							logger.error("unsuported endpoint in subscription " + potentialSub.getId());
 							return Uni.createFrom().voidItem();
 						}
-					}
-					default -> {
-						logger.error("unsuported endpoint in subscription " + potentialSub.getId());
-						return Uni.createFrom().voidItem();
-					}
 					}
 					if (potentialSub.getSubscription().getThrottling() > 0) {
 						long delay = potentialSub.getSubscription().getThrottling() - (System.currentTimeMillis()
@@ -1362,35 +1373,35 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 		}
 		Set<String> notificationTriggers = subscription.getNotificationTrigger();
 		switch (triggerReason) {
-		case AppConstants.BATCH_CREATE_REQUEST:
-		case AppConstants.BATCH_UPSERT_REQUEST:
-		case AppConstants.CREATE_REQUEST:
-			return notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_CREATED)
-					|| notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_CREATED);
-		case AppConstants.BATCH_MERGE_REQUEST:
-		case AppConstants.BATCH_UPDATE_REQUEST:
-		case AppConstants.APPEND_REQUEST:
-		case AppConstants.UPDATE_REQUEST:
-		case AppConstants.MERGE_PATCH_REQUEST:
-		case AppConstants.REPLACE_ENTITY_REQUEST:
-		case AppConstants.REPLACE_ATTRIBUTE_REQUEST:
-		case AppConstants.PARTIAL_UPDATE_REQUEST:
-			return notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_UPDATED)
-					|| notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_UPDATED)
-					|| notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_CREATED);
-		case AppConstants.DELETE_REQUEST:
-		case AppConstants.BATCH_DELETE_REQUEST:
-			return notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_DELETED);
-		case AppConstants.DELETE_ATTRIBUTE_REQUEST:
-			return notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_UPDATED)
-					|| notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_DELETED);
-		case AppConstants.UPSERT_REQUEST:
-			return notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_CREATED)
-					|| notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_UPDATED)
-					|| notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_UPDATED)
-					|| notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_CREATED);
-		default:
-			return false;
+			case AppConstants.BATCH_CREATE_REQUEST:
+			case AppConstants.BATCH_UPSERT_REQUEST:
+			case AppConstants.CREATE_REQUEST:
+				return notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_CREATED)
+						|| notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_CREATED);
+			case AppConstants.BATCH_MERGE_REQUEST:
+			case AppConstants.BATCH_UPDATE_REQUEST:
+			case AppConstants.APPEND_REQUEST:
+			case AppConstants.UPDATE_REQUEST:
+			case AppConstants.MERGE_PATCH_REQUEST:
+			case AppConstants.REPLACE_ENTITY_REQUEST:
+			case AppConstants.REPLACE_ATTRIBUTE_REQUEST:
+			case AppConstants.PARTIAL_UPDATE_REQUEST:
+				return notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_UPDATED)
+						|| notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_UPDATED)
+						|| notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_CREATED);
+			case AppConstants.DELETE_REQUEST:
+			case AppConstants.BATCH_DELETE_REQUEST:
+				return notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_DELETED);
+			case AppConstants.DELETE_ATTRIBUTE_REQUEST:
+				return notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_UPDATED)
+						|| notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_DELETED);
+			case AppConstants.UPSERT_REQUEST:
+				return notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_CREATED)
+						|| notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ENTITY_UPDATED)
+						|| notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_UPDATED)
+						|| notificationTriggers.contains(NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_ATTRIBUTE_CREATED);
+			default:
+				return false;
 		}
 
 	}
@@ -1398,7 +1409,7 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 	public static void main(String[] args) throws MalformedURLException, URISyntaxException {
 		URI url = new URI("mqtts://bla.com/basd");
 
-							}
+	}
 
 	private Uni<MqttClient> getMqttClient(NotificationParam notificationParam) {
 		URI host = notificationParam.getEndPoint().getUri();
@@ -1477,13 +1488,15 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 	Uni<Void> checkIntervalSubs() {
 		List<Uni<Void>> unis = Lists.newArrayList();
 		synchronized (tableLock) {
-			for (Cell<String, String, SubscriptionRequest> cell : tenant2subscriptionId2IntervalSubscription.cellSet()) {
+			for (Cell<String, String, SubscriptionRequest> cell : tenant2subscriptionId2IntervalSubscription
+					.cellSet()) {
 				SubscriptionRequest request = cell.getValue();
 				Subscription sub = request.getSubscription();
 				long now = System.currentTimeMillis();
 				if (sub.getNotification().getLastNotification() + sub.getTimeInterval() * 1000 < now) {
 					sub.getNotification().setLastNotification(now);
-					unis.add(queryFromSubscription(request, request.getTenant(), null, Maps.newHashMap(), Maps.newHashMap())
+					unis.add(queryFromSubscription(request, request.getTenant(), null, Maps.newHashMap(),
+							Maps.newHashMap())
 							.onItem().transformToUni(queryResult -> {
 								if (queryResult == null || queryResult.isEmpty()) {
 									return Uni.createFrom().voidItem();
@@ -1694,86 +1707,87 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 
 	private Tuple2<Boolean, Object> createPreviousVariant(Entry<String, Object> attribEntry) {
 		switch (attribEntry.getKey()) {
-		case NGSIConstants.JSON_LD_ID:
-		case NGSIConstants.JSON_LD_TYPE:
-		case NGSIConstants.NGSI_LD_CREATED_AT:
-		case NGSIConstants.NGSI_LD_MODIFIED_AT:
-			return Tuple2.of(false, attribEntry.getValue());
-		default: {
-			if (attribEntry.getValue() instanceof List<?> l) {
-				List<Map<String, Object>> result = new ArrayList<>(l.size());
-				Iterator<?> it = l.iterator();
-				boolean onlyDeletedAt = true;
-				while (it.hasNext()) {
-					Object obj = it.next();
-					if (obj instanceof Map<?, ?> m) {
-						boolean keep = m.remove(NGSIConstants.NGSI_LD_DELETED_AT) == null;
-						onlyDeletedAt = onlyDeletedAt && !keep;
-						Object prevValue = m.remove(NGSIConstants.PREVIOUS_VALUE);
-						Map<String, Object> oldEntry = null;
-						if (prevValue != null) {
-							keep = keep && true;
-							oldEntry = MicroServiceUtils.deepCopyMap((Map<String, Object>) m);
-							oldEntry.put(NGSIConstants.NGSI_LD_HAS_VALUE, prevValue);
-						} else {
-							prevValue = m.remove(NGSIConstants.PREVIOUS_OBJECT);
+			case NGSIConstants.JSON_LD_ID:
+			case NGSIConstants.JSON_LD_TYPE:
+			case NGSIConstants.NGSI_LD_CREATED_AT:
+			case NGSIConstants.NGSI_LD_MODIFIED_AT:
+				return Tuple2.of(false, attribEntry.getValue());
+			default: {
+				if (attribEntry.getValue() instanceof List<?> l) {
+					List<Map<String, Object>> result = new ArrayList<>(l.size());
+					Iterator<?> it = l.iterator();
+					boolean onlyDeletedAt = true;
+					while (it.hasNext()) {
+						Object obj = it.next();
+						if (obj instanceof Map<?, ?> m) {
+							boolean keep = m.remove(NGSIConstants.NGSI_LD_DELETED_AT) == null;
+							onlyDeletedAt = onlyDeletedAt && !keep;
+							Object prevValue = m.remove(NGSIConstants.PREVIOUS_VALUE);
+							Map<String, Object> oldEntry = null;
 							if (prevValue != null) {
 								keep = keep && true;
 								oldEntry = MicroServiceUtils.deepCopyMap((Map<String, Object>) m);
-								oldEntry.put(NGSIConstants.NGSI_LD_HAS_OBJECT, prevValue);
+								oldEntry.put(NGSIConstants.NGSI_LD_HAS_VALUE, prevValue);
 							} else {
-								prevValue = m.remove(NGSIConstants.PREVIOUS_JSON);
+								prevValue = m.remove(NGSIConstants.PREVIOUS_OBJECT);
 								if (prevValue != null) {
 									keep = keep && true;
 									oldEntry = MicroServiceUtils.deepCopyMap((Map<String, Object>) m);
-									oldEntry.put(NGSIConstants.NGSI_LD_HAS_JSON, prevValue);
+									oldEntry.put(NGSIConstants.NGSI_LD_HAS_OBJECT, prevValue);
 								} else {
-									prevValue = m.remove(NGSIConstants.PREVIOUS_LANGUAGE_MAP);
+									prevValue = m.remove(NGSIConstants.PREVIOUS_JSON);
 									if (prevValue != null) {
 										keep = keep && true;
 										oldEntry = MicroServiceUtils.deepCopyMap((Map<String, Object>) m);
-										oldEntry.put(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP, prevValue);
+										oldEntry.put(NGSIConstants.NGSI_LD_HAS_JSON, prevValue);
 									} else {
-										prevValue = m.remove(NGSIConstants.PREVIOUS_OJBECT_LIST);
+										prevValue = m.remove(NGSIConstants.PREVIOUS_LANGUAGE_MAP);
 										if (prevValue != null) {
 											keep = keep && true;
 											oldEntry = MicroServiceUtils.deepCopyMap((Map<String, Object>) m);
-											oldEntry.put(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST, prevValue);
+											oldEntry.put(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP, prevValue);
 										} else {
-											prevValue = m.remove(NGSIConstants.PREVIOUS_VALUE_LIST);
+											prevValue = m.remove(NGSIConstants.PREVIOUS_OJBECT_LIST);
 											if (prevValue != null) {
 												keep = keep && true;
 												oldEntry = MicroServiceUtils.deepCopyMap((Map<String, Object>) m);
-												oldEntry.put(NGSIConstants.NGSI_LD_HAS_LIST, prevValue);
+												oldEntry.put(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST, prevValue);
 											} else {
-												prevValue = m.remove(NGSIConstants.PREVIOUS_VOCAB);
+												prevValue = m.remove(NGSIConstants.PREVIOUS_VALUE_LIST);
 												if (prevValue != null) {
 													keep = keep && true;
 													oldEntry = MicroServiceUtils.deepCopyMap((Map<String, Object>) m);
-													oldEntry.put(NGSIConstants.NGSI_LD_HAS_VOCAB, prevValue);
+													oldEntry.put(NGSIConstants.NGSI_LD_HAS_LIST, prevValue);
+												} else {
+													prevValue = m.remove(NGSIConstants.PREVIOUS_VOCAB);
+													if (prevValue != null) {
+														keep = keep && true;
+														oldEntry = MicroServiceUtils
+																.deepCopyMap((Map<String, Object>) m);
+														oldEntry.put(NGSIConstants.NGSI_LD_HAS_VOCAB, prevValue);
+													}
 												}
 											}
 										}
 									}
 								}
 							}
-						}
-						if (!keep) {
-							it.remove();
-						}
-						if (oldEntry != null) {
-							result.add(oldEntry);
+							if (!keep) {
+								it.remove();
+							}
+							if (oldEntry != null) {
+								result.add(oldEntry);
+							}
 						}
 					}
+					if (result.isEmpty()) {
+						return Tuple2.of(onlyDeletedAt, null);
+					} else {
+						return Tuple2.of(onlyDeletedAt, result);
+					}
 				}
-				if (result.isEmpty()) {
-					return Tuple2.of(onlyDeletedAt, null);
-				} else {
-					return Tuple2.of(onlyDeletedAt, result);
-				}
+				return Tuple2.of(false, attribEntry.getValue());
 			}
-			return Tuple2.of(false, attribEntry.getValue());
-		}
 		}
 
 	}
@@ -1822,7 +1836,8 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 					request.setSendTimestamp(-1);
 					if (isIntervalSub(request)) {
 						synchronized (tableLock) {
-							tenant2subscriptionId2IntervalSubscription.put(request.getTenant(), request.getId(), request);
+							tenant2subscriptionId2IntervalSubscription.put(request.getTenant(), request.getId(),
+									request);
 							tenant2subscriptionId2Subscription.remove(tenant, request.getId());
 						}
 					} else {
@@ -1886,7 +1901,8 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 				request.setContextId(t.getItem2());
 				if (isIntervalSub(request)) {
 					synchronized (tableLock) {
-						this.tenant2subscriptionId2IntervalSubscription.put(request.getTenant(), request.getId(), request);
+						this.tenant2subscriptionId2IntervalSubscription.put(request.getTenant(), request.getId(),
+								request);
 					}
 				} else {
 					synchronized (tableLock) {

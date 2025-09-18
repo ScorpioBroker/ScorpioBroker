@@ -10,7 +10,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import io.vertx.mutiny.core.MultiMap;
-import jakarta.annotation.PostConstruct;
+
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
@@ -89,13 +89,7 @@ public class HistoryEntityService implements CSourceHandler {
 
 	private Table<String, String, List<RegistrationEntry>> tenant2CId2RegEntries = HashBasedTable.create();
 
-	// This is needed so that @postconstruct runs on the startup thread and not on a
-	// worker thread later on
 	void startup(@Observes StartupEvent event) {
-	}
-
-	@PostConstruct
-	void init() {
 		historyDAO.getAllRegistries().onItem().transform(t -> {
 			tenant2CId2RegEntries = t;
 			return null;

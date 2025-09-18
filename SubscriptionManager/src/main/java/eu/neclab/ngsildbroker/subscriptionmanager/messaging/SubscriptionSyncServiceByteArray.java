@@ -9,7 +9,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
-import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
@@ -33,6 +33,7 @@ import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
 import io.quarkus.arc.profile.IfBuildProfile;
 import io.quarkus.arc.properties.IfBuildProperty;
+import io.quarkus.runtime.StartupEvent;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
@@ -75,14 +76,13 @@ public class SubscriptionSyncServiceByteArray extends SubscriptionSyncServiceBas
 
 	@Inject
 	Vertx vertx;
-	
+
 	@Inject
 	MicroServiceUtils microServiceUtils;
 
 	private Executor executor;
 
-	@PostConstruct
-	public void setup() {
+	void startup(@Observes StartupEvent event) {
 		INSTANCE_ID = new AliveAnnouncement(SYNC_ID);
 		INSTANCE_ID.setSubType(AliveAnnouncement.NORMAL_SUB);
 		subService.addSyncService(this);

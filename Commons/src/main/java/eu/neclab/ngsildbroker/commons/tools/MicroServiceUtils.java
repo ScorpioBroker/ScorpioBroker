@@ -34,11 +34,13 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.BaseRequestHandler;
 import eu.neclab.ngsildbroker.commons.interfaces.CSourceHandler;
 import eu.neclab.ngsildbroker.commons.serialization.messaging.MyByteArrayBuilder;
+import io.quarkus.runtime.StartupEvent;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.vertx.core.http.impl.headers.HeadersMultiMap;
 import io.vertx.pgclient.PgException;
-import jakarta.annotation.PostConstruct;
+
+import jakarta.enterprise.event.Observes;
 import jakarta.inject.Singleton;
 
 @Singleton
@@ -73,8 +75,7 @@ public class MicroServiceUtils {
 	private static final byte[] FINALIZER = "]}".getBytes();
 	private static final int FINALIZER_lENGTH = FINALIZER.length - 1;
 
-	@PostConstruct
-	void setup() {
+	void startup(@Observes StartupEvent event) {
 		if (!gatewayUrl.endsWith("/")) {
 			gatewayUrl = gatewayUrl + "/";
 		}

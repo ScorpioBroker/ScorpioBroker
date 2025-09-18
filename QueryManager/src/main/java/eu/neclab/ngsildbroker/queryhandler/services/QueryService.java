@@ -66,7 +66,7 @@ import io.vertx.mutiny.ext.web.client.HttpResponse;
 import io.vertx.mutiny.ext.web.client.WebClient;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowSet;
-import jakarta.annotation.PostConstruct;
+
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
@@ -104,19 +104,13 @@ public class QueryService implements CSourceHandler {
 	@Inject
 	MicroServiceUtils microServiceUtils;
 
-	@PostConstruct
-	void setup() {
+	void startup(@Observes StartupEvent event) {
 		webClient = WebClient.create(vertx);
 		queryDAO.getAllRegistries().onItem().transform(t -> {
 			tenant2CId2RegEntries = t;
 			return null;
 		}).await().indefinitely();
 		this.microServiceUtils.registerCSourceReceiver(this);
-	}
-
-	// This is needed so that @postconstruct runs on the startup thread and not on a
-	// worker thread later on
-	void startup(@Observes StartupEvent event) {
 	}
 
 	public Uni<QueryResult> query(String tenant, String qToken, boolean tokenProvided,

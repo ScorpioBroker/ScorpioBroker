@@ -9,7 +9,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
-import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
@@ -32,6 +32,7 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.registry.subscriptionmanager.service.RegistrySubscriptionService;
 import io.quarkus.arc.profile.IfBuildProfile;
+import io.quarkus.runtime.StartupEvent;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
@@ -76,8 +77,7 @@ public class RegistrySubscriptionSyncServiceString extends RegistrySubscriptionS
 	@ConfigProperty(name = "scorpio.messaging.maxSize")
 	int messageSize;
 
-	@PostConstruct
-	public void setup() {
+	void startup(@Observes StartupEvent event) {
 		INSTANCE_ID = new AliveAnnouncement(SYNC_ID);
 		INSTANCE_ID.setSubType(AliveAnnouncement.REG_SUB);
 		subService.addSyncService(this);

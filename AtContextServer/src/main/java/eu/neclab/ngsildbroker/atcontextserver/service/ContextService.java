@@ -8,13 +8,14 @@ import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import io.quarkus.runtime.StartupEvent;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.ext.web.client.WebClient;
 import org.jboss.resteasy.reactive.RestResponse;
 
-import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,8 +35,7 @@ public class ContextService {
 	@Inject
 	Vertx vertx;
 
-	@PostConstruct
-	void init() {
+	void startup(@Observes StartupEvent event) {
 		webClient = WebClient.create(vertx);
 	}
 
@@ -66,7 +66,7 @@ public class ContextService {
 				}
 				return Uni.createFrom().voidItem();
 			}
-			if(reload) {
+			if (reload) {
 				return cache.reload(id);
 			}
 			return cache.invalidate(id);

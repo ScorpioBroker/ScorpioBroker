@@ -15,7 +15,7 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.pgclient.pubsub.PgSubscriber;
 import io.vertx.pgclient.PgConnectOptions;
-import jakarta.annotation.PostConstruct;
+
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
@@ -48,13 +48,7 @@ public class RegistrySubscriptionSyncSQS implements SyncService {
 
 	private String seperator = "<&>";
 
-	// This is needed so that @postconstruct runs on the startup thread and not on a
-	// worker thread later on
 	void startup(@Observes StartupEvent event) {
-	}
-
-	@PostConstruct
-	void setup() {
 		String tmp = reactiveDefaultUrl.substring("postgresql://".length());
 		String[] splitted = tmp.split(":");
 		String host = splitted[0];

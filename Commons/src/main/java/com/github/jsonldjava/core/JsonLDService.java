@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.Set;
 
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
-import jakarta.annotation.PostConstruct;
+
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
@@ -46,8 +46,7 @@ public class JsonLDService {
 	@ConfigProperty(name = "scorpio.multithreadingthreshold", defaultValue = "3000")
 	int multiThreadingThreshold;
 
-	@PostConstruct
-	void setup() {
+	void startup(@Observes StartupEvent event) {
 		WebClientOptions options = new WebClientOptions();
 
 		this.webClient = WebClient.create(vertx, options);
@@ -71,11 +70,6 @@ public class JsonLDService {
 				}).await().indefinitely();
 		JsonLdProcessor.init(coreContextUrl, coreContext, microServiceUtils);
 
-	}
-
-	// This is needed so that @postconstruct runs on the startup thread and not on a
-	// worker thread later on
-	void startup(@Observes StartupEvent event) {
 	}
 
 	public Context getCoreContextClone() {

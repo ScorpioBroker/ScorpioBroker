@@ -34,8 +34,7 @@ import io.smallrye.mutiny.Uni;
 
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.vertx.mutiny.core.Vertx;
-
-import io.vertx.mutiny.sqlclient.Pool;
+import io.vertx.mutiny.pgclient.PgPool;
 
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowSet;
@@ -49,7 +48,7 @@ public class ConnectionManager {
 	Logger logger = LoggerFactory.getLogger(ConnectionManager.class);
 
 	@Inject
-	Pool pgClient;
+	PgPool pgClient;
 
 	@Inject
 	AgroalDataSource writerDataSource;
@@ -103,10 +102,10 @@ public class ConnectionManager {
 
 	private String reactiveBaseUrl;
 
-	private Map<String, Pool> tenant2Client = Maps.newHashMap();
+	private Map<String, PgPool> tenant2Client = Maps.newHashMap();
 
 	public Uni<RowSet<Row>> executeQuery(String tenant, String sql, Tuple tuple, boolean createTenant) {
-		Pool client;
+		PgPool client;
 		if (tenant == null) {
 			client = pgClient;
 		} else {
@@ -135,7 +134,7 @@ public class ConnectionManager {
 	}
 
 	public Uni<RowSet<Row>> executeBatchQuery(String tenant, String sql, List<Tuple> tuples, boolean createTenant) {
-		Pool client;
+		PgPool client;
 		if (tenant == null) {
 			client = pgClient;
 		} else {
@@ -156,7 +155,7 @@ public class ConnectionManager {
 
 	public Uni<Void> executeBatchQueryWithPreStep(String tenant, String sql, List<Tuple> tuples, String preStepSql,
 			Tuple preStepTuple, boolean createTenant) {
-		Pool client;
+		PgPool client;
 		if (tenant == null) {
 			client = pgClient;
 		} else {
@@ -212,7 +211,7 @@ public class ConnectionManager {
 		}
 	}
 
-	private Uni<Pool> getTenant(String tenant, boolean createDB) {
+	private Uni<PgPool> getTenant(String tenant, boolean createDB) {
 		return determineTargetDataSource(tenant, createDB).onItem().transform(Unchecked.function(finalDataBase -> {
 			PoolOptions options = new PoolOptions();
 			options.setName(finalDataBase);
@@ -223,7 +222,7 @@ public class ConnectionManager {
 			options.setConnectionTimeout((int) connectionTime.getSeconds());
 			options.setConnectionTimeoutUnit(TimeUnit.SECONDS);
 
-			Pool pool = Pool.pool(vertx, PgConnectOptions.fromUri(reactiveBaseUrl + finalDataBase).setUser(username)
+			PgPool pool = PgPool.pool(vertx, PgConnectOptions.fromUri(reactiveBaseUrl + finalDataBase).setUser(username)
 					.setPassword(password).setCachePreparedStatements(true), options);
 
 			tenant2Client.put(tenant, pool);

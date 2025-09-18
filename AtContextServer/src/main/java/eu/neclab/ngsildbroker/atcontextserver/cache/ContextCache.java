@@ -11,6 +11,7 @@ import io.quarkus.cache.CacheInvalidate;
 import io.quarkus.cache.CacheKey;
 import io.quarkus.cache.CacheName;
 import io.quarkus.cache.CaffeineCache;
+import io.quarkus.runtime.StartupEvent;
 import io.quarkus.scheduler.Scheduler;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Vertx;
@@ -20,8 +21,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 
 import java.net.URLEncoder;
@@ -59,8 +60,7 @@ public class ContextCache {
 	String atContextUrl;
 	Duration cacheDuration;
 
-	@PostConstruct
-	void init() {
+	void startup(@Observes StartupEvent event) {
 		webClient = WebClient.create(vertx);
 		atContextUrl = microServiceUtils.getGatewayString() + NGSIConstants.JSONLD_CONTEXTS;
 		if (!cacheDurationTime.startsWith("PT")) {
@@ -176,10 +176,10 @@ public class ContextCache {
 		return Uni.createFrom().voidItem();
 	}
 
-//	@CacheInvalidateAll(cacheName = "context")
-//	@Scheduled(every = "${atcontext.cache.duration}", identity = "cacheDuration")
-//	public void invalidateAll() {
-//		id2numberOfHit.clear();
-//		id2LastUsage.clear();
-//	}
+	// @CacheInvalidateAll(cacheName = "context")
+	// @Scheduled(every = "${atcontext.cache.duration}", identity = "cacheDuration")
+	// public void invalidateAll() {
+	// id2numberOfHit.clear();
+	// id2LastUsage.clear();
+	// }
 }

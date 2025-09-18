@@ -13,7 +13,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
@@ -71,17 +70,17 @@ import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowIterator;
 
 @Singleton
-public class RegistrySubscriptionService implements CSourceHandler{
+public class RegistrySubscriptionService implements CSourceHandler {
 
 	private final static Logger logger = LoggerFactory.getLogger(RegistrySubscriptionService.class);
 
 	@Inject
 	RegistrySubscriptionInfoDAO regDAO;
 
-//	@Inject
-//	@Channel(AppConstants.INTERNAL_NOTIFICATION_CHANNEL)
-//	@Broadcast
-//	MutinyEmitter<String> internalNotificationSender;
+	// @Inject
+	// @Channel(AppConstants.INTERNAL_NOTIFICATION_CHANNEL)
+	// @Broadcast
+	// MutinyEmitter<String> internalNotificationSender;
 
 	@Inject
 	ObjectMapper objectMapper;
@@ -114,10 +113,6 @@ public class RegistrySubscriptionService implements CSourceHandler{
 	private String ALL_TYPES_SUB;
 
 	void startup(@Observes StartupEvent event) {
-	}
-
-	@PostConstruct
-	void setup() {
 		this.webClient = WebClient.create(vertx);
 		ALL_TYPES_SUB = NGSIConstants.NGSI_LD_DEFAULT_PREFIX + allTypeSubType;
 		regDAO.loadSubscriptions().onItem().transformToUni(subs -> {
@@ -250,7 +245,8 @@ public class RegistrySubscriptionService implements CSourceHandler{
 				}
 				return syncService.onItem().transformToUni(v2 -> {
 					return Uni.createFrom()
-							.item(new NGSILDOperationResult(AppConstants.UPDATE_SUBSCRIPTION_REQUEST, subscriptionId, tenant));
+							.item(new NGSILDOperationResult(AppConstants.UPDATE_SUBSCRIPTION_REQUEST, subscriptionId,
+									tenant));
 				});
 			});
 		});
@@ -320,19 +316,21 @@ public class RegistrySubscriptionService implements CSourceHandler{
 		List<Uni<Void>> unis = Lists.newArrayList();
 		for (SubscriptionRequest potentialSub : potentialSubs) {
 			switch (message.getRequestType()) {
-			case AppConstants.UPDATE_REQUEST:
-				if (shouldFire(message.getPayload(), potentialSub)) {
-					unis.add(regDAO.getRegById(message.getTenant(), message.getId()).onItem().transformToUni(rows -> {
-						return sendNotification(potentialSub, rows.iterator().next().getJsonObject(0).getMap(),
-								message.getRequestType());
-					}));
-				}
-				break;
-			case AppConstants.CREATE_REQUEST:
-			case AppConstants.DELETE_REQUEST:
-				unis.add(sendNotification(potentialSub, message.getPayload(), message.getRequestType()));
-			default:
-				break;
+				case AppConstants.UPDATE_REQUEST:
+					if (shouldFire(message.getPayload(), potentialSub)) {
+						unis.add(regDAO.getRegById(message.getTenant(), message.getId()).onItem()
+								.transformToUni(rows -> {
+									return sendNotification(potentialSub,
+											rows.iterator().next().getJsonObject(0).getMap(),
+											message.getRequestType());
+								}));
+					}
+					break;
+				case AppConstants.CREATE_REQUEST:
+				case AppConstants.DELETE_REQUEST:
+					unis.add(sendNotification(potentialSub, message.getPayload(), message.getRequestType()));
+				default:
+					break;
 			}
 
 		}
@@ -349,102 +347,127 @@ public class RegistrySubscriptionService implements CSourceHandler{
 						NotificationParam notificationParam = potentialSub.getSubscription().getNotification();
 						Uni<Void> toSend;
 						switch (notificationParam.getEndPoint().getUri().getScheme()) {
-						case "internal":
-//							try {
-//								MicroServiceUtils
-//										.serializeAndSplitObjectAndEmit(
-//												new InternalNotification(potentialSub.getTenant(), potentialSub.getId(),
-//														notification),
-//												messageSize, internalNotificationSender, objectMapper);
-//							} catch (ResponseException e) {
-//								logger.error("Failed to send internal notification", e);
-//							}
-							toSend = Uni.createFrom().voidItem();
-							break;
-						case "mqtt":
-						case "mqtts":
-							try {
-								toSend = getMqttClient(notificationParam).onItem().transformToUni(client -> {
-									int qos = 1;
+							case "internal":
+								// try {
+								// MicroServiceUtils
+								// .serializeAndSplitObjectAndEmit(
+								// new InternalNotification(potentialSub.getTenant(), potentialSub.getId(),
+								// notification),
+								// messageSize, internalNotificationSender, objectMapper);
+								// } catch (ResponseException e) {
+								// logger.error("Failed to send internal notification", e);
+								// }
+								toSend = Uni.createFrom().voidItem();
+								break;
+							case "mqtt":
+							case "mqtts":
+								try {
+									toSend = getMqttClient(notificationParam).onItem().transformToUni(client -> {
+										int qos = 1;
 
-									String qosString = notificationParam.getEndPoint().getNotifierInfo()
-											.get(NGSIConstants.MQTT_QOS);
-									if (qosString != null) {
-										qos = Integer.parseInt(qosString);
-									}
-									try {
-										return client
-												.publish(
-														notificationParam.getEndPoint().getUri().getPath().substring(1),
-														Buffer.buffer(SubscriptionTools
-																.getMqttPayload(notificationParam, notification)),
-														MqttQoS.valueOf(qos), false, false)
-												.onItem().transformToUni(t -> {
-													if (t == 0) {
-														// TODO what the fuck is the result here
-													}
-													long now = System.currentTimeMillis();
-													potentialSub.getSubscription().getNotification()
-															.setLastSuccessfulNotification(now);
-													potentialSub.getSubscription().getNotification()
-															.setLastNotification(now);
-													return regDAO.updateNotificationSuccess(potentialSub.getTenant(),
-															potentialSub.getId(),
-															SerializationTools.notifiedAt_formatter.format(
-																	LocalDateTime.ofInstant(Instant.ofEpochMilli(now),
-																			ZoneId.of("Z"))));
-												}).onFailure().recoverWithUni(e -> {
-													logger.error("failed to send notification for subscription "
-															+ potentialSub, e);
-													long now = System.currentTimeMillis();
-													potentialSub.getSubscription().getNotification()
-															.setLastFailedNotification(now);
-													potentialSub.getSubscription().getNotification()
-															.setLastNotification(now);
-													return regDAO.updateNotificationFailure(potentialSub.getTenant(),
-															potentialSub.getId(),
-															SerializationTools.notifiedAt_formatter.format(
-																	LocalDateTime.ofInstant(Instant.ofEpochMilli(now),
-																			ZoneId.of("Z"))));
-												});
-									} catch (Exception e) {
-										logger.error("failed to send notification for subscription " + potentialSub, e);
-										return Uni.createFrom().voidItem();
-									}
-								});
-							} catch (Exception e) {
-								logger.error("failed to send notification for subscription " + potentialSub, e);
-								return Uni.createFrom().voidItem();
-							}
-							break;
-						case "http":
-						case "https":
-							try {
-								toSend = ldService
-										.compact(notification, null, potentialSub.getContext(), HttpUtils.opts, -1)
-										.onItem().transformToUni(noti -> {
-											return webClient.post(notificationParam.getEndPoint().getUri().toString())
-													.putHeaders(SubscriptionTools.getHeaders(notificationParam,
-															potentialSub.getSubscription().getOtherHead()))
-													.sendJsonObject(new JsonObject(noti)).onFailure().retry().atMost(3)
-													.onItem().transformToUni(result -> {
-														int statusCode = result.statusCode();
+										String qosString = notificationParam.getEndPoint().getNotifierInfo()
+												.get(NGSIConstants.MQTT_QOS);
+										if (qosString != null) {
+											qos = Integer.parseInt(qosString);
+										}
+										try {
+											return client
+													.publish(
+															notificationParam.getEndPoint().getUri().getPath()
+																	.substring(1),
+															Buffer.buffer(SubscriptionTools
+																	.getMqttPayload(notificationParam, notification)),
+															MqttQoS.valueOf(qos), false, false)
+													.onItem().transformToUni(t -> {
+														if (t == 0) {
+															// TODO what the fuck is the result here
+														}
 														long now = System.currentTimeMillis();
-														if (statusCode > 200 && statusCode < 300) {
-															potentialSub.getSubscription().getNotification()
-																	.setLastSuccessfulNotification(now);
-															potentialSub.getSubscription().getNotification()
-																	.setLastNotification(now);
-															return regDAO.updateNotificationSuccess(
-																	potentialSub.getTenant(), potentialSub.getId(),
-																	SerializationTools.notifiedAt_formatter
-																			.format(LocalDateTime.ofInstant(
-																					Instant.ofEpochMilli(now),
-																					ZoneId.of("Z"))));
-														} else {
+														potentialSub.getSubscription().getNotification()
+																.setLastSuccessfulNotification(now);
+														potentialSub.getSubscription().getNotification()
+																.setLastNotification(now);
+														return regDAO.updateNotificationSuccess(
+																potentialSub.getTenant(),
+																potentialSub.getId(),
+																SerializationTools.notifiedAt_formatter.format(
+																		LocalDateTime.ofInstant(
+																				Instant.ofEpochMilli(now),
+																				ZoneId.of("Z"))));
+													}).onFailure().recoverWithUni(e -> {
+														logger.error("failed to send notification for subscription "
+																+ potentialSub, e);
+														long now = System.currentTimeMillis();
+														potentialSub.getSubscription().getNotification()
+																.setLastFailedNotification(now);
+														potentialSub.getSubscription().getNotification()
+																.setLastNotification(now);
+														return regDAO.updateNotificationFailure(
+																potentialSub.getTenant(),
+																potentialSub.getId(),
+																SerializationTools.notifiedAt_formatter.format(
+																		LocalDateTime.ofInstant(
+																				Instant.ofEpochMilli(now),
+																				ZoneId.of("Z"))));
+													});
+										} catch (Exception e) {
+											logger.error("failed to send notification for subscription " + potentialSub,
+													e);
+											return Uni.createFrom().voidItem();
+										}
+									});
+								} catch (Exception e) {
+									logger.error("failed to send notification for subscription " + potentialSub, e);
+									return Uni.createFrom().voidItem();
+								}
+								break;
+							case "http":
+							case "https":
+								try {
+									toSend = ldService
+											.compact(notification, null, potentialSub.getContext(), HttpUtils.opts, -1)
+											.onItem().transformToUni(noti -> {
+												return webClient
+														.post(notificationParam.getEndPoint().getUri().toString())
+														.putHeaders(SubscriptionTools.getHeaders(notificationParam,
+																potentialSub.getSubscription().getOtherHead()))
+														.sendJsonObject(new JsonObject(noti)).onFailure().retry()
+														.atMost(3)
+														.onItem().transformToUni(result -> {
+															int statusCode = result.statusCode();
+															long now = System.currentTimeMillis();
+															if (statusCode > 200 && statusCode < 300) {
+																potentialSub.getSubscription().getNotification()
+																		.setLastSuccessfulNotification(now);
+																potentialSub.getSubscription().getNotification()
+																		.setLastNotification(now);
+																return regDAO.updateNotificationSuccess(
+																		potentialSub.getTenant(), potentialSub.getId(),
+																		SerializationTools.notifiedAt_formatter
+																				.format(LocalDateTime.ofInstant(
+																						Instant.ofEpochMilli(now),
+																						ZoneId.of("Z"))));
+															} else {
+																logger.error(
+																		"failed to send notification for subscription "
+																				+ potentialSub + " with status code "
+																				+ statusCode
+																				+ ". Remember there is no redirect following for post due to security considerations");
+																potentialSub.getSubscription().getNotification()
+																		.setLastFailedNotification(now);
+																potentialSub.getSubscription().getNotification()
+																		.setLastNotification(now);
+																return regDAO.updateNotificationFailure(
+																		potentialSub.getTenant(), potentialSub.getId(),
+																		SerializationTools.notifiedAt_formatter
+																				.format(LocalDateTime.ofInstant(
+																						Instant.ofEpochMilli(now),
+																						ZoneId.of("Z"))));
+															}
+														}).onFailure().recoverWithUni(e -> {
 															logger.error("failed to send notification for subscription "
-																	+ potentialSub + " with status code " + statusCode
-																	+ ". Remember there is no redirect following for post due to security considerations");
+																	+ potentialSub, e);
+															long now = System.currentTimeMillis();
 															potentialSub.getSubscription().getNotification()
 																	.setLastFailedNotification(now);
 															potentialSub.getSubscription().getNotification()
@@ -455,31 +478,16 @@ public class RegistrySubscriptionService implements CSourceHandler{
 																			.format(LocalDateTime.ofInstant(
 																					Instant.ofEpochMilli(now),
 																					ZoneId.of("Z"))));
-														}
-													}).onFailure().recoverWithUni(e -> {
-														logger.error("failed to send notification for subscription "
-																+ potentialSub, e);
-														long now = System.currentTimeMillis();
-														potentialSub.getSubscription().getNotification()
-																.setLastFailedNotification(now);
-														potentialSub.getSubscription().getNotification()
-																.setLastNotification(now);
-														return regDAO.updateNotificationFailure(
-																potentialSub.getTenant(), potentialSub.getId(),
-																SerializationTools.notifiedAt_formatter
-																		.format(LocalDateTime.ofInstant(
-																				Instant.ofEpochMilli(now),
-																				ZoneId.of("Z"))));
-													});
-										});
-							} catch (Exception e) {
-								logger.error("failed to send notification for subscription " + potentialSub, e);
+														});
+											});
+								} catch (Exception e) {
+									logger.error("failed to send notification for subscription " + potentialSub, e);
+									return Uni.createFrom().voidItem();
+								}
+								break;
+							default:
+								logger.error("unsuported endpoint in subscription " + potentialSub.getId());
 								return Uni.createFrom().voidItem();
-							}
-							break;
-						default:
-							logger.error("unsuported endpoint in subscription " + potentialSub.getId());
-							return Uni.createFrom().voidItem();
 						}
 						if (potentialSub.getSubscription().getThrottling() > 0) {
 							long delay = potentialSub.getSubscription().getThrottling() - (System.currentTimeMillis()
@@ -1187,13 +1195,13 @@ public class RegistrySubscriptionService implements CSourceHandler{
 				});
 				return SubscriptionTools.generateCsourceNotification(message, data,
 						AppConstants.INTERNAL_NOTIFICATION_REQUEST, ldService).onItem().transformToUni(noti -> {
-//							try {
-//								MicroServiceUtils.serializeAndSplitObjectAndEmit(
-//										new InternalNotification(message.getTenant(), message.getId(), noti),
-//										messageSize, internalNotificationSender, objectMapper);
-//							} catch (ResponseException e) {
-//								logger.error("Failed to serialize notification", e);
-//							}
+							// try {
+							// MicroServiceUtils.serializeAndSplitObjectAndEmit(
+							// new InternalNotification(message.getTenant(), message.getId(), noti),
+							// messageSize, internalNotificationSender, objectMapper);
+							// } catch (ResponseException e) {
+							// logger.error("Failed to serialize notification", e);
+							// }
 							return Uni.createFrom().voidItem();
 						});
 

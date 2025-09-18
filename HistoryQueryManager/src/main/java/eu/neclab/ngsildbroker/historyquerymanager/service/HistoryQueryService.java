@@ -14,7 +14,7 @@ import java.util.Set;
 import com.github.jsonldjava.core.JsonLdConsts;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.mutiny.core.MultiMap;
-import jakarta.annotation.PostConstruct;
+
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
@@ -85,19 +85,13 @@ public class HistoryQueryService implements CSourceHandler {
 
 	private Table<String, String, List<RegistrationEntry>> tenant2CId2RegEntries = HashBasedTable.create();
 
-	@PostConstruct
-	void init() {
+	void startup(@Observes StartupEvent event) {
 		webClient = WebClient.create(vertx);
 		historyDAO.getAllRegistries().onItem().transform(t -> {
 			tenant2CId2RegEntries = t;
 			return null;
 		}).await().indefinitely();
 		this.microServiceUtils.registerCSourceReceiver(this);
-	}
-
-	// This is needed so that @postconstruct runs on the startup thread and not on a
-	// worker thread later on
-	void startup(@Observes StartupEvent event) {
 	}
 
 	public Uni<QueryResult> query(String tenant,

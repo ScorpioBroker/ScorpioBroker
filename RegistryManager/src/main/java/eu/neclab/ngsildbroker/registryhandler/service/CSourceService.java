@@ -44,8 +44,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.event.Observes;
+import io.quarkus.runtime.StartupEvent;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import java.util.ArrayList;
@@ -99,8 +99,7 @@ public class CSourceService {
 
 	private WebClient webClient;
 
-	@PostConstruct
-	void setup() {
+	void startup(@Observes StartupEvent event) {
 		this.webClient = WebClient.create(vertx);
 		if (FED_BROKERS_CONFIG.equals("none")) {
 			FED_BROKERS = new String[0];

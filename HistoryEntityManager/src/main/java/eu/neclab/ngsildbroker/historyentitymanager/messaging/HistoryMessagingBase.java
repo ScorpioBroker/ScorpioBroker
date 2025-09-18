@@ -26,10 +26,12 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.UpsertEntityRequest;
 import eu.neclab.ngsildbroker.commons.interfaces.BaseRequestHandler;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.historyentitymanager.service.HistoryEntityService;
+import io.quarkus.runtime.StartupEvent;
 //import eu.neclab.ngsildbroker.historyentitymanager.service.HistoryEntityService;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Vertx;
-import jakarta.annotation.PostConstruct;
+
+import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 
 public abstract class HistoryMessagingBase implements BaseRequestHandler {
@@ -43,10 +45,10 @@ public abstract class HistoryMessagingBase implements BaseRequestHandler {
 
 	@ConfigProperty(name = "scorpio.history.autorecording")
 	boolean autoRecording;
-	
+
 	@ConfigProperty(name = "scorpio.history.autorecordingthreadpoolsize")
 	int histRecordingThreadPooolSzie;
-	
+
 	@ConfigProperty(name = "scorpio.history.autorecordingbuffersize")
 	int maxSize;
 
@@ -58,20 +60,18 @@ public abstract class HistoryMessagingBase implements BaseRequestHandler {
 
 	@Inject
 	ObjectMapper objectMapper;
-	
+
 	@Inject
 	MicroServiceUtils microServiceUtils;
-	
+
 	Executor histRecordingExecutor;
-	
-	@PostConstruct
-	public void setup() {
-		if(autoRecording) {
+
+	void startup(@Observes StartupEvent event) {
+		if (autoRecording) {
 			histRecordingExecutor = Executors.newScheduledThreadPool(histRecordingThreadPooolSzie);
 		}
 		this.microServiceUtils.registerBaseRequestReceiver(this);
 	}
-	
 
 	public Uni<Void> handleCsourceRaw(String byteMessage) {
 		CSourceBaseRequest baseRequest;
@@ -93,7 +93,7 @@ public abstract class HistoryMessagingBase implements BaseRequestHandler {
 			logger.error("failed to serialize message " + byteMessage, e);
 			return Uni.createFrom().voidItem();
 		}
-		
+
 		if (baseRequest.getRequestType() >= 30) {
 			return handleBaseRequest(baseRequest);
 		} else {
@@ -180,7 +180,7 @@ public abstract class HistoryMessagingBase implements BaseRequestHandler {
 			String tenant = tenant2BufferEntry.getKey();
 
 			Long lastReceived = tenant2LastReceived.get(tenant);
-			if(lastReceived == null) {
+			if (lastReceived == null) {
 				lastReceived = -1l;
 			}
 
@@ -202,28 +202,28 @@ public abstract class HistoryMessagingBase implements BaseRequestHandler {
 					int regTypeToUse;
 
 					switch (request.getRequestType()) {
-					case AppConstants.UPSERT_REQUEST:
-						regTypeToUse = AppConstants.BATCH_UPSERT_REQUEST;
-						break;
-					case AppConstants.CREATE_REQUEST:
-						regTypeToUse = AppConstants.BATCH_CREATE_REQUEST;
-						break;
+						case AppConstants.UPSERT_REQUEST:
+							regTypeToUse = AppConstants.BATCH_UPSERT_REQUEST;
+							break;
+						case AppConstants.CREATE_REQUEST:
+							regTypeToUse = AppConstants.BATCH_CREATE_REQUEST;
+							break;
 
-					case AppConstants.APPEND_REQUEST:
-					case AppConstants.UPDATE_REQUEST:
-						regTypeToUse = AppConstants.BATCH_UPDATE_REQUEST;
-						break;
+						case AppConstants.APPEND_REQUEST:
+						case AppConstants.UPDATE_REQUEST:
+							regTypeToUse = AppConstants.BATCH_UPDATE_REQUEST;
+							break;
 
-					case AppConstants.MERGE_PATCH_REQUEST:
-						regTypeToUse = AppConstants.BATCH_MERGE_REQUEST;
-						break;
+						case AppConstants.MERGE_PATCH_REQUEST:
+							regTypeToUse = AppConstants.BATCH_MERGE_REQUEST;
+							break;
 
-					case AppConstants.DELETE_REQUEST:
-						regTypeToUse = AppConstants.BATCH_DELETE_REQUEST;
-						break;
+						case AppConstants.DELETE_REQUEST:
+							regTypeToUse = AppConstants.BATCH_DELETE_REQUEST;
+							break;
 
-					default:
-						continue;
+						default:
+							continue;
 					}
 
 					Map<String, List<Map<String, Object>>> payloads = opType2Payload.get(regTypeToUse);
