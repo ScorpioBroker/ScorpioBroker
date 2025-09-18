@@ -28,6 +28,11 @@ SplitEntity support
 Support for valueType added 
 
 ## Performance improvements
+
+### HEADS UP REINDEXING
+
+In this update we update the indexes on the database. This means the migration can take a bit depending on the load on your database.
+
 Query and Temporal Query improvements via
  - Better database connection handling in Scorpio
  - Heavy SQL optimizations in various forms
@@ -66,6 +71,8 @@ https://github.com/ScorpioBroker/ScorpioBroker/tree/development-quarkus/performa
 
 ### new docker compose template with Unix Socket
 
-As we had problems to get Flyway migration running via Unix sockets the provided compose file will still have a opened port 5432 for Flyway to run. Any NGSI-LD based interaction is then performed via a UNIX socket.
+As we had problems to get Flyway migration running via Unix sockets the provided compose file will still have a opened port 5432 for Flyway to run. Any NGSI-LD based interaction is then performed via a UNIX socket. UNIX socket connections are only available in the Java version.
+
+
 
 
