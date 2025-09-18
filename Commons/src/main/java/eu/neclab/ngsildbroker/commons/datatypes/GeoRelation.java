@@ -7,7 +7,7 @@ import java.io.Serializable;
  * @version 1.0
  * @created 11-Jun-2018 11:13:22
  */
-public class GeoRelation implements Serializable{
+public class GeoRelation implements Serializable {
 
 	/**
 	 *
@@ -20,10 +20,6 @@ public class GeoRelation implements Serializable{
 	private String relation;
 
 	public GeoRelation() {
-
-	}
-
-	public void finalize() throws Throwable {
 
 	}
 

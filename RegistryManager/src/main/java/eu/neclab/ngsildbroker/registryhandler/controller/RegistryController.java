@@ -129,7 +129,7 @@ public class RegistryController {
 					.onItem().transformToUni(queryResult -> {
 						return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty,
 								acceptHeader, count, actualLimit, null, context, ldService, false,
-								microServiceUtils.getGatewayString(), NGSIConstants.NGSI_LD_REGISTRY_ENDPOINT);
+								microServiceUtils.getGatewayString(), NGSIConstants.NGSI_LD_REGISTRY_ENDPOINT, -1);
 					});
 		}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 	}
@@ -142,7 +142,7 @@ public class RegistryController {
 		} catch (DecodeException e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
-		
+
 		if (jsonObject.containsKey(NGSIConstants.CONTEXT_SOURCE_INFO)) {
 			for (Object obj : jsonObject.getJsonArray(NGSIConstants.CONTEXT_SOURCE_INFO)) {
 				JsonObject jsonObject1 = (JsonObject) obj;
@@ -186,8 +186,8 @@ public class RegistryController {
 		return ldService.parse(headerContext).onItem().transformToUni(context -> {
 			return csourceService.retrieveRegistration(HttpUtils.getTenant(request), registrationId).onItem()
 					.transformToUni(entity -> {
-						return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, entity, null, null,
-								null, ldService, null, null, true);
+						return HttpUtils.generateRegistryResult(headerContext, context, acceptHeader, entity, ldService,
+								true);
 					});
 		}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 	}

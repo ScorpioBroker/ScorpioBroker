@@ -16,6 +16,7 @@ import jakarta.ws.rs.QueryParam;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.RestResponse;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLDService;
 import com.github.jsonldjava.utils.JsonUtils;
@@ -30,6 +31,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.OmitTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.OrderByTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.PickTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
@@ -62,6 +64,9 @@ public class EntityOperationsQueryController {
 
 	@Inject
 	JsonLDService ldService;
+
+	@Inject
+	ObjectMapper objectMapper;
 
 	@Path("/query")
 	@POST
@@ -151,6 +156,7 @@ public class EntityOperationsQueryController {
 				ScopeQueryTerm scopeQueryTerm = null;
 				OmitTerm omitTerm = null;
 				PickTerm pickTerm = null;
+				OrderByTerm orderBy = null;
 				boolean localOnlyTBU = localOnly;
 				LanguageQueryTerm langQuery;
 				Object entities = body.get(NGSIConstants.NGSI_LD_ENTITIES_SHORT);
@@ -159,6 +165,7 @@ public class EntityOperationsQueryController {
 				Object geoQ = body.get(NGSIConstants.NGSI_LD_GEO_QUERY_SHORT);
 				Object joinObj = body.get(NGSIConstants.QUERY_PARAMETER_JOIN);
 				Object joinLevelObj = body.get(NGSIConstants.QUERY_PARAMETER_JOINLEVEL);
+				Object ordering = body.get(NGSIConstants.NGSI_LD_ORDERING_NAME_SHORT);
 				String join = joinObj == null ? null : (String) joinObj;
 				int joinLevel = joinLevelObj == null ? 0 : (int) joinLevelObj;
 				boolean entityDist = (boolean) body.getOrDefault(NGSIConstants.QUERY_PARAMETER_ENTITY_DIST, false);
@@ -290,20 +297,38 @@ public class EntityOperationsQueryController {
 				} else {
 					idsAndTypeQueryAndIdPattern = null;
 				}
+
+				if (ordering != null && ordering instanceof Map m) {
+					String collation = (String) m.get(NGSIConstants.QUERY_PARAMETER_ORDER_COLLATION);
+					String orderGeometry = (String) m.get(NGSIConstants.QUERY_PARAMETER_GEOMETRY);
+					String orderFrom;
+					if (m.containsKey(NGSIConstants.GEO_JSON_COORDINATES)) {
+						orderFrom = objectMapper.writeValueAsString(m.get(NGSIConstants.GEO_JSON_COORDINATES));
+					} else {
+						orderFrom = null;
+					}
+
+					String orderByString = String.join(",",
+							((List<String>) m.get(NGSIConstants.QUERY_PARAMETER_ORDER_BY)));
+					orderBy = QueryParser.parseOrderBy(orderByString, collation, orderFrom, orderGeometry, context);
+				}
+
 				String checkSum;
 				if (idsAndTypeQueryAndIdPattern == null && attrs == null && q == null && csf == null && geometry == null
 						&& georel == null && coordinates == null && geoproperty == null && geometryProperty == null
 						&& scopeQ == null && pick == null && omit == null) {
-					checkSum = null;
+					checkSum = "";
 				} else {
 					checkSum = String.valueOf(Objects.hashCode(idsAndTypeQueryAndIdPattern, attrs, q, csf, geometry,
-							georel, coordinates, geoproperty, geometryProperty, scopeQ, pick, omit));
+							georel, coordinates, geoproperty, geometryProperty, scopeQ, pick, omit, ordering));
 				}
+
 				return queryService
 						.query(tenant, token, tokenProvided, idsAndTypeQueryAndIdPattern, attrsQuery, qQueryTerm,
 								csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset, count,
 								localOnlyTBU, context, request.headers(), false, null, null, join, joinLevel,
-								entityDist, pickTerm, omitTerm, checkSum, viaHeaders, null)
+								entityDist, pickTerm, omitTerm, checkSum, viaHeaders, null, retrieveEntityMap, orderBy,
+								false)
 						.onItem().transformToUni(queryResult -> {
 							if (doNotCompact) {
 								return Uni.createFrom().item(RestResponse.ok((Object) queryResult.getData()));
@@ -311,7 +336,7 @@ public class EntityOperationsQueryController {
 							return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty,
 									acceptHeader, count, actualLimit, langQuery, context, ldService, retrieveEntityMap,
 									microServiceUtils.getGatewayString(),
-									NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT);
+									NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT, AppConstants.QUERY_PAYLOAD);
 						}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, tenant));
 
 			} catch (Exception e) {

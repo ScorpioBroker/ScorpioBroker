@@ -59,51 +59,6 @@ public class EntityMap {
 		this.noRootLevelRegEntryAndLinkedQuery = noRootLevelRegEntryAndLinkedQuery;
 	}
 
-	@SuppressWarnings("unchecked")
-	public static EntityMap fromJson(String id, JsonObject json, ObjectMapper objectMapper) {
-		boolean splitEntities = json.getBoolean("splitEntities");
-		boolean regEmptyOrNoRegEntryAndNoLinkedQuery = json.getBoolean("regEmptyOrNoRegEntryAndNoLinkedQuery");
-		boolean noRootLevelRegEntryAndLinkedQuery = json.getBoolean("noRootLevelRegEntryAndLinkedQuery");
-		EntityMap result = new EntityMap(id, splitEntities, regEmptyOrNoRegEntryAndNoLinkedQuery,
-				noRootLevelRegEntryAndLinkedQuery);
-		result.setQueryCheckSum(json.getString("checkSum"));
-		LinkedHashMap<String, Set<String>> id2Cid = result.getEntityId2CSourceIds();
-		HashMap<String, QueryRemoteHost> cId2Host = result.getcSourceId2RemoteHost();
-		JsonArray entityMap = json.getJsonArray("entityMap");
-		if (entityMap != null) {
-			entityMap.forEach(arrayEntry -> {
-				JsonObject obj = (JsonObject) arrayEntry;
-				obj.forEach(entry -> {
-					id2Cid.put(entry.getKey(), Sets.newHashSet(((JsonArray) entry.getValue()).getList()));
-				});
-
-			});
-		}
-		if (json.containsKey("hosts")) {
-			json.getJsonObject("hosts").forEach(entry -> {
-
-				try {
-					cId2Host.put(entry.getKey(),
-							objectMapper.readValue((String) entry.getValue(), QueryRemoteHost.class));
-				} catch (JsonMappingException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (JsonProcessingException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			});
-		}
-		if (json.containsKey("list_size")) {
-			result.setManualSize(json.getInteger("list_size"));
-		}
-		result.setSelectPart(json.getString("selectPart"));
-		result.setWherePart(json.getString("wherePart"));
-		result.setFinalSelectPart(json.getString("finalselect"));
-
-		return result;
-	}
-
 	public void addEntry(String entityId, String csourceId, QueryRemoteHost remoteHost) {
 		Set<String> csourceIds = entityId2CSourceIds.get(entityId);
 		if (csourceIds == null) {
@@ -244,15 +199,15 @@ public class EntityMap {
 		}
 		ids.forEach(id -> {
 			Set<String> cIds = entityId2CSourceIds.remove(id);
-//			if (cIds != null) {
-//				cIds.forEach(cId -> {
-//					Set<String> eIds = csourceId2EntityIds.get(cId);
-//					if(eIds != null) {
-//						eIds.remove(id);
-//					}
-//					
-//				});
-//			}
+			// if (cIds != null) {
+			// cIds.forEach(cId -> {
+			// Set<String> eIds = csourceId2EntityIds.get(cId);
+			// if(eIds != null) {
+			// eIds.remove(id);
+			// }
+			//
+			// });
+			// }
 		});
 
 		return true;

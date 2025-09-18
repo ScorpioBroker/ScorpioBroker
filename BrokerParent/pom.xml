@@ -1,21 +1,23 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>eu.neclab.ngsildbroker</groupId>
 	<artifactId>broker-parent</artifactId>
 	<name>BrokerParent</name>
-	<version>5.0.9-SNAPSHOT</version>
+	<version>6.0.0-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<properties>
-		<compiler-plugin.version>3.13.0</compiler-plugin.version>
+		<compiler-plugin.version>3.14.0</compiler-plugin.version>
 		<failsafe.useModulePath>false</failsafe.useModulePath>
-		<maven.compiler.release>17</maven.compiler.release>
+		<maven.compiler.release>21</maven.compiler.release>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
 		<quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
-		<quarkus.platform.version>3.14.1</quarkus.platform.version>
-		<surefire-plugin.version>3.3.1</surefire-plugin.version>
-		<java.version>17</java.version>
+		<quarkus.platform.version>3.23.4</quarkus.platform.version>
+		<surefire-plugin.version>3.5.3</surefire-plugin.version>
+		<java.version>21</java.version>
 		<maven.compiler.source>${java.version}</maven.compiler.source>
 		<maven.compiler.target>${java.version}</maven.compiler.target>
 		<nativeext></nativeext>
@@ -49,7 +51,7 @@
 			<plugin>
 				<groupId>io.smallrye</groupId>
 				<artifactId>jandex-maven-plugin</artifactId>
-				<version>3.1.2</version>
+				<version>3.5.0</version>
 				<executions>
 					<execution>
 						<id>make-index</id>
@@ -131,6 +133,10 @@
 			<artifactId>quarkus-flyway</artifactId>
 		</dependency>
 		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-sqlserver</artifactId>
+		</dependency>
+		<dependency>
 			<groupId>io.quarkus</groupId>
 			<artifactId>quarkus-smallrye-health</artifactId>
 		</dependency>
@@ -192,7 +198,7 @@
 		<dependency>
 			<groupId>io.quarkiverse.loggingmanager</groupId>
 			<artifactId>quarkus-logging-manager</artifactId>
-			<version>3.1.2</version>
+			<version>3.4.1</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.commons</groupId>
@@ -241,7 +247,7 @@
 				<dependency>
 					<groupId>io.netty</groupId>
 					<artifactId>netty-resolver-dns-native-macos</artifactId>
-					<version>4.1.112.Final</version>
+					<version>4.2.6.Final</version>
 					<scope>runtime</scope>
 				</dependency>
 			</dependencies>
@@ -304,27 +310,27 @@
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-smallrye-reactive-messaging</artifactId>
-					
+
 				</dependency>
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-paho-mqtt5</artifactId>
-					
+
 				</dependency>
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-log</artifactId>
-					
+
 				</dependency>
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-jackson</artifactId>
-					
+
 				</dependency>
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-dataformat</artifactId>
-					
+
 				</dependency>
 			</dependencies>
 		</profile>
@@ -339,17 +345,17 @@
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-smallrye-reactive-messaging</artifactId>
-					
+
 				</dependency>
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-log</artifactId>
-					
+
 				</dependency>
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-aws2-kinesis</artifactId>
-					
+
 				</dependency>
 			</dependencies>
 		</profile>
@@ -364,17 +370,17 @@
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-smallrye-reactive-messaging</artifactId>
-					
+
 				</dependency>
 				<dependency>
 					<groupId>org.ap/ache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-jackson</artifactId>
-					
+
 				</dependency>
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-amqp</artifactId>
-					
+
 				</dependency>
 			</dependencies>
 		</profile>
@@ -389,17 +395,17 @@
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-smallrye-reactive-messaging</artifactId>
-					
+
 				</dependency>
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-activemq</artifactId>
-					
+
 				</dependency>
 				<dependency>
 					<groupId>org.apache.camel</groupId>
 					<artifactId>camel-jms</artifactId>
-					
+
 				</dependency>
 				<!--<dependency>
 					<groupId>org.apache.activemq</groupId>
@@ -409,17 +415,17 @@
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-log</artifactId>
-					
+
 				</dependency>
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-jackson</artifactId>
-					
+
 				</dependency>
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-dataformat</artifactId>
-					
+
 				</dependency>
 			</dependencies>
 		</profile>
@@ -434,12 +440,12 @@
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-smallrye-reactive-messaging</artifactId>
-					
+
 				</dependency>
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-azure-eventhubs</artifactId>
-					
+
 				</dependency>
 			</dependencies>
 		</profile>
@@ -454,29 +460,29 @@
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-smallrye-reactive-messaging</artifactId>
-					
+
 				</dependency>
 
 
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-google-pubsub</artifactId>
-					
+
 				</dependency>
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-log</artifactId>
-					
+
 				</dependency>
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-jackson</artifactId>
-					
+
 				</dependency>
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-dataformat</artifactId>
-					
+
 				</dependency>
 			</dependencies>
 		</profile>
@@ -488,30 +494,30 @@
 				</property>
 			</activation>
 			<dependencies>
+
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-smallrye-reactive-messaging</artifactId>
-					
+
 				</dependency>
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-log</artifactId>
-					
+
 				</dependency>
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
-					<artifactId>camel-quarkus-rabbitmq</artifactId>
-					<version>2.16.0</version>
+					<artifactId>camel-quarkus-spring-rabbitmq</artifactId>
 				</dependency>
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-jackson</artifactId>
-					
+
 				</dependency>
 				<dependency>
 					<groupId>org.apache.camel.quarkus</groupId>
 					<artifactId>camel-quarkus-dataformat</artifactId>
-					
+
 				</dependency>
 			</dependencies>
 		</profile>
@@ -535,7 +541,8 @@
 								</goals>
 								<configuration>
 									<systemPropertyVariables>
-										<native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
+										<native.image.path>
+											${project.build.directory}/${project.build.finalName}-runner</native.image.path>
 										<java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
 										<maven.home>${maven.home}</maven.home>
 									</systemPropertyVariables>

@@ -1,6 +1,7 @@
 package eu.neclab.ngsildbroker.commons.exceptions;
 
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.JsonMappingException;
 
@@ -11,10 +12,11 @@ import jakarta.ws.rs.ext.Provider;
 
 @Provider
 public class JsonMappingExceptionMapper implements ExceptionMapper<JsonMappingException> {
-	
+	private static final Logger logger = LoggerFactory.getLogger(JsonMappingExceptionMapper.class);
+
 	@Override
 	public Response toResponse(JsonMappingException exception) {
-
+		logger.debug("Logs to check", exception);
 		return Response.status(Response.Status.BAD_REQUEST)
 				.entity(new ResponseException(ErrorType.InvalidRequest,
 						"There is an error in the provided json document").getJson())

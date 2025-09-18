@@ -537,19 +537,26 @@ public final class HttpUtils {
 	}
 
 	public static Uni<RestResponse<Object>> generateEntityResult(List<Object> contextHeader, Context context,
-
 			int acceptHeader, Object entity, String geometryProperty, String options, LanguageQueryTerm langQuery,
 			JsonLDService ldService, List<String> omitList, List<String> pickList, boolean addAtContext) {
-		return generateEntityResult(contextHeader, context, acceptHeader, entity, geometryProperty, options, langQuery,
-				ldService, omitList, pickList, false, addAtContext);
+		return generateResult(contextHeader, context, acceptHeader, entity, geometryProperty, options, langQuery,
+				ldService, omitList, pickList, false, addAtContext, AppConstants.ENTITY_RETRIEVED_PAYLOAD);
 	}
 
-	public static Uni<RestResponse<Object>> generateEntityResult(List<Object> contextHeader, Context context,
+	public static Uni<RestResponse<Object>> generateSubscriptionResult(List<Object> contextHeader, Context context,
+			int acceptHeader, Object entity, String options,
+			JsonLDService ldService, boolean addAtContext) {
+		return generateResult(contextHeader, context, acceptHeader, entity, null, options, null,
+				ldService, null, null, false, addAtContext, AppConstants.SUBSCRIPTION_CREATE_PAYLOAD);
+	}
+
+	public static Uni<RestResponse<Object>> generateResult(List<Object> contextHeader, Context context,
 			int acceptHeader, Object entity, String geometryProperty, String options, LanguageQueryTerm langQuery,
 			JsonLDService ldService, List<String> omitList, List<String> pickList, boolean forceList,
-			boolean addAtContext) {
+			boolean addAtContext, int payloadType) {
 		return generateCompactedResult(contextHeader, context, acceptHeader, entity, geometryProperty, options,
-				langQuery, false, false, ldService, addAtContext).onItem().transform(resultBodyAndHeaders -> {
+				langQuery, false, false, ldService, addAtContext, payloadType).onItem()
+				.transform(resultBodyAndHeaders -> {
 					ResponseBuilder<Object> resp = RestResponseBuilderImpl.ok();
 					List<Tuple2<String, String>> headers = resultBodyAndHeaders.getItem2();
 					for (Tuple2<String, String> entry : headers) {
@@ -596,7 +603,7 @@ public final class HttpUtils {
 	public static Uni<Tuple2<Object, List<Tuple2<String, String>>>> generateCompactedResult(List<Object> contextHeader,
 			Context context, int acceptHeader, Object entity, String geometryProperty, String options,
 			LanguageQueryTerm langQuery, boolean forceArray, boolean forceAttributeList, JsonLDService ldService,
-			boolean addAtContext) {
+			boolean addAtContext, int payloadType) {
 
 		Set<String> optionSet = null;
 		if (options != null) {
@@ -607,7 +614,8 @@ public final class HttpUtils {
 		switch (acceptHeader) {
 
 			case 1:
-				uni = ldService.compact(entity, contextHeader, context, opts, -1, optionSet, langQuery).onItem()
+				uni = ldService.compact(entity, contextHeader, context, opts, payloadType, optionSet, langQuery)
+						.onItem()
 						.transformToUni(compacted -> {
 							List<Tuple2<String, String>> headers = Lists.newArrayList();
 							Object bodyContext = compacted.remove(NGSIConstants.JSON_LD_CONTEXT);
@@ -648,7 +656,8 @@ public final class HttpUtils {
 						});
 				break;
 			case 2:
-				uni = ldService.compact(entity, contextHeader, context, opts, -1, optionSet, langQuery).onItem()
+				uni = ldService.compact(entity, contextHeader, context, opts, payloadType, optionSet, langQuery)
+						.onItem()
 						.transformToUni(compacted -> {
 							Object finalCompacted;
 							if (compacted.containsKey(JsonLdConsts.GRAPH)) {
@@ -695,7 +704,8 @@ public final class HttpUtils {
 				});
 				break;
 			case 4:// geo+json
-				uni = ldService.compact(entity, contextHeader, context, opts, -1, optionSet, langQuery).onItem()
+				uni = ldService.compact(entity, contextHeader, context, opts, payloadType, optionSet, langQuery)
+						.onItem()
 						.transformToUni(compacted -> {
 							Object finalCompacted = compacted;
 							if (compacted.containsKey(JsonLdConsts.GRAPH)) {
@@ -810,7 +820,7 @@ public final class HttpUtils {
 									valueEntry.add(m.get(NGSIConstants.LANGUAGE_MAP));
 									break;
 								}
-								case NGSIConstants.VOCABPROPERTY: {
+								case NGSIConstants.VOCAB_PROPERTY: {
 									valueEntry = new ArrayList<Object>(2);
 									valueEntry.add(m.get(NGSIConstants.VOCAB));
 									break;
@@ -858,7 +868,7 @@ public final class HttpUtils {
 								tmp.put(NGSIConstants.LANGUAGEMAPS, valuesWithDate);
 								break;
 							}
-							case NGSIConstants.VOCABPROPERTY: {
+							case NGSIConstants.VOCAB_PROPERTY: {
 								tmp.put(NGSIConstants.VOCABS, valuesWithDate);
 								break;
 							}
@@ -1172,16 +1182,17 @@ public final class HttpUtils {
 	public static Uni<RestResponse<Object>> generateQueryResult(HttpServerRequest request, QueryResult queryResult,
 
 			String options, String geometryProperty, int acceptHeader, boolean count, int limit, LanguageQueryTerm lang,
-			Context context, JsonLDService ldService, boolean entityMap, String baseUrl, String ngsiLdEndpoint) {
+			Context context, JsonLDService ldService, boolean entityMap, String baseUrl, String ngsiLdEndpoint,
+			int payloadType) {
 		return generateQueryResult(request, queryResult, options, geometryProperty, acceptHeader, count, limit, lang,
-				context, ldService, true, false, entityMap, baseUrl, ngsiLdEndpoint);
+				context, ldService, true, false, entityMap, baseUrl, ngsiLdEndpoint, payloadType);
 	}
 
 	public static Uni<RestResponse<Object>> generateQueryResult(HttpServerRequest request, QueryResult queryResult,
 
 			String options, String geometryProperty, int acceptHeader, boolean count, int limit, LanguageQueryTerm lang,
 			Context context, JsonLDService ldService, boolean forceList, boolean forceAttributeList, boolean entityMap,
-			String baseUrl, String ngsiLdEndpoint) {
+			String baseUrl, String ngsiLdEndpoint, int payloadType) {
 		ResponseBuilder<Object> builder;
 		if (count) {
 			builder = RestResponseBuilderImpl.ok().header(NGSIConstants.COUNT_HEADER_RESULT, queryResult.getCount());
@@ -1196,7 +1207,8 @@ public final class HttpUtils {
 				.equals(request.headers().get(NGSIConstants.PREFER_HEADER));
 
 		return generateCompactedResult(atContext, context, acceptHeader, queryResult.getData(), geometryProperty,
-				options, lang, forceList, forceAttributeList, ldService, addAtContext).onItem()
+				options, lang, forceList, forceAttributeList, ldService, addAtContext, payloadType)
+				.onItem()
 				.transform(resultAndHeaders -> {
 					String nextLink;
 					String prevLink;
@@ -1333,26 +1345,29 @@ public final class HttpUtils {
 	}
 
 	public static RestResponse<Object> generateEntityMapResult(Map<String, Object> entityMap) {
-		Map<String, Object> result = Maps.newLinkedHashMap();
-		Map<String, List<String>> entityMapEntry = Maps.newLinkedHashMap();
-		result.put(NGSIConstants.ID, entityMap.get(NGSIConstants.ID));
-		result.put(NGSIConstants.TYPE, NGSIConstants.ENTITY_MAP_TYPE);
-		List<Map<String, List<String>>> dbEntityMap = (List<Map<String, List<String>>>) entityMap
-				.get(NGSIConstants.ENTITY_MAP_COMPACTED_ENTRY);
-		dbEntityMap.forEach(entry -> {
-			entry.entrySet().forEach(id2Cid -> {
-				entityMapEntry.put(id2Cid.getKey(), id2Cid.getValue());
-			});
-		});
-		result.put(NGSIConstants.ENTITY_MAP_COMPACTED_ENTRY, entityMapEntry);
-		if (entityMap.containsKey(NGSIConstants.LINKED_MAP_COMPACTED_ENTRY)) {
-			result.put(NGSIConstants.LINKED_MAP_COMPACTED_ENTRY,
-					entityMap.get(NGSIConstants.LINKED_MAP_COMPACTED_ENTRY));
-		}
-		LocalDateTime expiresAt = (LocalDateTime) entityMap.get(NGSIConstants.EXPIRES_AT);
-		result.put(NGSIConstants.EXPIRES_AT, SerializationTools.formatter.format(expiresAt));
-
-		return RestResponse.ok(result, MediaType.APPLICATION_JSON);
+		// Map<String, Object> result = Maps.newLinkedHashMap();
+		// Map<String, List<String>> entityMapEntry = Maps.newLinkedHashMap();
+		// result.put(NGSIConstants.ID, entityMap.get(NGSIConstants.ID));
+		// result.put(NGSIConstants.TYPE, NGSIConstants.ENTITY_MAP_TYPE);
+		// Map<String, List<String>> dbEntityMap = (Map<String, List<String>>) entityMap
+		// .get(NGSIConstants.ENTITY_MAP_COMPACTED_ENTRY);
+		// dbEntityMap.forEach(entry -> {
+		// entry.entrySet().forEach(id2Cid -> {
+		// entityMapEntry.put(id2Cid.getKey(), id2Cid.getValue());
+		// });
+		// });
+		// result.put(NGSIConstants.ENTITY_MAP_COMPACTED_ENTRY, entityMapEntry);
+		// if (entityMap.containsKey(NGSIConstants.LINKED_MAP_COMPACTED_ENTRY)) {
+		// result.put(NGSIConstants.LINKED_MAP_COMPACTED_ENTRY,
+		// entityMap.get(NGSIConstants.LINKED_MAP_COMPACTED_ENTRY));
+		// }
+		// LocalDateTime expiresAt = (LocalDateTime)
+		// entityMap.get(NGSIConstants.EXPIRES_AT);
+		// result.put(NGSIConstants.EXPIRES_AT,
+		// SerializationTools.formatter.format(expiresAt));
+		entityMap.put(NGSIConstants.TYPE, NGSIConstants.ENTITY_MAP_TYPE);
+		entityMap.put(NGSIConstants.EXPIRES_AT, entityMap.get(NGSIConstants.EXPIRES_AT) + "Z");
+		return RestResponse.ok(entityMap, MediaType.APPLICATION_JSON);
 	}
 
 	public static RestResponse<Object> generateEntityMapResult(EntityMap entityMap) {
@@ -1490,11 +1505,22 @@ public final class HttpUtils {
 		if (timeout != -1) {
 			result.timeout(timeout);
 		}
+
 		if (method == AppConstants.POST_OP || method == AppConstants.PUT_OP || method == AppConstants.PATCH_OP) {
 			return result.sendBuffer(Buffer.buffer(body));
 		} else {
-			return result.send();
+			return result.send().onItem().transform(resp -> {
+
+				return resp;
+			});
 		}
+	}
+
+	public static Uni<RestResponse<Object>> generateRegistryResult(List<Object> contextHeader, Context context,
+			int acceptHeader, Object entity,
+			JsonLDService ldService, boolean addAtContext) {
+		return generateResult(contextHeader, context, acceptHeader, entity, null, null, null,
+				ldService, null, null, false, addAtContext, AppConstants.CSOURCE_REG_CREATE_PAYLOAD);
 	}
 
 }

@@ -24,6 +24,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.OrderByTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ProjectionTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
@@ -34,60 +35,10 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import io.smallrye.mutiny.tuples.Tuple2;
 
 public class QueryParser {
-	// Query = (QueryTerm / QueryTermAssoc) *(logicalOp (QueryTerm /
-	// QueryTermAssoc))
-	// QueryTermAssoc = %x28 QueryTerm *(logicalOp QueryTerm) %x29 ; (QueryTerm)
+
 	private QueryParser() {
 
 	}
-
-	private static String andOp = ";";
-	private static String orOp = "\\|";
-	private static String logicalOp = "((" + andOp + ")|(" + orOp + "))";
-	private static String quotedStr = "\".*\"";
-	private static String equal = "==";
-	private static String unequal = "!=";
-	private static String greater = ">";
-	private static String greaterEq = ">=";
-	private static String less = "<";
-	private static String lessEq = "<=";
-	private static String patternOp = "~=";
-	private static String notPatternOp = "!~=";
-	private static String operator = "(" + equal + "|" + unequal + "|" + greaterEq + "|" + greater + "|" + lessEq + "|"
-			+ less + ")";
-	@SuppressWarnings("unused")
-	private static String allOperators = "(" + equal + "|" + unequal + "|" + greaterEq + "|" + greater + "|" + lessEq
-			+ "|" + less + "|" + patternOp + "|" + notPatternOp + ")";
-	private static String dots = "\\.\\.";
-	private static String dateTime = "\\d\\d\\d\\d-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(,\\d\\d\\d\\d\\d\\d)?Z";
-	private static String date = "\\d\\d\\d\\d-\\d\\d-\\d\\d";
-	private static String time = "\\d\\d:\\d\\d:\\d\\d(,\\d\\d\\d\\d\\d\\d)?Z";
-	private static String comparableValue = "((" + quotedStr + ")|(" + dateTime + ")|(" + date + ")|(" + time
-			+ ")|(\\d+))";
-	private static String otherValue = "(true|false)";
-	private static String value = "(" + comparableValue + "|" + otherValue + ")";
-	private static String valueList = value + "(," + value + ")*";
-	private static String range = "(" + comparableValue + dots + comparableValue + ")";
-	private static String uri = "\\w+:(\\/?\\/?)[^\\s]+";
-	private static String compEqualityValue = "(" + otherValue + "|" + valueList + "|" + range + "|" + uri + ")";
-	private static String attrName = "\\w+";
-	private static String attrPathName = attrName + "(\\." + attrName + ")*";
-	private static String compoundAttrName = attrName + "\\[" + attrName + "\\]*";
-	private static String attribute = "(" + attrName + "|" + compoundAttrName + "|" + attrPathName + ")";
-	private static String queryTermCompare = "" + attribute + "" + operator + "" + comparableValue + "";
-	private static String queryTermEqual = "" + attribute + equal + compEqualityValue + "";
-	private static String queryTermUnequal = "" + attribute + "" + unequal + "" + compEqualityValue + "";
-	private static String queryTermPattern = "" + attribute + patternOp + "(.+)";
-	private static String queryTermNotPattern = "" + attribute + notPatternOp + "(.*)";
-	private static String queryTerm = "(" + queryTermCompare + ")|(" + queryTermEqual + ")|(" + queryTermUnequal + ")|("
-			+ queryTermPattern + ")|(" + queryTermNotPattern + ")";
-	private static String queryTermAssoc = "\\((" + queryTerm + "((" + logicalOp + ")(" + queryTerm + "))*)\\)";
-	@SuppressWarnings("unused")
-	private static String query = "((" + queryTerm + ")|(" + queryTermAssoc + "))" + "((" + logicalOp + ")(("
-			+ queryTerm + ")|(" + queryTermAssoc + ")))*";
-
-	// TODO validate queries still not working ... rework regex ???
-	// private static Pattern p = Pattern.compile(query);
 
 	public static CSFQueryTerm parseCSFQuery(String input, Context context) throws ResponseException {
 		return null;
@@ -108,7 +59,7 @@ public class QueryParser {
 		input = URLDecoder.decode(input, StandardCharsets.UTF_8);
 		OfInt it = input.chars().iterator();
 		int currentJoinLevel = 0;
-		Tuple2<String, Set<String>> joinTuple;
+
 		while (it.hasNext()) {
 			char b = (char) it.next().intValue();
 			if (b == '(') {
@@ -120,10 +71,7 @@ public class QueryParser {
 			} else if (b == ';') {
 				QQueryTerm next = new QQueryTerm(context);
 				current.setOperant(operant);
-				if (!operant.isEmpty()) {
-					String expandedOpt = context.expandIri(operant.replaceAll("\"", ""), false, true, null, null);
-					current.setExpandedOpt(expandedOpt);
-				}
+
 				current.setNext(next);
 				current.setNextAnd(true);
 				if (!attribName.isEmpty()) {
@@ -140,10 +88,7 @@ public class QueryParser {
 			} else if (b == '|') {
 				QQueryTerm next = new QQueryTerm(context);
 				current.setOperant(operant);
-				if (!operant.isEmpty()) {
-					String expandedOpt = context.expandIri(operant.replaceAll("\"", ""), false, true, null, null);
-					current.setExpandedOpt(expandedOpt);
-				}
+
 				current.setNext(next);
 				current.setNextAnd(false);
 				if (!attribName.isEmpty()) {
@@ -158,8 +103,7 @@ public class QueryParser {
 
 			} else if (b == ')') {
 				current.setOperant(operant);
-				String expandedOpt = context.expandIri(operant.replaceAll("\"", ""), false, true, null, null);
-				current.setExpandedOpt(expandedOpt);
+
 				current = current.getParent();
 				readingAttrib = true;
 				readingOperant = false;
@@ -226,8 +170,6 @@ public class QueryParser {
 		}
 		if (!operant.isEmpty()) {
 			current.setOperant(operant);
-			String expandedOpt = context.expandIri(operant.replaceAll("\"", ""), false, true, null, null);
-			current.setExpandedOpt(expandedOpt);
 		}
 		return root;
 	}
@@ -354,7 +296,6 @@ public class QueryParser {
 		}
 		return result;
 	}
-	private Set<Character> allowedTypeOperationChars = Set.of('(',')',',','|',';'); 
 
 	public static TypeQueryTerm parseTypeQuery(String input, Context context) throws ResponseException {
 		if (input == null) {
@@ -370,7 +311,7 @@ public class QueryParser {
 			throw new ResponseException(ErrorType.InternalError, e.getMessage());
 		}
 		OfInt it = input.chars().iterator();
-		
+
 		while (it.hasNext()) {
 			char b = (char) it.next().intValue();
 			if (b == '(') {
@@ -406,9 +347,11 @@ public class QueryParser {
 				type.setLength(0);
 
 			} else {
-//				if(!Character.isLetter(b) && !Character.isDigit(b) && b != ':'&& b != '_' && b != '-') {
-//					throw new ResponseException(ErrorType.BadRequestData, "Invalid character in type: " + (char)b);
-//				}
+				// if(!Character.isLetter(b) && !Character.isDigit(b) && b != ':'&& b != '_' &&
+				// b != '-') {
+				// throw new ResponseException(ErrorType.BadRequestData, "Invalid character in
+				// type: " + (char)b);
+				// }
 				type.append((char) b);
 			}
 
@@ -459,61 +402,64 @@ public class QueryParser {
 			return new TemporalQueryTerm(timeProperty, null, null, null);
 		}
 		switch (timeRel) {
-		case NGSIConstants.TIME_REL_AFTER:
-			if (endTimeAt != null) {
-				throw new ResponseException(ErrorType.InvalidRequest,
-						NGSIConstants.TIME_REL_AFTER + " cannot be used with " + NGSIConstants.QUERY_PARAMETER_ENDTIME);
-			}
-			if (timeAt == null) {
-				throw new ResponseException(ErrorType.InvalidRequest,
-						NGSIConstants.TIME_REL_AFTER + " cannot be used without " + NGSIConstants.QUERY_PARAMETER_TIME);
-			}
-			try {
-				SerializationTools.informatter.parse(timeAt);
-			} catch (DateTimeParseException e) {
-				throw new ResponseException(ErrorType.InvalidRequest, "Provided timeAt is not in a valid format");
-			}
-			break;
-		case NGSIConstants.TIME_REL_BEFORE:
-			if (endTimeAt != null) {
-				throw new ResponseException(ErrorType.InvalidRequest, NGSIConstants.TIME_REL_BEFORE
-						+ " cannot be used with " + NGSIConstants.QUERY_PARAMETER_ENDTIME);
-			}
-			if (timeAt == null) {
-				throw new ResponseException(ErrorType.InvalidRequest, NGSIConstants.TIME_REL_BEFORE
-						+ " cannot be used without " + NGSIConstants.QUERY_PARAMETER_TIME);
-			}
-			try {
-				SerializationTools.informatter.parse(timeAt);
-			} catch (DateTimeParseException e) {
-				throw new ResponseException(ErrorType.InvalidRequest, "Provided timeAt is not in a valid format");
-			}
-			break;
-		case NGSIConstants.TIME_REL_BETWEEN:
-			if (endTimeAt == null) {
-				throw new ResponseException(ErrorType.InvalidRequest, NGSIConstants.TIME_REL_BETWEEN
-						+ " cannot be used without " + NGSIConstants.QUERY_PARAMETER_ENDTIME);
-			}
-			if (timeAt == null) {
-				throw new ResponseException(ErrorType.InvalidRequest, NGSIConstants.TIME_REL_BETWEEN
-						+ " cannot be used without " + NGSIConstants.QUERY_PARAMETER_TIME);
-			}
-			try {
-				SerializationTools.informatter.parse(timeAt);
-			} catch (DateTimeParseException e) {
-				throw new ResponseException(ErrorType.InvalidRequest, "Provided timeAt is not in a valid format");
-			}
-			try {
-				SerializationTools.informatter.parse(endTimeAt);
-			} catch (DateTimeParseException e) {
-				throw new ResponseException(ErrorType.InvalidRequest, "Provided endTimeAt is not in a valid format");
-			}
-			break;
+			case NGSIConstants.TIME_REL_AFTER:
+				if (endTimeAt != null) {
+					throw new ResponseException(ErrorType.InvalidRequest,
+							NGSIConstants.TIME_REL_AFTER + " cannot be used with "
+									+ NGSIConstants.QUERY_PARAMETER_ENDTIME);
+				}
+				if (timeAt == null) {
+					throw new ResponseException(ErrorType.InvalidRequest,
+							NGSIConstants.TIME_REL_AFTER + " cannot be used without "
+									+ NGSIConstants.QUERY_PARAMETER_TIME);
+				}
+				try {
+					SerializationTools.informatter.parse(timeAt);
+				} catch (DateTimeParseException e) {
+					throw new ResponseException(ErrorType.InvalidRequest, "Provided timeAt is not in a valid format");
+				}
+				break;
+			case NGSIConstants.TIME_REL_BEFORE:
+				if (endTimeAt != null) {
+					throw new ResponseException(ErrorType.InvalidRequest, NGSIConstants.TIME_REL_BEFORE
+							+ " cannot be used with " + NGSIConstants.QUERY_PARAMETER_ENDTIME);
+				}
+				if (timeAt == null) {
+					throw new ResponseException(ErrorType.InvalidRequest, NGSIConstants.TIME_REL_BEFORE
+							+ " cannot be used without " + NGSIConstants.QUERY_PARAMETER_TIME);
+				}
+				try {
+					SerializationTools.informatter.parse(timeAt);
+				} catch (DateTimeParseException e) {
+					throw new ResponseException(ErrorType.InvalidRequest, "Provided timeAt is not in a valid format");
+				}
+				break;
+			case NGSIConstants.TIME_REL_BETWEEN:
+				if (endTimeAt == null) {
+					throw new ResponseException(ErrorType.InvalidRequest, NGSIConstants.TIME_REL_BETWEEN
+							+ " cannot be used without " + NGSIConstants.QUERY_PARAMETER_ENDTIME);
+				}
+				if (timeAt == null) {
+					throw new ResponseException(ErrorType.InvalidRequest, NGSIConstants.TIME_REL_BETWEEN
+							+ " cannot be used without " + NGSIConstants.QUERY_PARAMETER_TIME);
+				}
+				try {
+					SerializationTools.informatter.parse(timeAt);
+				} catch (DateTimeParseException e) {
+					throw new ResponseException(ErrorType.InvalidRequest, "Provided timeAt is not in a valid format");
+				}
+				try {
+					SerializationTools.informatter.parse(endTimeAt);
+				} catch (DateTimeParseException e) {
+					throw new ResponseException(ErrorType.InvalidRequest,
+							"Provided endTimeAt is not in a valid format");
+				}
+				break;
 
-		default:
-			throw new ResponseException(ErrorType.InvalidRequest,
-					timeRel + " is not an allowed timerel. Use " + NGSIConstants.TIME_REL_AFTER + " or "
-							+ NGSIConstants.TIME_REL_BEFORE + " or " + NGSIConstants.TIME_REL_BETWEEN);
+			default:
+				throw new ResponseException(ErrorType.InvalidRequest,
+						timeRel + " is not an allowed timerel. Use " + NGSIConstants.TIME_REL_AFTER + " or "
+								+ NGSIConstants.TIME_REL_BEFORE + " or " + NGSIConstants.TIME_REL_BETWEEN);
 		}
 
 		return new TemporalQueryTerm(timeProperty, timeRel, timeAt, endTimeAt);
@@ -640,6 +586,55 @@ public class QueryParser {
 			expanded = context.expandIri(attribName.toString(), false, true, null, null);
 			current.setAttrib(expanded);
 		}
+	}
+
+	public static OrderByTerm parseOrderBy(String input, String collation, String orderFrom, String orderGeometry,
+			Context context) throws ResponseException {
+		if (input == null) {
+			return null;
+		}
+		OrderByTerm result = new OrderByTerm();
+
+		input = URLDecoder.decode(input, StandardCharsets.UTF_8);
+		OfInt it = input.chars().iterator();
+
+		StringBuilder current = new StringBuilder();
+		String orderTerm = null;
+		boolean readingAttrib = true;
+		String orderDirection = null;
+		while (it.hasNext()) {
+			char b = (char) it.next().intValue();
+			switch (b) {
+				case ';':
+					orderTerm = current.toString();
+					current.setLength(0);
+					readingAttrib = false;
+					break;
+				case ',':
+					if (readingAttrib) {
+						orderTerm = current.toString();
+					} else {
+						orderDirection = current.toString();
+					}
+					result.addTerm(orderTerm, collation, orderFrom, orderDirection, orderGeometry);
+					orderTerm = null;
+					orderDirection = null;
+					readingAttrib = true;
+					current.setLength(0);
+					break;
+
+				default:
+					current.append(b);
+					break;
+			}
+		}
+		if (readingAttrib) {
+			orderTerm = current.toString();
+		} else {
+			orderDirection = current.toString();
+		}
+		result.addTerm(orderTerm, collation, orderFrom, orderDirection, orderGeometry);
+		return result;
 	}
 
 }

@@ -45,10 +45,6 @@ public class EntityInfo implements Serializable {
 		this.idPattern = idPattern;
 	}
 
-	public void finalize() throws Throwable {
-
-	}
-
 	@Override
 	public String toString() {
 		return "EntityInfo [id=" + id + ", idPattern=" + idPattern + ", typeTerm=" + typeTerm + "]";

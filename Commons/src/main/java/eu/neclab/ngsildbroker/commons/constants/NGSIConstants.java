@@ -89,9 +89,10 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_PROPERTIES = "https://uri.etsi.org/ngsi-ld/propertyNames";
 	public final static String NGSI_LD_PROPERTIES_SHORT = "propertyNames";
 	public final static String NGSI_LD_INSTANCE_ID = "https://uri.etsi.org/ngsi-ld/instanceId";
-
+	public final static String NGSI_LD_INSTANCE_ID_SHORT = "instanceId";
 	public final static String NGSI_LD_ID_PATTERN = "https://uri.etsi.org/ngsi-ld/idPattern";
 	public final static String NGSI_LD_ENTITIES = "https://uri.etsi.org/ngsi-ld/entities";
+	public final static String NGSI_LD_ENTITY_LIST = "https://uri.etsi.org/ngsi-ld/entityList";
 	public final static String NGSI_LD_GEOMETRY = "https://purl.org/geojson/vocab#geometry";
 	public final static String NGSI_LD_GEO_QUERY = "https://uri.etsi.org/ngsi-ld/geoQ";
 	public final static String NGSI_LD_ACCEPT = "https://uri.etsi.org/ngsi-ld/accept";
@@ -134,6 +135,7 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_TIMES_SENT = "https://uri.etsi.org/ngsi-ld/timesSent";
 	public final static String NGSI_LD_TIMES_FAILED = "https://uri.etsi.org/ngsi-ld/timesFailed";
 	public final static String NGSI_LD_UNIT_CODE = "https://uri.etsi.org/ngsi-ld/unitCode";
+	public final static String NGSI_LD_UNIT_CODE_SHORT = "unitCode";
 	public final static String NGSI_LD_DATA_SET_ID = "https://uri.etsi.org/ngsi-ld/datasetId";
 	public final static String NGSI_LD_IS_ACTIVE = "https://uri.etsi.org/ngsi-ld/isActive";
 	public final static String NGSI_LD_ENTITY_TYPE_LIST = "https://uri.etsi.org/ngsi-ld/EntityTypeList";
@@ -168,12 +170,13 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_GEOREL = "https://uri.etsi.org/ngsi-ld/georel";
 	public static final String NGSI_LD_SHOWCHANGES = "https://uri.etsi.org/ngsi-ld/showChanges";
 	public final static String NGSI_LD_HAS_VOCAB = "https://uri.etsi.org/ngsi-ld/hasVocab";
-	public final static String NGSI_LD_VocabProperty = "https://uri.etsi.org/ngsi-ld/VocabProperty";
+	public final static String NGSI_LD_HAS_VALUE_TYPE = "https://uri.etsi.org/ngsi-ld/hasValueType";
+	public final static String NGSI_LD_VOCAB_PROPERTY = "https://uri.etsi.org/ngsi-ld/VocabProperty";
 
 	public final static String NGSI_LD_HAS_LIST = "https://uri.etsi.org/ngsi-ld/hasValueList";
-	public final static String NGSI_LD_ListProperty = "https://uri.etsi.org/ngsi-ld/ListProperty";
+	public final static String NGSI_LD_LIST_PROPERTY = "https://uri.etsi.org/ngsi-ld/ListProperty";
 	public final static String LISTPROPERTY = "ListProperty";
-	public final static String VOCABPROPERTY = "VocabProperty";
+	public final static String VOCAB_PROPERTY = "VocabProperty";
 	public final static String PROVIDED_BY = "providedBy";
 	public final static String NGSI_LD_PROVIDED_BY = "https://uri.etsi.org/ngsi-ld/default-context/providedBy";
 	public final static String NGSI_LD_SYS_ATTRS = "https://uri.etsi.org/ngsi-ld/sysAttrs";
@@ -276,6 +279,9 @@ public interface NGSIConstants {
 			"within", "contains", "overlaps");
 	public static final List<String> SPECIAL_PROPERTIES = Arrays.asList(NGSI_LD_CREATED_AT, NGSI_LD_OBSERVED_AT,
 			NGSI_LD_MODIFIED_AT, NGSI_LD_DATA_SET_ID, NGSI_LD_UNIT_CODE);
+	public static final Set<String> SPECIAL_AT_VALUE_PROPERTIES = Sets.newHashSet(NGSI_LD_CREATED_AT,
+			NGSI_LD_OBSERVED_AT,
+			NGSI_LD_MODIFIED_AT, NGSI_LD_UNIT_CODE);
 	public static final String MQTT_QOS = "mqtt_qos";
 	public static final String MQTT_VERSION = "mqtt_version";
 	public static final String DEFAULT_DATA_SET_ID = "https://uri.etsi.org/ngsi-ld/default-data-set-id";
@@ -302,7 +308,7 @@ public interface NGSIConstants {
 	public static final Integer[] VALID_QOS = { 0, 1, 2 };
 	public static final String COUNT_HEADER_RESULT = "NGSILD-Results-Count";
 	public static final Set<String> NGSI_LD_ATTR_TYPES = Sets.newHashSet(NGSI_LD_PROPERTY, NGSI_LD_RELATIONSHIP,
-			NGSI_LD_GEOPROPERTY, NGSI_LD_LANGPROPERTY, NGSI_LD_VocabProperty, NGSI_LD_ListProperty,
+			NGSI_LD_GEOPROPERTY, NGSI_LD_LANGPROPERTY, NGSI_LD_VOCAB_PROPERTY, NGSI_LD_LIST_PROPERTY,
 			NGSI_LD_LISTRELATIONSHIP,
 			NGSI_LD_JSON_PROPERTY);
 
@@ -314,8 +320,9 @@ public interface NGSIConstants {
 	public static final String ISACTIVE_FALSE = "paused";
 	public static final String ISACTIVE_TRUE = "active";
 	public final static String LIST = "list";
-	public static final String CURRENT_CORE_CONTEXT = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.8.jsonld";
+	public static final String CURRENT_CORE_CONTEXT = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.9.jsonld";
 	public static final Set<String> CORE_CONTEXT_URLS = Sets.newHashSet(
+			"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.9.jsonld",
 			"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.8.jsonld",
 			"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.7.jsonld",
 			"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.6.jsonld",
@@ -374,6 +381,7 @@ public interface NGSIConstants {
 	public static final String ERROR_UNEXPECTED_RESULT_NULL_TITLE = "The resource returned no body check detail for the resources return code";
 	public static final String ERROR_UNEXPECTED_RESULT_NOT_EXPECTED_BODY_TITLE = "The resource gave an unexpected result body";
 	public static final String NGSI_LD_ATTRIBUTE_NAME_SHORT = "attributeName";
+	public static final String NGSI_LD_ORDERING_NAME_SHORT = "ordering";
 	public static final String NGSI_LD_ATTRIBUTE_COUNT_SHORT = "attributeCount";
 	public static final String NGSI_LD_REASON_SHORT = "reason";
 	public static final String NGSI_LD_NOT_UPDATED_SHORT = "notUpdated";
@@ -509,6 +517,7 @@ public interface NGSIConstants {
 	public final static String NGSI_LD_HAS_KEY = "https://uri.etsi.org/ngsi-ld/hasKey";
 	public final static String KEY = "key";
 	public static final String OBJECT_TYPE = "objectType";
+	public static final String VALUE_TYPE = "valueType";
 	public final static String STATUS = "status";
 
 	public final static String ATTRIBUTE = "Attribute";
@@ -567,7 +576,7 @@ public interface NGSIConstants {
 	public static final String ENTITY_ID = "entityId";
 	public static final String JSON_PROPERTY = "JsonProperty";
 	public static final Set<String> NGSI_LD_ATTR_SHORT_TYPES = Sets.newHashSet(PROPERTY, RELATIONSHIP,
-			NGSI_LD_GEOPROPERTY_SHORT, LANGUAGE_PROPERTY, VOCABPROPERTY, LISTPROPERTY,
+			NGSI_LD_GEOPROPERTY_SHORT, LANGUAGE_PROPERTY, VOCAB_PROPERTY, LISTPROPERTY,
 			JSON_PROPERTY);
 	public static final String PREFER_HEADER = "Prefer";
 	public static final String PREFER_JSON_HEADER = "body=json";
@@ -587,4 +596,32 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_SOURCE_TIME_AT_SHORT = "contextSourceTimeAt";
 
 	public static final String CONTEXT_SOURCE_IDENTITY_SHORT = "ContextSourceIdentity";
+	public static final String FIELD_ID = "\"id\": \"";
+	public static final String FIELD_TYPE = "\"type\": ";
+	public static final String FIELD_OBSERVEDAT = "\"observedAt\": \"";
+	public static final String FIELD_MODIFIEDAT = "\"modifiedAt\": \"";
+	public static final String FIELD_CREATEDAT = "\"createdAt\": \"";
+	public static final String FIELD_PROP_TYPE = "\"type\": \"Property\", ";
+	public static final String FIELD_REL_TYPE = "\"type\": \"Relationship\", ";
+	public static final String FIELD_VALUE = "\"value\": ";
+	public static final String FIELD_OBJECT = "\"object\": ";
+	public static final String FIELD_DATASET_ID = "\"datasetId\": \"";
+	public static final String ENTITY = "entity";
+	public static final String ENTITY_LIST = "entityList";
+	public static final String UNIT_DATE_TIME = "DateTime";
+	public static final String QUERY_PARAMETER_LOCAL_ONLY = "local";
+	public static final String QUERY_PARAMETER_CONTAINED_BY = "containedBy";
+	public static final String HEADER_ENTITY_MAP = "NGSILD-EntityMap";
+	public static final String QUERY_PARAMETER_ENTITY_MAP = "entityMap";
+	public static final String QUERY_PARAMETER_MAX_DISTANCE = "maxDistance";
+	public static final String QUERY_PARAMETER_MIN_DISTANCE = "minDistance";
+	public static final String QUERY_PARAMETER_FORMAT = "format";
+	public static final String QUERY_PARAMETER_JSON_KEYS = "jsonKeys";
+	public static final String QUERY_PARAMETER_SPLIT_ENTITIES = "splitEntities";
+	public static final String QUERY_PARAMETER_ORDER_BY = "orderBy";
+	public static final String QUERY_PARAMETER_ORDER_FROM = "orderFrom";
+	public static final String QUERY_PARAMETER_ORDER_GEOMETRY = "orderGeometry";
+	public static final String QUERY_PARAMETER_ORDER_COLLATION = "collation";
+	public static final String QUERY_PARAMETER_META_DATA = "metadata";
+
 }

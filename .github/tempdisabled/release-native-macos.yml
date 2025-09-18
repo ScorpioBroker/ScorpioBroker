@@ -11,7 +11,7 @@ jobs:
         uses: graalvm/setup-graalvm@v1
         with:
           version: '22.1.0'
-          java-version: '17'
+          java-version: '21'
           components: 'native-image'
       - name: Get release number
         id: get-id
@@ -114,7 +114,7 @@ jobs:
         uses: graalvm/setup-graalvm@v1
         with:
           version: '22.1.0'
-          java-version: '17'
+          java-version: '21'
           components: 'native-image'
       - name: Get release number
         id: get-id
@@ -214,7 +214,7 @@ jobs:
         uses: graalvm/setup-graalvm@v1
         with:
           version: '22.1.0'
-          java-version: '17'
+          java-version: '21'
           components: 'native-image'
       - name: Get release number
         id: get-id

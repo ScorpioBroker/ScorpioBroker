@@ -94,10 +94,6 @@ public class NotificationParam implements Serializable {
 		this.lastFailedNotification = lastFailedNotification;
 	}
 
-	public void finalize() throws Throwable {
-
-	}
-
 	public EndPoint getEndPoint() {
 		return endPoint;
 	}
@@ -169,6 +165,5 @@ public class NotificationParam implements Serializable {
 	public void setJoin(String join) {
 		this.join = join;
 	}
-	
 
 }

@@ -29,7 +29,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin' # See 'Supported distributions' for available options
-          java-version: '17'
+          java-version: '21'
       - name: Build testserver
         run: |
           cd testserver
@@ -61,6 +61,10 @@ jobs:
         with:
           collection: fed-test.json
           environment: fed-test-environment.json
+      - name: print log
+        if: always()
+        run: |
+          docker ps --format '{{.Names}}' | while read name; do echo "=== $name ==="; docker logs "$name"; done
       - name: Stopping Scorpio 
         if: always()
         run: |

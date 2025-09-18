@@ -70,7 +70,7 @@ import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpResponse;
 import io.vertx.mutiny.ext.web.client.WebClient;
-import jakarta.annotation.PostConstruct;
+
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
@@ -118,8 +118,7 @@ public class EntityService implements CSourceHandler {
 	@ConfigProperty(name = "scorpio.messaging.maxSize")
 	int messageSize;
 
-	@PostConstruct
-	void init() {
+	void startup(@Observes StartupEvent event) {
 		webClient = WebClient.create(vertx);
 		entityDAO.getAllRegistries().onItem().transform(t -> {
 			tenant2CId2RegEntries = t;
@@ -130,11 +129,6 @@ public class EntityService implements CSourceHandler {
 			return null;
 		}).await().indefinitely();
 		this.microServiceUtils.registerCSourceReceiver(this);
-	}
-
-	// This is needed so that @postconstruct runs on the startup thread and not on a
-	// worker thread later on
-	void startup(@Observes StartupEvent event) {
 	}
 
 	private List<NGSILDOperationResult> handleBatchResponse(HttpResponse<Buffer> response, Throwable failure,

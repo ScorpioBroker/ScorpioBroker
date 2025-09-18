@@ -1,37 +1,9 @@
 package eu.neclab.ngsildbroker.commons.tools;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import eu.neclab.ngsildbroker.commons.constants.AppConstants;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.CSourceBaseRequest;
-import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
-import eu.neclab.ngsildbroker.commons.enums.ErrorType;
-import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
-import eu.neclab.ngsildbroker.commons.interfaces.BaseRequestHandler;
-import eu.neclab.ngsildbroker.commons.interfaces.CSourceHandler;
-import eu.neclab.ngsildbroker.commons.serialization.messaging.MyByteArrayBuilder;
-import io.vertx.core.http.impl.headers.HeadersMultiMap;
-import io.vertx.pgclient.PgException;
-
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import io.quarkus.runtime.configuration.ConfigUtils;
-import io.smallrye.reactive.messaging.MutinyEmitter;
-import jakarta.annotation.PostConstruct;
-import jakarta.inject.Singleton;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Base64.Encoder;
@@ -43,13 +15,41 @@ import java.util.Set;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterOutputStream;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.CSourceBaseRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.SubscriptionRequest;
+import eu.neclab.ngsildbroker.commons.enums.ErrorType;
+import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.interfaces.BaseRequestHandler;
+import eu.neclab.ngsildbroker.commons.interfaces.CSourceHandler;
+import eu.neclab.ngsildbroker.commons.serialization.messaging.MyByteArrayBuilder;
+import io.quarkus.runtime.StartupEvent;
+import io.quarkus.runtime.configuration.ConfigUtils;
+import io.smallrye.reactive.messaging.MutinyEmitter;
+import io.vertx.core.http.impl.headers.HeadersMultiMap;
+import io.vertx.pgclient.PgException;
+
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Singleton;
+
 @Singleton
 public class MicroServiceUtils {
 	private final static Logger logger = LoggerFactory.getLogger(MicroServiceUtils.class);
 
 	// private final static Charset UTF8_CHARSET = Charset.forName("UTF-8");
 
-	@ConfigProperty(name = "scorpio.gatewayurl")
+	@ConfigProperty(name = "scorpio.gateway.url")
 	String gatewayUrl;
 
 	@ConfigProperty(name = "scorpio.atcontexturl")
@@ -75,8 +75,7 @@ public class MicroServiceUtils {
 	private static final byte[] FINALIZER = "]}".getBytes();
 	private static final int FINALIZER_lENGTH = FINALIZER.length - 1;
 
-	@PostConstruct
-	void setup() {
+	void startup(@Observes StartupEvent event) {
 		if (!gatewayUrl.endsWith("/")) {
 			gatewayUrl = gatewayUrl + "/";
 		}

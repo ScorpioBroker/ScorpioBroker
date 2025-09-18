@@ -183,10 +183,10 @@ public final class EntityTools {
 					case NGSIConstants.NGSI_LD_LANGPROPERTY:
 						prop = generateFakeProperty(key, tmp);
 						break;
-					case NGSIConstants.NGSI_LD_VocabProperty:
+					case NGSIConstants.NGSI_LD_VOCAB_PROPERTY:
 						prop = generateFakeProperty(key, tmp);
 						break;
-					case NGSIConstants.NGSI_LD_ListProperty:
+					case NGSIConstants.NGSI_LD_LIST_PROPERTY:
 						prop = generateFakeProperty(key, tmp);
 						break;
 					case NGSIConstants.NGSI_LD_LOCALONLY:
@@ -522,7 +522,7 @@ public final class EntityTools {
 			}
 			// Map have vocab but not type
 			else if (map.containsKey(NGSIConstants.VOCAB)) {
-				((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.VOCABPROPERTY);
+				((Map<String, Object>) map).put(NGSIConstants.TYPE, NGSIConstants.VOCAB_PROPERTY);
 			}
 			// Map have value but not type
 			else if (map.containsKey(NGSIConstants.VALUE) && !map.containsKey(NGSIConstants.TYPE)) {
@@ -649,7 +649,7 @@ public final class EntityTools {
 
 	public static Uni<List<Map<String, Object>>> getRemoteEntities(QueryRemoteHost remoteHost, WebClient webClient,
 			int timeout, int limit, int offset, JsonLDService ldService) {
-		logger.debug("Calling remote host:" + remoteHost);
+		// logger.debug("Calling remote host:" + remoteHost);
 		List<Tuple3<String, String, String>> idsAndTypesAndIdPattern = remoteHost.getIdsAndTypesAndIdPattern();
 		Context context = remoteHost.context();
 		List<Uni<List<Object>>> unis = new ArrayList<>();
@@ -1007,7 +1007,7 @@ public final class EntityTools {
 					if (viaHeaders.getHostUrls().contains(regHost.host())) {
 						continue;
 					}
-					logger.debug("ogQueryInfo: " + ogQueryInfo);
+					// logger.debug("ogQueryInfo: " + ogQueryInfo);
 					QueryRemoteHost hostToQuery = QueryRemoteHost.fromRegEntry(regEntry);
 					QueryInfos queryInfos = remoteHost2QueryInfo.get(hostToQuery);
 					if (queryInfos == null) {
@@ -1104,6 +1104,7 @@ public final class EntityTools {
 			Map<String, Object> entity = it.next();
 			// order is important here qquery scope and geo remove full entities and the
 			// rest modifies the entities and might result in empty entities
+			boolean datasetIdResult = (dataSetIdTerm != null && !dataSetIdTerm.calculateEntity(entity));
 			boolean qResult = (qQuery != null && !qQuery.calculateEntity(entity, entityCache, jsonKeys, false));
 			boolean scopeResult = (scopeQuery != null && !scopeQuery.calculateEntity(entity));
 			boolean geoQResult = (geoQuery != null && !geoQuery.calculateEntity(entity));
@@ -1112,7 +1113,7 @@ public final class EntityTools {
 					&& !pickTerm.calculateEntity(entity, flatJoin, flatEntities, pickForFlat, calculateLinked));
 			boolean omitResult = (omitTerm != null
 					&& !omitTerm.calculateEntity(entity, flatJoin, flatEntities, pickForFlat, calculateLinked));
-			boolean datasetIdResult = (dataSetIdTerm != null && !dataSetIdTerm.calculateEntity(entity));
+
 			if (qResult || scopeResult || geoQResult || attrsResult || pickResult || omitResult || datasetIdResult) {
 				it.remove();
 				deleted.put((String) entity.get(NGSIConstants.JSON_LD_ID), entity);
@@ -1258,7 +1259,7 @@ public final class EntityTools {
 									}
 									break;
 								}
-								case NGSIConstants.NGSI_LD_ListProperty: {
+								case NGSIConstants.NGSI_LD_LIST_PROPERTY: {
 									List<Map<String, Object>> hasValueList = (List<Map<String, Object>>) m
 											.get(NGSIConstants.NGSI_LD_HAS_LIST);
 									if (hasValueList != null && hasValueList.size() > 0
@@ -1304,7 +1305,7 @@ public final class EntityTools {
 									}
 									break;
 								}
-								case NGSIConstants.NGSI_LD_VocabProperty: {
+								case NGSIConstants.NGSI_LD_VOCAB_PROPERTY: {
 									List<Map<String, Object>> hasVocab = (List<Map<String, Object>>) m
 											.get(NGSIConstants.NGSI_LD_HAS_VOCAB);
 									if (hasVocab != null && !hasVocab.isEmpty() && NGSIConstants.NGSI_LD_NULL

@@ -150,194 +150,207 @@ public class Subscription implements Serializable {
 			Object mapValue = mapEntry.getValue();
 
 			switch (key) {
-			case NGSIConstants.NGSI_LD_JSONLD_CONTEXT:
-				subscription.setJsonldContext(((List<Map<String, String>>) mapValue).get(0).get(JsonLdConsts.VALUE));
-				break;
-			case NGSIConstants.NGSI_LD_LOCALONLY:
-				if (!(mapValue instanceof List<?> list
-						&& ((Map<String, Object>) (list.get(0))).get(NGSIConstants.JSON_LD_VALUE) instanceof Boolean)) {
-					throw new ResponseException(ErrorType.BadRequestData, "localOnly should be boolean");
-				}
-				subscription
-						.setLocalOnly(((List<Map<String, Boolean>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE));
-				break;
-			case NGSIConstants.JSON_LD_ID:
-				subscription.setId((String) mapValue);
-				break;
-			case NGSIConstants.JSON_LD_TYPE:
-				if (mapValue instanceof String) {
-					subscription.setType((String) mapValue);
-				} else if (mapValue instanceof List) {
-					subscription.setType(((List<String>) mapValue).get(0));
-				}
-				break;
-			case NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER:
-				if (mapValue instanceof List) {
-					List<Map<String, String>> triggers = (List<Map<String, String>>) mapValue;
-					Set<String> notificationTriggers = subscription.getNotificationTrigger();
-					for (Map<String, String> trigger : triggers) {
-						String triggerValue = trigger.get(NGSIConstants.JSON_LD_VALUE);
-						if (!NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_VALID_VALUES.contains(triggerValue)) {
-							throw new ResponseException(ErrorType.BadRequestData,
-									"Invalid value for notificationTrigger. Valid values are " + String.join(",",
-											NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_VALID_VALUES));
-						}
-						notificationTriggers.add(triggerValue);
+				case NGSIConstants.NGSI_LD_JSONLD_CONTEXT:
+					subscription
+							.setJsonldContext(((List<Map<String, String>>) mapValue).get(0).get(JsonLdConsts.VALUE));
+					break;
+				case NGSIConstants.NGSI_LD_LOCALONLY:
+					if (!(mapValue instanceof List<?> list
+							&& ((Map<String, Object>) (list.get(0)))
+									.get(NGSIConstants.JSON_LD_VALUE) instanceof Boolean)) {
+						throw new ResponseException(ErrorType.BadRequestData, "localOnly should be boolean");
 					}
-				}
-				break;
-			case NGSIConstants.NGSI_LD_ENTITIES:
-				List<EntityInfo> entities = new ArrayList<EntityInfo>();
-				List<Map<String, Object>> list1 = (List<Map<String, Object>>) mapValue;
-				boolean hasType;
-				for (Map<String, Object> entry : list1) {
-					EntityInfo entityInfo = new EntityInfo();
-					hasType = false;
-					for (Entry<String, Object> entitiesEntry : entry.entrySet()) {
-						switch (entitiesEntry.getKey()) {
-						case NGSIConstants.JSON_LD_ID:
-							entityInfo.setId(((String) entitiesEntry.getValue()).split(","));
-							for (String tmpId : entityInfo.getId()) {
-								HttpUtils.validateUri(tmpId);
+					subscription
+							.setLocalOnly(
+									((List<Map<String, Boolean>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE));
+					break;
+				case NGSIConstants.JSON_LD_ID:
+					subscription.setId((String) mapValue);
+					break;
+				case NGSIConstants.JSON_LD_TYPE:
+					if (mapValue instanceof String) {
+						subscription.setType((String) mapValue);
+					} else if (mapValue instanceof List) {
+						subscription.setType(((List<String>) mapValue).get(0));
+					}
+					break;
+				case NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER:
+					if (mapValue instanceof List) {
+						List<Map<String, String>> triggers = (List<Map<String, String>>) mapValue;
+						Set<String> notificationTriggers = subscription.getNotificationTrigger();
+						for (Map<String, String> trigger : triggers) {
+							String triggerValue = trigger.get(NGSIConstants.JSON_LD_VALUE);
+							if (!NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_VALID_VALUES.contains(triggerValue)) {
+								throw new ResponseException(ErrorType.BadRequestData,
+										"Invalid value for notificationTrigger. Valid values are " + String.join(",",
+												NGSIConstants.NGSI_LD_NOTIFICATION_TRIGGER_VALID_VALUES));
 							}
-							break;
-						case NGSIConstants.JSON_LD_TYPE:
-							hasType = true;
-
-							entityInfo.setTypeTerm(QueryParser
-									.parseTypeQuery(((List<String>) entitiesEntry.getValue()).get(0), context));
-							if (entityInfo.getTypeTerm().getAllTypes().contains(NGSIConstants.NGSI_LD_STAR)) {
-								subscription.setLocalOnly(true);
-							}
-							break;
-						case NGSIConstants.NGSI_LD_ID_PATTERN:
-							entityInfo.setIdPattern((String) ((List<Map<String, Object>>) entitiesEntry.getValue())
-									.get(0).get(NGSIConstants.JSON_LD_VALUE));
-							break;
-						default:
-							throw new ResponseException(ErrorType.BadRequestData, "Unknown entry for entities");
+							notificationTriggers.add(triggerValue);
 						}
 					}
-					if (!hasType) {
-						throw new ResponseException(ErrorType.BadRequestData, "Entities entry needs type");
+					break;
+				case NGSIConstants.NGSI_LD_ENTITIES:
+					List<EntityInfo> entities = new ArrayList<EntityInfo>();
+					List<Map<String, Object>> list1 = (List<Map<String, Object>>) mapValue;
+					boolean hasType;
+					for (Map<String, Object> entry : list1) {
+						EntityInfo entityInfo = new EntityInfo();
+						hasType = false;
+						for (Entry<String, Object> entitiesEntry : entry.entrySet()) {
+							switch (entitiesEntry.getKey()) {
+								case NGSIConstants.JSON_LD_ID:
+									entityInfo.setId(((String) entitiesEntry.getValue()).split(","));
+									for (String tmpId : entityInfo.getId()) {
+										HttpUtils.validateUri(tmpId);
+									}
+									break;
+								case NGSIConstants.JSON_LD_TYPE:
+									hasType = true;
+
+									entityInfo.setTypeTerm(QueryParser
+											.parseTypeQuery(((List<String>) entitiesEntry.getValue()).get(0), context));
+									if (entityInfo.getTypeTerm().getAllTypes().contains(NGSIConstants.NGSI_LD_STAR)) {
+										subscription.setLocalOnly(true);
+									}
+									break;
+								case NGSIConstants.NGSI_LD_ID_PATTERN:
+									entityInfo.setIdPattern(
+											(String) ((List<Map<String, Object>>) entitiesEntry.getValue())
+													.get(0).get(NGSIConstants.JSON_LD_VALUE));
+									break;
+								default:
+									throw new ResponseException(ErrorType.BadRequestData, "Unknown entry for entities");
+							}
+						}
+						if (!hasType) {
+							throw new ResponseException(ErrorType.BadRequestData, "Entities entry needs type");
+						}
+						entities.add(entityInfo);
 					}
-					entities.add(entityInfo);
-				}
-				subscription.setEntities(entities);
-				break;
-			case NGSIConstants.NGSI_LD_GEO_QUERY:
-				try {
-					GeoQueryTerm ldGeoQuery = getGeoQuery(((List<Map<String, Object>>) mapValue).get(0), context);
-					subscription.setLdGeoQuery(ldGeoQuery);
-				} catch (Exception e) {
-					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse geoQ");
-				}
-				break;
-			case NGSIConstants.NGSI_LD_NOTIFICATION:
-				try {
-					NotificationParam notification = getNotificationParam(((List<Map<String, Object>>) mapValue).get(0),
-							context);
-					subscription.setNotification(notification);
-				} catch (Exception e) {
-					throw new ResponseException(ErrorType.BadRequestData,
-							"Failed to parse notification parameter." + e.getMessage());
-				}
-				break;
-			case NGSIConstants.NGSI_LD_QUERY:
-				try {
-					subscription.setLdQueryString(
-							(String) ((List<Map<String, Object>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE),
-							context);
-				} catch (Exception e) {
-					e.printStackTrace();
-					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse q");
-				}
-				break;
-			case NGSIConstants.NGSI_LD_WATCHED_ATTRIBUTES:
-				try {
-					subscription.setAttributeNames(getAttribs((List<Map<String, Object>>) mapValue));
-				} catch (Exception e) {
-					throw new ResponseException(ErrorType.BadRequestData,
-							"Failed to parse watched attributes " + mapValue);
-				}
-				break;
-			case NGSIConstants.NGSI_LD_THROTTLING:
-				try {
-					subscription.setThrottling(
-							(Integer) ((List<Map<String, Object>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE));
-				} catch (Exception e) {
-					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse throtteling");
-				}
-				break;
-			case NGSIConstants.NGSI_LD_TIME_INTERVAL:
-				try {
-					subscription.setTimeInterval(
-							(Integer) ((List<Map<String, Object>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE));
-				} catch (Exception e) {
-					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse timeinterval");
-				}
-				break;
-			case NGSIConstants.NGSI_LD_EXPIRES:
-				try {
-					subscription.setExpiresAt(SerializationTools.date2Long(
-							(String) ((List<Map<String, Object>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE)));
-				} catch (Exception e) {
-					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse expiresAt");
-				}
-				break;
-			case NGSIConstants.NGSI_LD_STATUS:
-				try {
-					subscription.setStatus(
-							(String) ((List<Map<String, Object>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE));
-				} catch (Exception e) {
-					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse status");
-				}
-				break;
-			case NGSIConstants.NGSI_LD_DESCRIPTION:
-				try {
-					subscription.setDescription(
-							(String) ((List<Map<String, Object>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE));
-				} catch (Exception e) {
-					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse status");
-				}
-				break;
-			case NGSIConstants.NGSI_LD_IS_ACTIVE:
-				try {
-					subscription.setActive(
-							(Boolean) ((List<Map<String, Object>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE));
-				} catch (Exception e) {
-					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse active state");
-				}
-				break;
-			case NGSIConstants.NGSI_LD_SUBSCRIPTION_NAME:
-				try {
-					subscription.setSubscriptionName(
-							(String) ((List<Map<String, Object>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE));
-				} catch (Exception e) {
-					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse active state");
-				}
-				break;
-			case NGSIConstants.NGSI_LD_CSF:
-				try {
-					subscription.setCsfQueryString(
-							(String) ((List<Map<String, Object>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE),
-							context);
-				} catch (Exception e) {
-					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse csfQ");
-				}
+					subscription.setEntities(entities);
+					break;
+				case NGSIConstants.NGSI_LD_GEO_QUERY:
+					try {
+						GeoQueryTerm ldGeoQuery = getGeoQuery(((List<Map<String, Object>>) mapValue).get(0), context);
+						subscription.setLdGeoQuery(ldGeoQuery);
+					} catch (Exception e) {
+						throw new ResponseException(ErrorType.BadRequestData, "Failed to parse geoQ");
+					}
+					break;
+				case NGSIConstants.NGSI_LD_NOTIFICATION:
+					try {
+						NotificationParam notification = getNotificationParam(
+								((List<Map<String, Object>>) mapValue).get(0),
+								context);
+						subscription.setNotification(notification);
+					} catch (Exception e) {
+						throw new ResponseException(ErrorType.BadRequestData,
+								"Failed to parse notification parameter." + e.getMessage());
+					}
+					break;
+				case NGSIConstants.NGSI_LD_QUERY:
+					try {
+						subscription.setLdQueryString(
+								(String) ((List<Map<String, Object>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE),
+								context);
+					} catch (Exception e) {
+						e.printStackTrace();
+						throw new ResponseException(ErrorType.BadRequestData, "Failed to parse q");
+					}
+					break;
+				case NGSIConstants.NGSI_LD_WATCHED_ATTRIBUTES:
+					try {
+						subscription.setAttributeNames(getAttribs((List<Map<String, Object>>) mapValue));
+					} catch (Exception e) {
+						throw new ResponseException(ErrorType.BadRequestData,
+								"Failed to parse watched attributes " + mapValue);
+					}
+					break;
+				case NGSIConstants.NGSI_LD_THROTTLING:
+					try {
+						subscription.setThrottling(
+								(Integer) ((List<Map<String, Object>>) mapValue).get(0)
+										.get(NGSIConstants.JSON_LD_VALUE));
+					} catch (Exception e) {
+						throw new ResponseException(ErrorType.BadRequestData, "Failed to parse throtteling");
+					}
+					break;
+				case NGSIConstants.NGSI_LD_TIME_INTERVAL:
+					try {
+						subscription.setTimeInterval(
+								(Integer) ((List<Map<String, Object>>) mapValue).get(0)
+										.get(NGSIConstants.JSON_LD_VALUE));
+					} catch (Exception e) {
+						throw new ResponseException(ErrorType.BadRequestData, "Failed to parse timeinterval");
+					}
+					break;
+				case NGSIConstants.NGSI_LD_EXPIRES:
+					try {
+						subscription.setExpiresAt(SerializationTools.date2Long(
+								(String) ((List<Map<String, Object>>) mapValue).get(0)
+										.get(NGSIConstants.JSON_LD_VALUE)));
+					} catch (Exception e) {
+						throw new ResponseException(ErrorType.BadRequestData, "Failed to parse expiresAt");
+					}
+					break;
+				case NGSIConstants.NGSI_LD_STATUS:
+					try {
+						subscription.setStatus(
+								(String) ((List<Map<String, Object>>) mapValue).get(0)
+										.get(NGSIConstants.JSON_LD_VALUE));
+					} catch (Exception e) {
+						throw new ResponseException(ErrorType.BadRequestData, "Failed to parse status");
+					}
+					break;
+				case NGSIConstants.NGSI_LD_DESCRIPTION:
+					try {
+						subscription.setDescription(
+								(String) ((List<Map<String, Object>>) mapValue).get(0)
+										.get(NGSIConstants.JSON_LD_VALUE));
+					} catch (Exception e) {
+						throw new ResponseException(ErrorType.BadRequestData, "Failed to parse status");
+					}
+					break;
+				case NGSIConstants.NGSI_LD_IS_ACTIVE:
+					try {
+						subscription.setActive(
+								(Boolean) ((List<Map<String, Object>>) mapValue).get(0)
+										.get(NGSIConstants.JSON_LD_VALUE));
+					} catch (Exception e) {
+						throw new ResponseException(ErrorType.BadRequestData, "Failed to parse active state");
+					}
+					break;
+				case NGSIConstants.NGSI_LD_SUBSCRIPTION_NAME:
+					try {
+						subscription.setSubscriptionName(
+								(String) ((List<Map<String, Object>>) mapValue).get(0)
+										.get(NGSIConstants.JSON_LD_VALUE));
+					} catch (Exception e) {
+						throw new ResponseException(ErrorType.BadRequestData, "Failed to parse active state");
+					}
+					break;
+				case NGSIConstants.NGSI_LD_CSF:
+					try {
+						subscription.setCsfQueryString(
+								(String) ((List<Map<String, Object>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE),
+								context);
+					} catch (Exception e) {
+						throw new ResponseException(ErrorType.BadRequestData, "Failed to parse csfQ");
+					}
 
-				break;
-			case NGSIConstants.NGSI_LD_SCOPE_Q:
-				try {
-					subscription.setScopeQueryString(
-							(String) ((List<Map<String, Object>>) mapValue).get(0).get(NGSIConstants.JSON_LD_VALUE));
-				} catch (Exception e) {
-					throw new ResponseException(ErrorType.BadRequestData, "Failed to parse scopeQ");
-				}
-				break;
+					break;
+				case NGSIConstants.NGSI_LD_SCOPE_Q:
+					try {
+						subscription.setScopeQueryString(
+								(String) ((List<Map<String, Object>>) mapValue).get(0)
+										.get(NGSIConstants.JSON_LD_VALUE));
+					} catch (Exception e) {
+						throw new ResponseException(ErrorType.BadRequestData, "Failed to parse scopeQ");
+					}
+					break;
 
-			default:
-				break;
+				default:
+					break;
 			}
 		}
 		if (subscription.getNotificationTrigger().isEmpty()) {
@@ -390,125 +403,128 @@ public class Subscription implements Serializable {
 		Map<String, String> notifierInfo = new HashMap<String, String>();
 		for (Entry<String, Object> entry : map.entrySet()) {
 			switch (entry.getKey()) {
-			case NGSIConstants.NGSI_LD_ATTRIBUTES:
-				List<Map<String, Object>> watchedAttribs = (List<Map<String, Object>>) entry.getValue();
-				String attrs = getCompactedAttrsQueryString(watchedAttribs, context);
-				notifyParam.setAttrs(QueryParser.parseAttrs(attrs, context));
-				break;
-			case NGSIConstants.NGSI_LD_PICK:
-				List<Map<String, Object>> pickList = (List<Map<String, Object>>) entry.getValue();
-				String pick = getCompactedQueryString(pickList, NGSIConstants.NGSI_LD_PICK, context);
-				PickTerm pickTerm = new PickTerm();
-				QueryParser.parseProjectionTerm(pickTerm, pick, context);
-				notifyParam.setPick(pickTerm);
-				break;
-			case NGSIConstants.NGSI_LD_OMIT:
-				List<Map<String, Object>> omitList = (List<Map<String, Object>>) entry.getValue();
-				String omit = getCompactedQueryString(omitList, NGSIConstants.NGSI_LD_OMIT, context);
-				OmitTerm omitTerm = OmitTerm.getNewRootInstance();
-				QueryParser.parseProjectionTerm(omitTerm, omit, context);
-				notifyParam.setOmit(omitTerm);
-				break;
-			case NGSIConstants.NGSI_LD_ENDPOINT:
-				EndPoint endPoint = new EndPoint();
-				for (Entry<String, Object> endPointEntry : ((List<Map<String, Object>>) entry.getValue()).get(0)
-						.entrySet()) {
-					switch (endPointEntry.getKey()) {
-					case NGSIConstants.NGSI_LD_ACCEPT -> accept = ((List<Map<String, String>>) endPointEntry.getValue())
-							.get(0).get(NGSIConstants.JSON_LD_VALUE);
-					case NGSIConstants.NGSI_LD_URI -> {
-						URI endPointURI = validateSubEndpoint(((List<Map<String, String>>) endPointEntry.getValue())
-								.get(0).get(NGSIConstants.JSON_LD_VALUE));
-						endPoint.setUri(endPointURI);
-					}
-					case NGSIConstants.NGSI_LD_NOTIFIERINFO -> {
-						for (Entry<String, Object> endPointNotifier : ((List<Map<String, Object>>) endPointEntry
-								.getValue()).get(0).entrySet()) {
-							switch (endPointNotifier.getKey()) {
-							case NGSIConstants.NGSI_LD_MQTT_VERSION -> {
-								mqttVersion = validateSubNotifierInfoMqttVersion(
-										((List<Map<String, String>>) endPointNotifier.getValue()).get(0)
-												.get(NGSIConstants.JSON_LD_VALUE));
-								notifierInfo.put(NGSIConstants.MQTT_VERSION, mqttVersion);
+				case NGSIConstants.NGSI_LD_ATTRIBUTES:
+					List<Map<String, Object>> watchedAttribs = (List<Map<String, Object>>) entry.getValue();
+					String attrs = getCompactedAttrsQueryString(watchedAttribs, context);
+					notifyParam.setAttrs(QueryParser.parseAttrs(attrs, context));
+					break;
+				case NGSIConstants.NGSI_LD_PICK:
+					List<Map<String, Object>> pickList = (List<Map<String, Object>>) entry.getValue();
+					String pick = getCompactedQueryString(pickList, NGSIConstants.NGSI_LD_PICK, context);
+					PickTerm pickTerm = new PickTerm();
+					QueryParser.parseProjectionTerm(pickTerm, pick, context);
+					notifyParam.setPick(pickTerm);
+					break;
+				case NGSIConstants.NGSI_LD_OMIT:
+					List<Map<String, Object>> omitList = (List<Map<String, Object>>) entry.getValue();
+					String omit = getCompactedQueryString(omitList, NGSIConstants.NGSI_LD_OMIT, context);
+					OmitTerm omitTerm = OmitTerm.getNewRootInstance();
+					QueryParser.parseProjectionTerm(omitTerm, omit, context);
+					notifyParam.setOmit(omitTerm);
+					break;
+				case NGSIConstants.NGSI_LD_ENDPOINT:
+					EndPoint endPoint = new EndPoint();
+					for (Entry<String, Object> endPointEntry : ((List<Map<String, Object>>) entry.getValue()).get(0)
+							.entrySet()) {
+						switch (endPointEntry.getKey()) {
+							case NGSIConstants.NGSI_LD_ACCEPT ->
+								accept = ((List<Map<String, String>>) endPointEntry.getValue())
+										.get(0).get(NGSIConstants.JSON_LD_VALUE);
+							case NGSIConstants.NGSI_LD_URI -> {
+								URI endPointURI = validateSubEndpoint(
+										((List<Map<String, String>>) endPointEntry.getValue())
+												.get(0).get(NGSIConstants.JSON_LD_VALUE));
+								endPoint.setUri(endPointURI);
 							}
-							case NGSIConstants.NGSI_LD_MQTT_QOS -> {
-								qos = validateSubNotifierInfoQos(
-										((List<Map<String, Integer>>) endPointNotifier.getValue()).get(0)
-												.get(NGSIConstants.JSON_LD_VALUE));
-								notifierInfo.put(NGSIConstants.MQTT_QOS, String.valueOf(qos));
+							case NGSIConstants.NGSI_LD_NOTIFIERINFO -> {
+								for (Entry<String, Object> endPointNotifier : ((List<Map<String, Object>>) endPointEntry
+										.getValue()).get(0).entrySet()) {
+									switch (endPointNotifier.getKey()) {
+										case NGSIConstants.NGSI_LD_MQTT_VERSION -> {
+											mqttVersion = validateSubNotifierInfoMqttVersion(
+													((List<Map<String, String>>) endPointNotifier.getValue()).get(0)
+															.get(NGSIConstants.JSON_LD_VALUE));
+											notifierInfo.put(NGSIConstants.MQTT_VERSION, mqttVersion);
+										}
+										case NGSIConstants.NGSI_LD_MQTT_QOS -> {
+											qos = validateSubNotifierInfoQos(
+													((List<Map<String, Integer>>) endPointNotifier.getValue()).get(0)
+															.get(NGSIConstants.JSON_LD_VALUE));
+											notifierInfo.put(NGSIConstants.MQTT_QOS, String.valueOf(qos));
+										}
+										default -> {
+											notifierInfo.put(NGSIConstants.MQTT_VERSION,
+													NGSIConstants.DEFAULT_MQTT_VERSION);
+											notifierInfo.put(NGSIConstants.MQTT_QOS,
+													String.valueOf(NGSIConstants.DEFAULT_MQTT_QOS));
+										}
+									}
+								}
+								endPoint.setNotifierInfo(notifierInfo);
 							}
-							default -> {
-								notifierInfo.put(NGSIConstants.MQTT_VERSION, NGSIConstants.DEFAULT_MQTT_VERSION);
-								notifierInfo.put(NGSIConstants.MQTT_QOS,
-										String.valueOf(NGSIConstants.DEFAULT_MQTT_QOS));
-							}
-							}
-						}
-						endPoint.setNotifierInfo(notifierInfo);
-					}
-					case NGSIConstants.NGSI_LD_RECEIVERINFO -> {
-						ArrayListMultimap<String, String> receiverInfo = ArrayListMultimap.create();
-						Map<String, Object> compacted = JsonLdProcessor
-								.compactWithLoadedContext(endPointEntry.getValue(), null, context, opts, 999);
-						List<Map<String, Object>> receiverInfos = (List<Map<String, Object>>) compacted
-								.get(JsonLdConsts.GRAPH);
-						if (receiverInfos == null) {
-							receiverInfos = Lists.newArrayList();
-							compacted.remove(NGSIConstants.JSON_LD_CONTEXT);
-							receiverInfos.add(compacted);
-						}
+							case NGSIConstants.NGSI_LD_RECEIVERINFO -> {
+								ArrayListMultimap<String, String> receiverInfo = ArrayListMultimap.create();
+								Map<String, Object> compacted = JsonLdProcessor
+										.compactWithLoadedContext(endPointEntry.getValue(), null, context, opts, 999);
+								List<Map<String, Object>> receiverInfos = (List<Map<String, Object>>) compacted
+										.get(JsonLdConsts.GRAPH);
+								if (receiverInfos == null) {
+									receiverInfos = Lists.newArrayList();
+									compacted.remove(NGSIConstants.JSON_LD_CONTEXT);
+									receiverInfos.add(compacted);
+								}
 
-						for (Map<String, Object> headerEntry : receiverInfos) {
-							if (headerEntry.containsKey(NGSIConstants.KEY)) {
-								receiverInfo.put(headerEntry.get(NGSIConstants.KEY).toString(),
-										headerEntry.get(NGSIConstants.VALUE).toString());
-							} else if (headerEntry.containsKey(NGSIConstants.NGSI_LD_HAS_KEY)) {
-								receiverInfo.put(headerEntry.get(NGSIConstants.NGSI_LD_HAS_KEY).toString(),
-										headerEntry.get(NGSIConstants.NGSI_LD_HAS_VALUE).toString());
-							} else {
-								headerEntry.forEach((t, u) -> {
-									receiverInfo.put(t, u.toString());
-								});
+								for (Map<String, Object> headerEntry : receiverInfos) {
+									if (headerEntry.containsKey(NGSIConstants.KEY)) {
+										receiverInfo.put(headerEntry.get(NGSIConstants.KEY).toString(),
+												headerEntry.get(NGSIConstants.VALUE).toString());
+									} else if (headerEntry.containsKey(NGSIConstants.NGSI_LD_HAS_KEY)) {
+										receiverInfo.put(headerEntry.get(NGSIConstants.NGSI_LD_HAS_KEY).toString(),
+												headerEntry.get(NGSIConstants.NGSI_LD_HAS_VALUE).toString());
+									} else {
+										headerEntry.forEach((t, u) -> {
+											receiverInfo.put(t, u.toString());
+										});
+									}
+								}
+								endPoint.setReceiverInfo(receiverInfo);
 							}
+							default -> throw new ResponseException(ErrorType.BadRequestData,
+									"Unkown entry for endpoint: " + entry.getKey());
 						}
-						endPoint.setReceiverInfo(receiverInfo);
 					}
-					default -> throw new ResponseException(ErrorType.BadRequestData,
-							"Unkown entry for endpoint: " + entry.getKey());
+					endPoint.setAccept(accept);
+					// endPoint.setNotifierInfo(notifierInfo);
+					notifyParam.setEndPoint(endPoint);
+					break;
+				case NGSIConstants.NGSI_LD_FORMAT:
+					String formatString = (String) ((List<Map<String, Object>>) entry.getValue()).get(0)
+							.get(NGSIConstants.JSON_LD_VALUE);
+					if (formatString.equalsIgnoreCase("keyvalues")) {
+						format = Format.keyValues;
 					}
-				}
-				endPoint.setAccept(accept);
-				// endPoint.setNotifierInfo(notifierInfo);
-				notifyParam.setEndPoint(endPoint);
-				break;
-			case NGSIConstants.NGSI_LD_FORMAT:
-				String formatString = (String) ((List<Map<String, Object>>) entry.getValue()).get(0)
-						.get(NGSIConstants.JSON_LD_VALUE);
-				if (formatString.equalsIgnoreCase("keyvalues")) {
-					format = Format.keyValues;
-				}
-				if (formatString.equalsIgnoreCase("concise")) {
-					format = Format.concise;
-				}
-				break;
-			case NGSIConstants.NGSI_LD_SYS_ATTRS:
-				notifyParam.setSysAttrs(
-						((List<Map<String, Boolean>>) entry.getValue()).get(0).get(NGSIConstants.JSON_LD_VALUE));
-				break;
-			case NGSIConstants.NGSI_LD_SHOWCHANGES:
-				notifyParam.setShowChanges(
-						((List<Map<String, Boolean>>) entry.getValue()).get(0).get(NGSIConstants.JSON_LD_VALUE));
-				break;
-			case NGSIConstants.NGSI_LD_TIMES_SENT:
-				notifyParam.setTimesSent(
-						((List<Map<String, Integer>>) entry.getValue()).get(0).get(NGSIConstants.JSON_LD_VALUE));
-				break;
-			case NGSIConstants.NGSI_LD_LAST_FAILURE:
-			case NGSIConstants.NGSI_LD_LAST_SUCCESS:
-			case NGSIConstants.NGSI_LD_LAST_NOTIFICATION:
-				break;
-			default:
-				throw new ResponseException(ErrorType.BadRequestData, "Unkown entry for notification");
+					if (formatString.equalsIgnoreCase("concise")) {
+						format = Format.concise;
+					}
+					break;
+				case NGSIConstants.NGSI_LD_SYS_ATTRS:
+					notifyParam.setSysAttrs(
+							((List<Map<String, Boolean>>) entry.getValue()).get(0).get(NGSIConstants.JSON_LD_VALUE));
+					break;
+				case NGSIConstants.NGSI_LD_SHOWCHANGES:
+					notifyParam.setShowChanges(
+							((List<Map<String, Boolean>>) entry.getValue()).get(0).get(NGSIConstants.JSON_LD_VALUE));
+					break;
+				case NGSIConstants.NGSI_LD_TIMES_SENT:
+					notifyParam.setTimesSent(
+							((List<Map<String, Integer>>) entry.getValue()).get(0).get(NGSIConstants.JSON_LD_VALUE));
+					break;
+				case NGSIConstants.NGSI_LD_LAST_FAILURE:
+				case NGSIConstants.NGSI_LD_LAST_SUCCESS:
+				case NGSIConstants.NGSI_LD_LAST_NOTIFICATION:
+					break;
+				default:
+					throw new ResponseException(ErrorType.BadRequestData, "Unkown entry for notification");
 			}
 		}
 		notifyParam.setFormat(format);
@@ -830,10 +846,6 @@ public class Subscription implements Serializable {
 		return ldQuery;
 	}
 
-	public void finalize() throws Throwable {
-
-	}
-
 	public Boolean isActive() {
 		return isActive;
 	}
@@ -954,7 +966,5 @@ public class Subscription implements Serializable {
 		// TODO Auto-generated method stub
 		return null;
 	}
-
-
 
 }

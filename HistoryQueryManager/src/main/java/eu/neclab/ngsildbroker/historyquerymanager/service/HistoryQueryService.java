@@ -14,7 +14,7 @@ import java.util.Set;
 import com.github.jsonldjava.core.JsonLdConsts;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.mutiny.core.MultiMap;
-import jakarta.annotation.PostConstruct;
+
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
@@ -55,6 +55,7 @@ import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.historyquerymanager.repository.HistoryDAO;
 import io.quarkus.runtime.StartupEvent;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple3;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.ext.web.client.WebClient;
@@ -84,8 +85,7 @@ public class HistoryQueryService implements CSourceHandler {
 
 	private Table<String, String, List<RegistrationEntry>> tenant2CId2RegEntries = HashBasedTable.create();
 
-	@PostConstruct
-	void init() {
+	void startup(@Observes StartupEvent event) {
 		webClient = WebClient.create(vertx);
 		historyDAO.getAllRegistries().onItem().transform(t -> {
 			tenant2CId2RegEntries = t;
@@ -94,26 +94,27 @@ public class HistoryQueryService implements CSourceHandler {
 		this.microServiceUtils.registerCSourceReceiver(this);
 	}
 
-	// This is needed so that @postconstruct runs on the startup thread and not on a
-	// worker thread later on
-	void startup(@Observes StartupEvent event) {
-	}
-
 	public Uni<QueryResult> query(String tenant,
 			List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeQueryAndIdPattern,
 			AttrsQueryTerm attrsQuery, QQueryTerm qQuery, CSFQueryTerm csf, GeoQueryTerm geoQuery,
 			ScopeQueryTerm scopeQuery, TemporalQueryTerm tempQuery, AggrTerm aggrQuery, LanguageQueryTerm langQuery,
-			Integer lastN, Integer limit, Integer offSet, Boolean count, Boolean localOnly, Context context,
+			int n, int offsetN, String orderN, Integer limit, Integer offSet, Boolean count, Boolean localOnly,
+			Context context,
 			HttpServerRequest request) {
-
-		Uni<QueryResult> local = historyDAO.query(tenant, idsAndTypeQueryAndIdPattern, attrsQuery, qQuery,
-				tempQuery, aggrQuery, geoQuery, scopeQuery, lastN, limit, offSet, count).onFailure()
+		Uni<QueryResult> local = historyDAO
+				.query(tenant, idsAndTypeQueryAndIdPattern, attrsQuery, qQuery, geoQuery,
+						scopeQuery, context, limit,
+						offSet, null, null, -1, null, null, null, "", false, true, true, null,
+						localOnly, false, false,
+						count, null, false, tempQuery, aggrQuery, n, offsetN, orderN)
+				.onFailure()
 				.recoverWithUni(e -> {
 					if (e instanceof PgException) {
 						PgException pge = (PgException) e;
 						logger.debug("At position " + pge.getPosition());
 						logger.debug("failed to query", pge);
 						if (pge.getSqlState().equals(AppConstants.SQL_INVALID_OPERATOR)) {
+							pge.printStackTrace();
 							return Uni.createFrom().failure(new ResponseException(ErrorType.InvalidRequest,
 									"Invalid operator in q query or aggr query"));
 						}
@@ -177,6 +178,9 @@ public class HistoryQueryService implements CSourceHandler {
 			Map<String, Map<String, Object>> entityId2Entity = Maps.newHashMap();
 			long rCount = 0;
 			for (Object entry : list) {
+				if (entry == null) {
+					continue;
+				}
 				QueryResult qResult = (QueryResult) entry;
 				mergeInResult(entityId2Entity, qResult.getData());
 				if (count) {
@@ -214,11 +218,25 @@ public class HistoryQueryService implements CSourceHandler {
 	 * @return Single entity merged with potential
 	 */
 	public Uni<Map<String, Object>> retrieveEntity(String tenant, String entityId, AttrsQueryTerm attrsQuery,
-			AggrTerm aggrQuery, TemporalQueryTerm tempQuery, String lang, int lastN, boolean localOnly, Context context,
+			AggrTerm aggrQuery, TemporalQueryTerm tempQuery, String lang, int n, int offsetN, String nOrder,
+			boolean localOnly, Context context,
 			io.vertx.core.MultiMap headersFromReq) {
+		List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeQueryAndIdPattern = new ArrayList<>(1);
+		idsAndTypeQueryAndIdPattern.add(Tuple3.of(new String[] { entityId }, null, null));
+		Uni<Map<String, Object>> local = historyDAO.query(tenant, idsAndTypeQueryAndIdPattern, attrsQuery, null, null,
+				null, context, 1,
+				0, null, null, -1, null, null, null, "", false, true, true, null,
+				localOnly, false, false,
+				false, null, false, tempQuery, aggrQuery, n, offsetN, nOrder).onItem().transform(qR -> {
+					Map<String, Object> result;
+					if (qR.getData().isEmpty()) {
+						result = new HashMap<>(0);
+					} else {
+						result = qR.getData().get(0);
+					}
 
-		Uni<Map<String, Object>> local = historyDAO.retrieveEntity(tenant, entityId, attrsQuery, aggrQuery, tempQuery,
-				lang, lastN);
+					return result;
+				});
 		if (localOnly) {
 			return local.onItem().transformToUni(localItem -> {
 				if (localItem.isEmpty()) {
@@ -458,6 +476,9 @@ public class HistoryQueryService implements CSourceHandler {
 	}
 
 	private static Map<String, String> queryStrToMap(String queryString) {
+		if (queryString == null) {
+			return new HashMap<>();
+		}
 		Map<String, String> paramMap = new HashMap<>();
 
 		String[] paramPairs = queryString.split("&");

@@ -147,7 +147,7 @@ public class SubscriptionController {
 						});
 						return HttpUtils.generateQueryResult(request, subscriptions, options, null, acceptHeader, false,
 								actualLimit, null, ctx, ldService, false, microServiceUtils.getGatewayString(),
-								NGSIConstants.NGSI_LD_SUB_ENDPOINT);
+								NGSIConstants.NGSI_LD_SUB_ENDPOINT, -1);
 					});
 		}).onFailure().recoverWithItem(e -> {
 			return HttpUtils.handleControllerExceptions(e, tenant);
@@ -204,8 +204,9 @@ public class SubscriptionController {
 			return subService.getSubscription(tenant, subscriptionId).onItem()
 					.transformToUni(subscription -> {
 						fixSub(subscription);
-						return HttpUtils.generateEntityResult(contextHeader, context, acceptHeader, subscription, null,
-								options, null, ldService, null, null, true);
+
+						return HttpUtils.generateSubscriptionResult(contextHeader, context, acceptHeader, subscription,
+								options, ldService, true);
 					});
 		}).onFailure().recoverWithItem(e -> {
 			return HttpUtils.handleControllerExceptions(e, tenant);

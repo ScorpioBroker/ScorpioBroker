@@ -1,8 +1,8 @@
-# RELEASE NOTES 5.1.0
+# RELEASE NOTES 6.0.0
 
 ## Restructuring config parameters
 
-Scorpio had quite a few config parameters which didn't follow the naming scheme scorpio.<config>. This is addressed in this release please refer to the application.properties to see the full updated list.
+Scorpio had quite a few config parameters which didn't follow the naming scheme scorpio.<configtopic>.<config>. This is addressed in this release please refer to the application.properties to see the full updated list.
 
 ## Clean seperation between internal and external addresses
 
@@ -12,3 +12,67 @@ Scorpio had an issue with addressing it's internal components when run in contai
  - scorpio.gateway.url - the public reachable endpoint of scorpio, defaults to http://localhost:9090
  
 ## Better via header support
+
+Early version has been adapted to be fully spec compliant
+Registrations are auto updated with the host alias on creation/update
+
+## Initial version (pre spec update) of Temporal Pagination
+Uses the parameters n, offsetN, orderN to paginate attribute instances
+Legacy compatibility with lastN, lastN -> n and orderN DESC
+
+## Support for order by implemented
+Fully implemented for the local use case (NGSI-LD 1.9)
+
+## Various 1.9 updates 
+SplitEntity support
+Support for valueType added 
+
+## Performance improvements
+
+### HEADS UP REINDEXING
+
+In this update we update the indexes on the database. This means the migration can take a bit depending on the load on your database.
+
+Query and Temporal Query improvements via
+ - Better database connection handling in Scorpio
+ - Heavy SQL optimizations in various forms
+ - Making use of PostgreSQLs jsonb_path_* functions for filter implementations (often faster then exploding an array via SQL)
+ - Making use of UNIX Sockets for database communication (as well as inter microservice communication where it helps Subscriptions) 
+ - Heavy optimization for Entity compaction
+
+Depending on load in the database ~ 1.8 – 3x better average performance on Queries in our tests.
+In general ~ 5-10x better performance in Temporal Queries due to pure SQL optimization. Additionally we implemented a sliding window approach for temporal queries which depending on distribution of the attributes in the database and the used query can bring up to 100x faster temporal queries in best case scenarios but also on average should bring additional improvements.
+
+We have uploaded our test results as well you can find the overview for each variant we tested.
+Each test did run 100 times and then averaged. The test was run on a Windows 11 machine using Docker in WSL. Due to background progresses we do have some spikes sometimes and hence bigger STDDEV. Used hardware for the test was:
+Ryzen 7600X3D
+32GB CL32 6000 MHz RAM
+PCIe gen. 4 SSD
+
+We constructed a test script testing
+ - type query
+ - attrs filter with type query 
+ - pick filter with type query 
+ - omit filter with type query 
+ - simple q filter with type query
+ - combined q filter with type query
+ - geo query within filter with type query 
+ - geo query near filter with type query 
+ - idPattern filter with type query 
+ - Combined attrs, q, geo query and idPattern filter with type query 
+ - Temporal query with type and temporal query
+Each test is executed 100 times.
+For 500 and 5000 we executed the tests with a limit of 100
+For 5000 and 50000 we executed the tests with a limit of 1000
+
+NOTE!: The shared testing script and results are purely intended for tracking advancements of scorpio itself. They do not represent a full query test in all it's variants but are only a means to track our advancements here.
+
+https://github.com/ScorpioBroker/ScorpioBroker/tree/development-quarkus/performance-testing
+
+### new docker compose template with Unix Socket
+
+As we had problems to get Flyway migration running via Unix sockets the provided compose file will still have a opened port 5432 for Flyway to run. Any NGSI-LD based interaction is then performed via a UNIX socket. UNIX socket connections are only available in the Java version.
+
+
+
+

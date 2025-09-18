@@ -12,7 +12,7 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.smallrye.mutiny.tuples.Tuple3;
 
 @RegisterForReflection
-public class Query implements Serializable{
+public class Query implements Serializable {
 	/**
 	 * 
 	 */
@@ -26,11 +26,15 @@ public class Query implements Serializable{
 	GeoQueryTerm geoQueryTerm;
 	DataSetIdTerm dataSetIdTerm;
 	AttrsQueryTerm attrsQueryTerm;
+	OrderByTerm orderBy;
 	private Set<String> jsonKeys;
 	private String join;
 	private int joinLevel;
 	private String entityMapToken;
 	private boolean tokenProvided;
+	private boolean entityMap;
+	private boolean metadata;
+
 	private CSFQueryTerm csfQueryTerm;
 	@JsonIgnore
 	private Context context;
@@ -41,7 +45,7 @@ public class Query implements Serializable{
 	private String finalOptions;
 	private int acceptHeader;
 	private boolean localOnly;
-	
+
 	public Query() {
 		// for serializer
 	}
@@ -224,7 +228,7 @@ public class Query implements Serializable{
 	public int getAcceptHeader() {
 		return acceptHeader;
 	}
-	
+
 	public boolean isLocalOnly() {
 		return localOnly;
 	}
@@ -233,5 +237,28 @@ public class Query implements Serializable{
 		this.localOnly = localOnly;
 	}
 
+	public boolean getEntityMap() {
+		return entityMap;
+	}
+
+	public void setEntityMap(boolean entityMap) {
+		this.entityMap = entityMap;
+	}
+
+	public OrderByTerm getOrderBy() {
+		return orderBy;
+	}
+
+	public void setOrderBy(OrderByTerm orderBy) {
+		this.orderBy = orderBy;
+	}
+
+	public boolean isMetadata() {
+		return metadata;
+	}
+
+	public void setMetadata(boolean metadata) {
+		this.metadata = metadata;
+	}
 
 }

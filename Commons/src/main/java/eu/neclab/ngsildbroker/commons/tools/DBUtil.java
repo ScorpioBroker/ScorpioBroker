@@ -22,7 +22,7 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.RegistrationEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.RemoteHost;
-import eu.neclab.ngsildbroker.commons.storage.ClientManager;
+import eu.neclab.ngsildbroker.commons.storage.ConnectionManager;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.vertx.mutiny.core.MultiMap;
@@ -143,75 +143,74 @@ public class DBUtil {
 
 	}
 
-	public static Uni<Table<String, String, List<RegistrationEntry>>> getAllRegistries(ClientManager clientManager,
+	public static Uni<Table<String, String, List<RegistrationEntry>>> getAllRegistries(
+			ConnectionManager connectionManager,
 			JsonLDService ldService, String sql, Logger logger) {
-		return clientManager.getClient(AppConstants.INTERNAL_NULL_KEY, false).onItem().transformToUni(client -> {
-			return client.preparedQuery("SELECT tenant_id FROM tenant").execute().onItem()
-					.transformToUni(tenantRows -> {
-						List<Uni<Tuple2<String, RowSet<Row>>>> unis = Lists.newArrayList();
-						RowIterator<Row> it = tenantRows.iterator();
-						// String sql = "SELECT cs_id, c_id, e_id, e_id_p, e_type, e_prop, e_rel,
-						// ST_AsGeoJSON(i_location), scopes, EXTRACT(MILLISECONDS FROM expires),
-						// endpoint, tenant_id, headers, reg_mode, createEntity, updateEntity,
-						// appendAttrs, updateAttrs, deleteAttrs, deleteEntity, createBatch,
-						// upsertBatch, updateBatch, deleteBatch, upsertTemporal, appendAttrsTemporal,
-						// deleteAttrsTemporal, updateAttrsTemporal, deleteAttrInstanceTemporal,
-						// deleteTemporal, mergeEntity, replaceEntity, replaceAttrs, mergeBatch,
-						// retrieveEntity, queryEntity, queryBatch, retrieveTemporal, queryTemporal,
-						// retrieveEntityTypes, retrieveEntityTypeDetails, retrieveEntityTypeInfo,
-						// retrieveAttrTypes, retrieveAttrTypeDetails, retrieveAttrTypeInfo,
-						// createSubscription, updateSubscription, retrieveSubscription,
-						// querySubscription, deleteSubscription, queryEntityMap, createEntityMap,
-						// updateEntityMap, deleteEntityMap, retrieveEntityMap FROM csourceinformation
-						// WHERE queryentity OR querybatch OR retrieveentity OR retrieveentitytypes OR
-						// retrieveentitytypedetails OR retrieveentitytypeinfo OR retrieveattrtypes OR
-						// retrieveattrtypedetails OR retrieveattrtypeinfo";
-						unis.add(client.preparedQuery(sql).execute().onItem()
-								.transform(rows -> Tuple2.of(AppConstants.INTERNAL_NULL_KEY, rows)));
-						while (it.hasNext()) {
-							unis.add(clientManager.getClient(it.next().getString(0), false).onItem()
-									.transformToUni(tenantClient -> {
-										return tenantClient.preparedQuery(sql).execute().onItem().transform(
-												tenantReg -> Tuple2.of(AppConstants.INTERNAL_NULL_KEY, tenantReg));
-									}));
-						}
-						return Uni.combine().all().unis(unis).with(list -> {
-							Table<String, String, List<RegistrationEntry>> result = HashBasedTable.create();
-							List<Uni<Void>> regEntries = Lists.newArrayList();
-							for (Object obj : list) {
-								@SuppressWarnings("unchecked")
-								Tuple2<String, RowSet<Row>> tuple = (Tuple2<String, RowSet<Row>>) obj;
-								String tenant = tuple.getItem1();
-								RowIterator<Row> it2 = tuple.getItem2().iterator();
-								while (it2.hasNext()) {
-									Row row = it2.next();
-									String cId = row.getString(1);
-									List<RegistrationEntry> entries;
-									if (result.contains(tenant, cId)) {
-										entries = result.get(tenant, cId);
-									} else {
-										entries = Lists.newArrayList();
-										result.put(tenant, cId, entries);
-									}
 
-									regEntries.add(DBUtil.getRegistrationEntry(row, tenant, ldService, logger).onItem()
-											.transformToUni(regEntry -> {
-												entries.add(regEntry);
-												return Uni.createFrom().voidItem();
-											}));
+		return connectionManager.executeQuery(null, "SELECT tenant_id FROM tenant", null, false).onItem()
+				.transformToUni(tenantRows -> {
+					List<Uni<Tuple2<String, RowSet<Row>>>> unis = Lists.newArrayList();
+					RowIterator<Row> it = tenantRows.iterator();
+					// String sql = "SELECT cs_id, c_id, e_id, e_id_p, e_type, e_prop, e_rel,
+					// ST_AsGeoJSON(i_location), scopes, EXTRACT(MILLISECONDS FROM expires),
+					// endpoint, tenant_id, headers, reg_mode, createEntity, updateEntity,
+					// appendAttrs, updateAttrs, deleteAttrs, deleteEntity, createBatch,
+					// upsertBatch, updateBatch, deleteBatch, upsertTemporal, appendAttrsTemporal,
+					// deleteAttrsTemporal, updateAttrsTemporal, deleteAttrInstanceTemporal,
+					// deleteTemporal, mergeEntity, replaceEntity, replaceAttrs, mergeBatch,
+					// retrieveEntity, queryEntity, queryBatch, retrieveTemporal, queryTemporal,
+					// retrieveEntityTypes, retrieveEntityTypeDetails, retrieveEntityTypeInfo,
+					// retrieveAttrTypes, retrieveAttrTypeDetails, retrieveAttrTypeInfo,
+					// createSubscription, updateSubscription, retrieveSubscription,
+					// querySubscription, deleteSubscription, queryEntityMap, createEntityMap,
+					// updateEntityMap, deleteEntityMap, retrieveEntityMap FROM csourceinformation
+					// WHERE queryentity OR querybatch OR retrieveentity OR retrieveentitytypes OR
+					// retrieveentitytypedetails OR retrieveentitytypeinfo OR retrieveattrtypes OR
+					// retrieveattrtypedetails OR retrieveattrtypeinfo";
+					unis.add(connectionManager.executeQuery(null, sql, null, false).onItem()
+							.transform(rows -> Tuple2.of(AppConstants.INTERNAL_NULL_KEY, rows)));
+					while (it.hasNext()) {
+						unis.add(connectionManager.executeQuery(it.next().getString(0), sql, null, false).onItem()
+								.transform(
+										tenantReg -> Tuple2.of(AppConstants.INTERNAL_NULL_KEY, tenantReg)));
 
+					}
+					return Uni.combine().all().unis(unis).with(list -> {
+						Table<String, String, List<RegistrationEntry>> result = HashBasedTable.create();
+						List<Uni<Void>> regEntries = Lists.newArrayList();
+						for (Object obj : list) {
+							@SuppressWarnings("unchecked")
+							Tuple2<String, RowSet<Row>> tuple = (Tuple2<String, RowSet<Row>>) obj;
+							String tenant = tuple.getItem1();
+							RowIterator<Row> it2 = tuple.getItem2().iterator();
+							while (it2.hasNext()) {
+								Row row = it2.next();
+								String cId = row.getString(1);
+								List<RegistrationEntry> entries;
+								if (result.contains(tenant, cId)) {
+									entries = result.get(tenant, cId);
+								} else {
+									entries = Lists.newArrayList();
+									result.put(tenant, cId, entries);
 								}
-							}
 
-							return Tuple2.of(result, regEntries);
-						}).onItem().transformToUni(tpl -> {
-							if (tpl.getItem2().isEmpty()) {
-								return Uni.createFrom().item(tpl.getItem1());
+								regEntries.add(DBUtil.getRegistrationEntry(row, tenant, ldService, logger).onItem()
+										.transformToUni(regEntry -> {
+											entries.add(regEntry);
+											return Uni.createFrom().voidItem();
+										}));
+
 							}
-							return Uni.combine().all().unis(tpl.getItem2()).with(v -> tpl.getItem1());
-						});
+						}
+
+						return Tuple2.of(result, regEntries);
+					}).onItem().transformToUni(tpl -> {
+						if (tpl.getItem2().isEmpty()) {
+							return Uni.createFrom().item(tpl.getItem1());
+						}
+						return Uni.combine().all().unis(tpl.getItem2()).with(v -> tpl.getItem1());
 					});
-		});
+				});
 
 	}
 

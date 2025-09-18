@@ -2,6 +2,7 @@ package eu.neclab.ngsildbroker.historyquerymanager.controller;
 
 import com.github.jsonldjava.core.JsonLDService;
 
+import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AggrTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
@@ -26,6 +27,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.RestResponse;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
+import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -51,10 +53,10 @@ public class HistoryController {
 	int defaultLimit;
 	@ConfigProperty(name = "scorpio.history.max-limit")
 	int maxLimit;
-	@ConfigProperty(name = "scorpio.history.lastn")
-	int defaultLastN;
-	@ConfigProperty(name = "scorpio.history.max-lastn")
-	int maxLastN;
+	// @ConfigProperty(name = "scorpio.history.lastn")
+	// int defaultLastN;
+	// @ConfigProperty(name = "scorpio.history.max-lastn")
+	// int maxLastN;
 
 	@Inject
 	JsonLDService ldService;
@@ -68,15 +70,34 @@ public class HistoryController {
 			@QueryParam("coordinates") String coordinates, @QueryParam("geoproperty") String geoproperty,
 			@QueryParam("timeproperty") String timeProperty, @QueryParam("timerel") String timerel,
 			@QueryParam("scopeQ") String scopeQ, @QueryParam("timeAt") String timeAt,
-			@QueryParam("endTimeAt") String endTimeAt, @QueryParam("lastN") Integer lastN,
+			@QueryParam("endTimeAt") String endTimeAt, @QueryParam("lastN") @DefaultValue("-1") int lastN,
 			@QueryParam("lang") String lang, @QueryParam("aggrMethods") String aggrMethods,
 			@QueryParam("aggrPeriodDuration") String aggrPeriodDuration, @QueryParam(value = "limit") Integer limit,
 			@QueryParam(value = "offset") int offset, @QueryParam(value = "entityMap") String qToken,
 			@QueryParam(value = "options") String options, @QueryParam(value = "count") String countS,
-			@QueryParam(value = "localOnly") String localOnlyS, @QueryParam("format") String format) {
+			@QueryParam(value = "localOnly") String localOnlyS, @QueryParam("format") String format,
+			@QueryParam("n") @DefaultValue("-1") int nInput,
+			@QueryParam("offsetN") @DefaultValue("0") int offsetN,
+			@QueryParam("orderN") @DefaultValue("ASC") String nOrderInput) {
 		boolean localOnly;
 		boolean count;
+		String tenant = HttpUtils.getTenant(request);
 
+		if (nInput != -1 && lastN != -1 && lastN != nInput) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
+					new ResponseException(ErrorType.BadRequestData,
+							"Conflicting input in n and lastN. Please remove one"),
+					tenant));
+		}
+		String nOrder;
+		int n;
+		if (lastN != -1) {
+			nOrder = "DESC";
+			n = lastN;
+		} else {
+			nOrder = nOrderInput;
+			n = nInput;
+		}
 		try {
 			localOnly = HttpUtils.parseBoolean(localOnlyS);
 			count = HttpUtils.parseBoolean(countS);
@@ -123,12 +144,7 @@ public class HistoryController {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
 					new ResponseException(ErrorType.InvalidRequest), HttpUtils.getTenant(request)));
 		}
-		int lastNTBU;
-		if (lastN == null) {
-			lastNTBU = defaultLastN;
-		} else {
-			lastNTBU = lastN;
-		}
+
 		List<Object> ctx = HttpUtils.getAtContext(request);
 		String finalOptions = options;
 		return HttpUtils.getContext(ctx, ldService).onItem().transformToUni(context -> {
@@ -156,14 +172,20 @@ public class HistoryController {
 			}
 			List<Tuple3<String[], TypeQueryTerm, String>> tmp = new ArrayList<>(1);
 			tmp.add(Tuple3.of(idList, typeQueryTerm, idPattern));
-			return historyQueryService.query(HttpUtils.getTenant(request), tmp, attrsQueryTerm, qQueryTerm,
+			return historyQueryService.query(tenant, tmp, attrsQueryTerm, qQueryTerm,
 					csfQueryTerm, geoQueryTerm, scopeQueryTerm, temporalQueryTerm, aggrTerm, languageQueryTerm,
-					lastNTBU, actualLimit, offset, count, localOnly, context, request).onItem()
+					n, offsetN, nOrder, actualLimit, offset, count, localOnly, context, request).onItem()
 					.transformToUni(queryResult -> {
+						int payloadType;
+						if (aggrTerm == null) {
+							payloadType = AppConstants.QUERY_PAYLOAD;
+						} else {
+							payloadType = -1;
+						}
 						return HttpUtils.generateQueryResult(request, queryResult, finalOptions, geoproperty,
 								acceptHeader, count, actualLimit, languageQueryTerm, context, ldService, true, true,
 								false, microServiceUtils.getGatewayString(),
-								NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT);
+								NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT, payloadType);
 					});
 		}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 	}
@@ -173,12 +195,14 @@ public class HistoryController {
 	public Uni<RestResponse<Object>> retrieveTemporalEntity(HttpServerRequest request,
 			@PathParam("entityId") String entityId, @QueryParam("attrs") String attrs,
 			@QueryParam("aggrMethods") String aggrMethods, @QueryParam("aggrPeriodDuration") String aggrPeriodDuration,
-			@QueryParam("lang") String lang, @QueryParam("lastN") Integer lastN,
+			@QueryParam("lang") String lang, @QueryParam("lastN") @DefaultValue("-1") int lastN,
 			@QueryParam("localOnly") String localOnlyS, @QueryParam(value = "options") String optionsString,
 			@QueryParam(value = "geometryProperty") String geometryProperty,
 			@QueryParam("timeproperty") String timeProperty, @QueryParam("timerel") String timeRel,
 			@QueryParam("timeAt") String timeAt, @QueryParam("endTimeAt") String endTimeAt,
-			@QueryParam("format") String format) {
+			@QueryParam("format") String format, @QueryParam("n") @DefaultValue("-1") int nInput,
+			@QueryParam("offsetN") @DefaultValue("0") int offsetN,
+			@QueryParam("orderN") @DefaultValue("ASC") String nOrderInput) {
 		boolean localOnly;
 		try {
 			localOnly = HttpUtils.parseBoolean(localOnlyS);
@@ -192,11 +216,20 @@ public class HistoryController {
 		if (acceptHeader != 1 && acceptHeader != 2) {
 			return HttpUtils.getInvalidHeader();
 		}
-		int lastNTBU;
-		if (lastN == null) {
-			lastNTBU = defaultLastN;
+		if (nInput != -1 && lastN != -1 && lastN != nInput) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
+					new ResponseException(ErrorType.BadRequestData,
+							"Conflicting input in n and lastN. Please remove one"),
+					HttpUtils.getTenant(request)));
+		}
+		String nOrder;
+		int n;
+		if (lastN != -1) {
+			nOrder = "DESC";
+			n = lastN;
 		} else {
-			lastNTBU = lastN;
+			nOrder = nOrderInput;
+			n = nInput;
 		}
 
 		List<Object> headerContext;
@@ -216,10 +249,19 @@ public class HistoryController {
 				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 			}
 			return historyQueryService.retrieveEntity(HttpUtils.getTenant(request), entityId, attrsQuery, aggrQuery,
-					tempQuery, lang, lastNTBU, localOnly, context, request.headers()).onItem()
+					tempQuery, lang, n, offsetN, nOrder, localOnly, context, request.headers()).onItem()
 					.transformToUni(entity -> {
-						return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, entity,
-								geometryProperty, finalOptionsString, null, ldService, null, null, true);
+						if (aggrQuery != null) {
+							return HttpUtils.generateResult(headerContext, context, acceptHeader, entity,
+									geometryProperty,
+									finalOptionsString, null,
+									ldService, null, null, false, true,
+									-1);
+						} else {
+
+							return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, entity,
+									geometryProperty, finalOptionsString, null, ldService, null, null, true);
+						}
 					});
 		}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 

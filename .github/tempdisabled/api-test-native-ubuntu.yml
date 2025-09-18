@@ -11,7 +11,7 @@ jobs:
         uses: graalvm/setup-graalvm@v1
         with:
           version: '22.1.0'
-          java-version: '17'
+          java-version: '21'
           components: 'native-image'
       - name: Build testserver
         run: |
@@ -55,7 +55,7 @@ jobs:
         uses: graalvm/setup-graalvm@v1
         with:
           version: '22.1.0'
-          java-version: '17'
+          java-version: '21'
           components: 'native-image'
       - name: Build testserver
         run: |

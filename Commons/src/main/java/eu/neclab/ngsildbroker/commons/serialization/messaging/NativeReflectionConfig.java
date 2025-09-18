@@ -41,7 +41,8 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
 		TemporalQueryTerm.class, LanguageQueryTerm.class, AttrsQueryTerm.class, LanguageQueryTerm.class,
 		QQueryTerm.class, ScopeQueryTerm.class, TypeQueryTerm.class, InternalNotification.class, BatchRequest.class,
 		BaseRequest.class, DeleteSubscriptionRequest.class, UpdateSubscriptionRequest.class, JsonLdOptions.class,
-		Query.class, ProjectionTerm.class, PickTerm.class, OmitTerm.class, CSFQueryTerm.class, DataSetIdTerm.class, CSourceBaseRequest.class }, serialization = true)
+		Query.class, ProjectionTerm.class, PickTerm.class, OmitTerm.class, CSFQueryTerm.class, DataSetIdTerm.class,
+		CSourceBaseRequest.class }, serialization = true)
 public class NativeReflectionConfig {
 
 }

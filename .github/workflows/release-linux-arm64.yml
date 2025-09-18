@@ -11,7 +11,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin' # See 'Supported distributions' for available options
-          java-version: '17'
+          java-version: '21'
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -162,7 +162,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./at-context-server/target/at-context-server-${{steps.get-build-id.outputs.id}}-runner
+          asset_path: ./AtContextServer/target/at-context-server-${{steps.get-build-id.outputs.id}}-runner
           asset_name: at-context-server-linux-arm64-kafka-${{steps.get-id.outputs.id}}-linux-arm64-kafka
           asset_content_type: application/octet-stream
       - name: Upload Release history-query-manager
@@ -236,7 +236,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin' # See 'Supported distributions' for available options
-          java-version: '17'
+          java-version: '21'
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -365,7 +365,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./at-context-server/target/at-context-server-${{steps.get-build-id.outputs.id}}-runner
+          asset_path: ./AtContextServer/target/at-context-server-${{steps.get-build-id.outputs.id}}-runner
           asset_name: at-context-server-linux-arm64-sqs-${{steps.get-id.outputs.id}}-linux-arm64-sqs
           asset_content_type: application/octet-stream
       - name: Upload Release history-query-manager
@@ -439,7 +439,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin' # See 'Supported distributions' for available options
-          java-version: '17'
+          java-version: '21'
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -590,7 +590,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./at-context-server/target/at-context-server-${{steps.get-build-id.outputs.id}}-runner
+          asset_path: ./AtContextServer/target/at-context-server-${{steps.get-build-id.outputs.id}}-runner
           asset_name: at-context-server-linux-arm64-rabbitmq-${{steps.get-id.outputs.id}}-linux-arm64-rabbitmq
           asset_content_type: application/octet-stream
       - name: Upload Release history-query-manager
@@ -664,7 +664,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin' # See 'Supported distributions' for available options
-          java-version: '17'
+          java-version: '21'
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -815,7 +815,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./at-context-server/target/at-context-server-${{steps.get-build-id.outputs.id}}-runner
+          asset_path: ./AtContextServer/target/at-context-server-${{steps.get-build-id.outputs.id}}-runner
           asset_name: at-context-server-linux-arm64-mqtt-${{steps.get-id.outputs.id}}-linux-arm64-mqtt
           asset_content_type: application/octet-stream
       - name: Upload Release history-query-manager
@@ -889,7 +889,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin' # See 'Supported distributions' for available options
-          java-version: '17'
+          java-version: '21'
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:

@@ -117,55 +117,55 @@ public class TypeQueryTerm implements Serializable {
 		this.parent = parent;
 	}
 
-//	public boolean equals(Object obj, boolean ignoreKids) {
-//		if (this == obj)
-//			return true;
-//		if (obj == null)
-//			return false;
-//		if (getClass() != obj.getClass())
-//			return false;
-//		TypeQueryTerm other = (TypeQueryTerm) obj;
-//		if (attribute == null) {
-//			if (other.attribute != null)
-//				return false;
-//		} else if (!attribute.equals(other.attribute))
-//			return false;
-//		if (!ignoreKids) {
-//			if (firstChild == null) {
-//				if (other.firstChild != null)
-//					return false;
-//			} else if (!firstChild.equals(other.firstChild))
-//				return false;
-//		}
-//		if (next == null) {
-//			if (other.next != null)
-//				return false;
-//		} else if (!next.equals(other.next))
-//			return false;
-//		if (nextAnd != other.nextAnd)
-//			return false;
-//		if (operant == null) {
-//			if (other.operant != null)
-//				return false;
-//		} else if (!operant.equals(other.operant))
-//			return false;
-//		if (operator == null) {
-//			if (other.operator != null)
-//				return false;
-//		} else if (!operator.equals(other.operator))
-//			return false;
-//		if (parent == null) {
-//			if (other.parent != null)
-//				return false;
-//		} else if (!parent.equals(other.parent, true))
-//			return false;
-//		return true;
-//	}
+	// public boolean equals(Object obj, boolean ignoreKids) {
+	// if (this == obj)
+	// return true;
+	// if (obj == null)
+	// return false;
+	// if (getClass() != obj.getClass())
+	// return false;
+	// TypeQueryTerm other = (TypeQueryTerm) obj;
+	// if (attribute == null) {
+	// if (other.attribute != null)
+	// return false;
+	// } else if (!attribute.equals(other.attribute))
+	// return false;
+	// if (!ignoreKids) {
+	// if (firstChild == null) {
+	// if (other.firstChild != null)
+	// return false;
+	// } else if (!firstChild.equals(other.firstChild))
+	// return false;
+	// }
+	// if (next == null) {
+	// if (other.next != null)
+	// return false;
+	// } else if (!next.equals(other.next))
+	// return false;
+	// if (nextAnd != other.nextAnd)
+	// return false;
+	// if (operant == null) {
+	// if (other.operant != null)
+	// return false;
+	// } else if (!operant.equals(other.operant))
+	// return false;
+	// if (operator == null) {
+	// if (other.operator != null)
+	// return false;
+	// } else if (!operator.equals(other.operator))
+	// return false;
+	// if (parent == null) {
+	// if (other.parent != null)
+	// return false;
+	// } else if (!parent.equals(other.parent, true))
+	// return false;
+	// return true;
+	// }
 
-//	@Override
-//	public boolean equals(Object obj) {
-//		return equals(obj, false);
-//	}
+	// @Override
+	// public boolean equals(Object obj) {
+	// return equals(obj, false);
+	// }
 
 	public int toBroadSql(StringBuilder result, StringBuilder queryToStoreWherePart, Tuple tuple, int dollar) {
 		result.append("e_types && ARRAY[");
@@ -189,13 +189,36 @@ public class TypeQueryTerm implements Serializable {
 		return dollar;
 	}
 
+	public int toBroadSql(StringBuilder result, Tuple tuple, int dollar) {
+		result.append("e_types && ARRAY[");
+		for (String type : allTypes) {
+			result.append('$');
+			result.append(dollar);
+			result.append(',');
+
+			dollar++;
+			tuple.addString(type);
+		}
+		result.setCharAt(result.length() - 1, ']');
+		result.append("::text[]");
+		return dollar;
+	}
+
 	public int toSql(StringBuilder result, Tuple tuple, int dollar) {
+		// if (firstChild == null && next == null && parent == null) {
+		// result.append('$');
+		// result.append(dollar);
+		// tuple.addString(type);
+		// dollar++;
+		// result.append(" = ANY(e_types)");
+		// return dollar;
+		// }
 		if (type == null || type.isEmpty()) {
 			TypeQueryTerm current = this;
 			while (current.firstChild != null) {
 				current = current.firstChild;
 			}
-			current.next.toSql(result, tuple, dollar);
+			dollar = current.toSql(result, tuple, dollar);
 		} else {
 			result.append("(e_types ");
 			if (next != null && nextAnd) {

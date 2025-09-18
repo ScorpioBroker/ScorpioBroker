@@ -1,5 +1,8 @@
 package eu.neclab.ngsildbroker.commons.exceptions;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.fasterxml.jackson.core.JsonParseException;
 
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
@@ -10,11 +13,11 @@ import jakarta.ws.rs.ext.Provider;
 @Provider
 public class JsonParseExceptionMapper implements ExceptionMapper<JsonParseException> {
 
-	
-	
+	private static final Logger logger = LoggerFactory.getLogger(JsonParseExceptionMapper.class);
+
 	@Override
 	public Response toResponse(JsonParseException exception) {
-
+		logger.debug("Logs to check", exception);
 		return Response.status(Response.Status.BAD_REQUEST)
 				.entity(new ResponseException(ErrorType.InvalidRequest,
 						"There is an error in the provided json document").getJson())

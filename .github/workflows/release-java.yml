@@ -155,7 +155,7 @@ jobs:
           asset_name: all-in-one-runner-java-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
       - name: Zip at-context-server release
-        working-directory: at-context-server/target/quarkus-app
+        working-directory: AtContextServer/target/quarkus-app
         run: zip -qq -r at-context-server.zip *
       - name: Upload Release at-context-server
         uses: actions/upload-release-asset@v1
@@ -163,7 +163,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./at-context-server/target/quarkus-app/at-context-server.zip
+          asset_path: ./AtContextServer/target/quarkus-app/at-context-server.zip
           asset_name: at-context-server-java-kafka-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
       - name: Zip history-query-manager release
@@ -380,7 +380,7 @@ jobs:
           asset_name: all-in-one-runner-java-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
       - name: Zip at-context-server release
-        working-directory: at-context-server/target/quarkus-app
+        working-directory: AtContextServer/target/quarkus-app
         run: zip -qq -r at-context-server.zip *
       - name: Upload Release at-context-server
         uses: actions/upload-release-asset@v1
@@ -388,7 +388,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./at-context-server/target/quarkus-app/at-context-server.zip
+          asset_path: ./AtContextServer/target/quarkus-app/at-context-server.zip
           asset_name: at-context-server-java-sqs-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
       - name: Zip history-query-manager release
@@ -627,7 +627,7 @@ jobs:
           asset_name: all-in-one-runner-java-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
       - name: Zip at-context-server release
-        working-directory: at-context-server/target/quarkus-app
+        working-directory: AtContextServer/target/quarkus-app
         run: zip -qq -r at-context-server.zip *
       - name: Upload Release at-context-server
         uses: actions/upload-release-asset@v1
@@ -635,7 +635,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./at-context-server/target/quarkus-app/at-context-server.zip
+          asset_path: ./AtContextServer/target/quarkus-app/at-context-server.zip
           asset_name: at-context-server-java-rabbitmq-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
       - name: Zip history-query-manager release
@@ -874,7 +874,7 @@ jobs:
           asset_name: all-in-one-runner-java-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
       - name: Zip at-context-server release
-        working-directory: at-context-server/target/quarkus-app
+        working-directory: AtContextServer/target/quarkus-app
         run: zip -qq -r at-context-server.zip *
       - name: Upload Release at-context-server
         uses: actions/upload-release-asset@v1
@@ -882,7 +882,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./at-context-server/target/quarkus-app/at-context-server.zip
+          asset_path: ./AtContextServer/target/quarkus-app/at-context-server.zip
           asset_name: at-context-server-java-mqtt-${{steps.get-id.outputs.id}}.zip
           asset_content_type: application/zip
       - name: Zip history-query-manager release

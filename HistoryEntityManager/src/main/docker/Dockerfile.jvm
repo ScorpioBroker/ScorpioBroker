@@ -1,4 +1,4 @@
-FROM openjdk:22-ea-21-jdk-slim
+FROM eclipse-temurin:21-jre-ubi9-minimal
 WORKDIR /usr/src/scorpio
 COPY target/quarkus-app ./
 ENV DBHOST=postgres

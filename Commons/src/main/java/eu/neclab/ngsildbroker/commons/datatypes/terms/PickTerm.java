@@ -9,6 +9,8 @@ import com.google.common.collect.Sets;
 
 import java.util.Set;
 
+import javax.xml.crypto.Data;
+
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.vertx.mutiny.sqlclient.Tuple;
@@ -212,9 +214,56 @@ public class PickTerm extends ProjectionTerm {
 	}
 
 	@Override
-	public int toSql(StringBuilder query, Tuple tuple, int dollar) {
-		query.append("ENTITY ?| $");
+	public int toSql(StringBuilder query, Tuple tuple, int dollar, DataSetIdTerm dataSetIdTerm) {
+
+		if (dataSetIdTerm != null) {
+			query.append("ENTITY @? $");
+			query.append(dollar);
+			dollar++;
+			StringBuilder tmp = new StringBuilder(128);
+			tmp.append("$.keyvalue() ? (");
+			Set<String> attribs = getAllTopLevelAttribs(true);
+			Set<String> ids = dataSetIdTerm.getIds();
+			for (String attrib : attribs) {
+				tmp.append("(@.key == \"");
+				tmp.append(attrib);
+				tmp.append("\") || ");
+			}
+			tmp.setLength(tmp.length() - 4);
+			tmp.append(" && ");
+			tmp.append('(');
+			if (ids.contains(NGSIConstants.JSON_LD_NONE)) {
+				tmp.append("!(exists(@.value.\"");
+				tmp.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
+				tmp.append("\")) || ");
+			}
+			for (String id : ids) {
+				tmp.append("(@.value.\"");
+				tmp.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
+				tmp.append("\"[0].\"");
+				tmp.append(NGSIConstants.JSON_LD_ID);
+				tmp.append("\" == ");
+
+				tmp.append('"');
+				tmp.append(id);
+				tmp.append("\") || ");
+			}
+			tmp.setLength(tmp.length() - 4);
+			tmp.append("))");
+			tuple.addString(tmp.toString());
+		} else {
+			query.append("ENTITY ?| $");
+			query.append(dollar);
+			dollar++;
+			tuple.addArrayOfString(getAllTopLevelAttribs(true).toArray(new String[0]));
+		}
+		return dollar;
+	}
+
+	public int toTempSql(StringBuilder query, Tuple tuple, int dollar) {
+		query.append("not attributeid = any($");
 		query.append(dollar);
+		query.append(')');
 		dollar++;
 		tuple.addArrayOfString(getAllTopLevelAttribs(true).toArray(new String[0]));
 		return dollar;
@@ -250,8 +299,7 @@ public class PickTerm extends ProjectionTerm {
 			Object attribObj = entity.get(current.attrib);
 			if (attribObj != null) {
 				if (current.hasLinked && calculateLinked) {
-					
-					
+
 					if (attribObj instanceof List<?> attrList) {
 						if (!flatJoin) {
 							for (Object attrInstanceObj : attrList) {
@@ -366,7 +414,5 @@ public class PickTerm extends ProjectionTerm {
 		entity.putAll(result);
 		return true;
 	}
-
-	
 
 }
