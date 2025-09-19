@@ -129,8 +129,8 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 	@ConfigProperty(name = "scorpio.alltypesub.type")
 	private String allTypeSubType;
 
-	@ConfigProperty(name = "scorpio.entitymanager.url")
-	private String entityServiceUrl;
+	@ConfigProperty(name = "scorpio.querymanager.url")
+	private String queryServiceUrl;
 
 	private String ALL_TYPES_SUB;
 
@@ -1522,7 +1522,7 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 	private Uni<List<Map<String, Object>>> queryFromSubscription(SubscriptionRequest request, String tenant,
 			Set<String> idsTBU, Map<String, List<Map<String, Object>>> prevPayloadToUse,
 			Map<String, List<Map<String, Object>>> payloadToUse) {
-		HttpRequest<Buffer> req = webClient.postAbs(entityServiceUrl + NGSIConstants.ENDPOINT_BATCH_QUERY);
+		HttpRequest<Buffer> req = webClient.postAbs(queryServiceUrl + NGSIConstants.ENDPOINT_BATCH_QUERY);
 		Map<String, Object> queryBody = request.getAsQueryBody(idsTBU, microServiceUtils.getContextServerURL());
 
 		req = req.addQueryParam(NGSIConstants.QUERY_PARAMETER_DO_NOT_COMPACT, "true");

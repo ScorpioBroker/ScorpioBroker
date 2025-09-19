@@ -7,7 +7,7 @@ Scorpio had quite a few config parameters which didn't follow the naming scheme 
 ## Clean seperation between internal and external addresses
 
 Scorpio had an issue with addressing it's internal components when run in container environment. This is now clear seperated using the config params
- - scorpio.entitymanager.url the endpoint to the entity manager used by the subscription manager. In a container scenario this should be the address within the container network.
+ - scorpio.querymanager.url the endpoint to the query manager used by the subscription manager. In a container scenario this should be the address within the container network.
  - scorpio.atcontexturl - the endpoint of the at context server component reachable by other components like entity manager. In a container scenario this should be the address within the container network.
  - scorpio.gateway.url - the public reachable endpoint of scorpio, defaults to http://localhost:9090
  
