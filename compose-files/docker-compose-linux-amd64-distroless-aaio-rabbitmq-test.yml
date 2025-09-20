@@ -25,7 +25,7 @@ services:
       - "9090:9090"
     environment:
       DBHOST: postgres
-      CAMEL_COMPONENT_AMQP_HOSTNAME: rabbitmq
+      CAMEL_COMPONENT_AMQP_HOST: rabbitmq
       CAMEL_COMPONENT_AMQP_PORT: 5672
     restart: on-failure
     depends_on:
