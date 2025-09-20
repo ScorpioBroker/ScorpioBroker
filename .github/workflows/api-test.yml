@@ -119,15 +119,7 @@ jobs:
           collection: api-test.json
           environment: api-test-aaio-environment.json
           reporters: '["cli","json","html"]'
-          reporter: |
-            {
-              "json": {
-                "export": "./newman-reports/newman-report.json"
-              },
-              "html": {
-                "export": "./newman-reports/newman-report.html"
-              }
-            }
+          reporter: '{"json":{"export":"./newman-reports/newman-report.json"},"html":{"export":"./newman-reports/newman-report.html"}}'
         continue-on-error: true  # Continue even if tests fail to generate artifacts
       - name: Generate summary report
         if: always()
@@ -202,15 +194,7 @@ jobs:
           collection: api-test.json
           environment: api-test-aaio-environment.json
           reporters: '["cli","json","html"]'
-          reporter: |
-            {
-              "json": {
-                "export": "./newman-reports/newman-report.json"
-              },
-              "html": {
-                "export": "./newman-reports/newman-report.html"
-              }
-            }
+          reporter: '{"json":{"export":"./newman-reports/newman-report.json"},"html":{"export":"./newman-reports/newman-report.html"}}'
         continue-on-error: true  # Continue even if tests fail to generate artifacts
       - name: Generate summary report
         if: always()
@@ -304,15 +288,7 @@ jobs:
           collection: api-test.json
           environment: api-test-aaio-environment.json
           reporters: '["cli","json","html"]'
-          reporter: |
-            {
-              "json": {
-                "export": "./newman-reports/newman-report.json"
-              },
-              "html": {
-                "export": "./newman-reports/newman-report.html"
-              }
-            }
+          reporter: '{"json":{"export":"./newman-reports/newman-report.json"},"html":{"export":"./newman-reports/newman-report.html"}}'
         continue-on-error: true  # Continue even if tests fail to generate artifacts
       - name: Generate summary report
         if: always()

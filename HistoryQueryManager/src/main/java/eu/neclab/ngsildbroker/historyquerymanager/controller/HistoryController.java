@@ -251,7 +251,8 @@ public class HistoryController {
 			return historyQueryService.retrieveEntity(HttpUtils.getTenant(request), entityId, attrsQuery, aggrQuery,
 					tempQuery, lang, n, offsetN, nOrder, localOnly, context, request.headers()).onItem()
 					.transformToUni(entity -> {
-						if (aggrQuery != null) {
+						if (aggrQuery != null || (finalOptionsString != null && !finalOptionsString
+								.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_TEMPORALVALUES))) {
 							return HttpUtils.generateResult(headerContext, context, acceptHeader, entity,
 									geometryProperty,
 									finalOptionsString, null,
