@@ -18,7 +18,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
-      start_period: 30s # Gives the broker 30 seconds to initialize before checks start
+      start_period: 60s # Gives the broker 30 seconds to initialize before checks start
   postgres:
     image: postgis/postgis
     ports:
