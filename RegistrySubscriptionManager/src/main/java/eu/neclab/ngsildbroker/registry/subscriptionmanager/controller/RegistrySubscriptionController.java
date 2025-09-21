@@ -2,7 +2,8 @@ package eu.neclab.ngsildbroker.registry.subscriptionmanager.controller;
 
 import java.util.List;
 import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
+import jakarta.enterprise.context.ApplicationScoped;
+import io.quarkus.runtime.Startup;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.PATCH;
@@ -25,7 +26,8 @@ import eu.neclab.ngsildbroker.registry.subscriptionmanager.service.RegistrySubsc
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
 
-@Singleton
+@ApplicationScoped
+@Startup
 @Path(NGSIConstants.NGSI_LD_REGISTRY_SUB_ENDPOINT)
 public class RegistrySubscriptionController {
 

@@ -10,10 +10,13 @@ import org.apache.camel.spi.annotations.Component;
 import org.apache.camel.support.DefaultComponent;
 import org.eclipse.microprofile.config.ConfigProvider;
 
+import io.quarkus.runtime.Startup;
+
 import java.util.Map;
 
 @Component("sns-fanout")
 @ApplicationScoped
+@Startup
 public class SnsSqsFanoutComponent extends DefaultComponent {
 
     private Sns2Component snsComponent;

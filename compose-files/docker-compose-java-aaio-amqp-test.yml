@@ -1,0 +1,35 @@
+version: '3'
+
+services:
+  testserver:
+    image: testserver
+    ports:
+      - "8080:8080"
+  artemis:
+    image: quay.io/artemiscloud/activemq-artemis-broker:1.0.26
+    ports:
+     - "5672:5672"
+    environment:
+      AMQ_USER: guest
+      AMQ_PASSWORD: guest
+  postgres:
+    image: postgis/postgis
+    ports:
+      - "5432"
+    environment:
+      POSTGRES_USER: ngb
+      POSTGRES_PASSWORD: ngb
+      POSTGRES_DB: ngb
+    depends_on:
+      - artemis
+  scorpio:
+    image: scorpiobroker/all-in-one-runner:java-amqp-latest
+    ports:
+      - "9090:9090"
+    environment:
+      DBHOST: postgres
+      CAMEL_COMPONENT_AMQP_HOST: artemis
+    restart: on-failure
+    depends_on:
+      - postgres
+      - artemis

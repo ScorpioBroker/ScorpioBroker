@@ -13,9 +13,8 @@ import java.util.UUID;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
-
+import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 
 import org.jboss.resteasy.reactive.RestResponse;
@@ -26,7 +25,7 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.storage.ConnectionManager;
-import io.quarkus.runtime.StartupEvent;
+import io.quarkus.runtime.Startup;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.sqlclient.Row;
@@ -34,6 +33,7 @@ import io.vertx.mutiny.sqlclient.Tuple;
 import io.vertx.pgclient.PgException;
 
 @ApplicationScoped
+@Startup
 public class ContextDao {
 	@Inject
 	ConnectionManager connectionManager;
@@ -45,7 +45,8 @@ public class ContextDao {
 
 	String atContextUrl;
 
-	void startup(@Observes StartupEvent event) {
+	@PostConstruct
+void startup() {
 		atContextUrl = microServiceUtils.getGatewayString() + NGSIConstants.JSONLD_CONTEXTS;
 	}
 

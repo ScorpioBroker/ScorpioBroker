@@ -22,12 +22,14 @@ import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
 import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
+import jakarta.enterprise.context.ApplicationScoped;
+import io.quarkus.runtime.Startup;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-@Singleton
+@ApplicationScoped
+@Startup
 public class CSourceDAO {
 
 	// private final static Logger logger =

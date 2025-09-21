@@ -5,16 +5,14 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 
 import eu.neclab.ngsildbroker.commons.datatypes.requests.BaseRequest;
 import io.quarkus.jackson.ObjectMapperCustomizer;
-import io.quarkus.runtime.StartupEvent;
+import io.quarkus.runtime.Startup;
+import jakarta.enterprise.context.ApplicationScoped;
 
-import jakarta.enterprise.event.Observes;
-import jakarta.inject.Singleton;
-
-@Singleton
+@ApplicationScoped
+@Startup
 public class MyObjectMapperCustomizer implements ObjectMapperCustomizer {
 
-	void startup(@Observes StartupEvent event) {
-	}
+	
 	
 	@Override
 	public void customize(ObjectMapper objectMapper) {

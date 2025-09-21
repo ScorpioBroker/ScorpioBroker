@@ -9,10 +9,9 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
-import jakarta.enterprise.event.Observes;
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
-
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Acknowledgment;
 import org.eclipse.microprofile.reactive.messaging.Acknowledgment.Strategy;
@@ -33,15 +32,16 @@ import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
 import io.quarkus.arc.profile.IfBuildProfile;
 import io.quarkus.arc.properties.IfBuildProperty;
-import io.quarkus.runtime.StartupEvent;
+import io.quarkus.runtime.Startup;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.smallrye.reactive.messaging.annotations.Broadcast;
 import io.vertx.mutiny.core.Vertx;
 
-@Singleton
-@IfBuildProfile(anyOf = { "mqtt", "rabbitmq" })
+@ApplicationScoped
+@Startup
+@IfBuildProfile(anyOf = { "mqtt"})
 @IfBuildProperty(enableIfMissing = true, name = "scorpio.subsync.enabled", stringValue = "true")
 public class SubscriptionSyncServiceByteArray extends SubscriptionSyncServiceBase {
 
@@ -82,7 +82,8 @@ public class SubscriptionSyncServiceByteArray extends SubscriptionSyncServiceBas
 
 	private Executor executor;
 
-	void startup(@Observes StartupEvent event) {
+	@PostConstruct
+	void startup() {
 		INSTANCE_ID = new AliveAnnouncement(SYNC_ID);
 		INSTANCE_ID.setSubType(AliveAnnouncement.NORMAL_SUB);
 		subService.addSyncService(this);

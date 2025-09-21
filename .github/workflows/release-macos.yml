@@ -352,7 +352,7 @@ jobs:
           asset_path: ./EntityManager/target/entity-manager-${{steps.get-id.outputs.id}}-runner
           asset_name: entity-manager-macos-mqtt-${{steps.get-id.outputs.id}}-macos-mqtt
           asset_content_type: application/octet-stream
-  build-macos-rabbitmq:
+  build-macos-amqp:
     runs-on: macos-13
     steps:
       - uses: actions/checkout@v2     
@@ -372,18 +372,18 @@ jobs:
           cd BrokerParent
           id=$(mvn help:evaluate -Dexpression="project.version" -q -DforceStdout)
           echo "::set-output name=id::$id"
-      - name: build-macos-with-rabbitmq
+      - name: build-macos-with-amqp
         run: |
           find . -name "pom.xml" -exec sed -i '' 's/${{steps.get-id.outputs.id}}-SNAPSHOT/${{steps.get-id.outputs.id}}/g' {} +
-          mvn clean package -DskipTests -Dmacos -Drabbitmq -Prabbitmq -Dnative -Dquarkus.native.container-build=false -Dquarkus.profile=rabbitmq
-      - name: Create Release ${{steps.get-id.outputs.id}}-macos-rabbitmq
+          mvn clean package -DskipTests -Dmacos -Damqp -Pamqp -Dnative -Dquarkus.native.container-build=false -Dquarkus.profile=amqp
+      - name: Create Release ${{steps.get-id.outputs.id}}-macos-amqp
         id: create_release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
-          tag_name: ${{steps.get-id.outputs.id}}-macos-rabbitmq
-          release_name: ${{steps.get-id.outputs.id}}-macos-rabbitmq
+          tag_name: ${{steps.get-id.outputs.id}}-macos-amqp
+          release_name: ${{steps.get-id.outputs.id}}-macos-amqp
           draft: false
           prerelease: false
           body_path: RELEASENOTES
@@ -394,7 +394,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: AllInOneRunner/target/all-in-one-runner-${{steps.get-id.outputs.id}}-runner
-          asset_name: scorpio-all-in-one-runner-${{steps.get-id.outputs.id}}-macos-rabbitmq
+          asset_name: scorpio-all-in-one-runner-${{steps.get-id.outputs.id}}-macos-amqp
           asset_content_type: application/octet-stream
       - name: Upload Release at-context-server
         uses: actions/upload-release-asset@v1
@@ -403,7 +403,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./AtContextServer/target/at-context-server-${{steps.get-id.outputs.id}}-runner
-          asset_name: at-context-server-macos-rabbitmq-${{steps.get-id.outputs.id}}-macos-rabbitmq
+          asset_name: at-context-server-macos-amqp-${{steps.get-id.outputs.id}}-macos-amqp
           asset_content_type: application/octet-stream
       - name: Upload Release history-query-manager
         uses: actions/upload-release-asset@v1
@@ -412,7 +412,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./HistoryQueryManager/target/history-query-manager-${{steps.get-id.outputs.id}}-runner
-          asset_name: history-query-manager-macos-rabbitmq-${{steps.get-id.outputs.id}}-macos-rabbitmq
+          asset_name: history-query-manager-macos-amqp-${{steps.get-id.outputs.id}}-macos-amqp
           asset_content_type: application/octet-stream
       - name: Upload Release history-entity-manager
         uses: actions/upload-release-asset@v1
@@ -421,7 +421,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./HistoryEntityManager/target/history-entity-manager-${{steps.get-id.outputs.id}}-runner
-          asset_name: history-entity-manager-macos-rabbitmq-${{steps.get-id.outputs.id}}-macos-rabbitmq
+          asset_name: history-entity-manager-macos-amqp-${{steps.get-id.outputs.id}}-macos-amqp
           asset_content_type: application/octet-stream
       - name: Upload Release registry-subscription-manager
         uses: actions/upload-release-asset@v1
@@ -430,7 +430,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./RegistrySubscriptionManager/target/registry-subscription-manager-${{steps.get-id.outputs.id}}-runner
-          asset_name: registry-subscription-manager-macos-rabbitmq-${{steps.get-id.outputs.id}}-macos-rabbitmq
+          asset_name: registry-subscription-manager-macos-amqp-${{steps.get-id.outputs.id}}-macos-amqp
           asset_content_type: application/octet-stream
       - name: Upload Release registry-manager 
         uses: actions/upload-release-asset@v1
@@ -439,7 +439,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./RegistryManager/target/registry-manager-${{steps.get-id.outputs.id}}-runner
-          asset_name: registry-manager-macos-rabbitmq-${{steps.get-id.outputs.id}}-macos-rabbitmq
+          asset_name: registry-manager-macos-amqp-${{steps.get-id.outputs.id}}-macos-amqp
           asset_content_type: application/octet-stream
       - name: Upload Release subscription-manager 
         uses: actions/upload-release-asset@v1
@@ -448,7 +448,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./SubscriptionManager/target/subscription-manager-${{steps.get-id.outputs.id}}-runner
-          asset_name: subscription-manager-macos-rabbitmq-${{steps.get-id.outputs.id}}-macos-rabbitmq
+          asset_name: subscription-manager-macos-amqp-${{steps.get-id.outputs.id}}-macos-amqp
           asset_content_type: application/octet-stream
       - name: Upload Release query-manager 
         uses: actions/upload-release-asset@v1
@@ -457,7 +457,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./QueryManager/target/query-manager-${{steps.get-id.outputs.id}}-runner
-          asset_name: query-manager-macos-rabbitmq-${{steps.get-id.outputs.id}}-macos-rabbitmq
+          asset_name: query-manager-macos-amqp-${{steps.get-id.outputs.id}}-macos-amqp
           asset_content_type: application/octet-stream
       - name: Upload Release entity-manager
         uses: actions/upload-release-asset@v1
@@ -466,7 +466,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./EntityManager/target/entity-manager-${{steps.get-id.outputs.id}}-runner
-          asset_name: entity-manager-macos-rabbitmq-${{steps.get-id.outputs.id}}-macos-rabbitmq
+          asset_name: entity-manager-macos-amqp-${{steps.get-id.outputs.id}}-macos-amqp
           asset_content_type: application/octet-stream
   build-macos-aaio:
     runs-on: macos-13

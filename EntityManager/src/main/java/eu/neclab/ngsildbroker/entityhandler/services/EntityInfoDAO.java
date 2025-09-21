@@ -38,7 +38,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
+import jakarta.enterprise.context.ApplicationScoped;
+import io.quarkus.runtime.Startup;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -47,7 +48,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-@Singleton
+@ApplicationScoped
+@Startup
 public class EntityInfoDAO {
 
 	private static Logger logger = LoggerFactory.getLogger(EntityInfoDAO.class);

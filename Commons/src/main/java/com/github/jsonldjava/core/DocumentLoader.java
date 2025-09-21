@@ -1,5 +1,6 @@
 package com.github.jsonldjava.core;
 
+import java.net.URI;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
@@ -68,7 +69,7 @@ public class DocumentLoader {
 			}
 
 			try {
-				return JsonUtils.fromURL(new URL(url), webClient).onItem()
+				return JsonUtils.fromURL(new URI(url).toURL(), webClient).onItem()
 						.transform(body -> new RemoteDocument(url, body));
 			} catch (final Exception e) {
 				return Uni.createFrom()

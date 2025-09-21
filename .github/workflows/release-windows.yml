@@ -375,7 +375,7 @@ jobs:
           asset_path: ./EntityManager/target/entity-manager-${{steps.get-build-id.outputs.id}}-runner.exe
           asset_name: entity-manager-windows-mqtt-${{steps.get-id.outputs.id}}-windows-mqtt.exe
           asset_content_type: application/octet-stream
-  build-windows-rabbitmq:
+  build-windows-amqp:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v2     
@@ -404,17 +404,17 @@ jobs:
           cd BrokerParent
           $id=$(mvn help:evaluate -Dexpression="project.version" -q -DforceStdout)
           echo "::set-output name=id::$id"
-      - name: build-windows-with-rabbitmq
+      - name: build-windows-with-amqp
         run: |
-          mvn clean package -DskipTests -Drabbitmq -Prabbitmq -Dnative -D"quarkus.native.container-build=false" -Dos=windows -D"quarkus.profile=rabbitmq"
-      - name: Create Release ${{steps.get-id.outputs.id}}-windows-rabbitmq
+          mvn clean package -DskipTests -Damqp -Pamqp -Dnative -D"quarkus.native.container-build=false" -Dos=windows -D"quarkus.profile=amqp"
+      - name: Create Release ${{steps.get-id.outputs.id}}-windows-amqp
         id: create_release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
-          tag_name: ${{steps.get-id.outputs.id}}-windows-rabbitmq.exe
-          release_name: ${{steps.get-id.outputs.id}}-windows-rabbitmq.exe
+          tag_name: ${{steps.get-id.outputs.id}}-windows-amqp.exe
+          release_name: ${{steps.get-id.outputs.id}}-windows-amqp.exe
           draft: false
           prerelease: false
           body_path: RELEASENOTES
@@ -425,7 +425,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: AllInOneRunner/target/all-in-one-runner-${{steps.get-build-id.outputs.id}}-runner.exe
-          asset_name: scorpio-all-in-one-runner-${{steps.get-id.outputs.id}}-windows-rabbitmq.exe
+          asset_name: scorpio-all-in-one-runner-${{steps.get-id.outputs.id}}-windows-amqp.exe
           asset_content_type: application/octet-stream
       - name: Upload Release at-context-server
         uses: actions/upload-release-asset@v1
@@ -434,7 +434,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./AtContextServer/target/at-context-server-${{steps.get-build-id.outputs.id}}-runner.exe
-          asset_name: at-context-server-windows-rabbitmq-${{steps.get-id.outputs.id}}-windows-rabbitmq.exe
+          asset_name: at-context-server-windows-amqp-${{steps.get-id.outputs.id}}-windows-amqp.exe
           asset_content_type: application/octet-stream
       - name: Upload Release history-query-manager
         uses: actions/upload-release-asset@v1
@@ -443,7 +443,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./HistoryQueryManager/target/history-query-manager-${{steps.get-build-id.outputs.id}}-runner.exe
-          asset_name: history-query-manager-windows-rabbitmq-${{steps.get-id.outputs.id}}-windows-rabbitmq.exe
+          asset_name: history-query-manager-windows-amqp-${{steps.get-id.outputs.id}}-windows-amqp.exe
           asset_content_type: application/octet-stream
       - name: Upload Release history-entity-manager
         uses: actions/upload-release-asset@v1
@@ -452,7 +452,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./HistoryEntityManager/target/history-entity-manager-${{steps.get-build-id.outputs.id}}-runner.exe
-          asset_name: history-entity-manager-windows-rabbitmq-${{steps.get-id.outputs.id}}-windows-rabbitmq.exe
+          asset_name: history-entity-manager-windows-amqp-${{steps.get-id.outputs.id}}-windows-amqp.exe
           asset_content_type: application/octet-stream
       - name: Upload Release registry-subscription-manager
         uses: actions/upload-release-asset@v1
@@ -461,7 +461,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./RegistrySubscriptionManager/target/registry-subscription-manager-${{steps.get-build-id.outputs.id}}-runner.exe
-          asset_name: registry-subscription-manager-windows-rabbitmq-${{steps.get-id.outputs.id}}-windows-rabbitmq.exe
+          asset_name: registry-subscription-manager-windows-amqp-${{steps.get-id.outputs.id}}-windows-amqp.exe
           asset_content_type: application/octet-stream
       - name: Upload Release registry-manager 
         uses: actions/upload-release-asset@v1
@@ -470,7 +470,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./RegistryManager/target/registry-manager-${{steps.get-build-id.outputs.id}}-runner.exe
-          asset_name: registry-manager-windows-rabbitmq-${{steps.get-id.outputs.id}}-windows-rabbitmq.exe
+          asset_name: registry-manager-windows-amqp-${{steps.get-id.outputs.id}}-windows-amqp.exe
           asset_content_type: application/octet-stream
       - name: Upload Release subscription-manager 
         uses: actions/upload-release-asset@v1
@@ -479,7 +479,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./SubscriptionManager/target/subscription-manager-${{steps.get-build-id.outputs.id}}-runner.exe
-          asset_name: subscription-manager-windows-rabbitmq-${{steps.get-id.outputs.id}}-windows-rabbitmq.exe
+          asset_name: subscription-manager-windows-amqp-${{steps.get-id.outputs.id}}-windows-amqp.exe
           asset_content_type: application/octet-stream
       - name: Upload Release query-manager 
         uses: actions/upload-release-asset@v1
@@ -488,7 +488,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./QueryManager/target/query-manager-${{steps.get-build-id.outputs.id}}-runner.exe
-          asset_name: query-manager-windows-rabbitmq-${{steps.get-id.outputs.id}}-windows-rabbitmq.exe
+          asset_name: query-manager-windows-amqp-${{steps.get-id.outputs.id}}-windows-amqp.exe
           asset_content_type: application/octet-stream
       - name: Upload Release entity-manager
         uses: actions/upload-release-asset@v1
@@ -497,7 +497,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./EntityManager/target/entity-manager-${{steps.get-build-id.outputs.id}}-runner.exe
-          asset_name: entity-manager-windows-rabbitmq-${{steps.get-id.outputs.id}}-windows-rabbitmq.exe
+          asset_name: entity-manager-windows-amqp-${{steps.get-id.outputs.id}}-windows-amqp.exe
           asset_content_type: application/octet-stream
   build-windows-aaio:
     runs-on: windows-latest

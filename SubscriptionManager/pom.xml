@@ -99,10 +99,10 @@
 			</build>
 		</profile>
 		<profile>
-			<id>rabbitmq</id>
+			<id>amqp</id>
 			<activation>
 				<property>
-					<name>rabbitmq</name>
+					<name>amqp</name>
 				</property>
 			</activation>
 			<build>

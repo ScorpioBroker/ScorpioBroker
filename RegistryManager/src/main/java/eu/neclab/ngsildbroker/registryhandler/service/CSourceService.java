@@ -44,10 +44,12 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import jakarta.enterprise.event.Observes;
-import io.quarkus.runtime.StartupEvent;
+
+import jakarta.annotation.PostConstruct;
+
 import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
+import jakarta.enterprise.context.ApplicationScoped;
+import io.quarkus.runtime.Startup;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -55,7 +57,8 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
-@Singleton
+@ApplicationScoped
+@Startup
 public class CSourceService {
 	private final static Logger logger = LoggerFactory.getLogger(RegistryController.class);
 	List<String> scorpioFedList = ConfigProvider.getConfig().getOptionalValues("scorpio.federation", String.class)
@@ -99,7 +102,8 @@ public class CSourceService {
 
 	private WebClient webClient;
 
-	void startup(@Observes StartupEvent event) {
+	@PostConstruct
+	void startup() {
 		this.webClient = WebClient.create(vertx);
 		if (FED_BROKERS_CONFIG.equals("none")) {
 			FED_BROKERS = new String[0];

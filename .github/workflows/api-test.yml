@@ -78,7 +78,7 @@ jobs:
 #      - name: docker tag and push
 #        run: |
 #          docker push scorpiobroker/all-in-one-runner:java-sqs-finaltest
-  build-java-rabbitmq:
+  build-java-amqp:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2     
@@ -96,19 +96,19 @@ jobs:
         run: |
           id=$(echo ${{github.ref_name}} | cut -d/ -f2)
           echo "::set-output name=id::$id"
-      - name: start rabbitmq & postgis for unit tests
+      - name: start amqp & postgis for unit tests
         run: |
-          docker compose -f ./compose-files/docker-compose-rabbitmq-postgis.yml up &
+          docker compose -f ./compose-files/docker-compose-amqp-postgis.yml up &
           sleep 30
-      - name: build-java-with-rabbitmq
+      - name: build-java-with-amqp
         run: |
-          mvn clean package -DskipTests -Prabbitmq -Drabbitmq -Ddocker -Ddocker-tag=java-rabbitmq-latest -Dquarkus.profile=rabbitmq
-      - name: stop rabbitmq & postgis for unit tests
+          mvn clean package -DskipTests -Pamqp -Damqp -Ddocker -Ddocker-tag=java-amqp-latest -Dquarkus.profile=amqp
+      - name: stop amqp & postgis for unit tests
         run: |
-          docker compose -f ./compose-files/docker-compose-rabbitmq-postgis.yml down
+          docker compose -f ./compose-files/docker-compose-amqp-postgis.yml down
       - name: start docker aaio 
         run: |
-          docker compose -f ./compose-files/docker-compose-java-aaio-rabbitmq-test.yml up > dockerout.log &
+          docker compose -f ./compose-files/docker-compose-java-aaio-amqp-test.yml up > dockerout.log &
           sleep 120
       - name: Create reports directory
         run: mkdir -p newman-reports
@@ -149,7 +149,7 @@ jobs:
           name: newman-html-report-rabbit
       - name: Stopping Scorpio
         if: always()
-        run: docker compose -f ./compose-files/docker-compose-java-aaio-rabbitmq-test.yml down
+        run: docker compose -f ./compose-files/docker-compose-java-aaio-amqp-test.yml down
       - name: print log
         if: always()
         run: |

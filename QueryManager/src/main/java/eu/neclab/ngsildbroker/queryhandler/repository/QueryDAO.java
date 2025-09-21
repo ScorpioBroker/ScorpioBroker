@@ -12,7 +12,8 @@ import java.util.Set;
 
 import eu.neclab.ngsildbroker.commons.datatypes.terms.DataSetIdTerm;
 import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
+import jakarta.enterprise.context.ApplicationScoped;
+import io.quarkus.runtime.Startup;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.locationtech.spatial4j.context.SpatialContextFactory;
@@ -61,7 +62,8 @@ import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
 import io.vertx.pgclient.PgException;
 
-@Singleton
+@ApplicationScoped
+@Startup
 public class QueryDAO {
 
 	@Inject

@@ -13,10 +13,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import jakarta.enterprise.event.Observes;
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
-
 import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
@@ -57,7 +56,7 @@ import eu.neclab.ngsildbroker.commons.tools.SubscriptionTools;
 import eu.neclab.ngsildbroker.registry.subscriptionmanager.messaging.SyncService;
 import eu.neclab.ngsildbroker.registry.subscriptionmanager.repository.RegistrySubscriptionInfoDAO;
 import io.netty.handler.codec.mqtt.MqttQoS;
-import io.quarkus.runtime.StartupEvent;
+import io.quarkus.runtime.Startup;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
@@ -69,7 +68,8 @@ import io.vertx.mutiny.mqtt.MqttClient;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowIterator;
 
-@Singleton
+@ApplicationScoped
+@Startup
 public class RegistrySubscriptionService implements CSourceHandler {
 
 	private final static Logger logger = LoggerFactory.getLogger(RegistrySubscriptionService.class);
@@ -112,7 +112,8 @@ public class RegistrySubscriptionService implements CSourceHandler {
 	MicroServiceUtils microServiceUtils;
 	private String ALL_TYPES_SUB;
 
-	void startup(@Observes StartupEvent event) {
+	@PostConstruct
+	void startup() {
 		this.webClient = WebClient.create(vertx);
 		ALL_TYPES_SUB = NGSIConstants.NGSI_LD_DEFAULT_PREFIX + allTypeSubType;
 		regDAO.loadSubscriptions().onItem().transformToUni(subs -> {

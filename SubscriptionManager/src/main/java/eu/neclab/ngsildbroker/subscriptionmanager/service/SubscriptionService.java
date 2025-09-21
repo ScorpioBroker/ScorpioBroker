@@ -65,7 +65,7 @@ import eu.neclab.ngsildbroker.commons.tools.SubscriptionTools;
 import eu.neclab.ngsildbroker.subscriptionmanager.messaging.SyncService;
 import eu.neclab.ngsildbroker.subscriptionmanager.repository.SubscriptionInfoDAO;
 import io.netty.handler.codec.mqtt.MqttQoS;
-import io.quarkus.runtime.StartupEvent;
+import io.quarkus.runtime.Startup;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
@@ -83,13 +83,13 @@ import io.vertx.mutiny.mqtt.MqttClient;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowIterator;
 import io.vertx.pgclient.PgException;
-
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
-import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
 
-@Singleton
+@ApplicationScoped
+@Startup
 @SuppressWarnings("unchecked")
 public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 
@@ -369,7 +369,8 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 		resultMap.put(key, valueList);
 	}
 
-	void startup(@Observes StartupEvent event) {
+	@PostConstruct
+	void startup() {
 		this.webClient = WebClient.create(vertx);
 		ALL_TYPES_SUB = NGSIConstants.NGSI_LD_DEFAULT_PREFIX + allTypeSubType;
 		Uni<Void> loadSubs = subDAO.loadSubscriptions().onItem().transformToUni(subs -> {

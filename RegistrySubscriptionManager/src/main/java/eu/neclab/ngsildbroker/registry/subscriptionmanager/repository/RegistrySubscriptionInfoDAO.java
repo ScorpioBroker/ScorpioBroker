@@ -8,9 +8,9 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import jakarta.enterprise.event.Observes;
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
 import com.google.common.collect.Lists;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -23,7 +23,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.storage.ConnectionManager;
-import io.quarkus.runtime.StartupEvent;
+import io.quarkus.runtime.Startup;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple3;
@@ -34,7 +34,8 @@ import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
 
-@Singleton
+@ApplicationScoped
+@Startup
 public class RegistrySubscriptionInfoDAO {
 
 	private static Logger logger = LoggerFactory.getLogger(RegistrySubscriptionInfoDAO.class);
@@ -45,7 +46,8 @@ public class RegistrySubscriptionInfoDAO {
 	Vertx vertx;
 	WebClient webClient;
 
-	void startup(@Observes StartupEvent event) {
+	@PostConstruct
+	void startup() {
 		webClient = WebClient.create(vertx);
 	}
 

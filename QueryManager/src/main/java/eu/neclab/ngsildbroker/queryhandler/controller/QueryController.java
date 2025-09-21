@@ -13,7 +13,8 @@ import java.util.UUID;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.DataSetIdTerm;
 
 import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
+import jakarta.enterprise.context.ApplicationScoped;
+import io.quarkus.runtime.Startup;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
@@ -60,7 +61,8 @@ import io.smallrye.mutiny.tuples.Tuple3;
 import io.smallrye.mutiny.tuples.Tuple5;
 import io.vertx.core.http.HttpServerRequest;
 
-@Singleton
+@ApplicationScoped
+@Startup
 @Path("/ngsi-ld/v1")
 public class QueryController {
 

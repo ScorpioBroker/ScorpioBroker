@@ -14,12 +14,9 @@ import java.util.Set;
 import com.github.jsonldjava.core.JsonLdConsts;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.mutiny.core.MultiMap;
-
-import jakarta.enterprise.event.Observes;
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
-
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,9 +50,8 @@ import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.historyquerymanager.repository.HistoryDAO;
-import io.quarkus.runtime.StartupEvent;
+import io.quarkus.runtime.Startup;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple3;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.ext.web.client.WebClient;
@@ -63,7 +59,8 @@ import io.vertx.pgclient.PgException;
 
 import static eu.neclab.ngsildbroker.commons.tools.HttpUtils.parseLinkHeaderNoUni;
 
-@Singleton
+@ApplicationScoped
+@Startup
 @SuppressWarnings("unchecked")
 public class HistoryQueryService implements CSourceHandler {
 
@@ -85,7 +82,8 @@ public class HistoryQueryService implements CSourceHandler {
 
 	private Table<String, String, List<RegistrationEntry>> tenant2CId2RegEntries = HashBasedTable.create();
 
-	void startup(@Observes StartupEvent event) {
+	@PostConstruct
+	void startup() {
 		webClient = WebClient.create(vertx);
 		historyDAO.getAllRegistries().onItem().transform(t -> {
 			tenant2CId2RegEntries = t;

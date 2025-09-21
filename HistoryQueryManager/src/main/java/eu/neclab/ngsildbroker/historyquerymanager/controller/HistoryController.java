@@ -26,7 +26,8 @@ import io.vertx.core.http.HttpServerRequest;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.RestResponse;
 import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
+import jakarta.enterprise.context.ApplicationScoped;
+import io.quarkus.runtime.Startup;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -38,7 +39,8 @@ import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.List;
 
-@Singleton
+@ApplicationScoped
+@Startup
 @Path("/ngsi-ld/v1/temporal/entities")
 public class HistoryController {
 

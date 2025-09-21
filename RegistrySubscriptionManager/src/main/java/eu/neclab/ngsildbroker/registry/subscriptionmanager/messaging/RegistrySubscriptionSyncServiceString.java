@@ -9,10 +9,9 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
-import jakarta.enterprise.event.Observes;
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
-
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Acknowledgment;
 import org.eclipse.microprofile.reactive.messaging.Acknowledgment.Strategy;
@@ -32,14 +31,15 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.registry.subscriptionmanager.service.RegistrySubscriptionService;
 import io.quarkus.arc.profile.IfBuildProfile;
-import io.quarkus.runtime.StartupEvent;
+import io.quarkus.runtime.Startup;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.smallrye.reactive.messaging.annotations.Broadcast;
 import io.vertx.mutiny.core.Vertx;
 
-@Singleton
+@ApplicationScoped
+@Startup
 @IfBuildProfile(anyOf = { "kafka" })
 public class RegistrySubscriptionSyncServiceString extends RegistrySubscriptionSyncServiceBase {
 
@@ -77,7 +77,8 @@ public class RegistrySubscriptionSyncServiceString extends RegistrySubscriptionS
 	@ConfigProperty(name = "scorpio.messaging.maxSize")
 	int messageSize;
 
-	void startup(@Observes StartupEvent event) {
+	@PostConstruct
+	void startup() {
 		INSTANCE_ID = new AliveAnnouncement(SYNC_ID);
 		INSTANCE_ID.setSubType(AliveAnnouncement.REG_SUB);
 		subService.addSyncService(this);

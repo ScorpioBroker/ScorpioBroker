@@ -10,9 +10,8 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import io.vertx.mutiny.core.MultiMap;
-
+import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 
 import org.apache.commons.lang3.ArrayUtils;
@@ -51,7 +50,7 @@ import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.historyentitymanager.repository.HistoryDAO;
-import io.quarkus.runtime.StartupEvent;
+import io.quarkus.runtime.Startup;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.vertx.core.json.JsonObject;
@@ -59,6 +58,7 @@ import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.ext.web.client.WebClient;
 
 @ApplicationScoped
+@Startup
 public class HistoryEntityService implements CSourceHandler {
 
 	private final static Logger logger = LoggerFactory.getLogger(HistoryEntityService.class);
@@ -89,7 +89,8 @@ public class HistoryEntityService implements CSourceHandler {
 
 	private Table<String, String, List<RegistrationEntry>> tenant2CId2RegEntries = HashBasedTable.create();
 
-	void startup(@Observes StartupEvent event) {
+	@PostConstruct
+	void startup() {
 		historyDAO.getAllRegistries().onItem().transform(t -> {
 			tenant2CId2RegEntries = t;
 			return null;

@@ -1,7 +1,8 @@
 package eu.neclab.ngsildbroker.subscriptionmanager.controller;
 
 import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
+import jakarta.enterprise.context.ApplicationScoped;
+import io.quarkus.runtime.Startup;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -17,7 +18,8 @@ import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
 
-@Singleton
+@ApplicationScoped
+@Startup
 @Path("/remotenotify")
 public class NotificationController {
 

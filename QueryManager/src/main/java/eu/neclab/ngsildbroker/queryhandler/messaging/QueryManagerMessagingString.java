@@ -7,10 +7,12 @@ import org.eclipse.microprofile.reactive.messaging.Incoming;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import io.quarkus.arc.profile.IfBuildProfile;
 import io.smallrye.mutiny.Uni;
-import jakarta.inject.Singleton;
+import jakarta.enterprise.context.ApplicationScoped;
+import io.quarkus.runtime.Startup;
 
-@Singleton
-@IfBuildProfile(anyOf = { "sqs", "kafka" })
+@ApplicationScoped
+@Startup
+@IfBuildProfile(anyOf = { "sqs", "kafka", "amqp" })
 public class QueryManagerMessagingString extends QueryManagerMessagingBase {
 
 	@Incoming(AppConstants.REGISTRY_RETRIEVE_CHANNEL)

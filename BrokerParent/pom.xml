@@ -359,31 +359,7 @@
 				</dependency>
 			</dependencies>
 		</profile>
-		<profile>
-			<id>amqp</id>
-			<activation>
-				<property>
-					<name>amqp</name>
-				</property>
-			</activation>
-			<dependencies>
-				<dependency>
-					<groupId>org.apache.camel.quarkus</groupId>
-					<artifactId>camel-quarkus-smallrye-reactive-messaging</artifactId>
-
-				</dependency>
-				<dependency>
-					<groupId>org.ap/ache.camel.quarkus</groupId>
-					<artifactId>camel-quarkus-jackson</artifactId>
-
-				</dependency>
-				<dependency>
-					<groupId>org.apache.camel.quarkus</groupId>
-					<artifactId>camel-quarkus-amqp</artifactId>
-
-				</dependency>
-			</dependencies>
-		</profile>
+		
 		<profile>
 			<id>activemq</id>
 			<activation>
@@ -487,10 +463,10 @@
 			</dependencies>
 		</profile>
 		<profile>
-			<id>rabbitmq</id>
+			<id>amqp</id>
 			<activation>
 				<property>
-					<name>rabbitmq</name>
+					<name>amqp</name>
 				</property>
 			</activation>
 			<dependencies>

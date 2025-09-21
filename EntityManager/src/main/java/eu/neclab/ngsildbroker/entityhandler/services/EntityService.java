@@ -58,7 +58,7 @@ import eu.neclab.ngsildbroker.commons.interfaces.CSourceHandler;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
-import io.quarkus.runtime.StartupEvent;
+import io.quarkus.runtime.Startup;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.reactive.messaging.MutinyEmitter;
@@ -70,12 +70,12 @@ import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpResponse;
 import io.vertx.mutiny.ext.web.client.WebClient;
-
+import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 
 @ApplicationScoped
+@Startup
 @SuppressWarnings("unchecked")
 public class EntityService implements CSourceHandler {
 
@@ -118,7 +118,8 @@ public class EntityService implements CSourceHandler {
 	@ConfigProperty(name = "scorpio.messaging.maxSize")
 	int messageSize;
 
-	void startup(@Observes StartupEvent event) {
+	@PostConstruct
+	void startup() {
 		webClient = WebClient.create(vertx);
 		entityDAO.getAllRegistries().onItem().transform(t -> {
 			tenant2CId2RegEntries = t;

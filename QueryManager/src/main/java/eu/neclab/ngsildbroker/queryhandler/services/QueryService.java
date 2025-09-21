@@ -54,7 +54,8 @@ import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import eu.neclab.ngsildbroker.queryhandler.repository.QueryDAO;
-import io.quarkus.runtime.StartupEvent;
+import io.quarkus.runtime.Startup;
+
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
@@ -66,12 +67,12 @@ import io.vertx.mutiny.ext.web.client.HttpResponse;
 import io.vertx.mutiny.ext.web.client.WebClient;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowSet;
-
+import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 
 @ApplicationScoped
+@Startup
 @SuppressWarnings("unchecked")
 public class QueryService implements CSourceHandler {
 
@@ -104,7 +105,8 @@ public class QueryService implements CSourceHandler {
 	@Inject
 	MicroServiceUtils microServiceUtils;
 
-	void startup(@Observes StartupEvent event) {
+	@PostConstruct
+	void startup() {
 		webClient = WebClient.create(vertx);
 		queryDAO.getAllRegistries().onItem().transform(t -> {
 			tenant2CId2RegEntries = t;
@@ -857,7 +859,7 @@ public class QueryService implements CSourceHandler {
 
 	private void inlineAttrib(Object attribObj, EntityCache entityCache, int currentJoinLevel, int joinLevel,
 			boolean localOnly) {
-		if (attribObj instanceof @SuppressWarnings("rawtypes") Map attribMap) {
+		if (attribObj instanceof Map attribMap) {
 			Object typeObj = attribMap.get(NGSIConstants.JSON_LD_TYPE);
 			if (typeObj != null && typeObj instanceof List<?> typeList) {
 				if (typeList.contains(NGSIConstants.NGSI_LD_RELATIONSHIP)) {

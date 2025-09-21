@@ -116,7 +116,7 @@ jobs:
         if: always()
         run: |
           cat dockerout.log
-  build-linux-amd64-rabbitmq:
+  build-linux-amd64-amqp:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2   
@@ -145,12 +145,12 @@ jobs:
           cd BrokerParent
           id=$(mvn help:evaluate -Dexpression="project.version" -q -DforceStdout)
           echo "::set-output name=id::$id"
-      - name: build-linux-amd64-with-rabbitmq
+      - name: build-linux-amd64-with-amqp
         run: |
-          mvn clean package -DskipTests -Drabbitmq -Prabbitmq -Dnative -Ddocker -Dnativedocker -Ddocker-tag=linux-amd64-rabbitmq-latest -Dquarkus.profile=rabbitmq -Dquarkus.docker.buildx.platform=linux/amd64
+          mvn clean package -DskipTests -Damqp -Pamqp -Dnative -Ddocker -Dnativedocker -Ddocker-tag=linux-amd64-amqp-latest -Dquarkus.profile=amqp -Dquarkus.docker.buildx.platform=linux/amd64
       - name: start docker aaio 
         run: |
-          docker compose -f ./compose-files/docker-compose-linux-amd64-aaio-rabbitmq-test.yml up > dockerout.log &
+          docker compose -f ./compose-files/docker-compose-linux-amd64-aaio-amqp-test.yml up > dockerout.log &
           sleep 120
       - name: newman action
         uses: matt-ball/newman-action@master
@@ -159,7 +159,7 @@ jobs:
           environment: api-test-aaio-environment.json
       - name: Stopping Scorpio 
         if: always()
-        run: docker compose -f ./compose-files/docker-compose-linux-amd64-aaio-rabbitmq-test.yml down
+        run: docker compose -f ./compose-files/docker-compose-linux-amd64-aaio-amqp-test.yml down
       - name: print log
         if: always()
         run: |

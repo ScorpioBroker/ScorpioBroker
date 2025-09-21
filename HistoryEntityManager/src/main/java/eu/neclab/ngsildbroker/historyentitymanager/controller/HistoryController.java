@@ -3,7 +3,8 @@ package eu.neclab.ngsildbroker.historyentitymanager.controller;
 import java.util.Map;
 
 import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
+import jakarta.enterprise.context.ApplicationScoped;
+import io.quarkus.runtime.Startup;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.POST;
@@ -23,7 +24,8 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.json.JsonObject;
 
-@Singleton
+@ApplicationScoped
+@Startup
 @Path("/ngsi-ld/v1/temporal/entities")
 public class HistoryController {
 
