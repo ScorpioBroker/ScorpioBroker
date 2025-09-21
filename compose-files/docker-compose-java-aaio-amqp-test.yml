@@ -12,6 +12,13 @@ services:
     environment:
       AMQ_USER: guest
       AMQ_PASSWORD: guest
+    healthcheck:
+      # This command uses Artemis's built-in tool to check if the node is running
+      test: ["CMD", "/home/jboss/broker/bin/artemis", "check", "node", "--user", "guest", "--password", "guest"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s # Gives the broker 30 seconds to initialize before checks start
   postgres:
     image: postgis/postgis
     ports:
@@ -20,8 +27,11 @@ services:
       POSTGRES_USER: ngb
       POSTGRES_PASSWORD: ngb
       POSTGRES_DB: ngb
-    depends_on:
-      - artemis
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ngb -d ngb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
   scorpio:
     image: scorpiobroker/all-in-one-runner:java-amqp-latest
     ports:
@@ -31,5 +41,7 @@ services:
       CAMEL_COMPONENT_AMQP_HOST: artemis
     restart: on-failure
     depends_on:
-      - postgres
-      - artemis
+      postgres:
+        condition: service_healthy
+      artemis:
+        condition: service_healthy
