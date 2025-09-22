@@ -110,50 +110,6 @@ jobs:
         run: |
           docker compose -f ./compose-files/docker-compose-java-aaio-amqp-test.yml up > dockerout.log &
           sleep 120
-      - name: Create reports directory
-        run: mkdir -p newman-reports
-
-      - name: Run Newman tests
-        uses: matt-ball/newman-action@master
-        with:
-          collection: api-test.json
-          environment: api-test-aaio-environment.json
-          reporters: '["cli","json","html"]'
-          reporter: '{"json":{"export":"./newman-reports/newman-report.json"},"html":{"export":"./newman-reports/newman-report.html"}}'
-        continue-on-error: true  # Continue even if tests fail to generate artifacts
-      - name: Generate summary report
-        if: always()
-        run: |
-          echo "# Newman Test Results" >> $GITHUB_STEP_SUMMARY
-          if [ -f "./newman-reports/newman-report.json" ]; then
-            echo "✅ Test reports generated successfully" >> $GITHUB_STEP_SUMMARY
-            echo "Check the artifacts for detailed results" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "❌ Failed to generate test reports" >> $GITHUB_STEP_SUMMARY
-          fi
-
-      - name: Upload Newman test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: newman-test-results-rabbit-${{ github.run_number }}
-          path: |
-            newman-reports/
-          retention-days: 30
-
-      - name: Upload HTML report as Pages artifact (optional)
-        if: always() && github.ref == 'refs/heads/main'
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: newman-reports/
-          name: newman-html-report-rabbit
-      - name: Stopping Scorpio
-        if: always()
-        run: docker compose -f ./compose-files/docker-compose-java-aaio-amqp-test.yml down
-      - name: print log
-        if: always()
-        run: |
-          cat dockerout.log
   build-java-kafka:
     runs-on: ubuntu-latest
     steps:

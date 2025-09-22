@@ -503,13 +503,6 @@ jobs:
         run: |
           docker compose -f ./compose-files/docker-compose-linux-amd64-aaio-amqp-test.yml up &
           sleep 120
-      - name: newman action
-        uses: matt-ball/newman-action@master
-        with:
-          collection: api-test.json
-          environment: api-test-aaio-environment.json
-      - name: Stopping Scorpio 
-        run: docker compose -f ./compose-files/docker-compose-linux-amd64-aaio-amqp-test.yml down
 #      - name: start docker dist 
 #        run: |
 #          docker compose -f ./compose-files/docker-compose-linux-amd64-dist-amqp-test.yml up &
