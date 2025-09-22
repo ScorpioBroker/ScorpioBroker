@@ -7,7 +7,7 @@ Scorpio had quite a few config parameters which didn't follow the naming scheme 
 ## Clean seperation between internal and external addresses
 
 Scorpio had an issue with addressing it's internal components when run in container environment. This is now clear seperated using the config params
- - scorpio.entitymanager.url the endpoint to the entity manager used by the subscription manager. In a container scenario this should be the address within the container network.
+ - scorpio.querymanager.url the endpoint to the query manager used by the subscription manager. In a container scenario this should be the address within the container network.
  - scorpio.atcontexturl - the endpoint of the at context server component reachable by other components like entity manager. In a container scenario this should be the address within the container network.
  - scorpio.gateway.url - the public reachable endpoint of scorpio, defaults to http://localhost:9090
  
@@ -19,6 +19,10 @@ Registrations are auto updated with the host alias on creation/update
 ## Initial version (pre spec update) of Temporal Pagination
 Uses the parameters n, offsetN, orderN to paginate attribute instances
 Legacy compatibility with lastN, lastN -> n and orderN DESC
+
+## Replacement of RabbitMQ variant with AMQP 
+
+Instead of supporting RabbitMQ specifically we added general support for AMQP and test it with Apache Artemis.
 
 ## Support for order by implemented
 Fully implemented for the local use case (NGSI-LD 1.9)

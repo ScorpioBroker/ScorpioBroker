@@ -8,9 +8,9 @@ import java.util.Map;
 
 import java.util.concurrent.TimeUnit;
 
-import jakarta.enterprise.event.Observes;
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
 import javax.sql.DataSource;
 import com.google.common.collect.Maps;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -29,7 +29,7 @@ import io.agroal.api.security.SimplePassword;
 import io.quarkus.arc.Arc;
 import io.quarkus.flyway.runtime.FlywayContainer;
 import io.quarkus.flyway.runtime.FlywayContainerProducer;
-import io.quarkus.runtime.StartupEvent;
+import io.quarkus.runtime.Startup;
 import io.smallrye.mutiny.Uni;
 
 import io.smallrye.mutiny.unchecked.Unchecked;
@@ -42,7 +42,8 @@ import io.vertx.mutiny.sqlclient.Tuple;
 import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.sqlclient.PoolOptions;
 
-@Singleton
+@ApplicationScoped
+@Startup
 public class ConnectionManager {
 
 	Logger logger = LoggerFactory.getLogger(ConnectionManager.class);
@@ -87,8 +88,10 @@ public class ConnectionManager {
 
 	@ConfigProperty(name = "scorpio.postgres.disablejit", defaultValue = "true")
 	boolean disableJIT;
-
-	void onStart(@Observes StartupEvent ev) throws URISyntaxException {
+	
+	
+	@PostConstruct
+	void setup() throws URISyntaxException{
 		if (disableJIT) {
 			executeQuery(null, "ALTER USER " + dbUser + " SET jit = off;", null, false).await().indefinitely();
 		} else {
@@ -119,10 +122,6 @@ public class ConnectionManager {
 				return client.preparedQuery(sql).execute();
 			}
 		} else {
-			if (!createTenant) {
-				return Uni.createFrom().failure(
-						new ResponseException(ErrorType.TenantNotFound, tenant + " tenant was not found"));
-			}
 			return getTenant(tenant, createTenant).onItem().transformToUni(tenantClient -> {
 				if (tuple != null) {
 					return tenantClient.preparedQuery(sql).execute(tuple);

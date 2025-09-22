@@ -23,6 +23,7 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
+import io.quarkus.runtime.Startup;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -41,6 +42,7 @@ import jakarta.ws.rs.QueryParam;
  * @date 10-Jul-2018
  */
 @ApplicationScoped
+@Startup
 @Path("/ngsi-ld/v1")
 public class EntityController {// implements EntityHandlerInterface {
 

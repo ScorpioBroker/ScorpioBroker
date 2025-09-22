@@ -10,18 +10,18 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.subscription.Subscripti
 import eu.neclab.ngsildbroker.commons.storage.ConnectionManager;
 import eu.neclab.ngsildbroker.registry.subscriptionmanager.service.RegistrySubscriptionService;
 import io.quarkus.arc.profile.IfBuildProfile;
-import io.quarkus.runtime.StartupEvent;
+import io.quarkus.runtime.Startup;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.pgclient.pubsub.PgSubscriber;
 import io.vertx.pgclient.PgConnectOptions;
-
-import jakarta.enterprise.event.Observes;
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
 
 @IfBuildProfile("sqs")
-@Singleton
+@ApplicationScoped
+@Startup
 public class RegistrySubscriptionSyncSQS implements SyncService {
 
 	private final String SYNC_ID = UUID.randomUUID().toString();
@@ -48,7 +48,8 @@ public class RegistrySubscriptionSyncSQS implements SyncService {
 
 	private String seperator = "<&>";
 
-	void startup(@Observes StartupEvent event) {
+	@PostConstruct
+	void startup() {
 		String tmp = reactiveDefaultUrl.substring("postgresql://".length());
 		String[] splitted = tmp.split(":");
 		String host = splitted[0];

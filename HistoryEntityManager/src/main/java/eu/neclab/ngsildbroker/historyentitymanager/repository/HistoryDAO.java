@@ -11,7 +11,8 @@ import java.util.Map.Entry;
 import java.util.UUID;
 
 import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
+import jakarta.enterprise.context.ApplicationScoped;
+import io.quarkus.runtime.Startup;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,7 +48,8 @@ import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
 import io.vertx.pgclient.PgException;
 
-@Singleton
+@ApplicationScoped
+@Startup
 @SuppressWarnings("unchecked")
 public class HistoryDAO {
 

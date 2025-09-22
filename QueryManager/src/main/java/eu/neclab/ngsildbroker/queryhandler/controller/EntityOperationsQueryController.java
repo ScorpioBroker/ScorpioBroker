@@ -7,7 +7,8 @@ import java.util.UUID;
 
 import io.vertx.core.json.JsonObject;
 import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
+import jakarta.enterprise.context.ApplicationScoped;
+import io.quarkus.runtime.Startup;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
@@ -46,7 +47,8 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple3;
 import io.vertx.core.http.HttpServerRequest;
 
-@Singleton
+@ApplicationScoped
+@Startup
 @Path("/ngsi-ld/v1/entityOperations")
 @SuppressWarnings("unchecked")
 public class EntityOperationsQueryController {

@@ -11,7 +11,7 @@ import io.quarkus.cache.CacheInvalidate;
 import io.quarkus.cache.CacheKey;
 import io.quarkus.cache.CacheName;
 import io.quarkus.cache.CaffeineCache;
-import io.quarkus.runtime.StartupEvent;
+import io.quarkus.runtime.Startup;
 import io.quarkus.scheduler.Scheduler;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Vertx;
@@ -21,8 +21,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 
 import java.net.URLEncoder;
@@ -37,6 +37,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 @ApplicationScoped
+@Startup
 public class ContextCache {
 	@CacheName("context")
 	Cache cache;
@@ -60,7 +61,8 @@ public class ContextCache {
 	String atContextUrl;
 	Duration cacheDuration;
 
-	void startup(@Observes StartupEvent event) {
+	@PostConstruct
+	void startup() {
 		webClient = WebClient.create(vertx);
 		atContextUrl = microServiceUtils.getGatewayString() + NGSIConstants.JSONLD_CONTEXTS;
 		if (!cacheDurationTime.startsWith("PT")) {

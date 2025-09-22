@@ -431,7 +431,7 @@ jobs:
           asset_path: ./EntityManager/target/entity-manager-${{steps.get-id.outputs.id}}-runner
           asset_name: entity-manager-linux-amd64-sqs-${{steps.get-id.outputs.id}}-linux-amd64-sqs
           asset_content_type: application/octet-stream
-  build-linux-amd64-rabbitmq:
+  build-linux-amd64-amqp:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2     
@@ -466,53 +466,46 @@ jobs:
           cd BrokerParent
           id=$(mvn help:evaluate -Dexpression="project.version" -q -DforceStdout)
           echo "::set-output name=id::$id"
-      - name: build-linux-amd64-with-rabbitmq
+      - name: build-linux-amd64-with-amqp
         run: |
           find . -name "pom.xml" -exec sed -i 's/${{steps.get-id.outputs.id}}-SNAPSHOT/${{steps.get-id.outputs.id}}/g' {} +
-          mvn clean package -DskipTests -Drabbitmq -Prabbitmq -Dnative -Ddocker -Dnativedocker -Ddocker-tag=linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} -Dquarkus.profile=rabbitmq -Dquarkus.docker.buildx.platform=linux/amd64
+          mvn clean package -DskipTests -Damqp -Pamqp -Dnative -Ddocker -Dnativedocker -Ddocker-tag=linux-amd64-amqp-${{steps.get-id.outputs.id}} -Dquarkus.profile=amqp -Dquarkus.docker.buildx.platform=linux/amd64
       - name: docker tag 
         run: |
-          docker tag scorpiobroker/at-context-server:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/at-context-server:linux-amd64-rabbitmq-latest
-          docker tag scorpiobroker/history-entity-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/history-entity-manager:linux-amd64-rabbitmq-latest
-          docker tag scorpiobroker/history-query-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/history-query-manager:linux-amd64-rabbitmq-latest
-          docker tag scorpiobroker/registry-subscription-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/registry-subscription-manager:linux-amd64-rabbitmq-latest
-          docker tag scorpiobroker/registry-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/registry-manager:linux-amd64-rabbitmq-latest
-          docker tag scorpiobroker/subscription-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/subscription-manager:linux-amd64-rabbitmq-latest
-          docker tag scorpiobroker/query-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/query-manager:linux-amd64-rabbitmq-latest
-          docker tag scorpiobroker/entity-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/entity-manager:linux-amd64-rabbitmq-latest
-          docker tag scorpiobroker/all-in-one-runner:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:linux-amd64-rabbitmq-latest
-          docker tag scorpiobroker/at-context-server:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/at-context-server:linux-amd64-rabbitmq-latest
-          docker tag scorpiobroker/history-entity-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-entity-manager:linux-amd64-rabbitmq-latest
-          docker tag scorpiobroker/history-query-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-query-manager:linux-amd64-rabbitmq-latest
-          docker tag scorpiobroker/registry-subscription-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-subscription-manager:linux-amd64-rabbitmq-latest
-          docker tag scorpiobroker/registry-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-manager:linux-amd64-rabbitmq-latest
-          docker tag scorpiobroker/subscription-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/subscription-manager:linux-amd64-rabbitmq-latest
-          docker tag scorpiobroker/query-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/query-manager:linux-amd64-rabbitmq-latest
-          docker tag scorpiobroker/entity-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/entity-manager:linux-amd64-rabbitmq-latest
-          docker tag scorpiobroker/all-in-one-runner:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:linux-amd64-rabbitmq-latest
-          docker tag scorpiobroker/at-context-server:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/at-context-server:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}}
-          docker tag scorpiobroker/history-entity-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-entity-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}}
-          docker tag scorpiobroker/history-query-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-query-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}}
-          docker tag scorpiobroker/registry-subscription-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-subscription-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}}
-          docker tag scorpiobroker/registry-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}}
-          docker tag scorpiobroker/subscription-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/subscription-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}}
-          docker tag scorpiobroker/query-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/query-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}}
-          docker tag scorpiobroker/entity-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/entity-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}}
-          docker tag scorpiobroker/all-in-one-runner:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/at-context-server:linux-amd64-amqp-${{steps.get-id.outputs.id}} scorpiobroker/at-context-server:linux-amd64-amqp-latest
+          docker tag scorpiobroker/history-entity-manager:linux-amd64-amqp-${{steps.get-id.outputs.id}} scorpiobroker/history-entity-manager:linux-amd64-amqp-latest
+          docker tag scorpiobroker/history-query-manager:linux-amd64-amqp-${{steps.get-id.outputs.id}} scorpiobroker/history-query-manager:linux-amd64-amqp-latest
+          docker tag scorpiobroker/registry-subscription-manager:linux-amd64-amqp-${{steps.get-id.outputs.id}} scorpiobroker/registry-subscription-manager:linux-amd64-amqp-latest
+          docker tag scorpiobroker/registry-manager:linux-amd64-amqp-${{steps.get-id.outputs.id}} scorpiobroker/registry-manager:linux-amd64-amqp-latest
+          docker tag scorpiobroker/subscription-manager:linux-amd64-amqp-${{steps.get-id.outputs.id}} scorpiobroker/subscription-manager:linux-amd64-amqp-latest
+          docker tag scorpiobroker/query-manager:linux-amd64-amqp-${{steps.get-id.outputs.id}} scorpiobroker/query-manager:linux-amd64-amqp-latest
+          docker tag scorpiobroker/entity-manager:linux-amd64-amqp-${{steps.get-id.outputs.id}} scorpiobroker/entity-manager:linux-amd64-amqp-latest
+          docker tag scorpiobroker/all-in-one-runner:linux-amd64-amqp-${{steps.get-id.outputs.id}} scorpiobroker/all-in-one-runner:linux-amd64-amqp-latest
+          docker tag scorpiobroker/at-context-server:linux-amd64-amqp-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/at-context-server:linux-amd64-amqp-latest
+          docker tag scorpiobroker/history-entity-manager:linux-amd64-amqp-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-entity-manager:linux-amd64-amqp-latest
+          docker tag scorpiobroker/history-query-manager:linux-amd64-amqp-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-query-manager:linux-amd64-amqp-latest
+          docker tag scorpiobroker/registry-subscription-manager:linux-amd64-amqp-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-subscription-manager:linux-amd64-amqp-latest
+          docker tag scorpiobroker/registry-manager:linux-amd64-amqp-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-manager:linux-amd64-amqp-latest
+          docker tag scorpiobroker/subscription-manager:linux-amd64-amqp-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/subscription-manager:linux-amd64-amqp-latest
+          docker tag scorpiobroker/query-manager:linux-amd64-amqp-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/query-manager:linux-amd64-amqp-latest
+          docker tag scorpiobroker/entity-manager:linux-amd64-amqp-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/entity-manager:linux-amd64-amqp-latest
+          docker tag scorpiobroker/all-in-one-runner:linux-amd64-amqp-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:linux-amd64-amqp-latest
+          docker tag scorpiobroker/at-context-server:linux-amd64-amqp-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/at-context-server:linux-amd64-amqp-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/history-entity-manager:linux-amd64-amqp-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-entity-manager:linux-amd64-amqp-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/history-query-manager:linux-amd64-amqp-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-query-manager:linux-amd64-amqp-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/registry-subscription-manager:linux-amd64-amqp-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-subscription-manager:linux-amd64-amqp-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/registry-manager:linux-amd64-amqp-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-manager:linux-amd64-amqp-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/subscription-manager:linux-amd64-amqp-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/subscription-manager:linux-amd64-amqp-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/query-manager:linux-amd64-amqp-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/query-manager:linux-amd64-amqp-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/entity-manager:linux-amd64-amqp-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/entity-manager:linux-amd64-amqp-${{steps.get-id.outputs.id}}
+          docker tag scorpiobroker/all-in-one-runner:linux-amd64-amqp-${{steps.get-id.outputs.id}} ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:linux-amd64-amqp-${{steps.get-id.outputs.id}}
       - name: start docker aaio 
         run: |
-          docker compose -f ./compose-files/docker-compose-linux-amd64-aaio-rabbitmq-test.yml up &
+          docker compose -f ./compose-files/docker-compose-linux-amd64-aaio-amqp-test.yml up &
           sleep 120
-      - name: newman action
-        uses: matt-ball/newman-action@master
-        with:
-          collection: api-test.json
-          environment: api-test-aaio-environment.json
-      - name: Stopping Scorpio 
-        run: docker compose -f ./compose-files/docker-compose-linux-amd64-aaio-rabbitmq-test.yml down
 #      - name: start docker dist 
 #        run: |
-#          docker compose -f ./compose-files/docker-compose-linux-amd64-dist-rabbitmq-test.yml up &
+#          docker compose -f ./compose-files/docker-compose-linux-amd64-dist-amqp-test.yml up &
 #          sleep 120
 #      - name: newman action
 #        uses: matt-ball/newman-action@master
@@ -520,7 +513,7 @@ jobs:
 #          collection: api-test.json
 #          environment: api-test-dist-environment.json
 #      - name: Stopping Scorpio 
-#        run: docker compose -f ./compose-files/docker-compose-linux-amd64-dist-rabbitmq-test.yml down
+#        run: docker compose -f ./compose-files/docker-compose-linux-amd64-dist-amqp-test.yml down
       - name: docker-login
         uses: docker/login-action@v2
         with:
@@ -528,50 +521,50 @@ jobs:
           password: ${{ secrets.DOCKER_TOKEN }}
       - name: docker tag and push
         run: |
-          docker push scorpiobroker/at-context-server:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}}
-          docker push scorpiobroker/history-entity-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}}
-          docker push scorpiobroker/history-query-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}}
-          docker push scorpiobroker/registry-subscription-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}}
-          docker push scorpiobroker/registry-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}}
-          docker push scorpiobroker/subscription-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}}
-          docker push scorpiobroker/query-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}}
-          docker push scorpiobroker/entity-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}}
-          docker push scorpiobroker/all-in-one-runner:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}}
-          docker push scorpiobroker/at-context-server:linux-amd64-rabbitmq-latest
-          docker push scorpiobroker/history-entity-manager:linux-amd64-rabbitmq-latest
-          docker push scorpiobroker/history-query-manager:linux-amd64-rabbitmq-latest
-          docker push scorpiobroker/registry-subscription-manager:linux-amd64-rabbitmq-latest
-          docker push scorpiobroker/registry-manager:linux-amd64-rabbitmq-latest
-          docker push scorpiobroker/subscription-manager:linux-amd64-rabbitmq-latest
-          docker push scorpiobroker/query-manager:linux-amd64-rabbitmq-latest
-          docker push scorpiobroker/entity-manager:linux-amd64-rabbitmq-latest
-          docker push scorpiobroker/all-in-one-runner:linux-amd64-rabbitmq-latest
-          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/at-context-server:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}}
-          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-entity-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}}
-          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-query-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}}
-          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-subscription-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}}
-          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}}
-          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/subscription-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}}
-          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/query-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}}
-          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/entity-manager:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}}
-          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:linux-amd64-rabbitmq-${{steps.get-id.outputs.id}}
-          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/at-context-server:linux-amd64-rabbitmq-latest
-          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-entity-manager:linux-amd64-rabbitmq-latest
-          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-query-manager:linux-amd64-rabbitmq-latest
-          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-subscription-manager:linux-amd64-rabbitmq-latest
-          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-manager:linux-amd64-rabbitmq-latest
-          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/subscription-manager:linux-amd64-rabbitmq-latest
-          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/query-manager:linux-amd64-rabbitmq-latest
-          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/entity-manager:linux-amd64-rabbitmq-latest
-          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:linux-amd64-rabbitmq-latest
-      - name: Create Release ${{steps.get-id.outputs.id}}-linux-amd64-rabbitmq
+          docker push scorpiobroker/at-context-server:linux-amd64-amqp-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/history-entity-manager:linux-amd64-amqp-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/history-query-manager:linux-amd64-amqp-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/registry-subscription-manager:linux-amd64-amqp-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/registry-manager:linux-amd64-amqp-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/subscription-manager:linux-amd64-amqp-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/query-manager:linux-amd64-amqp-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/entity-manager:linux-amd64-amqp-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/all-in-one-runner:linux-amd64-amqp-${{steps.get-id.outputs.id}}
+          docker push scorpiobroker/at-context-server:linux-amd64-amqp-latest
+          docker push scorpiobroker/history-entity-manager:linux-amd64-amqp-latest
+          docker push scorpiobroker/history-query-manager:linux-amd64-amqp-latest
+          docker push scorpiobroker/registry-subscription-manager:linux-amd64-amqp-latest
+          docker push scorpiobroker/registry-manager:linux-amd64-amqp-latest
+          docker push scorpiobroker/subscription-manager:linux-amd64-amqp-latest
+          docker push scorpiobroker/query-manager:linux-amd64-amqp-latest
+          docker push scorpiobroker/entity-manager:linux-amd64-amqp-latest
+          docker push scorpiobroker/all-in-one-runner:linux-amd64-amqp-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/at-context-server:linux-amd64-amqp-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-entity-manager:linux-amd64-amqp-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-query-manager:linux-amd64-amqp-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-subscription-manager:linux-amd64-amqp-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-manager:linux-amd64-amqp-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/subscription-manager:linux-amd64-amqp-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/query-manager:linux-amd64-amqp-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/entity-manager:linux-amd64-amqp-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:linux-amd64-amqp-${{steps.get-id.outputs.id}}
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/at-context-server:linux-amd64-amqp-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-entity-manager:linux-amd64-amqp-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/history-query-manager:linux-amd64-amqp-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-subscription-manager:linux-amd64-amqp-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/registry-manager:linux-amd64-amqp-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/subscription-manager:linux-amd64-amqp-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/query-manager:linux-amd64-amqp-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/entity-manager:linux-amd64-amqp-latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/scorpiobroker/all-in-one-runner:linux-amd64-amqp-latest
+      - name: Create Release ${{steps.get-id.outputs.id}}-linux-amd64-amqp
         id: create_release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.SUPER_SECRET }}
         with:
-          tag_name: ${{steps.get-id.outputs.id}}-linux-amd64-rabbitmq
-          release_name: ${{steps.get-id.outputs.id}}-linux-amd64-rabbitmq
+          tag_name: ${{steps.get-id.outputs.id}}-linux-amd64-amqp
+          release_name: ${{steps.get-id.outputs.id}}-linux-amd64-amqp
           draft: false
           prerelease: false
           body_path: RELEASENOTES
@@ -582,7 +575,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: AllInOneRunner/target/all-in-one-runner-${{steps.get-id.outputs.id}}-runner
-          asset_name: scorpio-all-in-one-runner-${{steps.get-id.outputs.id}}-linux-amd64-rabbitmq
+          asset_name: scorpio-all-in-one-runner-${{steps.get-id.outputs.id}}-linux-amd64-amqp
           asset_content_type: application/octet-stream
       - name: Upload Release at-context-server
         uses: actions/upload-release-asset@v1
@@ -591,7 +584,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./AtContextServer/target/at-context-server-${{steps.get-id.outputs.id}}-runner
-          asset_name: at-context-server-linux-amd64-rabbitmq-${{steps.get-id.outputs.id}}-linux-amd64-rabbitmq
+          asset_name: at-context-server-linux-amd64-amqp-${{steps.get-id.outputs.id}}-linux-amd64-amqp
           asset_content_type: application/octet-stream
       - name: Upload Release history-query-manager
         uses: actions/upload-release-asset@v1
@@ -600,7 +593,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./HistoryQueryManager/target/history-query-manager-${{steps.get-id.outputs.id}}-runner
-          asset_name: history-query-manager-linux-amd64-rabbitmq-${{steps.get-id.outputs.id}}-linux-amd64-rabbitmq
+          asset_name: history-query-manager-linux-amd64-amqp-${{steps.get-id.outputs.id}}-linux-amd64-amqp
           asset_content_type: application/octet-stream
       - name: Upload Release history-entity-manager
         uses: actions/upload-release-asset@v1
@@ -609,7 +602,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./HistoryEntityManager/target/history-entity-manager-${{steps.get-id.outputs.id}}-runner
-          asset_name: history-entity-manager-linux-amd64-rabbitmq-${{steps.get-id.outputs.id}}-linux-amd64-rabbitmq
+          asset_name: history-entity-manager-linux-amd64-amqp-${{steps.get-id.outputs.id}}-linux-amd64-amqp
           asset_content_type: application/octet-stream
       - name: Upload Release registry-subscription-manager
         uses: actions/upload-release-asset@v1
@@ -618,7 +611,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./RegistrySubscriptionManager/target/registry-subscription-manager-${{steps.get-id.outputs.id}}-runner
-          asset_name: registry-subscription-manager-linux-amd64-rabbitmq-${{steps.get-id.outputs.id}}-linux-amd64-rabbitmq
+          asset_name: registry-subscription-manager-linux-amd64-amqp-${{steps.get-id.outputs.id}}-linux-amd64-amqp
           asset_content_type: application/octet-stream
       - name: Upload Release registry-manager 
         uses: actions/upload-release-asset@v1
@@ -627,7 +620,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./RegistryManager/target/registry-manager-${{steps.get-id.outputs.id}}-runner
-          asset_name: registry-manager-linux-amd64-rabbitmq-${{steps.get-id.outputs.id}}-linux-amd64-rabbitmq
+          asset_name: registry-manager-linux-amd64-amqp-${{steps.get-id.outputs.id}}-linux-amd64-amqp
           asset_content_type: application/octet-stream
       - name: Upload Release subscription-manager 
         uses: actions/upload-release-asset@v1
@@ -636,7 +629,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./SubscriptionManager/target/subscription-manager-${{steps.get-id.outputs.id}}-runner
-          asset_name: subscription-manager-linux-amd64-rabbitmq-${{steps.get-id.outputs.id}}-linux-amd64-rabbitmq
+          asset_name: subscription-manager-linux-amd64-amqp-${{steps.get-id.outputs.id}}-linux-amd64-amqp
           asset_content_type: application/octet-stream
       - name: Upload Release query-manager 
         uses: actions/upload-release-asset@v1
@@ -645,7 +638,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./QueryManager/target/query-manager-${{steps.get-id.outputs.id}}-runner
-          asset_name: query-manager-linux-amd64-rabbitmq-${{steps.get-id.outputs.id}}-linux-amd64-rabbitmq
+          asset_name: query-manager-linux-amd64-amqp-${{steps.get-id.outputs.id}}-linux-amd64-amqp
           asset_content_type: application/octet-stream
       - name: Upload Release entity-manager
         uses: actions/upload-release-asset@v1
@@ -654,7 +647,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
           asset_path: ./EntityManager/target/entity-manager-${{steps.get-id.outputs.id}}-runner
-          asset_name: entity-manager-linux-amd64-rabbitmq-${{steps.get-id.outputs.id}}-linux-amd64-rabbitmq
+          asset_name: entity-manager-linux-amd64-amqp-${{steps.get-id.outputs.id}}-linux-amd64-amqp
           asset_content_type: application/octet-stream
   build-linux-amd64-mqtt:
     runs-on: ubuntu-latest

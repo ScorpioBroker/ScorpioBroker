@@ -9,8 +9,9 @@ import java.util.Random;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import io.vertx.core.json.DecodeException;
 import io.vertx.core.json.JsonArray;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
+
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
@@ -31,12 +32,14 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
+import io.quarkus.runtime.Startup;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple3;
 import io.vertx.core.http.HttpServerRequest;
 
-@Singleton
+@ApplicationScoped
+@Startup
 @Path("/ngsi-ld/v1/entityOperations")
 @SuppressWarnings("unchecked")
 public class EntityBatchController {

@@ -8,11 +8,9 @@ import java.util.Map;
 import java.util.Set;
 
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
-
-import jakarta.enterprise.event.Observes;
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
-
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
@@ -20,13 +18,14 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.storage.ConnectionManager;
-import io.quarkus.runtime.StartupEvent;
+import io.quarkus.runtime.Startup;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.client.WebClientOptions;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.ext.web.client.WebClient;
 
-@Singleton
+@ApplicationScoped
+@Startup
 public class JsonLDService {
 
 	private Context coreContext;
@@ -46,7 +45,8 @@ public class JsonLDService {
 	@ConfigProperty(name = "scorpio.multithreadingthreshold", defaultValue = "3000")
 	int multiThreadingThreshold;
 
-	void startup(@Observes StartupEvent event) {
+	@PostConstruct
+	void startup() {
 		WebClientOptions options = new WebClientOptions();
 
 		this.webClient = WebClient.create(vertx, options);

@@ -5,10 +5,13 @@ services:
     image: testserver
     ports:
       - "8080:8080"
-  rabbitmq:
-    image: rabbitmq:management
+  artemis:
+    image: quay.io/artemiscloud/activemq-artemis-broker:1.0.26
     ports:
-      - "5672:5672"
+     - "5672:5672"
+    environment:
+      AMQ_USER: guest
+      AMQ_PASSWORD: guest
   postgres:
     image: postgis/postgis
     ports:
@@ -18,16 +21,16 @@ services:
       POSTGRES_PASSWORD: ngb
       POSTGRES_DB: ngb
     depends_on:
-      - rabbitmq
+      - artemis
   scorpio:
-    image: scorpiobroker/all-in-one-runner:linux-amd64-rabbitmq-latest
+    image: scorpiobroker/all-in-one-runner:linux-amd64-amqp-latest
     ports:
       - "9090:9090"
     environment:
       DBHOST: postgres
-      CAMEL_COMPONENT_SPRING_RABBITMQ_CONNECTION_FACTORY_HOST: rabbitmq
-      CAMEL_COMPONENT_SPRING_RABBITMQ_CONNECTION_FACTORY_PORT: 5672
+      CAMEL_COMPONENT_AMQP_HOST: artemis
+      CAMEL_COMPONENT_AMQP_PORT: 5672
     restart: on-failure
     depends_on:
       - postgres
-      - rabbitmq
+      - artemis

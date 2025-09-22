@@ -8,9 +8,11 @@ import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import io.quarkus.arc.profile.IfBuildProfile;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
-import jakarta.inject.Singleton;
+import jakarta.enterprise.context.ApplicationScoped;
+import io.quarkus.runtime.Startup;
 
-@Singleton
+@ApplicationScoped
+@Startup
 @IfBuildProfile("in-memory")
 public class HistoryMessagingInMemory extends HistoryMessagingBase {
 

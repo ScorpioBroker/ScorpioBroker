@@ -1,0 +1,11 @@
+[
+  {
+    "name": "org.flywaydb.core.internal.exception.sqlExceptions.FlywaySqlServerUntrustedCertificateSqlException",
+    "methods": [
+      {
+        "name": "isFlywaySpecificVersionOf",
+        "parameterTypes": ["java.sql.SQLException"]
+      }
+    ]
+  }
+]

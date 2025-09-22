@@ -26,7 +26,8 @@ import io.vertx.core.http.HttpServerRequest;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.RestResponse;
 import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
+import jakarta.enterprise.context.ApplicationScoped;
+import io.quarkus.runtime.Startup;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -38,7 +39,8 @@ import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.List;
 
-@Singleton
+@ApplicationScoped
+@Startup
 @Path("/ngsi-ld/v1/temporal/entities")
 public class HistoryController {
 
@@ -251,7 +253,8 @@ public class HistoryController {
 			return historyQueryService.retrieveEntity(HttpUtils.getTenant(request), entityId, attrsQuery, aggrQuery,
 					tempQuery, lang, n, offsetN, nOrder, localOnly, context, request.headers()).onItem()
 					.transformToUni(entity -> {
-						if (aggrQuery != null) {
+						if (aggrQuery != null || (finalOptionsString != null && !finalOptionsString
+								.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_TEMPORALVALUES))) {
 							return HttpUtils.generateResult(headerContext, context, acceptHeader, entity,
 									geometryProperty,
 									finalOptionsString, null,

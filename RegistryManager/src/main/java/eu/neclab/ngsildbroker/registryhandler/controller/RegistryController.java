@@ -5,7 +5,8 @@ import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import io.vertx.core.json.DecodeException;
 import io.vertx.core.json.JsonObject;
 import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
+import jakarta.enterprise.context.ApplicationScoped;
+import io.quarkus.runtime.Startup;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.PATCH;
@@ -42,7 +43,8 @@ import io.vertx.core.http.HttpServerRequest;
  * @version 1.0
  * @date 20-Jul-2018
  */
-@Singleton
+@ApplicationScoped
+@Startup
 @Path("/ngsi-ld/v1/csourceRegistrations")
 public class RegistryController {
 	private final static Logger logger = LoggerFactory.getLogger(RegistryController.class);

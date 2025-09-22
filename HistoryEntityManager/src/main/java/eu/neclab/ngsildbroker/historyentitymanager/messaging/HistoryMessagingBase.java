@@ -26,12 +26,11 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.UpsertEntityRequest;
 import eu.neclab.ngsildbroker.commons.interfaces.BaseRequestHandler;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import eu.neclab.ngsildbroker.historyentitymanager.service.HistoryEntityService;
-import io.quarkus.runtime.StartupEvent;
-//import eu.neclab.ngsildbroker.historyentitymanager.service.HistoryEntityService;
+
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Vertx;
+import jakarta.annotation.PostConstruct;
 
-import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 
 public abstract class HistoryMessagingBase implements BaseRequestHandler {
@@ -66,7 +65,8 @@ public abstract class HistoryMessagingBase implements BaseRequestHandler {
 
 	Executor histRecordingExecutor;
 
-	void startup(@Observes StartupEvent event) {
+	@PostConstruct
+	void startup() {
 		if (autoRecording) {
 			histRecordingExecutor = Executors.newScheduledThreadPool(histRecordingThreadPooolSzie);
 		}
