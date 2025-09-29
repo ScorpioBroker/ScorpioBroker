@@ -11,6 +11,8 @@ import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
@@ -24,7 +26,7 @@ import io.vertx.ext.web.client.WebClientOptions;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.ext.web.client.WebClient;
 
-@ApplicationScoped
+@Singleton
 @Startup
 public class JsonLDService {
 
