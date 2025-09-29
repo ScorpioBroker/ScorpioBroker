@@ -27,6 +27,10 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.metrics.MetricUnits;
+import org.eclipse.microprofile.metrics.annotation.ConcurrentGauge;
+import org.eclipse.microprofile.metrics.annotation.Counted;
+import org.eclipse.microprofile.metrics.annotation.Timed;
 import org.jboss.resteasy.reactive.RestResponse;
 
 import java.util.ArrayList;
@@ -118,6 +122,9 @@ public class SubscriptionController {
 	}
 
 	@GET
+	@Counted(name = "retrieve_all_subscriptions_total", description = "Total number of retrieve all subscriptions requests", absolute = true)
+	@Timed(name = "retrieve_all_subscriptions_duration", description = "Duration of retrieve all subscriptions requests", unit = MetricUnits.MILLISECONDS, absolute = true)
+	@ConcurrentGauge(name = "retrieve_all_subscriptions_concurrent", description = "Number of concurrent retrieve all subscriptions requests", absolute = true)
 	public Uni<RestResponse<Object>> getAllSubscriptions(HttpServerRequest request, @QueryParam("limit") Integer limit,
 			@QueryParam("offset") int offset, @QueryParam("options") String options) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
@@ -186,6 +193,9 @@ public class SubscriptionController {
 
 	@Path("/{id}")
 	@GET
+	@Counted(name = "retrieve_subscription_total", description = "Total number of retrieve subscription requests", absolute = true)
+	@Timed(name = "retrieve_subscription_duration", description = "Duration of retrieve subscription requests", unit = MetricUnits.MILLISECONDS, absolute = true)
+	@ConcurrentGauge(name = "retrieve_subscription_concurrent", description = "Number of concurrent retrieve subscription requests", absolute = true)
 	public Uni<RestResponse<Object>> getSubscriptionById(HttpServerRequest request,
 			@PathParam(value = "id") String subscriptionId, @QueryParam(value = "options") String options) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
@@ -215,6 +225,9 @@ public class SubscriptionController {
 
 	@Path("/{id}")
 	@DELETE
+	@Counted(name = "delete_subscription_total", description = "Total number of delete subscription requests", absolute = true)
+	@Timed(name = "delete_subscription_duration", description = "Duration of delete subscription requests", unit = MetricUnits.MILLISECONDS, absolute = true)
+	@ConcurrentGauge(name = "delete_subscription_concurrent", description = "Number of concurrent delete subscription requests", absolute = true)
 	public Uni<RestResponse<Object>> deleteSubscription(HttpServerRequest request, @PathParam(value = "id") String id) {
 		String tenant = HttpUtils.getTenant(request);
 		try {
@@ -231,6 +244,9 @@ public class SubscriptionController {
 
 	@Path("/{id}")
 	@PATCH
+	@Counted(name = "patch_subscription_total", description = "Total number of patch subscription requests", absolute = true)
+	@Timed(name = "patch_subscription_duration", description = "Duration of patch subscription requests", unit = MetricUnits.MILLISECONDS, absolute = true)
+	@ConcurrentGauge(name = "patch_subscription_concurrent", description = "Number of concurrent patch subscription requests", absolute = true)
 	public Uni<RestResponse<Object>> updateSubscription(HttpServerRequest request, @PathParam(value = "id") String id,
 			String body) {
 		Map<String, Object> map;

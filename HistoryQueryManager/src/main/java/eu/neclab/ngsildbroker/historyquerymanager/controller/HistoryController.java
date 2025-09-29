@@ -24,6 +24,10 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple3;
 import io.vertx.core.http.HttpServerRequest;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.metrics.MetricUnits;
+import org.eclipse.microprofile.metrics.annotation.ConcurrentGauge;
+import org.eclipse.microprofile.metrics.annotation.Counted;
+import org.eclipse.microprofile.metrics.annotation.Timed;
 import org.jboss.resteasy.reactive.RestResponse;
 import jakarta.inject.Inject;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -65,6 +69,9 @@ public class HistoryController {
 
 	@GET
 	@Blocking
+	@Counted(name = "temp_entity_query_total", description = "Total number of temp entity query requests", absolute = true)
+	@Timed(name = "temp_entity_query_duration", description = "Duration of temp entity query requests", unit = MetricUnits.MILLISECONDS, absolute = true)
+	@ConcurrentGauge(name = "temp_entity_query_concurrent", description = "Number of concurrent temp entity query requests", absolute = true)
 	public Uni<RestResponse<Object>> queryTemporalEntities(HttpServerRequest request, @QueryParam("id") String ids,
 			@QueryParam("type") String typeQuery, @QueryParam("idPattern") String idPattern,
 			@QueryParam("attrs") String attrs, @QueryParam("q") String qInput, @QueryParam("csf") String csf,
@@ -194,6 +201,9 @@ public class HistoryController {
 
 	@Path("/{entityId}")
 	@GET
+	@Counted(name = "temp_entity_retrieve_total", description = "Total number of temp entity retrieve requests", absolute = true)
+	@Timed(name = "temp_entity_retrieve_duration", description = "Duration of temp entity retrieve requests", unit = MetricUnits.MILLISECONDS, absolute = true)
+	@ConcurrentGauge(name = "temp_entity_retrieve_concurrent", description = "Number of concurrent temp entity retrieve requests", absolute = true)
 	public Uni<RestResponse<Object>> retrieveTemporalEntity(HttpServerRequest request,
 			@PathParam("entityId") String entityId, @QueryParam("attrs") String attrs,
 			@QueryParam("aggrMethods") String aggrMethods, @QueryParam("aggrPeriodDuration") String aggrPeriodDuration,

@@ -6,6 +6,10 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.metrics.MetricUnits;
+import org.eclipse.microprofile.metrics.annotation.ConcurrentGauge;
+import org.eclipse.microprofile.metrics.annotation.Counted;
+import org.eclipse.microprofile.metrics.annotation.Timed;
 import org.jboss.resteasy.reactive.RestResponse;
 
 import com.github.jsonldjava.core.Context;
@@ -71,6 +75,9 @@ public class HistoryOperationsController {
 
 	@Path("/query")
 	@POST
+	@Counted(name = "temp_entity_batch_query_total", description = "Total number of temp entity batch query requests", absolute = true)
+	@Timed(name = "temp_entity_batch_query_duration", description = "Duration of temp entity batch query requests", unit = MetricUnits.MILLISECONDS, absolute = true)
+	@ConcurrentGauge(name = "temp_entity_batch_query_concurrent", description = "Number of concurrent temp entity batch query requests", absolute = true)
 	public Uni<RestResponse<Object>> postQuery(HttpServerRequest request, String bodyStr,
 			@QueryParam(value = "limit") Integer limit, @QueryParam(value = "offset") int offset,
 			@QueryParam("lastN") @DefaultValue("-1") int lastN, @QueryParam(value = "options") String options,

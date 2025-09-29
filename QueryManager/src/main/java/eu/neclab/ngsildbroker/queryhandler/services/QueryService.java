@@ -70,8 +70,9 @@ import io.vertx.mutiny.sqlclient.RowSet;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
-@ApplicationScoped
+@Singleton
 @Startup
 @SuppressWarnings("unchecked")
 public class QueryService implements CSourceHandler {

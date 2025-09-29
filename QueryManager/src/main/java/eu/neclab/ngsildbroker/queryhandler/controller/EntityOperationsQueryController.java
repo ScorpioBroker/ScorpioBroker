@@ -15,6 +15,10 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.metrics.MetricUnits;
+import org.eclipse.microprofile.metrics.annotation.ConcurrentGauge;
+import org.eclipse.microprofile.metrics.annotation.Counted;
+import org.eclipse.microprofile.metrics.annotation.Timed;
 import org.jboss.resteasy.reactive.RestResponse;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -72,6 +76,9 @@ public class EntityOperationsQueryController {
 
 	@Path("/query")
 	@POST
+	@Counted(name = "batch_entity_queries_total", description = "Total number of entity batch query requests", absolute = true)
+	@Timed(name = "batch_entity_query_duration", description = "Duration of entity batch query requests", unit = MetricUnits.MILLISECONDS, absolute = true)
+	@ConcurrentGauge(name = "batch_entity_queries_concurrent", description = "Number of concurrent entity batch query requests", absolute = true)
 	public Uni<RestResponse<Object>> postQuery(HttpServerRequest request, String bodyStr,
 			@QueryParam(value = "limit") Integer limit, @QueryParam(value = "offset") int offset,
 			@QueryParam(value = "options") String options, @QueryParam(value = "count") String countS,
