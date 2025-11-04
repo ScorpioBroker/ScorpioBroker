@@ -1027,7 +1027,7 @@ public class JsonLdApi {
 					result.add(compact(activeCtx, expandedName, attribInstance, true, -1, options, langQuery));
 					continue;
 				}
-				Map<String, Object> attribMap = (Map<String, Object>) attribInstance;
+				Map<String, Object> attribMap = new LinkedHashMap<>((Map<String, Object>) attribInstance);
 				Map<String, Object> resultMap = new LinkedHashMap<>(attribMap.size());
 				Object typeObj = attribMap.remove(NGSIConstants.JSON_LD_TYPE);
 				if (typeObj == null) {
