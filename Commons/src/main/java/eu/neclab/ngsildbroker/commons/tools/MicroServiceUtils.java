@@ -354,7 +354,7 @@ public class MicroServiceUtils {
 				baseRequestReceivers.get(0).handleBaseRequest(br).subscribe().with(x -> {
 				});
 				for (int i = 1; i < baseRequestReceivers.size(); i++) {
-					baseRequestReceivers.get(1).handleBaseRequest(br.copy()).subscribe().with(x -> {
+					baseRequestReceivers.get(i).handleBaseRequest(br.copy()).subscribe().with(x -> {
 					});
 				}
 			} else if (obj instanceof CSourceBaseRequest cr) {
@@ -366,7 +366,7 @@ public class MicroServiceUtils {
 				}
 			}
 		} catch (Exception e) {
-			logger.debug("Something wrong happened during sending a payload to other components", e);
+			logger.warn("Something wrong happened during sending a payload to other components", e);
 		}
 
 	}

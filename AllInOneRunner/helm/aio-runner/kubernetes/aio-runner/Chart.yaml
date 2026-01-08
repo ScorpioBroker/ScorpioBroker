@@ -1,0 +1,5 @@
+---
+name: aio-runner
+version: 6.0.0-SNAPSHOT
+icon: ../img/ScorpioLogo.svg
+apiVersion: v2

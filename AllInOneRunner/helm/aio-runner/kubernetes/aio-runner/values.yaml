@@ -1,0 +1,49 @@
+---
+app:
+  envs:
+    QUARKUS_FLYWAY_ACTIVE: "false"
+    bushost: localhost
+    busport: "9092"
+    dbhost: localhost
+    dbname: ngb
+    dbpass: ngb
+    dbport: "5432"
+    dbuser: ngb
+    gateway: http://localhost:9090
+    neo4j:
+      database: neo4j
+      host: localhost
+      pass: neo4jneo4j
+      port: "7687"
+      scheme: bolt
+      user: neo4j
+  image: scorpiobroker/all-in-one-runner:java-kafka-latest
+  livenessProbe:
+    failureThreshold: 3
+    httpGet:
+      path: /q/health/live
+      scheme: HTTP
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 10
+  ports:
+    http: 9090
+  readinessProbe:
+    failureThreshold: 3
+    httpGet:
+      path: /q/health/ready
+      scheme: HTTP
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 10
+  startupProbe:
+    failureThreshold: 3
+    httpGet:
+      path: /q/health/started
+      scheme: HTTP
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 10

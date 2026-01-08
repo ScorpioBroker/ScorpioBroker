@@ -56,6 +56,16 @@
 			<artifactId>info-manager</artifactId>
 			<version>${project.parent.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>eu.neclab.scorpioplusplus</groupId>
+			<artifactId>neo4j-storage-manager</artifactId>
+			<version>${project.parent.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>eu.neclab.scorpioplusplus</groupId>
+			<artifactId>chromadb-storage-manager</artifactId>
+			<version>${project.parent.version}</version>
+		</dependency>
 	</dependencies>
 	<profiles>
 		<profile>

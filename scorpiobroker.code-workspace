@@ -5,6 +5,12 @@
 		},
 		{
 			"path": "../../epafi/epafi"
+		},
+		{
+			"path": "../hdapimcp"
+		},
+		{
+			"path": "../ragmcp"
 		}
 	],
 	"settings": {

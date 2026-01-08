@@ -1,0 +1,40 @@
+---
+app:
+  envs:
+    QUARKUS_FLYWAY_ACTIVE: "false"
+    dbhost: localhost
+    dbname: ngb
+    dbpass: ngb
+    dbport: "5432"
+    dbuser: ngb
+    gateway: http://localhost:9090
+  image: scorpiobroker/info-manager:java-kafka-latest
+  livenessProbe:
+    failureThreshold: 3
+    httpGet:
+      path: /q/health/live
+      scheme: HTTP
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 10
+  ports:
+    http: 10097
+  readinessProbe:
+    failureThreshold: 3
+    httpGet:
+      path: /q/health/ready
+      scheme: HTTP
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 10
+  startupProbe:
+    failureThreshold: 3
+    httpGet:
+      path: /q/health/started
+      scheme: HTTP
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 10

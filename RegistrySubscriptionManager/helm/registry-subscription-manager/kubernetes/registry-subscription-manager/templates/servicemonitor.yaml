@@ -1,0 +1,25 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  annotations:
+    app.quarkus.io/quarkus-version: 3.28.4
+    app.quarkus.io/commit-id: 5b071181a29f961b54fc0809638df14e0a08191a
+    app.quarkus.io/vcs-uri: https://github.com/scorpiobroker/scorpiobroker.git
+    app.quarkus.io/build-timestamp: 2026-01-08 - 15:03:06 +0000
+  labels:
+    app.kubernetes.io/name: registry-subscription-manager
+    app.kubernetes.io/version: 6.0.0-SNAPSHOT
+    app.kubernetes.io/managed-by: quarkus
+  name: registry-subscription-manager
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: registry-subscription-manager
+      app.kubernetes.io/version: 6.0.0-SNAPSHOT
+  endpoints:
+    - scheme: http
+      targetPort: 10094
+      path: /q/metrics
+      interval: 10s
+      honorLabels: true

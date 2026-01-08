@@ -1,0 +1,20 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: at-context-server-flyway-init
+spec:
+  completionMode: NonIndexed
+  template:
+    metadata: {}
+    spec:
+      containers:
+        - env:
+            - name: QUARKUS_INIT_AND_EXIT
+              value: "true"
+            - name: QUARKUS_FLYWAY_ACTIVE
+              value: "true"
+          image: scorpiobroker/info-manager:java-kafka-latest
+          name: at-context-server-flyway-init
+      restartPolicy: OnFailure
+      serviceAccountName: at-context-server

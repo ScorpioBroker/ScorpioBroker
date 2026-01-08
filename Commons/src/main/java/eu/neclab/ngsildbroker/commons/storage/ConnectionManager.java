@@ -31,7 +31,7 @@ import io.quarkus.flyway.runtime.FlywayContainer;
 import io.quarkus.flyway.runtime.FlywayContainerProducer;
 import io.quarkus.runtime.Startup;
 import io.smallrye.mutiny.Uni;
-
+import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.pgclient.PgPool;
@@ -88,10 +88,9 @@ public class ConnectionManager {
 
 	@ConfigProperty(name = "scorpio.postgres.disablejit", defaultValue = "true")
 	boolean disableJIT;
-	
-	
+
 	@PostConstruct
-	void setup() throws URISyntaxException{
+	void setup() throws URISyntaxException {
 		if (disableJIT) {
 			executeQuery(null, "ALTER USER " + dbUser + " SET jit = off;", null, false).await().indefinitely();
 		} else {
@@ -238,18 +237,32 @@ public class ConnectionManager {
 	private Uni<String> createDataSourceForTenantId(String tenantidvalue, boolean createDB) {
 		return findDataBaseNameByTenantId(tenantidvalue, createDB).onItem()
 				.transform(Unchecked.function(tenantDatabaseName -> {
-					// TODO this needs to be from the config not hardcoded!!!
 					String tenantJdbcURL = DBUtil.databaseURLFromPostgresJdbcUrl(jdbcBaseUrl, tenantDatabaseName);
 					AgroalDataSourceConfigurationSupplier configuration = new AgroalDataSourceConfigurationSupplier()
 							.dataSourceImplementation(DataSourceImplementation.AGROAL).metricsEnabled(false)
 							.connectionPoolConfiguration(
-									cp -> cp.minSize(minsize).maxSize(maxsize).initialSize(initialSize)
+									cp -> cp.minSize(1).maxSize(1).initialSize(1)
 											.connectionFactoryConfiguration(cf -> cf.jdbcUrl(tenantJdbcURL)
 													.connectionProviderClassName(jdbcDriver).autoCommit(false)
 													.principal(new NamePrincipal(username))
 													.credential(new SimplePassword(password))));
 					AgroalDataSource agroaldataSource = AgroalDataSource.from(configuration);
 					flywayMigrate(agroaldataSource);
+					// Uni.createFrom().item(() -> {
+					// agroaldataSource.close();
+					// return null;
+					// }).runSubscriptionOn(Infrastructure.getDefaultWorkerPool())
+					// .subscribe().with(
+					// unused -> {
+					// // Success callback
+					// logger.debug("DataSource closed successfully");
+					// },
+					// failure -> {
+					// // Failure callback
+					// logger.warn("Error closing DataSource: ", failure);
+
+					// });
+
 					return tenantDatabaseName;
 				}));
 

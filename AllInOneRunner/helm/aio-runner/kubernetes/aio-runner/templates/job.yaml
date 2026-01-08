@@ -1,0 +1,20 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: aio-runner-flyway-init
+spec:
+  completionMode: NonIndexed
+  template:
+    metadata: {}
+    spec:
+      containers:
+        - env:
+            - name: QUARKUS_INIT_AND_EXIT
+              value: "true"
+            - name: QUARKUS_FLYWAY_ACTIVE
+              value: "true"
+          image: scorpiobroker/all-in-one-runner:java-kafka-latest
+          name: aio-runner-flyway-init
+      restartPolicy: OnFailure
+      serviceAccountName: aio-runner
