@@ -52,7 +52,7 @@ services:
       BUSHOST: kafka
       SCORPIO_STARTUPDELAY: 120s
     ports:
-      - "1025:1025"
+      - "10090:10090"
     depends_on:
       - kafka
       - postgres
@@ -64,7 +64,7 @@ services:
       BUSHOST: kafka
       SCORPIO_STARTUPDELAY: 120s
     ports:
-      - "1040:1040"
+      - "10095:10095"
     depends_on:
       - kafka
       - postgres
@@ -88,7 +88,7 @@ services:
       BUSHOST: kafka
       SCORPIO_STARTUPDELAY: 120s
     ports:
-      - "1042:1042"
+      - "10097:10097"
     depends_on:
       - kafka
       - postgres
@@ -100,7 +100,7 @@ services:
       BUSHOST: kafka
       SCORPIO_STARTUPDELAY: 120s
     ports:
-      - "1026:1026"
+      - "10091:10091"
     depends_on:
       - kafka
       - postgres
@@ -112,7 +112,7 @@ services:
       BUSHOST: kafka
       SCORPIO_STARTUPDELAY: 120s
     ports:
-      - "1030:1030"
+      - "10093:10093"
     depends_on:
       - kafka
       - postgres
@@ -124,7 +124,7 @@ services:
       BUSHOST: kafka
       SCORPIO_STARTUPDELAY: 120s
     ports:
-      - "2025:2025"
+      - "10094:10094"
     depends_on:
       - kafka
       - postgres
@@ -136,7 +136,7 @@ services:
       BUSHOST: kafka
       SCORPIO_STARTUPDELAY: 120s
     ports:
-      - "2026:2026"
+      - "10092:10092"
     depends_on:
       - kafka
       - postgres
