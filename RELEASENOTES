@@ -1,3 +1,9 @@
+# RELEASE NOTES 6.0.1
+
+ - Various minor bugfixes
+ - Added support for metrics for each endpoint. Metrics can be accessed via the /q/metrics/ endpoint or /q/metrics/application for only scorpio specific metrics
+ - Added initial support for helm file generation per microservice 
+
 # RELEASE NOTES 6.0.0
 
 ## Restructuring config parameters

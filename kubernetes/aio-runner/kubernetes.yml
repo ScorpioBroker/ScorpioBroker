@@ -4,9 +4,9 @@ kind: ServiceAccount
 metadata:
   annotations:
     app.quarkus.io/quarkus-version: 3.28.4
-    app.quarkus.io/commit-id: 5b071181a29f961b54fc0809638df14e0a08191a
+    app.quarkus.io/commit-id: 8daf039376e6022090fad01bd251371f720f4ad9
     app.quarkus.io/vcs-uri: https://github.com/scorpiobroker/scorpiobroker.git
-    app.quarkus.io/build-timestamp: 2026-01-08 - 15:06:32 +0000
+    app.quarkus.io/build-timestamp: 2026-01-09 - 13:50:05 +0000
   labels:
     app.kubernetes.io/name: aio-runner
     app.kubernetes.io/version: 6.0.0-SNAPSHOT
@@ -49,9 +49,9 @@ kind: Service
 metadata:
   annotations:
     app.quarkus.io/quarkus-version: 3.28.4
-    app.quarkus.io/commit-id: 5b071181a29f961b54fc0809638df14e0a08191a
+    app.quarkus.io/commit-id: 8daf039376e6022090fad01bd251371f720f4ad9
     app.quarkus.io/vcs-uri: https://github.com/scorpiobroker/scorpiobroker.git
-    app.quarkus.io/build-timestamp: 2026-01-08 - 15:06:32 +0000
+    app.quarkus.io/build-timestamp: 2026-01-09 - 13:50:05 +0000
     prometheus.io/scrape: "true"
     prometheus.io/path: /q/metrics
     prometheus.io/port: "9090"
@@ -77,9 +77,9 @@ kind: Deployment
 metadata:
   annotations:
     app.quarkus.io/quarkus-version: 3.28.4
-    app.quarkus.io/commit-id: 5b071181a29f961b54fc0809638df14e0a08191a
+    app.quarkus.io/commit-id: 8daf039376e6022090fad01bd251371f720f4ad9
     app.quarkus.io/vcs-uri: https://github.com/scorpiobroker/scorpiobroker.git
-    app.quarkus.io/build-timestamp: 2026-01-08 - 15:06:32 +0000
+    app.quarkus.io/build-timestamp: 2026-01-09 - 13:50:05 +0000
     prometheus.io/scrape: "true"
     prometheus.io/path: /q/metrics
     prometheus.io/port: "9090"
@@ -93,23 +93,23 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/version: 6.0.0-SNAPSHOT
       app.kubernetes.io/name: aio-runner
+      app.kubernetes.io/version: 6.0.0-SNAPSHOT
   template:
     metadata:
       annotations:
         app.quarkus.io/quarkus-version: 3.28.4
-        app.quarkus.io/commit-id: 5b071181a29f961b54fc0809638df14e0a08191a
+        app.quarkus.io/commit-id: 8daf039376e6022090fad01bd251371f720f4ad9
         app.quarkus.io/vcs-uri: https://github.com/scorpiobroker/scorpiobroker.git
-        app.quarkus.io/build-timestamp: 2026-01-08 - 15:06:32 +0000
+        app.quarkus.io/build-timestamp: 2026-01-09 - 13:50:05 +0000
         prometheus.io/scrape: "true"
         prometheus.io/path: /q/metrics
         prometheus.io/port: "9090"
         prometheus.io/scheme: http
       labels:
         app.kubernetes.io/managed-by: quarkus
-        app.kubernetes.io/version: 6.0.0-SNAPSHOT
         app.kubernetes.io/name: aio-runner
+        app.kubernetes.io/version: 6.0.0-SNAPSHOT
     spec:
       containers:
         - env:
@@ -119,7 +119,7 @@ spec:
                   fieldPath: metadata.namespace
             - name: QUARKUS_FLYWAY_ACTIVE
               value: "false"
-          image: scorpiobroker/all-in-one-runner:java-kafka-latest
+          image: docker.io/hebgen/aio-runner:6.0.0-SNAPSHOT
           imagePullPolicy: Always
           livenessProbe:
             failureThreshold: 3
@@ -180,7 +180,7 @@ spec:
               value: "true"
             - name: QUARKUS_FLYWAY_ACTIVE
               value: "true"
-          image: scorpiobroker/all-in-one-runner:java-kafka-latest
+          image: docker.io/hebgen/aio-runner:6.0.0-SNAPSHOT
           name: aio-runner-flyway-init
       restartPolicy: OnFailure
       serviceAccountName: aio-runner
@@ -190,9 +190,9 @@ kind: ServiceMonitor
 metadata:
   annotations:
     app.quarkus.io/quarkus-version: 3.28.4
-    app.quarkus.io/commit-id: 5b071181a29f961b54fc0809638df14e0a08191a
+    app.quarkus.io/commit-id: 8daf039376e6022090fad01bd251371f720f4ad9
     app.quarkus.io/vcs-uri: https://github.com/scorpiobroker/scorpiobroker.git
-    app.quarkus.io/build-timestamp: 2026-01-08 - 15:06:32 +0000
+    app.quarkus.io/build-timestamp: 2026-01-09 - 13:50:05 +0000
   labels:
     app.kubernetes.io/name: aio-runner
     app.kubernetes.io/version: 6.0.0-SNAPSHOT
