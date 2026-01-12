@@ -4,16 +4,16 @@ kind: Service
 metadata:
   annotations:
     app.quarkus.io/quarkus-version: 3.28.4
-    app.quarkus.io/commit-id: 5b071181a29f961b54fc0809638df14e0a08191a
+    app.quarkus.io/commit-id: 555496e2de3765466a67664fc5046ce0499b0505
     app.quarkus.io/vcs-uri: https://github.com/scorpiobroker/scorpiobroker.git
-    app.quarkus.io/build-timestamp: 2026-01-08 - 15:03:06 +0000
+    app.quarkus.io/build-timestamp: 2026-01-12 - 13:29:46 +0000
     prometheus.io/scrape: "true"
     prometheus.io/path: /q/metrics
     prometheus.io/port: "10094"
     prometheus.io/scheme: http
   labels:
     app.kubernetes.io/name: registry-subscription-manager
-    app.kubernetes.io/version: 6.0.0-SNAPSHOT
+    app.kubernetes.io/version: 6.0.1-SNAPSHOT
     app.kubernetes.io/managed-by: quarkus
   name: registry-subscription-manager
 spec:
@@ -24,5 +24,5 @@ spec:
       targetPort: {{ .Values.app.ports.http }}
   selector:
     app.kubernetes.io/name: registry-subscription-manager
-    app.kubernetes.io/version: 6.0.0-SNAPSHOT
+    app.kubernetes.io/version: 6.0.1-SNAPSHOT
   type: ClusterIP

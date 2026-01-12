@@ -5,7 +5,7 @@ import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import jakarta.annotation.PostConstruct;
@@ -13,6 +13,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import javax.sql.DataSource;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
+
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.flywaydb.core.Flyway;
 import org.slf4j.Logger;
@@ -88,6 +90,8 @@ public class ConnectionManager {
 
 	@ConfigProperty(name = "scorpio.postgres.disablejit", defaultValue = "true")
 	boolean disableJIT;
+
+	Set<String> currentlyRunningMigrations = Sets.newHashSet();
 
 	@PostConstruct
 	void setup() throws URISyntaxException {
@@ -241,13 +245,14 @@ public class ConnectionManager {
 					AgroalDataSourceConfigurationSupplier configuration = new AgroalDataSourceConfigurationSupplier()
 							.dataSourceImplementation(DataSourceImplementation.AGROAL).metricsEnabled(false)
 							.connectionPoolConfiguration(
-									cp -> cp.minSize(1).maxSize(1).initialSize(1)
+									cp -> cp.minSize(0).maxSize(maxsize).initialSize(1)
 											.connectionFactoryConfiguration(cf -> cf.jdbcUrl(tenantJdbcURL)
 													.connectionProviderClassName(jdbcDriver).autoCommit(false)
 													.principal(new NamePrincipal(username))
 													.credential(new SimplePassword(password))));
 					AgroalDataSource agroaldataSource = AgroalDataSource.from(configuration);
 					flywayMigrate(agroaldataSource);
+
 					// Uni.createFrom().item(() -> {
 					// agroaldataSource.close();
 					// return null;

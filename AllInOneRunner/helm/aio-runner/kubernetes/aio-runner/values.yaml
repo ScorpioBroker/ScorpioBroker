@@ -2,22 +2,13 @@
 app:
   envs:
     QUARKUS_FLYWAY_ACTIVE: "false"
-    bushost: localhost
-    busport: "9092"
     dbhost: localhost
     dbname: ngb
     dbpass: ngb
     dbport: "5432"
     dbuser: ngb
     gateway: http://localhost:9090
-    neo4j:
-      database: neo4j
-      host: localhost
-      pass: neo4jneo4j
-      port: "7687"
-      scheme: bolt
-      user: neo4j
-  image: scorpiobroker/all-in-one-runner:java-kafka-latest
+  image: docker.io/hebgen/aio-runner:6.0.1-SNAPSHOT
   livenessProbe:
     failureThreshold: 3
     httpGet:

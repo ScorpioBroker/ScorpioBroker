@@ -2,15 +2,13 @@
 app:
   envs:
     QUARKUS_FLYWAY_ACTIVE: "false"
-    bushost: localhost
-    busport: "9092"
     dbhost: localhost
     dbname: ngb
     dbpass: ngb
     dbport: "5432"
     dbuser: ngb
     gateway: http://localhost:9090
-  image: scorpiobroker/subscription-manager:java-kafka-latest
+  image: docker.io/hebgen/subscription-manager:6.0.1-SNAPSHOT
   livenessProbe:
     failureThreshold: 3
     httpGet:

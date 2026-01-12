@@ -4,13 +4,13 @@
   "metadata" : {
     "annotations" : {
       "app.quarkus.io/quarkus-version" : "3.28.4",
-      "app.quarkus.io/commit-id" : "8daf039376e6022090fad01bd251371f720f4ad9",
+      "app.quarkus.io/commit-id" : "555496e2de3765466a67664fc5046ce0499b0505",
       "app.quarkus.io/vcs-uri" : "https://github.com/scorpiobroker/scorpiobroker.git",
-      "app.quarkus.io/build-timestamp" : "2026-01-09 - 13:50:05 +0000"
+      "app.quarkus.io/build-timestamp" : "2026-01-12 - 14:12:24 +0000"
     },
     "labels" : {
       "app.kubernetes.io/name" : "aio-runner",
-      "app.kubernetes.io/version" : "6.0.0-SNAPSHOT",
+      "app.kubernetes.io/version" : "6.0.1-SNAPSHOT",
       "app.kubernetes.io/managed-by" : "quarkus"
     },
     "name" : "aio-runner"
@@ -21,7 +21,7 @@
   "metadata" : {
     "labels" : {
       "app.kubernetes.io/name" : "aio-runner",
-      "app.kubernetes.io/version" : "6.0.0-SNAPSHOT"
+      "app.kubernetes.io/version" : "6.0.1-SNAPSHOT"
     },
     "name" : "view-jobs"
   },
@@ -36,7 +36,7 @@
   "metadata" : {
     "labels" : {
       "app.kubernetes.io/name" : "aio-runner",
-      "app.kubernetes.io/version" : "6.0.0-SNAPSHOT"
+      "app.kubernetes.io/version" : "6.0.1-SNAPSHOT"
     },
     "name" : "aio-runner-view-jobs"
   },
@@ -56,9 +56,9 @@
   "metadata" : {
     "annotations" : {
       "app.quarkus.io/quarkus-version" : "3.28.4",
-      "app.quarkus.io/commit-id" : "8daf039376e6022090fad01bd251371f720f4ad9",
+      "app.quarkus.io/commit-id" : "555496e2de3765466a67664fc5046ce0499b0505",
       "app.quarkus.io/vcs-uri" : "https://github.com/scorpiobroker/scorpiobroker.git",
-      "app.quarkus.io/build-timestamp" : "2026-01-09 - 13:50:05 +0000",
+      "app.quarkus.io/build-timestamp" : "2026-01-12 - 14:12:24 +0000",
       "prometheus.io/scrape" : "true",
       "prometheus.io/path" : "/q/metrics",
       "prometheus.io/port" : "9090",
@@ -66,7 +66,7 @@
     },
     "labels" : {
       "app.kubernetes.io/name" : "aio-runner",
-      "app.kubernetes.io/version" : "6.0.0-SNAPSHOT",
+      "app.kubernetes.io/version" : "6.0.1-SNAPSHOT",
       "app.kubernetes.io/managed-by" : "quarkus"
     },
     "name" : "aio-runner"
@@ -80,7 +80,7 @@
     } ],
     "selector" : {
       "app.kubernetes.io/name" : "aio-runner",
-      "app.kubernetes.io/version" : "6.0.0-SNAPSHOT"
+      "app.kubernetes.io/version" : "6.0.1-SNAPSHOT"
     },
     "type" : "ClusterIP"
   }
@@ -90,9 +90,9 @@
   "metadata" : {
     "annotations" : {
       "app.quarkus.io/quarkus-version" : "3.28.4",
-      "app.quarkus.io/commit-id" : "8daf039376e6022090fad01bd251371f720f4ad9",
+      "app.quarkus.io/commit-id" : "555496e2de3765466a67664fc5046ce0499b0505",
       "app.quarkus.io/vcs-uri" : "https://github.com/scorpiobroker/scorpiobroker.git",
-      "app.quarkus.io/build-timestamp" : "2026-01-09 - 13:50:05 +0000",
+      "app.quarkus.io/build-timestamp" : "2026-01-12 - 14:12:24 +0000",
       "prometheus.io/scrape" : "true",
       "prometheus.io/path" : "/q/metrics",
       "prometheus.io/port" : "9090",
@@ -100,7 +100,7 @@
     },
     "labels" : {
       "app.kubernetes.io/name" : "aio-runner",
-      "app.kubernetes.io/version" : "6.0.0-SNAPSHOT",
+      "app.kubernetes.io/version" : "6.0.1-SNAPSHOT",
       "app.kubernetes.io/managed-by" : "quarkus"
     },
     "name" : "aio-runner"
@@ -109,17 +109,17 @@
     "replicas" : 1,
     "selector" : {
       "matchLabels" : {
-        "app.kubernetes.io/name" : "aio-runner",
-        "app.kubernetes.io/version" : "6.0.0-SNAPSHOT"
+        "app.kubernetes.io/version" : "6.0.1-SNAPSHOT",
+        "app.kubernetes.io/name" : "aio-runner"
       }
     },
     "template" : {
       "metadata" : {
         "annotations" : {
           "app.quarkus.io/quarkus-version" : "3.28.4",
-          "app.quarkus.io/commit-id" : "8daf039376e6022090fad01bd251371f720f4ad9",
+          "app.quarkus.io/commit-id" : "555496e2de3765466a67664fc5046ce0499b0505",
           "app.quarkus.io/vcs-uri" : "https://github.com/scorpiobroker/scorpiobroker.git",
-          "app.quarkus.io/build-timestamp" : "2026-01-09 - 13:50:05 +0000",
+          "app.quarkus.io/build-timestamp" : "2026-01-12 - 14:12:24 +0000",
           "prometheus.io/scrape" : "true",
           "prometheus.io/path" : "/q/metrics",
           "prometheus.io/port" : "9090",
@@ -127,8 +127,8 @@
         },
         "labels" : {
           "app.kubernetes.io/managed-by" : "quarkus",
-          "app.kubernetes.io/name" : "aio-runner",
-          "app.kubernetes.io/version" : "6.0.0-SNAPSHOT"
+          "app.kubernetes.io/version" : "6.0.1-SNAPSHOT",
+          "app.kubernetes.io/name" : "aio-runner"
         }
       },
       "spec" : {
@@ -144,7 +144,7 @@
             "name" : "QUARKUS_FLYWAY_ACTIVE",
             "value" : "false"
           } ],
-          "image" : "docker.io/hebgen/aio-runner:6.0.0-SNAPSHOT",
+          "image" : "docker.io/hebgen/aio-runner:6.0.1-SNAPSHOT",
           "imagePullPolicy" : "Always",
           "livenessProbe" : {
             "failureThreshold" : 3,
@@ -212,13 +212,13 @@
       "spec" : {
         "containers" : [ {
           "env" : [ {
-            "name" : "QUARKUS_INIT_AND_EXIT",
-            "value" : "true"
-          }, {
             "name" : "QUARKUS_FLYWAY_ACTIVE",
             "value" : "true"
+          }, {
+            "name" : "QUARKUS_INIT_AND_EXIT",
+            "value" : "true"
           } ],
-          "image" : "docker.io/hebgen/aio-runner:6.0.0-SNAPSHOT",
+          "image" : "docker.io/hebgen/aio-runner:6.0.1-SNAPSHOT",
           "name" : "aio-runner-flyway-init"
         } ],
         "restartPolicy" : "OnFailure",
@@ -232,13 +232,13 @@
   "metadata" : {
     "annotations" : {
       "app.quarkus.io/quarkus-version" : "3.28.4",
-      "app.quarkus.io/commit-id" : "8daf039376e6022090fad01bd251371f720f4ad9",
+      "app.quarkus.io/commit-id" : "555496e2de3765466a67664fc5046ce0499b0505",
       "app.quarkus.io/vcs-uri" : "https://github.com/scorpiobroker/scorpiobroker.git",
-      "app.quarkus.io/build-timestamp" : "2026-01-09 - 13:50:05 +0000"
+      "app.quarkus.io/build-timestamp" : "2026-01-12 - 14:12:24 +0000"
     },
     "labels" : {
       "app.kubernetes.io/name" : "aio-runner",
-      "app.kubernetes.io/version" : "6.0.0-SNAPSHOT",
+      "app.kubernetes.io/version" : "6.0.1-SNAPSHOT",
       "app.kubernetes.io/managed-by" : "quarkus"
     },
     "name" : "aio-runner"
@@ -247,7 +247,7 @@
     "selector" : {
       "matchLabels" : {
         "app.kubernetes.io/name" : "aio-runner",
-        "app.kubernetes.io/version" : "6.0.0-SNAPSHOT"
+        "app.kubernetes.io/version" : "6.0.1-SNAPSHOT"
       }
     },
     "endpoints" : [ {

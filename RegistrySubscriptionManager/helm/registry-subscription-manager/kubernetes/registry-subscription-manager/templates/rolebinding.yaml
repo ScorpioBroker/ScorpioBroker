@@ -4,7 +4,7 @@ kind: RoleBinding
 metadata:
   labels:
     app.kubernetes.io/name: registry-subscription-manager
-    app.kubernetes.io/version: 6.0.0-SNAPSHOT
+    app.kubernetes.io/version: 6.0.1-SNAPSHOT
   name: registry-subscription-manager-view-jobs
 roleRef:
   kind: Role

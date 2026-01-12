@@ -4,13 +4,13 @@
   "metadata" : {
     "annotations" : {
       "app.quarkus.io/quarkus-version" : "3.28.4",
-      "app.quarkus.io/commit-id" : "5b071181a29f961b54fc0809638df14e0a08191a",
+      "app.quarkus.io/commit-id" : "555496e2de3765466a67664fc5046ce0499b0505",
       "app.quarkus.io/vcs-uri" : "https://github.com/scorpiobroker/scorpiobroker.git",
-      "app.quarkus.io/build-timestamp" : "2026-01-08 - 15:04:47 +0000"
+      "app.quarkus.io/build-timestamp" : "2026-01-12 - 13:31:23 +0000"
     },
     "labels" : {
       "app.kubernetes.io/name" : "history-query-manager",
-      "app.kubernetes.io/version" : "6.0.0-SNAPSHOT",
+      "app.kubernetes.io/version" : "6.0.1-SNAPSHOT",
       "app.kubernetes.io/managed-by" : "quarkus"
     },
     "name" : "history-query-manager"
@@ -21,7 +21,7 @@
   "metadata" : {
     "labels" : {
       "app.kubernetes.io/name" : "history-query-manager",
-      "app.kubernetes.io/version" : "6.0.0-SNAPSHOT"
+      "app.kubernetes.io/version" : "6.0.1-SNAPSHOT"
     },
     "name" : "view-jobs"
   },
@@ -36,7 +36,7 @@
   "metadata" : {
     "labels" : {
       "app.kubernetes.io/name" : "history-query-manager",
-      "app.kubernetes.io/version" : "6.0.0-SNAPSHOT"
+      "app.kubernetes.io/version" : "6.0.1-SNAPSHOT"
     },
     "name" : "history-query-manager-view-jobs"
   },
@@ -56,9 +56,9 @@
   "metadata" : {
     "annotations" : {
       "app.quarkus.io/quarkus-version" : "3.28.4",
-      "app.quarkus.io/commit-id" : "5b071181a29f961b54fc0809638df14e0a08191a",
+      "app.quarkus.io/commit-id" : "555496e2de3765466a67664fc5046ce0499b0505",
       "app.quarkus.io/vcs-uri" : "https://github.com/scorpiobroker/scorpiobroker.git",
-      "app.quarkus.io/build-timestamp" : "2026-01-08 - 15:04:47 +0000",
+      "app.quarkus.io/build-timestamp" : "2026-01-12 - 13:31:23 +0000",
       "prometheus.io/scrape" : "true",
       "prometheus.io/path" : "/q/metrics",
       "prometheus.io/port" : "10096",
@@ -66,7 +66,7 @@
     },
     "labels" : {
       "app.kubernetes.io/name" : "history-query-manager",
-      "app.kubernetes.io/version" : "6.0.0-SNAPSHOT",
+      "app.kubernetes.io/version" : "6.0.1-SNAPSHOT",
       "app.kubernetes.io/managed-by" : "quarkus"
     },
     "name" : "history-query-manager"
@@ -80,7 +80,7 @@
     } ],
     "selector" : {
       "app.kubernetes.io/name" : "history-query-manager",
-      "app.kubernetes.io/version" : "6.0.0-SNAPSHOT"
+      "app.kubernetes.io/version" : "6.0.1-SNAPSHOT"
     },
     "type" : "ClusterIP"
   }
@@ -90,9 +90,9 @@
   "metadata" : {
     "annotations" : {
       "app.quarkus.io/quarkus-version" : "3.28.4",
-      "app.quarkus.io/commit-id" : "5b071181a29f961b54fc0809638df14e0a08191a",
+      "app.quarkus.io/commit-id" : "555496e2de3765466a67664fc5046ce0499b0505",
       "app.quarkus.io/vcs-uri" : "https://github.com/scorpiobroker/scorpiobroker.git",
-      "app.quarkus.io/build-timestamp" : "2026-01-08 - 15:04:47 +0000",
+      "app.quarkus.io/build-timestamp" : "2026-01-12 - 13:31:23 +0000",
       "prometheus.io/scrape" : "true",
       "prometheus.io/path" : "/q/metrics",
       "prometheus.io/port" : "10096",
@@ -100,7 +100,7 @@
     },
     "labels" : {
       "app.kubernetes.io/name" : "history-query-manager",
-      "app.kubernetes.io/version" : "6.0.0-SNAPSHOT",
+      "app.kubernetes.io/version" : "6.0.1-SNAPSHOT",
       "app.kubernetes.io/managed-by" : "quarkus"
     },
     "name" : "history-query-manager"
@@ -109,7 +109,7 @@
     "replicas" : 1,
     "selector" : {
       "matchLabels" : {
-        "app.kubernetes.io/version" : "6.0.0-SNAPSHOT",
+        "app.kubernetes.io/version" : "6.0.1-SNAPSHOT",
         "app.kubernetes.io/name" : "history-query-manager"
       }
     },
@@ -117,9 +117,9 @@
       "metadata" : {
         "annotations" : {
           "app.quarkus.io/quarkus-version" : "3.28.4",
-          "app.quarkus.io/commit-id" : "5b071181a29f961b54fc0809638df14e0a08191a",
+          "app.quarkus.io/commit-id" : "555496e2de3765466a67664fc5046ce0499b0505",
           "app.quarkus.io/vcs-uri" : "https://github.com/scorpiobroker/scorpiobroker.git",
-          "app.quarkus.io/build-timestamp" : "2026-01-08 - 15:04:47 +0000",
+          "app.quarkus.io/build-timestamp" : "2026-01-12 - 13:31:23 +0000",
           "prometheus.io/scrape" : "true",
           "prometheus.io/path" : "/q/metrics",
           "prometheus.io/port" : "10096",
@@ -127,7 +127,7 @@
         },
         "labels" : {
           "app.kubernetes.io/managed-by" : "quarkus",
-          "app.kubernetes.io/version" : "6.0.0-SNAPSHOT",
+          "app.kubernetes.io/version" : "6.0.1-SNAPSHOT",
           "app.kubernetes.io/name" : "history-query-manager"
         }
       },
@@ -141,11 +141,11 @@
               }
             }
           }, {
+            "name" : "dbhost",
+            "value" : "localhost"
+          }, {
             "name" : "dbname",
             "value" : "ngb"
-          }, {
-            "name" : "gateway",
-            "value" : "http://localhost:9090"
           }, {
             "name" : "dbport",
             "value" : "5432"
@@ -153,22 +153,16 @@
             "name" : "dbuser",
             "value" : "ngb"
           }, {
-            "name" : "dbhost",
-            "value" : "localhost"
+            "name" : "gateway",
+            "value" : "http://localhost:9090"
           }, {
             "name" : "dbpass",
             "value" : "ngb"
           }, {
-            "name" : "bushost",
-            "value" : "localhost"
-          }, {
-            "name" : "busport",
-            "value" : "9092"
-          }, {
             "name" : "QUARKUS_FLYWAY_ACTIVE",
             "value" : "false"
           } ],
-          "image" : "scorpiobroker/history-query-manager:java-kafka-latest",
+          "image" : "docker.io/hebgen/history-query-manager:6.0.1-SNAPSHOT",
           "imagePullPolicy" : "Always",
           "livenessProbe" : {
             "failureThreshold" : 3,
@@ -242,7 +236,7 @@
             "name" : "QUARKUS_FLYWAY_ACTIVE",
             "value" : "true"
           } ],
-          "image" : "scorpiobroker/history-query-manager:java-kafka-latest",
+          "image" : "docker.io/hebgen/history-query-manager:6.0.1-SNAPSHOT",
           "name" : "history-query-manager-flyway-init"
         } ],
         "restartPolicy" : "OnFailure",
@@ -256,13 +250,13 @@
   "metadata" : {
     "annotations" : {
       "app.quarkus.io/quarkus-version" : "3.28.4",
-      "app.quarkus.io/commit-id" : "5b071181a29f961b54fc0809638df14e0a08191a",
+      "app.quarkus.io/commit-id" : "555496e2de3765466a67664fc5046ce0499b0505",
       "app.quarkus.io/vcs-uri" : "https://github.com/scorpiobroker/scorpiobroker.git",
-      "app.quarkus.io/build-timestamp" : "2026-01-08 - 15:04:47 +0000"
+      "app.quarkus.io/build-timestamp" : "2026-01-12 - 13:31:23 +0000"
     },
     "labels" : {
       "app.kubernetes.io/name" : "history-query-manager",
-      "app.kubernetes.io/version" : "6.0.0-SNAPSHOT",
+      "app.kubernetes.io/version" : "6.0.1-SNAPSHOT",
       "app.kubernetes.io/managed-by" : "quarkus"
     },
     "name" : "history-query-manager"
@@ -271,7 +265,7 @@
     "selector" : {
       "matchLabels" : {
         "app.kubernetes.io/name" : "history-query-manager",
-        "app.kubernetes.io/version" : "6.0.0-SNAPSHOT"
+        "app.kubernetes.io/version" : "6.0.1-SNAPSHOT"
       }
     },
     "endpoints" : [ {

@@ -7,15 +7,13 @@ The following table lists the configurable parameters and their default values.
 | Parameter | Description | Default |
 |  ---  |  ---  |  ---  |
 | `app.envs.QUARKUS_FLYWAY_ACTIVE` |   | false |
-| `app.envs.bushost` |   | localhost |
-| `app.envs.busport` |   | 9092 |
 | `app.envs.dbhost` |   | localhost |
 | `app.envs.dbname` |   | ngb |
 | `app.envs.dbpass` |   | ngb |
 | `app.envs.dbport` |   | 5432 |
 | `app.envs.dbuser` |   | ngb |
 | `app.envs.gateway` |   | http://localhost:9090 |
-| `app.image` | The container image to use. | scorpiobroker/query-manager:java-kafka-latest |
+| `app.image` | The container image to use. | docker.io/hebgen/query-manager:6.0.1-SNAPSHOT |
 | `app.livenessProbe.failureThreshold` | The failure threshold to use. | 3 |
 | `app.livenessProbe.httpGet.path` | The http path to use for the probe. | /q/health/live |
 | `app.livenessProbe.httpGet.scheme` | The http schema to use for the probe. | HTTP |

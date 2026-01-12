@@ -14,7 +14,7 @@ spec:
               value: "true"
             - name: QUARKUS_FLYWAY_ACTIVE
               value: "true"
-          image: scorpiobroker/history-entity-manager:java-kafka-latest
+          image: docker.io/hebgen/history-entity-manager:6.0.1-SNAPSHOT
           name: history-entity-manager-flyway-init
       restartPolicy: OnFailure
       serviceAccountName: history-entity-manager

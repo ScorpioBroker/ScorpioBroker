@@ -55,13 +55,7 @@
             "dbport" : {
               "type" : "string"
             },
-            "busport" : {
-              "type" : "string"
-            },
             "dbname" : {
-              "type" : "string"
-            },
-            "bushost" : {
               "type" : "string"
             },
             "QUARKUS_FLYWAY_ACTIVE" : {

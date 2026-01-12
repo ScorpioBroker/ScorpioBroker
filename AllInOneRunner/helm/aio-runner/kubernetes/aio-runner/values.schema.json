@@ -55,36 +55,7 @@
             "dbport" : {
               "type" : "string"
             },
-            "neo4j" : {
-              "type" : "object",
-              "properties" : {
-                "database" : {
-                  "type" : "string"
-                },
-                "scheme" : {
-                  "type" : "string"
-                },
-                "pass" : {
-                  "type" : "string"
-                },
-                "port" : {
-                  "type" : "string"
-                },
-                "host" : {
-                  "type" : "string"
-                },
-                "user" : {
-                  "type" : "string"
-                }
-              }
-            },
-            "busport" : {
-              "type" : "string"
-            },
             "dbname" : {
-              "type" : "string"
-            },
-            "bushost" : {
               "type" : "string"
             },
             "QUARKUS_FLYWAY_ACTIVE" : {
