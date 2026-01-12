@@ -609,7 +609,8 @@ public class QueryController {
 		}
 		if (!localOnly && id == null && typeQuery == null && attrs == null && geometry == null && q == null
 				&& pick == null) {
-			return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData));
+			return Uni.createFrom().failure(new ResponseException(ErrorType.InvalidRequest,
+					"Minimum required input field is id or type or attrs or q or pick or a geo query"));
 		}
 		if (omit != null && pick != null) {
 			return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData));
