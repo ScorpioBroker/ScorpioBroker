@@ -1488,12 +1488,15 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 	@Scheduled(every = "${scorpio.subscription.checkinterval}", delayed = "${scorpio.startupdelay}")
 	Uni<Void> checkIntervalSubs() {
 		List<Uni<Void>> unis = Lists.newArrayList();
+		logger.debug("acquiring log for interval");
 		synchronized (tableLock) {
+			logger.debug("log acquired");
 			for (Cell<String, String, SubscriptionRequest> cell : tenant2subscriptionId2IntervalSubscription
 					.cellSet()) {
 				SubscriptionRequest request = cell.getValue();
 				Subscription sub = request.getSubscription();
 				long now = System.currentTimeMillis();
+				logger.debug("retrieving data for notification");
 				if (sub.getNotification().getLastNotification() + sub.getTimeInterval() * 1000 < now) {
 					sub.getNotification().setLastNotification(now);
 					unis.add(queryFromSubscription(request, request.getTenant(), null, Maps.newHashMap(),
@@ -1503,9 +1506,10 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 									return Uni.createFrom().voidItem();
 								}
 								try {
+									logger.debug("sending interval notification");
 									return sendNotification(request, queryResult);
 								} catch (Exception e) {
-									logger.error("Failed to send initial notifcation", e);
+									logger.error("Failed to send interval notifcation", e);
 									return Uni.createFrom().voidItem();
 								}
 
