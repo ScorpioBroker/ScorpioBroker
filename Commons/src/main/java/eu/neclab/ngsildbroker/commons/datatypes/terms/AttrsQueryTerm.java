@@ -79,6 +79,7 @@ public class AttrsQueryTerm implements Serializable {
 			tmp.append("])))");
 			query.append(dollar);
 			tuple.addString(tmp.toString());
+			dollar++;
 			query.append("::jsonpath");
 		} else {
 			query.append("ENTITY ?| $");

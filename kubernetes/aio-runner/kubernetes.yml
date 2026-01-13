@@ -6,7 +6,7 @@ metadata:
     app.quarkus.io/quarkus-version: 3.28.4
     app.quarkus.io/commit-id: 2ce44cd675057d7ffe52ddffbd855b36e6875a32
     app.quarkus.io/vcs-uri: https://github.com/scorpiobroker/scorpiobroker.git
-    app.quarkus.io/build-timestamp: 2026-01-13 - 15:56:20 +0000
+    app.quarkus.io/build-timestamp: 2026-01-13 - 16:20:36 +0000
   labels:
     app.kubernetes.io/name: aio-runner
     app.kubernetes.io/version: 6.0.1-SNAPSHOT
@@ -51,7 +51,7 @@ metadata:
     app.quarkus.io/quarkus-version: 3.28.4
     app.quarkus.io/commit-id: 2ce44cd675057d7ffe52ddffbd855b36e6875a32
     app.quarkus.io/vcs-uri: https://github.com/scorpiobroker/scorpiobroker.git
-    app.quarkus.io/build-timestamp: 2026-01-13 - 15:56:20 +0000
+    app.quarkus.io/build-timestamp: 2026-01-13 - 16:20:36 +0000
     prometheus.io/scrape: "true"
     prometheus.io/path: /q/metrics
     prometheus.io/port: "9090"
@@ -79,7 +79,7 @@ metadata:
     app.quarkus.io/quarkus-version: 3.28.4
     app.quarkus.io/commit-id: 2ce44cd675057d7ffe52ddffbd855b36e6875a32
     app.quarkus.io/vcs-uri: https://github.com/scorpiobroker/scorpiobroker.git
-    app.quarkus.io/build-timestamp: 2026-01-13 - 15:56:20 +0000
+    app.quarkus.io/build-timestamp: 2026-01-13 - 16:20:36 +0000
     prometheus.io/scrape: "true"
     prometheus.io/path: /q/metrics
     prometheus.io/port: "9090"
@@ -101,7 +101,7 @@ spec:
         app.quarkus.io/quarkus-version: 3.28.4
         app.quarkus.io/commit-id: 2ce44cd675057d7ffe52ddffbd855b36e6875a32
         app.quarkus.io/vcs-uri: https://github.com/scorpiobroker/scorpiobroker.git
-        app.quarkus.io/build-timestamp: 2026-01-13 - 15:56:20 +0000
+        app.quarkus.io/build-timestamp: 2026-01-13 - 16:20:36 +0000
         prometheus.io/scrape: "true"
         prometheus.io/path: /q/metrics
         prometheus.io/port: "9090"
@@ -192,7 +192,7 @@ metadata:
     app.quarkus.io/quarkus-version: 3.28.4
     app.quarkus.io/commit-id: 2ce44cd675057d7ffe52ddffbd855b36e6875a32
     app.quarkus.io/vcs-uri: https://github.com/scorpiobroker/scorpiobroker.git
-    app.quarkus.io/build-timestamp: 2026-01-13 - 15:56:20 +0000
+    app.quarkus.io/build-timestamp: 2026-01-13 - 16:20:36 +0000
   labels:
     app.kubernetes.io/name: aio-runner
     app.kubernetes.io/version: 6.0.1-SNAPSHOT
