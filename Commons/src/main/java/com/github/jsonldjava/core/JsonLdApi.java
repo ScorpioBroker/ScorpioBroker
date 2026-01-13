@@ -1151,7 +1151,7 @@ public class JsonLdApi {
 					modifiedAt.get(0).get(NGSIConstants.JSON_LD_VALUE));
 		}
 		if (observedAt != null) {
-			resultMap.put(NGSIConstants.QUERY_PARAMETER_MODIFIED_AT,
+			resultMap.put(NGSIConstants.QUERY_PARAMETER_OBSERVED_AT,
 					observedAt.get(0).get(NGSIConstants.JSON_LD_VALUE));
 		}
 
