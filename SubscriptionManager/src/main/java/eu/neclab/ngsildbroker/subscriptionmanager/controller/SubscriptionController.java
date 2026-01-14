@@ -36,6 +36,7 @@ import org.jboss.resteasy.reactive.RestResponse;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Path("/ngsi-ld/v1/subscriptions")
 public class SubscriptionController {
@@ -146,13 +147,20 @@ public class SubscriptionController {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
 					new ResponseException(ErrorType.InvalidRequest, "invalid offset"), tenant));
 		}
+		Set<String> finalOptions;
+		try {
+			finalOptions = HttpUtils.parseOptionsAndFormat(options, null);
+		} catch (ResponseException e) {
+			return Uni.createFrom().failure(e);
+		}
 		return ldService.parse(HttpUtils.getAtContext(request)).onItem().transformToUni(ctx -> {
 			return subService.getAllSubscriptions(tenant, actualLimit, offset).onItem()
 					.transformToUni(subscriptions -> {
 						subscriptions.getData().forEach(sub -> {
 							fixSub(sub);
 						});
-						return HttpUtils.generateQueryResult(request, subscriptions, options, null, acceptHeader, false,
+						return HttpUtils.generateQueryResult(request, subscriptions, finalOptions, null, acceptHeader,
+								false,
 								actualLimit, null, ctx, ldService, false, microServiceUtils.getGatewayString(),
 								NGSIConstants.NGSI_LD_SUB_ENDPOINT, -1);
 					});
@@ -210,13 +218,19 @@ public class SubscriptionController {
 		}
 
 		List<Object> contextHeader = HttpUtils.getAtContext(request);
+		Set<String> finalOptions;
+		try {
+			finalOptions = HttpUtils.parseOptionsAndFormat(options, null);
+		} catch (ResponseException e) {
+			return Uni.createFrom().failure(e);
+		}
 		return ldService.parse(contextHeader).onItem().transformToUni(context -> {
 			return subService.getSubscription(tenant, subscriptionId).onItem()
 					.transformToUni(subscription -> {
 						fixSub(subscription);
 
 						return HttpUtils.generateSubscriptionResult(contextHeader, context, acceptHeader, subscription,
-								options, ldService, true);
+								finalOptions, ldService, true);
 					});
 		}).onFailure().recoverWithItem(e -> {
 			return HttpUtils.handleControllerExceptions(e, tenant);

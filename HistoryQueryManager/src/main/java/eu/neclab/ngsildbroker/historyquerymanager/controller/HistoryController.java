@@ -42,6 +42,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 @ApplicationScoped
 @Startup
@@ -155,7 +156,12 @@ public class HistoryController {
 		}
 
 		List<Object> ctx = HttpUtils.getAtContext(request);
-		String finalOptions = options;
+		Set<String> finalOptions;
+		try {
+			finalOptions = HttpUtils.parseOptionsAndFormat(options, null);
+		} catch (ResponseException e) {
+			return Uni.createFrom().failure(e);
+		}
 		return HttpUtils.getContext(ctx, ldService).onItem().transformToUni(context -> {
 			TypeQueryTerm typeQueryTerm;
 			AttrsQueryTerm attrsQueryTerm;
@@ -246,7 +252,13 @@ public class HistoryController {
 
 		List<Object> headerContext;
 		headerContext = HttpUtils.getAtContext(request);
-		String finalOptionsString = optionsString;
+
+		Set<String> finalOptions;
+		try {
+			finalOptions = HttpUtils.parseOptionsAndFormat(optionsString, null);
+		} catch (ResponseException e) {
+			return Uni.createFrom().failure(e);
+		}
 		return ldService.parse(headerContext).onItem().transformToUni(context -> {
 			AttrsQueryTerm attrsQuery;
 			AggrTerm aggrQuery;
@@ -263,17 +275,17 @@ public class HistoryController {
 			return historyQueryService.retrieveEntity(HttpUtils.getTenant(request), entityId, attrsQuery, aggrQuery,
 					tempQuery, lang, n, offsetN, nOrder, localOnly, context, request.headers()).onItem()
 					.transformToUni(entity -> {
-						if (aggrQuery != null || (finalOptionsString != null && !finalOptionsString
+						if (aggrQuery != null || (finalOptions != null && !finalOptions
 								.contains(NGSIConstants.QUERY_PARAMETER_OPTIONS_TEMPORALVALUES))) {
 							return HttpUtils.generateResult(headerContext, context, acceptHeader, entity,
 									geometryProperty,
-									finalOptionsString, null,
+									finalOptions, null,
 									ldService, null, null, false, true,
 									-1);
 						} else {
 
 							return HttpUtils.generateEntityResult(headerContext, context, acceptHeader, entity,
-									geometryProperty, finalOptionsString, null, ldService, null, null, true);
+									geometryProperty, finalOptions, null, ldService, null, null, true);
 						}
 					});
 		}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));

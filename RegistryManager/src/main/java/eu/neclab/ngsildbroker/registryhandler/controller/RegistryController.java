@@ -1,6 +1,8 @@
 package eu.neclab.ngsildbroker.registryhandler.controller;
 
 import java.util.List;
+import java.util.Set;
+
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import io.vertx.core.json.DecodeException;
 import io.vertx.core.json.JsonObject;
@@ -107,7 +109,12 @@ public class RegistryController {
 				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 			}
 		}
-
+		Set<String> finalOptions;
+		try {
+			finalOptions = HttpUtils.parseOptionsAndFormat(options, null);
+		} catch (ResponseException e) {
+			return Uni.createFrom().failure(e);
+		}
 		List<Object> headerContext = HttpUtils.getAtContext(request);
 		return ldService.parse(headerContext).onItem().transformToUni(context -> {
 			AttrsQueryTerm attrsQuery;
@@ -136,7 +143,7 @@ public class RegistryController {
 							ids == null ? null : Sets.newHashSet(ids.split(",")), typeQueryTerm, idPattern, attrsQuery,
 							csfQueryTerm, geoQueryTerm, scopeQueryTerm, qQueryTerm, actualLimit, offset, count)
 					.onItem().transformToUni(queryResult -> {
-						return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty,
+						return HttpUtils.generateQueryResult(request, queryResult, finalOptions, geometryProperty,
 								acceptHeader, count, actualLimit, null, context, ldService, false,
 								microServiceUtils.getGatewayString(), NGSIConstants.NGSI_LD_REGISTRY_ENDPOINT, -1);
 					});

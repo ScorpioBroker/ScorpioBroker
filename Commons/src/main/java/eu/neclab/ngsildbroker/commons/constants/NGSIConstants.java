@@ -255,6 +255,9 @@ public interface NGSIConstants {
 	public final static String QUERY_PARAMETER_OPTIONS_SIMPLIFIED = "simplified";
 	public final static String QUERY_PARAMETER_OPTIONS_COMPRESS = "compress";
 	public final static String QUERY_PARAMETER_OPTIONS_TEMPORALVALUES = "temporalValues";
+	public final static Set<String> ALLOWED_OPTIONS = Sets.newHashSet(QUERY_PARAMETER_OPTIONS_SYSATTRS,
+			QUERY_PARAMETER_OPTIONS_KEYVALUES, QUERY_PARAMETER_OPTIONS_SIMPLIFIED, QUERY_PARAMETER_OPTIONS_COMPRESS,
+			QUERY_PARAMETER_OPTIONS_TEMPORALVALUES);
 
 	public final static String QUERY_EQUAL = "==";
 	public final static String QUERY_UNEQUAL = "!=";

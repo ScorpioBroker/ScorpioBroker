@@ -22,6 +22,7 @@ import java.util.zip.ZipOutputStream;
 import eu.neclab.ngsildbroker.commons.exceptions.LdContextException;
 import io.vertx.core.json.DecodeException;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpStatus;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.RestResponse.ResponseBuilder;
@@ -543,21 +544,21 @@ public final class HttpUtils {
 	}
 
 	public static Uni<RestResponse<Object>> generateEntityResult(List<Object> contextHeader, Context context,
-			int acceptHeader, Object entity, String geometryProperty, String options, LanguageQueryTerm langQuery,
+			int acceptHeader, Object entity, String geometryProperty, Set<String> options, LanguageQueryTerm langQuery,
 			JsonLDService ldService, List<String> omitList, List<String> pickList, boolean addAtContext) {
 		return generateResult(contextHeader, context, acceptHeader, entity, geometryProperty, options, langQuery,
 				ldService, omitList, pickList, false, addAtContext, AppConstants.ENTITY_RETRIEVED_PAYLOAD);
 	}
 
 	public static Uni<RestResponse<Object>> generateSubscriptionResult(List<Object> contextHeader, Context context,
-			int acceptHeader, Object entity, String options,
+			int acceptHeader, Object entity, Set<String> options,
 			JsonLDService ldService, boolean addAtContext) {
 		return generateResult(contextHeader, context, acceptHeader, entity, null, options, null,
 				ldService, null, null, false, addAtContext, AppConstants.SUBSCRIPTION_CREATE_PAYLOAD);
 	}
 
 	public static Uni<RestResponse<Object>> generateResult(List<Object> contextHeader, Context context,
-			int acceptHeader, Object entity, String geometryProperty, String options, LanguageQueryTerm langQuery,
+			int acceptHeader, Object entity, String geometryProperty, Set<String> options, LanguageQueryTerm langQuery,
 			JsonLDService ldService, List<String> omitList, List<String> pickList, boolean forceList,
 			boolean addAtContext, int payloadType) {
 		return generateCompactedResult(contextHeader, context, acceptHeader, entity, geometryProperty, options,
@@ -607,20 +608,15 @@ public final class HttpUtils {
 	}
 
 	public static Uni<Tuple2<Object, List<Tuple2<String, String>>>> generateCompactedResult(List<Object> contextHeader,
-			Context context, int acceptHeader, Object entity, String geometryProperty, String options,
+			Context context, int acceptHeader, Object entity, String geometryProperty, Set<String> options,
 			LanguageQueryTerm langQuery, boolean forceArray, boolean forceAttributeList, JsonLDService ldService,
 			boolean addAtContext, int payloadType) {
-
-		Set<String> optionSet = null;
-		if (options != null) {
-			optionSet = Set.of(options.split(","));
-		}
 
 		Uni<Tuple3<String, String, List<Tuple2<String, String>>>> uni;
 		switch (acceptHeader) {
 
 			case 1:
-				uni = ldService.compact(entity, contextHeader, context, opts, payloadType, optionSet, langQuery)
+				uni = ldService.compact(entity, contextHeader, context, opts, payloadType, options, langQuery)
 						.onItem()
 						.transformToUni(compacted -> {
 							List<Tuple2<String, String>> headers = Lists.newArrayList();
@@ -662,7 +658,7 @@ public final class HttpUtils {
 						});
 				break;
 			case 2:
-				uni = ldService.compact(entity, contextHeader, context, opts, payloadType, optionSet, langQuery)
+				uni = ldService.compact(entity, contextHeader, context, opts, payloadType, options, langQuery)
 						.onItem()
 						.transformToUni(compacted -> {
 							Object finalCompacted;
@@ -710,7 +706,7 @@ public final class HttpUtils {
 				});
 				break;
 			case 4:// geo+json
-				uni = ldService.compact(entity, contextHeader, context, opts, payloadType, optionSet, langQuery)
+				uni = ldService.compact(entity, contextHeader, context, opts, payloadType, options, langQuery)
 						.onItem()
 						.transformToUni(compacted -> {
 							Object finalCompacted = compacted;
@@ -1187,7 +1183,8 @@ public final class HttpUtils {
 
 	public static Uni<RestResponse<Object>> generateQueryResult(HttpServerRequest request, QueryResult queryResult,
 
-			String options, String geometryProperty, int acceptHeader, boolean count, int limit, LanguageQueryTerm lang,
+			Set<String> options, String geometryProperty, int acceptHeader, boolean count, int limit,
+			LanguageQueryTerm lang,
 			Context context, JsonLDService ldService, boolean entityMap, String baseUrl, String ngsiLdEndpoint,
 			int payloadType) {
 		return generateQueryResult(request, queryResult, options, geometryProperty, acceptHeader, count, limit, lang,
@@ -1196,7 +1193,8 @@ public final class HttpUtils {
 
 	public static Uni<RestResponse<Object>> generateQueryResult(HttpServerRequest request, QueryResult queryResult,
 
-			String options, String geometryProperty, int acceptHeader, boolean count, int limit, LanguageQueryTerm lang,
+			Set<String> options, String geometryProperty, int acceptHeader, boolean count, int limit,
+			LanguageQueryTerm lang,
 			Context context, JsonLDService ldService, boolean forceList, boolean forceAttributeList, boolean entityMap,
 			String baseUrl, String ngsiLdEndpoint, int payloadType) {
 		ResponseBuilder<Object> builder;
@@ -1527,6 +1525,35 @@ public final class HttpUtils {
 			JsonLDService ldService, boolean addAtContext) {
 		return generateResult(contextHeader, context, acceptHeader, entity, null, null, null,
 				ldService, null, null, false, addAtContext, AppConstants.CSOURCE_REG_CREATE_PAYLOAD);
+	}
+
+	public static Set<String> parseOptionsAndFormat(String options, String format) throws ResponseException {
+		Set<String> finalOptions;
+		if ((format != null && !format.isEmpty()) || (options != null && !options.isEmpty())) {
+			finalOptions = new HashSet<>();
+			if (options != null) {
+				String[] tmp = StringUtils.split(options, ',');
+				for (int i = 0; i < tmp.length; i++) {
+					if (!NGSIConstants.ALLOWED_OPTIONS.contains(tmp[i])) {
+						throw new ResponseException(ErrorType.BadRequestData, tmp[i] + " is not an allowed option");
+					}
+					finalOptions.add(tmp[i]);
+				}
+			}
+
+			if (format != null) {
+				String[] tmp = StringUtils.split(format, ',');
+				for (int i = 0; i < tmp.length; i++) {
+					if (!NGSIConstants.ALLOWED_OPTIONS.contains(tmp[i])) {
+						throw new ResponseException(ErrorType.BadRequestData, tmp[i] + " is not an allowed format");
+					}
+					finalOptions.add(tmp[i]);
+				}
+			}
+		} else {
+			finalOptions = null;
+		}
+		return finalOptions;
 	}
 
 }

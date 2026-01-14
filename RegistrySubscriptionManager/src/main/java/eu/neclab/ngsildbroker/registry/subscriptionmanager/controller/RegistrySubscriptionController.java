@@ -1,6 +1,8 @@
 package eu.neclab.ngsildbroker.registry.subscriptionmanager.controller;
 
 import java.util.List;
+import java.util.Set;
+
 import jakarta.inject.Inject;
 import jakarta.enterprise.context.ApplicationScoped;
 import io.quarkus.runtime.Startup;
@@ -85,10 +87,17 @@ public class RegistrySubscriptionController {
 							new ResponseException(ErrorType.BadRequestData, "invalid offset/limit"),
 							HttpUtils.getTenant(request)));
 		}
+		Set<String> finalOptions;
+		try {
+			finalOptions = HttpUtils.parseOptionsAndFormat(options, null);
+		} catch (ResponseException e) {
+			return Uni.createFrom().failure(e);
+		}
 		return ldService.parse(HttpUtils.getAtContext(request)).onItem().transformToUni(ctx -> {
 			return subService.getAllSubscriptions(HttpUtils.getTenant(request), limitTBU, offset).onItem()
 					.transformToUni(subscriptions -> {
-						return HttpUtils.generateQueryResult(request, subscriptions, options, null, acceptHeader, false,
+						return HttpUtils.generateQueryResult(request, subscriptions, finalOptions, null, acceptHeader,
+								false,
 								acceptHeader, null, ctx, ldService, false, microServiceUtils.getGatewayString(),
 								NGSIConstants.NGSI_LD_REGISTRY_SUB_ENDPOINT, -1);
 					}).onFailure()
@@ -112,11 +121,17 @@ public class RegistrySubscriptionController {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
 		List<Object> contextHeader = HttpUtils.getAtContext(request);
+		Set<String> finalOptions;
+		try {
+			finalOptions = HttpUtils.parseOptionsAndFormat(options, null);
+		} catch (ResponseException e) {
+			return Uni.createFrom().failure(e);
+		}
 		return ldService.parse(contextHeader).onItem().transformToUni(context -> {
 			return subService.getSubscription(HttpUtils.getTenant(request), subscriptionId).onItem()
 					.transformToUni(subscription -> {
 						return HttpUtils.generateSubscriptionResult(contextHeader, context, acceptHeader, subscription,
-								options, ldService, true);
+								finalOptions, ldService, true);
 					});
 		}).onFailure().recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 

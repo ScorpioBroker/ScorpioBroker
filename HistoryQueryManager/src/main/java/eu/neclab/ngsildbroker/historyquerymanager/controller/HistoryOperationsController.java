@@ -3,6 +3,7 @@ package eu.neclab.ngsildbroker.historyquerymanager.controller;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -360,7 +361,12 @@ public class HistoryOperationsController {
 					checkSum = String.valueOf(Objects.hashCode(idsAndTypeQueryAndIdPattern, attrs, q, csf, geometry,
 							georel, coordinates, geoproperty, geometryProperty, scopeQ, pick, omit));
 				}
-
+				Set<String> finalOptions;
+				try {
+					finalOptions = HttpUtils.parseOptionsAndFormat(options, null);
+				} catch (ResponseException e) {
+					return Uni.createFrom().failure(e);
+				}
 				return queryService.query(tenant, idsAndTypeQueryAndIdPattern, attrsQuery, qQueryTerm, csfQueryTerm,
 						geoQueryTerm, scopeQueryTerm, temporalQueryTerm, aggrTerm, langQuery, n, offsetN, nOrder,
 						actualLimit,
@@ -372,7 +378,8 @@ public class HistoryOperationsController {
 							} else {
 								payloadType = -1;
 							}
-							return HttpUtils.generateQueryResult(request, queryResult, options, (String) geoproperty,
+							return HttpUtils.generateQueryResult(request, queryResult, finalOptions,
+									(String) geoproperty,
 									acceptHeader, count, actualLimit, langQuery, context, ldService, true, true, false,
 									microServiceUtils.getGatewayString(),
 									NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT, payloadType);

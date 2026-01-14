@@ -3,6 +3,7 @@ package eu.neclab.ngsildbroker.queryhandler.controller;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import io.vertx.core.json.JsonObject;
@@ -331,7 +332,12 @@ public class EntityOperationsQueryController {
 					checkSum = String.valueOf(Objects.hashCode(idsAndTypeQueryAndIdPattern, attrs, q, csf, geometry,
 							georel, coordinates, geoproperty, geometryProperty, scopeQ, pick, omit, ordering));
 				}
-
+				Set<String> finalOptions;
+				try {
+					finalOptions = HttpUtils.parseOptionsAndFormat(options, null);
+				} catch (ResponseException e) {
+					return Uni.createFrom().failure(e);
+				}
 				return queryService
 						.query(tenant, token, tokenProvided, idsAndTypeQueryAndIdPattern, attrsQuery, qQueryTerm,
 								csfQueryTerm, geoQueryTerm, scopeQueryTerm, langQuery, actualLimit, offset, count,
@@ -342,7 +348,7 @@ public class EntityOperationsQueryController {
 							if (doNotCompact) {
 								return Uni.createFrom().item(RestResponse.ok((Object) queryResult.getData()));
 							}
-							return HttpUtils.generateQueryResult(request, queryResult, options, geometryProperty,
+							return HttpUtils.generateQueryResult(request, queryResult, finalOptions, geometryProperty,
 									acceptHeader, count, actualLimit, langQuery, context, ldService, retrieveEntityMap,
 									microServiceUtils.getGatewayString(),
 									NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT, AppConstants.QUERY_PAYLOAD);

@@ -42,7 +42,7 @@ public class Query implements Serializable {
 	@JsonIgnore
 	private ViaHeaders viaHeaders;
 	private int limit;
-	private String finalOptions;
+	private Set<String> finalOptions;
 	private int acceptHeader;
 	private boolean localOnly;
 
@@ -212,11 +212,11 @@ public class Query implements Serializable {
 		this.limit = limit;
 	}
 
-	public String getFinalOptions() {
+	public Set<String> getFinalOptions() {
 		return finalOptions;
 	}
 
-	public void setFinalOptions(String finalOptions) {
+	public void setFinalOptions(Set<String> finalOptions) {
 		this.finalOptions = finalOptions;
 	}
 

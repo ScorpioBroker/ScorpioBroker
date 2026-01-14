@@ -24,6 +24,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
 
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.metrics.MetricUnits;
 import org.eclipse.microprofile.metrics.annotation.ConcurrentGauge;
@@ -224,7 +225,7 @@ public class QueryController {
 						return Uni.createFrom().failure(e);
 					}
 					QueryResult queryResult = t.getItem1();
-					String finalOptions = t.getItem2();
+					Set<String> finalOptions = t.getItem2();
 					Integer acceptHeader = t.getItem3();
 					Integer actualLimit = t.getItem4();
 					Context context = t.getItem5();
@@ -500,7 +501,8 @@ public class QueryController {
 
 	}
 
-	public Uni<Tuple5<QueryResult, String, Integer, Integer, Context>> queryForQueryResult(HttpServerRequest request,
+	public Uni<Tuple5<QueryResult, Set<String>, Integer, Integer, Context>> queryForQueryResult(
+			HttpServerRequest request,
 			String id, String typeQuery, String idPattern, String attrs, String qInput, String csf, String geometry,
 			String georelInput, String coordinates, String geoproperty, String geometryProperty, String lang,
 			String scopeQ, boolean localOnly, String options, Integer limit, int offset, boolean count,
@@ -557,10 +559,13 @@ public class QueryController {
 		String q;
 		String georel;
 		String typeQuery;
-
-		if (format != null && !format.isEmpty()) {
-			options += "," + format;
+		Set<String> finalOptions;
+		try {
+			finalOptions = HttpUtils.parseOptionsAndFormat(options, format);
+		} catch (ResponseException e) {
+			return Uni.createFrom().failure(e);
 		}
+
 		String decodedUri = URLDecoder.decode(request.absoluteURI(), StandardCharsets.UTF_8);
 		if (qInput != null) {
 			String uri = decodedUri;
@@ -621,7 +626,7 @@ public class QueryController {
 		logger.debug("Query called: " + request.path());
 		List<Object> headerContext;
 		headerContext = HttpUtils.getAtContext(request);
-		String finalOptions = options;
+
 		Set<String> jsonKeys = new HashSet<>();
 		if (jsonKeysQP != null) {
 			jsonKeys.addAll(Arrays.asList(jsonKeysQP.split(",")));
