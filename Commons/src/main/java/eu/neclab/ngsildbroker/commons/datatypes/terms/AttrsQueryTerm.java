@@ -50,33 +50,35 @@ public class AttrsQueryTerm implements Serializable {
 		if (dataSetIdTerm != null) {
 			query.append("ENTITY @? $");
 			StringBuilder tmp = new StringBuilder(128);
-			tmp.append("$.keyvalue() ? (@.key == [");
+			tmp.append("$.keyvalue() ? ((");
 			Set<String> ids = dataSetIdTerm.getIds();
 			for (String attrib : attrs) {
+				tmp.append("@.key == ");
 				tmp.append('"');
 				tmp.append(attrib);
-				tmp.append("\",");
+				tmp.append("\" || ");
 			}
-			tmp.setLength(tmp.length() - 1);
-			tmp.append("] && (");
+			tmp.setLength(tmp.length() - 4);
+			tmp.append(") && (");
 
 			if (ids.contains(NGSIConstants.JSON_LD_NONE)) {
 				tmp.append("!(exists(@.value.\"");
 				tmp.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
 				tmp.append("\")) || ");
 			}
-			tmp.append("(@.value.\"");
-			tmp.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
-			tmp.append("\"[0].\"");
-			tmp.append(NGSIConstants.JSON_LD_ID);
-			tmp.append("\" == [");
+
+			tmp.append('(');
 			for (String id : ids) {
-				tmp.append('"');
+				tmp.append("@.value.\"");
+				tmp.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
+				tmp.append("\"[0].\"");
+				tmp.append(NGSIConstants.JSON_LD_ID);
+				tmp.append("\" == \"");
 				tmp.append(id);
-				tmp.append("\".");
+				tmp.append("\" || ");
 			}
-			tmp.setLength(tmp.length() - 1);
-			tmp.append("])))");
+			tmp.setLength(tmp.length() - 4);
+			tmp.append(")))");
 			query.append(dollar);
 			tuple.addString(tmp.toString());
 			dollar++;

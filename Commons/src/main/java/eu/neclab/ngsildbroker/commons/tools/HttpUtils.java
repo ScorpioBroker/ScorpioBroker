@@ -395,6 +395,9 @@ public final class HttpUtils {
 
 	public static URI validateUri(String uri) throws ResponseException {
 		try {
+			if (uri == null) {
+				throw new ResponseException(ErrorType.BadRequestData, "id is not a URI");
+			}
 			return validateUri(new URI(uri));
 		} catch (URISyntaxException e) {
 			throw new ResponseException(ErrorType.BadRequestData, "id is not a URI");
@@ -403,6 +406,9 @@ public final class HttpUtils {
 	}
 
 	public static URI validateUri(URI uri) throws ResponseException {
+		if (uri == null) {
+			throw new ResponseException(ErrorType.BadRequestData, "id is not a URI");
+		}
 		if (!uri.isAbsolute()) {
 			throw new ResponseException(ErrorType.BadRequestData, "id is not a URI");
 		}

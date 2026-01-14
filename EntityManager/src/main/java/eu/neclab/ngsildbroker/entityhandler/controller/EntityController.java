@@ -363,6 +363,23 @@ public class EntityController {// implements EntityHandlerInterface {
 	}
 
 	@PATCH
+	@Path("/entities")
+	@Counted(name = "entity_merge_patch_total", description = "Total number of entity merge patch requests", absolute = true)
+	@Timed(name = "entity_merge_patch_duration", description = "Duration of entity merge patch requests", unit = MetricUnits.MILLISECONDS, absolute = true)
+	@ConcurrentGauge(name = "entity_merge_patch_concurrent", description = "Number of concurrent entity merge patch requests", absolute = true)
+	public Uni<RestResponse<Object>> mergePatchPure(HttpServerRequest request,
+			String bodyStr) {
+		String id;
+		try {
+			Map<String, Object> body = new JsonObject(bodyStr).getMap();
+			id = (String) body.get(NGSIConstants.ID);
+		} catch (Exception e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+		}
+		return mergePatch(request, id, bodyStr);
+	}
+
+	@PATCH
 	@Path("/entities/{entityId}")
 	@Counted(name = "entity_merge_patch_total", description = "Total number of entity merge patch requests", absolute = true)
 	@Timed(name = "entity_merge_patch_duration", description = "Duration of entity merge patch requests", unit = MetricUnits.MILLISECONDS, absolute = true)
