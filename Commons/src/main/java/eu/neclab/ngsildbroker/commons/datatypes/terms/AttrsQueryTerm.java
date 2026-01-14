@@ -59,17 +59,17 @@ public class AttrsQueryTerm implements Serializable {
 				tmp.append("\" || ");
 			}
 			tmp.setLength(tmp.length() - 4);
-			tmp.append(") && (");
+			tmp.append(") && exists(@.value[*] ? (");
 
 			if (ids.contains(NGSIConstants.JSON_LD_NONE)) {
-				tmp.append("!(exists(@.value.\"");
+				tmp.append("!(exists(@.\"");
 				tmp.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
 				tmp.append("\")) || ");
 			}
 
 			tmp.append('(');
 			for (String id : ids) {
-				tmp.append("@.value.\"");
+				tmp.append("@.\"");
 				tmp.append(NGSIConstants.NGSI_LD_DATA_SET_ID);
 				tmp.append("\"[0].\"");
 				tmp.append(NGSIConstants.JSON_LD_ID);
@@ -78,7 +78,7 @@ public class AttrsQueryTerm implements Serializable {
 				tmp.append("\" || ");
 			}
 			tmp.setLength(tmp.length() - 4);
-			tmp.append(")))");
+			tmp.append("))))");
 			query.append(dollar);
 			tuple.addString(tmp.toString());
 			dollar++;

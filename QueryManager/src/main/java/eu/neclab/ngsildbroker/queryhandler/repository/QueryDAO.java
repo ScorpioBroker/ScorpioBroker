@@ -1401,11 +1401,14 @@ public class QueryDAO {
 						if (parent) {
 							if (attrsQuery != null) {
 								attrsQuery.calculateEntity(entity);
-							} else if (pickTerm != null) {
+							}
+							if (pickTerm != null) {
 								pickTerm.calculateEntity(entity, false, null, null, false);
-							} else if (omitTerm != null) {
+							}
+							if (omitTerm != null) {
 								omitTerm.calculateEntity(entity, false, null, null, false);
-							} else if (dataSetIdTerm != null) {
+							}
+							if (dataSetIdTerm != null) {
 								dataSetIdTerm.calculateEntity(entity);
 							}
 						}
