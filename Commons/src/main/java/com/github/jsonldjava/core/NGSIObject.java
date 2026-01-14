@@ -385,6 +385,11 @@ class NGSIObject {
 				}
 				break;
 			case AppConstants.CSOURCE_REG_UPDATE_PAYLOAD:
+				if (types != null && !types.isEmpty() && !types.contains(NGSIConstants.NGSI_LD_CSOURCE_REGISTRATION)) {
+					throw new ResponseException(ErrorType.InvalidRequest,
+							"A registration needs type which is "
+									+ NGSIConstants.NGSI_LD_CSOURCE_REGISTRATION_SHORT);
+				}
 				if (activeProperty != null) {
 					validateRegistration(payloadType, expandedProperty, activeProperty, api);
 				}
