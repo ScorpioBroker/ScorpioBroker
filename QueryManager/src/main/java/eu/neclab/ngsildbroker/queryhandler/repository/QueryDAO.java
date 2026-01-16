@@ -933,18 +933,16 @@ public class QueryDAO {
 			query.append(",0,");
 			query.append(NGSIConstants.JSON_LD_ID);
 			query.append("}' ELSE NULL END) AS LINK");
-			if (!localOnly) {
-				query.append(", ARRAY_AGG(E_TYPES ->> '");
-				query.append(NGSIConstants.JSON_LD_ID);
-				query.append("') AS ET");
-			} else {
-				query.append(", null AS ET");
-			}
+
+			query.append(", ARRAY_AGG(E_TYPES ->> '");
+			query.append(NGSIConstants.JSON_LD_ID);
+			query.append("') FILTER (WHERE E_TYPES IS NOT NULL) AS ET");
+
 			query.append(" FROM B");
 			query.append(counter + 1);
-			query.append(", JSONB_ARRAY_ELEMENTS(B");
+			query.append(" CROSS JOIN JSONB_ARRAY_ELEMENTS(B");
 			query.append(counter + 1);
-			query.append(".VALUE) AS Y, JSONB_ARRAY_ELEMENTS(CASE WHEN Y #>> '{");
+			query.append(".VALUE) AS Y CROSS JOIN JSONB_ARRAY_ELEMENTS(CASE WHEN Y #>> '{");
 			query.append(NGSIConstants.JSON_LD_TYPE);
 			query.append(",0}' = '");
 			query.append(NGSIConstants.NGSI_LD_RELATIONSHIP);
@@ -959,10 +957,17 @@ public class QueryDAO {
 			query.append(",0,");
 			query.append(NGSIConstants.JSON_LD_LIST);
 			query.append("}' ELSE null END) AS Z");
-			// if (!localOnly) {
-			query.append(", JSONB_ARRAY_ELEMENTS(Y -> '");
-			query.append(NGSIConstants.NGSI_LD_OBJECT_TYPE);
-			query.append("') AS E_TYPES");
+			if (!localOnly) {
+				query.append(" CROSS JOIN JSONB_ARRAY_ELEMENTS(Y -> '");
+				query.append(NGSIConstants.NGSI_LD_OBJECT_TYPE);
+				query.append("') AS E_TYPES");
+			} else {
+				query.append(" LEFT JOIN LATERAL JSONB_ARRAY_ELEMENTS(Y -> '");
+				query.append(NGSIConstants.NGSI_LD_OBJECT_TYPE);
+				query.append("') AS E_TYPES ON (Y ? '");
+				query.append(NGSIConstants.NGSI_LD_OBJECT_TYPE);
+				query.append("')");
+			}
 			// } else {
 			// query.append(", null AS E_TYPES");
 			// }
@@ -989,11 +994,13 @@ public class QueryDAO {
 			query.append(" LEFT JOIN ENTITY as E on C");
 			query.append(counter + 1);
 			query.append(".link = E.ID");
-			if (!localOnly) {
-				query.append(" WHERE C");
+			query.append(" WHERE C");
+			query.append(counter + 1);
+			if (localOnly) {
+				query.append(".ET is null OR C");
 				query.append(counter + 1);
-				query.append(".ET && E.E_TYPES");
 			}
+			query.append(".ET && E.E_TYPES");
 			query.append("), ");
 
 		}

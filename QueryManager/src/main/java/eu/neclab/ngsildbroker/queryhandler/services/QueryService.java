@@ -133,7 +133,7 @@ public class QueryService implements CSourceHandler {
 					return handleEntityMap(t.getItem2(), t.getItem1(), tenant, idsAndTypeQueryAndIdPattern,
 							attrsQuery, qQuery, geoQuery, scopeQuery, langQuery, limit, offSet, count,
 							dataSetIdTerm, join, joinLevel, context, jsonKeys, headersFromReq, pickTerm, omitTerm,
-							viaHeaders);
+							viaHeaders, localOnly);
 
 				});
 	}
@@ -143,7 +143,7 @@ public class QueryService implements CSourceHandler {
 			QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, int limit,
 			int offSet, boolean count, DataSetIdTerm dataSetIdTerm, String join, int joinLevel, Context context,
 			Set<String> jsonKeys, io.vertx.core.MultiMap headersFromReq, PickTerm pickTerm, OmitTerm omitTerm,
-			ViaHeaders viaHeaders) {
+			ViaHeaders viaHeaders, boolean localOnly) {
 		QueryResult result = new QueryResult(tenant);
 
 		List<Map<String, Object>> resultData = Lists.newArrayList();
@@ -190,7 +190,7 @@ public class QueryService implements CSourceHandler {
 					}
 				} else if (NGSIConstants.INLINE.equals(join)) {
 					for (Map<String, Object> entity : resultData) {
-						inlineEntity(entity, entityCache, 1, joinLevel, false);
+						inlineEntity(entity, entityCache, 1, joinLevel, localOnly);
 					}
 				}
 				if ((pickTerm != null && pickTerm.isHasAnyLinked())
@@ -231,7 +231,7 @@ public class QueryService implements CSourceHandler {
 								return updateEntityMapAndRepull(deleted, entityMap, updatedEntityCache, tenant,
 										idsAndTypeQueryAndIdPattern, attrsQuery, qQuery, geoQuery, scopeQuery,
 										langQuery, limit, offSet, count, dataSetIdTerm, join, joinLevel, context,
-										jsonKeys, headersFromReq, pickTerm, omitTerm, viaHeaders);
+										jsonKeys, headersFromReq, pickTerm, omitTerm, viaHeaders, localOnly);
 							}
 						});
 			} else {
@@ -277,7 +277,7 @@ public class QueryService implements CSourceHandler {
 									return updateEntityMapAndRepull(deleted, entityMap, updatedEntityCache, tenant,
 											idsAndTypeQueryAndIdPattern, attrsQuery, qQuery, geoQuery, scopeQuery,
 											langQuery, limit, offSet, count, dataSetIdTerm, join, joinLevel, context,
-											jsonKeys, headersFromReq, pickTerm, omitTerm, viaHeaders);
+											jsonKeys, headersFromReq, pickTerm, omitTerm, viaHeaders, localOnly);
 								}
 							}
 
@@ -315,7 +315,7 @@ public class QueryService implements CSourceHandler {
 														tenant, idsAndTypeQueryAndIdPattern, attrsQuery, qQuery,
 														geoQuery, scopeQuery, langQuery, limit, offSet, count,
 														dataSetIdTerm, join, joinLevel, context, jsonKeys,
-														headersFromReq, pickTerm, omitTerm, viaHeaders);
+														headersFromReq, pickTerm, omitTerm, viaHeaders, localOnly);
 											}
 										} else {
 											Map<String, Map<String, Object>> deleted = EntityTools
@@ -340,7 +340,7 @@ public class QueryService implements CSourceHandler {
 														tenant, idsAndTypeQueryAndIdPattern, attrsQuery, qQuery,
 														geoQuery, scopeQuery, langQuery, limit, offSet, count,
 														dataSetIdTerm, join, joinLevel, context, jsonKeys,
-														headersFromReq, pickTerm, omitTerm, viaHeaders);
+														headersFromReq, pickTerm, omitTerm, viaHeaders, localOnly);
 											}
 										}
 									});
@@ -679,7 +679,7 @@ public class QueryService implements CSourceHandler {
 			QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, int limit,
 			int offSet, boolean count, DataSetIdTerm dataSetIdTerm, String join, int joinLevel, Context context,
 			Set<String> jsonKeys, io.vertx.core.MultiMap headersFromReq, PickTerm pickTerm, OmitTerm omitTerm,
-			ViaHeaders viaHeaders) {
+			ViaHeaders viaHeaders, boolean localOnly) {
 
 		// if (entityMap.removeEntries(deleted.keySet())) {
 		// QueryResult result = new QueryResult(tenant);
@@ -715,7 +715,7 @@ public class QueryService implements CSourceHandler {
 				limit + (deleted.size() * 3)).onItem().transformToUni(updatedCache -> {
 					return handleEntityMap(entityMap, entityCache, tenant, idsAndTypeQueryAndIdPattern, attrsQuery,
 							qQuery, geoQuery, scopeQuery, langQuery, limit, offSet, count, dataSetIdTerm, join,
-							joinLevel, context, jsonKeys, headersFromReq, pickTerm, omitTerm, viaHeaders);
+							joinLevel, context, jsonKeys, headersFromReq, pickTerm, omitTerm, viaHeaders, localOnly);
 				});
 
 	}
