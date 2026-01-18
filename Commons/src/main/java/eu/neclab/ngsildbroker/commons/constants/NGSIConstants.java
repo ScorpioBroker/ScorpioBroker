@@ -256,8 +256,9 @@ public interface NGSIConstants {
 	public final static String QUERY_PARAMETER_OPTIONS_COMPRESS = "compress";
 	public final static String QUERY_PARAMETER_OPTIONS_TEMPORALVALUES = "temporalValues";
 	public final static String QUERY_PARAMETER_OPTIONS_NORMALIZED = "normalized";
+	public final static String QUERY_PARAMETER_CONCISE_VALUE = "concise";
 	public final static Set<String> ALLOWED_OPTIONS = Sets.newHashSet(QUERY_PARAMETER_OPTIONS_NORMALIZED,
-			QUERY_PARAMETER_OPTIONS_SYSATTRS,
+			QUERY_PARAMETER_OPTIONS_SYSATTRS, QUERY_PARAMETER_CONCISE_VALUE,
 			QUERY_PARAMETER_OPTIONS_KEYVALUES, QUERY_PARAMETER_OPTIONS_SIMPLIFIED, QUERY_PARAMETER_OPTIONS_COMPRESS,
 			QUERY_PARAMETER_OPTIONS_TEMPORALVALUES);
 
@@ -443,8 +444,7 @@ public interface NGSIConstants {
 	public final static String VOCAB = "vocab";
 	public final static String VOCABS = "vocabs";
 	public final static String INSTANCE_ID = "instanceId";
-	public final static String QUERY_PARAMETER_CONCISE_VALUE = "concise";
-	public final static String QUERY_PARAMETER_CONCISE = "option";
+
 	public static final String SCOPE = "scope";
 	public static final String PREVIOUS_VALUE = "https://uri.etsi.org/ngsi-ld/hasPreviousValue";
 	public static final String PREVIOUS_VOCAB = "https://uri.etsi.org/ngsi-ld/hasPreviousVocab";
