@@ -6,7 +6,7 @@
       "app.quarkus.io/quarkus-version" : "3.28.4",
       "app.quarkus.io/commit-id" : "1ea59ef640f4994a04d20db13b7eb0d442aa1390",
       "app.quarkus.io/vcs-uri" : "https://github.com/scorpiobroker/scorpiobroker.git",
-      "app.quarkus.io/build-timestamp" : "2026-01-18 - 22:08:02 +0000"
+      "app.quarkus.io/build-timestamp" : "2026-01-19 - 00:05:54 +0000"
     },
     "labels" : {
       "app.kubernetes.io/name" : "aio-runner",
@@ -58,7 +58,7 @@
       "app.quarkus.io/quarkus-version" : "3.28.4",
       "app.quarkus.io/commit-id" : "1ea59ef640f4994a04d20db13b7eb0d442aa1390",
       "app.quarkus.io/vcs-uri" : "https://github.com/scorpiobroker/scorpiobroker.git",
-      "app.quarkus.io/build-timestamp" : "2026-01-18 - 22:08:02 +0000",
+      "app.quarkus.io/build-timestamp" : "2026-01-19 - 00:05:54 +0000",
       "prometheus.io/scrape" : "true",
       "prometheus.io/path" : "/q/metrics",
       "prometheus.io/port" : "9090",
@@ -92,7 +92,7 @@
       "app.quarkus.io/quarkus-version" : "3.28.4",
       "app.quarkus.io/commit-id" : "1ea59ef640f4994a04d20db13b7eb0d442aa1390",
       "app.quarkus.io/vcs-uri" : "https://github.com/scorpiobroker/scorpiobroker.git",
-      "app.quarkus.io/build-timestamp" : "2026-01-18 - 22:08:02 +0000",
+      "app.quarkus.io/build-timestamp" : "2026-01-19 - 00:05:54 +0000",
       "prometheus.io/scrape" : "true",
       "prometheus.io/path" : "/q/metrics",
       "prometheus.io/port" : "9090",
@@ -119,7 +119,7 @@
           "app.quarkus.io/quarkus-version" : "3.28.4",
           "app.quarkus.io/commit-id" : "1ea59ef640f4994a04d20db13b7eb0d442aa1390",
           "app.quarkus.io/vcs-uri" : "https://github.com/scorpiobroker/scorpiobroker.git",
-          "app.quarkus.io/build-timestamp" : "2026-01-18 - 22:08:02 +0000",
+          "app.quarkus.io/build-timestamp" : "2026-01-19 - 00:05:54 +0000",
           "prometheus.io/scrape" : "true",
           "prometheus.io/path" : "/q/metrics",
           "prometheus.io/port" : "9090",
@@ -234,7 +234,7 @@
       "app.quarkus.io/quarkus-version" : "3.28.4",
       "app.quarkus.io/commit-id" : "1ea59ef640f4994a04d20db13b7eb0d442aa1390",
       "app.quarkus.io/vcs-uri" : "https://github.com/scorpiobroker/scorpiobroker.git",
-      "app.quarkus.io/build-timestamp" : "2026-01-18 - 22:08:02 +0000"
+      "app.quarkus.io/build-timestamp" : "2026-01-19 - 00:05:54 +0000"
     },
     "labels" : {
       "app.kubernetes.io/name" : "aio-runner",

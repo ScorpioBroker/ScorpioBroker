@@ -925,7 +925,11 @@ public class JsonLdApi {
 
 					case NGSIConstants.NGSI_LD_LANGPROPERTY:
 						handleLanguageProperty(resultMap, attribMap, langQuery);
-						result.add(resultMap.get(NGSIConstants.LANGUAGE_MAP));
+						if (langQuery != null) {
+							result.add(resultMap.get(NGSIConstants.VALUE));
+						} else {
+							result.add(resultMap.get(NGSIConstants.LANGUAGE_MAP));
+						}
 						break;
 
 					default:
