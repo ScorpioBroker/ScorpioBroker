@@ -66,6 +66,7 @@ import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
 import io.vertx.mutiny.ext.web.client.HttpResponse;
 import io.vertx.mutiny.ext.web.client.WebClient;
+import io.vertx.pgclient.PgException;
 import jakarta.ws.rs.core.MediaType;
 
 /**
@@ -381,6 +382,12 @@ public final class HttpUtils {
 					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
 					.entity(new ResponseException(ErrorType.InvalidRequest,
 							"There is an error in the provided json document").getJson());
+		} else if (e instanceof PgException pgE) {
+			logger.debug("Exception :: ", e);
+			myBuilder = RestResponseBuilderImpl.create(HttpStatus.SC_BAD_REQUEST)
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+					.entity(new ResponseException(ErrorType.InvalidRequest,
+							pgE.getErrorMessage()).getJson());
 		} else {
 			logger.error("Exception :: ", e);
 			myBuilder = RestResponseBuilderImpl.create(HttpStatus.SC_INTERNAL_SERVER_ERROR)

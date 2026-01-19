@@ -825,10 +825,18 @@ public class QQueryTerm implements Serializable {
 
 		if (operant.matches(URI) && !operant.matches(TIME)) { // uri and time patterns are ambiguous in the abnf grammar
 			this.operant = "\"" + operant + "\"";
+			this.expandedOpt = operant;
 		} else if (operant.startsWith("'") && operant.endsWith("'")) {
-			this.operant = "\"" + operant.substring(1, operant.length() - 1) + "\"";
+			String tmp = operant.substring(1, operant.length() - 1);
+			this.operant = "\"" + tmp + "\"";
+			this.expandedOpt = linkHeaders.expandIri(tmp, false, true, null, null);
 		} else {
 			this.operant = operant;
+			if (operant.startsWith("\"") && operant.endsWith("\"")) {
+				this.expandedOpt = linkHeaders.expandIri(operant.substring(1, operant.length() - 1), false, true, null,
+						null);
+			}
+
 		}
 		switch (operator) {
 			case NGSIConstants.QUERY_GREATEREQ:
@@ -862,7 +870,6 @@ public class QQueryTerm implements Serializable {
 				}
 				break;
 		}
-
 	}
 
 	public QQueryTerm getParent() {
@@ -2296,8 +2303,11 @@ public class QQueryTerm implements Serializable {
 	}
 
 	private int addItemToTupelForEqualAndUnequal(Tuple tuple, String listItem, StringBuilder sql, int dollarCount) {
+
 		String strTBU;
-		if (listItem.charAt(0) != '"' || listItem.charAt(listItem.length() - 1) != '"') {
+		if (listItem == null || listItem.isEmpty()) {
+			strTBU = "\"\"";
+		} else if (listItem.charAt(0) != '"' || listItem.charAt(listItem.length() - 1) != '"') {
 			strTBU = '"' + listItem + '"';
 		} else {
 			strTBU = listItem;
