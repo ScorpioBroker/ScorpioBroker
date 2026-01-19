@@ -365,7 +365,7 @@ public class HistoryOperationsController {
 				try {
 					finalOptions = HttpUtils.parseOptionsAndFormat(options, null);
 				} catch (ResponseException e) {
-					return Uni.createFrom().failure(e);
+					return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
 				}
 				return queryService.query(tenant, idsAndTypeQueryAndIdPattern, attrsQuery, qQueryTerm, csfQueryTerm,
 						geoQueryTerm, scopeQueryTerm, temporalQueryTerm, aggrTerm, langQuery, n, offsetN, nOrder,

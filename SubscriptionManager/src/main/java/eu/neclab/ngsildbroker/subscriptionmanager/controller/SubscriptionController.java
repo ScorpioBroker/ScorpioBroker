@@ -151,7 +151,7 @@ public class SubscriptionController {
 		try {
 			finalOptions = HttpUtils.parseOptionsAndFormat(options, null);
 		} catch (ResponseException e) {
-			return Uni.createFrom().failure(e);
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
 		return ldService.parse(HttpUtils.getAtContext(request)).onItem().transformToUni(ctx -> {
 			return subService.getAllSubscriptions(tenant, actualLimit, offset).onItem()
@@ -222,7 +222,7 @@ public class SubscriptionController {
 		try {
 			finalOptions = HttpUtils.parseOptionsAndFormat(options, null);
 		} catch (ResponseException e) {
-			return Uni.createFrom().failure(e);
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
 		return ldService.parse(contextHeader).onItem().transformToUni(context -> {
 			return subService.getSubscription(tenant, subscriptionId).onItem()

@@ -113,7 +113,7 @@ public class RegistryController {
 		try {
 			finalOptions = HttpUtils.parseOptionsAndFormat(options, null);
 		} catch (ResponseException e) {
-			return Uni.createFrom().failure(e);
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
 		List<Object> headerContext = HttpUtils.getAtContext(request);
 		return ldService.parse(headerContext).onItem().transformToUni(context -> {

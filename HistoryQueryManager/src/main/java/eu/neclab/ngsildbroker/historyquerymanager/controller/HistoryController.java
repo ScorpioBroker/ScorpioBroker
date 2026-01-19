@@ -160,7 +160,7 @@ public class HistoryController {
 		try {
 			finalOptions = HttpUtils.parseOptionsAndFormat(options, null);
 		} catch (ResponseException e) {
-			return Uni.createFrom().failure(e);
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
 		}
 		return HttpUtils.getContext(ctx, ldService).onItem().transformToUni(context -> {
 			TypeQueryTerm typeQueryTerm;

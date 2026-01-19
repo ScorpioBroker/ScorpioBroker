@@ -336,7 +336,7 @@ public class EntityOperationsQueryController {
 				try {
 					finalOptions = HttpUtils.parseOptionsAndFormat(options, null);
 				} catch (ResponseException e) {
-					return Uni.createFrom().failure(e);
+					return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
 				}
 				return queryService
 						.query(tenant, token, tokenProvided, idsAndTypeQueryAndIdPattern, attrsQuery, qQueryTerm,
