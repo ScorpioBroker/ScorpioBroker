@@ -88,15 +88,17 @@ public class HistoryController {
 			@QueryParam(value = "localOnly") String localOnlyS, @QueryParam("format") String format,
 			@QueryParam("n") @DefaultValue("-1") int nInput,
 			@QueryParam("offsetN") @DefaultValue("0") int offsetN,
-			@QueryParam("orderN") @DefaultValue("ASC") String nOrderInput) {
+			@QueryParam("orderN") @DefaultValue("ASC") String nOrderInput,
+			@QueryParam("firstN") @DefaultValue("-1") int firstN) {
 		boolean localOnly;
 		boolean count;
 		String tenant = HttpUtils.getTenant(request);
 
-		if (nInput != -1 && lastN != -1 && lastN != nInput) {
+		if ((nInput != -1 && lastN != -1 && lastN != nInput) || (nInput != -1 && firstN != -1 && firstN != nInput)
+				|| (firstN != -1 && lastN != -1)) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
 					new ResponseException(ErrorType.BadRequestData,
-							"Conflicting input in n and lastN. Please remove one"),
+							"Conflicting input in n and lastN or firstN. Please remove one"),
 					tenant));
 		}
 		String nOrder;
@@ -104,6 +106,9 @@ public class HistoryController {
 		if (lastN != -1) {
 			nOrder = "DESC";
 			n = lastN;
+		} else if (firstN != -1) {
+			nOrder = "ASC";
+			n = firstN;
 		} else {
 			nOrder = nOrderInput;
 			n = nInput;
@@ -220,7 +225,8 @@ public class HistoryController {
 			@QueryParam("timeAt") String timeAt, @QueryParam("endTimeAt") String endTimeAt,
 			@QueryParam("format") String format, @QueryParam("n") @DefaultValue("-1") int nInput,
 			@QueryParam("offsetN") @DefaultValue("0") int offsetN,
-			@QueryParam("orderN") @DefaultValue("ASC") String nOrderInput) {
+			@QueryParam("orderN") @DefaultValue("ASC") String nOrderInput,
+			@QueryParam("firstN") @DefaultValue("-1") int firstN) {
 		boolean localOnly;
 		try {
 			localOnly = HttpUtils.parseBoolean(localOnlyS);
@@ -234,10 +240,11 @@ public class HistoryController {
 		if (acceptHeader != 1 && acceptHeader != 2) {
 			return HttpUtils.getInvalidHeader();
 		}
-		if (nInput != -1 && lastN != -1 && lastN != nInput) {
+		if ((nInput != -1 && lastN != -1 && lastN != nInput) || (nInput != -1 && firstN != -1 && firstN != nInput)
+				|| (firstN != -1 && lastN != -1)) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(
 					new ResponseException(ErrorType.BadRequestData,
-							"Conflicting input in n and lastN. Please remove one"),
+							"Conflicting input in n and lastN or firstN. Please remove one"),
 					HttpUtils.getTenant(request)));
 		}
 		String nOrder;
@@ -245,6 +252,9 @@ public class HistoryController {
 		if (lastN != -1) {
 			nOrder = "DESC";
 			n = lastN;
+		} else if (firstN != -1) {
+			nOrder = "ASC";
+			n = firstN;
 		} else {
 			nOrder = nOrderInput;
 			n = nInput;

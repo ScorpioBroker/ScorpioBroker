@@ -1363,8 +1363,8 @@ public class QueryDAO {
 		// return null;
 		// }).subscribe().with(t -> {
 		// });
-		System.out.println(query.toString());
-		System.out.println(tuple.deepToString());
+		// System.out.println(query.toString());
+		// System.out.println(tuple.deepToString());
 		return connectionManager.executeQuery(tenant, query.toString(), tuple, false).onItem().transform(rows -> {
 			EntityMap entityMap = new EntityMap(qToken, splitEntities, regEmptyOrNoRegEntryAndNoLinkedQuery,
 					noRootLevelRegEntryAndLinkedQuery);
