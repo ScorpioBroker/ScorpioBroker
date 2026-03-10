@@ -18,6 +18,7 @@ import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.storage.ConnectionManager;
 import eu.neclab.ngsildbroker.commons.tools.DBUtil;
 import io.quarkus.runtime.Startup;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple3;
@@ -247,39 +248,41 @@ public class SubscriptionInfoDAO {
 
 		return connectionManager.executeQuery(null, "select tenant_id from tenant", null, false).onItem()
 				.transformToUni(rows -> {
-					List<Uni<RowSet<Row>>> unis = Lists.newArrayList();
-					rows.forEach(row -> {
+					List<String> tenantIds = new ArrayList<>();
+					rows.forEach(row -> tenantIds.add(row.getString(0)));
+					tenantIds.add(null); // null = default/internal tenant
 
-						unis.add(connectionManager.executeQuery(row.getString(0), "SELECT '" + row.getString(0)
-								+ "', subscriptions.subscription, context as contextId, contexts.body as contextBody FROM subscriptions LEFT JOIN contexts ON subscriptions.context = contexts.id",
-								null, false));
-					});
-					unis.add(connectionManager.executeQuery(null, "SELECT '" + AppConstants.INTERNAL_NULL_KEY
-							+ "', subscriptions.subscription, context as contextId, contexts.body as contextBody FROM subscriptions LEFT JOIN contexts ON subscriptions.context = contexts.id",
-							null, false));
-					return Uni.combine().all().unis(unis).with(list -> {
-						List<Tuple4<String, Map<String, Object>, String, Map<String, Object>>> result = new ArrayList<>();
-						for (Object obj : list) {
-							@SuppressWarnings("unchecked")
-							RowSet<Row> rowset = (RowSet<Row>) obj;
-							rowset.forEach(row -> {
-								String tenant = row.getString(0);
-								Map<String, Object> sub = row.getJsonObject(1).getMap();
-								String ctxId = row.getString(2);
-								JsonObject ctx = row.getJsonObject(3);
-								Map<String, Object> ctxMap;
-								if (ctx == null) {
-									logger.error("Failed to read context for subscription "
-											+ sub.get(NGSIConstants.JSON_LD_ID) + " on tenant " + tenant);
-									ctxMap = null;
-								} else {
-									ctxMap = ctx.getMap();
-								}
-								result.add(Tuple4.of(tenant, sub, ctxId, ctxMap));
-							});
-						}
-						return result;
-					});
+					// Process tenants sequentially to avoid exhausting the DB connection pool
+					return Multi.createFrom().iterable(tenantIds)
+							.onItem().transformToUniAndConcatenate(tenantId -> {
+								String tenantLabel = tenantId != null ? tenantId : AppConstants.INTERNAL_NULL_KEY;
+								return connectionManager.executeQuery(tenantId, "SELECT '" + tenantLabel
+										+ "', subscriptions.subscription, context as contextId, contexts.body as contextBody FROM subscriptions LEFT JOIN contexts ON subscriptions.context = contexts.id",
+										null, false)
+										.onItem().transform(rowSet -> {
+											List<Tuple4<String, Map<String, Object>, String, Map<String, Object>>> batch = new ArrayList<>();
+											rowSet.forEach(row -> {
+												String tenant = row.getString(0);
+												Map<String, Object> sub = row.getJsonObject(1).getMap();
+												String ctxId = row.getString(2);
+												JsonObject ctx = row.getJsonObject(3);
+												Map<String, Object> ctxMap;
+												if (ctx == null) {
+													logger.error("Failed to read context for subscription "
+															+ sub.get(NGSIConstants.JSON_LD_ID) + " on tenant " + tenant);
+													ctxMap = null;
+												} else {
+													ctxMap = ctx.getMap();
+												}
+												batch.add(Tuple4.of(tenant, sub, ctxId, ctxMap));
+											});
+											return batch;
+										}).onFailure().recoverWithItem(e -> {
+											logger.error("Failed to load subscriptions for tenant " + tenantLabel, e);
+											return new ArrayList<>();
+										});
+							})
+							.collect().in(ArrayList::new, List::addAll);
 				});
 
 	}

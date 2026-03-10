@@ -87,6 +87,8 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 @ApplicationScoped
 @Startup
@@ -156,7 +158,20 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 
 	private final Object tableLock = new Object();
 
+	private volatile boolean ready = false;
+	private final Queue<BaseRequest> startupEntityBuffer = new ConcurrentLinkedQueue<>();
+	private final Queue<CSourceBaseRequest> startupCsourceBuffer = new ConcurrentLinkedQueue<>();
+
+	public boolean isReady() {
+		return ready;
+	}
+
 	public Uni<Void> handleRegistryChange(CSourceBaseRequest req) {
+		if (!ready) {
+			startupCsourceBuffer.offer(req);
+			logger.debug("Buffering registry change during startup: {}", req.getId());
+			return Uni.createFrom().voidItem();
+		}
 		return RegistrationEntry.fromRegPayload(req.getPayload(), ldService).onItem().transformToUni(regs -> {
 			List<RegistrationEntry> queryNewRegs = Lists.newArrayList();
 			List<RegistrationEntry> subscriptionNewRegs = Lists.newArrayList();
@@ -449,13 +464,40 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 			});
 			return Uni.createFrom().voidItem();
 		});
-		Uni.combine().all().unis(loadSubs, loadRegs).with(l -> l).await().indefinitely();
-		this.microServiceUtils.registerBaseRequestReceiver(this);
-		this.microServiceUtils.registerCSourceReceiver(this);
+		Uni.combine().all().unis(loadSubs, loadRegs).with(l -> l)
+				.subscribe().with(
+						result -> {
+							this.microServiceUtils.registerBaseRequestReceiver(this);
+							this.microServiceUtils.registerCSourceReceiver(this);
+							this.ready = true;
+							logger.info("SubscriptionService initialization complete — now processing messages");
+							drainStartupBuffers();
+						},
+						failure -> logger.error("SubscriptionService initialization failed", failure)
+				);
 	}
 
 	private boolean isIntervalSub(SubscriptionRequest request) {
 		return request.getSubscription().getTimeInterval() > 0;
+	}
+
+	private void drainStartupBuffers() {
+		logger.info("Draining {} buffered entity messages and {} buffered csource messages",
+				startupEntityBuffer.size(), startupCsourceBuffer.size());
+		CSourceBaseRequest csourceMsg;
+		while ((csourceMsg = startupCsourceBuffer.poll()) != null) {
+			final CSourceBaseRequest msg = csourceMsg;
+			handleRegistryChange(msg).subscribe().with(
+					v -> logger.debug("Drained csource message: {}", msg.getId()),
+					e -> logger.error("Error draining csource message: {}", msg.getId(), e));
+		}
+		BaseRequest entityMsg;
+		while ((entityMsg = startupEntityBuffer.poll()) != null) {
+			final BaseRequest msg = entityMsg;
+			handleBaseRequest(msg).subscribe().with(
+					v -> logger.debug("Drained entity message for: {}", msg.getIds()),
+					e -> logger.error("Error draining entity message for: {}", msg.getIds(), e));
+		}
 	}
 
 	public Uni<NGSILDOperationResult> createSubscription(HeadersMultiMap linkHead, String tenant,
@@ -800,6 +842,11 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 	}
 
 	public Uni<Void> handleBaseRequest(BaseRequest message) {
+		if (!ready) {
+			startupEntityBuffer.offer(message);
+			logger.debug("Buffering entity message during startup for ids: {}", message.getIds());
+			return Uni.createFrom().voidItem();
+		}
 		Collection<SubscriptionRequest> potentialSubs;
 		synchronized (tableLock) {
 			// Copy the values to avoid concurrent modification issues
@@ -1487,6 +1534,9 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 
 	@Scheduled(every = "${scorpio.subscription.checkinterval}", delayed = "${scorpio.startupdelay}")
 	Uni<Void> checkIntervalSubs() {
+		if (!ready) {
+			return Uni.createFrom().voidItem();
+		}
 		List<Uni<Void>> unis = Lists.newArrayList();
 		synchronized (tableLock) {
 			for (Cell<String, String, SubscriptionRequest> cell : tenant2subscriptionId2IntervalSubscription
