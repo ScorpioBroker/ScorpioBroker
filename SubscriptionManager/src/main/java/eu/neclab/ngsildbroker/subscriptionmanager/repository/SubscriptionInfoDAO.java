@@ -248,15 +248,18 @@ public class SubscriptionInfoDAO {
 
 		return connectionManager.executeQuery(null, "select tenant_id from tenant", null, false).onItem()
 				.transformToUni(rows -> {
-					List<String> tenantIds = new ArrayList<>();
-					rows.forEach(row -> tenantIds.add(row.getString(0)));
-					tenantIds.add(null); // null = default/internal tenant
+					List<Tuple2<String, String>> tenantList = new ArrayList<>();
+					rows.forEach(row -> tenantList.add(Tuple2.of(row.getString(0), row.getString(0))));
+					tenantList.add(Tuple2.of(AppConstants.INTERNAL_NULL_KEY, "default")); // null = default/internal tenant
 
 					// Process tenants sequentially to avoid exhausting the DB connection pool
-					return Multi.createFrom().iterable(tenantIds)
-							.onItem().transformToUniAndConcatenate(tenantId -> {
-								String tenantLabel = tenantId != null ? tenantId : AppConstants.INTERNAL_NULL_KEY;
-								return connectionManager.executeQuery(tenantId, "SELECT '" + tenantLabel
+					return Multi.createFrom().iterable(tenantList)
+							.onItem().transformToUniAndConcatenate(tenantInfo -> {
+								String tenantId = tenantInfo.getItem1();
+								String tenantLabel = tenantInfo.getItem2();
+
+								logger.info("Loading subscriptions for tenant " + tenantLabel +" (" + tenantId + ")");
+								return connectionManager.executeQuery(tenantLabel, "SELECT '" + tenantId
 										+ "', subscriptions.subscription, context as contextId, contexts.body as contextBody FROM subscriptions LEFT JOIN contexts ON subscriptions.context = contexts.id",
 										null, false)
 										.onItem().transform(rowSet -> {
