@@ -162,6 +162,8 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 	private final Queue<BaseRequest> startupEntityBuffer = new ConcurrentLinkedQueue<>();
 	private final Queue<CSourceBaseRequest> startupCsourceBuffer = new ConcurrentLinkedQueue<>();
 
+	private boolean hasStartupError = false;
+
 	public boolean isReady() {
 		return ready;
 	}
@@ -463,8 +465,6 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 			});
 			return Uni.createFrom().voidItem();
 		});
-
-		boolean hasStartupError = false;
 		
 		loadRegs.subscribe().with(
 			result -> {
@@ -472,7 +472,7 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 			},
 			failure -> {
 				logger.error("SubscriptionService initialization failed during registry loading", failure);
-				hasStartupError = true;
+				this.hasStartupError = true;
 			}
 		);
 	
@@ -482,11 +482,11 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 			},
 			failure -> {
 				logger.error("SubscriptionService initialization failed during subscription loading", failure);
-				hasStartupError = true;
+				this.hasStartupError = true;
 			}
 		);
 
-		if (hasStartupError == false) {
+		if (this.hasStartupError == false) {
 			logger.info("SubscriptionService initialization okay, now registering message receivers");
 			this.microServiceUtils.registerBaseRequestReceiver(this);
 			this.microServiceUtils.registerCSourceReceiver(this);
