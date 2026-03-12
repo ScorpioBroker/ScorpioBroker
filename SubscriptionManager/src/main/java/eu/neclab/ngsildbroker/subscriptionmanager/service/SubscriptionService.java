@@ -431,7 +431,6 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 					}
 				}
 				return null;
-
 			});
 
 		});
@@ -464,17 +463,51 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 			});
 			return Uni.createFrom().voidItem();
 		});
-		Uni.combine().all().unis(loadSubs, loadRegs).with(l -> l)
-				.subscribe().with(
-						result -> {
-							this.microServiceUtils.registerBaseRequestReceiver(this);
-							this.microServiceUtils.registerCSourceReceiver(this);
-							this.ready = true;
-							logger.info("SubscriptionService initialization complete — now processing messages");
-							drainStartupBuffers();
-						},
-						failure -> logger.error("SubscriptionService initialization failed", failure)
-				);
+
+		boolean hasStartupError = false;
+		
+		loadRegs.subscribe().with(
+			result -> {
+				logger.info("SubscriptionService registry loading complete");								
+			},
+			failure -> {
+				logger.error("SubscriptionService initialization failed during registry loading", failure);
+				hasStartupError = true;
+			}
+		);
+	
+		loadSubs.subscribe().with(
+			result -> {
+				logger.info("SubscriptionService subscription loading complete");								
+			},
+			failure -> {
+				logger.error("SubscriptionService initialization failed during subscription loading", failure);
+				hasStartupError = true;
+			}
+		);
+
+		if (hasStartupError == false) {
+			logger.info("SubscriptionService initialization okay, now registering message receivers");
+			this.microServiceUtils.registerBaseRequestReceiver(this);
+			this.microServiceUtils.registerCSourceReceiver(this);
+			this.ready = true;
+			logger.info("SubscriptionService initialization complete — now processing messages");
+			drainStartupBuffers();
+		} else {
+			logger.error("SubscriptionService initialization failed, not registering message receivers");
+		}
+
+		// Uni.combine().all().unis(loadSubs, loadRegs).with(l -> l)
+		// 		.subscribe().with(
+		// 				result -> {
+		// 					this.microServiceUtils.registerBaseRequestReceiver(this);
+		// 					this.microServiceUtils.registerCSourceReceiver(this);
+		// 					this.ready = true;
+		// 					logger.info("SubscriptionService initialization complete — now processing messages");
+		// 					drainStartupBuffers();
+		// 				},
+		// 				failure -> logger.error("SubscriptionService initialization failed", failure)
+		// 		);
 	}
 
 	private boolean isIntervalSub(SubscriptionRequest request) {
