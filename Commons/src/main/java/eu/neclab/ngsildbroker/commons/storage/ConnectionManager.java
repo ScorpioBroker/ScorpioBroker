@@ -96,6 +96,9 @@ public class ConnectionManager {
 
 	@ConfigProperty(name = "quarkus.flyway.validate-on-migrate", defaultValue = "true")
 	boolean flywayValidateOnMigrate;
+
+	@ConfigProperty(name = "quarkus.flyway.validate-at-start", defaultValue = "false")
+	boolean flywayValidateAtStart;
 	
 	
 	@PostConstruct
@@ -259,7 +262,7 @@ public class ConnectionManager {
 													.principal(new NamePrincipal(username))
 													.credential(new SimplePassword(password))));
 					AgroalDataSource agroaldataSource = AgroalDataSource.from(configuration);
-					if (flywayValidateAndMigrate(agroaldataSource, flywayMigrateAtStart, tenantidvalue, tenantDatabaseName)){
+					if (flywayValidateAndMigrate(agroaldataSource, tenantidvalue, tenantDatabaseName)){
 						return tenantDatabaseName;
 					} else {
 						throw new Exception("Failed to validate or migrate database for tenant " + tenantidvalue);
@@ -302,7 +305,7 @@ public class ConnectionManager {
 				.execute(Tuple.of(tenantidvalue, databasename)).onItem().ignore().andContinueWithNull();
 	}
 
-	public Boolean flywayValidateAndMigrate(DataSource tenantDataSource, boolean migrate, String tenant, String tenantDatabaseName) {
+	public Boolean flywayValidateAndMigrate(DataSource tenantDataSource, String tenant, String tenantDatabaseName) {
 		logger.info("Starting Flyway validation and migration for tenant '" + tenant + "', database '" + tenantDatabaseName + "'");
 		FlywayContainerProducer flywayProducer = Arc.container().instance(FlywayContainerProducer.class).get();
 		FlywayContainer flywayContainer = flywayProducer.createFlyway(tenantDataSource, "<default>", true, true);
@@ -311,7 +314,15 @@ public class ConnectionManager {
 				.validateOnMigrate(flywayValidateOnMigrate)
 				.load();
 
-		if (migrate) {
+		if (flywayMigrateAtStart) {
+			if (flywayValidateAtStart) {
+				try {
+					flyway.validate();
+				} catch (Exception e) {
+					logger.error("Flyway validation failed for tenant '" + tenant + "', database '" + tenantDatabaseName + "'", e);
+					return false;
+				}
+			}
 			try {
 				MigrateResult result = flyway.migrate();
 				if (result.success) {
@@ -332,6 +343,17 @@ public class ConnectionManager {
 			}
 		} else {
 			logger.info("FlyWay migration disabled for all datasources; tenant '" + tenant + "', database '" + tenantDatabaseName + "'.");
+			if (flywayValidateAtStart) {
+				try {
+					flyway.validate();
+					logger.info("Flyway validation successful for tenant '" + tenant + "', database '"
+							+ tenantDatabaseName + "'.");
+				} catch (FlywayException e) {
+					logger.error("Flyway validation failed for tenant '" + tenant + "', database '" + tenantDatabaseName
+							+ "'", e);
+					return false;
+				}
+			}
 		}
 		return true;
 	}

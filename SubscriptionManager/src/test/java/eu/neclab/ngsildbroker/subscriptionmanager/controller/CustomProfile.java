@@ -17,7 +17,10 @@ public class CustomProfile implements  QuarkusTestProfile {
         logger.info("Using custom test profile: " + getConfigProfile());
         return Map.of(
             "profile", "kafka", 
-            "scorpio.gateway.url", "http://localhost:9090"
+            "scorpio.gateway.url", "http://localhost:9090",
+            "quarkus.flyway.migrate-at-start", "false",
+            "quarkus.flyway.validate-at-start", "false",
+            "quarkus.flyway.validate-on-migrate", "true"
             );        
     }
     @Override
