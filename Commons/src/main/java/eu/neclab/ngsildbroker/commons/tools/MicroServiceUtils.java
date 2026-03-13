@@ -413,8 +413,8 @@ public class MicroServiceUtils {
 			return gatewayUri;
 		} catch (URISyntaxException e) {
 			throw new AssertionError(
-					"something went really wrong here when creating a URL... this should never happen but did with "
-							+ gatewayUri,
+					"something went really wrong here when creating a URL... this should never happen but did with '"
+							+ gatewayUrl + "'",
 					e);
 		}
 	}

@@ -87,6 +87,8 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 @ApplicationScoped
 @Startup
@@ -156,7 +158,20 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 
 	private final Object tableLock = new Object();
 
+	private volatile boolean ready = false;
+	private final Queue<BaseRequest> startupEntityBuffer = new ConcurrentLinkedQueue<>();
+	private final Queue<CSourceBaseRequest> startupCsourceBuffer = new ConcurrentLinkedQueue<>();
+
+	public boolean isReady() {
+		return ready;
+	}
+
 	public Uni<Void> handleRegistryChange(CSourceBaseRequest req) {
+		if (!ready) {
+			startupCsourceBuffer.offer(req);
+			logger.debug("Buffering registry change during startup: {}", req.getId());
+			return Uni.createFrom().voidItem();
+		}
 		return RegistrationEntry.fromRegPayload(req.getPayload(), ldService).onItem().transformToUni(regs -> {
 			List<RegistrationEntry> queryNewRegs = Lists.newArrayList();
 			List<RegistrationEntry> subscriptionNewRegs = Lists.newArrayList();
@@ -371,6 +386,8 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 
 	@PostConstruct
 	void startup() {
+		logger.info("Starting SubscriptionService initialization - loading subscriptions and registries");		
+
 		this.webClient = WebClient.create(vertx);
 		ALL_TYPES_SUB = NGSIConstants.NGSI_LD_DEFAULT_PREFIX + allTypeSubType;
 		Uni<Void> loadSubs = subDAO.loadSubscriptions().onItem().transformToUni(subs -> {
@@ -388,7 +405,7 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 				for (Object obj : list) {
 					Tuple4<String, Map<String, Object>, String, Context> tuple = (Tuple4<String, Map<String, Object>, String, Context>) obj;
 					SubscriptionRequest request;
-
+					logger.debug("Loaded subscription {} with id {} for tenant {}", tuple.getItem1(), tuple.getItem2().get(NGSIConstants.JSON_LD_ID), tuple.getItem3());
 					try {
 						request = new SubscriptionRequest(tuple.getItem1(), tuple.getItem2(), tuple.getItem4());
 						request.setContextId(tuple.getItem3());
@@ -412,11 +429,10 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 						}
 						subscriptionId2RequestGlobal.put(request.getId(), request);
 					} catch (Exception e) {
-						logger.error("Failed to load stored subscription " + tuple.getItem1());
+						logger.error("Failed to load stored subscription " + tuple.getItem1(), e);
 					}
 				}
 				return null;
-
 			});
 
 		});
@@ -449,13 +465,65 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 			});
 			return Uni.createFrom().voidItem();
 		});
-		Uni.combine().all().unis(loadSubs, loadRegs).with(l -> l).await().indefinitely();
-		this.microServiceUtils.registerBaseRequestReceiver(this);
-		this.microServiceUtils.registerCSourceReceiver(this);
+				
+		loadRegs.subscribe().with(
+			result -> {
+				logger.info("1 - SubscriptionService registry loading complete");
+				loadSubs.subscribe().with(
+					subResult -> {
+						logger.info("2 - SubscriptionService subscription loading complete");
+						logger.info("3 - SubscriptionService initialization OK, registering message receivers");
+						this.microServiceUtils.registerBaseRequestReceiver(this);
+						this.microServiceUtils.registerCSourceReceiver(this);
+						
+						this.ready = true;
+						logger.info("4 - SubscriptionService initialization complete - processing messages");
+						drainStartupBuffers();
+					},
+					subFailure -> {
+						logger.error("SubscriptionService initialization failed during subscription loading",
+								subFailure);
+					});
+			},
+			failure -> {
+				logger.error("SubscriptionService initialization failed during registry loading", failure);
+			}
+		);
+			
+		// Uni.combine().all().unis(loadSubs, loadRegs).with(l -> l)
+		// 		.subscribe().with(
+		// 				result -> {
+		// 					this.microServiceUtils.registerBaseRequestReceiver(this);
+		// 					this.microServiceUtils.registerCSourceReceiver(this);
+		// 					this.ready = true;
+		// 					logger.info("SubscriptionService initialization complete - processing messages");
+		// 					drainStartupBuffers();
+		// 				},
+		// 				failure -> logger.error("SubscriptionService initialization failed", failure)
+		// 		);
 	}
 
 	private boolean isIntervalSub(SubscriptionRequest request) {
 		return request.getSubscription().getTimeInterval() > 0;
+	}
+
+	private void drainStartupBuffers() {
+		logger.info("Draining {} buffered entity messages and {} buffered csource messages",
+				startupEntityBuffer.size(), startupCsourceBuffer.size());
+		CSourceBaseRequest csourceMsg;
+		while ((csourceMsg = startupCsourceBuffer.poll()) != null) {
+			final CSourceBaseRequest msg = csourceMsg;
+			handleRegistryChange(msg).subscribe().with(
+					v -> logger.debug("Drained csource message: {}", msg.getId()),
+					e -> logger.error("Error draining csource message: {}", msg.getId(), e));
+		}
+		BaseRequest entityMsg;
+		while ((entityMsg = startupEntityBuffer.poll()) != null) {
+			final BaseRequest msg = entityMsg;
+			handleBaseRequest(msg).subscribe().with(
+					v -> logger.debug("Drained entity message for: {}", msg.getIds()),
+					e -> logger.error("Error draining entity message for: {}", msg.getIds(), e));
+		}
 	}
 
 	public Uni<NGSILDOperationResult> createSubscription(HeadersMultiMap linkHead, String tenant,
@@ -800,6 +868,11 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 	}
 
 	public Uni<Void> handleBaseRequest(BaseRequest message) {
+		if (!ready) {
+			startupEntityBuffer.offer(message);
+			logger.debug("Buffering entity message during startup for ids: {}", message.getIds());
+			return Uni.createFrom().voidItem();
+		}
 		Collection<SubscriptionRequest> potentialSubs;
 		synchronized (tableLock) {
 			// Copy the values to avoid concurrent modification issues
@@ -1487,6 +1560,9 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 
 	@Scheduled(every = "${scorpio.subscription.checkinterval}", delayed = "${scorpio.startupdelay}")
 	Uni<Void> checkIntervalSubs() {
+		if (!ready) {
+			return Uni.createFrom().voidItem();
+		}
 		List<Uni<Void>> unis = Lists.newArrayList();
 		logger.debug("acquiring log for interval");
 		synchronized (tableLock) {
