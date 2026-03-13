@@ -249,7 +249,7 @@ public class SubscriptionInfoDAO {
 				.transformToUni(rows -> {
 					List<Tuple2<String, String>> tenantList = new ArrayList<>();
 					rows.forEach(row -> tenantList.add(Tuple2.of(row.getString(0), row.getString(0))));
-					tenantList.add(Tuple2.of(AppConstants.INTERNAL_NULL_KEY, "default")); // null = default/internal tenant
+					tenantList.add(Tuple2.of(AppConstants.INTERNAL_NULL_KEY, null)); // null = default/internal
 
 					// Process tenants sequentially to avoid exhausting the DB connection pool
 					return Multi.createFrom().iterable(tenantList)

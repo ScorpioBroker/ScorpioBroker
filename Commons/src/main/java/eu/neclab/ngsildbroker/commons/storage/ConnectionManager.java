@@ -249,7 +249,7 @@ public class ConnectionManager {
 	private Uni<String> createDataSourceForTenantId(String tenantidvalue, boolean createDB) {
 		return findDataBaseNameByTenantId(tenantidvalue, createDB).onItem()
 				.transform(Unchecked.function(tenantDatabaseName -> {
-					logger.info("Creating data source for tenant '" + tenantidvalue + "', database '" + tenantDatabaseName + "'");
+					logger.debug("Creating data source for tenant '" + tenantidvalue + "', database '" + tenantDatabaseName + "'");
 
 					// TODO this needs to be from the config not hardcoded!!!
 					String tenantJdbcURL = DBUtil.databaseURLFromPostgresJdbcUrl(jdbcBaseUrl, tenantDatabaseName);
@@ -306,7 +306,6 @@ public class ConnectionManager {
 	}
 
 	public Boolean flywayValidateAndMigrate(DataSource tenantDataSource, String tenant, String tenantDatabaseName) {
-		logger.info("Starting Flyway validation and migration for tenant '" + tenant + "', database '" + tenantDatabaseName + "'");
 		FlywayContainerProducer flywayProducer = Arc.container().instance(FlywayContainerProducer.class).get();
 		FlywayContainer flywayContainer = flywayProducer.createFlyway(tenantDataSource, "<default>", true, true);
 		Flyway flyway = Flyway.configure()
@@ -342,12 +341,9 @@ public class ConnectionManager {
 				}
 			}
 		} else {
-			logger.info("FlyWay migration disabled for all datasources; tenant '" + tenant + "', database '" + tenantDatabaseName + "'.");
 			if (flywayValidateAtStart) {
 				try {
 					flyway.validate();
-					logger.info("Flyway validation successful for tenant '" + tenant + "', database '"
-							+ tenantDatabaseName + "'.");
 				} catch (FlywayException e) {
 					logger.error("Flyway validation failed for tenant '" + tenant + "', database '" + tenantDatabaseName
 							+ "'", e);
