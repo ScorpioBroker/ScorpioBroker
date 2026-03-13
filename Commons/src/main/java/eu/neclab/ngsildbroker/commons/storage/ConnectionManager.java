@@ -118,6 +118,21 @@ public class ConnectionManager {
 
 	private Map<String, PgPool> tenant2Client = Maps.newHashMap();
 
+	public Map<String, String> testTenantClients() {
+		Map<String, String> statusMap = Maps.newHashMap();
+		for (Map.Entry<String, PgPool> entry : tenant2Client.entrySet()) {
+			String tenantId = entry.getKey();
+			PgPool pool = entry.getValue();
+			try {
+				pool.query("SELECT 1").execute().await().atMost(Duration.ofSeconds(1));
+				statusMap.put(tenantId, "UP");
+			} catch (Exception e) {
+				statusMap.put(tenantId, "DOWN: " + e.getMessage());
+			}
+		}
+		return statusMap;
+	}
+
 	public Uni<RowSet<Row>> executeQuery(String tenant, String sql, Tuple tuple, boolean createTenant) {
 		PgPool client;
 		if (tenant == null) {

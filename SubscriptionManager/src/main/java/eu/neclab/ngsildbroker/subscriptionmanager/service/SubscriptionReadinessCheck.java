@@ -16,7 +16,7 @@ public class SubscriptionReadinessCheck implements HealthCheck {
 
 	@Override
 	public HealthCheckResponse call() {
-		return HealthCheckResponse.named("subscriptions-loaded")
+		return HealthCheckResponse.named("Startup: subscriptions loaded")
 				.status(subscriptionService.isReady())
 				.build();
 	}
