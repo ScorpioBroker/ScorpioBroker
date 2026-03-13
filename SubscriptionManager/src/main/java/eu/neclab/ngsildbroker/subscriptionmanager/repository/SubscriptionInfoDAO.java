@@ -256,8 +256,9 @@ public class SubscriptionInfoDAO {
 							.onItem().transformToUniAndConcatenate(tenantInfo -> {
 								String tenantId = tenantInfo.getItem1();
 								String tenantLabel = tenantInfo.getItem2();
+								String tenantDisplay = tenantLabel != null ? tenantLabel : "default/internal";
 
-								logger.info("Loading subscriptions for tenant '" + tenantLabel + "'");
+								logger.info("Loading subscriptions for tenant '" + tenantDisplay + "'");
 								return connectionManager.executeQuery(tenantLabel, "SELECT '" + tenantId
 										+ "', subscriptions.subscription, context as contextId, contexts.body as contextBody FROM subscriptions LEFT JOIN contexts ON subscriptions.context = contexts.id",
 										null, false)
@@ -278,9 +279,10 @@ public class SubscriptionInfoDAO {
 												}
 												batch.add(Tuple4.of(tenant, sub, ctxId, ctxMap));
 											});
+											logger.info("Loaded "+batch.size()+" subscriptions for tenant '" + tenantDisplay + "'");
 											return batch;
 										}).onFailure().recoverWithItem(e -> {
-											logger.error("Failed to load subscriptions for tenant '" + tenantLabel + "'", e);
+											logger.error("Failed to load subscriptions for tenant '" + tenantDisplay + "'", e);
 											return new ArrayList<>();
 										});
 							})

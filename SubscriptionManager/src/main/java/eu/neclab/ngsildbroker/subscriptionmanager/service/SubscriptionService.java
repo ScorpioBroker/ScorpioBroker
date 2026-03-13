@@ -468,16 +468,13 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 				
 		loadRegs.subscribe().with(
 			result -> {
-				logger.info("1 - SubscriptionService registry loading complete");
+				logger.info("SubscriptionService registry loading complete");
 				loadSubs.subscribe().with(
 					subResult -> {
-						logger.info("2 - SubscriptionService subscription loading complete");
-						logger.info("3 - SubscriptionService initialization OK, registering message receivers");
+						logger.info("SubscriptionService subscription loading complete");
 						this.microServiceUtils.registerBaseRequestReceiver(this);
 						this.microServiceUtils.registerCSourceReceiver(this);
-						
 						this.ready = true;
-						logger.info("4 - SubscriptionService initialization complete - processing messages");
 						drainStartupBuffers();
 					},
 					subFailure -> {
