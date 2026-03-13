@@ -481,12 +481,12 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 						drainStartupBuffers();
 					},
 					subFailure -> {
-						logger.error("SubscriptionService initialization failed during subscription loading",
+						logger.error("SubscriptionService initialization failed during subscription loading: "+subFailure.getMessage(),
 								subFailure);
 					});
 			},
 			failure -> {
-				logger.error("SubscriptionService initialization failed during registry loading", failure);
+				logger.error("SubscriptionService initialization failed during registry loading: "+failure.getMessage(), failure);
 			}
 		);
 			
