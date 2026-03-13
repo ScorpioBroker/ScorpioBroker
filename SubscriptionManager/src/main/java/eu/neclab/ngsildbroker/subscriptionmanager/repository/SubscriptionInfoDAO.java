@@ -245,7 +245,6 @@ public class SubscriptionInfoDAO {
 	}
 
 	public Uni<List<Tuple4<String, Map<String, Object>, String, Map<String, Object>>>> loadSubscriptions() {
-
 		return connectionManager.executeQuery(null, "select tenant_id from tenant", null, false).onItem()
 				.transformToUni(rows -> {
 					List<Tuple2<String, String>> tenantList = new ArrayList<>();
@@ -258,7 +257,7 @@ public class SubscriptionInfoDAO {
 								String tenantId = tenantInfo.getItem1();
 								String tenantLabel = tenantInfo.getItem2();
 
-								logger.info("Loading subscriptions for tenant " + tenantLabel +" (" + tenantId + ")");
+								logger.info("Loading subscriptions for tenant '" + tenantLabel + "'");
 								return connectionManager.executeQuery(tenantLabel, "SELECT '" + tenantId
 										+ "', subscriptions.subscription, context as contextId, contexts.body as contextBody FROM subscriptions LEFT JOIN contexts ON subscriptions.context = contexts.id",
 										null, false)
@@ -271,8 +270,8 @@ public class SubscriptionInfoDAO {
 												JsonObject ctx = row.getJsonObject(3);
 												Map<String, Object> ctxMap;
 												if (ctx == null) {
-													logger.error("Failed to read context for subscription "
-															+ sub.get(NGSIConstants.JSON_LD_ID) + " on tenant " + tenant);
+													logger.error("Failed to read context for subscription '" 
+															+ sub.get(NGSIConstants.JSON_LD_ID) + "' on tenant '" + tenant + "'");
 													ctxMap = null;
 												} else {
 													ctxMap = ctx.getMap();
@@ -281,7 +280,7 @@ public class SubscriptionInfoDAO {
 											});
 											return batch;
 										}).onFailure().recoverWithItem(e -> {
-											logger.error("Failed to load subscriptions for tenant " + tenantLabel, e);
+											logger.error("Failed to load subscriptions for tenant '" + tenantLabel + "'", e);
 											return new ArrayList<>();
 										});
 							})
@@ -303,7 +302,7 @@ public class SubscriptionInfoDAO {
 					JsonObject ctx = first.getJsonObject(2);
 					Map<String, Object> ctxMap;
 					if (ctx == null) {
-						logger.error("Failed to read context for subscription " + id + " on tenant " + tenant);
+						logger.error("Failed to read context for subscription '" + id + "' on tenant '" + tenant + "'");
 						ctxMap = null;
 					} else {
 						ctxMap = ctx.getMap();

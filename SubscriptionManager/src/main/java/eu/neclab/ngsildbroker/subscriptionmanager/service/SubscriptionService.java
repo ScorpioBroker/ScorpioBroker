@@ -162,8 +162,6 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 	private final Queue<BaseRequest> startupEntityBuffer = new ConcurrentLinkedQueue<>();
 	private final Queue<CSourceBaseRequest> startupCsourceBuffer = new ConcurrentLinkedQueue<>();
 
-	private boolean hasStartupError = false;
-
 	public boolean isReady() {
 		return ready;
 	}
@@ -388,6 +386,8 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 
 	@PostConstruct
 	void startup() {
+		logger.info("Starting SubscriptionService initialization - loading subscriptions and registries");		
+
 		this.webClient = WebClient.create(vertx);
 		ALL_TYPES_SUB = NGSIConstants.NGSI_LD_DEFAULT_PREFIX + allTypeSubType;
 		Uni<Void> loadSubs = subDAO.loadSubscriptions().onItem().transformToUni(subs -> {
@@ -405,7 +405,7 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 				for (Object obj : list) {
 					Tuple4<String, Map<String, Object>, String, Context> tuple = (Tuple4<String, Map<String, Object>, String, Context>) obj;
 					SubscriptionRequest request;
-
+					logger.debug("Loaded subscription {} with id {} for tenant {}", tuple.getItem1(), tuple.getItem2().get(NGSIConstants.JSON_LD_ID), tuple.getItem3());
 					try {
 						request = new SubscriptionRequest(tuple.getItem1(), tuple.getItem2(), tuple.getItem4());
 						request.setContextId(tuple.getItem3());
@@ -429,7 +429,7 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 						}
 						subscriptionId2RequestGlobal.put(request.getId(), request);
 					} catch (Exception e) {
-						logger.error("Failed to load stored subscription " + tuple.getItem1());
+						logger.error("Failed to load stored subscription " + tuple.getItem1(), e);
 					}
 				}
 				return null;
@@ -465,45 +465,38 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 			});
 			return Uni.createFrom().voidItem();
 		});
-		
+				
 		loadRegs.subscribe().with(
 			result -> {
-				logger.info("SubscriptionService registry loading complete");								
+				logger.info("1 - SubscriptionService registry loading complete");
+				loadSubs.subscribe().with(
+					subResult -> {
+						logger.info("2 - SubscriptionService subscription loading complete");
+						logger.info("3 - SubscriptionService initialization OK, registering message receivers");
+						this.microServiceUtils.registerBaseRequestReceiver(this);
+						this.microServiceUtils.registerCSourceReceiver(this);
+						
+						this.ready = true;
+						logger.info("4 - SubscriptionService initialization complete - processing messages");
+						drainStartupBuffers();
+					},
+					subFailure -> {
+						logger.error("SubscriptionService initialization failed during subscription loading",
+								subFailure);
+					});
 			},
 			failure -> {
 				logger.error("SubscriptionService initialization failed during registry loading", failure);
-				this.hasStartupError = true;
 			}
 		);
-	
-		loadSubs.subscribe().with(
-			result -> {
-				logger.info("SubscriptionService subscription loading complete");								
-			},
-			failure -> {
-				logger.error("SubscriptionService initialization failed during subscription loading", failure);
-				this.hasStartupError = true;
-			}
-		);
-
-		if (this.hasStartupError == false) {
-			logger.info("SubscriptionService initialization okay, now registering message receivers");
-			this.microServiceUtils.registerBaseRequestReceiver(this);
-			this.microServiceUtils.registerCSourceReceiver(this);
-			this.ready = true;
-			logger.info("SubscriptionService initialization complete — now processing messages");
-			drainStartupBuffers();
-		} else {
-			logger.error("SubscriptionService initialization failed, not registering message receivers");
-		}
-
+			
 		// Uni.combine().all().unis(loadSubs, loadRegs).with(l -> l)
 		// 		.subscribe().with(
 		// 				result -> {
 		// 					this.microServiceUtils.registerBaseRequestReceiver(this);
 		// 					this.microServiceUtils.registerCSourceReceiver(this);
 		// 					this.ready = true;
-		// 					logger.info("SubscriptionService initialization complete — now processing messages");
+		// 					logger.info("SubscriptionService initialization complete - processing messages");
 		// 					drainStartupBuffers();
 		// 				},
 		// 				failure -> logger.error("SubscriptionService initialization failed", failure)
