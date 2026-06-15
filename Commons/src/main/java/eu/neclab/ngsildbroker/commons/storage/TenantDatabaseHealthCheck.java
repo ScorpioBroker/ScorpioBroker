@@ -11,7 +11,6 @@ import org.eclipse.microprofile.health.Readiness;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import io.vertx.mutiny.pgclient.PgPool;
 
 @Readiness
 @ApplicationScoped

@@ -465,39 +465,26 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 			});
 			return Uni.createFrom().voidItem();
 		});
-				
-		loadRegs.subscribe().with(
-			result -> {
-				logger.info("SubscriptionService registry loading complete");
-				loadSubs.subscribe().with(
-					subResult -> {
-						logger.info("SubscriptionService subscription loading complete");
-						this.microServiceUtils.registerBaseRequestReceiver(this);
-						this.microServiceUtils.registerCSourceReceiver(this);
-						this.ready = true;
-						drainStartupBuffers();
-					},
-					subFailure -> {
-						logger.error("SubscriptionService initialization failed during subscription loading: "+subFailure.getMessage(),
-								subFailure);
-					});
-			},
-			failure -> {
-				logger.error("SubscriptionService initialization failed during registry loading: "+failure.getMessage(), failure);
-			}
-		);
-			
-		// Uni.combine().all().unis(loadSubs, loadRegs).with(l -> l)
-		// 		.subscribe().with(
-		// 				result -> {
-		// 					this.microServiceUtils.registerBaseRequestReceiver(this);
-		// 					this.microServiceUtils.registerCSourceReceiver(this);
-		// 					this.ready = true;
-		// 					logger.info("SubscriptionService initialization complete - processing messages");
-		// 					drainStartupBuffers();
-		// 				},
-		// 				failure -> logger.error("SubscriptionService initialization failed", failure)
-		// 		);
+
+		try {
+			loadRegs.await().atMost(Duration.ofSeconds(30));
+		} catch (Exception e) {
+			logger.error("SubscriptionService initialization failed during registry loading: " + e.getMessage(), e);
+			throw new RuntimeException("SubscriptionService initialization failed during registry loading", e);
+		}
+		try {
+			loadSubs.await().atMost(Duration.ofSeconds(30));
+		} catch (Exception e) {
+			logger.error("SubscriptionService initialization failed during subscription loading: " + e.getMessage(), e);
+			throw new RuntimeException("SubscriptionService initialization failed during subscription loading", e);
+		}
+
+		this.microServiceUtils.registerBaseRequestReceiver(this);
+		this.microServiceUtils.registerCSourceReceiver(this);
+		this.ready = true;
+		drainStartupBuffers();
+		logger.info("SubscriptionService initialization completed successfully");
+		// System.exit(0);
 	}
 
 	private boolean isIntervalSub(SubscriptionRequest request) {
