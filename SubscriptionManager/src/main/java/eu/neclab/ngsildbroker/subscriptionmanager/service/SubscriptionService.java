@@ -68,6 +68,7 @@ import io.netty.handler.codec.mqtt.MqttQoS;
 import io.quarkus.runtime.Startup;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple4;
 import io.vertx.core.http.impl.headers.HeadersMultiMap;
@@ -862,13 +863,15 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 			// Copy the values to avoid concurrent modification issues
 			potentialSubs = List.copyOf(tenant2subscriptionId2Subscription.row(message.getTenant()).values());
 		}
-		return checkSubscriptions(message, potentialSubs);
+		return Uni.createFrom().voidItem()
+				.emitOn(Infrastructure.getDefaultWorkerPool())
+				.onItem().transformToUni(v -> checkSubscriptions(message, potentialSubs));
 	}
 
 	public Uni<Void> checkSubscriptions(BaseRequest message, Collection<SubscriptionRequest> potentialSubs) {
 		List<Uni<Void>> unis = Lists.newArrayList();
 		logger.debug("checking subscriptions");
-		// logger.debug(message.toString());
+		logger.debug(message.toString());
 
 		for (SubscriptionRequest potentialSub : potentialSubs) {
 			logger.debug("Potential Sub");
