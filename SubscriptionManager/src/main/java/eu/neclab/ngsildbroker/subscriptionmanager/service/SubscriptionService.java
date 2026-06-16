@@ -1357,6 +1357,11 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 						}
 						case "http", "https" -> {
 							try {
+								logger.debug(
+										"Sending HTTP notification for subscription {} to endpoint {}, payload size: {} entities",
+										potentialSub.getId(),
+										notificationParam.getEndPoint().getUri().toString(),
+										dataToSend.size());
 								toSend = webClient.postAbs(notificationParam.getEndPoint().getUri().toString())
 										.putHeaders(SubscriptionTools.getHeaders(notificationParam,
 												potentialSub.getSubscription().getOtherHead()))
