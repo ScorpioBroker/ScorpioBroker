@@ -24,8 +24,8 @@ public abstract class SubscriptionMessagingBase {
 
 	public Uni<Void> baseHandleEntity(BaseRequest message) {
 
-		// logger.debug("Subscription sub manager got called for entity: " +
-		// message.getIds());
+		logger.debug("Subscription event consumed - entity ids: {}, requestType: {}, sendTimestamp: {}",
+				message.getIds(), message.getRequestType(), message.getSendTimestamp());
 		return subscriptionService.handleBaseRequest(message).onFailure().recoverWithUni(t -> {
 			logger.debug("Exception Occurred in checkSubscriptions: ", t);
 			return Uni.createFrom().voidItem();
@@ -40,6 +40,7 @@ public abstract class SubscriptionMessagingBase {
 	ObjectMapper objectMapper;
 
 	public Uni<Void> handleEntityRaw(String byteMessage) {
+		logger.debug("Received entity message from messaging channel, size: {} bytes", byteMessage.length());
 		BaseRequest baseRequest;
 		try {
 			baseRequest = objectMapper.readValue(byteMessage, BaseRequest.class);
@@ -53,6 +54,7 @@ public abstract class SubscriptionMessagingBase {
 	}
 
 	public Uni<Void> handleCsourceRaw(String byteMessage) {
+		logger.debug("Received csource message from messaging channel, size: {} bytes", byteMessage.length());
 		CSourceBaseRequest message;
 		try {
 			message = objectMapper.readValue(byteMessage, CSourceBaseRequest.class);
@@ -64,7 +66,8 @@ public abstract class SubscriptionMessagingBase {
 	}
 
 	public Uni<Void> baseHandleCsource(CSourceBaseRequest message) {
-		logger.debug("CSource sub manager got called for csource: " + message.getId());
+		logger.debug("Subscription event consumed - csource id: {}, requestType: {}",
+				message.getId(), message.getRequestType());
 		return subscriptionService.handleRegistryChange(message).onFailure().recoverWithUni(e -> {
 			logger.debug("failed to handle registry entry", e);
 			return Uni.createFrom().voidItem();
