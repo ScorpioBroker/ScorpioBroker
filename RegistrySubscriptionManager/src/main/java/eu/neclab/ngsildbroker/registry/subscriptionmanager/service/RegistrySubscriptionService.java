@@ -59,6 +59,7 @@ import io.netty.handler.codec.mqtt.MqttQoS;
 import io.quarkus.runtime.Startup;
 import io.quarkus.scheduler.Scheduled;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.Vertx;
@@ -108,6 +109,9 @@ public class RegistrySubscriptionService implements CSourceHandler {
 	@ConfigProperty(name = "scorpio.alltypesub.type")
 	private String allTypeSubType;
 
+	@ConfigProperty(name = "scorpio.subscription.notification.worker-thread", defaultValue = "false")
+	boolean notificationOnWorkerThread;
+
 	@Inject
 	MicroServiceUtils microServiceUtils;
 	private String ALL_TYPES_SUB;
@@ -149,7 +153,6 @@ public class RegistrySubscriptionService implements CSourceHandler {
 			});
 		}).await().indefinitely();
 		this.microServiceUtils.registerCSourceReceiver(this);
-
 	}
 
 	private boolean isIntervalSub(SubscriptionRequest request) {
@@ -343,8 +346,12 @@ public class RegistrySubscriptionService implements CSourceHandler {
 
 	private Uni<Void> sendNotification(SubscriptionRequest potentialSub, Map<String, Object> reg, int triggerReason) {
 		if (shouldSendOut(potentialSub, reg)) {
-			return SubscriptionTools.generateCsourceNotification(potentialSub, reg, triggerReason, ldService).onItem()
-					.transformToUni(notification -> {
+			long notificationStartTime = System.currentTimeMillis();
+			Uni<Map<String, Object>> generated = SubscriptionTools.generateCsourceNotification(potentialSub, reg, triggerReason, ldService);
+			if (notificationOnWorkerThread) {
+				generated = generated.emitOn(Infrastructure.getDefaultWorkerPool());
+			}
+			return generated.onItem().transformToUni(notification -> {
 						NotificationParam notificationParam = potentialSub.getSubscription().getNotification();
 						Uni<Void> toSend;
 						switch (notificationParam.getEndPoint().getUri().getScheme()) {

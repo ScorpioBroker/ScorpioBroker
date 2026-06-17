@@ -135,6 +135,9 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 	@ConfigProperty(name = "scorpio.querymanager.url")
 	private String queryServiceUrl;
 
+	@ConfigProperty(name = "scorpio.subscription.notification.worker-thread", defaultValue = "false")
+	boolean notificationOnWorkerThread;
+
 	private String ALL_TYPES_SUB;
 
 	private Table<String, SubscriptionRemoteHost, Set<String>> tenant2RemoteHost2SubIds = HashBasedTable.create();
@@ -870,12 +873,12 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 
 	public Uni<Void> checkSubscriptions(BaseRequest message, Collection<SubscriptionRequest> potentialSubs) {
 		List<Uni<Void>> unis = Lists.newArrayList();
-		logger.debug("checking subscriptions");
-		logger.debug(message.toString());
+		logger.debug("matching subscriptions to message with ids {} and tenant {}", message.getIds(), message.getTenant());
+		// logger.debug(message.toString());
 
 		for (SubscriptionRequest potentialSub : potentialSubs) {
-			logger.debug("Potential Sub");
-			logger.debug(potentialSub.toString());
+			// logger.debug("Potential Sub");
+			// logger.debug(potentialSub.toString());
 			List<Map<String, Object>> dataToSend = Lists.newArrayList();
 
 			if ((potentialSub.getSendTimestamp() != -1 && potentialSub.getSendTimestamp() > message.getSendTimestamp())
@@ -1295,8 +1298,12 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 		if (dataToSend == null || dataToSend.isEmpty()) {
 			return Uni.createFrom().voidItem();
 		}
-		return SubscriptionTools.generateNotification(potentialSub, dataToSend, ldService).onItem()
-				.transformToUni(notification -> {
+		long notificationStartTime = System.currentTimeMillis();
+		Uni<Map<String, Object>> generated = SubscriptionTools.generateNotification(potentialSub, dataToSend, ldService);
+		if (notificationOnWorkerThread) {
+			generated = generated.emitOn(Infrastructure.getDefaultWorkerPool());
+		}
+		return generated.onItem().transformToUni(notification -> {
 					NotificationParam notificationParam = potentialSub.getSubscription().getNotification();
 					Uni<Void> toSend;
 					switch (notificationParam.getEndPoint().getUri().getScheme()) {
@@ -1323,6 +1330,10 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 														// TODO what the fuck is the result here
 													}
 													long now = System.currentTimeMillis();
+													logger.debug(
+															"MQTT notification for subscription {} completed in {} ms",
+															potentialSub.getId(),
+															now - notificationStartTime);
 													potentialSub.getSubscription().getNotification()
 															.setLastSuccessfulNotification(now);
 													potentialSub.getSubscription().getNotification()
@@ -1372,6 +1383,11 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 										.retry().atMost(3).onItem().transformToUni(result -> {
 											int statusCode = result.statusCode();
 											long now = System.currentTimeMillis();
+											logger.debug(
+													"HTTP notification for subscription {} completed in {} ms with status {}",
+													potentialSub.getId(),
+													now - notificationStartTime,
+													statusCode);
 											if (statusCode >= 200 && statusCode < 300) {
 												potentialSub.getSubscription().getNotification()
 														.setLastSuccessfulNotification(now);
