@@ -470,25 +470,19 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 			return Uni.createFrom().voidItem();
 		});
 
-		try {
-			loadRegs.await().atMost(Duration.ofSeconds(30));
-		} catch (Exception e) {
-			logger.error("SubscriptionService initialization failed during registry loading: " + e.getMessage(), e);
-			throw new RuntimeException("SubscriptionService initialization failed during registry loading", e);
-		}
-		try {
-			loadSubs.await().atMost(Duration.ofSeconds(30));
-		} catch (Exception e) {
-			logger.error("SubscriptionService initialization failed during subscription loading: " + e.getMessage(), e);
-			throw new RuntimeException("SubscriptionService initialization failed during subscription loading", e);
-		}
-
-		this.microServiceUtils.registerBaseRequestReceiver(this);
-		this.microServiceUtils.registerCSourceReceiver(this);
-		this.ready = true;
-		drainStartupBuffers();
-		logger.info("SubscriptionService initialization completed successfully");
-		// System.exit(0);
+		Uni.combine().all().unis(loadRegs, loadSubs).asTuple()
+				.emitOn(Infrastructure.getDefaultWorkerPool())
+				.subscribe().with(
+						tuple -> {
+							this.microServiceUtils.registerBaseRequestReceiver(this);
+							this.microServiceUtils.registerCSourceReceiver(this);
+							this.ready = true;
+							drainStartupBuffers();
+							logger.info("SubscriptionService initialization completed successfully");
+						},
+						e -> {
+							logger.error("SubscriptionService initialization failed: " + e.getMessage(), e);
+						});
 	}
 
 	private boolean isIntervalSub(SubscriptionRequest request) {
