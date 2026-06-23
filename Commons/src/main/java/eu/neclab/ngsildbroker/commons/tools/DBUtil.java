@@ -37,9 +37,29 @@ public class DBUtil {
 	public static String databaseURLFromPostgresJdbcUrl(String url, String newDbName) {
 		try {
 			String cleanURI = url.substring(5);
-
+			
 			URI uri = URI.create(cleanURI);
-			return "jdbc:" + uri.getScheme() + "://" + uri.getHost() + ":" + uri.getPort() + "/" + newDbName;
+			String jdbcURL = "jdbc:" + uri.getScheme() + "://" + uri.getHost() + ":" + uri.getPort() + "/" + newDbName;
+			if (uri.getRawQuery() != null) {
+				jdbcURL += "?" + uri.getRawQuery();
+			}
+			return jdbcURL;
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	public static String databaseURLFromPostgresJdbcUrl(String url, String newDbName, String clientName) {
+		try {
+			String tenantJdbcURL = databaseURLFromPostgresJdbcUrl(url, newDbName);
+			if (tenantJdbcURL.contains("?ApplicationName=")) {
+				tenantJdbcURL = tenantJdbcURL.replaceFirst("ApplicationName=[^&]*", "ApplicationName=" + clientName);
+			} else if (tenantJdbcURL.contains("?")) {
+				tenantJdbcURL += "&ApplicationName=" + clientName;
+			} else {
+				tenantJdbcURL += "?ApplicationName=" + clientName;
+			}
+			return tenantJdbcURL;
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
