@@ -89,6 +89,7 @@ public class RegistrationEntry {
 	boolean retrieveEntityMap;
 	RemoteHost host;
 	Context context;
+	Map<String, Object> registration;
 
 	public RegistrationEntry(String cId, String eId, String eIdp, String type, String eProp, String eRel,
 			Shape location, String[] scopes, long expiresAt, int regMode, boolean createEntity, boolean updateEntity,
@@ -581,6 +582,12 @@ public class RegistrationEntry {
 				}
 			}
 
+			// keep a reference to the full expanded registration so a context source
+			// filter (csf) can be evaluated against the registration's descriptive
+			// properties in memory. all entries of one registration share the payload.
+			for (RegistrationEntry regEntry : result) {
+				regEntry.registration = payload;
+			}
 			return result;
 		});
 	}
@@ -1411,6 +1418,10 @@ public class RegistrationEntry {
 
 	public void setContext(Context context) {
 		this.context = context;
+	}
+
+	public Map<String, Object> registration() {
+		return registration;
 	}
 
 }

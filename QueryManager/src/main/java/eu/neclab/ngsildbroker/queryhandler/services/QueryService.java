@@ -124,7 +124,7 @@ public class QueryService implements CSourceHandler {
 			DataSetIdTerm dataSetIdTerm, String join, int joinLevel, boolean entityDist, PickTerm pickTerm,
 			OmitTerm omitTerm, String checkSum, ViaHeaders viaHeaders, String typePattern,
 			boolean forceEntitymapCreation, OrderByTerm orderBy, boolean metadata) {
-		return getAndStoreEntityMap(tenant, qToken, idsAndTypeQueryAndIdPattern, attrsQuery, geoQuery, qQuery,
+		return getAndStoreEntityMap(tenant, qToken, idsAndTypeQueryAndIdPattern, attrsQuery, geoQuery, qQuery, csf,
 				scopeQuery, langQuery, limit, offSet, context, headersFromReq, doNotCompact, dataSetIdTerm, join,
 				joinLevel, entityDist, pickTerm, omitTerm, checkSum, viaHeaders, typePattern, localOnly,
 				forceEntitymapCreation || tokenProvided,
@@ -1819,7 +1819,8 @@ public class QueryService implements CSourceHandler {
 
 	public Uni<Tuple2<EntityCache, EntityMap>> getAndStoreEntityMap(String tenant, String qToken,
 			List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeQueryAndIdPattern, AttrsQueryTerm attrsQuery,
-			GeoQueryTerm geoQuery, QQueryTerm qQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery, int limit,
+			GeoQueryTerm geoQuery, QQueryTerm qQuery, CSFQueryTerm csf, ScopeQueryTerm scopeQuery,
+			LanguageQueryTerm langQuery, int limit,
 			int offset, Context context, io.vertx.core.MultiMap headersFromReq, boolean doNotCompact,
 			DataSetIdTerm dataSetIdTerm, String join, int joinLevel, boolean splitEntities, PickTerm pickTerm,
 			OmitTerm omitTerm, String queryCechksum, ViaHeaders viaHeaders, String typePattern, boolean localOnly,
@@ -1834,7 +1835,7 @@ public class QueryService implements CSourceHandler {
 		} else {
 			EntityCache fullEntityCache = new EntityCache();
 			Collection<QueryRemoteHost> remoteHost2Query = EntityTools.getRemoteQueries(tenant,
-					idsAndTypeQueryAndIdPattern, attrsQuery, qQuery, geoQuery, scopeQuery, langQuery,
+					idsAndTypeQueryAndIdPattern, attrsQuery, qQuery, csf, geoQuery, scopeQuery, langQuery,
 					tenant2CId2RegEntries, context, fullEntityCache, splitEntities, viaHeaders);
 			// remoteHost2Query.forEach(entry -> logger.debug(entry.toString()));
 			if (remoteHost2Query.isEmpty() || localOnly) {
@@ -2069,9 +2070,11 @@ public class QueryService implements CSourceHandler {
 			}
 			List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypes = new ArrayList<>(1);
 			idsAndTypes.add(Tuple3.of(entityIds, typeQueryTerm, null));
+			// csf is null here: this is the linked-entity (join) traversal, not the
+			// primary source selection which already applied csf when building the map
 			Collection<QueryRemoteHost> remoteQueries = EntityTools.getRemoteQueries(idsAndTypes, null, linkedQ, null,
-					null, null, tenant2CId2RegEntries.row(tenant).values(), linkHeaders, fullEntityCache, viaHeaders,
-					splitEntities);
+					null, null, null, tenant2CId2RegEntries.row(tenant).values(), linkHeaders, fullEntityCache,
+					viaHeaders, splitEntities);
 			for (QueryRemoteHost remoteQuery : remoteQueries) {
 
 				unis.add(EntityTools.getRemoteEntities(remoteQuery, webClient, timeout, fedlimit, 0, ldService).onItem()

@@ -435,7 +435,8 @@ public class QueryController {
 				.transformToUni(params -> {
 					return queryService.getAndStoreEntityMap(tenant, params.getEntityMapToken(),
 							params.getIdsAndTypeAndIdPattern(), params.getAttrsQueryTerm(), params.getGeoQueryTerm(),
-							params.getqQueryTerm(), params.getScopeQueryTerm(), params.getLanguageQueryTerm(), 1, 0,
+							params.getqQueryTerm(), params.getCsfQueryTerm(), params.getScopeQueryTerm(),
+							params.getLanguageQueryTerm(), 1, 0,
 							params.getContext(), request.headers(), false, params.getDataSetIdTerm(), null, -1,
 							distEntities, params.getPickTerm(), params.getOmitTerm(), params.getCheckSum(),
 							params.getViaHeaders(), null, false, true, true, true, params.getOrderBy(),
