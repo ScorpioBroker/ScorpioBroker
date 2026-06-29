@@ -1223,7 +1223,7 @@ public final class HttpUtils {
 				.transform(resultAndHeaders -> {
 					String nextLink;
 					String prevLink;
-					if (request != null) {
+					if (request != null && payloadType == AppConstants.QUERY_PAYLOAD) {
 						MultiMap urlParams = request.params();
 						nextLink = HttpUtils.generateNextLink(urlParams, queryResult, baseUrl, ngsiLdEndpoint);
 						prevLink = HttpUtils.generatePrevLink(urlParams, queryResult, baseUrl, ngsiLdEndpoint);

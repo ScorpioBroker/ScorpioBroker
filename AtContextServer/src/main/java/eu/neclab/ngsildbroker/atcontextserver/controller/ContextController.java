@@ -10,6 +10,7 @@ import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.json.JsonObject;
 
 import org.apache.commons.lang3.StringUtils;
@@ -171,7 +172,8 @@ public class ContextController {
 	@Counted(name = "context_createimplicitly_total", description = "Total number of context createimplicitly requests", absolute = true)
 	@Timed(name = "context_createimplicitly_duration", description = "Duration of context createimplicitly requests", unit = MetricUnits.MILLISECONDS, absolute = true)
 	@ConcurrentGauge(name = "context_createimplicitly_concurrent", description = "Number of concurrent context createimplicitly requests", absolute = true)
-	public Uni<RestResponse<Object>> createImplicitly(String payload) {
+	public Uni<RestResponse<Object>> createImplicitly(HttpServerRequest request, String payload) {
+		String tenant = HttpUtils.getTenant(request);
 		return JsonUtils.fromString(payload).onItem().transformToUni(json -> {
 			Map<String, Object> payloadMap = new HashMap<>();
 			try {
@@ -181,9 +183,9 @@ public class ContextController {
 				else
 					payloadMap.put(NGSIConstants.JSON_LD_CONTEXT, contextBody);
 			} catch (Exception e) {
-				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, AppConstants.INTERNAL_NULL_KEY));
+				return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
 			}
-			return contextService.createImplicitly(payloadMap);
+			return contextService.createImplicitly(tenant, payloadMap);
 		});
 	}
 }

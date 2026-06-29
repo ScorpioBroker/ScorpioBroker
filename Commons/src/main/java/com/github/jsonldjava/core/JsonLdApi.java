@@ -3522,39 +3522,8 @@ public class JsonLdApi {
 				geoValue.put(NGSIConstants.CSOURCE_COORDINATES, multiLineStringResult);
 				break;
 			case NGSIConstants.NGSI_LD_MULTI_POLYGON:
-				// MultiPolygon: [{"@list": [{"@list": [{"@list": [{"@list": [{"@value": lon},
-				// {"@value": lat}]}, ...]}, ...]}, ...]
-				List<Map<String, List<Map<String, List<Map<String, List<Map<String, List<Map<String, Number>>>>>>>>>> multiPolyHelper = (List<Map<String, List<Map<String, List<Map<String, List<Map<String, List<Map<String, Number>>>>>>>>>>) coordinatesObj;
-				List<List<List<List<Number>>>> multiPoliResult = new ArrayList<>(
-						multiPolyHelper.size());
-				for (Map<String, List<Map<String, List<Map<String, List<Map<String, List<Map<String, Number>>>>>>>>> polyEntry : multiPolyHelper) {
-
-					List<Map<String, List<Map<String, List<Map<String, Number>>>>>> poliHelper = polyEntry
-							.get(NGSIConstants.JSON_LD_LIST).get(0)
-							.get(NGSIConstants.JSON_LD_LIST);
-					;
-					List<List<List<Number>>> polyResult = new ArrayList<>(poliHelper.size());
-					for (Map<String, List<Map<String, List<Map<String, Number>>>>> lineEntry : poliHelper) {
-						List<Map<String, List<Map<String, Number>>>> line = lineEntry
-								.get(NGSIConstants.JSON_LD_LIST);
-
-						List<List<Number>> mLineResult = new ArrayList<>(line.size());
-						for (Map<String, List<Map<String, Number>>> pointEntry : line) {
-
-							List<Map<String, Number>> tmp = pointEntry
-									.get(NGSIConstants.JSON_LD_LIST);
-							List<Number> point = new ArrayList<>(2);
-							point.add(tmp.get(0).get(NGSIConstants.JSON_LD_VALUE));
-							point.add(tmp.get(1).get(NGSIConstants.JSON_LD_VALUE));
-							mLineResult.add(point);
-						}
-						polyResult.add(mLineResult);
-					}
-
-				}
-				geoValue.put(NGSIConstants.TYPE,
-						NGSIConstants.GEO_TYPE_MULTI_POLYGON);
-				geoValue.put(NGSIConstants.CSOURCE_COORDINATES, multiPoliResult);
+				geoValue.put(NGSIConstants.TYPE, NGSIConstants.GEO_TYPE_MULTI_POLYGON);
+				geoValue.put(NGSIConstants.CSOURCE_COORDINATES, compactMultiPolygonCoordinates(coordinatesObj));
 				break;
 
 			default:
@@ -3808,6 +3777,35 @@ public class JsonLdApi {
 
 		return expandSubLevels(context, activeProperty, new NGSIObject(entryValue, null), -1, false);
 
+	}
+
+	@SuppressWarnings("unchecked")
+	private List<List<List<List<Number>>>> compactMultiPolygonCoordinates(Object coordinatesObj) {
+		List<Map<String, Object>> wrapped = (List<Map<String, Object>>) coordinatesObj;
+		List<Map<String, Object>> polygons = (List<Map<String, Object>>) wrapped.get(0)
+				.get(NGSIConstants.JSON_LD_LIST);
+		List<List<List<List<Number>>>> multiPolygonResult = new ArrayList<>(polygons.size());
+		for (Map<String, Object> polygonEntry : polygons) {
+			List<Map<String, Object>> rings = (List<Map<String, Object>>) polygonEntry
+					.get(NGSIConstants.JSON_LD_LIST);
+			List<List<List<Number>>> polygonResult = new ArrayList<>(rings.size());
+			for (Map<String, Object> ringEntry : rings) {
+				List<Map<String, Object>> points = (List<Map<String, Object>>) ringEntry
+						.get(NGSIConstants.JSON_LD_LIST);
+				List<List<Number>> ringResult = new ArrayList<>(points.size());
+				for (Map<String, Object> pointEntry : points) {
+					List<Map<String, Object>> coords = (List<Map<String, Object>>) pointEntry
+							.get(NGSIConstants.JSON_LD_LIST);
+					List<Number> point = new ArrayList<>(2);
+					point.add((Number) coords.get(0).get(NGSIConstants.JSON_LD_VALUE));
+					point.add((Number) coords.get(1).get(NGSIConstants.JSON_LD_VALUE));
+					ringResult.add(point);
+				}
+				polygonResult.add(ringResult);
+			}
+			multiPolygonResult.add(polygonResult);
+		}
+		return multiPolygonResult;
 	}
 
 }

@@ -94,8 +94,8 @@ void startup() {
 		return cache.createOrGetCache(url, false, true);
 	}
 
-	public Uni<RestResponse<Object>> createImplicitly(Map<String, Object> payload) {
-		return dao.createContextImpl(payload);
+	public Uni<RestResponse<Object>> createImplicitly(String tenant, Map<String, Object> payload) {
+		return dao.createContextImpl(tenant, payload);
 
 	}
 }

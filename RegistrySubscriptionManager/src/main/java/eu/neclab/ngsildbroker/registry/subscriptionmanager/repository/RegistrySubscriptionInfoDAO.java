@@ -54,6 +54,7 @@ public class RegistrySubscriptionInfoDAO {
 	public Uni<RowSet<Row>> createSubscription(SubscriptionRequest request) {
 
 		return webClient.postAbs("http://localhost:9090/ngsi-ld/v1/jsonldContexts/createimplicitly/")
+				.putHeader(NGSIConstants.TENANT_HEADER, request.getTenant())
 				.sendJsonObject(new JsonObject(request.getContext().serialize())).onItemOrFailure()
 				.transformToUni((item, failure) -> {
 					if (failure != null)
@@ -68,6 +69,7 @@ public class RegistrySubscriptionInfoDAO {
 	public Uni<Tuple2<Map<String, Object>, Object>> updateSubscription(UpdateSubscriptionRequest request) {
 
 		return webClient.postAbs("http://localhost:9090/ngsi-ld/v1/jsonldContexts/createimplicitly/")
+				.putHeader(NGSIConstants.TENANT_HEADER, request.getTenant())
 				.sendJsonObject(new JsonObject(request.getContext().serialize())).onItemOrFailure()
 				.transformToUni((item, failure) -> {
 					if (failure != null)

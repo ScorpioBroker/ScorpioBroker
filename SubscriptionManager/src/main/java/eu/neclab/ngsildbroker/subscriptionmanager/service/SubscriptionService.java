@@ -376,6 +376,11 @@ public class SubscriptionService implements CSourceHandler, BaseRequestHandler {
 		Uni<Void> loadSubs = subDAO.loadSubscriptions().onItem().transformToUni(subs -> {
 			List<Uni<Tuple4<String, Map<String, Object>, String, Context>>> unis = Lists.newArrayList();
 			subs.forEach(tuple -> {
+				if (tuple.getItem4() == null) {
+					logger.error("Skipping subscription {} on tenant {} - context {} not found in tenant database",
+							tuple.getItem2().get(NGSIConstants.JSON_LD_ID), tuple.getItem1(), tuple.getItem3());
+					return;
+				}
 				unis.add(ldService.parsePure(tuple.getItem4().get(NGSIConstants.JSON_LD_CONTEXT)).onItem()
 						.transform(ctx -> {
 							return Tuple4.of(tuple.getItem1(), tuple.getItem2(), tuple.getItem3(), ctx);

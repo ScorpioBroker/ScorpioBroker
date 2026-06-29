@@ -168,6 +168,7 @@ public class QueryService implements CSourceHandler {
 
 		// no registry entries just push out the result
 		boolean isFlatJoin = NGSIConstants.FLAT.equals(join);
+		boolean isolateForInlineJoin = needsInlineJoinResultIsolation(join, joinLevel);
 		result.setIsFlatJoin(isFlatJoin);
 		if (entityMap.isRegEmptyOrNoRegEntryAndNoLinkedQuery()) {
 
@@ -176,7 +177,8 @@ public class QueryService implements CSourceHandler {
 				if (isFlatJoin) {
 					resultData.add(entityCache.remove(id2Hosts.getKey()).getItem1());
 				} else {
-					resultData.add(entityCache.get(id2Hosts.getKey()).getItem1());
+					Map<String, Object> cached = entityCache.get(id2Hosts.getKey()).getItem1();
+					resultData.add(isolateForInlineJoin ? entityShellForJoin(cached) : cached);
 				}
 			});
 
@@ -190,7 +192,7 @@ public class QueryService implements CSourceHandler {
 					}
 				} else if (NGSIConstants.INLINE.equals(join)) {
 					for (Map<String, Object> entity : resultData) {
-						inlineEntity(entity, entityCache, 1, joinLevel, localOnly);
+						inlineEntity(entity, entityCache, 0, joinLevel, localOnly);
 					}
 				}
 				if ((pickTerm != null && pickTerm.isHasAnyLinked())
@@ -208,7 +210,8 @@ public class QueryService implements CSourceHandler {
 		} else if (entityMap.isNoRootLevelRegEntryAndLinkedQuery()) {
 
 			subMap.forEach(id2Hosts -> {
-				resultData.add(entityCache.get(id2Hosts.getKey()).getItem1());
+				Map<String, Object> cached = entityCache.get(id2Hosts.getKey()).getItem1();
+				resultData.add(isolateForInlineJoin ? entityShellForJoin(cached) : cached);
 			});
 			if (qQuery != null && qQuery.hasLinkedQ()) {
 				return retrieveJoins(tenant, resultData, entityCache, context, qQuery, 0, -1, qQuery.getMaxJoinLevel(),
@@ -249,7 +252,7 @@ public class QueryService implements CSourceHandler {
 							if (tpl != null) {
 								Map<String, Object> itm1 = tpl.getItem1();
 								if (itm1 != null) {
-									resultData.add(itm1);
+									resultData.add(isolateForInlineJoin ? entityShellForJoin(itm1) : itm1);
 								}
 							}
 
@@ -839,6 +842,51 @@ public class QueryService implements CSourceHandler {
 
 	}
 
+	private static boolean needsInlineJoinResultIsolation(String join, int joinLevel) {
+		return join != null && joinLevel > 0 && NGSIConstants.INLINE.equals(join);
+	}
+
+	/**
+	 * Shallow entity shell for inline join: copies top-level keys and attribute entries so
+	 * {@link #inlineEntity} can add {@code entity} on relationships without mutating the cache.
+	 * Does not deep-copy expanded NGSI-LD internals (unlike {@link MicroServiceUtils#deepCopyMap}).
+	 */
+	@SuppressWarnings("unchecked")
+	private static Map<String, Object> entityShellForJoin(Map<String, Object> cached) {
+		if (cached == null) {
+			return null;
+		}
+		Map<String, Object> entity = Maps.newLinkedHashMapWithExpectedSize(cached.size());
+		for (Entry<String, Object> entry : cached.entrySet()) {
+			String key = entry.getKey();
+			if (NGSIConstants.ENTITY_BASE_PROPS.contains(key)) {
+				entity.put(key, entry.getValue());
+				continue;
+			}
+			Object value = entry.getValue();
+			if (value instanceof List<?> list) {
+				List<Object> copied = new ArrayList<>(list.size());
+				for (Object item : list) {
+					copied.add(item instanceof Map<?, ?> m ? attributeShellForJoin((Map<String, Object>) m) : item);
+				}
+				entity.put(key, copied);
+			} else if (value instanceof Map<?, ?> m) {
+				entity.put(key, attributeShellForJoin((Map<String, Object>) m));
+			} else {
+				entity.put(key, value);
+			}
+		}
+		return entity;
+	}
+
+	private static Map<String, Object> attributeShellForJoin(Map<String, Object> attrib) {
+		Map<String, Object> shell = Maps.newLinkedHashMapWithExpectedSize(attrib.size());
+		shell.putAll(attrib);
+		shell.remove(NGSIConstants.NGSI_LD_ENTITY);
+		shell.remove(NGSIConstants.NGSI_LD_ENTITY_TYPE_LIST);
+		return shell;
+	}
+
 	private void inlineEntity(Map<String, Object> entity, EntityCache entityCache, int currentJoinLevel, int joinLevel,
 			boolean localOnly) {
 		for (String attribName : entity.keySet()) {
@@ -861,6 +909,10 @@ public class QueryService implements CSourceHandler {
 	private void inlineAttrib(Object attribObj, EntityCache entityCache, int currentJoinLevel, int joinLevel,
 			boolean localOnly) {
 		if (attribObj instanceof Map attribMap) {
+			if (attribMap.containsKey(NGSIConstants.NGSI_LD_ENTITY)
+					|| attribMap.containsKey(NGSIConstants.NGSI_LD_ENTITY_TYPE_LIST)) {
+				return;
+			}
 			Object typeObj = attribMap.get(NGSIConstants.JSON_LD_TYPE);
 			if (typeObj != null && typeObj instanceof List<?> typeList) {
 				if (typeList.contains(NGSIConstants.NGSI_LD_RELATIONSHIP)) {
@@ -876,7 +928,7 @@ public class QueryService implements CSourceHandler {
 							if (entityAndHosts != null) {
 								Map<String, Object> ogEntity = entityAndHosts.getItem1();
 								if (ogEntity != null) {
-									Map<String, Object> entity = MicroServiceUtils.deepCopyMap(ogEntity);
+									Map<String, Object> entity = entityShellForJoin(ogEntity);
 									entities.add(entity);
 									if (currentJoinLevel + 1 <= joinLevel) {
 										inlineEntity(entity, entityCache, currentJoinLevel + 1, joinLevel, localOnly);
@@ -900,7 +952,7 @@ public class QueryService implements CSourceHandler {
 								Map<String, Object> ogEntity = entityAndHosts.getItem1();
 								if (ogEntity != null && ((List<String>) ogEntity.get(NGSIConstants.JSON_LD_TYPE))
 										.stream().anyMatch(tmpTypeSet::contains)) {
-									Map<String, Object> entity = MicroServiceUtils.deepCopyMap(ogEntity);
+									Map<String, Object> entity = entityShellForJoin(ogEntity);
 									entities.add(entity);
 									if (currentJoinLevel + 1 <= joinLevel) {
 										inlineEntity(entity, entityCache, currentJoinLevel + 1, joinLevel, localOnly);
@@ -933,7 +985,7 @@ public class QueryService implements CSourceHandler {
 									if (entityAndHosts != null) {
 										Map<String, Object> ogEntity = entityAndHosts.getItem1();
 										if (ogEntity != null) {
-											Map<String, Object> entity = MicroServiceUtils.deepCopyMap(ogEntity);
+											Map<String, Object> entity = entityShellForJoin(ogEntity);
 											entities.add(entity);
 											if (currentJoinLevel + 1 <= joinLevel) {
 												inlineEntity(entity, entityCache, currentJoinLevel + 1, joinLevel,
@@ -969,7 +1021,7 @@ public class QueryService implements CSourceHandler {
 										if (ogEntity != null
 												&& ((List<String>) ogEntity.get(NGSIConstants.JSON_LD_TYPE)).stream()
 														.anyMatch(tmpTypeSet::contains)) {
-											Map<String, Object> entity = MicroServiceUtils.deepCopyMap(ogEntity);
+											Map<String, Object> entity = entityShellForJoin(ogEntity);
 											entities.add(entity);
 											if (currentJoinLevel + 1 <= joinLevel) {
 												inlineEntity(entity, entityCache, currentJoinLevel + 1, joinLevel,

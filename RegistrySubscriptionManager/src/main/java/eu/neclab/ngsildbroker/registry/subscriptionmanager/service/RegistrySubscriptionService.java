@@ -119,6 +119,11 @@ public class RegistrySubscriptionService implements CSourceHandler {
 		regDAO.loadSubscriptions().onItem().transformToUni(subs -> {
 			List<Uni<Tuple2<Tuple2<String, Map<String, Object>>, Context>>> unis = Lists.newArrayList();
 			subs.forEach(tuple -> {
+				if (tuple.getItem3() == null) {
+					logger.error("Skipping registry subscription {} on tenant {} - context not found",
+							tuple.getItem2().get(NGSIConstants.JSON_LD_ID), tuple.getItem1());
+					return;
+				}
 				unis.add(ldService.parsePure(tuple.getItem3().get(NGSIConstants.JSON_LD_CONTEXT)).onItem()
 						.transform(ctx -> {
 							return Tuple2.of(Tuple2.of(tuple.getItem1(), tuple.getItem2()), ctx);

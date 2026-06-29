@@ -4,9 +4,9 @@ kind: Service
 metadata:
   annotations:
     app.quarkus.io/quarkus-version: 3.28.4
-    app.quarkus.io/commit-id: 555496e2de3765466a67664fc5046ce0499b0505
+    app.quarkus.io/commit-id: 59675831de0ce7a6ee91ff20efd25a8e6581e7a9
     app.quarkus.io/vcs-uri: https://github.com/scorpiobroker/scorpiobroker.git
-    app.quarkus.io/build-timestamp: 2026-01-12 - 13:27:25 +0000
+    app.quarkus.io/build-timestamp: 2026-06-24 - 13:49:58 +0000
     prometheus.io/scrape: "true"
     prometheus.io/path: /q/metrics
     prometheus.io/port: "10091"

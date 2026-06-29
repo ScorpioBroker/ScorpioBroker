@@ -29,6 +29,10 @@
 				<artifactId>quarkus-maven-plugin</artifactId>
 				<version>${quarkus.platform.version}</version>
 				<extensions>true</extensions>
+				<configuration>
+					<!-- Java 24+: jboss-threads thread-local reset needs java.lang opened -->
+					<jvmArgs>--enable-native-access=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED</jvmArgs>
+				</configuration>
 				<executions>
 					<execution>
 						<goals>

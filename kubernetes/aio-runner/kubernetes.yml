@@ -4,9 +4,9 @@ kind: ServiceAccount
 metadata:
   annotations:
     app.quarkus.io/quarkus-version: 3.28.4
-    app.quarkus.io/commit-id: 02b8d91e2eb1ce7a61232bee96e1e4570713cb6b
+    app.quarkus.io/commit-id: 59675831de0ce7a6ee91ff20efd25a8e6581e7a9
     app.quarkus.io/vcs-uri: https://github.com/scorpiobroker/scorpiobroker.git
-    app.quarkus.io/build-timestamp: 2026-01-19 - 15:13:27 +0000
+    app.quarkus.io/build-timestamp: 2026-06-24 - 21:28:28 +0000
   labels:
     app.kubernetes.io/name: aio-runner
     app.kubernetes.io/version: 6.0.1-SNAPSHOT
@@ -49,9 +49,9 @@ kind: Service
 metadata:
   annotations:
     app.quarkus.io/quarkus-version: 3.28.4
-    app.quarkus.io/commit-id: 02b8d91e2eb1ce7a61232bee96e1e4570713cb6b
+    app.quarkus.io/commit-id: 59675831de0ce7a6ee91ff20efd25a8e6581e7a9
     app.quarkus.io/vcs-uri: https://github.com/scorpiobroker/scorpiobroker.git
-    app.quarkus.io/build-timestamp: 2026-01-19 - 15:13:27 +0000
+    app.quarkus.io/build-timestamp: 2026-06-24 - 21:28:28 +0000
     prometheus.io/scrape: "true"
     prometheus.io/path: /q/metrics
     prometheus.io/port: "9090"
@@ -77,9 +77,9 @@ kind: Deployment
 metadata:
   annotations:
     app.quarkus.io/quarkus-version: 3.28.4
-    app.quarkus.io/commit-id: 02b8d91e2eb1ce7a61232bee96e1e4570713cb6b
+    app.quarkus.io/commit-id: 59675831de0ce7a6ee91ff20efd25a8e6581e7a9
     app.quarkus.io/vcs-uri: https://github.com/scorpiobroker/scorpiobroker.git
-    app.quarkus.io/build-timestamp: 2026-01-19 - 15:13:27 +0000
+    app.quarkus.io/build-timestamp: 2026-06-24 - 21:28:28 +0000
     prometheus.io/scrape: "true"
     prometheus.io/path: /q/metrics
     prometheus.io/port: "9090"
@@ -99,9 +99,9 @@ spec:
     metadata:
       annotations:
         app.quarkus.io/quarkus-version: 3.28.4
-        app.quarkus.io/commit-id: 02b8d91e2eb1ce7a61232bee96e1e4570713cb6b
+        app.quarkus.io/commit-id: 59675831de0ce7a6ee91ff20efd25a8e6581e7a9
         app.quarkus.io/vcs-uri: https://github.com/scorpiobroker/scorpiobroker.git
-        app.quarkus.io/build-timestamp: 2026-01-19 - 15:13:27 +0000
+        app.quarkus.io/build-timestamp: 2026-06-24 - 21:28:28 +0000
         prometheus.io/scrape: "true"
         prometheus.io/path: /q/metrics
         prometheus.io/port: "9090"
@@ -190,9 +190,9 @@ kind: ServiceMonitor
 metadata:
   annotations:
     app.quarkus.io/quarkus-version: 3.28.4
-    app.quarkus.io/commit-id: 02b8d91e2eb1ce7a61232bee96e1e4570713cb6b
+    app.quarkus.io/commit-id: 59675831de0ce7a6ee91ff20efd25a8e6581e7a9
     app.quarkus.io/vcs-uri: https://github.com/scorpiobroker/scorpiobroker.git
-    app.quarkus.io/build-timestamp: 2026-01-19 - 15:13:27 +0000
+    app.quarkus.io/build-timestamp: 2026-06-24 - 21:28:28 +0000
   labels:
     app.kubernetes.io/name: aio-runner
     app.kubernetes.io/version: 6.0.1-SNAPSHOT

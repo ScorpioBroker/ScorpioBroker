@@ -10,9 +10,9 @@ spec:
     spec:
       containers:
         - env:
-            - name: QUARKUS_INIT_AND_EXIT
-              value: "true"
             - name: QUARKUS_FLYWAY_ACTIVE
+              value: "true"
+            - name: QUARKUS_INIT_AND_EXIT
               value: "true"
           image: docker.io/hebgen/registry-subscription-manager:6.0.1-SNAPSHOT
           name: registry-subscription-manager-flyway-init
