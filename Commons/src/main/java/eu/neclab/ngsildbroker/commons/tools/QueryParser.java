@@ -41,7 +41,12 @@ public class QueryParser {
 	}
 
 	public static CSFQueryTerm parseCSFQuery(String input, Context context) throws ResponseException {
-		return null;
+		if (input == null) {
+			return null;
+		}
+		CSFQueryTerm root = new CSFQueryTerm(context);
+		parseQueryIntoRoot(input, context, root);
+		return root;
 	}
 
 	public static QQueryTerm parseQuery(String input, Context context) throws ResponseException {
@@ -49,6 +54,12 @@ public class QueryParser {
 			return null;
 		}
 		QQueryTerm root = new QQueryTerm(context);
+		parseQueryIntoRoot(input, context, root);
+		return root;
+	}
+
+	private static QQueryTerm parseQueryIntoRoot(String input, Context context, QQueryTerm root)
+			throws ResponseException {
 		QQueryTerm current = root;
 		boolean readingAttrib = true;
 		boolean readingOperant = false;
