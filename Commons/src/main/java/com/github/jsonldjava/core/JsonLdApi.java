@@ -1541,8 +1541,11 @@ public class JsonLdApi {
 							// compacted version and should not be expanded
 							// expandedValue = activeCtx.expandIri((String) value, true, false, null, null);
 
-							if (!((String) value).contains(":") && !ngsiElement.isFromHasValue()) {
-								throw new ResponseException(ErrorType.BadRequestData, "IDs need to be URIs");
+							if (!ngsiElement.isFromHasValue()) {
+								// validate the id the same way GET/DELETE do on the path parameter so
+								// that ids with spaces or characters not permitted by RFC 3986 are
+								// rejected at creation time instead of becoming unmanageable resources
+								HttpUtils.validateUri((String) value);
 							}
 							expandedValue = activeCtx.expandIri((String) value, true, false, null, null);
 
