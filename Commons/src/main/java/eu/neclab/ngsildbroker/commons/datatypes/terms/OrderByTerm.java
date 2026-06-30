@@ -40,9 +40,9 @@ public class OrderByTerm {
             this.orderGeometry = orderGeometry;
             if (orderDirection != null) {
                 if (orderDirection.contains("asc")) {
-                    orderDirection = "ASC";
+                    this.orderDirection = "ASC";
                 } else {
-                    orderDirection = "DESC";
+                    this.orderDirection = "DESC";
                 }
             } else {
                 this.orderDirection = null;
