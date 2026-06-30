@@ -24,8 +24,10 @@ import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple3;
+import io.smallrye.mutiny.unchecked.Unchecked;
 
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -34,13 +36,21 @@ import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
 import io.vertx.pgclient.PgException;
 
+import org.postgresql.PGConnection;
+import org.postgresql.copy.CopyManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.sql.DataSource;
 
 import jakarta.inject.Inject;
 import jakarta.enterprise.context.ApplicationScoped;
 import io.quarkus.runtime.Startup;
 
+import java.io.Reader;
+import java.io.StringReader;
+import java.sql.Connection;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -657,6 +667,82 @@ public class EntityInfoDAO {
 			return Uni.createFrom().voidItem();
 		});
 
+	}
+
+	/**
+	 * Bulk-stores a batch of already expanded entities using the PostgreSQL COPY
+	 * protocol for maximum write throughput. Existing entities are fully
+	 * overwritten. This is the only DAO method that intentionally uses the blocking
+	 * JDBC driver (the reactive client has no COPY support); the blocking work is
+	 * offloaded to the Mutiny worker pool.
+	 *
+	 * The entities are streamed into a transaction-scoped TEMP staging table via
+	 * COPY, then upserted into the ENTITY table (id and e_types derived in SQL,
+	 * mirroring NGSILD_CREATEBATCH). ON CONFLICT DO UPDATE overwrites everything, so
+	 * no per-entity DB failures are expected.
+	 *
+	 * @return the number of rows copied into the staging table
+	 */
+	public Uni<Integer> bulkCopyInsert(String tenant, List<Map<String, Object>> expandedEntities) {
+		if (expandedEntities.isEmpty()) {
+			return Uni.createFrom().item(0);
+		}
+		return Uni.createFrom().item(Unchecked.supplier(() -> {
+			DataSource ds = connectionManager.getWriteDataSource(tenant);
+			Connection conn = ds.getConnection();
+			try {
+				conn.setAutoCommit(false);
+				try (Statement st = conn.createStatement()) {
+					st.execute("CREATE TEMP TABLE IF NOT EXISTS bulk_staging(entity jsonb) ON COMMIT DROP");
+				}
+				CopyManager copyManager = conn.unwrap(PGConnection.class).getCopyAPI();
+				Reader reader = new StringReader(toCsv(expandedEntities));
+				long copied = copyManager.copyIn(
+						"COPY bulk_staging(entity) FROM STDIN WITH (FORMAT csv, QUOTE '\"', ESCAPE '\"')", reader);
+				try (Statement st = conn.createStatement()) {
+					st.execute("""
+							INSERT INTO ENTITY (id, e_types, entity)
+							SELECT entity->>'@id',
+							       ARRAY(SELECT jsonb_array_elements_text(entity->'@type')),
+							       entity
+							FROM bulk_staging
+							ON CONFLICT (id) DO UPDATE
+							  SET e_types = EXCLUDED.e_types,
+							      entity  = EXCLUDED.entity""");
+				}
+				conn.commit();
+				return (int) copied;
+			} catch (Exception e) {
+				try {
+					conn.rollback();
+				} catch (Exception rollbackEx) {
+					logger.error("Failed to roll back bulk copy transaction", rollbackEx);
+				}
+				logger.error("Failed to bulk copy entities", e);
+				throw e;
+			} finally {
+				try {
+					conn.close();
+				} catch (Exception closeEx) {
+					logger.error("Failed to close bulk copy connection", closeEx);
+				}
+			}
+		})).runSubscriptionOn(Infrastructure.getDefaultWorkerPool());
+	}
+
+	/**
+	 * Serializes the expanded entities to CSV (one minified JSON object per row,
+	 * CSV-quoted) so a single jsonb column can be streamed through COPY. CSV quoting
+	 * (wrap in double quotes, double any internal double quote) safely handles every
+	 * comma/brace/quote/newline inside the JSON.
+	 */
+	private String toCsv(List<Map<String, Object>> expandedEntities) {
+		StringBuilder sb = new StringBuilder(expandedEntities.size() * 512);
+		for (Map<String, Object> entity : expandedEntities) {
+			String json = new JsonObject(entity).encode();
+			sb.append('"').append(json.replace("\"", "\"\"")).append('"').append('\n');
+		}
+		return sb.toString();
 	}
 
 	public Uni<Map<String, Object>> mergeBatchEntity(BatchRequest request) {

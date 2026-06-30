@@ -213,6 +213,25 @@ public class ConnectionManager {
 		}
 	}
 
+	/**
+	 * Returns a blocking JDBC {@link DataSource} for write access. Only used by the
+	 * high-throughput bulk-insert path which relies on the PostgreSQL COPY protocol
+	 * (not available through the reactive client). The reactive paths must keep
+	 * using {@link #executeQuery}/{@link #executeBatchQuery}.
+	 *
+	 * Currently only the default tenant (backed by {@code writerDataSource}) is
+	 * supported. Per-tenant COPY would require building a tenant specific Agroal
+	 * datasource (see {@link #createDataSourceForTenantId}) and is left as a
+	 * follow-up.
+	 */
+	public DataSource getWriteDataSource(String tenant) throws ResponseException {
+		if (tenant == null || tenant.equals(AppConstants.INTERNAL_NULL_KEY)) {
+			return writerDataSource;
+		}
+		throw new ResponseException(ErrorType.TenantNotFound,
+				"Bulk insert is currently only supported for the default tenant");
+	}
+
 	private Uni<PgPool> getTenant(String tenant, boolean createDB) {
 		return determineTargetDataSource(tenant, createDB).onItem().transform(Unchecked.function(finalDataBase -> {
 			PoolOptions options = new PoolOptions();

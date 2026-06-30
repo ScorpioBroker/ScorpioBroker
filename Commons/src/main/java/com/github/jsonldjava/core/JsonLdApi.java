@@ -1790,7 +1790,12 @@ public class JsonLdApi {
 							// }
 							if (NGSIConstants.NGSI_LD_HAS_VALUE.equals(expandedProperty)
 									|| NGSIConstants.NGSI_LD_HAS_LIST.equals(expandedProperty)) {
-								ngsiElement.setHasAtValue(true);
+								// A null value must not count as "having a value", otherwise the
+								// validation pass (NGSIObject.validate -> "properties without a value")
+								// would let a "value": null through.
+								if (value != null) {
+									ngsiElement.setHasAtValue(true);
+								}
 							} else if (NGSIConstants.NGSI_LD_HAS_VOCAB.equals(expandedProperty)) {
 								ngsiElement.setHasVocab(true);
 							} else if (NGSIConstants.NGSI_LD_HAS_JSON.equals(expandedProperty)) {
