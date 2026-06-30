@@ -32,6 +32,18 @@ public class OrderByTermTest {
     }
 
     @Test
+    public void testTermEntryOrderDirectionAscUppercase() {
+        OrderByTerm orderByTerm = new OrderByTerm();
+        orderByTerm.addTerm("temperature", null, null, "ASC", null);
+
+        StringBuilder sql = new StringBuilder();
+        orderByTerm.toSqlOrder(sql);
+
+        assertTrue(sql.toString().contains("ASC"), "Expected ASC in SQL but got: " + sql);
+        assertFalse(sql.toString().contains("DESC"), "Expected no DESC in SQL but got: " + sql);
+    }
+
+    @Test
     public void testTermEntryOrderDirectionNull() {
         OrderByTerm orderByTerm = new OrderByTerm();
         orderByTerm.addTerm("temperature", null, null, null, null);
