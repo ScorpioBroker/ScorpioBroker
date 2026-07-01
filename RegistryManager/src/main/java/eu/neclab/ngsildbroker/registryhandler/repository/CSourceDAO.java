@@ -195,6 +195,18 @@ public class CSourceDAO {
 			sql.append(tempSql.toString().toLowerCase().replace("entity", "csource.reg"));
 			sqlAdded = true;
 		}
+		if (csf != null) {
+			// context source filter: an NGSI-LD query over the registrations'
+			// descriptive properties, applied against the registration jsonb the same
+			// way as the q term above
+			if (sqlAdded) {
+				sql.append(" AND ");
+			}
+			StringBuilder tempSql = new StringBuilder();
+			dollar = csf.toSqlOld(tempSql, dollar, tuple, true, false);
+			sql.append(tempSql.toString().toLowerCase().replace("entity", "csource.reg"));
+			sqlAdded = true;
+		}
 		if (typeQuery != null) {
 			if (sqlAdded) {
 				sql.append(" and ");
@@ -262,12 +274,6 @@ public class CSourceDAO {
 		sql.append(" offset $");
 		sql.append(dollar++);
 		tuple.addInteger(offset);
-		if (csf != null) {
-			// if (sqlAdded) {
-			// sql += " and ";
-			// }
-			// dollar++;
-		}
 		// String sqlString = sql.toString();
 		// logger.debug("SQL: " + sqlString);
 		// logger.debug("Tuple: " + tuple.deepToString());

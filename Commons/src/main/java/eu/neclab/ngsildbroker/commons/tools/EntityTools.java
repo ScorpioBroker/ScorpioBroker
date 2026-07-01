@@ -48,6 +48,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.OmitTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.PickTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
@@ -959,18 +960,18 @@ public final class EntityTools {
 
 	public static Collection<QueryRemoteHost> getRemoteQueries(String tenant,
 			List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeQueryAndIdPattern, AttrsQueryTerm attrsQuery,
-			QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery,
-			Table<String, String, List<RegistrationEntry>> tenant2CId2RegEntries, Context context,
-			EntityCache fullEntityCache, boolean splitEntities, ViaHeaders viaHeaders) {
-		return getRemoteQueries(idsAndTypeQueryAndIdPattern, attrsQuery, qQuery, geoQuery, scopeQuery, langQuery,
+			QQueryTerm qQuery, CSFQueryTerm csf, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery,
+			LanguageQueryTerm langQuery, Table<String, String, List<RegistrationEntry>> tenant2CId2RegEntries,
+			Context context, EntityCache fullEntityCache, boolean splitEntities, ViaHeaders viaHeaders) {
+		return getRemoteQueries(idsAndTypeQueryAndIdPattern, attrsQuery, qQuery, csf, geoQuery, scopeQuery, langQuery,
 				tenant2CId2RegEntries.row(tenant).values(), context, fullEntityCache, viaHeaders, splitEntities);
 	}
 
 	public static Collection<QueryRemoteHost> getRemoteQueries(
 			List<Tuple3<String[], TypeQueryTerm, String>> idsAndTypeQueryAndIdPattern, AttrsQueryTerm attrsQuery,
-			QQueryTerm qQuery, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery, LanguageQueryTerm langQuery,
-			Collection<List<RegistrationEntry>> regEntries, Context context, EntityCache fullEntityCache,
-			ViaHeaders viaHeaders, boolean isDist) {
+			QQueryTerm qQuery, CSFQueryTerm csf, GeoQueryTerm geoQuery, ScopeQueryTerm scopeQuery,
+			LanguageQueryTerm langQuery, Collection<List<RegistrationEntry>> regEntries, Context context,
+			EntityCache fullEntityCache, ViaHeaders viaHeaders, boolean isDist) {
 
 		// ids, types, attrs, geo, scope
 		List<Map<QueryRemoteHost, QueryInfos>> remoteHost2QueryInfos = Lists.newArrayList();
@@ -1000,6 +1001,11 @@ public final class EntityTools {
 					QueryInfos ogQueryInfo = regEntry.matches(id, idPattern, typeQuery, attrsQuery, qQuery, geoQuery,
 							scopeQuery);
 					if (ogQueryInfo == null) {
+						continue;
+					}
+					// context source filter: skip registrations whose descriptive
+					// properties don't satisfy the csf
+					if (csf != null && !csf.eval(regEntry.registration())) {
 						continue;
 					}
 

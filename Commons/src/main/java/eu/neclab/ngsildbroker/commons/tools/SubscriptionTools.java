@@ -26,6 +26,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.DataSetIdTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
@@ -471,6 +472,7 @@ public class SubscriptionTools {
 			Collection<List<RegistrationEntry>> regEntries, Context context, ViaHeaders viaHeaders) {
 
 		// ids, types, attrs, geo, scope
+		CSFQueryTerm csf = sub.getCsfQuery();
 		List<Map<SubscriptionRemoteHost, QueryInfos>> remoteHost2QueryInfos = Lists.newArrayList();
 		if (idsAndTypeQueryAndIdPattern == null) {
 			idsAndTypeQueryAndIdPattern = Lists.newArrayList();
@@ -494,6 +496,11 @@ public class SubscriptionTools {
 					}
 
 					if (regEntry.matches(id, idPattern, typeQuery, attrsQuery, qQuery, geoQuery, scopeQuery) == null) {
+						continue;
+					}
+					// context source filter: skip registrations whose descriptive
+					// properties don't satisfy the subscription's csf
+					if (csf != null && !csf.eval(regEntry.registration())) {
 						continue;
 					}
 

@@ -122,7 +122,7 @@ public class HistoryQueryService implements CSourceHandler {
 		if (localOnly) {
 			return local;
 		}
-		Map<RemoteHost, String> remoteHosts = getRemoteHostsForQuery(tenant, request.query(), context);
+		Map<RemoteHost, String> remoteHosts = getRemoteHostsForQuery(tenant, request.query(), context, csf);
 		if (remoteHosts.isEmpty()) {
 			return local;
 		}
@@ -417,7 +417,8 @@ public class HistoryQueryService implements CSourceHandler {
 		return result;
 	}
 
-	private Map<RemoteHost, String> getRemoteHostsForQuery(String tenant, String query, Context context) {
+	private Map<RemoteHost, String> getRemoteHostsForQuery(String tenant, String query, Context context,
+			CSFQueryTerm csf) {
 		Map<RemoteHost, String> result = new HashMap<>();
 		Map<String, String> queryMap = queryStrToMap(query);
 		Set<String> filteredIds = new HashSet<>();
@@ -427,6 +428,10 @@ public class HistoryQueryService implements CSourceHandler {
 		for (List<RegistrationEntry> regEntries : tenant2CId2RegEntries.row(tenant).values()) {
 			for (RegistrationEntry regEntry : regEntries) {
 				if (!regEntry.retrieveTemporal()) {
+					continue;
+				}
+				// context source filter: skip registrations the csf rejects
+				if (csf != null && !csf.eval(regEntry.registration())) {
 					continue;
 				}
 

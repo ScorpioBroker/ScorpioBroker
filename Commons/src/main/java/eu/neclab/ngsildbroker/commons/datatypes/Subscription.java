@@ -27,6 +27,7 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.LanguageQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.OmitTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.PickTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TemporalQueryTerm;
@@ -78,7 +79,7 @@ public class Subscription implements Serializable {
 	@JsonIgnore
 	private QQueryTerm ldQuery;
 	@JsonIgnore
-	private QQueryTerm csfQuery;
+	private CSFQueryTerm csfQuery;
 	@JsonIgnore
 	private ScopeQueryTerm scopeQuery;
 	private DataSetIdTerm datasetIdTerm;
@@ -904,7 +905,7 @@ public class Subscription implements Serializable {
 		}
 		this.csfQueryString = csfQueryString;
 		if (csfQueryString != null) {
-			this.csfQuery = QueryParser.parseQuery(csfQueryString, ldContext);
+			this.csfQuery = QueryParser.parseCSFQuery(csfQueryString, ldContext);
 		} else {
 			this.csfQuery = null;
 		}
@@ -914,7 +915,7 @@ public class Subscription implements Serializable {
 		return isActive;
 	}
 
-	public QQueryTerm getCsfQuery() {
+	public CSFQueryTerm getCsfQuery() {
 		return csfQuery;
 	}
 
