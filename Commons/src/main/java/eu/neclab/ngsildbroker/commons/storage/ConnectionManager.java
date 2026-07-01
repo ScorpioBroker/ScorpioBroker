@@ -85,9 +85,6 @@ public class ConnectionManager {
 	@ConfigProperty(name = "pool.initialSize")
 	int initialSize;
 
-	@ConfigProperty(name = "scorpio.postgres.username")
-	String dbUser;
-
 	@ConfigProperty(name = "scorpio.postgres.disablejit", defaultValue = "true")
 	boolean disableJIT;
 
@@ -95,11 +92,8 @@ public class ConnectionManager {
 
 	@PostConstruct
 	void setup() throws URISyntaxException {
-		if (disableJIT) {
-			executeQuery(null, "ALTER USER " + dbUser + " SET jit = off;", null, false).await().indefinitely();
-		} else {
-			executeQuery(null, "ALTER USER " + dbUser + " SET jit = on;", null, false).await().indefinitely();
-		}
+		String jitValue = disableJIT ? "off" : "on";
+		executeQuery(null, "ALTER USER CURRENT_USER SET jit = " + jitValue, null, false).await().indefinitely();
 
 		URI uri = new URI(reactiveDefaultUrl);
 		reactiveBaseUrl = uri.getScheme() + "://" + uri.getHost() + ":" + uri.getPort() + "/";
