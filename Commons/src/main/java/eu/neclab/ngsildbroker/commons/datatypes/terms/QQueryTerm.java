@@ -1934,22 +1934,334 @@ public class QQueryTerm implements Serializable {
 
 	public int toSql(StringBuilder result, int dollar, Tuple tuple, boolean isDist,
 			boolean localOnly, DataSetIdTerm dataSetIdTerm) {
+		QQueryTerm lastInGroup = this;
 		if (firstChild != null && !isLinkedQ) {
 			result.append("(");
 			dollar = firstChild.toSql(result, dollar, tuple, isDist, localOnly, dataSetIdTerm);
 			result.append(")");
 		} else {
-			dollar = parseAttribute(result, dollar, tuple, attribute, localOnly, isDist, -1, dataSetIdTerm);
+			List<QQueryTerm> mergeGroup = collectSameElementGroup();
+			if (mergeGroup.size() > 1) {
+				dollar = emitSameElementGroup(result, dollar, tuple, mergeGroup, dataSetIdTerm);
+				lastInGroup = mergeGroup.get(mergeGroup.size() - 1);
+			} else {
+				dollar = parseAttribute(result, dollar, tuple, attribute, localOnly, isDist, -1, dataSetIdTerm);
+			}
 		}
-		if (hasNext()) {
-			if (nextAnd) {
+		if (lastInGroup.hasNext()) {
+			if (lastInGroup.nextAnd) {
 				result.append(" and ");
 			} else {
 				result.append(" or ");
 			}
-			dollar = next.toSql(result, dollar, tuple, isDist, localOnly, dataSetIdTerm);
+			dollar = lastInGroup.next.toSql(result, dollar, tuple, isDist, localOnly, dataSetIdTerm);
 		}
 		return dollar;
+	}
+
+	/**
+	 * Detects a run of consecutive ';' (AND) connected simple terms that all
+	 * target the same base attribute (e.g. "myAttr[id]==X" followed by
+	 * "myAttr.subAttr==Y"). When such a run is found, the individual
+	 * per-attribute-instance conditions are combined into a single jsonpath
+	 * filter so that they all have to be satisfied by the SAME array
+	 * element/instance (same datasetId), instead of each condition being
+	 * allowed to match a different instance independently. Terms that don't
+	 * fit this simple shape (existence checks, negations, linked/nested
+	 * queries, ranges, wildcards, ...) are left untouched and fall back to
+	 * the regular independent per-term handling.
+	 */
+	private List<QQueryTerm> collectSameElementGroup() {
+		List<QQueryTerm> group = new ArrayList<>();
+		if (!isSameElementGroupCandidate()) {
+			return group;
+		}
+		group.add(this);
+		String base = getSameElementBaseAttrib();
+		QQueryTerm cursor = this;
+		while (cursor.nextAnd && cursor.next != null && cursor.next.isSameElementGroupCandidate()
+				&& base.equals(cursor.next.getSameElementBaseAttrib())) {
+			cursor = cursor.next;
+			group.add(cursor);
+		}
+		return group.size() > 1 ? group : new ArrayList<>();
+	}
+
+	private boolean isSameElementGroupCandidate() {
+		if (firstChild != null || isLinkedQ) {
+			return false;
+		}
+		if (attribute == null || attribute.isEmpty() || operant == null || operant.isEmpty()) {
+			return false;
+		}
+		if (operator == null || NGSIConstants.QUERY_UNEQUAL.equals(operator)
+				|| NGSIConstants.QUERY_NOTPATTERNOP.equals(operator)) {
+			return false;
+		}
+		String attrib = attribute;
+		int complexIndex = attrib.indexOf('[');
+		String base;
+		if (complexIndex != -1) {
+			if (attrib.charAt(attrib.length() - 1) != ']') {
+				return false;
+			}
+			base = attrib.substring(0, complexIndex);
+			if (base.indexOf('.') != -1) {
+				return false;
+			}
+		} else {
+			int dotIndex = attrib.indexOf('.');
+			base = dotIndex == -1 ? attrib : attrib.substring(0, dotIndex);
+		}
+		if (base.isEmpty() || NGSIConstants.NGSI_LD_STAR.equals(base) || "*".equals(base)) {
+			return false;
+		}
+		return true;
+	}
+
+	private String getSameElementBaseAttrib() {
+		String attrib = attribute;
+		int complexIndex = attrib.indexOf('[');
+		if (complexIndex != -1) {
+			return attrib.substring(0, complexIndex);
+		}
+		int dotIndex = attrib.indexOf('.');
+		return dotIndex == -1 ? attrib : attrib.substring(0, dotIndex);
+	}
+
+	private int emitSameElementGroup(StringBuilder result, int dollar, Tuple tuple, List<QQueryTerm> group,
+			DataSetIdTerm dataSetIdTerm) {
+		String base = group.get(0).getSameElementBaseAttrib();
+		String expandedBase = linkHeaders.expandIri(base, false, true, null, null);
+
+		result.append('(');
+		result.append("entity ? $");
+		result.append(dollar);
+		dollar++;
+		tuple.addString(expandedBase);
+		result.append(" AND entity @? $");
+		result.append(dollar);
+		dollar++;
+
+		StringBuilder jsonPath = new StringBuilder(256);
+		jsonPath.append("$.\"");
+		jsonPath.append(expandedBase);
+		jsonPath.append("\"[*] ? (");
+		if (dataSetIdTerm != null) {
+			StringBuilder datasetIdPathBuilder = new StringBuilder(64);
+			dataSetIdTerm.toJsonPath(datasetIdPathBuilder);
+			jsonPath.append('(');
+			jsonPath.append(datasetIdPathBuilder);
+			jsonPath.append(") && ");
+		}
+		for (int i = 0; i < group.size(); i++) {
+			if (i > 0) {
+				jsonPath.append(" && ");
+			}
+			jsonPath.append(group.get(i).buildSameElementCondition());
+		}
+		jsonPath.append(')');
+
+		tuple.addString(jsonPath.toString());
+		result.append("::jsonpath)");
+		return dollar;
+	}
+
+	private String buildSameElementCondition() {
+		String attrib = attribute;
+		int complexIndex = attrib.indexOf('[');
+		String complexPart;
+		String[] complexSplitted;
+		String remainderAttrib;
+		if (complexIndex != -1) {
+			complexPart = attrib.substring(complexIndex + 1, attrib.length() - 1);
+			complexSplitted = StringUtils.split(complexPart, '.');
+			remainderAttrib = attrib.substring(0, complexIndex);
+		} else {
+			complexPart = null;
+			complexSplitted = null;
+			remainderAttrib = attrib;
+		}
+		String[] attribPath = StringUtils.split(remainderAttrib, '.');
+		String[] subPath = Arrays.copyOfRange(attribPath, 1, attribPath.length);
+		return buildSameElementRelativeCondition(subPath, complexPart, complexSplitted);
+	}
+
+	private String buildSameElementRelativeCondition(String[] subPath, String complexPart, String[] complexSplitted) {
+		if (subPath.length > 0) {
+			String seg = linkHeaders.expandIri(subPath[0], false, true, null, null);
+			String[] rest = Arrays.copyOfRange(subPath, 1, subPath.length);
+			String inner = buildSameElementRelativeCondition(rest, complexPart, complexSplitted);
+			return "exists(@.\"" + seg + "\"[*] ? (" + inner + "))";
+		}
+		return buildSameElementLeafCondition(complexPart, complexSplitted);
+	}
+
+	/**
+	 * Relative (to the shared array element "@") equivalent of the
+	 * type-alternatives OR block in {@link #parseAttribute}, wrapped with
+	 * exists() so several of these can be combined with && inside one
+	 * shared jsonpath filter. Mirrors the existing per-type semantics
+	 * exactly (e.g. hasObject/hasObjectList intentionally ignore
+	 * complexPart, same as parseAttribute does today) so the ONLY new
+	 * behavior introduced is the same-element correlation across terms,
+	 * not a change to how any single term is evaluated on its own.
+	 */
+	private String buildSameElementLeafCondition(String complexPart, String[] complexSplitted) {
+		String operatorTBU = operator;
+		List<String[]> tokens = splitValues(operant);
+		boolean regex = false;
+		if (NGSIConstants.QUERY_PATTERNOP.equals(operator)) {
+			operatorTBU = ".string() like_regex ";
+			regex = true;
+		}
+
+		StringBuilder fromToBuilder = new StringBuilder(128);
+		StringBuilder idQBuilder = new StringBuilder(128);
+		StringBuilder vocabQBuilder = new StringBuilder(128);
+		StringBuilder valueQBuilder = new StringBuilder(128);
+		StringBuilder pureQBuilder = new StringBuilder(128);
+		StringBuilder pureFromToBuilder = new StringBuilder(128);
+		fromToBuilder.append('(');
+		idQBuilder.append('(');
+		vocabQBuilder.append('(');
+		valueQBuilder.append('(');
+		pureQBuilder.append('(');
+		pureFromToBuilder.append('(');
+
+		for (String[] token : tokens) {
+			int listIndex = token[0].indexOf("..");
+			String prepedValue = prepValueForJsonPath(token[0], regex);
+			idQBuilder.append("@.\"").append(NGSIConstants.JSON_LD_ID).append('"').append(operatorTBU)
+					.append(prepedValue).append(" || ");
+
+			vocabQBuilder.append("@.\"").append(NGSIConstants.JSON_LD_ID).append('"').append(operatorTBU)
+					.append('"').append(linkHeaders.expandIri(token[1], false, true, null, null)).append("\" || ");
+
+			valueQBuilder.append("@.\"").append(NGSIConstants.JSON_LD_VALUE).append('"').append(operatorTBU)
+					.append(prepedValue).append(" || ");
+
+			pureQBuilder.append('@').append(operatorTBU).append(prepedValue).append(" || ");
+
+			if (NGSIConstants.QUERY_EQUAL.equals(operatorTBU) && listIndex != -1) {
+				fromToBuilder.append("(@.\"").append(NGSIConstants.JSON_LD_VALUE).append("\" >= ")
+						.append(token[0].substring(0, listIndex)).append(" && @.\"")
+						.append(NGSIConstants.JSON_LD_VALUE).append("\" <= ")
+						.append(token[0].substring(listIndex + 2)).append(')').append(" || ");
+
+				pureFromToBuilder.append("(@ >= ").append(token[0].substring(0, listIndex)).append(" && @ <= ")
+						.append(token[0].substring(listIndex + 2)).append(')').append(" || ");
+			}
+		}
+		if (fromToBuilder.length() >= 4) {
+			fromToBuilder.setLength(fromToBuilder.length() - 4);
+		}
+		if (pureFromToBuilder.length() >= 4) {
+			pureFromToBuilder.setLength(pureFromToBuilder.length() - 4);
+		}
+		idQBuilder.setLength(idQBuilder.length() - 4);
+		vocabQBuilder.setLength(vocabQBuilder.length() - 4);
+		valueQBuilder.setLength(valueQBuilder.length() - 4);
+		pureQBuilder.setLength(pureQBuilder.length() - 4);
+
+		fromToBuilder.append(')');
+		pureFromToBuilder.append(')');
+		idQBuilder.append(')');
+		vocabQBuilder.append(')');
+		valueQBuilder.append(')');
+		pureQBuilder.append(')');
+
+		String fromTo = fromToBuilder.length() == 2 ? null : fromToBuilder.toString();
+		String pureFromTo = pureFromToBuilder.length() == 2 ? null : pureFromToBuilder.toString();
+		String idQ = idQBuilder.toString();
+		String vocabQ = vocabQBuilder.toString();
+		String valueQ = valueQBuilder.toString();
+		String pureQ = pureQBuilder.toString();
+
+		StringBuilder frag = new StringBuilder(256);
+		StringBuilder path = new StringBuilder(64);
+
+		// hasValue (+ optional complexPart drill into a structured Property value)
+		path.append("@.\"").append(NGSIConstants.NGSI_LD_HAS_VALUE).append("\"[*].");
+		if (complexPart != null) {
+			for (String c : complexSplitted) {
+				path.append('"').append(linkHeaders.expandIri(c, false, true, null, null)).append("\"[*].");
+			}
+		}
+		path.setLength(path.length() - 1);
+		path.append(" ? (");
+		if (fromTo != null) {
+			path.append(fromTo).append(" || ");
+		}
+		path.append(valueQ).append(')');
+		frag.append("exists(").append(path).append(')');
+		frag.append(" || ");
+
+		// hasObject (relationship target id match; complexPart ignored, same as parseAttribute today)
+		frag.append("exists(@.\"").append(NGSIConstants.NGSI_LD_HAS_OBJECT).append("\"[*] ? ").append(idQ)
+				.append(')');
+		frag.append(" || ");
+
+		// hasValueList (structured list value)
+		path.setLength(0);
+		path.append("@.\"").append(NGSIConstants.NGSI_LD_HAS_LIST).append("\"[0].\"").append(NGSIConstants.JSON_LD_LIST)
+				.append("\"[*].");
+		if (complexPart != null) {
+			for (String c : complexSplitted) {
+				path.append('"').append(linkHeaders.expandIri(c, false, true, null, null)).append("\"[*].");
+			}
+		}
+		path.setLength(path.length() - 1);
+		path.append(" ? (");
+		if (fromTo != null) {
+			path.append(fromTo).append(" || ");
+		}
+		path.append(valueQ).append(')');
+		frag.append("exists(").append(path).append(')');
+		frag.append(" || ");
+
+		// hasObjectList (relationship list, target id match)
+		frag.append("exists(@.\"").append(NGSIConstants.NGSI_LD_HAS_OBJECT_LIST).append("\"[0].\"")
+				.append(NGSIConstants.JSON_LD_LIST).append("\"[*].\"").append(NGSIConstants.NGSI_LD_HAS_OBJECT)
+				.append("\"[*] ? ").append(idQ).append(')');
+		frag.append(" || ");
+
+		// hasVocab
+		frag.append("exists(@.\"").append(NGSIConstants.NGSI_LD_HAS_VOCAB).append("\"[*] ? ").append(vocabQ)
+				.append(')');
+		frag.append(" || ");
+
+		// hasLanguageMap
+		path.setLength(0);
+		path.append("@.\"").append(NGSIConstants.NGSI_LD_HAS_LANGUAGE_MAP).append("\"[*] ? (");
+		if (complexPart != null && !complexPart.equals("*")) {
+			path.append("(@.\"").append(NGSIConstants.JSON_LD_LANGUAGE).append("\" == \"").append(complexPart)
+					.append("\") && ");
+		}
+		if (fromTo != null) {
+			path.append(fromTo).append(" || ");
+		}
+		path.append(valueQ).append(')');
+		frag.append("exists(").append(path).append(')');
+
+		if (complexPart != null) {
+			// hasJson (raw JSON value, dotted path)
+			path.setLength(0);
+			path.append("@.\"").append(NGSIConstants.NGSI_LD_HAS_JSON).append("\"[0].\"")
+					.append(NGSIConstants.JSON_LD_VALUE).append("\".");
+			for (String c : complexSplitted) {
+				path.append('"').append(c).append("\".");
+			}
+			path.setLength(path.length() - 1);
+			path.append(" ? (");
+			if (pureFromTo != null) {
+				path.append(pureFromTo).append(" || ");
+			}
+			path.append(pureQ).append(')');
+			frag.append(" || exists(").append(path).append(')');
+		}
+
+		return "(" + frag + ")";
 	}
 
 	public int toSqlOld(StringBuilder result, int dollarCount, Tuple tuple, boolean isDist,
