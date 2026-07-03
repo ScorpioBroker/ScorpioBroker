@@ -1,3 +1,65 @@
+# RELEASE NOTES 6.0.2
+
+## High-throughput bulk insert
+
+New Scorpio-specific endpoint `POST /scorpio/v1/bulkinsert` on the EntityManager for loading 100k to millions of entities.
+
+ - Accepts NDJSON (line-delimited) or a JSON array; format is detected from Content-Type or by sniffing the first byte
+ - Streams the request body without buffering the whole upload; entities are expanded in chunks and written via PostgreSQL COPY into a transaction-scoped staging table (overwrite semantics)
+ - Optional `?trigger=true` publishes BATCH_CREATE_REQUEST notifications after insert (respects scorpio.entity.batch-operations.create.max)
+ - Response reports received, inserted, and expandFailed entity ids
+ - Honors a shared @context from the Link header; strips redundant per-entity core @context URLs before expand
+ - Currently only supported for the default tenant
+ - Deliberately bypasses registration resolution, federation/distribution, and per-entity NGSILDOperationResult construction — existing entities are merged or overwritten; only expansion failures are reported
+
+New config parameters (see application.properties):
+
+ - scorpio.entity.bulk.expand.chunk (default 100 in EntityManager, 1000000 in AllInOneRunner) — entities expanded per chunk
+ - scorpio.entity.bulk.expand.sync (default false in EntityManager, true in AllInOneRunner) — synchronous vs asynchronous JSON-LD expand
+ - scorpio.entity.bulk.copy.batch (default 5000 in EntityManager, 1000000 in AllInOneRunner) — COPY batch size
+
+A benchmark script (bench_bulk.py) comparing bulk insert against /entityOperations/upsert is included in the repository root.
+
+## Context Source Filter (csf)
+
+Full implementation of the NGSI-LD csf (Context Source Filter) query parameter, returned.
+
+ - QueryParser.parseCSFQuery() now produces a real CSFQueryTerm (same query language as q)
+ - GET /csourceRegistrations?csf=... filters registrations in SQL against the registration JSON
+ - CSFQueryTerm.eval() evaluates filters in-memory against a registration's expanded payload before contacting remote brokers
+ - Distributed entity queries, linked-entity (join) traversal, and temporal queries now honour csf when selecting context sources
+ - Subscriptions honour csf when selecting remote context sources for notifications
+
+## Bug fixes
+
+ - Entity/subscription/registration IDs are now validated with HttpUtils.validateUri at creation time (#661). Previously POST accepted IDs with spaces or invalid URI characters that GET/DELETE could not address, leaving orphaned resources
+ - PostgreSQL JIT configuration at startup no longer fails when the database username contains special characters such as dots (#666). Uses ALTER USER CURRENT_USER SET jit instead of interpolating the username; scorpio.postgres.username config removed
+ - orderBy direction (ASC/DESC) is now correctly applied (#672). Fixed missing this assignment and made direction comparison case-insensitive
+ - JSON-LD expansion no longer treats "value": null as a valid property value
+ - MultiPolygon geo property compaction refactored (compactMultiPolygonCoordinates) for correct coordinate extraction
+ - Inline join queries (join=inline): fixed off-by-one join depth (inlineEntity now starts at level 0); uses shallow entityShellForJoin copies instead of deepCopyMap so inlined relationships do not corrupt the entity cache
+ - Entity retrieve-by-id responses now use the correct payload type and no longer emit spurious next/prev pagination Link headers
+ - Implicit context creation (/jsonldContexts/createimplicitly) now respects the Ngsild-Tenant header instead of always writing to the public schema
+ - Registry subscription creation forwards the tenant header when calling implicit context creation
+ - Subscriptions and registry-subscriptions whose @context is missing from the tenant database are skipped with an error log on startup instead of crashing the broker
+
+## Developer / documentation
+
+ - AGENT.md added with architecture overview, dev run command, module map, and conventions for contributors
+ - Quarkus dev/build: BrokerParent adds JVM args for Java 24+ (--enable-native-access=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED) required by jboss-threads thread-local reset
+ - OrderByTermTest unit tests added for orderBy direction handling
+
+## Infrastructure
+
+ - Helm chart templates and pre-generated kubernetes manifests regenerated for all microservices (build metadata, env var ordering)
+
+## Upgrade notes
+
+ - Bulk insert is a Scorpio-specific endpoint, not part of the standard NGSI-LD API. Tune the scorpio.entity.bulk.* properties for your workload
+ - CSF is now functional end-to-end — federated deployments using csf on queries, subscriptions, or registration discovery will behave differently than on 6.0.1
+ - Stricter ID validation — clients that previously created entities with malformed URIs will now receive 400 BadRequestData at POST time
+ - No database schema migrations in this release; safe to roll forward on existing 6.0.1 databases
+
 # RELEASE NOTES 6.0.1
 
  - Various minor bugfixes
