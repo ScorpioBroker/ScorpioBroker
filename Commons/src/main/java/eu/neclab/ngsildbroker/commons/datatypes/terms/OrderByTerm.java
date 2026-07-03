@@ -39,10 +39,10 @@ public class OrderByTerm {
 
             this.orderGeometry = orderGeometry;
             if (orderDirection != null) {
-                if (orderDirection.contains("asc")) {
-                    orderDirection = "ASC";
+                if (orderDirection.toLowerCase().contains("asc")) {
+                    this.orderDirection = "ASC";
                 } else {
-                    orderDirection = "DESC";
+                    this.orderDirection = "DESC";
                 }
             } else {
                 this.orderDirection = null;
