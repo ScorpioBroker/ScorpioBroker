@@ -1,9 +1,25 @@
 package eu.neclab.ngsildbroker.entityhandler.services;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import javax.sql.DataSource;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.github.jsonldjava.core.JsonLDService;
 import com.github.jsonldjava.core.JsonLdConsts;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Table;
+
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.datatypes.RegistrationEntry;
@@ -23,30 +39,20 @@ import eu.neclab.ngsildbroker.commons.tools.DBUtil;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import io.quarkus.logging.Log;
+import io.quarkus.runtime.Startup;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.mutiny.tuples.Tuple3;
-
+import io.smallrye.mutiny.unchecked.Unchecked;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
 import io.vertx.pgclient.PgException;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import jakarta.inject.Inject;
 import jakarta.enterprise.context.ApplicationScoped;
-import io.quarkus.runtime.Startup;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import jakarta.inject.Inject;
 
 @ApplicationScoped
 @Startup
@@ -666,10 +672,243 @@ public class EntityInfoDAO {
 		});
 		Tuple tuple = Tuple.of(new JsonArray(entities));
 		return connectionManager.executeQuery(request.getTenant(), "SELECT * FROM MERGE_JSON_BATCH($1)", tuple, true)
-				.onItem()
-				.transform(rows -> {
-					return rows.iterator().next().getJsonObject(0).getMap();
-				});
+				.onItem().transform(rows -> rows.iterator().next().getJsonObject(0).getMap());
+	}
+
+	/**
+	 * Bulk-stores expanded entities via batched JDBC upsert. Drops non-essential
+	 * indexes for the duration of the load, then rebuilds them before commit.
+	 */
+	public Uni<Integer> bulkCopyInsert(String tenant, List<Map<String, Object>> expandedEntities) {
+		if (expandedEntities.isEmpty()) {
+			return Uni.createFrom().item(0);
+		}
+		return Uni.createFrom().item(Unchecked.supplier(() -> {
+			DataSource ds = connectionManager.getWriteDataSource(tenant);
+			Connection conn = ds.getConnection();
+			try {
+				conn.setAutoCommit(false);
+
+				try (Statement st = conn.createStatement()) {
+					st.execute("SET LOCAL session_replication_role = replica");
+					st.execute("SET LOCAL synchronous_commit = off");
+					st.execute("SET LOCAL maintenance_work_mem = '2GB'");
+
+					st.execute("DROP INDEX IF EXISTS public.I_entity_scopes");
+					st.execute("DROP INDEX IF EXISTS public.I_entity_types");
+					st.execute("DROP INDEX IF EXISTS public.i_entity_createdat");
+					st.execute("DROP INDEX IF EXISTS public.i_entity_data");
+					st.execute("DROP INDEX IF EXISTS public.i_entity_location");
+					st.execute("DROP INDEX IF EXISTS public.i_entity_modifiedat");
+				}
+
+				final String sql = """
+						INSERT INTO ENTITY (id, e_types, entity, createdat, modifiedat, location, scopes)
+						VALUES (
+						    ?,
+						    ?,
+						    ?::jsonb,
+						    ?::timestamp,
+						    ?::timestamp,
+						    CASE WHEN ?::text IS NULL THEN NULL
+						         ELSE ST_SetSRID(ST_GeomFromGeoJSON(?::text), 4326) END,
+						    ?
+						)
+						ON CONFLICT (id) DO UPDATE
+						  SET e_types    = EXCLUDED.e_types,
+						      entity     = ngsild_update_entity(entity.entity, excluded.entity, true),
+						      createdat  = EXCLUDED.createdat,
+						      modifiedat = EXCLUDED.modifiedat,
+						      location   = EXCLUDED.location,
+						      scopes     = EXCLUDED.scopes
+						""";
+
+				long t1 = System.nanoTime();
+				int affected = 0;
+
+				try (PreparedStatement ps = conn.prepareStatement(sql)) {
+					final int batchSize = 1_000_000;
+					int inBatch = 0;
+
+					for (Map<String, Object> e : expandedEntities) {
+						JsonObject json = new JsonObject(e);
+
+						String id = extractId(json);
+						java.sql.Array types = conn.createArrayOf("text", extractTypesArray(json));
+						String entityJson = json.encode();
+						String createdAt = extractValueAt(json, NGSIConstants.NGSI_LD_CREATED_AT);
+						String modifiedAt = extractValueAt(json, NGSIConstants.NGSI_LD_MODIFIED_AT);
+						String geoJson = extractGeoJson(json);
+						Object[] scopeArr = extractScopesArray(json);
+						java.sql.Array scopes = scopeArr == null ? null : conn.createArrayOf("text", scopeArr);
+
+						ps.setString(1, id);
+						ps.setArray(2, types);
+						ps.setString(3, entityJson);
+						ps.setString(4, createdAt);
+						ps.setString(5, modifiedAt);
+						ps.setString(6, geoJson);
+						ps.setString(7, geoJson);
+						if (scopes == null) {
+							ps.setNull(8, java.sql.Types.ARRAY);
+						} else {
+							ps.setArray(8, scopes);
+						}
+
+						ps.addBatch();
+						if (++inBatch == batchSize) {
+							for (int c : ps.executeBatch()) {
+								affected += (c > 0 ? c : 0);
+							}
+							inBatch = 0;
+						}
+					}
+					if (inBatch > 0) {
+						for (int c : ps.executeBatch()) {
+							affected += (c > 0 ? c : 0);
+						}
+					}
+				}
+
+				long t2 = System.nanoTime();
+
+				try (Statement st = conn.createStatement()) {
+					st.execute("CREATE INDEX i_entity_createdat  ON public.entity USING btree (createdat)");
+					st.execute("CREATE INDEX i_entity_modifiedat ON public.entity USING btree (modifiedat)");
+					st.execute("CREATE INDEX I_entity_scopes ON public.entity USING gin  (scopes)");
+					st.execute("CREATE INDEX I_entity_types  ON public.entity USING gin  (e_types)");
+					st.execute("CREATE INDEX i_entity_location   ON public.entity USING gist (location)");
+					st.execute("CREATE INDEX i_entity_data       ON public.entity USING gin  (entity)");
+				}
+				long t3 = System.nanoTime();
+
+				logger.info("insert={}ms rebuild={}ms", (t2 - t1) / 1_000_000, (t3 - t2) / 1_000_000);
+
+				conn.commit();
+
+				try (Statement st = conn.createStatement()) {
+					st.execute("ANALYZE public.entity");
+				}
+				return affected;
+			} catch (Exception e) {
+				try {
+					conn.rollback();
+				} catch (Exception rb) {
+					logger.error("Failed to roll back bulk insert transaction", rb);
+				}
+				logger.error("Failed to bulk insert entities", e);
+				throw e;
+			} finally {
+				try {
+					conn.close();
+				} catch (Exception ce) {
+					logger.error("Failed to close bulk insert connection", ce);
+				}
+			}
+		})).runSubscriptionOn(Infrastructure.getDefaultWorkerPool());
+	}
+
+	private String extractId(JsonObject json) {
+		Object v = json.getValue(NGSIConstants.JSON_LD_ID);
+		return v == null ? null : v.toString();
+	}
+
+	private String[] extractTypesArray(JsonObject json) {
+		Object t = json.getValue(NGSIConstants.JSON_LD_TYPE);
+		if (t instanceof JsonArray arr) {
+			String[] out = new String[arr.size()];
+			for (int i = 0; i < arr.size(); i++) {
+				out[i] = arr.getValue(i).toString();
+			}
+			return out;
+		}
+		return new String[0];
+	}
+
+	private String extractValueAt(JsonObject json, String key) {
+		Object arr = json.getValue(key);
+		if (arr instanceof JsonArray ja && !ja.isEmpty() && ja.getValue(0) instanceof JsonObject fo) {
+			Object val = fo.getValue(NGSIConstants.JSON_LD_VALUE);
+			return val == null ? null : val.toString();
+		}
+		return null;
+	}
+
+	private Object[] extractScopesArray(JsonObject json) {
+		Object sv = json.getValue(NGSIConstants.NGSI_LD_SCOPE);
+		if (!(sv instanceof JsonArray arr)) {
+			return null;
+		}
+		Object[] out = new Object[arr.size()];
+		for (int i = 0; i < arr.size(); i++) {
+			Object o = arr.getValue(i);
+			out[i] = (o instanceof JsonObject elem) ? elem.getValue(NGSIConstants.JSON_LD_VALUE) : null;
+		}
+		return out;
+	}
+
+	private String extractGeoJson(JsonObject json) {
+		Object loc = json.getValue(NGSIConstants.NGSI_LD_LOCATION);
+		if (!(loc instanceof JsonArray locArr) || locArr.isEmpty()) {
+			return null;
+		}
+		if (!(locArr.getValue(0) instanceof JsonObject locObj)) {
+			return null;
+		}
+
+		Object locType = locObj.getValue(NGSIConstants.JSON_LD_TYPE);
+		boolean isGeo = (locType instanceof JsonArray lta)
+				&& lta.stream().anyMatch(x -> NGSIConstants.NGSI_LD_GEOPROPERTY.equals(x));
+		if (!isGeo) {
+			return null;
+		}
+
+		Object hv = locObj.getValue(NGSIConstants.NGSI_LD_HAS_VALUE);
+		if (!(hv instanceof JsonArray hvArr) || hvArr.isEmpty()) {
+			return null;
+		}
+		if (!(hvArr.getValue(0) instanceof JsonObject node)) {
+			return null;
+		}
+
+		Object ntObj = node.getValue(NGSIConstants.JSON_LD_TYPE);
+		if (!(ntObj instanceof JsonArray nta) || nta.isEmpty()) {
+			return null;
+		}
+		Object t0 = nta.getValue(0);
+		if (t0 == null) {
+			return null;
+		}
+		String fullType = t0.toString();
+		String geoType = fullType.length() >= 31 ? fullType.substring(31) : "";
+
+		Object coordsWrap = node.getValue(NGSIConstants.NGSI_LD_COORDINATES);
+		Object coordList = null;
+		if (coordsWrap instanceof JsonArray cwa && !cwa.isEmpty() && cwa.getValue(0) instanceof JsonObject cw0) {
+			coordList = cw0.getValue(NGSIConstants.JSON_LD_LIST);
+		}
+		Object coordinates = getCoordinates(coordList);
+
+		return new JsonObject().put("type", geoType).put("coordinates", coordinates).encode();
+	}
+
+	private Object getCoordinates(Object coordinateList) {
+		if (!(coordinateList instanceof JsonArray arr)) {
+			return null;
+		}
+		JsonArray out = new JsonArray();
+		for (Object elem : arr) {
+			if (elem instanceof JsonObject eo) {
+				if (eo.containsKey(NGSIConstants.JSON_LD_LIST)) {
+					out.add(getCoordinates(eo.getValue(NGSIConstants.JSON_LD_LIST)));
+				} else {
+					out.add(eo.getValue(NGSIConstants.JSON_LD_VALUE));
+				}
+			} else {
+				out.add((Object) null);
+			}
+		}
+		return out;
 	}
 
 }

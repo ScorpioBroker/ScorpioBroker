@@ -137,6 +137,25 @@ public class JsonLDService {
 		return JsonLdProcessor.expand(input, webClient);
 	}
 
+	/**
+	 * Parses header {@code @context} once for bulk ingest. Blocking; use on a worker
+	 * thread.
+	 */
+	public Context resolveActiveContextForBulk(List<Object> contextLinks) {
+		return JsonLdProcessor.resolveActiveContextForBulk(contextLinks, webClient);
+	}
+
+	/**
+	 * Synchronous single-entity expand using a shared active context. Blocking.
+	 */
+	@SuppressWarnings("unchecked")
+	public Map<String, Object> expandEntitySync(Context activeCtx, Object entity, JsonLdOptions opts, int payloadType,
+			boolean atContextAllowed) throws JsonLdError, ResponseException {
+		return (Map<String, Object>) new JsonLdApi(opts)
+				.expandEntitySync(activeCtx, entity, payloadType, atContextAllowed, webClient, microServiceUtils)
+				.getElement();
+	}
+
 	public Context getCoreContext() {
 		return coreContext;
 	}
