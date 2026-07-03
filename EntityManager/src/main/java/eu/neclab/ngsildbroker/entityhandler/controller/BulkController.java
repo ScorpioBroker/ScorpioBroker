@@ -22,7 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.net.HttpHeaders;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
-import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
 import eu.neclab.ngsildbroker.entityhandler.services.EntityService.BulkResult;
@@ -76,8 +76,9 @@ public class BulkController {
 		String tenant = HttpUtils.getTenant(request);
 		try {
 			boolean trigger = HttpUtils.parseBoolean(triggerS);
-			// Permissive for bulk ingest: honor a shared @context from the Link header and
-			// any per-entity @context embedded in the uploaded entities.
+			// Permissive for bulk ingest: honor a shared @context from the Link header.
+			// Per-entity @context that only references NGSI-LD core URLs is stripped before
+			// expand (see stripRedundantCoreContext).
 			List<Object> atContext = HttpUtils.getAtContext(request);
 			boolean atContextAllowed = true;
 			BulkResult result = new BulkResult();
@@ -107,7 +108,9 @@ public class BulkController {
 				continue;
 			}
 			try {
-				batch.add(new JsonObject(text).getMap());
+				Map<String, Object> entity = new JsonObject(text).getMap();
+				stripRedundantCoreContext(entity);
+				batch.add(entity);
 			} catch (Exception e) {
 				logger.warn("Skipping malformed NDJSON line in bulk insert: {}", e.getMessage());
 				continue;
@@ -142,7 +145,41 @@ public class BulkController {
 	private Map<String, Object> readObject(JsonParser parser) throws Exception {
 		@SuppressWarnings("unchecked")
 		Map<String, Object> map = parser.readValueAs(Map.class);
+		stripRedundantCoreContext(map);
 		return map;
+	}
+
+	/**
+	 * Drops per-entity {@code @context} when it only references NGSI-LD core context
+	 * URLs ({@link NGSIConstants#CORE_CONTEXT_URLS}). The broker already loads the core
+	 * context; keeping it on each entity forces a redundant clone/parse on every expand.
+	 */
+	private void stripRedundantCoreContext(Map<String, Object> entity) {
+		Object context = entity.get(NGSIConstants.JSON_LD_CONTEXT);
+		if (context == null) {
+			return;
+		}
+		if (usesOnlyCoreContextUrls(context)) {
+			entity.remove(NGSIConstants.JSON_LD_CONTEXT);
+		}
+	}
+
+	private boolean usesOnlyCoreContextUrls(Object context) {
+		if (context instanceof String) {
+			return NGSIConstants.CORE_CONTEXT_URLS.contains(context);
+		}
+		if (context instanceof List<?> list) {
+			if (list.isEmpty()) {
+				return false;
+			}
+			for (Object item : list) {
+				if (!(item instanceof String) || !NGSIConstants.CORE_CONTEXT_URLS.contains(item)) {
+					return false;
+				}
+			}
+			return true;
+		}
+		return false;
 	}
 
 	/**
@@ -158,8 +195,12 @@ public class BulkController {
 		}
 		List<Map<String, Object>> chunk = new ArrayList<>(batch);
 		batch.clear();
+		long start = System.currentTimeMillis();
 		entityService.bulkInsertChunk(tenant, chunk, atContext, atContextAllowed, trigger, result).await()
 				.indefinitely();
+		if (logger.isDebugEnabled()) {
+			logger.debug("bulk flush took {}ms ({} entities)", System.currentTimeMillis() - start, chunk.size());
+		}
 	}
 
 	private Format detectFormat(HttpServerRequest request, BufferedInputStream in) throws Exception {

@@ -1225,6 +1225,28 @@ public class JsonLdApi {
 	}
 
 	/**
+	 * Synchronous single-entity expand for bulk ingest. Mirrors the map branch of
+	 * {@link #expand(Context, String, NGSIObject, int, boolean, WebClient, MicroServiceUtils)}
+	 * without building per-entity {@link Uni}s.
+	 */
+	public NGSIObject expandEntitySync(Context activeCtx, Object element, int payloadType, boolean atContextAllowed,
+			WebClient webClient, MicroServiceUtils microServiceUtils) throws JsonLdError, ResponseException {
+		if (element instanceof Map<?, ?>) {
+			final Map<String, Object> elem = (Map<String, Object>) element;
+			Object bodyContext = elem.remove(JsonLdConsts.CONTEXT);
+			Context ctx = activeCtx;
+			if (bodyContext != null) {
+				if (!atContextAllowed) {
+					throw new ResponseException(ErrorType.BadRequestData, "@context entry in body is not allowed");
+				}
+				ctx = activeCtx.parse(bodyContext, true, webClient, microServiceUtils).await().indefinitely();
+			}
+			return expandSubLevels(ctx, null, new NGSIObject(element, null), payloadType, atContextAllowed);
+		}
+		return expandSubLevels(activeCtx, null, new NGSIObject(element, null), payloadType, atContextAllowed);
+	}
+
+	/**
 	 * Compaction Algorithm
 	 *
 	 * http://json-ld.org/spec/latest/json-ld-api/#compaction-algorithm

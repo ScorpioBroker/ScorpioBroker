@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jsonldjava.core.Context;
+import com.github.jsonldjava.core.JsonLdError;
 import com.github.jsonldjava.core.JsonLDService;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.HashBasedTable;
@@ -60,6 +61,8 @@ import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
 import io.quarkus.runtime.Startup;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
+import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.smallrye.reactive.messaging.annotations.Broadcast;
@@ -120,6 +123,9 @@ public class EntityService implements CSourceHandler {
 
 	@ConfigProperty(name = "scorpio.entity.bulk.expand.chunk")
 	int bulkExpandChunk;
+
+	@ConfigProperty(name = "scorpio.entity.bulk.expand.sync", defaultValue = "false")
+	boolean bulkExpandSync;
 
 	@ConfigProperty(name = "scorpio.entity.batch-operations.create.max")
 	int maxCreateBatch;
@@ -1316,51 +1322,130 @@ public class EntityService implements CSourceHandler {
 
 	/**
 	 * High-throughput bulk-insert path. Deliberately does as little as possible per
-	 * entity: it only expands the entities (in chunks) and hands them to the DAO for
+	 * entity: it only expands the entities (in chunks) and hands them to the DAO
+	 * for
 	 * a COPY-based overwrite. Unlike {@link #createBatch} it skips registration
 	 * resolution, local/remote split, federation/distribution and per-entity
-	 * {@link NGSILDOperationResult} construction. Existing entities are overwritten,
+	 * {@link NGSILDOperationResult} construction. Existing entities are
+	 * overwritten,
 	 * so the only failures reported are expansion failures.
 	 *
 	 * Called once per copy-batch by the streaming controller. When {@code trigger}
-	 * is true, the inserted entities are split into {@code create.max} sized packages
-	 * and published to the entity channel as {@link AppConstants#BATCH_CREATE_REQUEST}
+	 * is true, the inserted entities are split into {@code create.max} sized
+	 * packages
+	 * and published to the entity channel as
+	 * {@link AppConstants#BATCH_CREATE_REQUEST}
 	 * messages (mirroring {@link #createBatch}).
 	 */
 	public Uni<Void> bulkInsertChunk(String tenant, List<Map<String, Object>> rawEntities, List<Object> atContext,
 			boolean atContextAllowed, boolean trigger, BulkResult result) {
 		result.addReceived(rawEntities.size());
-		Uni<List<Map<String, Object>>> expandedUni = Uni.createFrom()
-				.item((List<Map<String, Object>>) new ArrayList<Map<String, Object>>());
-		for (List<Map<String, Object>> sub : Lists.partition(rawEntities, bulkExpandChunk)) {
-			expandedUni = expandedUni.onItem().transformToUni(acc -> expandBulkSubChunk(sub, atContext,
-					atContextAllowed, result).onItem().transform(expandedSub -> {
-						acc.addAll(expandedSub);
-						return acc;
-					}));
+		if (bulkExpandSync) {
+			return bulkInsertChunkSyncExpand(tenant, rawEntities, atContext, atContextAllowed, trigger, result);
 		}
-		return expandedUni.onItem().transformToUni(expanded -> {
-			if (expanded.isEmpty()) {
+		List<Uni<List<Map<String, Object>>>> expandedUnis = new ArrayList<>(rawEntities.size() / bulkExpandChunk + 1);
+		for (List<Map<String, Object>> sub : Lists.partition(rawEntities, bulkExpandChunk)) {
+			expandedUnis.add(expandBulkSubChunk(sub, atContext, atContextAllowed, result));
+		}
+		long start = System.nanoTime();
+
+		return Uni.combine().all().unis(expandedUnis).withUni(expandedChunks -> {
+			logBulkExpandDuration(start, rawEntities.size());
+			if (expandedChunks.isEmpty()) {
 				return Uni.createFrom().voidItem();
 			}
-			return entityDAO.bulkCopyInsert(tenant, expanded).onItem().transformToUni(copied -> {
-				result.addInserted(copied);
-				if (trigger) {
-					try {
-						emitBulkCreateBatches(tenant, expanded);
-					} catch (ResponseException e) {
-						return Uni.createFrom().<Void>failure(e);
-					}
-				}
-				return Uni.createFrom().voidItem();
-			});
+			List<Map<String, Object>> expanded = new ArrayList<>();
+			for (Object expandedSub : expandedChunks) {
+				expanded.addAll((List<Map<String, Object>>) expandedSub);
+			}
+			return finishBulkInsert(tenant, expanded, trigger, result);
 		});
+	}
+
+	/**
+	 * Bulk expand without per-entity {@link Uni} graphs: one shared parsed context,
+	 * synchronous {@link com.github.jsonldjava.core.JsonLdApi#expandSubLevels} per
+	 * entity, chunked only for error isolation.
+	 */
+	private Uni<Void> bulkInsertChunkSyncExpand(String tenant, List<Map<String, Object>> rawEntities,
+			List<Object> atContext, boolean atContextAllowed, boolean trigger, BulkResult result) {
+		return Uni.createFrom().item(Unchecked.supplier(() -> {
+			long start = System.nanoTime();
+			Context activeCtx = jsonLdService.resolveActiveContextForBulk(atContext);
+			List<Map<String, Object>> expanded = new ArrayList<>(rawEntities.size());
+			for (List<Map<String, Object>> sub : Lists.partition(rawEntities, bulkExpandChunk)) {
+				try {
+					expanded.addAll(expandBulkSubChunkSync(activeCtx, sub, atContextAllowed));
+				} catch (JsonLdError | ResponseException e) {
+					expanded.addAll(expandBulkIndividuallySync(activeCtx, sub, atContextAllowed, result));
+				}
+			}
+			logBulkExpandDuration(start, rawEntities.size());
+			return expanded;
+		})).runSubscriptionOn(Infrastructure.getDefaultWorkerPool()).onItem()
+				.transformToUni(expanded -> finishBulkInsert(tenant, expanded, trigger, result));
+	}
+
+	private Uni<Void> finishBulkInsert(String tenant, List<Map<String, Object>> expanded, boolean trigger,
+			BulkResult result) {
+		if (expanded.isEmpty()) {
+			return Uni.createFrom().voidItem();
+		}
+		long start1 = System.currentTimeMillis();
+		return entityDAO.bulkCopyInsert(tenant, expanded).onItem().transformToUni(copied -> {
+			if (logger.isDebugEnabled()) {
+				logger.debug("bulk DB insert took {}ms for {} entities", System.currentTimeMillis() - start1,
+						expanded.size());
+			}
+			result.addInserted(copied);
+			if (trigger) {
+				try {
+					emitBulkCreateBatches(tenant, expanded);
+				} catch (ResponseException e) {
+					return Uni.createFrom().<Void>failure(e);
+				}
+			}
+			return Uni.createFrom().voidItem();
+		});
+	}
+
+	private List<Map<String, Object>> expandBulkSubChunkSync(Context activeCtx, List<Map<String, Object>> sub,
+			boolean atContextAllowed) throws JsonLdError, ResponseException {
+		List<Map<String, Object>> out = new ArrayList<>(sub.size());
+		for (Map<String, Object> raw : sub) {
+			out.add(jsonLdService.expandEntitySync(activeCtx, raw, AppConstants.opts, AppConstants.CREATE_REQUEST,
+					atContextAllowed));
+		}
+		return out;
+	}
+
+	private List<Map<String, Object>> expandBulkIndividuallySync(Context activeCtx, List<Map<String, Object>> sub,
+			boolean atContextAllowed, BulkResult result) {
+		List<Map<String, Object>> out = new ArrayList<>();
+		for (Map<String, Object> raw : sub) {
+			String id = (String) raw.get(NGSIConstants.QUERY_PARAMETER_ID);
+			try {
+				out.add(jsonLdService.expandEntitySync(activeCtx, raw, AppConstants.opts, AppConstants.CREATE_REQUEST,
+						atContextAllowed));
+			} catch (JsonLdError | ResponseException e) {
+				result.addExpandFailed(id);
+			}
+		}
+		return out;
+	}
+
+	private void logBulkExpandDuration(long startNanos, int entityCount) {
+		if (logger.isDebugEnabled()) {
+			logger.debug("bulk expand took {}ms for {} entities", (System.nanoTime() - startNanos) / 1_000_000,
+					entityCount);
+		}
 	}
 
 	/**
 	 * Expands a sub-chunk of raw entities in a single JSON-LD expand call. If that
 	 * fails (a bad entity poisons the whole chunk), it falls back to expanding each
-	 * entity individually so the offending ids can be isolated and reported while the
+	 * entity individually so the offending ids can be isolated and reported while
+	 * the
 	 * rest still get inserted.
 	 */
 	private Uni<List<Map<String, Object>>> expandBulkSubChunk(List<Map<String, Object>> sub, List<Object> atContext,

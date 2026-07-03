@@ -84,6 +84,16 @@ public class JsonLdProcessor {
 	}
 
 	/**
+	 * Parses the request {@code @context} once for a bulk copy-batch. Blocking.
+	 */
+	static Context resolveActiveContextForBulk(List<Object> contextLinks, WebClient webClient) {
+		if (contextLinks != null && !contextLinks.isEmpty()) {
+			return getCoreContextClone().parse(contextLinks, true, webClient, microServiceUtils).await().indefinitely();
+		}
+		return getCoreContextClone();
+	}
+
+	/**
 	 * Compacts the given input using the context according to the steps in the
 	 * <a href="http://www.w3.org/TR/json-ld-api/#compaction-algorithm"> Compaction
 	 * algorithm</a>.
