@@ -114,6 +114,11 @@ public class QueryParser {
 
 			} else if (b == ')') {
 				current.setOperant(operant);
+				if (!attribName.isEmpty()) {
+					current.setAttribute(attribName);
+					root.addAttrib(attribName);
+					attribName = "";
+				}
 
 				current = current.getParent();
 				readingAttrib = true;
