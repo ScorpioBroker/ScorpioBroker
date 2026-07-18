@@ -115,12 +115,16 @@ add a new one.
 - Tests are JUnit-based and sparse (~21 test classes); not every module has
   meaningful coverage. Don't assume a green local test run proves much, and don't
   add large speculative test suites unless asked.
-- **PMD** runs in CI (`pmd-ruleset.xml`, broad rule set). Keep new code clean, but
-  the existing code intentionally suppresses many warnings (see generics note) —
-  follow local style over generic PMD ideals.
-- The functional source of truth is the **Postman API test suite** (`api-test.json`
-  + the `api-test-*-environment.json` files); CI runs the NGSI-LD test suite
-  against the broker.
+- **PMD** runs in CI (`pmd-ruleset.xml`, broad rule set) but is NOT a gate — ignore
+  it; never spend time running or appeasing it. Follow local style (see generics
+  note).
+- **THE absolute gate for everything is the Postman API test workflow**:
+  `.github/workflows/api-test.yml` runs Newman with `api-test.json` +
+  `api-test-aaio-environment.json` against the dockerized broker (job
+  `build-java-aaio`). No change is done until this passes. Run it locally with a
+  `postman/newman` docker container (never install newman) — full recipe in
+  `CLAUDE.md` §"Running the Postman API test gate locally". The FIWARE NGSI-LD
+  Robot suite (`api-etsi-test.yml`) is the secondary functional check.
 
 ## 6. Working style for agents
 

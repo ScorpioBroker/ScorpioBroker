@@ -286,6 +286,22 @@ public class RegistryControllerTest {
 	}
 
 	/**
+	 * unknown query parameters are rejected with 400 (spec 6.3.20)
+	 */
+	@Test
+	@Order(12)
+	public void getDiscoverCSourceInvalidParamTest() throws Exception {
+
+		ExtractableResponse<Response> response = given()
+				.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+				.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
+				.get("/ngsi-ld/v1/csourceRegistrations?type=Test1&invalidParams=x").then()
+				.statusCode(Status.BAD_REQUEST.getStatusCode()).statusCode(400).extract();
+		assertEquals(400, response.statusCode());
+
+	}
+
+	/**
 	 * this method is use for delete the Csource registration
 	 */
 	@Test

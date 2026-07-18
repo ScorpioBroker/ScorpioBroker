@@ -8,7 +8,7 @@ app:
     dbport: "5432"
     dbuser: ngb
     gateway: http://localhost:9090
-  image: docker.io/hebgen/at-context-server:6.0.1-SNAPSHOT
+  image: scorpiobroker/info-manager:java-latest
   livenessProbe:
     failureThreshold: 3
     httpGet:

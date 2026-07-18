@@ -10,7 +10,6 @@ import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.QueryParam;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.metrics.MetricUnits;
@@ -22,7 +21,11 @@ import org.jboss.resteasy.reactive.RestResponse;
 import com.github.jsonldjava.core.JsonLDService;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.ParsedQueryParams;
+import eu.neclab.ngsildbroker.commons.enums.NgsiLdOperation;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import eu.neclab.ngsildbroker.commons.tools.QueryParamParser;
 import eu.neclab.ngsildbroker.historyentitymanager.service.HistoryEntityService;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
@@ -54,6 +57,7 @@ public class HistoryController {
 	public Uni<RestResponse<Object>> createTemporalEntity(HttpServerRequest request, String body) {
 		Map<String, Object> payload;
 		try {
+			QueryParamParser.parse(request, NgsiLdOperation.CREATE_TEMPORAL);
 			payload = new JsonObject(body).getMap();
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
@@ -79,6 +83,7 @@ public class HistoryController {
 	public Uni<RestResponse<Object>> deleteTemporalEntityById(HttpServerRequest request,
 			@PathParam("entityId") String entityId) {
 		try {
+			QueryParamParser.parse(request, NgsiLdOperation.DELETE_TEMPORAL);
 			HttpUtils.validateUri(entityId);
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
@@ -101,6 +106,7 @@ public class HistoryController {
 		Map<String, Object> payload;
 
 		try {
+			QueryParamParser.parse(request, NgsiLdOperation.APPEND_TEMPORAL_ATTRS);
 			payload = new JsonObject(body).getMap();
 			HttpUtils.validateUri(entityId);
 		} catch (Exception e) {
@@ -122,12 +128,14 @@ public class HistoryController {
 	@Timed(name = "temp_entity_delete_attrs_duration", description = "Duration of temp entity delete attrs requests", unit = MetricUnits.MILLISECONDS, absolute = true)
 	@ConcurrentGauge(name = "temp_entity_delete_attrs_concurrent", description = "Number of concurrent temp entity delete attrs requests", absolute = true)
 	public Uni<RestResponse<Object>> deleteAttrib2TemporalEntity(HttpServerRequest request,
-			@PathParam("entityId") String entityId, @PathParam("attrId") String attrId,
-			@QueryParam("datasetId") String datasetId, @QueryParam("deleteAll") String deleteAllS) {
+			@PathParam("entityId") String entityId, @PathParam("attrId") String attrId) {
+		String datasetId;
 		boolean deleteAll;
 		try {
+			ParsedQueryParams queryParams = QueryParamParser.parse(request, NgsiLdOperation.DELETE_TEMPORAL_ATTR);
+			datasetId = queryParams.getString(NGSIConstants.QUERY_PARAMETER_DATA_SET_ID);
 			HttpUtils.validateUri(entityId);
-			deleteAll = HttpUtils.parseBoolean(deleteAllS);
+			deleteAll = queryParams.getBoolean(NGSIConstants.QUERY_PARAMETER_DELETE_ALL);
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
@@ -151,6 +159,7 @@ public class HistoryController {
 			@PathParam("instanceId") String instanceId, String body) {
 		Map<String, Object> payload;
 		try {
+			QueryParamParser.parse(request, NgsiLdOperation.UPDATE_TEMPORAL_ATTR_INSTANCE);
 			payload = new JsonObject(body).getMap();
 			HttpUtils.validateUri(entityId);
 		} catch (Exception e) {
@@ -180,6 +189,7 @@ public class HistoryController {
 			@PathParam("entityId") String entityId, @PathParam("attrId") String attrId,
 			@PathParam("instanceId") String instanceId) {
 		try {
+			QueryParamParser.parse(request, NgsiLdOperation.DELETE_TEMPORAL_ATTR_INSTANCE);
 			HttpUtils.validateUri(entityId);
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));

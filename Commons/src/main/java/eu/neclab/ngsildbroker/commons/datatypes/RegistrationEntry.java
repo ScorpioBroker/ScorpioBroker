@@ -87,6 +87,7 @@ public class RegistrationEntry {
 	boolean updateEntityMap;
 	boolean deleteEntityMap;
 	boolean retrieveEntityMap;
+	boolean purgeEntity;
 	RemoteHost host;
 	Context context;
 	Map<String, Object> registration;
@@ -103,7 +104,7 @@ public class RegistrationEntry {
 			boolean retrieveAttrTypeDetails, boolean retrieveAttrTypeInfo, boolean createSubscription,
 			boolean updateSubscription, boolean retrieveSubscription, boolean querySubscription,
 			boolean deleteSubscription, boolean queryEntityMap, boolean createEntityMap, boolean updateEntityMap,
-			boolean deleteEntityMap, boolean retrieveEntityMap, RemoteHost host, Context context) {
+			boolean deleteEntityMap, boolean retrieveEntityMap, boolean purgeEntity, RemoteHost host, Context context) {
 		super();
 		this.cId = cId;
 		this.eId = eId;
@@ -156,6 +157,7 @@ public class RegistrationEntry {
 		this.updateEntityMap = updateEntityMap;
 		this.deleteEntityMap = deleteEntityMap;
 		this.retrieveEntityMap = retrieveEntityMap;
+		this.purgeEntity = purgeEntity;
 		this.host = host;
 		this.context = context;
 	}
@@ -288,6 +290,7 @@ public class RegistrationEntry {
 			boolean tmpUpdateEntityMap = false;
 			boolean tmpDeleteEntityMap = false;
 			boolean tmpRetrieveEntityMap = false;
+			boolean tmpPurgeEntity = false;
 			if (payload.containsKey(NGSIConstants.NGSI_LD_REG_OPERATIONS)) {
 				for (Map<String, String> opEntry : (List<Map<String, String>>) payload
 						.get(NGSIConstants.NGSI_LD_REG_OPERATIONS)) {
@@ -303,7 +306,7 @@ public class RegistrationEntry {
 							tmpRetrieveEntity = tmpQueryEntity = true;
 							break;
 						case NGSIConstants.NGSI_LD_REG_OPERATION_REDIRECTION_OPS:
-							tmpCreateEntity = tmpUpdateEntity = tmpAppendAttrs = tmpUpdateAttrs = tmpDeleteAttrs = tmpDeleteEntity = tmpMergeEntity = tmpReplaceEntity = tmpReplaceAttrs = tmpRetrieveEntity = tmpQueryEntity = tmpRetrieveEntityTypes = tmpRetrieveEntityTypeDetails = tmpRetrieveEntityTypeInfo = tmpRetrieveAttrTypes = tmpRetrieveAttrTypeDetails = tmpRetrieveAttrTypeInfo = true;
+							tmpCreateEntity = tmpUpdateEntity = tmpAppendAttrs = tmpUpdateAttrs = tmpDeleteAttrs = tmpDeleteEntity = tmpMergeEntity = tmpReplaceEntity = tmpReplaceAttrs = tmpRetrieveEntity = tmpQueryEntity = tmpRetrieveEntityTypes = tmpRetrieveEntityTypeDetails = tmpRetrieveEntityTypeInfo = tmpRetrieveAttrTypes = tmpRetrieveAttrTypeDetails = tmpRetrieveAttrTypeInfo = tmpPurgeEntity = true;
 							break;
 						case NGSIConstants.NGSI_LD_REG_OPERATION_CREATEENTITY:
 							tmpCreateEntity = true;
@@ -428,6 +431,9 @@ public class RegistrationEntry {
 						case NGSIConstants.NGSI_LD_REG_OPERATION_RETRIEVE_ENTITYMAP:
 							tmpRetrieveEntityMap = true;
 							break;
+						case NGSIConstants.NGSI_LD_REG_OPERATION_PURGEENTITY:
+							tmpPurgeEntity = true;
+							break;
 					}
 				}
 			} else {
@@ -496,7 +502,7 @@ public class RegistrationEntry {
 												tmpCreateSubscription, tmpUpdateSubscription, tmpRetrieveSubscription,
 												tmpQuerySubscription, tmpDeleteSubscription, tmpQueryEntityMap,
 												tmpCreateEntityMap, tmpUpdateEntityMap, tmpDeleteEntityMap,
-												tmpRetrieveEntityMap, remoteHost, ctx));
+												tmpRetrieveEntityMap, tmpPurgeEntity, remoteHost, ctx));
 									}
 								}
 								if (containsRels) {
@@ -517,7 +523,7 @@ public class RegistrationEntry {
 												tmpCreateSubscription, tmpUpdateSubscription, tmpRetrieveSubscription,
 												tmpQuerySubscription, tmpDeleteSubscription, tmpQueryEntityMap,
 												tmpCreateEntityMap, tmpUpdateEntityMap, tmpDeleteEntityMap,
-												tmpRetrieveEntityMap, remoteHost, ctx));
+												tmpRetrieveEntityMap, tmpPurgeEntity, remoteHost, ctx));
 									}
 								}
 							} else {
@@ -534,7 +540,7 @@ public class RegistrationEntry {
 										tmpCreateSubscription, tmpUpdateSubscription, tmpRetrieveSubscription,
 										tmpQuerySubscription, tmpDeleteSubscription, tmpQueryEntityMap,
 										tmpCreateEntityMap, tmpUpdateEntityMap, tmpDeleteEntityMap,
-										tmpRetrieveEntityMap, remoteHost, ctx));
+										tmpRetrieveEntityMap, tmpPurgeEntity, remoteHost, ctx));
 							}
 
 						}
@@ -558,7 +564,7 @@ public class RegistrationEntry {
 									tmpRetrieveAttrTypes, tmpRetrieveAttrTypeDetails, tmpRetrieveAttrTypeInfo,
 									tmpCreateSubscription, tmpUpdateSubscription, tmpRetrieveSubscription,
 									tmpQuerySubscription, tmpDeleteSubscription, tmpQueryEntityMap, tmpCreateEntityMap,
-									tmpUpdateEntityMap, tmpDeleteEntityMap, tmpRetrieveEntityMap, remoteHost, ctx));
+									tmpUpdateEntityMap, tmpDeleteEntityMap, tmpRetrieveEntityMap, tmpPurgeEntity, remoteHost, ctx));
 						}
 					}
 					if (containsRels) {
@@ -576,7 +582,7 @@ public class RegistrationEntry {
 									tmpRetrieveAttrTypes, tmpRetrieveAttrTypeDetails, tmpRetrieveAttrTypeInfo,
 									tmpCreateSubscription, tmpUpdateSubscription, tmpRetrieveSubscription,
 									tmpQuerySubscription, tmpDeleteSubscription, tmpQueryEntityMap, tmpCreateEntityMap,
-									tmpUpdateEntityMap, tmpDeleteEntityMap, tmpRetrieveEntityMap, remoteHost, ctx));
+									tmpUpdateEntityMap, tmpDeleteEntityMap, tmpRetrieveEntityMap, tmpPurgeEntity, remoteHost, ctx));
 						}
 					}
 				}
@@ -1402,6 +1408,14 @@ public class RegistrationEntry {
 
 	public void setRetrieveEntityMap(boolean retrieveEntityMap) {
 		this.retrieveEntityMap = retrieveEntityMap;
+	}
+
+	public boolean purgeEntity() {
+		return purgeEntity;
+	}
+
+	public void setPurgeEntity(boolean purgeEntity) {
+		this.purgeEntity = purgeEntity;
 	}
 
 	public RemoteHost host() {

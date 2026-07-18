@@ -12,7 +12,6 @@ import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.QueryParam;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.slf4j.Logger;
@@ -20,10 +19,13 @@ import org.slf4j.LoggerFactory;
 import com.github.jsonldjava.core.JsonLDService;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.ParsedQueryParams;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
+import eu.neclab.ngsildbroker.commons.enums.NgsiLdOperation;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
+import eu.neclab.ngsildbroker.commons.tools.QueryParamParser;
 import eu.neclab.ngsildbroker.registry.subscriptionmanager.service.RegistrySubscriptionService;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
@@ -54,6 +56,11 @@ public class RegistrySubscriptionController {
 
 	@POST
 	public Uni<RestResponse<Object>> subscribe(HttpServerRequest request, String payload) {
+		try {
+			QueryParamParser.parse(request, NgsiLdOperation.CREATE_SUBSCRIPTION);
+		} catch (ResponseException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+		}
 		return HttpUtils.expandBody(request, payload, AppConstants.SUBSCRIPTION_CREATE_PAYLOAD, ldService).onItem()
 				.transformToUni(tuple -> {
 					return subService
@@ -64,11 +71,21 @@ public class RegistrySubscriptionController {
 	}
 
 	@GET
-	public Uni<RestResponse<Object>> getAllSubscriptions(HttpServerRequest request, @QueryParam("limit") Integer limit,
-			@QueryParam("offset") int offset, @QueryParam("options") String options) {
+	public Uni<RestResponse<Object>> getAllSubscriptions(HttpServerRequest request) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		if (acceptHeader == -1) {
 			return HttpUtils.getInvalidHeader();
+		}
+		Integer limit;
+		int offset;
+		String options;
+		try {
+			ParsedQueryParams queryParams = QueryParamParser.parse(request, NgsiLdOperation.QUERY_SUBSCRIPTIONS);
+			limit = queryParams.getInteger(NGSIConstants.QUERY_PARAMETER_LIMIT);
+			offset = queryParams.getInt(NGSIConstants.QUERY_PARAMETER_OFFSET, 0);
+			options = queryParams.getString(NGSIConstants.QUERY_PARAMETER_OPTIONS);
+		} catch (ResponseException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
 		int limitTBU;
 		if (limit == null) {
@@ -110,10 +127,17 @@ public class RegistrySubscriptionController {
 	@Path("/{id}")
 	@GET
 	public Uni<RestResponse<Object>> getSubscriptionById(HttpServerRequest request,
-			@PathParam(value = "id") String subscriptionId, @QueryParam(value = "options") String options) {
+			@PathParam(value = "id") String subscriptionId) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		if (acceptHeader == -1) {
 			return HttpUtils.getInvalidHeader();
+		}
+		String options;
+		try {
+			ParsedQueryParams queryParams = QueryParamParser.parse(request, NgsiLdOperation.RETRIEVE_SUBSCRIPTION);
+			options = queryParams.getString(NGSIConstants.QUERY_PARAMETER_OPTIONS);
+		} catch (ResponseException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
 		try {
 			HttpUtils.validateUri(subscriptionId);
@@ -141,6 +165,7 @@ public class RegistrySubscriptionController {
 	@DELETE
 	public Uni<RestResponse<Object>> deleteSubscription(HttpServerRequest request, @PathParam(value = "id") String id) {
 		try {
+			QueryParamParser.parse(request, NgsiLdOperation.DELETE_SUBSCRIPTION);
 			HttpUtils.validateUri(id);
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
@@ -156,6 +181,7 @@ public class RegistrySubscriptionController {
 	public Uni<RestResponse<Object>> updateSubscription(HttpServerRequest request, @PathParam(value = "id") String id,
 			String payload) {
 		try {
+			QueryParamParser.parse(request, NgsiLdOperation.UPDATE_SUBSCRIPTION);
 			HttpUtils.validateUri(id);
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));

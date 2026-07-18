@@ -507,6 +507,7 @@ public interface NGSIConstants {
 	public static final String NGSI_LD_REG_OPERATION_UPDATE_ENTITYMAP = "updateEntityMap";
 	public static final String NGSI_LD_REG_OPERATION_DELETE_ENTITYMAP = "deleteEntityMap";
 	public static final String NGSI_LD_REG_OPERATION_RETRIEVE_ENTITYMAP = "retrieveEntityMap";
+	public static final String NGSI_LD_REG_OPERATION_PURGEENTITY = "purgeEntity";
 	public static final String NGSI_LD_REG_OPERATION_CANCOMPRESS = "canCompress";
 	public static final String ENTITY_MAP_TOKEN_HEADER = "NGSILD-EntityMap";
 
@@ -552,6 +553,8 @@ public interface NGSIConstants {
 	public static final String JSON_LD_NULL = "@null";
 	public static final String QUERY_PARAMETER_OMIT = "omit";
 	public static final String QUERY_PARAMETER_PICK = "pick";
+	public static final String QUERY_PARAMETER_DROP = "drop";
+	public static final String QUERY_PARAMETER_KEEP = "keep";
 	public static final String NGSI_LD_REGISTRY_SUB_ENDPOINT = "/ngsi-ld/v1/csourceSubscriptions";
 	public static final String NGSI_LD_REGISTRY_ENDPOINT = "/ngsi-ld/v1/csourceRegistrations";
 	public static final String NGSI_LD_SUB_ENDPOINT = "/ngsi-ld/v1/subscriptions";
@@ -630,5 +633,15 @@ public interface NGSIConstants {
 	public static final String QUERY_PARAMETER_ORDER_GEOMETRY = "orderGeometry";
 	public static final String QUERY_PARAMETER_ORDER_COLLATION = "collation";
 	public static final String QUERY_PARAMETER_META_DATA = "metadata";
+	public static final String QUERY_PARAMETER_LOCAL_ONLY_LEGACY = "localOnly";
+	public static final String QUERY_PARAMETER_AGGR_METHODS = "aggrMethods";
+	public static final String QUERY_PARAMETER_AGGR_PERIOD_DURATION = "aggrPeriodDuration";
+	public static final String QUERY_PARAMETER_BBOX = "bbox";
+	public static final String QUERY_PARAMETER_KIND = "kind";
+	public static final String QUERY_PARAMETER_RELOAD = "reload";
+	public static final String QUERY_PARAMETER_N = "n";
+	public static final String QUERY_PARAMETER_OFFSET_N = "offsetN";
+	public static final String QUERY_PARAMETER_ORDER_N = "orderN";
+	public static final String QUERY_PARAMETER_N_ORDER = "nOrder";
 
 }

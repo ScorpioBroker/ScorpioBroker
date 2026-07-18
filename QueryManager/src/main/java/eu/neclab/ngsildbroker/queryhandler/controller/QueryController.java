@@ -1,7 +1,5 @@
 package eu.neclab.ngsildbroker.queryhandler.controller;
 
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -28,6 +26,7 @@ import com.google.common.net.HttpHeaders;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.ParsedQueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.ViaHeaders;
 import eu.neclab.ngsildbroker.commons.datatypes.results.QueryResult;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
@@ -43,9 +42,11 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.Query;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
+import eu.neclab.ngsildbroker.commons.enums.NgsiLdOperation;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
+import eu.neclab.ngsildbroker.commons.tools.QueryParamParser;
 import eu.neclab.ngsildbroker.commons.tools.QueryParser;
 import eu.neclab.ngsildbroker.queryhandler.services.QueryService;
 import io.quarkus.runtime.Startup;
@@ -56,13 +57,11 @@ import io.vertx.core.http.HttpServerRequest;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.DELETE;
-import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.QueryParam;
 
 @ApplicationScoped
 @Startup
@@ -103,35 +102,48 @@ public class QueryController {
 	@Counted(name = "entity_retrieve_total", description = "Total number of entity retrieve requests", absolute = true)
 	@Timed(name = "entity_retrieve_duration", description = "Duration of entity retrieve requests", unit = MetricUnits.MILLISECONDS, absolute = true)
 	@ConcurrentGauge(name = "entity_retrieve_concurrent", description = "Number of concurrent entity retrieve requests", absolute = true)
-	public Uni<RestResponse<Object>> getEntity(HttpServerRequest request, @QueryParam(value = "attrs") String attrs,
-			@QueryParam(value = "options") String options, @QueryParam(value = "lang") String lang,
-			@QueryParam(value = "geometryProperty") String geometryProperty,
-			@QueryParam(value = "local") String localOnlyS, @PathParam("entityId") String entityId,
-			@QueryParam(value = "doNotCompact") String doNotCompactS,
-			@QueryParam("containedBy") @DefaultValue(AppConstants.EMPTY) String containedBy,
-			@QueryParam("join") String join,
-			@QueryParam("joinLevel") Integer joinLevel, @QueryParam("pick") String pick,
-			@QueryParam("omit") String omit, @QueryParam("format") String format,
-			@QueryParam("entityMap") String entityMapS, @QueryParam("datasetId") String datasetId,
-			@QueryParam("splitEntities") @DefaultValue("true") String distEntitiesS,
+	public Uni<RestResponse<Object>> getEntity(HttpServerRequest request, @PathParam("entityId") String entityId,
 			@HeaderParam("NGSILD-EntityMap") String entityMapToken) {
 		logger.debug("getEntity");
+		String tenant = HttpUtils.getTenant(request);
+		String attrs;
+		String options;
+		String lang;
+		String geometryProperty;
+		String containedBy;
+		String join;
+		Integer joinLevel;
+		String pick;
+		String omit;
+		String format;
+		String datasetId;
 		boolean localOnly;
 		boolean doNotCompact;
 		boolean entityMap;
 		boolean distEntities;
-		String tenant = HttpUtils.getTenant(request);
 		try {
-			localOnly = HttpUtils.parseBoolean(localOnlyS);
-			doNotCompact = HttpUtils.parseBoolean(doNotCompactS);
-			entityMap = HttpUtils.parseBoolean(entityMapS);
-			distEntities = HttpUtils.parseBoolean(distEntitiesS);
+			ParsedQueryParams queryParams = QueryParamParser.parse(request, NgsiLdOperation.RETRIEVE_ENTITY);
+			attrs = queryParams.getString(NGSIConstants.QUERY_PARAMETER_ATTRS);
+			options = queryParams.getString(NGSIConstants.QUERY_PARAMETER_OPTIONS);
+			lang = queryParams.getString(NGSIConstants.QUERY_PARAMETER_LANG);
+			geometryProperty = queryParams.getString(NGSIConstants.QUERY_PARAMETER_GEOMETRY_PROPERTY);
+			containedBy = queryParams.getString(NGSIConstants.QUERY_PARAMETER_CONTAINED_BY, AppConstants.EMPTY);
+			join = queryParams.getString(NGSIConstants.QUERY_PARAMETER_JOIN);
+			joinLevel = queryParams.getInteger(NGSIConstants.QUERY_PARAMETER_JOINLEVEL);
+			pick = queryParams.getString(NGSIConstants.QUERY_PARAMETER_PICK);
+			omit = queryParams.getString(NGSIConstants.QUERY_PARAMETER_OMIT);
+			format = queryParams.getString(NGSIConstants.QUERY_PARAMETER_FORMAT);
+			datasetId = queryParams.getString(NGSIConstants.QUERY_PARAMETER_DATA_SET_ID);
+			localOnly = queryParams.getLocal();
+			doNotCompact = queryParams.getBoolean(NGSIConstants.QUERY_PARAMETER_DO_NOT_COMPACT);
+			entityMap = queryParams.getBoolean(NGSIConstants.QUERY_PARAMETER_ENTITY_MAP);
+			distEntities = queryParams.getBoolean(NGSIConstants.QUERY_PARAMETER_SPLIT_ENTITIES, true);
 		} catch (ResponseException e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
 		}
 		return queryForQueryResult(request, entityId, null, null, attrs, null, null, null, null, null, null,
 				geometryProperty, lang, null, localOnly, options, 1, 0, false, containedBy, join, joinLevel,
-				doNotCompact, entityMapToken, entityMap, null, null, pick, omit, format, null, datasetId, distEntities,
+				doNotCompact, entityMapToken, entityMap, pick, omit, format, null, datasetId, distEntities,
 				null, null, null, null, false)
 				.onItemOrFailure().transformToUni((t, e) -> {
 					if (e != null) {
@@ -157,65 +169,85 @@ public class QueryController {
 	@Timed(name = "entity_query_duration", description = "Duration of entity query requests", unit = MetricUnits.MILLISECONDS, absolute = true)
 	@ConcurrentGauge(name = "entity_queries_concurrent", description = "Number of concurrent entity query requests", absolute = true)
 	public Uni<RestResponse<Object>> query(HttpServerRequest request,
-			@QueryParam(NGSIConstants.QUERY_PARAMETER_ID) String id,
-			@QueryParam(NGSIConstants.QUERY_PARAMETER_TYPE) String typeQuery,
-			@QueryParam(NGSIConstants.QUERY_PARAMETER_IDPATTERN) String idPattern,
-			@QueryParam(NGSIConstants.QUERY_PARAMETER_ATTRS) String attrs,
-			@QueryParam(NGSIConstants.QUERY_PARAMETER_QUERY) String qInput,
-			@QueryParam(NGSIConstants.QUERY_PARAMETER_CSF) String csf,
-			@QueryParam(NGSIConstants.QUERY_PARAMETER_GEOMETRY) String geometry,
-			@QueryParam(NGSIConstants.QUERY_PARAMETER_GEOREL) String georelInput,
-			@QueryParam(NGSIConstants.QUERY_PARAMETER_COORDINATES) String coordinates,
-			@QueryParam(NGSIConstants.QUERY_PARAMETER_GEOPROPERTY) String geoproperty,
-			@QueryParam(NGSIConstants.QUERY_PARAMETER_GEOMETRY_PROPERTY) String geometryProperty,
-			@QueryParam(NGSIConstants.QUERY_PARAMETER_LANG) String lang,
-			@QueryParam(NGSIConstants.QUERY_PARAMETER_SCOPE_QUERY) String scopeQ,
-			@QueryParam(NGSIConstants.QUERY_PARAMETER_LOCAL_ONLY) String localOnlyS,
-			@QueryParam(NGSIConstants.QUERY_PARAMETER_OPTIONS) String options,
-			@QueryParam(NGSIConstants.QUERY_PARAMETER_LIMIT) Integer limit,
-			@QueryParam(NGSIConstants.QUERY_PARAMETER_OFFSET) int offset,
-			@QueryParam(NGSIConstants.QUERY_PARAMETER_COUNT) String countS,
-			@QueryParam(NGSIConstants.QUERY_PARAMETER_CONTAINED_BY) @DefaultValue(AppConstants.EMPTY) String containedBy,
-			@QueryParam(NGSIConstants.QUERY_PARAMETER_JOIN) String join,
-			@QueryParam(NGSIConstants.QUERY_PARAMETER_JOINLEVEL) Integer joinLevel,
-			@QueryParam(NGSIConstants.QUERY_PARAMETER_DO_NOT_COMPACT) String doNotCompactS,
-			@HeaderParam(NGSIConstants.HEADER_ENTITY_MAP) String entityMapToken,
-			@QueryParam(NGSIConstants.QUERY_PARAMETER_ENTITY_MAP) String entityMapRetrieveS,
-			@QueryParam(NGSIConstants.QUERY_PARAMETER_MAX_DISTANCE) String maxDistance,
-			@QueryParam(NGSIConstants.QUERY_PARAMETER_MIN_DISTANCE) String minDistance,
-			@QueryParam(NGSIConstants.QUERY_PARAMETER_PICK) String pick,
-			@QueryParam(NGSIConstants.QUERY_PARAMETER_OMIT) String omit,
-			@QueryParam(NGSIConstants.QUERY_PARAMETER_FORMAT) String format,
-			@QueryParam(NGSIConstants.QUERY_PARAMETER_JSON_KEYS) String jsonKeysQP,
-			@QueryParam(NGSIConstants.QUERY_PARAMETER_DATA_SET_ID) String datasetId,
-			@QueryParam(NGSIConstants.QUERY_PARAMETER_SPLIT_ENTITIES) @DefaultValue("true") String distEntitiesS,
-			@QueryParam(NGSIConstants.QUERY_PARAMETER_ORDER_BY) String orderBy,
-			@QueryParam(NGSIConstants.QUERY_PARAMETER_ORDER_FROM) String orderFrom,
-			@QueryParam(NGSIConstants.QUERY_PARAMETER_ORDER_GEOMETRY) String orderGeometry,
-			@QueryParam(NGSIConstants.QUERY_PARAMETER_ORDER_COLLATION) String collation,
-			@QueryParam(NGSIConstants.QUERY_PARAMETER_META_DATA) @DefaultValue("false") String metadataS) {
+			@HeaderParam(NGSIConstants.HEADER_ENTITY_MAP) String entityMapToken) {
 		logger.debug("query");
+		String tenant = HttpUtils.getTenant(request);
+		String id;
+		String typeQuery;
+		String idPattern;
+		String attrs;
+		String q;
+		String csf;
+		String geometry;
+		String georel;
+		String coordinates;
+		String geoproperty;
+		String geometryProperty;
+		String lang;
+		String scopeQ;
+		String options;
+		Integer limit;
+		int offset;
+		String containedBy;
+		String join;
+		Integer joinLevel;
+		String pick;
+		String omit;
+		String format;
+		String jsonKeysQP;
+		String datasetId;
+		String orderBy;
+		String orderFrom;
+		String orderGeometry;
+		String collation;
 		boolean localOnly;
 		boolean doNotCompact;
 		boolean entityMapRetrieve;
 		boolean distEntities;
 		boolean count;
 		boolean metadata;
-		String tenant = HttpUtils.getTenant(request);
 		try {
-			localOnly = HttpUtils.parseBoolean(localOnlyS);
-			doNotCompact = HttpUtils.parseBoolean(doNotCompactS);
-			entityMapRetrieve = HttpUtils.parseBoolean(entityMapRetrieveS);
-			distEntities = HttpUtils.parseBoolean(distEntitiesS);
-			count = HttpUtils.parseBoolean(countS);
-			metadata = HttpUtils.parseBoolean(metadataS);
-
+			ParsedQueryParams queryParams = QueryParamParser.parse(request, NgsiLdOperation.QUERY_ENTITIES);
+			id = queryParams.getString(NGSIConstants.QUERY_PARAMETER_ID);
+			typeQuery = queryParams.getString(NGSIConstants.QUERY_PARAMETER_TYPE);
+			idPattern = queryParams.getString(NGSIConstants.QUERY_PARAMETER_IDPATTERN);
+			attrs = queryParams.getString(NGSIConstants.QUERY_PARAMETER_ATTRS);
+			q = queryParams.getQ();
+			csf = queryParams.getString(NGSIConstants.QUERY_PARAMETER_CSF);
+			geometry = queryParams.getString(NGSIConstants.QUERY_PARAMETER_GEOMETRY);
+			georel = queryParams.getGeorel();
+			coordinates = queryParams.getString(NGSIConstants.QUERY_PARAMETER_COORDINATES);
+			geoproperty = queryParams.getString(NGSIConstants.QUERY_PARAMETER_GEOPROPERTY);
+			geometryProperty = queryParams.getString(NGSIConstants.QUERY_PARAMETER_GEOMETRY_PROPERTY);
+			lang = queryParams.getString(NGSIConstants.QUERY_PARAMETER_LANG);
+			scopeQ = queryParams.getScopeQ();
+			options = queryParams.getString(NGSIConstants.QUERY_PARAMETER_OPTIONS);
+			limit = queryParams.getInteger(NGSIConstants.QUERY_PARAMETER_LIMIT);
+			offset = queryParams.getInt(NGSIConstants.QUERY_PARAMETER_OFFSET, 0);
+			containedBy = queryParams.getString(NGSIConstants.QUERY_PARAMETER_CONTAINED_BY, AppConstants.EMPTY);
+			join = queryParams.getString(NGSIConstants.QUERY_PARAMETER_JOIN);
+			joinLevel = queryParams.getInteger(NGSIConstants.QUERY_PARAMETER_JOINLEVEL);
+			pick = queryParams.getString(NGSIConstants.QUERY_PARAMETER_PICK);
+			omit = queryParams.getString(NGSIConstants.QUERY_PARAMETER_OMIT);
+			format = queryParams.getString(NGSIConstants.QUERY_PARAMETER_FORMAT);
+			jsonKeysQP = queryParams.getString(NGSIConstants.QUERY_PARAMETER_JSON_KEYS);
+			datasetId = queryParams.getString(NGSIConstants.QUERY_PARAMETER_DATA_SET_ID);
+			orderBy = queryParams.getString(NGSIConstants.QUERY_PARAMETER_ORDER_BY);
+			orderFrom = queryParams.getString(NGSIConstants.QUERY_PARAMETER_ORDER_FROM);
+			orderGeometry = queryParams.getString(NGSIConstants.QUERY_PARAMETER_ORDER_GEOMETRY);
+			collation = queryParams.getString(NGSIConstants.QUERY_PARAMETER_ORDER_COLLATION);
+			localOnly = queryParams.getLocal();
+			doNotCompact = queryParams.getBoolean(NGSIConstants.QUERY_PARAMETER_DO_NOT_COMPACT);
+			entityMapRetrieve = queryParams.getBoolean(NGSIConstants.QUERY_PARAMETER_ENTITY_MAP);
+			distEntities = queryParams.getBoolean(NGSIConstants.QUERY_PARAMETER_SPLIT_ENTITIES, true);
+			count = queryParams.getBoolean(NGSIConstants.QUERY_PARAMETER_COUNT);
+			metadata = queryParams.getBoolean(NGSIConstants.QUERY_PARAMETER_META_DATA, false);
 		} catch (ResponseException e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
 		}
-		return queryForQueryResult(request, id, typeQuery, idPattern, attrs, qInput, csf, geometry, georelInput,
+		return queryForQueryResult(request, id, typeQuery, idPattern, attrs, q, csf, geometry, georel,
 				coordinates, geoproperty, geometryProperty, lang, scopeQ, localOnly, options, limit, offset, count,
-				containedBy, join, joinLevel, doNotCompact, entityMapToken, entityMapRetrieve, maxDistance, minDistance,
+				containedBy, join, joinLevel, doNotCompact, entityMapToken, entityMapRetrieve,
 				pick, omit, format, jsonKeysQP, datasetId, distEntities, orderBy, orderFrom, orderGeometry, collation,
 				metadata)
 				.onItemOrFailure().transformToUni((t, e) -> {
@@ -244,19 +276,17 @@ public class QueryController {
 	@Counted(name = "types_total", description = "Total number of types requests", absolute = true)
 	@Timed(name = "types_duration", description = "Duration of types requests", unit = MetricUnits.MILLISECONDS, absolute = true)
 	@ConcurrentGauge(name = "types_concurrent", description = "Number of concurrent types requests", absolute = true)
-	public Uni<RestResponse<Object>> getAllTypes(HttpServerRequest request,
-			@QueryParam(NGSIConstants.QUERY_PARAMETER_DETAILS) String detailsS,
-			@QueryParam(NGSIConstants.QUERY_PARAMETER_LOCAL_ONLY) String localOnlyS,
-			@QueryParam(value = "bbox") @DefaultValue("false") String bboxS) {
+	public Uni<RestResponse<Object>> getAllTypes(HttpServerRequest request) {
 		logger.debug("getAllTypes");
 		boolean details;
 		boolean localOnly;
 		boolean bbox;
 		String tenant = HttpUtils.getTenant(request);
 		try {
-			details = HttpUtils.parseBoolean(detailsS);
-			localOnly = HttpUtils.parseBoolean(localOnlyS);
-			bbox = HttpUtils.parseBoolean(bboxS);
+			ParsedQueryParams queryParams = QueryParamParser.parse(request, NgsiLdOperation.RETRIEVE_TYPES);
+			details = queryParams.getBoolean(NGSIConstants.QUERY_PARAMETER_DETAILS);
+			localOnly = queryParams.getLocal();
+			bbox = queryParams.getBoolean(NGSIConstants.QUERY_PARAMETER_BBOX, false);
 		} catch (ResponseException e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
 		}
@@ -292,13 +322,13 @@ public class QueryController {
 	@Counted(name = "types_type_total", description = "Total number of type requests", absolute = true)
 	@Timed(name = "types_type_duration", description = "Duration of type requests", unit = MetricUnits.MILLISECONDS, absolute = true)
 	@ConcurrentGauge(name = "types_type_concurrent", description = "Number of concurrent type requests", absolute = true)
-	public Uni<RestResponse<Object>> getType(HttpServerRequest request, @PathParam("entityType") String type,
-			@QueryParam(NGSIConstants.QUERY_PARAMETER_LOCAL_ONLY) String localOnlyS) {
+	public Uni<RestResponse<Object>> getType(HttpServerRequest request, @PathParam("entityType") String type) {
 		logger.debug("getType");
 		boolean localOnly;
 		String tenant = HttpUtils.getTenant(request);
 		try {
-			localOnly = HttpUtils.parseBoolean(localOnlyS);
+			ParsedQueryParams queryParams = QueryParamParser.parse(request, NgsiLdOperation.RETRIEVE_TYPE);
+			localOnly = queryParams.getLocal();
 		} catch (ResponseException e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
 		}
@@ -326,16 +356,15 @@ public class QueryController {
 	@Counted(name = "attributes_total", description = "Total number of attributes requests", absolute = true)
 	@Timed(name = "attributes_duration", description = "Duration of attributes requests", unit = MetricUnits.MILLISECONDS, absolute = true)
 	@ConcurrentGauge(name = "attributes_concurrent", description = "Number of concurrent attributes requests", absolute = true)
-	public Uni<RestResponse<Object>> getAllAttributes(HttpServerRequest request,
-			@QueryParam(NGSIConstants.QUERY_PARAMETER_DETAILS) String detailsS,
-			@QueryParam(NGSIConstants.QUERY_PARAMETER_LOCAL_ONLY) String localOnlyS) {
+	public Uni<RestResponse<Object>> getAllAttributes(HttpServerRequest request) {
 		logger.debug("getAllAttributes");
 		boolean localOnly;
 		boolean details;
 		String tenant = HttpUtils.getTenant(request);
 		try {
-			localOnly = HttpUtils.parseBoolean(localOnlyS);
-			details = HttpUtils.parseBoolean(detailsS);
+			ParsedQueryParams queryParams = QueryParamParser.parse(request, NgsiLdOperation.RETRIEVE_ATTRIBUTES);
+			localOnly = queryParams.getLocal();
+			details = queryParams.getBoolean(NGSIConstants.QUERY_PARAMETER_DETAILS);
 		} catch (ResponseException e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
 		}
@@ -367,16 +396,15 @@ public class QueryController {
 	@Counted(name = "attributes_attribute_total", description = "Total number of attribute requests", absolute = true)
 	@Timed(name = "attributes_attribute_duration", description = "Duration of attribute requests", unit = MetricUnits.MILLISECONDS, absolute = true)
 	@ConcurrentGauge(name = "attributes_attribute_concurrent", description = "Number of concurrent attribute requests", absolute = true)
-	public Uni<RestResponse<Object>> getAttribute(HttpServerRequest request, @PathParam("attribute") String attribute,
-			@QueryParam(NGSIConstants.QUERY_PARAMETER_DETAILS) String detailsS,
-			@QueryParam(NGSIConstants.QUERY_PARAMETER_LOCAL_ONLY) String localOnlyS) {
+	public Uni<RestResponse<Object>> getAttribute(HttpServerRequest request, @PathParam("attribute") String attribute) {
 		logger.debug("getAttribute");
 		boolean localOnly;
 		boolean details;
 		String tenant = HttpUtils.getTenant(request);
 		try {
-			localOnly = HttpUtils.parseBoolean(localOnlyS);
-			details = HttpUtils.parseBoolean(detailsS);
+			ParsedQueryParams queryParams = QueryParamParser.parse(request, NgsiLdOperation.RETRIEVE_ATTRIBUTE);
+			localOnly = queryParams.getLocal();
+			details = queryParams.getBoolean(NGSIConstants.QUERY_PARAMETER_DETAILS);
 		} catch (ResponseException e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
 		}
@@ -406,30 +434,61 @@ public class QueryController {
 	@Counted(name = "entity_map_create_total", description = "Total number of entitymap create requests", absolute = true)
 	@Timed(name = "entity_map_create_duration", description = "Duration of entitymap create requests", unit = MetricUnits.MILLISECONDS, absolute = true)
 	@ConcurrentGauge(name = "entity_map_create_concurrent", description = "Number of concurrent entitymap create requests", absolute = true)
-	public Uni<RestResponse<Object>> queryEntityMap(HttpServerRequest request, @QueryParam("id") String id,
-			@QueryParam("type") String typeQuery, @QueryParam("idPattern") String idPattern,
-			@QueryParam("attrs") String attrs, @QueryParam("q") String qInput, @QueryParam("csf") String csf,
-			@QueryParam("geometry") String geometry, @QueryParam("georel") String georelInput,
-			@QueryParam("coordinates") String coordinates, @QueryParam("geoproperty") String geoproperty,
-			@QueryParam("geometryProperty") String geometryProperty, @QueryParam("lang") String lang,
-			@QueryParam("scopeQ") String scopeQ, @QueryParam("maxDistance") String maxDistance,
-			@QueryParam("minDistance") String minDistance, @QueryParam("pick") String pick,
-			@QueryParam("omit") String omit, @QueryParam("jsonKeys") String jsonKeysQP,
-			@QueryParam("datasetId") String datasetId,
-			@QueryParam("splitEntities") @DefaultValue("true") String distEntitiesS,
-			@QueryParam("orderBy") String orderBy, @QueryParam("orderFrom") String orderFrom,
-			@QueryParam("orderGeometry") String orderGeometry, @QueryParam("collation") String collation) {
+	public Uni<RestResponse<Object>> queryEntityMap(HttpServerRequest request) {
 		logger.debug("queryEntityMap");
-		boolean distEntities;
 		String tenant = HttpUtils.getTenant(request);
+		String id;
+		String typeQuery;
+		String idPattern;
+		String attrs;
+		String q;
+		String csf;
+		String geometry;
+		String georel;
+		String coordinates;
+		String geoproperty;
+		String geometryProperty;
+		String lang;
+		String scopeQ;
+		String pick;
+		String omit;
+		String jsonKeysQP;
+		String datasetId;
+		String orderBy;
+		String orderFrom;
+		String orderGeometry;
+		String collation;
+		boolean distEntities;
 		try {
-			distEntities = HttpUtils.parseBoolean(distEntitiesS);
+			ParsedQueryParams queryParams = QueryParamParser.parse(request, NgsiLdOperation.CREATE_ENTITY_MAP);
+			id = queryParams.getString(NGSIConstants.QUERY_PARAMETER_ID);
+			typeQuery = queryParams.getString(NGSIConstants.QUERY_PARAMETER_TYPE);
+			idPattern = queryParams.getString(NGSIConstants.QUERY_PARAMETER_IDPATTERN);
+			attrs = queryParams.getString(NGSIConstants.QUERY_PARAMETER_ATTRS);
+			q = queryParams.getQ();
+			csf = queryParams.getString(NGSIConstants.QUERY_PARAMETER_CSF);
+			geometry = queryParams.getString(NGSIConstants.QUERY_PARAMETER_GEOMETRY);
+			georel = queryParams.getGeorel();
+			coordinates = queryParams.getString(NGSIConstants.QUERY_PARAMETER_COORDINATES);
+			geoproperty = queryParams.getString(NGSIConstants.QUERY_PARAMETER_GEOPROPERTY);
+			geometryProperty = queryParams.getString(NGSIConstants.QUERY_PARAMETER_GEOMETRY_PROPERTY);
+			lang = queryParams.getString(NGSIConstants.QUERY_PARAMETER_LANG);
+			scopeQ = queryParams.getScopeQ();
+			pick = queryParams.getString(NGSIConstants.QUERY_PARAMETER_PICK);
+			omit = queryParams.getString(NGSIConstants.QUERY_PARAMETER_OMIT);
+			jsonKeysQP = queryParams.getString(NGSIConstants.QUERY_PARAMETER_JSON_KEYS);
+			datasetId = queryParams.getString(NGSIConstants.QUERY_PARAMETER_DATA_SET_ID);
+			orderBy = queryParams.getString(NGSIConstants.QUERY_PARAMETER_ORDER_BY);
+			orderFrom = queryParams.getString(NGSIConstants.QUERY_PARAMETER_ORDER_FROM);
+			orderGeometry = queryParams.getString(NGSIConstants.QUERY_PARAMETER_ORDER_GEOMETRY);
+			collation = queryParams.getString(NGSIConstants.QUERY_PARAMETER_ORDER_COLLATION);
+			distEntities = queryParams.getBoolean(NGSIConstants.QUERY_PARAMETER_SPLIT_ENTITIES, true);
 		} catch (ResponseException e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
 		}
-		return getQueryParam(request, id, typeQuery, idPattern, attrs, qInput, csf, geometry, georelInput, coordinates,
+		return getQueryParam(request, id, typeQuery, idPattern, attrs, q, csf, geometry, georel, coordinates,
 				geoproperty, geometryProperty, lang, scopeQ, false, null, 1, 0, false, null, null, -1, false, null,
-				false, maxDistance, minDistance, pick, omit, null, jsonKeysQP, datasetId, distEntities, orderBy,
+				false, pick, omit, null, jsonKeysQP, datasetId, distEntities, orderBy,
 				orderFrom,
 				orderGeometry, collation, false).onItem()
 				.transformToUni(params -> {
@@ -458,6 +517,11 @@ public class QueryController {
 			@PathParam("entityMapId") String entityMapId) {
 		logger.debug("getEntityMap");
 		String tenant = HttpUtils.getTenant(request);
+		try {
+			QueryParamParser.parse(request, NgsiLdOperation.RETRIEVE_ENTITY_MAP);
+		} catch (ResponseException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
+		}
 		return queryService.getEntityMap(tenant, entityMapId).onItem()
 				.transform(entityMap -> HttpUtils.generateEntityMapResult(entityMap)).onFailure()
 				.recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, tenant));
@@ -473,6 +537,11 @@ public class QueryController {
 			@PathParam("entityMapId") String entityMapId) {
 		logger.debug("deleteEntityMap");
 		String tenant = HttpUtils.getTenant(request);
+		try {
+			QueryParamParser.parse(request, NgsiLdOperation.DELETE_ENTITY_MAP);
+		} catch (ResponseException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
+		}
 		return queryService.deleteEntityMap(tenant, entityMapId).onItem()
 				.transform(v -> RestResponse.status(204)).onFailure()
 				.recoverWithItem(e -> HttpUtils.handleControllerExceptions(e, tenant));
@@ -487,6 +556,11 @@ public class QueryController {
 	public Uni<RestResponse<Object>> updateEntityMap(HttpServerRequest request, String bodyStr,
 			@PathParam("entityMapId") String entityMapId) {
 		logger.debug("updateEntityMap");
+		try {
+			QueryParamParser.parse(request, NgsiLdOperation.UPDATE_ENTITY_MAP);
+		} catch (ResponseException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+		}
 		return JsonUtils.fromString(bodyStr).onItem().transformToUni(obj -> {
 			@SuppressWarnings("unchecked")
 			Map<String, Object> body = (Map<String, Object>) obj;
@@ -502,11 +576,11 @@ public class QueryController {
 
 	public Uni<Tuple5<QueryResult, Set<String>, Integer, Integer, Context>> queryForQueryResult(
 			HttpServerRequest request,
-			String id, String typeQuery, String idPattern, String attrs, String qInput, String csf, String geometry,
-			String georelInput, String coordinates, String geoproperty, String geometryProperty, String lang,
+			String id, String typeQuery, String idPattern, String attrs, String q, String csf, String geometry,
+			String georel, String coordinates, String geoproperty, String geometryProperty, String lang,
 			String scopeQ, boolean localOnly, String options, Integer limit, int offset, boolean count,
 			String containedBy, String join, Integer joinLevelInput, boolean doNotCompact, String entityMapToken,
-			boolean entityMapRetrieve, String maxDistance, String minDistance, String pick, String omit, String format,
+			boolean entityMapRetrieve, String pick, String omit, String format,
 			String jsonKeysQP, String datasetId, boolean distEntities, String orderBy, String orderFrom,
 			String orderGeometry, String collation, boolean metadata) {
 		int joinLevel;
@@ -520,9 +594,9 @@ public class QueryController {
 			joinLevel = joinLevelInput;
 		}
 		String tenant = HttpUtils.getTenant(request);
-		return getQueryParam(request, id, typeQuery, idPattern, attrs, qInput, csf, geometry, georelInput, coordinates,
+		return getQueryParam(request, id, typeQuery, idPattern, attrs, q, csf, geometry, georel, coordinates,
 				geoproperty, geometryProperty, lang, scopeQ, localOnly, options, limit, offset, count, containedBy,
-				join, joinLevel, doNotCompact, entityMapToken, entityMapRetrieve, maxDistance, minDistance, pick, omit,
+				join, joinLevel, doNotCompact, entityMapToken, entityMapRetrieve, pick, omit,
 				format, jsonKeysQP, datasetId, distEntities, orderBy, orderFrom, orderGeometry, collation, metadata)
 				.onItem()
 				.transformToUni(qP -> {
@@ -541,12 +615,12 @@ public class QueryController {
 
 	}
 
-	private Uni<Query> getQueryParam(HttpServerRequest request, String id, String typeQueryInput, String idPattern,
-			String attrs, String qInput, String csf, String geometry, String georelInput, String coordinates,
+	private Uni<Query> getQueryParam(HttpServerRequest request, String id, String typeQuery, String idPattern,
+			String attrs, String q, String csf, String geometry, String georel, String coordinates,
 			String geoproperty, String geometryProperty, String lang, String scopeQ, boolean localOnly, String options,
 			Integer limit, int offset, boolean count, String containedBy, String join, int joinLevel,
-			boolean doNotCompact, String entityMapToken, boolean entityMapRetrieve, String maxDistance,
-			String minDistance, String pick, String omit, String format, String jsonKeysQP, String datasetId,
+			boolean doNotCompact, String entityMapToken, boolean entityMapRetrieve, String pick, String omit,
+			String format, String jsonKeysQP, String datasetId,
 			boolean distEntities, String orderBy, String orderFrom, String orderGeometry, String collation,
 			boolean metadata) {
 
@@ -555,48 +629,11 @@ public class QueryController {
 			return Uni.createFrom().failure(
 					new ResponseException(ErrorType.BadRequestData, "Omit, pick and attrs are mutually exclusive"));
 		}
-		String q;
-		String georel;
-		String typeQuery;
 		Set<String> finalOptions;
 		try {
 			finalOptions = HttpUtils.parseOptionsAndFormat(options, format);
 		} catch (ResponseException e) {
 			return Uni.createFrom().failure(e);
-		}
-
-		String decodedUri = URLDecoder.decode(request.absoluteURI(), StandardCharsets.UTF_8);
-		if (qInput != null) {
-			String uri = decodedUri;
-			uri = uri.substring(uri.indexOf("q=") + 2);
-			int index = uri.indexOf('&');
-			if (index != -1) {
-				uri = uri.substring(0, index);
-			}
-			q = uri.replaceAll("\"", "");
-		} else {
-			q = null;
-		}
-		if (typeQueryInput != null) {
-			String uri = decodedUri;
-			int start = uri.indexOf("type=") + 5;
-			int end = uri.indexOf('&', start);
-			if (end != -1) {
-				typeQuery = uri.substring(start, end);
-			} else {
-				typeQuery = uri.substring(start);
-			}
-
-		} else {
-			typeQuery = null;
-		}
-
-		if (maxDistance != null) {
-			georel = georelInput + ";maxDistance=" + maxDistance;
-		} else if (minDistance != null) {
-			georel = georelInput + ";minDistance=" + minDistance;
-		} else {
-			georel = georelInput;
 		}
 		if (acceptHeader == -1) {
 			return Uni.createFrom()

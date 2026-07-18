@@ -452,17 +452,6 @@ public final class HttpUtils {
 		return Uni.createFrom().item(result);
 	}
 
-	public static MultiMap getQueryParamMap(HttpServerRequest request) {
-		if (request.query() == null)
-			return null;
-		MultiMap mMap = MultiMap.caseInsensitiveMultiMap();
-		String[] params = request.query().split("&");
-		for (String param : params) {
-			mMap.add(param.split("=", 2)[0], param.split("=", 2)[1]);
-		}
-		return mMap;
-	}
-
 	public static RestResponse<Object> generateUpdateResultResponse(NGSILDOperationResult updateResult) {
 		if (updateResult.getFailures().isEmpty()) {
 			ResponseBuilder<Object> builder = new RestResponseBuilderImpl<Object>().status(204);
@@ -1224,7 +1213,7 @@ public final class HttpUtils {
 					String nextLink;
 					String prevLink;
 					if (request != null && payloadType == AppConstants.QUERY_PAYLOAD) {
-						MultiMap urlParams = request.params();
+						MultiMap urlParams = QueryParamParser.rawParamsForEcho(request);
 						nextLink = HttpUtils.generateNextLink(urlParams, queryResult, baseUrl, ngsiLdEndpoint);
 						prevLink = HttpUtils.generatePrevLink(urlParams, queryResult, baseUrl, ngsiLdEndpoint);
 					} else {

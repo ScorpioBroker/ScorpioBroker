@@ -4,7 +4,7 @@ kind: RoleBinding
 metadata:
   labels:
     app.kubernetes.io/name: query-manager
-    app.kubernetes.io/version: 6.0.1-SNAPSHOT
+    app.kubernetes.io/version: 6.0.2-SNAPSHOT
   name: query-manager-view-jobs
 roleRef:
   kind: Role

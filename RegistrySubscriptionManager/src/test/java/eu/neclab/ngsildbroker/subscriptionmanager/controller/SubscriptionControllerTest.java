@@ -400,6 +400,26 @@ public class SubscriptionControllerTest {
 		}
 	}
 
+	/*
+	 * unknown query parameters are rejected with 400 (spec 6.3.20)
+	 */
+	@Test
+	@Order(14)
+	public void getAllRegistrySubscriptionInvalidParamTest() {
+		try {
+			ExtractableResponse<Response> response = given()
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
+					.get("/ngsi-ld/v1/csourceSubscriptions?invalidParams=x").then()
+					.statusCode(Status.BAD_REQUEST.getStatusCode()).statusCode(400).extract();
+			assertEquals(400, response.statusCode());
+			assertNotEquals(200, response.statusCode());
+		} catch (Exception e) {
+			Assertions.fail();
+			e.printStackTrace();
+		}
+	}
+
 	/**
 	 * this method is try to delete the registry subscription entity by ID
 	 */

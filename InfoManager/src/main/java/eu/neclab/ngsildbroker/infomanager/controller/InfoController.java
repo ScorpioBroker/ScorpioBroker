@@ -2,8 +2,11 @@ package eu.neclab.ngsildbroker.infomanager.controller;
 
 import com.google.common.collect.Maps;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.enums.NgsiLdOperation;
+import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
+import eu.neclab.ngsildbroker.commons.tools.QueryParamParser;
 import eu.neclab.ngsildbroker.commons.tools.SerializationTools;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
@@ -24,7 +27,13 @@ public class InfoController {
 	@GET
 	@Path("/sourceIdentity")
 	public Uni<RestResponse<Object>> getSourceIdentity(HttpServerRequest request) {
-		String sourceAlias = microServiceUtils.getGatewayString() + HttpUtils.getTenant(request);
+		String tenant = HttpUtils.getTenant(request);
+		try {
+			QueryParamParser.parse(request, NgsiLdOperation.INFO);
+		} catch (ResponseException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
+		}
+		String sourceAlias = microServiceUtils.getGatewayString() + tenant;
 		Map<String, Object> sourceIdentity = Maps.newHashMap();
 		sourceIdentity.put(NGSIConstants.ID, sourceAlias);
 		sourceIdentity.put(NGSIConstants.TYPE, NGSIConstants.CONTEXT_SOURCE_IDENTITY_SHORT);

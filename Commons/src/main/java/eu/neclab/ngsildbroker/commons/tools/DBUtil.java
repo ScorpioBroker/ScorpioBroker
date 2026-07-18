@@ -136,7 +136,8 @@ public class DBUtil {
 					row.getBoolean(39), row.getBoolean(40), row.getBoolean(41), row.getBoolean(42), row.getBoolean(43),
 					row.getBoolean(44), row.getBoolean(45), row.getBoolean(46), row.getBoolean(47), row.getBoolean(48),
 					row.getBoolean(49), row.getBoolean(50), row.getBoolean(51), row.getBoolean(52), row.getBoolean(53),
-					row.getBoolean(54), new RemoteHost(row.getString(10), row.getString(11), headers, row.getString(1),
+					row.getBoolean(54), row.getBoolean(56),
+					new RemoteHost(row.getString(10), row.getString(11), headers, row.getString(1),
 							false, false, row.getInteger(13), false, true, row.getString(55)),
 					ctx);
 		});

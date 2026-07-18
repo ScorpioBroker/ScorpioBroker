@@ -1,7 +1,5 @@
 package eu.neclab.ngsildbroker.historyquerymanager.service;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -12,7 +10,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import com.github.jsonldjava.core.JsonLdConsts;
-import io.vertx.core.http.HttpServerRequest;
 import io.vertx.mutiny.core.MultiMap;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -30,6 +27,7 @@ import com.google.common.collect.Table;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.ParsedQueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.RegistrationEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.RemoteHost;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.CSourceBaseRequest;
@@ -49,6 +47,7 @@ import eu.neclab.ngsildbroker.commons.interfaces.CSourceHandler;
 import eu.neclab.ngsildbroker.commons.tools.EntityTools;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
+import eu.neclab.ngsildbroker.commons.tools.QueryParamParser;
 import eu.neclab.ngsildbroker.historyquerymanager.repository.HistoryDAO;
 import io.quarkus.runtime.Startup;
 import io.smallrye.mutiny.Uni;
@@ -98,7 +97,7 @@ public class HistoryQueryService implements CSourceHandler {
 			ScopeQueryTerm scopeQuery, TemporalQueryTerm tempQuery, AggrTerm aggrQuery, LanguageQueryTerm langQuery,
 			int n, int offsetN, String orderN, Integer limit, Integer offSet, Boolean count, Boolean localOnly,
 			Context context,
-			HttpServerRequest request) {
+			io.vertx.core.MultiMap headersFromReq, ParsedQueryParams queryParams) {
 		Uni<QueryResult> local = historyDAO
 				.query(tenant, idsAndTypeQueryAndIdPattern, attrsQuery, qQuery, geoQuery,
 						scopeQuery, context, limit,
@@ -122,21 +121,21 @@ public class HistoryQueryService implements CSourceHandler {
 		if (localOnly) {
 			return local;
 		}
-		Map<RemoteHost, String> remoteHosts = getRemoteHostsForQuery(tenant, request.query(), context, csf);
+		Map<RemoteHost, String> remoteHosts = getRemoteHostsForQuery(tenant, queryParams, context, csf);
 		if (remoteHosts.isEmpty()) {
 			return local;
 		}
 		List<Uni<QueryResult>> remoteCalls = new ArrayList<>(remoteHosts.size());
 		for (Entry<RemoteHost, String> entry : remoteHosts.entrySet()) {
 			RemoteHost remoteHost = entry.getKey();
-			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(), request.headers());
+			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(), headersFromReq);
 
 			String url = remoteHost.host() + NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT + "?" + entry.getValue();
 			String linkHead;
 			List<Object> contextLinks;
 			if (!remoteHost.headers().contains(NGSIConstants.LINK_HEADER)) {
-				linkHead = request.headers().get(NGSIConstants.LINK_HEADER);
-				contextLinks = parseLinkHeaderNoUni(request.headers().getAll(NGSIConstants.LINK_HEADER),
+				linkHead = headersFromReq.get(NGSIConstants.LINK_HEADER);
+				contextLinks = parseLinkHeaderNoUni(headersFromReq.getAll(NGSIConstants.LINK_HEADER),
 						NGSIConstants.HEADER_REL_LDCONTEXT);
 			} else {
 				linkHead = remoteHost.headers().get(NGSIConstants.LINK_HEADER);
@@ -417,14 +416,20 @@ public class HistoryQueryService implements CSourceHandler {
 		return result;
 	}
 
-	private Map<RemoteHost, String> getRemoteHostsForQuery(String tenant, String query, Context context,
-			CSFQueryTerm csf) {
+	private Map<RemoteHost, String> getRemoteHostsForQuery(String tenant, ParsedQueryParams queryParams,
+			Context context, CSFQueryTerm csf) {
 		Map<RemoteHost, String> result = new HashMap<>();
-		Map<String, String> queryMap = queryStrToMap(query);
+		// raw still-encoded values are forwarded verbatim; only the rewritten
+		// id/type/attrs entries get re-encoded below
+		Map<String, String> queryMap = queryParams.getRawParams();
 		Set<String> filteredIds = new HashSet<>();
-		Set<String> entityIds = new HashSet<>(Arrays.asList(queryMap.getOrDefault("id", "").split(",")));
+		Set<String> entityIds = new HashSet<>(Arrays
+				.asList(queryParams.getString(NGSIConstants.QUERY_PARAMETER_ID, "").split(",")));
 		Set<String> filteredTypes = new HashSet<>();
-		Set<String> types = new HashSet<>(Arrays.asList(queryMap.getOrDefault("type", "").split(",")));
+		Set<String> types = new HashSet<>(Arrays
+				.asList(queryParams.getString(NGSIConstants.QUERY_PARAMETER_TYPE, "").split(",")));
+		Set<String> uniqueAttrs = new HashSet<>(Arrays
+				.asList(queryParams.getString(NGSIConstants.QUERY_PARAMETER_ATTRS, "").split(",")));
 		for (List<RegistrationEntry> regEntries : tenant2CId2RegEntries.row(tenant).values()) {
 			for (RegistrationEntry regEntry : regEntries) {
 				if (!regEntry.retrieveTemporal()) {
@@ -460,41 +465,23 @@ public class HistoryQueryService implements CSourceHandler {
 					filteredTypes = types;
 				}
 
-				queryMap.put("id", String.join(",", filteredIds));
-				queryMap.put("type", String.join(",", filteredTypes));
+				queryMap.put(NGSIConstants.QUERY_PARAMETER_ID,
+						QueryParamParser.rfc3986Encode(String.join(",", filteredIds)));
+				queryMap.put(NGSIConstants.QUERY_PARAMETER_TYPE,
+						QueryParamParser.rfc3986Encode(String.join(",", filteredTypes)));
 
 				if (regEntry.eProp() != null || regEntry.eRel() != null) {
-					Set<String> uniqueAttrs = new HashSet<>(
-							Arrays.asList(queryMap.getOrDefault("attrs", "").split(",")));
 					uniqueAttrs.add(regEntry.eProp());
 					uniqueAttrs.add(regEntry.eRel());
 					uniqueAttrs.remove("");
 					uniqueAttrs.remove(null);
-					queryMap.put("attrs", String.join(",", uniqueAttrs));
+					queryMap.put(NGSIConstants.QUERY_PARAMETER_ATTRS,
+							QueryParamParser.rfc3986Encode(String.join(",", uniqueAttrs)));
 				}
 				result.put(remoteHost, queryMapToStr(queryMap));
 			}
 		}
 		return result;
-	}
-
-	private static Map<String, String> queryStrToMap(String queryString) {
-		if (queryString == null) {
-			return new HashMap<>();
-		}
-		Map<String, String> paramMap = new HashMap<>();
-
-		String[] paramPairs = queryString.split("&");
-		for (String paramPair : paramPairs) {
-			String[] keyValue = paramPair.split("=");
-			if (keyValue.length == 2) {
-				String key = keyValue[0];
-				String value = keyValue[1];
-				paramMap.put(key, value);
-			}
-		}
-
-		return paramMap;
 	}
 
 	public static String queryMapToStr(Map<String, String> paramMap) {
@@ -506,13 +493,13 @@ public class HistoryQueryService implements CSourceHandler {
 			}
 		}
 
+		// values are already in wire encoding, appending them verbatim keeps
+		// the forwarded query single-encoded
 		for (Map.Entry<String, String> entry : paramMap.entrySet()) {
 			if (!queryStringBuilder.isEmpty()) {
 				queryStringBuilder.append("&");
 			}
-			String key = URLEncoder.encode(entry.getKey(), StandardCharsets.UTF_8);
-			String value = URLEncoder.encode(entry.getValue(), StandardCharsets.UTF_8);
-			queryStringBuilder.append(key).append("=").append(value);
+			queryStringBuilder.append(entry.getKey()).append("=").append(entry.getValue());
 		}
 		return queryStringBuilder.toString();
 	}

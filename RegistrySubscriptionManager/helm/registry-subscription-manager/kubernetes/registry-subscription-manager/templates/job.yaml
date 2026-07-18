@@ -14,7 +14,7 @@ spec:
               value: "true"
             - name: QUARKUS_INIT_AND_EXIT
               value: "true"
-          image: docker.io/hebgen/registry-subscription-manager:6.0.1-SNAPSHOT
+          image: scorpiobroker/registry-subscription-manager:java-latest
           name: registry-subscription-manager-flyway-init
       restartPolicy: OnFailure
       serviceAccountName: registry-subscription-manager

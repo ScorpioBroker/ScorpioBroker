@@ -116,6 +116,23 @@ public class HistoryControllerTest {
 
 
     /**
+     * unknown query parameters are rejected with 400 (spec 6.3.20)
+     */
+    @Test
+    public void createTemporalEntityInvalidParamTest() throws Exception {
+
+        ExtractableResponse<Response> response = given().body(temporalPayload)
+                .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+                .header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
+                .post("/ngsi-ld/v1/temporal/entities?invalidParams=x")
+                .then()
+                .extract();
+        int statsCode = response.statusCode();
+        assertEquals(400, statsCode);
+
+    }
+
+    /**
      * this method is use for delete the temporalEntity by Id
      */
     @Test

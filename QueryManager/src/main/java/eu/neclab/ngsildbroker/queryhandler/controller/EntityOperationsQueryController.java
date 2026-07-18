@@ -13,7 +13,6 @@ import io.quarkus.runtime.Startup;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
-import jakarta.ws.rs.QueryParam;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.metrics.MetricUnits;
@@ -31,6 +30,7 @@ import com.google.common.net.HttpHeaders;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.ParsedQueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.ViaHeaders;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
@@ -43,9 +43,11 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
+import eu.neclab.ngsildbroker.commons.enums.NgsiLdOperation;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
+import eu.neclab.ngsildbroker.commons.tools.QueryParamParser;
 import eu.neclab.ngsildbroker.commons.tools.QueryParser;
 import eu.neclab.ngsildbroker.queryhandler.services.QueryService;
 import io.smallrye.mutiny.Uni;
@@ -81,20 +83,26 @@ public class EntityOperationsQueryController {
 	@Timed(name = "batch_entity_query_duration", description = "Duration of entity batch query requests", unit = MetricUnits.MILLISECONDS, absolute = true)
 	@ConcurrentGauge(name = "batch_entity_queries_concurrent", description = "Number of concurrent entity batch query requests", absolute = true)
 	public Uni<RestResponse<Object>> postQuery(HttpServerRequest request, String bodyStr,
-			@QueryParam(value = "limit") Integer limit, @QueryParam(value = "offset") int offset,
-			@QueryParam(value = "options") String options, @QueryParam(value = "count") String countS,
-			@QueryParam(value = "local") String localOnlyS,
-			@QueryParam(value = "geometryProperty") String geometryProperty,
-			@HeaderParam("NGSILD-EntityMap") String entityMapToken, @QueryParam("entityMap") String retrieveEntityMapS,
-			@QueryParam(value = "doNotCompact") boolean doNotCompact) {
+			@HeaderParam("NGSILD-EntityMap") String entityMapToken) {
+		Integer limit;
+		int offset;
+		String options;
+		String geometryProperty;
 		boolean localOnly;
 		boolean count;
 		boolean retrieveEntityMap;
+		boolean doNotCompact;
 		String tenant = HttpUtils.getTenant(request);
 		try {
-			localOnly = HttpUtils.parseBoolean(localOnlyS);
-			count = HttpUtils.parseBoolean(countS);
-			retrieveEntityMap = HttpUtils.parseBoolean(retrieveEntityMapS);
+			ParsedQueryParams queryParams = QueryParamParser.parse(request, NgsiLdOperation.BATCH_QUERY);
+			limit = queryParams.getInteger(NGSIConstants.QUERY_PARAMETER_LIMIT);
+			offset = queryParams.getInt(NGSIConstants.QUERY_PARAMETER_OFFSET, 0);
+			options = queryParams.getString(NGSIConstants.QUERY_PARAMETER_OPTIONS);
+			geometryProperty = queryParams.getString(NGSIConstants.QUERY_PARAMETER_GEOMETRY_PROPERTY);
+			localOnly = queryParams.getLocal();
+			count = queryParams.getBoolean(NGSIConstants.QUERY_PARAMETER_COUNT);
+			retrieveEntityMap = queryParams.getBoolean(NGSIConstants.QUERY_PARAMETER_ENTITY_MAP);
+			doNotCompact = queryParams.getBoolean(NGSIConstants.QUERY_PARAMETER_DO_NOT_COMPACT);
 		} catch (ResponseException e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
 		}

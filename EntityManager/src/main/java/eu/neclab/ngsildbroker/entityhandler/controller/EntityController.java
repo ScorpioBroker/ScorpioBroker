@@ -1,5 +1,6 @@
 package eu.neclab.ngsildbroker.entityhandler.controller;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,17 +16,28 @@ import org.jboss.resteasy.reactive.RestResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLDService;
 import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.net.HttpHeaders;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.ParsedQueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.ViaHeaders;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
+import eu.neclab.ngsildbroker.commons.enums.NgsiLdOperation;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
+import eu.neclab.ngsildbroker.commons.tools.QueryParamParser;
+import eu.neclab.ngsildbroker.commons.tools.QueryParser;
 import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
 import io.quarkus.runtime.Startup;
 import io.smallrye.mutiny.Uni;
@@ -38,7 +50,6 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.QueryParam;
 
 /**
  * 
@@ -80,8 +91,9 @@ public class EntityController {// implements EntityHandlerInterface {
 		Map<String, Object> body;
 		String tenant = HttpUtils.getTenant(req);
 		try {
+			QueryParamParser.parse(req, NgsiLdOperation.CREATE_ENTITY);
 			body = new JsonObject(bodyStr).getMap();
-		} catch (DecodeException e) {
+		} catch (DecodeException | ResponseException e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(req)));
 		}
 		ViaHeaders viaHeaders;
@@ -131,6 +143,7 @@ public class EntityController {// implements EntityHandlerInterface {
 		Map<String, Object> body;
 		String tenant = HttpUtils.getTenant(req);
 		try {
+			QueryParamParser.parse(req, NgsiLdOperation.UPDATE_ENTITY_ATTRS);
 			HttpUtils.validateUri(entityId);
 			body = new JsonObject(bodyStr).getMap();
 		} catch (Exception e) {
@@ -176,9 +189,12 @@ public class EntityController {// implements EntityHandlerInterface {
 	@Timed(name = "entity_update_duration", description = "Duration of entity update requests", unit = MetricUnits.MILLISECONDS, absolute = true)
 	@ConcurrentGauge(name = "entity_update_concurrent", description = "Number of concurrent entity update requests", absolute = true)
 	public Uni<RestResponse<Object>> appendEntity(HttpServerRequest req, @PathParam("entityId") String entityId,
-			String bodyStr, @QueryParam("options") String options) {
+			String bodyStr) {
+		String options;
 		Map<String, Object> body;
 		try {
+			ParsedQueryParams queryParams = QueryParamParser.parse(req, NgsiLdOperation.APPEND_ENTITY_ATTRS);
+			options = queryParams.getString(NGSIConstants.QUERY_PARAMETER_OPTIONS);
 			HttpUtils.validateUri(entityId);
 			body = new JsonObject(bodyStr).getMap();
 		} catch (Exception e) {
@@ -230,6 +246,7 @@ public class EntityController {// implements EntityHandlerInterface {
 
 		Map<String, Object> body;
 		try {
+			QueryParamParser.parse(req, NgsiLdOperation.PARTIAL_UPDATE_ATTR);
 			HttpUtils.validateUri(entityId);
 			Map<String, Object> tmp = new JsonObject(bodyStr).getMap();
 			if (!tmp.containsKey(attrib)) {
@@ -295,11 +312,13 @@ public class EntityController {// implements EntityHandlerInterface {
 	@Timed(name = "attrs_delete_duration", description = "Duration of attrs delete requests", unit = MetricUnits.MILLISECONDS, absolute = true)
 	@ConcurrentGauge(name = "attrs_delete_concurrent", description = "Number of concurrent attrs delete requests", absolute = true)
 	public Uni<RestResponse<Object>> deleteAttribute(HttpServerRequest request, @PathParam("entityId") String entityId,
-			@PathParam("attrId") String attrId, @QueryParam("datasetId") String datasetId,
-			@QueryParam("deleteAll") String deleteAllS) {
+			@PathParam("attrId") String attrId) {
+		String datasetId;
 		boolean deleteAll;
 		try {
-			deleteAll = HttpUtils.parseBoolean(deleteAllS);
+			ParsedQueryParams queryParams = QueryParamParser.parse(request, NgsiLdOperation.DELETE_ATTR);
+			datasetId = queryParams.getString(NGSIConstants.QUERY_PARAMETER_DATA_SET_ID);
+			deleteAll = queryParams.getBoolean(NGSIConstants.QUERY_PARAMETER_DELETE_ALL);
 			HttpUtils.validateUri(entityId);
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
@@ -340,6 +359,7 @@ public class EntityController {// implements EntityHandlerInterface {
 	@ConcurrentGauge(name = "entity_delete_concurrent", description = "Number of concurrent entity delete requests", absolute = true)
 	public Uni<RestResponse<Object>> deleteEntity(HttpServerRequest request, @PathParam("entityId") String entityId) {
 		try {
+			QueryParamParser.parse(request, NgsiLdOperation.DELETE_ENTITY);
 			HttpUtils.validateUri(entityId);
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
@@ -362,6 +382,128 @@ public class EntityController {// implements EntityHandlerInterface {
 
 	}
 
+	/**
+	 * Method(DELETE) for "/ngsi-ld/v1/entities" rest endpoint. Purge Entities as
+	 * defined by NGSI-LD spec 5.6.21 / 6.4.3.3.
+	 *
+	 * @return ResponseEntity object
+	 */
+	@DELETE
+	@Path("/entities")
+	@Counted(name = "entity_purge_total", description = "Total number of entity purge requests", absolute = true)
+	@Timed(name = "entity_purge_duration", description = "Duration of entity purge requests", unit = MetricUnits.MILLISECONDS, absolute = true)
+	@ConcurrentGauge(name = "entity_purge_concurrent", description = "Number of concurrent entity purge requests", absolute = true)
+	public Uni<RestResponse<Object>> purgeEntities(HttpServerRequest request) {
+		ParsedQueryParams queryParams;
+		String id;
+		String type;
+		String idPattern;
+		String attrs;
+		String q;
+		String csf;
+		String geometry;
+		String georel;
+		String coordinates;
+		String geoproperty;
+		String scopeQ;
+		String drop;
+		String keep;
+		boolean localOnly;
+		try {
+			queryParams = QueryParamParser.parse(request, NgsiLdOperation.PURGE_ENTITIES);
+			id = queryParams.getString(NGSIConstants.QUERY_PARAMETER_ID);
+			type = queryParams.getString(NGSIConstants.QUERY_PARAMETER_TYPE);
+			idPattern = queryParams.getString(NGSIConstants.QUERY_PARAMETER_IDPATTERN);
+			attrs = queryParams.getString(NGSIConstants.QUERY_PARAMETER_ATTRS);
+			q = queryParams.getQ();
+			csf = queryParams.getString(NGSIConstants.QUERY_PARAMETER_CSF);
+			geometry = queryParams.getString(NGSIConstants.QUERY_PARAMETER_GEOMETRY);
+			georel = queryParams.getGeorel();
+			coordinates = queryParams.getString(NGSIConstants.QUERY_PARAMETER_COORDINATES);
+			geoproperty = queryParams.getString(NGSIConstants.QUERY_PARAMETER_GEOPROPERTY);
+			scopeQ = queryParams.getScopeQ();
+			drop = queryParams.getString(NGSIConstants.QUERY_PARAMETER_DROP);
+			keep = queryParams.getString(NGSIConstants.QUERY_PARAMETER_KEEP);
+			localOnly = queryParams.getLocal();
+			if (drop != null && keep != null) {
+				throw new ResponseException(ErrorType.BadRequestData, "drop and keep are mutually exclusive");
+			}
+			if (!localOnly && type == null && attrs == null && q == null && georel == null && geometry == null
+					&& coordinates == null && drop == null && keep == null) {
+				throw new ResponseException(ErrorType.BadRequestData,
+						"Too wide purge query. Minimum required input is type, attrs, q, a geo query, drop or keep unless the purge is limited to local scope");
+			}
+		} catch (Exception e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+		}
+		String tenant = HttpUtils.getTenant(request);
+		ViaHeaders viaHeaders;
+		try {
+			viaHeaders = new ViaHeaders(request.headers().getAll(HttpHeaders.VIA),
+					microServiceUtils.getSourceAlias(tenant));
+		} catch (ResponseException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
+		}
+		return ldService.parse(HttpUtils.getAtContext(request)).onItem().transformToUni(context -> {
+			TypeQueryTerm typeQueryTerm;
+			AttrsQueryTerm attrsQuery;
+			QQueryTerm qQueryTerm;
+			CSFQueryTerm csfQueryTerm;
+			GeoQueryTerm geoQueryTerm;
+			ScopeQueryTerm scopeQueryTerm;
+			String[] ids;
+			List<String> dropAttrs;
+			List<String> keepAttrs;
+			boolean local = localOnly;
+			try {
+				typeQueryTerm = QueryParser.parseTypeQuery(type, context);
+				if (typeQueryTerm != null && typeQueryTerm.getAllTypes().contains(NGSIConstants.NGSI_LD_STAR)) {
+					local = true;
+					typeQueryTerm = null;
+				}
+				attrsQuery = QueryParser.parseAttrs(attrs, context);
+				qQueryTerm = QueryParser.parseQuery(q, context);
+				csfQueryTerm = QueryParser.parseCSFQuery(csf, context);
+				geoQueryTerm = QueryParser.parseGeoQuery(georel, coordinates, geometry, geoproperty, context);
+				scopeQueryTerm = QueryParser.parseScopeQuery(scopeQ);
+				if (id != null) {
+					ids = id.split(",");
+					for (String tmpId : ids) {
+						HttpUtils.validateUri(tmpId);
+					}
+				} else {
+					ids = null;
+				}
+				dropAttrs = expandAttrList(drop, context);
+				keepAttrs = expandAttrList(keep, context);
+			} catch (Exception e) {
+				return Uni.createFrom().failure(e);
+			}
+			return entityService.purgeEntities(tenant, ids, typeQueryTerm, idPattern, attrsQuery, qQueryTerm,
+					geoQueryTerm, scopeQueryTerm, csfQueryTerm, dropAttrs, keepAttrs, local, queryParams, context,
+					request.headers(), viaHeaders).onItem().transform(results -> {
+						if (results.isEmpty()) {
+							return RestResponse.status(RestResponse.Status.NO_CONTENT);
+						}
+						return HttpUtils.generateBatchResult(results);
+					});
+		}).onFailure().recoverWithItem(e -> {
+			return HttpUtils.handleControllerExceptions(e, tenant);
+		});
+
+	}
+
+	private static List<String> expandAttrList(String commaList, Context context) {
+		if (commaList == null) {
+			return null;
+		}
+		List<String> result = new ArrayList<>();
+		for (String entry : commaList.split(",")) {
+			result.add(context.expandIri(entry, false, true, null, null));
+		}
+		return result;
+	}
+
 	@PATCH
 	@Path("/entities")
 	@Counted(name = "entity_merge_patch_total", description = "Total number of entity merge patch requests", absolute = true)
@@ -371,6 +513,7 @@ public class EntityController {// implements EntityHandlerInterface {
 			String bodyStr) {
 		String id;
 		try {
+			QueryParamParser.parse(request, NgsiLdOperation.MERGE_PATCH);
 			Map<String, Object> body = new JsonObject(bodyStr).getMap();
 			id = (String) body.get(NGSIConstants.ID);
 		} catch (Exception e) {
@@ -388,6 +531,7 @@ public class EntityController {// implements EntityHandlerInterface {
 			String bodyStr) {
 		Map<String, Object> body;
 		try {
+			QueryParamParser.parse(request, NgsiLdOperation.MERGE_PATCH);
 			HttpUtils.validateUri(entityId);
 			body = new JsonObject(bodyStr).getMap();
 		} catch (Exception e) {
@@ -434,6 +578,7 @@ public class EntityController {// implements EntityHandlerInterface {
 		logger.debug("replacing entity");
 		Map<String, Object> body;
 		try {
+			QueryParamParser.parse(request, NgsiLdOperation.REPLACE_ENTITY);
 			HttpUtils.validateUri(entityId);
 			body = new JsonObject(bodyStr).getMap();
 		} catch (Exception e) {
@@ -484,7 +629,7 @@ public class EntityController {// implements EntityHandlerInterface {
 		logger.debug("replacing Attrs");
 
 		try {
-
+			QueryParamParser.parse(request, NgsiLdOperation.REPLACE_ATTR);
 			HttpUtils.validateUri(entityId);
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));

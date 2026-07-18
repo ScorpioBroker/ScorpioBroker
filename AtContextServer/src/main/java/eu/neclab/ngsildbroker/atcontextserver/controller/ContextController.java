@@ -6,9 +6,12 @@ import com.google.common.collect.Sets;
 import eu.neclab.ngsildbroker.atcontextserver.service.ContextService;
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.ParsedQueryParams;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
+import eu.neclab.ngsildbroker.commons.enums.NgsiLdOperation;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
+import eu.neclab.ngsildbroker.commons.tools.QueryParamParser;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.json.JsonObject;
@@ -29,7 +32,6 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.QueryParam;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -49,12 +51,12 @@ public class ContextController {
 	@Counted(name = "context_retrieve_total", description = "Total number of context retrieve requests", absolute = true)
 	@Timed(name = "context_retrieve_duration", description = "Duration of context retrieve requests", unit = MetricUnits.MILLISECONDS, absolute = true)
 	@ConcurrentGauge(name = "context_retrieve_concurrent", description = "Number of concurrent context retrieve requests", absolute = true)
-	public Uni<RestResponse<Object>> getContextById(@PathParam("contextId") String id,
-			@QueryParam("details") String detailsS) {
+	public Uni<RestResponse<Object>> getContextById(HttpServerRequest request, @PathParam("contextId") String id) {
 
 		boolean details;
 		try {
-			details = HttpUtils.parseBoolean(detailsS);
+			ParsedQueryParams queryParams = QueryParamParser.parse(request, NgsiLdOperation.RETRIEVE_CONTEXT);
+			details = queryParams.getBoolean(NGSIConstants.QUERY_PARAMETER_DETAILS);
 		} catch (ResponseException e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, AppConstants.INTERNAL_NULL_KEY));
 		}
@@ -73,11 +75,13 @@ public class ContextController {
 	}
 
 	@GET
-	public Uni<RestResponse<Object>> getContexts(@QueryParam("kind") String kind,
-			@QueryParam("details") String detailsS) {
+	public Uni<RestResponse<Object>> getContexts(HttpServerRequest request) {
+		String kind;
 		boolean details;
 		try {
-			details = HttpUtils.parseBoolean(detailsS);
+			ParsedQueryParams queryParams = QueryParamParser.parse(request, NgsiLdOperation.QUERY_CONTEXTS);
+			kind = queryParams.getString(NGSIConstants.QUERY_PARAMETER_KIND);
+			details = queryParams.getBoolean(NGSIConstants.QUERY_PARAMETER_DETAILS);
 		} catch (ResponseException e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, AppConstants.INTERNAL_NULL_KEY));
 		}
@@ -101,10 +105,11 @@ public class ContextController {
 	@Counted(name = "context_create_total", description = "Total number of context create requests", absolute = true)
 	@Timed(name = "context_create_duration", description = "Duration of context create requests", unit = MetricUnits.MILLISECONDS, absolute = true)
 	@ConcurrentGauge(name = "context_create_concurrent", description = "Number of concurrent context create requests", absolute = true)
-	public Uni<RestResponse<Object>> createContext(String body) {
+	public Uni<RestResponse<Object>> createContext(HttpServerRequest request, String body) {
 
 		Map<String, Object> context;
 		try {
+			QueryParamParser.parse(request, NgsiLdOperation.CREATE_CONTEXT);
 			context = new JsonObject(body).getMap();
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, AppConstants.INTERNAL_NULL_KEY));
@@ -127,11 +132,12 @@ public class ContextController {
 	@Counted(name = "context_delete_total", description = "Total number of context delete requests", absolute = true)
 	@Timed(name = "context_delete_duration", description = "Duration of context delete requests", unit = MetricUnits.MILLISECONDS, absolute = true)
 	@ConcurrentGauge(name = "context_delete_concurrent", description = "Number of concurrent context delete requests", absolute = true)
-	public Uni<RestResponse<Object>> deleteContextById(@PathParam("contextId") String id,
-			@QueryParam("reload") String reloadS) {
+	public Uni<RestResponse<Object>> deleteContextById(HttpServerRequest request,
+			@PathParam("contextId") String id) {
 		boolean reload;
 		try {
-			reload = HttpUtils.parseBoolean(reloadS);
+			ParsedQueryParams queryParams = QueryParamParser.parse(request, NgsiLdOperation.DELETE_CONTEXT);
+			reload = queryParams.getBoolean(NGSIConstants.QUERY_PARAMETER_RELOAD);
 		} catch (ResponseException e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, AppConstants.INTERNAL_NULL_KEY));
 		}
@@ -159,7 +165,12 @@ public class ContextController {
 	@Counted(name = "context_cache_total", description = "Total number of context cache requests", absolute = true)
 	@Timed(name = "context_cache_duration", description = "Duration of context cache requests", unit = MetricUnits.MILLISECONDS, absolute = true)
 	@ConcurrentGauge(name = "context_cache_concurrent", description = "Number of concurrent context cache requests", absolute = true)
-	public Uni<RestResponse<Object>> loadCache(@PathParam("url") String url) {
+	public Uni<RestResponse<Object>> loadCache(HttpServerRequest request, @PathParam("url") String url) {
+		try {
+			QueryParamParser.parse(request, NgsiLdOperation.CACHE_CONTEXT);
+		} catch (ResponseException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, AppConstants.INTERNAL_NULL_KEY));
+		}
 		if (NGSIConstants.CORE_CONTEXT_URLS.contains(url)) {
 			url = AppConstants.INTERNAL_NULL_KEY;
 		}
@@ -174,6 +185,11 @@ public class ContextController {
 	@ConcurrentGauge(name = "context_createimplicitly_concurrent", description = "Number of concurrent context createimplicitly requests", absolute = true)
 	public Uni<RestResponse<Object>> createImplicitly(HttpServerRequest request, String payload) {
 		String tenant = HttpUtils.getTenant(request);
+		try {
+			QueryParamParser.parse(request, NgsiLdOperation.CREATE_CONTEXT_IMPLICIT);
+		} catch (ResponseException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
+		}
 		return JsonUtils.fromString(payload).onItem().transformToUni(json -> {
 			Map<String, Object> payloadMap = new HashMap<>();
 			try {

@@ -14,7 +14,7 @@ import jakarta.inject.Inject;
 
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
-import jakarta.ws.rs.QueryParam;
+import eu.neclab.ngsildbroker.commons.datatypes.ParsedQueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.ViaHeaders;
 import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -32,9 +32,11 @@ import com.google.common.net.HttpHeaders;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
+import eu.neclab.ngsildbroker.commons.enums.NgsiLdOperation;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
+import eu.neclab.ngsildbroker.commons.tools.QueryParamParser;
 import eu.neclab.ngsildbroker.entityhandler.services.EntityService;
 import io.quarkus.runtime.Startup;
 import io.smallrye.mutiny.Uni;
@@ -82,14 +84,14 @@ public class EntityBatchController {
 	@Counted(name = "entity_batch_create_total", description = "Total number of entity batch create requests", absolute = true)
 	@Timed(name = "entity_batch_create_duration", description = "Duration of entity batch create requests", unit = MetricUnits.MILLISECONDS, absolute = true)
 	@ConcurrentGauge(name = "entity_batch_create_concurrent", description = "Number of concurrent entity batch create requests", absolute = true)
-	public Uni<RestResponse<Object>> createMultiple(HttpServerRequest request, String body,
-			@QueryParam("localOnly") String localOnlyS) {
+	public Uni<RestResponse<Object>> createMultiple(HttpServerRequest request, String body) {
 		List<Uni<Tuple2<String, Object>>> unis = Lists.newArrayList();
 		List<Map<String, Object>> compactedEntities;
 		boolean localOnly;
 		String tenant = HttpUtils.getTenant(request);
 		try {
-			localOnly = HttpUtils.parseBoolean(localOnlyS);
+			ParsedQueryParams queryParams = QueryParamParser.parse(request, NgsiLdOperation.BATCH_CREATE);
+			localOnly = queryParams.getLocal();
 			compactedEntities = new JsonArray(body).getList();
 		} catch (DecodeException | ResponseException e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
@@ -171,13 +173,15 @@ public class EntityBatchController {
 	@Counted(name = "entity_batch_upsert_total", description = "Total number of entity batch upsert requests", absolute = true)
 	@Timed(name = "entity_batch_upsert_duration", description = "Duration of entity batch upsert requests", unit = MetricUnits.MILLISECONDS, absolute = true)
 	@ConcurrentGauge(name = "entity_batch_upsert_concurrent", description = "Number of concurrent entity batch upsert requests", absolute = true)
-	public Uni<RestResponse<Object>> upsertMultiple(HttpServerRequest request, String body,
-			@QueryParam(value = "options") String options, @QueryParam("localOnly") String localOnlyS) {
+	public Uni<RestResponse<Object>> upsertMultiple(HttpServerRequest request, String body) {
+		String options;
 		boolean localOnly;
 		List<Map<String, Object>> compactedEntities;
 		String tenant = HttpUtils.getTenant(request);
 		try {
-			localOnly = HttpUtils.parseBoolean(localOnlyS);
+			ParsedQueryParams queryParams = QueryParamParser.parse(request, NgsiLdOperation.BATCH_UPSERT);
+			options = queryParams.getString(NGSIConstants.QUERY_PARAMETER_OPTIONS);
+			localOnly = queryParams.getLocal();
 			compactedEntities = new JsonArray(body).getList();
 		} catch (DecodeException | ResponseException e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
@@ -264,13 +268,15 @@ public class EntityBatchController {
 	@Counted(name = "entity_batch_update_total", description = "Total number of entity batch update requests", absolute = true)
 	@Timed(name = "entity_batch_update_duration", description = "Duration of entity batch update requests", unit = MetricUnits.MILLISECONDS, absolute = true)
 	@ConcurrentGauge(name = "entity_batch_update_concurrent", description = "Number of concurrent entity batch update requests", absolute = true)
-	public Uni<RestResponse<Object>> appendMultiple(HttpServerRequest request, String body,
-			@QueryParam(value = "options") String options, @QueryParam("localOnly") String localOnlyS) {
+	public Uni<RestResponse<Object>> appendMultiple(HttpServerRequest request, String body) {
 		List<Map<String, Object>> compactedEntities;
 		String tenant = HttpUtils.getTenant(request);
+		String options;
 		boolean localOnly;
 		try {
-			localOnly = HttpUtils.parseBoolean(localOnlyS);
+			ParsedQueryParams queryParams = QueryParamParser.parse(request, NgsiLdOperation.BATCH_UPDATE);
+			options = queryParams.getString(NGSIConstants.QUERY_PARAMETER_OPTIONS);
+			localOnly = queryParams.getLocal();
 			compactedEntities = new JsonArray(body).getList();
 		} catch (DecodeException | ResponseException e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
@@ -342,13 +348,13 @@ public class EntityBatchController {
 	@Counted(name = "entity_batch_delete_total", description = "Total number of entity batch delete requests", absolute = true)
 	@Timed(name = "entity_batch_delete_duration", description = "Duration of entity batch delete requests", unit = MetricUnits.MILLISECONDS, absolute = true)
 	@ConcurrentGauge(name = "entity_batch_delete_concurrent", description = "Number of concurrent entity batch delete requests", absolute = true)
-	public Uni<RestResponse<Object>> deleteMultiple(HttpServerRequest request, String entityIdsStr,
-			@QueryParam("localOnly") String localOnlyS) {
+	public Uni<RestResponse<Object>> deleteMultiple(HttpServerRequest request, String entityIdsStr) {
 		String tenant = HttpUtils.getTenant(request);
 		List<String> entityIds;
 		boolean localOnly;
 		try {
-			localOnly = HttpUtils.parseBoolean(localOnlyS);
+			ParsedQueryParams queryParams = QueryParamParser.parse(request, NgsiLdOperation.BATCH_DELETE);
+			localOnly = queryParams.getLocal();
 			entityIds = new JsonArray(entityIdsStr).getList();
 		} catch (DecodeException | ResponseException e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
@@ -380,13 +386,15 @@ public class EntityBatchController {
 	@Counted(name = "entity_batch_merge_total", description = "Total number of entity batch merge requests", absolute = true)
 	@Timed(name = "entity_batch_merge_duration", description = "Duration of entity batch merge requests", unit = MetricUnits.MILLISECONDS, absolute = true)
 	@ConcurrentGauge(name = "entity_batch_merge_concurrent", description = "Number of concurrent entity batch merge requests", absolute = true)
-	public Uni<RestResponse<Object>> mergeMultiple(HttpServerRequest request, String body,
-			@QueryParam(value = "options") String options, @QueryParam("localOnly") String localOnlyS) {
+	public Uni<RestResponse<Object>> mergeMultiple(HttpServerRequest request, String body) {
 		List<Map<String, Object>> compactedEntities;
 		String tenant = HttpUtils.getTenant(request);
+		String options;
 		boolean localOnly;
 		try {
-			localOnly = HttpUtils.parseBoolean(localOnlyS);
+			ParsedQueryParams queryParams = QueryParamParser.parse(request, NgsiLdOperation.BATCH_MERGE);
+			options = queryParams.getString(NGSIConstants.QUERY_PARAMETER_OPTIONS);
+			localOnly = queryParams.getLocal();
 			compactedEntities = new JsonArray(body).getList();
 		} catch (DecodeException | ResponseException e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));

@@ -1,8 +1,5 @@
 package eu.neclab.ngsildbroker.commons.tools;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -67,7 +64,6 @@ public class QueryParser {
 		String attribName = "";
 		StringBuilder operator = new StringBuilder();
 		String operant = "";
-		input = URLDecoder.decode(input, StandardCharsets.UTF_8);
 		OfInt it = input.chars().iterator();
 		int currentJoinLevel = 0;
 
@@ -316,11 +312,6 @@ public class QueryParser {
 		TypeQueryTerm root = new TypeQueryTerm(context);
 		TypeQueryTerm current = root;
 		StringBuilder type = new StringBuilder();
-		try {
-			input = URLDecoder.decode(input, "utf-8");
-		} catch (UnsupportedEncodingException e) {
-			throw new ResponseException(ErrorType.InternalError, e.getMessage());
-		}
 		OfInt it = input.chars().iterator();
 
 		while (it.hasNext()) {
@@ -562,7 +553,7 @@ public class QueryParser {
 		ProjectionTerm root = projectionTerm;
 		ProjectionTerm current = root;
 		StringBuilder attribName = new StringBuilder();
-		input = URLDecoder.decode(input, StandardCharsets.UTF_8).trim();
+		input = input.trim();
 		String expanded;
 		OfInt it = input.chars().iterator();
 		while (it.hasNext()) {
@@ -606,7 +597,6 @@ public class QueryParser {
 		}
 		OrderByTerm result = new OrderByTerm();
 
-		input = URLDecoder.decode(input, StandardCharsets.UTF_8);
 		OfInt it = input.chars().iterator();
 
 		StringBuilder current = new StringBuilder();

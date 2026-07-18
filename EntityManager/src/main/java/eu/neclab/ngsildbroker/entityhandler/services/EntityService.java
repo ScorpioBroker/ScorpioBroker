@@ -31,9 +31,11 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Table;
+import com.google.common.net.HttpHeaders;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.ParsedQueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.RegistrationEntry;
 import eu.neclab.ngsildbroker.commons.datatypes.RemoteHost;
 import eu.neclab.ngsildbroker.commons.datatypes.ViaHeaders;
@@ -53,6 +55,12 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.UpsertEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.results.Attrib;
 import eu.neclab.ngsildbroker.commons.datatypes.results.CRUDSuccess;
 import eu.neclab.ngsildbroker.commons.datatypes.results.NGSILDOperationResult;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.interfaces.CSourceHandler;
@@ -83,6 +91,9 @@ import jakarta.inject.Inject;
 public class EntityService implements CSourceHandler {
 
 	private final static Logger logger = LoggerFactory.getLogger(EntityService.class);
+	// entity members which are not attributes and must survive a keep/drop purge
+	private final static Set<String> PURGE_SYSTEM_KEYS = Set.of(NGSIConstants.JSON_LD_ID, NGSIConstants.JSON_LD_TYPE,
+			NGSIConstants.NGSI_LD_CREATED_AT, NGSIConstants.NGSI_LD_MODIFIED_AT, NGSIConstants.NGSI_LD_SCOPE);
 	public static boolean checkEntity = false;
 	@ConfigProperty(name = "scorpio.topics.entity.zip")
 	boolean zip;
@@ -1096,7 +1107,8 @@ public class EntityService implements CSourceHandler {
 							|| regEntry.deleteAttrs() || regEntry.deleteBatch() || regEntry.deleteEntity()
 							|| regEntry.mergeBatch() || regEntry.mergeEntity() || regEntry.replaceAttrs()
 							|| regEntry.replaceEntity() || regEntry.updateAttrs() || regEntry.updateBatch()
-							|| regEntry.updateEntity() || regEntry.upsertBatch()) && regEntry.regMode() != 0) {
+							|| regEntry.updateEntity() || regEntry.upsertBatch() || regEntry.purgeEntity())
+							&& regEntry.regMode() != 0) {
 						newRegs.add(regEntry);
 					}
 					if (regEntry.queryBatch() || regEntry.queryEntity() || regEntry.retrieveEntity()) {
@@ -1977,49 +1989,175 @@ public class EntityService implements CSourceHandler {
 			}
 		}
 
-		Uni<List<NGSILDOperationResult>> local = entityDAO.batchDeleteEntity(tenant, entityIds).onItem()
-				.transformToUni(dbResult -> {
-					List<NGSILDOperationResult> result = Lists.newArrayList();
-					List<Map<String, Object>> successes = (List<Map<String, Object>>) dbResult.get("success");
-					List<Map<String, String>> fails = (List<Map<String, String>>) dbResult.get("failure");
-					Set<String> successEntityIds = Sets.newHashSet();
-					Map<String, List<Map<String, Object>>> deleted = Maps.newHashMap();
-					for (Map<String, Object> entry : successes) {
-						String entityId = (String) entry.get("id");
-						successEntityIds.add(entityId);
-						MicroServiceUtils.putIntoIdMap(deleted, entityId, (Map<String, Object>) entry.get("old"));
-						NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.DELETE_REQUEST,
-								entityId, tenant);
-						opResult.addSuccess(new CRUDSuccess(null, null, null, Sets.newHashSet()));
-						result.add(opResult);
-					}
-					for (Map<String, String> fail : fails) {
-						fail.entrySet().forEach(entry -> {
-							String entityId = entry.getKey();
-							String sqlstate = entry.getValue();
-							NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.DELETE_REQUEST,
-									entityId, tenant);
-							opResult.addFailure(new ResponseException(ErrorType.NotFound, sqlstate));
-							result.add(opResult);
-						});
+		unis.add(0, localDeleteBatch(tenant, entityIds));
+		return Uni.combine().all().unis(unis).with(resultLists -> {
+			List<NGSILDOperationResult> result = Lists.newArrayList();
+			resultLists.forEach(resultList -> {
+				result.addAll((List<NGSILDOperationResult>) resultList);
+			});
+			return result;
+		});
+	}
 
-					}
-					BatchRequest request = new BatchRequest(tenant, successEntityIds, null,
-							AppConstants.BATCH_DELETE_REQUEST, zip);
-					request.setPrevPayload(deleted);
-					if (!request.getIds().isEmpty()) {
-						logger.debug("Delete batch request sending to kafka " + request.getIds());
-						try {
-							microServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter,
-									objectMapper);
-						} catch (ResponseException e) {
-							return Uni.createFrom().failure(e);
-						}
-					}
-					return Uni.createFrom().item(result);
+	private Uni<List<NGSILDOperationResult>> localDeleteBatch(String tenant, List<String> entityIds) {
+		return entityDAO.batchDeleteEntity(tenant, entityIds).onItem().transformToUni(dbResult -> {
+			List<NGSILDOperationResult> result = Lists.newArrayList();
+			List<Map<String, Object>> successes = (List<Map<String, Object>>) dbResult.get("success");
+			List<Map<String, String>> fails = (List<Map<String, String>>) dbResult.get("failure");
+			Set<String> successEntityIds = Sets.newHashSet();
+			Map<String, List<Map<String, Object>>> deleted = Maps.newHashMap();
+			for (Map<String, Object> entry : successes) {
+				String entityId = (String) entry.get("id");
+				successEntityIds.add(entityId);
+				MicroServiceUtils.putIntoIdMap(deleted, entityId, (Map<String, Object>) entry.get("old"));
+				NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.DELETE_REQUEST, entityId,
+						tenant);
+				opResult.addSuccess(new CRUDSuccess(null, null, null, Sets.newHashSet()));
+				result.add(opResult);
+			}
+			for (Map<String, String> fail : fails) {
+				fail.entrySet().forEach(entry -> {
+					String entityId = entry.getKey();
+					String sqlstate = entry.getValue();
+					NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.DELETE_REQUEST, entityId,
+							tenant);
+					opResult.addFailure(new ResponseException(ErrorType.NotFound, sqlstate));
+					result.add(opResult);
 				});
 
-		unis.add(0, local);
+			}
+			BatchRequest request = new BatchRequest(tenant, successEntityIds, null, AppConstants.BATCH_DELETE_REQUEST,
+					zip);
+			request.setPrevPayload(deleted);
+			if (!request.getIds().isEmpty()) {
+				logger.debug("Delete batch request sending to kafka " + request.getIds());
+				try {
+					microServiceUtils.serializeAndSplitObjectAndEmit(request, messageSize, entityEmitter,
+							objectMapper);
+				} catch (ResponseException e) {
+					return Uni.createFrom().failure(e);
+				}
+			}
+			return Uni.createFrom().item(result);
+		});
+	}
+
+	public Uni<List<NGSILDOperationResult>> purgeEntities(String tenant, String[] ids, TypeQueryTerm typeQuery,
+			String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery, GeoQueryTerm geoQuery,
+			ScopeQueryTerm scopeQuery, CSFQueryTerm csfQuery, List<String> dropAttrs, List<String> keepAttrs,
+			boolean localOnly, ParsedQueryParams params, Context context, io.vertx.core.MultiMap headersFromReq,
+			ViaHeaders viaHeaders) {
+		boolean attrMode = dropAttrs != null || keepAttrs != null;
+		Uni<List<NGSILDOperationResult>> local = entityDAO
+				.queryForPurge(tenant, ids, typeQuery, idPattern, attrsQuery, qQuery, geoQuery, scopeQuery, attrMode)
+				.onItem().transformToUni(id2Keys -> {
+					if (id2Keys.isEmpty()) {
+						return Uni.createFrom().item(Lists.newArrayList());
+					}
+					if (!attrMode) {
+						return localDeleteBatch(tenant, List.copyOf(id2Keys.keySet()));
+					}
+					List<Uni<NGSILDOperationResult>> entityUnis = new ArrayList<>(id2Keys.size());
+					for (Entry<String, List<String>> entry : id2Keys.entrySet()) {
+						String entityId = entry.getKey();
+						List<String> toDelete;
+						if (dropAttrs != null) {
+							toDelete = new ArrayList<>(dropAttrs);
+							toDelete.retainAll(entry.getValue());
+						} else {
+							toDelete = new ArrayList<>(entry.getValue());
+							toDelete.removeAll(keepAttrs);
+						}
+						toDelete.removeAll(PURGE_SYSTEM_KEYS);
+						NGSILDOperationResult opResult = new NGSILDOperationResult(AppConstants.DELETE_REQUEST,
+								entityId, tenant);
+						if (toDelete.isEmpty()) {
+							opResult.addSuccess(new CRUDSuccess(null, null, null, Sets.newHashSet()));
+							entityUnis.add(Uni.createFrom().item(opResult));
+							continue;
+						}
+						Set<Attrib> attribs = Sets.newHashSet();
+						List<Uni<NGSILDOperationResult>> attrUnis = new ArrayList<>(toDelete.size());
+						for (String attr : toDelete) {
+							attribs.add(new Attrib(attr, null));
+							attrUnis.add(localDeleteAttrib(
+									new DeleteAttributeRequest(tenant, entityId, attr, null, true, zip), entityId));
+						}
+						entityUnis.add(Uni.combine().all().unis(attrUnis).with(list -> {
+							opResult.addSuccess(new CRUDSuccess(null, null, null, attribs));
+							return opResult;
+						}));
+					}
+					return Uni.combine().all().unis(entityUnis).with(list -> {
+						List<NGSILDOperationResult> result = Lists.newArrayList();
+						list.forEach(obj -> result.add((NGSILDOperationResult) obj));
+						return result;
+					});
+				});
+		if (localOnly) {
+			return local;
+		}
+		Set<RemoteHost> remoteHosts = Sets.newHashSet();
+		for (List<RegistrationEntry> regEntries : tenant2CId2RegEntries.row(tenant).values()) {
+			for (RegistrationEntry regEntry : regEntries) {
+				if (regEntry.expiresAt() > 0 && regEntry.expiresAt() <= System.currentTimeMillis()) {
+					continue;
+				}
+				if (!regEntry.purgeEntity()) {
+					continue;
+				}
+				if (regEntry.matches(ids, idPattern, typeQuery, attrsQuery, qQuery, geoQuery, scopeQuery) == null) {
+					continue;
+				}
+				if (csfQuery != null && !csfQuery.eval(regEntry.registration())) {
+					continue;
+				}
+				if (viaHeaders.getHostUrls().contains(regEntry.host().host())) {
+					continue;
+				}
+				remoteHosts.add(regEntry.host());
+			}
+		}
+		if (remoteHosts.isEmpty()) {
+			return local;
+		}
+		// spec 5.6.21: the matching INPUT data is forwarded, so the purge goes out
+		// with the original request params (minus local) rather than a
+		// registration-narrowed rewrite
+		Map<String, String> queryParams = Maps.newHashMap();
+		try {
+			for (String name : params.getRawParams().keySet()) {
+				if (NGSIConstants.QUERY_PARAMETER_LOCAL_ONLY.equals(name)
+						|| NGSIConstants.QUERY_PARAMETER_LOCAL_ONLY_LEGACY.equals(name)) {
+					continue;
+				}
+				if (NGSIConstants.QUERY_PARAMETER_SCOPE_QUERY.equals(name)) {
+					queryParams.put(name, params.getScopeQ());
+				} else {
+					queryParams.put(name, params.getString(name));
+				}
+			}
+		} catch (ResponseException e) {
+			return Uni.createFrom().failure(e);
+		}
+		List<Uni<List<NGSILDOperationResult>>> unis = new ArrayList<>(remoteHosts.size() + 1);
+		unis.add(local);
+		for (RemoteHost remoteHost : remoteHosts) {
+			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(), headersFromReq);
+			List<String> ogAtContext = context.getOriginalAtContext();
+			if (ogAtContext != null && !ogAtContext.isEmpty() && !toFrwd.contains(HttpHeaders.LINK)) {
+				toFrwd.add(HttpHeaders.LINK, "<" + ogAtContext.get(0)
+						+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
+			}
+			unis.add(HttpUtils
+					.connect(webClient, remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT, tenant,
+							AppConstants.DELETE_OP, null, queryParams, toFrwd, null, viaHeaders,
+							remoteHost.cSourceAlias(), -1)
+					.onItemOrFailure().transform((response, failure) -> {
+						return List.of(HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(204),
+								remoteHost, AppConstants.DELETE_REQUEST, remoteHost.cSourceId(), Sets.newHashSet()));
+					}));
+		}
 		return Uni.combine().all().unis(unis).with(resultLists -> {
 			List<NGSILDOperationResult> result = Lists.newArrayList();
 			resultLists.forEach(resultList -> {

@@ -270,6 +270,25 @@ public class EntityControllerTest {
 
 
     /**
+     * unknown query parameters are rejected with 400 (spec 6.3.20)
+     */
+
+    @Test
+    public void appendEntityInvalidQueryParamTest() {
+        ExtractableResponse<Response> response = RestAssured.given()
+                .header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+                .header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD)
+                .body(appendPayload)
+                .queryParam("invalidParams", "x")
+                .when()
+                .post("/ngsi-ld/v1/entities/{entityId}/attrs", "urn:test:testentity1").then()
+                .statusCode(400).extract();
+        int statusCode = response.statusCode();
+        assertEquals(400, statusCode);
+
+    }
+
+    /**
      * this method is use for partial update the attribute
      */
 

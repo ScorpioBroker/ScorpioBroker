@@ -21,6 +21,7 @@ import com.google.common.net.HttpHeaders;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.ParsedQueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.ViaHeaders;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AggrTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
@@ -34,9 +35,11 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TemporalQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
+import eu.neclab.ngsildbroker.commons.enums.NgsiLdOperation;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
+import eu.neclab.ngsildbroker.commons.tools.QueryParamParser;
 import eu.neclab.ngsildbroker.commons.tools.QueryParser;
 import eu.neclab.ngsildbroker.historyquerymanager.service.HistoryQueryService;
 import io.smallrye.mutiny.Uni;
@@ -46,11 +49,9 @@ import io.vertx.core.json.JsonObject;
 import jakarta.inject.Inject;
 import jakarta.enterprise.context.ApplicationScoped;
 import io.quarkus.runtime.Startup;
-import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
-import jakarta.ws.rs.QueryParam;
 
 @ApplicationScoped
 @Startup
@@ -80,18 +81,37 @@ public class HistoryOperationsController {
 	@Timed(name = "temp_entity_batch_query_duration", description = "Duration of temp entity batch query requests", unit = MetricUnits.MILLISECONDS, absolute = true)
 	@ConcurrentGauge(name = "temp_entity_batch_query_concurrent", description = "Number of concurrent temp entity batch query requests", absolute = true)
 	public Uni<RestResponse<Object>> postQuery(HttpServerRequest request, String bodyStr,
-			@QueryParam(value = "limit") Integer limit, @QueryParam(value = "offset") int offset,
-			@QueryParam("lastN") @DefaultValue("-1") int lastN, @QueryParam(value = "options") String options,
-			@QueryParam(value = "count") String countS, @QueryParam(value = "local") String localOnlyS,
-			@QueryParam(value = "geometryProperty") String geometryProperty,
-			@HeaderParam("NGSILD-EntityMap") String entityMapToken, @QueryParam("entityMap") String retrieveEntityMapS,
-			@QueryParam(value = "doNotCompact") String doNotCompactS, @QueryParam("n") @DefaultValue("-1") int nInput,
-			@QueryParam("offsetN") @DefaultValue("-1") int offsetN,
-			@QueryParam("nOrder") @DefaultValue("ASC") String nOrderInput) {
+			@HeaderParam("NGSILD-EntityMap") String entityMapToken) {
 
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		String tenant = HttpUtils.getTenant(request);
+		ParsedQueryParams queryParams;
+		Integer limit;
+		int lastN;
+		String options;
+		String geometryProperty;
+		int nInput;
+		int offsetN;
+		String nOrderInput;
+		boolean localOnly;
+		boolean count;
+		int offset;
 		Map<String, Object> body;
+		try {
+			queryParams = QueryParamParser.parse(request, NgsiLdOperation.TEMPORAL_BATCH_QUERY);
+			limit = queryParams.getInteger(NGSIConstants.QUERY_PARAMETER_LIMIT);
+			offset = queryParams.getInt(NGSIConstants.QUERY_PARAMETER_OFFSET, 0);
+			lastN = queryParams.getInt(NGSIConstants.QUERY_PARAMETER_LAST_N, -1);
+			options = queryParams.getString(NGSIConstants.QUERY_PARAMETER_OPTIONS);
+			geometryProperty = queryParams.getString(NGSIConstants.QUERY_PARAMETER_GEOMETRY_PROPERTY);
+			nInput = queryParams.getInt(NGSIConstants.QUERY_PARAMETER_N, -1);
+			offsetN = queryParams.getInt(NGSIConstants.QUERY_PARAMETER_OFFSET_N, -1);
+			nOrderInput = queryParams.getString(NGSIConstants.QUERY_PARAMETER_N_ORDER, "ASC");
+			localOnly = queryParams.getLocal();
+			count = queryParams.getBoolean(NGSIConstants.QUERY_PARAMETER_COUNT);
+		} catch (ResponseException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
+		}
 		if (acceptHeader == -1) {
 			return HttpUtils.getInvalidHeader();
 		}
@@ -120,15 +140,7 @@ public class HistoryOperationsController {
 			nOrder = nOrderInput;
 			n = nInput;
 		}
-		// boolean retrieveEntityMap;
-		// boolean doNotCompact;
-		boolean localOnly;
-		boolean count;
 		try {
-			// retrieveEntityMap = HttpUtils.parseBoolean(retrieveEntityMapS);
-			// doNotCompact = HttpUtils.parseBoolean(doNotCompactS);
-			localOnly = HttpUtils.parseBoolean(localOnlyS);
-			count = HttpUtils.parseBoolean(countS);
 			body = new JsonObject(bodyStr).getMap();
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
@@ -371,7 +383,8 @@ public class HistoryOperationsController {
 						geoQueryTerm, scopeQueryTerm, temporalQueryTerm, aggrTerm, langQuery, n, offsetN, nOrder,
 						actualLimit,
 						offset,
-						false, localOnly, context, request).onItem().transformToUni(queryResult -> {
+						false, localOnly, context, request.headers(), queryParams).onItem()
+						.transformToUni(queryResult -> {
 							int payloadType;
 							if (aggrTerm == null) {
 								payloadType = AppConstants.QUERY_PAYLOAD;

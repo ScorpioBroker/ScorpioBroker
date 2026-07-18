@@ -4,19 +4,19 @@ kind: ServiceMonitor
 metadata:
   annotations:
     app.quarkus.io/quarkus-version: 3.28.4
-    app.quarkus.io/commit-id: 59675831de0ce7a6ee91ff20efd25a8e6581e7a9
+    app.quarkus.io/commit-id: acb7e4bc4d7b4e31bfa3872b87af3146ff9306ef
     app.quarkus.io/vcs-uri: https://github.com/scorpiobroker/scorpiobroker.git
-    app.quarkus.io/build-timestamp: 2026-06-24 - 13:48:26 +0000
+    app.quarkus.io/build-timestamp: 2026-07-18 - 19:32:26 +0000
   labels:
     app.kubernetes.io/name: at-context-server
-    app.kubernetes.io/version: 6.0.1-SNAPSHOT
+    app.kubernetes.io/version: 6.0.2-SNAPSHOT
     app.kubernetes.io/managed-by: quarkus
   name: at-context-server
 spec:
   selector:
     matchLabels:
       app.kubernetes.io/name: at-context-server
-      app.kubernetes.io/version: 6.0.1-SNAPSHOT
+      app.kubernetes.io/version: 6.0.2-SNAPSHOT
   endpoints:
     - scheme: http
       targetPort: 10097

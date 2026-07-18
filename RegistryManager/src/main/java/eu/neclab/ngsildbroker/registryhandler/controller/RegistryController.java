@@ -15,7 +15,6 @@ import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.QueryParam;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.metrics.MetricUnits;
@@ -29,6 +28,7 @@ import com.github.jsonldjava.core.JsonLDService;
 import com.google.common.collect.Sets;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.ParsedQueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
@@ -36,9 +36,11 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
+import eu.neclab.ngsildbroker.commons.enums.NgsiLdOperation;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
+import eu.neclab.ngsildbroker.commons.tools.QueryParamParser;
 import eu.neclab.ngsildbroker.commons.tools.QueryParser;
 import eu.neclab.ngsildbroker.registryhandler.service.CSourceService;
 import io.smallrye.mutiny.Uni;
@@ -74,16 +76,44 @@ public class RegistryController {
 	@Counted(name = "registration_query_total", description = "Total number of registration query requests", absolute = true)
 	@Timed(name = "registration_query_duration", description = "Duration of registration query requests", unit = MetricUnits.MILLISECONDS, absolute = true)
 	@ConcurrentGauge(name = "registration_query_concurrent", description = "Number of concurrent registration query requests", absolute = true)
-	public Uni<RestResponse<Object>> queryCSource(HttpServerRequest request, @QueryParam("id") String ids,
-			@QueryParam("type") String type, @QueryParam("idPattern") String idPattern,
-			@QueryParam("attrs") String attrs, @QueryParam("q") String q, @QueryParam("csf") String csf,
-			@QueryParam("geometry") String geometry, @QueryParam("georel") String georel,
-			@QueryParam("coordinates") String coordinates, @QueryParam("geoproperty") String geoproperty,
-			@QueryParam("geometryProperty") String geometryProperty, @QueryParam("timeproperty") String timeProperty,
-			@QueryParam("timerel") String timerel, @QueryParam("scopeQ") String scopeQ,
-			@QueryParam("timeAt") String timeAt, @QueryParam("endTimeAt") String endTimeAt,
-			@QueryParam(value = "limit") Integer limit, @QueryParam(value = "offset") int offset,
-			@QueryParam(value = "options") String options, @QueryParam(value = "count") boolean count) {
+	public Uni<RestResponse<Object>> queryCSource(HttpServerRequest request) {
+		String ids;
+		String type;
+		String idPattern;
+		String attrs;
+		String q;
+		String csf;
+		String geometry;
+		String georel;
+		String coordinates;
+		String geoproperty;
+		String geometryProperty;
+		String scopeQ;
+		Integer limit;
+		int offset;
+		String options;
+		boolean count;
+		try {
+			ParsedQueryParams queryParams = QueryParamParser.parse(request, NgsiLdOperation.QUERY_CSOURCES);
+			ids = queryParams.getString(NGSIConstants.QUERY_PARAMETER_ID);
+			type = queryParams.getString(NGSIConstants.QUERY_PARAMETER_TYPE);
+			idPattern = queryParams.getString(NGSIConstants.QUERY_PARAMETER_IDPATTERN);
+			attrs = queryParams.getString(NGSIConstants.QUERY_PARAMETER_ATTRS);
+			q = queryParams.getString(NGSIConstants.QUERY_PARAMETER_QUERY);
+			csf = queryParams.getString(NGSIConstants.QUERY_PARAMETER_CSF);
+			geometry = queryParams.getString(NGSIConstants.QUERY_PARAMETER_GEOMETRY);
+			georel = queryParams.getGeorel();
+			coordinates = queryParams.getString(NGSIConstants.QUERY_PARAMETER_COORDINATES);
+			geoproperty = queryParams.getString(NGSIConstants.QUERY_PARAMETER_GEOPROPERTY);
+			geometryProperty = queryParams.getString(NGSIConstants.QUERY_PARAMETER_GEOMETRY_PROPERTY);
+			scopeQ = queryParams.getScopeQ();
+			limit = queryParams.getInteger(NGSIConstants.QUERY_PARAMETER_LIMIT);
+			offset = queryParams.getInt(NGSIConstants.QUERY_PARAMETER_OFFSET, 0);
+			options = queryParams.getString(NGSIConstants.QUERY_PARAMETER_OPTIONS);
+			count = queryParams.getBoolean(NGSIConstants.QUERY_PARAMETER_COUNT);
+		} catch (ResponseException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+		}
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		if (acceptHeader != 1 && acceptHeader != 2) {
 			return HttpUtils.getInvalidHeader();
@@ -157,8 +187,9 @@ public class RegistryController {
 	public Uni<RestResponse<Object>> registerCSource(HttpServerRequest request, String payload) {
 		JsonObject jsonObject;
 		try {
+			QueryParamParser.parse(request, NgsiLdOperation.CREATE_CSOURCE);
 			jsonObject = new JsonObject(payload);
-		} catch (DecodeException e) {
+		} catch (DecodeException | ResponseException e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
 
@@ -194,6 +225,11 @@ public class RegistryController {
 	public Uni<RestResponse<Object>> getCSourceById(HttpServerRequest request,
 			@PathParam("registrationId") String registrationId) {
 		logger.debug("get CSource() ::" + registrationId);
+		try {
+			QueryParamParser.parse(request, NgsiLdOperation.RETRIEVE_CSOURCE);
+		} catch (ResponseException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+		}
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		if (acceptHeader != 1 && acceptHeader != 2) {
 			return HttpUtils.getInvalidHeader();
@@ -221,6 +257,11 @@ public class RegistryController {
 	@ConcurrentGauge(name = "registration_patch_concurrent", description = "Number of concurrent registration patch requests", absolute = true)
 	public Uni<RestResponse<Object>> updateCSource(HttpServerRequest request,
 			@PathParam("registrationId") String registrationId, String payload) {
+		try {
+			QueryParamParser.parse(request, NgsiLdOperation.UPDATE_CSOURCE);
+		} catch (ResponseException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+		}
 		return HttpUtils.expandBody(request, payload, AppConstants.CSOURCE_REG_UPDATE_PAYLOAD, ldService).onItem()
 				.transformToUni(tuple -> {
 					return csourceService
@@ -239,6 +280,11 @@ public class RegistryController {
 	@ConcurrentGauge(name = "registration_delete_concurrent", description = "Number of concurrent registration delete requests", absolute = true)
 	public Uni<RestResponse<Object>> deleteCSource(HttpServerRequest request,
 			@PathParam("registrationId") String registrationId) {
+		try {
+			QueryParamParser.parse(request, NgsiLdOperation.DELETE_CSOURCE);
+		} catch (ResponseException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
+		}
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		if (acceptHeader == -1) {
 			return HttpUtils.getInvalidHeader();

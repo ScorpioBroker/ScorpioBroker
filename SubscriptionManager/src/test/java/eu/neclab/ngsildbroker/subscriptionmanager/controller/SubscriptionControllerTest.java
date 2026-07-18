@@ -283,6 +283,28 @@ public class SubscriptionControllerTest {
 	}
 
 	/**
+	 * unknown query parameters are rejected with 400 (spec 6.3.20)
+	 */
+	@Test
+	@Order(10)
+	public void getAllSubscriptionInvalidParamTest() {
+
+		try {
+			ExtractableResponse<Response> response = RestAssured.given()
+					.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+					.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD).when()
+					.get("/ngsi-ld/v1/subscriptions?invalidParams=x").then()
+					.statusCode(Status.BAD_REQUEST.getStatusCode()).statusCode(400).extract();
+			assertEquals(400, response.statusCode());
+
+		} catch (Exception e) {
+			Assertions.fail();
+			e.printStackTrace();
+		}
+
+	}
+
+	/**
 	 * this method is use for delete subscription
 	 */
 	@Test

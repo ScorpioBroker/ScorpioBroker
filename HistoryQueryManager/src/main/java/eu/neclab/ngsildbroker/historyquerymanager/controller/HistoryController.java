@@ -4,6 +4,7 @@ import com.github.jsonldjava.core.JsonLDService;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.ParsedQueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AggrTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.CSFQueryTerm;
@@ -14,9 +15,11 @@ import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TemporalQueryTerm;
 import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
+import eu.neclab.ngsildbroker.commons.enums.NgsiLdOperation;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
+import eu.neclab.ngsildbroker.commons.tools.QueryParamParser;
 import eu.neclab.ngsildbroker.commons.tools.QueryParser;
 import eu.neclab.ngsildbroker.historyquerymanager.service.HistoryQueryService;
 import io.smallrye.common.annotation.Blocking;
@@ -32,14 +35,10 @@ import org.jboss.resteasy.reactive.RestResponse;
 import jakarta.inject.Inject;
 import jakarta.enterprise.context.ApplicationScoped;
 import io.quarkus.runtime.Startup;
-import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.QueryParam;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -73,26 +72,68 @@ public class HistoryController {
 	@Counted(name = "temp_entity_query_total", description = "Total number of temp entity query requests", absolute = true)
 	@Timed(name = "temp_entity_query_duration", description = "Duration of temp entity query requests", unit = MetricUnits.MILLISECONDS, absolute = true)
 	@ConcurrentGauge(name = "temp_entity_query_concurrent", description = "Number of concurrent temp entity query requests", absolute = true)
-	public Uni<RestResponse<Object>> queryTemporalEntities(HttpServerRequest request, @QueryParam("id") String ids,
-			@QueryParam("type") String typeQuery, @QueryParam("idPattern") String idPattern,
-			@QueryParam("attrs") String attrs, @QueryParam("q") String qInput, @QueryParam("csf") String csf,
-			@QueryParam("geometry") String geometry, @QueryParam("georel") String georel,
-			@QueryParam("coordinates") String coordinates, @QueryParam("geoproperty") String geoproperty,
-			@QueryParam("timeproperty") String timeProperty, @QueryParam("timerel") String timerel,
-			@QueryParam("scopeQ") String scopeQ, @QueryParam("timeAt") String timeAt,
-			@QueryParam("endTimeAt") String endTimeAt, @QueryParam("lastN") @DefaultValue("-1") int lastN,
-			@QueryParam("lang") String lang, @QueryParam("aggrMethods") String aggrMethods,
-			@QueryParam("aggrPeriodDuration") String aggrPeriodDuration, @QueryParam(value = "limit") Integer limit,
-			@QueryParam(value = "offset") int offset, @QueryParam(value = "entityMap") String qToken,
-			@QueryParam(value = "options") String options, @QueryParam(value = "count") String countS,
-			@QueryParam(value = "localOnly") String localOnlyS, @QueryParam("format") String format,
-			@QueryParam("n") @DefaultValue("-1") int nInput,
-			@QueryParam("offsetN") @DefaultValue("0") int offsetN,
-			@QueryParam("orderN") @DefaultValue("ASC") String nOrderInput,
-			@QueryParam("firstN") @DefaultValue("-1") int firstN) {
+	public Uni<RestResponse<Object>> queryTemporalEntities(HttpServerRequest request) {
+		String tenant = HttpUtils.getTenant(request);
+		ParsedQueryParams queryParams;
+		String ids;
+		String typeQuery;
+		String idPattern;
+		String attrs;
+		String q;
+		String csf;
+		String geometry;
+		String georel;
+		String coordinates;
+		String geoproperty;
+		String timeProperty;
+		String timerel;
+		String scopeQ;
+		String timeAt;
+		String endTimeAt;
+		int lastN;
+		String lang;
+		String aggrMethods;
+		String aggrPeriodDuration;
+		Integer limit;
+		int offset;
+		int nInput;
+		int offsetN;
+		String nOrderInput;
+		int firstN;
 		boolean localOnly;
 		boolean count;
-		String tenant = HttpUtils.getTenant(request);
+		try {
+			queryParams = QueryParamParser.parse(request, NgsiLdOperation.QUERY_TEMPORAL);
+			ids = queryParams.getString(NGSIConstants.QUERY_PARAMETER_ID);
+			typeQuery = queryParams.getString(NGSIConstants.QUERY_PARAMETER_TYPE);
+			idPattern = queryParams.getString(NGSIConstants.QUERY_PARAMETER_IDPATTERN);
+			attrs = queryParams.getString(NGSIConstants.QUERY_PARAMETER_ATTRS);
+			q = queryParams.getQ();
+			csf = queryParams.getString(NGSIConstants.QUERY_PARAMETER_CSF);
+			geometry = queryParams.getString(NGSIConstants.QUERY_PARAMETER_GEOMETRY);
+			georel = queryParams.getGeorel();
+			coordinates = queryParams.getString(NGSIConstants.QUERY_PARAMETER_COORDINATES);
+			geoproperty = queryParams.getString(NGSIConstants.QUERY_PARAMETER_GEOPROPERTY);
+			timeProperty = queryParams.getString(NGSIConstants.QUERY_PARAMETER_TIMEPROPERTY);
+			timerel = queryParams.getString(NGSIConstants.QUERY_PARAMETER_TIMEREL);
+			scopeQ = queryParams.getScopeQ();
+			timeAt = queryParams.getString(NGSIConstants.QUERY_PARAMETER_TIME);
+			endTimeAt = queryParams.getString(NGSIConstants.QUERY_PARAMETER_ENDTIME);
+			lastN = queryParams.getInt(NGSIConstants.QUERY_PARAMETER_LAST_N, -1);
+			lang = queryParams.getString(NGSIConstants.QUERY_PARAMETER_LANG);
+			aggrMethods = queryParams.getString(NGSIConstants.QUERY_PARAMETER_AGGR_METHODS);
+			aggrPeriodDuration = queryParams.getString(NGSIConstants.QUERY_PARAMETER_AGGR_PERIOD_DURATION);
+			limit = queryParams.getInteger(NGSIConstants.QUERY_PARAMETER_LIMIT);
+			offset = queryParams.getInt(NGSIConstants.QUERY_PARAMETER_OFFSET, 0);
+			nInput = queryParams.getInt(NGSIConstants.QUERY_PARAMETER_N, -1);
+			offsetN = queryParams.getInt(NGSIConstants.QUERY_PARAMETER_OFFSET_N, 0);
+			nOrderInput = queryParams.getString(NGSIConstants.QUERY_PARAMETER_ORDER_N, "ASC");
+			firstN = queryParams.getInt(NGSIConstants.QUERY_PARAMETER_FIRST_N, -1);
+			localOnly = queryParams.getLocal();
+			count = queryParams.getBoolean(NGSIConstants.QUERY_PARAMETER_COUNT);
+		} catch (ResponseException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
+		}
 
 		if ((nInput != -1 && lastN != -1 && lastN != nInput) || (nInput != -1 && firstN != -1 && firstN != nInput)
 				|| (firstN != -1 && lastN != -1)) {
@@ -113,29 +154,7 @@ public class HistoryController {
 			nOrder = nOrderInput;
 			n = nInput;
 		}
-		try {
-			localOnly = HttpUtils.parseBoolean(localOnlyS);
-			count = HttpUtils.parseBoolean(countS);
-		} catch (ResponseException e) {
-			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
-		}
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
-		if (format != null && !format.isEmpty()) {
-			options += "," + format;
-		}
-		String q;
-		if (qInput != null) {
-			try {
-				q = URLDecoder.decode(request.absoluteURI().split("q=")[1].split("&")[0], "UTF-8");
-			} catch (UnsupportedEncodingException e) {
-				return Uni.createFrom()
-						.item(HttpUtils.handleControllerExceptions(
-								new ResponseException(ErrorType.BadRequestData, "failed to decode q query"),
-								HttpUtils.getTenant(request)));
-			}
-		} else {
-			q = null;
-		}
 		if (acceptHeader != 1 && acceptHeader != 2) {
 			return HttpUtils.getInvalidHeader();
 		}
@@ -163,7 +182,7 @@ public class HistoryController {
 		List<Object> ctx = HttpUtils.getAtContext(request);
 		Set<String> finalOptions;
 		try {
-			finalOptions = HttpUtils.parseOptionsAndFormat(options, null);
+			finalOptions = queryParams.getFinalOptions();
 		} catch (ResponseException e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
 		}
@@ -194,7 +213,8 @@ public class HistoryController {
 			tmp.add(Tuple3.of(idList, typeQueryTerm, idPattern));
 			return historyQueryService.query(tenant, tmp, attrsQueryTerm, qQueryTerm,
 					csfQueryTerm, geoQueryTerm, scopeQueryTerm, temporalQueryTerm, aggrTerm, languageQueryTerm,
-					n, offsetN, nOrder, actualLimit, offset, count, localOnly, context, request).onItem()
+					n, offsetN, nOrder, actualLimit, offset, count, localOnly, context, request.headers(),
+					queryParams).onItem()
 					.transformToUni(queryResult -> {
 						int payloadType;
 						if (aggrTerm == null) {
@@ -216,27 +236,44 @@ public class HistoryController {
 	@Timed(name = "temp_entity_retrieve_duration", description = "Duration of temp entity retrieve requests", unit = MetricUnits.MILLISECONDS, absolute = true)
 	@ConcurrentGauge(name = "temp_entity_retrieve_concurrent", description = "Number of concurrent temp entity retrieve requests", absolute = true)
 	public Uni<RestResponse<Object>> retrieveTemporalEntity(HttpServerRequest request,
-			@PathParam("entityId") String entityId, @QueryParam("attrs") String attrs,
-			@QueryParam("aggrMethods") String aggrMethods, @QueryParam("aggrPeriodDuration") String aggrPeriodDuration,
-			@QueryParam("lang") String lang, @QueryParam("lastN") @DefaultValue("-1") int lastN,
-			@QueryParam("localOnly") String localOnlyS, @QueryParam(value = "options") String optionsString,
-			@QueryParam(value = "geometryProperty") String geometryProperty,
-			@QueryParam("timeproperty") String timeProperty, @QueryParam("timerel") String timeRel,
-			@QueryParam("timeAt") String timeAt, @QueryParam("endTimeAt") String endTimeAt,
-			@QueryParam("format") String format, @QueryParam("n") @DefaultValue("-1") int nInput,
-			@QueryParam("offsetN") @DefaultValue("0") int offsetN,
-			@QueryParam("orderN") @DefaultValue("ASC") String nOrderInput,
-			@QueryParam("firstN") @DefaultValue("-1") int firstN) {
+			@PathParam("entityId") String entityId) {
+		ParsedQueryParams queryParams;
+		String attrs;
+		String aggrMethods;
+		String aggrPeriodDuration;
+		String lang;
+		int lastN;
+		String geometryProperty;
+		String timeProperty;
+		String timeRel;
+		String timeAt;
+		String endTimeAt;
+		int nInput;
+		int offsetN;
+		String nOrderInput;
+		int firstN;
 		boolean localOnly;
 		try {
-			localOnly = HttpUtils.parseBoolean(localOnlyS);
+			queryParams = QueryParamParser.parse(request, NgsiLdOperation.RETRIEVE_TEMPORAL);
+			attrs = queryParams.getString(NGSIConstants.QUERY_PARAMETER_ATTRS);
+			aggrMethods = queryParams.getString(NGSIConstants.QUERY_PARAMETER_AGGR_METHODS);
+			aggrPeriodDuration = queryParams.getString(NGSIConstants.QUERY_PARAMETER_AGGR_PERIOD_DURATION);
+			lang = queryParams.getString(NGSIConstants.QUERY_PARAMETER_LANG);
+			lastN = queryParams.getInt(NGSIConstants.QUERY_PARAMETER_LAST_N, -1);
+			geometryProperty = queryParams.getString(NGSIConstants.QUERY_PARAMETER_GEOMETRY_PROPERTY);
+			timeProperty = queryParams.getString(NGSIConstants.QUERY_PARAMETER_TIMEPROPERTY);
+			timeRel = queryParams.getString(NGSIConstants.QUERY_PARAMETER_TIMEREL);
+			timeAt = queryParams.getString(NGSIConstants.QUERY_PARAMETER_TIME);
+			endTimeAt = queryParams.getString(NGSIConstants.QUERY_PARAMETER_ENDTIME);
+			nInput = queryParams.getInt(NGSIConstants.QUERY_PARAMETER_N, -1);
+			offsetN = queryParams.getInt(NGSIConstants.QUERY_PARAMETER_OFFSET_N, 0);
+			nOrderInput = queryParams.getString(NGSIConstants.QUERY_PARAMETER_ORDER_N, "ASC");
+			firstN = queryParams.getInt(NGSIConstants.QUERY_PARAMETER_FIRST_N, -1);
+			localOnly = queryParams.getLocal();
 		} catch (ResponseException e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, HttpUtils.getTenant(request)));
 		}
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
-		if (format != null && !format.isEmpty()) {
-			optionsString += "," + format;
-		}
 		if (acceptHeader != 1 && acceptHeader != 2) {
 			return HttpUtils.getInvalidHeader();
 		}
@@ -265,7 +302,7 @@ public class HistoryController {
 
 		Set<String> finalOptions;
 		try {
-			finalOptions = HttpUtils.parseOptionsAndFormat(optionsString, null);
+			finalOptions = queryParams.getFinalOptions();
 		} catch (ResponseException e) {
 			return Uni.createFrom().failure(e);
 		}

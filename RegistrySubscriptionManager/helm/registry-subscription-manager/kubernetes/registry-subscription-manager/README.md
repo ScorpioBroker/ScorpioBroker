@@ -13,7 +13,7 @@ The following table lists the configurable parameters and their default values.
 | `app.envs.dbport` |   | 5432 |
 | `app.envs.dbuser` |   | ngb |
 | `app.envs.gateway` |   | http://localhost:9090 |
-| `app.image` | The container image to use. | docker.io/hebgen/registry-subscription-manager:6.0.1-SNAPSHOT |
+| `app.image` | The container image to use. | scorpiobroker/registry-subscription-manager:java-latest |
 | `app.livenessProbe.failureThreshold` | The failure threshold to use. | 3 |
 | `app.livenessProbe.httpGet.path` | The http path to use for the probe. | /q/health/live |
 | `app.livenessProbe.httpGet.scheme` | The http schema to use for the probe. | HTTP |

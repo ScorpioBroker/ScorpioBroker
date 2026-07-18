@@ -7,11 +7,14 @@ import com.google.common.net.HttpHeaders;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
+import eu.neclab.ngsildbroker.commons.datatypes.ParsedQueryParams;
 import eu.neclab.ngsildbroker.commons.datatypes.ViaHeaders;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
+import eu.neclab.ngsildbroker.commons.enums.NgsiLdOperation;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.tools.HttpUtils;
 import eu.neclab.ngsildbroker.commons.tools.MicroServiceUtils;
+import eu.neclab.ngsildbroker.commons.tools.QueryParamParser;
 import eu.neclab.ngsildbroker.subscriptionmanager.service.SubscriptionService;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
@@ -25,7 +28,6 @@ import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.QueryParam;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.metrics.MetricUnits;
 import org.eclipse.microprofile.metrics.annotation.ConcurrentGauge;
@@ -66,8 +68,9 @@ public class SubscriptionController {
 		Map<String, Object> map;
 		String tenant = HttpUtils.getTenant(request);
 		try {
+			QueryParamParser.parse(request, NgsiLdOperation.CREATE_SUBSCRIPTION);
 			map = new JsonObject(body).getMap();
-		} catch (DecodeException e) {
+		} catch (DecodeException | ResponseException e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
 		}
 
@@ -126,10 +129,20 @@ public class SubscriptionController {
 	@Counted(name = "retrieve_all_subscriptions_total", description = "Total number of retrieve all subscriptions requests", absolute = true)
 	@Timed(name = "retrieve_all_subscriptions_duration", description = "Duration of retrieve all subscriptions requests", unit = MetricUnits.MILLISECONDS, absolute = true)
 	@ConcurrentGauge(name = "retrieve_all_subscriptions_concurrent", description = "Number of concurrent retrieve all subscriptions requests", absolute = true)
-	public Uni<RestResponse<Object>> getAllSubscriptions(HttpServerRequest request, @QueryParam("limit") Integer limit,
-			@QueryParam("offset") int offset, @QueryParam("options") String options) {
+	public Uni<RestResponse<Object>> getAllSubscriptions(HttpServerRequest request) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		String tenant = HttpUtils.getTenant(request);
+		Integer limit;
+		int offset;
+		String options;
+		try {
+			ParsedQueryParams queryParams = QueryParamParser.parse(request, NgsiLdOperation.QUERY_SUBSCRIPTIONS);
+			limit = queryParams.getInteger(NGSIConstants.QUERY_PARAMETER_LIMIT);
+			offset = queryParams.getInt(NGSIConstants.QUERY_PARAMETER_OFFSET, 0);
+			options = queryParams.getString(NGSIConstants.QUERY_PARAMETER_OPTIONS);
+		} catch (ResponseException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
+		}
 		if (acceptHeader != 1 && acceptHeader != 2) {
 			return HttpUtils.getInvalidHeader();
 		}
@@ -205,9 +218,16 @@ public class SubscriptionController {
 	@Timed(name = "retrieve_subscription_duration", description = "Duration of retrieve subscription requests", unit = MetricUnits.MILLISECONDS, absolute = true)
 	@ConcurrentGauge(name = "retrieve_subscription_concurrent", description = "Number of concurrent retrieve subscription requests", absolute = true)
 	public Uni<RestResponse<Object>> getSubscriptionById(HttpServerRequest request,
-			@PathParam(value = "id") String subscriptionId, @QueryParam(value = "options") String options) {
+			@PathParam(value = "id") String subscriptionId) {
 		int acceptHeader = HttpUtils.parseAcceptHeader(request.headers().getAll("Accept"));
 		String tenant = HttpUtils.getTenant(request);
+		String options;
+		try {
+			ParsedQueryParams queryParams = QueryParamParser.parse(request, NgsiLdOperation.RETRIEVE_SUBSCRIPTION);
+			options = queryParams.getString(NGSIConstants.QUERY_PARAMETER_OPTIONS);
+		} catch (ResponseException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
+		}
 		if (acceptHeader != 1 && acceptHeader != 2) {
 			return HttpUtils.getInvalidHeader();
 		}
@@ -245,6 +265,7 @@ public class SubscriptionController {
 	public Uni<RestResponse<Object>> deleteSubscription(HttpServerRequest request, @PathParam(value = "id") String id) {
 		String tenant = HttpUtils.getTenant(request);
 		try {
+			QueryParamParser.parse(request, NgsiLdOperation.DELETE_SUBSCRIPTION);
 			HttpUtils.validateUri(id);
 		} catch (Exception e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
@@ -265,6 +286,11 @@ public class SubscriptionController {
 			String body) {
 		Map<String, Object> map;
 		String tenant = HttpUtils.getTenant(request);
+		try {
+			QueryParamParser.parse(request, NgsiLdOperation.UPDATE_SUBSCRIPTION);
+		} catch (ResponseException e) {
+			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
+		}
 		ViaHeaders viaHeaders;
 		try {
 			viaHeaders = new ViaHeaders(request.headers().getAll(HttpHeaders.VIA),

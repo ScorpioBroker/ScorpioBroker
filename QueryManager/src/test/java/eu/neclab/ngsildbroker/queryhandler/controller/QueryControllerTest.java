@@ -203,10 +203,9 @@ public class QueryControllerTest {
 
 		Mockito.when(queryService.getType(any(), any(), anyBoolean(), any(), false))
 				.thenReturn(Uni.createFrom().item(map));
-		Boolean details = false;
 
 		ExtractableResponse<Response> response = given().accept(AppConstants.NGB_APPLICATION_JSONLD).request()
-				.contentType(AppConstants.NGB_APPLICATION_JSON).queryParam("details", details).when()
+				.contentType(AppConstants.NGB_APPLICATION_JSON).when()
 				.get("/ngsi-ld/v1/types/{entityType}", "Vehicle").then().extract();
 		assertEquals(200, response.statusCode());
 
@@ -242,6 +241,50 @@ public class QueryControllerTest {
 				.get("/ngsi-ld/v1/attributes/{attribute}", "brandName").then().extract();
 		assertEquals(200, response.statusCode());
 
+	}
+
+	@Test
+	public void queryInvalidParamTest() {
+		ExtractableResponse<Response> response = given().accept(AppConstants.NGB_APPLICATION_JSONLD).request()
+				.contentType(AppConstants.NGB_APPLICATION_JSON).when()
+				.get("/ngsi-ld/v1/entities?type=Vehicle&invalidParams=x").then().extract();
+		assertEquals(400, response.statusCode());
+	}
+
+	@Test
+	public void typesInvalidParamTest() {
+		ExtractableResponse<Response> response = given().accept(AppConstants.NGB_APPLICATION_JSONLD).request()
+				.contentType(AppConstants.NGB_APPLICATION_JSON).when().get("/ngsi-ld/v1/types?invalidParams=x").then()
+				.extract();
+		assertEquals(400, response.statusCode());
+	}
+
+	@Test
+	public void retrieveEntityInvalidParamTest() {
+		ExtractableResponse<Response> response = given().accept(AppConstants.NGB_APPLICATION_JSONLD).request()
+				.contentType(AppConstants.NGB_APPLICATION_JSON).when()
+				.get("/ngsi-ld/v1/entities/urn:ngsi-ld:Vehicle:A100?invalidParams=x").then().extract();
+		assertEquals(400, response.statusCode());
+	}
+
+	@Test
+	public void queryDuplicateParamTest() {
+		ExtractableResponse<Response> response = given().accept(AppConstants.NGB_APPLICATION_JSONLD).request()
+				.contentType(AppConstants.NGB_APPLICATION_JSON).when()
+				.get("/ngsi-ld/v1/entities?type=Vehicle&type=Car").then().extract();
+		assertEquals(400, response.statusCode());
+	}
+
+	@Test
+	public void postQueryInvalidParamTest() {
+		ExtractableResponse<Response> response = RestAssured.given()
+				.header(HttpHeaders.CONTENT_TYPE, AppConstants.NGB_APPLICATION_JSON)
+				.header(HttpHeaders.ACCEPT, AppConstants.NGB_APPLICATION_JSONLD)
+				.body("{\r\n" + "    \"type\": \"Query\",\r\n" + "    \"entities\": [\r\n" + "        {\r\n"
+						+ "            \"id\": \"urn:test:testentity1\",\r\n" + "            \"type\": \"TestType\"\r\n"
+						+ "        }\r\n" + "    ]\r\n" + "}")
+				.when().queryParam("invalidParams", "x").post("/ngsi-ld/v1/entityOperations/query").then().extract();
+		assertEquals(400, response.statusCode());
 	}
 
 	@Test

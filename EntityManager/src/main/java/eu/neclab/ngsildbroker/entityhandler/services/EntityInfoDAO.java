@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -12,6 +13,7 @@ import java.util.Set;
 
 import javax.sql.DataSource;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,6 +34,11 @@ import eu.neclab.ngsildbroker.commons.datatypes.requests.MergePatchRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.ReplaceAttribRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.ReplaceEntityRequest;
 import eu.neclab.ngsildbroker.commons.datatypes.requests.UpdateEntityRequest;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.AttrsQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.GeoQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.QQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.ScopeQueryTerm;
+import eu.neclab.ngsildbroker.commons.datatypes.terms.TypeQueryTerm;
 import eu.neclab.ngsildbroker.commons.enums.ErrorType;
 import eu.neclab.ngsildbroker.commons.exceptions.ResponseException;
 import eu.neclab.ngsildbroker.commons.storage.ConnectionManager;
@@ -65,6 +72,9 @@ public class EntityInfoDAO {
 
 	@Inject
 	JsonLDService ldService;
+
+	@ConfigProperty(name = "scorpio.geoquery.defaultdatasetid", defaultValue = "true")
+	boolean useDefaultForGeo;
 
 	public Uni<Map<String, Object>> batchCreateEntity(BatchRequest request) {
 
@@ -244,6 +254,104 @@ public class EntityInfoDAO {
 
 	}
 
+	/**
+	 * @return matching entity ids, mapped to the entity's top level keys when
+	 *         withAttrKeys is set, null values otherwise
+	 */
+	public Uni<Map<String, List<String>>> queryForPurge(String tenant, String[] ids, TypeQueryTerm typeQuery,
+			String idPattern, AttrsQueryTerm attrsQuery, QQueryTerm qQuery, GeoQueryTerm geoQuery,
+			ScopeQueryTerm scopeQuery, boolean withAttrKeys) {
+
+		StringBuilder query = new StringBuilder("SELECT ID");
+		if (withAttrKeys) {
+			query.append(", ARRAY(SELECT JSONB_OBJECT_KEYS(ENTITY))");
+		}
+		query.append(" FROM ENTITY");
+		int dollar = 1;
+		Tuple tuple = Tuple.tuple();
+		if (typeQuery != null || attrsQuery != null || geoQuery != null || qQuery != null || ids != null
+				|| idPattern != null || scopeQuery != null) {
+			query.append(" WHERE ");
+			boolean sqlAdded = false;
+			if (typeQuery != null) {
+				dollar = typeQuery.toSql(query, tuple, dollar);
+				sqlAdded = true;
+			}
+			if (attrsQuery != null) {
+				if (sqlAdded) {
+					query.append(" AND ");
+				}
+				dollar = attrsQuery.toSql(query, tuple, dollar, null);
+				sqlAdded = true;
+			}
+			if (geoQuery != null) {
+				if (sqlAdded) {
+					query.append(" AND ");
+				}
+				dollar = geoQuery.toSql(query, tuple, dollar, null, useDefaultForGeo);
+				sqlAdded = true;
+			}
+			if (qQuery != null) {
+				if (sqlAdded) {
+					query.append(" AND ");
+				}
+				dollar = qQuery.toSql(query, dollar, tuple, false, true, null);
+				sqlAdded = true;
+			}
+			if (ids != null) {
+				if (sqlAdded) {
+					query.append(" AND ");
+				}
+				query.append("id IN (");
+				for (String id : ids) {
+					query.append('$');
+					query.append(dollar);
+					query.append(',');
+					tuple.addString(id);
+					dollar++;
+				}
+				query.setCharAt(query.length() - 1, ')');
+				sqlAdded = true;
+			}
+			if (idPattern != null) {
+				if (sqlAdded) {
+					query.append(" AND ");
+				}
+				query.append("id ~ $");
+				query.append(dollar);
+				tuple.addString(idPattern);
+				dollar++;
+				sqlAdded = true;
+			}
+			if (scopeQuery != null) {
+				if (sqlAdded) {
+					query.append(" AND ");
+				}
+				scopeQuery.toSql(query);
+			}
+		}
+		Log.debug(query.toString());
+		return connectionManager.executeQuery(tenant, query.toString(), tuple, false).onItem().transform(rows -> {
+			Map<String, List<String>> result = new HashMap<>(rows.size());
+			rows.forEach(row -> {
+				result.put(row.getString(0), withAttrKeys ? Arrays.asList(row.getArrayOfStrings(1)) : null);
+			});
+			return result;
+		}).onFailure().recoverWithUni(e -> {
+			if (e instanceof PgException pge) {
+				if (pge.getSqlState().equals(AppConstants.INVALID_REGULAR_EXPRESSION)) {
+					return Uni.createFrom()
+							.failure(new ResponseException(ErrorType.BadRequestData, "Invalid regular expression"));
+				}
+				if (pge.getSqlState().equals(AppConstants.INVALID_GEO_QUERY)) {
+					return Uni.createFrom().failure(new ResponseException(ErrorType.BadRequestData,
+							"Invalid geo query. " + pge.getErrorMessage()));
+				}
+			}
+			return Uni.createFrom().failure(e);
+		});
+	}
+
 	@SuppressWarnings("unchecked")
 	/**
 	 * 
@@ -382,7 +490,7 @@ public class EntityInfoDAO {
 
 	public Uni<Table<String, String, List<RegistrationEntry>>> getAllRegistries() {
 		return DBUtil.getAllRegistries(connectionManager, ldService,
-				"SELECT cs_id, c_id, e_id, e_id_p, e_type, e_prop, e_rel, ST_AsGeoJSON(i_location), scopes, EXTRACT(MILLISECONDS FROM expires), endpoint, tenant_id, headers, reg_mode, createEntity, updateEntity, appendAttrs, updateAttrs, deleteAttrs, deleteEntity, createBatch, upsertBatch, updateBatch, deleteBatch, upsertTemporal, appendAttrsTemporal, deleteAttrsTemporal, updateAttrsTemporal, deleteAttrInstanceTemporal, deleteTemporal, mergeEntity, replaceEntity, replaceAttrs, mergeBatch, retrieveEntity, queryEntity, queryBatch, retrieveTemporal, queryTemporal, retrieveEntityTypes, retrieveEntityTypeDetails, retrieveEntityTypeInfo, retrieveAttrTypes, retrieveAttrTypeDetails, retrieveAttrTypeInfo, createSubscription, updateSubscription, retrieveSubscription, querySubscription, deleteSubscription,queryEntityMap, createEntityMap, updateEntityMap, deleteEntityMap, retrieveEntityMap, csource_Alias FROM csourceinformation WHERE (createEntity OR createBatch OR updateEntity OR appendAttrs OR deleteAttrs OR deleteEntity OR upsertBatch OR updateBatch OR deleteBatch) AND reg_mode != 0",
+				"SELECT cs_id, c_id, e_id, e_id_p, e_type, e_prop, e_rel, ST_AsGeoJSON(i_location), scopes, EXTRACT(MILLISECONDS FROM expires), endpoint, tenant_id, headers, reg_mode, createEntity, updateEntity, appendAttrs, updateAttrs, deleteAttrs, deleteEntity, createBatch, upsertBatch, updateBatch, deleteBatch, upsertTemporal, appendAttrsTemporal, deleteAttrsTemporal, updateAttrsTemporal, deleteAttrInstanceTemporal, deleteTemporal, mergeEntity, replaceEntity, replaceAttrs, mergeBatch, retrieveEntity, queryEntity, queryBatch, retrieveTemporal, queryTemporal, retrieveEntityTypes, retrieveEntityTypeDetails, retrieveEntityTypeInfo, retrieveAttrTypes, retrieveAttrTypeDetails, retrieveAttrTypeInfo, createSubscription, updateSubscription, retrieveSubscription, querySubscription, deleteSubscription,queryEntityMap, createEntityMap, updateEntityMap, deleteEntityMap, retrieveEntityMap, csource_Alias, purgeEntity FROM csourceinformation WHERE (createEntity OR createBatch OR updateEntity OR appendAttrs OR deleteAttrs OR deleteEntity OR upsertBatch OR updateBatch OR deleteBatch OR purgeEntity) AND reg_mode != 0",
 				logger);
 
 	}
@@ -576,7 +684,7 @@ public class EntityInfoDAO {
 
 	public Uni<Table<String, String, List<RegistrationEntry>>> getAllQueryRegistries() {
 		return DBUtil.getAllRegistries(connectionManager, ldService,
-				"SELECT cs_id, c_id, e_id, e_id_p, e_type, e_prop, e_rel, ST_AsGeoJSON(i_location), scopes, EXTRACT(MILLISECONDS FROM expires), endpoint, tenant_id, headers, reg_mode, createEntity, updateEntity, appendAttrs, updateAttrs, deleteAttrs, deleteEntity, createBatch, upsertBatch, updateBatch, deleteBatch, upsertTemporal, appendAttrsTemporal, deleteAttrsTemporal, updateAttrsTemporal, deleteAttrInstanceTemporal, deleteTemporal, mergeEntity, replaceEntity, replaceAttrs, mergeBatch, retrieveEntity, queryEntity, queryBatch, retrieveTemporal, queryTemporal, retrieveEntityTypes, retrieveEntityTypeDetails, retrieveEntityTypeInfo, retrieveAttrTypes, retrieveAttrTypeDetails, retrieveAttrTypeInfo, createSubscription, updateSubscription, retrieveSubscription, querySubscription, deleteSubscription, queryEntityMap, createEntityMap, updateEntityMap, deleteEntityMap, retrieveEntityMap, csource_Alias FROM csourceinformation WHERE queryentity OR querybatch OR retrieveentity OR retrieveentitytypes OR retrieveentitytypedetails OR retrieveentitytypeinfo OR retrieveattrtypes OR retrieveattrtypedetails OR retrieveattrtypeinfo",
+				"SELECT cs_id, c_id, e_id, e_id_p, e_type, e_prop, e_rel, ST_AsGeoJSON(i_location), scopes, EXTRACT(MILLISECONDS FROM expires), endpoint, tenant_id, headers, reg_mode, createEntity, updateEntity, appendAttrs, updateAttrs, deleteAttrs, deleteEntity, createBatch, upsertBatch, updateBatch, deleteBatch, upsertTemporal, appendAttrsTemporal, deleteAttrsTemporal, updateAttrsTemporal, deleteAttrInstanceTemporal, deleteTemporal, mergeEntity, replaceEntity, replaceAttrs, mergeBatch, retrieveEntity, queryEntity, queryBatch, retrieveTemporal, queryTemporal, retrieveEntityTypes, retrieveEntityTypeDetails, retrieveEntityTypeInfo, retrieveAttrTypes, retrieveAttrTypeDetails, retrieveAttrTypeInfo, createSubscription, updateSubscription, retrieveSubscription, querySubscription, deleteSubscription, queryEntityMap, createEntityMap, updateEntityMap, deleteEntityMap, retrieveEntityMap, csource_Alias, purgeEntity FROM csourceinformation WHERE queryentity OR querybatch OR retrieveentity OR retrieveentitytypes OR retrieveentitytypedetails OR retrieveentitytypeinfo OR retrieveattrtypes OR retrieveattrtypedetails OR retrieveattrtypeinfo",
 				logger);
 	}
 
