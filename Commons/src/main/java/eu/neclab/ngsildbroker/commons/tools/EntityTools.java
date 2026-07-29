@@ -89,8 +89,9 @@ public final class EntityTools {
 
 	}
 
-	public static Uni<Map<String, Object>> prepareSplitUpEntityForSending(Map<String, Object> expanded, Context context,
-			JsonLDService ldService) {
+	public static Uni<Tuple2<String, Map<String, Object>>> prepareSplitUpEntityForSending(
+			Map<String, Object> expanded, Context context, JsonLDService ldService,
+			io.vertx.mutiny.core.MultiMap toFrwd) {
 		if (expanded.containsKey(NGSIConstants.JSON_LD_TYPE)) {
 			expanded.put(NGSIConstants.JSON_LD_TYPE,
 					Lists.newArrayList((Set<String>) expanded.get(NGSIConstants.JSON_LD_TYPE)));
@@ -103,8 +104,22 @@ public final class EntityTools {
 			}
 			expanded.put(NGSIConstants.NGSI_LD_SCOPE, finalScopes);
 		}
-		return ldService.compact(expanded, null, context, HttpUtils.opts, -1);
+		return resolveCompactContextForForward(toFrwd, context, ldService).onItem().transformToUni(compactCtx -> {
+			return ldService.compact(expanded, null, compactCtx, HttpUtils.opts, -1).onItem().transform(compacted -> {
+				String contentType = HttpUtils.attachContextForForward(toFrwd, compacted, context);
+				return Tuple2.of(contentType, compacted);
+			});
+		});
 
+	}
+
+	private static Uni<Context> resolveCompactContextForForward(io.vertx.mutiny.core.MultiMap toFrwd,
+			Context requestContext, JsonLDService ldService) {
+		String regJsonldContext = HttpUtils.getRegistrationJsonldContext(toFrwd);
+		if (regJsonldContext == null) {
+			return Uni.createFrom().item(requestContext);
+		}
+		return ldService.parse(regJsonldContext);
 	}
 
 	public static Notification squashNotifications(List<Notification> data) {
@@ -841,6 +856,7 @@ public final class EntityTools {
 			if (idsTypeAndPattern != null) {
 				for (Tuple3<String, String, String> tpl : idsTypeAndPattern) {
 					String id = tpl.getItem1();
+					String type = tpl.getItem2();
 					if (id != null) {
 						String[] ids = id.split(",");
 						for (String idEntry : ids) {
@@ -851,6 +867,9 @@ public final class EntityTools {
 								for (Entry<String, Object> param : queryParams.entrySet()) {
 									HttpUtils.serializeQueryParams(httpQueryParams, param);
 								}
+							}
+							if (type != null) {
+								httpQueryParams.put(NGSIConstants.TYPE, remoteHost.context().compactIri(type));
 							}
 							if (context != null && context.getOriginalAtContext() != null
 									&& !context.getOriginalAtContext().isEmpty()) {
@@ -995,7 +1014,7 @@ public final class EntityTools {
 						it.remove();
 						continue;
 					}
-					if (!regEntry.queryBatch() && !regEntry.queryEntity()) {
+					if (!regEntry.queryBatch() && !regEntry.queryEntity() && !regEntry.retrieveEntity()) {
 						continue;
 					}
 					QueryInfos ogQueryInfo = regEntry.matches(id, idPattern, typeQuery, attrsQuery, qQuery, geoQuery,

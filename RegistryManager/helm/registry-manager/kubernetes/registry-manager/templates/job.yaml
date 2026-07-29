@@ -14,7 +14,7 @@ spec:
               value: "true"
             - name: QUARKUS_INIT_AND_EXIT
               value: "true"
-          image: scorpiobroker/registry-manager:java-latest
+          image: docker.io/demo/registry-manager:6.0.2-SNAPSHOT
           name: registry-manager-flyway-init
       restartPolicy: OnFailure
       serviceAccountName: registry-manager

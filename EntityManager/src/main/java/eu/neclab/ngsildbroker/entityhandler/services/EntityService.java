@@ -311,7 +311,9 @@ public class EntityService implements CSourceHandler {
 			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
 			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(), headersFromReq);
 			if (remoteHost.canDoSingleOp()) {
-				unis.add(prepareSplitUpEntityForSending(expanded, context).onItem().transformToUni(compacted -> {
+				unis.add(prepareSplitUpEntityForSending(expanded, context, toFrwd).onItem().transformToUni(prepared -> {
+					String contentType = prepared.getItem1();
+					Map<String, Object> compacted = prepared.getItem2();
 					String body;
 					try {
 						body = JsonUtils.toString(compacted);
@@ -324,7 +326,7 @@ public class EntityService implements CSourceHandler {
 							.connect(webClient,
 									remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + entityId
 											+ "/attrs/" + request.getAttribName(),
-									tenant, AppConstants.PATCH_OP, AppConstants.NGB_APPLICATION_JSON, null,
+									tenant, AppConstants.PATCH_OP, contentType, null,
 									toFrwd, body, viaHeaders,
 									remoteHost.cSourceAlias(), -1)
 							.onItemOrFailure()
@@ -602,8 +604,10 @@ public class EntityService implements CSourceHandler {
 			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
 			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(), headersFromReq);
 			if (remoteHost.canDoSingleOp()) {
-				unis.add(prepareSplitUpEntityForSending(remoteEntityAndHost.getItem2(), context).onItem()
-						.transformToUni(compacted -> {
+				unis.add(prepareSplitUpEntityForSending(remoteEntityAndHost.getItem2(), context, toFrwd).onItem()
+						.transformToUni(prepared -> {
+							String contentType = prepared.getItem1();
+							Map<String, Object> compacted = prepared.getItem2();
 
 							String body;
 							try {
@@ -616,7 +620,7 @@ public class EntityService implements CSourceHandler {
 									.connect(webClient,
 											remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/"
 													+ entityId + "/attrs",
-											tenant, AppConstants.POST_OP, AppConstants.NGB_APPLICATION_JSON, null,
+											tenant, AppConstants.POST_OP, contentType, null,
 											toFrwd, body, viaHeaders,
 											remoteHost.cSourceAlias(), -1)
 									.onItemOrFailure()
@@ -629,8 +633,10 @@ public class EntityService implements CSourceHandler {
 
 						}));
 			} else {
-				unis.add(prepareSplitUpEntityForSending(remoteEntityAndHost.getItem2(), context).onItem()
-						.transformToUni(compacted -> {
+				unis.add(prepareSplitUpEntityForSending(remoteEntityAndHost.getItem2(), context, toFrwd).onItem()
+						.transformToUni(prepared -> {
+							String contentType = prepared.getItem1();
+							Map<String, Object> compacted = prepared.getItem2();
 							compacted.put(NGSIConstants.QUERY_PARAMETER_ID, entityId);
 							String body;
 							try {
@@ -643,7 +649,7 @@ public class EntityService implements CSourceHandler {
 							return HttpUtils
 									.connect(webClient,
 											remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_UPDATE,
-											tenant, AppConstants.POST_OP, AppConstants.NGB_APPLICATION_JSON, null,
+											tenant, AppConstants.POST_OP, contentType, null,
 											toFrwd, body, viaHeaders,
 											remoteHost.cSourceAlias(), -1)
 									.onItemOrFailure().transform((response, failure) -> {
@@ -696,7 +702,9 @@ public class EntityService implements CSourceHandler {
 			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
 			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(), headersFromReq);
 
-			unis.add(prepareSplitUpEntityForSending(expanded, context).onItem().transformToUni(compacted -> {
+			unis.add(prepareSplitUpEntityForSending(expanded, context, toFrwd).onItem().transformToUni(prepared -> {
+				String contentType = prepared.getItem1();
+				Map<String, Object> compacted = prepared.getItem2();
 				String body;
 				try {
 					body = JsonUtils.toString(compacted);
@@ -708,7 +716,7 @@ public class EntityService implements CSourceHandler {
 				return HttpUtils
 						.connect(webClient,
 								remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + entityId + "/attrs",
-								tenant, AppConstants.PATCH_OP, AppConstants.NGB_APPLICATION_JSON, null,
+								tenant, AppConstants.PATCH_OP, contentType, null,
 								toFrwd, body, viaHeaders,
 								remoteHost.cSourceAlias(), -1)
 						.onItemOrFailure()
@@ -794,7 +802,9 @@ public class EntityService implements CSourceHandler {
 			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(), headersFromReq);
 
 			if (remoteHost.canDoSingleOp()) {
-				unis.add(prepareSplitUpEntityForSending(expanded, context).onItem().transformToUni(compacted -> {
+				unis.add(prepareSplitUpEntityForSending(expanded, context, toFrwd).onItem().transformToUni(prepared -> {
+					String contentType = prepared.getItem1();
+					Map<String, Object> compacted = prepared.getItem2();
 					String body;
 					try {
 						body = JsonUtils.toString(compacted);
@@ -806,7 +816,7 @@ public class EntityService implements CSourceHandler {
 					return HttpUtils
 							.connect(webClient,
 									remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT,
-									tenant, AppConstants.POST_OP, AppConstants.NGB_APPLICATION_JSON, null,
+									tenant, AppConstants.POST_OP, contentType, null,
 									toFrwd, body, viaHeaders,
 									remoteHost.cSourceAlias(), -1)
 							.onItemOrFailure()
@@ -817,7 +827,9 @@ public class EntityService implements CSourceHandler {
 							});
 				}));
 			} else {
-				unis.add(prepareSplitUpEntityForSending(expanded, context).onItem().transformToUni(compacted -> {
+				unis.add(prepareSplitUpEntityForSending(expanded, context, toFrwd).onItem().transformToUni(prepared -> {
+					String contentType = prepared.getItem1();
+					Map<String, Object> compacted = prepared.getItem2();
 					String body;
 					try {
 						body = JsonUtils.toString(List.of(compacted));
@@ -829,7 +841,7 @@ public class EntityService implements CSourceHandler {
 					return HttpUtils
 							.connect(webClient,
 									remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_CREATE,
-									tenant, AppConstants.POST_OP, AppConstants.NGB_APPLICATION_JSON, null,
+									tenant, AppConstants.POST_OP, contentType, null,
 									toFrwd, body, viaHeaders,
 									remoteHost.cSourceAlias(), -1)
 							.onItemOrFailure()
@@ -1148,7 +1160,8 @@ public class EntityService implements CSourceHandler {
 		});
 	}
 
-	private Uni<Map<String, Object>> prepareSplitUpEntityForSending(Map<String, Object> expanded, Context context) {
+	private Uni<Tuple2<String, Map<String, Object>>> prepareSplitUpEntityForSending(Map<String, Object> expanded,
+			Context context, MultiMap toFrwd) {
 		if (expanded.containsKey(NGSIConstants.JSON_LD_TYPE)) {
 			expanded.put(NGSIConstants.JSON_LD_TYPE,
 					Lists.newArrayList((Set<String>) expanded.get(NGSIConstants.JSON_LD_TYPE)));
@@ -1161,8 +1174,26 @@ public class EntityService implements CSourceHandler {
 			}
 			expanded.put(NGSIConstants.NGSI_LD_SCOPE, finalScopes);
 		}
-		return jsonLdService.compact(expanded, null, context, HttpUtils.opts, -1);
+		return resolveCompactContextForForward(toFrwd, context).onItem().transformToUni(compactCtx -> {
+			return jsonLdService.compact(expanded, null, compactCtx, HttpUtils.opts, -1).onItem()
+					.transform(compacted -> {
+						String contentType = HttpUtils.attachContextForForward(toFrwd, compacted, context);
+						return Tuple2.of(contentType, compacted);
+					});
+		});
 
+	}
+
+	/**
+	 * When registration contextSourceInfo defines jsonldContext, compact with that
+	 * context (clause 4.3.6.6); otherwise use the request context.
+	 */
+	private Uni<Context> resolveCompactContextForForward(MultiMap toFrwd, Context requestContext) {
+		String regJsonldContext = HttpUtils.getRegistrationJsonldContext(toFrwd);
+		if (regJsonldContext == null) {
+			return Uni.createFrom().item(requestContext);
+		}
+		return jsonLdService.parse(regJsonldContext);
 	}
 
 	public Uni<List<NGSILDOperationResult>> createBatch(String tenant, List<Map<String, Object>> expandedEntities,
@@ -1207,14 +1238,23 @@ public class EntityService implements CSourceHandler {
 				for (Tuple2<Context, Map<String, Object>> tuple : tuples) {
 					Map<String, Object> expanded = tuple.getItem2();
 					Context context = tuple.getItem1();
-					compactedUnis.add(jsonLdService.compact(expanded, null, context, AppConstants.opts, -1));
+					compactedUnis.add(resolveCompactContextForForward(toFrwd, context).onItem()
+							.transformToUni(compactCtx -> jsonLdService.compact(expanded, null, compactCtx,
+									AppConstants.opts, -1)));
 				}
 
 				if (remoteHost.canDoBatchOp()) {
+					List<Context> contextsForBatch = Lists.newArrayList();
+					for (Tuple2<Context, Map<String, Object>> tuple : tuples) {
+						contextsForBatch.add(tuple.getItem1());
+					}
 					unis.add(Uni.combine().all().unis(compactedUnis).with(list -> {
 						List<Map<String, Object>> toSend = Lists.newArrayList();
+						int i = 0;
 						for (Object obj : list) {
-							toSend.add((Map<String, Object>) obj);
+							Map<String, Object> compacted = (Map<String, Object>) obj;
+							HttpUtils.attachContextForForward(toFrwd, compacted, contextsForBatch.get(i++));
+							toSend.add(compacted);
 						}
 						return toSend;
 					}).onItem().transformToUni(toSend -> {
@@ -1224,11 +1264,14 @@ public class EntityService implements CSourceHandler {
 						} catch (IOException e) {
 							return Uni.createFrom().item(Lists.newArrayList());
 						}
+						String contentType = HttpUtils.hasRegistrationJsonldContext(toFrwd)
+								? AppConstants.NGB_APPLICATION_JSON
+								: AppConstants.NGB_APPLICATION_JSONLD;
 
 						return HttpUtils
 								.connect(webClient,
 										remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_CREATE,
-										tenant, AppConstants.POST_OP, AppConstants.NGB_APPLICATION_JSON, null,
+										tenant, AppConstants.POST_OP, contentType, null,
 										toFrwd, body, viaHeaders,
 										remoteHost.cSourceAlias(), -1)
 								.onItemOrFailure()
@@ -1239,8 +1282,11 @@ public class EntityService implements CSourceHandler {
 					}));
 				} else {
 					List<Uni<NGSILDOperationResult>> singleUnis = new ArrayList<>();
+					Iterator<Context> ctxIt = tuples.stream().map(Tuple2::getItem1).iterator();
 					for (Uni<Map<String, Object>> compactedUni : compactedUnis) {
+						Context entityContext = ctxIt.next();
 						singleUnis.add(compactedUni.onItem().transformToUni(entity -> {
+							String contentType = HttpUtils.attachContextForForward(toFrwd, entity, entityContext);
 							String body;
 							try {
 								body = JsonUtils.toString(entity);
@@ -1252,7 +1298,7 @@ public class EntityService implements CSourceHandler {
 							return HttpUtils
 									.connect(webClient,
 											remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT,
-											tenant, AppConstants.POST_OP, AppConstants.NGB_APPLICATION_JSON, null,
+											tenant, AppConstants.POST_OP, contentType, null,
 											toFrwd, body, viaHeaders,
 											remoteHost.cSourceAlias(), -1)
 									.onItemOrFailure()
@@ -1587,13 +1633,22 @@ public class EntityService implements CSourceHandler {
 				for (Tuple2<Context, Map<String, Object>> tuple : tuples) {
 					Map<String, Object> expanded = tuple.getItem2();
 					Context context = tuple.getItem1();
-					compactedUnis.add(jsonLdService.compact(expanded, null, context, AppConstants.opts, -1));
+					compactedUnis.add(resolveCompactContextForForward(toFrwd, context).onItem()
+							.transformToUni(compactCtx -> jsonLdService.compact(expanded, null, compactCtx,
+									AppConstants.opts, -1)));
 				}
 				if (remoteHost.canDoBatchOp()) {
+					List<Context> contextsForBatch = Lists.newArrayList();
+					for (Tuple2<Context, Map<String, Object>> tuple : tuples) {
+						contextsForBatch.add(tuple.getItem1());
+					}
 					unis.add(Uni.combine().all().unis(compactedUnis).with(list -> {
 						List<Map<String, Object>> toSend = Lists.newArrayList();
+						int i = 0;
 						for (Object obj : list) {
-							toSend.add((Map<String, Object>) obj);
+							Map<String, Object> compacted = (Map<String, Object>) obj;
+							HttpUtils.attachContextForForward(toFrwd, compacted, contextsForBatch.get(i++));
+							toSend.add(compacted);
 						}
 						return toSend;
 					}).onItem().transformToUni(toSend -> {
@@ -1603,11 +1658,14 @@ public class EntityService implements CSourceHandler {
 						} catch (IOException e) {
 							return Uni.createFrom().item(Lists.newArrayList());
 						}
+						String contentType = HttpUtils.hasRegistrationJsonldContext(toFrwd)
+								? AppConstants.NGB_APPLICATION_JSON
+								: AppConstants.NGB_APPLICATION_JSONLD;
 
 						return HttpUtils
 								.connect(webClient,
 										remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_UPDATE,
-										tenant, AppConstants.POST_OP, AppConstants.NGB_APPLICATION_JSON, null,
+										tenant, AppConstants.POST_OP, contentType, null,
 										toFrwd, body, viaHeaders,
 										remoteHost.cSourceAlias(), -1)
 								.onItemOrFailure()
@@ -1618,8 +1676,11 @@ public class EntityService implements CSourceHandler {
 					}));
 				} else {
 					List<Uni<NGSILDOperationResult>> singleUnis = new ArrayList<>();
+					Iterator<Context> ctxIt = tuples.stream().map(Tuple2::getItem1).iterator();
 					for (Uni<Map<String, Object>> compactedUni : compactedUnis) {
+						Context entityContext = ctxIt.next();
 						singleUnis.add(compactedUni.onItem().transformToUni(entity -> {
+							String contentType = HttpUtils.attachContextForForward(toFrwd, entity, entityContext);
 							String body;
 							try {
 								body = JsonUtils.toString(entity);
@@ -1633,7 +1694,7 @@ public class EntityService implements CSourceHandler {
 											remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/"
 													+ entity.get(NGSIConstants.JSON_LD_ID) + "/"
 													+ NGSIConstants.QUERY_PARAMETER_ATTRS,
-											tenant, AppConstants.POST_OP, AppConstants.NGB_APPLICATION_JSON, null,
+											tenant, AppConstants.POST_OP, contentType, null,
 											toFrwd, body, viaHeaders,
 											remoteHost.cSourceAlias(), -1)
 									.onItemOrFailure()
@@ -1832,13 +1893,22 @@ public class EntityService implements CSourceHandler {
 			for (Tuple2<Context, Map<String, Object>> tuple : tuples) {
 				Map<String, Object> expanded = tuple.getItem2();
 				Context context = tuple.getItem1();
-				compactedUnis.add(jsonLdService.compact(expanded, null, context, AppConstants.opts, -1));
+				compactedUnis.add(resolveCompactContextForForward(toFrwd, context).onItem()
+						.transformToUni(compactCtx -> jsonLdService.compact(expanded, null, compactCtx,
+								AppConstants.opts, -1)));
 			}
 			if (remoteHost.canDoBatchOp()) {
+				List<Context> contextsForBatch = Lists.newArrayList();
+				for (Tuple2<Context, Map<String, Object>> tuple : tuples) {
+					contextsForBatch.add(tuple.getItem1());
+				}
 				unis.add(Uni.combine().all().unis(compactedUnis).with(list -> {
 					List<Map<String, Object>> toSend = Lists.newArrayList();
+					int i = 0;
 					for (Object obj : list) {
-						toSend.add((Map<String, Object>) obj);
+						Map<String, Object> compacted = (Map<String, Object>) obj;
+						HttpUtils.attachContextForForward(toFrwd, compacted, contextsForBatch.get(i++));
+						toSend.add(compacted);
 					}
 					return toSend;
 				}).onItem().transformToUni(toSend -> {
@@ -1848,11 +1918,14 @@ public class EntityService implements CSourceHandler {
 					} catch (IOException e) {
 						return Uni.createFrom().item(Lists.newArrayList());
 					}
+					String contentType = HttpUtils.hasRegistrationJsonldContext(toFrwd)
+							? AppConstants.NGB_APPLICATION_JSON
+							: AppConstants.NGB_APPLICATION_JSONLD;
 
 					return HttpUtils
 							.connect(webClient,
 									remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_UPSERT,
-									tenant, AppConstants.POST_OP, AppConstants.NGB_APPLICATION_JSON, null,
+									tenant, AppConstants.POST_OP, contentType, null,
 									toFrwd, body, viaHeaders,
 									remoteHost.cSourceAlias(), -1)
 							.onItemOrFailure().transform((response, failure) -> {
@@ -1862,8 +1935,11 @@ public class EntityService implements CSourceHandler {
 				}));
 			} else {
 				List<Uni<NGSILDOperationResult>> singleUnis = new ArrayList<>();
+				Iterator<Context> ctxIt = tuples.stream().map(Tuple2::getItem1).iterator();
 				for (Uni<Map<String, Object>> compactedUni : compactedUnis) {
+					Context entityContext = ctxIt.next();
 					singleUnis.add(compactedUni.onItem().transformToUni(entity -> {
+						String contentType = HttpUtils.attachContextForForward(toFrwd, entity, entityContext);
 						String body;
 						try {
 							body = JsonUtils.toString(entity);
@@ -1877,7 +1953,7 @@ public class EntityService implements CSourceHandler {
 										remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/"
 												+ entity.get(NGSIConstants.JSON_LD_ID) + "/"
 												+ NGSIConstants.QUERY_PARAMETER_ATTRS,
-										tenant, AppConstants.POST_OP, AppConstants.NGB_APPLICATION_JSON, null,
+										tenant, AppConstants.POST_OP, contentType, null,
 										toFrwd, body, viaHeaders,
 										remoteHost.cSourceAlias(), -1)
 								.onItemOrFailure()
@@ -1886,7 +1962,7 @@ public class EntityService implements CSourceHandler {
 										return HttpUtils
 												.connect(webClient,
 														remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT,
-														tenant, AppConstants.POST_OP, AppConstants.NGB_APPLICATION_JSON,
+														tenant, AppConstants.POST_OP, contentType,
 														null,
 														toFrwd, body, viaHeaders,
 														remoteHost.cSourceAlias(), -1)
@@ -2145,7 +2221,8 @@ public class EntityService implements CSourceHandler {
 		for (RemoteHost remoteHost : remoteHosts) {
 			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(), headersFromReq);
 			List<String> ogAtContext = context.getOriginalAtContext();
-			if (ogAtContext != null && !ogAtContext.isEmpty() && !toFrwd.contains(HttpHeaders.LINK)) {
+			if (ogAtContext != null && !ogAtContext.isEmpty()
+					&& !HttpUtils.hasRegistrationJsonldContext(toFrwd) && !toFrwd.contains(HttpHeaders.LINK)) {
 				toFrwd.add(HttpHeaders.LINK, "<" + ogAtContext.get(0)
 						+ ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
 			}
@@ -2186,7 +2263,9 @@ public class EntityService implements CSourceHandler {
 			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(), headersFromReq);
 
 			if (remoteHost.canDoSingleOp()) {
-				unis.add(prepareSplitUpEntityForSending(expanded, context).onItem().transformToUni(compacted -> {
+				unis.add(prepareSplitUpEntityForSending(expanded, context, toFrwd).onItem().transformToUni(prepared -> {
+					String contentType = prepared.getItem1();
+					Map<String, Object> compacted = prepared.getItem2();
 					String body;
 					try {
 						body = JsonUtils.toString(compacted);
@@ -2198,7 +2277,7 @@ public class EntityService implements CSourceHandler {
 					return HttpUtils
 							.connect(webClient,
 									remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + entityId,
-									tenant, AppConstants.PATCH_OP, AppConstants.NGB_APPLICATION_JSON, null,
+									tenant, AppConstants.PATCH_OP, contentType, null,
 									toFrwd, body, viaHeaders,
 									remoteHost.cSourceAlias(), -1)
 							.onItemOrFailure()
@@ -2209,7 +2288,9 @@ public class EntityService implements CSourceHandler {
 							});
 				}));
 			} else {
-				unis.add(prepareSplitUpEntityForSending(expanded, context).onItem().transformToUni(compacted -> {
+				unis.add(prepareSplitUpEntityForSending(expanded, context, toFrwd).onItem().transformToUni(prepared -> {
+					String contentType = prepared.getItem1();
+					Map<String, Object> compacted = prepared.getItem2();
 					String body;
 					try {
 						body = JsonUtils.toString(List.of(compacted));
@@ -2221,7 +2302,7 @@ public class EntityService implements CSourceHandler {
 					return HttpUtils
 							.connect(webClient,
 									remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_CREATE,
-									tenant, AppConstants.PATCH_OP, AppConstants.NGB_APPLICATION_JSON, null,
+									tenant, AppConstants.PATCH_OP, contentType, null,
 									toFrwd, body, viaHeaders,
 									remoteHost.cSourceAlias(), -1)
 							.onItemOrFailure()
@@ -2374,7 +2455,9 @@ public class EntityService implements CSourceHandler {
 			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
 			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(), headersFromReq);
 			if (remoteHost.canDoSingleOp()) {
-				unis.add(prepareSplitUpEntityForSending(expanded, context).onItem().transformToUni(compacted -> {
+				unis.add(prepareSplitUpEntityForSending(expanded, context, toFrwd).onItem().transformToUni(prepared -> {
+					String contentType = prepared.getItem1();
+					Map<String, Object> compacted = prepared.getItem2();
 					String body;
 					try {
 						body = JsonUtils.toString(compacted);
@@ -2386,7 +2469,7 @@ public class EntityService implements CSourceHandler {
 					return HttpUtils
 							.connect(webClient,
 									remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + entityId,
-									tenant, AppConstants.PATCH_OP, AppConstants.NGB_APPLICATION_JSON, null,
+									tenant, AppConstants.PATCH_OP, contentType, null,
 									toFrwd, body, viaHeaders,
 									remoteHost.cSourceAlias(), -1)
 							.onItemOrFailure()
@@ -2470,7 +2553,9 @@ public class EntityService implements CSourceHandler {
 			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
 			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(), headersFromReq);
 			if (remoteHost.canDoSingleOp()) {
-				unis.add(prepareSplitUpEntityForSending(expanded, context).onItem().transformToUni(compacted -> {
+				unis.add(prepareSplitUpEntityForSending(expanded, context, toFrwd).onItem().transformToUni(prepared -> {
+					String contentType = prepared.getItem1();
+					Map<String, Object> compacted = prepared.getItem2();
 					String body;
 					try {
 						body = JsonUtils.toString(compacted);
@@ -2483,7 +2568,7 @@ public class EntityService implements CSourceHandler {
 							.connect(webClient,
 									remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/" + entityId + "/"
 											+ "attrs" + "/" + attrId,
-									tenant, AppConstants.PATCH_OP, AppConstants.NGB_APPLICATION_JSON, null,
+									tenant, AppConstants.PATCH_OP, contentType, null,
 									toFrwd, body, viaHeaders,
 									remoteHost.cSourceAlias(), -1)
 							.onItemOrFailure().transform((response, failure) -> {
@@ -2611,13 +2696,22 @@ public class EntityService implements CSourceHandler {
 				for (Tuple2<Context, Map<String, Object>> tuple : tuples) {
 					Map<String, Object> expanded = tuple.getItem2();
 					Context context = tuple.getItem1();
-					compactedUnis.add(jsonLdService.compact(expanded, null, context, AppConstants.opts, -1));
+					compactedUnis.add(resolveCompactContextForForward(toFrwd, context).onItem()
+							.transformToUni(compactCtx -> jsonLdService.compact(expanded, null, compactCtx,
+									AppConstants.opts, -1)));
 				}
 				if (remoteHost.canDoBatchOp()) {
+					List<Context> contextsForBatch = Lists.newArrayList();
+					for (Tuple2<Context, Map<String, Object>> tuple : tuples) {
+						contextsForBatch.add(tuple.getItem1());
+					}
 					unis.add(Uni.combine().all().unis(compactedUnis).with(list -> {
 						List<Map<String, Object>> toSend = Lists.newArrayList();
+						int i = 0;
 						for (Object obj : list) {
-							toSend.add((Map<String, Object>) obj);
+							Map<String, Object> compacted = (Map<String, Object>) obj;
+							HttpUtils.attachContextForForward(toFrwd, compacted, contextsForBatch.get(i++));
+							toSend.add(compacted);
 						}
 						return toSend;
 					}).onItem().transformToUni(toSend -> {
@@ -2627,11 +2721,14 @@ public class EntityService implements CSourceHandler {
 						} catch (IOException e) {
 							return Uni.createFrom().item(Lists.newArrayList());
 						}
+						String contentType = HttpUtils.hasRegistrationJsonldContext(toFrwd)
+								? AppConstants.NGB_APPLICATION_JSON
+								: AppConstants.NGB_APPLICATION_JSONLD;
 
 						return HttpUtils
 								.connect(webClient,
 										remoteHost.host() + NGSIConstants.ENDPOINT_BATCH_MERGE,
-										tenant, AppConstants.PATCH_OP, AppConstants.NGB_APPLICATION_JSON, null,
+										tenant, AppConstants.PATCH_OP, contentType, null,
 										toFrwd, body, viaHeaders,
 										remoteHost.cSourceAlias(), -1)
 								.onItemOrFailure()
@@ -2642,8 +2739,11 @@ public class EntityService implements CSourceHandler {
 					}));
 				} else {
 					List<Uni<NGSILDOperationResult>> singleUnis = new ArrayList<>();
+					Iterator<Context> ctxIt = tuples.stream().map(Tuple2::getItem1).iterator();
 					for (Uni<Map<String, Object>> compactedUni : compactedUnis) {
+						Context entityContext = ctxIt.next();
 						singleUnis.add(compactedUni.onItem().transformToUni(entity -> {
+							String contentType = HttpUtils.attachContextForForward(toFrwd, entity, entityContext);
 							String body;
 							try {
 								body = JsonUtils.toString(entity);
@@ -2657,7 +2757,7 @@ public class EntityService implements CSourceHandler {
 											remoteHost.host() + NGSIConstants.NGSI_LD_ENTITIES_ENDPOINT + "/"
 													+ entity.get(NGSIConstants.JSON_LD_ID) + "/"
 													+ NGSIConstants.QUERY_PARAMETER_ATTRS,
-											tenant, AppConstants.PATCH_OP, AppConstants.NGB_APPLICATION_JSON, null,
+											tenant, AppConstants.PATCH_OP, contentType, null,
 											toFrwd, body, viaHeaders,
 											remoteHost.cSourceAlias(), -1)
 									.onItemOrFailure()

@@ -14,7 +14,7 @@ spec:
               value: "true"
             - name: QUARKUS_INIT_AND_EXIT
               value: "true"
-          image: scorpiobroker/all-in-one-runner:java-latest
+          image: docker.io/demo/aio-runner:6.0.2-SNAPSHOT
           name: aio-runner-flyway-init
       restartPolicy: OnFailure
       serviceAccountName: aio-runner

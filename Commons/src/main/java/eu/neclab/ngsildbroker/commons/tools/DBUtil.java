@@ -107,7 +107,8 @@ public class DBUtil {
 		if (atContextLink == null) {
 			ctxUni = Uni.createFrom().nullItem();
 		} else {
-			headers.remove(NGSIConstants.JSONLD_CONTEXT);
+			// Keep jsonldContext on headers so mutation forward can detect registration
+			// precedence (clause 4.3.6.6); only parse a Context for RegistrationEntry.
 			ctxUni = ldService.parse(atContextLink);
 		}
 		return ctxUni.onItem().transform(ctx -> {

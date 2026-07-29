@@ -128,6 +128,11 @@ public final class HttpUtils {
 	}
 
 	public static int parseAcceptHeader(List<String> acceptHeaders) {
+		// ETSI GS CIM 009 V1.9.1 clause 6.3.4: if Accept is not present, application/json
+		// shall be assumed. Do not apply this fallback when any Accept value is set.
+		if (acceptHeaders == null || acceptHeaders.isEmpty()) {
+			return 1; // application/json
+		}
 		float q = 1;
 		int appGroup = -1;
 		Iterator<String> it = acceptHeaders.iterator();
@@ -501,9 +506,13 @@ public final class HttpUtils {
 			});
 		}
 		if (result.contains(NGSIConstants.JSONLD_CONTEXT)) {
-			String linkHeader = "<%s>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"',"
+			String linkHeader = "<%s>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\""
 					.formatted(result.get(NGSIConstants.JSONLD_CONTEXT));
-			result.remove(NGSIConstants.JSONLD_CONTEXT).add("Link", linkHeader);
+			// Keep jsonldContext key so forward paths can detect registration precedence
+			// (clause 4.3.6.6); also expose it as Link for application/json binding.
+			if (!result.contains(HttpHeaders.LINK)) {
+				result.add(HttpHeaders.LINK, linkHeader);
+			}
 		}
 		if (!result.contains("Accept")) {
 			result.add("Accept", "application/json");
@@ -527,9 +536,11 @@ public final class HttpUtils {
 			});
 		}
 		if (result.contains(NGSIConstants.JSONLD_CONTEXT)) {
-			String linkHeader = "<%s>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"',"
+			String linkHeader = "<%s>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\""
 					.formatted(result.get(NGSIConstants.JSONLD_CONTEXT));
-			result.add("Link", linkHeader);
+			if (!result.contains(HttpHeaders.LINK)) {
+				result.add(HttpHeaders.LINK, linkHeader);
+			}
 			result.add("Accept", "application/json");
 		}
 		//
@@ -904,6 +915,60 @@ public final class HttpUtils {
 
 	private static String getLinkHeader(Object entry) {
 		return "<" + entry + ">; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"";
+	}
+
+	/**
+	 * Attach the associated JSON-LD {@code @context} to a forwarded mutation payload
+	 * as required by the MIME type (ETSI GS CIM 009 V1.9.1 clause 4.3.6.6 / 6.3.5).
+	 * <p>
+	 * Registration {@code contextSourceInfo.jsonldContext} takes precedence: when that
+	 * key is present on the forwarded headers, the payload is sent as
+	 * {@code application/json} with the context in a Link header and without an
+	 * {@code @context} member in the body. Only if no registration
+	 * {@code jsonldContext} is set is the original request {@code @context} put into
+	 * the body with {@code application/ld+json}.
+	 *
+	 * @return the Content-Type to use for the forwarded request
+	 */
+	public static String attachContextForForward(io.vertx.mutiny.core.MultiMap toFrwd,
+			Map<String, Object> compacted, Context context) {
+		String regJsonldContext = getRegistrationJsonldContext(toFrwd);
+		if (regJsonldContext != null) {
+			compacted.remove(NGSIConstants.JSON_LD_CONTEXT);
+			ensureJsonLdContextLink(toFrwd, regJsonldContext);
+			return AppConstants.NGB_APPLICATION_JSON;
+		}
+		List<String> ogAtContext = context.getOriginalAtContext();
+		compacted.put(NGSIConstants.JSON_LD_CONTEXT,
+				ogAtContext.size() == 1 ? ogAtContext.get(0) : ogAtContext);
+		return AppConstants.NGB_APPLICATION_JSONLD;
+	}
+
+	/**
+	 * Returns the registration {@code jsonldContext} URL from forwarded headers, if
+	 * {@code contextSourceInfo} defined one. Does not treat a plain Link header
+	 * (e.g. from {@code urn:ngsi-ld:request}) as registration precedence.
+	 */
+	public static String getRegistrationJsonldContext(io.vertx.mutiny.core.MultiMap toFrwd) {
+		if (toFrwd == null) {
+			return null;
+		}
+		return toFrwd.get(NGSIConstants.JSONLD_CONTEXT);
+	}
+
+	public static boolean hasRegistrationJsonldContext(io.vertx.mutiny.core.MultiMap toFrwd) {
+		return getRegistrationJsonldContext(toFrwd) != null;
+	}
+
+	private static void ensureJsonLdContextLink(io.vertx.mutiny.core.MultiMap toFrwd, String contextUrl) {
+		if (toFrwd == null || contextUrl == null) {
+			return;
+		}
+		List<Object> existing = parseLinkHeaderNoUni(toFrwd.getAll(HttpHeaders.LINK),
+				NGSIConstants.HEADER_REL_LDCONTEXT);
+		if (existing.isEmpty()) {
+			toFrwd.add(HttpHeaders.LINK, getLinkHeader(contextUrl));
+		}
 	}
 
 	public static String getTenant(HttpServerRequest request) {

@@ -430,6 +430,7 @@ public class QueryService implements CSourceHandler {
 		Map<String, Map<String, Map<String, Map<String, Object>>>> entityId2AttrName2DatasetId2AttrValue = Maps
 				.newHashMap();
 		List<String> onlyAddedToCache = Lists.newArrayList();
+		List<Map<String, Object>> auxiliaryEntities = Lists.newArrayList();
 		String id;
 		Map<String, Map<String, Object>> id2Entity = Maps.newHashMap();
 		for (Object o : l) {
@@ -438,10 +439,17 @@ public class QueryService implements CSourceHandler {
 			QueryRemoteHost remoteHost = t.getItem2();
 			for (Map<String, Object> entity : entities) {
 				id = (String) entity.get(NGSIConstants.JSON_LD_ID);
-				Tuple2<Map<String, Object>, Set<String>> potentialLocalEntity = entityCache.get(id);
 				if (entityMap != null) {
 					entityMap.addEntry(id, "generated-" + remoteHost.cSourceId(), remoteHost);
 				}
+				Object regModeObj = entity.get(AppConstants.REG_MODE_KEY);
+				// auxiliary is applied after exclusive/redirect/inclusive merge (5.7.1.4)
+				if (regModeObj instanceof Integer regMode && regMode == 0) {
+					entity.remove(AppConstants.REG_MODE_KEY);
+					auxiliaryEntities.add(entity);
+					continue;
+				}
+				Tuple2<Map<String, Object>, Set<String>> potentialLocalEntity = entityCache.get(id);
 				if (potentialLocalEntity == null || potentialLocalEntity.getItem1() == null) {
 					entityCache.putEntity(id, entity, t.getItem2().cSourceId());
 					id2Entity.put(id, entity);
@@ -497,10 +505,43 @@ public class QueryService implements CSourceHandler {
 			id2Entity.put(entityId, entity);
 		}
 		for (String idEntry : onlyAddedToCache) {
-			id2Entity.get(idEntry).remove(AppConstants.REG_MODE_KEY);
+			Map<String, Object> cached = id2Entity.get(idEntry);
+			if (cached != null) {
+				cached.remove(AppConstants.REG_MODE_KEY);
+			}
+		}
+		for (Map<String, Object> auxiliaryEntity : auxiliaryEntities) {
+			applyAuxiliaryEntity(auxiliaryEntity, id2Entity, entityCache);
 		}
 		return id2Entity.values();
 
+	}
+
+	/**
+	 * Auxiliary CSR data is supplementary only (4.3.6.2 / 5.7.1.4): add an Attribute
+	 * only when it is not present at all after exclusive/redirect/inclusive merge.
+	 */
+	private void applyAuxiliaryEntity(Map<String, Object> auxiliaryEntity,
+			Map<String, Map<String, Object>> id2Entity, EntityCache entityCache) {
+		String entityId = (String) auxiliaryEntity.get(NGSIConstants.JSON_LD_ID);
+		Map<String, Object> merged = id2Entity.get(entityId);
+		if (merged == null) {
+			auxiliaryEntity.remove(AppConstants.REG_MODE_KEY);
+			id2Entity.put(entityId, auxiliaryEntity);
+			entityCache.putEntity(entityId, auxiliaryEntity, "dummy");
+			return;
+		}
+		for (Entry<String, Object> attrib : auxiliaryEntity.entrySet()) {
+			String key = attrib.getKey();
+			if (key.equals(NGSIConstants.JSON_LD_ID) || key.equals(NGSIConstants.JSON_LD_TYPE)
+					|| key.equals(NGSIConstants.NGSI_LD_CREATED_AT) || key.equals(NGSIConstants.NGSI_LD_MODIFIED_AT)
+					|| key.equals(NGSIConstants.NGSI_LD_SCOPE) || key.equals(AppConstants.REG_MODE_KEY)) {
+				continue;
+			}
+			if (!merged.containsKey(key)) {
+				merged.put(key, attrib.getValue());
+			}
+		}
 	}
 
 	private Uni<QueryResult> doJoinIfNeeded(String tenant, QueryResult result, EntityCache entityCache, Context context,
@@ -1073,6 +1114,10 @@ public class QueryService implements CSourceHandler {
 		}
 		if (entity.containsKey(AppConstants.REG_MODE_KEY)) {
 			regMode = (Integer) entity.remove(AppConstants.REG_MODE_KEY);
+		}
+		// auxiliary must not participate in the primary merge
+		if (regMode == 0) {
+			return;
 		}
 		Set<String> types = entityId2Types.get(entityId);
 		if (types == null) {
@@ -1746,6 +1791,26 @@ public class QueryService implements CSourceHandler {
 		return unis;
 	}
 
+	private static Long getTemporalAt(Map<String, Object> attrEntry, String temporalKey) {
+		Object raw = attrEntry.get(temporalKey);
+		if (raw == null) {
+			return null;
+		}
+		try {
+			if (raw instanceof List<?> list && !list.isEmpty() && list.get(0) instanceof Map<?, ?> map) {
+				Object value = map.get(NGSIConstants.JSON_LD_VALUE);
+				if (value instanceof String date) {
+					return SerializationTools.date2Long(date);
+				}
+			} else if (raw instanceof String date) {
+				return SerializationTools.date2Long(date);
+			}
+		} catch (Exception e) {
+			return null;
+		}
+		return null;
+	}
+
 	private void mergeAttr(String key, List<Map<String, Object>> value,
 			Map<String, Map<String, Map<String, Object>>> result, int regMode,
 			Map<String, Integer> attsDataset2CurrentRegMode) {
@@ -1776,22 +1841,32 @@ public class QueryService implements CSourceHandler {
 				}
 				if (attribMap.containsKey(datasetId)) {
 					Integer currentRegMode = attsDataset2CurrentRegMode.get(key + datasetId);
-					if (regMode == 3 || currentRegMode == 0) {
+					// 1 inclusive, 2 redirect, 3 exclusive (auxiliary is applied after merge)
+					// exclusive always wins (4.3.6.3)
+					if (regMode == 3) {
 						attribMap.put(datasetId, attrEntry);
 						attsDataset2CurrentRegMode.put(key + datasetId, regMode);
 						continue;
 					}
-					if (currentRegMode == 3 || regMode == 0) {
+					if (currentRegMode != null && currentRegMode == 3) {
 						continue;
 					}
+					// inclusive / redirect (and local): merge per 4.5.5.3
 					Map<String, Object> currentValue = attribMap.get(datasetId);
-					Long currentModifiedDate = SerializationTools
-							.date2Long(((List<Map<String, String>>) currentValue.get(NGSIConstants.NGSI_LD_MODIFIED_AT))
-									.get(0).get(NGSIConstants.JSON_LD_VALUE));
-					Long newModifiedDate = SerializationTools
-							.date2Long(((List<Map<String, String>>) attrEntry.get(NGSIConstants.NGSI_LD_MODIFIED_AT))
-									.get(0).get(NGSIConstants.JSON_LD_VALUE));
-					if (newModifiedDate > currentModifiedDate) {
+					Long currentObservedAt = getTemporalAt(currentValue, NGSIConstants.NGSI_LD_OBSERVED_AT);
+					Long newObservedAt = getTemporalAt(attrEntry, NGSIConstants.NGSI_LD_OBSERVED_AT);
+					if (currentObservedAt != null || newObservedAt != null) {
+						if (newObservedAt != null
+								&& (currentObservedAt == null || newObservedAt > currentObservedAt)) {
+							attribMap.put(datasetId, attrEntry);
+							attsDataset2CurrentRegMode.put(key + datasetId, regMode);
+						}
+						continue;
+					}
+					Long currentModifiedDate = getTemporalAt(currentValue, NGSIConstants.NGSI_LD_MODIFIED_AT);
+					Long newModifiedDate = getTemporalAt(attrEntry, NGSIConstants.NGSI_LD_MODIFIED_AT);
+					if (currentModifiedDate != null && newModifiedDate != null
+							&& newModifiedDate > currentModifiedDate) {
 						attribMap.put(datasetId, attrEntry);
 						attsDataset2CurrentRegMode.put(key + datasetId, regMode);
 					}

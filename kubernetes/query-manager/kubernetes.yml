@@ -4,9 +4,9 @@ kind: ServiceAccount
 metadata:
   annotations:
     app.quarkus.io/quarkus-version: 3.28.4
-    app.quarkus.io/commit-id: acb7e4bc4d7b4e31bfa3872b87af3146ff9306ef
-    app.quarkus.io/vcs-uri: https://github.com/scorpiobroker/scorpiobroker.git
-    app.quarkus.io/build-timestamp: 2026-07-18 - 19:33:05 +0000
+    app.quarkus.io/commit-id: c4191904d8ab780c45d443d7401f101fa679f07d
+    app.quarkus.io/vcs-uri: https://github.com/ScorpioBroker/ScorpioBroker.git
+    app.quarkus.io/build-timestamp: 2026-07-22 - 15:57:09 +0000
   labels:
     app.kubernetes.io/name: query-manager
     app.kubernetes.io/version: 6.0.2-SNAPSHOT
@@ -49,9 +49,9 @@ kind: Service
 metadata:
   annotations:
     app.quarkus.io/quarkus-version: 3.28.4
-    app.quarkus.io/commit-id: acb7e4bc4d7b4e31bfa3872b87af3146ff9306ef
-    app.quarkus.io/vcs-uri: https://github.com/scorpiobroker/scorpiobroker.git
-    app.quarkus.io/build-timestamp: 2026-07-18 - 19:33:05 +0000
+    app.quarkus.io/commit-id: c4191904d8ab780c45d443d7401f101fa679f07d
+    app.quarkus.io/vcs-uri: https://github.com/ScorpioBroker/ScorpioBroker.git
+    app.quarkus.io/build-timestamp: 2026-07-22 - 15:57:09 +0000
     prometheus.io/scrape: "true"
     prometheus.io/path: /q/metrics
     prometheus.io/port: "10091"
@@ -77,9 +77,9 @@ kind: Deployment
 metadata:
   annotations:
     app.quarkus.io/quarkus-version: 3.28.4
-    app.quarkus.io/commit-id: acb7e4bc4d7b4e31bfa3872b87af3146ff9306ef
-    app.quarkus.io/vcs-uri: https://github.com/scorpiobroker/scorpiobroker.git
-    app.quarkus.io/build-timestamp: 2026-07-18 - 19:33:05 +0000
+    app.quarkus.io/commit-id: c4191904d8ab780c45d443d7401f101fa679f07d
+    app.quarkus.io/vcs-uri: https://github.com/ScorpioBroker/ScorpioBroker.git
+    app.quarkus.io/build-timestamp: 2026-07-22 - 15:57:09 +0000
     prometheus.io/scrape: "true"
     prometheus.io/path: /q/metrics
     prometheus.io/port: "10091"
@@ -99,9 +99,9 @@ spec:
     metadata:
       annotations:
         app.quarkus.io/quarkus-version: 3.28.4
-        app.quarkus.io/commit-id: acb7e4bc4d7b4e31bfa3872b87af3146ff9306ef
-        app.quarkus.io/vcs-uri: https://github.com/scorpiobroker/scorpiobroker.git
-        app.quarkus.io/build-timestamp: 2026-07-18 - 19:33:05 +0000
+        app.quarkus.io/commit-id: c4191904d8ab780c45d443d7401f101fa679f07d
+        app.quarkus.io/vcs-uri: https://github.com/ScorpioBroker/ScorpioBroker.git
+        app.quarkus.io/build-timestamp: 2026-07-22 - 15:57:09 +0000
         prometheus.io/scrape: "true"
         prometheus.io/path: /q/metrics
         prometheus.io/port: "10091"
@@ -117,21 +117,21 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
-            - name: dbpass
-              value: ngb
             - name: dbhost
               value: localhost
-            - name: gateway
-              value: http://localhost:9090
-            - name: dbport
-              value: "5432"
             - name: dbuser
               value: ngb
+            - name: dbport
+              value: "5432"
             - name: dbname
+              value: ngb
+            - name: gateway
+              value: http://localhost:9090
+            - name: dbpass
               value: ngb
             - name: QUARKUS_FLYWAY_ACTIVE
               value: "false"
-          image: scorpiobroker/query-manager:java-latest
+          image: docker.io/demo/query-manager:6.0.2-SNAPSHOT
           imagePullPolicy: Always
           livenessProbe:
             failureThreshold: 3
@@ -192,7 +192,7 @@ spec:
               value: "true"
             - name: QUARKUS_INIT_AND_EXIT
               value: "true"
-          image: scorpiobroker/query-manager:java-latest
+          image: docker.io/demo/query-manager:6.0.2-SNAPSHOT
           name: query-manager-flyway-init
       restartPolicy: OnFailure
       serviceAccountName: query-manager
@@ -202,9 +202,9 @@ kind: ServiceMonitor
 metadata:
   annotations:
     app.quarkus.io/quarkus-version: 3.28.4
-    app.quarkus.io/commit-id: acb7e4bc4d7b4e31bfa3872b87af3146ff9306ef
-    app.quarkus.io/vcs-uri: https://github.com/scorpiobroker/scorpiobroker.git
-    app.quarkus.io/build-timestamp: 2026-07-18 - 19:33:05 +0000
+    app.quarkus.io/commit-id: c4191904d8ab780c45d443d7401f101fa679f07d
+    app.quarkus.io/vcs-uri: https://github.com/ScorpioBroker/ScorpioBroker.git
+    app.quarkus.io/build-timestamp: 2026-07-22 - 15:57:09 +0000
   labels:
     app.kubernetes.io/name: query-manager
     app.kubernetes.io/version: 6.0.2-SNAPSHOT

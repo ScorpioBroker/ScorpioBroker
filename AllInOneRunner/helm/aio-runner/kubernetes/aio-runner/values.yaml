@@ -8,7 +8,7 @@ app:
     dbport: "5432"
     dbuser: ngb
     gateway: http://localhost:9090
-  image: scorpiobroker/all-in-one-runner:java-latest
+  image: docker.io/demo/aio-runner:6.0.2-SNAPSHOT
   livenessProbe:
     failureThreshold: 3
     httpGet:

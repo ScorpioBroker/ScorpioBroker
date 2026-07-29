@@ -210,6 +210,12 @@ public class CSourceService {
 					if (pge.getSqlState().equals("23505")) {
 						error = ErrorType.AlreadyExists;
 						errorMsg = "Registration already exists";
+					} else if (pge.getSqlState().equals("23514")) {
+						error = ErrorType.Conflict;
+						errorMsg = pge.getErrorMessage() != null ? pge.getErrorMessage() : "Registration conflict";
+					} else if (pge.getSqlState().equals("22023")) {
+						error = ErrorType.BadRequestData;
+						errorMsg = pge.getErrorMessage() != null ? pge.getErrorMessage() : "Bad registration data";
 					}
 				}
 				e.printStackTrace();
@@ -327,44 +333,43 @@ public class CSourceService {
 			String regType = brokerDetails.get("regtype");
 			String url = brokerDetails.get("url");
 			String finalUrl = url.endsWith("/") ? url : url + "/";
-			unis.add(cSourceInfoDAO.isTenantPresent(sourceTenant).onItem().transformToUni(present -> {
-				if (present) {
-					return retrieveRegistration(sourceTenant, regType).onItem().transformToUni(body -> {
-						String csourceId = microServiceUtils.getGatewayString();
-						body.put("@id", csourceId);
-						return ldService.compact(body, null, HttpUtils.opts).onItem().transformToUni(compacted -> {
-							String compact;
-							try {
-								compact = JsonUtils.toPrettyString(compacted);
-							} catch (Exception e) {
-								return Uni.createFrom().failure(new Throwable("Unable to compact"));
-							}
-							return webClient.patchAbs(finalUrl + "csourceRegistrations/" + csourceId)
-									.putHeader("Content-Type", "application/json")
-									.putHeader("NGSILD-Tenant", targetTenant).sendBuffer(Buffer.buffer(compact))
-									.onItem().transformToUni(i -> {
-										if (i.statusCode() == HttpResponseStatus.NOT_FOUND.code()) {
-											return webClient.post(finalUrl + "csourceRegistrations/")
-													.putHeader("Content-Type", "application/json")
-													.putHeader("NGSILD-Tenant", targetTenant)
-													.sendBuffer(Buffer.buffer(compact)).onItem().transformToUni(r -> {
-														if (r.statusCode() >= 200 && r.statusCode() < 300) {
-															return Uni.createFrom().nullItem();
-														}
-														return Uni.createFrom().failure(new ResponseException(
-																ErrorType.InternalError, r.bodyAsString()));
-													});
-										}
-										return Uni.createFrom().voidItem();
-									}).onFailure().retry().atMost(5).onFailure().recoverWithUni(e -> {
-										logger.error("Failed to register with fed broker " + brokerName, e);
-										return Uni.createFrom().voidItem();
-									});
-						});
-					});
+			unis.add(cSourceInfoDAO.isTenantPresent(sourceTenant).chain(present -> {
+				if (!present) {
+					return Uni.createFrom().voidItem();
 				}
-				return Uni.createFrom().voidItem();
-
+				return retrieveRegistration(sourceTenant, regType).chain(body -> {
+					String csourceId = microServiceUtils.getGatewayString();
+					body.put("@id", csourceId);
+					return ldService.compact(body, null, HttpUtils.opts).chain(compacted -> {
+						String compact;
+						try {
+							compact = JsonUtils.toPrettyString(compacted);
+						} catch (Exception e) {
+							return Uni.createFrom().failure(new Throwable("Unable to compact"));
+						}
+						return webClient.patchAbs(finalUrl + "csourceRegistrations/" + csourceId)
+								.putHeader("Content-Type", "application/json")
+								.putHeader("NGSILD-Tenant", targetTenant).sendBuffer(Buffer.buffer(compact))
+								.chain(i -> {
+									if (i.statusCode() == HttpResponseStatus.NOT_FOUND.code()) {
+										return webClient.post(finalUrl + "csourceRegistrations/")
+												.putHeader("Content-Type", "application/json")
+												.putHeader("NGSILD-Tenant", targetTenant)
+												.sendBuffer(Buffer.buffer(compact)).chain(r -> {
+													if (r.statusCode() >= 200 && r.statusCode() < 300) {
+														return Uni.createFrom().voidItem();
+													}
+													return Uni.createFrom().failure(new ResponseException(
+															ErrorType.InternalError, r.bodyAsString()));
+												});
+									}
+									return Uni.createFrom().voidItem();
+								}).onFailure().retry().atMost(5).onFailure().recoverWithUni(e -> {
+									logger.error("Failed to register with fed broker " + brokerName, e);
+									return Uni.createFrom().voidItem();
+								});
+					});
+				});
 			}));
 		}
 

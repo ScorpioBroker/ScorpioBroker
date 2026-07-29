@@ -14,7 +14,7 @@ spec:
               value: "true"
             - name: QUARKUS_INIT_AND_EXIT
               value: "true"
-          image: scorpiobroker/history-query-manager:java-latest
+          image: docker.io/demo/history-query-manager:6.0.2-SNAPSHOT
           name: history-query-manager-flyway-init
       restartPolicy: OnFailure
       serviceAccountName: history-query-manager

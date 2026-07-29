@@ -1,0 +1,18 @@
+
+  .-- Source mode  '^' = server, '=' = peer, '#' = local clock.
+ / .- Source state '*' = current best, '+' = combined, '-' = not combined,
+| /             'x' = may be in error, '~' = too variable, '?' = unusable.
+||                                                 .- xxxx [ yyyy ] +/- zzzz
+||      Reachability register (octal) -.           |  xxxx = adjusted offset,
+||      Log2(Polling interval) --.      |          |  yyyy = measured offset,
+||                                \     |          |  zzzz = estimated error.
+||                                 |    |           \
+MS Name/IP address         Stratum Poll Reach LastRx Last sample               
+===============================================================================
+^? ntp-nts-2.ps5.canonical.>     0   8     0     -     +0ns[   +0ns] +/-    0ns
+^? ntp-nts-3.ps5.canonical.>     0   8     0     -     +0ns[   +0ns] +/-    0ns
+^? ntp-nts-2.ps6.canonical.>     0   8     0     -     +0ns[   +0ns] +/-    0ns
+^? ntp-nts-3.ps6.canonical.>     0   8     0     -     +0ns[   +0ns] +/-    0ns
+^? ntp-nts-1.ps5.canonical.>     0   8     0     -     +0ns[   +0ns] +/-    0ns
+^? ntp-nts-1.ps6.canonical.>     0   7     0     -     +0ns[   +0ns] +/-    0ns
+^- _gateway                      2   6   377     9   +7418s[ +7418s] +/-   55ms

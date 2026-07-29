@@ -184,7 +184,7 @@ public class RegistrationEntry {
 		if (atContextLink == null) {
 			ctxUni = Uni.createFrom().nullItem();
 		} else {
-			headers.remove(NGSIConstants.JSONLD_CONTEXT);
+			// Keep jsonldContext on headers for forward-path precedence detection.
 			ctxUni = ldService.parse(atContextLink);
 		}
 		return ctxUni.onItem().transform(ctx -> {
@@ -477,7 +477,8 @@ public class RegistrationEntry {
 								tmpEId = (String) entitiesEntry.get(NGSIConstants.JSON_LD_ID);
 							}
 							if (entitiesEntry.containsKey(NGSIConstants.NGSI_LD_ID_PATTERN)) {
-								tmpEIdp = ((List<Map<String, String>>) entitiesEntry.get(NGSIConstants.JSON_LD_ID))
+								tmpEIdp = ((List<Map<String, String>>) entitiesEntry
+										.get(NGSIConstants.NGSI_LD_ID_PATTERN))
 										.get(0).get(NGSIConstants.JSON_LD_VALUE);
 							}
 

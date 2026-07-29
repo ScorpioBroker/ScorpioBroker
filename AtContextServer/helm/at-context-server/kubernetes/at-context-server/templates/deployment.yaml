@@ -4,9 +4,9 @@ kind: Deployment
 metadata:
   annotations:
     app.quarkus.io/quarkus-version: 3.28.4
-    app.quarkus.io/commit-id: acb7e4bc4d7b4e31bfa3872b87af3146ff9306ef
-    app.quarkus.io/vcs-uri: https://github.com/scorpiobroker/scorpiobroker.git
-    app.quarkus.io/build-timestamp: 2026-07-18 - 19:32:26 +0000
+    app.quarkus.io/commit-id: c4191904d8ab780c45d443d7401f101fa679f07d
+    app.quarkus.io/vcs-uri: https://github.com/ScorpioBroker/ScorpioBroker.git
+    app.quarkus.io/build-timestamp: 2026-07-22 - 15:56:54 +0000
     prometheus.io/scrape: "true"
     prometheus.io/path: /q/metrics
     prometheus.io/port: "10097"
@@ -26,9 +26,9 @@ spec:
     metadata:
       annotations:
         app.quarkus.io/quarkus-version: 3.28.4
-        app.quarkus.io/commit-id: acb7e4bc4d7b4e31bfa3872b87af3146ff9306ef
-        app.quarkus.io/vcs-uri: https://github.com/scorpiobroker/scorpiobroker.git
-        app.quarkus.io/build-timestamp: 2026-07-18 - 19:32:26 +0000
+        app.quarkus.io/commit-id: c4191904d8ab780c45d443d7401f101fa679f07d
+        app.quarkus.io/vcs-uri: https://github.com/ScorpioBroker/ScorpioBroker.git
+        app.quarkus.io/build-timestamp: 2026-07-22 - 15:56:54 +0000
         prometheus.io/scrape: "true"
         prometheus.io/path: /q/metrics
         prometheus.io/port: "10097"
@@ -44,18 +44,18 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
-            - name: gateway
-              value: {{ .Values.app.envs.gateway | quote }}
-            - name: dbpass
-              value: {{ .Values.app.envs.dbpass | quote }}
-            - name: dbport
-              value: {{ .Values.app.envs.dbport | quote }}
             - name: dbhost
               value: {{ .Values.app.envs.dbhost | quote }}
-            - name: dbuser
-              value: {{ .Values.app.envs.dbuser | quote }}
+            - name: gateway
+              value: {{ .Values.app.envs.gateway | quote }}
             - name: dbname
               value: {{ .Values.app.envs.dbname | quote }}
+            - name: dbuser
+              value: {{ .Values.app.envs.dbuser | quote }}
+            - name: dbport
+              value: {{ .Values.app.envs.dbport | quote }}
+            - name: dbpass
+              value: {{ .Values.app.envs.dbpass | quote }}
             - name: QUARKUS_FLYWAY_ACTIVE
               value: {{ .Values.app.envs.QUARKUS_FLYWAY_ACTIVE | quote }}
           image: {{ .Values.app.image }}

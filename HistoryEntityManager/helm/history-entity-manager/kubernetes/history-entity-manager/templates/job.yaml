@@ -14,7 +14,7 @@ spec:
               value: "true"
             - name: QUARKUS_INIT_AND_EXIT
               value: "true"
-          image: scorpiobroker/history-entity-manager:java-latest
+          image: docker.io/demo/history-entity-manager:6.0.2-SNAPSHOT
           name: history-entity-manager-flyway-init
       restartPolicy: OnFailure
       serviceAccountName: history-entity-manager

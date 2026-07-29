@@ -1,0 +1,9 @@
+S Name/IP Address        Auth COpts EOpts Last Score     Interval  Leap
+=======================================================================
+M ntp-nts-2.ps5.canonical.> Y -P--- -PTR-    0   1.0    +0ns    +0ns  ?
+M ntp-nts-3.ps5.canonical.> Y -P--- -PTR-    0   1.0    +0ns    +0ns  ?
+M ntp-nts-2.ps6.canonical.> Y -P--- -PTR-    0   1.0    +0ns    +0ns  ?
+M ntp-nts-3.ps6.canonical.> Y -P--- -PTR-    0   1.0    +0ns    +0ns  ?
+M ntp-nts-1.ps5.canonical.> Y ----- --TR-    0   1.0    +0ns    +0ns  ?
+M ntp-nts-1.ps6.canonical.> Y ----- --TR-    0   1.0    +0ns    +0ns  ?
+W _gateway                  N ----- -----    0   1.0  +7418s  +7418s  N

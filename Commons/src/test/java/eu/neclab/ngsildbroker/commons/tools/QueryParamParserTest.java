@@ -296,4 +296,12 @@ public class QueryParamParserTest {
 				() -> QueryParamParser.parse("type=T&pick=name", NgsiLdOperation.PURGE_ENTITIES));
 		assertErrorType(projection, ErrorType.InvalidRequest);
 	}
+
+	@Test
+	public void retrieveEntityAcceptsType() throws ResponseException {
+		ParsedQueryParams params = QueryParamParser.parse("type=Vehicle&attrs=speed",
+				NgsiLdOperation.RETRIEVE_ENTITY);
+		assertEquals("Vehicle", params.getString("type"));
+		assertEquals("speed", params.getString("attrs"));
+	}
 }

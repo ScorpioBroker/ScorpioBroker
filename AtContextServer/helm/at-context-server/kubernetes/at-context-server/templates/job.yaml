@@ -14,7 +14,7 @@ spec:
               value: "true"
             - name: QUARKUS_INIT_AND_EXIT
               value: "true"
-          image: scorpiobroker/at-context-server:java-latest
+          image: docker.io/demo/at-context-server:6.0.2-SNAPSHOT
           name: at-context-server-flyway-init
       restartPolicy: OnFailure
       serviceAccountName: at-context-server

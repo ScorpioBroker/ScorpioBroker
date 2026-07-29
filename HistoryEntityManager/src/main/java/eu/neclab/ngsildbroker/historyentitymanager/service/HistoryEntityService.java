@@ -22,11 +22,13 @@ import org.slf4j.LoggerFactory;
 
 import com.github.jsonldjava.core.Context;
 import com.github.jsonldjava.core.JsonLDService;
+import com.github.jsonldjava.utils.JsonUtils;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Table;
+import com.google.common.net.HttpHeaders;
 
 import eu.neclab.ngsildbroker.commons.constants.AppConstants;
 import eu.neclab.ngsildbroker.commons.constants.NGSIConstants;
@@ -53,8 +55,8 @@ import eu.neclab.ngsildbroker.historyentitymanager.repository.HistoryDAO;
 import io.quarkus.runtime.Startup;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Tuple2;
-import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.Vertx;
+import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.WebClient;
 
 @ApplicationScoped
@@ -125,16 +127,26 @@ public class HistoryEntityService implements CSourceHandler {
 			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
 			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(), headersFromReq);
 
-			unis.add(EntityTools.prepareSplitUpEntityForSending(expanded, originalContext, ldService).onItem()
-					.transformToUni(compacted -> {
+			unis.add(EntityTools.prepareSplitUpEntityForSending(expanded, originalContext, ldService, toFrwd).onItem()
+					.transformToUni(prepared -> {
+						String contentType = prepared.getItem1();
+						Map<String, Object> compacted = prepared.getItem2();
+						String body;
+						try {
+							body = JsonUtils.toString(compacted);
+						} catch (Exception e) {
+							return Uni.createFrom().item(new NGSILDOperationResult(AppConstants.CREATE_TEMPORAL_REQUEST,
+									entityId, remoteHost.tenant()));
+						}
 						return webClient.post(remoteHost.host() + NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT)
-								.putHeaders(toFrwd).sendJsonObject(new JsonObject(compacted)).onItemOrFailure()
+								.putHeaders(toFrwd).putHeader(HttpHeaders.CONTENT_TYPE, contentType)
+								.sendBuffer(Buffer.buffer(body)).onItemOrFailure()
 								.transform((response, failure) -> {
 									NGSILDOperationResult result = HttpUtils.handleWebResponse(response, failure,
 											ArrayUtils.toArray(201, 204), remoteHost,
 											AppConstants.CREATE_TEMPORAL_REQUEST, entityId,
 											HttpUtils.getAttribsFromCompactedPayload(compacted));
-									if (response.statusCode() == 204) {
+									if (response != null && response.statusCode() == 204) {
 										result.setWasUpdated(true);
 									}
 									return result;
@@ -182,12 +194,22 @@ public class HistoryEntityService implements CSourceHandler {
 			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
 			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(), headersFromReq);
 
-			unis.add(EntityTools.prepareSplitUpEntityForSending(expanded, originalContext, ldService).onItem()
-					.transformToUni(compacted -> {
+			unis.add(EntityTools.prepareSplitUpEntityForSending(expanded, originalContext, ldService, toFrwd).onItem()
+					.transformToUni(prepared -> {
+						String contentType = prepared.getItem1();
+						Map<String, Object> compacted = prepared.getItem2();
+						String body;
+						try {
+							body = JsonUtils.toString(compacted);
+						} catch (Exception e) {
+							return Uni.createFrom().item(new NGSILDOperationResult(AppConstants.APPEND_TEMPORAL_REQUEST,
+									entityId, remoteHost.tenant()));
+						}
 						return webClient
 								.post(remoteHost.host() + NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT + "/"
 										+ NGSIConstants.QUERY_PARAMETER_ATTRS)
-								.putHeaders(toFrwd).sendJsonObject(new JsonObject(compacted)).onItemOrFailure()
+								.putHeaders(toFrwd).putHeader(HttpHeaders.CONTENT_TYPE, contentType)
+								.sendBuffer(Buffer.buffer(body)).onItemOrFailure()
 								.transform((response, failure) -> {
 									return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(204),
 											remoteHost, AppConstants.APPEND_TEMPORAL_REQUEST, entityId,
@@ -249,13 +271,24 @@ public class HistoryEntityService implements CSourceHandler {
 			RemoteHost remoteHost = remoteEntityAndHost.getItem1();
 			MultiMap toFrwd = HttpUtils.getHeadToFrwd(remoteHost.headers(), headersFromReq);
 
-			unis.add(EntityTools.prepareSplitUpEntityForSending(expanded, originalContext, ldService).onItem()
-					.transformToUni(compacted -> {
+			unis.add(EntityTools.prepareSplitUpEntityForSending(expanded, originalContext, ldService, toFrwd).onItem()
+					.transformToUni(prepared -> {
+						String contentType = prepared.getItem1();
+						Map<String, Object> compacted = prepared.getItem2();
+						String body;
+						try {
+							body = JsonUtils.toString(compacted);
+						} catch (Exception e) {
+							return Uni.createFrom().item(
+									new NGSILDOperationResult(AppConstants.UPDATE_TEMPORAL_INSTANCE_REQUEST, entityId,
+											remoteHost.tenant()));
+						}
 						return webClient
 								.post(remoteHost.host() + NGSIConstants.NGSI_LD_TEMPORAL_ENTITIES_ENDPOINT + "/"
 										+ NGSIConstants.QUERY_PARAMETER_ATTRS + "/" + request.getAttribName() + "/"
 										+ request.getInstanceId())
-								.putHeaders(toFrwd).sendJsonObject(new JsonObject(compacted)).onItemOrFailure()
+								.putHeaders(toFrwd).putHeader(HttpHeaders.CONTENT_TYPE, contentType)
+								.sendBuffer(Buffer.buffer(body)).onItemOrFailure()
 								.transform((response, failure) -> {
 									return HttpUtils.handleWebResponse(response, failure, ArrayUtils.toArray(204),
 											remoteHost, AppConstants.UPDATE_TEMPORAL_INSTANCE_REQUEST, entityId,

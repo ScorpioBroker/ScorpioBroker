@@ -14,7 +14,7 @@ spec:
               value: "true"
             - name: QUARKUS_INIT_AND_EXIT
               value: "true"
-          image: scorpiobroker/entity-manager:java-latest
+          image: docker.io/demo/entity-manager:6.0.2-SNAPSHOT
           name: entity-manager-flyway-init
       restartPolicy: OnFailure
       serviceAccountName: entity-manager

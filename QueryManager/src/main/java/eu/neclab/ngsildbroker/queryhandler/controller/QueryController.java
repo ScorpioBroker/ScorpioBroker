@@ -117,6 +117,7 @@ public class QueryController {
 		String omit;
 		String format;
 		String datasetId;
+		String typeQuery;
 		boolean localOnly;
 		boolean doNotCompact;
 		boolean entityMap;
@@ -134,6 +135,7 @@ public class QueryController {
 			omit = queryParams.getString(NGSIConstants.QUERY_PARAMETER_OMIT);
 			format = queryParams.getString(NGSIConstants.QUERY_PARAMETER_FORMAT);
 			datasetId = queryParams.getString(NGSIConstants.QUERY_PARAMETER_DATA_SET_ID);
+			typeQuery = queryParams.getString(NGSIConstants.QUERY_PARAMETER_TYPE);
 			localOnly = queryParams.getLocal();
 			doNotCompact = queryParams.getBoolean(NGSIConstants.QUERY_PARAMETER_DO_NOT_COMPACT);
 			entityMap = queryParams.getBoolean(NGSIConstants.QUERY_PARAMETER_ENTITY_MAP);
@@ -141,7 +143,7 @@ public class QueryController {
 		} catch (ResponseException e) {
 			return Uni.createFrom().item(HttpUtils.handleControllerExceptions(e, tenant));
 		}
-		return queryForQueryResult(request, entityId, null, null, attrs, null, null, null, null, null, null,
+		return queryForQueryResult(request, entityId, typeQuery, null, attrs, null, null, null, null, null, null,
 				geometryProperty, lang, null, localOnly, options, 1, 0, false, containedBy, join, joinLevel,
 				doNotCompact, entityMapToken, entityMap, pick, omit, format, null, datasetId, distEntities,
 				null, null, null, null, false)

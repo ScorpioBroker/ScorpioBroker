@@ -23,6 +23,7 @@ public enum ErrorType {
 	LdContextNotAvailable(503, "https://uri.etsi.org/ngsi-ld/errors/LdContextNotAvailable",
 			"LD context not available."),
 	AlreadyExists(409, "https://uri.etsi.org/ngsi-ld/errors/AlreadyExists", "Already exists."),
+	Conflict(409, "https://uri.etsi.org/ngsi-ld/errors/Conflict", "Conflict."),
 	LenghtRequired(411, "HTTP request provided by a client does not define the “Content-Length” HTTP header",
 			"HTTP request provided by a client does not define the “Content-Length” HTTP header"),
 	RequestEntityTooLarge(413, "HTTP input data stream is too large i.e. too many bytes",
